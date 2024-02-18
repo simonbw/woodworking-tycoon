@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "es6",
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+  // "include":Ø ["src/types", "src/server/index.ts", "src/client/pages"]
+}

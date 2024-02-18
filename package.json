@@ -1,0 +1,51 @@
+{
+  "name": "woodworking-tycoon",
+  "version": "1.0.0",
+  "description": "Woodworking idle game",
+  "main": "index.js",
+  "scripts": {
+    "format": "npx prettier --write ./src/**/*.{ts,tsx}",
+    "build": "node esbuild-client.config.mjs",
+    "dev": "node esbuild-client.config.mjs --dev",
+    "tsc": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simonbw/woodworking-tycoon.git"
+  },
+  "author": "Simon Baumgardt-Wellander",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/simonbw/woodworking-tycoon/issues"
+  },
+  "homepage": "https://github.com/simonbw/woodworking-tycoon#readme",
+  "nodemonConfig": {
+    "enable-source-maps": true,
+    "watch": [
+      "dist/server"
+    ]
+  },
+  "engines": {
+    "npm": "10.x",
+    "node": "20.x"
+  },
+  "prettier": {},
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.10",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "dotenv": "^16.3.1",
+    "esbuild": "^0.19.11",
+    "esbuild-serve": "^1.0.1",
+    "esbuild-style-plugin": "^1.6.3",
+    "postcss": "^8.4.33",
+    "postcss-import": "^16.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.4.1",
+    "tailwindcss-opentype": "^1.1.0",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4"
+  }
+}
