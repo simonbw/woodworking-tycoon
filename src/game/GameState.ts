@@ -1,5 +1,6 @@
 export interface GameState {
   readonly money: number;
+  readonly reputation: number;
   readonly materials: Material[];
   readonly tools: Tool[];
   readonly machines: MachinePlacement[];
@@ -56,6 +57,7 @@ export interface Machine {
   readonly cellsOccupied: readonly Position[];
   readonly freeCellsNeeded: readonly Position[];
   readonly operationPosition: Position;
+  readonly cost: number;
 }
 
 export const MATERIALS = {
@@ -125,6 +127,7 @@ export const MACHINES = {
   workBench: {
     id: "workBench",
     name: "Work Bench",
+    cost: 100,
     cellsOccupied: [
       [0, 0],
       [1, 0],
@@ -136,5 +139,17 @@ export const MACHINES = {
       { recipe: RECIPES.sandBoard, duration: 10 },
       { recipe: RECIPES.assembleShelf, duration: 10 },
     ],
+  },
+  tableSaw: {
+    id: "tableSaw",
+    name: "Table Saw",
+    cost: 100,
+    cellsOccupied: [[0, 0]],
+    freeCellsNeeded: [
+      [0, -1],
+      [0, 1],
+    ],
+    operationPosition: [0, 1],
+    operations: [{ recipe: RECIPES.cutPallet, duration: 10 }],
   },
 } satisfies { [key: string]: Machine };

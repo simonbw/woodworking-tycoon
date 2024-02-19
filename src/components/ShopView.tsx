@@ -1,35 +1,74 @@
 import React from "react";
-import {
-  GameState,
-  Machine,
-  MachinePlacement,
-  Position,
-} from "../game/GameState";
+import { GameState, MachinePlacement, Position } from "../game/GameState";
 import { range } from "../utils/arrayUtils";
 import { useGameState } from "./useGameState";
 
-export const ShopLayoutView: React.FC = () => {
+const GRID_SPACING = 0.05;
+const MACHINE_OVERHANG = 0.02;
+
+export const ShopView: React.FC = () => {
   const { gameState } = useGameState();
   const [width, height] = gameState.shopInfo.size;
 
   const cells = getCellMap(gameState);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-64">
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-64 bg-zinc-800">
       {cells.flatMap((row) =>
         row.map((cell) => (
           <rect
             key={`${cell.x}-${cell.y}`}
-            x={cell.x}
-            y={cell.y}
-            width={1}
-            height={1}
-            fill={cell.machine ? "black" : "white"}
-            className="stroke-[0.1] stroke-zinc-500"
+            x={cell.x + GRID_SPACING}
+            y={cell.y + GRID_SPACING}
+            width={1 - GRID_SPACING * 2}
+            height={1 - GRID_SPACING * 2}
+            className="fill-zinc-600"
           />
         ))
       )}
+
+      {gameState.machines.map((machinePlacement) => (
+        <MachineView
+          key={machinePlacement.machine.id}
+          machinePlacement={machinePlacement}
+        />
+      ))}
     </svg>
+  );
+};
+
+const MachineView: React.FC<{ machinePlacement: MachinePlacement }> = ({
+  machinePlacement,
+}) => {
+  const cells = getMachineCells(machinePlacement);
+
+  const operatorPosition = translateVec(
+    rotateVec(
+      machinePlacement.machine.operationPosition,
+      machinePlacement.rotation
+    ),
+    machinePlacement.position
+  );
+
+  return (
+    <>
+      {cells.map(([x, y]) => (
+        <rect
+          key={`${x}-${y}`}
+          x={x - MACHINE_OVERHANG}
+          y={y - MACHINE_OVERHANG}
+          width={1 + MACHINE_OVERHANG * 2}
+          height={1 + MACHINE_OVERHANG * 2}
+          className="fill-amber-600 drop-shadow"
+        />
+      ))}
+      <circle
+        cx={operatorPosition[0] + 0.5}
+        cy={operatorPosition[1] + 0.5}
+        className="fill-blue-500/50 stroke-blue-500/80 stroke-[0.05]"
+        r={0.3}
+      />
+    </>
   );
 };
 

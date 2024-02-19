@@ -3,8 +3,8 @@ import { CommissionsSection } from "./CommissionsSection";
 import { MachinesSection } from "./MachinesSection";
 import { MaterialsSection } from "./MaterialsSection";
 import { MoneySection } from "./MoneySection";
+import { ShopView } from "./ShopView";
 import { ToolsSection } from "./ToolsSection";
-import { ShopLayoutView } from "./ShopLayoutView";
 
 export const GameView: React.FC = () => {
   return (
@@ -16,12 +16,20 @@ export const GameView: React.FC = () => {
         </h1>
       </header>
 
-      <MoneySection />
-      <MaterialsSection />
-      <MachinesSection />
-      <ToolsSection />
-      <CommissionsSection />
-      <ShopLayoutView />
+      <div className="grid grid-cols-3">
+        <div className="space-y-6">
+          <MaterialsSection />
+          <MachinesSection />
+          <ToolsSection />
+        </div>
+        <div className="space-y-6">
+          <ShopView />
+        </div>
+        <div className="space-y-6">
+          <MoneySection />
+          <CommissionsSection />
+        </div>
+      </div>
     </main>
   );
 };

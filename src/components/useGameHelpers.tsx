@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Commission, Material, Operation } from "../game/GameState";
+import { Commission, Machine, Material, Operation } from "../game/GameState";
 import { useGameState } from "./useGameState";
 
 export function useGameHelpers() {
@@ -30,5 +30,14 @@ export function useGameHelpers() {
     return hasMaterials(operation.recipe.inputMaterials);
   };
 
-  return { hasMaterials, canCompleteCommission, canPerformOperation };
+  const canBuyMachine = (machine: Machine) => {
+    return gameStateRef.current.money >= machine.cost;
+  };
+
+  return {
+    hasMaterials,
+    canCompleteCommission,
+    canPerformOperation,
+    canBuyMachine,
+  };
 }

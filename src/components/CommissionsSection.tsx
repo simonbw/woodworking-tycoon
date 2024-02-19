@@ -7,7 +7,7 @@ import { useGameActions } from "./useGameActions";
 export const CommissionsSection: React.FC = () => {
   const { gameState } = useGameState();
   return (
-    <section className="flex gap-2">
+    <section className="space-y-2">
       <h2 className="section-heading">Commissions</h2>
       <ul>
         {gameState.commissions.map((commission, i) => (
