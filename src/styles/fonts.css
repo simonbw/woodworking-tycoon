@@ -1,0 +1,42 @@
+@font-face {
+  font-family: "Lumberjack";
+  font-style: normal;
+  font-weight: normal;
+  src: url("/fonts/Lumberjack-Rough.otf");
+}
+
+@font-face {
+  font-family: "Bree Serif";
+  font-style: normal;
+  font-weight: normal;
+  src: url("/fonts/BreeSerif-Regular.ttf");
+}
+
+@font-face {
+  font-family: "Cabin";
+  font-weight: 400 700;
+  font-stretch: 100%;
+  src: url("/fonts/Cabin-Variable.ttf");
+}
+
+@font-face {
+  font-family: "Cabin";
+  font-style: italic;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  src: url("/fonts/Cabin-Italic-Variable.ttf");
+}
+
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 200 1000;
+  src: url("/fonts/Nunito.ttf");
+}
+
+@font-face {
+  font-family: "Nunito";
+  font-style: italic;
+  font-weight: 200 1000;
+  src: url("/fonts/Nunito-Italic.ttf");
+}

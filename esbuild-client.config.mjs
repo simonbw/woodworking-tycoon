@@ -18,8 +18,8 @@ const context = await esbuild
     bundle: true,
     minify: !isDev,
     sourcemap: true,
-    outdir: "dist/client",
-    external: ["/static/*"],
+    outdir: "dist",
+    external: ["/fonts/*", "/images/*"],
     plugins: [
       postcssPlugin({
         extract: true,
@@ -40,7 +40,7 @@ if (isDev) {
   fs.watch("static/", { recursive: true }, async (eventType, filename) => {
     if (eventType == "change") {
       const from = path.join("static", filename);
-      const to = path.join("dist/client", filename);
+      const to = path.join("dist", filename);
       console.log(`copying ${from} to ${to}`);
 
       try {
@@ -58,7 +58,7 @@ if (isDev) {
   await context.watch();
   const { host, port } = await context
     .serve({
-      servedir: "dist/client",
+      servedir: "dist",
       port: Number(process.env.ES_BUILD_DEV_PORT || 3001),
     })
     .catch((error) => {
@@ -73,8 +73,8 @@ if (isDev) {
 
 async function copyStatics() {
   const startTime = performance.now();
-  await fsp.mkdir("dist/client", { recursive: true });
-  console.log(`copying statics to dist/client`);
-  fsp.cp("static", "dist/client", { recursive: true });
+  await fsp.mkdir("dist", { recursive: true });
+  console.log(`copying statics to dist`);
+  fsp.cp("static", "dist", { recursive: true });
   console.log(`done [${Math.round(performance.now() - startTime)}ms]`);
 }

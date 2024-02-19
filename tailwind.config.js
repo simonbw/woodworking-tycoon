@@ -1,8 +1,8 @@
 import headlessPlugin from "@headlessui/tailwindcss";
-import opentypePlugin from "tailwindcss-opentype";
 import typeographyPlugin from "@tailwindcss/typography";
+import opentypePlugin from "tailwindcss-opentype";
 import defaultTheme from "tailwindcss/defaultTheme";
-import { tailwindSvgStopsPlugin } from "./src/client/utils/tailwind-svg-stops";
+import { tailwindSvgStopsPlugin } from "./src/utils/tailwind-svg-stops";
 
 /** @type {import('tailwindcss').Config} */
 const config = {
@@ -22,6 +22,15 @@ const config = {
     },
 
     extend: {
+      fontFamily: {
+        // Styles
+        sans: ["Nunito", ...defaultTheme.fontFamily.sans],
+        serif: ["Bree Serif", ...defaultTheme.fontFamily.serif],
+        body: ["Nunito", ...defaultTheme.fontFamily.sans],
+        heading: ["Bree Serif", ...defaultTheme.fontFamily.serif],
+        lumberjack: ["Lumberjack", ...defaultTheme.fontFamily.serif],
+      },
+
       colors: {
         brown: {
           50: "#fdf8f6",
@@ -34,6 +43,7 @@ const config = {
           700: "#977669",
           800: "#846358",
           900: "#43302b",
+          950: "#211015",
         },
       },
 
