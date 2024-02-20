@@ -62,7 +62,7 @@ export const MACHINES = {
         },
       },
     ],
-    className: "fill-amber-600 drop-shadow-md",
+    className: "fill-brown-800 drop-shadow-md",
   },
 
   jobsiteTableSaw: {

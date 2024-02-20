@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Commission, Machine, Tool } from "../game/GameState";
-import { Direction, rotateVec } from "../game/Vectors";
+import { Direction, rotateVec, translateVec } from "../game/Vectors";
 import { MachineOperation } from "../game/MachineType";
 import { MaterialInstance } from "../game/Materials";
 import { useGameHelpers } from "./useGameHelpers";
@@ -64,15 +64,17 @@ export function useGameActions() {
 
       movePlayer: (direction: Direction) =>
         updateGameState((gameState) => {
+          const cellMap = helpers.getCellMap();
           const player = gameState.people[0];
-          const [dx, dy] = rotateVec([1, 0], direction);
-          const newPosition: [number, number] = [
-            clamp(player.position[0] + dx, 0, gameState.shopInfo.size[0] - 1),
-            clamp(player.position[1] + dy, 0, gameState.shopInfo.size[1] - 1),
-          ];
+          const moveVec = rotateVec([1, 0], direction);
+          const [x, y] = translateVec(player.position, moveVec);
+          const newCell = cellMap[y]?.[x];
+          if (newCell === undefined || newCell.machine) {
+            return gameState;
+          }
           return {
             ...gameState,
-            people: [{ ...player, position: newPosition }],
+            people: [{ ...player, position: [x, y] }],
           };
         }),
     }),

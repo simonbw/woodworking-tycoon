@@ -8,8 +8,9 @@ export const initialGameState: GameState = {
   tools: [],
   people: [{ name: "Player", position: [0, 0] }],
   machines: [
-    { type: MACHINES.jobsiteTableSaw, position: [2, 3], rotation: 0 },
-    { type: MACHINES.makeshiftWorkbench, position: [0, 0], rotation: 0 },
+    { type: MACHINES.jobsiteTableSaw, position: [1, 3], rotation: 2 },
+    { type: MACHINES.makeshiftWorkbench, position: [3, 0], rotation: 3 },
+    { type: MACHINES.makeshiftWorkbench, position: [3, 1], rotation: 3 },
   ],
   commissions: [
     {
