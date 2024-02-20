@@ -1,5 +1,6 @@
 import React from "react";
-import { GameState, MachinePlacement, Position } from "../game/GameState";
+import { GameState, Machine, Person } from "../game/GameState";
+import { Vector, rotateVec, translateVec } from "../game/Vectors";
 import { range } from "../utils/arrayUtils";
 import { useGameState } from "./useGameState";
 
@@ -13,7 +14,11 @@ export const ShopView: React.FC = () => {
   const cells = getCellMap(gameState);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-64 bg-zinc-800">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-64 bg-zinc-800"
+      shapeRendering="crispEdges"
+    >
       {cells.flatMap((row) =>
         row.map((cell) => (
           <rect
@@ -29,22 +34,39 @@ export const ShopView: React.FC = () => {
 
       {gameState.machines.map((machinePlacement) => (
         <MachineView
-          key={machinePlacement.machine.id}
+          key={machinePlacement.type.id}
           machinePlacement={machinePlacement}
         />
+      ))}
+
+      {gameState.people.map((person) => (
+        <PersonView key={person.name} person={person} />
       ))}
     </svg>
   );
 };
 
-const MachineView: React.FC<{ machinePlacement: MachinePlacement }> = ({
+const PersonView: React.FC<{ person: Person }> = ({ person }) => {
+  const [x, y] = person.position;
+  return (
+    <circle
+      cx={0.5}
+      cy={0.5}
+      r={0.3}
+      style={{ transform: `translate(${x}px, ${y}px)` }}
+      className="fill-green-500 stroke-green-600 stroke-[0.05] transition-transform"
+    />
+  );
+};
+
+const MachineView: React.FC<{ machinePlacement: Machine }> = ({
   machinePlacement,
 }) => {
   const cells = getMachineCells(machinePlacement);
 
   const operatorPosition = translateVec(
     rotateVec(
-      machinePlacement.machine.operationPosition,
+      machinePlacement.type.operationPosition,
       machinePlacement.rotation
     ),
     machinePlacement.position
@@ -59,14 +81,16 @@ const MachineView: React.FC<{ machinePlacement: MachinePlacement }> = ({
           y={y - MACHINE_OVERHANG}
           width={1 + MACHINE_OVERHANG * 2}
           height={1 + MACHINE_OVERHANG * 2}
-          className="fill-amber-600 drop-shadow"
+          className={
+            machinePlacement.type.className ?? "fill-amber-600 drop-shadow"
+          }
         />
       ))}
       <circle
         cx={operatorPosition[0] + 0.5}
         cy={operatorPosition[1] + 0.5}
         className="fill-blue-500/50 stroke-blue-500/80 stroke-[0.05]"
-        r={0.3}
+        r={0.35}
       />
     </>
   );
@@ -90,30 +114,11 @@ function getCellMap(gameState: GameState): CellValue[][] {
   return cells;
 }
 
-function getMachineCells(
-  machinePosition: MachinePlacement
-): readonly Position[] {
-  return machinePosition.machine.cellsOccupied.map((cell) =>
+function getMachineCells(machinePosition: Machine): ReadonlyArray<Vector> {
+  return machinePosition.type.cellsOccupied.map((cell) =>
     translateVec(
       rotateVec(cell, machinePosition.rotation),
       machinePosition.position
     )
   );
-}
-
-function rotateVec([x, y]: Position, rotation: 0 | 1 | 2 | 3): Position {
-  switch (rotation) {
-    case 0:
-      return [x, y];
-    case 1:
-      return [y, -x];
-    case 2:
-      return [-x, -y];
-    case 3:
-      return [-y, x];
-  }
-}
-
-function translateVec([x, y]: Position, [dx, dy]: Position): Position {
-  return [x + dx, y + dy];
 }

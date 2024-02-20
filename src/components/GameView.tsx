@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { CommissionsSection } from "./CommissionsSection";
 import { MachinesSection } from "./MachinesSection";
 import { MaterialsSection } from "./MaterialsSection";
 import { MoneySection } from "./MoneySection";
 import { ShopView } from "./ShopView";
 import { ToolsSection } from "./ToolsSection";
+import { useGameState } from "./useGameState";
 
 export const GameView: React.FC = () => {
   return (
@@ -30,6 +31,28 @@ export const GameView: React.FC = () => {
           <CommissionsSection />
         </div>
       </div>
+      <DebugView />
     </main>
   );
+};
+
+const DebugView: React.FC = () => {
+  const { gameState } = useGameState();
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="button">
+        Debug
+      </button>
+    );
+  } else {
+    return (
+      <pre
+        className="whitespace-pre-wrap text-xs rounded p-2 bg-white/20 cursor-pointer"
+        onClick={() => setOpen(false)}
+      >
+        {JSON.stringify(gameState, null, 2)}
+      </pre>
+    );
+  }
 };

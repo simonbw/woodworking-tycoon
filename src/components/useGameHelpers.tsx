@@ -1,5 +1,11 @@
 import { useRef } from "react";
-import { Commission, Machine, Material, Operation } from "../game/GameState";
+import { Commission } from "../game/GameState";
+import {
+  InputMaterial,
+  MachineOperation,
+  MachineType,
+} from "../game/MachineType";
+import { MaterialInstance } from "../game/Materials";
 import { useGameState } from "./useGameState";
 
 export function useGameHelpers() {
@@ -7,35 +13,26 @@ export function useGameHelpers() {
   const gameStateRef = useRef(gameState);
   gameStateRef.current = gameState;
 
-  const hasMaterials = (materials: readonly Material[]) => {
-    // TODO: This is slow
-    const availableMaterials = [...gameStateRef.current.materials];
-    console.log("availableMaterials", availableMaterials);
-    for (const material of materials) {
-      const index = availableMaterials.indexOf(material);
-      if (index === -1) {
-        console.log("Missing material", material);
-        return false;
-      }
-      availableMaterials.splice(index, 1);
-    }
-    return true;
+  const findMaterials = (
+    inputMaterial: InputMaterial
+  ): ReadonlyArray<MaterialInstance> => {
+    return [];
   };
 
   const canCompleteCommission = (commission: Commission) => {
-    return hasMaterials(commission.requiredMaterials);
+    return false;
   };
 
-  const canPerformOperation = (operation: Operation) => {
-    return hasMaterials(operation.recipe.inputMaterials);
+  const canPerformOperation = (operation: MachineOperation) => {
+    return false;
   };
 
-  const canBuyMachine = (machine: Machine) => {
+  const canBuyMachine = (machine: MachineType) => {
     return gameStateRef.current.money >= machine.cost;
   };
 
   return {
-    hasMaterials,
+    findMaterials,
     canCompleteCommission,
     canPerformOperation,
     canBuyMachine,

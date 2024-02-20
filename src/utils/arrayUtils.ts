@@ -6,7 +6,7 @@ export function last<T>(array: ReadonlyArray<T> | string): T | string {
 
 export function omit<T extends object, K extends keyof T>(
   obj: T,
-  ...keys: K[]
+  ...keys: readonly K[]
 ): Omit<T, K> {
   const result = { ...obj } as Omit<T, K>;
   keys.forEach((key) => {
@@ -17,7 +17,7 @@ export function omit<T extends object, K extends keyof T>(
 
 export function pick<T extends object, K extends keyof T>(
   obj: T,
-  ...keys: K[]
+  ...keys: readonly K[]
 ): Pick<T, K> {
   const result = {} as Pick<T, K>;
   keys.forEach((key) => {
@@ -28,6 +28,10 @@ export function pick<T extends object, K extends keyof T>(
 
 export function objectValues<T extends object>(obj: T): T[keyof T][] {
   return Object.values(obj);
+}
+
+export function objectKeys<T extends object>(obj: T): (keyof T)[] {
+  return Object.keys(obj) as (keyof T)[];
 }
 
 type Entries<T> = {
@@ -42,11 +46,11 @@ export function range(start: number, end: number): number[] {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-export function arrayEquals<T>(a: T[], b: T[]): boolean {
+export function arrayEquals<T>(a: readonly T[], b: readonly T[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
-export function findDuplicates<T>(items: T[]): T[] {
+export function findDuplicates<T>(items: readonly T[]): T[] {
   const duplicates = new Set<T>();
   const seen = new Set<T>();
   for (const item of items) {
@@ -58,7 +62,10 @@ export function findDuplicates<T>(items: T[]): T[] {
   return [...duplicates];
 }
 
-export function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
+export function groupBy<T, K>(
+  items: readonly T[],
+  keyFn: (item: T) => K
+): Map<K, T[]> {
   const groups = new Map<K, T[]>();
   for (const item of items) {
     const key = keyFn(item);
@@ -70,7 +77,7 @@ export function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
 }
 
 export function countBy<T, K>(
-  items: T[],
+  items: readonly T[],
   keyFn: (item: T) => K
 ): Map<K, number> {
   const counts = new Map<K, number>();
@@ -80,4 +87,8 @@ export function countBy<T, K>(
     counts.set(key, count + 1);
   }
   return counts;
+}
+
+export function repeat<T>(value: T, times: number): T[] {
+  return Array.from({ length: times }, () => value);
 }

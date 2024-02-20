@@ -24,17 +24,17 @@ const CommissionListItem: React.FC<{
   const { canCompleteCommission } = useGameHelpers();
   const { completeCommission } = useGameActions();
   const name = commission.requiredMaterials
-    .map((material) => material.name)
+    .map((material) => `${material.type} (x${material.quantity})`)
     .join(", ");
   return (
-    <li>
+    <li className="flex gap-1 items-center">
       <span>{name}</span>
       <button
         disabled={!canCompleteCommission(commission)}
         className="button"
         onClick={() => completeCommission(commission)}
       >
-        Complete (${commission.reward.toFixed(2)})
+        Complete (${commission.rewardMoney.toFixed(2)})
       </button>
     </li>
   );

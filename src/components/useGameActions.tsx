@@ -1,14 +1,11 @@
 import { useMemo } from "react";
-import {
-  Commission,
-  Machine,
-  MachinePlacement,
-  Material,
-  Operation,
-  Tool,
-} from "../game/GameState";
-import { useGameState } from "./useGameState";
+import { Commission, Machine, Tool } from "../game/GameState";
+import { Direction, rotateVec } from "../game/Vectors";
+import { MachineOperation } from "../game/MachineType";
+import { MaterialInstance } from "../game/Materials";
 import { useGameHelpers } from "./useGameHelpers";
+import { useGameState } from "./useGameState";
+import { clamp } from "../utils/mathUtils";
 
 export function useGameActions() {
   const { updateGameState } = useGameState();
@@ -16,7 +13,7 @@ export function useGameActions() {
 
   return useMemo(
     () => ({
-      giveMachine: (machinePlacement: MachinePlacement) =>
+      giveMachine: (machinePlacement: Machine) =>
         updateGameState((gameState) => {
           return {
             ...gameState,
@@ -32,26 +29,11 @@ export function useGameActions() {
           };
         }),
 
-      giveMaterial: (material: Material) =>
+      giveMaterial: (material: MaterialInstance) =>
         updateGameState((gameState) => {
           return {
             ...gameState,
             materials: [...gameState.materials, material],
-          };
-        }),
-
-      takeMaterial: (material: Material) =>
-        updateGameState((gameState) => {
-          const materials = [...gameState.materials];
-          const index = materials.indexOf(material);
-          if (index !== -1) {
-            materials.splice(index, 1);
-          } else {
-            throw new Error(`Material ${material.name} not found`);
-          }
-          return {
-            ...gameState,
-            materials,
           };
         }),
 
@@ -63,45 +45,34 @@ export function useGameActions() {
           };
         }),
 
-      doOperation: (operation: Operation) =>
+      doOperation: (operation: MachineOperation) =>
         updateGameState((gameState) => {
           console.log("Doing operation", operation);
-          const materials = [...gameState.materials];
-          // TODO: This is really inefficient, we can do it all with only one copy
-          for (const inputMaterial of operation.recipe.inputMaterials) {
-            const index = materials.indexOf(inputMaterial);
-            if (index !== -1) {
-              materials.splice(index, 1);
-            } else {
-              throw new Error(
-                `Material ${inputMaterial.name} not found for operation`
-              );
-            }
-          }
-          materials.push(...operation.recipe.outputMaterials);
           return {
             ...gameState,
-            materials,
           };
         }),
 
       completeCommission: (commission: Commission) =>
         updateGameState((gameState) => {
-          const materials = [...gameState.materials];
-          for (const requiredMaterial of commission.requiredMaterials) {
-            const index = materials.indexOf(requiredMaterial);
-            if (index !== -1) {
-              materials.splice(index, 1);
-            } else {
-              throw new Error(
-                `Material ${requiredMaterial.name} not found for commission`
-              );
-            }
-          }
           return {
             ...gameState,
-            materials,
-            money: gameState.money + commission.reward,
+            money: gameState.money + commission.rewardMoney,
+            reputation: gameState.reputation + commission.rewardReputation,
+          };
+        }),
+
+      movePlayer: (direction: Direction) =>
+        updateGameState((gameState) => {
+          const player = gameState.people[0];
+          const [dx, dy] = rotateVec([1, 0], direction);
+          const newPosition: [number, number] = [
+            clamp(player.position[0] + dx, 0, gameState.shopInfo.size[0] - 1),
+            clamp(player.position[1] + dy, 0, gameState.shopInfo.size[1] - 1),
+          ];
+          return {
+            ...gameState,
+            people: [{ ...player, position: newPosition }],
           };
         }),
     }),
