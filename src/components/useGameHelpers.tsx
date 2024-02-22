@@ -1,14 +1,14 @@
 import { useRef } from "react";
-import { Commission, Machine } from "../game/GameState";
+import { Commission, Machine, MaterialPile } from "../game/GameState";
 import {
   InputMaterial,
   MachineOperation,
   MachineType,
 } from "../game/MachineType";
 import { MaterialInstance } from "../game/Materials";
-import { useGameState } from "./useGameState";
-import { Vector, translateVec, rotateVec } from "../game/Vectors";
+import { Vector, rotateVec, translateVec } from "../game/Vectors";
 import { range } from "../utils/arrayUtils";
+import { useGameState } from "./useGameState";
 
 export function useGameHelpers() {
   const { gameState: _gameState } = useGameState();
@@ -28,8 +28,19 @@ export function useGameHelpers() {
   };
 
   const canPerformOperation = (operation: MachineOperation) => {
-    // TODO: Implement canPerformOperation
-    return false;
+    const availableMaterials = [...gameStateRef.current.player.inventory];
+
+    for (const inputMaterial of operation.inputMaterials) {
+      const index = availableMaterials.findIndex((material) =>
+        materialMeetsInput(material, inputMaterial)
+      );
+      if (index === -1) {
+        return false;
+      }
+      availableMaterials.splice(index, 1);
+    }
+
+    return true;
   };
 
   const canBuyMachine = (machine: MachineType) => {
@@ -41,6 +52,7 @@ export function useGameHelpers() {
     y: number;
     machine: Machine | undefined;
     operableMachines: Machine[];
+    materialPiles: MaterialPile[];
   };
   function getCellMap(): CellInfo[][] {
     const [width, height] = gameStateRef.current.shopInfo.size;
@@ -51,6 +63,7 @@ export function useGameHelpers() {
         y,
         machine: undefined,
         operableMachines: [],
+        materialPiles: [],
       }))
     );
 
@@ -68,6 +81,11 @@ export function useGameHelpers() {
       if (ox >= 0 && ox < width && oy >= 0 && oy < height) {
         cells[oy][ox].operableMachines.push(machine);
       }
+    }
+
+    for (const materialPile of gameStateRef.current.materialPiles) {
+      const [x, y] = materialPile.position;
+      cells[y][x].materialPiles.push(materialPile);
     }
 
     return cells;
@@ -92,4 +110,24 @@ export function getMachineCells(
       machinePosition.position
     )
   );
+}
+
+export function materialMeetsInput(
+  material: MaterialInstance,
+  inputMaterial: InputMaterial
+) {
+  for (const key of Object.keys(inputMaterial)) {
+    // Make sure to skip quantity, because that's not a property of the material
+    if (key === "quantity") {
+      continue;
+    }
+    if (
+      !(key in material) ||
+      (material as Record<string, unknown>)[key] !==
+        (inputMaterial as Record<string, unknown>)[key]
+    ) {
+      return false;
+    }
+  }
+  return true;
 }

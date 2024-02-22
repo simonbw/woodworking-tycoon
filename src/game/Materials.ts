@@ -13,6 +13,7 @@ export type Species =
   | "mahogany";
 
 export interface Board {
+  readonly id: string;
   readonly type: "board";
   readonly length: BoardDimension;
   readonly width: BoardDimension;
@@ -29,6 +30,7 @@ export type SheetGoodKind =
   | "particleBoard";
 
 export interface SheetGood {
+  readonly id: string;
   readonly type: "plywood";
   readonly length: BoardDimension;
   readonly width: BoardDimension;
@@ -37,12 +39,14 @@ export interface SheetGood {
 }
 
 export type FinishedProduct = {
-  type: "shelf" | "jewlryBox" | "simpleCuttingBoard";
-  species: Species;
+  readonly id: string;
+  readonly type: "shelf" | "jewlryBox" | "simpleCuttingBoard";
+  readonly species: Species;
 };
 
 export type Pallet = {
-  type: "pallet";
+  readonly id: string;
+  readonly type: "pallet";
 };
 
 export type MaterialInstance = Pallet | Board | SheetGood | FinishedProduct;

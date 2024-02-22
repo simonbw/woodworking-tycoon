@@ -42,6 +42,10 @@ export function objectEntries<T extends object>(obj: T): Entries<T> {
   return Object.entries(obj) as Entries<T>;
 }
 
+export function array(n: number): number[] {
+  return range(0, n - 1);
+}
+
 export function range(start: number, end: number): number[] {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }

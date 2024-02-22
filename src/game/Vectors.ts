@@ -1,4 +1,5 @@
-export type Vector = [number, number];
+export type Vector = readonly [number, number];
+
 export type Direction = 0 | 1 | 2 | 3;
 
 export function rotateVec([x, y]: Vector, rotation: Direction): Vector {
@@ -16,4 +17,8 @@ export function rotateVec([x, y]: Vector, rotation: Direction): Vector {
 
 export function translateVec([x, y]: Vector, [dx, dy]: Vector): Vector {
   return [x + dx, y + dy];
+}
+
+export function vectorEquals(a: Vector, b: Vector): boolean {
+  return a[0] === b[0] && a[1] === b[1];
 }

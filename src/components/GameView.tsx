@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { CommissionsSection } from "./CommissionsSection";
-import { MachinesSection } from "./MachinesSection";
 import { MaterialsSection } from "./MaterialsSection";
 import { MoneySection } from "./MoneySection";
-import { ShopView } from "./ShopView";
+import { ShopView } from "./shop-view/ShopView";
 import { ToolsSection } from "./ToolsSection";
-import { useGameState } from "./useGameState";
+import { DebugView } from "./DebugView";
+import { CurrentCellInfo } from "./shop-view/current-cell-info/CurrentCellInfo";
 
 export const GameView: React.FC = () => {
   return (
@@ -20,11 +20,11 @@ export const GameView: React.FC = () => {
       <div className="grid grid-cols-3">
         <div className="space-y-6">
           <MaterialsSection />
-          <MachinesSection />
           <ToolsSection />
         </div>
-        <div className="space-y-6">
+        <div className="space-y-1">
           <ShopView />
+          <CurrentCellInfo />
         </div>
         <div className="space-y-6">
           <MoneySection />
@@ -34,25 +34,4 @@ export const GameView: React.FC = () => {
       <DebugView />
     </main>
   );
-};
-
-const DebugView: React.FC = () => {
-  const { gameState } = useGameState();
-  const [open, setOpen] = useState(false);
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)} className="button">
-        Debug
-      </button>
-    );
-  } else {
-    return (
-      <pre
-        className="whitespace-pre-wrap text-xs rounded p-2 bg-white/20 cursor-pointer"
-        onClick={() => setOpen(false)}
-      >
-        {JSON.stringify(gameState, null, 2)}
-      </pre>
-    );
-  }
 };

@@ -1,6 +1,16 @@
-import { objectKeys } from "../utils/arrayUtils";
-import { InputMaterial } from "./MachineType";
+import { idMaker } from "../utils/idMaker";
 import { Board, BoardDimension, MaterialInstance } from "./Materials";
+
+const makeId = idMaker();
+
+export function makeMaterial<T extends MaterialInstance>(
+  materialInitializer: Omit<T, "id">
+): T {
+  return {
+    id: `m-${makeId()}`,
+    ...materialInitializer,
+  } as T; // TODO: Why is this cast necessary?
+}
 
 /** Syntactic sugar to create a board material instance */
 export function board(
@@ -9,13 +19,13 @@ export function board(
   width: Board["width"] = 1,
   thickness: Board["thickness"] = 1
 ): MaterialInstance & { type: "board" } {
-  return {
+  return makeMaterial({
     type: "board",
     species,
     length,
     width,
     thickness,
-  };
+  });
 }
 
 export function isBoard(material: MaterialInstance): material is Board {
@@ -41,16 +51,4 @@ export function cutBoard(
     { ...inputBoard, [dimension]: outputSize },
     { ...inputBoard, [dimension]: offcutSize },
   ];
-}
-
-export function materialMeetsInput(
-  material: MaterialInstance,
-  inputMaterial: InputMaterial
-) {
-  for (const key of objectKeys(inputMaterial)) {
-    if (!(key in material) || material[key] !== inputMaterial[key]) {
-      return false;
-    }
-  }
-  return true;
 }

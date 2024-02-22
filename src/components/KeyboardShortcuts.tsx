@@ -1,8 +1,8 @@
 import React from "react";
-import { useKeyDown } from "./useKeyDown";
 import { useGameActions } from "./useGameActions";
+import { useKeyDown } from "./useKeyDown";
 
-export const KeyboardShortcuts: React.FC = () => {
+export const GlobalKeyboardShortcuts: React.FC = () => {
   const { movePlayer } = useGameActions();
   useKeyDown((event) => {
     switch (event.code) {

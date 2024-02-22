@@ -1,6 +1,6 @@
-import { repeat } from "../utils/arrayUtils";
-import { Vector } from "./Vectors";
+import { array, repeat } from "../utils/arrayUtils";
 import { MaterialInstance } from "./Materials";
+import { Vector } from "./Vectors";
 import { board, cutBoard, isBoard } from "./material-helpers";
 
 export interface MachineType {
@@ -56,9 +56,13 @@ export const MACHINES = {
           if (inputPallet.type !== "pallet") {
             throw new Error("Input material is not a pallet");
           }
-          const deckBoard = board("pallet", 3, 4, 1);
-          const stringerBoard = board("pallet", 4, 6, 3);
-          return [...repeat(deckBoard, 11), ...repeat(stringerBoard, 3)];
+
+          return [
+            // 11 deck boards
+            ...array(11).map(() => board("pallet", 3, 4, 1)),
+            // 3 stringer boards
+            ...array(3).map(() => board("pallet", 4, 6, 3)),
+          ];
         },
       },
     ],

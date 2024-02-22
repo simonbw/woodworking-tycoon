@@ -1,22 +1,23 @@
 import { InputMaterialWithQuantity, MachineType } from "./MachineType";
 import { MaterialInstance } from "./Materials";
-import { Direction, Vector } from "./Vectors";
+import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
+import { Direction, Vector } from "./Vectors";
+
+export type MaterialPile = {
+  material: MaterialInstance;
+  position: Vector;
+};
 
 export interface GameState {
   readonly money: number;
   readonly reputation: number;
-  readonly materials: ReadonlyArray<MaterialInstance>;
+  readonly materialPiles: ReadonlyArray<MaterialPile>;
   readonly tools: ReadonlyArray<Tool>;
   readonly machines: ReadonlyArray<Machine>;
   readonly commissions: ReadonlyArray<Commission>;
   readonly shopInfo: ShopInfo;
-  readonly people: ReadonlyArray<Person>;
-}
-
-export interface Person {
-  name: string;
-  position: Vector;
+  readonly player: Person;
 }
 
 export interface Machine {
