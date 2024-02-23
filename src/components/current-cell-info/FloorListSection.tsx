@@ -8,12 +8,11 @@ import { useGameActions } from "../useGameActions";
 import { useGameHelpers } from "../useGameHelpers";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
+import { useCellMap } from "../useCellMap";
 
 export const FloorListSection: React.FC = () => {
   const { gameState } = useGameState();
-  const { getCellMap } = useGameHelpers();
-
-  const cells = getCellMap();
+  const cells = useCellMap();
 
   const [px, py] = gameState.player.position;
   const playerCell = cells[py][px];

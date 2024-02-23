@@ -11,6 +11,7 @@ import {
 } from "../game/Vectors";
 import { materialMeetsInput, useGameHelpers } from "./useGameHelpers";
 import { useGameState } from "./useGameState";
+import { makeCellMap } from "./useCellMap";
 
 export function useGameActions() {
   const { updateGameState } = useGameState();
@@ -86,7 +87,7 @@ export function useGameActions() {
 
       movePlayer: (direction: Direction) =>
         updateGameState((gameState) => {
-          const cellMap = helpers.getCellMap();
+          const cellMap = makeCellMap(gameState);
           const moveVec = rotateVec([1, 0], direction);
           const [x, y] = translateVec(gameState.player.position, moveVec);
           const newCell = cellMap[y]?.[x];

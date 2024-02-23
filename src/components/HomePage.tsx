@@ -1,15 +1,13 @@
 import React from "react";
 import { CommissionsSection } from "./CommissionsSection";
-import { DebugView } from "./DebugView";
 import { MaterialsSection } from "./MaterialsSection";
 import { MoneySection } from "./MoneySection";
-import { CurrentCellInfo } from "./current-cell-info/CurrentCellInfo";
-import { InventorySection } from "./current-cell-info/InventorySection";
-import { ShopView } from "./shop-view/ShopView";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
+import { InventorySection } from "./current-cell-info/InventorySection";
 import { MachineListSection } from "./current-cell-info/MachineListSection";
+import { ShopView } from "./shop-view/ShopView";
 
-export const GameView: React.FC = () => {
+export const HomePage: React.FC = () => {
   return (
     <main className="p-8 space-y-6">
       <header className="flex gap-2 items-center">
@@ -19,7 +17,7 @@ export const GameView: React.FC = () => {
         </h1>
       </header>
 
-      <div className="flex gap-8 w-full">
+      <div className="flex gap-8 justify-center">
         <div className="space-y-6 w-full max-w-80">
           <MoneySection />
           <CommissionsSection />
@@ -40,7 +38,6 @@ export const GameView: React.FC = () => {
           <MaterialsSection />
         </div>
       </div>
-      <DebugView />
     </main>
   );
 };

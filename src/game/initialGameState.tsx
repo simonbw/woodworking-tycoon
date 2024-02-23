@@ -60,6 +60,9 @@ export const initialGameState: GameState = {
 
     { type: MACHINES.workspace, position: [0, 5], rotation: 2, materials: [] },
   ],
+  storage: {
+    machines: [MACHINES.miterSaw, MACHINES.jobsiteTableSaw],
+  },
   commissions: [
     {
       requiredMaterials: [{ type: ["shelf"], quantity: 1 }],

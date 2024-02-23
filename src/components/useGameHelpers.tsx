@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Commission, Machine, MaterialPile } from "../game/GameState";
+import { Commission, Machine } from "../game/GameState";
 import {
   InputMaterial,
   MachineOperation,
@@ -7,7 +7,6 @@ import {
 } from "../game/MachineType";
 import { MaterialInstance } from "../game/Materials";
 import { Vector, rotateVec, translateVec } from "../game/Vectors";
-import { range } from "../utils/arrayUtils";
 import { useGameState } from "./useGameState";
 
 export function useGameHelpers() {
@@ -47,59 +46,11 @@ export function useGameHelpers() {
     return gameStateRef.current.money >= machine.cost;
   };
 
-  type CellInfo = {
-    x: number;
-    y: number;
-    machine: Machine | undefined;
-    operableMachines: Machine[];
-    materialPiles: MaterialPile[];
-  };
-  function getCellMap(): CellInfo[][] {
-    const [width, height] = gameStateRef.current.shopInfo.size;
-
-    const cells: CellInfo[][] = range(0, height - 1).map((y) =>
-      range(0, width - 1).map((x) => ({
-        x,
-        y,
-        machine: undefined,
-        operableMachines: [],
-        materialPiles: [],
-      }))
-    );
-
-    for (const machine of gameStateRef.current.machines) {
-      const machineCells = getMachineCells(machine);
-      for (const cell of machineCells) {
-        const [x, y] = cell;
-        cells[y][x].machine = machine;
-      }
-
-      if (machine.type.operationPosition !== undefined) {
-        const [ox, oy] = translateVec(
-          rotateVec(machine.type.operationPosition, machine.rotation),
-          machine.position
-        );
-
-        if (ox >= 0 && ox < width && oy >= 0 && oy < height) {
-          cells[oy][ox].operableMachines.push(machine);
-        }
-      }
-    }
-
-    for (const materialPile of gameStateRef.current.materialPiles) {
-      const [x, y] = materialPile.position;
-      cells[y][x].materialPiles.push(materialPile);
-    }
-
-    return cells;
-  }
-
   return {
     findMaterials,
     canCompleteCommission,
     canPerformOperation,
     canBuyMachine,
-    getCellMap,
     getMachineCells,
   };
 }

@@ -1,29 +1,37 @@
 import React from "react";
-import { GameView } from "./GameView";
-import { StoreView } from "./StoreView";
+import { DebugView } from "./DebugView";
+import { HomePage } from "./HomePage";
+import { LayoutPage } from "./LayoutPage";
+import { StorePage } from "./StorePage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { ActionKeyContextProvider } from "./consumerCountContext";
+import { CellMapProvider } from "./useCellMap";
 import { GameStateProvider } from "./useGameState";
 
 export const Main: React.FC = () => {
   return (
     <GameStateProvider>
       <UiModeProvider>
-        <ActionKeyContextProvider>
-          <ScreenSwitcher />
-        </ActionKeyContextProvider>
+        <CellMapProvider>
+          <ActionKeyContextProvider>
+            <ScreenSwitcher />
+            <DebugView />
+          </ActionKeyContextProvider>
+        </CellMapProvider>
       </UiModeProvider>
     </GameStateProvider>
   );
 };
 
 const ScreenSwitcher: React.FC = () => {
-  const { mode, setMode } = useUiMode();
+  const { mode } = useUiMode();
 
   switch (mode.mode) {
     case "normal":
-      return <GameView />;
+      return <HomePage />;
     case "store":
-      return <StoreView />;
+      return <StorePage />;
+    case "shopLayout":
+      return <LayoutPage />;
   }
 };

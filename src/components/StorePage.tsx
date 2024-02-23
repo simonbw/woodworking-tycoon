@@ -1,7 +1,7 @@
 import React from "react";
 import { useUiMode } from "./UiMode";
 
-export const StoreView: React.FC = () => {
+export const StorePage: React.FC = () => {
   const { setMode } = useUiMode();
   return (
     <main className="p-8 space-y-6">

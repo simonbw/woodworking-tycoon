@@ -25,6 +25,12 @@ export const MaterialsSection: React.FC = () => {
       <button className="button" onClick={() => setMode({ mode: "store" })}>
         Go To Store
       </button>
+      <button
+        className="button"
+        onClick={() => setMode({ mode: "shopLayout" })}
+      >
+        Go To Layout
+      </button>
     </section>
   );
 };

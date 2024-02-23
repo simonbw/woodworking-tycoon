@@ -1,11 +1,11 @@
 import React from "react";
-import { useGameHelpers } from "../useGameHelpers";
+import { useCellMap } from "../useCellMap";
+import { useGameActions } from "../useGameActions";
 import { useGameState } from "../useGameState";
+import { useKeyDown } from "../useKeyDown";
 import { MachineSprite } from "./MachineSprite";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
-import { useGameActions } from "../useGameActions";
-import { useKeyDown } from "../useKeyDown";
 
 export const CELL_SIZE = 100;
 export const GRID_SPACING = 2;
@@ -15,9 +15,8 @@ export function scaled(n: number): number {
 
 export const ShopView: React.FC = () => {
   const { gameState } = useGameState();
-  const { getCellMap } = useGameHelpers();
+  const cells = useCellMap();
 
-  const cells = getCellMap();
   const height = cells.length;
   const width = cells[0].length;
 
