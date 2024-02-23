@@ -21,7 +21,7 @@ export const OperatorPositionSprite: React.FC<{ position: Vector }> = ({
         cy={50}
         r={50}
         fill={`url(#${gradientId})`}
-        className="opacity-0"
+        className="opacity-20"
         style={{ transform: `translate(${scaled(x)}px, ${scaled(y)}px)` }}
       />
     </>
