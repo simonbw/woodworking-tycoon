@@ -44,7 +44,7 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
   );
   return (
     <li>
-      <span className="font-heading">{machine.type.name}</span>
+      <span className="section-heading">{machine.type.name}</span>
       <ul className="pl-1">
         {availableOperations.map((operation) => (
           <MachineListOperationItem key={operation.id} operation={operation} />

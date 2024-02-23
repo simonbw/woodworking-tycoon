@@ -17,6 +17,12 @@ html {
     @apply disabled:text-zinc-400 disabled:border-zinc-400 disabled:pointer-events-none;
   }
 
+  .button-outline {
+    @apply border border-white text-white px-4 py-1.5 rounded-md font-lumberjack select-none;
+    @apply hover:bg-white/10 active:bg-white/20;
+    @apply disabled:text-zinc-400 disabled:border-zinc-400 disabled:pointer-events-none;
+  }
+
   .section-heading {
     @apply font-heading font-bold text-2xl;
   }

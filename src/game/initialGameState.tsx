@@ -11,17 +11,54 @@ export const initialGameState: GameState = {
   tools: [],
   player: { name: "Player", position: [0, 0], inventory: [] },
   machines: [
-    { type: MACHINES.makeshiftBench, position: [0, 1], rotation: 1 },
-    { type: MACHINES.makeshiftBench, position: [0, 2], rotation: 1 },
-    { type: MACHINES.makeshiftBench, position: [0, 3], rotation: 1 },
-    { type: MACHINES.workspace, position: [0, 2], rotation: 1 },
+    {
+      type: MACHINES.makeshiftBench,
+      position: [0, 1],
+      rotation: 1,
+      materials: [],
+    },
+    {
+      type: MACHINES.makeshiftBench,
+      position: [0, 2],
+      rotation: 1,
+      materials: [],
+    },
+    {
+      type: MACHINES.makeshiftBench,
+      position: [0, 3],
+      rotation: 1,
+      materials: [],
+    },
+    { type: MACHINES.workspace, position: [0, 2], rotation: 1, materials: [] },
 
-    { type: MACHINES.makeshiftBench, position: [3, 0], rotation: 3 },
-    { type: MACHINES.makeshiftBench, position: [3, 1], rotation: 3 },
-    { type: MACHINES.makeshiftBench, position: [3, 2], rotation: 3 },
-    { type: MACHINES.miterSaw, position: [3, 1], rotation: 3 },
+    {
+      type: MACHINES.makeshiftBench,
+      position: [3, 0],
+      rotation: 3,
+      materials: [],
+    },
+    {
+      type: MACHINES.makeshiftBench,
+      position: [3, 1],
+      rotation: 3,
+      materials: [],
+    },
+    {
+      type: MACHINES.makeshiftBench,
+      position: [3, 2],
+      rotation: 3,
+      materials: [],
+    },
+    { type: MACHINES.miterSaw, position: [3, 1], rotation: 3, materials: [] },
 
-    { type: MACHINES.jobsiteTableSaw, position: [2, 4], rotation: 2 },
+    {
+      type: MACHINES.jobsiteTableSaw,
+      position: [2, 4],
+      rotation: 2,
+      materials: [],
+    },
+
+    { type: MACHINES.workspace, position: [0, 5], rotation: 2, materials: [] },
   ],
   commissions: [
     {

@@ -6,6 +6,7 @@ import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
 import { getMaterialName } from "../../game/getMaterialName";
 import { groupBy } from "../../utils/arrayUtils";
+import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
 
 export const InventorySection: React.FC = () => {
   const { gameState } = useGameState();
@@ -17,17 +18,19 @@ export const InventorySection: React.FC = () => {
   ].sort(([a], [b]) => a.localeCompare(b));
 
   if (groupedInventory.length === 0) {
-    return null;
+    return (
+      <div>
+        <p className="italic text-gray-400">Inventory is empty</p>
+      </div>
+    );
   }
 
   return (
-    <section>
-      <ul className="pl-1">
-        {groupedInventory.map(([materialName, materials]) => (
-          <InventoryListItem key={materialName} materials={materials} />
-        ))}
-      </ul>
-    </section>
+    <ul className="space-y-1sd">
+      {groupedInventory.map(([materialName, materials]) => (
+        <InventoryListItem key={materialName} materials={materials} />
+      ))}
+    </ul>
   );
 };
 
@@ -44,12 +47,18 @@ const InventoryListItem: React.FC<{
   });
 
   return (
-    <li
-      className="cursor-pointer hover:bg-white/10 rounded-sm px-1"
-      onClick={() => dropMaterial(materials[0])}
-    >
-      [{actionKey}] Drop {getMaterialName(materials[0])}{" "}
+    <li className="flex items-center gap-2">
+      <svg viewBox="-50 -50 100 100" className="w-10 h-10 bg-white/10 rounded">
+        <MaterialPileSprite material={materials[0]} />
+      </svg>
+      <span>{getMaterialName(materials[0])}</span>
       {materials.length > 1 && <em>x{materials.length}</em>}
+      <button
+        className="button text-xs"
+        onClick={() => dropMaterial(materials[0])}
+      >
+        Drop{actionKey && <span> [{actionKey}]</span>}
+      </button>
     </li>
   );
 };

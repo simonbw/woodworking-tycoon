@@ -4,6 +4,8 @@ import { useGameState } from "../useGameState";
 import { MachineSprite } from "./MachineSprite";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
+import { useGameActions } from "../useGameActions";
+import { useKeyDown } from "../useKeyDown";
 
 export const CELL_SIZE = 100;
 export const GRID_SPACING = 2;
@@ -24,6 +26,31 @@ export const ShopView: React.FC = () => {
       .filter((cell) => cell.materialPiles.length > 0)
       .map((cell) => cell.materialPiles)
   );
+
+  const { movePlayer } = useGameActions();
+  useKeyDown((event) => {
+    switch (event.code) {
+      case "Escape":
+        console.log("Escape key pressed");
+        break;
+      case "KeyD":
+      case "ArrowRight":
+        movePlayer(0);
+        break;
+      case "KeyW":
+      case "ArrowUp":
+        movePlayer(1);
+        break;
+      case "KeyA":
+      case "ArrowLeft":
+        movePlayer(2);
+        break;
+      case "KeyS":
+      case "ArrowDown":
+        movePlayer(3);
+        break;
+    }
+  });
 
   return (
     <svg

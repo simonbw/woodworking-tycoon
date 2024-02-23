@@ -8,7 +8,7 @@ export const PalletSprite: React.FC = () => {
   const width = 48 * PIXELS_PER_INCH;
   const height = 36 * PIXELS_PER_INCH;
   return (
-    <g transform="scale(0.8)">
+    <g transform="scale(0.8) rotate(90)">
       {/* bottom deck boards */}
       {array(4).map((i) => (
         <g

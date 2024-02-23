@@ -18,12 +18,16 @@ export interface GameState {
   readonly commissions: ReadonlyArray<Commission>;
   readonly shopInfo: ShopInfo;
   readonly player: Person;
+  readonly storage: {
+    machines: ReadonlyArray<MachineType>;
+  };
 }
 
 export interface Machine {
   readonly type: MachineType;
   readonly position: Vector;
   readonly rotation: Direction;
+  readonly materials: ReadonlyArray<MaterialInstance>;
 }
 
 export interface Commission {

@@ -1,9 +1,9 @@
 import React, { ReactNode, createContext, useContext, useState } from "react";
-import { MachineType } from "../game/MachineType";
 
 export type UiMode =
   | { mode: "normal" }
-  | { mode: "addingMachine"; machine: MachineType };
+  | { mode: "store" }
+  | { mode: "shopLayout" };
 const uiModeContext = createContext<
   { mode: UiMode; setMode: (mode: UiMode) => void } | undefined
 >(undefined);

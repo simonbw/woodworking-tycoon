@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { MaterialPile } from "../../game/GameState";
-import { Species } from "../../game/Materials";
+import { MaterialInstance, Species } from "../../game/Materials";
 import { Vector } from "../../game/Vectors";
 import { rNormal, rUniform } from "../../utils/randUtils";
 import { BoardSprite } from "../material-sprites/BoardSprite";
@@ -30,7 +30,7 @@ export const MaterialPilesSprite: React.FC<{
           key={`${x},${y}`}
           transform={`translate(${x} ${y}) rotate(${angle})`}
         >
-          <LocalMaterialPileSprite materialPile={materialPile} />
+          <MaterialPileSprite material={materialPile.material} />
         </g>
       ))}
     </>
@@ -54,12 +54,12 @@ export const classNameBySpecies: Record<Species, string> = {
   walnut: "fill-brown-900",
 };
 
-const LocalMaterialPileSprite: React.FC<{
-  materialPile: MaterialPile;
-}> = ({ materialPile }) => {
-  switch (materialPile.material.type) {
+export const MaterialPileSprite: React.FC<{
+  material: MaterialInstance;
+}> = ({ material }) => {
+  switch (material.type) {
     case "board":
-      return <BoardSprite board={materialPile.material} />;
+      return <BoardSprite board={material} />;
 
     case "pallet":
       return <PalletSprite />;
@@ -69,7 +69,7 @@ const LocalMaterialPileSprite: React.FC<{
         <rect
           width={20}
           height={20}
-          className={classNameBySpecies[materialPile.material.species]}
+          className={classNameBySpecies[material.species]}
         />
       );
 

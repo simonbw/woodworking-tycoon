@@ -1,40 +1,30 @@
-import React, { useMemo } from "react";
-import { groupBy } from "../utils/arrayUtils";
-import { useGameState } from "./useGameState";
-import { useGameActions } from "./useGameActions";
+import React from "react";
 import { makeMaterial } from "../game/material-helpers";
+import { useUiMode } from "./UiMode";
+import { useGameActions } from "./useGameActions";
+import { useGameState } from "./useGameState";
 
 export const MaterialsSection: React.FC = () => {
   const { gameState } = useGameState();
   const { addMaterial } = useGameActions();
-
-  const materialGroups = useMemo(
-    () =>
-      [
-        ...groupBy(
-          gameState.materialPiles,
-          (pile) => pile.material.type
-        ).entries(),
-      ].sort(([a], [b]) => a.localeCompare(b)),
-    [gameState.materialPiles]
-  );
+  const { setMode } = useUiMode();
 
   return (
     <section className="space-y-2">
-      <h2 className="section-heading">Materials</h2>
-      <div className="flex gap-2">
-        <button
-          className="button"
-          onClick={() =>
-            addMaterial(makeMaterial({ type: "pallet" }), [
-              gameState.shopInfo.size[0] - 1,
-              gameState.shopInfo.size[1] - 1,
-            ])
-          }
-        >
-          Find a Pallet
-        </button>
-      </div>
+      <button
+        className="button"
+        onClick={() =>
+          addMaterial(makeMaterial({ type: "pallet" }), [
+            gameState.shopInfo.size[0] - 1,
+            gameState.shopInfo.size[1] - 1,
+          ])
+        }
+      >
+        Find a Pallet
+      </button>
+      <button className="button" onClick={() => setMode({ mode: "store" })}>
+        Go To Store
+      </button>
     </section>
   );
 };

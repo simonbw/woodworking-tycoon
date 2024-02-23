@@ -3,6 +3,7 @@ import { MaterialPile } from "../../game/GameState";
 import { getMaterialName } from "../../game/getMaterialName";
 import { groupBy } from "../../utils/arrayUtils";
 import { useActionKeys } from "../consumerCountContext";
+import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
 import { useGameActions } from "../useGameActions";
 import { useGameHelpers } from "../useGameHelpers";
 import { useGameState } from "../useGameState";
@@ -18,7 +19,11 @@ export const FloorListSection: React.FC = () => {
   const playerCell = cells[py][px];
 
   if (playerCell.materialPiles.length === 0) {
-    return null;
+    return (
+      <div>
+        <p className="italic text-gray-400">Floor is empty</p>
+      </div>
+    );
   }
 
   const groupedMaterials = [
@@ -48,12 +53,18 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
   });
 
   return (
-    <li
-      className="cursor-pointer hover:bg-white/10 rounded-sm px-1"
-      onClick={() => pickUpMaterial(piles[0])}
-    >
-      [{actionKey}] Pick Up {getMaterialName(piles[0].material)}{" "}
+    <li className="flex items-center gap-2">
+      <svg viewBox="-50 -50 100 100" className="w-10 h-10">
+        <MaterialPileSprite material={piles[0].material} />
+      </svg>
+      <span>{getMaterialName(piles[0].material)}</span>
       {piles.length > 1 && <em>x{piles.length}</em>}
+      <button
+        className="button text-xs"
+        onClick={() => pickUpMaterial(piles[0])}
+      >
+        Pick Up{actionKey && <span> [{actionKey}]</span>}
+      </button>
     </li>
   );
 };
