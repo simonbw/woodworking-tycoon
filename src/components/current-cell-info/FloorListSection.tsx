@@ -52,7 +52,8 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
       className="cursor-pointer hover:bg-white/10 rounded-sm px-1"
       onClick={() => pickUpMaterial(piles[0])}
     >
-      [{actionKey}] Pick Up {getMaterialName(piles[0].material)}
+      [{actionKey}] Pick Up {getMaterialName(piles[0].material)}{" "}
+      {piles.length > 1 && <em>x{piles.length}</em>}
     </li>
   );
 };
