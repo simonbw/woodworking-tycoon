@@ -1,11 +1,11 @@
 import React from "react";
-import { Machine } from "../../../game/GameState";
-import { MachineOperation } from "../../../game/MachineType";
-import { useActionKeys } from "../../consumerCountContext";
-import { useGameActions } from "../../useGameActions";
-import { useGameHelpers } from "../../useGameHelpers";
-import { useGameState } from "../../useGameState";
-import { useKeyDown } from "../../useKeyDown";
+import { Machine } from "../../game/GameState";
+import { MachineOperation } from "../../game/MachineType";
+import { useActionKeys } from "../consumerCountContext";
+import { useGameActions } from "../useGameActions";
+import { useGameHelpers } from "../useGameHelpers";
+import { useGameState } from "../useGameState";
+import { useKeyDown } from "../useKeyDown";
 
 export const MachineListSection: React.FC = () => {
   const { gameState } = useGameState();
@@ -33,6 +33,7 @@ export const MachineListSection: React.FC = () => {
     </section>
   );
 };
+
 const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { canPerformOperation } = useGameHelpers();
   const availableOperations = machine.type.operations.filter((operation) =>
@@ -49,8 +50,9 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
           <MachineListOperationItem key={operation.id} operation={operation} />
         ))}
         {unavailableOperations.map((operation) => (
-          <li key={operation.id} className="opacity-60">
-            {operation.name}
+          <li key={operation.id} className="text-red-700 opacity-8d0">
+            <span className="invisible">[x] s</span>
+            <span>{operation.name}</span>
           </li>
         ))}
       </ul>

@@ -1,12 +1,12 @@
 import React from "react";
-import { MaterialPile } from "../../../game/GameState";
-import { getMaterialName } from "../../../game/getMaterialName";
-import { groupBy } from "../../../utils/arrayUtils";
-import { useActionKeys } from "../../consumerCountContext";
-import { useGameActions } from "../../useGameActions";
-import { useGameHelpers } from "../../useGameHelpers";
-import { useGameState } from "../../useGameState";
-import { useKeyDown } from "../../useKeyDown";
+import { MaterialPile } from "../../game/GameState";
+import { getMaterialName } from "../../game/getMaterialName";
+import { groupBy } from "../../utils/arrayUtils";
+import { useActionKeys } from "../consumerCountContext";
+import { useGameActions } from "../useGameActions";
+import { useGameHelpers } from "../useGameHelpers";
+import { useGameState } from "../useGameState";
+import { useKeyDown } from "../useKeyDown";
 
 export const FloorListSection: React.FC = () => {
   const { gameState } = useGameState();

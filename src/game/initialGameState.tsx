@@ -11,13 +11,21 @@ export const initialGameState: GameState = {
   tools: [],
   player: { name: "Player", position: [0, 0], inventory: [] },
   machines: [
-    { type: MACHINES.jobsiteTableSaw, position: [1, 3], rotation: 2 },
-    { type: MACHINES.makeshiftWorkbench, position: [3, 0], rotation: 3 },
-    { type: MACHINES.makeshiftWorkbench, position: [3, 1], rotation: 3 },
+    { type: MACHINES.makeshiftBench, position: [0, 1], rotation: 1 },
+    { type: MACHINES.makeshiftBench, position: [0, 2], rotation: 1 },
+    { type: MACHINES.makeshiftBench, position: [0, 3], rotation: 1 },
+    { type: MACHINES.workspace, position: [0, 2], rotation: 1 },
+
+    { type: MACHINES.makeshiftBench, position: [3, 0], rotation: 3 },
+    { type: MACHINES.makeshiftBench, position: [3, 1], rotation: 3 },
+    { type: MACHINES.makeshiftBench, position: [3, 2], rotation: 3 },
+    { type: MACHINES.miterSaw, position: [3, 1], rotation: 3 },
+
+    { type: MACHINES.jobsiteTableSaw, position: [2, 4], rotation: 2 },
   ],
   commissions: [
     {
-      requiredMaterials: [{ type: "shelf", quantity: 1 }],
+      requiredMaterials: [{ type: ["shelf"], quantity: 1 }],
       rewardMoney: 50,
       rewardReputation: 10,
     },

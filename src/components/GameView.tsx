@@ -5,7 +5,8 @@ import { MoneySection } from "./MoneySection";
 import { ShopView } from "./shop-view/ShopView";
 import { ToolsSection } from "./ToolsSection";
 import { DebugView } from "./DebugView";
-import { CurrentCellInfo } from "./shop-view/current-cell-info/CurrentCellInfo";
+import { CurrentCellInfo } from "./current-cell-info/CurrentCellInfo";
+import { MiterSawSprite } from "./machine-sprites/MiterSawSprite";
 
 export const GameView: React.FC = () => {
   return (

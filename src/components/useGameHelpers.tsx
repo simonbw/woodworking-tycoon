@@ -73,13 +73,16 @@ export function useGameHelpers() {
         const [x, y] = cell;
         cells[y][x].machine = machine;
       }
-      const [ox, oy] = translateVec(
-        rotateVec(machine.type.operationPosition, machine.rotation),
-        machine.position
-      );
 
-      if (ox >= 0 && ox < width && oy >= 0 && oy < height) {
-        cells[oy][ox].operableMachines.push(machine);
+      if (machine.type.operationPosition !== undefined) {
+        const [ox, oy] = translateVec(
+          rotateVec(machine.type.operationPosition, machine.rotation),
+          machine.position
+        );
+
+        if (ox >= 0 && ox < width && oy >= 0 && oy < height) {
+          cells[oy][ox].operableMachines.push(machine);
+        }
       }
     }
 
@@ -120,11 +123,12 @@ export function materialMeetsInput(
     // Make sure to skip quantity, because that's not a property of the material
     if (key === "quantity") {
       continue;
-    }
-    if (
-      !(key in material) ||
-      (material as Record<string, unknown>)[key] !==
-        (inputMaterial as Record<string, unknown>)[key]
+    } else if (!(key in material)) {
+      return false;
+    } else if (
+      !(inputMaterial as Record<string, unknown[]>)[key].includes(
+        (material as Record<string, unknown>)[key]
+      )
     ) {
       return false;
     }

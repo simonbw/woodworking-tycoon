@@ -1,4 +1,5 @@
 import { idMaker } from "../utils/idMaker";
+import { InputMaterial } from "./MachineType";
 import { Board, BoardDimension, MaterialInstance } from "./Materials";
 
 const makeId = idMaker();
@@ -26,6 +27,12 @@ export function board(
     width,
     thickness,
   });
+}
+
+export function boardInput({}: BoardDimension[]): InputMaterial<Board> {
+  return {
+    type: ["board"],
+  };
 }
 
 export function isBoard(material: MaterialInstance): material is Board {

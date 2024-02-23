@@ -1,55 +1,73 @@
 import React from "react";
 import { useGameHelpers } from "../useGameHelpers";
 import { useGameState } from "../useGameState";
-import { MachineView } from "./MachineView";
-import { MaterialPileView } from "./MaterialPileView";
-import { PersonView } from "./PersonView";
-import { useGameActions } from "../useGameActions";
+import { MachineSprite } from "./MachineSprite";
+import { MaterialPilesSprite } from "./MaterialPileSprite";
+import { PersonSprite } from "./PersonSprite";
 
-const GRID_SPACING = 0.05;
-export const MACHINE_OVERHANG = 0.02;
+export const CELL_SIZE = 100;
+export const GRID_SPACING = 2;
+export function scaled(n: number): number {
+  return n * CELL_SIZE;
+}
 
 export const ShopView: React.FC = () => {
   const { gameState } = useGameState();
   const { getCellMap } = useGameHelpers();
-  const { movePlayer } = useGameActions();
 
   const cells = getCellMap();
   const height = cells.length;
   const width = cells[0].length;
 
+  const materialPileGroups = cells.flatMap((row) =>
+    row
+      .filter((cell) => cell.materialPiles.length > 0)
+      .map((cell) => cell.materialPiles)
+  );
+
   return (
     <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-64 bg-zinc-800"
-      shapeRendering="crispEdges"
+      viewBox={`${-GRID_SPACING} ${-GRID_SPACING} ${
+        scaled(width) + GRID_SPACING
+      } ${scaled(height) + GRID_SPACING}`}
+      className="w-64 "
+      shapeRendering="geometricPrecision"
     >
       {cells.flatMap((row) =>
         row.map((cell) => (
           <rect
             key={`cell-${cell.x},${cell.y}`}
-            x={cell.x + GRID_SPACING}
-            y={cell.y + GRID_SPACING}
-            width={1 - GRID_SPACING * 2}
-            height={1 - GRID_SPACING * 2}
+            x={cell.x * CELL_SIZE + GRID_SPACING}
+            y={cell.y * CELL_SIZE + GRID_SPACING}
+            width={CELL_SIZE - GRID_SPACING * 2}
+            height={CELL_SIZE - GRID_SPACING * 2}
             className="fill-zinc-700"
           />
         ))
       )}
 
       {/* TODO: Sort these by ones in the same square */}
-      {gameState.materialPiles.map((materialPile, i) => (
-        <MaterialPileView key={`pile${i}`} materialPile={materialPile} />
+      {materialPileGroups.map((materialPiles, i) => (
+        <g
+          key={`pile${materialPiles[0].position.join(",")}`}
+          style={{
+            transform: `translate(${scaled(
+              materialPiles[0].position[0]
+            )}px, ${scaled(materialPiles[0].position[1])}px)`,
+          }}
+        >
+          <MaterialPilesSprite materialPiles={materialPiles} />
+        </g>
       ))}
 
       {gameState.machines.map((machinePlacement) => (
-        <MachineView
+        <MachineSprite
           key={machinePlacement.type.id + machinePlacement.position.join(",")}
           machinePlacement={machinePlacement}
         />
       ))}
 
-      <PersonView person={gameState.player} />
+      <PersonSprite person={gameState.player} />
     </svg>
   );
 };

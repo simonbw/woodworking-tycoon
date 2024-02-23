@@ -1,16 +1,19 @@
 // Represents length, width, or thickness.
 
-const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export type BoardDimension = (typeof BOARD_DIMENSIONS)[number];
 
-export type Species =
-  | "pallet"
-  | "pine"
-  | "oak"
-  | "maple"
-  | "cherry"
-  | "walnut"
-  | "mahogany";
+export const SPECIES = [
+  "pallet",
+  "pine",
+  "oak",
+  "maple",
+  "cherry",
+  "walnut",
+  "mahogany",
+] as const;
+
+export type Species = (typeof SPECIES)[number];
 
 export interface Board {
   readonly id: string;
@@ -40,7 +43,7 @@ export interface SheetGood {
 
 export type FinishedProduct = {
   readonly id: string;
-  readonly type: "shelf" | "jewlryBox" | "simpleCuttingBoard";
+  readonly type: "shelf" | "jewelryBox" | "simpleCuttingBoard";
   readonly species: Species;
 };
 

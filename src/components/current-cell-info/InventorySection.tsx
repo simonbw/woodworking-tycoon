@@ -1,11 +1,11 @@
 import React from "react";
-import { MaterialInstance } from "../../../game/Materials";
-import { useActionKeys } from "../../consumerCountContext";
-import { useGameActions } from "../../useGameActions";
-import { useGameState } from "../../useGameState";
-import { useKeyDown } from "../../useKeyDown";
-import { getMaterialName } from "../../../game/getMaterialName";
-import { groupBy } from "../../../utils/arrayUtils";
+import { MaterialInstance } from "../../game/Materials";
+import { useActionKeys } from "../consumerCountContext";
+import { useGameActions } from "../useGameActions";
+import { useGameState } from "../useGameState";
+import { useKeyDown } from "../useKeyDown";
+import { getMaterialName } from "../../game/getMaterialName";
+import { groupBy } from "../../utils/arrayUtils";
 
 export const InventorySection: React.FC = () => {
   const { gameState } = useGameState();

@@ -22,3 +22,11 @@ export function translateVec([x, y]: Vector, [dx, dy]: Vector): Vector {
 export function vectorEquals(a: Vector, b: Vector): boolean {
   return a[0] === b[0] && a[1] === b[1];
 }
+
+export function localToGlobal(
+  origin: Vector,
+  local: Vector,
+  rotation: Direction = 0
+): Vector {
+  return translateVec(rotateVec(local, rotation), origin);
+}
