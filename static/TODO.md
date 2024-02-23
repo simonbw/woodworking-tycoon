@@ -1,4 +1,4 @@
-# TODO
+# Woodworking Tycoon Roadmap
 
 There's a ton to do in this game, so I figured it might be good to keep a list of things that we want to add.
 
@@ -87,6 +87,12 @@ Since this is a tycoon game, money should be an important part of it, and there 
 
 ### Dust Collection
 
-I think there could
+I think there could be a possibility for something cool involving dust collection in the future. Some things about it:
+
+-
+
+### Balance between hand tools and
 
 ### Wood Moisture Content
+
+Another system that could just add complexity as well as

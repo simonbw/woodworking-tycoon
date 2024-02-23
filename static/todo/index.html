@@ -6,11 +6,75 @@
   <link rel="icon" href="/images/favicon-3.png" />
 
   <style>
+    @font-face {
+      font-family: "Lumberjack";
+      font-style: normal;
+      font-weight: normal;
+      src: url("/fonts/Lumberjack-Rough.otf");
+    }
+
+    @font-face {
+      font-family: "Bree Serif";
+      font-style: normal;
+      font-weight: normal;
+      src: url("/fonts/BreeSerif-Regular.ttf");
+    }
+
+    @font-face {
+      font-family: "Nunito";
+      font-style: normal;
+      font-weight: 200 1000;
+      src: url("/fonts/Nunito.ttf");
+    }
+
+    @font-face {
+      font-family: "Nunito";
+      font-style: italic;
+      font-weight: 200 1000;
+      src: url("/fonts/Nunito-Italic.ttf");
+    }
+  </style>
+
+  <style>
+    html {
+      font-size: 18px;
+    }
+
     body {
-      font-family: sans-serif;
+      font-family: Nunito, sans-serif;
       margin: auto;
       padding: 4rem;
-      max-width: 48rem;
+      max-width: 42rem;
+
+      background: #27272a;
+      color: #a1a1aa;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: "Bree Serif", sans-serif;
+      color: #d4d4d8;
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      border-bottom: 1px solid #a1a1aa;
+      padding-bottom: 0.25rem;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      border-left: 4px solid #d4d4d8;
+      padding-left: 8px;
+      padding-block: 0.5rem;
+      margin-left: -12px;
+      border-radius: 2px;
+
+      background: #aaa2;
     }
   </style>
 
