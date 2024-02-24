@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { useGameState } from "./useGameState";
 
 export const DebugView: React.FC = () => {
-  const { gameState } = useGameState();
+  const gameState = useGameState();
   const [open, setOpen] = useState(false);
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="button">
-        Debug
-      </button>
+      <div className="p-8">
+        <button onClick={() => setOpen(true)} className="button">
+          Debug
+        </button>
+      </div>
     );
   } else {
     return (

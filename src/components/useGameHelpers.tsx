@@ -10,7 +10,7 @@ import { Vector, rotateVec, translateVec } from "../game/Vectors";
 import { useGameState } from "./useGameState";
 
 export function useGameHelpers() {
-  const { gameState: _gameState } = useGameState();
+  const _gameState = useGameState();
   const gameStateRef = useRef(_gameState);
   gameStateRef.current = _gameState;
 

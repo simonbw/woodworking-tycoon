@@ -2,6 +2,19 @@ export type Vector = readonly [number, number];
 
 export type Direction = 0 | 1 | 2 | 3;
 
+export function invertDirection(direction: Direction): Direction {
+  switch (direction) {
+    case 0:
+      return 2;
+    case 1:
+      return 3;
+    case 2:
+      return 0;
+    case 3:
+      return 1;
+  }
+}
+
 export function rotateVec([x, y]: Vector, rotation: Direction): Vector {
   switch (rotation) {
     case 0:
@@ -17,6 +30,10 @@ export function rotateVec([x, y]: Vector, rotation: Direction): Vector {
 
 export function translateVec([x, y]: Vector, [dx, dy]: Vector): Vector {
   return [x + dx, y + dy];
+}
+
+export function scaleVec([x, y]: Vector, scalar: number): Vector {
+  return [x * scalar, y * scalar];
 }
 
 export function vectorEquals(a: Vector, b: Vector): boolean {

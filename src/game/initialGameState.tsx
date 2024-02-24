@@ -1,64 +1,39 @@
-import { GameState } from "./GameState";
-import { MACHINES } from "./MachineType";
+import { GameState, Machine } from "./GameState";
+import { MACHINES, MachineType } from "./MachineType";
+import { Direction } from "./Vectors";
 import { makeMaterial } from "./material-helpers";
 
 export const initialGameState: GameState = {
+  tick: 0,
   money: 0,
   reputation: 0,
   materialPiles: [
     { material: makeMaterial({ type: "pallet" }), position: [3, 5] },
   ],
-  tools: [],
-  player: { name: "Player", position: [0, 0], inventory: [] },
+  player: {
+    name: "Player",
+    position: [0, 0],
+    inventory: [],
+    workQueue: [],
+    canWork: true,
+  },
   machines: [
-    {
-      type: MACHINES.makeshiftBench,
-      position: [0, 1],
-      rotation: 1,
-      materials: [],
-    },
-    {
-      type: MACHINES.makeshiftBench,
-      position: [0, 2],
-      rotation: 1,
-      materials: [],
-    },
-    {
-      type: MACHINES.makeshiftBench,
-      position: [0, 3],
-      rotation: 1,
-      materials: [],
-    },
-    { type: MACHINES.workspace, position: [0, 2], rotation: 1, materials: [] },
+    // left workstation
+    machine(MACHINES.makeshiftBench, [0, 1], 1),
+    machine(MACHINES.makeshiftBench, [0, 2], 1),
+    machine(MACHINES.makeshiftBench, [0, 3], 1),
+    machine(MACHINES.workspace, [0, 2], 1),
 
-    {
-      type: MACHINES.makeshiftBench,
-      position: [3, 0],
-      rotation: 3,
-      materials: [],
-    },
-    {
-      type: MACHINES.makeshiftBench,
-      position: [3, 1],
-      rotation: 3,
-      materials: [],
-    },
-    {
-      type: MACHINES.makeshiftBench,
-      position: [3, 2],
-      rotation: 3,
-      materials: [],
-    },
-    { type: MACHINES.miterSaw, position: [3, 1], rotation: 3, materials: [] },
+    // miter station
+    machine(MACHINES.makeshiftBench, [3, 0], 3),
+    machine(MACHINES.makeshiftBench, [3, 1], 3),
+    machine(MACHINES.makeshiftBench, [3, 2], 3),
+    machine(MACHINES.miterSaw, [3, 1], 3),
 
-    {
-      type: MACHINES.jobsiteTableSaw,
-      position: [2, 4],
-      rotation: 2,
-      materials: [],
-    },
+    machine(MACHINES.jobsiteTableSaw, [2, 4], 2),
 
-    { type: MACHINES.workspace, position: [0, 5], rotation: 2, materials: [] },
+    // floor thing
+    machine(MACHINES.workspace, [0, 5], 2),
   ],
   storage: {
     machines: [MACHINES.miterSaw, MACHINES.jobsiteTableSaw],
@@ -74,5 +49,15 @@ export const initialGameState: GameState = {
     name: "One Car Garage",
     electricity: 120,
     size: [4, 6],
+    materialDropoffPosition: [3, 5],
   },
 };
+
+// Helper method to create a machine with less boilerplate
+function machine(
+  type: MachineType,
+  position: [number, number],
+  rotation: Direction
+): Machine {
+  return { type, position, rotation, materials: [] };
+}

@@ -5,7 +5,7 @@ import { useGameState } from "./useGameState";
 import { useGameActions } from "./useGameActions";
 
 export const CommissionsSection: React.FC = () => {
-  const { gameState } = useGameState();
+  const gameState = useGameState();
   return (
     <section className="space-y-2">
       <h2 className="section-heading">Commissions</h2>

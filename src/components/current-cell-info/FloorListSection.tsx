@@ -1,23 +1,20 @@
 import React from "react";
+import { useCellMap } from "../../game/CellMap";
 import { MaterialPile } from "../../game/GameState";
 import { getMaterialName } from "../../game/getMaterialName";
 import { groupBy } from "../../utils/arrayUtils";
 import { useActionKeys } from "../consumerCountContext";
 import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
 import { useGameActions } from "../useGameActions";
-import { useGameHelpers } from "../useGameHelpers";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
-import { useCellMap } from "../useCellMap";
 
 export const FloorListSection: React.FC = () => {
-  const { gameState } = useGameState();
-  const cells = useCellMap();
+  const gameState = useGameState();
+  const cellMap = useCellMap();
+  const playerCell = cellMap.at(gameState.player.position);
 
-  const [px, py] = gameState.player.position;
-  const playerCell = cells[py][px];
-
-  if (playerCell.materialPiles.length === 0) {
+  if (!playerCell?.materialPiles.length) {
     return (
       <div>
         <p className="italic text-gray-400">Floor is empty</p>

@@ -1,22 +1,34 @@
 import React from "react";
+import { NavBar } from "./NavBar";
 import { useUiMode } from "./UiMode";
+import { MaterialPileSprite } from "./shop-view/MaterialPileSprite";
 
 export const StorePage: React.FC = () => {
   const { setMode } = useUiMode();
+
   return (
     <main className="p-8 space-y-6">
-      <header className="flex gap-2 items-center">
-        <img src="/images/favicon-3.png" className="relative w-16 top-1" />
-        <h1 className="font-heading font-bold text-5xl tracking-wide">Store</h1>
-      </header>
-
-      <button className="button" onClick={() => setMode({ mode: "normal" })}>
-        Back
-      </button>
+      <NavBar />
 
       <div className="grid grid-cols-3">
         <section>
           <h2 className="section-heading">Materials</h2>
+          <ul>
+            <li>
+              <svg
+                viewBox="-50 -50 100 100"
+                className="w-10 h-10 bg-white/10 rounded"
+              >
+                <MaterialPileSprite
+                  material={{ id: "store-pallet", type: "pallet" }}
+                />
+              </svg>
+
+              <span>Pallet</span>
+
+              <button className="button">Buy</button>
+            </li>
+          </ul>
         </section>
         <section>
           <h2 className="section-heading">Machines</h2>

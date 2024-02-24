@@ -1,7 +1,9 @@
 import React from "react";
+import { ActionBar } from "./ActionBar";
 import { CommissionsSection } from "./CommissionsSection";
-import { MaterialsSection } from "./MaterialsSection";
 import { MoneySection } from "./MoneySection";
+import { NavBar } from "./NavBar";
+import { Ticker } from "./Ticker";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
 import { InventorySection } from "./current-cell-info/InventorySection";
 import { MachineListSection } from "./current-cell-info/MachineListSection";
@@ -10,15 +12,11 @@ import { ShopView } from "./shop-view/ShopView";
 export const HomePage: React.FC = () => {
   return (
     <main className="p-8 space-y-6">
-      <header className="flex gap-2 items-center">
-        <img src="/images/favicon-3.png" className="relative w-16 top-1" />
-        <h1 className="font-heading font-bold text-5xl tracking-wide">
-          Woodworking Tycoon
-        </h1>
-      </header>
+      <NavBar />
 
-      <div className="flex gap-8 justify-center">
+      <div className="flex gap-8">
         <div className="space-y-6 w-full max-w-80">
+          <Ticker />
           <MoneySection />
           <CommissionsSection />
         </div>
@@ -35,7 +33,7 @@ export const HomePage: React.FC = () => {
             <FloorListSection />
           </section>
           <MachineListSection />
-          <MaterialsSection />
+          <ActionBar />
         </div>
       </div>
     </main>

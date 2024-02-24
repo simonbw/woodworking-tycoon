@@ -174,3 +174,11 @@ Another system that could just add complexity as well as
 ### Making Money
 
 Making money is an important part of any tycoon game.
+
+## Performance Optimization Possibilities
+
+The game is already reaching performance limitations.
+I think this is largely due to the react/svg combo.
+I'm wondering if we could gain a lot of performance by switching to a canvas-based renderer for react instead of an SVG one.
+
+Consider [@pixi/react](https://www.npmjs.com/package/@pixi/react).

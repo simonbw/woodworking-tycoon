@@ -9,7 +9,7 @@ import { groupBy } from "../../utils/arrayUtils";
 import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
 
 export const InventorySection: React.FC = () => {
-  const { gameState } = useGameState();
+  const gameState = useGameState();
 
   const groupedInventory = [
     ...groupBy(gameState.player.inventory, (material) =>

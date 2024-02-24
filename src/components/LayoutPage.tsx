@@ -1,23 +1,15 @@
 import React from "react";
+import { groupBy } from "../utils/arrayUtils";
+import { NavBar } from "./NavBar";
 import { useUiMode } from "./UiMode";
 import { ShopView } from "./shop-view/ShopView";
 import { useGameState } from "./useGameState";
-import { groupBy } from "../utils/arrayUtils";
 
 export const LayoutPage: React.FC = () => {
   const { setMode } = useUiMode();
   return (
     <main className="p-8 space-y-6">
-      <header className="flex gap-2 items-center">
-        <img src="/images/favicon-3.png" className="relative w-16 top-1" />
-        <h1 className="font-heading font-bold text-5xl tracking-wide">
-          Layout
-        </h1>
-      </header>
-
-      <button className="button" onClick={() => setMode({ mode: "normal" })}>
-        Back
-      </button>
+      <NavBar />
 
       <div className="grid grid-cols-2">
         <section>
@@ -30,9 +22,9 @@ export const LayoutPage: React.FC = () => {
 };
 
 const StorageSection: React.FC = () => {
-  const storage = useGameState().gameState.storage;
+  const gameState = useGameState();
   const groupedMachines = [
-    ...groupBy(storage.machines, (machine) => machine.id).values(),
+    ...groupBy(gameState.storage.machines, (machine) => machine.id).values(),
   ];
   return (
     <section>

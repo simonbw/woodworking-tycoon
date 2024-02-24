@@ -1,13 +1,13 @@
 import React from "react";
+import { tickAction } from "../game/game-actions/tickAction";
 import { makeMaterial } from "../game/material-helpers";
-import { useUiMode } from "./UiMode";
 import { useGameActions } from "./useGameActions";
-import { useGameState } from "./useGameState";
+import { useApplyGameAction, useGameState } from "./useGameState";
 
-export const MaterialsSection: React.FC = () => {
-  const { gameState } = useGameState();
+// Just a bunch of debug crap
+export const ActionBar: React.FC = () => {
+  const gameState = useGameState();
   const { addMaterial } = useGameActions();
-  const { setMode } = useUiMode();
 
   return (
     <section className="space-y-2">
@@ -21,15 +21,6 @@ export const MaterialsSection: React.FC = () => {
         }
       >
         Find a Pallet
-      </button>
-      <button className="button" onClick={() => setMode({ mode: "store" })}>
-        Go To Store
-      </button>
-      <button
-        className="button"
-        onClick={() => setMode({ mode: "shopLayout" })}
-      >
-        Go To Layout
       </button>
     </section>
   );

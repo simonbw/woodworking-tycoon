@@ -1,5 +1,8 @@
+import { Vector } from "./Vectors";
+
 export interface ShopInfo {
   name: string;
   electricity: 120 | 240;
-  size: [number, number];
+  size: Vector;
+  materialDropoffPosition: Vector;
 }

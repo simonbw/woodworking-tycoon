@@ -17,6 +17,7 @@ export const OperatorPositionSprite: React.FC<{ position: Vector }> = ({
         </radialGradient>
       </defs>
       <circle
+        pointerEvents="none"
         cx={50}
         cy={50}
         r={50}

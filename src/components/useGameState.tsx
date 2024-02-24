@@ -26,9 +26,17 @@ export const GameStateProvider: React.FC<{ children?: ReactNode }> = ({
 };
 
 export function useGameState() {
-  const gameState = useContext(gameStateContext);
-  if (gameState === undefined) {
+  const value = useContext(gameStateContext);
+  if (value === undefined) {
     throw new Error("useGameState must be used within a GameStateProvider");
   }
-  return gameState;
+  return value.gameState;
+}
+
+export function useApplyGameAction() {
+  const value = useContext(gameStateContext);
+  if (value === undefined) {
+    throw new Error("useGameUpdater must be used within a GameStateProvider");
+  }
+  return value.updateGameState;
 }

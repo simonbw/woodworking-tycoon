@@ -5,19 +5,16 @@ import { LayoutPage } from "./LayoutPage";
 import { StorePage } from "./StorePage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { ActionKeyContextProvider } from "./consumerCountContext";
-import { CellMapProvider } from "./useCellMap";
 import { GameStateProvider } from "./useGameState";
 
 export const Main: React.FC = () => {
   return (
     <GameStateProvider>
       <UiModeProvider>
-        <CellMapProvider>
-          <ActionKeyContextProvider>
-            <ScreenSwitcher />
-            <DebugView />
-          </ActionKeyContextProvider>
-        </CellMapProvider>
+        <ActionKeyContextProvider>
+          <ScreenSwitcher />
+          <DebugView />
+        </ActionKeyContextProvider>
       </UiModeProvider>
     </GameStateProvider>
   );

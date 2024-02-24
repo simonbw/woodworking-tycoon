@@ -1,61 +1,61 @@
-import { Vector } from "../game/Vectors";
+import {
+  Direction,
+  Vector,
+  rotateVec,
+  translateVec,
+  vectorEquals,
+} from "../game/Vectors";
+import { VectorSet } from "./VectorSet";
 
-class VectorSet {
-  private set: Set<string> = new Set();
-
-  constructor(vectors: ReadonlyArray<Vector> = []) {
-    for (const vector of vectors) {
-      this.add(vector);
-    }
-  }
-
-  add(vector: Vector) {
-    this.set.add(vector.join(","));
-  }
-
-  has(vector: Vector) {
-    return this.set.has(vector.join(","));
-  }
+export function getNeighbors(
+  position: Vector
+): { direction: Direction; position: Vector }[] {
+  const directions: Direction[] = [0, 1, 2, 3];
+  return directions.map((direction) => ({
+    direction,
+    position: translateVec(position, rotateVec([1, 0], direction)),
+  }));
 }
 
-export function getNeighbors(vector: Vector): Vector[] {
-  const [x, y] = vector;
-  return [
-    [x - 1, y],
-    [x + 1, y],
-    [x, y - 1],
-    [x, y + 1],
-  ];
+type PathItem = { direction: Direction; position: Vector };
+type Path = PathItem[];
+
+function vecToKey(vec: Vector): string {
+  return vec.join(",");
 }
 
+// A simple breadth-first search to find a path from start to end
 export function findPath(
   start: Vector,
   end: Vector,
-  obstacles: ReadonlyArray<Vector>
-): Vector[] | undefined {
-  const obstacleSet = new VectorSet(obstacles);
+  validCells: ReadonlyArray<Vector>
+): Path | undefined {
+  const validSet = new VectorSet(validCells);
   const visited = new VectorSet();
-  const queue = [start];
-  const path = new Map<string, Vector>();
+  const queue: PathItem[] = [{ position: start, direction: 0 }];
+  const path = new Map<string, PathItem>();
   visited.add(start);
 
   while (queue.length > 0) {
-    const current = queue.shift() as Vector;
-    if (current[0] === end[0] && current[1] === end[1]) {
-      const result = [current];
-      while (path.has(result[0].join(","))) {
-        const next = path.get(result[0].join(",")) as Vector;
+    const current = queue.shift()!;
+    if (vectorEquals(current.position, end)) {
+      const result: Path = [current];
+      while (path.has(vecToKey(result[0].position))) {
+        const next = path.get(vecToKey(result[0].position))!;
         result.unshift(next);
       }
+      result.shift();
       return result;
     }
-    for (const neighbor of getNeighbors(current)) {
-      if (!visited.has(neighbor) && !obstacleSet.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-        path.set(neighbor.join(","), current);
+
+    for (const pathItem of getNeighbors(current.position)) {
+      if (!visited.has(pathItem.position) && validSet.has(pathItem.position)) {
+        visited.add(pathItem.position);
+        queue.push(pathItem);
+        path.set(vecToKey(pathItem.position), current);
       }
     }
   }
+
   return undefined;
 }

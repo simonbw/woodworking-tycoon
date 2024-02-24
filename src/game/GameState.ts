@@ -9,11 +9,14 @@ export type MaterialPile = {
   position: Vector;
 };
 
+export type GameAction = (gameState: GameState) => GameState;
+
+/** Represents all of the state for the game simulation. This is what gets loaded/saved. Does not include UI state. */
 export interface GameState {
+  readonly tick: number;
   readonly money: number;
   readonly reputation: number;
   readonly materialPiles: ReadonlyArray<MaterialPile>;
-  readonly tools: ReadonlyArray<Tool>;
   readonly machines: ReadonlyArray<Machine>;
   readonly commissions: ReadonlyArray<Commission>;
   readonly shopInfo: ShopInfo;
@@ -35,13 +38,3 @@ export interface Commission {
   readonly rewardMoney: number;
   readonly rewardReputation: number;
 }
-
-export interface Tool {
-  readonly id: string;
-  readonly name: string;
-}
-
-// TODO: Figure out how to guarantee that key and id fields always match
-export const TOOLS = {
-  handSaw: { id: "handSaw", name: "Hand Saw" },
-} satisfies { [key: string]: Tool };

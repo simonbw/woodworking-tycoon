@@ -1,4 +1,5 @@
 import React from "react";
+import { useCellMap } from "../../game/CellMap";
 import { Machine } from "../../game/GameState";
 import { MachineOperation } from "../../game/MachineType";
 import { useActionKeys } from "../consumerCountContext";
@@ -6,17 +7,14 @@ import { useGameActions } from "../useGameActions";
 import { useGameHelpers } from "../useGameHelpers";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
-import { useCellMap } from "../useCellMap";
 
 export const MachineListSection: React.FC = () => {
-  const { gameState } = useGameState();
+  const gameState = useGameState();
 
-  const cells = useCellMap();
+  const cellMap = useCellMap();
+  const playerCell = cellMap.at(gameState.player.position);
 
-  const [px, py] = gameState.player.position;
-  const playerCell = cells[py][px];
-
-  if (playerCell.operableMachines.length === 0) {
+  if (!playerCell?.operableMachines.length) {
     return null;
   }
 
