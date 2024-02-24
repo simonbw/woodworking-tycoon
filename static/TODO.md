@@ -39,23 +39,52 @@ This should be pretty easy since all the game state is in a nice JSON object tha
 
 We need a system on a separate page that allows you to place/move machines around the shop.
 
+### System for choosing
+
+### Tool system
+
 ### Unlock System
 
 Rather than all the features being available at once, it would help the playability of the game if features unlocked as the game progressed, so as not to overwhelm the player, and also to keep the gameplay interesting.
 
 A basic order I imagine things being unlocked:
 
-1. The
-
-2.
+1. You start with a pallet, a workspace, and a hand saw.
+2. Once you
 
 ## Content to add
 
 This is more about using either the existing systems
 
-### Shops
+### Workshops
 
-Different levels
+There should be a few different levels of workshop.
+
+#### 1. Small Garage
+
+- Mostly limited by space
+- Can only use 120V tools
+
+#### 2. Large garage
+
+- Significantly more space
+- Can use up to 220V tools
+
+#### 3. Commercial Space
+
+- Lots of space
+- Can use 3-Phase tools
+
+Questions:
+
+- Should you be able to have more than one shop at once?
+- Should the shops be strictly increasing in difficulty, or should there
+
+Some interesting challenges some shops could have:
+
+- Weird space layout, like very narrow, or many small rooms
+- No electricity. Everything has to be done with hand tools
+-
 
 ### Sounds
 
@@ -71,9 +100,42 @@ I think we also want to have some unique sets of ambient sounds or background mu
 
 - Store page
 - Layout page? (or just stick with )
-- Each different shop
+- Each different shop has its own soundtrack
 
 ### Machine/Operation/Material Ideas
+
+#### Bandsaw
+
+- Resawing
+- special curved shapes
+
+#### Planer
+
+- Gets boards to desired thickness
+- Provides a "planed" finish, which is faster to sand than a rough finish
+
+#### Sanding
+
+Boards should have a "surface finish" property
+Possibly also a "squareness" property
+
+You should be able to sand
+
+#### Lathe
+
+Lathe should be highly skill dependant
+
+- Make round table legs
+- Make bowls
+
+Some related ideas would be:
+
+- Tool Sharpening
+- Attachments?
+
+### Intermediate project ideas
+
+Cutting board
 
 -
 
@@ -83,7 +145,19 @@ These are ideas I'm less sure about that I don't necessarily have a system in mi
 
 ### Economics
 
-Since this is a tycoon game, money should be an important part of it, and there should be
+Since this is a tycoon game, money should be an important part of it. In general, there should be tradeoffs on how to spend money.
+
+The simple type of question is just "is this purchase worth the cost". That applies to things like:
+
+- Should I buy this machine?
+- Should I buy these materials to build this more advanced
+- Should I buy a bigger shop?
+
+Some more complex questions could be about operating costs. Things like:
+
+- If I buy this bigger shop, will I make enough money for the upkeep to be worth it?
+- If I buy this tool/machine/shop, what else do I need to buy to fully utilize it?
+- If I take out a loan to buy this tool/machine/shop, will having it now be worth paying the interest instead of waiting until I can
 
 ### Dust Collection
 
@@ -96,3 +170,7 @@ I think there could be a possibility for something cool involving dust collectio
 ### Wood Moisture Content
 
 Another system that could just add complexity as well as
+
+### Making Money
+
+Making money is an important part of any tycoon game.
