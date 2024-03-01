@@ -1,7 +1,7 @@
 import React from "react";
 import { NavBar } from "./NavBar";
 import { useUiMode } from "./UiMode";
-import { MaterialPileSprite } from "./shop-view/MaterialPileSprite";
+import { MaterialIcon } from "./current-cell-info/SimpleSpriteStage";
 
 export const StorePage: React.FC = () => {
   const { setMode } = useUiMode();
@@ -14,15 +14,8 @@ export const StorePage: React.FC = () => {
         <section>
           <h2 className="section-heading">Materials</h2>
           <ul>
-            <li>
-              <svg
-                viewBox="-50 -50 100 100"
-                className="w-10 h-10 bg-white/10 rounded"
-              >
-                <MaterialPileSprite
-                  material={{ id: "store-pallet", type: "pallet" }}
-                />
-              </svg>
+            <li className="flex gap-2 items-center">
+              <MaterialIcon material={{ id: "store-pallet", type: "pallet" }} />
 
               <span>Pallet</span>
 

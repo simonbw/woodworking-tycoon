@@ -15,6 +15,10 @@ export function invertDirection(direction: Direction): Direction {
   }
 }
 
+export function directionToAngle(direction: Direction): number {
+  return 360 - direction * 90;
+}
+
 export function rotateVec([x, y]: Vector, rotation: Direction): Vector {
   switch (rotation) {
     case 0:

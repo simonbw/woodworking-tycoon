@@ -1,15 +1,16 @@
 import headlessPlugin from "@headlessui/tailwindcss";
 import typeographyPlugin from "@tailwindcss/typography";
+import { Config } from "tailwindcss";
 import opentypePlugin from "tailwindcss-opentype";
 import defaultTheme from "tailwindcss/defaultTheme";
+import { PluginCreator } from "tailwindcss/types/config";
 import { tailwindSvgStopsPlugin } from "./src/utils/tailwind-svg-stops";
 
-/** @type {import('tailwindcss').Config} */
 const config = {
   content: ["./src/**/*.{html,js,ts,tsx}"],
 
   plugins: [
-    opentypePlugin,
+    opentypePlugin as PluginCreator,
     headlessPlugin,
     typeographyPlugin,
     tailwindSvgStopsPlugin,
@@ -62,6 +63,6 @@ const config = {
       }),
     },
   },
-};
+} satisfies Config;
 
 export default config;

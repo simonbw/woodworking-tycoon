@@ -1,16 +1,39 @@
+import { Sprite } from "@pixi/react-animated";
 import React from "react";
+import { Spring } from "react-spring";
 import { Person } from "../../game/Person";
-import { scaled } from "./ShopView";
+import { directionToAngle, scaleVec, translateVec } from "../../game/Vectors";
+import { CELL_SIZE } from "./ShopView";
 
 export const PersonSprite: React.FC<{ person: Person }> = ({ person }) => {
-  const [x, y] = person.position;
+  const position = translateVec(scaleVec(person.position, CELL_SIZE), [50, 50]);
   return (
-    <circle
-      cx={50}
-      cy={50}
-      r={30}
-      className="transition-transform ease-out fill-sky-500 drop-shadow-md"
-      style={{ transform: `translate(${scaled(x)}px, ${scaled(y)}px)` }}
-    />
+    <Spring
+      to={{
+        x: position[0],
+        y: position[1],
+        angle: directionToAngle(person.direction) + 90, // TODO: Angle
+      }}
+      config={{
+        mass: 0.1,
+        tension: 200,
+        friction: 12,
+        clamp: true,
+      }}
+    >
+      {({ x, y, angle }) => {
+        return (
+          <Sprite
+            image={"/images/person.png"}
+            x={x}
+            y={y}
+            angle={angle}
+            width={100}
+            height={100}
+            anchor={{ x: 0.5, y: 0.5 }}
+          />
+        );
+      }}
+    </Spring>
   );
 };

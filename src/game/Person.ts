@@ -4,6 +4,7 @@ import { Direction, Vector } from "./Vectors";
 export interface Person {
   name: string;
   position: Vector;
+  direction: Direction;
   inventory: ReadonlyArray<MaterialInstance>;
 
   workQueue: ReadonlyArray<WorkItem>;

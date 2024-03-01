@@ -1,18 +1,16 @@
-import React from "react";
-import {
-  Vector,
-  scaleVec,
-  translateVec,
-  vectorEquals,
-} from "../../game/Vectors";
+import { Graphics } from "@pixi/react";
+import React, { useCallback } from "react";
+import { Vector, vectorEquals } from "../../game/Vectors";
 import { applyWorkItemAction } from "../../game/game-actions/work-item-actions";
+import { PixiGraphics } from "../../utils/PixiGraphics";
 import { useGameState } from "../useGameState";
-import { CELL_SIZE, scaled } from "./ShopView";
+import { cellCenter } from "./ShopView";
 
 export const WorkQueueSprite: React.FC = () => {
   const gameState = useGameState();
 
-  let positions = [];
+  // TODO: Memoize this
+  const positions: Vector[] = [];
   let lastPosition = gameState.player.position;
   let hypotheticalState = gameState;
   for (const workItem of gameState.player.workQueue) {
@@ -23,33 +21,25 @@ export const WorkQueueSprite: React.FC = () => {
       lastPosition = newPosition;
     }
   }
+  positions.unshift(gameState.player.position);
 
-  if (positions.length === 0) {
+  const draw = useCallback(
+    (g: PixiGraphics) => {
+      g.clear();
+      g.lineStyle(8, 0x87ceeb, 0.5);
+      const [startX, startY] = cellCenter(positions[0]);
+      g.moveTo(startX, startY);
+      for (const position of positions.slice(1)) {
+        const [x, y] = cellCenter(position);
+        g.lineTo(x, y);
+      }
+    },
+    [positions]
+  );
+
+  if (positions.length === 1) {
     return null;
   }
 
-  positions.unshift(gameState.player.position);
-
-  function toScreen(position: Vector): Vector {
-    return scaleVec(translateVec(position, [0.5, 0.5]), CELL_SIZE);
-  }
-
-  const d =
-    `M${toScreen(positions[0]).join(",")} ` +
-    positions
-      .slice(1)
-      .map(toScreen)
-      .map((screenPosition) => `L ${screenPosition.join(",")}`)
-      .join(" ");
-  return (
-    <g>
-      <path
-        d={d}
-        fill="none"
-        className="stroke-[8] stroke-sky-500/50"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </g>
-  );
+  return <Graphics draw={draw} />;
 };

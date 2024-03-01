@@ -48,7 +48,7 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
     );
     const destinationCell = cellMap.at(destinationPosition);
     if (destinationCell === undefined || destinationCell.machine) {
-      return gameState;
+      return { ...gameState, player: { ...gameState.player, direction } };
     }
     return {
       ...gameState,
@@ -56,6 +56,7 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
         ...gameState.player,
         canWork: false,
         position: destinationPosition,
+        direction,
       },
     };
   };

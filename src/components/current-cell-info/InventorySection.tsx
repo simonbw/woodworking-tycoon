@@ -1,12 +1,13 @@
 import React from "react";
 import { MaterialInstance } from "../../game/Materials";
+import { getMaterialName } from "../../game/getMaterialName";
+import { groupBy } from "../../utils/arrayUtils";
 import { useActionKeys } from "../consumerCountContext";
+import { MaterialSprite } from "../shop-view/MaterialPileSprite";
 import { useGameActions } from "../useGameActions";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
-import { getMaterialName } from "../../game/getMaterialName";
-import { groupBy } from "../../utils/arrayUtils";
-import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
+import { MaterialIcon, SimpleSpriteStage } from "./SimpleSpriteStage";
 
 export const InventorySection: React.FC = () => {
   const gameState = useGameState();
@@ -26,7 +27,7 @@ export const InventorySection: React.FC = () => {
   }
 
   return (
-    <ul className="space-y-1sd">
+    <ul className="space-y-1">
       {groupedInventory.map(([materialName, materials]) => (
         <InventoryListItem key={materialName} materials={materials} />
       ))}
@@ -48,9 +49,7 @@ const InventoryListItem: React.FC<{
 
   return (
     <li className="flex items-center gap-2">
-      <svg viewBox="-50 -50 100 100" className="w-10 h-10 bg-white/10 rounded">
-        <MaterialPileSprite material={materials[0]} />
-      </svg>
+      <MaterialIcon material={materials[0]} />
       <span>{getMaterialName(materials[0])}</span>
       {materials.length > 1 && <em>x{materials.length}</em>}
       <button

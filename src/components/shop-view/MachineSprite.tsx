@@ -1,29 +1,36 @@
-import React from "react";
+import { Container, Graphics, Sprite } from "@pixi/react";
+import React, { useCallback } from "react";
 import { Machine } from "../../game/GameState";
 import { MACHINES, MachineType } from "../../game/MachineType";
-import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
-import { MiterSawSprite } from "../machine-sprites/MiterSawSprite";
-import { OperatorPositionSprite } from "./OperatorPositionSprite";
-import { CELL_SIZE, scaled } from "./ShopView";
-import { scaleVec } from "../../game/Vectors";
+import { scaleVec, translateVec } from "../../game/Vectors";
+import { PixiGraphics } from "../../utils/PixiGraphics";
+import { CELL_SIZE } from "./ShopView";
+import { colors } from "../../utils/colors";
 
 export const MachineSprite: React.FC<{ machinePlacement: Machine }> = ({
   machinePlacement,
 }) => {
-  const [x, y] = scaleVec(machinePlacement.position, CELL_SIZE);
+  const [x, y] = translateVec(
+    scaleVec(machinePlacement.position, CELL_SIZE),
+    [50, 50]
+  );
   const angle = machinePlacement.rotation * -90;
 
   return (
-    <g
-      transform={`translate(50 50) translate(${x}, ${y}) rotate(${angle}) translate(-50 -50)`}
-    >
+    <Container x={x} y={y} angle={angle} anchor={{ x: 0.5, y: 0.5 }}>
       <LocalMachineSprite machineType={machinePlacement.type} />
       {machinePlacement.type.operationPosition && (
-        <OperatorPositionSprite
-          position={machinePlacement.type.operationPosition}
+        <Sprite
+          image={"/images/operator-position.png"}
+          width={100}
+          height={100}
+          anchor={{ x: 0.5, y: 0.5 }}
+          alpha={0.3}
+          x={machinePlacement.type.operationPosition[0] * CELL_SIZE}
+          y={machinePlacement.type.operationPosition[1] * CELL_SIZE}
         />
       )}
-    </g>
+    </Container>
   );
 };
 
@@ -32,33 +39,63 @@ const LocalMachineSprite: React.FC<{ machineType: MachineType }> = ({
 }) => {
   switch (machineType.id) {
     case MACHINES.jobsiteTableSaw.id:
-      return <JobsiteTableSawSprite />;
+      return (
+        <Sprite
+          image={"/images/jobsite-table-saw.png"}
+          width={100}
+          height={100}
+          anchor={{ x: 0.5, y: 0.5 }}
+        />
+      );
 
     case MACHINES.miterSaw.id:
-      return <MiterSawSprite />;
+      return (
+        <Sprite
+          image={"/images/miter-saw.png"}
+          width={100}
+          height={100}
+          anchor={{ x: 0.5, y: 0.5 }}
+        />
+      );
 
     case MACHINES.workspace.id:
       return (
-        <rect
-          x={5}
-          y={5}
-          width={90}
-          height={90}
-          className="stroke-[2] stroke-white/40 fill-white/10"
+        <Sprite
+          image={"/images/workspace.png"}
+          width={100}
+          height={100}
+          anchor={{ x: 0.5, y: 0.5 }}
+          alpha={0.3}
         />
       );
 
     default: {
-      return machineType.cellsOccupied.map(([x, y]) => (
-        <rect
-          key={`${x}-${y}`}
-          x={scaled(x)}
-          y={scaled(y)}
-          width={scaled(1)}
-          height={scaled(1)}
-          className={machineType.className ?? "fill-amber-600 drop-shadow"}
-        />
-      ));
+      return <DefaultMachineSprite machineType={machineType} />;
     }
   }
+};
+
+const DefaultMachineSprite: React.FC<{ machineType: MachineType }> = ({
+  machineType,
+}) => {
+  return (
+    <Graphics
+      draw={useCallback(
+        (g: PixiGraphics) => {
+          g.clear();
+          for (const [x, y] of machineType.cellsOccupied) {
+            g.beginFill(colors.brown["900"]);
+            g.drawRect(
+              (x - 0.5) * CELL_SIZE,
+              (y - 0.5) * CELL_SIZE,
+              CELL_SIZE,
+              CELL_SIZE
+            );
+            g.endFill();
+          }
+        },
+        [machineType]
+      )}
+    />
+  );
 };

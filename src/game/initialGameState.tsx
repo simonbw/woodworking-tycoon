@@ -13,6 +13,7 @@ export const initialGameState: GameState = {
   player: {
     name: "Player",
     position: [0, 0],
+    direction: 0,
     inventory: [],
     workQueue: [],
     canWork: true,

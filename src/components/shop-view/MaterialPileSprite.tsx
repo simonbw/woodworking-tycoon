@@ -1,19 +1,23 @@
-import React, { useRef } from "react";
+import { Graphics as PixiGraphics } from "@pixi/graphics";
+import { Container, Graphics, Sprite } from "@pixi/react";
+import React, { useCallback, useRef } from "react";
 import { MaterialPile } from "../../game/GameState";
-import { MaterialInstance, Species } from "../../game/Materials";
+import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { Vector } from "../../game/Vectors";
 import { rNormal, rUniform } from "../../utils/randUtils";
 import { BoardSprite } from "../material-sprites/BoardSprite";
-import { PalletSprite } from "../material-sprites/PalletSprite";
+import { colorBySpecies } from "./colorBySpecies";
 
 export const MaterialPilesSprite: React.FC<{
   materialPiles: ReadonlyArray<MaterialPile>;
 }> = ({ materialPiles }) => {
+  // TODO: These positions need to match up with each material, not just the index in the array
   const positions = useRef<{ position: Vector; angle: number }[]>([]);
 
   while (positions.current.length < materialPiles.length) {
     positions.current.push(makePosition());
   }
+
   while (positions.current.length > materialPiles.length) {
     positions.current.pop();
   }
@@ -26,12 +30,9 @@ export const MaterialPilesSprite: React.FC<{
   return (
     <>
       {zipped.map(({ position: [x, y], angle, materialPile }, i) => (
-        <g
-          key={`${x},${y}`}
-          transform={`translate(${x} ${y}) rotate(${angle})`}
-        >
-          <MaterialPileSprite material={materialPile.material} />
-        </g>
+        <Container key={`${x},${y}`} x={x} y={y} angle={angle}>
+          <MaterialSprite material={materialPile.material} />
+        </Container>
       ))}
     </>
   );
@@ -44,17 +45,7 @@ function makePosition(): { position: Vector; angle: number } {
   };
 }
 
-export const classNameBySpecies: Record<Species, string> = {
-  pallet: "fill-amber-400",
-  cherry: "fill-brown-500",
-  mahogany: "fill-brown-800",
-  maple: "fill-yellow-300",
-  oak: "fill-brown-300",
-  pine: "fill-brown-300",
-  walnut: "fill-brown-900",
-};
-
-export const MaterialPileSprite: React.FC<{
+export const MaterialSprite: React.FC<{
   material: MaterialInstance;
 }> = ({ material }) => {
   switch (material.type) {
@@ -62,28 +53,49 @@ export const MaterialPileSprite: React.FC<{
       return <BoardSprite board={material} />;
 
     case "pallet":
-      return <PalletSprite />;
+      return (
+        <Sprite
+          image={"/images/pallet.png"}
+          anchor={{ x: 0.5, y: 0.5 }}
+          width={85}
+          height={85}
+        />
+      );
 
     case "jewelryBox":
-      return (
-        <rect
-          width={20}
-          height={20}
-          className={classNameBySpecies[material.species]}
-        />
-      );
+      return <FinishedBoxSprite material={material as FinishedProduct} />;
 
     default:
-      return (
-        <circle
-          cx={0}
-          cy={0}
-          r={10}
-          className="fill-red-500 drop-shadow"
-          shapeRendering="geometricPrecision"
-        />
-      );
+      return <DefaultMaterialPileSprite />;
   }
 };
 
 export const PIXELS_PER_INCH = 2;
+
+const DefaultMaterialPileSprite: React.FC = () => {
+  return (
+    <Graphics
+      draw={useCallback((g: PixiGraphics) => {
+        g.clear();
+        g.beginFill(0);
+        g.drawRect(-10, -10, 20, 20);
+        g.endFill();
+      }, [])}
+    />
+  );
+};
+
+const FinishedBoxSprite: React.FC<{
+  material: FinishedProduct;
+}> = ({ material }) => {
+  return (
+    <Graphics
+      draw={useCallback((g: PixiGraphics) => {
+        g.clear();
+        g.beginFill(colorBySpecies[material.species]);
+        g.drawRect(-10, -10, 20, 20);
+        g.endFill();
+      }, [])}
+    />
+  );
+};

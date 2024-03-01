@@ -2,9 +2,8 @@ import { useMemo } from "react";
 import { Commission, MaterialPile } from "../game/GameState";
 import { MachineOperation } from "../game/MachineType";
 import { MaterialInstance } from "../game/Materials";
-import { Direction, Vector, vectorEquals } from "../game/Vectors";
+import { Vector, vectorEquals } from "../game/Vectors";
 import { performOperationAction } from "../game/game-actions/player-actions";
-import { applyWorkItemAction } from "../game/game-actions/work-item-actions";
 import { useApplyGameAction } from "./useGameState";
 
 export function useGameActions() {

@@ -3,7 +3,7 @@ import { GameState } from "../game/GameState";
 import { UpdateFunction } from "../utils/typeUtils";
 import { initialGameState } from "../game/initialGameState";
 
-const gameStateContext = createContext<
+export const gameStateContext = createContext<
   | {
       gameState: GameState;
       updateGameState: UpdateFunction<GameState>;

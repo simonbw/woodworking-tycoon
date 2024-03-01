@@ -4,10 +4,10 @@ import { MaterialPile } from "../../game/GameState";
 import { getMaterialName } from "../../game/getMaterialName";
 import { groupBy } from "../../utils/arrayUtils";
 import { useActionKeys } from "../consumerCountContext";
-import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
 import { useGameActions } from "../useGameActions";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
+import { MaterialIcon } from "./SimpleSpriteStage";
 
 export const FloorListSection: React.FC = () => {
   const gameState = useGameState();
@@ -30,7 +30,7 @@ export const FloorListSection: React.FC = () => {
 
   return (
     <section>
-      <ul className="pl-1">
+      <ul className="space-y-1">
         {groupedMaterials.map(([materialName, piles]) => (
           <FloorListItem key={materialName} piles={piles} />
         ))}
@@ -50,9 +50,7 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
 
   return (
     <li className="flex items-center gap-2">
-      <svg viewBox="-50 -50 100 100" className="w-10 h-10">
-        <MaterialPileSprite material={piles[0].material} />
-      </svg>
+      <MaterialIcon material={piles[0].material} />
       <span>{getMaterialName(piles[0].material)}</span>
       {piles.length > 1 && <em>x{piles.length}</em>}
       <button
