@@ -32,7 +32,7 @@ export function lerpOrSnap(
   a: number,
   b: number,
   t: number = 0.5,
-  threshold: number = 0.01,
+  threshold: number = 0.01
 ): number {
   if (Math.abs(b - a) < threshold) {
     return b;
@@ -47,6 +47,11 @@ export function normalizeAngle(angle: number) {
 
 // Return the difference between two angles
 export function angleDelta(a: number, b: number): number {
+  return mod(b - a + 180, 360) - 180;
+}
+
+// Return the difference between two angles
+export function rotationDelta(a: number, b: number): number {
   return mod(b - a + Math.PI, Math.PI * 2) - Math.PI;
 }
 

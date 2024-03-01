@@ -25,6 +25,7 @@ export const SimpleSpriteStage: React.FC<{
   );
 };
 
+// TODO: Optimize this a lot
 export const MaterialIcon: React.FC<{ material: MaterialInstance }> = ({
   material,
 }) => {

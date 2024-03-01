@@ -7,7 +7,7 @@ import { MaterialSprite } from "../shop-view/MaterialPileSprite";
 import { useGameActions } from "../useGameActions";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
-import { MaterialIcon, SimpleSpriteStage } from "./SimpleSpriteStage";
+import { MaterialIcon, SimpleSpriteStage } from "./MaterialIcon";
 
 export const InventorySection: React.FC = () => {
   const gameState = useGameState();

@@ -7,7 +7,7 @@ import { useActionKeys } from "../consumerCountContext";
 import { useGameActions } from "../useGameActions";
 import { useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
-import { MaterialIcon } from "./SimpleSpriteStage";
+import { MaterialIcon } from "./MaterialIcon";
 
 export const FloorListSection: React.FC = () => {
   const gameState = useGameState();
