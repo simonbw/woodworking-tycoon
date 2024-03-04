@@ -2,6 +2,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
 import { classNames } from "../utils/classNames";
 import { useApplyGameAction, useGameState } from "./useGameState";
+import { useKeyDown } from "./useKeyDown";
 
 const PAUSED = 0;
 const NORMAL = 2;
@@ -21,6 +22,23 @@ export const Ticker: React.FC = () => {
     }, 1000 / ticksPerSecond);
     return () => clearInterval(interval);
   }, [ticksPerSecond]);
+
+  useKeyDown((event) => {
+    switch (event.key) {
+      case "`":
+        setTicksPerSecond(PAUSED);
+        break;
+      case "1":
+        setTicksPerSecond(NORMAL);
+        break;
+      case "2":
+        setTicksPerSecond(FAST);
+        break;
+      case "3":
+        setTicksPerSecond(FASTER);
+        break;
+    }
+  });
 
   const speedButton: React.FC<{
     speed: number;

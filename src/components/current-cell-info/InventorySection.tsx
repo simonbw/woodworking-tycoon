@@ -2,7 +2,7 @@ import React from "react";
 import { MaterialInstance } from "../../game/Materials";
 import {
   dropMaterialAction,
-  moveMaterialToMachineAction,
+  moveMaterialsToMachineAction,
 } from "../../game/game-actions/player-actions";
 import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
@@ -57,7 +57,13 @@ const InventoryListItem: React.FC<{
       )}
       <button
         className="button text-xs"
-        onClick={() => applyAction(dropMaterialAction(materials[0]))}
+        onClick={(event) => {
+          if (event.shiftKey) {
+            applyAction(dropMaterialAction(materials));
+          } else {
+            applyAction(dropMaterialAction([materials[0]]));
+          }
+        }}
       >
         Drop
       </button>
@@ -65,9 +71,15 @@ const InventoryListItem: React.FC<{
         <button
           key={index}
           className="button text-xs"
-          onClick={() =>
-            applyAction(moveMaterialToMachineAction(materials[0], machine))
-          }
+          onClick={(event) => {
+            if (event.shiftKey) {
+              applyAction(moveMaterialsToMachineAction(materials, machine));
+            } else {
+              applyAction(
+                moveMaterialsToMachineAction([materials[0]], machine)
+              );
+            }
+          }}
         >
           Move To {machine.type.name}
         </button>

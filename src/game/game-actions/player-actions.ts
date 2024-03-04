@@ -1,8 +1,7 @@
 import { materialMeetsInput } from "../../components/useGameHelpers";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
-import { Machine } from "../Machine";
-import { MachineOperation } from "../Machine";
+import { Machine, MachineOperation } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 
@@ -29,80 +28,99 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
   };
 }
 
-export function pickUpMaterialAction(materialPile: MaterialPile): GameAction {
+export function pickUpMaterialAction(
+  materialPiles: ReadonlyArray<MaterialPile>
+): GameAction {
   return (gameState) => {
-    if (!vectorEquals(gameState.player.position, materialPile.position)) {
-      console.warn("Tried to pick up material from wrong position");
+    for (const materialPile of materialPiles) {
+      if (!vectorEquals(gameState.player.position, materialPile.position)) {
+        console.warn("Tried to pick up material from wrong position");
+        return gameState;
+      }
     }
     return {
       ...gameState,
       player: {
         ...gameState.player,
-        inventory: [...gameState.player.inventory, materialPile.material],
+        inventory: [
+          ...gameState.player.inventory,
+          ...materialPiles.map((pile) => pile.material),
+        ],
       },
       materialPiles: gameState.materialPiles.filter(
-        (pile) => pile !== materialPile
+        (pile) => !materialPiles.includes(pile)
       ),
     };
   };
 }
 
-export function dropMaterialAction(material: MaterialInstance): GameAction {
+export function dropMaterialAction(
+  materials: ReadonlyArray<MaterialInstance>
+): GameAction {
   return (gameState) => {
-    if (!gameState.player.inventory.some((item) => item === material)) {
-      console.warn("Tried to drop material not in inventory");
+    for (const material of materials) {
+      if (!gameState.player.inventory.some((item) => item === material)) {
+        console.warn("Tried to drop material not in inventory");
+        return gameState;
+      }
     }
     return {
       ...gameState,
       player: {
         ...gameState.player,
         inventory: gameState.player.inventory.filter(
-          (item) => item !== material
+          (item) => !materials.includes(item)
         ),
       },
       materialPiles: [
         ...gameState.materialPiles,
-        { material, position: gameState.player.position },
+        ...materials.map((material) => ({
+          material,
+          position: gameState.player.position,
+        })),
       ],
     };
   };
 }
 
-export function moveMaterialToMachineAction(
-  material: MaterialInstance,
+export function moveMaterialsToMachineAction(
+  materials: ReadonlyArray<MaterialInstance>,
   machine: Machine
 ): GameAction {
   return (gameState) => {
-    if (!gameState.player.inventory.some((item) => item === material)) {
-      console.warn("Tried to move material not in inventory");
+    for (const material of materials) {
+      if (!gameState.player.inventory.some((item) => item === material)) {
+        console.warn("Tried to move material not in inventory");
+        return gameState;
+      }
     }
     return {
       ...gameState,
       player: {
         ...gameState.player,
         inventory: gameState.player.inventory.filter(
-          (item) => item !== material
+          (item) => !materials.includes(item)
         ),
       },
       machines: gameState.machines.map((m) =>
         m === machine
-          ? { ...m, inputMaterials: [...m.inputMaterials, material] }
+          ? { ...m, inputMaterials: [...m.inputMaterials, ...materials] }
           : m
       ),
     };
   };
 }
 
-export function takeInputFromMachineAction(
+export function takeInputsFromMachineAction(
   materials: ReadonlyArray<MaterialInstance>,
   machine: Machine
 ): GameAction {
   return (gameState) => {
-    if (
-      !materials.every((material) => machine.inputMaterials.includes(material))
-    ) {
-      console.warn("Tried to move material not in machine");
-      return gameState;
+    for (const material of materials) {
+      if (!machine.inputMaterials.includes(material)) {
+        console.warn("Tried to move material not in machine");
+        return gameState;
+      }
     }
     return {
       ...gameState,
@@ -124,16 +142,16 @@ export function takeInputFromMachineAction(
   };
 }
 
-export function takeOutputFromMachineAction(
+export function takeOutputsFromMachineAction(
   materials: ReadonlyArray<MaterialInstance>,
   machine: Machine
 ): GameAction {
   return (gameState) => {
-    if (
-      !materials.every((material) => machine.outputMaterials.includes(material))
-    ) {
-      console.warn("Tried to move material not in machine");
-      return gameState;
+    for (const material of materials) {
+      if (!machine.outputMaterials.includes(material)) {
+        console.warn("Tried to move material not in machine");
+        return gameState;
+      }
     }
     return {
       ...gameState,
@@ -180,7 +198,6 @@ export function operateMachineAction(machine: Machine): GameAction {
 
     for (const inputMaterial of machine.selectedOperation.inputMaterials) {
       for (let i = 0; i < inputMaterial.quantity; i++) {
-        // TODO: Quantity
         const index = inventory.findIndex((m) =>
           materialMeetsInput(m, inputMaterial)
         );

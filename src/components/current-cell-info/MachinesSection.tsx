@@ -4,8 +4,8 @@ import { Machine } from "../../game/Machine";
 import {
   operateMachineAction,
   setMachineOperationAction,
-  takeInputFromMachineAction,
-  takeOutputFromMachineAction,
+  takeInputsFromMachineAction,
+  takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
 import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
@@ -81,10 +81,10 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
             key={name}
             onClick={(event) => {
               if (event.shiftKey) {
-                applyAction(takeInputFromMachineAction(materials, machine));
+                applyAction(takeInputsFromMachineAction(materials, machine));
               } else {
                 applyAction(
-                  takeInputFromMachineAction([materials[0]], machine)
+                  takeInputsFromMachineAction([materials[0]], machine)
                 );
               }
             }}
@@ -101,10 +101,10 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
             key={name}
             onClick={(event) => {
               if (event.shiftKey) {
-                applyAction(takeOutputFromMachineAction(materials, machine));
+                applyAction(takeOutputsFromMachineAction(materials, machine));
               } else {
                 applyAction(
-                  takeOutputFromMachineAction([materials[0]], machine)
+                  takeOutputsFromMachineAction([materials[0]], machine)
                 );
               }
             }}

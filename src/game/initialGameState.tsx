@@ -72,5 +72,9 @@ function machine(
     inputMaterials: [],
     outputMaterials: [],
     selectedOperation: type.operations[0],
+    operationProgress: {
+      status: "notStarted",
+      ticksRemaining: 0,
+    },
   };
 }

@@ -5,6 +5,7 @@ import { PixiGraphics } from "../../utils/PixiGraphics";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
+const INCHES_PER_FOOT = 6; // yeah, that's dumb, I know
 export const BoardSprite: React.FC<
   {
     board: Omit<Board, "id" | "type">;
@@ -17,7 +18,7 @@ export const BoardSprite: React.FC<
       g.clear();
       g.beginFill(colorBySpecies[species].primary);
       const width = boardWidth * PIXELS_PER_INCH;
-      const height = boardLength * 6 * PIXELS_PER_INCH;
+      const height = boardLength * PIXELS_PER_INCH * INCHES_PER_FOOT;
       const depth = (thickness * PIXELS_PER_INCH) / 4;
       g.drawRect(-width / 2, -height / 2, width, height);
       g.endFill();
