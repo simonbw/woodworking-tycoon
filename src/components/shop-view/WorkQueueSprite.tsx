@@ -4,7 +4,7 @@ import { Vector, vectorEquals } from "../../game/Vectors";
 import { applyWorkItemAction } from "../../game/game-actions/work-item-actions";
 import { PixiGraphics } from "../../utils/PixiGraphics";
 import { useGameState } from "../useGameState";
-import { cellCenter } from "./ShopView";
+import { cellCenter } from "./shop-scale";
 
 export const WorkQueueSprite: React.FC = () => {
   const gameState = useGameState();

@@ -1,11 +1,11 @@
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
 import { MaterialPile } from "../../game/GameState";
-import { getMaterialName } from "../../game/getMaterialName";
+import { pickUpMaterialAction } from "../../game/game-actions/player-actions";
+import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
 import { useActionKeys } from "../consumerCountContext";
-import { useGameActions } from "../useGameActions";
-import { useGameState } from "../useGameState";
+import { useApplyGameAction, useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
 import { MaterialIcon } from "./MaterialIcon";
 
@@ -39,12 +39,12 @@ export const FloorListSection: React.FC = () => {
   );
 };
 const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
-  const { pickUpMaterial } = useGameActions();
+  const applyAction = useApplyGameAction();
   const actionKey = useActionKeys();
 
   useKeyDown((event) => {
     if (event.key === actionKey) {
-      pickUpMaterial(piles[0]);
+      applyAction(pickUpMaterialAction(piles[0]));
     }
   });
 
@@ -52,10 +52,10 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
     <li className="flex items-center gap-2">
       <MaterialIcon material={piles[0].material} />
       <span>{getMaterialName(piles[0].material)}</span>
-      {piles.length > 1 && <em>x{piles.length}</em>}
+      {piles.length > 1 && <em className="text-zinc-500">×{piles.length}</em>}
       <button
         className="button text-xs"
-        onClick={() => pickUpMaterial(piles[0])}
+        onClick={() => applyAction(pickUpMaterialAction(piles[0]))}
       >
         Pick Up{actionKey && <span> [{actionKey}]</span>}
       </button>

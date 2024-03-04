@@ -1,13 +1,16 @@
 import React from "react";
 import { MaterialInstance } from "../../game/Materials";
-import { getMaterialName } from "../../game/getMaterialName";
+import {
+  dropMaterialAction,
+  moveMaterialToMachineAction,
+} from "../../game/game-actions/player-actions";
+import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
 import { useActionKeys } from "../consumerCountContext";
-import { MaterialSprite } from "../shop-view/MaterialPileSprite";
-import { useGameActions } from "../useGameActions";
-import { useGameState } from "../useGameState";
+import { useApplyGameAction, useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
-import { MaterialIcon, SimpleSpriteStage } from "./MaterialIcon";
+import { MaterialIcon } from "./MaterialIcon";
+import { useCellMap } from "../../game/CellMap";
 
 export const InventorySection: React.FC = () => {
   const gameState = useGameState();
@@ -38,26 +41,37 @@ export const InventorySection: React.FC = () => {
 const InventoryListItem: React.FC<{
   materials: MaterialInstance[];
 }> = ({ materials }) => {
-  const { dropMaterial } = useGameActions();
-  const actionKey = useActionKeys();
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
 
-  useKeyDown((event) => {
-    if (event.key === actionKey) {
-      dropMaterial(materials[0]);
-    }
-  });
+  const cellMap = useCellMap();
+  const playerCell = cellMap.at(gameState.player.position);
+  const operableMachines = playerCell?.operableMachines;
 
   return (
     <li className="flex items-center gap-2">
       <MaterialIcon material={materials[0]} />
       <span>{getMaterialName(materials[0])}</span>
-      {materials.length > 1 && <em>x{materials.length}</em>}
+      {materials.length > 1 && (
+        <em className="text-zinc-500">×{materials.length}</em>
+      )}
       <button
         className="button text-xs"
-        onClick={() => dropMaterial(materials[0])}
+        onClick={() => applyAction(dropMaterialAction(materials[0]))}
       >
-        Drop{actionKey && <span> [{actionKey}]</span>}
+        Drop
       </button>
+      {operableMachines?.map((machine, index) => (
+        <button
+          key={index}
+          className="button text-xs"
+          onClick={() =>
+            applyAction(moveMaterialToMachineAction(materials[0], machine))
+          }
+        >
+          Move To {machine.type.name}
+        </button>
+      ))}
     </li>
   );
 };

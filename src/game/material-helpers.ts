@@ -1,9 +1,10 @@
+import { humanizeString } from "../utils/humanizeString";
 import { idMaker } from "../utils/idMaker";
-import { InputMaterial } from "./MachineType";
-import { Board, BoardDimension, MaterialInstance } from "./Materials";
+import { BOARD_DIMENSIONS, MaterialInstance, Pallet } from "./Materials";
 
 const makeId = idMaker();
 
+// TODO: This is all wrong somehow
 export function makeMaterial<T extends MaterialInstance>(
   materialInitializer: Omit<T, "id">
 ): T {
@@ -13,49 +14,71 @@ export function makeMaterial<T extends MaterialInstance>(
   } as T; // TODO: Why is this cast necessary?
 }
 
-/** Syntactic sugar to create a board material instance */
-export function board(
-  species: Board["species"] = "pallet",
-  length: Board["length"] = 1,
-  width: Board["width"] = 1,
-  thickness: Board["thickness"] = 1
-): MaterialInstance & { type: "board" } {
-  return makeMaterial({
-    type: "board",
-    species,
-    length,
-    width,
-    thickness,
+export function makePallet() {
+  return makeMaterial<Pallet>({
+    type: "pallet",
+    deckBoardsLeft: [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ],
+    stringerBoardsLeft: 3,
   });
 }
 
-export function boardInput({}: BoardDimension[]): InputMaterial<Board> {
-  return {
-    type: ["board"],
-  };
-}
-
-export function isBoard(material: MaterialInstance): material is Board {
-  return material.type === "board";
-}
-
-/** Takes an input board and cuts it into two boards of the specified size */
-export function cutBoard(
-  inputBoard: Board,
-  outputSize: BoardDimension,
-  dimension: "length" | "width" | "thickness",
-  waste: number = 0
-): [Board, Board] {
-  const startingDimension = inputBoard[dimension];
-
-  if (startingDimension <= outputSize) {
-    throw new Error("Board is too small to cut");
+export function getMaterialName(material: MaterialInstance): string {
+  switch (material.type) {
+    case "board": {
+      const { species, width, length, thickness } = material;
+      return `${humanizeString(
+        species
+      )} Board (${length}'x${width}"x${thickness}/4)`;
+    }
+    default:
+      return humanizeString(material.type);
   }
+}
 
-  const offcutSize = (inputBoard.length - outputSize - waste) as BoardDimension;
+// Returns the amount of space an item takes up in the inventory
+export function getMaterialInventorySize(material: MaterialInstance): number {
+  switch (material.type) {
+    case "pallet":
+      return 100;
 
-  return [
-    { ...inputBoard, [dimension]: outputSize },
-    { ...inputBoard, [dimension]: offcutSize },
-  ];
+    case "board": {
+      const { length, width, thickness } = material;
+      const size = length * width * thickness;
+      const maxDimension = Math.max(...BOARD_DIMENSIONS);
+      const maxSize = maxDimension * maxDimension * maxDimension;
+      return (size / maxSize) * 100;
+    }
+
+    case "jewelryBox":
+      return 10;
+
+    case "shelf":
+      return 20;
+
+    case "simpleCuttingBoard":
+      return 10;
+
+    case "plywood": {
+      const { length, width, thickness } = material;
+      const size = length * width * thickness;
+      const maxDimension = Math.max(...BOARD_DIMENSIONS);
+      const maxSize = maxDimension * maxDimension * maxDimension;
+      return (size / maxSize) * 100;
+    }
+
+    default:
+      return 10;
+  }
 }

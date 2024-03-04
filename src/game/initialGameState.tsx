@@ -1,14 +1,21 @@
-import { GameState, Machine } from "./GameState";
-import { MACHINES, MachineType } from "./MachineType";
+import { boolean } from "zod";
+import { array } from "../utils/arrayUtils";
+import { GameState } from "./GameState";
+import { Machine } from "./Machine";
+import { MACHINE_TYPES, MachineType } from "./Machine";
+import { Pallet } from "./Materials";
 import { Direction } from "./Vectors";
-import { makeMaterial } from "./material-helpers";
+import { makeMaterial, makePallet } from "./material-helpers";
 
 export const initialGameState: GameState = {
   tick: 0,
   money: 0,
   reputation: 0,
   materialPiles: [
-    { material: makeMaterial({ type: "pallet" }), position: [3, 5] },
+    {
+      material: makePallet(),
+      position: [3, 5],
+    },
   ],
   player: {
     name: "Player",
@@ -17,27 +24,25 @@ export const initialGameState: GameState = {
     inventory: [],
     workQueue: [],
     canWork: true,
+    currentMachine: null,
   },
   machines: [
     // left workstation
-    machine(MACHINES.makeshiftBench, [0, 1], 1),
-    machine(MACHINES.makeshiftBench, [0, 2], 1),
-    machine(MACHINES.makeshiftBench, [0, 3], 1),
-    machine(MACHINES.workspace, [0, 2], 1),
+    machine(MACHINE_TYPES.makeshiftBench, [0, 1], 1),
+    machine(MACHINE_TYPES.workspace, [0, 1], 1),
 
     // miter station
-    machine(MACHINES.makeshiftBench, [3, 0], 3),
-    machine(MACHINES.makeshiftBench, [3, 1], 3),
-    machine(MACHINES.makeshiftBench, [3, 2], 3),
-    machine(MACHINES.miterSaw, [3, 1], 3),
+    machine(MACHINE_TYPES.makeshiftBench, [3, 0], 3),
+    machine(MACHINE_TYPES.makeshiftBench, [3, 1], 3),
+    machine(MACHINE_TYPES.makeshiftBench, [3, 2], 3),
+    machine(MACHINE_TYPES.miterSaw, [3, 1], 3),
 
-    machine(MACHINES.jobsiteTableSaw, [2, 4], 2),
-
-    // floor thing
-    machine(MACHINES.workspace, [0, 5], 2),
+    // Freestanding tools
+    machine(MACHINE_TYPES.jobsiteTableSaw, [2, 4], 2),
+    machine(MACHINE_TYPES.lunchboxPlaner, [0, 3], 0),
   ],
   storage: {
-    machines: [MACHINES.miterSaw, MACHINES.jobsiteTableSaw],
+    machines: [MACHINE_TYPES.miterSaw, MACHINE_TYPES.jobsiteTableSaw],
   },
   commissions: [
     {
@@ -60,5 +65,12 @@ function machine(
   position: [number, number],
   rotation: Direction
 ): Machine {
-  return { type, position, rotation, materials: [] };
+  return {
+    type,
+    position,
+    rotation,
+    inputMaterials: [],
+    outputMaterials: [],
+    selectedOperation: type.operations[0],
+  };
 }

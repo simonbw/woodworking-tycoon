@@ -1,5 +1,8 @@
 // Represents length, width, or thickness.
 
+import { boolean } from "zod";
+import { Tuple } from "../utils/typeUtils";
+
 export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export type BoardDimension = (typeof BOARD_DIMENSIONS)[number];
 
@@ -11,6 +14,7 @@ export const SPECIES = [
   "cherry",
   "walnut",
   "mahogany",
+  "purpleHeart",
 ] as const;
 
 export type Species = (typeof SPECIES)[number];
@@ -50,6 +54,8 @@ export type FinishedProduct = {
 export type Pallet = {
   readonly id: string;
   readonly type: "pallet";
+  readonly deckBoardsLeft: Tuple<boolean, 11>;
+  readonly stringerBoardsLeft: number;
 };
 
 export type MaterialInstance = Pallet | Board | SheetGood | FinishedProduct;

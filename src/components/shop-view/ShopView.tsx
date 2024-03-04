@@ -1,8 +1,6 @@
-// import "@pixi/events";
-import { Container, Stage } from "@pixi/react";
+import { Container, Stage, TilingSprite } from "@pixi/react";
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
-import { Vector } from "../../game/Vectors";
 import {
   gameStateContext,
   useApplyGameAction,
@@ -14,17 +12,7 @@ import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { WorkQueueSprite } from "./WorkQueueSprite";
-
-export const CELL_SIZE = 100;
-export const SPACING = 2;
-
-export function scaled(n: number): number {
-  return n * CELL_SIZE;
-}
-
-export function cellCenter(position: Vector): Vector {
-  return [scaled(position[0] + 0.5), scaled(position[1] + 0.5)];
-}
+import { scaled, scaledVec } from "./shop-scale";
 
 export const ShopView: React.FC = () => {
   const gameState = useGameState();
@@ -47,6 +35,14 @@ export const ShopView: React.FC = () => {
         height={height}
         options={{ backgroundAlpha: 0, antialias: true, eventMode: "auto" }}
       >
+        <TilingSprite
+          eventMode="static"
+          image={"/images/concrete-floor-2-big.png"}
+          tilePosition={[0, 0]}
+          tileScale={0.25}
+          width={width}
+          height={height}
+        />
         <gameStateContext.Provider value={{ gameState, updateGameState }}>
           {cellMap.getCells().map((cell) => (
             <FloorTileSprite
@@ -57,8 +53,7 @@ export const ShopView: React.FC = () => {
           {materialPileGroups.map((materialPiles, i) => (
             <Container
               key={`pile${materialPiles[0].position.join(",")}`}
-              x={materialPiles[0].position[0] * CELL_SIZE}
-              y={materialPiles[0].position[1] * CELL_SIZE}
+              position={scaledVec(materialPiles[0].position)}
             >
               <MaterialPilesSprite materialPiles={materialPiles} />
             </Container>
@@ -68,7 +63,7 @@ export const ShopView: React.FC = () => {
               key={
                 machinePlacement.type.id + machinePlacement.position.join(",")
               }
-              machinePlacement={machinePlacement}
+              machine={machinePlacement}
             />
           ))}
           <WorkQueueSprite />

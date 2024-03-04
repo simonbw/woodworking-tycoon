@@ -2,7 +2,7 @@ import React from "react";
 import { DebugView } from "./DebugView";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
-import { StorePage } from "./StorePage";
+import { StorePage } from "./store-page/StorePage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { ActionKeyContextProvider } from "./consumerCountContext";
 import { GameStateProvider } from "./useGameState";

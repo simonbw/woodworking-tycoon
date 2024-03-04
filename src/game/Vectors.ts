@@ -1,4 +1,4 @@
-export type Vector = readonly [number, number];
+export type Vector = [number, number];
 
 export type Direction = 0 | 1 | 2 | 3;
 

@@ -11,7 +11,7 @@ import {
 import { colors } from "../../utils/colors";
 import { findPath } from "../../utils/pathingUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { CELL_SIZE, SPACING } from "./ShopView";
+import { CELL_SIZE, SPACING } from "./shop-scale";
 
 export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
   const applyAction = useApplyGameAction();
@@ -33,6 +33,7 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
       x={cell.position[0] * CELL_SIZE}
       y={cell.position[1] * CELL_SIZE}
       draw={draw}
+      alpha={0.1}
       click={() => {
         const startPosition = getWorkQueueEndState(gameState).player.position;
 
@@ -54,7 +55,6 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
             )
           );
         }
-        console.log("Clicked on cell", cell.position, path);
       }}
     />
   );

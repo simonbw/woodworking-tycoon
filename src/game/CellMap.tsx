@@ -1,7 +1,8 @@
 import { LRUCache } from "typescript-lru-cache";
 import { getMachineCells } from "../components/useGameHelpers";
 import { useGameState } from "../components/useGameState";
-import { GameState, Machine, MaterialPile } from "./GameState";
+import { GameState, MaterialPile } from "./GameState";
+import { Machine } from "./Machine";
 import { Vector, rotateVec, translateVec } from "./Vectors";
 
 export type CellInfo = {

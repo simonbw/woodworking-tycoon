@@ -1,10 +1,7 @@
 import { useRef } from "react";
-import { Commission, Machine } from "../game/GameState";
-import {
-  InputMaterial,
-  MachineOperation,
-  MachineType,
-} from "../game/MachineType";
+import { Commission } from "../game/GameState";
+import { Machine } from "../game/Machine";
+import { InputMaterial, MachineOperation, MachineType } from "../game/Machine";
 import { MaterialInstance } from "../game/Materials";
 import { Vector, rotateVec, translateVec } from "../game/Vectors";
 import { useGameState } from "./useGameState";
@@ -66,6 +63,18 @@ export function getMachineCells(
   );
 }
 
+export function materialToInput<T extends MaterialInstance = MaterialInstance>(
+  material: T
+): InputMaterial<T> {
+  const result: InputMaterial<T> = {};
+  for (const key in material) {
+    if (key !== "id") {
+      result[key] = [material[key]];
+    }
+  }
+  return result;
+}
+
 export function materialMeetsInput(
   material: MaterialInstance,
   inputMaterial: InputMaterial
@@ -84,5 +93,27 @@ export function materialMeetsInput(
       return false;
     }
   }
+  return true;
+}
+
+export function machineCanOperate(machine: Machine): boolean {
+  const inventory = [...machine.inputMaterials];
+
+  const materialsToConsume: MaterialInstance[] = [];
+
+  for (const inputMaterial of machine.selectedOperation.inputMaterials) {
+    for (let i = 0; i < inputMaterial.quantity; i++) {
+      // TODO: Quantity
+      const index = inventory.findIndex((m) =>
+        materialMeetsInput(m, inputMaterial)
+      );
+      if (index === -1) {
+        return false;
+      }
+      materialsToConsume.push(inventory[index]);
+      inventory.splice(index, 1);
+    }
+  }
+
   return true;
 }

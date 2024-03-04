@@ -25,6 +25,8 @@ export const tickAction: GameAction = (gameState) => {
     };
   }
 
+  // TODO: Update all machines in progress?
+
   return {
     ...gameState,
     tick: gameState.tick + 1,

@@ -6,7 +6,7 @@ import { NavBar } from "./NavBar";
 import { Ticker } from "./Ticker";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
 import { InventorySection } from "./current-cell-info/InventorySection";
-import { MachineListSection } from "./current-cell-info/MachineListSection";
+import { MachinesSection } from "./current-cell-info/MachinesSection";
 import { ShopView } from "./shop-view/ShopView";
 
 export const HomePage: React.FC = () => {
@@ -32,7 +32,7 @@ export const HomePage: React.FC = () => {
             <h2 className="section-heading">Floor</h2>
             <FloorListSection />
           </section>
-          <MachineListSection />
+          <MachinesSection />
           <ActionBar />
         </div>
       </div>

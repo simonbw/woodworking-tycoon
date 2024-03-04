@@ -5,9 +5,23 @@
 
 @import "tailwindcss/utilities";
 
-html {
-  font-size: 18px;
-  @apply bg-zinc-800 text-zinc-100;
+@layer base {
+  html {
+    font-size: 18px;
+    @apply bg-zinc-800 text-zinc-100 select-none;
+  }
+
+  select {
+    @apply bg-zinc-700 p-1 rounded;
+  }
+
+  label {
+    @apply flex flex-col;
+  }
+
+  label > span {
+    @apply text-sm;
+  }
 }
 
 @layer components {

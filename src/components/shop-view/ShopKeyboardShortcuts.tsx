@@ -1,10 +1,9 @@
 import React from "react";
-import { useGameActions } from "../useGameActions";
-import { useKeyDown } from "../useKeyDown";
-import { useApplyGameAction } from "../useGameState";
+import { combineActions } from "../../game/game-actions/misc-actions";
 import { instaMovePlayerAction } from "../../game/game-actions/player-actions";
 import { clearWorkQueueAction } from "../../game/game-actions/work-item-actions";
-import { combineActions } from "../../game/game-actions/misc-actions";
+import { useApplyGameAction } from "../useGameState";
+import { useKeyDown } from "../useKeyDown";
 
 export const ShopKeyboardShortcuts: React.FC = () => {
   const applyAction = useApplyGameAction();

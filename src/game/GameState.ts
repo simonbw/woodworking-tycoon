@@ -1,8 +1,9 @@
-import { InputMaterialWithQuantity, MachineType } from "./MachineType";
+import { Machine } from "./Machine";
+import { InputMaterialWithQuantity, MachineType } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
-import { Direction, Vector } from "./Vectors";
+import { Vector } from "./Vectors";
 
 export type MaterialPile = {
   material: MaterialInstance;
@@ -24,13 +25,6 @@ export interface GameState {
   readonly storage: {
     machines: ReadonlyArray<MachineType>;
   };
-}
-
-export interface Machine {
-  readonly type: MachineType;
-  readonly position: Vector;
-  readonly rotation: Direction;
-  readonly materials: ReadonlyArray<MaterialInstance>;
 }
 
 export interface Commission {
