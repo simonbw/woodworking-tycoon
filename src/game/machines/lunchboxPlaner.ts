@@ -13,6 +13,7 @@ export const lunchboxPlaner: MachineType = {
   cost: 450,
   materialStorage: 0,
   toolStorage: 0,
+  inputSpaces: 1,
   operations: [
     ...BOARD_DIMENSIONS.filter(
       // you can't plane something down to the maximum dimension

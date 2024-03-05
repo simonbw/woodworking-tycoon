@@ -12,6 +12,7 @@ export const miterSaw: MachineType = {
   cost: 150,
   materialStorage: 0,
   toolStorage: 0,
+  inputSpaces: 1,
   operations: [
     ...BOARD_DIMENSIONS.map(
       (length): MachineOperation => ({

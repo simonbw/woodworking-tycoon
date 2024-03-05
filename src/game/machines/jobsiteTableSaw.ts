@@ -1,10 +1,10 @@
+import {
+  InputMaterialWithQuantity,
+  MachineOperation,
+  MachineType,
+} from "../Machine";
 import { BOARD_DIMENSIONS, Board } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
-import {
-  MachineType,
-  MachineOperation,
-  InputMaterialWithQuantity,
-} from "../Machine";
 
 export const jobsiteTableSaw: MachineType = {
   id: "jobsiteTableSaw",
@@ -19,6 +19,7 @@ export const jobsiteTableSaw: MachineType = {
   cost: 300,
   materialStorage: 0,
   toolStorage: 0,
+  inputSpaces: 1,
   operations: [
     ...BOARD_DIMENSIONS.map(
       (width): MachineOperation => ({

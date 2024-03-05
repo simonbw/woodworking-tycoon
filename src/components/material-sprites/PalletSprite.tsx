@@ -4,7 +4,7 @@ import { Pallet } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
 import { array } from "../../utils/arrayUtils";
 import { lerp } from "../../utils/mathUtils";
-import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import { BoardSprite } from "./BoardSprite";
 
 export const MAX_STRINGERS = 3;
@@ -12,17 +12,17 @@ export const MAX_TOP_DECK = 7;
 export const MAX_BOTTOM_DECK = 4;
 
 export const PalletSprite: React.FC<{ pallet: Pallet }> = ({ pallet }) => {
-  const bottom = pallet.deckBoardsLeft.slice(0, MAX_BOTTOM_DECK);
-  const top = pallet.deckBoardsLeft.slice(
+  const bottom = pallet.deckBoards.slice(0, MAX_BOTTOM_DECK);
+  const top = pallet.deckBoards.slice(
     MAX_BOTTOM_DECK,
     MAX_BOTTOM_DECK + MAX_TOP_DECK
   );
 
-  const deckBoard = useMemo(() => board("pallet", 3, 2, 2), []);
+  const deckBoard = useMemo(() => board("pallet", 3, 4, 2), []);
   const stringerBoard = useMemo(() => board("pallet", 4, 1, 2), []);
 
-  const totalWidth = (42 * PIXELS_PER_INCH) / 2;
-  const totalHeight = (32 * PIXELS_PER_INCH) / 2;
+  const totalWidth = (4 * INCHES_PER_FOOT - 2) * PIXELS_PER_INCH;
+  const totalHeight = (3 * INCHES_PER_FOOT - 2) * PIXELS_PER_INCH;
 
   return (
     <Container x={-totalWidth / 2} y={-totalHeight / 2}>

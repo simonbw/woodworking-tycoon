@@ -1,5 +1,6 @@
 import { humanizeString } from "../utils/humanizeString";
 import { idMaker } from "../utils/idMaker";
+import { InputMaterial } from "./Machine";
 import { BOARD_DIMENSIONS, MaterialInstance, Pallet } from "./Materials";
 
 const makeId = idMaker();
@@ -17,7 +18,7 @@ export function makeMaterial<T extends MaterialInstance>(
 export function makePallet() {
   return makeMaterial<Pallet>({
     type: "pallet",
-    deckBoardsLeft: [
+    deckBoards: [
       true,
       true,
       true,
@@ -81,4 +82,37 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
     default:
       return 10;
   }
+}
+
+export function materialToInput<T extends MaterialInstance = MaterialInstance>(
+  material: T
+): InputMaterial<T> {
+  const result: InputMaterial<T> = {};
+  for (const key in material) {
+    if (key !== "id") {
+      result[key] = [material[key]];
+    }
+  }
+  return result;
+}
+
+export function materialMeetsInput(
+  material: MaterialInstance,
+  inputMaterial: InputMaterial
+) {
+  for (const key of Object.keys(inputMaterial)) {
+    // Make sure to skip quantity, because that's not a property of the material
+    if (key === "quantity") {
+      continue;
+    } else if (!(key in material)) {
+      return false;
+    } else if (
+      !(inputMaterial as Record<string, unknown[]>)[key].includes(
+        (material as Record<string, unknown>)[key]
+      )
+    ) {
+      return false;
+    }
+  }
+  return true;
 }

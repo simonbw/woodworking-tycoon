@@ -1,5 +1,4 @@
 import { LRUCache } from "typescript-lru-cache";
-import { getMachineCells } from "../components/useGameHelpers";
 import { useGameState } from "../components/useGameState";
 import { GameState, MaterialPile } from "./GameState";
 import { Machine } from "./Machine";
@@ -98,7 +97,9 @@ export class CellMap {
   }
 
   addMachine(machine: Machine) {
-    const machineCells = getMachineCells(machine);
+    const machineCells = machine.type.cellsOccupied.map((cell) =>
+      translateVec(rotateVec(cell, machine.rotation), machine.position)
+    );
     for (const position of machineCells) {
       this._at(position)!.machine = machine;
     }

@@ -11,4 +11,5 @@ export const makeshiftBench: MachineType = {
   toolStorage: 0,
   className: "fill-brown-800 drop-shadow-md",
   operations: [],
+  inputSpaces: 0,
 };

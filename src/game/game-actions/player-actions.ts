@@ -1,4 +1,4 @@
-import { materialMeetsInput } from "../../components/useGameHelpers";
+import { materialMeetsInput } from "../material-helpers";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
 import { Machine, MachineOperation } from "../Machine";
@@ -88,6 +88,13 @@ export function moveMaterialsToMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
+    const spacesRemaining =
+      machine.type.inputSpaces - machine.inputMaterials.length;
+    if (materials.length > spacesRemaining) {
+      console.warn("Tried to move too many materials to machine");
+      return gameState;
+    }
+
     for (const material of materials) {
       if (!gameState.player.inventory.some((item) => item === material)) {
         console.warn("Tried to move material not in inventory");

@@ -18,6 +18,7 @@ export interface MachineType {
   readonly materialStorage: number;
   readonly toolStorage: number;
   readonly className?: string;
+  readonly inputSpaces: number;
 }
 
 export const MACHINE_TYPES = {

@@ -11,14 +11,14 @@ import {
 import { colors } from "../../utils/colors";
 import { findPath } from "../../utils/pathingUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { CELL_SIZE, SPACING } from "./shop-scale";
+import { PIXELS_PER_CELL, SPACING } from "./shop-scale";
 
 export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
   const cellMap = useCellMap();
 
-  const size = CELL_SIZE - SPACING * 2;
+  const size = PIXELS_PER_CELL - SPACING * 2;
   const draw = useCallback((g: PixiGraphics) => {
     g.clear();
     g.beginFill(colors.zinc[700]);
@@ -30,8 +30,8 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
   return (
     <Graphics
       eventMode="static"
-      x={cell.position[0] * CELL_SIZE}
-      y={cell.position[1] * CELL_SIZE}
+      x={cell.position[0] * PIXELS_PER_CELL}
+      y={cell.position[1] * PIXELS_PER_CELL}
       draw={draw}
       alpha={0.1}
       click={() => {

@@ -7,9 +7,9 @@ import {
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
+import { machineCanOperate } from "../../game/machine-helpers";
 import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
-import { machineCanOperate } from "../useGameHelpers";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { MaterialIcon } from "./MaterialIcon";
 

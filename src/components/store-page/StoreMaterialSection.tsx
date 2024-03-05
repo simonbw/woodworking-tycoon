@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { MaterialInstance } from "../../game/Materials";
 import { getMaterialName, makeMaterial } from "../../game/material-helpers";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
-import { materialMeetsInput, materialToInput } from "../useGameHelpers";
+import { materialMeetsInput } from "../../game/material-helpers";
+import { materialToInput } from "../../game/material-helpers";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 interface MaterialSaleInfo {

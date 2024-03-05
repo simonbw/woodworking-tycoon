@@ -54,7 +54,7 @@ export type FinishedProduct = {
 export type Pallet = {
   readonly id: string;
   readonly type: "pallet";
-  readonly deckBoardsLeft: Tuple<boolean, 11>;
+  readonly deckBoards: Tuple<boolean, 11>;
   readonly stringerBoardsLeft: number;
 };
 

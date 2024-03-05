@@ -1,17 +1,27 @@
 import { Vector } from "../../game/Vectors";
 
-export const PIXELS_PER_INCH = 4;
-export const CELL_SIZE = 28 * PIXELS_PER_INCH;
+export const PIXELS_PER_INCH = 4; // the main defining scale
+export const INCHES_PER_FOOT = 12; // yeah, that's dumb, I know
+export const INCHES_PER_CELL = 32;
+export const PIXELS_PER_CELL = INCHES_PER_CELL * PIXELS_PER_INCH;
 export const SPACING = 0;
 
-export function scaled(n: number): number {
-  return n * CELL_SIZE;
+export function feetToPixels(n: number): number {
+  return n * INCHES_PER_FOOT * PIXELS_PER_INCH;
 }
 
-export function scaledVec([x, y]: Vector): Vector {
-  return [scaled(x), scaled(y)];
+export function inchesToPixels(n: number): number {
+  return n * PIXELS_PER_INCH;
 }
 
-export function cellCenter(position: Vector): Vector {
-  return [scaled(position[0] + 0.5), scaled(position[1] + 0.5)];
+export function cellToPixel(n: number): number {
+  return n * PIXELS_PER_CELL;
+}
+
+export function cellToPixelVec([x, y]: Vector): Vector {
+  return [cellToPixel(x), cellToPixel(y)];
+}
+
+export function cellToPixelCenter(position: Vector): Vector {
+  return [cellToPixel(position[0] + 0.5), cellToPixel(position[1] + 0.5)];
 }

@@ -4,7 +4,7 @@ import { Vector, vectorEquals } from "../../game/Vectors";
 import { applyWorkItemAction } from "../../game/game-actions/work-item-actions";
 import { PixiGraphics } from "../../utils/PixiGraphics";
 import { useGameState } from "../useGameState";
-import { cellCenter } from "./shop-scale";
+import { cellToPixelCenter } from "./shop-scale";
 
 export const WorkQueueSprite: React.FC = () => {
   const gameState = useGameState();
@@ -27,10 +27,10 @@ export const WorkQueueSprite: React.FC = () => {
     (g: PixiGraphics) => {
       g.clear();
       g.lineStyle(8, 0x87ceeb, 0.5);
-      const [startX, startY] = cellCenter(positions[0]);
+      const [startX, startY] = cellToPixelCenter(positions[0]);
       g.moveTo(startX, startY);
       for (const position of positions.slice(1)) {
-        const [x, y] = cellCenter(position);
+        const [x, y] = cellToPixelCenter(position);
         g.lineTo(x, y);
       }
     },

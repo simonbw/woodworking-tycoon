@@ -14,6 +14,7 @@ export const workspace: MachineType = {
   cost: 0,
   materialStorage: 0,
   toolStorage: 0,
+  inputSpaces: 1,
   operations: [
     {
       name: "Dismantle Pallet",
@@ -26,22 +27,29 @@ export const workspace: MachineType = {
           throw new Error("Input material is not a pallet");
         }
 
-        if (inputPallet.deckBoardsLeft.every((board) => board === false)) {
+        const deckBoardsCount = inputPallet.deckBoards.filter(
+          (board) => board
+        ).length;
+        if (deckBoardsCount <= 1) {
+          const stringers = array(3).map(() => board("pallet", 4, 6, 3));
+          const deckBoards = array(deckBoardsCount).map(() =>
+            board("pallet", 3, 4, 1)
+          );
           return {
             inputs: [],
-            outputs: array(3).map(() => board("pallet", 4, 6, 3)),
+            outputs: [...stringers, ...deckBoards],
           };
         } else {
           const deckBoardsLeft = [
-            ...inputPallet.deckBoardsLeft,
-          ] as typeof inputPallet.deckBoardsLeft;
+            ...inputPallet.deckBoards,
+          ] as typeof inputPallet.deckBoards;
           const index = deckBoardsLeft.findLastIndex((board) => board === true);
           deckBoardsLeft[index] = false;
           return {
             inputs: [
               makeMaterial<Pallet>({
                 ...inputPallet,
-                deckBoardsLeft,
+                deckBoards: deckBoardsLeft,
               }),
             ],
             outputs: [board("pallet", 3, 4, 1)],

@@ -10,7 +10,7 @@ import {
 import { FloorTileSprite } from "./FloorTileSprite";
 import { MachineSprite } from "./MachineSprite";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
-import { CELL_SIZE, scaled } from "./shop-scale";
+import { PIXELS_PER_CELL, cellToPixel } from "./shop-scale";
 
 export const ShopLayoutView: React.FC = () => {
   const gameState = useGameState();
@@ -22,8 +22,8 @@ export const ShopLayoutView: React.FC = () => {
     .filter((cell) => cell.materialPiles.length > 0)
     .map((cell) => cell.materialPiles);
 
-  const width = scaled(cellMap.getWidth());
-  const height = scaled(cellMap.getHeight());
+  const width = cellToPixel(cellMap.getWidth());
+  const height = cellToPixel(cellMap.getHeight());
 
   return (
     <Stage
@@ -41,8 +41,8 @@ export const ShopLayoutView: React.FC = () => {
         {materialPileGroups.map((materialPiles, i) => (
           <Container
             key={`pile${materialPiles[0].position.join(",")}`}
-            x={materialPiles[0].position[0] * CELL_SIZE}
-            y={materialPiles[0].position[1] * CELL_SIZE}
+            x={materialPiles[0].position[0] * PIXELS_PER_CELL}
+            y={materialPiles[0].position[1] * PIXELS_PER_CELL}
           >
             <MaterialPilesSprite materialPiles={materialPiles} />
           </Container>

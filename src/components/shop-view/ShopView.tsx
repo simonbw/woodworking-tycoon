@@ -12,7 +12,7 @@ import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { WorkQueueSprite } from "./WorkQueueSprite";
-import { scaled, scaledVec } from "./shop-scale";
+import { cellToPixel, cellToPixelVec } from "./shop-scale";
 
 export const ShopView: React.FC = () => {
   const gameState = useGameState();
@@ -24,8 +24,8 @@ export const ShopView: React.FC = () => {
     .filter((cell) => cell.materialPiles.length > 0)
     .map((cell) => cell.materialPiles);
 
-  const width = scaled(cellMap.getWidth());
-  const height = scaled(cellMap.getHeight());
+  const width = cellToPixel(cellMap.getWidth());
+  const height = cellToPixel(cellMap.getHeight());
 
   return (
     <>
@@ -53,7 +53,7 @@ export const ShopView: React.FC = () => {
           {materialPileGroups.map((materialPiles, i) => (
             <Container
               key={`pile${materialPiles[0].position.join(",")}`}
-              position={scaledVec(materialPiles[0].position)}
+              position={cellToPixelVec(materialPiles[0].position)}
             >
               <MaterialPilesSprite materialPiles={materialPiles} />
             </Container>

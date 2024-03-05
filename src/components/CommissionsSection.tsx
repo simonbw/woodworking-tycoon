@@ -1,7 +1,6 @@
 import React from "react";
 import { Commission } from "../game/GameState";
 import { completeCommissionAction } from "../game/game-actions/store-actions";
-import { useGameHelpers } from "./useGameHelpers";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 export const CommissionsSection: React.FC = () => {
@@ -21,7 +20,6 @@ export const CommissionsSection: React.FC = () => {
 const CommissionListItem: React.FC<{
   commission: Commission;
 }> = ({ commission }) => {
-  const { canCompleteCommission } = useGameHelpers();
   const applyAction = useApplyGameAction();
   const name = commission.requiredMaterials
     .map((material) => `${material.type} (x${material.quantity})`)
@@ -30,7 +28,7 @@ const CommissionListItem: React.FC<{
     <li className="flex gap-1 items-center">
       <span>{name}</span>
       <button
-        disabled={!canCompleteCommission(commission)}
+        disabled
         className="button"
         onClick={() => applyAction(completeCommissionAction(commission))}
       >

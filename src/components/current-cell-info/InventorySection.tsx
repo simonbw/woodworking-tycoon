@@ -1,4 +1,5 @@
 import React from "react";
+import { useCellMap } from "../../game/CellMap";
 import { MaterialInstance } from "../../game/Materials";
 import {
   dropMaterialAction,
@@ -6,11 +7,8 @@ import {
 } from "../../game/game-actions/player-actions";
 import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
-import { useActionKeys } from "../consumerCountContext";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { useKeyDown } from "../useKeyDown";
 import { MaterialIcon } from "./MaterialIcon";
-import { useCellMap } from "../../game/CellMap";
 
 export const InventorySection: React.FC = () => {
   const gameState = useGameState();

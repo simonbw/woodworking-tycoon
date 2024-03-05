@@ -9,7 +9,7 @@ import { board } from "../../game/board-helpers";
 import { getMaterialName } from "../../game/material-helpers";
 import { humanizeString } from "../../utils/humanizeString";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
-import { materialMeetsInput } from "../useGameHelpers";
+import { materialMeetsInput } from "../../game/material-helpers";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const BoardSelector: React.FC = () => {

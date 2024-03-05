@@ -2,7 +2,7 @@ import { Container, Stage } from "@pixi/react";
 import React, { ReactNode } from "react";
 import { MaterialInstance } from "../../game/Materials";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
-import { CELL_SIZE, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import {
   colorBySheetGoodKind,
   colorBySpecies,
@@ -15,8 +15,8 @@ export const SimpleSpriteStage: React.FC<{
 }> = ({ children, scale = 0.5 }) => {
   return (
     <Stage
-      width={CELL_SIZE * scale}
-      height={CELL_SIZE * scale}
+      width={PIXELS_PER_CELL * scale}
+      height={PIXELS_PER_CELL * scale}
       raf={false}
       options={{
         backgroundAlpha: 0,
@@ -25,8 +25,8 @@ export const SimpleSpriteStage: React.FC<{
       className="rounded bg-zinc-700 p-0.5"
     >
       <Container
-        y={(CELL_SIZE / 2) * scale}
-        x={(CELL_SIZE / 2) * scale}
+        y={(PIXELS_PER_CELL / 2) * scale}
+        x={(PIXELS_PER_CELL / 2) * scale}
         scale={scale}
       >
         {children}
@@ -59,17 +59,20 @@ export const MaterialIcon: React.FC<{
 
       return (
         <Wrapper size={size} quantity={quantity}>
-          <svg viewBox={`0 0 ${CELL_SIZE} ${CELL_SIZE}`} className="w-full">
+          <svg
+            viewBox={`0 0 ${PIXELS_PER_CELL} ${PIXELS_PER_CELL}`}
+            className="w-full"
+          >
             <rect
-              x={CELL_SIZE / 2 - width / 2}
-              y={CELL_SIZE / 2 - height / 2}
+              x={PIXELS_PER_CELL / 2 - width / 2}
+              y={PIXELS_PER_CELL / 2 - height / 2}
               width={width}
               height={height}
               fill={colorBySpecies[board.species].primary}
             />
             <rect
-              x={CELL_SIZE / 2 + width / 2}
-              y={CELL_SIZE / 2 - height / 2}
+              x={PIXELS_PER_CELL / 2 + width / 2}
+              y={PIXELS_PER_CELL / 2 - height / 2}
               width={depth}
               height={height}
               fill={colorBySpecies[board.species].secondary}
@@ -87,17 +90,20 @@ export const MaterialIcon: React.FC<{
 
       return (
         <Wrapper size={size}>
-          <svg viewBox={`0 0 ${CELL_SIZE} ${CELL_SIZE}`} className="w-full">
+          <svg
+            viewBox={`0 0 ${PIXELS_PER_CELL} ${PIXELS_PER_CELL}`}
+            className="w-full"
+          >
             <rect
-              x={CELL_SIZE / 2 - width / 2}
-              y={CELL_SIZE / 2 - height / 2}
+              x={PIXELS_PER_CELL / 2 - width / 2}
+              y={PIXELS_PER_CELL / 2 - height / 2}
               width={width}
               height={height}
               fill={colorBySheetGoodKind[board.kind].primary}
             />
             <rect
-              x={CELL_SIZE / 2 + width / 2 - depth}
-              y={CELL_SIZE / 2 - height / 2}
+              x={PIXELS_PER_CELL / 2 + width / 2 - depth}
+              y={PIXELS_PER_CELL / 2 - height / 2}
               width={depth}
               height={height}
               fill={"#00000033"}
