@@ -35,15 +35,15 @@ export const ShopView: React.FC = () => {
         height={height}
         options={{ backgroundAlpha: 0, antialias: true, eventMode: "auto" }}
       >
-        <TilingSprite
-          eventMode="static"
-          image={"/images/concrete-floor-2-big.png"}
-          tilePosition={[0, 0]}
-          tileScale={0.25}
-          width={width}
-          height={height}
-        />
         <gameStateContext.Provider value={{ gameState, updateGameState }}>
+          <TilingSprite
+            eventMode="static"
+            image={"/images/concrete-floor-2-big.png"}
+            tilePosition={[0, 0]}
+            tileScale={0.25}
+            width={width}
+            height={height}
+          />
           {cellMap.getCells().map((cell) => (
             <FloorTileSprite
               cell={cell}

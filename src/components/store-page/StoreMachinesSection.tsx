@@ -1,6 +1,7 @@
 import React from "react";
 import { MACHINE_TYPES, MachineType } from "../../game/Machine";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { buyMachineAction } from "../../game/game-actions/store-actions";
 
 interface MachineSaleInfo {
   machine: MachineType;
@@ -35,7 +36,6 @@ const MachineListItem: React.FC<MachineSaleInfo> = ({ machine, price }) => {
 
   return (
     <li className="flex gap-2 items-center">
-      {/* <MaterialIcon material={material} /> */}
       <span className="inline-flex flex-col">
         <span className="flex gap-4">
           <span>{machine.name}</span>
@@ -46,18 +46,7 @@ const MachineListItem: React.FC<MachineSaleInfo> = ({ machine, price }) => {
       <button
         className="button"
         onClick={() => {
-          applyAction((state) => {
-            return {
-              ...state,
-              storage: {
-                ...state.storage,
-                machines: {
-                  ...state.storage.machines,
-                  machine,
-                },
-              },
-            };
-          });
+          applyAction(buyMachineAction(machine, price));
         }}
       >
         Buy

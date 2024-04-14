@@ -1,4 +1,5 @@
 import { Commission, GameAction } from "../GameState";
+import { MachineType } from "../Machine";
 import { MaterialInstance } from "../Materials";
 
 export function buyMaterialAction(
@@ -38,6 +39,26 @@ export function sellMaterialAction(
         inventory: gameState.player.inventory.filter(
           (item) => item !== material
         ),
+      },
+    };
+  };
+}
+
+export function buyMachineAction(
+  machineType: MachineType,
+  price: number
+): GameAction {
+  return (gameState) => {
+    if (gameState.money < price) {
+      console.warn("Tried to buy machine without enough money");
+      return gameState;
+    }
+    return {
+      ...gameState,
+      money: gameState.money - price,
+      storage: {
+        ...gameState.storage,
+        machines: [...gameState.storage.machines, machineType],
       },
     };
   };

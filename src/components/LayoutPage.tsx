@@ -1,4 +1,4 @@
-import { Container, Stage } from "@pixi/react";
+import { Container, Stage, TilingSprite } from "@pixi/react";
 import React, { useState } from "react";
 import { useCellMap } from "../game/CellMap";
 import { MachineType } from "../game/Machine";
@@ -50,6 +50,14 @@ export const LayoutPage: React.FC = () => {
             options={{ backgroundAlpha: 0, antialias: true, eventMode: "auto" }}
           >
             <gameStateContext.Provider value={{ gameState, updateGameState }}>
+              <TilingSprite
+                eventMode="static"
+                image={"/images/concrete-floor-2-big.png"}
+                tilePosition={[0, 0]}
+                tileScale={0.25}
+                width={width}
+                height={height}
+              />
               {cellMap.getCells().map((cell) => (
                 <FloorTileSprite
                   cell={cell}
