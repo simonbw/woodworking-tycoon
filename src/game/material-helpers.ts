@@ -5,14 +5,13 @@ import { BOARD_DIMENSIONS, MaterialInstance, Pallet } from "./Materials";
 
 const makeId = idMaker();
 
-// TODO: This is all wrong somehow
 export function makeMaterial<T extends MaterialInstance>(
   materialInitializer: Omit<T, "id">
 ): T {
   return {
-    id: `m-${makeId()}`,
     ...materialInitializer,
-  } as T; // TODO: Why is this cast necessary?
+    id: `m-${makeId()}`,
+  } as T;
 }
 
 export function makePallet() {

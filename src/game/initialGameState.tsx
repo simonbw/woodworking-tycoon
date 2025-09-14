@@ -1,7 +1,6 @@
 import { GameState } from "./GameState";
 import { MACHINE_TYPES, Machine, MachineType } from "./Machine";
 import { Direction } from "./Vectors";
-import { board } from "./board-helpers";
 import { makePallet } from "./material-helpers";
 
 export const initialGameState: GameState = {
@@ -18,13 +17,7 @@ export const initialGameState: GameState = {
     name: "Player",
     position: [0, 0],
     direction: 0,
-    inventory: [
-      board("cherry", 3, 5, 3),
-      board("cherry", 3, 4, 3),
-      board("cherry", 3, 3, 3),
-      board("cherry", 3, 2, 3),
-      board("cherry", 3, 1, 3),
-    ],
+    inventory: [],
     workQueue: [],
     canWork: true,
     currentMachine: null,

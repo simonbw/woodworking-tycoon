@@ -2,7 +2,7 @@ import { array } from "../../utils/arrayUtils";
 import { board } from "../board-helpers";
 import { MachineType } from "../Machine";
 import { makeMaterial } from "../material-helpers";
-import { Pallet } from "../Materials";
+import { Pallet, FinishedProduct, Board } from "../Materials";
 
 export const workspace: MachineType = {
   id: "workspace",
@@ -14,7 +14,7 @@ export const workspace: MachineType = {
   cost: 0,
   materialStorage: 0,
   toolStorage: 0,
-  inputSpaces: 1,
+  inputSpaces: 3,
   operations: [
     {
       name: "Dismantle Pallet",
@@ -55,6 +55,35 @@ export const workspace: MachineType = {
             outputs: [board("pallet", 3, 4, 1)],
           };
         }
+      },
+    },
+    {
+      name: "Build Pallet Wood Shelf",
+      id: "buildPalletShelf",
+      duration: 30,
+      inputMaterials: [
+        { type: ["board"], species: ["pallet"], width: [4], length: [2], quantity: 2 }, // shelf boards cut to 2'
+        { type: ["board"], species: ["pallet"], width: [6], length: [2], quantity: 1 }, // back support cut to 2'
+      ],
+      output: (materials) => {
+        // Validate inputs - we expect 3 boards total
+        const boards = materials.filter((m): m is Board => m.type === "board");
+        if (boards.length !== 3) {
+          throw new Error("Need exactly 3 boards to build a shelf");
+        }
+
+        // Use the species from the first board for the finished shelf
+        const species = boards[0].species;
+
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "shelf",
+              species: species,
+            }),
+          ],
+        };
       },
     },
   ],

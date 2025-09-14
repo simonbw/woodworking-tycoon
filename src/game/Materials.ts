@@ -1,6 +1,5 @@
 // Represents length, width, or thickness.
 
-import { boolean } from "zod";
 import { Tuple } from "../utils/typeUtils";
 
 export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -60,4 +59,4 @@ export type Pallet = {
 
 export type MaterialInstance = Pallet | Board | SheetGood | FinishedProduct;
 
-export type MaterialId = MaterialInstance["type"];
+export type MaterialType = MaterialInstance["type"];

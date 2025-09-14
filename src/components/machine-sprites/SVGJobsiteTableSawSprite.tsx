@@ -1,7 +1,6 @@
 import React, { useId, memo } from "react";
 
 export const JobsiteTableSawSprite: React.FC = memo(() => {
-  console.log("rendering JobsiteTableSawSprite");
   const gradientId = useId();
 
   const center = 50;

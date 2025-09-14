@@ -8,8 +8,6 @@ type Color =
 
 export const tailwindSvgStopsPlugin = plugin(
   ({ matchUtilities, theme, e }) => {
-    console.log("adding svg stops");
-
     const stopValues: [string, string][] = [];
     const colorEntries: [string, Color][] = objectEntries(
       theme("colors") as Record<string, Color>

@@ -9,7 +9,6 @@ import { cellToPixelCenter } from "./shop-scale";
 export const WorkQueueSprite: React.FC = () => {
   const gameState = useGameState();
 
-  // TODO: Memoize this
   const positions: Vector[] = [];
   let lastPosition = gameState.player.position;
   let hypotheticalState = gameState;

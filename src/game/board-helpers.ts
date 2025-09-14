@@ -38,8 +38,6 @@ export function cutBoard(
 
   const offcutSize = startingDimension - outputSize - waste;
 
-  console.log("cutBoard", startingDimension, outputSize, offcutSize);
-
   return {
     inputs: offcutSize > 0 ? [{ ...inputBoard, [dimension]: offcutSize }] : [],
     outputs: [{ ...inputBoard, [dimension]: outputSize }],
