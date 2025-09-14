@@ -7,7 +7,9 @@
     "format": "npx prettier --write ./src/**/*.{ts,tsx}",
     "build": "node esbuild-client.config.mjs",
     "dev": "node esbuild-client.config.mjs --dev",
-    "tsc": "tsc --noEmit"
+    "tsc": "tsc --noEmit",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed"
   },
   "repository": {
     "type": "git",
@@ -53,5 +55,8 @@
     "typescript": "^5.9.2",
     "typescript-lru-cache": "^2.0.0",
     "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
   }
 }

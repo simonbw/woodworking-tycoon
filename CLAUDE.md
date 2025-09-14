@@ -12,6 +12,16 @@ Woodworking Tycoon is an idle/simulation game built with React and TypeScript. T
 - **Development server**: `npm run dev` (serves on port 3001 by default, configurable via ES_BUILD_DEV_PORT)
 - **Type checking**: `npm run tsc`
 - **Code formatting**: `npm run format`
+- **E2E Testing**: `npm run test` (runs Playwright tests on port 3002, starts its own server)
+
+### Testing Guidelines for Claude
+
+**IMPORTANT**: Claude should NEVER run `npm run dev` directly. The user manages the dev server.
+
+For testing changes:
+- Use `npm run test` to run automated E2E tests (fast, comprehensive validation)
+- Ask the user to test manually if more complex validation is needed
+- The test suite validates core functionality including UI rendering, game state, and recent fixes
 
 ## Architecture Overview
 
