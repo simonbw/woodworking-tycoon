@@ -11,7 +11,7 @@ export function machineCanOperate(machine: Machine): boolean {
     for (let i = 0; i < inputMaterial.quantity; i++) {
       // TODO: Quantity
       const index = inventory.findIndex((m) =>
-        materialMeetsInput(m, inputMaterial)
+        materialMeetsInput(m, inputMaterial),
       );
       if (index === -1) {
         return false;

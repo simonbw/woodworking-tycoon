@@ -47,7 +47,7 @@ export function vectorEquals(a: Vector, b: Vector): boolean {
 export function localToGlobal(
   origin: Vector,
   local: Vector,
-  rotation: Direction = 0
+  rotation: Direction = 0,
 ): Vector {
   return translateVec(rotateVec(local, rotation), origin);
 }

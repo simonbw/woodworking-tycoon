@@ -17,7 +17,7 @@ import { useKeyDown } from "./useKeyDown";
 
 export const LayoutPage: React.FC = () => {
   const [selectedMachine, setSelectedMachine] = useState<MachineType | null>(
-    null
+    null,
   );
   useKeyDown((event) => {
     switch (event.key) {

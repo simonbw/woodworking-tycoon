@@ -8,7 +8,7 @@ export function board(
   species: Board["species"] = "pallet",
   length: Board["length"] = 1,
   width: Board["width"] = 1,
-  thickness: Board["thickness"] = 1
+  thickness: Board["thickness"] = 1,
 ): MaterialInstance & { type: "board" } {
   return makeMaterial({
     type: "board",
@@ -28,7 +28,7 @@ export function cutBoard(
   inputBoard: Board,
   outputSize: BoardDimension,
   dimension: "length" | "width" | "thickness",
-  waste: number = 0
+  waste: number = 0,
 ): OperationOutput {
   const startingDimension = inputBoard[dimension];
 

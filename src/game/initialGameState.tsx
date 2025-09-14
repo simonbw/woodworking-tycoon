@@ -59,7 +59,7 @@ export const initialGameState: GameState = {
 function machine(
   type: MachineType,
   position: [number, number],
-  rotation: Direction
+  rotation: Direction,
 ): Machine {
   return {
     type,

@@ -10,7 +10,7 @@ export function useDocumentClick(callback: (event: MouseEvent) => void) {
 
 export function useDocumentEvent<T extends keyof DocumentEventMap>(
   type: T,
-  callback: (event: DocumentEventMap[T]) => void
+  callback: (event: DocumentEventMap[T]) => void,
 ) {
   useEffect(() => {
     document.addEventListener(type, callback);

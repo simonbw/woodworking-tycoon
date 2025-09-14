@@ -30,11 +30,11 @@ export function humanizeString(s: string) {
 // Typescript definitions added by us
 function decamelize(
   text: string,
-  { separator = "_", preserveConsecutiveUppercase = false } = {}
+  { separator = "_", preserveConsecutiveUppercase = false } = {},
 ) {
   if (!(typeof text === "string" && typeof separator === "string")) {
     throw new TypeError(
-      "The `text` and `separator` arguments should be of type `string`"
+      "The `text` and `separator` arguments should be of type `string`",
     );
   }
 
@@ -50,7 +50,7 @@ function decamelize(
   // `myURLstring → `my_URLstring`
   const decamelized = text.replace(
     /([\p{Lowercase_Letter}\d])(\p{Uppercase_Letter})/gu,
-    replacement
+    replacement,
   );
 
   if (preserveConsecutiveUppercase) {
@@ -62,14 +62,14 @@ function decamelize(
   return decamelized
     .replace(
       /(\p{Uppercase_Letter})(\p{Uppercase_Letter}\p{Lowercase_Letter}+)/gu,
-      replacement
+      replacement,
     )
     .toLowerCase();
 }
 
 const handlePreserveConsecutiveUppercase = (
   decamelized: string,
-  separator: string
+  separator: string,
 ) => {
   // Lowercase all single uppercase characters. As we
   // want to preserve uppercase sequences, we cannot
@@ -77,13 +77,13 @@ const handlePreserveConsecutiveUppercase = (
   // `data_For_USACounties` → `data_for_USACounties`
   decamelized = decamelized.replace(
     /((?<![\p{Uppercase_Letter}\d])[\p{Uppercase_Letter}\d](?![\p{Uppercase_Letter}\d]))/gu,
-    ($0) => $0.toLowerCase()
+    ($0) => $0.toLowerCase(),
   );
 
   // Remaining uppercase sequences will be separated from lowercase sequences.
   // `data_For_USACounties` → `data_for_USA_counties`
   return decamelized.replace(
     /(\p{Uppercase_Letter}+)(\p{Uppercase_Letter}\p{Lowercase_Letter}+)/gu,
-    (_: string, $1: string, $2: string) => $1 + separator + $2.toLowerCase()
+    (_: string, $1: string, $2: string) => $1 + separator + $2.toLowerCase(),
   );
 };

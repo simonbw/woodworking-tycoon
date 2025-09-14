@@ -50,7 +50,7 @@ export const Ticker: React.FC = () => {
         className={classNames(
           "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
           "hover:bg-white/5",
-          ticksPerSecond === speed ? "bg-white/10" : "bg-transparent"
+          ticksPerSecond === speed ? "bg-white/10" : "bg-transparent",
         )}
         onClick={() => setTicksPerSecond(speed)}
         title={title}
@@ -73,7 +73,7 @@ export const Ticker: React.FC = () => {
           <button
             className={classNames(
               "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
-              "hover:bg-white/5"
+              "hover:bg-white/5",
             )}
             onClick={() => applyAction(tickAction)}
             title="Step forward one tick"

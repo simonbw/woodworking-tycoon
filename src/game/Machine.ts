@@ -36,7 +36,7 @@ export interface MachineOperation {
   readonly duration: number;
   readonly inputMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly output: (
-    materials: ReadonlyArray<MaterialInstance>
+    materials: ReadonlyArray<MaterialInstance>,
   ) => OperationOutput;
 }
 
@@ -45,7 +45,7 @@ export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
 };
 
 export type InputMaterialWithQuantity<
-  T extends MaterialInstance = MaterialInstance
+  T extends MaterialInstance = MaterialInstance,
 > = InputMaterial<T> & {
   readonly quantity: number;
 };

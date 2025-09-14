@@ -98,7 +98,7 @@ export class CellMap {
 
   addMachine(machine: Machine) {
     const machineCells = machine.type.cellsOccupied.map((cell) =>
-      translateVec(rotateVec(cell, machine.rotation), machine.position)
+      translateVec(rotateVec(cell, machine.rotation), machine.position),
     );
     for (const position of machineCells) {
       this._at(position)!.machine = machine;
@@ -107,7 +107,7 @@ export class CellMap {
     if (machine.type.operationPosition !== undefined) {
       const operationPosition = translateVec(
         rotateVec(machine.type.operationPosition, machine.rotation),
-        machine.position
+        machine.position,
       );
 
       if (this.has(operationPosition)) {

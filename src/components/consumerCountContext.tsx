@@ -55,7 +55,7 @@ export function useActionKeys(): string | undefined {
   const context = useContext(consumerCountContext);
   if (context === undefined) {
     throw new Error(
-      "useActionKeys must be used within a ActionKeyContextProvider"
+      "useActionKeys must be used within a ActionKeyContextProvider",
     );
   }
   const index = context.useConsumerIndex();

@@ -68,7 +68,7 @@ export function findDuplicates<T>(items: readonly T[]): T[] {
 
 export function groupBy<T, K>(
   items: readonly T[],
-  keyFn: (item: T) => K
+  keyFn: (item: T) => K,
 ): Map<K, T[]> {
   const groups = new Map<K, T[]>();
   for (const item of items) {
@@ -82,7 +82,7 @@ export function groupBy<T, K>(
 
 export function countBy<T, K>(
   items: readonly T[],
-  keyFn: (item: T) => K
+  keyFn: (item: T) => K,
 ): Map<K, number> {
   const counts = new Map<K, number>();
   for (const item of items) {

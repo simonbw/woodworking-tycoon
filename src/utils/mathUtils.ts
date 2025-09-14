@@ -32,7 +32,7 @@ export function lerpOrSnap(
   a: number,
   b: number,
   t: number = 0.5,
-  threshold: number = 0.01
+  threshold: number = 0.01,
 ): number {
   if (Math.abs(b - a) < threshold) {
     return b;

@@ -16,7 +16,7 @@ type _TupleOf<T, N extends number, R extends unknown[]> = R["length"] extends N
   : _TupleOf<T, N, [T, ...R]>;
 
 export function objectKeysTuple<T extends object>(
-  obj: T
+  obj: T,
 ): [keyof T, ...(keyof T)[]] {
   return Object.keys(obj) as [keyof T, ...(keyof T)[]];
 }

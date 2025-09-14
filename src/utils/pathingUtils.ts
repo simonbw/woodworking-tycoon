@@ -8,7 +8,7 @@ import {
 import { VectorSet } from "./VectorSet";
 
 export function getNeighbors(
-  position: Vector
+  position: Vector,
 ): { direction: Direction; position: Vector }[] {
   const directions: Direction[] = [0, 1, 2, 3];
   return directions.map((direction) => ({
@@ -28,7 +28,7 @@ function vecToKey(vec: Vector): string {
 export function findPath(
   start: Vector,
   end: Vector,
-  validCells: ReadonlyArray<Vector>
+  validCells: ReadonlyArray<Vector>,
 ): Path | undefined {
   const validSet = new VectorSet(validCells);
   const visited = new VectorSet();

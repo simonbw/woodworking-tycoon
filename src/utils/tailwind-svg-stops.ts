@@ -10,7 +10,7 @@ export const tailwindSvgStopsPlugin = plugin(
   ({ matchUtilities, theme, e }) => {
     const stopValues: [string, string][] = [];
     const colorEntries: [string, Color][] = objectEntries(
-      theme("colors") as Record<string, Color>
+      theme("colors") as Record<string, Color>,
     );
     while (colorEntries.length > 0) {
       const [colorName, colorValue] = colorEntries.pop()!;
@@ -32,8 +32,8 @@ export const tailwindSvgStopsPlugin = plugin(
       {
         values: Object.fromEntries(stopValues),
         type: "color",
-      }
+      },
     );
   },
-  { theme: {} }
+  { theme: {} },
 );

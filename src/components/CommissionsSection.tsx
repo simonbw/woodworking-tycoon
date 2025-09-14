@@ -23,7 +23,7 @@ const CommissionListItem: React.FC<{
 }> = ({ commission }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
-  
+
   const name = commission.requiredMaterials
     .map((material) => `${material.type} (x${material.quantity})`)
     .join(", ");
@@ -31,7 +31,7 @@ const CommissionListItem: React.FC<{
   // Check if player has all required materials
   const canComplete = commission.requiredMaterials.every((requiredMaterial) => {
     const matchingMaterials = gameState.player.inventory.filter((material) =>
-      materialMeetsInput(material, requiredMaterial)
+      materialMeetsInput(material, requiredMaterial),
     );
     return matchingMaterials.length >= requiredMaterial.quantity;
   });

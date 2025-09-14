@@ -96,14 +96,14 @@ export function seededShuffle<T>(a: T[], seed: number = getSeed()): T[] {
 
 export function getSeed(): number {
   const urlSeed = Number(
-    new URLSearchParams(window.location.search).get("seed")
+    new URLSearchParams(window.location.search).get("seed"),
   );
   return urlSeed || randomSeed();
 }
 
 export function getGoalSeed(): number | undefined {
   const urlSeed = Number(
-    new URLSearchParams(window.location.search).get("goal")
+    new URLSearchParams(window.location.search).get("goal"),
   );
   return urlSeed || undefined;
 }
