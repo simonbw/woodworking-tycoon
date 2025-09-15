@@ -53,6 +53,12 @@ export const initialGameState: GameState = {
     size: [4, 6],
     materialDropoffPosition: [3, 5],
   },
+  progression: {
+    tutorialStage: 0,
+    unlockedTabs: [],
+    unlockedFeatures: [],
+    commissionsCompleted: 0,
+  },
 };
 
 // Helper method to create a machine with less boilerplate

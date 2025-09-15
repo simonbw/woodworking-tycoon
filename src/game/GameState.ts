@@ -13,6 +13,16 @@ export type MaterialPile = {
 export type GameAction = (gameState: GameState) => GameState;
 
 /** Represents all of the state for the game simulation. This is what gets loaded/saved. Does not include UI state. */
+export type UnlockableTab = 'store' | 'layout';
+export type UnlockableFeature = 'freeSelling';
+
+export interface ProgressionState {
+  readonly tutorialStage: number;
+  readonly unlockedTabs: ReadonlyArray<UnlockableTab>;
+  readonly unlockedFeatures: ReadonlyArray<UnlockableFeature>;
+  readonly commissionsCompleted: number;
+}
+
 export interface GameState {
   readonly tick: number;
   readonly money: number;
@@ -25,6 +35,7 @@ export interface GameState {
   readonly storage: {
     machines: ReadonlyArray<MachineType>;
   };
+  readonly progression: ProgressionState;
 }
 
 export interface Commission {
