@@ -1,4 +1,4 @@
-import { GameAction, UnlockableTab, UnlockableFeature } from "../GameState";
+import { GameAction } from "../GameState";
 
 export function advanceTutorialStageAction(stage: number): GameAction {
   return (gameState) => {
@@ -12,33 +12,37 @@ export function advanceTutorialStageAction(stage: number): GameAction {
   };
 }
 
-export function unlockTabAction(tab: UnlockableTab): GameAction {
+export function unlockStoreAction(): GameAction {
   return (gameState) => {
-    if (gameState.progression.unlockedTabs.includes(tab)) {
-      return gameState; // Tab already unlocked
-    }
-    
     return {
       ...gameState,
       progression: {
         ...gameState.progression,
-        unlockedTabs: [...gameState.progression.unlockedTabs, tab],
+        storeUnlocked: true,
       },
     };
   };
 }
 
-export function unlockFeatureAction(feature: UnlockableFeature): GameAction {
+export function unlockShopLayoutAction(): GameAction {
   return (gameState) => {
-    if (gameState.progression.unlockedFeatures.includes(feature)) {
-      return gameState; // Feature already unlocked
-    }
-    
     return {
       ...gameState,
       progression: {
         ...gameState.progression,
-        unlockedFeatures: [...gameState.progression.unlockedFeatures, feature],
+        shopLayoutUnlocked: true,
+      },
+    };
+  };
+}
+
+export function unlockFreeSellingAction(): GameAction {
+  return (gameState) => {
+    return {
+      ...gameState,
+      progression: {
+        ...gameState.progression,
+        freeSelling: true,
       },
     };
   };
@@ -58,24 +62,28 @@ export function incrementCommissionsCompletedAction(): GameAction {
 
 export function checkProgressionMilestonesAction(): GameAction {
   return (gameState) => {
-    const { commissionsCompleted } = gameState.progression;
+    const { commissionsCompleted, tutorialStage, storeUnlocked, shopLayoutUnlocked, freeSelling } = gameState.progression;
     let updatedState = gameState;
 
     // First commission: Unlock store tab, advance to tutorial stage 1
-    if (commissionsCompleted >= 1 && gameState.progression.tutorialStage < 1) {
+    if (commissionsCompleted >= 1 && tutorialStage < 1) {
       updatedState = advanceTutorialStageAction(1)(updatedState);
-      updatedState = unlockTabAction('store')(updatedState);
+    }
+    if (commissionsCompleted >= 1 && !storeUnlocked) {
+      updatedState = unlockStoreAction()(updatedState);
     }
 
     // Second commission: Unlock layout tab, advance to tutorial stage 2
-    if (commissionsCompleted >= 2 && gameState.progression.tutorialStage < 2) {
+    if (commissionsCompleted >= 2 && tutorialStage < 2) {
       updatedState = advanceTutorialStageAction(2)(updatedState);
-      updatedState = unlockTabAction('layout')(updatedState);
+    }
+    if (commissionsCompleted >= 2 && !shopLayoutUnlocked) {
+      updatedState = unlockShopLayoutAction()(updatedState);
     }
 
     // Third commission: Unlock free selling feature
-    if (commissionsCompleted >= 3 && !gameState.progression.unlockedFeatures.includes('freeSelling')) {
-      updatedState = unlockFeatureAction('freeSelling')(updatedState);
+    if (commissionsCompleted >= 3 && !freeSelling) {
+      updatedState = unlockFreeSellingAction()(updatedState);
     }
 
     return updatedState;

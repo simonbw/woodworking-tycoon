@@ -5,10 +5,7 @@ import { useGameState } from "./useGameState";
 export const NavBar: React.FC = () => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
-  const { unlockedTabs } = gameState.progression;
-
-  const isStoreUnlocked = unlockedTabs.includes('store');
-  const isLayoutUnlocked = unlockedTabs.includes('layout');
+  const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
 
   return (
     <nav className="flex gap-2 p-2 rounded bg-white/10 w-fit">
@@ -18,7 +15,7 @@ export const NavBar: React.FC = () => {
       >
         Home
       </button>
-      {isStoreUnlocked && (
+      {storeUnlocked && (
         <button
           className={mode.mode === "store" ? "button" : "button-ghost"}
           onClick={() => setMode({ mode: "store" })}
@@ -26,7 +23,7 @@ export const NavBar: React.FC = () => {
           Store
         </button>
       )}
-      {isLayoutUnlocked && (
+      {shopLayoutUnlocked && (
         <button
           className={mode.mode === "shopLayout" ? "button" : "button-ghost"}
           onClick={() => setMode({ mode: "shopLayout" })}

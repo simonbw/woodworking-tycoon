@@ -1,14 +1,15 @@
-import { GameState, ProgressionState, UnlockableTab, UnlockableFeature } from "./GameState";
+import { GameState, ProgressionState } from "./GameState";
 
-export function shouldUnlockTab(commissionsCompleted: number, tab: UnlockableTab): boolean {
-  switch (tab) {
-    case 'store':
-      return commissionsCompleted >= 1;
-    case 'layout':
-      return commissionsCompleted >= 2;
-    default:
-      return false;
-  }
+export function shouldUnlockStore(commissionsCompleted: number): boolean {
+  return commissionsCompleted >= 1;
+}
+
+export function shouldUnlockShopLayout(commissionsCompleted: number): boolean {
+  return commissionsCompleted >= 2;
+}
+
+export function shouldUnlockFreeSelling(commissionsCompleted: number): boolean {
+  return commissionsCompleted >= 3;
 }
 
 export function shouldAdvanceTutorial(gameState: GameState): number | null {
@@ -24,28 +25,18 @@ export function shouldAdvanceTutorial(gameState: GameState): number | null {
   return null; // No advancement needed
 }
 
-export function getLockedFeatures(progression: ProgressionState): UnlockableFeature[] {
-  const allFeatures: UnlockableFeature[] = ['freeSelling'];
-  return allFeatures.filter(feature => !progression.unlockedFeatures.includes(feature));
-}
-
-export function getLockedTabs(progression: ProgressionState): UnlockableTab[] {
-  const allTabs: UnlockableTab[] = ['store', 'layout'];
-  return allTabs.filter(tab => !progression.unlockedTabs.includes(tab));
-}
-
 export function getNextMilestone(progression: ProgressionState): string | null {
-  const { commissionsCompleted, unlockedTabs, unlockedFeatures } = progression;
+  const { commissionsCompleted, storeUnlocked, shopLayoutUnlocked, freeSelling } = progression;
 
   if (commissionsCompleted === 0) {
     return "Complete your first commission to unlock the Store";
   }
 
-  if (commissionsCompleted === 1 && !unlockedTabs.includes('layout')) {
+  if (commissionsCompleted === 1 && !shopLayoutUnlocked) {
     return "Complete one more commission to unlock Shop Layout editing";
   }
 
-  if (commissionsCompleted === 2 && !unlockedFeatures.includes('freeSelling')) {
+  if (commissionsCompleted === 2 && !freeSelling) {
     return "Complete one more commission to unlock free selling";
   }
 
@@ -69,10 +60,18 @@ export function getTutorialMessage(tutorialStage: number): string | null {
   }
 }
 
-export function isFeatureUnlocked(progression: ProgressionState, feature: UnlockableFeature): boolean {
-  return progression.unlockedFeatures.includes(feature);
+export function getAllUnlockedFeatures(progression: ProgressionState): string[] {
+  const features: string[] = [];
+  if (progression.storeUnlocked) features.push('Store');
+  if (progression.shopLayoutUnlocked) features.push('Shop Layout');
+  if (progression.freeSelling) features.push('Free Selling');
+  return features;
 }
 
-export function isTabUnlocked(progression: ProgressionState, tab: UnlockableTab): boolean {
-  return progression.unlockedTabs.includes(tab);
+export function getRemainingFeatures(progression: ProgressionState): string[] {
+  const features: string[] = [];
+  if (!progression.storeUnlocked) features.push('Store');
+  if (!progression.shopLayoutUnlocked) features.push('Shop Layout');
+  if (!progression.freeSelling) features.push('Free Selling');
+  return features;
 }

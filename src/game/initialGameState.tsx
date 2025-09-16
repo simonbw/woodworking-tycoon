@@ -55,8 +55,9 @@ export const initialGameState: GameState = {
   },
   progression: {
     tutorialStage: 0,
-    unlockedTabs: [],
-    unlockedFeatures: [],
+    storeUnlocked: false,
+    shopLayoutUnlocked: false,
+    freeSelling: false,
     commissionsCompleted: 0,
   },
 };

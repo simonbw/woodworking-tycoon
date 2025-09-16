@@ -23,23 +23,23 @@ export const Main: React.FC = () => {
 const ScreenSwitcher: React.FC = () => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
-  const { unlockedTabs } = gameState.progression;
+  const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
 
   // Safety check: if user is in a tab that's no longer unlocked, redirect to home
   useEffect(() => {
-    if (mode.mode === "store" && !unlockedTabs.includes('store')) {
+    if (mode.mode === "store" && !storeUnlocked) {
       setMode({ mode: "normal" });
-    } else if (mode.mode === "shopLayout" && !unlockedTabs.includes('layout')) {
+    } else if (mode.mode === "shopLayout" && !shopLayoutUnlocked) {
       setMode({ mode: "normal" });
     }
-  }, [mode.mode, unlockedTabs, setMode]);
+  }, [mode.mode, storeUnlocked, shopLayoutUnlocked, setMode]);
 
   switch (mode.mode) {
     case "normal":
       return <HomePage />;
     case "store":
-      return unlockedTabs.includes('store') ? <StorePage /> : <HomePage />;
+      return storeUnlocked ? <StorePage /> : <HomePage />;
     case "shopLayout":
-      return unlockedTabs.includes('layout') ? <LayoutPage /> : <HomePage />;
+      return shopLayoutUnlocked ? <LayoutPage /> : <HomePage />;
   }
 };
