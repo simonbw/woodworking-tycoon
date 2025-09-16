@@ -58,35 +58,6 @@ export const workspace: MachineType = {
       },
     },
     {
-      name: "Build Pallet Wood Shelf",
-      id: "buildPalletShelf",
-      duration: 30,
-      inputMaterials: [
-        { type: ["board"], species: ["pallet"], width: [4], length: [2], quantity: 2 }, // shelf boards cut to 2'
-        { type: ["board"], species: ["pallet"], width: [6], length: [2], quantity: 1 }, // back support cut to 2'
-      ],
-      output: (materials) => {
-        // Validate inputs - we expect 3 boards total
-        const boards = materials.filter((m): m is Board => m.type === "board");
-        if (boards.length !== 3) {
-          throw new Error("Need exactly 3 boards to build a shelf");
-        }
-
-        // Use the species from the first board for the finished shelf
-        const species = boards[0].species;
-
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "shelf",
-              species: species,
-            }),
-          ],
-        };
-      },
-    },
-    {
       name: "Build Rustic Pallet Shelf",
       id: "buildRusticPalletShelf",
       duration: 30,
