@@ -62,6 +62,7 @@ function machine(
     position,
     rotation,
     inputMaterials: [],
+    processingMaterials: [],
     outputMaterials: [],
     selectedOperation: type.operations[0],
     operationProgress: {
