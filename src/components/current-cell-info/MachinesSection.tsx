@@ -44,6 +44,12 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
+  const processingMaterials = [
+    ...groupBy(machine.processingMaterials, (material) =>
+      getMaterialName(material)
+    ).entries(),
+  ].sort(([a], [b]) => a.localeCompare(b));
+
   const outputMaterials = [
     ...groupBy(machine.outputMaterials, (material) =>
       getMaterialName(material)
@@ -51,6 +57,11 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
   ].sort(([a], [b]) => a.localeCompare(b));
 
   const canOperate = machineCanOperate(machine);
+  const isOperating = machine.operationProgress.status === "inProgress";
+  const progressPercent = isOperating
+    ? ((machine.selectedOperation.duration - machine.operationProgress.ticksRemaining) / 
+       machine.selectedOperation.duration) * 100
+    : 0;
 
   return (
     <section className="space-y-1">
@@ -95,6 +106,21 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
         {inputMaterials.length === 0 && (
           <span className="text-zinc-500">No inputs</span>
         )}
+        
+        {/* Show processing materials when operating */}
+        {processingMaterials.length > 0 && (
+          <>
+            <span className="p-2">→</span>
+            <span className="text-amber-600">[Processing:</span>
+            {processingMaterials.map(([name, materials]) => (
+              <span key={name} className="opacity-50">
+                <MaterialIcon material={materials[0]} quantity={materials.length} />
+              </span>
+            ))}
+            <span className="text-amber-600">]</span>
+          </>
+        )}
+        
         <span className="p-2">→</span>
         {outputMaterials.map(([name, materials]) => (
           <span
@@ -117,13 +143,27 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
         )}
       </div>
 
-      <button
-        className="button"
-        disabled={!canOperate}
-        onClick={() => applyAction(operateMachineAction(machine))}
-      >
-        Operate
-      </button>
+      {isOperating ? (
+        <div className="space-y-1">
+          <div className="text-sm text-zinc-400">
+            Operating... ({machine.operationProgress.ticksRemaining} ticks remaining)
+          </div>
+          <div className="w-full bg-zinc-700 rounded-full h-2">
+            <div
+              className="bg-amber-600 h-2 rounded-full transition-all duration-200"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      ) : (
+        <button
+          className="button"
+          disabled={!canOperate}
+          onClick={() => applyAction(operateMachineAction(machine))}
+        >
+          Operate
+        </button>
+      )}
     </section>
   );
 };
