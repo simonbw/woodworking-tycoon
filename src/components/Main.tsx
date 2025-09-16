@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { DebugView } from "./DebugView";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
 import { StorePage } from "./store-page/StorePage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { ActionKeyContextProvider } from "./consumerCountContext";
-import { GameStateProvider } from "./useGameState";
+import { GameStateProvider, useGameState } from "./useGameState";
 
 export const Main: React.FC = () => {
   return (
@@ -21,14 +21,25 @@ export const Main: React.FC = () => {
 };
 
 const ScreenSwitcher: React.FC = () => {
-  const { mode } = useUiMode();
+  const { mode, setMode } = useUiMode();
+  const gameState = useGameState();
+  const { unlockedTabs } = gameState.progression;
+
+  // Safety check: if user is in a tab that's no longer unlocked, redirect to home
+  useEffect(() => {
+    if (mode.mode === "store" && !unlockedTabs.includes('store')) {
+      setMode({ mode: "normal" });
+    } else if (mode.mode === "shopLayout" && !unlockedTabs.includes('layout')) {
+      setMode({ mode: "normal" });
+    }
+  }, [mode.mode, unlockedTabs, setMode]);
 
   switch (mode.mode) {
     case "normal":
       return <HomePage />;
     case "store":
-      return <StorePage />;
+      return unlockedTabs.includes('store') ? <StorePage /> : <HomePage />;
     case "shopLayout":
-      return <LayoutPage />;
+      return unlockedTabs.includes('layout') ? <LayoutPage /> : <HomePage />;
   }
 };

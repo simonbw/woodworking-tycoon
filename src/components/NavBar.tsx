@@ -18,22 +18,22 @@ export const NavBar: React.FC = () => {
       >
         Home
       </button>
-      <button
-        className={mode.mode === "store" ? "button" : "button-ghost"}
-        onClick={() => setMode({ mode: "store" })}
-        disabled={!isStoreUnlocked}
-        title={!isStoreUnlocked ? "Complete your first commission to unlock the store" : ""}
-      >
-        Store
-      </button>
-      <button
-        className={mode.mode === "shopLayout" ? "button" : "button-ghost"}
-        onClick={() => setMode({ mode: "shopLayout" })}
-        disabled={!isLayoutUnlocked}
-        title={!isLayoutUnlocked ? "Complete more commissions to unlock shop layout editing" : ""}
-      >
-        Shop Layout
-      </button>
+      {isStoreUnlocked && (
+        <button
+          className={mode.mode === "store" ? "button" : "button-ghost"}
+          onClick={() => setMode({ mode: "store" })}
+        >
+          Store
+        </button>
+      )}
+      {isLayoutUnlocked && (
+        <button
+          className={mode.mode === "shopLayout" ? "button" : "button-ghost"}
+          onClick={() => setMode({ mode: "shopLayout" })}
+        >
+          Shop Layout
+        </button>
+      )}
     </nav>
   );
 };
