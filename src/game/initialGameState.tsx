@@ -10,7 +10,7 @@ export const initialGameState: GameState = {
   materialPiles: [
     {
       material: makePallet(),
-      position: [3, 5],
+      position: [2, 4], // Positioned for easy access to workspace
     },
   ],
   player: {
@@ -23,28 +23,17 @@ export const initialGameState: GameState = {
     currentMachine: null,
   },
   machines: [
-    // left workstation
-    machine(MACHINE_TYPES.makeshiftBench, [0, 1], 1),
-    machine(MACHINE_TYPES.workspace, [0, 1], 1),
-
-    // miter station
-    machine(MACHINE_TYPES.makeshiftBench, [3, 0], 3),
-    machine(MACHINE_TYPES.makeshiftBench, [3, 1], 3),
-    machine(MACHINE_TYPES.makeshiftBench, [3, 2], 3),
-    machine(MACHINE_TYPES.miterSaw, [3, 1], 3),
-
-    // Freestanding tools
-    machine(MACHINE_TYPES.jobsiteTableSaw, [2, 4], 2),
-    machine(MACHINE_TYPES.lunchboxPlaner, [0, 3], 0),
+    // Single workspace for tutorial
+    machine(MACHINE_TYPES.workspace, [1, 2], 0),
   ],
   storage: {
-    machines: [MACHINE_TYPES.miterSaw, MACHINE_TYPES.jobsiteTableSaw],
+    machines: [], // Empty - no machines available initially
   },
   commissions: [
     {
-      requiredMaterials: [{ type: ["shelf"], quantity: 1 }],
-      rewardMoney: 50,
-      rewardReputation: 10,
+      requiredMaterials: [{ type: ["rusticShelf"], species: ["pallet"], quantity: 1 }],
+      rewardMoney: 150, // Enough to buy miter saw for next progression
+      rewardReputation: 2,
     },
   ],
   shopInfo: {

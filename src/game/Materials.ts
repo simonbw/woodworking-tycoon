@@ -46,7 +46,7 @@ export interface SheetGood {
 
 export type FinishedProduct = {
   readonly id: string;
-  readonly type: "shelf" | "jewelryBox" | "simpleCuttingBoard";
+  readonly type: "shelf" | "rusticShelf" | "jewelryBox" | "simpleCuttingBoard";
   readonly species: Species;
 };
 

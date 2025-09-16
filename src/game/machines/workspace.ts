@@ -86,5 +86,31 @@ export const workspace: MachineType = {
         };
       },
     },
+    {
+      name: "Build Rustic Pallet Shelf",
+      id: "buildRusticPalletShelf",
+      duration: 30,
+      inputMaterials: [
+        { type: ["board"], species: ["pallet"], width: [6], length: [4], quantity: 2 }, // stringers as shelves
+        { type: ["board"], species: ["pallet"], width: [4], length: [3], quantity: 3 }, // deck boards as back support
+      ],
+      output: (materials) => {
+        // Validate inputs
+        const boards = materials.filter((m): m is Board => m.type === "board");
+        if (boards.length !== 5) {
+          throw new Error("Need exactly 5 boards to build a rustic shelf");
+        }
+
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "rusticShelf",
+              species: "pallet",
+            }),
+          ],
+        };
+      },
+    },
   ],
 };
