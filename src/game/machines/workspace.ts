@@ -19,7 +19,7 @@ export const workspace: MachineType = {
     {
       name: "Dismantle Pallet",
       id: "dismantlePallet",
-      duration: 10,
+      duration: 4,
       inputMaterials: [{ type: ["pallet"], quantity: 1 }],
       output: (materials) => {
         const inputPallet = materials[0];
