@@ -64,13 +64,20 @@ export interface OperationParameter<T = number | string> {
 
 export type ParameterValues = Record<string, number | string>;
 
-export interface ParameterizedOperation<TParams extends ParameterValues = ParameterValues> {
+export interface ParameterizedOperation<
+  TParams extends ParameterValues = ParameterValues,
+> {
   readonly id: string;
   readonly name: string;
   readonly duration: number;
   readonly parameters: ReadonlyArray<OperationParameter>;
-  readonly getInputMaterials: (params: TParams) => ReadonlyArray<InputMaterialWithQuantity>;
-  readonly output: (materials: ReadonlyArray<MaterialInstance>, params: TParams) => OperationOutput;
+  readonly getInputMaterials: (
+    params: TParams,
+  ) => ReadonlyArray<InputMaterialWithQuantity>;
+  readonly output: (
+    materials: ReadonlyArray<MaterialInstance>,
+    params: TParams,
+  ) => OperationOutput;
 }
 
 export interface OperationProgress {

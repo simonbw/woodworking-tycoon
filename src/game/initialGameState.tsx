@@ -1,5 +1,10 @@
 import { GameState } from "./GameState";
-import { MACHINE_TYPES, Machine, MachineType, ParameterValues } from "./Machine";
+import {
+  MACHINE_TYPES,
+  Machine,
+  MachineType,
+  ParameterValues,
+} from "./Machine";
 import { Direction } from "./Vectors";
 import { makePallet } from "./material-helpers";
 import { isParameterizedOperation } from "./operation-helpers";
@@ -32,7 +37,9 @@ export const initialGameState: GameState = {
   },
   commissions: [
     {
-      requiredMaterials: [{ type: ["rusticShelf"], species: ["pallet"], quantity: 1 }],
+      requiredMaterials: [
+        { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
+      ],
       rewardMoney: 150, // Enough to buy miter saw for next progression
       rewardReputation: 2,
     },
@@ -60,7 +67,7 @@ function machine(
 ): Machine {
   const firstOperation = type.operations[0];
   let selectedParameters: ParameterValues | undefined;
-  
+
   // If the first operation is parameterized, set default parameter values
   if (isParameterizedOperation(firstOperation)) {
     selectedParameters = {};
@@ -68,7 +75,7 @@ function machine(
       selectedParameters[param.id] = param.values[0];
     }
   }
-  
+
   return {
     type,
     position,

@@ -7,10 +7,10 @@ export function machineCanOperate(machine: Machine): boolean {
   const inventory = [...machine.inputMaterials];
 
   const materialsToConsume: MaterialInstance[] = [];
-  
+
   const inputMaterials = getOperationInputMaterials(
     machine.selectedOperation,
-    machine.selectedParameters
+    machine.selectedParameters,
   );
 
   for (const inputMaterial of inputMaterials) {

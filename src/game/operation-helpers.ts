@@ -1,14 +1,28 @@
-import { InputMaterialWithQuantity, MachineOperation, OperationOutput, ParameterizedOperation, ParameterValues } from "./Machine";
-import { MaterialInstance, Board, Pallet, SheetGood, FinishedProduct, BoardDimension, Species } from "./Materials";
+import {
+  InputMaterialWithQuantity,
+  MachineOperation,
+  OperationOutput,
+  ParameterizedOperation,
+  ParameterValues,
+} from "./Machine";
+import {
+  MaterialInstance,
+  Board,
+  Pallet,
+  SheetGood,
+  FinishedProduct,
+  BoardDimension,
+  Species,
+} from "./Materials";
 import { makeMaterial } from "./material-helpers";
 
 /**
  * Type guard to check if an operation is parameterized
  */
 export function isParameterizedOperation(
-  operation: MachineOperation | ParameterizedOperation
+  operation: MachineOperation | ParameterizedOperation,
 ): operation is ParameterizedOperation {
-  return 'parameters' in operation && 'getInputMaterials' in operation;
+  return "parameters" in operation && "getInputMaterials" in operation;
 }
 
 /**
@@ -16,7 +30,7 @@ export function isParameterizedOperation(
  */
 export function getOperationInputMaterials(
   operation: MachineOperation | ParameterizedOperation,
-  params?: ParameterValues
+  params?: ParameterValues,
 ): ReadonlyArray<InputMaterialWithQuantity> {
   if (isParameterizedOperation(operation)) {
     if (!params) {
@@ -39,7 +53,7 @@ export function getOperationInputMaterials(
 export function executeOperation(
   operation: MachineOperation | ParameterizedOperation,
   materials: ReadonlyArray<MaterialInstance>,
-  params?: ParameterValues
+  params?: ParameterValues,
 ): OperationOutput {
   if (isParameterizedOperation(operation)) {
     if (!params) {
@@ -56,23 +70,25 @@ export function executeOperation(
  * Used for previewing what an operation will produce.
  */
 export function generateMockMaterials(
-  requirements: ReadonlyArray<InputMaterialWithQuantity>
+  requirements: ReadonlyArray<InputMaterialWithQuantity>,
 ): MaterialInstance[] {
   const results: MaterialInstance[] = [];
-  
+
   for (const req of requirements) {
     for (let i = 0; i < req.quantity; i++) {
       results.push(generateSingleMockMaterial(req));
     }
   }
-  
+
   return results;
 }
 
-function generateSingleMockMaterial(req: InputMaterialWithQuantity): MaterialInstance {
+function generateSingleMockMaterial(
+  req: InputMaterialWithQuantity,
+): MaterialInstance {
   // Determine material type
   const materialType = req.type?.[0] || "board";
-  
+
   switch (materialType) {
     case "board": {
       const reqAny = req as any; // Cast to access optional properties
@@ -86,28 +102,40 @@ function generateSingleMockMaterial(req: InputMaterialWithQuantity): MaterialIns
       });
       return board;
     }
-    
+
     case "pallet": {
       const pallet: Pallet = makeMaterial<Pallet>({
         type: "pallet",
-        deckBoards: [true, true, true, true, true, true, true, true, true, true, true],
+        deckBoards: [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+        ],
         stringerBoardsLeft: 3,
       });
       return pallet;
     }
-    
+
     case "plywood": {
       const reqAny = req as any;
       const sheet: SheetGood = makeMaterial<SheetGood>({
         type: "plywood",
         length: (reqAny.length?.[0] || 8) as BoardDimension,
         width: (reqAny.width?.[0] || 4) as BoardDimension,
-        thickness: (reqAny.thickness?.[0] || 2) as (1 | 2 | 3 | 4),
+        thickness: (reqAny.thickness?.[0] || 2) as 1 | 2 | 3 | 4,
         kind: (reqAny.kind?.[0] || "plywoodA") as SheetGood["kind"],
       });
       return sheet;
     }
-    
+
     case "shelf":
     case "rusticShelf":
     case "jewelryBox":
@@ -119,9 +147,9 @@ function generateSingleMockMaterial(req: InputMaterialWithQuantity): MaterialIns
       });
       return product;
     }
-    
+
     default:
-      // Fallback to a basic board  
+      // Fallback to a basic board
       return makeMaterial<Board>({
         type: "board",
         length: 8 as BoardDimension,
@@ -138,7 +166,7 @@ function generateSingleMockMaterial(req: InputMaterialWithQuantity): MaterialIns
  */
 export function generateOperationPreview(
   operation: ParameterizedOperation,
-  params: ParameterValues
+  params: ParameterValues,
 ): {
   expectedInputs: ReadonlyArray<InputMaterialWithQuantity>;
   mockMaterials: ReadonlyArray<MaterialInstance>;
@@ -146,13 +174,13 @@ export function generateOperationPreview(
 } {
   // Get input requirements for these parameters
   const expectedInputs = operation.getInputMaterials(params);
-  
+
   // Generate mock materials that satisfy requirements
   const mockMaterials = generateMockMaterials(expectedInputs);
-  
+
   // Call the actual operation function to see what it produces
   const result = operation.output(mockMaterials, params);
-  
+
   return {
     expectedInputs,
     mockMaterials,
