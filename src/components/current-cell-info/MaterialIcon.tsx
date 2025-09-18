@@ -48,7 +48,10 @@ export const MaterialIcon: React.FC<{
   material: MaterialInstance;
   size?: keyof typeof sizeToScale;
   quantity?: number;
-}> = ({ material, size = "medium", quantity }) => {
+  placeholder?: boolean;
+  isValid?: boolean;
+  tooltip?: string;
+}> = ({ material, size = "medium", quantity, placeholder = false, isValid = true, tooltip }) => {
   switch (material.type) {
     // Make the board with SVG so we don't have to use Pixi to render it
     case "board": {
@@ -58,7 +61,7 @@ export const MaterialIcon: React.FC<{
       const depth = (board.thickness * PIXELS_PER_INCH) / 4;
 
       return (
-        <Wrapper size={size} quantity={quantity}>
+        <Wrapper size={size} quantity={quantity} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
           <svg
             viewBox={`0 0 ${PIXELS_PER_CELL} ${PIXELS_PER_CELL}`}
             className="w-full"
@@ -89,7 +92,7 @@ export const MaterialIcon: React.FC<{
       const depth = (board.thickness * PIXELS_PER_INCH) / 4;
 
       return (
-        <Wrapper size={size}>
+        <Wrapper size={size} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
           <svg
             viewBox={`0 0 ${PIXELS_PER_CELL} ${PIXELS_PER_CELL}`}
             className="w-full"
@@ -115,16 +118,18 @@ export const MaterialIcon: React.FC<{
 
     case "pallet":
       return (
-        <Wrapper size={size}>
+        <Wrapper size={size} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
           <img src="/images/pallet.png" />
         </Wrapper>
       );
 
     default:
       return (
-        <SimpleSpriteStage scale={sizeToScale[size]}>
-          <MaterialSprite material={material} />
-        </SimpleSpriteStage>
+        <Wrapper size={size} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
+          <SimpleSpriteStage scale={sizeToScale[size]}>
+            <MaterialSprite material={material} />
+          </SimpleSpriteStage>
+        </Wrapper>
       );
   }
 };
@@ -140,19 +145,43 @@ const Wrapper: React.FC<{
   children: ReactNode;
   size: keyof typeof sizeToClassname;
   quantity?: number;
-}> = ({ children, size, quantity }) => {
+  isValid?: boolean;
+  tooltip?: string;
+  placeholder?: boolean;
+}> = ({ children, size, quantity, isValid = true, tooltip, placeholder = false }) => {
+  // Determine border style based on state
+  const borderStyle = placeholder
+    ? "border-2 border-dashed border-zinc-600"
+    : isValid
+      ? "border border-zinc-600"
+      : "border-2 border-red-500";
+
+  const bgStyle = placeholder
+    ? "bg-zinc-800/50"
+    : isValid
+      ? "bg-zinc-700"
+      : "bg-red-900/20";
+
   return (
     <span
       className={classNames(
-        "rounded bg-zinc-700 inline-block overflow-hidden relative",
-        sizeToClassname[size]
+        "rounded inline-block overflow-hidden relative",
+        sizeToClassname[size],
+        borderStyle,
+        bgStyle,
+        placeholder ? "opacity-50" : ""
       )}
+      title={tooltip}
     >
       {children}
       {quantity && (
-        <span className="absolute bottom-0.5 right-0.5 text-xs select-none">
+        <span className="absolute bottom-0.5 right-0.5 text-xs select-none bg-black/70 px-1 rounded">
           {quantity}
         </span>
+      )}
+      {/* Validation indicator for invalid materials */}
+      {!isValid && !placeholder && (
+        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
       )}
     </span>
   );

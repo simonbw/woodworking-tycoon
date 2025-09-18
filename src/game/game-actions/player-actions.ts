@@ -1,9 +1,10 @@
 import { materialMeetsInput } from "../material-helpers";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
-import { Machine, MachineOperation } from "../Machine";
+import { Machine, MachineOperation, ParameterizedOperation, ParameterValues } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
+import { getOperationInputMaterials } from "../operation-helpers";
 
 export function instaMovePlayerAction(direction: Direction): GameAction {
   return (gameState) => {
@@ -182,7 +183,8 @@ export function takeOutputsFromMachineAction(
 
 export function setMachineOperationAction(
   machine: Machine,
-  operation: MachineOperation
+  operation: MachineOperation | ParameterizedOperation,
+  parameters?: ParameterValues
 ): GameAction {
   return (gameState) => {
     if (!machine.type.operations.includes(operation)) {
@@ -192,7 +194,7 @@ export function setMachineOperationAction(
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
-        m === machine ? { ...m, selectedOperation: operation } : m
+        m === machine ? { ...m, selectedOperation: operation, selectedParameters: parameters } : m
       ),
     };
   };
@@ -210,7 +212,12 @@ export function operateMachineAction(machine: Machine): GameAction {
     const materialsToConsume: MaterialInstance[] = [];
 
     // Validate that we have all required materials
-    for (const inputMaterial of machine.selectedOperation.inputMaterials) {
+    const inputMaterials = getOperationInputMaterials(
+      machine.selectedOperation,
+      machine.selectedParameters
+    );
+    
+    for (const inputMaterial of inputMaterials) {
       for (let i = 0; i < inputMaterial.quantity; i++) {
         const index = inventory.findIndex((m) =>
           materialMeetsInput(m, inputMaterial)

@@ -2,7 +2,7 @@ import { array } from "../../utils/arrayUtils";
 import { board } from "../board-helpers";
 import { MachineType } from "../Machine";
 import { makeMaterial } from "../material-helpers";
-import { Pallet, FinishedProduct, Board } from "../Materials";
+import { Pallet, FinishedProduct, Board, MaterialInstance } from "../Materials";
 
 export const workspace: MachineType = {
   id: "workspace",
@@ -21,14 +21,14 @@ export const workspace: MachineType = {
       id: "dismantlePallet",
       duration: 4,
       inputMaterials: [{ type: ["pallet"], quantity: 1 }],
-      output: (materials) => {
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputPallet = materials[0];
         if (inputPallet.type !== "pallet") {
           throw new Error("Input material is not a pallet");
         }
 
         const deckBoardsCount = inputPallet.deckBoards.filter(
-          (board) => board
+          (board: boolean) => board
         ).length;
         if (deckBoardsCount <= 1) {
           const stringers = array(3).map(() => board("pallet", 4, 6, 3));
@@ -43,7 +43,7 @@ export const workspace: MachineType = {
           const deckBoardsLeft = [
             ...inputPallet.deckBoards,
           ] as typeof inputPallet.deckBoards;
-          const index = deckBoardsLeft.findLastIndex((board) => board === true);
+          const index = deckBoardsLeft.findLastIndex((board: boolean) => board === true);
           deckBoardsLeft[index] = false;
           return {
             inputs: [
@@ -65,9 +65,9 @@ export const workspace: MachineType = {
         { type: ["board"], species: ["pallet"], width: [6], length: [4], quantity: 2 }, // stringers as shelves
         { type: ["board"], species: ["pallet"], width: [4], length: [3], quantity: 3 }, // deck boards as back support
       ],
-      output: (materials) => {
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
         // Validate inputs
-        const boards = materials.filter((m): m is Board => m.type === "board");
+        const boards = materials.filter((m: MaterialInstance): m is Board => m.type === "board");
         if (boards.length !== 5) {
           throw new Error("Need exactly 5 boards to build a rustic shelf");
         }

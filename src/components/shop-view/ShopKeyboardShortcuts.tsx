@@ -16,6 +16,8 @@ import { materialMeetsInput } from "../../game/material-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { useKeyDown } from "../useKeyDown";
+import { getOperationInputMaterials, isParameterizedOperation } from "../../game/operation-helpers";
+import { ParameterValues } from "../../game/Machine";
 
 export const ShopKeyboardShortcuts: React.FC = () => {
   const applyAction = useApplyGameAction();
@@ -101,8 +103,13 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           const spacesLeft =
             machine.type.inputSpaces - machine.inputMaterials.length;
 
+          const inputMaterials = getOperationInputMaterials(
+            machine.selectedOperation,
+            machine.selectedParameters
+          );
+          
           const matchingMaterials = inventory.filter((material) =>
-            machine.selectedOperation.inputMaterials.some((input) =>
+            inputMaterials.some((input: any) =>
               materialMeetsInput(material, input)
             )
           );
@@ -153,11 +160,20 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           operationIndex + (event.shiftKey ? -1 : 1),
           machine.type.operations.length
         );
+        
+        const nextOperation = machine.type.operations[nextOperationIndex];
+        let parameters: ParameterValues | undefined = undefined;
+        
+        // Set default parameters for parameterized operations
+        if (isParameterizedOperation(nextOperation)) {
+          parameters = {};
+          for (const param of nextOperation.parameters) {
+            parameters[param.id] = param.values[0];
+          }
+        }
+        
         return applyAction(
-          setMachineOperationAction(
-            machine,
-            machine.type.operations[nextOperationIndex]
-          )
+          setMachineOperationAction(machine, nextOperation, parameters)
         );
       }
     }
