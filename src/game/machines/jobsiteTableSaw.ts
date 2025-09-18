@@ -1,9 +1,5 @@
-import {
-  InputMaterialWithQuantity,
-  MachineOperation,
-  MachineType,
-} from "../Machine";
-import { BOARD_DIMENSIONS, Board } from "../Materials";
+import { MachineType, ParameterizedOperation } from "../Machine";
+import { BOARD_DIMENSIONS, BoardDimension } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
 
 export const jobsiteTableSaw: MachineType = {
@@ -21,26 +17,31 @@ export const jobsiteTableSaw: MachineType = {
   toolStorage: 0,
   inputSpaces: 1,
   operations: [
-    ...BOARD_DIMENSIONS.map(
-      (width): MachineOperation => ({
-        name: `Rip Board - ${width}'`,
-        id: `ripBoard${width}`,
-        duration: 15,
-        inputMaterials: [
-          {
-            type: ["board"] as const,
-            width: BOARD_DIMENSIONS.filter((d) => d > width),
-            quantity: 1,
-          } satisfies InputMaterialWithQuantity<Board>,
-        ],
-        output: (materials) => {
-          const inputBoard = materials[0];
-          if (!isBoard(inputBoard)) {
-            throw new Error("Input material is not a board");
-          }
-          return cutBoard(inputBoard, width, "width");
+    {
+      id: "ripBoard",
+      name: "Rip Board",
+      duration: 15,
+      parameters: [
+        {
+          id: "targetWidth",
+          name: "Target Width",
+          values: BOARD_DIMENSIONS,
         },
-      })
-    ),
+      ],
+      getInputMaterials: (params) => [
+        {
+          type: ["board"],
+          width: BOARD_DIMENSIONS.filter((d) => d > (params.targetWidth as BoardDimension)),
+          quantity: 1,
+        },
+      ],
+      output: (materials, params) => {
+        const inputBoard = materials[0];
+        if (!isBoard(inputBoard)) {
+          throw new Error("Input material is not a board");
+        }
+        return cutBoard(inputBoard, params.targetWidth as BoardDimension, "width");
+      },
+    } as ParameterizedOperation,
   ],
 };

@@ -22,8 +22,8 @@ export function board(
 export function isBoard(material: MaterialInstance): material is Board {
   return material.type === "board";
 }
-/** Takes an input board and cuts it into two boards of the specified size */
 
+/** Takes an input board and cuts it into two boards of the specified size */
 export function cutBoard(
   inputBoard: Board,
   outputSize: BoardDimension,
@@ -36,10 +36,15 @@ export function cutBoard(
     throw new Error("Board is too small to cut");
   }
 
+  const outputs = [{ ...inputBoard, [dimension]: outputSize }];
+
   const offcutSize = startingDimension - outputSize - waste;
+  if (offcutSize > 0) {
+    outputs.push({ ...inputBoard, [dimension]: offcutSize });
+  }
 
   return {
-    inputs: offcutSize > 0 ? [{ ...inputBoard, [dimension]: offcutSize }] : [],
-    outputs: [{ ...inputBoard, [dimension]: outputSize }],
+    inputs: [],
+    outputs,
   };
 }

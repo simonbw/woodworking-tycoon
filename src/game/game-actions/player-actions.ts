@@ -1,9 +1,10 @@
 import { materialMeetsInput } from "../material-helpers";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
-import { Machine, MachineOperation } from "../Machine";
+import { Machine, MachineOperation, ParameterizedOperation, ParameterValues } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
+import { getOperationInputMaterials } from "../operation-helpers";
 
 export function instaMovePlayerAction(direction: Direction): GameAction {
   return (gameState) => {
@@ -182,7 +183,8 @@ export function takeOutputsFromMachineAction(
 
 export function setMachineOperationAction(
   machine: Machine,
-  operation: MachineOperation
+  operation: MachineOperation | ParameterizedOperation,
+  parameters?: ParameterValues
 ): GameAction {
   return (gameState) => {
     if (!machine.type.operations.includes(operation)) {
@@ -192,7 +194,7 @@ export function setMachineOperationAction(
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
-        m === machine ? { ...m, selectedOperation: operation } : m
+        m === machine ? { ...m, selectedOperation: operation, selectedParameters: parameters } : m
       ),
     };
   };
@@ -200,10 +202,22 @@ export function setMachineOperationAction(
 
 export function operateMachineAction(machine: Machine): GameAction {
   return (gameState) => {
+    // Can't start a new operation if one is in progress
+    if (machine.operationProgress.status === "inProgress") {
+      console.warn("Machine is already operating");
+      return gameState;
+    }
+
     const inventory = [...machine.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
-    for (const inputMaterial of machine.selectedOperation.inputMaterials) {
+    // Validate that we have all required materials
+    const inputMaterials = getOperationInputMaterials(
+      machine.selectedOperation,
+      machine.selectedParameters
+    );
+    
+    for (const inputMaterial of inputMaterials) {
       for (let i = 0; i < inputMaterial.quantity; i++) {
         const index = inventory.findIndex((m) =>
           materialMeetsInput(m, inputMaterial)
@@ -217,11 +231,7 @@ export function operateMachineAction(machine: Machine): GameAction {
       }
     }
 
-    const { inputs, outputs } =
-      machine.selectedOperation.output(materialsToConsume);
-
-    inventory.push(...inputs);
-
+    // Start the operation - move materials to processing and set timer
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
@@ -229,7 +239,11 @@ export function operateMachineAction(machine: Machine): GameAction {
           ? {
               ...m,
               inputMaterials: inventory,
-              outputMaterials: [...m.outputMaterials, ...outputs],
+              processingMaterials: materialsToConsume,
+              operationProgress: {
+                status: "inProgress" as const,
+                ticksRemaining: machine.selectedOperation.duration,
+              },
             }
           : m
       ),

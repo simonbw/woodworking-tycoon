@@ -21,12 +21,17 @@ export function shouldAdvanceTutorial(gameState: GameState): number | null {
   if (commissionsCompleted >= 2 && tutorialStage < 2) {
     return 2;
   }
-  
+
   return null; // No advancement needed
 }
 
 export function getNextMilestone(progression: ProgressionState): string | null {
-  const { commissionsCompleted, storeUnlocked, shopLayoutUnlocked, freeSelling } = progression;
+  const {
+    commissionsCompleted,
+    storeUnlocked,
+    shopLayoutUnlocked,
+    freeSelling,
+  } = progression;
 
   if (commissionsCompleted === 0) {
     return "Complete your first commission to unlock the Store";
@@ -41,7 +46,7 @@ export function getNextMilestone(progression: ProgressionState): string | null {
   }
 
   if (commissionsCompleted < 3) {
-    return `Complete ${3 - commissionsCompleted} more commission${3 - commissionsCompleted === 1 ? '' : 's'} to unlock all features`;
+    return `Complete ${3 - commissionsCompleted} more commission${3 - commissionsCompleted === 1 ? "" : "s"} to unlock all features`;
   }
 
   return null; // All milestones reached
@@ -60,18 +65,20 @@ export function getTutorialMessage(tutorialStage: number): string | null {
   }
 }
 
-export function getAllUnlockedFeatures(progression: ProgressionState): string[] {
+export function getAllUnlockedFeatures(
+  progression: ProgressionState,
+): string[] {
   const features: string[] = [];
-  if (progression.storeUnlocked) features.push('Store');
-  if (progression.shopLayoutUnlocked) features.push('Shop Layout');
-  if (progression.freeSelling) features.push('Free Selling');
+  if (progression.storeUnlocked) features.push("Store");
+  if (progression.shopLayoutUnlocked) features.push("Shop Layout");
+  if (progression.freeSelling) features.push("Free Selling");
   return features;
 }
 
 export function getRemainingFeatures(progression: ProgressionState): string[] {
   const features: string[] = [];
-  if (!progression.storeUnlocked) features.push('Store');
-  if (!progression.shopLayoutUnlocked) features.push('Shop Layout');
-  if (!progression.freeSelling) features.push('Free Selling');
+  if (!progression.storeUnlocked) features.push("Store");
+  if (!progression.shopLayoutUnlocked) features.push("Shop Layout");
+  if (!progression.freeSelling) features.push("Free Selling");
   return features;
 }
