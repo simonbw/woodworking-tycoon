@@ -1,7 +1,7 @@
 import { BOARD_DIMENSIONS, Board, BoardDimension } from "../Materials";
 import { isBoard } from "../board-helpers";
 import { makeMaterial } from "../material-helpers";
-import { MachineType, MachineOperation } from "../Machine";
+import { MachineType, ParameterizedOperation } from "../Machine";
 
 export const lunchboxPlaner: MachineType = {
   id: "planer",
@@ -15,33 +15,44 @@ export const lunchboxPlaner: MachineType = {
   toolStorage: 0,
   inputSpaces: 1,
   operations: [
-    ...BOARD_DIMENSIONS.filter(
-      // you can't plane something down to the maximum dimension
-      (dimension) => dimension < Math.max(...BOARD_DIMENSIONS)
-    ).map(
-      (thickness): MachineOperation => ({
-        name: `Plane Board to ${thickness}/4`,
-        id: `planeBoard${thickness}`,
-        duration: 15,
-        inputMaterials: [
+    {
+      id: "planeBoard",
+      name: "Plane Board",
+      duration: 15,
+      parameters: [
+        {
+          id: "targetThickness",
+          name: "Target Thickness",
+          values: BOARD_DIMENSIONS.filter(
+            // you can't plane something down to the maximum dimension
+            (dimension) => dimension < Math.max(...BOARD_DIMENSIONS)
+          ),
+        },
+      ],
+      getInputMaterials: (params) => {
+        const targetThickness = params.targetThickness as BoardDimension;
+        // Need boards thicker than target
+        const validThicknesses = BOARD_DIMENSIONS.filter(d => d > targetThickness);
+        return [
           {
             type: ["board"],
-            thickness: [(thickness + 1) as BoardDimension],
+            thickness: validThicknesses,
             quantity: 1,
           },
-        ],
-        output: (materials) => {
-          const inputBoard = materials[0];
-          if (!isBoard(inputBoard)) {
-            throw new Error("Input material is not a board");
-          }
-          // Same board, just thinner
-          return {
-            inputs: [],
-            outputs: [makeMaterial({ ...inputBoard, thickness } as Board)],
-          };
-        },
-      })
-    ),
+        ];
+      },
+      output: (materials, params) => {
+        const inputBoard = materials[0];
+        if (!isBoard(inputBoard)) {
+          throw new Error("Input material is not a board");
+        }
+        const targetThickness = params.targetThickness as BoardDimension;
+        // Same board, just thinner
+        return {
+          inputs: [],
+          outputs: [makeMaterial<Board>({ ...inputBoard, thickness: targetThickness })],
+        };
+      },
+    } as ParameterizedOperation,
   ],
 };
