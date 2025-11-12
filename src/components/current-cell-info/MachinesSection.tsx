@@ -1,8 +1,11 @@
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
-import { Machine, ParameterValues } from "../../game/Machine";
-import { MaterialInstance, Board, BoardDimension, Species, Pallet } from "../../game/Materials";
-import { makeMaterial } from "../../game/material-helpers";
+import {
+  InputMaterialWithQuantity,
+  Machine,
+  ParameterValues,
+} from "../../game/Machine";
+import { MaterialInstance } from "../../game/Materials";
 import {
   operateMachineAction,
   setMachineOperationAction,
@@ -10,47 +13,20 @@ import {
   takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
 import { machineCanOperate } from "../../game/machine-helpers";
-import { getMaterialName } from "../../game/material-helpers";
+import {
+  createMockMaterial,
+  getMaterialName,
+  materialMeetsInput,
+} from "../../game/material-helpers";
+import {
+  executeOperation,
+  generateOperationPreview,
+  getOperationInputMaterials,
+  isParameterizedOperation,
+} from "../../game/operation-helpers";
 import { groupBy } from "../../utils/arrayUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { MaterialIcon } from "./MaterialIcon";
-import { isParameterizedOperation, generateOperationPreview, getOperationInputMaterials, executeOperation } from "../../game/operation-helpers";
-import { InputMaterialWithQuantity } from "../../game/Machine";
-import { materialMeetsInput } from "../../game/material-helpers";
-
-// Helper to create a mock material from a requirement for placeholder display
-function createMockMaterial(requirement: InputMaterialWithQuantity): MaterialInstance {
-  const reqAny = requirement as any;
-  const materialType = requirement.type?.[0] || "board";
-
-  switch (materialType) {
-    case "board":
-      return makeMaterial<Board>({
-        type: "board",
-        length: (reqAny.length?.[0] || 8) as BoardDimension,
-        width: (reqAny.width?.[0] || 4) as BoardDimension,
-        thickness: (reqAny.thickness?.[0] || 2) as BoardDimension,
-        species: (reqAny.species?.[0] || "pine") as Species,
-      });
-
-    case "pallet":
-      return makeMaterial<Pallet>({
-        type: "pallet",
-        deckBoards: [true, true, true, true, true, true, true, true, true, true, true],
-        stringerBoardsLeft: 3,
-      });
-
-    default:
-      // Fallback to board
-      return makeMaterial<Board>({
-        type: "board",
-        length: 8 as BoardDimension,
-        width: 4 as BoardDimension,
-        thickness: 2 as BoardDimension,
-        species: "pine" as Species,
-      });
-  }
-}
 
 // Helper to match actual materials to operation requirements
 function matchMaterialsToSlots(
@@ -68,7 +44,7 @@ function matchMaterialsToSlots(
   for (const requirement of requirements) {
     for (let i = 0; i < requirement.quantity; i++) {
       // Find a matching material
-      const materialIndex = availableMaterials.findIndex(material =>
+      const materialIndex = availableMaterials.findIndex((material) =>
         materialMeetsInput(material, requirement)
       );
 
@@ -80,7 +56,7 @@ function matchMaterialsToSlots(
           requirement,
           material,
           isValid: true,
-          isPlaceholder: false
+          isPlaceholder: false,
         });
       } else {
         // No matching material found - try to find any material for this slot
@@ -93,7 +69,7 @@ function matchMaterialsToSlots(
             requirement,
             material,
             isValid: false,
-            isPlaceholder: false
+            isPlaceholder: false,
           });
         } else {
           // No material at all - show mock material as placeholder
@@ -101,7 +77,7 @@ function matchMaterialsToSlots(
             requirement,
             material: createMockMaterial(requirement),
             isValid: false,
-            isPlaceholder: true
+            isPlaceholder: true,
           });
         }
       }
@@ -145,8 +121,10 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
   const canOperate = machineCanOperate(machine);
   const isOperating = machine.operationProgress.status === "inProgress";
   const progressPercent = isOperating
-    ? ((machine.selectedOperation.duration - machine.operationProgress.ticksRemaining) /
-       machine.selectedOperation.duration) * 100
+    ? ((machine.selectedOperation.duration -
+        machine.operationProgress.ticksRemaining) /
+        machine.selectedOperation.duration) *
+      100
     : 0;
 
   // Get expected inputs/outputs for the current operation
@@ -158,16 +136,21 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
     machine.selectedParameters
   );
 
-  const inputSlots = matchMaterialsToSlots([...machine.inputMaterials], expectedInputs);
+  const inputSlots = matchMaterialsToSlots(
+    [...machine.inputMaterials],
+    expectedInputs
+  );
 
   // Calculate expected outputs if we have valid inputs
   let expectedOutputs: readonly MaterialInstance[] = [];
-  const allInputsValid = inputSlots.every(slot => slot.isValid && !slot.isPlaceholder);
+  const allInputsValid = inputSlots.every(
+    (slot) => slot.isValid && !slot.isPlaceholder
+  );
   if (allInputsValid && inputSlots.length > 0) {
     try {
       const validMaterials = inputSlots
-        .filter(slot => !slot.isPlaceholder)
-        .map(slot => slot.material);
+        .filter((slot) => !slot.isPlaceholder)
+        .map((slot) => slot.material);
       const result = executeOperation(
         machine.selectedOperation,
         validMaterials,
@@ -182,9 +165,15 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   // Always show what the operation would produce using generateOperationPreview
   let previewOutputs: readonly MaterialInstance[] = [];
-  if (expectedInputs.length > 0 && isParameterizedOperation(machine.selectedOperation)) {
+  if (
+    expectedInputs.length > 0 &&
+    isParameterizedOperation(machine.selectedOperation)
+  ) {
     try {
-      const preview = generateOperationPreview(machine.selectedOperation, machine.selectedParameters || {});
+      const preview = generateOperationPreview(
+        machine.selectedOperation,
+        machine.selectedParameters || {}
+      );
       previewOutputs = preview.expectedOutputs;
     } catch (error) {
       previewOutputs = [];
@@ -200,7 +189,7 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
           const operation = machine.type.operations.find(
             (op) => op.id === event.target.value
           )!;
-          
+
           // Set default parameters for parameterized operations
           let parameters: ParameterValues | undefined;
           if (isParameterizedOperation(operation)) {
@@ -209,7 +198,7 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               parameters[param.id] = param.values[0];
             }
           }
-          
+
           applyAction(
             setMachineOperationAction(machine, operation, parameters)
           );
@@ -223,32 +212,38 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
       </select>
 
       {/* Parameter controls for parameterized operations */}
-      {isParamOp && machine.selectedOperation.parameters.map((param) => (
-        <div key={param.id} className="flex gap-2 items-center">
-          <label className="text-xs text-zinc-400">{param.name}:</label>
-          <select
-            className="text-xs"
-            value={machine.selectedParameters?.[param.id] || param.values[0]}
-            onChange={(event) => {
-              const newParams = {
-                ...machine.selectedParameters,
-                [param.id]: event.target.value.includes('"') 
-                  ? parseInt(event.target.value) 
-                  : event.target.value
-              };
-              applyAction(
-                setMachineOperationAction(machine, machine.selectedOperation, newParams)
-              );
-            }}
-          >
-            {param.values.map((value) => (
-              <option key={value} value={value}>
-                {value}{typeof value === 'number' ? '"' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      ))}
+      {isParamOp &&
+        machine.selectedOperation.parameters.map((param) => (
+          <div key={param.id} className="flex gap-2 items-center">
+            <label className="text-xs text-zinc-400">{param.name}:</label>
+            <select
+              className="text-xs"
+              value={machine.selectedParameters?.[param.id] || param.values[0]}
+              onChange={(event) => {
+                const newParams = {
+                  ...machine.selectedParameters,
+                  [param.id]: event.target.value.includes('"')
+                    ? parseInt(event.target.value)
+                    : event.target.value,
+                };
+                applyAction(
+                  setMachineOperationAction(
+                    machine,
+                    machine.selectedOperation,
+                    newParams
+                  )
+                );
+              }}
+            >
+              {param.values.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                  {typeof value === "number" ? '"' : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
 
       {/* Crafting-style slot display */}
       <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded">
@@ -259,7 +254,9 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               key={i}
               onClick={() => {
                 if (!slot.isPlaceholder) {
-                  applyAction(takeInputsFromMachineAction([slot.material], machine));
+                  applyAction(
+                    takeInputsFromMachineAction([slot.material], machine)
+                  );
                 }
               }}
             >
@@ -267,7 +264,11 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
                 material={slot.material}
                 placeholder={slot.isPlaceholder}
                 isValid={slot.isValid}
-                tooltip={slot.isPlaceholder ? `Needs: ${getMaterialName(slot.material)}` : getMaterialName(slot.material)}
+                tooltip={
+                  slot.isPlaceholder
+                    ? `Needs: ${getMaterialName(slot.material)}`
+                    : getMaterialName(slot.material)
+                }
               />
             </span>
           ))}
@@ -292,7 +293,9 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
                 if (event.shiftKey) {
                   applyAction(takeOutputsFromMachineAction(materials, machine));
                 } else {
-                  applyAction(takeOutputsFromMachineAction([materials[0]], machine));
+                  applyAction(
+                    takeOutputsFromMachineAction([materials[0]], machine)
+                  );
                 }
               }}
             >
@@ -305,40 +308,47 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
           ))}
 
           {/* Show expected output placeholders when no actual outputs but inputs are valid */}
-          {outputMaterials.length === 0 && expectedOutputs.length > 0 && expectedOutputs.map((output, i) => (
-            <MaterialIcon
-              key={`exact-${i}`}
-              material={output}
-              placeholder={true}
-              tooltip={`Will produce: ${getMaterialName(output)}`}
-            />
-          ))}
+          {outputMaterials.length === 0 &&
+            expectedOutputs.length > 0 &&
+            expectedOutputs.map((output, i) => (
+              <MaterialIcon
+                key={`exact-${i}`}
+                material={output}
+                placeholder={true}
+                tooltip={`Will produce: ${getMaterialName(output)}`}
+              />
+            ))}
 
           {/* Show preview placeholders when no actual outputs and no valid inputs */}
-          {outputMaterials.length === 0 && expectedOutputs.length === 0 && previewOutputs.map((output, i) => (
-            <MaterialIcon
-              key={`preview-${i}`}
-              material={output}
-              placeholder={true}
-              tooltip={`Will produce: ${getMaterialName(output)}`}
-            />
-          ))}
+          {outputMaterials.length === 0 &&
+            expectedOutputs.length === 0 &&
+            previewOutputs.map((output, i) => (
+              <MaterialIcon
+                key={`preview-${i}`}
+                material={output}
+                placeholder={true}
+                tooltip={`Will produce: ${getMaterialName(output)}`}
+              />
+            ))}
 
           {/* Show generic placeholder when no outputs at all */}
-          {outputMaterials.length === 0 && expectedOutputs.length === 0 && previewOutputs.length === 0 && (
-            <MaterialIcon
-              material={createMockMaterial({ type: ["board"], quantity: 1 })}
-              placeholder={true}
-              tooltip="Output will appear here"
-            />
-          )}
+          {outputMaterials.length === 0 &&
+            expectedOutputs.length === 0 &&
+            previewOutputs.length === 0 && (
+              <MaterialIcon
+                material={createMockMaterial({ type: ["board"], quantity: 1 })}
+                placeholder={true}
+                tooltip="Output will appear here"
+              />
+            )}
         </div>
       </div>
 
       {isOperating ? (
         <div className="space-y-1">
           <div className="text-sm text-zinc-400">
-            Operating... ({machine.operationProgress.ticksRemaining} ticks remaining)
+            Operating... ({machine.operationProgress.ticksRemaining} ticks
+            remaining)
           </div>
           <div className="w-full bg-zinc-700 rounded-full h-2">
             <div

@@ -57,6 +57,16 @@ export type Pallet = {
   readonly stringerBoardsLeft: number;
 };
 
-export type MaterialInstance = Pallet | Board | SheetGood | FinishedProduct;
+export type UnknownMaterial = {
+  readonly id: string;
+  readonly type: "unknown";
+};
+
+export type MaterialInstance =
+  | Pallet
+  | Board
+  | SheetGood
+  | FinishedProduct
+  | UnknownMaterial;
 
 export type MaterialType = MaterialInstance["type"];
