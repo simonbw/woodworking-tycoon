@@ -67,5 +67,6 @@ export interface Machine {
   readonly selectedOperation: MachineOperation;
   readonly operationProgress: OperationProgress;
   readonly inputMaterials: ReadonlyArray<MaterialInstance>;
+  readonly processingMaterials: ReadonlyArray<MaterialInstance>;
   readonly outputMaterials: ReadonlyArray<MaterialInstance>;
 }

@@ -8,18 +8,20 @@ import { PalletSprite } from "./PalletSprite";
 // Just choose the correct sprite for a material
 export const MaterialSprite: React.FC<{
   material: MaterialInstance;
-}> = ({ material }) => {
+  alpha?: number;
+  tint?: number;
+}> = ({ material, alpha, tint }) => {
   switch (material.type) {
     case "board":
-      return <BoardSprite board={material} />;
+      return <BoardSprite board={material} alpha={alpha} tint={tint} />;
 
     case "pallet":
-      return <PalletSprite pallet={material} />;
+      return <PalletSprite pallet={material} alpha={alpha} tint={tint} />;
 
     case "jewelryBox":
-      return <FinishedBoxSprite material={material as FinishedProduct} />;
+      return <FinishedBoxSprite material={material as FinishedProduct} alpha={alpha} tint={tint} />;
 
     default:
-      return <DefaultMaterialPileSprite />;
+      return <DefaultMaterialPileSprite alpha={alpha} tint={tint} />;
   }
 };

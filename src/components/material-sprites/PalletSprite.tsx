@@ -11,7 +11,11 @@ export const MAX_STRINGERS = 3;
 export const MAX_TOP_DECK = 7;
 export const MAX_BOTTOM_DECK = 4;
 
-export const PalletSprite: React.FC<{ pallet: Pallet }> = ({ pallet }) => {
+export const PalletSprite: React.FC<{ 
+  pallet: Pallet; 
+  alpha?: number; 
+  tint?: number; 
+}> = ({ pallet, alpha, tint }) => {
   const bottom = pallet.deckBoards.slice(0, MAX_BOTTOM_DECK);
   const top = pallet.deckBoards.slice(
     MAX_BOTTOM_DECK,
@@ -25,7 +29,7 @@ export const PalletSprite: React.FC<{ pallet: Pallet }> = ({ pallet }) => {
   const totalHeight = (3 * INCHES_PER_FOOT - 2) * PIXELS_PER_INCH;
 
   return (
-    <Container x={-totalWidth / 2} y={-totalHeight / 2}>
+    <Container x={-totalWidth / 2} y={-totalHeight / 2} alpha={alpha}>
       {bottom.map(
         (boardExists, i) =>
           boardExists && (
@@ -35,6 +39,7 @@ export const PalletSprite: React.FC<{ pallet: Pallet }> = ({ pallet }) => {
               x={lerp(0, totalWidth, i / (MAX_BOTTOM_DECK - 1))}
               y={totalHeight / 2}
               anchor={-0.5}
+              tint={tint}
             />
           )
       )}
@@ -47,6 +52,7 @@ export const PalletSprite: React.FC<{ pallet: Pallet }> = ({ pallet }) => {
           y={lerp(0, totalHeight, i / (MAX_STRINGERS - 1))}
           angle={90}
           anchor={-0.5}
+          tint={tint}
         />
       ))}
 
@@ -59,6 +65,7 @@ export const PalletSprite: React.FC<{ pallet: Pallet }> = ({ pallet }) => {
               x={lerp(0, totalWidth, i / (MAX_TOP_DECK - 1))}
               y={totalHeight / 2}
               anchor={-0.5}
+              tint={tint}
             />
           )
       )}

@@ -200,9 +200,16 @@ export function setMachineOperationAction(
 
 export function operateMachineAction(machine: Machine): GameAction {
   return (gameState) => {
+    // Can't start a new operation if one is in progress
+    if (machine.operationProgress.status === "inProgress") {
+      console.warn("Machine is already operating");
+      return gameState;
+    }
+
     const inventory = [...machine.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
+    // Validate that we have all required materials
     for (const inputMaterial of machine.selectedOperation.inputMaterials) {
       for (let i = 0; i < inputMaterial.quantity; i++) {
         const index = inventory.findIndex((m) =>
@@ -217,11 +224,7 @@ export function operateMachineAction(machine: Machine): GameAction {
       }
     }
 
-    const { inputs, outputs } =
-      machine.selectedOperation.output(materialsToConsume);
-
-    inventory.push(...inputs);
-
+    // Start the operation - move materials to processing and set timer
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
@@ -229,7 +232,11 @@ export function operateMachineAction(machine: Machine): GameAction {
           ? {
               ...m,
               inputMaterials: inventory,
-              outputMaterials: [...m.outputMaterials, ...outputs],
+              processingMaterials: materialsToConsume,
+              operationProgress: {
+                status: "inProgress" as const,
+                ticksRemaining: machine.selectedOperation.duration,
+              },
             }
           : m
       ),

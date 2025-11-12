@@ -6,9 +6,13 @@ import { colorBySpecies } from "../shop-view/colorBySpecies";
 
 export const FinishedBoxSprite: React.FC<{
   material: FinishedProduct;
-}> = ({ material }) => {
+  alpha?: number;
+  tint?: number;
+}> = ({ material, alpha, tint }) => {
   return (
     <Graphics
+      alpha={alpha}
+      tint={tint}
       draw={useCallback((g: PixiGraphics) => {
         g.clear();
         g.beginFill(colorBySpecies[material.species].primary);

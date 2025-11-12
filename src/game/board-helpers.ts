@@ -8,7 +8,7 @@ export function board(
   species: Board["species"] = "pallet",
   length: Board["length"] = 1,
   width: Board["width"] = 1,
-  thickness: Board["thickness"] = 1,
+  thickness: Board["thickness"] = 1
 ): MaterialInstance & { type: "board" } {
   return makeMaterial({
     type: "board",
@@ -22,13 +22,13 @@ export function board(
 export function isBoard(material: MaterialInstance): material is Board {
   return material.type === "board";
 }
-/** Takes an input board and cuts it into two boards of the specified size */
 
+/** Takes an input board and cuts it into two boards of the specified size */
 export function cutBoard(
   inputBoard: Board,
   outputSize: BoardDimension,
   dimension: "length" | "width" | "thickness",
-  waste: number = 0,
+  waste: number = 0
 ): OperationOutput {
   const startingDimension = inputBoard[dimension];
 
@@ -36,10 +36,15 @@ export function cutBoard(
     throw new Error("Board is too small to cut");
   }
 
+  const outputs = [{ ...inputBoard, [dimension]: outputSize }];
+
   const offcutSize = startingDimension - outputSize - waste;
+  if (offcutSize > 0) {
+    outputs.push({ ...inputBoard, [dimension]: offcutSize });
+  }
 
   return {
-    inputs: offcutSize > 0 ? [{ ...inputBoard, [dimension]: offcutSize }] : [],
-    outputs: [{ ...inputBoard, [dimension]: outputSize }],
+    inputs: [],
+    outputs,
   };
 }

@@ -39,7 +39,7 @@ export const MachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 };
 
 const LocalMachineSprite: React.FC<Machine> = (machine) => {
-  const { inputMaterials, outputMaterials } = machine;
+  const { inputMaterials, processingMaterials, outputMaterials } = machine;
   switch (machine.type.id) {
     case MACHINE_TYPES.jobsiteTableSaw.id:
       return <JobsiteTableSawSprite {...machine} />;
@@ -64,6 +64,11 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
               <MaterialSprite material={material} key={index} />
             </Container>
           ))}
+          {processingMaterials.map((material, index) => (
+            <Container angle={index * 10 + 2.5} key={`proc-${index}`}>
+              <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
+            </Container>
+          ))}
           {outputMaterials.map((material, index) => (
             <Container angle={index * 10 + 5} key={`out-${index}`}>
               <MaterialSprite material={material} key={index} />
@@ -85,6 +90,11 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
               <MaterialSprite material={material} key={index} />
             </Container>
           ))}
+          {processingMaterials.map((material, index) => (
+            <Container angle={index * 10 + 2.5} key={`proc-${index}`}>
+              <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
+            </Container>
+          ))}
           {outputMaterials.map((material, index) => (
             <Container angle={index * 10 + 5} key={`out-${index}`}>
               <MaterialSprite material={material} key={index} />
@@ -100,6 +110,11 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
           {inputMaterials.map((material, index) => (
             <Container angle={index * 10} key={`in-${index}`}>
               <MaterialSprite material={material} key={index} />
+            </Container>
+          ))}
+          {processingMaterials.map((material, index) => (
+            <Container angle={index * 10 + 2.5} key={`proc-${index}`}>
+              <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
             </Container>
           ))}
           {outputMaterials.map((material, index) => (
