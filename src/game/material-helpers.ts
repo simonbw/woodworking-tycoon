@@ -9,14 +9,13 @@ import {
   MaterialInstance,
   Pallet,
   SheetGood,
-  Species,
   UnknownMaterial,
 } from "./Materials";
 
 const makeId = idMaker();
 
 export function makeMaterial<T extends MaterialInstance>(
-  materialInitializer: Omit<T, "id">
+  materialInitializer: Omit<T, "id">,
 ): T {
   return {
     ...materialInitializer,
@@ -49,7 +48,7 @@ export function getMaterialName(material: MaterialInstance): string {
     case "board": {
       const { species, width, length, thickness } = material;
       return `${humanizeString(
-        species
+        species,
       )} Board (${length}'x${width}"x${thickness}/4)`;
     }
     default:
@@ -94,7 +93,7 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
 }
 
 export function materialToInput<T extends MaterialInstance = MaterialInstance>(
-  material: T
+  material: T,
 ): InputMaterial<T> {
   const result: InputMaterial<T> = {};
   for (const key in material) {
@@ -107,7 +106,7 @@ export function materialToInput<T extends MaterialInstance = MaterialInstance>(
 
 export function materialMeetsInput(
   material: MaterialInstance,
-  inputMaterial: InputMaterial
+  inputMaterial: InputMaterial,
 ) {
   for (const key of Object.keys(inputMaterial)) {
     // Make sure to skip quantity, because that's not a property of the material
@@ -117,7 +116,7 @@ export function materialMeetsInput(
       return false;
     } else if (
       !(inputMaterial as Record<string, unknown[]>)[key].includes(
-        (material as Record<string, unknown>)[key]
+        (material as Record<string, unknown>)[key],
       )
     ) {
       return false;
@@ -128,7 +127,7 @@ export function materialMeetsInput(
 
 // Helper to create a mock material from a requirement for placeholder display
 export function createMockMaterial(
-  requirement: InputMaterialWithQuantity
+  requirement: InputMaterialWithQuantity,
 ): MaterialInstance {
   if (requirement.type === undefined || requirement.type.length === 0) {
     throw new Error("Requirement must specify at least one material type");
@@ -149,10 +148,10 @@ export function createMockMaterial(
       const r = requirement as InputMaterialWithQuantity<SheetGood>;
       return makeMaterial<SheetGood>({
         type: "plywood",
+        kind: r.kind?.[0] || "plywoodA",
         length: (r.length?.[0] || 8) as BoardDimension,
         width: (r.width?.[0] || 4) as BoardDimension,
-        thickness: (r.thickness?.[0] || 2) as BoardDimension,
-        species: (requirement.species?.[0] || "pine") as Species,
+        thickness: (r.thickness?.[0] || 2) as SheetGood["thickness"],
       });
     }
 
@@ -183,7 +182,7 @@ export function createMockMaterial(
         type: requirement.type[0],
         species:
           "species" in requirement
-            ? requirement.species?.[0] ?? "pine"
+            ? (requirement.species?.[0] ?? "pine")
             : "pine",
       });
 

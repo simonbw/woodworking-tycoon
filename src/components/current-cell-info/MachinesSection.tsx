@@ -222,8 +222,8 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               onChange={(event) => {
                 const newParams = {
                   ...machine.selectedParameters,
-                  [param.id]: event.target.value.includes('"')
-                    ? parseInt(event.target.value)
+                  [param.id]: typeof param.values[0] === "number"
+                    ? Number(event.target.value)
                     : event.target.value,
                 };
                 applyAction(
