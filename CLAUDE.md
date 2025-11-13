@@ -19,6 +19,7 @@ Woodworking Tycoon is an idle/simulation game built with React and TypeScript. T
 **IMPORTANT**: Claude should NEVER run `npm run dev` directly. The user manages the dev server.
 
 For testing changes:
+
 - Use `npm run test` to run automated E2E tests (fast, comprehensive validation)
 - Ask the user to test manually if more complex validation is needed
 - The test suite validates core functionality including UI rendering, game state, and recent fixes
@@ -94,5 +95,3 @@ The game implements a time-based simulation where players queue actions and the 
 - **Machine Operations**: Transform raw materials into finished products
 - **Shop Layout**: Physical space management affects workflow efficiency
 - **Economic Progression**: Purchase better machines and expand workshop space
-
-See `dist/TODO.md` for detailed development roadmap and planned features.
