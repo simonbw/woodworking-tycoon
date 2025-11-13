@@ -10,7 +10,7 @@ export interface MachineType {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly operations: ReadonlyArray<MachineOperation>;
+  readonly operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
   readonly cellsOccupied: ReadonlyArray<Vector>;
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
   readonly operationPosition?: Vector;
@@ -55,6 +55,31 @@ export interface OperationOutput {
   outputs: ReadonlyArray<MaterialInstance>;
 }
 
+// Parameterized operation system
+export interface OperationParameter<T = number | string> {
+  readonly id: string;
+  readonly name: string;
+  readonly values: ReadonlyArray<T>;
+}
+
+export type ParameterValues = Record<string, number | string>;
+
+export interface ParameterizedOperation<
+  TParams extends ParameterValues = ParameterValues,
+> {
+  readonly id: string;
+  readonly name: string;
+  readonly duration: number;
+  readonly parameters: ReadonlyArray<OperationParameter>;
+  readonly getInputMaterials: (
+    params: TParams,
+  ) => ReadonlyArray<InputMaterialWithQuantity>;
+  readonly output: (
+    materials: ReadonlyArray<MaterialInstance>,
+    params: TParams,
+  ) => OperationOutput;
+}
+
 export interface OperationProgress {
   readonly status: "notStarted" | "inProgress" | "finished";
   readonly ticksRemaining: number;
@@ -64,7 +89,8 @@ export interface Machine {
   readonly type: MachineType;
   readonly position: Vector;
   readonly rotation: Direction;
-  readonly selectedOperation: MachineOperation;
+  readonly selectedOperation: MachineOperation | ParameterizedOperation;
+  readonly selectedParameters?: ParameterValues;
   readonly operationProgress: OperationProgress;
   readonly inputMaterials: ReadonlyArray<MaterialInstance>;
   readonly processingMaterials: ReadonlyArray<MaterialInstance>;

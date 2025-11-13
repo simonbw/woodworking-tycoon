@@ -1,5 +1,6 @@
 import { GameAction } from "../GameState";
 import { applyWorkItemAction } from "./work-item-actions";
+import { executeOperation } from "../operation-helpers";
 
 export const tickAction: GameAction = (gameState) => {
   gameState = {
@@ -45,8 +46,10 @@ export const tickAction: GameAction = (gameState) => {
     }
 
     // Operation completed - apply the transformation
-    const { inputs, outputs } = machine.selectedOperation.output(
-      machine.processingMaterials
+    const { inputs, outputs } = executeOperation(
+      machine.selectedOperation,
+      machine.processingMaterials,
+      machine.selectedParameters
     );
 
     return {

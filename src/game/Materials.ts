@@ -2,8 +2,10 @@
 
 import { Tuple } from "../utils/typeUtils";
 
-export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const; // either feet, inches, or quarters of an inch
+export const SHEET_THICKNESSES = [1, 2, 3, 4] as const; // in quarters of an inch
 export type BoardDimension = (typeof BOARD_DIMENSIONS)[number];
+export type SheetThickness = (typeof SHEET_THICKNESSES)[number];
 
 export const SPECIES = [
   "pallet",
@@ -28,9 +30,9 @@ export interface Board {
 }
 
 export type SheetGoodKind =
-  | "plywoodA"
-  | "plywoodB"
-  | "plywoodC"
+  | "plywoodA" // high quality
+  | "plywoodB" // medium quality
+  | "plywoodC" // low quality
   | "mdf"
   | "osb"
   | "particleBoard";
@@ -40,7 +42,7 @@ export interface SheetGood {
   readonly type: "plywood";
   readonly length: BoardDimension;
   readonly width: BoardDimension;
-  readonly thickness: 1 | 2 | 3 | 4; // 1/4", 1/2", 3/4", 1"
+  readonly thickness: SheetThickness;
   readonly kind: SheetGoodKind;
 }
 
@@ -57,6 +59,16 @@ export type Pallet = {
   readonly stringerBoardsLeft: number;
 };
 
-export type MaterialInstance = Pallet | Board | SheetGood | FinishedProduct;
+export type UnknownMaterial = {
+  readonly id: string;
+  readonly type: "unknown";
+};
+
+export type MaterialInstance =
+  | Pallet
+  | Board
+  | SheetGood
+  | FinishedProduct
+  | UnknownMaterial;
 
 export type MaterialType = MaterialInstance["type"];

@@ -1,7 +1,16 @@
 import { humanizeString } from "../utils/humanizeString";
 import { idMaker } from "../utils/idMaker";
-import { InputMaterial } from "./Machine";
-import { BOARD_DIMENSIONS, MaterialInstance, Pallet } from "./Materials";
+import { InputMaterial, InputMaterialWithQuantity } from "./Machine";
+import {
+  Board,
+  BOARD_DIMENSIONS,
+  BoardDimension,
+  FinishedProduct,
+  MaterialInstance,
+  Pallet,
+  SheetGood,
+  UnknownMaterial,
+} from "./Materials";
 
 const makeId = idMaker();
 
@@ -114,4 +123,79 @@ export function materialMeetsInput(
     }
   }
   return true;
+}
+
+// Helper to create a mock material from a requirement for placeholder display
+export function createMockMaterial(
+  requirement: InputMaterialWithQuantity,
+): MaterialInstance {
+  if (requirement.type === undefined || requirement.type.length === 0) {
+    throw new Error("Requirement must specify at least one material type");
+  }
+
+  switch (requirement.type[0]) {
+    case "board": {
+      const r = requirement as InputMaterialWithQuantity<Board>;
+      return makeMaterial<Board>({
+        type: "board",
+        length: r.length?.[0] || 8,
+        width: r.width?.[0] || 4,
+        thickness: r.thickness?.[0] || 2,
+        species: r.species?.[0] || "pine",
+      });
+    }
+    case "plywood": {
+      const r = requirement as InputMaterialWithQuantity<SheetGood>;
+      return makeMaterial<SheetGood>({
+        type: "plywood",
+        kind: r.kind?.[0] || "plywoodA",
+        length: (r.length?.[0] || 8) as BoardDimension,
+        width: (r.width?.[0] || 4) as BoardDimension,
+        thickness: (r.thickness?.[0] || 2) as SheetGood["thickness"],
+      });
+    }
+
+    case "pallet":
+      return makeMaterial<Pallet>({
+        type: "pallet",
+        deckBoards: [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+        ],
+        stringerBoardsLeft: 3,
+      });
+
+    case "jewelryBox":
+    case "rusticShelf":
+    case "shelf":
+    case "simpleCuttingBoard":
+      return makeMaterial<FinishedProduct>({
+        type: requirement.type[0],
+        species:
+          "species" in requirement
+            ? (requirement.species?.[0] ?? "pine")
+            : "pine",
+      });
+
+    case "unknown":
+      return makeMaterial<UnknownMaterial>({
+        type: "unknown",
+      });
+
+    default:
+      return assertUnreachable(requirement.type[0]);
+  }
+}
+
+function assertUnreachable(x: never): never {
+  throw new Error(`Unexpected object: ${x}`);
 }
