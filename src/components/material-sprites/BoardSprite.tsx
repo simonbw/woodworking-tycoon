@@ -44,5 +44,12 @@ export const BoardSprite: React.FC<
     [boardWidth, boardLength, thickness, species]
   );
 
-  return <Graphics {...rest} draw={draw} />;
+  return (
+    <Graphics
+      {...rest}
+      {...(rest.alpha !== undefined && { alpha: rest.alpha })}
+      {...(rest.tint !== undefined && { tint: rest.tint })}
+      draw={draw}
+    />
+  );
 };

@@ -8,8 +8,8 @@ export const DefaultMaterialPileSprite: React.FC<{
 }> = ({ alpha, tint }) => {
   return (
     <Graphics
-      alpha={alpha}
-      tint={tint}
+      {...(alpha !== undefined && { alpha })}
+      {...(tint !== undefined && { tint })}
       draw={useCallback((g: PixiGraphics) => {
         g.clear();
         g.beginFill(0);

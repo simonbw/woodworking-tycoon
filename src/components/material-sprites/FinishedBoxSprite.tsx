@@ -11,8 +11,8 @@ export const FinishedBoxSprite: React.FC<{
 }> = ({ material, alpha, tint }) => {
   return (
     <Graphics
-      alpha={alpha}
-      tint={tint}
+      {...(alpha !== undefined && { alpha })}
+      {...(tint !== undefined && { tint })}
       draw={useCallback((g: PixiGraphics) => {
         g.clear();
         g.beginFill(colorBySpecies[material.species].primary);
