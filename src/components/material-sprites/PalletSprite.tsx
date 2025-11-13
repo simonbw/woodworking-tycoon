@@ -4,6 +4,7 @@ import { Pallet } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
 import { array } from "../../utils/arrayUtils";
 import { lerp } from "../../utils/mathUtils";
+import { omitUndefined } from "../../utils/objectUtils";
 import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import { BoardSprite } from "./BoardSprite";
 
@@ -25,8 +26,6 @@ export const PalletSprite: React.FC<{
   const deckBoard = useMemo(() => board("pallet", 3, 4, 2), []);
   const stringerBoard = useMemo(() => board("pallet", 4, 1, 2), []);
 
-  const tintProp = tint !== undefined ? { tint } : {};
-
   const totalWidth = (4 * INCHES_PER_FOOT - 2) * PIXELS_PER_INCH;
   const totalHeight = (3 * INCHES_PER_FOOT - 2) * PIXELS_PER_INCH;
 
@@ -34,7 +33,7 @@ export const PalletSprite: React.FC<{
     <Container
       x={-totalWidth / 2}
       y={-totalHeight / 2}
-      {...(alpha !== undefined && { alpha })}
+      {...omitUndefined({ alpha })}
     >
       {bottom.map(
         (boardExists, i) =>
@@ -45,7 +44,7 @@ export const PalletSprite: React.FC<{
               x={lerp(0, totalWidth, i / (MAX_BOTTOM_DECK - 1))}
               y={totalHeight / 2}
               anchor={-0.5}
-              {...tintProp}
+              tint={tint}
             />
           )
       )}
@@ -58,7 +57,7 @@ export const PalletSprite: React.FC<{
           y={lerp(0, totalHeight, i / (MAX_STRINGERS - 1))}
           angle={90}
           anchor={-0.5}
-          {...tintProp}
+          tint={tint}
         />
       ))}
 
@@ -71,7 +70,7 @@ export const PalletSprite: React.FC<{
               x={lerp(0, totalWidth, i / (MAX_TOP_DECK - 1))}
               y={totalHeight / 2}
               anchor={-0.5}
-              {...tintProp}
+              tint={tint}
             />
           )
       )}

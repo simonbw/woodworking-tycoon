@@ -1,6 +1,7 @@
 import { Graphics as PixiGraphics } from "@pixi/graphics";
 import { Graphics } from "@pixi/react";
 import React, { useCallback } from "react";
+import { omitUndefined } from "../../utils/objectUtils";
 
 export const DefaultMaterialPileSprite: React.FC<{
   alpha?: number;
@@ -8,8 +9,7 @@ export const DefaultMaterialPileSprite: React.FC<{
 }> = ({ alpha, tint }) => {
   return (
     <Graphics
-      {...(alpha !== undefined && { alpha })}
-      {...(tint !== undefined && { tint })}
+      {...omitUndefined({ alpha, tint })}
       draw={useCallback((g: PixiGraphics) => {
         g.clear();
         g.beginFill(0);

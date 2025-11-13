@@ -11,22 +11,17 @@ export const MaterialSprite: React.FC<{
   alpha?: number;
   tint?: number;
 }> = ({ material, alpha, tint }) => {
-  const optionalProps = {
-    ...(alpha !== undefined && { alpha }),
-    ...(tint !== undefined && { tint }),
-  };
-
   switch (material.type) {
     case "board":
-      return <BoardSprite board={material} {...optionalProps} />;
+      return <BoardSprite board={material} alpha={alpha} tint={tint} />;
 
     case "pallet":
-      return <PalletSprite pallet={material} {...optionalProps} />;
+      return <PalletSprite pallet={material} alpha={alpha} tint={tint} />;
 
     case "jewelryBox":
-      return <FinishedBoxSprite material={material as FinishedProduct} {...optionalProps} />;
+      return <FinishedBoxSprite material={material as FinishedProduct} alpha={alpha} tint={tint} />;
 
     default:
-      return <DefaultMaterialPileSprite {...optionalProps} />;
+      return <DefaultMaterialPileSprite alpha={alpha} tint={tint} />;
   }
 };

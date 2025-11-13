@@ -1,6 +1,7 @@
 import { Graphics } from "@pixi/react";
 import React, { useCallback } from "react";
 import { Board } from "../../game/Materials";
+import { omitUndefined } from "../../utils/objectUtils";
 import { PixiGraphics } from "../../utils/PixiGraphics";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
@@ -44,12 +45,5 @@ export const BoardSprite: React.FC<
     [boardWidth, boardLength, thickness, species]
   );
 
-  return (
-    <Graphics
-      {...rest}
-      {...(rest.alpha !== undefined && { alpha: rest.alpha })}
-      {...(rest.tint !== undefined && { tint: rest.tint })}
-      draw={draw}
-    />
-  );
+  return <Graphics {...omitUndefined(rest)} draw={draw} />;
 };
