@@ -1,4 +1,4 @@
-import { Container, Stage } from "@pixi/react";
+import { Application } from "@pixi/react";
 import React, { ReactNode } from "react";
 import { MaterialInstance } from "../../game/Materials";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
@@ -14,24 +14,21 @@ export const SimpleSpriteStage: React.FC<{
   scale?: number;
 }> = ({ children, scale = 0.5 }) => {
   return (
-    <Stage
+    <Application
       width={PIXELS_PER_CELL * scale}
       height={PIXELS_PER_CELL * scale}
-      raf={false}
-      options={{
-        backgroundAlpha: 0,
-        antialias: true,
-      }}
+      backgroundAlpha={0}
+      antialias={true}
       className="rounded bg-zinc-700 p-0.5"
     >
-      <Container
+      <pixiContainer
         y={(PIXELS_PER_CELL / 2) * scale}
         x={(PIXELS_PER_CELL / 2) * scale}
         scale={scale}
       >
         {children}
-      </Container>
-    </Stage>
+      </pixiContainer>
+    </Application>
   );
 };
 

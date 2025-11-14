@@ -1,8 +1,8 @@
-import { Container, Graphics, Sprite } from "@pixi/react";
+import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { MACHINE_TYPES, Machine } from "../../game/Machine";
-import { PixiGraphics } from "../../utils/PixiGraphics";
 import { colors } from "../../utils/colors";
+import { useTexture } from "../../utils/useTexture";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
 import { MiterSawSprite } from "../machine-sprites/MiterSawSprite";
@@ -19,14 +19,15 @@ export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 export const MachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const [x, y] = cellToPixelCenter(machine.position);
   const angle = machine.rotation * -90;
+  const operatorPositionTexture = useTexture("/images/operator-position.png");
 
   return (
-    <Container x={x} y={y} angle={angle} anchor={{ x: 0.5, y: 0.5 }}>
+    <pixiContainer x={x} y={y} angle={angle} anchor={{ x: 0.5, y: 0.5 }}>
       <LocalMachineSprite {...machine} />
 
       {machine.type.operationPosition && (
-        <Sprite
-          image={"/images/operator-position.png"}
+        <pixiSprite
+          texture={operatorPositionTexture}
           scale={IMAGE_SCALE}
           anchor={{ x: 0.5, y: 0.5 }}
           alpha={0}
@@ -34,12 +35,15 @@ export const MachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           y={machine.type.operationPosition[1] * PIXELS_PER_CELL}
         />
       )}
-    </Container>
+    </pixiContainer>
   );
 };
 
 const LocalMachineSprite: React.FC<Machine> = (machine) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
+  const workspaceTexture = useTexture("/images/workspace.png");
+  const makeshiftBenchTexture = useTexture("/images/makeshift-bench.png");
+
   switch (machine.type.id) {
     case MACHINE_TYPES.jobsiteTableSaw.id:
       return <JobsiteTableSawSprite {...machine} />;
@@ -52,77 +56,77 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
 
     case MACHINE_TYPES.workspace.id:
       return (
-        <Container>
-          <Sprite
-            image={"/images/workspace.png"}
+        <pixiContainer>
+          <pixiSprite
+            texture={workspaceTexture}
             scale={IMAGE_SCALE}
             anchor={{ x: 0.5, y: 0.5 }}
             alpha={0.3}
           />
           {inputMaterials.map((material, index) => (
-            <Container angle={index * 10} key={`in-${index}`}>
+            <pixiContainer angle={index * 10} key={`in-${index}`}>
               <MaterialSprite material={material} key={index} />
-            </Container>
+            </pixiContainer>
           ))}
           {processingMaterials.map((material, index) => (
-            <Container angle={index * 10 + 2.5} key={`proc-${index}`}>
+            <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
               <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
-            </Container>
+            </pixiContainer>
           ))}
           {outputMaterials.map((material, index) => (
-            <Container angle={index * 10 + 5} key={`out-${index}`}>
+            <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
               <MaterialSprite material={material} key={index} />
-            </Container>
+            </pixiContainer>
           ))}
-        </Container>
+        </pixiContainer>
       );
 
     case MACHINE_TYPES.makeshiftBench.id:
       return (
-        <Container>
-          <Sprite
-            image={"/images/makeshift-bench.png"}
+        <pixiContainer>
+          <pixiSprite
+            texture={makeshiftBenchTexture}
             scale={IMAGE_SCALE}
             anchor={{ x: 0.5, y: 0.5 }}
           />
           {inputMaterials.map((material, index) => (
-            <Container angle={index * 10} key={`in-${index}`}>
+            <pixiContainer angle={index * 10} key={`in-${index}`}>
               <MaterialSprite material={material} key={index} />
-            </Container>
+            </pixiContainer>
           ))}
           {processingMaterials.map((material, index) => (
-            <Container angle={index * 10 + 2.5} key={`proc-${index}`}>
+            <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
               <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
-            </Container>
+            </pixiContainer>
           ))}
           {outputMaterials.map((material, index) => (
-            <Container angle={index * 10 + 5} key={`out-${index}`}>
+            <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
               <MaterialSprite material={material} key={index} />
-            </Container>
+            </pixiContainer>
           ))}
-        </Container>
+        </pixiContainer>
       );
 
     default: {
       return (
-        <Container>
+        <pixiContainer>
           <DefaultMachineSprite />
           {inputMaterials.map((material, index) => (
-            <Container angle={index * 10} key={`in-${index}`}>
+            <pixiContainer angle={index * 10} key={`in-${index}`}>
               <MaterialSprite material={material} key={index} />
-            </Container>
+            </pixiContainer>
           ))}
           {processingMaterials.map((material, index) => (
-            <Container angle={index * 10 + 2.5} key={`proc-${index}`}>
+            <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
               <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
-            </Container>
+            </pixiContainer>
           ))}
           {outputMaterials.map((material, index) => (
-            <Container angle={index * 10 + 5} key={`out-${index}`}>
+            <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
               <MaterialSprite material={material} key={index} />
-            </Container>
+            </pixiContainer>
           ))}
-        </Container>
+        </pixiContainer>
       );
     }
   }
@@ -130,13 +134,12 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
 
 const DefaultMachineSprite: React.FC = () => {
   return (
-    <Graphics
-      draw={useCallback((g: PixiGraphics) => {
+    <pixiGraphics
+      draw={useCallback((g: Graphics) => {
         g.clear();
-        g.beginFill(colors.brown["900"]);
         const [x, y] = cellToPixelCenter([0, 0]);
-        g.drawRect(x, y, PIXELS_PER_CELL, PIXELS_PER_CELL);
-        g.endFill();
+        g.rect(x, y, PIXELS_PER_CELL, PIXELS_PER_CELL);
+        g.fill(colors.brown["900"]);
       }, [])}
     />
   );

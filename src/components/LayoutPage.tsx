@@ -1,8 +1,9 @@
-import { Container, Stage, TilingSprite } from "@pixi/react";
+import { Application } from "@pixi/react";
 import React, { useState } from "react";
 import { useCellMap } from "../game/CellMap";
 import { MachineType } from "../game/Machine";
 import { groupBy } from "../utils/arrayUtils";
+import { useTexture } from "../utils/useTexture";
 import { NavBar } from "./NavBar";
 import { FloorTileSprite } from "./shop-view/FloorTileSprite";
 import { MachineSprite } from "./shop-view/MachineSprite";
@@ -29,6 +30,7 @@ export const LayoutPage: React.FC = () => {
   const gameState = useGameState();
   const updateGameState = useApplyGameAction();
   const cellMap = useCellMap();
+  const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
   const materialPileGroups = cellMap
     .getCells()
@@ -44,17 +46,18 @@ export const LayoutPage: React.FC = () => {
 
       <div className="grid grid-cols-2">
         <section>
-          <Stage
+          <Application
             width={width}
             height={height}
-            options={{ backgroundAlpha: 0, antialias: true, eventMode: "auto" }}
+            backgroundAlpha={0}
+            antialias={true}
           >
             <gameStateContext.Provider value={{ gameState, updateGameState }}>
-              <TilingSprite
+              <pixiTilingSprite
                 eventMode="static"
-                image={"/images/concrete-floor-2-big.png"}
-                tilePosition={[0, 0]}
-                tileScale={0.25}
+                texture={floorTexture}
+                tilePosition={{ x: 0, y: 0 }}
+                tileScale={{ x: 0.25, y: 0.25 }}
                 width={width}
                 height={height}
               />
@@ -65,13 +68,13 @@ export const LayoutPage: React.FC = () => {
                 />
               ))}
               {materialPileGroups.map((materialPiles, i) => (
-                <Container
+                <pixiContainer
                   key={`pile${materialPiles[0].position.join(",")}`}
                   x={materialPiles[0].position[0] * PIXELS_PER_CELL}
                   y={materialPiles[0].position[1] * PIXELS_PER_CELL}
                 >
                   <MaterialPilesSprite materialPiles={materialPiles} />
-                </Container>
+                </pixiContainer>
               ))}
               {gameState.machines.map((machinePlacement) => (
                 <MachineSprite
@@ -83,7 +86,7 @@ export const LayoutPage: React.FC = () => {
                 />
               ))}
             </gameStateContext.Provider>
-          </Stage>
+          </Application>
         </section>
         <StorageSection
           selectedMachine={selectedMachine}

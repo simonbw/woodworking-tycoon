@@ -1,8 +1,8 @@
-import { Container, Sprite } from "@pixi/react";
 import React from "react";
 import { Machine } from "../../game/Machine";
 import { BOARD_DIMENSIONS } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
+import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
@@ -10,15 +10,17 @@ import { extractFirstNumber } from "./extractFirstNumber";
 
 export const MiterSawSprite: React.FC<Machine> = (machine) => {
   const { inputMaterials, outputMaterials } = machine;
+  const miterSawBaseTexture = useTexture("/images/miter-saw-base.png");
+  const miterSawTopTexture = useTexture("/images/miter-saw-top.png");
 
   const cutLength =
     extractFirstNumber(machine.selectedOperation.id) ||
     Math.max(...BOARD_DIMENSIONS);
 
   return (
-    <Container>
-      <Sprite
-        image={"/images/miter-saw-base.png"}
+    <pixiContainer>
+      <pixiSprite
+        texture={miterSawBaseTexture}
         scale={IMAGE_SCALE}
         anchor={{ x: 0.5, y: 0.5 }}
       />
@@ -26,25 +28,25 @@ export const MiterSawSprite: React.FC<Machine> = (machine) => {
         const x = feetToPixels(-board.length / 2) - 3;
         const y = inchesToPixels(board.width / 2 - 3);
         return (
-          <Container angle={90} x={x} y={y} key={index}>
+          <pixiContainer angle={90} x={x} y={y} key={index}>
             <MaterialSprite material={board} />
-          </Container>
+          </pixiContainer>
         );
       })}
       {outputMaterials.filter(isBoard).map((board, index) => {
         const x = feetToPixels(board.length / 2) + 3;
         const y = inchesToPixels(board.width / 2 - 3);
         return (
-          <Container angle={90 + index * 5} x={x} y={y} key={index}>
+          <pixiContainer angle={90 + index * 5} x={x} y={y} key={index}>
             <MaterialSprite material={board} />
-          </Container>
+          </pixiContainer>
         );
       })}
-      <Sprite
-        image={"/images/miter-saw-top.png"}
+      <pixiSprite
+        texture={miterSawTopTexture}
         scale={IMAGE_SCALE}
         anchor={{ x: 0.5, y: 0.5 }}
       />
-    </Container>
+    </pixiContainer>
   );
 };

@@ -1,6 +1,7 @@
-import { Container, Stage, TilingSprite } from "@pixi/react";
+import { Application } from "@pixi/react";
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
+import { useTexture } from "../../utils/useTexture";
 import {
   gameStateContext,
   useApplyGameAction,
@@ -18,6 +19,7 @@ export const ShopView: React.FC = () => {
   const gameState = useGameState();
   const updateGameState = useApplyGameAction();
   const cellMap = useCellMap();
+  const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
   const materialPileGroups = cellMap
     .getCells()
@@ -30,17 +32,18 @@ export const ShopView: React.FC = () => {
   return (
     <>
       <ShopKeyboardShortcuts />
-      <Stage
+      <Application
         width={width}
         height={height}
-        options={{ backgroundAlpha: 0, antialias: true, eventMode: "auto" }}
+        backgroundAlpha={0}
+        antialias={true}
       >
         <gameStateContext.Provider value={{ gameState, updateGameState }}>
-          <TilingSprite
+          <pixiTilingSprite
             eventMode="static"
-            image={"/images/concrete-floor-2-big.png"}
-            tilePosition={[0, 0]}
-            tileScale={0.25}
+            texture={floorTexture}
+            tilePosition={{ x: 0, y: 0 }}
+            tileScale={{ x: 0.25, y: 0.25 }}
             width={width}
             height={height}
           />
@@ -50,14 +53,18 @@ export const ShopView: React.FC = () => {
               key={`cell-${cell.position.join(",")}`}
             />
           ))}
-          {materialPileGroups.map((materialPiles, i) => (
-            <Container
-              key={`pile${materialPiles[0].position.join(",")}`}
-              position={cellToPixelVec(materialPiles[0].position)}
-            >
-              <MaterialPilesSprite materialPiles={materialPiles} />
-            </Container>
-          ))}
+          {materialPileGroups.map((materialPiles, i) => {
+            const [x, y] = cellToPixelVec(materialPiles[0].position);
+            return (
+              <pixiContainer
+                key={`pile${materialPiles[0].position.join(",")}`}
+                x={x}
+                y={y}
+              >
+                <MaterialPilesSprite materialPiles={materialPiles} />
+              </pixiContainer>
+            );
+          })}
           {gameState.machines.map((machinePlacement) => (
             <MachineSprite
               key={
@@ -69,7 +76,7 @@ export const ShopView: React.FC = () => {
           <WorkQueueSprite />
           <PersonSprite person={gameState.player} />
         </gameStateContext.Provider>
-      </Stage>
+      </Application>
     </>
   );
 };

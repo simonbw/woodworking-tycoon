@@ -1,6 +1,5 @@
-import { Graphics as PixiGraphics } from "@pixi/graphics";
-import { Graphics } from "@pixi/react";
 import React, { useCallback } from "react";
+import { Graphics as PixiGraphics } from "pixi.js";
 import { omitUndefined } from "../../utils/objectUtils";
 
 export const DefaultMaterialPileSprite: React.FC<{
@@ -8,13 +7,12 @@ export const DefaultMaterialPileSprite: React.FC<{
   tint?: number;
 }> = ({ alpha, tint }) => {
   return (
-    <Graphics
+    <pixiGraphics
       {...omitUndefined({ alpha, tint })}
       draw={useCallback((g: PixiGraphics) => {
         g.clear();
-        g.beginFill(0);
-        g.drawRect(-10, -10, 20, 20);
-        g.endFill();
+        g.rect(-10, -10, 20, 20);
+        g.fill(0);
       }, [])}
     />
   );

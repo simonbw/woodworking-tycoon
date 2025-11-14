@@ -1,4 +1,3 @@
-import { Container } from "@pixi/react";
 import React, { useMemo } from "react";
 import { Pallet } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
@@ -30,7 +29,7 @@ export const PalletSprite: React.FC<{
   const totalHeight = (3 * INCHES_PER_FOOT - 2) * PIXELS_PER_INCH;
 
   return (
-    <Container
+    <pixiContainer
       x={-totalWidth / 2}
       y={-totalHeight / 2}
       {...omitUndefined({ alpha })}
@@ -38,42 +37,48 @@ export const PalletSprite: React.FC<{
       {bottom.map(
         (boardExists, i) =>
           boardExists && (
-            <BoardSprite
-              board={deckBoard}
+            <pixiContainer
               key={`bottom-${i}`}
               x={lerp(0, totalWidth, i / (MAX_BOTTOM_DECK - 1))}
               y={totalHeight / 2}
-              anchor={-0.5}
-              tint={tint}
-            />
+            >
+              <BoardSprite
+                board={deckBoard}
+                tint={tint}
+              />
+            </pixiContainer>
           )
       )}
 
       {array(pallet.stringerBoardsLeft).map((_, i) => (
-        <BoardSprite
-          board={stringerBoard}
+        <pixiContainer
           key={`stringer-${i}`}
           x={totalWidth / 2}
           y={lerp(0, totalHeight, i / (MAX_STRINGERS - 1))}
           angle={90}
-          anchor={-0.5}
-          tint={tint}
-        />
+        >
+          <BoardSprite
+            board={stringerBoard}
+            tint={tint}
+          />
+        </pixiContainer>
       ))}
 
       {top.map(
         (boardExists, i) =>
           boardExists && (
-            <BoardSprite
-              board={deckBoard}
+            <pixiContainer
               key={`top-${i}`}
               x={lerp(0, totalWidth, i / (MAX_TOP_DECK - 1))}
               y={totalHeight / 2}
-              anchor={-0.5}
-              tint={tint}
-            />
+            >
+              <BoardSprite
+                board={deckBoard}
+                tint={tint}
+              />
+            </pixiContainer>
           )
       )}
-    </Container>
+    </pixiContainer>
   );
 };

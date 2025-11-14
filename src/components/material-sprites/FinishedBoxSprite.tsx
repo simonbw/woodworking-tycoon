@@ -1,5 +1,4 @@
-import { Graphics as PixiGraphics } from "@pixi/graphics";
-import { Graphics } from "@pixi/react";
+import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { FinishedProduct } from "../../game/Materials";
 import { omitUndefined } from "../../utils/objectUtils";
@@ -11,14 +10,13 @@ export const FinishedBoxSprite: React.FC<{
   tint?: number;
 }> = ({ material, alpha, tint }) => {
   return (
-    <Graphics
+    <pixiGraphics
       {...omitUndefined({ alpha, tint })}
-      draw={useCallback((g: PixiGraphics) => {
+      draw={useCallback((g: Graphics) => {
         g.clear();
-        g.beginFill(colorBySpecies[material.species].primary);
-        g.lineStyle(1, colorBySpecies[material.species].secondary);
-        g.drawRect(-10, -10, 20, 20);
-        g.endFill();
+        g.rect(-10, -10, 20, 20);
+        g.stroke({ width: 1, color: colorBySpecies[material.species].secondary });
+        g.fill(colorBySpecies[material.species].primary);
       }, [])}
     />
   );

@@ -1,4 +1,3 @@
-import { Container } from "@pixi/react";
 import React from "react";
 import { MaterialPile } from "../../game/GameState";
 import { PIXELS_PER_CELL } from "./shop-scale";
@@ -12,14 +11,14 @@ export const MaterialPilesSprite: React.FC<{
   return (
     <>
       {materialPiles.map((materialPile, i) => (
-        <Container
+        <pixiContainer
           key={i}
           x={PIXELS_PER_CELL / 2}
           y={PIXELS_PER_CELL / 2}
           angle={i * 10}
         >
           <MaterialSprite material={materialPile.material} />
-        </Container>
+        </pixiContainer>
       ))}
     </>
   );

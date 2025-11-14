@@ -40,7 +40,7 @@ export const Ticker: React.FC = () => {
     }
   });
 
-  const speedButton: React.FC<{
+  const SpeedButton: React.FC<{
     speed: number;
     title: string;
     children: ReactNode;
@@ -65,11 +65,9 @@ export const Ticker: React.FC = () => {
       <TimeOfDay tick={gameState.tick} />
       <div className="rounded-b-md bg-zinc-700 overflow-hidden">
         <menu className="flex gap-0 justify-stretch">
-          {speedButton({
-            speed: PAUSED,
-            title: "Pause game",
-            children: "⏸",
-          })}
+          <SpeedButton speed={PAUSED} title="Pause game">
+            ⏸
+          </SpeedButton>
           <button
             className={classNames(
               "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
@@ -80,21 +78,15 @@ export const Ticker: React.FC = () => {
           >
             ❯
           </button>
-          {speedButton({
-            title: "Play at normal speed",
-            speed: NORMAL,
-            children: "▶",
-          })}
-          {speedButton({
-            title: "Play at fast speed",
-            speed: FAST,
-            children: "▶▶",
-          })}
-          {speedButton({
-            title: "Play at faster speed",
-            speed: FASTER,
-            children: "▶▶▶",
-          })}
+          <SpeedButton title="Play at normal speed" speed={NORMAL}>
+            ▶
+          </SpeedButton>
+          <SpeedButton title="Play at fast speed" speed={FAST}>
+            ▶▶
+          </SpeedButton>
+          <SpeedButton title="Play at faster speed" speed={FASTER}>
+            ▶▶▶
+          </SpeedButton>
         </menu>
       </div>
     </section>

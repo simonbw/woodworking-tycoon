@@ -1,5 +1,4 @@
-import { Graphics as PixiGraphics } from "@pixi/graphics";
-import { Graphics } from "@pixi/react";
+import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { CellInfo, useCellMap } from "../../game/CellMap";
 import { GameState } from "../../game/GameState";
@@ -19,22 +18,21 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
   const cellMap = useCellMap();
 
   const size = PIXELS_PER_CELL - SPACING * 2;
-  const draw = useCallback((g: PixiGraphics) => {
+  const draw = useCallback((g: Graphics) => {
     g.clear();
-    g.beginFill(colors.zinc[700]);
-    g.drawRect(SPACING, SPACING, size, size);
-    g.endFill();
+    g.rect(SPACING, SPACING, size, size);
+    g.fill(colors.zinc[700]);
   }, []);
 
   // TODO: Manage hover state
   return (
-    <Graphics
+    <pixiGraphics
       eventMode="static"
       x={cell.position[0] * PIXELS_PER_CELL}
       y={cell.position[1] * PIXELS_PER_CELL}
       draw={draw}
       alpha={0.1}
-      click={() => {
+      onClick={() => {
         const startPosition = getWorkQueueEndState(gameState).player.position;
 
         const path = findPath(

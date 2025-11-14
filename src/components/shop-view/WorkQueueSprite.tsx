@@ -1,8 +1,7 @@
-import { Graphics } from "@pixi/react";
+import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { Vector, vectorEquals } from "../../game/Vectors";
 import { applyWorkItemAction } from "../../game/game-actions/work-item-actions";
-import { PixiGraphics } from "../../utils/PixiGraphics";
 import { useGameState } from "../useGameState";
 import { cellToPixelCenter } from "./shop-scale";
 
@@ -23,15 +22,15 @@ export const WorkQueueSprite: React.FC = () => {
   positions.unshift(gameState.player.position);
 
   const draw = useCallback(
-    (g: PixiGraphics) => {
+    (g: Graphics) => {
       g.clear();
-      g.lineStyle(8, 0x87ceeb, 0.5);
       const [startX, startY] = cellToPixelCenter(positions[0]);
       g.moveTo(startX, startY);
       for (const position of positions.slice(1)) {
         const [x, y] = cellToPixelCenter(position);
         g.lineTo(x, y);
       }
+      g.stroke({ width: 8, color: 0x87ceeb, alpha: 0.5 });
     },
     [positions]
   );
@@ -40,5 +39,5 @@ export const WorkQueueSprite: React.FC = () => {
     return null;
   }
 
-  return <Graphics draw={draw} />;
+  return <pixiGraphics draw={draw} />;
 };
