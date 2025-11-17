@@ -344,6 +344,20 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
         </div>
       </div>
 
+      {/* Take All button for outputs */}
+      {machine.outputMaterials.length > 0 && (
+        <button
+          className="button text-xs py-1"
+          onClick={() =>
+            applyAction(
+              takeOutputsFromMachineAction(machine.outputMaterials, machine)
+            )
+          }
+        >
+          Take All ({machine.outputMaterials.length})
+        </button>
+      )}
+
       {isOperating ? (
         <div className="space-y-1">
           <div className="text-sm text-zinc-400">
