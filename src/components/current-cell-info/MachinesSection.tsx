@@ -12,7 +12,10 @@ import {
   machineCanOperate,
   matchMaterialsToSlots,
 } from "../../game/machine-helpers";
-import { createMockMaterial, getMaterialName } from "../../game/material-helpers";
+import {
+  createMockMaterial,
+  getMaterialName,
+} from "../../game/material-helpers";
 import {
   executeOperation,
   generateOperationPreview,
@@ -158,9 +161,10 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               onChange={(event) => {
                 const newParams = {
                   ...machine.selectedParameters,
-                  [param.id]: typeof param.values[0] === "number"
-                    ? Number(event.target.value)
-                    : event.target.value,
+                  [param.id]:
+                    typeof param.values[0] === "number"
+                      ? Number(event.target.value)
+                      : event.target.value,
                 };
                 applyAction(
                   setMachineOperationAction(
@@ -280,20 +284,6 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
         </div>
       </div>
 
-      {/* Take All button for outputs */}
-      {machine.outputMaterials.length > 0 && (
-        <button
-          className="button text-xs py-1"
-          onClick={() =>
-            applyAction(
-              takeOutputsFromMachineAction(machine.outputMaterials, machine)
-            )
-          }
-        >
-          Take All ({machine.outputMaterials.length})
-        </button>
-      )}
-
       {isOperating ? (
         <div className="space-y-1">
           <div className="text-sm text-zinc-400">
@@ -314,6 +304,19 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
           onClick={() => applyAction(operateMachineAction(machine))}
         >
           Operate
+        </button>
+      )}
+      {/* Take All button for outputs */}
+      {machine.outputMaterials.length > 0 && (
+        <button
+          className="button text-xs py-1"
+          onClick={() =>
+            applyAction(
+              takeOutputsFromMachineAction(machine.outputMaterials, machine)
+            )
+          }
+        >
+          Take All ({machine.outputMaterials.length})
         </button>
       )}
     </section>
