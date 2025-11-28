@@ -1,10 +1,6 @@
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
-import {
-  InputMaterialWithQuantity,
-  Machine,
-  ParameterValues,
-} from "../../game/Machine";
+import { Machine, ParameterValues } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import {
   operateMachineAction,
@@ -12,11 +8,13 @@ import {
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
-import { machineCanOperate } from "../../game/machine-helpers";
+import {
+  machineCanOperate,
+  matchMaterialsToSlots,
+} from "../../game/machine-helpers";
 import {
   createMockMaterial,
   getMaterialName,
-  materialMeetsInput,
 } from "../../game/material-helpers";
 import {
   executeOperation,
@@ -27,65 +25,6 @@ import {
 import { groupBy } from "../../utils/arrayUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { MaterialIcon } from "./MaterialIcon";
-
-// Helper to match actual materials to operation requirements
-function matchMaterialsToSlots(
-  actualMaterials: MaterialInstance[],
-  requirements: ReadonlyArray<InputMaterialWithQuantity>
-): Array<{
-  requirement: InputMaterialWithQuantity;
-  material: MaterialInstance;
-  isValid: boolean;
-  isPlaceholder: boolean;
-}> {
-  const slots = [];
-  const availableMaterials = [...actualMaterials];
-
-  for (const requirement of requirements) {
-    for (let i = 0; i < requirement.quantity; i++) {
-      // Find a matching material
-      const materialIndex = availableMaterials.findIndex((material) =>
-        materialMeetsInput(material, requirement)
-      );
-
-      if (materialIndex !== -1) {
-        // Found a matching material
-        const material = availableMaterials[materialIndex];
-        availableMaterials.splice(materialIndex, 1);
-        slots.push({
-          requirement,
-          material,
-          isValid: true,
-          isPlaceholder: false,
-        });
-      } else {
-        // No matching material found - try to find any material for this slot
-        const anyMaterialIndex = availableMaterials.findIndex(() => true);
-        if (anyMaterialIndex !== -1) {
-          // Found a material but it doesn't match requirements
-          const material = availableMaterials[anyMaterialIndex];
-          availableMaterials.splice(anyMaterialIndex, 1);
-          slots.push({
-            requirement,
-            material,
-            isValid: false,
-            isPlaceholder: false,
-          });
-        } else {
-          // No material at all - show mock material as placeholder
-          slots.push({
-            requirement,
-            material: createMockMaterial(requirement),
-            isValid: false,
-            isPlaceholder: true,
-          });
-        }
-      }
-    }
-  }
-
-  return slots;
-}
 
 export const MachinesSection: React.FC = () => {
   const gameState = useGameState();
@@ -222,9 +161,10 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               onChange={(event) => {
                 const newParams = {
                   ...machine.selectedParameters,
-                  [param.id]: typeof param.values[0] === "number"
-                    ? Number(event.target.value)
-                    : event.target.value,
+                  [param.id]:
+                    typeof param.values[0] === "number"
+                      ? Number(event.target.value)
+                      : event.target.value,
                 };
                 applyAction(
                   setMachineOperationAction(
@@ -364,6 +304,19 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
           onClick={() => applyAction(operateMachineAction(machine))}
         >
           Operate
+        </button>
+      )}
+      {/* Take All button for outputs */}
+      {machine.outputMaterials.length > 0 && (
+        <button
+          className="button text-xs py-1"
+          onClick={() =>
+            applyAction(
+              takeOutputsFromMachineAction(machine.outputMaterials, machine)
+            )
+          }
+        >
+          Take All ({machine.outputMaterials.length})
         </button>
       )}
     </section>
