@@ -3,6 +3,7 @@ import React, { useCallback } from "react";
 import { MACHINE_TYPES, Machine } from "../../game/Machine";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
+import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
 import { MiterSawSprite } from "../machine-sprites/MiterSawSprite";
@@ -54,6 +55,9 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
     case MACHINE_TYPES.lunchboxPlaner.id:
       return <LunchboxPlanerSprite {...machine} />;
 
+    case MACHINE_TYPES.garbageCan.id:
+      return <GarbageCanSprite {...machine} />;
+
     case MACHINE_TYPES.workspace.id:
       return (
         <pixiContainer>
@@ -70,7 +74,12 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
           ))}
           {processingMaterials.map((material, index) => (
             <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
-              <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
+              <MaterialSprite
+                material={material}
+                key={index}
+                alpha={0.6}
+                tint={0xffb366}
+              />
             </pixiContainer>
           ))}
           {outputMaterials.map((material, index) => (
@@ -96,7 +105,12 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
           ))}
           {processingMaterials.map((material, index) => (
             <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
-              <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
+              <MaterialSprite
+                material={material}
+                key={index}
+                alpha={0.6}
+                tint={0xffb366}
+              />
             </pixiContainer>
           ))}
           {outputMaterials.map((material, index) => (
@@ -118,7 +132,12 @@ const LocalMachineSprite: React.FC<Machine> = (machine) => {
           ))}
           {processingMaterials.map((material, index) => (
             <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
-              <MaterialSprite material={material} key={index} alpha={0.6} tint={0xFFB366} />
+              <MaterialSprite
+                material={material}
+                key={index}
+                alpha={0.6}
+                tint={0xffb366}
+              />
             </pixiContainer>
           ))}
           {outputMaterials.map((material, index) => (
