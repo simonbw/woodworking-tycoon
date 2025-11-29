@@ -1,5 +1,6 @@
 import { MaterialInstance } from "./Materials";
 import { Direction, Vector } from "./Vectors";
+import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { makeshiftBench } from "./machines/makeshiftBench";
@@ -27,6 +28,7 @@ export const MACHINE_TYPES = {
   jobsiteTableSaw,
   miterSaw,
   lunchboxPlaner,
+  garbageCan,
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;
 

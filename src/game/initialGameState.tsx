@@ -31,6 +31,8 @@ export const initialGameState: GameState = {
   machines: [
     // Single workspace for tutorial
     machine(MACHINE_TYPES.workspace, [1, 2], 0),
+    // Garbage can for disposing unwanted materials
+    machine(MACHINE_TYPES.garbageCan, [0, 5], 0),
   ],
   storage: {
     machines: [], // Empty - no machines available initially
