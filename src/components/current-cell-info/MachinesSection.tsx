@@ -24,6 +24,7 @@ import {
 } from "../../game/operation-helpers";
 import { groupBy } from "../../utils/arrayUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { ProgressButton } from "../ProgressButton";
 import { MaterialIcon } from "./MaterialIcon";
 
 export const MachinesSection: React.FC = () => {
@@ -284,28 +285,15 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
         </div>
       </div>
 
-      {isOperating ? (
-        <div className="space-y-1">
-          <div className="text-sm text-zinc-400">
-            Operating... ({machine.operationProgress.ticksRemaining} ticks
-            remaining)
-          </div>
-          <div className="w-full bg-zinc-700 rounded-full h-2">
-            <div
-              className="bg-amber-600 h-2 rounded-full transition-all duration-200"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-      ) : (
-        <button
-          className="button"
-          disabled={!canOperate}
-          onClick={() => applyAction(operateMachineAction(machine))}
-        >
-          Operate
-        </button>
-      )}
+      <ProgressButton
+        progress={progressPercent / 100}
+        disabled={!canOperate}
+        onClick={() => applyAction(operateMachineAction(machine))}
+      >
+        {isOperating
+          ? `Operating... (${machine.operationProgress.ticksRemaining} ticks)`
+          : "Operate"}
+      </ProgressButton>
       {/* Take All button for outputs */}
       {machine.outputMaterials.length > 0 && (
         <button
