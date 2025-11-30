@@ -8,7 +8,9 @@
     "build": "node esbuild-client.config.mjs",
     "dev": "node esbuild-client.config.mjs --dev",
     "tsc": "tsc --noEmit",
-    "test": "npx playwright test",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "npx tsx --test 'src/**/*.test.ts'",
+    "test:e2e": "npx playwright test",
     "test:headed": "npx playwright test --headed"
   },
   "repository": {

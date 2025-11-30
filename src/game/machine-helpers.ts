@@ -13,23 +13,29 @@ export interface MaterialSlot {
 /**
  * Match actual materials to operation requirements, creating slots for each required material.
  * Returns slots with materials, validation status, and placeholders for missing materials.
+ *
+ * Uses a two-pass algorithm:
+ * 1. First pass: Assign exact matches to ensure valid materials go to correct slots
+ * 2. Second pass: Fill remaining empty slots with leftover materials (invalid) or placeholders
  */
 export function matchMaterialsToSlots(
   actualMaterials: MaterialInstance[],
   requirements: ReadonlyArray<InputMaterialWithQuantity>,
 ): MaterialSlot[] {
-  const slots: MaterialSlot[] = [];
   const availableMaterials = [...actualMaterials];
+
+  // PASS 1: Create all slots and assign exact matches
+  const slots: (MaterialSlot | null)[] = [];
 
   for (const requirement of requirements) {
     for (let i = 0; i < requirement.quantity; i++) {
-      // Find a matching material
+      // Try to find a matching material
       const materialIndex = availableMaterials.findIndex((material) =>
         materialMeetsInput(material, requirement),
       );
 
       if (materialIndex !== -1) {
-        // Found a matching material
+        // Found a valid match - assign it
         const material = availableMaterials[materialIndex];
         availableMaterials.splice(materialIndex, 1);
         slots.push({
@@ -39,32 +45,57 @@ export function matchMaterialsToSlots(
           isPlaceholder: false,
         });
       } else {
-        // No matching material found - try to find any material for this slot
-        const anyMaterialIndex = availableMaterials.findIndex(() => true);
-        if (anyMaterialIndex !== -1) {
-          // Found a material but it doesn't match requirements
-          const material = availableMaterials[anyMaterialIndex];
-          availableMaterials.splice(anyMaterialIndex, 1);
-          slots.push({
-            requirement,
-            material,
-            isValid: false,
-            isPlaceholder: false,
-          });
-        } else {
-          // No material at all - show mock material as placeholder
-          slots.push({
-            requirement,
-            material: createMockMaterial(requirement),
-            isValid: false,
-            isPlaceholder: true,
-          });
-        }
+        // No match found - leave slot empty for now
+        slots.push(null);
       }
     }
   }
 
-  return slots;
+  // PASS 2: Fill empty slots with remaining materials or placeholders
+  for (let i = 0; i < slots.length; i++) {
+    if (slots[i] === null) {
+      // This slot needs to be filled
+      const requirement = getRequirementForSlotIndex(i, requirements);
+
+      if (availableMaterials.length > 0) {
+        // Use a remaining material (but mark as invalid)
+        const material = availableMaterials.shift()!;
+        slots[i] = {
+          requirement,
+          material,
+          isValid: false,
+          isPlaceholder: false,
+        };
+      } else {
+        // No materials left - create placeholder
+        slots[i] = {
+          requirement,
+          material: createMockMaterial(requirement),
+          isValid: false,
+          isPlaceholder: true,
+        };
+      }
+    }
+  }
+
+  return slots as MaterialSlot[];
+}
+
+/**
+ * Helper to get the requirement for a given slot index
+ */
+function getRequirementForSlotIndex(
+  slotIndex: number,
+  requirements: ReadonlyArray<InputMaterialWithQuantity>,
+): InputMaterialWithQuantity {
+  let index = 0;
+  for (const requirement of requirements) {
+    if (slotIndex < index + requirement.quantity) {
+      return requirement;
+    }
+    index += requirement.quantity;
+  }
+  throw new Error(`Slot index ${slotIndex} out of range`);
 }
 
 export function machineCanOperate(machine: Machine): boolean {

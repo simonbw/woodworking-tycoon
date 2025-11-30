@@ -14,7 +14,7 @@ export const workspace: MachineType = {
   cost: 0,
   materialStorage: 0,
   toolStorage: 0,
-  inputSpaces: 3,
+  inputSpaces: 5,
   operations: [
     {
       name: "Dismantle Pallet",
