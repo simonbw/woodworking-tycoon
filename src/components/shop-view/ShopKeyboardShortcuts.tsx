@@ -3,7 +3,6 @@ import { CellMap } from "../../game/CellMap";
 import { combineActions } from "../../game/game-actions/misc-actions";
 import {
   dropMaterialAction,
-  instaMovePlayerAction,
   moveMaterialsToMachineAction,
   operateMachineAction,
   pickUpMaterialAction,
@@ -11,7 +10,7 @@ import {
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
-import { clearWorkQueueAction } from "../../game/game-actions/work-item-actions";
+import { addWorkItemAction, clearWorkQueueAction } from "../../game/game-actions/work-item-actions";
 import { materialMeetsInput } from "../../game/material-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useApplyGameAction, useGameState } from "../useGameState";
@@ -32,22 +31,22 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       case "KeyD":
       case "ArrowRight":
         return applyAction(
-          combineActions(clearWorkQueueAction(), instaMovePlayerAction(0))
+          addWorkItemAction({ type: "move", direction: 0 })
         );
       case "KeyW":
       case "ArrowUp":
         return applyAction(
-          combineActions(clearWorkQueueAction(), instaMovePlayerAction(1))
+          addWorkItemAction({ type: "move", direction: 1 })
         );
       case "KeyA":
       case "ArrowLeft":
         return applyAction(
-          combineActions(clearWorkQueueAction(), instaMovePlayerAction(2))
+          addWorkItemAction({ type: "move", direction: 2 })
         );
       case "KeyS":
       case "ArrowDown":
         return applyAction(
-          combineActions(clearWorkQueueAction(), instaMovePlayerAction(3))
+          addWorkItemAction({ type: "move", direction: 3 })
         );
 
       // Pick Up

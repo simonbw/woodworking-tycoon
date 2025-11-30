@@ -9,6 +9,32 @@ const NORMAL = 2;
 const FAST = 4;
 const FASTER = 20;
 
+const SpeedButton: React.FC<{
+  speed: number;
+  title: string;
+  children: ReactNode;
+  ticksPerSecond: number;
+  setTicksPerSecond: (speed: number) => void;
+}> = ({ speed, children, title, ticksPerSecond, setTicksPerSecond }) => {
+  return (
+    <button
+      className={classNames(
+        "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
+        "hover:bg-white/5",
+        ticksPerSecond === speed ? "bg-white/10" : "bg-transparent",
+      )}
+      onClick={(e) => {
+        setTicksPerSecond(speed);
+        e.currentTarget.blur();
+      }}
+      title={title}
+      tabIndex={-1}
+    >
+      {children}
+    </button>
+  );
+};
+
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
@@ -40,32 +66,17 @@ export const Ticker: React.FC = () => {
     }
   });
 
-  const SpeedButton: React.FC<{
-    speed: number;
-    title: string;
-    children: ReactNode;
-  }> = ({ speed, children, title }) => {
-    return (
-      <button
-        className={classNames(
-          "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
-          "hover:bg-white/5",
-          ticksPerSecond === speed ? "bg-white/10" : "bg-transparent",
-        )}
-        onClick={() => setTicksPerSecond(speed)}
-        title={title}
-      >
-        {children}
-      </button>
-    );
-  };
-
   return (
     <section>
       <TimeOfDay tick={gameState.tick} />
       <div className="rounded-b-md bg-zinc-700 overflow-hidden">
         <menu className="flex gap-0 justify-stretch">
-          <SpeedButton speed={PAUSED} title="Pause game">
+          <SpeedButton
+            speed={PAUSED}
+            title="Pause game"
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
             ⏸
           </SpeedButton>
           <button
@@ -73,18 +84,37 @@ export const Ticker: React.FC = () => {
               "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
               "hover:bg-white/5",
             )}
-            onClick={() => applyAction(tickAction)}
+            onClick={(e) => {
+              applyAction(tickAction);
+              e.currentTarget.blur();
+            }}
             title="Step forward one tick"
+            tabIndex={-1}
           >
             ❯
           </button>
-          <SpeedButton title="Play at normal speed" speed={NORMAL}>
+          <SpeedButton
+            title="Play at normal speed"
+            speed={NORMAL}
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
             ▶
           </SpeedButton>
-          <SpeedButton title="Play at fast speed" speed={FAST}>
+          <SpeedButton
+            title="Play at fast speed"
+            speed={FAST}
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
             ▶▶
           </SpeedButton>
-          <SpeedButton title="Play at faster speed" speed={FASTER}>
+          <SpeedButton
+            title="Play at faster speed"
+            speed={FASTER}
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
             ▶▶▶
           </SpeedButton>
         </menu>
