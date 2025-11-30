@@ -1,11 +1,7 @@
 import plugin from "tailwindcss/plugin";
 import { objectEntries } from "./arrayUtils";
 
-// TODO: Get recursive type working
-type Color =
-  | string
-  | Record<string, string | Record<string, string | Record<string, string>>>;
-
+type Color = string | { [key: string]: Color };
 export const tailwindSvgStopsPlugin = plugin(
   ({ matchUtilities, theme, e }) => {
     const stopValues: [string, string][] = [];
