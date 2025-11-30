@@ -19,7 +19,7 @@ export interface MaterialSlot {
  * 2. Second pass: Fill remaining empty slots with leftover materials (invalid) or placeholders
  */
 export function matchMaterialsToSlots(
-  actualMaterials: MaterialInstance[],
+  actualMaterials: ReadonlyArray<MaterialInstance>,
   requirements: ReadonlyArray<InputMaterialWithQuantity>,
 ): MaterialSlot[] {
   const availableMaterials = [...actualMaterials];
@@ -98,29 +98,24 @@ function getRequirementForSlotIndex(
   throw new Error(`Slot index ${slotIndex} out of range`);
 }
 
+/**
+ * Checks if a machine has all required materials to start its selected operation.
+ *
+ * Uses the material slot matching algorithm to verify that the machine's input materials
+ * satisfy all requirements for the current operation. The machine can operate only if
+ * every material slot can be filled with a valid material (no placeholders or invalid materials).
+ *
+ * @param machine - The machine to check
+ * @returns true if the machine has all required materials and can start operating, false otherwise
+ */
 export function machineCanOperate(machine: Machine): boolean {
-  const inventory = [...machine.inputMaterials];
-
-  const materialsToConsume: MaterialInstance[] = [];
-
   const inputMaterials = getOperationInputMaterials(
     machine.selectedOperation,
     machine.selectedParameters,
   );
 
-  for (const inputMaterial of inputMaterials) {
-    for (let i = 0; i < inputMaterial.quantity; i++) {
-      // TODO: Quantity
-      const index = inventory.findIndex((m) =>
-        materialMeetsInput(m, inputMaterial),
-      );
-      if (index === -1) {
-        return false;
-      }
-      materialsToConsume.push(inventory[index]);
-      inventory.splice(index, 1);
-    }
-  }
+  const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);
 
-  return true;
+  // Machine can operate if all slots have valid materials (no placeholders, all valid)
+  return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
 }
