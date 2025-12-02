@@ -15,7 +15,7 @@ import { extractFirstNumber } from "./extractFirstNumber";
 
 const AnimatedPixiContainer = animated("pixiContainer");
 
-export const JobsiteTableSawSprite: React.FC<Machine> = (machine) => {
+export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
   const tableSawTableTexture = useTexture("/images/jobsite-table-saw-table.png");
   const tableSawFenceTexture = useTexture("/images/jobsite-table-saw-fence.png");

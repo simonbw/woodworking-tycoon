@@ -1,5 +1,5 @@
-import { Machine } from "./Machine";
-import { InputMaterialWithQuantity, MachineType } from "./Machine";
+import { MachineState, MachineId } from "./Machine";
+import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
@@ -26,12 +26,12 @@ export interface GameState {
   readonly money: number;
   readonly reputation: number;
   readonly materialPiles: ReadonlyArray<MaterialPile>;
-  readonly machines: ReadonlyArray<Machine>;
+  readonly machines: ReadonlyArray<MachineState>;
   readonly commissions: ReadonlyArray<Commission>;
   readonly shopInfo: ShopInfo;
   readonly player: Person;
   readonly storage: {
-    machines: ReadonlyArray<MachineType>;
+    machines: ReadonlyArray<MachineId>;
   };
   readonly progression: ProgressionState;
 }

@@ -8,7 +8,7 @@ import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
 import { extractFirstNumber } from "./extractFirstNumber";
 
-export const MiterSawSprite: React.FC<Machine> = (machine) => {
+export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
   const miterSawBaseTexture = useTexture("/images/miter-saw-base.png");
   const miterSawTopTexture = useTexture("/images/miter-saw-top.png");

@@ -87,14 +87,81 @@ export interface OperationProgress {
   readonly ticksRemaining: number;
 }
 
-export interface Machine {
-  readonly type: MachineType;
+/**
+ * Serializable machine state - the source of truth
+ * Uses IDs instead of object references so it can be JSON.stringify'd
+ */
+export interface MachineState {
+  readonly machineTypeId: MachineId;
   readonly position: Vector;
   readonly rotation: Direction;
-  readonly selectedOperation: MachineOperation | ParameterizedOperation;
+  readonly selectedOperationId: string;
   readonly selectedParameters?: ParameterValues;
   readonly operationProgress: OperationProgress;
   readonly inputMaterials: ReadonlyArray<MaterialInstance>;
   readonly processingMaterials: ReadonlyArray<MaterialInstance>;
   readonly outputMaterials: ReadonlyArray<MaterialInstance>;
+}
+
+/**
+ * Machine view class - provides convenient access to MachineType and operations
+ * Similar to CellMap pattern - a computed view over the raw state
+ */
+export class Machine {
+  constructor(private readonly state: MachineState) {}
+
+  // Computed properties with lookups
+  get type(): MachineType {
+    const machineType = MACHINE_TYPES[this.state.machineTypeId];
+    if (!machineType) {
+      throw new Error(`Unknown machine type: ${this.state.machineTypeId}`);
+    }
+    return machineType;
+  }
+
+  get selectedOperation(): MachineOperation | ParameterizedOperation {
+    const operation = this.type.operations.find(
+      (op) => op.id === this.state.selectedOperationId,
+    );
+    if (!operation) {
+      throw new Error(
+        `Unknown operation: ${this.state.selectedOperationId} for machine ${this.state.machineTypeId}`,
+      );
+    }
+    return operation;
+  }
+
+  // Pass-through properties for convenience
+  get position(): Vector {
+    return this.state.position;
+  }
+
+  get rotation(): Direction {
+    return this.state.rotation;
+  }
+
+  get selectedParameters(): ParameterValues | undefined {
+    return this.state.selectedParameters;
+  }
+
+  get operationProgress(): OperationProgress {
+    return this.state.operationProgress;
+  }
+
+  get inputMaterials(): ReadonlyArray<MaterialInstance> {
+    return this.state.inputMaterials;
+  }
+
+  get processingMaterials(): ReadonlyArray<MaterialInstance> {
+    return this.state.processingMaterials;
+  }
+
+  get outputMaterials(): ReadonlyArray<MaterialInstance> {
+    return this.state.outputMaterials;
+  }
+
+  // Access to underlying state for game actions
+  toState(): MachineState {
+    return this.state;
+  }
 }

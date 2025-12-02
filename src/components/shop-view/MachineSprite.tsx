@@ -24,7 +24,7 @@ export const MachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   return (
     <pixiContainer x={x} y={y} angle={angle} anchor={{ x: 0.5, y: 0.5 }}>
-      <LocalMachineSprite {...machine} />
+      <LocalMachineSprite machine={machine} />
 
       {machine.type.operationPosition && (
         <pixiSprite
@@ -40,23 +40,23 @@ export const MachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   );
 };
 
-const LocalMachineSprite: React.FC<Machine> = (machine) => {
+const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
   const workspaceTexture = useTexture("/images/workspace.png");
   const makeshiftBenchTexture = useTexture("/images/makeshift-bench.png");
 
   switch (machine.type.id) {
     case MACHINE_TYPES.jobsiteTableSaw.id:
-      return <JobsiteTableSawSprite {...machine} />;
+      return <JobsiteTableSawSprite machine={machine} />;
 
     case MACHINE_TYPES.miterSaw.id:
-      return <MiterSawSprite {...machine} />;
+      return <MiterSawSprite machine={machine} />;
 
     case MACHINE_TYPES.lunchboxPlaner.id:
-      return <LunchboxPlanerSprite {...machine} />;
+      return <LunchboxPlanerSprite machine={machine} />;
 
     case MACHINE_TYPES.garbageCan.id:
-      return <GarbageCanSprite {...machine} />;
+      return <GarbageCanSprite machine={machine} />;
 
     case MACHINE_TYPES.workspace.id:
       return (

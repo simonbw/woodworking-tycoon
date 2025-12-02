@@ -1,8 +1,8 @@
 import { GameState } from "./GameState";
 import {
   MACHINE_TYPES,
-  Machine,
-  MachineType,
+  MachineState,
+  MachineId,
   ParameterValues,
 } from "./Machine";
 import { Direction } from "./Vectors";
@@ -26,13 +26,12 @@ export const initialGameState: GameState = {
     inventory: [],
     workQueue: [],
     canWork: true,
-    currentMachine: null,
   },
   machines: [
     // Single workspace for tutorial
-    machine(MACHINE_TYPES.workspace, [1, 2], 0),
+    machine("workspace", [1, 2], 0),
     // Garbage can for disposing unwanted materials
-    machine(MACHINE_TYPES.garbageCan, [0, 5], 0),
+    machine("garbageCan", [0, 5], 0),
   ],
   storage: {
     machines: [], // Empty - no machines available initially
@@ -63,11 +62,12 @@ export const initialGameState: GameState = {
 
 // Helper method to create a machine with less boilerplate
 function machine(
-  type: MachineType,
+  machineTypeId: MachineId,
   position: [number, number],
   rotation: Direction,
-): Machine {
-  const firstOperation = type.operations[0];
+): MachineState {
+  const machineType = MACHINE_TYPES[machineTypeId];
+  const firstOperation = machineType.operations[0];
   let selectedParameters: ParameterValues | undefined;
 
   // If the first operation is parameterized, set default parameter values
@@ -79,13 +79,13 @@ function machine(
   }
 
   return {
-    type,
+    machineTypeId,
     position,
     rotation,
     inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
-    selectedOperation: firstOperation,
+    selectedOperationId: firstOperation.id,
     selectedParameters,
     operationProgress: {
       status: "notStarted",

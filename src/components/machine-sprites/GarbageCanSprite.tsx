@@ -4,7 +4,7 @@ import { Machine } from "../../game/Machine";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
 
-export const GarbageCanSprite: React.FC<Machine> = (machine) => {
+export const GarbageCanSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
 
   return (

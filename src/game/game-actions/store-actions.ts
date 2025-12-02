@@ -1,5 +1,5 @@
 import { Commission, GameAction } from "../GameState";
-import { MachineType } from "../Machine";
+import { MachineId, MACHINE_TYPES } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
 import { incrementCommissionsCompletedAction, checkProgressionMilestonesAction } from "./progression-actions";
@@ -48,7 +48,7 @@ export function sellMaterialAction(
 }
 
 export function buyMachineAction(
-  machineType: MachineType,
+  machineTypeId: MachineId,
   price: number
 ): GameAction {
   return (gameState) => {
@@ -61,7 +61,7 @@ export function buyMachineAction(
       money: gameState.money - price,
       storage: {
         ...gameState.storage,
-        machines: [...gameState.storage.machines, machineType],
+        machines: [...gameState.storage.machines, machineTypeId],
       },
     };
   };
