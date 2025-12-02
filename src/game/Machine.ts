@@ -1,3 +1,4 @@
+import { LRUCache } from "typescript-lru-cache";
 import { MaterialInstance } from "./Materials";
 import { Direction, Vector } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
@@ -108,7 +109,11 @@ export interface MachineState {
  * Similar to CellMap pattern - a computed view over the raw state
  */
 export class Machine {
-  constructor(private readonly state: MachineState) {}
+  readonly state: MachineState;
+
+  constructor(state: MachineState) {
+    this.state = state;
+  }
 
   // Computed properties with lookups
   get type(): MachineType {
@@ -159,9 +164,26 @@ export class Machine {
   get outputMaterials(): ReadonlyArray<MaterialInstance> {
     return this.state.outputMaterials;
   }
+}
 
-  // Access to underlying state for game actions
-  toState(): MachineState {
-    return this.state;
+// Keep computed machines array for game states
+const machinesCache = new LRUCache<
+  ReadonlyArray<MachineState>,
+  ReadonlyArray<Machine>
+>({
+  maxSize: 100,
+});
+
+/**
+ * Converts MachineState[] to Machine[] with caching
+ * Similar to CellMap.fromGameState pattern
+ */
+export function getMachines(
+  machineStates: ReadonlyArray<MachineState>,
+): ReadonlyArray<Machine> {
+  if (!machinesCache.has(machineStates)) {
+    const machines = machineStates.map((state) => new Machine(state));
+    machinesCache.set(machineStates, machines);
   }
+  return machinesCache.get(machineStates)!;
 }

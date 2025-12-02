@@ -7,17 +7,12 @@ import { useGameState } from "../useGameState";
 import { cellToPixelCenter } from "./shop-scale";
 
 export const WorkQueueSprite: React.FC = () => {
-  const gameStateView = useGameState();
+  const gameState = useGameState();
 
-  // Convert view to raw state for work queue processing
-  let hypotheticalState: GameState = {
-    ...gameStateView,
-    machines: gameStateView.machines.map((m) => m.toState()),
-  };
-
+  let hypotheticalState = gameState;
   const positions: Vector[] = [];
-  let lastPosition = gameStateView.player.position;
-  for (const workItem of gameStateView.player.workQueue) {
+  let lastPosition = gameState.player.position;
+  for (const workItem of gameState.player.workQueue) {
     hypotheticalState = applyWorkItemAction(workItem)(hypotheticalState);
     const newPosition = hypotheticalState.player.position;
     if (!vectorEquals(newPosition, lastPosition)) {
@@ -25,7 +20,7 @@ export const WorkQueueSprite: React.FC = () => {
       lastPosition = newPosition;
     }
   }
-  positions.unshift(gameStateView.player.position);
+  positions.unshift(gameState.player.position);
 
   const draw = useCallback(
     (g: Graphics) => {

@@ -5,11 +5,10 @@ import { Machine, MachineOperation, ParameterizedOperation, ParameterValues, MAC
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
-import { enrichGameState } from "../GameStateView";
 
 export function instaMovePlayerAction(direction: Direction): GameAction {
   return (gameState) => {
-    const cellMap = CellMap.fromGameState(enrichGameState(gameState));
+    const cellMap = CellMap.fromGameState(gameState);
     const destinationPosition = translateVec(
       gameState.player.position,
       rotateVec([1, 0], direction)
@@ -90,7 +89,7 @@ export function moveMaterialsToMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
-    const machineState = machine.toState();
+    const machineState = machine.state;
     const machineType = MACHINE_TYPES[machineState.machineTypeId];
     const spacesRemaining =
       machineType.inputSpaces - machineState.inputMaterials.length;
@@ -127,7 +126,7 @@ export function takeInputsFromMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
-    const machineState = machine.toState();
+    const machineState = machine.state;
     for (const material of materials) {
       if (!machineState.inputMaterials.includes(material)) {
         console.warn("Tried to move material not in machine");
@@ -159,7 +158,7 @@ export function takeOutputsFromMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
-    const machineState = machine.toState();
+    const machineState = machine.state;
     for (const material of materials) {
       if (!machineState.outputMaterials.includes(material)) {
         console.warn("Tried to move material not in machine");
@@ -192,7 +191,7 @@ export function setMachineOperationAction(
   parameters?: ParameterValues
 ): GameAction {
   return (gameState) => {
-    const machineState = machine.toState();
+    const machineState = machine.state;
     if (!machine.type.operations.includes(operation)) {
       throw new Error("Tried to set machine operation to invalid operation");
     }
@@ -210,7 +209,7 @@ export function setMachineOperationAction(
 
 export function operateMachineAction(machine: Machine): GameAction {
   return (gameState) => {
-    const machineState = machine.toState();
+    const machineState = machine.state;
     // Can't start a new operation if one is in progress
     if (machineState.operationProgress.status === "inProgress") {
       console.warn("Machine is already operating");

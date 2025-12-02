@@ -6,7 +6,7 @@ import {
   gameStateContext,
   useApplyGameAction,
   useGameState,
-  useRawGameState,
+  useMachines,
   useSaveGame,
   useLoadGame,
   useNewGame,
@@ -20,8 +20,8 @@ import { WorkQueueSprite } from "./WorkQueueSprite";
 import { cellToPixel, cellToPixelVec } from "./shop-scale";
 
 export const ShopView: React.FC = () => {
-  const gameStateView = useGameState();
-  const gameState = useRawGameState();
+  const gameState = useGameState();
+  const machines = useMachines();
   const updateGameState = useApplyGameAction();
   const saveGame = useSaveGame();
   const loadGame = useLoadGame();
@@ -73,7 +73,7 @@ export const ShopView: React.FC = () => {
               </pixiContainer>
             );
           })}
-          {gameStateView.machines.map((machinePlacement) => (
+          {machines.map((machinePlacement) => (
             <MachineSprite
               key={
                 machinePlacement.type.id + machinePlacement.position.join(",")
@@ -82,7 +82,7 @@ export const ShopView: React.FC = () => {
             />
           ))}
           <WorkQueueSprite />
-          <PersonSprite person={gameStateView.player} />
+          <PersonSprite person={gameState.player} />
         </gameStateContext.Provider>
       </Application>
     </>

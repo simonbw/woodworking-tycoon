@@ -1,8 +1,7 @@
 import { LRUCache } from "typescript-lru-cache";
 import { useGameState } from "../components/useGameState";
-import { GameStateView } from "./GameStateView";
-import { MaterialPile } from "./GameState";
-import { Machine } from "./Machine";
+import { GameState, MaterialPile } from "./GameState";
+import { getMachines, Machine } from "./Machine";
 import { Vector, rotateVec, translateVec } from "./Vectors";
 
 export type CellInfo = {
@@ -22,8 +21,8 @@ type MutableCellInfo = {
   readonly materialPiles: MaterialPile[];
 };
 
-// Keep computed cell maps for game state views.
-const cellMapCache = new LRUCache<GameStateView, CellMap>({
+// Keep computed cell maps for game states.
+const cellMapCache = new LRUCache<GameState, CellMap>({
   maxSize: 100,
 });
 
@@ -31,29 +30,30 @@ export class CellMap {
   private _cells: CellInfo[];
   private _map = new Map<string, CellInfo>();
 
-  static fromGameState(gameStateView: GameStateView): CellMap {
-    if (!cellMapCache.has(gameStateView)) {
+  static fromGameState(gameState: GameState): CellMap {
+    if (!cellMapCache.has(gameState)) {
       const cellMap = new CellMap();
 
-      const [width, height] = gameStateView.shopInfo.size;
+      const [width, height] = gameState.shopInfo.size;
       for (let i = 0; i < height; i++) {
         for (let j = 0; j < width; j++) {
           cellMap.addCell([j, i]);
         }
       }
 
-      for (const machine of gameStateView.machines) {
+      const machines = getMachines(gameState.machines);
+      for (const machine of machines) {
         cellMap.addMachine(machine);
       }
 
-      for (const materialPile of gameStateView.materialPiles) {
+      for (const materialPile of gameState.materialPiles) {
         cellMap.addMaterialPile(materialPile);
       }
 
-      cellMapCache.set(gameStateView, cellMap);
+      cellMapCache.set(gameState, cellMap);
     }
 
-    return cellMapCache.get(gameStateView)!;
+    return cellMapCache.get(gameState)!;
   }
 
   constructor(cells: CellInfo[] = []) {

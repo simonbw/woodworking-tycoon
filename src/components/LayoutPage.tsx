@@ -13,7 +13,7 @@ import {
   gameStateContext,
   useApplyGameAction,
   useGameState,
-  useRawGameState,
+  useMachines,
   useSaveGame,
   useLoadGame,
   useNewGame,
@@ -31,8 +31,8 @@ export const LayoutPage: React.FC = () => {
     }
   });
 
-  const gameStateView = useGameState();
-  const gameState = useRawGameState();
+  const gameState = useGameState();
+  const machines = useMachines();
   const updateGameState = useApplyGameAction();
   const saveGame = useSaveGame();
   const loadGame = useLoadGame();
@@ -92,7 +92,7 @@ export const LayoutPage: React.FC = () => {
                   <MaterialPilesSprite materialPiles={materialPiles} />
                 </pixiContainer>
               ))}
-              {gameStateView.machines.map((machinePlacement) => (
+              {machines.map((machinePlacement) => (
                 <MachineSprite
                   key={
                     machinePlacement.type.id +

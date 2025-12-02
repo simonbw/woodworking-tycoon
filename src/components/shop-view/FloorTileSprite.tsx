@@ -2,7 +2,6 @@ import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { CellInfo, useCellMap } from "../../game/CellMap";
 import { GameState } from "../../game/GameState";
-import { GameStateView } from "../../game/GameStateView";
 import { combineActions } from "../../game/game-actions/misc-actions";
 import {
   addWorkItemAction,
@@ -60,14 +59,10 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
 };
 
 // Get the position at the end of the current work queue
-function getWorkQueueEndState(gameStateView: GameStateView): GameState {
-  // Convert view back to raw state
-  let gameState: GameState = {
-    ...gameStateView,
-    machines: gameStateView.machines.map((m) => m.toState()),
-  };
-  for (const workItem of gameState.player.workQueue) {
-    gameState = applyWorkItemAction(workItem)(gameState);
+function getWorkQueueEndState(gameState: GameState): GameState {
+  let state = gameState;
+  for (const workItem of state.player.workQueue) {
+    state = applyWorkItemAction(workItem)(state);
   }
-  return gameState;
+  return state;
 }

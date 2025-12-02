@@ -1,9 +1,9 @@
 import React, { ReactNode, createContext, useContext, useState } from "react";
 import { GameState } from "../game/GameState";
-import { GameStateView, enrichGameState } from "../game/GameStateView";
 import { UpdateFunction } from "../utils/typeUtils";
 import { initialGameState } from "../game/initialGameState";
 import { loadGame, saveGame, deleteSave } from "../game/saveLoad";
+import { getMachines, Machine } from "../game/Machine";
 
 export const gameStateContext = createContext<
   | {
@@ -56,27 +56,24 @@ export const GameStateProvider: React.FC<{ children?: ReactNode }> = ({
 };
 
 /**
- * Returns enriched GameStateView with Machine class instances
- * Use this in components for convenient access to machine.type, machine.selectedOperation, etc.
+ * Returns raw GameState with MachineState objects
+ * Use this for accessing the core game state
  */
-export function useGameState(): GameStateView {
+export function useGameState(): GameState {
   const value = useContext(gameStateContext);
   if (value === undefined) {
     throw new Error("useGameState must be used within a GameStateProvider");
   }
-  return enrichGameState(value.gameState);
+  return value.gameState;
 }
 
 /**
- * Returns raw GameState with MachineState objects
- * Use this in game actions that need to work with serializable state
+ * Returns Machine[] view layer with convenient access to machine.type, machine.selectedOperation, etc.
+ * Similar to useCellMap() pattern
  */
-export function useRawGameState(): GameState {
-  const value = useContext(gameStateContext);
-  if (value === undefined) {
-    throw new Error("useRawGameState must be used within a GameStateProvider");
-  }
-  return value.gameState;
+export function useMachines(): ReadonlyArray<Machine> {
+  const gameState = useGameState();
+  return getMachines(gameState.machines);
 }
 
 export function useApplyGameAction() {
