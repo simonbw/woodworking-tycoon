@@ -6,6 +6,10 @@ import {
   gameStateContext,
   useApplyGameAction,
   useGameState,
+  useMachines,
+  useSaveGame,
+  useLoadGame,
+  useNewGame,
 } from "../useGameState";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { MachineSprite } from "./MachineSprite";
@@ -17,7 +21,11 @@ import { cellToPixel, cellToPixelVec } from "./shop-scale";
 
 export const ShopView: React.FC = () => {
   const gameState = useGameState();
+  const machines = useMachines();
   const updateGameState = useApplyGameAction();
+  const saveGame = useSaveGame();
+  const loadGame = useLoadGame();
+  const newGame = useNewGame();
   const cellMap = useCellMap();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
@@ -38,7 +46,7 @@ export const ShopView: React.FC = () => {
         backgroundAlpha={0}
         antialias={true}
       >
-        <gameStateContext.Provider value={{ gameState, updateGameState }}>
+        <gameStateContext.Provider value={{ gameState, updateGameState, saveGame, loadGame, newGame }}>
           <pixiTilingSprite
             eventMode="static"
             texture={floorTexture}
@@ -65,7 +73,7 @@ export const ShopView: React.FC = () => {
               </pixiContainer>
             );
           })}
-          {gameState.machines.map((machinePlacement) => (
+          {machines.map((machinePlacement) => (
             <MachineSprite
               key={
                 machinePlacement.type.id + machinePlacement.position.join(",")

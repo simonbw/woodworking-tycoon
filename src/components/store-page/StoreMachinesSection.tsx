@@ -1,6 +1,6 @@
 import React from "react";
-import { MACHINE_TYPES, MachineType } from "../../game/Machine";
-import { useApplyGameAction, useGameState } from "../useGameState";
+import { MACHINE_TYPES, MachineId, MachineType } from "../../game/Machine";
+import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { buyMachineAction } from "../../game/game-actions/store-actions";
 
 interface MachineSaleInfo {
@@ -30,10 +30,11 @@ export const StoreMachinesSection: React.FC = () => {
 const MachineListItem: React.FC<MachineSaleInfo> = ({ machine, price }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
+  const machines = useMachines();
 
   const numberOwned =
-    gameState.machines.filter((m) => m.type === machine).length +
-    gameState.storage.machines.filter((m) => m === machine).length;
+    machines.filter((m) => m.type.id === machine.id).length +
+    gameState.storage.machines.filter((machineId) => machineId === machine.id).length;
 
   return (
     <li className="flex gap-2 items-center">
@@ -47,7 +48,7 @@ const MachineListItem: React.FC<MachineSaleInfo> = ({ machine, price }) => {
       <button
         className="button"
         onClick={() => {
-          applyAction(buyMachineAction(machine, price));
+          applyAction(buyMachineAction(machine.id as MachineId, price));
         }}
       >
         Buy

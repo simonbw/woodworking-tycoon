@@ -1,7 +1,7 @@
 import { LRUCache } from "typescript-lru-cache";
 import { useGameState } from "../components/useGameState";
 import { GameState, MaterialPile } from "./GameState";
-import { Machine } from "./Machine";
+import { getMachines, Machine } from "./Machine";
 import { Vector, rotateVec, translateVec } from "./Vectors";
 
 export type CellInfo = {
@@ -41,7 +41,8 @@ export class CellMap {
         }
       }
 
-      for (const machine of gameState.machines) {
+      const machines = getMachines(gameState.machines);
+      for (const machine of machines) {
         cellMap.addMachine(machine);
       }
 

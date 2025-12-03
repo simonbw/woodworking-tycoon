@@ -12,7 +12,7 @@ import { extractFirstNumber } from "./extractFirstNumber";
 
 const AnimatedPixiSprite = animated("pixiSprite");
 
-export const LunchboxPlanerSprite: React.FC<Machine> = (machine) => {
+export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
   const planerBottomTexture = useTexture("/images/lunchbox-planer-bottom.png");
   const planerTopTexture = useTexture("/images/lunchbox-planer-top.png");

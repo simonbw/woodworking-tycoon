@@ -1,6 +1,7 @@
 import { GameAction } from "../GameState";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
+import { MACHINE_TYPES } from "../Machine";
 
 export const tickAction: GameAction = (gameState) => {
   gameState = {
@@ -27,36 +28,46 @@ export const tickAction: GameAction = (gameState) => {
   }
 
   // Process machines that are operating
-  const updatedMachines = gameState.machines.map((machine) => {
-    if (machine.operationProgress.status !== "inProgress") {
-      return machine;
+  const updatedMachines = gameState.machines.map((machineState) => {
+    if (machineState.operationProgress.status !== "inProgress") {
+      return machineState;
     }
 
-    const newTicksRemaining = machine.operationProgress.ticksRemaining - 1;
+    const newTicksRemaining = machineState.operationProgress.ticksRemaining - 1;
 
     // Operation still in progress
     if (newTicksRemaining > 0) {
       return {
-        ...machine,
+        ...machineState,
         operationProgress: {
-          ...machine.operationProgress,
+          ...machineState.operationProgress,
           ticksRemaining: newTicksRemaining,
         },
       };
     }
 
     // Operation completed - apply the transformation
+    const machineType = MACHINE_TYPES[machineState.machineTypeId];
+    const selectedOperation = machineType.operations.find(
+      (op) => op.id === machineState.selectedOperationId
+    );
+    if (!selectedOperation) {
+      throw new Error(
+        `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`
+      );
+    }
+
     const { inputs, outputs } = executeOperation(
-      machine.selectedOperation,
-      machine.processingMaterials,
-      machine.selectedParameters
+      selectedOperation,
+      machineState.processingMaterials,
+      machineState.selectedParameters
     );
 
     return {
-      ...machine,
-      inputMaterials: [...machine.inputMaterials, ...inputs],
+      ...machineState,
+      inputMaterials: [...machineState.inputMaterials, ...inputs],
       processingMaterials: [],
-      outputMaterials: [...machine.outputMaterials, ...outputs],
+      outputMaterials: [...machineState.outputMaterials, ...outputs],
       operationProgress: {
         status: "notStarted" as const,
         ticksRemaining: 0,

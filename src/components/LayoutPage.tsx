@@ -1,7 +1,7 @@
 import { Application } from "@pixi/react";
 import React, { useState } from "react";
 import { useCellMap } from "../game/CellMap";
-import { MachineType } from "../game/Machine";
+import { MACHINE_TYPES, MachineId, MachineType } from "../game/Machine";
 import { groupBy } from "../utils/arrayUtils";
 import { useTexture } from "../utils/useTexture";
 import { NavBar } from "./NavBar";
@@ -13,6 +13,10 @@ import {
   gameStateContext,
   useApplyGameAction,
   useGameState,
+  useMachines,
+  useSaveGame,
+  useLoadGame,
+  useNewGame,
 } from "./useGameState";
 import { useKeyDown } from "./useKeyDown";
 
@@ -28,7 +32,11 @@ export const LayoutPage: React.FC = () => {
   });
 
   const gameState = useGameState();
+  const machines = useMachines();
   const updateGameState = useApplyGameAction();
+  const saveGame = useSaveGame();
+  const loadGame = useLoadGame();
+  const newGame = useNewGame();
   const cellMap = useCellMap();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
@@ -52,7 +60,15 @@ export const LayoutPage: React.FC = () => {
             backgroundAlpha={0}
             antialias={true}
           >
-            <gameStateContext.Provider value={{ gameState, updateGameState }}>
+            <gameStateContext.Provider
+              value={{
+                gameState,
+                updateGameState,
+                saveGame,
+                loadGame,
+                newGame,
+              }}
+            >
               <pixiTilingSprite
                 eventMode="static"
                 texture={floorTexture}
@@ -76,7 +92,7 @@ export const LayoutPage: React.FC = () => {
                   <MaterialPilesSprite materialPiles={materialPiles} />
                 </pixiContainer>
               ))}
-              {gameState.machines.map((machinePlacement) => (
+              {machines.map((machinePlacement) => (
                 <MachineSprite
                   key={
                     machinePlacement.type.id +
@@ -103,24 +119,27 @@ const StorageSection: React.FC<{
 }> = ({ setSelectedMachine }) => {
   const gameState = useGameState();
   const groupedMachines = [
-    ...groupBy(gameState.storage.machines, (machine) => machine.id).values(),
+    ...groupBy(gameState.storage.machines, (machineId) => machineId).values(),
   ];
   return (
     <section>
       <h2 className="section-heading">Storage</h2>
       <ul>
-        {groupedMachines.map((machines) => (
-          <li key={machines[0].id}>
-            <span>{machines[0].name}</span>
-            <button
-              className="button"
-              onClick={() => setSelectedMachine(machines[0])}
-            >
-              Place
-            </button>
-            {machines.length > 1 && <span>x{machines.length}</span>}
-          </li>
-        ))}
+        {groupedMachines.map((machineIds) => {
+          const machineType = MACHINE_TYPES[machineIds[0]];
+          return (
+            <li key={machineIds[0]}>
+              <span>{machineType.name}</span>
+              <button
+                className="button"
+                onClick={() => setSelectedMachine(machineType)}
+              >
+                Place
+              </button>
+              {machineIds.length > 1 && <span>x{machineIds.length}</span>}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

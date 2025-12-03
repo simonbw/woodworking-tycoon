@@ -60,8 +60,9 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
 
 // Get the position at the end of the current work queue
 function getWorkQueueEndState(gameState: GameState): GameState {
-  for (const workItem of gameState.player.workQueue) {
-    gameState = applyWorkItemAction(workItem)(gameState);
+  let state = gameState;
+  for (const workItem of state.player.workQueue) {
+    state = applyWorkItemAction(workItem)(state);
   }
-  return gameState;
+  return state;
 }

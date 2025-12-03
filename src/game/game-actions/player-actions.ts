@@ -1,7 +1,7 @@
 import { materialMeetsInput } from "../material-helpers";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
-import { Machine, MachineOperation, ParameterizedOperation, ParameterValues } from "../Machine";
+import { Machine, MachineOperation, ParameterizedOperation, ParameterValues, MACHINE_TYPES } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
@@ -89,8 +89,10 @@ export function moveMaterialsToMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
+    const machineState = machine.state;
+    const machineType = MACHINE_TYPES[machineState.machineTypeId];
     const spacesRemaining =
-      machine.type.inputSpaces - machine.inputMaterials.length;
+      machineType.inputSpaces - machineState.inputMaterials.length;
     if (materials.length > spacesRemaining) {
       console.warn("Tried to move too many materials to machine");
       return gameState;
@@ -111,7 +113,7 @@ export function moveMaterialsToMachineAction(
         ),
       },
       machines: gameState.machines.map((m) =>
-        m === machine
+        vectorEquals(m.position, machineState.position)
           ? { ...m, inputMaterials: [...m.inputMaterials, ...materials] }
           : m
       ),
@@ -124,8 +126,9 @@ export function takeInputsFromMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
+    const machineState = machine.state;
     for (const material of materials) {
-      if (!machine.inputMaterials.includes(material)) {
+      if (!machineState.inputMaterials.includes(material)) {
         console.warn("Tried to move material not in machine");
         return gameState;
       }
@@ -137,11 +140,11 @@ export function takeInputsFromMachineAction(
         inventory: [...gameState.player.inventory, ...materials],
       },
       machines: gameState.machines.map((m) =>
-        m === machine
+        vectorEquals(m.position, machineState.position)
           ? {
               ...m,
               inputMaterials: m.inputMaterials.filter(
-                (item) => !materials.includes(item)
+                (item: MaterialInstance) => !materials.includes(item)
               ),
             }
           : m
@@ -155,8 +158,9 @@ export function takeOutputsFromMachineAction(
   machine: Machine
 ): GameAction {
   return (gameState) => {
+    const machineState = machine.state;
     for (const material of materials) {
-      if (!machine.outputMaterials.includes(material)) {
+      if (!machineState.outputMaterials.includes(material)) {
         console.warn("Tried to move material not in machine");
         return gameState;
       }
@@ -168,11 +172,11 @@ export function takeOutputsFromMachineAction(
         inventory: [...gameState.player.inventory, ...materials],
       },
       machines: gameState.machines.map((m) =>
-        m === machine
+        vectorEquals(m.position, machineState.position)
           ? {
               ...m,
               outputMaterials: m.outputMaterials.filter(
-                (item) => !materials.includes(item)
+                (item: MaterialInstance) => !materials.includes(item)
               ),
             }
           : m
@@ -187,6 +191,7 @@ export function setMachineOperationAction(
   parameters?: ParameterValues
 ): GameAction {
   return (gameState) => {
+    const machineState = machine.state;
     if (!machine.type.operations.includes(operation)) {
       throw new Error("Tried to set machine operation to invalid operation");
     }
@@ -194,7 +199,9 @@ export function setMachineOperationAction(
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
-        m === machine ? { ...m, selectedOperation: operation, selectedParameters: parameters } : m
+        vectorEquals(m.position, machineState.position)
+          ? { ...m, selectedOperationId: operation.id, selectedParameters: parameters }
+          : m
       ),
     };
   };
@@ -202,21 +209,22 @@ export function setMachineOperationAction(
 
 export function operateMachineAction(machine: Machine): GameAction {
   return (gameState) => {
+    const machineState = machine.state;
     // Can't start a new operation if one is in progress
-    if (machine.operationProgress.status === "inProgress") {
+    if (machineState.operationProgress.status === "inProgress") {
       console.warn("Machine is already operating");
       return gameState;
     }
 
-    const inventory = [...machine.inputMaterials];
+    const inventory = [...machineState.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
     // Validate that we have all required materials
     const inputMaterials = getOperationInputMaterials(
       machine.selectedOperation,
-      machine.selectedParameters
+      machineState.selectedParameters
     );
-    
+
     for (const inputMaterial of inputMaterials) {
       for (let i = 0; i < inputMaterial.quantity; i++) {
         const index = inventory.findIndex((m) =>
@@ -235,7 +243,7 @@ export function operateMachineAction(machine: Machine): GameAction {
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
-        m === machine
+        vectorEquals(m.position, machineState.position)
           ? {
               ...m,
               inputMaterials: inventory,
