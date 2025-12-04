@@ -56,7 +56,8 @@ export function buyMachineAction(
       console.warn("Tried to buy machine without enough money");
       return gameState;
     }
-    return {
+
+    let updatedState = {
       ...gameState,
       money: gameState.money - price,
       storage: {
@@ -64,6 +65,20 @@ export function buyMachineAction(
         machines: [...gameState.storage.machines, machineTypeId],
       },
     };
+
+    // Unlock shop layout when buying miter saw
+    if (machineTypeId === "miterSaw" && !gameState.progression.shopLayoutUnlocked) {
+      updatedState = {
+        ...updatedState,
+        progression: {
+          ...updatedState.progression,
+          shopLayoutUnlocked: true,
+          tutorialStage: Math.max(updatedState.progression.tutorialStage, 2),
+        },
+      };
+    }
+
+    return updatedState;
   };
 }
 

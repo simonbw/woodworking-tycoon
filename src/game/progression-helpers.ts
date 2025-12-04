@@ -4,8 +4,8 @@ export function shouldUnlockStore(commissionsCompleted: number): boolean {
   return commissionsCompleted >= 1;
 }
 
-export function shouldUnlockShopLayout(commissionsCompleted: number): boolean {
-  return commissionsCompleted >= 2;
+export function shouldUnlockShopLayout(hasMiterSaw: boolean): boolean {
+  return hasMiterSaw;
 }
 
 export function shouldUnlockFreeSelling(commissionsCompleted: number): boolean {
@@ -18,9 +18,7 @@ export function shouldAdvanceTutorial(gameState: GameState): number | null {
   if (commissionsCompleted >= 1 && tutorialStage < 1) {
     return 1;
   }
-  if (commissionsCompleted >= 2 && tutorialStage < 2) {
-    return 2;
-  }
+  // Tutorial stage 2 is now advanced when purchasing miter saw, not by commission count
 
   return null; // No advancement needed
 }
@@ -37,16 +35,12 @@ export function getNextMilestone(progression: ProgressionState): string | null {
     return "Complete your first commission to unlock the Store";
   }
 
-  if (commissionsCompleted === 1 && !shopLayoutUnlocked) {
-    return "Complete one more commission to unlock Shop Layout editing";
+  if (storeUnlocked && !shopLayoutUnlocked) {
+    return "Buy a Miter Saw from the Store to unlock Shop Layout editing";
   }
 
-  if (commissionsCompleted === 2 && !freeSelling) {
-    return "Complete one more commission to unlock free selling";
-  }
-
-  if (commissionsCompleted < 3) {
-    return `Complete ${3 - commissionsCompleted} more commission${3 - commissionsCompleted === 1 ? "" : "s"} to unlock all features`;
+  if (shopLayoutUnlocked && !freeSelling) {
+    return "Complete more commissions to unlock free selling";
   }
 
   return null; // All milestones reached
@@ -57,9 +51,9 @@ export function getTutorialMessage(tutorialStage: number): string | null {
     case 0:
       return "Welcome! Complete your first commission to get started.";
     case 1:
-      return "Great! You've unlocked the Store. Try completing another commission.";
+      return "Great! You've unlocked the Store. Buy a Miter Saw to expand your capabilities.";
     case 2:
-      return "Excellent! You can now edit your shop layout. One more commission will unlock free selling.";
+      return "Excellent! You can now edit your shop layout. Complete more commissions to unlock free selling.";
     default:
       return null;
   }

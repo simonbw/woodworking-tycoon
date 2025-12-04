@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { DebugView } from "./DebugView";
+import { FixtureLoader } from "./FixtureLoader";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
 import { StorePage } from "./store-page/StorePage";
@@ -14,6 +15,7 @@ export const Main: React.FC = () => {
         <ActionKeyContextProvider>
           <ScreenSwitcher />
           <DebugView />
+          <FixtureLoader />
         </ActionKeyContextProvider>
       </UiModeProvider>
     </GameStateProvider>

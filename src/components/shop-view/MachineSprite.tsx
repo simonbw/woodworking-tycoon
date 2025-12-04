@@ -17,13 +17,65 @@ import {
 const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 
-export const MachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
+export const MachineSprite: React.FC<{
+  machine: Machine;
+  isSelected?: boolean;
+  onClick?: () => void;
+}> = ({ machine, isSelected = false, onClick }) => {
   const [x, y] = cellToPixelCenter(machine.position);
   const angle = machine.rotation * -90;
   const operatorPositionTexture = useTexture("/images/operator-position.png");
 
+  const drawSelectionHighlight = useCallback(
+    (g: Graphics) => {
+      if (!isSelected) {
+        g.clear();
+        return;
+      }
+
+      g.clear();
+      // Draw highlight around the machine
+      const cellSize = PIXELS_PER_CELL;
+      const occupiedCells = machine.type.cellsOccupied;
+
+      // Calculate bounding box
+      const xs = occupiedCells.map(([x]) => x);
+      const ys = occupiedCells.map(([, y]) => y);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+
+      const width = (maxX - minX + 1) * cellSize;
+      const height = (maxY - minY + 1) * cellSize;
+      const offsetX = (minX + maxX) / 2 * cellSize;
+      const offsetY = (minY + maxY) / 2 * cellSize;
+
+      // Yellow selection outline
+      g.rect(
+        offsetX - width / 2 - 4,
+        offsetY - height / 2 - 4,
+        width + 8,
+        height + 8,
+      );
+      g.stroke({ width: 3, color: 0xfcd34d });
+    },
+    [isSelected, machine.type.cellsOccupied]
+  );
+
   return (
-    <pixiContainer x={x} y={y} angle={angle} anchor={{ x: 0.5, y: 0.5 }}>
+    <pixiContainer
+      x={x}
+      y={y}
+      angle={angle}
+      anchor={{ x: 0.5, y: 0.5 }}
+      eventMode={onClick ? "static" : "auto"}
+      onClick={onClick}
+      cursor={onClick ? "pointer" : "default"}
+    >
+      {/* Selection highlight */}
+      {isSelected && <pixiGraphics draw={drawSelectionHighlight} />}
+
       <LocalMachineSprite machine={machine} />
 
       {machine.type.operationPosition && (

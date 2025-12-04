@@ -6,7 +6,8 @@
     "moduleResolution": "node",
     "jsx": "react",
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   }
   // "include": ["src/types", "src/server/index.ts", "src/client/pages"]
 }
