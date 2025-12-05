@@ -19,25 +19,25 @@ test.describe("Layout Editor", () => {
     await page.waitForTimeout(300);
 
     // Navigate to layout page
-    await page.click('text="Shop Layout"');
+    await page.getByText("Shop Layout").click();
     await page.waitForTimeout(500);
 
     // Verify we're on the layout page
-    await expect(page.locator('text="Layout Editor"')).toBeVisible();
-    await expect(page.locator('text="Storage"')).toBeVisible();
+    await expect(page.getByText("Layout Editor")).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Storage', level: 3 })).toBeVisible();
 
     // ==================== TEST 1: Place machine from storage ====================
     console.log("Test 1: Place machine from storage");
 
     // Verify miter saw is in storage
-    await expect(page.locator('text="Miter Saw"')).toBeVisible();
+    await expect(page.getByText("Miter Saw")).toBeVisible();
 
     // Click Place button
     await page.click('button:has-text("Place")');
     await page.waitForTimeout(200);
 
     // Verify placement mode is active
-    await expect(page.locator('text="Placing Machine"')).toBeVisible();
+    await expect(page.getByText("Placing Machine")).toBeVisible();
 
     // Get game state to find valid placement location
     const validCell = await page.evaluate(() => {
@@ -63,7 +63,7 @@ test.describe("Layout Editor", () => {
     expect(placedSuccessfully).toBe(true);
 
     // Verify back to normal mode
-    await expect(page.locator('text="Select or Place"')).toBeVisible();
+    await expect(page.getByText("Select or Place")).toBeVisible();
 
     // ==================== TEST 2: Rotate during placement ====================
     console.log("Test 2: Rotate during placement");
@@ -93,7 +93,7 @@ test.describe("Layout Editor", () => {
     await page.waitForTimeout(200);
 
     // Verify placement cancelled and machine still in storage
-    await expect(page.locator('text="Select or Place"')).toBeVisible();
+    await expect(page.getByText("Select or Place")).toBeVisible();
     const stillInStorage = await page.evaluate(() => {
       const gameState = (window as any).__GET_GAME_STATE__();
       return gameState.storage.machines.includes("miterSaw");
@@ -112,12 +112,12 @@ test.describe("Layout Editor", () => {
     await page.waitForTimeout(500);
 
     // Verify we're still on layout page and it's visible
-    await expect(page.locator('text="Layout Editor"')).toBeVisible();
+    await expect(page.getByText("Layout Editor")).toBeVisible();
 
     // Clear any lingering UI state
     await page.keyboard.press("Escape");
     await page.waitForTimeout(200);
-    await expect(page.locator('text="Select or Place"')).toBeVisible();
+    await expect(page.getByText("Select or Place")).toBeVisible();
 
     // Re-query canvas after fixture load
     const canvas3 = page.locator('canvas').first();
@@ -136,13 +136,13 @@ test.describe("Layout Editor", () => {
     await page.waitForTimeout(500);
 
     // Verify move mode is active
-    await expect(page.locator('text="Moving Machine"')).toBeVisible();
-    await expect(page.locator('text="Moving: Miter Saw"')).toBeVisible();
+    await expect(page.getByText("Moving Machine")).toBeVisible();
+    await expect(page.getByText("Moving: Miter Saw")).toBeVisible();
 
     // Move to a new location
     const newPos = [1, 3];
     await canvas3.click({ position: { x: 128 * newPos[0] + 64, y: 128 * newPos[1] + 64 } });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Verify machine moved
     const movedSuccessfully = await page.evaluate((newPosition) => {
@@ -256,12 +256,12 @@ test.describe("Layout Editor", () => {
 
     await canvas6.click({ position: { x: 128 * anyMachine.position[0] + 64, y: 128 * anyMachine.position[1] + 64 } });
     await page.waitForTimeout(300);
-    await expect(page.locator('text="Moving Machine"')).toBeVisible();
+    await expect(page.getByText("Moving Machine")).toBeVisible();
 
     // Click same machine again to deselect
     await canvas6.click({ position: { x: 128 * anyMachine.position[0] + 64, y: 128 * anyMachine.position[1] + 64 } });
     await page.waitForTimeout(300);
-    await expect(page.locator('text="Select or Place"')).toBeVisible();
+    await expect(page.getByText("Select or Place")).toBeVisible();
 
     // ==================== TEST 8: ESC cancels selection/placement ====================
     console.log("Test 8: ESC cancels modes");
@@ -269,12 +269,12 @@ test.describe("Layout Editor", () => {
     // Select a machine
     await canvas6.click({ position: { x: 128 * anyMachine.position[0] + 64, y: 128 * anyMachine.position[1] + 64 } });
     await page.waitForTimeout(300);
-    await expect(page.locator('text="Moving Machine"')).toBeVisible();
+    await expect(page.getByText("Moving Machine")).toBeVisible();
 
     // Press ESC
     await page.keyboard.press("Escape");
     await page.waitForTimeout(200);
-    await expect(page.locator('text="Select or Place"')).toBeVisible();
+    await expect(page.getByText("Select or Place")).toBeVisible();
 
     console.log("All layout editor tests passed!");
   });

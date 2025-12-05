@@ -17,22 +17,11 @@ import {
 const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 
-export const MachineSprite: React.FC<{
+const MachineSelectionHighlight: React.FC<{
   machine: Machine;
-  isSelected?: boolean;
-  onClick?: () => void;
-}> = ({ machine, isSelected = false, onClick }) => {
-  const [x, y] = cellToPixelCenter(machine.position);
-  const angle = machine.rotation * -90;
-  const operatorPositionTexture = useTexture("/images/operator-position.png");
-
-  const drawSelectionHighlight = useCallback(
+}> = ({ machine }) => {
+  const draw = useCallback(
     (g: Graphics) => {
-      if (!isSelected) {
-        g.clear();
-        return;
-      }
-
       g.clear();
       // Draw highlight around the machine
       const cellSize = PIXELS_PER_CELL;
@@ -48,20 +37,27 @@ export const MachineSprite: React.FC<{
 
       const width = (maxX - minX + 1) * cellSize;
       const height = (maxY - minY + 1) * cellSize;
-      const offsetX = (minX + maxX) / 2 * cellSize;
-      const offsetY = (minY + maxY) / 2 * cellSize;
+      const offsetX = ((minX + maxX) / 2) * cellSize;
+      const offsetY = ((minY + maxY) / 2) * cellSize;
 
       // Yellow selection outline
-      g.rect(
-        offsetX - width / 2 - 4,
-        offsetY - height / 2 - 4,
-        width + 8,
-        height + 8,
-      );
+      g.rect(offsetX - width / 2 - 4, offsetY - height / 2 - 4, width + 8, height + 8);
       g.stroke({ width: 3, color: 0xfcd34d });
     },
-    [isSelected, machine.type.cellsOccupied]
+    [machine.type.cellsOccupied],
   );
+
+  return <pixiGraphics draw={draw} />;
+};
+
+export const MachineSprite: React.FC<{
+  machine: Machine;
+  isSelected?: boolean;
+  onClick?: () => void;
+}> = ({ machine, isSelected = false, onClick }) => {
+  const [x, y] = cellToPixelCenter(machine.position);
+  const angle = machine.rotation * -90;
+  const operatorPositionTexture = useTexture("/images/operator-position.png");
 
   return (
     <pixiContainer
@@ -74,7 +70,7 @@ export const MachineSprite: React.FC<{
       cursor={onClick ? "pointer" : "default"}
     >
       {/* Selection highlight */}
-      {isSelected && <pixiGraphics draw={drawSelectionHighlight} />}
+      {isSelected && <MachineSelectionHighlight machine={machine} />}
 
       <LocalMachineSprite machine={machine} />
 
