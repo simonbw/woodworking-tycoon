@@ -62,7 +62,7 @@ export function incrementCommissionsCompletedAction(): GameAction {
 
 export function checkProgressionMilestonesAction(): GameAction {
   return (gameState) => {
-    const { commissionsCompleted, tutorialStage, storeUnlocked, shopLayoutUnlocked, freeSelling } = gameState.progression;
+    const { commissionsCompleted, tutorialStage, storeUnlocked, freeSelling } = gameState.progression;
     let updatedState = gameState;
 
     // First commission: Unlock store tab, advance to tutorial stage 1
@@ -73,13 +73,7 @@ export function checkProgressionMilestonesAction(): GameAction {
       updatedState = unlockStoreAction()(updatedState);
     }
 
-    // Second commission: Unlock layout tab, advance to tutorial stage 2
-    if (commissionsCompleted >= 2 && tutorialStage < 2) {
-      updatedState = advanceTutorialStageAction(2)(updatedState);
-    }
-    if (commissionsCompleted >= 2 && !shopLayoutUnlocked) {
-      updatedState = unlockShopLayoutAction()(updatedState);
-    }
+    // Shop layout is now unlocked when purchasing miter saw, not by commission count
 
     // Third commission: Unlock free selling feature
     if (commissionsCompleted >= 3 && !freeSelling) {

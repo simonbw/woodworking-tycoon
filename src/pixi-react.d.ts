@@ -17,6 +17,8 @@ type PixiProps<T> = Partial<T> & {
   onPointerDown?: (event: any) => void;
   onPointerUp?: (event: any) => void;
   onPointerMove?: (event: any) => void;
+  onPointerOver?: (event: any) => void;
+  onPointerOut?: (event: any) => void;
   key?: string | number;
   ref?: any;
 };

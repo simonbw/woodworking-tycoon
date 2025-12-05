@@ -1,22 +1,15 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import { CellInfo, useCellMap } from "../../game/CellMap";
-import { GameState } from "../../game/GameState";
-import { combineActions } from "../../game/game-actions/misc-actions";
-import {
-  addWorkItemAction,
-  applyWorkItemAction,
-} from "../../game/game-actions/work-item-actions";
+import { CellInfo } from "../../game/CellMap";
 import { colors } from "../../utils/colors";
-import { findPath } from "../../utils/pathingUtils";
-import { useApplyGameAction, useGameState } from "../useGameState";
 import { PIXELS_PER_CELL, SPACING } from "./shop-scale";
 
-export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
-  const applyAction = useApplyGameAction();
-  const gameState = useGameState();
-  const cellMap = useCellMap();
-
+export const FloorTileSprite: React.FC<{
+  cell: CellInfo;
+  onClick?: (position: [number, number]) => void;
+  onHover?: (position: [number, number]) => void;
+  onHoverOut?: () => void;
+}> = ({ cell, onClick, onHover, onHoverOut }) => {
   const size = PIXELS_PER_CELL - SPACING * 2;
   const draw = useCallback((g: Graphics) => {
     g.clear();
@@ -24,7 +17,10 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
     g.fill(colors.zinc[700]);
   }, []);
 
-  // TODO: Manage hover state
+  const handleClick = useCallback(() => {
+    onClick?.(cell.position as [number, number]);
+  }, [onClick, cell.position]);
+
   return (
     <pixiGraphics
       eventMode="static"
@@ -32,37 +28,9 @@ export const FloorTileSprite: React.FC<{ cell: CellInfo }> = ({ cell }) => {
       y={cell.position[1] * PIXELS_PER_CELL}
       draw={draw}
       alpha={0.1}
-      onClick={() => {
-        const startPosition = getWorkQueueEndState(gameState).player.position;
-
-        const path = findPath(
-          startPosition,
-          cell.position,
-          cellMap.getFreeCells().map((cell) => cell.position)
-        );
-
-        if (path != undefined) {
-          applyAction(
-            combineActions(
-              ...path.map((pathItem) =>
-                addWorkItemAction({
-                  type: "move",
-                  direction: pathItem.direction,
-                })
-              )
-            )
-          );
-        }
-      }}
+      onClick={handleClick}
+      onPointerOver={() => onHover?.(cell.position as [number, number])}
+      onPointerOut={() => onHoverOut?.()}
     />
   );
 };
-
-// Get the position at the end of the current work queue
-function getWorkQueueEndState(gameState: GameState): GameState {
-  let state = gameState;
-  for (const workItem of state.player.workQueue) {
-    state = applyWorkItemAction(workItem)(state);
-  }
-  return state;
-}

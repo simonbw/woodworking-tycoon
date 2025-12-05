@@ -1,8 +1,8 @@
 import { GameState } from "./GameState";
 import {
   MACHINE_TYPES,
-  MachineState,
   MachineId,
+  MachineState,
   ParameterValues,
 } from "./Machine";
 import { Direction } from "./Vectors";
@@ -41,7 +41,7 @@ export const initialGameState: GameState = {
       requiredMaterials: [
         { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
       ],
-      rewardMoney: 150, // Enough to buy miter saw for next progression
+      rewardMoney: 200, // Enough to buy miter saw for next progression
       rewardReputation: 2,
     },
   ],

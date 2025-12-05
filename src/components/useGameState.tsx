@@ -1,4 +1,10 @@
-import React, { ReactNode, createContext, useContext, useState } from "react";
+import React, {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { GameState } from "../game/GameState";
 import { UpdateFunction } from "../utils/typeUtils";
 import { initialGameState } from "../game/initialGameState";
@@ -39,6 +45,22 @@ export const GameStateProvider: React.FC<{ children?: ReactNode }> = ({
     deleteSave();
     setGameState(initialGameState);
   };
+
+  // Expose game state functions to window for testing and debugging
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__GAME_STATE__ = gameState;
+      (window as any).__UPDATE_GAME_STATE__ = setGameState;
+      (window as any).__GET_GAME_STATE__ = () => gameState;
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        delete (window as any).__GAME_STATE__;
+        delete (window as any).__UPDATE_GAME_STATE__;
+        delete (window as any).__GET_GAME_STATE__;
+      }
+    };
+  }, [gameState]);
 
   return (
     <gameStateContext.Provider

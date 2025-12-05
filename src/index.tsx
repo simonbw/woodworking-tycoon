@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import "./pixi-setup";
 import { Main } from "./components/Main";
 import { loadAssets } from "./utils/loadAssets";
+// Load test fixtures for testing and debugging
+import "../tests/fixtures";
 
 const reactContainer = document.getElementById("react-container");
 if (!reactContainer) {

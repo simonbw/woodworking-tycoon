@@ -1,52 +1,184 @@
-import { Application } from "@pixi/react";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useCellMap } from "../game/CellMap";
-import { MACHINE_TYPES, MachineId, MachineType } from "../game/Machine";
-import { groupBy } from "../utils/arrayUtils";
-import { useTexture } from "../utils/useTexture";
-import { NavBar } from "./NavBar";
-import { FloorTileSprite } from "./shop-view/FloorTileSprite";
-import { MachineSprite } from "./shop-view/MachineSprite";
-import { MaterialPilesSprite } from "./shop-view/MaterialPileSprite";
-import { PIXELS_PER_CELL, cellToPixel } from "./shop-view/shop-scale";
 import {
-  gameStateContext,
-  useApplyGameAction,
-  useGameState,
-  useMachines,
-  useSaveGame,
-  useLoadGame,
-  useNewGame,
-} from "./useGameState";
+  canPlaceMachine,
+  moveMachineAction,
+  placeMachineAction,
+  removeMachineToStorageAction,
+} from "../game/game-actions/machine-actions";
+import { combineActions } from "../game/game-actions/misc-actions";
+import {
+  addWorkItemAction,
+  applyWorkItemAction,
+} from "../game/game-actions/work-item-actions";
+import { GameState } from "../game/GameState";
+import { MACHINE_TYPES, MachineId, MachineType } from "../game/Machine";
+import { Direction } from "../game/Vectors";
+import { findPath } from "../utils/pathingUtils";
+import { NavBar } from "./NavBar";
+import { LayoutEditorCanvas } from "./layout-page/LayoutEditorCanvas";
+import { StorageSection } from "./layout-page/StorageSection";
+import { useApplyGameAction, useGameState, useMachines } from "./useGameState";
 import { useKeyDown } from "./useKeyDown";
 
+interface PlacementMode {
+  machineType: MachineType;
+  machineTypeId: MachineId;
+  rotation: Direction;
+}
+
+type EditMode = "none" | "placing" | "moving";
+
 export const LayoutPage: React.FC = () => {
-  const [selectedMachine, setSelectedMachine] = useState<MachineType | null>(
+  const [placementMode, setPlacementMode] = useState<PlacementMode | null>(
     null,
   );
-  useKeyDown((event) => {
-    switch (event.key) {
-      case "Escape":
-        return setSelectedMachine(null);
-    }
-  });
+  const [selectedMachineIndex, setSelectedMachineIndex] = useState<
+    number | null
+  >(null);
+  const [moveRotation, setMoveRotation] = useState<Direction>(0);
+  const [hoverPosition, setHoverPosition] = useState<[number, number] | null>(
+    null,
+  );
 
   const gameState = useGameState();
   const machines = useMachines();
   const updateGameState = useApplyGameAction();
-  const saveGame = useSaveGame();
-  const loadGame = useLoadGame();
-  const newGame = useNewGame();
   const cellMap = useCellMap();
-  const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
-  const materialPileGroups = cellMap
-    .getCells()
-    .filter((cell) => cell.materialPiles.length > 0)
-    .map((cell) => cell.materialPiles);
+  // Determine current edit mode
+  const editMode: EditMode = placementMode
+    ? "placing"
+    : selectedMachineIndex !== null
+      ? "moving"
+      : "none";
 
-  const width = cellToPixel(cellMap.getWidth());
-  const height = cellToPixel(cellMap.getHeight());
+  useKeyDown((event) => {
+    switch (event.key) {
+      case "Escape":
+        setPlacementMode(null);
+        setSelectedMachineIndex(null);
+        return;
+      case "r":
+      case "R":
+        if (placementMode) {
+          setPlacementMode({
+            ...placementMode,
+            rotation: ((placementMode.rotation + 1) % 4) as Direction,
+          });
+        } else if (selectedMachineIndex !== null) {
+          setMoveRotation(((moveRotation + 1) % 4) as Direction);
+        }
+        break;
+      case "Delete":
+      case "Backspace":
+        if (selectedMachineIndex !== null) {
+          updateGameState(removeMachineToStorageAction(selectedMachineIndex));
+          setSelectedMachineIndex(null);
+        }
+        break;
+    }
+  });
+
+  const handleFloorTileClick = useCallback(
+    (position: [number, number]) => {
+      // If in placement mode, try to place the machine
+      if (placementMode) {
+        const isValid = canPlaceMachine(
+          cellMap,
+          placementMode.machineType,
+          position,
+          placementMode.rotation,
+        );
+
+        if (isValid) {
+          updateGameState(
+            placeMachineAction(
+              placementMode.machineTypeId,
+              position,
+              placementMode.rotation,
+            ),
+          );
+          setPlacementMode(null);
+        }
+        return;
+      }
+
+      // If in move mode, try to move the selected machine
+      if (selectedMachineIndex !== null && selectedMachineIndex !== undefined) {
+        const selectedMachine = gameState.machines[selectedMachineIndex];
+        if (selectedMachine) {
+          const machineType = MACHINE_TYPES[selectedMachine.machineTypeId];
+          const isValid = canPlaceMachine(
+            cellMap,
+            machineType,
+            position,
+            moveRotation,
+            selectedMachineIndex, // Exclude the machine being moved
+          );
+
+          if (isValid) {
+            updateGameState(
+              moveMachineAction(selectedMachineIndex, position, moveRotation),
+            );
+            setSelectedMachineIndex(null);
+            setMoveRotation(0);
+          }
+        }
+        return;
+      }
+
+      // Normal player movement
+      const startPosition = getWorkQueueEndState(gameState).player.position;
+
+      const path = findPath(
+        startPosition,
+        position,
+        cellMap.getFreeCells().map((cell) => cell.position),
+      );
+
+      if (path != undefined) {
+        updateGameState(
+          combineActions(
+            ...path.map((pathItem) =>
+              addWorkItemAction({
+                type: "move",
+                direction: pathItem.direction,
+              }),
+            ),
+          ),
+        );
+      }
+    },
+    [
+      placementMode,
+      selectedMachineIndex,
+      moveRotation,
+      cellMap,
+      updateGameState,
+      gameState,
+    ],
+  );
+
+  const handleMachineClick = useCallback(
+    (index: number) => {
+      if (editMode === "none") {
+        // Toggle selection
+        if (selectedMachineIndex === index) {
+          setSelectedMachineIndex(null);
+        } else {
+          setSelectedMachineIndex(index);
+          setMoveRotation(gameState.machines[index].rotation);
+        }
+      }
+    },
+    [editMode, selectedMachineIndex, gameState.machines],
+  );
+
+  const handleBackgroundClick = useCallback(() => {
+    // Click on background deselects
+    setSelectedMachineIndex(null);
+  }, []);
 
   return (
     <main className="p-8 space-y-6">
@@ -54,93 +186,37 @@ export const LayoutPage: React.FC = () => {
 
       <div className="grid grid-cols-2">
         <section>
-          <Application
-            width={width}
-            height={height}
-            backgroundAlpha={0}
-            antialias={true}
-          >
-            <gameStateContext.Provider
-              value={{
-                gameState,
-                updateGameState,
-                saveGame,
-                loadGame,
-                newGame,
-              }}
-            >
-              <pixiTilingSprite
-                eventMode="static"
-                texture={floorTexture}
-                tilePosition={{ x: 0, y: 0 }}
-                tileScale={{ x: 0.25, y: 0.25 }}
-                width={width}
-                height={height}
-              />
-              {cellMap.getCells().map((cell) => (
-                <FloorTileSprite
-                  cell={cell}
-                  key={`cell-${cell.position.join(",")}`}
-                />
-              ))}
-              {materialPileGroups.map((materialPiles, i) => (
-                <pixiContainer
-                  key={`pile${materialPiles[0].position.join(",")}`}
-                  x={materialPiles[0].position[0] * PIXELS_PER_CELL}
-                  y={materialPiles[0].position[1] * PIXELS_PER_CELL}
-                >
-                  <MaterialPilesSprite materialPiles={materialPiles} />
-                </pixiContainer>
-              ))}
-              {machines.map((machinePlacement) => (
-                <MachineSprite
-                  key={
-                    machinePlacement.type.id +
-                    machinePlacement.position.join(",")
-                  }
-                  machine={machinePlacement}
-                />
-              ))}
-            </gameStateContext.Provider>
-          </Application>
+          <LayoutEditorCanvas
+            cellMap={cellMap}
+            placementMode={placementMode}
+            selectedMachineIndex={selectedMachineIndex}
+            moveRotation={moveRotation}
+            hoverPosition={hoverPosition}
+            editMode={editMode}
+            onFloorTileClick={handleFloorTileClick}
+            onHover={setHoverPosition}
+            onHoverOut={() => setHoverPosition(null)}
+            onMachineClick={handleMachineClick}
+            onBackgroundClick={handleBackgroundClick}
+          />
         </section>
         <StorageSection
-          selectedMachine={selectedMachine}
-          setSelectedMachine={setSelectedMachine}
+          placementMode={placementMode}
+          setPlacementMode={setPlacementMode}
+          editMode={editMode}
+          selectedMachineIndex={selectedMachineIndex}
+          machines={machines}
         />
       </div>
     </main>
   );
 };
 
-const StorageSection: React.FC<{
-  selectedMachine: MachineType | null;
-  setSelectedMachine: (machineType: MachineType | null) => void;
-}> = ({ setSelectedMachine }) => {
-  const gameState = useGameState();
-  const groupedMachines = [
-    ...groupBy(gameState.storage.machines, (machineId) => machineId).values(),
-  ];
-  return (
-    <section>
-      <h2 className="section-heading">Storage</h2>
-      <ul>
-        {groupedMachines.map((machineIds) => {
-          const machineType = MACHINE_TYPES[machineIds[0]];
-          return (
-            <li key={machineIds[0]}>
-              <span>{machineType.name}</span>
-              <button
-                className="button"
-                onClick={() => setSelectedMachine(machineType)}
-              >
-                Place
-              </button>
-              {machineIds.length > 1 && <span>x{machineIds.length}</span>}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-};
+// Get the position at the end of the current work queue
+function getWorkQueueEndState(gameState: GameState): GameState {
+  let state = gameState;
+  for (const workItem of state.player.workQueue) {
+    state = applyWorkItemAction(workItem)(state);
+  }
+  return state;
+}

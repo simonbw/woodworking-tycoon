@@ -5,8 +5,8 @@ import { useApplyGameAction, useGameState } from "./useGameState";
 import { useKeyDown } from "./useKeyDown";
 
 const PAUSED = 0;
-const NORMAL = 2;
-const FAST = 4;
+const NORMAL = 5;
+const FAST = 10;
 const FASTER = 20;
 
 const SpeedButton: React.FC<{
