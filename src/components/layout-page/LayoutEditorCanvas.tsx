@@ -28,6 +28,7 @@ interface LayoutEditorCanvasProps {
   selectedMachineIndex: number | null;
   moveRotation: Direction;
   hoverPosition: [number, number] | null;
+  editMode: "none" | "placing" | "moving";
   onFloorTileClick: (position: [number, number]) => void;
   onHover: (position: [number, number]) => void;
   onHoverOut: () => void;
@@ -41,6 +42,7 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
   selectedMachineIndex,
   moveRotation,
   hoverPosition,
+  editMode,
   onFloorTileClick,
   onHover,
   onHoverOut,
@@ -112,7 +114,7 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
               <MachineSprite
                 machine={machinePlacement}
                 isSelected={selectedMachineIndex === index}
-                onClick={() => onMachineClick(index)}
+                onClick={editMode === "none" ? () => onMachineClick(index) : undefined}
               />
             </pixiContainer>
           ))}

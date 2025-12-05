@@ -192,6 +192,7 @@ export const LayoutPage: React.FC = () => {
             selectedMachineIndex={selectedMachineIndex}
             moveRotation={moveRotation}
             hoverPosition={hoverPosition}
+            editMode={editMode}
             onFloorTileClick={handleFloorTileClick}
             onHover={setHoverPosition}
             onHoverOut={() => setHoverPosition(null)}
