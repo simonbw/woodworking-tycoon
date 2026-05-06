@@ -3,8 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Woodworking Tycoon Basic Functionality', () => {
   test('should load and validate all core functionality', async ({ page }) => {
     const startTime = Date.now();
-    
-    // Listen for console errors
+
     const consoleErrors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') {
@@ -12,44 +11,47 @@ test.describe('Woodworking Tycoon Basic Functionality', () => {
       }
     });
 
-    // Navigate to the app
-    await page.goto('/');
+    await test.step('navigate to app and wait for main content', async () => {
+      await page.goto('/');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForSelector('main');
+    });
 
-    // Wait for the page to be loaded
-    await page.waitForLoadState('domcontentloaded');
-    
-    // Wait for main content to be present
-    await page.waitForSelector('main');
+    await test.step('page loads under 30 seconds', async () => {
+      const loadTime = Date.now() - startTime;
+      expect(loadTime).toBeLessThan(30000);
+    });
 
-    // Check load time
-    const loadTime = Date.now() - startTime;
-    expect(loadTime).toBeLessThan(30000);
+    await test.step('no console errors during load', async () => {
+      expect(consoleErrors).toEqual([]);
+    });
 
-    // Check that there are no console errors
-    expect(consoleErrors).toEqual([]);
+    await test.step('page title is correct', async () => {
+      await expect(page).toHaveTitle(/Woodworking Tycoon/);
+    });
 
-    // Check that the page title is correct
-    await expect(page).toHaveTitle(/Woodworking Tycoon/);
+    await test.step('main layout is visible', async () => {
+      const main = page.locator('main');
+      await expect(main).toBeVisible();
+    });
 
-    // Check that the main layout is present
-    const main = page.locator('main');
-    await expect(main).toBeVisible();
-    
-    // Check that the PIXI canvas (shop view) is present
-    const canvas = page.locator('canvas');
-    await expect(canvas).toBeVisible();
+    await test.step('PIXI canvas (shop view) is visible', async () => {
+      const canvas = page.locator('canvas');
+      await expect(canvas).toBeVisible();
+    });
 
-    // Check money section displays correctly
-    const moneySection = page.locator('p.font-lumberjack').filter({ hasText: '$' });
-    await expect(moneySection).toBeVisible();
-    
-    const moneyText = await moneySection.textContent();
-    expect(moneyText).toMatch(/^\$\d+\.\d{2}$/);
+    await test.step('money section displays with correct format', async () => {
+      const moneySection = page.locator('p.font-lumberjack').filter({ hasText: '$' });
+      await expect(moneySection).toBeVisible();
 
-    // Ensure the day job button is NOT present (validates our fix)
-    const dayJobButton = page.getByRole('button', { name: /day job/i });
-    await expect(dayJobButton).not.toBeVisible();
-    
-    await expect(page.locator('text=Work Day Job')).not.toBeVisible();
+      const moneyText = await moneySection.textContent();
+      expect(moneyText).toMatch(/^\$\d+\.\d{2}$/);
+    });
+
+    await test.step('day job button is not present', async () => {
+      const dayJobButton = page.getByRole('button', { name: /day job/i });
+      await expect(dayJobButton).not.toBeVisible();
+      await expect(page.locator('text=Work Day Job')).not.toBeVisible();
+    });
   });
 });

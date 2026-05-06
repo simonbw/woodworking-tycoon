@@ -12,7 +12,10 @@ Woodworking Tycoon is an idle/simulation game built with React and TypeScript. T
 - **Development server**: `npm run dev` (serves on port 3001 by default, configurable via ES_BUILD_DEV_PORT)
 - **Type checking**: `npm run tsc`
 - **Code formatting**: `npm run format`
-- **E2E Testing**: `npm run test` (runs Playwright tests on port 3002, starts its own server)
+- **All tests**: `npm run test` (runs unit then E2E)
+- **Unit tests only**: `npm run test:unit` (`tsx --test` against `src/**/*.test.ts`)
+- **E2E tests only**: `npm run test:e2e` (Playwright on port 3002 — starts its own dev server)
+- **E2E headed**: `npm run test:headed`
 
 ### Testing Guidelines for Claude
 
@@ -20,9 +23,14 @@ Woodworking Tycoon is an idle/simulation game built with React and TypeScript. T
 
 For testing changes:
 
-- Use `npm run test` to run automated E2E tests (fast, comprehensive validation)
+- Use `npm run test` for full validation, or `test:unit` / `test:e2e` to target one tier
 - Ask the user to test manually if more complex validation is needed
-- The test suite validates core functionality including UI rendering, game state, and recent fixes
+
+### Testing Style
+
+- **Unit tests** (`src/**/*.test.ts`, `node:test` via `tsx`) should be small and focused — one behavior per `it()`.
+- **E2E tests** (`tests/*.spec.ts`, Playwright) should be **fat** — one `test()` walks through many related assertions to amortize browser startup. Use `test.step('label', async () => {...})` inside the test so failure reports identify which step broke. Do not split fat E2E tests just to get better failure attribution; `test.step` solves that.
+- **Test fixtures** (`tests/fixtures/`) provide preset `GameState` objects loaded into the running app via `FixtureLoader` — use these to set up complex initial states (e.g. `layout-with-placed-machines`) instead of clicking through the UI to build them.
 
 ## Architecture Overview
 
@@ -30,8 +38,9 @@ For testing changes:
 
 The game follows a state-driven architecture with clear separation between game logic and UI:
 
-- **GameState** (`src/game/GameState.ts`): Core game state interface containing all simulation data (money, materials, machines, commissions, etc.)
+- **GameState** (`src/game/GameState.ts`): Core game state interface containing all simulation data (money, materials, machines, commissions, etc.). Includes a `ProgressionState` slice for the persistent unlock state.
 - **Game Actions** (`src/game/game-actions/`): Pure functions that transform game state
+- **Save/Load** (`src/game/saveLoad.ts`): Serializes the persistent slice of `GameState` to/from JSON for browser storage
 - **Components** (`src/components/`): React components for UI, organized by feature areas
 
 ### Key Systems
@@ -58,18 +67,23 @@ The game uses PIXI.js via `@pixi/react` for performant 2D rendering of the shop 
 
 ```
 src/
-├── components/          # React components
-│   ├── shop-view/      # Main game area rendering
-│   ├── store-page/     # Equipment purchasing
+├── components/            # React components
+│   ├── shop-view/         # Main game area rendering (PIXI)
+│   ├── store-page/        # Equipment purchasing UI
+│   ├── layout-page/       # Machine placement / layout editor UI
 │   ├── current-cell-info/ # Inspector panels
-│   ├── machine-sprites/ # PIXI machine renderers
-│   └── material-sprites/ # PIXI material renderers
-├── game/               # Core game logic
-│   ├── game-actions/   # State transformation functions
-│   ├── machines/       # Machine type definitions
-│   └── *.ts           # Game entities and helpers
-├── utils/              # Shared utilities
-└── styles/            # CSS and styling
+│   ├── machine-sprites/   # PIXI machine renderers
+│   ├── material-sprites/  # PIXI material renderers
+│   └── *.tsx              # Top-level UI (ActionBar, NavBar, HomePage, Ticker, …)
+├── game/                  # Core game logic
+│   ├── game-actions/      # State transformation functions
+│   ├── machines/          # Machine type definitions
+│   └── *.ts               # Game entities, helpers, saveLoad
+├── utils/                 # Shared utilities
+└── styles/                # CSS and styling
+tests/
+├── fixtures/              # Preset GameState fixtures for E2E tests
+└── *.spec.ts              # Playwright specs
 ```
 
 ## Key Technical Details
@@ -95,3 +109,5 @@ The game implements a time-based simulation where players queue actions and the 
 - **Machine Operations**: Transform raw materials into finished products
 - **Shop Layout**: Physical space management affects workflow efficiency
 - **Economic Progression**: Purchase better machines and expand workshop space
+
+See `GAMEPLAY_ROADMAP.md` for the full design vision (commission progression, tutorial sequence, late-game goals) and `docs/woodworking-features-brainstorm.md` for the broader feature pool.

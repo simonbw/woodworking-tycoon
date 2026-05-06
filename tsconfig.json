@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "es6",
+    "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "node",
-    "jsx": "react",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   }
-  // "include": ["src/types", "src/server/index.ts", "src/client/pages"]
 }
