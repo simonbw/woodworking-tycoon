@@ -31,16 +31,28 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 select-none">
-      <div className="w-full max-w-md flex flex-col items-center gap-8">
-        <h1 className="font-lumberjack text-5xl text-center text-amber-100 tracking-wide">
-          Woodworking Tycoon
-        </h1>
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 select-none bg-workshop-bg">
+      <div className="w-full max-w-md flex flex-col items-center gap-12">
+        {/* Hand-painted shop sign */}
+        <div className="flex flex-col items-center">
+          <span className="font-condensed uppercase tracking-[0.4em] text-paper-manila/50 text-xs mb-2">
+            Established 2026
+          </span>
+          <h1 className="font-lumberjack text-6xl text-center text-paper-manila leading-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
+            Woodworking
+            <br />
+            Tycoon
+          </h1>
+          <span className="font-stencil tracking-[0.3em] text-gold text-sm mt-3">
+            ★ ★ ★
+          </span>
+        </div>
 
+        {/* Menu actions styled as work-order tabs */}
         <div className="w-full flex flex-col gap-3">
           {hasSave && (
             <button
-              className="button text-xl py-3"
+              className="button text-base py-3 tracking-[0.2em]"
               onClick={handleContinue}
               autoFocus
             >
@@ -48,9 +60,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
             </button>
           )}
           <button
-            className={
-              hasSave ? "button-ghost text-xl py-3" : "button text-xl py-3"
-            }
+            className="button text-base py-3 tracking-[0.2em]"
             onClick={handleNewGame}
             autoFocus={!hasSave}
           >
