@@ -45,5 +45,6 @@ export const layoutWithMiterSawInStorage: GameState = {
     shopLayoutUnlocked: true,
     freeSelling: false,
     commissionsCompleted: 1,
+    tickSpeedControlsUnlocked: false,
   },
 };

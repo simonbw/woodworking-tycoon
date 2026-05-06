@@ -19,6 +19,7 @@ export interface ProgressionState {
   readonly shopLayoutUnlocked: boolean;
   readonly freeSelling: boolean;
   readonly commissionsCompleted: number;
+  readonly tickSpeedControlsUnlocked: boolean;
 }
 
 export interface GameState {

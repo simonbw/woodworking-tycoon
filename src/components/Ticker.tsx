@@ -38,7 +38,8 @@ const SpeedButton: React.FC<{
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const [ticksPerSecond, setTicksPerSecond] = useState<number>(FAST); // [1, 2, 3, 4
+  const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
+  const [ticksPerSecond, setTicksPerSecond] = useState<number>(NORMAL);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -50,6 +51,7 @@ export const Ticker: React.FC = () => {
   }, [ticksPerSecond]);
 
   useKeyDown((event) => {
+    if (!controlsUnlocked) return;
     switch (event.key) {
       case "`":
         setTicksPerSecond(PAUSED);
@@ -68,68 +70,78 @@ export const Ticker: React.FC = () => {
 
   return (
     <section>
-      <TimeOfDay tick={gameState.tick} />
-      <div className="rounded-b-md bg-zinc-700 overflow-hidden">
-        <menu className="flex gap-0 justify-stretch">
-          <SpeedButton
-            speed={PAUSED}
-            title="Pause game"
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ⏸
-          </SpeedButton>
-          <button
-            className={classNames(
-              "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
-              "hover:bg-white/5",
-            )}
-            onClick={(e) => {
-              applyAction(tickAction);
-              e.currentTarget.blur();
-            }}
-            title="Step forward one tick"
-            tabIndex={-1}
-          >
-            ❯
-          </button>
-          <SpeedButton
-            title="Play at normal speed"
-            speed={NORMAL}
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ▶
-          </SpeedButton>
-          <SpeedButton
-            title="Play at fast speed"
-            speed={FAST}
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ▶▶
-          </SpeedButton>
-          <SpeedButton
-            title="Play at faster speed"
-            speed={FASTER}
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ▶▶▶
-          </SpeedButton>
-        </menu>
-      </div>
+      <TimeOfDay tick={gameState.tick} rounded={!controlsUnlocked} />
+      {controlsUnlocked && (
+        <div className="rounded-b-md bg-zinc-700 overflow-hidden">
+          <menu className="flex gap-0 justify-stretch">
+            <SpeedButton
+              speed={PAUSED}
+              title="Pause game"
+              ticksPerSecond={ticksPerSecond}
+              setTicksPerSecond={setTicksPerSecond}
+            >
+              ⏸
+            </SpeedButton>
+            <button
+              className={classNames(
+                "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
+                "hover:bg-white/5",
+              )}
+              onClick={(e) => {
+                applyAction(tickAction);
+                e.currentTarget.blur();
+              }}
+              title="Step forward one tick"
+              tabIndex={-1}
+            >
+              ❯
+            </button>
+            <SpeedButton
+              title="Play at normal speed"
+              speed={NORMAL}
+              ticksPerSecond={ticksPerSecond}
+              setTicksPerSecond={setTicksPerSecond}
+            >
+              ▶
+            </SpeedButton>
+            <SpeedButton
+              title="Play at fast speed"
+              speed={FAST}
+              ticksPerSecond={ticksPerSecond}
+              setTicksPerSecond={setTicksPerSecond}
+            >
+              ▶▶
+            </SpeedButton>
+            <SpeedButton
+              title="Play at faster speed"
+              speed={FASTER}
+              ticksPerSecond={ticksPerSecond}
+              setTicksPerSecond={setTicksPerSecond}
+            >
+              ▶▶▶
+            </SpeedButton>
+          </menu>
+        </div>
+      )}
     </section>
   );
 };
 
 const ticksPerDay = 100;
 
-const TimeOfDay: React.FC<{ tick: number }> = ({ tick }) => {
+const TimeOfDay: React.FC<{ tick: number; rounded: boolean }> = ({
+  tick,
+  rounded,
+}) => {
   const day = Math.floor(tick / ticksPerDay);
   const time = tick % ticksPerDay;
   return (
-    <div className="font-lumberjack relative block px-2 py-1 rounded-t-md overflow-hidden border-t border-x border-zinc-700">
+    <div
+      className={classNames(
+        "font-lumberjack relative block px-2 py-1 overflow-hidden border border-zinc-700",
+        rounded ? "rounded-md" : "rounded-t-md border-b-0",
+      )}
+    >
       <span
         style={{ width: (time / ticksPerDay) * 100 + "%" }}
         className="absolute top-0 bottom-0 left-0 bg-zinc-500 transition-[width] ease-linear"

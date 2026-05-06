@@ -93,5 +93,6 @@ export const layoutWithPlacedMachines: GameState = {
     shopLayoutUnlocked: true,
     freeSelling: false,
     commissionsCompleted: 1,
+    tickSpeedControlsUnlocked: false,
   },
 };

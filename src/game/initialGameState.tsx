@@ -57,6 +57,7 @@ export const initialGameState: GameState = {
     shopLayoutUnlocked: false,
     freeSelling: false,
     commissionsCompleted: 0,
+    tickSpeedControlsUnlocked: false,
   },
 };
 
