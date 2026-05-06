@@ -15,19 +15,17 @@ export const ProgressButton: React.FC<ProgressButtonProps> = ({
 
   return (
     <button
-      className={`button relative overflow-hidden ${className}`}
+      className={`button-paper relative overflow-hidden w-full ${className}`}
       {...buttonProps}
     >
       {/* Fill background that grows from left to right */}
       <div
-        className="absolute inset-0 bg-amber-600 transition-all duration-200 origin-left"
+        className="absolute inset-0 bg-gold/70 transition-all duration-200 origin-left"
         style={{ width: `${progressPercent}%` }}
       />
 
       {/* Button text with z-index to stay above fill */}
-      <span className="relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-        {children}
-      </span>
+      <span className="relative z-10">{children}</span>
     </button>
   );
 };

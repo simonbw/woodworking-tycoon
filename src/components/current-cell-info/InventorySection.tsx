@@ -15,24 +15,26 @@ export const InventorySection: React.FC = () => {
 
   const groupedInventory = [
     ...groupBy(gameState.player.inventory, (material) =>
-      getMaterialName(material)
+      getMaterialName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
   if (groupedInventory.length === 0) {
     return (
-      <div>
-        <p className="italic text-gray-400">Inventory is empty</p>
+      <div className="lined-sheet text-center">
+        <p className="italic text-ink-fade">Inventory is empty</p>
       </div>
     );
   }
 
   return (
-    <ul className="space-y-1">
-      {groupedInventory.map(([materialName, materials]) => (
-        <InventoryListItem key={materialName} materials={materials} />
-      ))}
-    </ul>
+    <div className="lined-sheet">
+      <ul className="divide-y divide-ink-black/15">
+        {groupedInventory.map(([materialName, materials]) => (
+          <InventoryListItem key={materialName} materials={materials} />
+        ))}
+      </ul>
+    </div>
   );
 };
 
@@ -47,14 +49,16 @@ const InventoryListItem: React.FC<{
   const operableMachines = playerCell?.operableMachines;
 
   return (
-    <li className="flex items-center gap-2">
-      <MaterialIcon material={materials[0]} />
-      <span>{getMaterialName(materials[0])}</span>
+    <li className="flex items-center gap-2 py-1.5">
+      <MaterialIcon material={materials[0]} size="small" />
+      <span className="grow text-sm">{getMaterialName(materials[0])}</span>
       {materials.length > 1 && (
-        <em className="text-zinc-500">×{materials.length}</em>
+        <span className="font-mono text-sm text-ink-fade tabular-nums">
+          ×{materials.length}
+        </span>
       )}
       <button
-        className="button text-xs"
+        className="button-paper text-xs"
         onClick={(event) => {
           if (event.shiftKey) {
             applyAction(dropMaterialAction(materials));
@@ -68,18 +72,18 @@ const InventoryListItem: React.FC<{
       {operableMachines?.map((machine, index) => (
         <button
           key={index}
-          className="button text-xs"
+          className="button-paper text-xs"
           onClick={(event) => {
             if (event.shiftKey) {
               applyAction(moveMaterialsToMachineAction(materials, machine));
             } else {
               applyAction(
-                moveMaterialsToMachineAction([materials[0]], machine)
+                moveMaterialsToMachineAction([materials[0]], machine),
               );
             }
           }}
         >
-          Move To {machine.type.name}
+          → {machine.type.name}
         </button>
       ))}
     </li>

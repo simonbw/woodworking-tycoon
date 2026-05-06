@@ -14,38 +14,43 @@ export const FloorListSection: React.FC = () => {
 
   if (!playerCell?.materialPiles.length) {
     return (
-      <div>
-        <p className="italic text-gray-400">Floor is empty</p>
+      <div className="lined-sheet text-center">
+        <p className="italic text-ink-fade">Floor is empty</p>
       </div>
     );
   }
 
   const groupedMaterials = [
     ...groupBy(playerCell.materialPiles, (pile) =>
-      getMaterialName(pile.material)
+      getMaterialName(pile.material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <section>
-      <ul className="space-y-1">
+    <div className="lined-sheet">
+      <ul className="divide-y divide-ink-black/15">
         {groupedMaterials.map(([materialName, piles]) => (
           <FloorListItem key={materialName} piles={piles} />
         ))}
       </ul>
-    </section>
+    </div>
   );
 };
+
 const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
   const applyAction = useApplyGameAction();
 
   return (
-    <li className="flex items-center gap-2">
-      <MaterialIcon material={piles[0].material} />
-      <span>{getMaterialName(piles[0].material)}</span>
-      {piles.length > 1 && <em className="text-zinc-500">×{piles.length}</em>}
+    <li className="flex items-center gap-2 py-1.5">
+      <MaterialIcon material={piles[0].material} size="small" />
+      <span className="grow text-sm">{getMaterialName(piles[0].material)}</span>
+      {piles.length > 1 && (
+        <span className="font-mono text-sm text-ink-fade tabular-nums">
+          ×{piles.length}
+        </span>
+      )}
       <button
-        className="button text-xs"
+        className="button-paper text-xs"
         onClick={(event) => {
           if (event.shiftKey) {
             applyAction(pickUpMaterialAction(piles));

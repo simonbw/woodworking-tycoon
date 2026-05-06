@@ -38,23 +38,23 @@ export const MachinesSection: React.FC = () => {
   }
 
   return (
-    <>
+    <div className="space-y-3">
       {playerCell.operableMachines.map((machine) => (
-        <MachineListItem
+        <MachineSpecSheet
           key={machine.type.name + machine.position.join(",")}
           machine={machine}
         />
       ))}
-    </>
+    </div>
   );
 };
 
-const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
+const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
 
   const outputMaterials = [
     ...groupBy(machine.outputMaterials, (material) =>
-      getMaterialName(material)
+      getMaterialName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -67,24 +67,21 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
       100
     : 0;
 
-  // Get expected inputs/outputs for the current operation
   const isParamOp = isParameterizedOperation(machine.selectedOperation);
 
-  // Get input requirements and match them to actual materials
   const expectedInputs = getOperationInputMaterials(
     machine.selectedOperation,
-    machine.selectedParameters
+    machine.selectedParameters,
   );
 
   const inputSlots = matchMaterialsToSlots(
     [...machine.inputMaterials],
-    expectedInputs
+    expectedInputs,
   );
 
-  // Calculate expected outputs if we have valid inputs
   let expectedOutputs: readonly MaterialInstance[] = [];
   const allInputsValid = inputSlots.every(
-    (slot) => slot.isValid && !slot.isPlaceholder
+    (slot) => slot.isValid && !slot.isPlaceholder,
   );
   if (allInputsValid && inputSlots.length > 0) {
     try {
@@ -94,16 +91,14 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
       const result = executeOperation(
         machine.selectedOperation,
         validMaterials,
-        machine.selectedParameters
+        machine.selectedParameters,
       );
       expectedOutputs = result.outputs;
     } catch (error) {
-      // If operation fails, show no preview
       expectedOutputs = [];
     }
   }
 
-  // Always show what the operation would produce using generateOperationPreview
   let previewOutputs: readonly MaterialInstance[] = [];
   if (
     expectedInputs.length > 0 &&
@@ -112,7 +107,7 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
     try {
       const preview = generateOperationPreview(
         machine.selectedOperation,
-        machine.selectedParameters || {}
+        machine.selectedParameters || {},
       );
       previewOutputs = preview.expectedOutputs;
     } catch (error) {
@@ -121,74 +116,92 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
   }
 
   return (
-    <section className="space-y-1">
-      <h3 className="section-heading">{machine.type.name}</h3>
-      <select
-        value={machine.selectedOperation.id}
-        onChange={(event) => {
-          const operation = machine.type.operations.find(
-            (op) => op.id === event.target.value
-          )!;
+    <section className="paper-card space-y-3">
+      <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
+        <h3 className="font-stencil text-lg uppercase tracking-wide">
+          {machine.type.name}
+        </h3>
+        <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
+          Spec Sheet
+        </span>
+      </header>
 
-          // Set default parameters for parameterized operations
-          let parameters: ParameterValues | undefined;
-          if (isParameterizedOperation(operation)) {
-            parameters = {};
-            for (const param of operation.parameters) {
-              parameters[param.id] = param.values[0];
-            }
-          }
+      <div className="space-y-2 text-sm">
+        <label className="flex flex-row items-center gap-2">
+          <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16">
+            Mode
+          </span>
+          <select
+            className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
+            value={machine.selectedOperation.id}
+            onChange={(event) => {
+              const operation = machine.type.operations.find(
+                (op) => op.id === event.target.value,
+              )!;
 
-          applyAction(
-            setMachineOperationAction(machine, operation, parameters)
-          );
-        }}
-      >
-        {machine.type.operations.map((operation) => (
-          <option key={operation.id} value={operation.id}>
-            {operation.name}
-          </option>
-        ))}
-      </select>
+              let parameters: ParameterValues | undefined;
+              if (isParameterizedOperation(operation)) {
+                parameters = {};
+                for (const param of operation.parameters) {
+                  parameters[param.id] = param.values[0];
+                }
+              }
 
-      {/* Parameter controls for parameterized operations */}
-      {isParamOp &&
-        machine.selectedOperation.parameters.map((param) => (
-          <div key={param.id} className="flex gap-2 items-center">
-            <label className="text-xs text-zinc-400">{param.name}:</label>
-            <select
-              className="text-xs"
-              value={machine.selectedParameters?.[param.id] || param.values[0]}
-              onChange={(event) => {
-                const newParams = {
-                  ...machine.selectedParameters,
-                  [param.id]:
-                    typeof param.values[0] === "number"
-                      ? Number(event.target.value)
-                      : event.target.value,
-                };
-                applyAction(
-                  setMachineOperationAction(
-                    machine,
-                    machine.selectedOperation,
-                    newParams
-                  )
-                );
-              }}
+              applyAction(
+                setMachineOperationAction(machine, operation, parameters),
+              );
+            }}
+          >
+            {machine.type.operations.map((operation) => (
+              <option key={operation.id} value={operation.id}>
+                {operation.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {isParamOp &&
+          machine.selectedOperation.parameters.map((param) => (
+            <label
+              key={param.id}
+              className="flex flex-row items-center gap-2 text-xs"
             >
-              {param.values.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                  {typeof value === "number" ? '"' : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))}
+              <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16">
+                {param.name}
+              </span>
+              <select
+                className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
+                value={machine.selectedParameters?.[param.id] || param.values[0]}
+                onChange={(event) => {
+                  const newParams = {
+                    ...machine.selectedParameters,
+                    [param.id]:
+                      typeof param.values[0] === "number"
+                        ? Number(event.target.value)
+                        : event.target.value,
+                  };
+                  applyAction(
+                    setMachineOperationAction(
+                      machine,
+                      machine.selectedOperation,
+                      newParams,
+                    ),
+                  );
+                }}
+              >
+                {param.values.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                    {typeof value === "number" ? '"' : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+      </div>
 
-      {/* Crafting-style slot display */}
-      <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded">
-        {/* Input slots */}
+      {/* Slot diagram — inset bay with darker frame */}
+      <div className="flex items-center gap-3 p-3 bg-workshop-panel/15 border border-ink-black/20 rounded">
         <div className="flex gap-1">
           {inputSlots.map((slot, i) => (
             <span
@@ -196,7 +209,7 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               onClick={() => {
                 if (!slot.isPlaceholder) {
                   applyAction(
-                    takeInputsFromMachineAction([slot.material], machine)
+                    takeInputsFromMachineAction([slot.material], machine),
                   );
                 }
               }}
@@ -222,11 +235,9 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
           )}
         </div>
 
-        <span className="text-zinc-500">→</span>
+        <span className="font-mono text-ink-fade text-lg">→</span>
 
-        {/* Output slots */}
         <div className="flex gap-1">
-          {/* Show actual outputs if they exist */}
           {outputMaterials.map(([name, materials]) => (
             <span
               key={name}
@@ -235,7 +246,7 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
                   applyAction(takeOutputsFromMachineAction(materials, machine));
                 } else {
                   applyAction(
-                    takeOutputsFromMachineAction([materials[0]], machine)
+                    takeOutputsFromMachineAction([materials[0]], machine),
                   );
                 }
               }}
@@ -248,7 +259,6 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
             </span>
           ))}
 
-          {/* Show expected output placeholders when no actual outputs but inputs are valid */}
           {outputMaterials.length === 0 &&
             expectedOutputs.length > 0 &&
             expectedOutputs.map((output, i) => (
@@ -260,7 +270,6 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               />
             ))}
 
-          {/* Show preview placeholders when no actual outputs and no valid inputs */}
           {outputMaterials.length === 0 &&
             expectedOutputs.length === 0 &&
             previewOutputs.map((output, i) => (
@@ -272,7 +281,6 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
               />
             ))}
 
-          {/* Show generic placeholder when no outputs at all */}
           {outputMaterials.length === 0 &&
             expectedOutputs.length === 0 &&
             previewOutputs.length === 0 && (
@@ -285,28 +293,38 @@ const MachineListItem: React.FC<{ machine: Machine }> = ({ machine }) => {
         </div>
       </div>
 
+      <div className="flex items-center justify-between gap-2 text-xs font-condensed uppercase tracking-[0.15em] text-ink-fade">
+        <span>
+          Status:{" "}
+          {isOperating ? (
+            <span className="text-ink-blue">
+              Running · {machine.operationProgress.ticksRemaining} ticks
+            </span>
+          ) : (
+            "Idle"
+          )}
+        </span>
+        {machine.outputMaterials.length > 0 && (
+          <button
+            className="button-paper text-xs"
+            onClick={() =>
+              applyAction(
+                takeOutputsFromMachineAction(machine.outputMaterials, machine),
+              )
+            }
+          >
+            Take All ({machine.outputMaterials.length})
+          </button>
+        )}
+      </div>
+
       <ProgressButton
         progress={progressPercent / 100}
         disabled={!canOperate}
         onClick={() => applyAction(operateMachineAction(machine))}
       >
-        {isOperating
-          ? `Operating... (${machine.operationProgress.ticksRemaining} ticks)`
-          : "Operate"}
+        {isOperating ? "Operating..." : "Operate"}
       </ProgressButton>
-      {/* Take All button for outputs */}
-      {machine.outputMaterials.length > 0 && (
-        <button
-          className="button text-xs py-1"
-          onClick={() =>
-            applyAction(
-              takeOutputsFromMachineAction(machine.outputMaterials, machine)
-            )
-          }
-        >
-          Take All ({machine.outputMaterials.length})
-        </button>
-      )}
     </section>
   );
 };
