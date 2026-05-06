@@ -11,10 +11,16 @@ test.describe('Woodworking Tycoon Basic Functionality', () => {
       }
     });
 
-    await test.step('navigate to app and wait for main content', async () => {
+    await test.step('navigate to app and wait for start menu', async () => {
       await page.goto('/');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForSelector('main');
+    });
+
+    await test.step('start menu shows and we can start a new game', async () => {
+      await expect(page.getByRole('heading', { name: 'Woodworking Tycoon' })).toBeVisible();
+      await page.getByRole('button', { name: 'New Game' }).click();
+      await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
     });
 
     await test.step('page loads under 30 seconds', async () => {

@@ -7,8 +7,7 @@ import React, {
 } from "react";
 import { GameState } from "../game/GameState";
 import { UpdateFunction } from "../utils/typeUtils";
-import { initialGameState } from "../game/initialGameState";
-import { loadGame, saveGame, deleteSave } from "../game/saveLoad";
+import { saveGame } from "../game/saveLoad";
 import { getMachines, Machine } from "../game/Machine";
 
 export const gameStateContext = createContext<
@@ -16,34 +15,24 @@ export const gameStateContext = createContext<
       gameState: GameState;
       updateGameState: UpdateFunction<GameState>;
       saveGame: () => void;
-      loadGame: () => void;
-      newGame: () => void;
+      quitToMenu: () => void;
     }
   | undefined
 >(undefined);
 
-export const GameStateProvider: React.FC<{ children?: ReactNode }> = ({
-  children,
-}) => {
-  const [gameState, setGameState] = useState<GameState>(() => {
-    const savedGame = loadGame();
-    return savedGame || initialGameState;
-  });
+export const GameStateProvider: React.FC<{
+  initialState: GameState;
+  onQuitToMenu: (finalState: GameState) => void;
+  children?: ReactNode;
+}> = ({ initialState, onQuitToMenu, children }) => {
+  const [gameState, setGameState] = useState<GameState>(initialState);
 
   const handleSaveGame = () => {
     saveGame(gameState);
   };
 
-  const handleLoadGame = () => {
-    const savedGame = loadGame();
-    if (savedGame) {
-      setGameState(savedGame);
-    }
-  };
-
-  const handleNewGame = () => {
-    deleteSave();
-    setGameState(initialGameState);
+  const handleQuitToMenu = () => {
+    onQuitToMenu(gameState);
   };
 
   // Expose game state functions to window for testing and debugging
@@ -68,8 +57,7 @@ export const GameStateProvider: React.FC<{ children?: ReactNode }> = ({
         gameState,
         updateGameState: setGameState,
         saveGame: handleSaveGame,
-        loadGame: handleLoadGame,
-        newGame: handleNewGame,
+        quitToMenu: handleQuitToMenu,
       }}
     >
       {children}
@@ -114,18 +102,10 @@ export function useSaveGame() {
   return value.saveGame;
 }
 
-export function useLoadGame() {
+export function useQuitToMenu() {
   const value = useContext(gameStateContext);
   if (value === undefined) {
-    throw new Error("useLoadGame must be used within a GameStateProvider");
+    throw new Error("useQuitToMenu must be used within a GameStateProvider");
   }
-  return value.loadGame;
-}
-
-export function useNewGame() {
-  const value = useContext(gameStateContext);
-  if (value === undefined) {
-    throw new Error("useNewGame must be used within a GameStateProvider");
-  }
-  return value.newGame;
+  return value.quitToMenu;
 }

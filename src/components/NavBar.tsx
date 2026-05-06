@@ -1,19 +1,12 @@
 import React from "react";
 import { useUiMode } from "./UiMode";
-import {
-  useGameState,
-  useSaveGame,
-  useLoadGame,
-  useNewGame,
-} from "./useGameState";
+import { useGameState, useQuitToMenu } from "./useGameState";
 
 export const NavBar: React.FC = () => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
   const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
-  const saveGame = useSaveGame();
-  const loadGame = useLoadGame();
-  const newGame = useNewGame();
+  const quitToMenu = useQuitToMenu();
 
   return (
     <nav className="flex gap-2 p-2 rounded bg-white/10 w-fit">
@@ -40,23 +33,12 @@ export const NavBar: React.FC = () => {
         </button>
       )}
       <div className="border-l border-white/20 mx-2" />
-      <button className="button-ghost" onClick={saveGame}>
-        Save
-      </button>
-      <button className="button-ghost" onClick={loadGame}>
-        Load
-      </button>
       <button
         className="button-ghost"
-        onClick={() => {
-          if (
-            confirm("Start a new game? This will delete your current save.")
-          ) {
-            newGame();
-          }
-        }}
+        onClick={quitToMenu}
+        title="Save and return to main menu"
       >
-        New Game
+        Save & Quit
       </button>
     </nav>
   );

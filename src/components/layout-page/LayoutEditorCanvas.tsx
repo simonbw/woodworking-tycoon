@@ -12,9 +12,8 @@ import {
   gameStateContext,
   useApplyGameAction,
   useGameState,
-  useLoadGame,
   useMachines,
-  useNewGame,
+  useQuitToMenu,
   useSaveGame,
 } from "../useGameState";
 import { MachineGhostPreview } from "./MachineGhostPreview";
@@ -53,8 +52,7 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
   const machines = useMachines();
   const updateGameState = useApplyGameAction();
   const saveGame = useSaveGame();
-  const loadGame = useLoadGame();
-  const newGame = useNewGame();
+  const quitToMenu = useQuitToMenu();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
   const materialPileGroups = cellMap
@@ -77,8 +75,7 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
           gameState,
           updateGameState,
           saveGame,
-          loadGame,
-          newGame,
+          quitToMenu,
         }}
       >
         <pixiContainer sortableChildren={true}>

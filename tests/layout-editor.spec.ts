@@ -5,6 +5,9 @@ test.describe("Layout Editor", () => {
     // Navigate to the game
     await page.goto("http://localhost:3002");
 
+    // Click through start menu into a new game
+    await page.getByRole("button", { name: "New Game" }).click();
+
     // Wait for game to load
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     await page.waitForTimeout(500); // Give PIXI time to initialize

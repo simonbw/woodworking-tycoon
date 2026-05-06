@@ -7,9 +7,8 @@ import {
   useApplyGameAction,
   useGameState,
   useMachines,
+  useQuitToMenu,
   useSaveGame,
-  useLoadGame,
-  useNewGame,
 } from "../useGameState";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { MachineSprite } from "./MachineSprite";
@@ -24,8 +23,7 @@ export const ShopView: React.FC = () => {
   const machines = useMachines();
   const updateGameState = useApplyGameAction();
   const saveGame = useSaveGame();
-  const loadGame = useLoadGame();
-  const newGame = useNewGame();
+  const quitToMenu = useQuitToMenu();
   const cellMap = useCellMap();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
 
@@ -46,7 +44,7 @@ export const ShopView: React.FC = () => {
         backgroundAlpha={0}
         antialias={true}
       >
-        <gameStateContext.Provider value={{ gameState, updateGameState, saveGame, loadGame, newGame }}>
+        <gameStateContext.Provider value={{ gameState, updateGameState, saveGame, quitToMenu }}>
           <pixiTilingSprite
             eventMode="static"
             texture={floorTexture}

@@ -1,16 +1,33 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { GameState } from "../game/GameState";
+import { saveGame } from "../game/saveLoad";
 import { DebugView } from "./DebugView";
 import { FixtureLoader } from "./FixtureLoader";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
+import { StartMenu } from "./StartMenu";
 import { StorePage } from "./store-page/StorePage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { ActionKeyContextProvider } from "./consumerCountContext";
 import { GameStateProvider, useGameState } from "./useGameState";
 
 export const Main: React.FC = () => {
+  const [activeGame, setActiveGame] = useState<GameState | null>(null);
+
+  if (!activeGame) {
+    return <StartMenu onStart={setActiveGame} />;
+  }
+
+  const handleQuitToMenu = (finalState: GameState) => {
+    saveGame(finalState);
+    setActiveGame(null);
+  };
+
   return (
-    <GameStateProvider>
+    <GameStateProvider
+      initialState={activeGame}
+      onQuitToMenu={handleQuitToMenu}
+    >
       <UiModeProvider>
         <ActionKeyContextProvider>
           <ScreenSwitcher />
