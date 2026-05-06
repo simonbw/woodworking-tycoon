@@ -127,7 +127,7 @@ export const Ticker: React.FC = () => {
   );
 };
 
-const ticksPerDay = 100;
+const ticksPerDay = 600;
 
 const TimeOfDay: React.FC<{ tick: number; rounded: boolean }> = ({
   tick,
