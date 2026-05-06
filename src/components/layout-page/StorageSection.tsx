@@ -1,5 +1,10 @@
 import React from "react";
-import { MACHINE_TYPES, Machine, MachineId, MachineType } from "../../game/Machine";
+import {
+  MACHINE_TYPES,
+  Machine,
+  MachineId,
+  MachineType,
+} from "../../game/Machine";
 import { Direction } from "../../game/Vectors";
 import { groupBy } from "../../utils/arrayUtils";
 import { useGameState } from "../useGameState";
@@ -43,40 +48,41 @@ export const StorageSection: React.FC<StorageSectionProps> = ({
         machines={machines}
       />
 
-      {/* Storage inventory */}
-      <div>
-        <h3 className="text-lg font-semibold text-brown-100 mb-2">Storage</h3>
+      <div className="paper-card">
+        <h3 className="font-stencil text-base uppercase tracking-widest border-b border-ink-black/40 pb-1 mb-3">
+          Storage
+        </h3>
         {groupedMachines.length === 0 ? (
-          <p className="text-brown-400 text-sm italic">
+          <p className="italic text-ink-fade text-sm">
             No machines in storage
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-ink-black/15">
             {groupedMachines.map((machineIds) => {
               const machineType = MACHINE_TYPES[machineIds[0]];
               const isSelected = placementMode?.machineTypeId === machineIds[0];
               return (
                 <li
                   key={machineIds[0]}
-                  className="flex items-center justify-between p-3 bg-brown-900 rounded border border-brown-700 hover:border-brown-600"
+                  className="flex items-center justify-between py-2 gap-3"
                 >
-                  <div>
-                    <div className="font-medium text-brown-100">
+                  <div className="grow">
+                    <div className="font-condensed uppercase tracking-wide font-semibold">
                       {machineType.name}
                     </div>
-                    <div className="text-xs text-brown-400">
+                    <div className="text-xs text-ink-fade">
                       {machineType.description}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {machineIds.length > 1 && (
-                      <span className="text-sm text-brown-300">
+                      <span className="font-mono text-sm text-ink-fade tabular-nums">
                         ×{machineIds.length}
                       </span>
                     )}
                     <button
-                      className={`button text-sm ${
-                        isSelected ? "bg-brown-600" : ""
+                      className={`button-paper text-xs ${
+                        isSelected ? "bg-ink-black/15" : ""
                       }`}
                       onClick={() =>
                         setPlacementMode({
