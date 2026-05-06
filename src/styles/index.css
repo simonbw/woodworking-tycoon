@@ -94,6 +94,21 @@
     opacity: 0.85;
   }
 
+  /* Big-box store product card — white, sharp, retail */
+  .product-card {
+    @apply bg-white text-ink-black p-3 rounded-sm shadow-md border border-store-concrete-dark/60 font-condensed;
+  }
+
+  /* Aisle-tag heading — used inside the store for section headers */
+  .aisle-heading {
+    @apply font-stencil font-bold text-2xl uppercase tracking-wide text-store-orange-dark border-b-4 border-store-orange pb-1 mb-3;
+  }
+
+  /* Big block price — for product cards in the store */
+  .price-tag {
+    @apply font-stencil font-bold text-2xl text-ink-black tabular-nums leading-none;
+  }
+
   /* Subtle cork texture — small flecks of color over the corkboard tone */
   .corkboard-bg {
     background-image:

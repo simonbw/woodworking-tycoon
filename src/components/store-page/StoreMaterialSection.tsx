@@ -17,50 +17,79 @@ export const StoreMaterialSection: React.FC = () => {
   });
   return (
     <section>
-      <h2 className="section-heading">Materials</h2>
-      <ul className="space-y-2 mt-2">
+      <h2 className="aisle-heading">Materials</h2>
+      <ul className="space-y-2">
         {materialsForSale.map((info) => (
-          <MaterialsListItem key={info.material.id} {...info} />
+          <MaterialProductCard key={info.material.id} {...info} />
         ))}
       </ul>
     </section>
   );
 };
 
-const MaterialsListItem: React.FC<MaterialSaleInfo> = ({ material, price }) => {
+const MaterialProductCard: React.FC<MaterialSaleInfo> = ({
+  material,
+  price,
+}) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
   const numberOwned = gameState.player.inventory.filter((m) =>
-    materialMeetsInput(m, materialToInput(material))
+    materialMeetsInput(m, materialToInput(material)),
   ).length;
 
+  const canAfford = gameState.money >= price;
+
   return (
-    <li className="flex gap-2 items-center">
+    <li className="product-card flex items-center gap-3">
       <MaterialIcon material={material} />
-      <span className="inline-flex flex-col">
-        <span className="flex gap-4">
-          <span>{getMaterialName(material)}</span>
-          <span>${price.toFixed(2)}</span>
-        </span>
-        <span className="text-zinc-500 text-sm">{numberOwned} owned</span>
-      </span>
-      <button
-        className="button"
-        onClick={() => {
-          applyAction((state) => {
-            return {
+      <div className="grow">
+        <div className="font-stencil text-base uppercase tracking-wide text-ink-black">
+          {getMaterialName(material)}
+        </div>
+        <div className="text-xs text-ink-fade">
+          {numberOwned > 0 && (
+            <span className="text-store-orange-dark font-semibold">
+              {numberOwned} owned ·{" "}
+            </span>
+          )}
+          In stock
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <PriceTag price={price} />
+        <button
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          disabled={!canAfford}
+          onClick={() => {
+            applyAction((state) => ({
               ...state,
               player: {
                 ...state.player,
                 inventory: [...state.player.inventory, material],
               },
-            };
-          });
-        }}
-      >
-        Buy
-      </button>
+            }));
+          }}
+        >
+          Buy
+        </button>
+      </div>
     </li>
+  );
+};
+
+const PriceTag: React.FC<{ price: number }> = ({ price }) => {
+  if (price === 0) {
+    return <span className="price-tag text-store-orange-dark">FREE</span>;
+  }
+  const dollars = Math.floor(price);
+  const cents = Math.round((price - dollars) * 100)
+    .toString()
+    .padStart(2, "0");
+  return (
+    <span className="price-tag">
+      ${dollars}
+      <sup className="text-xs ml-0.5">{cents}</sup>
+    </span>
   );
 };
