@@ -5,8 +5,14 @@ export const MoneySection: React.FC = () => {
   const gameState = useGameState();
 
   return (
-    <section className="p-6 bg-white/10 rounded-md max-w-fit flex flex-col gap-2 items-end">
-      <p className="font-lumberjack text-4xl">${gameState.money.toFixed(2)}</p>
+    <section className="receipt-strip max-w-fit relative">
+      {/* Receipt header — small uppercase label */}
+      <div className="font-condensed uppercase tracking-[0.25em] text-xs text-ink-fade leading-none mb-1">
+        Balance
+      </div>
+      <div className="font-mono text-3xl text-ink-black tabular-nums leading-none">
+        ${gameState.money.toFixed(2)}
+      </div>
     </section>
   );
 };

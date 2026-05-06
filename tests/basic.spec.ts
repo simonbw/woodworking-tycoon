@@ -47,10 +47,10 @@ test.describe('Woodworking Tycoon Basic Functionality', () => {
     });
 
     await test.step('money section displays with correct format', async () => {
-      const moneySection = page.locator('p.font-lumberjack').filter({ hasText: '$' });
+      const moneySection = page.locator('section').filter({ hasText: 'Balance' }).filter({ hasText: '$' });
       await expect(moneySection).toBeVisible();
 
-      const moneyText = await moneySection.textContent();
+      const moneyText = await moneySection.locator('div.font-mono').textContent();
       expect(moneyText).toMatch(/^\$\d+\.\d{2}$/);
     });
 

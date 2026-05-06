@@ -19,9 +19,11 @@ const SpeedButton: React.FC<{
   return (
     <button
       className={classNames(
-        "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
-        "hover:bg-white/5",
-        ticksPerSecond === speed ? "bg-white/10" : "bg-transparent",
+        "p-1 text-center text-sm grow font-condensed",
+        "hover:bg-ink-black/10",
+        ticksPerSecond === speed
+          ? "bg-ink-black/15 text-ink-black"
+          : "bg-transparent text-ink-black/70",
       )}
       onClick={(e) => {
         setTicksPerSecond(speed);
@@ -69,10 +71,10 @@ export const Ticker: React.FC = () => {
   });
 
   return (
-    <section>
-      <TimeOfDay tick={gameState.tick} rounded={!controlsUnlocked} />
+    <section className="max-w-fit">
+      <CalendarPage tick={gameState.tick} />
       {controlsUnlocked && (
-        <div className="rounded-b-md bg-zinc-700 overflow-hidden">
+        <div className="bg-paper-cream border-x border-b border-paper-manila-edge rounded-b-sm overflow-hidden">
           <menu className="flex gap-0 justify-stretch">
             <SpeedButton
               speed={PAUSED}
@@ -83,10 +85,7 @@ export const Ticker: React.FC = () => {
               ⏸
             </SpeedButton>
             <button
-              className={classNames(
-                "align-middle font-sans p-1 tracking-[-0.2em] text-center text-sm grow",
-                "hover:bg-white/5",
-              )}
+              className="p-1 text-center text-sm grow font-condensed text-ink-black/70 hover:bg-ink-black/10"
               onClick={(e) => {
                 applyAction(tickAction);
                 e.currentTarget.blur();
@@ -129,24 +128,32 @@ export const Ticker: React.FC = () => {
 
 const ticksPerDay = 600;
 
-const TimeOfDay: React.FC<{ tick: number; rounded: boolean }> = ({
-  tick,
-  rounded,
-}) => {
+const CalendarPage: React.FC<{ tick: number }> = ({ tick }) => {
   const day = Math.floor(tick / ticksPerDay);
   const time = tick % ticksPerDay;
+  const dayPercent = (time / ticksPerDay) * 100;
+
   return (
-    <div
-      className={classNames(
-        "font-lumberjack relative block px-2 py-1 overflow-hidden border border-zinc-700",
-        rounded ? "rounded-md" : "rounded-t-md border-b-0",
-      )}
-    >
-      <span
-        style={{ width: (time / ticksPerDay) * 100 + "%" }}
-        className="absolute top-0 bottom-0 left-0 bg-zinc-500 transition-[width] ease-linear"
-      />
-      <span className="relative">Day {day + 1}</span>
+    <div className="relative bg-paper-ivory text-ink-black rounded-t-sm shadow-md border border-paper-manila-edge overflow-hidden w-48">
+      {/* Tear-off perforation at the top */}
+      <div className="h-1.5 bg-ink-red/85" />
+
+      <div className="px-3 pt-2 pb-1 flex flex-col items-center font-typewriter">
+        <span className="text-[0.625rem] uppercase tracking-[0.3em] text-ink-fade leading-none">
+          Day
+        </span>
+        <span className="font-stencil text-3xl leading-none mt-0.5">
+          {day + 1}
+        </span>
+      </div>
+
+      {/* Day-progress rule along the bottom */}
+      <div className="relative h-1 bg-paper-manila-edge/40 mx-3 mb-2">
+        <span
+          style={{ width: dayPercent + "%" }}
+          className="absolute top-0 bottom-0 left-0 bg-ink-blue/80 transition-[width] ease-linear"
+        />
+      </div>
     </div>
   );
 };
