@@ -8,11 +8,11 @@
 @layer base {
   html {
     font-size: 18px;
-    @apply bg-zinc-800 text-zinc-100 select-none;
+    @apply bg-workshop-bg text-paper-manila select-none font-typewriter;
   }
 
   select {
-    @apply bg-zinc-700 p-1 rounded;
+    @apply bg-workshop-panel text-paper-manila px-2 py-1 rounded border border-workshop-edge font-condensed;
   }
 
   label {
@@ -20,24 +20,77 @@
   }
 
   label > span {
-    @apply text-sm;
+    @apply text-sm font-condensed uppercase tracking-wider text-paper-manila/70;
   }
 }
 
 @layer components {
+  /* Default button — for chrome on the dark workshop background */
   .button {
-    @apply border border-white text-white px-4 py-1.5 rounded-md font-lumberjack select-none;
-    @apply hover:bg-white/10 active:bg-white/20;
-    @apply disabled:text-zinc-400 disabled:border-zinc-400 disabled:pointer-events-none;
+    @apply border border-paper-manila/60 text-paper-manila px-3 py-1 rounded font-condensed uppercase tracking-wider text-sm select-none;
+    @apply hover:bg-paper-manila/10 active:bg-paper-manila/20;
+    @apply disabled:text-workshop-edge disabled:border-workshop-edge disabled:pointer-events-none;
   }
 
   .button-ghost {
-    @apply border border-transparent text-white px-4 py-1.5 rounded-md font-lumberjack select-none;
-    @apply hover:bg-white/10 active:bg-white/20 hover:border-white active:border-white focus:border-white;
-    @apply disabled:text-zinc-400 disabled:pointer-events-none;
+    @apply border border-transparent text-paper-manila/80 px-3 py-1 rounded font-condensed uppercase tracking-wider text-sm select-none;
+    @apply hover:bg-paper-manila/10 hover:border-paper-manila/40 hover:text-paper-manila active:bg-paper-manila/20;
+    @apply disabled:text-workshop-edge disabled:pointer-events-none;
   }
 
+  /* Button variant for use *on* a paper card (dark text on light background) */
+  .button-paper {
+    @apply border border-ink-black/40 text-ink-black px-3 py-1 rounded font-condensed uppercase tracking-wider text-sm select-none;
+    @apply hover:bg-ink-black/10 active:bg-ink-black/20;
+    @apply disabled:text-ink-fade disabled:border-ink-black/20 disabled:pointer-events-none;
+  }
+
+  /* Section heading — stencil, uppercase, like a workshop sign */
   .section-heading {
-    @apply font-heading font-bold text-2xl;
+    @apply font-stencil font-bold text-xl uppercase tracking-wide text-paper-manila;
+  }
+
+  /* Smaller subsection header */
+  .subsection-heading {
+    @apply font-condensed font-semibold text-sm uppercase tracking-[0.15em] text-paper-manila/70;
+  }
+
+  /* Paper card primitives. These have *light* backgrounds so any text inside
+     should default to ink-black (handled by .paper-card text color). */
+  .paper-card {
+    @apply bg-paper-manila text-ink-black p-4 rounded-sm shadow-md font-typewriter;
+  }
+
+  .paper-card-ivory {
+    @apply bg-paper-ivory text-ink-black p-4 rounded-sm shadow-md font-typewriter;
+  }
+
+  .paper-card-legal {
+    @apply bg-paper-legal text-ink-black p-4 rounded-sm shadow-md font-typewriter;
+  }
+
+  /* Receipt strip — narrow ivory paper with monospace digits */
+  .receipt-strip {
+    @apply bg-paper-ivory text-ink-black px-4 py-2 rounded-sm shadow font-mono;
+  }
+
+  /* Lined sheet — ruled-paper feel for inventory-style lists */
+  .lined-sheet {
+    @apply bg-paper-cream text-ink-black p-3 rounded-sm shadow font-typewriter;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 27px,
+      rgba(31, 58, 110, 0.18) 27px,
+      rgba(31, 58, 110, 0.18) 28px
+    );
+    background-position: 0 0.5rem;
+  }
+
+  /* Stamp — diagonal red ink stamp overlay */
+  .stamp {
+    @apply font-stencil font-bold uppercase text-ink-red border-2 border-ink-red px-2 py-0.5 rounded-sm tracking-widest;
+    transform: rotate(-8deg);
+    opacity: 0.85;
   }
 }
