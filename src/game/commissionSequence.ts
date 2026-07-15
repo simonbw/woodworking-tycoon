@@ -7,11 +7,14 @@ import { REAL_WOOD_SPECIES } from "./Materials";
  *
  * Commissions must only require materials the player can actually produce at
  * that point in the sequence. Current production chain: dismantling a pallet
- * yields stringers (4x6x3 boards) and deck boards (3x4x1 boards); the miter
- * saw cuts length, the table saw rips width, the planer reduces thickness
- * (boards and panels); the workspace builds rustic shelves from 2 stringers
- * + 3 deck boards, glues five 2x2x4 strips into a panel, and finishes a
- * planed single-species hardwood panel into a cutting board.
+ * yields stringers (4x6x3 boards) and deck boards (3x4x1 boards), all rough;
+ * the miter saw cuts length, the table saw rips width; sanding tools
+ * (mounted at workstations) step surface rough → smooth → sanded; the planer
+ * reduces thickness and leaves surfaces smooth; the workspace builds rustic
+ * shelves from 2 stringers + 3 deck boards, glues five smooth 2x2x4 strips
+ * into a (rough) panel, and finishes a sanded single-species hardwood panel
+ * into a cutting board. Tools before machines: the sander era (commission 4)
+ * comes well before the planer era (commission 7).
  */
 export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
   {
@@ -62,18 +65,19 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardReputation: 3,
   },
   {
-    id: "smooth-stock",
-    name: "Smooth Stock",
+    id: "sanded-set",
+    name: "Sanded Set",
     description:
-      "A customer wants thick stock planed down smooth and even. A planer will make quick work of it.",
+      "An order for boards sanded baby-smooth. Grab something to sand with from the store's tool wall and mount it at a workstation.",
     requiredMaterials: [
       {
         type: ["board"],
         species: ["pallet"],
-        length: [4],
-        width: [6],
-        thickness: [2],
-        quantity: 2,
+        length: [3],
+        width: [4],
+        thickness: [1],
+        surface: ["sanded"],
+        quantity: 4,
       },
     ],
     rewardMoney: 650,
@@ -94,7 +98,7 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "proper-cutting-board",
     name: "A Proper Cutting Board",
     description:
-      'A chef wants real hardwood cutting boards. Buy lumber, rip it into 2" strips, glue up a panel, plane it smooth, and finish it at the workspace.',
+      'A chef wants real hardwood cutting boards. Buy lumber, rip it into 2" strips, glue up a panel, sand it silky, and finish it at the workspace.',
     requiredMaterials: [
       {
         type: ["simpleCuttingBoard"],
@@ -104,6 +108,25 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 1000,
     rewardReputation: 6,
+  },
+  {
+    id: "dimensioned-stock",
+    name: "Dimensioned Stock",
+    description:
+      "A furniture maker needs thick stock milled down to exact thickness — that's planer work. Sanding won't take off a quarter inch.",
+    requiredMaterials: [
+      {
+        type: ["board"],
+        species: ["pallet"],
+        length: [4],
+        width: [6],
+        thickness: [2],
+        surface: ["smooth", "sanded"],
+        quantity: 2,
+      },
+    ],
+    rewardMoney: 1200,
+    rewardReputation: 7,
   },
 ];
 

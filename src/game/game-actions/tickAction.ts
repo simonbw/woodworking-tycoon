@@ -1,7 +1,7 @@
 import { GameAction } from "../GameState";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
-import { MACHINE_TYPES } from "../Machine";
+import { Machine } from "../Machine";
 import { getSellValue } from "../material-values";
 
 export const tickAction: GameAction = (gameState) => {
@@ -71,10 +71,10 @@ export const tickAction: GameAction = (gameState) => {
       };
     }
 
-    // Operation completed - apply the transformation
-    const machineType = MACHINE_TYPES[machineState.machineTypeId];
-    const selectedOperation = machineType.operations.find(
-      (op) => op.id === machineState.selectedOperationId
+    // Operation completed - apply the transformation. Look the operation up
+    // through the Machine view so mounted tools' operations resolve too.
+    const selectedOperation = new Machine(machineState).operations.find(
+      (op) => op.id === machineState.selectedOperationId,
     );
     if (!selectedOperation) {
       throw new Error(

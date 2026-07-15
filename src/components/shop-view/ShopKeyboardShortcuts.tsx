@@ -148,7 +148,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
 
         if (!machine) break;
 
-        const operationIndex = machine.type.operations.indexOf(
+        const operationIndex = machine.operations.indexOf(
           machine.selectedOperation
         );
         if (operationIndex === -1) {
@@ -157,10 +157,10 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         }
         const nextOperationIndex = mod(
           operationIndex + (event.shiftKey ? -1 : 1),
-          machine.type.operations.length
+          machine.operations.length
         );
         
-        const nextOperation = machine.type.operations[nextOperationIndex];
+        const nextOperation = machine.operations[nextOperationIndex];
         let parameters: ParameterValues | undefined = undefined;
         
         // Set default parameters for parameterized operations

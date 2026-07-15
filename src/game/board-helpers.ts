@@ -9,6 +9,7 @@ export function board(
   length: Board["length"] = 1,
   width: Board["width"] = 1,
   thickness: Board["thickness"] = 1,
+  surface: Board["surface"] = "rough",
 ): MaterialInstance & { type: "board" } {
   return makeMaterial({
     type: "board",
@@ -16,6 +17,7 @@ export function board(
     length,
     width,
     thickness,
+    surface,
   });
 }
 

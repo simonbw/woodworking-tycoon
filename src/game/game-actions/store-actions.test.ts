@@ -162,7 +162,7 @@ describe("completeCommissionAction", () => {
     const base = stateAtCommission(2, boards);
     const state = {
       ...base,
-      storage: { machines: ["salesTable" as const] },
+      storage: { machines: ["salesTable" as const], tools: [] },
       progression: { ...base.progression, freeSelling: true },
     };
     const result = completeCommissionAction()(state);

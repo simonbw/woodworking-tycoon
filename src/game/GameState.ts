@@ -1,6 +1,7 @@
 import { MachineState, MachineId } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
+import { ToolId } from "./Tool";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
 import { Vector } from "./Vectors";
@@ -32,6 +33,7 @@ export interface GameState {
   readonly player: Person;
   readonly storage: {
     machines: ReadonlyArray<MachineId>;
+    tools: ReadonlyArray<ToolId>;
   };
   readonly progression: ProgressionState;
 }

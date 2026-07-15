@@ -19,8 +19,37 @@ async function movePlayerTo(page: any, position: [number, number]) {
   await page.waitForTimeout(300);
 }
 
-test.describe("Cutting Board Chain", () => {
-  test("should buy stock lumber, glue, plane, finish, and sell", async ({
+/** The workspace's spec-sheet card. */
+function workspaceCard(page: any) {
+  return page.locator("section", { hasText: "Workspace" });
+}
+
+/** Run one sanding pass on the panel currently in inventory. */
+async function sandPanelOnce(page: any, expectSurface: string) {
+  await page
+    .locator("li", { hasText: "Maple Panel" })
+    .getByRole("button", { name: "→ Workspace" })
+    .click();
+  await page.waitForTimeout(200);
+  await workspaceCard(page).getByRole("button", { name: "Operate" }).click();
+  await page.waitForFunction(
+    (surface: string) =>
+      (window as any)
+        .__GET_GAME_STATE__()
+        .machines.some((m: any) =>
+          m.outputMaterials.some(
+            (mat: any) => mat.type === "panel" && mat.surface === surface,
+          ),
+        ),
+    expectSurface,
+    { timeout: 15000 },
+  );
+  await workspaceCard(page).getByRole("button", { name: /Take All/ }).click();
+  await page.waitForTimeout(200);
+}
+
+test.describe("Cutting Board Chain (no planer required)", () => {
+  test("should mount a sander, glue, sand, finish, and sell", async ({
     page,
   }) => {
     test.setTimeout(90000);
@@ -41,54 +70,57 @@ test.describe("Cutting Board Chain", () => {
       await expect(page.getByText("A Proper Cutting Board")).toBeVisible();
     });
 
-    await test.step("store sells fixed SKUs, no pallet, no custom cuts", async () => {
+    await test.step("store: tool wall, S4S and rough lumber prices", async () => {
       await page.getByText("Store", { exact: true }).click();
       await page.waitForTimeout(300);
-      await expect(page.getByText("Lumber Rack")).toBeVisible();
-      // The workhorse pine SKU at volume x markup pricing
-      await expect(page.getByText("Pine Board (8'x4\"x4/4)")).toBeVisible();
-      await expect(page.getByText("$38.40")).toBeVisible();
-      // Pallet wood is not sold — scavenging is its source
-      const speciesOptions = await page
-        .locator("select")
-        .first()
-        .locator("option")
-        .allTextContents();
-      expect(speciesOptions).not.toContain("Pallet");
-      // The old custom-cut dimension pickers are gone
-      await expect(page.getByText("Custom Cut")).not.toBeVisible();
-    });
-
-    await test.step("buying a SKU deducts species-priced money", async () => {
-      await page.locator("select").first().selectOption("maple");
-      await page.waitForTimeout(200);
-      // Maple workhorse: $38.40 x 3 = $115.20, unaffordable at $100
-      const workhorseRow = page.locator("li", {
-        hasText: "Maple Board (8'x4\"x4/4)",
-      });
-      await expect(workhorseRow.getByText("$115.20")).toBeVisible();
+      await expect(page.getByText("Tool Wall")).toBeVisible();
+      await expect(page.getByText("Sanding Block")).toBeVisible();
+      await expect(page.getByText("$10.00")).toBeVisible();
+      await expect(page.getByText("Random Orbit Sander")).toBeVisible();
+      // Default finish is S4S: workhorse pine at full price
       await expect(
-        workhorseRow.getByRole("button", { name: "Buy" }),
-      ).toBeDisabled();
+        page.getByText("Pine Board (8'x4\"x4/4, smooth)"),
+      ).toBeVisible();
+      await expect(page.getByText("$38.40")).toBeVisible();
+      // Rough sawn is 65% of that
+      await page.locator("select").nth(1).selectOption("rough");
+      await page.waitForTimeout(200);
+      await expect(
+        page.getByText("Pine Board (8'x4\"x4/4, rough)"),
+      ).toBeVisible();
+      await expect(page.getByText("$24.96")).toBeVisible();
       await page.getByText("Home", { exact: true }).click();
       await page.waitForTimeout(300);
     });
 
-    await test.step("glue up five maple strips into a panel", async () => {
-      const workspaceCard = page.locator("section", { hasText: "Workspace" });
-      await workspaceCard
+    await test.step("mount the sander at the workspace", async () => {
+      await expect(page.getByText("1/1 slots")).not.toBeVisible();
+      await page.getByRole("button", { name: "Attach" }).click();
+      await page.waitForTimeout(200);
+      await expect(page.getByText("1/1 slots")).toBeVisible();
+      // The sander's operations joined the workspace's Mode list
+      const modeOptions = await workspaceCard(page)
+        .locator("select")
+        .first()
+        .locator("option")
+        .allTextContents();
+      expect(modeOptions).toContain("Sand Panel");
+    });
+
+    await test.step("glue up five smooth maple strips", async () => {
+      await workspaceCard(page)
         .locator("select")
         .first()
         .selectOption({ label: "Glue Up Panel" });
       await page.waitForTimeout(200);
-      // Shift-click moves the whole strip stack to the workspace
       await page
         .locator("li", { hasText: "Maple Board" })
         .getByRole("button", { name: "→ Workspace" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
-      await workspaceCard.getByRole("button", { name: "Operate" }).click();
-      // 40 ticks of glue drying at ~200ms per tick
+      await workspaceCard(page)
+        .getByRole("button", { name: "Operate" })
+        .click();
       await page.waitForFunction(
         () =>
           (window as any)
@@ -99,53 +131,34 @@ test.describe("Cutting Board Chain", () => {
         undefined,
         { timeout: 30000 },
       );
-      await workspaceCard.getByRole("button", { name: /Take All/ }).click();
-      await page.waitForTimeout(200);
-      await expect(
-        page.getByText('Maple Panel (2\'x10"x4/4)').first(),
-      ).toBeVisible();
-    });
-
-    await test.step("plane the panel to 3/4", async () => {
-      await movePlayerTo(page, [2, 3]);
-      const planerCard = page.locator("section", { hasText: "Planer" });
-      await planerCard
-        .locator("select")
-        .first()
-        .selectOption({ label: "Plane Panel" });
-      await page.waitForTimeout(200);
-      // Target thickness 3
-      await planerCard.locator("select").nth(1).selectOption("3");
-      await page.waitForTimeout(200);
-      await page
-        .locator("li", { hasText: "Maple Panel" })
-        .getByRole("button", { name: "→ Planer" })
+      await workspaceCard(page)
+        .getByRole("button", { name: /Take All/ })
         .click();
       await page.waitForTimeout(200);
-      await planerCard.getByRole("button", { name: "Operate" }).click();
-      await page.waitForFunction(
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines.some((m: any) =>
-              m.outputMaterials.some(
-                (mat: any) => mat.type === "panel" && mat.thickness === 3,
-              ),
-            ),
-        undefined,
-        { timeout: 15000 },
-      );
-      await planerCard.getByRole("button", { name: /Take All/ }).click();
-      await page.waitForTimeout(200);
+      // Fresh glue-up is rough
       await expect(
-        page.getByText('Maple Panel (2\'x10"x3/4)').first(),
+        page.getByText("Maple Panel (2'x10\"x4/4, rough)").first(),
       ).toBeVisible();
     });
 
-    await test.step("finish the cutting board at the workspace", async () => {
-      await movePlayerTo(page, [1, 3]);
-      const workspaceCard = page.locator("section", { hasText: "Workspace" });
-      await workspaceCard
+    await test.step("sand the panel to smooth, then to sanded", async () => {
+      await workspaceCard(page)
+        .locator("select")
+        .first()
+        .selectOption({ label: "Sand Panel" });
+      await page.waitForTimeout(200);
+      await sandPanelOnce(page, "smooth");
+      await expect(
+        page.getByText("Maple Panel (2'x10\"x4/4, smooth)").first(),
+      ).toBeVisible();
+      await sandPanelOnce(page, "sanded");
+      await expect(
+        page.getByText("Maple Panel (2'x10\"x4/4, sanded)").first(),
+      ).toBeVisible();
+    });
+
+    await test.step("finish the cutting board — full thickness, no planer", async () => {
+      await workspaceCard(page)
         .locator("select")
         .first()
         .selectOption({ label: "Finish Cutting Board" });
@@ -155,21 +168,24 @@ test.describe("Cutting Board Chain", () => {
         .getByRole("button", { name: "→ Workspace" })
         .click();
       await page.waitForTimeout(200);
-      await workspaceCard.getByRole("button", { name: "Operate" }).click();
+      await workspaceCard(page)
+        .getByRole("button", { name: "Operate" })
+        .click();
       await page.waitForFunction(
         () =>
           (window as any)
             .__GET_GAME_STATE__()
-            .player.inventory.concat(
-              (window as any)
-                .__GET_GAME_STATE__()
-                .machines.flatMap((m: any) => m.outputMaterials),
-            )
-            .some((mat: any) => mat.type === "simpleCuttingBoard"),
+            .machines.some((m: any) =>
+              m.outputMaterials.some(
+                (mat: any) => mat.type === "simpleCuttingBoard",
+              ),
+            ),
         undefined,
         { timeout: 15000 },
       );
-      await workspaceCard.getByRole("button", { name: /Take All/ }).click();
+      await workspaceCard(page)
+        .getByRole("button", { name: /Take All/ })
+        .click();
       await page.waitForTimeout(200);
       const cuttingBoard = await page.evaluate(() =>
         (window as any)

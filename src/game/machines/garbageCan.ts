@@ -9,7 +9,7 @@ export const garbageCan: MachineType = {
   freeCellsNeeded: [],
   cost: 0, // Free - basic quality of life feature
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 0,
   inputSpaces: 5, // Can accept multiple materials at once
   operations: [
     {

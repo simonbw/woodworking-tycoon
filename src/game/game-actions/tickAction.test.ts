@@ -20,6 +20,7 @@ function workspaceMachine(overrides: Partial<MachineState>): MachineState {
     selectedOperationId: "dismantlePallet",
     selectedParameters: undefined,
     operationProgress: { status: "notStarted", ticksRemaining: 0 },
+    tools: [],
     ...overrides,
   };
 }

@@ -25,6 +25,23 @@ export const REAL_WOOD_SPECIES: ReadonlyArray<Species> = SPECIES.filter(
   (species) => species !== "pallet",
 );
 
+/**
+ * Surface quality ladder (see docs/tools-and-surfaces.md). Sanding bumps a
+ * material one step up; planing produces "smooth" (never "sanded"); glue-ups
+ * always come out "rough". Scalar for now — widens to per-face state if S2S
+ * lumber or face-specific operations ever matter.
+ */
+export const SURFACE_CONDITIONS = ["rough", "smooth", "sanded"] as const;
+export type SurfaceCondition = (typeof SURFACE_CONDITIONS)[number];
+
+/** The next step up the surface ladder, or null at the top. */
+export function improvedSurface(
+  surface: SurfaceCondition,
+): SurfaceCondition | null {
+  const index = SURFACE_CONDITIONS.indexOf(surface);
+  return SURFACE_CONDITIONS[index + 1] ?? null;
+}
+
 export interface Board {
   readonly id: string;
   readonly type: "board";
@@ -32,6 +49,7 @@ export interface Board {
   readonly width: BoardDimension;
   readonly thickness: BoardDimension;
   readonly species: Species;
+  readonly surface: SurfaceCondition;
 }
 
 export type SheetGoodKind =
@@ -70,6 +88,7 @@ export interface Panel {
   readonly length: BoardDimension;
   readonly thickness: BoardDimension;
   readonly strips: ReadonlyArray<PanelStrip>;
+  readonly surface: SurfaceCondition;
 }
 
 /** Total width is derived from the strips — never stored. */

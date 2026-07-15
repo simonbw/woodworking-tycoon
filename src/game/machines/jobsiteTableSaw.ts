@@ -14,7 +14,7 @@ export const jobsiteTableSaw: MachineType = {
   operationPosition: [0, 1],
   cost: 300,
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 0,
   inputSpaces: 1,
   operations: [
     {

@@ -1,5 +1,6 @@
 import { LRUCache } from "typescript-lru-cache";
 import { MaterialInstance } from "./Materials";
+import { TOOL_TYPES, ToolId } from "./Tool";
 import { Direction, Vector } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
@@ -19,7 +20,7 @@ export interface MachineType {
   readonly operationPosition?: Vector;
   readonly cost: number;
   readonly materialStorage: number;
-  readonly toolStorage: number;
+  readonly toolSlots: number;
   readonly className?: string;
   readonly inputSpaces: number;
 }
@@ -111,6 +112,8 @@ export interface MachineState {
   readonly inputMaterials: ReadonlyArray<MaterialInstance>;
   readonly processingMaterials: ReadonlyArray<MaterialInstance>;
   readonly outputMaterials: ReadonlyArray<MaterialInstance>;
+  /** Handheld tools mounted at this station (max: type.toolSlots) */
+  readonly tools: ReadonlyArray<ToolId>;
 }
 
 /**
@@ -133,8 +136,19 @@ export class Machine {
     return machineType;
   }
 
+  /**
+   * All operations available at this station: the machine's own plus those
+   * of every mounted tool.
+   */
+  get operations(): ReadonlyArray<MachineOperation | ParameterizedOperation> {
+    return [
+      ...this.type.operations,
+      ...this.state.tools.flatMap((toolId) => TOOL_TYPES[toolId].operations),
+    ];
+  }
+
   get selectedOperation(): MachineOperation | ParameterizedOperation {
-    const operation = this.type.operations.find(
+    const operation = this.operations.find(
       (op) => op.id === this.state.selectedOperationId,
     );
     if (!operation) {

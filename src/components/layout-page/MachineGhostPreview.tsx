@@ -47,6 +47,7 @@ export const MachineGhostPreview: React.FC<MachineGhostPreviewProps> = ({
     inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
+    tools: [],
   };
 
   return (

@@ -19,16 +19,28 @@ const planePanel = lunchboxPlaner.operations.find(
 ) as ParameterizedOperation;
 
 describe("glueUpPanel", () => {
-  const strips = Array.from({ length: 5 }, () => board("maple", 2, 2, 4));
+  const strips = Array.from({ length: 5 }, () =>
+    board("maple", 2, 2, 4, "smooth"),
+  );
 
-  it("requires five 2x2x4 strips", () => {
+  it("requires five smooth 2x2x4 strips", () => {
     const requirement = glueUp.inputMaterials[0];
     assert.strictEqual(requirement.quantity, 5);
     assert.ok(materialMeetsInput(strips[0], requirement));
-    assert.ok(!materialMeetsInput(board("maple", 2, 4, 4), requirement));
+    assert.ok(
+      !materialMeetsInput(board("maple", 2, 4, 4, "smooth"), requirement),
+    );
+    // Rough faces don't glue — surface prep first
+    assert.ok(
+      !materialMeetsInput(board("maple", 2, 2, 4, "rough"), requirement),
+    );
+    // Sanded is even better than smooth, still fine
+    assert.ok(
+      materialMeetsInput(board("maple", 2, 2, 4, "sanded"), requirement),
+    );
   });
 
-  it("glues five strips into a 10-inch panel", () => {
+  it("glues five strips into a 10-inch panel that comes out rough", () => {
     const { outputs } = glueUp.output(strips);
     assert.strictEqual(outputs.length, 1);
     const result = outputs[0];
@@ -36,16 +48,17 @@ describe("glueUpPanel", () => {
     assert.strictEqual(panelWidth(result), 10);
     assert.strictEqual(result.length, 2);
     assert.strictEqual(result.thickness, 4);
+    assert.strictEqual(result.surface, "rough"); // glue squeeze-out
     assert.ok(result.strips.every((strip) => strip.species === "maple"));
   });
 
   it("preserves strip order for multi-species glue-ups", () => {
     const mixed = [
-      board("walnut", 2, 2, 4),
-      board("maple", 2, 2, 4),
-      board("walnut", 2, 2, 4),
-      board("maple", 2, 2, 4),
-      board("walnut", 2, 2, 4),
+      board("walnut", 2, 2, 4, "smooth"),
+      board("maple", 2, 2, 4, "smooth"),
+      board("walnut", 2, 2, 4, "smooth"),
+      board("maple", 2, 2, 4, "smooth"),
+      board("walnut", 2, 2, 4, "smooth"),
     ];
     const { outputs } = glueUp.output(mixed);
     const result = outputs[0];
@@ -59,18 +72,31 @@ describe("glueUpPanel", () => {
 
 describe("finishCuttingBoard", () => {
   const requirement = finish.inputMaterials[0];
-  const goodBlank = uniformPanel("maple", 5, 2, 2, 3);
+  const goodBlank = uniformPanel("maple", 5, 2, 2, 3, "sanded");
 
-  it("accepts a planed single-species hardwood panel", () => {
+  it("accepts a sanded single-species hardwood panel", () => {
     assert.ok(materialMeetsInput(goodBlank, requirement));
   });
 
-  it("rejects an unplaned panel", () => {
-    assert.ok(!materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4), requirement));
+  it("accepts full-thickness sanded panels — the planer is optional", () => {
+    assert.ok(
+      materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4, "sanded"), requirement),
+    );
+  });
+
+  it("rejects panels that aren't sanded", () => {
+    assert.ok(
+      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3, "rough"), requirement),
+    );
+    assert.ok(
+      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3, "smooth"), requirement),
+    );
   });
 
   it("rejects a panel that is too narrow", () => {
-    assert.ok(!materialMeetsInput(uniformPanel("maple", 4, 2, 2, 3), requirement));
+    assert.ok(
+      !materialMeetsInput(uniformPanel("maple", 4, 2, 2, 3, "sanded"), requirement),
+    );
   });
 
   it("rejects a panel not made of 2-inch strips", () => {
@@ -82,6 +108,7 @@ describe("finishCuttingBoard", () => {
       ],
       2,
       3,
+      "sanded",
     );
     assert.ok(!materialMeetsInput(wideStrips, requirement));
   });
@@ -97,13 +124,17 @@ describe("finishCuttingBoard", () => {
       ],
       2,
       3,
+      "sanded",
     );
     assert.ok(!materialMeetsInput(striped, requirement));
   });
 
   it("rejects pallet wood — no pallet chemicals near food", () => {
     assert.ok(
-      !materialMeetsInput(uniformPanel("pallet", 5, 2, 2, 3), requirement),
+      !materialMeetsInput(
+        uniformPanel("pallet", 5, 2, 2, 3, "sanded"),
+        requirement,
+      ),
     );
   });
 
@@ -116,12 +147,13 @@ describe("finishCuttingBoard", () => {
 });
 
 describe("planePanel", () => {
-  it("thins the panel and preserves its strips", () => {
-    const blank = uniformPanel("maple", 5, 2, 2, 4);
+  it("thins the panel, smooths it, and preserves its strips", () => {
+    const blank = uniformPanel("maple", 5, 2, 2, 4, "rough");
     const { outputs } = planePanel.output([blank], { targetThickness: 3 });
     const result = outputs[0];
     assert.ok(isPanel(result));
     assert.strictEqual(result.thickness, 3);
+    assert.strictEqual(result.surface, "smooth");
     assert.deepStrictEqual(result.strips, blank.strips);
   });
 

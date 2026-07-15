@@ -1,4 +1,10 @@
-import { Board, FinishedProduct, MaterialInstance, Species } from "./Materials";
+import {
+  Board,
+  FinishedProduct,
+  MaterialInstance,
+  Species,
+  SurfaceCondition,
+} from "./Materials";
 
 /**
  * Free-sell prices. Value comes from processing depth: raw boards are priced
@@ -33,6 +39,16 @@ export const SPECIES_VALUE_MULTIPLIER: Record<Species, number> = {
   purpleHeart: 8,
 };
 
+/**
+ * Surface prep adds a little value to raw stock — enough to reward sanding
+ * scavenged boards, not enough to beat turning them into products.
+ */
+export const SURFACE_VALUE_MULTIPLIER: Record<SurfaceCondition, number> = {
+  rough: 1,
+  smooth: 1.15,
+  sanded: 1.3,
+};
+
 export function getSellValue(material: MaterialInstance): number {
   switch (material.type) {
     case "board":
@@ -41,7 +57,8 @@ export function getSellValue(material: MaterialInstance): number {
           material.width *
           material.thickness *
           BOARD_VALUE_PER_UNIT *
-          SPECIES_VALUE_MULTIPLIER[material.species],
+          SPECIES_VALUE_MULTIPLIER[material.species] *
+          SURFACE_VALUE_MULTIPLIER[material.surface],
       );
     case "plywood":
       return roundToCents(
@@ -62,7 +79,7 @@ export function getSellValue(material: MaterialInstance): number {
               BOARD_VALUE_PER_UNIT *
               SPECIES_VALUE_MULTIPLIER[strip.species],
           0,
-        ),
+        ) * SURFACE_VALUE_MULTIPLIER[material.surface],
       );
     case "pallet":
       return WHOLE_PALLET_VALUE;
@@ -81,12 +98,20 @@ export function getSellValue(material: MaterialInstance): number {
 
 /**
  * Store prices for buying lumber. Kept well above sell value so buying and
- * flipping always loses money.
+ * flipping always loses money. Rough-sawn stock is discounted — it needs
+ * planing (or slow sanding) before it can be glued, which is the planer's
+ * economic niche.
  */
 const BUY_MARKUP = 3;
+const ROUGH_DISCOUNT = 0.65;
 
 export function getBoardBuyPrice(board: Board): number {
-  return roundToCents(getSellValue(board) * BUY_MARKUP);
+  // Priced from raw wood volume (rough sell value), so the small surface
+  // sell-bonus doesn't inflate store prices.
+  const s4sPrice = getSellValue({ ...board, surface: "rough" }) * BUY_MARKUP;
+  return roundToCents(
+    board.surface === "rough" ? s4sPrice * ROUGH_DISCOUNT : s4sPrice,
+  );
 }
 
 function roundToCents(value: number): number {

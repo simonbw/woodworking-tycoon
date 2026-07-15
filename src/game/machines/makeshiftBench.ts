@@ -6,10 +6,11 @@ export const makeshiftBench: MachineType = {
   description: "A makeshift bench to place tools on.",
   cellsOccupied: [[0, 0]],
   freeCellsNeeded: [[0, 1]],
+  operationPosition: [0, 1],
   cost: 0,
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 3,
   className: "fill-brown-800 drop-shadow-md",
   operations: [],
-  inputSpaces: 0,
+  inputSpaces: 3,
 };
