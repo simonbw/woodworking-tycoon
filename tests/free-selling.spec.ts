@@ -19,7 +19,7 @@ test.describe("Free Selling", () => {
 
     await test.step("locked before free selling unlocks", async () => {
       await expect(page.getByText("Errands")).not.toBeVisible();
-      // Unlock only the store: the Sales Table listing is gated on freeSelling
+      // Unlock the store: the Sales Table is a one-time grant, never sold
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -76,12 +76,13 @@ test.describe("Free Selling", () => {
       );
     });
 
-    await test.step("sales table and priced lumber in the store", async () => {
+    await test.step("priced lumber in the store, no sales table for sale", async () => {
       await page.getByText("Store", { exact: true }).click();
       await page.waitForTimeout(300);
+      // Even with freeSelling unlocked the table is not purchasable
       await expect(
         page.getByText("Sales Table", { exact: true }),
-      ).toBeVisible();
+      ).not.toBeVisible();
       // BoardSelector now shows a price (default 8' x 4" x 4/4 pine = $38.40)
       await expect(page.getByText("$38.40")).toBeVisible();
       await page.getByText("Home", { exact: true }).click();

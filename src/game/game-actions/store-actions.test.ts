@@ -150,6 +150,25 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.progression.freeSelling, true);
   });
 
+  it("grants the free sales table when free selling unlocks", () => {
+    const boards = Array.from({ length: 4 }, () => board("pallet", 2, 4, 1));
+    const result = completeCommissionAction()(stateAtCommission(1, boards));
+    assert.deepStrictEqual(result.storage.machines, ["salesTable"]);
+  });
+
+  it("does not grant a second sales table on later commissions", () => {
+    // Commission 3 (ripped-slats) requires 4 boards at 3x2x1
+    const boards = Array.from({ length: 4 }, () => board("pallet", 3, 2, 1));
+    const base = stateAtCommission(2, boards);
+    const state = {
+      ...base,
+      storage: { machines: ["salesTable" as const] },
+      progression: { ...base.progression, freeSelling: true },
+    };
+    const result = completeCommissionAction()(state);
+    assert.deepStrictEqual(result.storage.machines, ["salesTable"]);
+  });
+
   it("does nothing, including progression, when materials are missing", () => {
     const state = stateAtCommission(0, []);
     const result = completeCommissionAction()(state);

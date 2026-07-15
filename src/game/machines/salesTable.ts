@@ -14,7 +14,9 @@ export const salesTable: MachineType = {
   cellsOccupied: [[0, 0]],
   freeCellsNeeded: [[0, 1]],
   operationPosition: [0, 1],
-  cost: 50,
+  // Not sold in the store: granted once when free selling unlocks, so the
+  // player can never be priced out of their only income source.
+  cost: 0,
   materialStorage: 0,
   toolStorage: 0,
   inputSpaces: 5,
