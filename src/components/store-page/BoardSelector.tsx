@@ -6,6 +6,8 @@ import {
   Species,
 } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
+import { buyMaterialAction } from "../../game/game-actions/store-actions";
+import { getBoardBuyPrice } from "../../game/material-values";
 import { getMaterialName } from "../../game/material-helpers";
 import { humanizeString } from "../../utils/humanizeString";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
@@ -90,20 +92,25 @@ export const BoardSelector: React.FC = () => {
               {numberOwned} owned
             </div>
           </div>
-          <button
-            className="bg-store-orange hover:bg-store-orange-dark text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
-            onClick={() => {
-              applyAction((state) => ({
-                ...state,
-                player: {
-                  ...state.player,
-                  inventory: [...state.player.inventory, material],
-                },
-              }));
-            }}
-          >
-            Buy
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="price-tag tabular-nums">
+              ${getBoardBuyPrice(material).toFixed(2)}
+            </span>
+            <button
+              className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+              disabled={gameState.money < getBoardBuyPrice(material)}
+              onClick={() =>
+                applyAction(
+                  buyMaterialAction(
+                    board(species, length, width, thickness),
+                    getBoardBuyPrice(material),
+                  ),
+                )
+              }
+            >
+              Buy
+            </button>
+          </div>
         </div>
       </div>
     </section>

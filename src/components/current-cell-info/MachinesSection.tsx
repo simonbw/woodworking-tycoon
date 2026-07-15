@@ -33,7 +33,8 @@ export const MachinesSection: React.FC = () => {
   const cellMap = useCellMap();
   const playerCell = cellMap.at(gameState.player.position);
 
-  if (!playerCell?.operableMachines.length) {
+  // The player can't work machines while out of the shop
+  if (gameState.player.away || !playerCell?.operableMachines.length) {
     return null;
   }
 
@@ -51,6 +52,12 @@ export const MachinesSection: React.FC = () => {
 
 const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
+
+  // Machines with no operations (e.g. the sales table) get a simple
+  // contents card instead of the operation spec sheet.
+  if (machine.type.operations.length === 0) {
+    return <OperationlessMachineCard machine={machine} />;
+  }
 
   const outputMaterials = [
     ...groupBy(machine.outputMaterials, (material) =>
@@ -325,6 +332,63 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
       >
         {isOperating ? "Operating..." : "Operate"}
       </ProgressButton>
+    </section>
+  );
+};
+
+/** Card for machines with no operations, like the sales table: just show
+ * what's on it and let the player take things back. */
+const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
+  machine,
+}) => {
+  const applyAction = useApplyGameAction();
+
+  const groupedContents = [
+    ...groupBy(machine.inputMaterials, (material) =>
+      getMaterialName(material),
+    ).entries(),
+  ].sort(([a], [b]) => a.localeCompare(b));
+
+  return (
+    <section className="paper-card space-y-3">
+      <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
+        <h3 className="font-stencil text-lg uppercase tracking-wide">
+          {machine.type.name}
+        </h3>
+        <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
+          Contents
+        </span>
+      </header>
+      {groupedContents.length === 0 ? (
+        <p className="italic text-ink-fade text-sm">Empty</p>
+      ) : (
+        <ul className="divide-y divide-ink-black/15 text-sm">
+          {groupedContents.map(([materialName, materials]) => (
+            <li key={materialName} className="flex items-center gap-2 py-1.5">
+              <span className="grow">{materialName}</span>
+              {materials.length > 1 && (
+                <span className="font-mono text-ink-fade tabular-nums">
+                  ×{materials.length}
+                </span>
+              )}
+              <button
+                className="button-paper text-xs"
+                onClick={(event) => {
+                  if (event.shiftKey) {
+                    applyAction(takeInputsFromMachineAction(materials, machine));
+                  } else {
+                    applyAction(
+                      takeInputsFromMachineAction([materials[0]], machine),
+                    );
+                  }
+                }}
+              >
+                Take
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 };

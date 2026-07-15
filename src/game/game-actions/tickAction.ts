@@ -2,15 +2,40 @@ import { GameAction } from "../GameState";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { MACHINE_TYPES } from "../Machine";
+import { getSellValue } from "../material-values";
 
 export const tickAction: GameAction = (gameState) => {
-  gameState = {
-    ...gameState,
-    player: {
-      ...gameState.player,
-      canWork: true,
-    },
-  };
+  const away = gameState.player.away;
+  if (away) {
+    if (gameState.tick >= away.returnTick) {
+      // Welcome home: drop the haul at the material dropoff spot
+      gameState = {
+        ...gameState,
+        materialPiles: [
+          ...gameState.materialPiles,
+          ...away.loot.map((material) => ({
+            material,
+            position: gameState.shopInfo.materialDropoffPosition,
+          })),
+        ],
+        player: { ...gameState.player, away: null, canWork: true },
+      };
+    } else {
+      // Still out of the shop: no player work, but machines keep running
+      gameState = {
+        ...gameState,
+        player: { ...gameState.player, canWork: false },
+      };
+    }
+  } else {
+    gameState = {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        canWork: true,
+      },
+    };
+  }
 
   // TODO: This might be kinda inefficient
   while (gameState.player.canWork && gameState.player.workQueue.length > 0) {
@@ -75,9 +100,25 @@ export const tickAction: GameAction = (gameState) => {
     };
   });
 
+  // Sales tables automatically sell one item per tick
+  let money = gameState.money;
+  const machinesAfterSales = updatedMachines.map((machineState) => {
+    if (
+      machineState.machineTypeId !== "salesTable" ||
+      machineState.inputMaterials.length === 0
+    ) {
+      return machineState;
+    }
+    const [sold, ...remaining] = machineState.inputMaterials;
+    // Round to cents so repeated sales don't accumulate float error
+    money = Math.round((money + getSellValue(sold)) * 100) / 100;
+    return { ...machineState, inputMaterials: remaining };
+  });
+
   return {
     ...gameState,
-    machines: updatedMachines,
+    money,
+    machines: machinesAfterSales,
     tick: gameState.tick + 1,
   };
 };

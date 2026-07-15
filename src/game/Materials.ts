@@ -65,10 +65,6 @@ export type UnknownMaterial = {
 };
 
 export type MaterialInstance =
-  | Pallet
-  | Board
-  | SheetGood
-  | FinishedProduct
-  | UnknownMaterial;
+  Pallet | Board | SheetGood | FinishedProduct | UnknownMaterial;
 
 export type MaterialType = MaterialInstance["type"];

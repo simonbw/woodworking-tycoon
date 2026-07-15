@@ -1,29 +1,46 @@
 import { GameState } from "../../src/game/GameState";
 
-export const layoutWithMiterSawInStorage: GameState = {
+/**
+ * Free selling unlocked, a sales table placed, and the player standing at its
+ * operation position with sellable items in inventory.
+ */
+export const freeSellingShop: GameState = {
   tick: 0,
-  money: 50,
-  reputation: 2,
+  money: 100,
+  reputation: 5,
   materialPiles: [],
   player: {
     name: "Player",
-    position: [0, 0],
+    position: [1, 3], // the sales table's operation cell
     direction: 0,
-    inventory: [],
+    inventory: [
+      {
+        id: "test-shelf-1",
+        type: "rusticShelf",
+        species: "pallet",
+      },
+      {
+        id: "test-board-1",
+        type: "board",
+        species: "pallet",
+        width: 4,
+        length: 3,
+        thickness: 1,
+      },
+    ],
     workQueue: [],
     canWork: true,
     away: null,
   },
   machines: [
     {
-      machineTypeId: "workspace",
+      machineTypeId: "salesTable",
       position: [1, 2],
       rotation: 0,
       inputMaterials: [],
       processingMaterials: [],
       outputMaterials: [],
-      selectedOperationId: "rip",
-      selectedParameters: { width: 8 },
+      selectedOperationId: "none",
       operationProgress: {
         status: "notStarted",
         ticksRemaining: 0,
@@ -31,7 +48,7 @@ export const layoutWithMiterSawInStorage: GameState = {
     },
   ],
   storage: {
-    machines: ["miterSaw"],
+    machines: [],
   },
   shopInfo: {
     name: "One Car Garage",
@@ -43,8 +60,8 @@ export const layoutWithMiterSawInStorage: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     shopLayoutUnlocked: true,
-    freeSelling: false,
-    commissionsCompleted: 1,
+    freeSelling: true,
+    commissionsCompleted: 2,
     tickSpeedControlsUnlocked: false,
   },
 };

@@ -9,11 +9,15 @@ interface MachineSaleInfo {
 }
 
 export const StoreMachinesSection: React.FC = () => {
+  const gameState = useGameState();
   const machinesToSell: MachineSaleInfo[] = [
     { machine: MACHINE_TYPES.garbageCan, price: 0 },
     { machine: MACHINE_TYPES.jobsiteTableSaw, price: 200 },
     { machine: MACHINE_TYPES.miterSaw, price: 200 },
     { machine: MACHINE_TYPES.makeshiftBench, price: 100 },
+    ...(gameState.progression.freeSelling
+      ? [{ machine: MACHINE_TYPES.salesTable, price: 50 }]
+      : []),
   ];
   return (
     <section>

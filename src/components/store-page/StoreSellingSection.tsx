@@ -9,7 +9,8 @@ export const StoreSellingSection: React.FC = () => {
           Returns &amp; Sales
         </p>
         <p className="text-xs text-ink-fade font-typewriter mt-2">
-          Coming soon
+          Selling something? Set up a Sales Table in your own shop — aisle
+          two, next to the garbage cans.
         </p>
       </div>
     </section>
