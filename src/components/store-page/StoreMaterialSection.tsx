@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import { MaterialInstance } from "../../game/Materials";
-import { getMaterialName, makeMaterial } from "../../game/material-helpers";
+import { buyMaterialAction } from "../../game/game-actions/store-actions";
+import { getMaterialName, makePallet } from "../../game/material-helpers";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
-import { materialMeetsInput } from "../../game/material-helpers";
-import { materialToInput } from "../../game/material-helpers";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 interface MaterialSaleInfo {
+  /** Creates a fresh instance for each purchase */
+  makeInstance: () => MaterialInstance;
+  /** Display-only sample for the product card */
   material: MaterialInstance;
   price: number;
 }
 
 export const StoreMaterialSection: React.FC = () => {
   const [materialsForSale] = useState<ReadonlyArray<MaterialSaleInfo>>(() => {
-    return [{ material: makeMaterial({ type: "pallet" }), price: 0 }];
+    return [{ makeInstance: makePallet, material: makePallet(), price: 0 }];
   });
   return (
     <section>
@@ -28,14 +30,16 @@ export const StoreMaterialSection: React.FC = () => {
 };
 
 const MaterialProductCard: React.FC<MaterialSaleInfo> = ({
+  makeInstance,
   material,
   price,
 }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  const numberOwned = gameState.player.inventory.filter((m) =>
-    materialMeetsInput(m, materialToInput(material)),
+  // Count by type: instance fields like a pallet's deckBoards vary per copy
+  const numberOwned = gameState.player.inventory.filter(
+    (m) => m.type === material.type,
   ).length;
 
   const canAfford = gameState.money >= price;
@@ -61,15 +65,7 @@ const MaterialProductCard: React.FC<MaterialSaleInfo> = ({
         <button
           className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={!canAfford}
-          onClick={() => {
-            applyAction((state) => ({
-              ...state,
-              player: {
-                ...state.player,
-                inventory: [...state.player.inventory, material],
-              },
-            }));
-          }}
+          onClick={() => applyAction(buyMaterialAction(makeInstance(), price))}
         >
           Buy
         </button>
