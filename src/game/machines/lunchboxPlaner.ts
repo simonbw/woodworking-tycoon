@@ -1,5 +1,6 @@
-import { BOARD_DIMENSIONS, Board, BoardDimension } from "../Materials";
+import { BOARD_DIMENSIONS, Board, BoardDimension, Panel } from "../Materials";
 import { isBoard } from "../board-helpers";
+import { isPanel } from "../panel-helpers";
 import { makeMaterial } from "../material-helpers";
 import { MachineType, ParameterizedOperation } from "../Machine";
 
@@ -51,6 +52,43 @@ export const lunchboxPlaner: MachineType = {
         return {
           inputs: [],
           outputs: [makeMaterial<Board>({ ...inputBoard, thickness: targetThickness })],
+        };
+      },
+    } as ParameterizedOperation,
+    {
+      id: "planePanel",
+      name: "Plane Panel",
+      duration: 15,
+      parameters: [
+        {
+          id: "targetThickness",
+          name: "Target Thickness",
+          values: BOARD_DIMENSIONS.filter(
+            (dimension) => dimension < Math.max(...BOARD_DIMENSIONS)
+          ),
+        },
+      ],
+      getInputMaterials: (params) => {
+        const targetThickness = params.targetThickness as BoardDimension;
+        const validThicknesses = BOARD_DIMENSIONS.filter(d => d > targetThickness);
+        return [
+          {
+            type: ["panel"],
+            thickness: validThicknesses,
+            quantity: 1,
+          },
+        ];
+      },
+      output: (materials, params) => {
+        const inputPanel = materials[0];
+        if (!isPanel(inputPanel)) {
+          throw new Error("Input material is not a panel");
+        }
+        const targetThickness = params.targetThickness as BoardDimension;
+        // Same panel, just thinner
+        return {
+          inputs: [],
+          outputs: [makeMaterial<Panel>({ ...inputPanel, thickness: targetThickness })],
         };
       },
     } as ParameterizedOperation,

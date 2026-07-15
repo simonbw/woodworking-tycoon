@@ -1,9 +1,11 @@
 import React from "react";
 import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { BoardSprite } from "./BoardSprite";
+import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
 import { FinishedBoxSprite } from "./FinishedBoxSprite";
 import { PalletSprite } from "./PalletSprite";
+import { PanelSprite } from "./PanelSprite";
 
 // Just choose the correct sprite for a material
 export const MaterialSprite: React.FC<{
@@ -20,6 +22,14 @@ export const MaterialSprite: React.FC<{
 
     case "jewelryBox":
       return <FinishedBoxSprite material={material as FinishedProduct} alpha={alpha} tint={tint} />;
+
+    case "panel":
+      return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
+
+    case "simpleCuttingBoard":
+      return (
+        <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
+      );
 
     default:
       return <DefaultMaterialPileSprite alpha={alpha} tint={tint} />;

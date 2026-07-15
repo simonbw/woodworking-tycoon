@@ -1,4 +1,5 @@
 import { Commission, ProgressionState } from "./GameState";
+import { REAL_WOOD_SPECIES } from "./Materials";
 
 /**
  * The authored, linear sequence of commissions. Each one introduces one new
@@ -7,8 +8,10 @@ import { Commission, ProgressionState } from "./GameState";
  * Commissions must only require materials the player can actually produce at
  * that point in the sequence. Current production chain: dismantling a pallet
  * yields stringers (4x6x3 boards) and deck boards (3x4x1 boards); the miter
- * saw cuts length, the table saw rips width, the planer reduces thickness,
- * and the workspace builds rustic shelves from 2 stringers + 3 deck boards.
+ * saw cuts length, the table saw rips width, the planer reduces thickness
+ * (boards and panels); the workspace builds rustic shelves from 2 stringers
+ * + 3 deck boards, glues five 2x2x4 strips into a panel, and finishes a
+ * planed single-species hardwood panel into a cutting board.
  */
 export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
   {
@@ -86,6 +89,21 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 800,
     rewardReputation: 5,
+  },
+  {
+    id: "proper-cutting-board",
+    name: "A Proper Cutting Board",
+    description:
+      'A chef wants real hardwood cutting boards. Buy lumber, rip it into 2" strips, glue up a panel, plane it smooth, and finish it at the workspace.',
+    requiredMaterials: [
+      {
+        type: ["simpleCuttingBoard"],
+        species: REAL_WOOD_SPECIES,
+        quantity: 2,
+      },
+    ],
+    rewardMoney: 1000,
+    rewardReputation: 6,
   },
 ];
 

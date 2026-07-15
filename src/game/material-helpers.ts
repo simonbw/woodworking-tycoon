@@ -8,6 +8,9 @@ import {
   FinishedProduct,
   MaterialInstance,
   Pallet,
+  Panel,
+  panelSpecies,
+  panelWidth,
   SheetGood,
   UnknownMaterial,
 } from "./Materials";
@@ -51,6 +54,14 @@ export function getMaterialName(material: MaterialInstance): string {
         species,
       )} Board (${length}'x${width}"x${thickness}/4)`;
     }
+    case "panel": {
+      const species = panelSpecies(material);
+      const speciesName =
+        species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
+      return `${speciesName} Panel (${material.length}'x${panelWidth(
+        material,
+      )}"x${material.thickness}/4)`;
+    }
     default:
       return humanizeString(material.type);
   }
@@ -65,6 +76,13 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
     case "board": {
       const { length, width, thickness } = material;
       const size = length * width * thickness;
+      const maxDimension = Math.max(...BOARD_DIMENSIONS);
+      const maxSize = maxDimension * maxDimension * maxDimension;
+      return (size / maxSize) * 100;
+    }
+
+    case "panel": {
+      const size = material.length * panelWidth(material) * material.thickness;
       const maxDimension = Math.max(...BOARD_DIMENSIONS);
       const maxSize = maxDimension * maxDimension * maxDimension;
       return (size / maxSize) * 100;
@@ -95,22 +113,25 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
 export function materialToInput<T extends MaterialInstance = MaterialInstance>(
   material: T,
 ): InputMaterial<T> {
-  const result: InputMaterial<T> = {};
+  const result: Record<string, unknown[]> = {};
   for (const key in material) {
     if (key !== "id") {
       result[key] = [material[key]];
     }
   }
-  return result;
+  return result as InputMaterial<T>;
 }
 
 export function materialMeetsInput(
   material: MaterialInstance,
   inputMaterial: InputMaterial,
 ) {
+  if (inputMaterial.matches && !inputMaterial.matches(material)) {
+    return false;
+  }
   for (const key of Object.keys(inputMaterial)) {
-    // Make sure to skip quantity, because that's not a property of the material
-    if (key === "quantity") {
+    // Skip quantity and matches: they're not properties of the material
+    if (key === "quantity" || key === "matches") {
       continue;
     } else if (!(key in material)) {
       return false;
@@ -184,6 +205,18 @@ export function createMockMaterial(
           "species" in requirement
             ? (requirement.species?.[0] ?? "pine")
             : "pine",
+      });
+
+    case "panel":
+      // Placeholder display only; a representative single-species blank
+      return makeMaterial<Panel>({
+        type: "panel",
+        length: 2,
+        thickness: 4,
+        strips: Array.from({ length: 5 }, () => ({
+          species: "maple",
+          width: 2,
+        })),
       });
 
     case "unknown":

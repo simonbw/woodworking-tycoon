@@ -1,8 +1,16 @@
 import { array } from "../../utils/arrayUtils";
-import { board } from "../board-helpers";
+import { board, isBoard } from "../board-helpers";
 import { MachineType } from "../Machine";
 import { makeMaterial } from "../material-helpers";
-import { Pallet, FinishedProduct, Board, MaterialInstance } from "../Materials";
+import {
+  Pallet,
+  FinishedProduct,
+  Board,
+  MaterialInstance,
+  panelSpecies,
+  panelWidth,
+} from "../Materials";
+import { isPanel, panel } from "../panel-helpers";
 
 export const workspace: MachineType = {
   id: "workspace",
@@ -78,6 +86,78 @@ export const workspace: MachineType = {
             makeMaterial<FinishedProduct>({
               type: "rusticShelf",
               species: "pallet",
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Glue Up Panel",
+      id: "glueUpPanel",
+      duration: 40, // glue needs time to dry
+      inputMaterials: [
+        {
+          type: ["board"],
+          width: [2],
+          length: [2],
+          thickness: [4],
+          quantity: 5,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const strips = materials.filter(isBoard);
+        if (strips.length !== 5) {
+          throw new Error("Need exactly 5 strips to glue up a panel");
+        }
+        // Strip order is preserved, so multi-species glue-ups keep their
+        // pattern — the recipe doesn't care, but future two-tone boards do.
+        return {
+          inputs: [],
+          outputs: [
+            panel(
+              strips.map((strip) => ({
+                species: strip.species,
+                width: strip.width,
+              })),
+              strips[0].length,
+              strips[0].thickness,
+            ),
+          ],
+        };
+      },
+    },
+    {
+      name: "Finish Cutting Board",
+      id: "finishCuttingBoard",
+      duration: 20,
+      inputMaterials: [
+        {
+          type: ["panel"],
+          length: [2],
+          thickness: [3],
+          quantity: 1,
+          // A proper cutting board: a planed panel at least 10" wide, glued
+          // from 2" strips of a single real hardwood — no pallet chemicals
+          // near food.
+          matches: (material) =>
+            isPanel(material) &&
+            panelWidth(material) >= 10 &&
+            material.strips.every((strip) => strip.width === 2) &&
+            panelSpecies(material).length === 1 &&
+            material.strips[0].species !== "pallet",
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const blank = materials[0];
+        if (!isPanel(blank)) {
+          throw new Error("Input material is not a panel");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "simpleCuttingBoard",
+              species: blank.strips[0].species,
             }),
           ],
         };

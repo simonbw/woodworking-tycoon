@@ -47,6 +47,13 @@ export interface MachineOperation {
 
 export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
   [K in keyof T]?: ReadonlyArray<T[K]>;
+} & {
+  /**
+   * Escape hatch for constraints the flat allowed-values fields can't
+   * express (e.g. conditions on a panel's strip list). Checked in addition
+   * to the flat fields by materialMeetsInput.
+   */
+  readonly matches?: (material: MaterialInstance) => boolean;
 };
 
 export type InputMaterialWithQuantity<

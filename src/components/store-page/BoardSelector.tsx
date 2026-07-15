@@ -1,119 +1,112 @@
 import React, { useMemo, useState } from "react";
-import {
-  BOARD_DIMENSIONS,
-  BoardDimension,
-  SPECIES,
-  Species,
-} from "../../game/Materials";
+import { Species } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
-import { getMaterialName } from "../../game/material-helpers";
+import { getMaterialName, materialMeetsInput } from "../../game/material-helpers";
 import { humanizeString } from "../../utils/humanizeString";
+import { LUMBER_SKUS, LumberSku, STORE_SPECIES } from "../../game/lumberStock";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
-import { materialMeetsInput } from "../../game/material-helpers";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
+/**
+ * The lumber rack: a few common sizes per species. No custom cutting —
+ * ripping, crosscutting, and planing stock to size is the player's job.
+ */
 export const BoardSelector: React.FC = () => {
+  const [species, setSpecies] = useState<Species>("pine");
+
+  return (
+    <section>
+      <h2 className="aisle-heading">Lumber Rack</h2>
+      <div className="mb-2">
+        <SelectField
+          label="Species"
+          value={species}
+          onChange={(v) => setSpecies(v as Species)}
+          options={STORE_SPECIES.map((s) => ({
+            value: s,
+            label: humanizeString(s),
+          }))}
+        />
+      </div>
+      <ul className="space-y-2">
+        {LUMBER_SKUS.map((sku) => (
+          <LumberSkuCard
+            key={`${sku.length}x${sku.width}x${sku.thickness}`}
+            sku={sku}
+            species={species}
+          />
+        ))}
+      </ul>
+      <p className="text-xs text-ink-fade font-typewriter mt-2">
+        We stock what we stock. Need a different size? That's what your saws
+        are for. Boards wider than 8"? Glue 'em up yourself — that's
+        woodworking.
+      </p>
+    </section>
+  );
+};
+
+const LumberSkuCard: React.FC<{ sku: LumberSku; species: Species }> = ({
+  sku,
+  species,
+}) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  const [length, setLength] = useState<BoardDimension>(8);
-  const [width, setWidth] = useState<BoardDimension>(4);
-  const [thickness, setThickness] = useState<BoardDimension>(4);
-  const [species, setSpecies] = useState<Species>("pine");
-
   const material = useMemo(
-    () => board(species, length, width, thickness),
-    [length, width, thickness, species],
+    () => board(species, sku.length, sku.width, sku.thickness),
+    [species, sku],
   );
+  const price = getBoardBuyPrice(material);
 
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
       type: ["board"],
       species: [species],
-      length: [length],
-      width: [width],
-      thickness: [thickness],
+      length: [sku.length],
+      width: [sku.width],
+      thickness: [sku.thickness],
     }),
   ).length;
 
   return (
-    <section>
-      <h2 className="aisle-heading">Custom Cut</h2>
-      <div className="product-card">
-        <div className="flex gap-3 items-stretch">
-          <div className="w-24 flex items-center justify-center">
-            <MaterialIcon material={material} size="large" />
-          </div>
-          <div className="flex flex-col gap-2 grow text-xs">
-            <SelectField
-              label="Species"
-              value={species}
-              onChange={(v) => setSpecies(v as Species)}
-              options={SPECIES.map((s) => ({
-                value: s,
-                label: humanizeString(s),
-              }))}
-            />
-            <div>
-              <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade mb-0.5">
-                Dimensions
-              </div>
-              <div className="flex items-center gap-1">
-                <DimensionSelect
-                  value={length}
-                  onChange={setLength}
-                  suffix="'"
-                />
-                <span className="text-ink-fade">×</span>
-                <DimensionSelect
-                  value={width}
-                  onChange={setWidth}
-                  suffix='"'
-                />
-                <span className="text-ink-fade">×</span>
-                <DimensionSelect
-                  value={thickness}
-                  onChange={setThickness}
-                  suffix="/4"
-                />
-              </div>
-            </div>
-          </div>
+    <li className="product-card flex items-center gap-3">
+      <div className="w-12 flex items-center justify-center">
+        <MaterialIcon material={material} />
+      </div>
+      <div className="grow">
+        <div className="font-stencil text-sm uppercase tracking-wide text-ink-black leading-none">
+          {getMaterialName(material)}
         </div>
-
-        <div className="flex justify-between items-end mt-3 pt-2 border-t border-ink-black/15">
-          <div>
-            <div className="font-stencil text-sm uppercase tracking-wide text-ink-black leading-none">
-              {getMaterialName(material)}
-            </div>
-            <div className="text-xs text-ink-fade tabular-nums mt-1">
-              {numberOwned} owned
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="price-tag tabular-nums">
-              ${getBoardBuyPrice(material).toFixed(2)}
+        <div className="text-xs text-ink-fade tabular-nums mt-1">
+          {numberOwned > 0 && (
+            <span className="text-store-orange-dark font-semibold">
+              {numberOwned} owned ·{" "}
             </span>
-            <button
-              className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
-              disabled={gameState.money < getBoardBuyPrice(material)}
-              onClick={() =>
-                applyAction(
-                  buyMaterialAction(
-                    board(species, length, width, thickness),
-                    getBoardBuyPrice(material),
-                  ),
-                )
-              }
-            >
-              Buy
-            </button>
-          </div>
+          )}
+          In stock
         </div>
       </div>
-    </section>
+      <div className="flex items-center gap-2">
+        <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
+        <button
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          disabled={gameState.money < price}
+          onClick={() =>
+            applyAction(
+              buyMaterialAction(
+                board(species, sku.length, sku.width, sku.thickness),
+                price,
+              ),
+            )
+          }
+        >
+          Buy
+        </button>
+      </div>
+    </li>
   );
 };
 
@@ -139,23 +132,4 @@ const SelectField: React.FC<{
       ))}
     </select>
   </label>
-);
-
-const DimensionSelect: React.FC<{
-  value: BoardDimension;
-  onChange: (value: BoardDimension) => void;
-  suffix: string;
-}> = ({ value, onChange, suffix }) => (
-  <select
-    className="bg-paper-ivory border border-ink-black/30 text-ink-black px-1.5 py-0.5 rounded font-mono text-xs"
-    value={value}
-    onChange={(e) => onChange(parseInt(e.target.value) as BoardDimension)}
-  >
-    {BOARD_DIMENSIONS.map((dim) => (
-      <option key={dim} value={dim}>
-        {dim}
-        {suffix}
-      </option>
-    ))}
-  </select>
 );
