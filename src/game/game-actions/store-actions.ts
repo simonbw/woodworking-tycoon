@@ -83,44 +83,46 @@ export function buyMachineAction(
 }
 
 export function completeCommissionAction(commission: Commission): GameAction {
-  return combineActions(
-    (gameState) => {
-      // Check if player has all required materials
-      for (const requiredMaterial of commission.requiredMaterials) {
-        const matchingMaterials = gameState.player.inventory.filter((material) =>
-          materialMeetsInput(material, requiredMaterial)
-        );
-        if (matchingMaterials.length < requiredMaterial.quantity) {
-          console.warn("Player doesn't have required materials for commission");
-          return gameState;
+  return (gameState) => {
+    // Check if player has all required materials
+    for (const requiredMaterial of commission.requiredMaterials) {
+      const matchingMaterials = gameState.player.inventory.filter((material) =>
+        materialMeetsInput(material, requiredMaterial)
+      );
+      if (matchingMaterials.length < requiredMaterial.quantity) {
+        console.warn("Player doesn't have required materials for commission");
+        return gameState;
+      }
+    }
+
+    // Remove required materials from inventory
+    let updatedInventory = [...gameState.player.inventory];
+    for (const requiredMaterial of commission.requiredMaterials) {
+      let remainingQuantity = requiredMaterial.quantity;
+      updatedInventory = updatedInventory.filter((material) => {
+        if (remainingQuantity > 0 && materialMeetsInput(material, requiredMaterial)) {
+          remainingQuantity--;
+          return false; // Remove this material
         }
-      }
+        return true; // Keep this material
+      });
+    }
 
-      // Remove required materials from inventory
-      let updatedInventory = [...gameState.player.inventory];
-      for (const requiredMaterial of commission.requiredMaterials) {
-        let remainingQuantity = requiredMaterial.quantity;
-        updatedInventory = updatedInventory.filter((material) => {
-          if (remainingQuantity > 0 && materialMeetsInput(material, requiredMaterial)) {
-            remainingQuantity--;
-            return false; // Remove this material
-          }
-          return true; // Keep this material
-        });
-      }
+    const completedState = {
+      ...gameState,
+      money: gameState.money + commission.rewardMoney,
+      reputation: gameState.reputation + commission.rewardReputation,
+      commissions: gameState.commissions.filter((c) => c !== commission),
+      player: {
+        ...gameState.player,
+        inventory: updatedInventory,
+      },
+    };
 
-      return {
-        ...gameState,
-        money: gameState.money + commission.rewardMoney,
-        reputation: gameState.reputation + commission.rewardReputation,
-        commissions: gameState.commissions.filter((c) => c !== commission),
-        player: {
-          ...gameState.player,
-          inventory: updatedInventory,
-        },
-      };
-    },
-    incrementCommissionsCompletedAction(),
-    checkProgressionMilestonesAction()
-  );
+    // Progression must only advance when the commission actually completes
+    return combineActions(
+      incrementCommissionsCompletedAction(),
+      checkProgressionMilestonesAction()
+    )(completedState);
+  };
 }
