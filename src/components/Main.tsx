@@ -8,15 +8,12 @@ import { LayoutPage } from "./LayoutPage";
 import { StartMenu } from "./StartMenu";
 import { StorePage } from "./store-page/StorePage";
 import { UiModeProvider, useUiMode } from "./UiMode";
+import { UiSoundLayer } from "./UiSoundLayer";
 import { ActionKeyContextProvider } from "./consumerCountContext";
 import { GameStateProvider, useGameState } from "./useGameState";
 
 export const Main: React.FC = () => {
   const [activeGame, setActiveGame] = useState<GameState | null>(null);
-
-  if (!activeGame) {
-    return <StartMenu onStart={setActiveGame} />;
-  }
 
   const handleQuitToMenu = (finalState: GameState) => {
     saveGame(finalState);
@@ -24,18 +21,25 @@ export const Main: React.FC = () => {
   };
 
   return (
-    <GameStateProvider
-      initialState={activeGame}
-      onQuitToMenu={handleQuitToMenu}
-    >
-      <UiModeProvider>
-        <ActionKeyContextProvider>
-          <ScreenSwitcher />
-          <DebugView />
-          <FixtureLoader />
-        </ActionKeyContextProvider>
-      </UiModeProvider>
-    </GameStateProvider>
+    <>
+      <UiSoundLayer />
+      {!activeGame ? (
+        <StartMenu onStart={setActiveGame} />
+      ) : (
+        <GameStateProvider
+          initialState={activeGame}
+          onQuitToMenu={handleQuitToMenu}
+        >
+          <UiModeProvider>
+            <ActionKeyContextProvider>
+              <ScreenSwitcher />
+              <DebugView />
+              <FixtureLoader />
+            </ActionKeyContextProvider>
+          </UiModeProvider>
+        </GameStateProvider>
+      )}
+    </>
   );
 };
 

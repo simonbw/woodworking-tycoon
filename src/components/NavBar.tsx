@@ -36,6 +36,7 @@ export const NavBar: React.FC = () => {
           className="button-ghost mb-1.5 self-center"
           onClick={quitToMenu}
           title="Save and return to main menu"
+          data-sfx="ui-back"
         >
           Save &amp; Quit
         </button>
@@ -54,6 +55,7 @@ const FolderTab: React.FC<{
   return (
     <button
       onClick={onClick}
+      data-sfx="ui-tab"
       className={classNames(
         "relative px-5 pt-2 pb-1 rounded-t-md font-condensed uppercase tracking-[0.15em] text-sm transition-colors",
         active
