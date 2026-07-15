@@ -32,7 +32,6 @@ export const layoutWithMiterSawInStorage: GameState = {
   storage: {
     machines: ["miterSaw"],
   },
-  commissions: [],
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,

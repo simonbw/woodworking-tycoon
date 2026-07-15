@@ -1,78 +1,41 @@
-import { GameState, ProgressionState } from "./GameState";
+import { hasCompletedCommission } from "./commissionSequence";
+import { GameState } from "./GameState";
+import { MachineId } from "./Machine";
 
-export function shouldUnlockStore(commissionsCompleted: number): boolean {
-  return commissionsCompleted >= 1;
+export function ownsMachine(
+  gameState: GameState,
+  machineId: MachineId,
+): boolean {
+  return (
+    gameState.storage.machines.includes(machineId) ||
+    gameState.machines.some((m) => m.machineTypeId === machineId)
+  );
 }
 
-export function shouldUnlockShopLayout(hasMiterSaw: boolean): boolean {
-  return hasMiterSaw;
-}
+/**
+ * Each unlockable feature declares the condition it depends on. Unlocks are
+ * one-way: once a flag in ProgressionState is true it stays true, even if the
+ * condition later becomes false (e.g. a sold machine).
+ *
+ * Keyed by the ProgressionState flag the condition controls.
+ */
+export const UNLOCK_CONDITIONS: Record<
+  "storeUnlocked" | "shopLayoutUnlocked" | "freeSelling",
+  (gameState: GameState) => boolean
+> = {
+  storeUnlocked: (gameState) =>
+    hasCompletedCommission(gameState.progression, "first-shelf"),
+  shopLayoutUnlocked: (gameState) => ownsMachine(gameState, "miterSaw"),
+  freeSelling: (gameState) =>
+    hasCompletedCommission(gameState.progression, "cut-to-order"),
+};
 
-export function shouldUnlockFreeSelling(commissionsCompleted: number): boolean {
-  return commissionsCompleted >= 3;
-}
-
-export function shouldAdvanceTutorial(gameState: GameState): number | null {
-  const { commissionsCompleted, tutorialStage } = gameState.progression;
-
-  if (commissionsCompleted >= 1 && tutorialStage < 1) {
-    return 1;
-  }
-  // Tutorial stage 2 is now advanced when purchasing miter saw, not by commission count
-
-  return null; // No advancement needed
-}
-
-export function getNextMilestone(progression: ProgressionState): string | null {
-  const {
-    commissionsCompleted,
-    storeUnlocked,
-    shopLayoutUnlocked,
-    freeSelling,
-  } = progression;
-
-  if (commissionsCompleted === 0) {
-    return "Complete your first commission to unlock the Store";
-  }
-
-  if (storeUnlocked && !shopLayoutUnlocked) {
-    return "Buy a Miter Saw from the Store to unlock Shop Layout editing";
-  }
-
-  if (shopLayoutUnlocked && !freeSelling) {
-    return "Complete more commissions to unlock free selling";
-  }
-
-  return null; // All milestones reached
-}
-
-export function getTutorialMessage(tutorialStage: number): string | null {
-  switch (tutorialStage) {
-    case 0:
-      return "Welcome! Complete your first commission to get started.";
-    case 1:
-      return "Great! You've unlocked the Store. Buy a Miter Saw to expand your capabilities.";
-    case 2:
-      return "Excellent! You can now edit your shop layout. Complete more commissions to unlock free selling.";
-    default:
-      return null;
-  }
-}
-
-export function getAllUnlockedFeatures(
-  progression: ProgressionState,
-): string[] {
-  const features: string[] = [];
-  if (progression.storeUnlocked) features.push("Store");
-  if (progression.shopLayoutUnlocked) features.push("Shop Layout");
-  if (progression.freeSelling) features.push("Free Selling");
-  return features;
-}
-
-export function getRemainingFeatures(progression: ProgressionState): string[] {
-  const features: string[] = [];
-  if (!progression.storeUnlocked) features.push("Store");
-  if (!progression.shopLayoutUnlocked) features.push("Shop Layout");
-  if (!progression.freeSelling) features.push("Free Selling");
-  return features;
+/**
+ * The tutorial stage is derived from which features have been unlocked:
+ * 0 = nothing yet, 1 = store unlocked, 2 = shop layout unlocked.
+ */
+export function tutorialStageFor(gameState: GameState): number {
+  if (gameState.progression.shopLayoutUnlocked) return 2;
+  if (gameState.progression.storeUnlocked) return 1;
+  return 0;
 }

@@ -36,15 +36,6 @@ export const initialGameState: GameState = {
   storage: {
     machines: [], // Empty - no machines available initially
   },
-  commissions: [
-    {
-      requiredMaterials: [
-        { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
-      ],
-      rewardMoney: 200, // Enough to buy miter saw for next progression
-      rewardReputation: 2,
-    },
-  ],
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,

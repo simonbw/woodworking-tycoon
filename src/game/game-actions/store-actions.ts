@@ -1,5 +1,6 @@
-import { Commission, GameAction } from "../GameState";
-import { MachineId, MACHINE_TYPES } from "../Machine";
+import { GameAction } from "../GameState";
+import { getActiveCommission } from "../commissionSequence";
+import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
 import { incrementCommissionsCompletedAction, checkProgressionMilestonesAction } from "./progression-actions";
@@ -57,7 +58,7 @@ export function buyMachineAction(
       return gameState;
     }
 
-    let updatedState = {
+    const updatedState = {
       ...gameState,
       money: gameState.money - price,
       storage: {
@@ -66,24 +67,20 @@ export function buyMachineAction(
       },
     };
 
-    // Unlock shop layout when buying miter saw
-    if (machineTypeId === "miterSaw" && !gameState.progression.shopLayoutUnlocked) {
-      updatedState = {
-        ...updatedState,
-        progression: {
-          ...updatedState.progression,
-          shopLayoutUnlocked: true,
-          tutorialStage: Math.max(updatedState.progression.tutorialStage, 2),
-        },
-      };
-    }
-
-    return updatedState;
+    // Owning a miter saw unlocks the shop layout tab (see UNLOCK_CONDITIONS)
+    return checkProgressionMilestonesAction()(updatedState);
   };
 }
 
-export function completeCommissionAction(commission: Commission): GameAction {
+/** Completes the active commission if the player has the required materials. */
+export function completeCommissionAction(): GameAction {
   return (gameState) => {
+    const commission = getActiveCommission(gameState.progression);
+    if (!commission) {
+      console.warn("No active commission to complete");
+      return gameState;
+    }
+
     // Check if player has all required materials
     for (const requiredMaterial of commission.requiredMaterials) {
       const matchingMaterials = gameState.player.inventory.filter((material) =>
@@ -112,7 +109,6 @@ export function completeCommissionAction(commission: Commission): GameAction {
       ...gameState,
       money: gameState.money + commission.rewardMoney,
       reputation: gameState.reputation + commission.rewardReputation,
-      commissions: gameState.commissions.filter((c) => c !== commission),
       player: {
         ...gameState.player,
         inventory: updatedInventory,

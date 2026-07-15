@@ -28,7 +28,6 @@ export interface GameState {
   readonly reputation: number;
   readonly materialPiles: ReadonlyArray<MaterialPile>;
   readonly machines: ReadonlyArray<MachineState>;
-  readonly commissions: ReadonlyArray<Commission>;
   readonly shopInfo: ShopInfo;
   readonly player: Person;
   readonly storage: {
@@ -37,7 +36,15 @@ export interface GameState {
   readonly progression: ProgressionState;
 }
 
+/**
+ * A work order in the authored commission sequence. The active commission is
+ * derived from `progression.commissionsCompleted` (see commissionSequence.ts)
+ * rather than stored in GameState.
+ */
 export interface Commission {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
   readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly rewardMoney: number;
   readonly rewardReputation: number;

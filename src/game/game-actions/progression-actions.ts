@@ -1,52 +1,5 @@
 import { GameAction } from "../GameState";
-
-export function advanceTutorialStageAction(stage: number): GameAction {
-  return (gameState) => {
-    return {
-      ...gameState,
-      progression: {
-        ...gameState.progression,
-        tutorialStage: stage,
-      },
-    };
-  };
-}
-
-export function unlockStoreAction(): GameAction {
-  return (gameState) => {
-    return {
-      ...gameState,
-      progression: {
-        ...gameState.progression,
-        storeUnlocked: true,
-      },
-    };
-  };
-}
-
-export function unlockShopLayoutAction(): GameAction {
-  return (gameState) => {
-    return {
-      ...gameState,
-      progression: {
-        ...gameState.progression,
-        shopLayoutUnlocked: true,
-      },
-    };
-  };
-}
-
-export function unlockFreeSellingAction(): GameAction {
-  return (gameState) => {
-    return {
-      ...gameState,
-      progression: {
-        ...gameState.progression,
-        freeSelling: true,
-      },
-    };
-  };
-}
+import { tutorialStageFor, UNLOCK_CONDITIONS } from "../progression-helpers";
 
 export function incrementCommissionsCompletedAction(): GameAction {
   return (gameState) => {
@@ -60,26 +13,35 @@ export function incrementCommissionsCompletedAction(): GameAction {
   };
 }
 
+/**
+ * Applies any unlock whose condition is now met (see UNLOCK_CONDITIONS) and
+ * advances the tutorial stage to match. Run this after any action that could
+ * change what the player has earned or owns.
+ */
 export function checkProgressionMilestonesAction(): GameAction {
   return (gameState) => {
-    const { commissionsCompleted, tutorialStage, storeUnlocked, freeSelling } = gameState.progression;
-    let updatedState = gameState;
+    let progression = gameState.progression;
 
-    // First commission: Unlock store tab, advance to tutorial stage 1
-    if (commissionsCompleted >= 1 && tutorialStage < 1) {
-      updatedState = advanceTutorialStageAction(1)(updatedState);
-    }
-    if (commissionsCompleted >= 1 && !storeUnlocked) {
-      updatedState = unlockStoreAction()(updatedState);
+    for (const [flag, conditionMet] of Object.entries(UNLOCK_CONDITIONS)) {
+      const key = flag as keyof typeof UNLOCK_CONDITIONS;
+      if (!progression[key] && conditionMet(gameState)) {
+        progression = { ...progression, [key]: true };
+      }
     }
 
-    // Shop layout is now unlocked when purchasing miter saw, not by commission count
+    const updatedState = { ...gameState, progression };
+    const tutorialStage = Math.max(
+      progression.tutorialStage,
+      tutorialStageFor(updatedState),
+    );
 
-    // Third commission: Unlock free selling feature
-    if (commissionsCompleted >= 3 && !freeSelling) {
-      updatedState = unlockFreeSellingAction()(updatedState);
+    if (progression === gameState.progression &&
+        tutorialStage === progression.tutorialStage) {
+      return gameState;
     }
-
-    return updatedState;
+    return {
+      ...updatedState,
+      progression: { ...progression, tutorialStage },
+    };
   };
 }

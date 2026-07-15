@@ -1,6 +1,8 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { Commission, GameState } from "../GameState";
+import { board } from "../board-helpers";
+import { COMMISSION_SEQUENCE } from "../commissionSequence";
+import { GameState } from "../GameState";
 import { MaterialInstance, FinishedProduct } from "../Materials";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
@@ -29,13 +31,23 @@ function stateWith(
   return state;
 }
 
-const shelfCommission: Commission = {
-  requiredMaterials: [
-    { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
-  ],
-  rewardMoney: 200,
-  rewardReputation: 2,
-};
+/** State part-way through the sequence, with the given number of commissions done. */
+function stateAtCommission(
+  commissionsCompleted: number,
+  inventory: ReadonlyArray<MaterialInstance>,
+): GameState {
+  return stateWith(
+    {
+      progression: {
+        ...initialGameState.progression,
+        commissionsCompleted,
+        storeUnlocked: commissionsCompleted >= 1,
+        tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
+      },
+    },
+    inventory,
+  );
+}
 
 describe("buyMaterialAction", () => {
   it("deducts the price and adds the material to the inventory", () => {
@@ -100,61 +112,55 @@ describe("buyMachineAction", () => {
 });
 
 describe("completeCommissionAction", () => {
-  it("pays the reward and reputation and removes the commission", () => {
-    const state = stateWith(
-      { money: 0, reputation: 0, commissions: [shelfCommission] },
-      [makeShelf()],
-    );
-    const result = completeCommissionAction(shelfCommission)(state);
-    assert.strictEqual(result.money, 200);
-    assert.strictEqual(result.reputation, 2);
-    assert.deepStrictEqual(result.commissions, []);
+  const firstCommission = COMMISSION_SEQUENCE[0];
+
+  it("pays the active commission's reward and reputation", () => {
+    const state = stateAtCommission(0, [makeShelf()]);
+    const result = completeCommissionAction()(state);
+    assert.strictEqual(result.money, firstCommission.rewardMoney);
+    assert.strictEqual(result.reputation, firstCommission.rewardReputation);
+  });
+
+  it("advances to the next commission in the sequence", () => {
+    const state = stateAtCommission(0, [makeShelf()]);
+    const result = completeCommissionAction()(state);
+    assert.strictEqual(result.progression.commissionsCompleted, 1);
   });
 
   it("consumes only the required materials", () => {
     const extraShelf = makeShelf();
-    const state = stateWith({ commissions: [shelfCommission] }, [
-      makeShelf(),
-      extraShelf,
-    ]);
-    const result = completeCommissionAction(shelfCommission)(state);
+    const state = stateAtCommission(0, [makeShelf(), extraShelf]);
+    const result = completeCommissionAction()(state);
     assert.deepStrictEqual(result.player.inventory, [extraShelf]);
   });
 
-  it("increments commissionsCompleted and unlocks the store after the first commission", () => {
-    const state = stateWith(
-      { commissions: [shelfCommission] },
-      [makeShelf()],
+  it("unlocks the store after the first commission", () => {
+    const result = completeCommissionAction()(
+      stateAtCommission(0, [makeShelf()]),
     );
-    const result = completeCommissionAction(shelfCommission)(state);
-    assert.strictEqual(result.progression.commissionsCompleted, 1);
     assert.strictEqual(result.progression.storeUnlocked, true);
     assert.strictEqual(result.progression.tutorialStage, 1);
   });
 
-  it("unlocks free selling after the third commission", () => {
-    const state = stateWith(
-      {
-        commissions: [shelfCommission],
-        progression: {
-          ...initialGameState.progression,
-          commissionsCompleted: 2,
-          storeUnlocked: true,
-          tutorialStage: 2,
-        },
-      },
-      [makeShelf()],
-    );
-    const result = completeCommissionAction(shelfCommission)(state);
-    assert.strictEqual(result.progression.commissionsCompleted, 3);
+  it("unlocks free selling after the second commission", () => {
+    // Commission 2 (cut-to-order) requires 4 pallet boards at 2x4x1
+    const boards = Array.from({ length: 4 }, () => board("pallet", 2, 4, 1));
+    const result = completeCommissionAction()(stateAtCommission(1, boards));
+    assert.strictEqual(result.progression.commissionsCompleted, 2);
     assert.strictEqual(result.progression.freeSelling, true);
   });
 
   it("does nothing, including progression, when materials are missing", () => {
-    const state = stateWith({ commissions: [shelfCommission] }, []);
-    const result = completeCommissionAction(shelfCommission)(state);
+    const state = stateAtCommission(0, []);
+    const result = completeCommissionAction()(state);
     assert.strictEqual(result, state);
     assert.strictEqual(result.progression.commissionsCompleted, 0);
     assert.strictEqual(result.progression.storeUnlocked, false);
+  });
+
+  it("does nothing when the sequence is exhausted", () => {
+    const state = stateAtCommission(COMMISSION_SEQUENCE.length, [makeShelf()]);
+    const result = completeCommissionAction()(state);
+    assert.strictEqual(result, state);
   });
 });

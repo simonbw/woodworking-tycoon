@@ -1,5 +1,6 @@
 import React from "react";
 import { Commission } from "../game/GameState";
+import { getActiveCommission } from "../game/commissionSequence";
 import { InputMaterialWithQuantity } from "../game/Machine";
 import { completeCommissionAction } from "../game/game-actions/store-actions";
 import { materialMeetsInput } from "../game/material-helpers";
@@ -8,19 +9,21 @@ import { useApplyGameAction, useGameState } from "./useGameState";
 
 export const CommissionsSection: React.FC = () => {
   const gameState = useGameState();
+  const commission = getActiveCommission(gameState.progression);
 
   return (
     <section className="space-y-3">
       <h2 className="section-heading">Commissions</h2>
       <div className="bg-corkboard-dark rounded-md p-4 shadow-inner border border-black/40 corkboard-bg space-y-4">
-        {gameState.commissions.length === 0 ? (
+        {commission === null ? (
           <p className="text-paper-manila/60 italic font-typewriter text-center py-6">
-            No active commissions
+            No more work orders (yet)
           </p>
         ) : (
-          gameState.commissions.map((commission, i) => (
-            <WorkOrder key={i} commission={commission} index={i} />
-          ))
+          <WorkOrder
+            commission={commission}
+            index={gameState.progression.commissionsCompleted}
+          />
         )}
       </div>
     </section>
@@ -64,12 +67,15 @@ const WorkOrder: React.FC<{
 
       <header className="flex items-baseline justify-between border-b border-ink-black/30 pb-1.5 mb-2">
         <h3 className="font-stencil text-base uppercase tracking-widest">
-          Work Order
+          {commission.name}
         </h3>
         <span className="font-mono text-xs text-ink-fade">#{orderNumber}</span>
       </header>
 
       <div className="font-typewriter text-sm space-y-2">
+        <p className="font-ink text-base leading-snug text-ink-blue">
+          {commission.description}
+        </p>
         <div>
           <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
             Required
@@ -111,7 +117,7 @@ const WorkOrder: React.FC<{
           <button
             disabled={!canComplete}
             className="button-paper text-xs"
-            onClick={() => applyAction(completeCommissionAction(commission))}
+            onClick={() => applyAction(completeCommissionAction())}
           >
             Mark Complete
           </button>

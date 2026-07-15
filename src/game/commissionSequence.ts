@@ -1,0 +1,106 @@
+import { Commission, ProgressionState } from "./GameState";
+
+/**
+ * The authored, linear sequence of commissions. Each one introduces one new
+ * element (tool, material, or technique), per GAMEPLAY_ROADMAP.md.
+ *
+ * Commissions must only require materials the player can actually produce at
+ * that point in the sequence. Current production chain: dismantling a pallet
+ * yields stringers (4x6x3 boards) and deck boards (3x4x1 boards); the miter
+ * saw cuts length, the table saw rips width, the planer reduces thickness,
+ * and the workspace builds rustic shelves from 2 stringers + 3 deck boards.
+ */
+export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
+  {
+    id: "first-shelf",
+    name: "Your First Shelf",
+    description:
+      "A neighbor wants a rustic shelf. Break down that pallet at the workspace and build one.",
+    requiredMaterials: [
+      { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
+    ],
+    rewardMoney: 200,
+    rewardReputation: 2,
+  },
+  {
+    id: "cut-to-order",
+    name: "Cut to Order",
+    description:
+      "A picture framer needs short boards cut precisely to length. Sounds like a job for a miter saw.",
+    requiredMaterials: [
+      {
+        type: ["board"],
+        species: ["pallet"],
+        length: [2],
+        width: [4],
+        thickness: [1],
+        quantity: 4,
+      },
+    ],
+    rewardMoney: 350,
+    rewardReputation: 3,
+  },
+  {
+    id: "ripped-slats",
+    name: "Slat Set",
+    description:
+      "An order for narrow slats, ripped to a consistent width. Time for a table saw.",
+    requiredMaterials: [
+      {
+        type: ["board"],
+        species: ["pallet"],
+        length: [3],
+        width: [2],
+        thickness: [1],
+        quantity: 4,
+      },
+    ],
+    rewardMoney: 500,
+    rewardReputation: 3,
+  },
+  {
+    id: "smooth-stock",
+    name: "Smooth Stock",
+    description:
+      "A customer wants thick stock planed down smooth and even. A planer will make quick work of it.",
+    requiredMaterials: [
+      {
+        type: ["board"],
+        species: ["pallet"],
+        length: [4],
+        width: [6],
+        thickness: [2],
+        quantity: 2,
+      },
+    ],
+    rewardMoney: 650,
+    rewardReputation: 4,
+  },
+  {
+    id: "double-shelf-order",
+    name: "Double Shelf Order",
+    description:
+      "A cafe wants a matching pair of rustic shelves. Put the whole shop to work.",
+    requiredMaterials: [
+      { type: ["rusticShelf"], species: ["pallet"], quantity: 2 },
+    ],
+    rewardMoney: 800,
+    rewardReputation: 5,
+  },
+];
+
+/** The commission the player is currently working on, or null if the authored sequence is finished. */
+export function getActiveCommission(
+  progression: ProgressionState,
+): Commission | null {
+  return COMMISSION_SEQUENCE[progression.commissionsCompleted] ?? null;
+}
+
+/** Whether the commission with the given id has been completed. */
+export function hasCompletedCommission(
+  progression: ProgressionState,
+  commissionId: string,
+): boolean {
+  const index = COMMISSION_SEQUENCE.findIndex((c) => c.id === commissionId);
+  return index !== -1 && progression.commissionsCompleted > index;
+}

@@ -80,7 +80,6 @@ export const layoutWithPlacedMachines: GameState = {
   storage: {
     machines: [],
   },
-  commissions: [],
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
