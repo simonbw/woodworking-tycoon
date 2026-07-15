@@ -21,7 +21,7 @@ export const workspace: MachineType = {
   operationPosition: [0, 1],
   cost: 0,
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 1,
   inputSpaces: 5,
   operations: [
     {
@@ -101,6 +101,8 @@ export const workspace: MachineType = {
           width: [2],
           length: [2],
           thickness: [4],
+          // Clean faces make good glue joints — rough stock won't do
+          surface: ["smooth", "sanded"],
           quantity: 5,
         },
       ],
@@ -111,6 +113,7 @@ export const workspace: MachineType = {
         }
         // Strip order is preserved, so multi-species glue-ups keep their
         // pattern — the recipe doesn't care, but future two-tone boards do.
+        // Squeeze-out and alignment ridges mean the panel comes out rough.
         return {
           inputs: [],
           outputs: [
@@ -121,6 +124,7 @@ export const workspace: MachineType = {
               })),
               strips[0].length,
               strips[0].thickness,
+              "rough",
             ),
           ],
         };
@@ -134,11 +138,13 @@ export const workspace: MachineType = {
         {
           type: ["panel"],
           length: [2],
-          thickness: [3],
+          thickness: [3, 4],
+          // Food-safe means fully sanded — a planed surface isn't enough
+          surface: ["sanded"],
           quantity: 1,
-          // A proper cutting board: a planed panel at least 10" wide, glued
-          // from 2" strips of a single real hardwood — no pallet chemicals
-          // near food.
+          // A proper cutting board: a panel at least 10" wide, glued from
+          // 2" strips of a single real hardwood — no pallet chemicals near
+          // food.
           matches: (material) =>
             isPanel(material) &&
             panelWidth(material) >= 10 &&

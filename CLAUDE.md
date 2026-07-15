@@ -54,9 +54,10 @@ The game follows a state-driven architecture with clear separation between game 
 
 ### Material and Machine System
 
-- **Materials** (`src/game/Materials.ts`): Wood types and their properties
+- **Materials** (`src/game/Materials.ts`): Wood types and their properties; boards and panels carry a surface condition (rough → smooth → sanded)
 - **Machines** (`src/game/Machine.ts`): Woodworking equipment with input/output specifications
-- **Operations**: Each machine can perform specific operations transforming materials
+- **Tools** (`src/game/Tool.ts`, `src/game/tools/`): Handheld tools that mount into a workstation's tool slots and add operations there (see `docs/tools-and-surfaces.md`)
+- **Operations**: Each machine can perform specific operations transforming materials; a station's operation list combines its own operations with its mounted tools'
 - **Material Piles**: Physical placement of materials in the shop space
 
 ### Rendering Architecture

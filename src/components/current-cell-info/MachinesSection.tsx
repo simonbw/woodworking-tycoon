@@ -13,6 +13,11 @@ import {
   matchMaterialsToSlots,
 } from "../../game/machine-helpers";
 import {
+  mountToolAction,
+  unmountToolAction,
+} from "../../game/game-actions/tool-actions";
+import { TOOL_TYPES } from "../../game/Tool";
+import {
   createMockMaterial,
   getMaterialName,
 } from "../../game/material-helpers";
@@ -55,7 +60,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   // Machines with no operations (e.g. the sales table) get a simple
   // contents card instead of the operation spec sheet.
-  if (machine.type.operations.length === 0) {
+  if (machine.operations.length === 0) {
     return <OperationlessMachineCard machine={machine} />;
   }
 
@@ -142,7 +147,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
             value={machine.selectedOperation.id}
             onChange={(event) => {
-              const operation = machine.type.operations.find(
+              const operation = machine.operations.find(
                 (op) => op.id === event.target.value,
               )!;
 
@@ -159,7 +164,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
               );
             }}
           >
-            {machine.type.operations.map((operation) => (
+            {machine.operations.map((operation) => (
               <option key={operation.id} value={operation.id}>
                 {operation.name}
               </option>
@@ -206,6 +211,8 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             </label>
           ))}
       </div>
+
+      <ToolRack machine={machine} />
 
       {/* Slot diagram — inset bay with darker frame */}
       <div className="flex items-center gap-3 p-3 bg-workshop-panel/15 border border-ink-black/20 rounded">
@@ -336,6 +343,67 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   );
 };
 
+/**
+ * Tool slots on a workstation: mounted tools can be removed to storage,
+ * and stored tools can be mounted while slots are free. Mounting a tool
+ * adds its operations to the station's Mode list.
+ */
+const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+
+  if (machine.type.toolSlots === 0) {
+    return null;
+  }
+
+  const freeSlots = machine.type.toolSlots - machine.state.tools.length;
+
+  return (
+    <div className="space-y-1">
+      <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+        Tools · {machine.state.tools.length}/{machine.type.toolSlots} slots
+      </div>
+      <ul className="divide-y divide-ink-black/15 text-sm">
+        {machine.state.tools.map((toolId, index) => (
+          <li
+            key={`${toolId}-${index}`}
+            className="flex items-center gap-2 py-1"
+          >
+            <span className="grow">{TOOL_TYPES[toolId].name}</span>
+            <button
+              className="button-paper text-xs"
+              onClick={() => applyAction(unmountToolAction(machine, toolId))}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+        {freeSlots > 0 &&
+          gameState.storage.tools.map((toolId, index) => (
+            <li
+              key={`stored-${toolId}-${index}`}
+              className="flex items-center gap-2 py-1 text-ink-fade"
+            >
+              <span className="grow">{TOOL_TYPES[toolId].name} (stored)</span>
+              <button
+                className="button-paper text-xs"
+                onClick={() => applyAction(mountToolAction(machine, toolId))}
+              >
+                Attach
+              </button>
+            </li>
+          ))}
+        {machine.state.tools.length === 0 &&
+          gameState.storage.tools.length === 0 && (
+            <li className="py-1 italic text-ink-fade text-xs">
+              No tools yet — check the store's tool wall.
+            </li>
+          )}
+      </ul>
+    </div>
+  );
+};
+
 /** Card for machines with no operations, like the sales table: just show
  * what's on it and let the player take things back. */
 const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
@@ -359,6 +427,7 @@ const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
           Contents
         </span>
       </header>
+      <ToolRack machine={machine} />
       {groupedContents.length === 0 ? (
         <p className="italic text-ink-fade text-sm">Empty</p>
       ) : (

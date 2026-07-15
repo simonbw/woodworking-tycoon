@@ -15,11 +15,12 @@ import { useApplyGameAction, useGameState } from "../useGameState";
  */
 export const BoardSelector: React.FC = () => {
   const [species, setSpecies] = useState<Species>("pine");
+  const [finish, setFinish] = useState<StoreFinish>("smooth");
 
   return (
     <section>
       <h2 className="aisle-heading">Lumber Rack</h2>
-      <div className="mb-2">
+      <div className="mb-2 flex gap-2">
         <SelectField
           label="Species"
           value={species}
@@ -29,6 +30,15 @@ export const BoardSelector: React.FC = () => {
             label: humanizeString(s),
           }))}
         />
+        <SelectField
+          label="Finish"
+          value={finish}
+          onChange={(v) => setFinish(v as StoreFinish)}
+          options={[
+            { value: "smooth", label: "S4S (surfaced)" },
+            { value: "rough", label: "Rough sawn" },
+          ]}
+        />
       </div>
       <ul className="space-y-2">
         {LUMBER_SKUS.map((sku) => (
@@ -36,28 +46,32 @@ export const BoardSelector: React.FC = () => {
             key={`${sku.length}x${sku.width}x${sku.thickness}`}
             sku={sku}
             species={species}
+            finish={finish}
           />
         ))}
       </ul>
       <p className="text-xs text-ink-fade font-typewriter mt-2">
         We stock what we stock. Need a different size? That's what your saws
-        are for. Boards wider than 8"? Glue 'em up yourself — that's
-        woodworking.
+        are for. Rough sawn is cheaper for a reason — surface it yourself.
       </p>
     </section>
   );
 };
 
-const LumberSkuCard: React.FC<{ sku: LumberSku; species: Species }> = ({
-  sku,
-  species,
-}) => {
+/** The two finishes the store stocks: surfaced-four-sides or rough sawn. */
+type StoreFinish = "smooth" | "rough";
+
+const LumberSkuCard: React.FC<{
+  sku: LumberSku;
+  species: Species;
+  finish: StoreFinish;
+}> = ({ sku, species, finish }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
   const material = useMemo(
-    () => board(species, sku.length, sku.width, sku.thickness),
-    [species, sku],
+    () => board(species, sku.length, sku.width, sku.thickness, finish),
+    [species, sku, finish],
   );
   const price = getBoardBuyPrice(material);
 
@@ -68,6 +82,7 @@ const LumberSkuCard: React.FC<{ sku: LumberSku; species: Species }> = ({
       length: [sku.length],
       width: [sku.width],
       thickness: [sku.thickness],
+      surface: [finish],
     }),
   ).length;
 
@@ -97,7 +112,7 @@ const LumberSkuCard: React.FC<{ sku: LumberSku; species: Species }> = ({
           onClick={() =>
             applyAction(
               buyMaterialAction(
-                board(species, sku.length, sku.width, sku.thickness),
+                board(species, sku.length, sku.width, sku.thickness, finish),
                 price,
               ),
             )

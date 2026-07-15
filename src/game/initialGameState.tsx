@@ -36,6 +36,7 @@ export const initialGameState: GameState = {
   ],
   storage: {
     machines: [], // Empty - no machines available initially
+    tools: [],
   },
   shopInfo: {
     name: "One Car Garage",
@@ -78,6 +79,7 @@ function machine(
     inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
+    tools: [],
     selectedOperationId: firstOperation.id,
     selectedParameters,
     operationProgress: {

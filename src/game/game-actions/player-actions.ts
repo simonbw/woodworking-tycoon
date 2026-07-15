@@ -192,7 +192,7 @@ export function setMachineOperationAction(
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
-    if (!machine.type.operations.includes(operation)) {
+    if (!machine.operations.includes(operation)) {
       throw new Error("Tried to set machine operation to invalid operation");
     }
 

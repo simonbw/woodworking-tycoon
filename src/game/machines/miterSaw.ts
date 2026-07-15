@@ -11,7 +11,7 @@ export const miterSaw: MachineType = {
   operationPosition: [0, 1],
   cost: 150,
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 0,
   inputSpaces: 1,
   operations: [
     {

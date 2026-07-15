@@ -18,7 +18,7 @@ export const salesTable: MachineType = {
   // player can never be priced out of their only income source.
   cost: 0,
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 0,
   inputSpaces: 5,
   operations: [],
 };

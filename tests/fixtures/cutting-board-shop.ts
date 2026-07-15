@@ -14,6 +14,7 @@ function idleMachine(
     inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
+    tools: [],
     selectedOperationId,
     selectedParameters,
     operationProgress: {
@@ -24,9 +25,10 @@ function idleMachine(
 }
 
 /**
- * Everything needed to run the cutting board chain: workspace, planer, and
- * sales table in a row (operation cells at [1,3], [2,3], [3,3]), the player
- * at the workspace with five maple strips, and commission 6 active.
+ * Everything needed to run the cutting board chain WITHOUT a planer:
+ * workspace and sales table (operation cells at [1,3], [3,3]), the player at
+ * the workspace with five smooth maple strips, a random orbit sander in tool
+ * storage, and commission 6 active. Proves machines buy time, not access.
  */
 export const cuttingBoardShop: GameState = {
   tick: 0,
@@ -44,6 +46,7 @@ export const cuttingBoardShop: GameState = {
       length: 2 as const,
       width: 2 as const,
       thickness: 4 as const,
+      surface: "smooth" as const,
     })),
     workQueue: [],
     canWork: true,
@@ -51,13 +54,11 @@ export const cuttingBoardShop: GameState = {
   },
   machines: [
     idleMachine("workspace", [1, 2], "dismantlePallet"),
-    idleMachine("lunchboxPlaner", [2, 2], "planeBoard", {
-      targetThickness: 1,
-    }),
     idleMachine("salesTable", [3, 2], "none"),
   ],
   storage: {
     machines: [],
+    tools: ["randomOrbitSander"],
   },
   shopInfo: {
     name: "One Car Garage",

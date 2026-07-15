@@ -26,6 +26,7 @@ export const freeSellingShop: GameState = {
         width: 4,
         length: 3,
         thickness: 1,
+        surface: "rough",
       },
     ],
     workQueue: [],
@@ -40,6 +41,7 @@ export const freeSellingShop: GameState = {
       inputMaterials: [],
       processingMaterials: [],
       outputMaterials: [],
+      tools: [],
       selectedOperationId: "none",
       operationProgress: {
         status: "notStarted",
@@ -49,6 +51,7 @@ export const freeSellingShop: GameState = {
   ],
   storage: {
     machines: [],
+    tools: [],
   },
   shopInfo: {
     name: "One Car Garage",

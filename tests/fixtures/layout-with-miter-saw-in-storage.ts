@@ -22,6 +22,7 @@ export const layoutWithMiterSawInStorage: GameState = {
       inputMaterials: [],
       processingMaterials: [],
       outputMaterials: [],
+      tools: [],
       selectedOperationId: "rip",
       selectedParameters: { width: 8 },
       operationProgress: {
@@ -32,6 +33,7 @@ export const layoutWithMiterSawInStorage: GameState = {
   ],
   storage: {
     machines: ["miterSaw"],
+    tools: [],
   },
   shopInfo: {
     name: "One Car Garage",

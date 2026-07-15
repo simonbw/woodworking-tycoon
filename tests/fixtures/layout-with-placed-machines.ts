@@ -13,6 +13,7 @@ export const layoutWithPlacedMachines: GameState = {
         width: 8,
         length: 8,
         thickness: 1,
+        surface: "rough",
       },
       position: [2, 1],
     },
@@ -34,6 +35,7 @@ export const layoutWithPlacedMachines: GameState = {
       inputMaterials: [],
       processingMaterials: [],
       outputMaterials: [],
+      tools: [],
       selectedOperationId: "rip",
       selectedParameters: { width: 8 },
       operationProgress: {
@@ -53,10 +55,12 @@ export const layoutWithPlacedMachines: GameState = {
           width: 8,
           length: 8,
           thickness: 1,
+          surface: "rough",
         },
       ],
       processingMaterials: [],
       outputMaterials: [],
+      tools: [],
       selectedOperationId: "cutBoard",
       selectedParameters: { targetLength: 8 },
       operationProgress: {
@@ -71,6 +75,7 @@ export const layoutWithPlacedMachines: GameState = {
       inputMaterials: [],
       processingMaterials: [],
       outputMaterials: [],
+      tools: [],
       selectedOperationId: "assemble",
       operationProgress: {
         status: "notStarted",
@@ -80,6 +85,7 @@ export const layoutWithPlacedMachines: GameState = {
   ],
   storage: {
     machines: [],
+    tools: [],
   },
   shopInfo: {
     name: "One Car Garage",

@@ -99,6 +99,7 @@ function generateSingleMockMaterial(
         width: (reqAny.width?.[0] || 4) as BoardDimension,
         thickness: (reqAny.thickness?.[0] || 2) as BoardDimension,
         species: (reqAny.species?.[0] || "pine") as Species,
+        surface: (reqAny.surface?.[0] || "rough") as Board["surface"],
       });
       return board;
     }
@@ -156,6 +157,7 @@ function generateSingleMockMaterial(
         width: 4 as BoardDimension,
         thickness: 2 as BoardDimension,
         species: "pine" as Species,
+        surface: "rough",
       });
   }
 }

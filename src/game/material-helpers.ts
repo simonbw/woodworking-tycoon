@@ -49,10 +49,10 @@ export function makePallet() {
 export function getMaterialName(material: MaterialInstance): string {
   switch (material.type) {
     case "board": {
-      const { species, width, length, thickness } = material;
+      const { species, width, length, thickness, surface } = material;
       return `${humanizeString(
         species,
-      )} Board (${length}'x${width}"x${thickness}/4)`;
+      )} Board (${length}'x${width}"x${thickness}/4, ${surface})`;
     }
     case "panel": {
       const species = panelSpecies(material);
@@ -60,7 +60,7 @@ export function getMaterialName(material: MaterialInstance): string {
         species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
       return `${speciesName} Panel (${material.length}'x${panelWidth(
         material,
-      )}"x${material.thickness}/4)`;
+      )}"x${material.thickness}/4, ${material.surface})`;
     }
     default:
       return humanizeString(material.type);
@@ -163,6 +163,7 @@ export function createMockMaterial(
         width: r.width?.[0] || 4,
         thickness: r.thickness?.[0] || 2,
         species: r.species?.[0] || "pine",
+        surface: r.surface?.[0] || "rough",
       });
     }
     case "plywood": {
@@ -207,17 +208,20 @@ export function createMockMaterial(
             : "pine",
       });
 
-    case "panel":
+    case "panel": {
       // Placeholder display only; a representative single-species blank
+      const r = requirement as InputMaterialWithQuantity<Panel>;
       return makeMaterial<Panel>({
         type: "panel",
         length: 2,
-        thickness: 4,
+        thickness: r.thickness?.[0] || 4,
+        surface: r.surface?.[0] || "rough",
         strips: Array.from({ length: 5 }, () => ({
           species: "maple",
           width: 2,
         })),
       });
+    }
 
     case "unknown":
       return makeMaterial<UnknownMaterial>({

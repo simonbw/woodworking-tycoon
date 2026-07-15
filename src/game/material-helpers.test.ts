@@ -44,10 +44,10 @@ describe("materialMeetsInput", () => {
 });
 
 describe("getMaterialName", () => {
-  it("names single-species panels by species and derived width", () => {
+  it("names single-species panels by species, width, and surface", () => {
     assert.strictEqual(
       getMaterialName(uniformPanel("maple", 5, 2, 2, 4)),
-      "Maple Panel (2'x10\"x4/4)",
+      "Maple Panel (2'x10\"x4/4, rough)",
     );
   });
 
@@ -59,10 +59,11 @@ describe("getMaterialName", () => {
       ],
       2,
       4,
+      "smooth",
     );
     assert.strictEqual(
       getMaterialName(striped),
-      "Mixed Wood Panel (2'x4\"x4/4)",
+      "Mixed Wood Panel (2'x4\"x4/4, smooth)",
     );
   });
 });

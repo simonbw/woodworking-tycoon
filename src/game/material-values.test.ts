@@ -100,36 +100,71 @@ describe("getBoardBuyPrice", () => {
     );
   });
 
-  it("keeps buy-and-flip unprofitable for every store SKU and species", () => {
+  it("keeps buy-and-flip unprofitable for every store SKU, species, and finish", () => {
     for (const species of STORE_SPECIES) {
       for (const sku of LUMBER_SKUS) {
-        const b = board(species, sku.length, sku.width, sku.thickness);
-        assert.ok(
-          getBoardBuyPrice(b) > getSellValue(b),
-          `${species} ${sku.length}x${sku.width}x${sku.thickness} should cost more than it sells for`,
-        );
+        for (const surface of ["rough", "smooth"] as const) {
+          const b = board(
+            species,
+            sku.length,
+            sku.width,
+            sku.thickness,
+            surface,
+          );
+          assert.ok(
+            getBoardBuyPrice(b) > getSellValue(b),
+            `${species} ${sku.length}x${sku.width}x${sku.thickness} ${surface} should cost more than it sells for`,
+          );
+        }
       }
     }
+  });
+
+  it("discounts rough sawn lumber to 65% of S4S", () => {
+    const s4s = getBoardBuyPrice(board("maple", 8, 4, 4, "smooth"));
+    const rough = getBoardBuyPrice(board("maple", 8, 4, 4, "rough"));
+    assert.strictEqual(rough, Math.round(s4s * 0.65 * 100) / 100);
+  });
+
+  it("keeps plane-and-flip unprofitable too", () => {
+    // Buy rough, plane it (losing a thickness step), sell smooth
+    const roughCost = getBoardBuyPrice(board("maple", 8, 4, 4, "rough"));
+    const planedValue = getSellValue(board("maple", 8, 4, 3, "smooth"));
+    assert.ok(roughCost > planedValue);
+  });
+});
+
+describe("surface value", () => {
+  it("rewards sanding raw stock a little", () => {
+    const rough = getSellValue(board("pallet", 4, 6, 3, "rough"));
+    const smooth = getSellValue(board("pallet", 4, 6, 3, "smooth"));
+    const sanded = getSellValue(board("pallet", 4, 6, 3, "sanded"));
+    assert.ok(rough < smooth && smooth < sanded);
+    // ...but not product-level money: still less than double
+    assert.ok(sanded < rough * 2);
   });
 });
 
 describe("cutting board economics", () => {
-  it("is profitable for every real species", () => {
+  it("is profitable for every real species, on both lumber paths", () => {
     // One 8' x 4" x 4/4 board rips into 8 strips (2' x 2" x 4/4);
-    // a cutting board consumes 5 of them.
+    // a cutting board consumes 5 of them. S4S glues directly; rough sawn
+    // is cheaper but needs surfacing first (planer or sanding time).
     for (const species of REAL_WOOD_SPECIES) {
-      const lumberCost = getBoardBuyPrice(board(species, 8, 4, 4));
-      const costPerCuttingBoard = (lumberCost * 5) / 8;
       const sellValue = getSellValue(
         makeMaterial<FinishedProduct>({
           type: "simpleCuttingBoard",
           species,
         }),
       );
-      assert.ok(
-        sellValue > costPerCuttingBoard,
-        `${species}: sells $${sellValue} vs $${costPerCuttingBoard} in lumber`,
-      );
+      for (const surface of ["smooth", "rough"] as const) {
+        const lumberCost = getBoardBuyPrice(board(species, 8, 4, 4, surface));
+        const costPerCuttingBoard = (lumberCost * 5) / 8;
+        assert.ok(
+          sellValue > costPerCuttingBoard,
+          `${species} (${surface}): sells $${sellValue} vs $${costPerCuttingBoard} in lumber`,
+        );
+      }
     }
   });
 

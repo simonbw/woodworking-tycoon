@@ -13,7 +13,7 @@ export const lunchboxPlaner: MachineType = {
   operationPosition: [0, 1],
   cost: 450,
   materialStorage: 0,
-  toolStorage: 0,
+  toolSlots: 0,
   inputSpaces: 1,
   operations: [
     {
@@ -48,10 +48,16 @@ export const lunchboxPlaner: MachineType = {
           throw new Error("Input material is not a board");
         }
         const targetThickness = params.targetThickness as BoardDimension;
-        // Same board, just thinner
+        // Thinner, and freshly surfaced (but only sanding reaches "sanded")
         return {
           inputs: [],
-          outputs: [makeMaterial<Board>({ ...inputBoard, thickness: targetThickness })],
+          outputs: [
+            makeMaterial<Board>({
+              ...inputBoard,
+              thickness: targetThickness,
+              surface: "smooth",
+            }),
+          ],
         };
       },
     } as ParameterizedOperation,
@@ -85,10 +91,16 @@ export const lunchboxPlaner: MachineType = {
           throw new Error("Input material is not a panel");
         }
         const targetThickness = params.targetThickness as BoardDimension;
-        // Same panel, just thinner
+        // Thinner, and freshly surfaced (but only sanding reaches "sanded")
         return {
           inputs: [],
-          outputs: [makeMaterial<Panel>({ ...inputPanel, thickness: targetThickness })],
+          outputs: [
+            makeMaterial<Panel>({
+              ...inputPanel,
+              thickness: targetThickness,
+              surface: "smooth",
+            }),
+          ],
         };
       },
     } as ParameterizedOperation,

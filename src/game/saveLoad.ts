@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 4; // Increment this when GameState structure changes
+const SAVE_VERSION = 5; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
