@@ -89,7 +89,7 @@ tests/
 ## Key Technical Details
 
 - **Build System**: esbuild with custom configuration (`esbuild-client.config.mjs`)
-- **Styling**: Tailwind CSS with custom brown color palette and lumberjack theming
+- **Styling**: Tailwind CSS with a "paperwork" design system (paper/manila surfaces, ink text colors, typewriter/stencil/condensed fonts) defined in `tailwind.config.ts`. The legacy brown palette is retained only for sprites/older components.
 - **Asset Pipeline**: Static assets in `static/` are copied to `dist/` during build
 - **Development**: Live reload enabled via esbuild's serve mode
 - **Type Safety**: Strict TypeScript with comprehensive type definitions
@@ -98,7 +98,7 @@ tests/
 
 - All game state mutations should go through the action system in `src/game/game-actions/`
 - New machines should be added to `src/game/machines/` with corresponding sprites in `src/components/machine-sprites/`
-- UI components should use the existing design system (Tailwind + custom brown theme)
+- UI components should use the existing "paperwork" design system (paper/manila/ink tokens and workshop chrome from `tailwind.config.ts`) — not the legacy brown palette, which is kept only for sprites
 - Performance considerations: The game renders many objects, so prefer PIXI components for game entities and React for UI overlays
 
 ## Game Design Notes
