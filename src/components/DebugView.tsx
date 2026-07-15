@@ -4,6 +4,9 @@ import { useGameState } from "./useGameState";
 export const DebugView: React.FC = () => {
   const gameState = useGameState();
   const [open, setOpen] = useState(false);
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
   if (!open) {
     return (
       <div className="p-8">
