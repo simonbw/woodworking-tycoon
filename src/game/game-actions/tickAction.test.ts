@@ -1,10 +1,12 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { board } from "../board-helpers";
 import { GameState } from "../GameState";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
-import { Pallet } from "../Materials";
+import { getSellValue } from "../material-values";
+import { FinishedProduct, Pallet } from "../Materials";
 import { tickAction } from "./tickAction";
 
 function workspaceMachine(overrides: Partial<MachineState>): MachineState {
@@ -76,6 +78,73 @@ describe("tickAction", () => {
       status: "inProgress",
       ticksRemaining: 2,
     });
+  });
+
+  it("sells one item per tick from a sales table", () => {
+    const shelf = makeMaterial<FinishedProduct>({
+      type: "rusticShelf",
+      species: "pallet",
+    });
+    const deckBoard = board("pallet", 3, 4, 1);
+    const table: MachineState = {
+      ...workspaceMachine({}),
+      machineTypeId: "salesTable",
+      selectedOperationId: "none",
+      inputMaterials: [shelf, deckBoard],
+    };
+    const afterOne = tickAction(stateWith({ money: 0, machines: [table] }));
+    assert.strictEqual(afterOne.money, getSellValue(shelf));
+    assert.deepStrictEqual(afterOne.machines[0].inputMaterials, [deckBoard]);
+
+    const afterTwo = tickAction(afterOne);
+    assert.strictEqual(
+      afterTwo.money,
+      getSellValue(shelf) + getSellValue(deckBoard),
+    );
+    assert.deepStrictEqual(afterTwo.machines[0].inputMaterials, []);
+  });
+
+  it("pauses player work while away and keeps machines running", () => {
+    const machine = workspaceMachine({
+      processingMaterials: [nearlyDismantledPallet()],
+      operationProgress: { status: "inProgress", ticksRemaining: 5 },
+    });
+    const state = stateWith({
+      tick: 10,
+      machines: [machine],
+      player: {
+        ...initialGameState.player,
+        away: { kind: "scavenging", returnTick: 20, loot: [] },
+        workQueue: [{ type: "move", direction: 0 }],
+      },
+    });
+    const result = tickAction(state);
+    assert.strictEqual(result.player.workQueue.length, 1);
+    assert.deepStrictEqual(result.player.position, [0, 0]);
+    assert.strictEqual(
+      result.machines[0].operationProgress.ticksRemaining,
+      4,
+    );
+  });
+
+  it("delivers scavenged loot to the dropoff spot on return", () => {
+    const loot = [makeMaterial<Pallet>({ ...nearlyDismantledPallet() })];
+    const state = stateWith({
+      tick: 20,
+      materialPiles: [],
+      player: {
+        ...initialGameState.player,
+        away: { kind: "scavenging", returnTick: 20, loot },
+      },
+    });
+    const result = tickAction(state);
+    assert.strictEqual(result.player.away, null);
+    assert.strictEqual(result.materialPiles.length, 1);
+    assert.strictEqual(result.materialPiles[0].material, loot[0]);
+    assert.deepStrictEqual(
+      result.materialPiles[0].position,
+      initialGameState.shopInfo.materialDropoffPosition,
+    );
   });
 
   it("applies the operation output when the countdown finishes", () => {

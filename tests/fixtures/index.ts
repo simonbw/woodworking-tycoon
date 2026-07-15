@@ -1,10 +1,12 @@
 import { GameState } from "../../src/game/GameState";
+import { freeSellingShop } from "./free-selling-shop";
 import { layoutWithMiterSawInStorage } from "./layout-with-miter-saw-in-storage";
 import { layoutWithPlacedMachines } from "./layout-with-placed-machines";
 
 export const TEST_FIXTURES: Record<string, GameState> = {
   "layout-with-miter-saw-in-storage": layoutWithMiterSawInStorage,
   "layout-with-placed-machines": layoutWithPlacedMachines,
+  "free-selling-shop": freeSellingShop,
 };
 
 // Expose fixtures to window for manual testing

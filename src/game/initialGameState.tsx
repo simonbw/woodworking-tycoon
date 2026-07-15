@@ -26,6 +26,7 @@ export const initialGameState: GameState = {
     inventory: [],
     workQueue: [],
     canWork: true,
+    away: null,
   },
   machines: [
     // Single workspace for tutorial

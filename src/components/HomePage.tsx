@@ -1,6 +1,7 @@
 import React from "react";
 import { ActionBar } from "./ActionBar";
 import { CommissionsSection } from "./CommissionsSection";
+import { ErrandsSection } from "./ErrandsSection";
 import { MoneySection } from "./MoneySection";
 import { NavBar } from "./NavBar";
 import { Ticker } from "./Ticker";
@@ -19,6 +20,7 @@ export const HomePage: React.FC = () => {
           <Ticker />
           <MoneySection />
           <CommissionsSection />
+          <ErrandsSection />
         </div>
         <div className="space-y-1 flex flex-col items-center">
           <ShopView />

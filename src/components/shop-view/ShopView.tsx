@@ -80,7 +80,9 @@ export const ShopView: React.FC = () => {
             />
           ))}
           <WorkQueueSprite />
-          <PersonSprite person={gameState.player} />
+          {!gameState.player.away && (
+            <PersonSprite person={gameState.player} />
+          )}
         </gameStateContext.Provider>
       </Application>
     </>

@@ -24,6 +24,7 @@ export const layoutWithPlacedMachines: GameState = {
     inventory: [],
     workQueue: [],
     canWork: true,
+    away: null,
   },
   machines: [
     {

@@ -3,7 +3,6 @@ import { NavBar } from "../NavBar";
 import { useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
 import { StoreMachinesSection } from "./StoreMachinesSection";
-import { StoreMaterialSection } from "./StoreMaterialSection";
 import { StoreSellingSection } from "./StoreSellingSection";
 
 export const StorePage: React.FC = () => {
@@ -17,7 +16,6 @@ export const StorePage: React.FC = () => {
           <div className="grid grid-cols-3 gap-4">
             <section className="space-y-4">
               <BoardSelector />
-              <StoreMaterialSection />
             </section>
             <StoreMachinesSection />
             <StoreSellingSection />
