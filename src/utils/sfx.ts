@@ -2,13 +2,16 @@ import { getSfxBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
 
 /**
- * Lightweight UI sound-effect player built on the shared AudioContext.
+ * Lightweight sound-effect player built on the shared AudioContext.
  *
  * Sounds live under `static/sounds/` and are served at `/sounds/<name>.mp3`.
  * Each clip is fetched and decoded on first use, then cached so subsequent
  * plays are instant. Playback goes through a per-play gain node (for relative
  * per-sound trim) into the shared SFX bus, so master/SFX volume and mute from
  * the settings menu apply uniformly (see `audioBus.ts`).
+ *
+ * `playUiSound` covers the named UI clicks; `playSound` plays any clip by name
+ * and is what the game-event → sound bridge (`GameSoundLayer`) uses.
  */
 
 export type UiSoundName =
@@ -23,9 +26,9 @@ const SOUND_GAIN: Record<UiSoundName, number> = {
   "ui-back": 0.6,
 };
 
-const bufferCache = new Map<UiSoundName, Promise<AudioBuffer>>();
+const bufferCache = new Map<string, Promise<AudioBuffer>>();
 
-function loadBuffer(name: UiSoundName): Promise<AudioBuffer> {
+function loadBuffer(name: string): Promise<AudioBuffer> {
   const cached = bufferCache.get(name);
   if (cached) return cached;
 
@@ -44,30 +47,35 @@ function loadBuffer(name: UiSoundName): Promise<AudioBuffer> {
 }
 
 /**
- * Fire a UI sound. Never throws and never blocks the caller — failures
- * (missing file, decode error, locked audio) are swallowed so a missing
- * asset can't break an interaction.
+ * Play a clip by file name (without extension) at the given relative gain.
+ * Never throws and never blocks the caller — failures (missing file, decode
+ * error, locked audio) are swallowed so a missing asset can't break anything.
  */
-export function playUiSound(name: UiSoundName): void {
+export function playSound(name: string, gain = 1): void {
   void (async () => {
     try {
       const ctx = getAudioContext();
-      // The context starts suspended until a user gesture; UI sounds are
-      // triggered by gestures, so resuming here unlocks it on first use.
+      // The context starts suspended until a user gesture; our sounds follow
+      // gestures/ticks after one, so resuming here unlocks it on first use.
       if (ctx.state === "suspended") {
         await ctx.resume();
       }
       const buffer = await loadBuffer(name);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      const gain = ctx.createGain();
-      gain.gain.value = SOUND_GAIN[name];
-      source.connect(gain).connect(getSfxBus());
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = gain;
+      source.connect(gainNode).connect(getSfxBus());
       source.start();
     } catch {
       // Audio is a nice-to-have; ignore any failure.
     }
   })();
+}
+
+/** Fire one of the named UI sounds at its configured level. */
+export function playUiSound(name: UiSoundName): void {
+  playSound(name, SOUND_GAIN[name]);
 }
 
 /** Warm the decode cache so the first play has no fetch/decode latency. */

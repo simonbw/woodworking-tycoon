@@ -2,6 +2,7 @@ import { MachineState, MachineId } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
+import { SoundEvent } from "./SoundEvent";
 import { ToolId } from "./Tool";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
@@ -42,6 +43,12 @@ export interface GameState {
     tools: ReadonlyArray<ToolId>;
   };
   readonly progression: ProgressionState;
+  /**
+   * Transient queue of sound cues emitted by the action(s) that produced this
+   * state, drained by `GameSoundLayer` each render. Optional and never
+   * persisted (stripped in `saveLoad`); treat a missing value as empty.
+   */
+  readonly pendingSounds?: ReadonlyArray<SoundEvent>;
 }
 
 /**

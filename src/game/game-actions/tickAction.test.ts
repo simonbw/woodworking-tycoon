@@ -81,6 +81,23 @@ describe("tickAction", () => {
     });
   });
 
+  it("emits an operation-complete sound cue when an operation finishes", () => {
+    const machine = workspaceMachine({
+      processingMaterials: [nearlyDismantledPallet()],
+      operationProgress: { status: "inProgress", ticksRemaining: 1 },
+    });
+    const result = tickAction(stateWith({ machines: [machine] }));
+    assert.deepStrictEqual(result.pendingSounds, [
+      { kind: "operation-complete", machineTypeId: "workspace" },
+    ]);
+  });
+
+  it("keeps the pendingSounds reference stable on a tick with no completions", () => {
+    const before = stateWith({ tick: 1 });
+    const result = tickAction(before);
+    assert.strictEqual(result.pendingSounds, before.pendingSounds);
+  });
+
   it("sells one item per tick from a sales table", () => {
     const shelf = makeMaterial<FinishedProduct>({
       type: "rusticShelf",

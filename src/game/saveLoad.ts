@@ -10,9 +10,11 @@ interface SaveData {
 
 export function saveGame(gameState: GameState): void {
   try {
+    // pendingSounds is a transient audio queue — never persist it.
+    const { pendingSounds: _pendingSounds, ...persisted } = gameState;
     const saveData: SaveData = {
       version: SAVE_VERSION,
-      gameState,
+      gameState: persisted,
     };
     const serialized = JSON.stringify(saveData);
     localStorage.setItem(SAVE_KEY, serialized);
@@ -51,7 +53,8 @@ export function loadGame(): GameState | null {
     }
 
     console.log("Game loaded successfully");
-    return gameState;
+    // Reconstruct the transient, non-persisted audio queue.
+    return { ...gameState, pendingSounds: [] };
   } catch (error) {
     console.error("Failed to load game:", error);
     deleteSave();
