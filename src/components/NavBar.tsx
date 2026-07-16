@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { classNames } from "../utils/classNames";
+import { SettingsMenu } from "./SettingsMenu";
 import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useGameState, useQuitToMenu } from "./useGameState";
@@ -9,6 +10,7 @@ export const NavBar: React.FC = () => {
   const gameState = useGameState();
   const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
   const quitToMenu = useQuitToMenu();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <nav className="relative">
@@ -42,6 +44,15 @@ export const NavBar: React.FC = () => {
           onClick={() => setMode({ mode: "skills" })}
         />
         <div className="grow" />
+        <Tooltip content="Settings">
+          <button
+            className="button-ghost mb-1.5 self-center text-lg leading-none"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+          >
+            ⚙
+          </button>
+        </Tooltip>
         <Tooltip content="Save and return to main menu">
           <button
             className="button-ghost mb-1.5 self-center"
@@ -54,6 +65,7 @@ export const NavBar: React.FC = () => {
       </div>
       {/* Folder body — the rule that the active tab merges into */}
       <div className="h-0.5 bg-paper-manila/40" />
+      {settingsOpen && <SettingsMenu onClose={() => setSettingsOpen(false)} />}
     </nav>
   );
 };
