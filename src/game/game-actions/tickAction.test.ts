@@ -164,5 +164,25 @@ describe("tickAction", () => {
       status: "notStarted",
       ticksRemaining: 0,
     });
+    // Boards are not finished products: no craft XP for milling
+    assert.strictEqual(result.progression.xp, 0);
+  });
+
+  it("awards craft XP equal to sell value when a product completes", () => {
+    const shelfBoards = [
+      board("pallet", 4, 6, 3),
+      board("pallet", 4, 6, 3),
+      board("pallet", 3, 4, 1),
+      board("pallet", 3, 4, 1),
+      board("pallet", 3, 4, 1),
+    ];
+    const machine = workspaceMachine({
+      selectedOperationId: "buildRusticPalletShelf",
+      processingMaterials: shelfBoards,
+      operationProgress: { status: "inProgress", ticksRemaining: 1 },
+    });
+    const result = tickAction(stateWith({ machines: [machine] }));
+    // Rustic shelf sells for $60 -> 60 XP
+    assert.strictEqual(result.progression.xp, 60);
   });
 });

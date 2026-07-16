@@ -1,4 +1,5 @@
 import { GameState } from "../../src/game/GameState";
+import { STARTER_SKILLS } from "../../src/game/Skill";
 import { MachineState } from "../../src/game/Machine";
 
 function idleMachine(
@@ -73,5 +74,8 @@ export const cuttingBoardShop: GameState = {
     freeSelling: true,
     commissionsCompleted: 5,
     tickSpeedControlsUnlocked: false,
+    xp: 0,
+    skillPoints: 0,
+    unlockedSkills: STARTER_SKILLS,
   },
 };

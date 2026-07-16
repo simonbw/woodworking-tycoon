@@ -46,6 +46,19 @@ export function makePallet() {
   });
 }
 
+const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
+  "shelf",
+  "rusticShelf",
+  "jewelryBox",
+  "simpleCuttingBoard",
+];
+
+export function isFinishedProduct(
+  material: MaterialInstance,
+): material is FinishedProduct {
+  return FINISHED_PRODUCT_TYPES.includes(material.type);
+}
+
 export function getMaterialName(material: MaterialInstance): string {
   switch (material.type) {
     case "board": {
@@ -63,6 +76,11 @@ export function getMaterialName(material: MaterialInstance): string {
       )}"x${material.thickness}/4, ${material.surface})`;
     }
     default:
+      if (isFinishedProduct(material) && material.accentSpecies) {
+        return `${humanizeString(material.species)} & ${humanizeString(
+          material.accentSpecies,
+        )} ${humanizeString(material.type)}`;
+      }
       return humanizeString(material.type);
   }
 }

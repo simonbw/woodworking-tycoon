@@ -1,4 +1,5 @@
 import { GameState } from "../../src/game/GameState";
+import { STARTER_SKILLS } from "../../src/game/Skill";
 
 /**
  * Free selling unlocked, a sales table placed, and the player standing at its
@@ -66,5 +67,8 @@ export const freeSellingShop: GameState = {
     freeSelling: true,
     commissionsCompleted: 2,
     tickSpeedControlsUnlocked: false,
+    xp: 0,
+    skillPoints: 0,
+    unlockedSkills: STARTER_SKILLS,
   },
 };

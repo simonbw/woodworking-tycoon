@@ -5,6 +5,7 @@ import { Machine, MachineOperation, ParameterizedOperation, ParameterValues, MAC
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
+import { availableOperations, getOperationDuration } from "../skill-helpers";
 
 export function instaMovePlayerAction(direction: Direction): GameAction {
   return (gameState) => {
@@ -192,7 +193,7 @@ export function setMachineOperationAction(
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
-    if (!machine.operations.includes(operation)) {
+    if (!availableOperations(machine, gameState.progression).includes(operation)) {
       throw new Error("Tried to set machine operation to invalid operation");
     }
 
@@ -250,7 +251,10 @@ export function operateMachineAction(machine: Machine): GameAction {
               processingMaterials: materialsToConsume,
               operationProgress: {
                 status: "inProgress" as const,
-                ticksRemaining: machine.selectedOperation.duration,
+                ticksRemaining: getOperationDuration(
+                  machine.selectedOperation,
+                  gameState.progression,
+                ),
               },
             }
           : m

@@ -7,6 +7,7 @@ import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
 import { StartMenu } from "./StartMenu";
 import { StorePage } from "./store-page/StorePage";
+import { SkillsPage } from "./skills-page/SkillsPage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ActionKeyContextProvider } from "./consumerCountContext";
@@ -64,5 +65,7 @@ const ScreenSwitcher: React.FC = () => {
       return storeUnlocked ? <StorePage /> : <HomePage />;
     case "shopLayout":
       return shopLayoutUnlocked ? <LayoutPage /> : <HomePage />;
+    case "skills":
+      return <SkillsPage />;
   }
 };

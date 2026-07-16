@@ -109,8 +109,12 @@ function getRequirementForSlotIndex(
  * @returns true if the machine has all required materials and can start operating, false otherwise
  */
 export function machineCanOperate(machine: Machine): boolean {
+  const operation = machine.selectedOperationOrNull;
+  if (!operation) {
+    return false;
+  }
   const inputMaterials = getOperationInputMaterials(
-    machine.selectedOperation,
+    operation,
     machine.selectedParameters,
   );
 

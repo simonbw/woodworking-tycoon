@@ -1,0 +1,110 @@
+/**
+ * The skill tree (see docs/skills-and-recipes.md). Every recipe in the game
+ * belongs to a skill; skills the player can use from the start are
+ * `startsUnlocked` — shown on the Skills page as already-earned
+ * certificates so the system explains itself.
+ */
+export const SKILL_IDS = [
+  "basicMilling",
+  "quickDryGlue",
+  "rusticCarpentry",
+  "panelWork",
+  "fineShelving",
+  "boxJoinery",
+  "surfacePrep",
+  "efficientSanding",
+  "twoToneBoards",
+] as const;
+export type SkillId = (typeof SKILL_IDS)[number];
+
+export interface SkillType {
+  readonly id: SkillId;
+  readonly name: string;
+  readonly description: string;
+  readonly branch: SkillBranch;
+  /** Skills that must be unlocked before this one can be bought. */
+  readonly requires: ReadonlyArray<SkillId>;
+  readonly startsUnlocked?: boolean;
+}
+
+export const SKILL_BRANCHES = ["milling", "joinery", "finishing"] as const;
+export type SkillBranch = (typeof SKILL_BRANCHES)[number];
+
+export const SKILL_TYPES: Record<SkillId, SkillType> = {
+  basicMilling: {
+    id: "basicMilling",
+    name: "Basic Milling",
+    description:
+      "Breaking down pallets, crosscutting, ripping, and planing stock.",
+    branch: "milling",
+    requires: [],
+    startsUnlocked: true,
+  },
+  quickDryGlue: {
+    id: "quickDryGlue",
+    name: "Quick-Dry Glue",
+    description: "Better glue, better clamping. Glue-ups dry 40% faster.",
+    branch: "milling",
+    requires: ["basicMilling"],
+  },
+  rusticCarpentry: {
+    id: "rusticCarpentry",
+    name: "Rustic Carpentry",
+    description: "Honest work with reclaimed wood: the rustic pallet shelf.",
+    branch: "joinery",
+    requires: [],
+    startsUnlocked: true,
+  },
+  panelWork: {
+    id: "panelWork",
+    name: "Panel Work",
+    description:
+      "Gluing strips into panels and finishing them into cutting boards.",
+    branch: "joinery",
+    requires: [],
+    startsUnlocked: true,
+  },
+  fineShelving: {
+    id: "fineShelving",
+    name: "Fine Shelving",
+    description:
+      "A proper hardwood shelf: sanded stock, clean lines, real money.",
+    branch: "joinery",
+    requires: ["rusticCarpentry"],
+  },
+  boxJoinery: {
+    id: "boxJoinery",
+    name: "Box Joinery",
+    description:
+      "Jewelry boxes from thin sanded stock. You'll want a planer for this.",
+    branch: "joinery",
+    requires: ["fineShelving"],
+  },
+  surfacePrep: {
+    id: "surfacePrep",
+    name: "Surface Prep",
+    description: "Sanding: rough to smooth to silky.",
+    branch: "finishing",
+    requires: [],
+    startsUnlocked: true,
+  },
+  efficientSanding: {
+    id: "efficientSanding",
+    name: "Efficient Sanding",
+    description: "Technique beats effort. Sanding goes 40% faster.",
+    branch: "finishing",
+    requires: ["surfacePrep"],
+  },
+  twoToneBoards: {
+    id: "twoToneBoards",
+    name: "Two-Tone Boards",
+    description:
+      "Cutting boards striped from two species. Customers pay extra for pretty.",
+    branch: "finishing",
+    requires: ["surfacePrep"],
+  },
+};
+
+export const STARTER_SKILLS: ReadonlyArray<SkillId> = SKILL_IDS.filter(
+  (id) => SKILL_TYPES[id].startsUnlocked,
+);

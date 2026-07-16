@@ -32,6 +32,15 @@ export const NavBar: React.FC = () => {
             onClick={() => setMode({ mode: "shopLayout" })}
           />
         )}
+        <FolderTab
+          label={
+            gameState.progression.skillPoints > 0
+              ? `Skills (${gameState.progression.skillPoints})`
+              : "Skills"
+          }
+          active={mode.mode === "skills"}
+          onClick={() => setMode({ mode: "skills" })}
+        />
         <div className="grow" />
         <Tooltip content="Save and return to main menu">
           <button

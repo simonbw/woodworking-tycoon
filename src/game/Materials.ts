@@ -105,6 +105,8 @@ export type FinishedProduct = {
   readonly id: string;
   readonly type: "shelf" | "rusticShelf" | "jewelryBox" | "simpleCuttingBoard";
   readonly species: Species;
+  /** Second wood in a two-tone piece (e.g. striped cutting boards). */
+  readonly accentSpecies?: Species;
 };
 
 export type Pallet = {
