@@ -110,6 +110,6 @@ function withValidSelectedOperation(machineState: MachineState): MachineState {
     ...machineState,
     selectedOperationId: operations[0]?.id ?? "none",
     selectedParameters: undefined,
-    operationProgress: { status: "notStarted", ticksRemaining: 0 },
+    operationProgress: { status: "notStarted", phaseIndex: 0, ticksRemaining: 0 },
   };
 }

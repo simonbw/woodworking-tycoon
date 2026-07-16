@@ -28,6 +28,7 @@ export const layoutWithMiterSawInStorage: GameState = {
       selectedParameters: { width: 8 },
       operationProgress: {
         status: "notStarted",
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
     },

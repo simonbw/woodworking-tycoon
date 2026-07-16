@@ -43,9 +43,10 @@ faster)
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
 cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →
 `box-joinery` (Jewelry Box: thin sanded stock — planer-era product, $90 base).
-`panel-work` also → `freeform-lamination` (Glue Up Pair + Glue On Strip:
-build panels of any width and strip pattern, one strip at a time — the
-machinery for every pattern board, and later for custom pattern commissions)
+`panel-work` also → `freeform-lamination` (Glue Up Pair + Glue On Strip +
+Join Panels: build panels of any width and strip pattern, staged like a real
+wide glue-up — the machinery for every pattern board, and later for custom
+pattern commissions)
 
 **Finishing** — `surface-prep`★ (sanding) → `efficient-sanding` (sand 40%
 faster) → `two-tone-boards` (Two-Tone Cutting Board: exactly two species,

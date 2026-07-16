@@ -57,7 +57,7 @@ test.describe("Pattern Boards", () => {
   test("should unlock striped and sunrise tiers and build both boards", async ({
     page,
   }) => {
-    test.setTimeout(180000);
+    test.setTimeout(240000);
     await page.goto("http://localhost:3002");
     await page.getByRole("button", { name: "New Game" }).click();
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
@@ -111,6 +111,8 @@ test.describe("Pattern Boards", () => {
     });
 
     await test.step("finish the striped blank", async () => {
+      // Run fast: the glue cures are long by design
+      await page.keyboard.press("3");
       await selectMode(page, "Finish Striped Board");
       await moveToWorkspace(page, "Mixed Wood Panel");
       await operateAndTake(

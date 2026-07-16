@@ -89,6 +89,7 @@ function machine(
     selectedParameters,
     operationProgress: {
       status: "notStarted",
+      phaseIndex: 0,
       ticksRemaining: 0,
     },
   };

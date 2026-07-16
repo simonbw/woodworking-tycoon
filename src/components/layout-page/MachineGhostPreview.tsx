@@ -42,6 +42,7 @@ export const MachineGhostPreview: React.FC<MachineGhostPreviewProps> = ({
       machineType.operations.length > 0 ? machineType.operations[0].id : "none",
     operationProgress: {
       status: "notStarted" as const,
+      phaseIndex: 0,
       ticksRemaining: 0,
     },
     inputMaterials: [],

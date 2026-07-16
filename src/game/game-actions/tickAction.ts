@@ -3,8 +3,10 @@ import { SoundEvent } from "../SoundEvent";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct } from "../material-helpers";
+import { playerAttendsMachine } from "../machine-helpers";
 import { Machine } from "../Machine";
 import { getSellValue } from "../material-values";
+import { getOperationPhases } from "../skill-helpers";
 import { withXp } from "./skill-actions";
 
 export const tickAction: GameAction = (gameState) => {
@@ -55,8 +57,11 @@ export const tickAction: GameAction = (gameState) => {
     };
   }
 
-  // Process machines that are operating. Finished products earn craft XP
-  // when their operation completes — making things is how you learn.
+  // Process machines that are operating. Attended phases only tick while
+  // the player stands at the operation cell; hands-free phases (glue
+  // curing) run regardless, even during away trips. Finished products earn
+  // craft XP when their operation completes — making things is how you
+  // learn.
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
   const updatedMachines = gameState.machines.map((machineState) => {
@@ -64,9 +69,52 @@ export const tickAction: GameAction = (gameState) => {
       return machineState;
     }
 
-    const newTicksRemaining = machineState.operationProgress.ticksRemaining - 1;
+    // Look the operation up through the Machine view so mounted tools'
+    // operations resolve too.
+    const machine = new Machine(machineState);
+    const selectedOperation = machine.operations.find(
+      (op) => op.id === machineState.selectedOperationId,
+    );
+    if (!selectedOperation) {
+      throw new Error(
+        `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`
+      );
+    }
 
-    // Operation still in progress
+    const phases = getOperationPhases(selectedOperation, gameState.progression);
+    const attended = playerAttendsMachine(
+      machine,
+      gameState.player.position,
+      gameState.player.away !== null,
+    );
+    const { phaseIndex, ticksRemaining } = machineState.operationProgress;
+
+    // Waiting at a phase boundary: the previous phase is done but the next
+    // one is attended and the player wasn't there. Enter it once they are.
+    if (ticksRemaining === 0) {
+      const nextPhase = phases[phaseIndex + 1];
+      if (!nextPhase || (nextPhase.attended && !attended)) {
+        return machineState;
+      }
+      return {
+        ...machineState,
+        operationProgress: {
+          status: "inProgress" as const,
+          phaseIndex: phaseIndex + 1,
+          ticksRemaining: nextPhase.duration,
+        },
+      };
+    }
+
+    // Attended phases pause (never cancel) while the player is elsewhere
+    const currentPhase = phases[Math.min(phaseIndex, phases.length - 1)];
+    if (currentPhase.attended && !attended) {
+      return machineState;
+    }
+
+    const newTicksRemaining = ticksRemaining - 1;
+
+    // Phase still in progress
     if (newTicksRemaining > 0) {
       return {
         ...machineState,
@@ -77,17 +125,28 @@ export const tickAction: GameAction = (gameState) => {
       };
     }
 
-    // Operation completed - apply the transformation. Look the operation up
-    // through the Machine view so mounted tools' operations resolve too.
-    const selectedOperation = new Machine(machineState).operations.find(
-      (op) => op.id === machineState.selectedOperationId,
-    );
-    if (!selectedOperation) {
-      throw new Error(
-        `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`
-      );
+    // Phase finished with more to go: advance, or hold at the boundary if
+    // the next phase needs the player and they've stepped away
+    if (phaseIndex < phases.length - 1) {
+      const nextPhase = phases[phaseIndex + 1];
+      const canEnterNext = !nextPhase.attended || attended;
+      return {
+        ...machineState,
+        operationProgress: canEnterNext
+          ? {
+              status: "inProgress" as const,
+              phaseIndex: phaseIndex + 1,
+              ticksRemaining: nextPhase.duration,
+            }
+          : {
+              status: "inProgress" as const,
+              phaseIndex,
+              ticksRemaining: 0,
+            },
+      };
     }
 
+    // Operation completed - apply the transformation
     const { inputs, outputs } = executeOperation(
       selectedOperation,
       machineState.processingMaterials,
@@ -115,6 +174,7 @@ export const tickAction: GameAction = (gameState) => {
       outputMaterials: [...machineState.outputMaterials, ...outputs],
       operationProgress: {
         status: "notStarted" as const,
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
     };

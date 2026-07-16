@@ -5,7 +5,7 @@ import { Machine, MachineOperation, ParameterizedOperation, ParameterValues, MAC
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
-import { availableOperations, getOperationDuration } from "../skill-helpers";
+import { availableOperations, getOperationPhases } from "../skill-helpers";
 import { emitSound } from "./sound-actions";
 
 export function instaMovePlayerAction(direction: Direction): GameAction {
@@ -256,7 +256,11 @@ export function operateMachineAction(machine: Machine): GameAction {
       }
     }
 
-    // Start the operation - move materials to processing and set timer
+    // Start the operation - move materials to processing and enter phase 0
+    const [firstPhase] = getOperationPhases(
+      machine.selectedOperation,
+      gameState.progression,
+    );
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
@@ -267,10 +271,8 @@ export function operateMachineAction(machine: Machine): GameAction {
               processingMaterials: materialsToConsume,
               operationProgress: {
                 status: "inProgress" as const,
-                ticksRemaining: getOperationDuration(
-                  machine.selectedOperation,
-                  gameState.progression,
-                ),
+                phaseIndex: 0,
+                ticksRemaining: firstPhase.duration,
               },
             }
           : m

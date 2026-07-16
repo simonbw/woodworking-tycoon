@@ -2,7 +2,7 @@ import { LRUCache } from "typescript-lru-cache";
 import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
-import { Direction, Vector } from "./Vectors";
+import { Direction, rotateVec, translateVec, Vector } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
@@ -37,10 +37,29 @@ export const MACHINE_TYPES = {
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;
 
+/**
+ * One stretch of an operation. Attended phases only progress while the
+ * player is standing at the machine's operation cell; phases with
+ * attended: false run on their own (glue curing, and someday kilns and
+ * finishes). An operation can't ENTER an attended phase without the player
+ * there — it sits ready until they arrive.
+ */
+export interface OperationPhase {
+  readonly name: string;
+  readonly duration: number;
+  readonly attended: boolean;
+}
+
 export interface MachineOperation {
   readonly id: string;
   readonly name: string;
+  /** Total ticks; must equal the sum of phases when phases are declared. */
   readonly duration: number;
+  /**
+   * Omitted for ordinary hand work: the whole duration is one attended
+   * phase. Declared only when part of the operation runs without you.
+   */
+  readonly phases?: ReadonlyArray<OperationPhase>;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
   readonly inputMaterials: ReadonlyArray<InputMaterialWithQuantity>;
@@ -85,7 +104,10 @@ export interface ParameterizedOperation<
 > {
   readonly id: string;
   readonly name: string;
+  /** Total ticks; must equal the sum of phases when phases are declared. */
   readonly duration: number;
+  /** See MachineOperation.phases. */
+  readonly phases?: ReadonlyArray<OperationPhase>;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
   readonly parameters: ReadonlyArray<OperationParameter>;
@@ -100,6 +122,12 @@ export interface ParameterizedOperation<
 
 export interface OperationProgress {
   readonly status: "notStarted" | "inProgress" | "finished";
+  /** Index into the operation's phase list (0 for single-phase ops). */
+  readonly phaseIndex: number;
+  /**
+   * Ticks left in the current phase. 0 while inProgress means the phase
+   * finished but the next one is attended and waiting for the player.
+   */
   readonly ticksRemaining: number;
 }
 
@@ -172,6 +200,15 @@ export class Machine {
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null
     );
+  }
+
+  /** The shop cell the player stands in to work this machine, or null. */
+  get absoluteOperationPosition(): Vector | null {
+    const local = this.type.operationPosition;
+    if (local === undefined) {
+      return null;
+    }
+    return translateVec(rotateVec(local, this.rotation), this.position);
   }
 
   // Pass-through properties for convenience

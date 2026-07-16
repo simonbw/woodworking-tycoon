@@ -1,7 +1,8 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
-import { MachineOperation } from "../Machine";
+import { MACHINE_TYPES, MachineOperation } from "../Machine";
+import { TOOL_TYPES } from "../Tool";
 import { isFinishedProduct, materialMeetsInput } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import {
@@ -10,15 +11,18 @@ import {
   stripsAlternate,
   widthDominantSpecies,
 } from "../panel-helpers";
-import { getOperationDuration } from "../skill-helpers";
+import { getOperationDuration, getOperationPhases } from "../skill-helpers";
 import { PanelStrip, Species } from "../Materials";
-import { workspace } from "./workspace";
+import { GLUE_CURE_TICKS, workspace } from "./workspace";
 
 const glueUpPair = workspace.operations.find(
   (op) => op.id === "glueUpPair",
 ) as MachineOperation;
 const extendPanel = workspace.operations.find(
   (op) => op.id === "extendPanel",
+) as MachineOperation;
+const joinPanels = workspace.operations.find(
+  (op) => op.id === "joinPanels",
 ) as MachineOperation;
 const finishStriped = workspace.operations.find(
   (op) => op.id === "finishStripedBoard",
@@ -178,6 +182,51 @@ describe("extendPanel", () => {
   });
 });
 
+describe("joinPanels", () => {
+  it("marries two sub-panels in order and re-roughs the joint", () => {
+    const left = panel(strips(["walnut", 3], ["maple", 1]), 2, 4, "sanded");
+    const right = panel(strips(["walnut", 2], ["maple", 2]), 2, 4, "smooth");
+    const { outputs } = joinPanels.output([left, right]);
+    const output = outputs[0];
+    assert.strictEqual(output.type, "panel");
+    if (output.type !== "panel") return;
+    assert.deepStrictEqual(output.strips, [
+      { species: "walnut", width: 3 },
+      { species: "maple", width: 1 },
+      { species: "walnut", width: 2 },
+      { species: "maple", width: 2 },
+    ]);
+    assert.strictEqual(output.surface, "rough");
+  });
+});
+
+describe("glue-up phases", () => {
+  const glueOpIds = ["glueUpPanel", "glueUpPair", "extendPanel", "joinPanels"];
+
+  it("every glue-up clamps attended, then cures hands-free for the same long stretch", () => {
+    for (const id of glueOpIds) {
+      const op = workspace.operations.find((o) => o.id === id)!;
+      assert.ok(op.phases, `${id} declares phases`);
+      assert.strictEqual(op.phases[0].attended, true, `${id} clamps attended`);
+      const cure = op.phases.find((phase) => !phase.attended)!;
+      assert.strictEqual(cure.duration, GLUE_CURE_TICKS, `${id} cure time`);
+    }
+  });
+
+  it("declared phases always sum to the operation's duration", () => {
+    const allOperations = [
+      ...Object.values(MACHINE_TYPES).flatMap((type) => type.operations),
+      ...Object.values(TOOL_TYPES).flatMap((type) => type.operations),
+    ];
+    for (const op of allOperations) {
+      if (op.phases) {
+        const sum = op.phases.reduce((total, phase) => total + phase.duration, 0);
+        assert.strictEqual(sum, op.duration, `${op.id} phases sum`);
+      }
+    }
+  });
+});
+
 describe("finishStripedBoard", () => {
   const requirement = finishStriped.inputMaterials[0];
   const alternating = panel(
@@ -328,8 +377,13 @@ describe("quickDryGlue covers the freeform ops", () => {
     unlockedSkills: ["quickDryGlue" as const],
   };
 
-  it("speeds up pair glue-ups and strip extensions", () => {
-    assert.strictEqual(getOperationDuration(glueUpPair, progression), 15);
-    assert.strictEqual(getOperationDuration(extendPanel, progression), 9);
+  it("speeds up curing but not the clamping handwork", () => {
+    // Pair: 5 attended + 60 cure -> 5 + 36
+    assert.strictEqual(getOperationDuration(glueUpPair, progression), 41);
+    assert.strictEqual(getOperationDuration(extendPanel, progression), 41);
+    const phases = getOperationPhases(glueUpPair, progression);
+    assert.strictEqual(phases[0].duration, 5); // clamping unchanged
+    assert.strictEqual(phases[1].duration, 36); // 60 x 0.6
+    assert.strictEqual(phases[1].attended, false);
   });
 });

@@ -16,6 +16,39 @@ The planer is the canonical case: you never *need* it to make a cutting
 board — a sander gets you there slowly. The planer earns its $450 by being
 fast and by unlocking the rough-lumber discount (see Lumber tiers).
 
+## Attended vs hands-free operation phases (Now: v1)
+
+Operations run as a list of **phases**, each `{ name, duration, attended }`.
+An op that declares no phases is one attended stretch of hand work — the
+default and the common case.
+
+The rules (all in `tickAction`):
+
+1. An **attended** phase only ticks while the player stands at the machine's
+   operation cell (and isn't on an away trip). Otherwise it pauses — never
+   cancels — and resumes on return.
+2. A **hands-free** phase (`attended: false`) always ticks, including during
+   away trips.
+3. An operation cannot *enter* an attended phase without the player there:
+   it finishes the prior phase and sits "ready — needs you" until they show
+   up. (No current op has an attended phase after a hands-free one; kilns or
+   a finishing room will.)
+
+Today's only hands-free phases are glue **curing**: every glue-up is a short
+attended Glue & Clamp followed by the same long unattended cure
+(`GLUE_CURE_TICKS`, uniform across batch/pair/extend/join — glue doesn't
+care how many strips you fed it). Quick-Dry Glue multiplies only the cure.
+
+The intended economy: attended work serializes through the player (your
+hands are the bottleneck), hands-free work parallelizes across stations —
+so staged glue-ups (Glue Up Pair / Join Panels) plus extra benches convert
+money into throughput, which is this doc's guiding principle applied to
+time. Shop-view feedback: amber progress bar = attended work underway,
+green = hands-free, amber pause marker = attended work waiting for you.
+
+Later candidates for hands-free phases: oil/varnish curing, kiln drying,
+CNC-style machines that run a whole job unattended.
+
 ## Handheld tools (Now: v1)
 
 - `ToolType { id, name, description, cost, operations }` — registry in

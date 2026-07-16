@@ -41,6 +41,7 @@ export const layoutWithPlacedMachines: GameState = {
       selectedParameters: { width: 8 },
       operationProgress: {
         status: "notStarted",
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
     },
@@ -66,6 +67,7 @@ export const layoutWithPlacedMachines: GameState = {
       selectedParameters: { targetLength: 8 },
       operationProgress: {
         status: "notStarted",
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
     },
@@ -80,6 +82,7 @@ export const layoutWithPlacedMachines: GameState = {
       selectedOperationId: "assemble",
       operationProgress: {
         status: "notStarted",
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
     },

@@ -20,6 +20,7 @@ function idleMachine(
     selectedParameters,
     operationProgress: {
       status: "notStarted",
+      phaseIndex: 0,
       ticksRemaining: 0,
     },
   };
@@ -73,7 +74,8 @@ export const cuttingBoardShop: GameState = {
     shopLayoutUnlocked: true,
     freeSelling: true,
     commissionsCompleted: 5,
-    tickSpeedControlsUnlocked: false,
+    // Lets specs use the speed keys to fast-forward through glue cures
+    tickSpeedControlsUnlocked: true,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,
