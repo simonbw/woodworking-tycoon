@@ -27,6 +27,8 @@ export const MaterialSprite: React.FC<{
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
     case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard":
       return (
         <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
       );

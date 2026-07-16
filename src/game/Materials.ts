@@ -103,7 +103,13 @@ export function panelSpecies(panel: Panel): ReadonlyArray<Species> {
 
 export type FinishedProduct = {
   readonly id: string;
-  readonly type: "shelf" | "rusticShelf" | "jewelryBox" | "simpleCuttingBoard";
+  readonly type:
+    | "shelf"
+    | "rusticShelf"
+    | "jewelryBox"
+    | "simpleCuttingBoard"
+    | "stripedCuttingBoard"
+    | "sunriseCuttingBoard";
   readonly species: Species;
   /** Second wood in a two-tone piece (e.g. striped cutting boards). */
   readonly accentSpecies?: Species;

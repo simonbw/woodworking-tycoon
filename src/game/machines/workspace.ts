@@ -12,7 +12,13 @@ import {
   REAL_WOOD_SPECIES,
   Species,
 } from "../Materials";
-import { isPanel, panel } from "../panel-helpers";
+import {
+  isPanel,
+  isSunrisePattern,
+  panel,
+  stripsAlternate,
+  widthDominantSpecies,
+} from "../panel-helpers";
 
 /** The most common strip species in a panel (ties go to first appearance). */
 function dominantSpecies(strips: ReadonlyArray<{ species: Species }>): Species {
@@ -145,6 +151,76 @@ export const workspace: MachineType = {
       },
     },
     {
+      name: "Glue Up Pair",
+      id: "glueUpPair",
+      requiredSkill: "freeformLamination",
+      duration: 25,
+      inputMaterials: [
+        {
+          type: ["board"],
+          length: [2],
+          thickness: [4],
+          surface: ["smooth", "sanded"],
+          quantity: 2,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const strips = materials.filter(isBoard);
+        if (strips.length !== 2) {
+          throw new Error("Need exactly 2 strips to glue up a pair");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            panel(
+              strips.map((strip) => ({
+                species: strip.species,
+                width: strip.width,
+              })),
+              strips[0].length,
+              strips[0].thickness,
+              "rough",
+            ),
+          ],
+        };
+      },
+    },
+    {
+      name: "Glue On Strip",
+      id: "extendPanel",
+      requiredSkill: "freeformLamination",
+      duration: 15,
+      inputMaterials: [
+        { type: ["panel"], length: [2], thickness: [4], quantity: 1 },
+        {
+          type: ["board"],
+          length: [2],
+          thickness: [4],
+          surface: ["smooth", "sanded"],
+          quantity: 1,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const base = materials.find(isPanel);
+        const strip = materials.find(isBoard);
+        if (!base || !strip) {
+          throw new Error("Glue On Strip needs a panel and a board");
+        }
+        // Fresh squeeze-out re-roughs the whole panel, so sand last
+        return {
+          inputs: [],
+          outputs: [
+            panel(
+              [...base.strips, { species: strip.species, width: strip.width }],
+              base.length,
+              base.thickness,
+              "rough",
+            ),
+          ],
+        };
+      },
+    },
+    {
       name: "Finish Cutting Board",
       id: "finishCuttingBoard",
       requiredSkill: "panelWork",
@@ -217,6 +293,90 @@ export const workspace: MachineType = {
           outputs: [
             makeMaterial<FinishedProduct>({
               type: "simpleCuttingBoard",
+              species,
+              accentSpecies,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Finish Striped Board",
+      id: "finishStripedBoard",
+      requiredSkill: "stripedBoards",
+      duration: 30,
+      inputMaterials: [
+        {
+          type: ["panel"],
+          length: [2],
+          thickness: [3, 4],
+          surface: ["sanded"],
+          quantity: 1,
+          // A two-tone with discipline: 2" strips of two real woods in
+          // strict alternation, at least 10" wide
+          matches: (material) =>
+            isPanel(material) &&
+            panelWidth(material) >= 10 &&
+            material.strips.every((strip) => strip.width === 2) &&
+            panelSpecies(material).length === 2 &&
+            material.strips.every((strip) => strip.species !== "pallet") &&
+            stripsAlternate(material.strips),
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const blank = materials[0];
+        if (!isPanel(blank)) {
+          throw new Error("Input material is not a panel");
+        }
+        const species = dominantSpecies(blank.strips);
+        const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "stripedCuttingBoard",
+              species,
+              accentSpecies,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Finish Sunrise Board",
+      id: "finishSunriseBoard",
+      requiredSkill: "sunriseBoards",
+      duration: 40,
+      inputMaterials: [
+        {
+          type: ["panel"],
+          length: [2],
+          thickness: [3, 4],
+          surface: ["sanded"],
+          quantity: 1,
+          // The gradient fade: two real woods, one shrinking strip by
+          // strip as the other grows (see isSunrisePattern). Minimum
+          // pattern (3,1,2,2,1,3) is already 12" wide.
+          matches: (material) =>
+            isPanel(material) &&
+            panelSpecies(material).length === 2 &&
+            material.strips.every((strip) => strip.species !== "pallet") &&
+            isSunrisePattern(material.strips),
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const blank = materials[0];
+        if (!isPanel(blank)) {
+          throw new Error("Input material is not a panel");
+        }
+        // The wider wood reads as the board's color, the other as accent
+        const species = widthDominantSpecies(blank.strips);
+        const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "sunriseCuttingBoard",
               species,
               accentSpecies,
             }),
