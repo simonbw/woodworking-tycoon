@@ -6,6 +6,7 @@ import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
 import { availableOperations, getOperationDuration } from "../skill-helpers";
+import { emitSound } from "./sound-actions";
 
 export function instaMovePlayerAction(direction: Direction): GameAction {
   return (gameState) => {
@@ -40,19 +41,22 @@ export function pickUpMaterialAction(
         return gameState;
       }
     }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        inventory: [
-          ...gameState.player.inventory,
-          ...materialPiles.map((pile) => pile.material),
-        ],
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: [
+            ...gameState.player.inventory,
+            ...materialPiles.map((pile) => pile.material),
+          ],
+        },
+        materialPiles: gameState.materialPiles.filter(
+          (pile) => !materialPiles.includes(pile)
+        ),
       },
-      materialPiles: gameState.materialPiles.filter(
-        (pile) => !materialPiles.includes(pile)
-      ),
-    };
+      { kind: "material-pickup" },
+    );
   };
 }
 
@@ -66,22 +70,25 @@ export function dropMaterialAction(
         return gameState;
       }
     }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        inventory: gameState.player.inventory.filter(
-          (item) => !materials.includes(item)
-        ),
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: gameState.player.inventory.filter(
+            (item) => !materials.includes(item)
+          ),
+        },
+        materialPiles: [
+          ...gameState.materialPiles,
+          ...materials.map((material) => ({
+            material,
+            position: gameState.player.position,
+          })),
+        ],
       },
-      materialPiles: [
-        ...gameState.materialPiles,
-        ...materials.map((material) => ({
-          material,
-          position: gameState.player.position,
-        })),
-      ],
-    };
+      { kind: "material-drop" },
+    );
   };
 }
 
@@ -105,20 +112,23 @@ export function moveMaterialsToMachineAction(
         return gameState;
       }
     }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        inventory: gameState.player.inventory.filter(
-          (item) => !materials.includes(item)
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: gameState.player.inventory.filter(
+            (item) => !materials.includes(item)
+          ),
+        },
+        machines: gameState.machines.map((m) =>
+          vectorEquals(m.position, machineState.position)
+            ? { ...m, inputMaterials: [...m.inputMaterials, ...materials] }
+            : m
         ),
       },
-      machines: gameState.machines.map((m) =>
-        vectorEquals(m.position, machineState.position)
-          ? { ...m, inputMaterials: [...m.inputMaterials, ...materials] }
-          : m
-      ),
-    };
+      { kind: "material-drop" },
+    );
   };
 }
 
@@ -134,23 +144,26 @@ export function takeInputsFromMachineAction(
         return gameState;
       }
     }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        inventory: [...gameState.player.inventory, ...materials],
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: [...gameState.player.inventory, ...materials],
+        },
+        machines: gameState.machines.map((m) =>
+          vectorEquals(m.position, machineState.position)
+            ? {
+                ...m,
+                inputMaterials: m.inputMaterials.filter(
+                  (item: MaterialInstance) => !materials.includes(item)
+                ),
+              }
+            : m
+        ),
       },
-      machines: gameState.machines.map((m) =>
-        vectorEquals(m.position, machineState.position)
-          ? {
-              ...m,
-              inputMaterials: m.inputMaterials.filter(
-                (item: MaterialInstance) => !materials.includes(item)
-              ),
-            }
-          : m
-      ),
-    };
+      { kind: "material-pickup" },
+    );
   };
 }
 
@@ -166,23 +179,26 @@ export function takeOutputsFromMachineAction(
         return gameState;
       }
     }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        inventory: [...gameState.player.inventory, ...materials],
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: [...gameState.player.inventory, ...materials],
+        },
+        machines: gameState.machines.map((m) =>
+          vectorEquals(m.position, machineState.position)
+            ? {
+                ...m,
+                outputMaterials: m.outputMaterials.filter(
+                  (item: MaterialInstance) => !materials.includes(item)
+                ),
+              }
+            : m
+        ),
       },
-      machines: gameState.machines.map((m) =>
-        vectorEquals(m.position, machineState.position)
-          ? {
-              ...m,
-              outputMaterials: m.outputMaterials.filter(
-                (item: MaterialInstance) => !materials.includes(item)
-              ),
-            }
-          : m
-      ),
-    };
+      { kind: "material-pickup" },
+    );
   };
 }
 

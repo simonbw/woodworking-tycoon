@@ -6,6 +6,8 @@ import { playUiSound, preloadUiSounds, UiSoundName } from "../utils/sfx";
  * a soft tick on hover and a click on press. Buttons that want a different
  * press sound declare `data-sfx="ui-purchase"` (etc.); `data-sfx="none"`
  * opts a button out of the click sound entirely. Hover is uniform.
+ * `<select>` changes (operation mode, target length/width/…) get a tick too,
+ * since they're the one common control that isn't a button.
  *
  * Centralising it here means new buttons get sound for free, with no
  * per-component wiring.
@@ -35,11 +37,18 @@ export const UiSoundLayer: React.FC = () => {
       playUiSound((override as UiSoundName) ?? "ui-click");
     };
 
+    const onChange = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.tagName === "SELECT") playUiSound("ui-click");
+    };
+
     document.addEventListener("pointerover", onPointerOver);
     document.addEventListener("click", onClick);
+    document.addEventListener("change", onChange);
     return () => {
       document.removeEventListener("pointerover", onPointerOver);
       document.removeEventListener("click", onClick);
+      document.removeEventListener("change", onChange);
     };
   }, []);
 

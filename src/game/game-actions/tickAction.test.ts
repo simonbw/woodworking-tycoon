@@ -88,7 +88,28 @@ describe("tickAction", () => {
     });
     const result = tickAction(stateWith({ machines: [machine] }));
     assert.deepStrictEqual(result.pendingSounds, [
-      { kind: "operation-complete", machineTypeId: "workspace" },
+      {
+        kind: "operation-complete",
+        machineTypeId: "workspace",
+        operationId: "dismantlePallet",
+      },
+    ]);
+  });
+
+  it("emits a sale cue for each item a sales table sells", () => {
+    const shelf = makeMaterial<FinishedProduct>({
+      type: "rusticShelf",
+      species: "pallet",
+    });
+    const table: MachineState = {
+      ...workspaceMachine({}),
+      machineTypeId: "salesTable",
+      selectedOperationId: "none",
+      inputMaterials: [shelf],
+    };
+    const result = tickAction(stateWith({ machines: [table] }));
+    assert.deepStrictEqual(result.pendingSounds, [
+      { kind: "sale", machineTypeId: "salesTable" },
     ]);
   });
 

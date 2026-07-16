@@ -6,6 +6,7 @@ import { materialMeetsInput } from "../material-helpers";
 import { incrementCommissionsCompletedAction, checkProgressionMilestonesAction } from "./progression-actions";
 import { combineActions } from "./misc-actions";
 import { withXp } from "./skill-actions";
+import { emitSound } from "./sound-actions";
 
 export function buyMaterialAction(
   material: MaterialInstance,
@@ -108,15 +109,18 @@ export function completeCommissionAction(): GameAction {
 
     // Commissions teach: chunky XP alongside the payout
     const completedState = withXp(
-      {
-        ...gameState,
-        money: gameState.money + commission.rewardMoney,
-        reputation: gameState.reputation + commission.rewardReputation,
-        player: {
-          ...gameState.player,
-          inventory: updatedInventory,
+      emitSound(
+        {
+          ...gameState,
+          money: gameState.money + commission.rewardMoney,
+          reputation: gameState.reputation + commission.rewardReputation,
+          player: {
+            ...gameState.player,
+            inventory: updatedInventory,
+          },
         },
-      },
+        { kind: "commission-complete" },
+      ),
       Math.round(commission.rewardMoney / 5),
     );
 

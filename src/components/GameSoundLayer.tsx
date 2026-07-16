@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { clearPendingSoundsAction } from "../game/game-actions/sound-actions";
-import { SoundEventKind } from "../game/SoundEvent";
+import { SoundEvent } from "../game/SoundEvent";
 import { playSound } from "../utils/sfx";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
@@ -14,15 +14,87 @@ import { useApplyGameAction, useGameState } from "./useGameState";
  */
 
 /**
- * Clip + relative gain for each cue, or `null` when no asset is wired yet — the
- * bridge still runs end to end, it just plays nothing until the file lands.
- * The SFX-content work (#32) drops clips into `static/sounds/` and fills these
- * in (per-machine variants can key off `event.machineTypeId`).
+ * Clip per operation. Keyed by operation rather than machine so tool-provided
+ * operations sound like the tool (sanding on a bench sounds like sandpaper,
+ * not like a bench). Operations with no entry fall back to `assembly-mallet`,
+ * which reads as generic "hand work finished".
  */
-const SOUND_FOR: Record<SoundEventKind, { clip: string; gain: number } | null> =
-  {
-    "operation-complete": null, // TODO(#32): machine-operation clip(s)
-  };
+const OPERATION_CLIP: Record<string, string> = {
+  ripBoard: "table-saw-rip",
+  cutBoard: "miter-cut",
+  planeBoard: "planer-pass",
+  planePanel: "planer-pass",
+  blockSandBoard: "hand-sanding",
+  blockSandPanel: "hand-sanding",
+  orbitSandBoard: "orbital-sander",
+  orbitSandPanel: "orbital-sander",
+  dismantlePallet: "pallet-dismantle",
+  glueUpPanel: "glue-clamp",
+  dispose: "dispose-toss",
+  buildRusticPalletShelf: "assembly-mallet",
+  buildShelf: "assembly-mallet",
+  buildJewelryBox: "assembly-mallet",
+  finishCuttingBoard: "assembly-mallet",
+  finishTwoToneBoard: "assembly-mallet",
+};
+
+const FALLBACK_OPERATION_CLIP = "assembly-mallet";
+
+/** Relative level per clip. Frequent cues sit low so they don't fatigue. */
+const CLIP_GAIN: Record<string, number> = {
+  "table-saw-rip": 0.7,
+  "miter-cut": 0.7,
+  "planer-pass": 0.7,
+  "hand-sanding": 0.5,
+  "orbital-sander": 0.6,
+  "pallet-dismantle": 0.7,
+  "glue-clamp": 0.5,
+  "assembly-mallet": 0.6,
+  "dispose-toss": 0.6,
+  "commission-complete": 0.9,
+  "cash-register": 0.6,
+  "material-pickup": 0.45,
+  "material-drop": 0.45,
+};
+
+/**
+ * Minimum gap between two plays of the same clip. Guards against machine-gun
+ * audio: a sales table sells one item per tick, which at the fastest speed is
+ * 20 ticks/second.
+ */
+const DEFAULT_MIN_GAP_MS = 60;
+const CLIP_MIN_GAP_MS: Record<string, number> = {
+  "cash-register": 250,
+};
+
+const lastPlayedAt = new Map<string, number>();
+
+function clipFor(event: SoundEvent): string | null {
+  switch (event.kind) {
+    case "operation-complete":
+      return (
+        (event.operationId && OPERATION_CLIP[event.operationId]) ??
+        FALLBACK_OPERATION_CLIP
+      );
+    case "commission-complete":
+      return "commission-complete";
+    case "sale":
+      return "cash-register";
+    case "material-pickup":
+      return "material-pickup";
+    case "material-drop":
+      return "material-drop";
+  }
+}
+
+function playThrottled(clip: string): void {
+  const now = Date.now();
+  const last = lastPlayedAt.get(clip);
+  const minGap = CLIP_MIN_GAP_MS[clip] ?? DEFAULT_MIN_GAP_MS;
+  if (last !== undefined && now - last < minGap) return;
+  lastPlayedAt.set(clip, now);
+  playSound(clip, CLIP_GAIN[clip] ?? 1);
+}
 
 export const GameSoundLayer: React.FC = () => {
   const gameState = useGameState();
@@ -31,10 +103,14 @@ export const GameSoundLayer: React.FC = () => {
 
   useEffect(() => {
     if (!pending || pending.length === 0) return;
+    // Collapse duplicates within a drain — three machines finishing on the same
+    // tick should sound like one hit, not a flam.
+    const clips = new Set<string>();
     for (const event of pending) {
-      const sound = SOUND_FOR[event.kind];
-      if (sound) playSound(sound.clip, sound.gain);
+      const clip = clipFor(event);
+      if (clip) clips.add(clip);
     }
+    clips.forEach(playThrottled);
     // Drain the queue now that its cues have been played.
     applyAction(clearPendingSoundsAction);
   }, [pending, applyAction]);

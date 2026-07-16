@@ -100,11 +100,12 @@ export const tickAction: GameAction = (gameState) => {
       }
     }
 
-    // Cue a sound for the finished operation. The GameSoundLayer maps this to
-    // a clip (per-machine variants land in #32).
+    // Cue a sound for the finished operation; GameSoundLayer picks the clip
+    // from the operation (so tool operations sound like the tool).
     soundEvents.push({
       kind: "operation-complete",
       machineTypeId: machineState.machineTypeId,
+      operationId: machineState.selectedOperationId,
     });
 
     return {
@@ -131,6 +132,7 @@ export const tickAction: GameAction = (gameState) => {
     const [sold, ...remaining] = machineState.inputMaterials;
     // Round to cents so repeated sales don't accumulate float error
     money = Math.round((money + getSellValue(sold)) * 100) / 100;
+    soundEvents.push({ kind: "sale", machineTypeId: machineState.machineTypeId });
     return { ...machineState, inputMaterials: remaining };
   });
 

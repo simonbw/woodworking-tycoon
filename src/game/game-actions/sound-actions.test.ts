@@ -1,6 +1,8 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { initialGameState } from "../initialGameState";
+import { makePallet } from "../material-helpers";
+import { dropMaterialAction, pickUpMaterialAction } from "./player-actions";
 import { clearPendingSoundsAction, emitSound } from "./sound-actions";
 
 describe("sound-actions", () => {
@@ -36,5 +38,39 @@ describe("sound-actions", () => {
   it("clearPendingSoundsAction returns the same state when already empty", () => {
     const cleared = clearPendingSoundsAction(initialGameState);
     assert.strictEqual(cleared, initialGameState);
+  });
+});
+
+describe("material movement sound cues", () => {
+  it("pickUpMaterialAction emits a pickup cue", () => {
+    const pile = { material: makePallet(), position: [0, 0] as [number, number] };
+    const state = {
+      ...initialGameState,
+      materialPiles: [pile],
+      player: { ...initialGameState.player, position: [0, 0] as [number, number] },
+    };
+    const result = pickUpMaterialAction([pile])(state);
+    assert.deepStrictEqual(result.pendingSounds, [{ kind: "material-pickup" }]);
+  });
+
+  it("dropMaterialAction emits a drop cue", () => {
+    const material = makePallet();
+    const state = {
+      ...initialGameState,
+      player: { ...initialGameState.player, inventory: [material] },
+    };
+    const result = dropMaterialAction([material])(state);
+    assert.deepStrictEqual(result.pendingSounds, [{ kind: "material-drop" }]);
+  });
+
+  it("emits no cue when a pickup is rejected", () => {
+    const pile = { material: makePallet(), position: [3, 3] as [number, number] };
+    const state = {
+      ...initialGameState,
+      materialPiles: [pile],
+      player: { ...initialGameState.player, position: [0, 0] as [number, number] },
+    };
+    const result = pickUpMaterialAction([pile])(state);
+    assert.strictEqual(result.pendingSounds?.length, 0);
   });
 });
