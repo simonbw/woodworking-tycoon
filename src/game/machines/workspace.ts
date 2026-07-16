@@ -1,6 +1,6 @@
 import { array } from "../../utils/arrayUtils";
 import { board, isBoard } from "../board-helpers";
-import { MachineType } from "../Machine";
+import { MachineType, OperationPhase } from "../Machine";
 import { makeMaterial } from "../material-helpers";
 import {
   Pallet,
@@ -19,6 +19,20 @@ import {
   stripsAlternate,
   widthDominantSpecies,
 } from "../panel-helpers";
+
+/**
+ * Every glue-up cures for the same long stretch once it's in the clamps —
+ * the glue doesn't care how many strips you fed it. Curing is hands-free;
+ * only the spread-and-clamp handwork differs per operation.
+ */
+export const GLUE_CURE_TICKS = 60;
+
+function gluePhases(clampTicks: number): ReadonlyArray<OperationPhase> {
+  return [
+    { name: "Glue & Clamp", duration: clampTicks, attended: true },
+    { name: "Curing", duration: GLUE_CURE_TICKS, attended: false },
+  ];
+}
 
 /** The most common strip species in a panel (ties go to first appearance). */
 function dominantSpecies(strips: ReadonlyArray<{ species: Species }>): Species {
@@ -114,7 +128,8 @@ export const workspace: MachineType = {
       name: "Glue Up Panel",
       id: "glueUpPanel",
       requiredSkill: "panelWork",
-      duration: 40, // glue needs time to dry
+      duration: 8 + GLUE_CURE_TICKS,
+      phases: gluePhases(8),
       inputMaterials: [
         {
           type: ["board"],
@@ -154,7 +169,8 @@ export const workspace: MachineType = {
       name: "Glue Up Pair",
       id: "glueUpPair",
       requiredSkill: "freeformLamination",
-      duration: 25,
+      duration: 5 + GLUE_CURE_TICKS,
+      phases: gluePhases(5),
       inputMaterials: [
         {
           type: ["board"],
@@ -189,7 +205,8 @@ export const workspace: MachineType = {
       name: "Glue On Strip",
       id: "extendPanel",
       requiredSkill: "freeformLamination",
-      duration: 15,
+      duration: 5 + GLUE_CURE_TICKS,
+      phases: gluePhases(5),
       inputMaterials: [
         { type: ["panel"], length: [2], thickness: [4], quantity: 1 },
         {
@@ -214,6 +231,35 @@ export const workspace: MachineType = {
               [...base.strips, { species: strip.species, width: strip.width }],
               base.length,
               base.thickness,
+              "rough",
+            ),
+          ],
+        };
+      },
+    },
+    {
+      name: "Join Panels",
+      id: "joinPanels",
+      requiredSkill: "freeformLamination",
+      duration: 8 + GLUE_CURE_TICKS,
+      phases: gluePhases(8),
+      inputMaterials: [
+        { type: ["panel"], length: [2], thickness: [4], quantity: 2 },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const panels = materials.filter(isPanel);
+        if (panels.length !== 2) {
+          throw new Error("Need exactly 2 panels to join");
+        }
+        // How a real shop stages a wide glue-up: sub-panels first, then one
+        // joint to marry them. Strip order: first panel, then the second.
+        return {
+          inputs: [],
+          outputs: [
+            panel(
+              [...panels[0].strips, ...panels[1].strips],
+              panels[0].length,
+              panels[0].thickness,
               "rough",
             ),
           ],

@@ -1,5 +1,10 @@
 import { ProgressionState } from "./GameState";
-import { Machine, MachineOperation, ParameterizedOperation } from "./Machine";
+import {
+  Machine,
+  MachineOperation,
+  OperationPhase,
+  ParameterizedOperation,
+} from "./Machine";
 import { SkillId } from "./Skill";
 
 /**
@@ -54,26 +59,53 @@ export function availableOperations(
   );
 }
 
+const GLUE_OPERATION_IDS = [
+  "glueUpPanel",
+  "glueUpPair",
+  "extendPanel",
+  "joinPanels",
+];
+
 /**
- * Operation duration after passive skills. Applied when work starts, so
- * in-flight operations aren't affected by mid-operation purchases.
+ * The operation's phase list with passive skills applied per phase. Ops
+ * that declare no phases are one attended stretch of hand work. Phase
+ * durations are read as each phase is entered, so a skill bought
+ * mid-operation speeds the remaining phases but not the current one.
  */
+export function getOperationPhases(
+  operation: MachineOperation | ParameterizedOperation,
+  progression: ProgressionState,
+): ReadonlyArray<OperationPhase> {
+  const phases = operation.phases ?? [
+    { name: operation.name, duration: operation.duration, attended: true },
+  ];
+  return phases.map((phase) => {
+    let duration = phase.duration;
+    if (
+      hasSkill(progression, "efficientSanding") &&
+      (operation.id.endsWith("SandBoard") || operation.id.endsWith("SandPanel"))
+    ) {
+      duration = Math.round(duration * 0.6);
+    }
+    // Better glue cures faster — the clamping handwork is unchanged
+    if (
+      hasSkill(progression, "quickDryGlue") &&
+      GLUE_OPERATION_IDS.includes(operation.id) &&
+      !phase.attended
+    ) {
+      duration = Math.round(duration * 0.6);
+    }
+    return { ...phase, duration };
+  });
+}
+
+/** Total operation duration after passive skills (all phases). */
 export function getOperationDuration(
   operation: MachineOperation | ParameterizedOperation,
   progression: ProgressionState,
 ): number {
-  let duration = operation.duration;
-  if (
-    hasSkill(progression, "efficientSanding") &&
-    (operation.id.endsWith("SandBoard") || operation.id.endsWith("SandPanel"))
-  ) {
-    duration = Math.round(duration * 0.6);
-  }
-  if (
-    hasSkill(progression, "quickDryGlue") &&
-    ["glueUpPanel", "glueUpPair", "extendPanel"].includes(operation.id)
-  ) {
-    duration = Math.round(duration * 0.6);
-  }
-  return duration;
+  return getOperationPhases(operation, progression).reduce(
+    (sum, phase) => sum + phase.duration,
+    0,
+  );
 }

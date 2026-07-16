@@ -1,8 +1,11 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { MACHINE_TYPES, Machine } from "../../game/Machine";
+import { playerAttendsMachine } from "../../game/machine-helpers";
+import { getOperationPhases } from "../../game/skill-helpers";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
+import { useGameState } from "../useGameState";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
@@ -85,8 +88,83 @@ export const MachineSprite: React.FC<{
           y={machine.type.operationPosition[1] * PIXELS_PER_CELL}
         />
       )}
+
+      {/* Counter-rotated so the badge reads upright at any machine rotation */}
+      <pixiContainer angle={-angle}>
+        <OperationStatusBadge machine={machine} />
+      </pixiContainer>
     </pixiContainer>
   );
+};
+
+/**
+ * Floating status over a working machine: a progress bar (amber while an
+ * attended phase needs you at the machine, green while a hands-free phase
+ * runs on its own) or a pulsing amber pause marker when an attended phase
+ * is waiting for the player to come back.
+ */
+const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const gameState = useGameState();
+  const progress = machine.operationProgress;
+  const operation = machine.selectedOperationOrNull;
+
+  const phases = operation
+    ? getOperationPhases(operation, gameState.progression)
+    : [];
+  const attending = playerAttendsMachine(
+    machine,
+    gameState.player.position,
+    gameState.player.away !== null,
+  );
+
+  const isOperating = progress.status === "inProgress" && phases.length > 0;
+  // At a boundary (ticksRemaining 0) the phase that matters is the next one
+  const relevantPhase = isOperating
+    ? progress.ticksRemaining === 0
+      ? phases[progress.phaseIndex + 1]
+      : phases[Math.min(progress.phaseIndex, phases.length - 1)]
+    : undefined;
+  const needsYou = relevantPhase !== undefined && relevantPhase.attended && !attending;
+
+  const total = phases.reduce((sum, phase) => sum + phase.duration, 0);
+  const remaining = isOperating
+    ? progress.ticksRemaining +
+      phases
+        .slice(progress.phaseIndex + 1)
+        .reduce((sum, phase) => sum + phase.duration, 0)
+    : 0;
+  const fraction = total > 0 ? (total - remaining) / total : 0;
+
+  const draw = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      if (!isOperating || relevantPhase === undefined) {
+        return;
+      }
+      const y = -PIXELS_PER_CELL * 0.68;
+      if (needsYou) {
+        // Amber pause marker: this machine is waiting for the player
+        g.circle(0, y, 7);
+        g.fill({ color: 0x1c1917, alpha: 0.75 });
+        g.circle(0, y, 6);
+        g.fill(0xf59e0b);
+        for (const x of [-2.5, 1]) {
+          g.rect(x, y - 3, 1.5, 6);
+          g.fill(0x1c1917);
+        }
+        return;
+      }
+      // Progress bar: amber while attended handwork, green while hands-free
+      const barWidth = PIXELS_PER_CELL * 0.7;
+      g.rect(-barWidth / 2 - 1, y - 3, barWidth + 2, 6);
+      g.fill({ color: 0x1c1917, alpha: 0.75 });
+      g.rect(-barWidth / 2, y - 2, barWidth * fraction, 4);
+      g.fill(relevantPhase.attended ? 0xf59e0b : 0x4ade80);
+    },
+    [isOperating, needsYou, fraction, relevantPhase],
+  );
+
+  return <pixiGraphics draw={draw} />;
 };
 
 const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {

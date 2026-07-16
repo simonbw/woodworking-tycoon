@@ -21,6 +21,7 @@ function idleMachine(
     selectedParameters: undefined,
     operationProgress: {
       status: "notStarted",
+      phaseIndex: 0,
       ticksRemaining: 0,
     },
   };
@@ -106,7 +107,8 @@ export const patternBoardShop: GameState = {
     shopLayoutUnlocked: true,
     freeSelling: true,
     commissionsCompleted: 5,
-    tickSpeedControlsUnlocked: false,
+    // Lets specs use the speed keys to fast-forward through glue cures
+    tickSpeedControlsUnlocked: true,
     xp: 0,
     skillPoints: 3,
     unlockedSkills: [...STARTER_SKILLS, "twoToneBoards"],

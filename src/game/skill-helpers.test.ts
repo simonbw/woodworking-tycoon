@@ -78,14 +78,15 @@ describe("getOperationDuration", () => {
     );
   });
 
-  it("shortens glue-ups with quick-dry glue", () => {
+  it("shortens the curing phase (only) with quick-dry glue", () => {
     const progression = {
       ...initialGameState.progression,
       unlockedSkills: [...STARTER_SKILLS, "quickDryGlue" as const],
     };
+    const [clamp, cure] = glueUp.phases!;
     assert.strictEqual(
       getOperationDuration(glueUp, progression),
-      Math.round(glueUp.duration * 0.6),
+      clamp.duration + Math.round(cure.duration * 0.6),
     );
   });
 });

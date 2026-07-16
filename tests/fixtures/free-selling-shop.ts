@@ -46,6 +46,7 @@ export const freeSellingShop: GameState = {
       selectedOperationId: "none",
       operationProgress: {
         status: "notStarted",
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
     },

@@ -178,6 +178,7 @@ export function placeMachineAction(
       selectedParameters: undefined,
       operationProgress: {
         status: "notStarted" as const,
+        phaseIndex: 0,
         ticksRemaining: 0,
       },
       inputMaterials: [],

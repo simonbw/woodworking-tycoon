@@ -18,7 +18,7 @@ import {
 } from "../../game/game-actions/tool-actions";
 import {
   availableOperations,
-  getOperationDuration,
+  getOperationPhases,
 } from "../../game/skill-helpers";
 import { TOOL_TYPES } from "../../game/Tool";
 import {
@@ -83,15 +83,28 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const canOperate = machineCanOperate(machine);
   const isOperating = machine.operationProgress.status === "inProgress";
-  const effectiveDuration = selectedOperation
-    ? getOperationDuration(selectedOperation, gameState.progression)
+  const phases = selectedOperation
+    ? getOperationPhases(selectedOperation, gameState.progression)
+    : [];
+  const { phaseIndex, ticksRemaining } = machine.operationProgress;
+  const totalDuration = phases.reduce((sum, phase) => sum + phase.duration, 0);
+  const ticksLeftOverall = isOperating
+    ? ticksRemaining +
+      phases
+        .slice(phaseIndex + 1)
+        .reduce((sum, phase) => sum + phase.duration, 0)
     : 0;
   const progressPercent =
-    isOperating && selectedOperation
-      ? ((effectiveDuration - machine.operationProgress.ticksRemaining) /
-          effectiveDuration) *
-        100
+    isOperating && totalDuration > 0
+      ? ((totalDuration - ticksLeftOverall) / totalDuration) * 100
       : 0;
+  // Phase detail only matters for ops that declared phases (glue-ups);
+  // single-phase hand work keeps the plain "Running" status
+  const currentPhase = isOperating
+    ? phases[Math.min(phaseIndex, phases.length - 1)]
+    : undefined;
+  const waitingPhase =
+    isOperating && ticksRemaining === 0 ? phases[phaseIndex + 1] : undefined;
 
   const expectedInputs = selectedOperation
     ? getOperationInputMaterials(selectedOperation, machine.selectedParameters)
@@ -329,9 +342,21 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
         <span>
           Status:{" "}
           {isOperating ? (
-            <span className="text-ink-blue">
-              Running · {machine.operationProgress.ticksRemaining} ticks
-            </span>
+            waitingPhase ? (
+              <span className="text-store-orange-dark">
+                Ready · {waitingPhase.name} needs you
+              </span>
+            ) : selectedOperation?.phases && currentPhase ? (
+              <span className="text-ink-blue">
+                {currentPhase.name}
+                {!currentPhase.attended && " (hands-free)"} · {ticksRemaining}{" "}
+                ticks
+              </span>
+            ) : (
+              <span className="text-ink-blue">
+                Running · {ticksRemaining} ticks
+              </span>
+            )
           ) : (
             "Idle"
           )}

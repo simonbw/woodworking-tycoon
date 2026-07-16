@@ -114,7 +114,11 @@ describe("unmountToolAction", () => {
         index === 0
           ? ({
               ...machine,
-              operationProgress: { status: "inProgress", ticksRemaining: 5 },
+              operationProgress: {
+                status: "inProgress",
+                phaseIndex: 0,
+                ticksRemaining: 5,
+              },
             } as MachineState)
           : machine,
       ),

@@ -2,6 +2,7 @@ import { InputMaterialWithQuantity, Machine } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { createMockMaterial, materialMeetsInput } from "./material-helpers";
 import { getOperationInputMaterials } from "./operation-helpers";
+import { Vector, vectorEquals } from "./Vectors";
 
 export interface MaterialSlot {
   requirement: InputMaterialWithQuantity;
@@ -108,6 +109,24 @@ function getRequirementForSlotIndex(
  * @param machine - The machine to check
  * @returns true if the machine has all required materials and can start operating, false otherwise
  */
+/**
+ * Whether the player counts as attending this machine: standing at its
+ * operation cell and not off on an away trip. Machines with no operation
+ * cell can't be worked at all, so their (never-reachable) attended phases
+ * are treated as satisfied rather than deadlocking.
+ */
+export function playerAttendsMachine(
+  machine: Machine,
+  playerPosition: Vector,
+  playerIsAway: boolean,
+): boolean {
+  const operationCell = machine.absoluteOperationPosition;
+  if (operationCell === null) {
+    return true;
+  }
+  return !playerIsAway && vectorEquals(playerPosition, operationCell);
+}
+
 export function machineCanOperate(machine: Machine): boolean {
   const operation = machine.selectedOperationOrNull;
   if (!operation) {
