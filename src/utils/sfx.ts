@@ -1,3 +1,4 @@
+import { getSfxBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
 
 /**
@@ -5,8 +6,9 @@ import { getAudioContext } from "./getAudioContext";
  *
  * Sounds live under `static/sounds/` and are served at `/sounds/<name>.mp3`.
  * Each clip is fetched and decoded on first use, then cached so subsequent
- * plays are instant. Playback goes through a per-play gain node so individual
- * sounds (e.g. the quiet hover tick) can sit at different levels.
+ * plays are instant. Playback goes through a per-play gain node (for relative
+ * per-sound trim) into the shared SFX bus, so master/SFX volume and mute from
+ * the settings menu apply uniformly (see `audioBus.ts`).
  */
 
 export type UiSoundName =
@@ -60,7 +62,7 @@ export function playUiSound(name: UiSoundName): void {
       source.buffer = buffer;
       const gain = ctx.createGain();
       gain.gain.value = SOUND_GAIN[name];
-      source.connect(gain).connect(ctx.destination);
+      source.connect(gain).connect(getSfxBus());
       source.start();
     } catch {
       // Audio is a nice-to-have; ignore any failure.
