@@ -1,5 +1,6 @@
 import React from "react";
 import { classNames } from "../utils/classNames";
+import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useGameState, useQuitToMenu } from "./useGameState";
 
@@ -32,14 +33,15 @@ export const NavBar: React.FC = () => {
           />
         )}
         <div className="grow" />
-        <button
-          className="button-ghost mb-1.5 self-center"
-          onClick={quitToMenu}
-          title="Save and return to main menu"
-          data-sfx="ui-back"
-        >
-          Save &amp; Quit
-        </button>
+        <Tooltip content="Save and return to main menu">
+          <button
+            className="button-ghost mb-1.5 self-center"
+            onClick={quitToMenu}
+            data-sfx="ui-back"
+          >
+            Save &amp; Quit
+          </button>
+        </Tooltip>
       </div>
       {/* Folder body — the rule that the active tab merges into */}
       <div className="h-0.5 bg-paper-manila/40" />

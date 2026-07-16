@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
 import { classNames } from "../utils/classNames";
+import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
 import { useKeyDown } from "./useKeyDown";
 
@@ -17,23 +18,24 @@ const SpeedButton: React.FC<{
   setTicksPerSecond: (speed: number) => void;
 }> = ({ speed, children, title, ticksPerSecond, setTicksPerSecond }) => {
   return (
-    <button
-      className={classNames(
-        "p-1 text-center text-sm grow font-condensed",
-        "hover:bg-ink-black/10",
-        ticksPerSecond === speed
-          ? "bg-ink-black/15 text-ink-black"
-          : "bg-transparent text-ink-black/70",
-      )}
-      onClick={(e) => {
-        setTicksPerSecond(speed);
-        e.currentTarget.blur();
-      }}
-      title={title}
-      tabIndex={-1}
-    >
-      {children}
-    </button>
+    <Tooltip content={title}>
+      <button
+        className={classNames(
+          "p-1 text-center text-sm grow font-condensed",
+          "hover:bg-ink-black/10",
+          ticksPerSecond === speed
+            ? "bg-ink-black/15 text-ink-black"
+            : "bg-transparent text-ink-black/70",
+        )}
+        onClick={(e) => {
+          setTicksPerSecond(speed);
+          e.currentTarget.blur();
+        }}
+        tabIndex={-1}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 };
 
@@ -84,17 +86,18 @@ export const Ticker: React.FC = () => {
             >
               ⏸
             </SpeedButton>
-            <button
-              className="p-1 text-center text-sm grow font-condensed text-ink-black/70 hover:bg-ink-black/10"
-              onClick={(e) => {
-                applyAction(tickAction);
-                e.currentTarget.blur();
-              }}
-              title="Step forward one tick"
-              tabIndex={-1}
-            >
-              ❯
-            </button>
+            <Tooltip content="Step forward one tick">
+              <button
+                className="p-1 text-center text-sm grow font-condensed text-ink-black/70 hover:bg-ink-black/10"
+                onClick={(e) => {
+                  applyAction(tickAction);
+                  e.currentTarget.blur();
+                }}
+                tabIndex={-1}
+              >
+                ❯
+              </button>
+            </Tooltip>
             <SpeedButton
               title="Play at normal speed"
               speed={NORMAL}

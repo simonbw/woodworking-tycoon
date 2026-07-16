@@ -8,6 +8,7 @@ import {
   colorBySpecies,
 } from "../shop-view/colorBySpecies";
 import { classNames } from "../../utils/classNames";
+import { Tooltip } from "../Tooltip";
 
 export const SimpleSpriteStage: React.FC<{
   children: ReactNode;
@@ -47,7 +48,7 @@ export const MaterialIcon: React.FC<{
   quantity?: number;
   placeholder?: boolean;
   isValid?: boolean;
-  tooltip?: string;
+  tooltip?: ReactNode;
 }> = ({ material, size = "medium", quantity, placeholder = false, isValid = true, tooltip }) => {
   switch (material.type) {
     // Make the board with SVG so we don't have to use Pixi to render it
@@ -143,7 +144,7 @@ const Wrapper: React.FC<{
   size: keyof typeof sizeToClassname;
   quantity?: number;
   isValid?: boolean;
-  tooltip?: string;
+  tooltip?: ReactNode;
   placeholder?: boolean;
 }> = ({ children, size, quantity, isValid = true, tooltip, placeholder = false }) => {
   // Determine border style based on state
@@ -160,26 +161,27 @@ const Wrapper: React.FC<{
       : "bg-red-900/20";
 
   return (
-    <span
-      className={classNames(
-        "rounded inline-block overflow-hidden relative",
-        sizeToClassname[size],
-        borderStyle,
-        bgStyle,
-        placeholder ? "opacity-50" : ""
-      )}
-      title={tooltip}
-    >
-      {children}
-      {quantity && (
-        <span className="absolute bottom-0.5 right-0.5 text-xs select-none bg-black/70 px-1 rounded">
-          {quantity}
-        </span>
-      )}
-      {/* Validation indicator for invalid materials */}
-      {!isValid && !placeholder && (
-        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
-      )}
-    </span>
+    <Tooltip content={tooltip}>
+      <span
+        className={classNames(
+          "rounded inline-block overflow-hidden relative",
+          sizeToClassname[size],
+          borderStyle,
+          bgStyle,
+          placeholder ? "opacity-50" : ""
+        )}
+      >
+        {children}
+        {quantity && (
+          <span className="absolute bottom-0.5 right-0.5 text-xs select-none bg-black/70 px-1 rounded">
+            {quantity}
+          </span>
+        )}
+        {/* Validation indicator for invalid materials */}
+        {!isValid && !placeholder && (
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
+        )}
+      </span>
+    </Tooltip>
   );
 };
