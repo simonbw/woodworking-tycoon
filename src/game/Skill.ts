@@ -14,6 +14,9 @@ export const SKILL_IDS = [
   "surfacePrep",
   "efficientSanding",
   "twoToneBoards",
+  "stripedBoards",
+  "freeformLamination",
+  "sunriseBoards",
 ] as const;
 export type SkillId = (typeof SKILL_IDS)[number];
 
@@ -102,6 +105,30 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
       "Cutting boards striped from two species. Customers pay extra for pretty.",
     branch: "finishing",
     requires: ["surfacePrep"],
+  },
+  stripedBoards: {
+    id: "stripedBoards",
+    name: "Striped Boards",
+    description:
+      "Two woods in strict alternation. Discipline at the glue-up, drama on the shelf.",
+    branch: "finishing",
+    requires: ["twoToneBoards"],
+  },
+  freeformLamination: {
+    id: "freeformLamination",
+    name: "Freeform Lamination",
+    description:
+      "Glue up any two strips, then keep adding more — panels of any width and pattern.",
+    branch: "joinery",
+    requires: ["panelWork"],
+  },
+  sunriseBoards: {
+    id: "sunriseBoards",
+    name: "Sunrise Boards",
+    description:
+      "One wood fades out as the other fades in. The showpiece of the strip board.",
+    branch: "finishing",
+    requires: ["stripedBoards", "freeformLamination"],
   },
 };
 

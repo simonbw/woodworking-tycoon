@@ -34,20 +34,37 @@ visible on the Skills page (that's where aspiration lives).
 - Levels follow an increasing-cost curve; each level grants 1 skill point.
   Points are spent on the Skills page. No respec (nothing is a trap yet).
 
-## The tree (Now: 9 nodes, 3 branches)
+## The tree (Now: 12 nodes, 3 branches)
 
 **Milling** — `basic-milling`★ (dismantle, crosscut, rip, plane) →
-`quick-dry-glue` (glue-ups dry 40% faster)
+`quick-dry-glue` (all glue-ups — batch, pair, and strip extension — dry 40%
+faster)
 
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
 cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →
-`box-joinery` (Jewelry Box: thin sanded stock — planer-era product, $90 base)
+`box-joinery` (Jewelry Box: thin sanded stock — planer-era product, $90 base).
+`panel-work` also → `freeform-lamination` (Glue Up Pair + Glue On Strip:
+build panels of any width and strip pattern, one strip at a time — the
+machinery for every pattern board, and later for custom pattern commissions)
 
 **Finishing** — `surface-prep`★ (sanding) → `efficient-sanding` (sand 40%
 faster) → `two-tone-boards` (Two-Tone Cutting Board: exactly two species,
-premium price — the Panel strip model finally pays off)
+premium price) → `striped-boards` (Striped Cutting Board: strict alternation,
+$60 base) → `sunrise-boards` (Sunrise Cutting Board: one wood fades out as
+the other fades in, e.g. 3W,1M,2W,2M,1W,3M — requires `striped-boards` AND
+`freeform-lamination`, the tree's first cross-branch node, $100 base)
 
 ★ = starter skill, unlocked at game start.
+
+### The strip-board ladder
+
+Same raw materials, escalating pattern discipline, escalating price:
+simple ($40, one species) → two-tone ($40 x avg-species x 1.5, any two-species
+mix) → striped ($60 base, strict alternation of 2" strips) → sunrise ($100
+base, alternating fade with strictly shrinking/growing widths, min 6 strips =
+12" wide). A striped panel also satisfies the two-tone recipe — the better
+skill is purely an upgrade on the same glue-up. End-grain boards are the
+intended next rung (crosscut + re-glue; needs its own design pass).
 
 ## Later
 

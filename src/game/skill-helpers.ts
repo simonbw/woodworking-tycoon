@@ -69,7 +69,10 @@ export function getOperationDuration(
   ) {
     duration = Math.round(duration * 0.6);
   }
-  if (hasSkill(progression, "quickDryGlue") && operation.id === "glueUpPanel") {
+  if (
+    hasSkill(progression, "quickDryGlue") &&
+    ["glueUpPanel", "glueUpPair", "extendPanel"].includes(operation.id)
+  ) {
     duration = Math.round(duration * 0.6);
   }
   return duration;

@@ -19,6 +19,9 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   rusticShelf: 60,
   shelf: 45,
   simpleCuttingBoard: 40,
+  // The strip-board tiers: same materials, fancier patterns, better money
+  stripedCuttingBoard: 60,
+  sunriseCuttingBoard: 100,
   jewelryBox: 90,
 };
 
@@ -86,7 +89,9 @@ export function getSellValue(material: MaterialInstance): number {
     case "shelf":
     case "rusticShelf":
     case "jewelryBox":
-    case "simpleCuttingBoard": {
+    case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard": {
       // Two-tone pieces average their species and add a style premium
       const speciesMultiplier = material.accentSpecies
         ? ((SPECIES_VALUE_MULTIPLIER[material.species] +

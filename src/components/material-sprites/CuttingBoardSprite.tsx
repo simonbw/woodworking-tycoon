@@ -5,18 +5,44 @@ import { omitUndefined } from "../../utils/objectUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
+/** Accent stripes for each board tier, as [offset, width] in inches. */
+function accentStripes(type: FinishedProduct["type"]): [number, number][] {
+  switch (type) {
+    case "stripedCuttingBoard":
+      // Strict alternation: accent at 2-4" and 6-8" of a 10" board
+      return [
+        [2, 2],
+        [6, 2],
+      ];
+    case "sunriseCuttingBoard":
+      // The fade: accent strips growing 1", 2", 3" across a 12" board
+      return [
+        [3, 1],
+        [6, 2],
+        [9, 3],
+      ];
+    default:
+      // Two-tone: a free mix, so one wide stripe and one narrow
+      return [
+        [1.5, 3],
+        [7, 1],
+      ];
+  }
+}
+
 /** A finished cutting board: rounded corners and a hanging hole. */
 export const CuttingBoardSprite: React.FC<
   {
     material: FinishedProduct;
   } & Omit<React.ComponentProps<"pixiGraphics">, "draw">
 > = ({ material, ...rest }) => {
-  const { species, accentSpecies } = material;
+  const { type, species, accentSpecies } = material;
 
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
-      const width = 10 * PIXELS_PER_INCH;
+      const widthInches = type === "sunriseCuttingBoard" ? 12 : 10;
+      const width = widthInches * PIXELS_PER_INCH;
       const height = 16 * PIXELS_PER_INCH;
       const radius = 2 * PIXELS_PER_INCH;
 
@@ -36,11 +62,15 @@ export const CuttingBoardSprite: React.FC<
       g.roundRect(-width / 2, -height / 2, width, height, radius);
       g.fill(colorBySpecies[species].primary);
 
-      // two-tone: accent stripes over the base wood
+      // accent stripes over the base wood, patterned by tier
       if (accentSpecies) {
-        const stripeWidth = 2 * PIXELS_PER_INCH;
-        for (const x of [-width / 2 + stripeWidth, width / 2 - stripeWidth * 2]) {
-          g.rect(x, -height / 2 + 1, stripeWidth, height - 2);
+        for (const [offset, stripeWidth] of accentStripes(type)) {
+          g.rect(
+            -width / 2 + offset * PIXELS_PER_INCH,
+            -height / 2 + 1,
+            stripeWidth * PIXELS_PER_INCH,
+            height - 2,
+          );
           g.fill(colorBySpecies[accentSpecies].primary);
         }
       }
@@ -49,7 +79,7 @@ export const CuttingBoardSprite: React.FC<
       g.circle(0, -height / 2 + 2 * PIXELS_PER_INCH, 0.75 * PIXELS_PER_INCH);
       g.fill(colorBySpecies[species].secondary);
     },
-    [species, accentSpecies],
+    [type, species, accentSpecies],
   );
 
   return <pixiGraphics {...omitUndefined(rest)} draw={draw} />;

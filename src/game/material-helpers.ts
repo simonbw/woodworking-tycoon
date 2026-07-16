@@ -51,6 +51,8 @@ const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
   "rusticShelf",
   "jewelryBox",
   "simpleCuttingBoard",
+  "stripedCuttingBoard",
+  "sunriseCuttingBoard",
 ];
 
 export function isFinishedProduct(
@@ -113,6 +115,8 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
       return 20;
 
     case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard":
       return 10;
 
     case "plywood": {
@@ -218,6 +222,8 @@ export function createMockMaterial(
     case "rusticShelf":
     case "shelf":
     case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard":
       return makeMaterial<FinishedProduct>({
         type: requirement.type[0],
         species:

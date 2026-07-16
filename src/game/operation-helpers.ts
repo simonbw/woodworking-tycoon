@@ -140,7 +140,9 @@ function generateSingleMockMaterial(
     case "shelf":
     case "rusticShelf":
     case "jewelryBox":
-    case "simpleCuttingBoard": {
+    case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard": {
       const reqAny = req as any;
       const product: FinishedProduct = makeMaterial<FinishedProduct>({
         type: materialType as FinishedProduct["type"],
