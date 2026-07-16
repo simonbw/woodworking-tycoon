@@ -1,4 +1,5 @@
 import { GameAction } from "../GameState";
+import { SoundEvent } from "../SoundEvent";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct } from "../material-helpers";
@@ -57,6 +58,7 @@ export const tickAction: GameAction = (gameState) => {
   // Process machines that are operating. Finished products earn craft XP
   // when their operation completes — making things is how you learn.
   let xpEarned = 0;
+  const soundEvents: SoundEvent[] = [];
   const updatedMachines = gameState.machines.map((machineState) => {
     if (machineState.operationProgress.status !== "inProgress") {
       return machineState;
@@ -98,6 +100,14 @@ export const tickAction: GameAction = (gameState) => {
       }
     }
 
+    // Cue a sound for the finished operation; GameSoundLayer picks the clip
+    // from the operation (so tool operations sound like the tool).
+    soundEvents.push({
+      kind: "operation-complete",
+      machineTypeId: machineState.machineTypeId,
+      operationId: machineState.selectedOperationId,
+    });
+
     return {
       ...machineState,
       inputMaterials: [...machineState.inputMaterials, ...inputs],
@@ -122,16 +132,27 @@ export const tickAction: GameAction = (gameState) => {
     const [sold, ...remaining] = machineState.inputMaterials;
     // Round to cents so repeated sales don't accumulate float error
     money = Math.round((money + getSellValue(sold)) * 100) / 100;
+    soundEvents.push({ kind: "sale", machineTypeId: machineState.machineTypeId });
     return { ...machineState, inputMaterials: remaining };
   });
 
-  return withXp(
-    {
-      ...gameState,
-      money,
-      machines: machinesAfterSales,
-      tick: gameState.tick + 1,
-    },
-    xpEarned,
-  );
+  // Only override pendingSounds when there's something to add, so quiet ticks
+  // keep the queue's reference stable and don't re-trigger the sound drain.
+  const nextState =
+    soundEvents.length > 0
+      ? {
+          ...gameState,
+          money,
+          machines: machinesAfterSales,
+          tick: gameState.tick + 1,
+          pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
+        }
+      : {
+          ...gameState,
+          money,
+          machines: machinesAfterSales,
+          tick: gameState.tick + 1,
+        };
+
+  return withXp(nextState, xpEarned);
 };

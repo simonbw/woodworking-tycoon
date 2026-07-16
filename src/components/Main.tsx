@@ -3,6 +3,7 @@ import { GameState } from "../game/GameState";
 import { saveGame } from "../game/saveLoad";
 import { DebugView } from "./DebugView";
 import { FixtureLoader } from "./FixtureLoader";
+import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
 import { StartMenu } from "./StartMenu";
@@ -34,6 +35,7 @@ export const Main: React.FC = () => {
           <UiModeProvider>
             <ActionKeyContextProvider>
               <ScreenSwitcher />
+              <GameSoundLayer />
               <DebugView />
               <FixtureLoader />
             </ActionKeyContextProvider>

@@ -56,6 +56,7 @@ export const initialGameState: GameState = {
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,
   },
+  pendingSounds: [],
 };
 
 // Helper method to create a machine with less boilerplate
