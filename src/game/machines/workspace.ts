@@ -9,8 +9,19 @@ import {
   MaterialInstance,
   panelSpecies,
   panelWidth,
+  REAL_WOOD_SPECIES,
+  Species,
 } from "../Materials";
 import { isPanel, panel } from "../panel-helpers";
+
+/** The most common strip species in a panel (ties go to first appearance). */
+function dominantSpecies(strips: ReadonlyArray<{ species: Species }>): Species {
+  const counts = new Map<Species, number>();
+  for (const strip of strips) {
+    counts.set(strip.species, (counts.get(strip.species) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
 
 export const workspace: MachineType = {
   id: "workspace",
@@ -27,6 +38,7 @@ export const workspace: MachineType = {
     {
       name: "Dismantle Pallet",
       id: "dismantlePallet",
+      requiredSkill: "basicMilling",
       duration: 4,
       inputMaterials: [{ type: ["pallet"], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
@@ -68,6 +80,7 @@ export const workspace: MachineType = {
     {
       name: "Build Rustic Pallet Shelf",
       id: "buildRusticPalletShelf",
+      requiredSkill: "rusticCarpentry",
       duration: 30,
       inputMaterials: [
         { type: ["board"], species: ["pallet"], width: [6], length: [4], quantity: 2 }, // stringers as shelves
@@ -94,6 +107,7 @@ export const workspace: MachineType = {
     {
       name: "Glue Up Panel",
       id: "glueUpPanel",
+      requiredSkill: "panelWork",
       duration: 40, // glue needs time to dry
       inputMaterials: [
         {
@@ -133,6 +147,7 @@ export const workspace: MachineType = {
     {
       name: "Finish Cutting Board",
       id: "finishCuttingBoard",
+      requiredSkill: "panelWork",
       duration: 20,
       inputMaterials: [
         {
@@ -164,6 +179,78 @@ export const workspace: MachineType = {
             makeMaterial<FinishedProduct>({
               type: "simpleCuttingBoard",
               species: blank.strips[0].species,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Finish Two-Tone Board",
+      id: "finishTwoToneBoard",
+      requiredSkill: "twoToneBoards",
+      duration: 25,
+      inputMaterials: [
+        {
+          type: ["panel"],
+          length: [2],
+          thickness: [3, 4],
+          surface: ["sanded"],
+          quantity: 1,
+          // Like a cutting board, but striped from exactly two real woods
+          matches: (material) =>
+            isPanel(material) &&
+            panelWidth(material) >= 10 &&
+            material.strips.every((strip) => strip.width === 2) &&
+            panelSpecies(material).length === 2 &&
+            material.strips.every((strip) => strip.species !== "pallet"),
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const blank = materials[0];
+        if (!isPanel(blank)) {
+          throw new Error("Input material is not a panel");
+        }
+        const species = dominantSpecies(blank.strips);
+        const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "simpleCuttingBoard",
+              species,
+              accentSpecies,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Build Shelf",
+      id: "buildShelf",
+      requiredSkill: "fineShelving",
+      duration: 35,
+      inputMaterials: [
+        {
+          type: ["board"],
+          species: REAL_WOOD_SPECIES,
+          length: [4],
+          width: [6],
+          thickness: [4],
+          surface: ["sanded"],
+          quantity: 2,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const boards = materials.filter(isBoard);
+        if (boards.length !== 2) {
+          throw new Error("Need exactly 2 boards to build a shelf");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "shelf",
+              species: boards[0].species,
             }),
           ],
         };

@@ -31,6 +31,15 @@ export const NavBar: React.FC = () => {
             onClick={() => setMode({ mode: "shopLayout" })}
           />
         )}
+        <FolderTab
+          label={
+            gameState.progression.skillPoints > 0
+              ? `Skills (${gameState.progression.skillPoints})`
+              : "Skills"
+          }
+          active={mode.mode === "skills"}
+          onClick={() => setMode({ mode: "skills" })}
+        />
         <div className="grow" />
         <button
           className="button-ghost mb-1.5 self-center"

@@ -1,4 +1,5 @@
 import { GameState } from "../../src/game/GameState";
+import { STARTER_SKILLS } from "../../src/game/Skill";
 
 export const layoutWithPlacedMachines: GameState = {
   tick: 0,
@@ -100,5 +101,8 @@ export const layoutWithPlacedMachines: GameState = {
     freeSelling: false,
     commissionsCompleted: 1,
     tickSpeedControlsUnlocked: false,
+    xp: 0,
+    skillPoints: 0,
+    unlockedSkills: STARTER_SKILLS,
   },
 };

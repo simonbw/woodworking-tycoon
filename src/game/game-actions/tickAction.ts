@@ -1,8 +1,10 @@
 import { GameAction } from "../GameState";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
+import { isFinishedProduct } from "../material-helpers";
 import { Machine } from "../Machine";
 import { getSellValue } from "../material-values";
+import { withXp } from "./skill-actions";
 
 export const tickAction: GameAction = (gameState) => {
   const away = gameState.player.away;
@@ -52,7 +54,9 @@ export const tickAction: GameAction = (gameState) => {
     };
   }
 
-  // Process machines that are operating
+  // Process machines that are operating. Finished products earn craft XP
+  // when their operation completes — making things is how you learn.
+  let xpEarned = 0;
   const updatedMachines = gameState.machines.map((machineState) => {
     if (machineState.operationProgress.status !== "inProgress") {
       return machineState;
@@ -88,6 +92,12 @@ export const tickAction: GameAction = (gameState) => {
       machineState.selectedParameters
     );
 
+    for (const output of outputs) {
+      if (isFinishedProduct(output)) {
+        xpEarned += Math.round(getSellValue(output));
+      }
+    }
+
     return {
       ...machineState,
       inputMaterials: [...machineState.inputMaterials, ...inputs],
@@ -115,10 +125,13 @@ export const tickAction: GameAction = (gameState) => {
     return { ...machineState, inputMaterials: remaining };
   });
 
-  return {
-    ...gameState,
-    money,
-    machines: machinesAfterSales,
-    tick: gameState.tick + 1,
-  };
+  return withXp(
+    {
+      ...gameState,
+      money,
+      machines: machinesAfterSales,
+      tick: gameState.tick + 1,
+    },
+    xpEarned,
+  );
 };

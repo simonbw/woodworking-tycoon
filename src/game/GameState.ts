@@ -1,6 +1,7 @@
 import { MachineState, MachineId } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
+import { SkillId } from "./Skill";
 import { ToolId } from "./Tool";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
@@ -21,6 +22,11 @@ export interface ProgressionState {
   readonly freeSelling: boolean;
   readonly commissionsCompleted: number;
   readonly tickSpeedControlsUnlocked: boolean;
+  /** Lifetime craft XP (never spent — levels derive from it). */
+  readonly xp: number;
+  /** Unspent skill points (1 per level gained). */
+  readonly skillPoints: number;
+  readonly unlockedSkills: ReadonlyArray<SkillId>;
 }
 
 export interface GameState {

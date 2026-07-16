@@ -121,6 +121,15 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.reputation, firstCommission.rewardReputation);
   });
 
+  it("awards craft XP for the commission", () => {
+    const state = stateAtCommission(0, [makeShelf()]);
+    const result = completeCommissionAction()(state);
+    assert.strictEqual(
+      result.progression.xp,
+      Math.round(firstCommission.rewardMoney / 5),
+    );
+  });
+
   it("advances to the next commission in the sequence", () => {
     const state = stateAtCommission(0, [makeShelf()]);
     const result = completeCommissionAction()(state);

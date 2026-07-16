@@ -16,6 +16,10 @@ import {
   mountToolAction,
   unmountToolAction,
 } from "../../game/game-actions/tool-actions";
+import {
+  availableOperations,
+  getOperationDuration,
+} from "../../game/skill-helpers";
 import { TOOL_TYPES } from "../../game/Tool";
 import {
   createMockMaterial,
@@ -57,12 +61,19 @@ export const MachinesSection: React.FC = () => {
 
 const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
+  const gameState = useGameState();
 
-  // Machines with no operations (e.g. the sales table) get a simple
-  // contents card instead of the operation spec sheet.
-  if (machine.operations.length === 0) {
+  // Only skill-unlocked recipes appear at the station; locked ones live on
+  // the Skills page. Stations with nothing usable (e.g. the sales table)
+  // get a simple contents card instead of the operation spec sheet.
+  const operations = availableOperations(machine, gameState.progression);
+  if (operations.length === 0) {
     return <OperationlessMachineCard machine={machine} />;
   }
+
+  // Null when nothing is selected yet (e.g. a freshly-placed station whose
+  // only recipes came from tools)
+  const selectedOperation = machine.selectedOperationOrNull;
 
   const outputMaterials = [
     ...groupBy(machine.outputMaterials, (material) =>
@@ -72,19 +83,19 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const canOperate = machineCanOperate(machine);
   const isOperating = machine.operationProgress.status === "inProgress";
-  const progressPercent = isOperating
-    ? ((machine.selectedOperation.duration -
-        machine.operationProgress.ticksRemaining) /
-        machine.selectedOperation.duration) *
-      100
+  const effectiveDuration = selectedOperation
+    ? getOperationDuration(selectedOperation, gameState.progression)
     : 0;
+  const progressPercent =
+    isOperating && selectedOperation
+      ? ((effectiveDuration - machine.operationProgress.ticksRemaining) /
+          effectiveDuration) *
+        100
+      : 0;
 
-  const isParamOp = isParameterizedOperation(machine.selectedOperation);
-
-  const expectedInputs = getOperationInputMaterials(
-    machine.selectedOperation,
-    machine.selectedParameters,
-  );
+  const expectedInputs = selectedOperation
+    ? getOperationInputMaterials(selectedOperation, machine.selectedParameters)
+    : [];
 
   const inputSlots = matchMaterialsToSlots(
     [...machine.inputMaterials],
@@ -95,13 +106,13 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const allInputsValid = inputSlots.every(
     (slot) => slot.isValid && !slot.isPlaceholder,
   );
-  if (allInputsValid && inputSlots.length > 0) {
+  if (selectedOperation && allInputsValid && inputSlots.length > 0) {
     try {
       const validMaterials = inputSlots
         .filter((slot) => !slot.isPlaceholder)
         .map((slot) => slot.material);
       const result = executeOperation(
-        machine.selectedOperation,
+        selectedOperation,
         validMaterials,
         machine.selectedParameters,
       );
@@ -113,12 +124,13 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   let previewOutputs: readonly MaterialInstance[] = [];
   if (
+    selectedOperation &&
     expectedInputs.length > 0 &&
-    isParameterizedOperation(machine.selectedOperation)
+    isParameterizedOperation(selectedOperation)
   ) {
     try {
       const preview = generateOperationPreview(
-        machine.selectedOperation,
+        selectedOperation,
         machine.selectedParameters || {},
       );
       previewOutputs = preview.expectedOutputs;
@@ -145,9 +157,9 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           </span>
           <select
             className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
-            value={machine.selectedOperation.id}
+            value={selectedOperation?.id ?? ""}
             onChange={(event) => {
-              const operation = machine.operations.find(
+              const operation = operations.find(
                 (op) => op.id === event.target.value,
               )!;
 
@@ -164,7 +176,12 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
               );
             }}
           >
-            {machine.operations.map((operation) => (
+            {!selectedOperation && (
+              <option value="" disabled>
+                Select mode…
+              </option>
+            )}
+            {operations.map((operation) => (
               <option key={operation.id} value={operation.id}>
                 {operation.name}
               </option>
@@ -172,8 +189,9 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           </select>
         </label>
 
-        {isParamOp &&
-          machine.selectedOperation.parameters.map((param) => (
+        {selectedOperation &&
+          isParameterizedOperation(selectedOperation) &&
+          selectedOperation.parameters.map((param) => (
             <label
               key={param.id}
               className="flex flex-row items-center gap-2 text-xs"
@@ -195,7 +213,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                   applyAction(
                     setMachineOperationAction(
                       machine,
-                      machine.selectedOperation,
+                      selectedOperation,
                       newParams,
                     ),
                   );

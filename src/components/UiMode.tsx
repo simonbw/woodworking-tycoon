@@ -1,7 +1,10 @@
 import React, { ReactNode, createContext, useContext, useState } from "react";
 
 export type UiMode =
-  { mode: "normal" } | { mode: "store" } | { mode: "shopLayout" };
+  | { mode: "normal" }
+  | { mode: "store" }
+  | { mode: "shopLayout" }
+  | { mode: "skills" };
 const uiModeContext = createContext<
   { mode: UiMode; setMode: (mode: UiMode) => void } | undefined
 >(undefined);

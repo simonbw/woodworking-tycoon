@@ -86,11 +86,16 @@ export function getSellValue(material: MaterialInstance): number {
     case "shelf":
     case "rusticShelf":
     case "jewelryBox":
-    case "simpleCuttingBoard":
-      return roundToCents(
-        PRODUCT_VALUES[material.type] *
-          SPECIES_VALUE_MULTIPLIER[material.species],
-      );
+    case "simpleCuttingBoard": {
+      // Two-tone pieces average their species and add a style premium
+      const speciesMultiplier = material.accentSpecies
+        ? ((SPECIES_VALUE_MULTIPLIER[material.species] +
+            SPECIES_VALUE_MULTIPLIER[material.accentSpecies]) /
+            2) *
+          1.5
+        : SPECIES_VALUE_MULTIPLIER[material.species];
+      return roundToCents(PRODUCT_VALUES[material.type] * speciesMultiplier);
+    }
     case "unknown":
       return 0;
   }

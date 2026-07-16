@@ -19,6 +19,7 @@ export const jobsiteTableSaw: MachineType = {
   operations: [
     {
       id: "ripBoard",
+      requiredSkill: "basicMilling",
       name: "Rip Board",
       duration: 15,
       parameters: [

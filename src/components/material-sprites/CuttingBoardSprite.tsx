@@ -11,7 +11,7 @@ export const CuttingBoardSprite: React.FC<
     material: FinishedProduct;
   } & Omit<React.ComponentProps<"pixiGraphics">, "draw">
 > = ({ material, ...rest }) => {
-  const { species } = material;
+  const { species, accentSpecies } = material;
 
   const draw = useCallback(
     (g: Graphics) => {
@@ -36,11 +36,20 @@ export const CuttingBoardSprite: React.FC<
       g.roundRect(-width / 2, -height / 2, width, height, radius);
       g.fill(colorBySpecies[species].primary);
 
+      // two-tone: accent stripes over the base wood
+      if (accentSpecies) {
+        const stripeWidth = 2 * PIXELS_PER_INCH;
+        for (const x of [-width / 2 + stripeWidth, width / 2 - stripeWidth * 2]) {
+          g.rect(x, -height / 2 + 1, stripeWidth, height - 2);
+          g.fill(colorBySpecies[accentSpecies].primary);
+        }
+      }
+
       // hanging hole
       g.circle(0, -height / 2 + 2 * PIXELS_PER_INCH, 0.75 * PIXELS_PER_INCH);
       g.fill(colorBySpecies[species].secondary);
     },
-    [species],
+    [species, accentSpecies],
   );
 
   return <pixiGraphics {...omitUndefined(rest)} draw={draw} />;

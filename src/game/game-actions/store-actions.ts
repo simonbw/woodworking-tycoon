@@ -5,6 +5,7 @@ import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
 import { incrementCommissionsCompletedAction, checkProgressionMilestonesAction } from "./progression-actions";
 import { combineActions } from "./misc-actions";
+import { withXp } from "./skill-actions";
 
 export function buyMaterialAction(
   material: MaterialInstance,
@@ -105,15 +106,19 @@ export function completeCommissionAction(): GameAction {
       });
     }
 
-    const completedState = {
-      ...gameState,
-      money: gameState.money + commission.rewardMoney,
-      reputation: gameState.reputation + commission.rewardReputation,
-      player: {
-        ...gameState.player,
-        inventory: updatedInventory,
+    // Commissions teach: chunky XP alongside the payout
+    const completedState = withXp(
+      {
+        ...gameState,
+        money: gameState.money + commission.rewardMoney,
+        reputation: gameState.reputation + commission.rewardReputation,
+        player: {
+          ...gameState.player,
+          inventory: updatedInventory,
+        },
       },
-    };
+      Math.round(commission.rewardMoney / 5),
+    );
 
     // Progression must only advance when the commission actually completes
     return combineActions(

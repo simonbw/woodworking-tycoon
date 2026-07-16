@@ -162,15 +162,19 @@ export function placeMachineAction(
       return gameState;
     }
 
-    // Create new machine state
+    // Create new machine state; default to the first UNLOCKED operation
+    const unlockedOps = machineType.operations.filter(
+      (op: { requiredSkill?: string }) =>
+        !op.requiredSkill ||
+        (gameState.progression.unlockedSkills as ReadonlyArray<string>).includes(
+          op.requiredSkill,
+        ),
+    );
     const newMachine = {
       machineTypeId,
       position,
       rotation,
-      selectedOperationId:
-        machineType.operations.length > 0
-          ? machineType.operations[0].id
-          : "none",
+      selectedOperationId: unlockedOps.length > 0 ? unlockedOps[0].id : "none",
       selectedParameters: undefined,
       operationProgress: {
         status: "notStarted" as const,

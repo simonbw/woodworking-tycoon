@@ -1,4 +1,5 @@
 import { GameState } from "./GameState";
+import { STARTER_SKILLS } from "./Skill";
 import {
   MACHINE_TYPES,
   MachineId,
@@ -51,6 +52,9 @@ export const initialGameState: GameState = {
     freeSelling: false,
     commissionsCompleted: 0,
     tickSpeedControlsUnlocked: false,
+    xp: 0,
+    skillPoints: 0,
+    unlockedSkills: STARTER_SKILLS,
   },
 };
 

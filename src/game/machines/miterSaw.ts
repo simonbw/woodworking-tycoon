@@ -16,6 +16,7 @@ export const miterSaw: MachineType = {
   operations: [
     {
       id: "cutBoard",
+      requiredSkill: "basicMilling",
       name: "Cut Board",
       duration: 15,
       parameters: [

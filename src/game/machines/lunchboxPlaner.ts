@@ -18,6 +18,7 @@ export const lunchboxPlaner: MachineType = {
   operations: [
     {
       id: "planeBoard",
+      requiredSkill: "basicMilling",
       name: "Plane Board",
       duration: 15,
       parameters: [
@@ -63,6 +64,7 @@ export const lunchboxPlaner: MachineType = {
     } as ParameterizedOperation,
     {
       id: "planePanel",
+      requiredSkill: "basicMilling",
       name: "Plane Panel",
       duration: 15,
       parameters: [

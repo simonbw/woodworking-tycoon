@@ -1,5 +1,6 @@
 import { LRUCache } from "typescript-lru-cache";
 import { MaterialInstance } from "./Materials";
+import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
 import { Direction, Vector } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
@@ -40,6 +41,8 @@ export interface MachineOperation {
   readonly id: string;
   readonly name: string;
   readonly duration: number;
+  /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
+  readonly requiredSkill?: SkillId;
   readonly inputMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly output: (
     materials: ReadonlyArray<MaterialInstance>,
@@ -83,6 +86,8 @@ export interface ParameterizedOperation<
   readonly id: string;
   readonly name: string;
   readonly duration: number;
+  /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
+  readonly requiredSkill?: SkillId;
   readonly parameters: ReadonlyArray<OperationParameter>;
   readonly getInputMaterials: (
     params: TParams,
@@ -148,15 +153,25 @@ export class Machine {
   }
 
   get selectedOperation(): MachineOperation | ParameterizedOperation {
-    const operation = this.operations.find(
-      (op) => op.id === this.state.selectedOperationId,
-    );
+    const operation = this.selectedOperationOrNull;
     if (!operation) {
       throw new Error(
         `Unknown operation: ${this.state.selectedOperationId} for machine ${this.state.machineTypeId}`,
       );
     }
     return operation;
+  }
+
+  /**
+   * Like selectedOperation, but null when the id doesn't resolve (e.g. a
+   * station whose recipes are all still locked, or "none").
+   */
+  get selectedOperationOrNull():
+    MachineOperation | ParameterizedOperation | null {
+    return (
+      this.operations.find((op) => op.id === this.state.selectedOperationId) ??
+      null
+    );
   }
 
   // Pass-through properties for convenience
