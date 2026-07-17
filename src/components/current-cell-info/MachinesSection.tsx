@@ -23,6 +23,7 @@ import {
 import { TOOL_TYPES } from "../../game/Tool";
 import {
   createMockMaterial,
+  describeMaterialRequirement,
   getMaterialName,
 } from "../../game/material-helpers";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
@@ -310,7 +311,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 isValid={slot.isValid}
                 tooltip={
                   slot.isPlaceholder
-                    ? `Needs: ${getMaterialName(slot.material)}`
+                    ? `Needs: ${describeMaterialRequirement(slot.requirement)}`
                     : getMaterialName(slot.material)
                 }
               />
