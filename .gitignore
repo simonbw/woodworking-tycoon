@@ -133,6 +133,9 @@ dist
 playwright-report/
 test-results/
 
+# Claude Code worktrees
+.claude/worktrees/
+
 # Misc
 .DS_Store
 node_modules
