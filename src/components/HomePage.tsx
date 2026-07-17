@@ -4,6 +4,7 @@ import { CommissionsSection } from "./CommissionsSection";
 import { ErrandsSection } from "./ErrandsSection";
 import { MoneySection } from "./MoneySection";
 import { NavBar } from "./NavBar";
+import { SuppliesSection } from "./SuppliesSection";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
 import { Ticker } from "./Ticker";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
@@ -28,6 +29,7 @@ const HomePageContent: React.FC = () => {
         <div className="space-y-6 w-full max-w-80">
           <Ticker />
           <MoneySection />
+          <SuppliesSection />
           <CommissionsSection />
           <ErrandsSection />
         </div>

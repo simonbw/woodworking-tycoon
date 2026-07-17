@@ -49,6 +49,8 @@ test.describe("Consumables", () => {
       await expect(
         workspaceCard(page).getByRole("button", { name: "Operate" }),
       ).toBeDisabled();
+      // The sidebar supply cabinet stays hidden while everything is at zero
+      await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });
 
     await test.step("dismantling the pallet returns its nails", async () => {
@@ -77,6 +79,12 @@ test.describe("Consumables", () => {
         );
       }
       expect(await nailCount(page)).toBe(8);
+      // The supply cabinet card appears once there's stock to show
+      const suppliesCard = page
+        .locator("section", { hasText: /^Supplies/ })
+        .first();
+      await expect(suppliesCard.getByText("Nails")).toBeVisible();
+      await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
     });
 
     await test.step("the salvaged nails cover one rustic shelf", async () => {
