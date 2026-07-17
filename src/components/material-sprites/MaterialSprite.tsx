@@ -3,6 +3,7 @@ import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { BoardSprite } from "./BoardSprite";
 import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
+import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
 import { FinishedBoxSprite } from "./FinishedBoxSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
@@ -26,9 +27,15 @@ export const MaterialSprite: React.FC<{
     case "panel":
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
+    case "endGrainSlice":
+      return (
+        <EndGrainSliceSprite slice={material} alpha={alpha} tint={tint} />
+      );
+
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard":
       return (
         <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
       );

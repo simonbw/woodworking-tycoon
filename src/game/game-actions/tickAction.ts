@@ -7,6 +7,7 @@ import { playerAttendsMachine } from "../machine-helpers";
 import { Machine } from "../Machine";
 import { getSellValue } from "../material-values";
 import { getOperationPhases } from "../skill-helpers";
+import { ToolId } from "../Tool";
 import { withXp } from "./skill-actions";
 
 export const tickAction: GameAction = (gameState) => {
@@ -64,6 +65,7 @@ export const tickAction: GameAction = (gameState) => {
   // learn.
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
+  const toolsGranted: ToolId[] = [];
   const updatedMachines = gameState.machines.map((machineState) => {
     if (machineState.operationProgress.status !== "inProgress") {
       return machineState;
@@ -147,7 +149,7 @@ export const tickAction: GameAction = (gameState) => {
     }
 
     // Operation completed - apply the transformation
-    const { inputs, outputs } = executeOperation(
+    const { inputs, outputs, toolOutputs } = executeOperation(
       selectedOperation,
       machineState.processingMaterials,
       machineState.selectedParameters
@@ -157,6 +159,11 @@ export const tickAction: GameAction = (gameState) => {
       if (isFinishedProduct(output)) {
         xpEarned += Math.round(getSellValue(output));
       }
+    }
+
+    // Shop-made tooling (e.g. the crosscut sled) lands in tool storage
+    if (toolOutputs) {
+      toolsGranted.push(...toolOutputs);
     }
 
     // Cue a sound for the finished operation; GameSoundLayer picks the clip
@@ -214,5 +221,16 @@ export const tickAction: GameAction = (gameState) => {
           tick: gameState.tick + 1,
         };
 
-  return withXp(nextState, xpEarned);
+  const withTools =
+    toolsGranted.length > 0
+      ? {
+          ...nextState,
+          storage: {
+            ...nextState.storage,
+            tools: [...nextState.storage.tools, ...toolsGranted],
+          },
+        }
+      : nextState;
+
+  return withXp(withTools, xpEarned);
 };

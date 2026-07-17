@@ -4,6 +4,7 @@ import { freeSellingShop } from "./free-selling-shop";
 import { layoutWithMiterSawInStorage } from "./layout-with-miter-saw-in-storage";
 import { layoutWithPlacedMachines } from "./layout-with-placed-machines";
 import { patternBoardShop } from "./pattern-board-shop";
+import { endGrainShop } from "./end-grain-shop";
 
 export const TEST_FIXTURES: Record<string, GameState> = {
   "layout-with-miter-saw-in-storage": layoutWithMiterSawInStorage,
@@ -11,6 +12,7 @@ export const TEST_FIXTURES: Record<string, GameState> = {
   "free-selling-shop": freeSellingShop,
   "cutting-board-shop": cuttingBoardShop,
   "pattern-board-shop": patternBoardShop,
+  "end-grain-shop": endGrainShop,
 };
 
 // Expose fixtures to window for manual testing

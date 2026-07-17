@@ -17,6 +17,8 @@ export const SKILL_IDS = [
   "stripedBoards",
   "freeformLamination",
   "sunriseBoards",
+  "jigsAndFixtures",
+  "endGrainBoards",
 ] as const;
 export type SkillId = (typeof SKILL_IDS)[number];
 
@@ -129,6 +131,22 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
       "One wood fades out as the other fades in. The showpiece of the strip board.",
     branch: "finishing",
     requires: ["stripedBoards", "freeformLamination"],
+  },
+  jigsAndFixtures: {
+    id: "jigsAndFixtures",
+    name: "Jigs & Fixtures",
+    description:
+      "Shop-made tooling. Build a crosscut sled and your saw can do things no store-bought rig can.",
+    branch: "milling",
+    requires: ["basicMilling"],
+  },
+  endGrainBoards: {
+    id: "endGrainBoards",
+    name: "End-Grain Boards",
+    description:
+      "Slice a panel, stand the grain on end, glue it again. Butcher-block money.",
+    branch: "finishing",
+    requires: ["surfacePrep", "jigsAndFixtures"],
   },
 };
 

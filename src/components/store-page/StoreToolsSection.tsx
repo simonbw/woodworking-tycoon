@@ -8,9 +8,12 @@ export const StoreToolsSection: React.FC = () => {
     <section>
       <h2 className="aisle-heading">Tool Wall</h2>
       <ul className="space-y-2">
-        {Object.values(TOOL_TYPES).map((tool) => (
-          <ToolProductCard key={tool.id} tool={tool} />
-        ))}
+        {Object.values(TOOL_TYPES)
+          // Shop-made jigs aren't for sale — you build those
+          .filter((tool) => !tool.craftedOnly)
+          .map((tool) => (
+            <ToolProductCard key={tool.id} tool={tool} />
+          ))}
       </ul>
       <p className="text-xs text-ink-fade font-typewriter mt-2">
         Handheld tools mount into a workstation's tool slots. Better tools do

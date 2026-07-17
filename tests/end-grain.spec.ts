@@ -1,0 +1,255 @@
+import { test, expect } from "@playwright/test";
+
+declare global {
+  interface Window {
+    __TEST_FIXTURES__: Record<string, unknown>;
+    __UPDATE_GAME_STATE__: (fn: (state: unknown) => unknown) => void;
+    __GET_GAME_STATE__: () => any;
+  }
+}
+
+const WORKSPACE_CELL: [number, number] = [1, 3];
+const SAW_CELL: [number, number] = [2, 5];
+const SALES_CELL: [number, number] = [3, 3];
+
+function card(page: any, name: string) {
+  return page.locator("section", { hasText: name });
+}
+
+async function modesOf(page: any, name: string): Promise<string[]> {
+  return card(page, name)
+    .locator("select")
+    .first()
+    .locator("option")
+    .allTextContents();
+}
+
+async function selectMode(page: any, machineName: string, label: string) {
+  await card(page, machineName)
+    .locator("select")
+    .first()
+    .selectOption({ label });
+  await page.waitForTimeout(200);
+}
+
+async function teleportPlayer(page: any, position: [number, number]) {
+  await page.evaluate((pos: [number, number]) => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: { ...state.player, position: pos },
+    }));
+  }, position);
+  await page.waitForTimeout(200);
+}
+
+async function operateAndWait(
+  page: any,
+  machineName: string,
+  isDoneSource: string,
+) {
+  await card(page, machineName)
+    .getByRole("button", { name: "Operate" })
+    .click();
+  await page.waitForFunction(
+    (src: string) => {
+      const matches = new Function("mat", `return (${src})(mat)`) as any;
+      return (window as any)
+        .__GET_GAME_STATE__()
+        .machines.some((m: any) => m.outputMaterials.some(matches));
+    },
+    isDoneSource,
+    { timeout: 30000 },
+  );
+  await card(page, machineName)
+    .getByRole("button", { name: /Take All/ })
+    .click();
+  await page.waitForTimeout(200);
+}
+
+test.describe("End-Grain Boards", () => {
+  test("should buy plywood, build a sled, and make an end-grain board", async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    await page.goto("http://localhost:3002");
+    await page.getByRole("button", { name: "New Game" }).click();
+    await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
+    await page.waitForTimeout(500);
+    await page.evaluate(() => {
+      const fixtures = (window as any).__TEST_FIXTURES__;
+      (window as any).__UPDATE_GAME_STATE__(() => fixtures["end-grain-shop"]);
+    });
+    await page.waitForTimeout(300);
+
+    await test.step("buy jig plywood from the Sheet Goods aisle", async () => {
+      await page.getByText("Store", { exact: true }).click();
+      await page.waitForTimeout(300);
+      await expect(page.getByText("Sheet Goods")).toBeVisible();
+      // The sled itself is NOT for sale on the tool wall
+      await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
+      await page
+        .locator("li", { hasText: "Plywood Sheet" })
+        .getByRole("button", { name: "Buy" })
+        .click();
+      await page.waitForTimeout(200);
+      const money = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().money,
+      );
+      expect(money).toBe(90.4); // $9.60 of shop-grade plywood
+    });
+
+    await test.step("learn Jigs & Fixtures and End-Grain Boards", async () => {
+      await page.getByText("Skills (2)", { exact: true }).click();
+      await page.waitForTimeout(300);
+      for (const skill of ["Jigs & Fixtures", "End-Grain Boards"]) {
+        await page
+          .locator("li", { hasText: skill })
+          .getByRole("button", { name: /Learn/ })
+          .click();
+        await page.waitForTimeout(200);
+      }
+      await expect(page.getByText("Certified")).toHaveCount(6);
+    });
+
+    await test.step("build the crosscut sled at the workspace", async () => {
+      await page.getByText("Home", { exact: true }).click();
+      await page.waitForTimeout(300);
+      await page.keyboard.press("3"); // the cures are long by design
+      await selectMode(page, "Workspace", "Build Crosscut Sled");
+      await page
+        .locator("li", { hasText: "Plywood" })
+        .getByRole("button", { name: "→ Workspace" })
+        .click();
+      await page.waitForTimeout(200);
+      await page
+        .locator("li", { hasText: "Pallet Board" })
+        .getByRole("button", { name: "→ Workspace" })
+        .click({ modifiers: ["Shift"] });
+      await page.waitForTimeout(200);
+      await card(page, "Workspace")
+        .getByRole("button", { name: "Operate" })
+        .click();
+      await page.waitForFunction(
+        () =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .storage.tools.includes("crosscutSled"),
+        undefined,
+        { timeout: 15000 },
+      );
+    });
+
+    await test.step("mount the sled on the table saw", async () => {
+      await teleportPlayer(page, SAW_CELL);
+      let modes = await modesOf(page, "Jobsite Table Saw");
+      expect(modes).not.toContain("Crosscut Panel");
+      await card(page, "Jobsite Table Saw")
+        .getByRole("button", { name: "Attach" })
+        .click();
+      await page.waitForTimeout(200);
+      modes = await modesOf(page, "Jobsite Table Saw");
+      expect(modes).toContain("Crosscut Panel");
+    });
+
+    await test.step("crosscut the sanded panel into slices", async () => {
+      await selectMode(page, "Jobsite Table Saw", "Crosscut Panel");
+      await page
+        .locator("li", { hasText: "Maple Panel" })
+        .getByRole("button", { name: "→ Jobsite Table Saw" })
+        .click();
+      await page.waitForTimeout(200);
+      await operateAndWait(
+        page,
+        "Jobsite Table Saw",
+        `(mat) => mat.type === "endGrainSlice"`,
+      );
+      const sliceCount = await page.evaluate(
+        () =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .player.inventory.filter(
+              (mat: any) => mat.type === "endGrainSlice",
+            ).length,
+      );
+      expect(sliceCount).toBe(4);
+    });
+
+    await test.step("glue the slices grain-up and sand the blank", async () => {
+      await teleportPlayer(page, WORKSPACE_CELL);
+      await selectMode(page, "Workspace", "Glue Up End-Grain Panel");
+      await page
+        .locator("li", { hasText: "Maple End-Grain Slice" })
+        .getByRole("button", { name: "→ Workspace" })
+        .click({ modifiers: ["Shift"] });
+      await page.waitForTimeout(200);
+      await operateAndWait(
+        page,
+        "Workspace",
+        `(mat) => mat.type === "panel" && mat.grain === "end"`,
+      );
+      await expect(
+        page.getByText(`Maple End-Grain Panel (1'x10"x8/4, rough)`).first(),
+      ).toBeVisible();
+
+      await selectMode(page, "Workspace", "Sand Panel");
+      for (const surface of ["smooth", "sanded"]) {
+        await page
+          .locator("li", { hasText: "Maple End-Grain Panel" })
+          .getByRole("button", { name: "→ Workspace" })
+          .click();
+        await page.waitForTimeout(200);
+        await operateAndWait(
+          page,
+          "Workspace",
+          `(mat) => mat.type === "panel" && mat.surface === "${surface}"`,
+        );
+      }
+    });
+
+    await test.step("finish the end-grain board", async () => {
+      await selectMode(page, "Workspace", "Finish End-Grain Board");
+      await page
+        .locator("li", { hasText: "Maple End-Grain Panel" })
+        .getByRole("button", { name: "→ Workspace" })
+        .click();
+      await page.waitForTimeout(200);
+      await operateAndWait(
+        page,
+        "Workspace",
+        `(mat) => mat.type === "endGrainCuttingBoard"`,
+      );
+      const board = await page.evaluate(() =>
+        (window as any)
+          .__GET_GAME_STATE__()
+          .player.inventory.find(
+            (mat: any) => mat.type === "endGrainCuttingBoard",
+          ),
+      );
+      expect(board.species).toBe("maple");
+    });
+
+    await test.step("XP and the sale", async () => {
+      // $450 board -> 450 XP -> level 3 -> the 2 spent points earned back
+      const progression = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().progression,
+      );
+      expect(progression.xp).toBe(450);
+      expect(progression.skillPoints).toBe(2);
+
+      const moneyBefore = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().money,
+      );
+      await teleportPlayer(page, SALES_CELL);
+      await page
+        .locator("li", { hasText: "End Grain Cutting Board" })
+        .getByRole("button", { name: "→ Sales Table" })
+        .click();
+      await page.waitForFunction(
+        (before: number) =>
+          (window as any).__GET_GAME_STATE__().money === before + 450,
+        moneyBefore,
+        { timeout: 10000 },
+      );
+    });
+  });
+});

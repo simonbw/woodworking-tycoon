@@ -62,6 +62,29 @@ export const CuttingBoardSprite: React.FC<
       g.roundRect(-width / 2, -height / 2, width, height, radius);
       g.fill(colorBySpecies[species].primary);
 
+      // end grain reads as a brick grid of glued blocks
+      if (type === "endGrainCuttingBoard") {
+        const block = 2 * PIXELS_PER_INCH;
+        const inset = 1.5;
+        for (let row = 0; -height / 2 + row * block < height / 2; row++) {
+          const y = -height / 2 + row * block;
+          const offset = row % 2 === 0 ? 0 : block / 2;
+          for (
+            let x = -width / 2 - block + offset;
+            x < width / 2;
+            x += block
+          ) {
+            g.rect(
+              Math.max(x + inset, -width / 2 + inset),
+              y + inset,
+              Math.min(block - inset * 2, width / 2 - inset - x - inset),
+              Math.min(block - inset * 2, height / 2 - y - inset * 2),
+            );
+            g.fill({ color: colorBySpecies[species].secondary, alpha: 0.35 });
+          }
+        }
+      }
+
       // accent stripes over the base wood, patterned by tier
       if (accentSpecies) {
         for (const [offset, stripeWidth] of accentStripes(type)) {

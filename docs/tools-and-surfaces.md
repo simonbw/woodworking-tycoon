@@ -49,6 +49,20 @@ green = hands-free, amber pause marker = attended work waiting for you.
 Later candidates for hands-free phases: oil/varnish curing, kiln drying,
 CNC-style machines that run a whole job unattended.
 
+## Shop-made jigs (Now: v1)
+
+Some tools are never sold — you build them (`ToolType.craftedOnly`, granted
+via `OperationOutput.toolOutputs`). The crosscut sled is the first: plywood
+base plus scrap runners, built at the workspace under `jigs-and-fixtures`,
+mounts only on the table saw (`ToolType.compatibleMachines`) and unlocks
+wide panel crosscuts — the doorway to end-grain boards. Later jigs live
+here too: tapering jigs, box-joint jigs, router sleds.
+
+Related hard rule: **end grain never meets the planer** (`Panel.grain`).
+Planing an end-grain panel tears it apart in real life, so `planePanel`
+rejects them and sanding is the only way to flatten one — which keeps
+sanders relevant deep into the planer era and sets up a future drum sander.
+
 ## Handheld tools (Now: v1)
 
 - `ToolType { id, name, description, cost, operations }` — registry in

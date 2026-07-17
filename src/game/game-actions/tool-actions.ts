@@ -35,6 +35,11 @@ export function mountToolAction(machine: Machine, toolId: ToolId): GameAction {
       console.warn(`No free tool slots on ${machine.type.name}`);
       return gameState;
     }
+    const compatible = TOOL_TYPES[toolId].compatibleMachines;
+    if (compatible && !compatible.includes(machine.state.machineTypeId)) {
+      console.warn(`${toolId} doesn't mount on a ${machine.type.name}`);
+      return gameState;
+    }
 
     const storageIndex = gameState.storage.tools.indexOf(toolId);
     const updatedTools = [

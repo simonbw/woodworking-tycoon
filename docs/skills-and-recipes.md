@@ -34,11 +34,12 @@ visible on the Skills page (that's where aspiration lives).
 - Levels follow an increasing-cost curve; each level grants 1 skill point.
   Points are spent on the Skills page. No respec (nothing is a trap yet).
 
-## The tree (Now: 12 nodes, 3 branches)
+## The tree (Now: 14 nodes, 3 branches)
 
 **Milling** — `basic-milling`★ (dismantle, crosscut, rip, plane) →
-`quick-dry-glue` (all glue-ups — batch, pair, and strip extension — dry 40%
-faster)
+`quick-dry-glue` (all glue-up cures 40% faster) and → `jigs-and-fixtures`
+(shop-made tooling: Build Crosscut Sled → Crosscut Panel on the table saw —
+the first recipe whose output is a tool, not a product)
 
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
 cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →
@@ -53,7 +54,9 @@ faster) → `two-tone-boards` (Two-Tone Cutting Board: exactly two species,
 premium price) → `striped-boards` (Striped Cutting Board: strict alternation,
 $60 base) → `sunrise-boards` (Sunrise Cutting Board: one wood fades out as
 the other fades in, e.g. 3W,1M,2W,2M,1W,3M — requires `striped-boards` AND
-`freeform-lamination`, the tree's first cross-branch node, $100 base)
+`freeform-lamination`, the tree's first cross-branch node, $100 base).
+`surface-prep` also → `end-grain-boards` (requires `jigs-and-fixtures` too:
+Glue Up End-Grain Panel + Finish End-Grain Board, $150 base)
 
 ★ = starter skill, unlocked at game start.
 
@@ -64,8 +67,16 @@ simple ($40, one species) → two-tone ($40 x avg-species x 1.5, any two-species
 mix) → striped ($60 base, strict alternation of 2" strips) → sunrise ($100
 base, alternating fade with strictly shrinking/growing widths, min 6 strips =
 12" wide). A striped panel also satisfies the two-tone recipe — the better
-skill is purely an upgrade on the same glue-up. End-grain boards are the
-intended next rung (crosscut + re-glue; needs its own design pass).
+skill is purely an upgrade on the same glue-up.
+
+The top rung is **end-grain** ($150 base): flatten a panel, crosscut it into
+slices on the shop-made sled, stand the slices grain-up, glue again (same
+uniform cure), then sand — a planer tears end grain apart, so `planePanel`
+refuses `grain: "end"` and sanding is the only flattening path. v1 is the
+single-species butcher block; the **checkerboard** comes later with slice
+orientation (a flip state, or better: the planned glue-up layout UI where
+you arrange every piece by hand). Slices already carry the source strip
+pattern, so a striped panel's slices are checkerboard-ready.
 
 ## Later
 
