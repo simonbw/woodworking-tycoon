@@ -1,3 +1,4 @@
+import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
@@ -9,6 +10,7 @@ export const freeSellingShop: GameState = {
   tick: 0,
   money: 100,
   reputation: 5,
+  consumables: NO_CONSUMABLES,
   materialPiles: [],
   player: {
     name: "Player",

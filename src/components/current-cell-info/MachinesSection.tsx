@@ -25,6 +25,7 @@ import {
   createMockMaterial,
   getMaterialName,
 } from "../../game/material-helpers";
+import { CONSUMABLE_TYPES } from "../../game/Consumable";
 import {
   executeOperation,
   generateOperationPreview,
@@ -99,7 +100,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
-  const canOperate = machineCanOperate(machine);
+  const canOperate = machineCanOperate(machine, gameState.consumables);
   const isOperating = machine.operationProgress.status === "inProgress";
   const phases = selectedOperation
     ? getOperationPhases(selectedOperation, gameState.progression)
@@ -262,6 +263,32 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
       </div>
 
       <ToolRack machine={machine} />
+
+      {/* Supplies drawn from the shop-wide stock when the op starts */}
+      {selectedOperation?.requiredConsumables &&
+        selectedOperation.requiredConsumables.length > 0 && (
+          <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+            Supplies:{" "}
+            {selectedOperation.requiredConsumables.map((cost, i) => {
+              const type = CONSUMABLE_TYPES[cost.id];
+              const stocked = gameState.consumables[cost.id] ?? 0;
+              const enough = stocked >= cost.amount;
+              // "8 nails", but "4 oz Mineral Oil" when the unit isn't the name
+              const label =
+                type.unit === type.name.toLowerCase()
+                  ? `${cost.amount} ${type.unit}`
+                  : `${cost.amount} ${type.unit} ${type.name}`;
+              return (
+                <span key={cost.id}>
+                  {i > 0 && " · "}
+                  <span className={enough ? "" : "text-store-orange-dark"}>
+                    {label} (have {stocked})
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        )}
 
       {/* Slot diagram — inset bay with darker frame */}
       <div className="flex items-center gap-3 p-3 bg-workshop-panel/15 border border-ink-black/20 rounded">

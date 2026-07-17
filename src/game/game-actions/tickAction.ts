@@ -1,3 +1,4 @@
+import { addConsumables, ConsumableAmount } from "../Consumable";
 import { GameAction } from "../GameState";
 import { SoundEvent } from "../SoundEvent";
 import { applyWorkItemAction } from "./work-item-actions";
@@ -66,6 +67,7 @@ export const tickAction: GameAction = (gameState) => {
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
   const toolsGranted: ToolId[] = [];
+  const consumablesGranted: ConsumableAmount[] = [];
   const updatedMachines = gameState.machines.map((machineState) => {
     if (machineState.operationProgress.status !== "inProgress") {
       return machineState;
@@ -149,11 +151,12 @@ export const tickAction: GameAction = (gameState) => {
     }
 
     // Operation completed - apply the transformation
-    const { inputs, outputs, toolOutputs } = executeOperation(
-      selectedOperation,
-      machineState.processingMaterials,
-      machineState.selectedParameters
-    );
+    const { inputs, outputs, toolOutputs, consumableOutputs } =
+      executeOperation(
+        selectedOperation,
+        machineState.processingMaterials,
+        machineState.selectedParameters
+      );
 
     for (const output of outputs) {
       if (isFinishedProduct(output)) {
@@ -164,6 +167,11 @@ export const tickAction: GameAction = (gameState) => {
     // Shop-made tooling (e.g. the crosscut sled) lands in tool storage
     if (toolOutputs) {
       toolsGranted.push(...toolOutputs);
+    }
+
+    // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock
+    if (consumableOutputs) {
+      consumablesGranted.push(...consumableOutputs);
     }
 
     // Cue a sound for the finished operation; GameSoundLayer picks the clip
@@ -232,5 +240,16 @@ export const tickAction: GameAction = (gameState) => {
         }
       : nextState;
 
-  return withXp(withTools, xpEarned);
+  const withConsumables =
+    consumablesGranted.length > 0
+      ? {
+          ...withTools,
+          consumables: addConsumables(
+            withTools.consumables,
+            consumablesGranted,
+          ),
+        }
+      : withTools;
+
+  return withXp(withConsumables, xpEarned);
 };

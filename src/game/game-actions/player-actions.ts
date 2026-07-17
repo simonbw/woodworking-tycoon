@@ -1,4 +1,5 @@
 import { materialMeetsInput } from "../material-helpers";
+import { hasConsumables, subtractConsumables } from "../Consumable";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
 import { Machine, MachineOperation, ParameterizedOperation, ParameterValues, MACHINE_TYPES } from "../Machine";
@@ -256,6 +257,14 @@ export function operateMachineAction(machine: Machine): GameAction {
       }
     }
 
+    // Supplies are spent up front — once the operation starts, the glue is
+    // out of the bottle and the nails are in the wood.
+    const consumableCosts = machine.selectedOperation.requiredConsumables ?? [];
+    if (!hasConsumables(gameState.consumables, consumableCosts)) {
+      console.warn("Tried to perform operation without required supplies");
+      return gameState;
+    }
+
     // Start the operation - move materials to processing and enter phase 0
     const [firstPhase] = getOperationPhases(
       machine.selectedOperation,
@@ -263,6 +272,7 @@ export function operateMachineAction(machine: Machine): GameAction {
     );
     return {
       ...gameState,
+      consumables: subtractConsumables(gameState.consumables, consumableCosts),
       machines: gameState.machines.map((m) =>
         vectorEquals(m.position, machineState.position)
           ? {

@@ -1,5 +1,6 @@
 import {
   Board,
+  Finish,
   FinishedProduct,
   MaterialInstance,
   Species,
@@ -52,6 +53,15 @@ export const SURFACE_VALUE_MULTIPLIER: Record<SurfaceCondition, number> = {
   rough: 1,
   smooth: 1.15,
   sanded: 1.3,
+};
+
+/**
+ * A finished finish sells better than raw wood. Each finish will earn its
+ * multiplier a different way (cost, labor, cure time) as the finishing
+ * system grows; mineral oil is the cheap, easy baseline.
+ */
+export const FINISH_VALUE_MULTIPLIER: Record<Finish, number> = {
+  mineralOil: 1.25,
 };
 
 export function getSellValue(material: MaterialInstance): number {
@@ -116,7 +126,12 @@ export function getSellValue(material: MaterialInstance): number {
             2) *
           1.5
         : SPECIES_VALUE_MULTIPLIER[material.species];
-      return roundToCents(PRODUCT_VALUES[material.type] * speciesMultiplier);
+      const finishMultiplier = material.finish
+        ? FINISH_VALUE_MULTIPLIER[material.finish]
+        : 1;
+      return roundToCents(
+        PRODUCT_VALUES[material.type] * speciesMultiplier * finishMultiplier,
+      );
     }
     case "unknown":
       return 0;

@@ -75,7 +75,10 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await page.waitForTimeout(300);
       await expect(page.getByText("Tool Wall")).toBeVisible();
       await expect(page.getByText("Sanding Block")).toBeVisible();
-      await expect(page.getByText("$10.00")).toBeVisible();
+      // Scoped: the supplies aisle sells a $10.00 oil bottle too
+      await expect(
+        page.locator("section", { hasText: "Tool Wall" }).getByText("$10.00"),
+      ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
       // Default finish is S4S: workhorse pine at full price
       await expect(
@@ -94,10 +97,10 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     });
 
     await test.step("mount the sander at the workspace", async () => {
-      await expect(page.getByText("1/1 slots")).not.toBeVisible();
+      await expect(page.getByText("1/2 slots")).not.toBeVisible();
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
-      await expect(page.getByText("1/1 slots")).toBeVisible();
+      await expect(page.getByText("1/2 slots")).toBeVisible();
       // The sander's operations joined the workspace's Mode list
       const modeOptions = await workspaceCard(page)
         .locator("select")

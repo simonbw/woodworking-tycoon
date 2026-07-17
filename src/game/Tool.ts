@@ -1,5 +1,6 @@
 import type { MachineId, MachineOperation } from "./Machine";
 import { crosscutSled } from "./tools/crosscutSled";
+import { hammer } from "./tools/hammer";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
 import { sandingBlock } from "./tools/sandingBlock";
 
@@ -30,6 +31,7 @@ export interface ToolType {
 }
 
 export const TOOL_TYPES = {
+  hammer,
   sandingBlock,
   randomOrbitSander,
   crosscutSled,

@@ -87,10 +87,17 @@ export function getMaterialName(material: MaterialInstance): string {
       return `${speciesName} End-Grain Slice`;
     }
     default:
-      if (isFinishedProduct(material) && material.accentSpecies) {
-        return `${humanizeString(material.species)} & ${humanizeString(
-          material.accentSpecies,
-        )} ${humanizeString(material.type)}`;
+      if (isFinishedProduct(material)) {
+        // "mineralOil" reads as "Oiled"; future finishes name themselves here
+        const finishPrefix = material.finish === "mineralOil" ? "Oiled " : "";
+        if (material.accentSpecies) {
+          return `${finishPrefix}${humanizeString(
+            material.species,
+          )} & ${humanizeString(material.accentSpecies)} ${humanizeString(
+            material.type,
+          )}`;
+        }
+        return `${finishPrefix}${humanizeString(material.type)}`;
       }
       return humanizeString(material.type);
   }

@@ -1,4 +1,5 @@
 import { GameState } from "../../src/game/GameState";
+import { consumablesShop } from "./consumables-shop";
 import { cuttingBoardShop } from "./cutting-board-shop";
 import { freeSellingShop } from "./free-selling-shop";
 import { layoutWithMiterSawInStorage } from "./layout-with-miter-saw-in-storage";
@@ -13,6 +14,7 @@ export const TEST_FIXTURES: Record<string, GameState> = {
   "cutting-board-shop": cuttingBoardShop,
   "pattern-board-shop": patternBoardShop,
   "end-grain-shop": endGrainShop,
+  "consumables-shop": consumablesShop,
 };
 
 // Expose fixtures to window for manual testing
