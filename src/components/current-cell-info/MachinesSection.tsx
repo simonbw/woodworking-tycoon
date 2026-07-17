@@ -32,28 +32,45 @@ import {
   isParameterizedOperation,
 } from "../../game/operation-helpers";
 import { groupBy } from "../../utils/arrayUtils";
+import { classNames } from "../../utils/classNames";
+import { ShortcutKeys } from "../shortcuts/Kbd";
+import { useTargetedMachine } from "../TargetedMachineContext";
+import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ProgressButton } from "../ProgressButton";
 import { MaterialIcon } from "./MaterialIcon";
 
 export const MachinesSection: React.FC = () => {
   const gameState = useGameState();
-
-  const cellMap = useCellMap();
-  const playerCell = cellMap.at(gameState.player.position);
+  const { machines, isTargeted } = useTargetedMachine();
 
   // The player can't work machines while out of the shop
-  if (gameState.player.away || !playerCell?.operableMachines.length) {
+  if (gameState.player.away || machines.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-3">
-      {playerCell.operableMachines.map((machine) => (
-        <MachineSpecSheet
+      {machines.map((machine) => (
+        <div
           key={machine.type.name + machine.position.join(",")}
-          machine={machine}
-        />
+          // With only one machine here the keys are unambiguous, so the
+          // targeting outline would just be noise.
+          className={classNames(
+            "rounded-sm",
+            machines.length > 1 &&
+              isTargeted(machine) &&
+              "ring-2 ring-ink-blue/60 ring-offset-2 ring-offset-workshop-bg",
+          )}
+        >
+          {machines.length > 1 && isTargeted(machine) && (
+            <div className="flex items-center gap-1.5 pb-1 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-blue">
+              <ShortcutKeys shortcut="cycle-machine" />
+              <span>keys act on this one</span>
+            </div>
+          )}
+          <MachineSpecSheet machine={machine} />
+        </div>
       ))}
     </div>
   );
@@ -62,6 +79,7 @@ export const MachinesSection: React.FC = () => {
 const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
+  const { isTargeted } = useTargetedMachine();
 
   // Only skill-unlocked recipes appear at the station; locked ones live on
   // the Skills page. Stations with nothing usable (e.g. the sales table)
@@ -375,13 +393,18 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
         )}
       </div>
 
-      <ProgressButton
-        progress={progressPercent / 100}
-        disabled={!canOperate}
-        onClick={() => applyAction(operateMachineAction(machine))}
+      <Tooltip
+        content="Operate this machine"
+        shortcut={isTargeted(machine) ? "operate-machine" : undefined}
       >
-        {isOperating ? "Operating..." : "Operate"}
-      </ProgressButton>
+        <ProgressButton
+          progress={progressPercent / 100}
+          disabled={!canOperate}
+          onClick={() => applyAction(operateMachineAction(machine))}
+        >
+          {isOperating ? "Operating..." : "Operate"}
+        </ProgressButton>
+      </Tooltip>
     </section>
   );
 };

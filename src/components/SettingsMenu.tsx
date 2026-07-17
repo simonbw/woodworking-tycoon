@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useEffect } from "react";
 import { getSfxBus } from "../utils/audioBus";
 import { setAudioSettings } from "../utils/audioSettings";
 import { playUiSound } from "../utils/sfx";
+import { useModalScope, useShortcut } from "./shortcuts/ShortcutProvider";
 import { useAudioSettings } from "./useAudioSettings";
-import { useKeyDown } from "./useKeyDown";
 
 interface SettingsMenuProps {
   onClose: () => void;
@@ -18,14 +18,10 @@ interface SettingsMenuProps {
 export const SettingsMenu: React.FC<SettingsMenuProps> = ({ onClose }) => {
   const settings = useAudioSettings();
 
-  useKeyDown(
-    useCallback(
-      (e: KeyboardEvent) => {
-        if (e.key === "Escape") onClose();
-      },
-      [onClose],
-    ),
-  );
+  // Claims the modal scope, so Escape closes this and nothing else — it used
+  // to also clear the player's work queue on the page behind.
+  useModalScope();
+  useShortcut("close-modal", onClose);
 
   // Build the audio graph up front (if a sound hasn't already) so dragging a
   // slider is audible immediately, not only after the first release tick.

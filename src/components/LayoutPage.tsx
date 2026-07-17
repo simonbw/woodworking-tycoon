@@ -18,8 +18,8 @@ import { findPath } from "../utils/pathingUtils";
 import { NavBar } from "./NavBar";
 import { LayoutEditorCanvas } from "./layout-page/LayoutEditorCanvas";
 import { StorageSection } from "./layout-page/StorageSection";
+import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { useApplyGameAction, useGameState, useMachines } from "./useGameState";
-import { useKeyDown } from "./useKeyDown";
 
 interface PlacementMode {
   machineType: MachineType;
@@ -53,32 +53,32 @@ export const LayoutPage: React.FC = () => {
       ? "moving"
       : "none";
 
-  useKeyDown((event) => {
-    switch (event.key) {
-      case "Escape":
-        setPlacementMode(null);
-        setSelectedMachineIndex(null);
-        return;
-      case "r":
-      case "R":
-        if (placementMode) {
-          setPlacementMode({
-            ...placementMode,
-            rotation: ((placementMode.rotation + 1) % 4) as Direction,
-          });
-        } else if (selectedMachineIndex !== null) {
-          setMoveRotation(((moveRotation + 1) % 4) as Direction);
-        }
-        break;
-      case "Delete":
-      case "Backspace":
-        if (selectedMachineIndex !== null) {
-          updateGameState(removeMachineToStorageAction(selectedMachineIndex));
-          setSelectedMachineIndex(null);
-        }
-        break;
+  useShortcut("layout-cancel", () => {
+    setPlacementMode(null);
+    setSelectedMachineIndex(null);
+  });
+
+  useShortcut("layout-rotate", () => {
+    if (placementMode) {
+      setPlacementMode({
+        ...placementMode,
+        rotation: ((placementMode.rotation + 1) % 4) as Direction,
+      });
+    } else if (selectedMachineIndex !== null) {
+      setMoveRotation(((moveRotation + 1) % 4) as Direction);
     }
   });
+
+  useShortcut(
+    "layout-remove",
+    () => {
+      if (selectedMachineIndex !== null) {
+        updateGameState(removeMachineToStorageAction(selectedMachineIndex));
+        setSelectedMachineIndex(null);
+      }
+    },
+    selectedMachineIndex !== null,
+  );
 
   const handleFloorTileClick = useCallback(
     (position: [number, number]) => {

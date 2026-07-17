@@ -4,6 +4,7 @@ import { CommissionsSection } from "./CommissionsSection";
 import { ErrandsSection } from "./ErrandsSection";
 import { MoneySection } from "./MoneySection";
 import { NavBar } from "./NavBar";
+import { TargetedMachineProvider } from "./TargetedMachineContext";
 import { Ticker } from "./Ticker";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
 import { InventorySection } from "./current-cell-info/InventorySection";
@@ -11,6 +12,14 @@ import { MachinesSection } from "./current-cell-info/MachinesSection";
 import { ShopView } from "./shop-view/ShopView";
 
 export const HomePage: React.FC = () => {
+  return (
+    <TargetedMachineProvider>
+      <HomePageContent />
+    </TargetedMachineProvider>
+  );
+};
+
+const HomePageContent: React.FC = () => {
   return (
     <main className="p-8 space-y-6">
       <NavBar />

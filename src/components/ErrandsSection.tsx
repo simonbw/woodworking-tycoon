@@ -1,5 +1,7 @@
 import React from "react";
 import { startScavengingAction } from "../game/game-actions/scavenge-actions";
+import { useShortcut } from "./shortcuts/ShortcutProvider";
+import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 /** Off-site things the player can spend time on, like scavenging for pallets. */
@@ -7,12 +9,19 @@ export const ErrandsSection: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
 
+  const away = gameState.player.away;
+  const ticksLeft = away ? Math.max(0, away.returnTick - gameState.tick) : 0;
+  const canScavenge = gameState.progression.freeSelling && !away;
+
+  useShortcut(
+    "scavenge",
+    () => applyAction(startScavengingAction()),
+    canScavenge,
+  );
+
   if (!gameState.progression.freeSelling) {
     return null;
   }
-
-  const away = gameState.player.away;
-  const ticksLeft = away ? Math.max(0, away.returnTick - gameState.tick) : 0;
 
   return (
     <section className="space-y-3">
@@ -31,12 +40,14 @@ export const ErrandsSection: React.FC = () => {
                 pallets in whatever shape you find them.
               </div>
             </div>
-            <button
-              className="button-paper text-xs"
-              onClick={() => applyAction(startScavengingAction())}
-            >
-              Go
-            </button>
+            <Tooltip content="Go scavenging" shortcut="scavenge">
+              <button
+                className="button-paper text-xs"
+                onClick={() => applyAction(startScavengingAction())}
+              >
+                Go
+              </button>
+            </Tooltip>
           </div>
         )}
       </div>
