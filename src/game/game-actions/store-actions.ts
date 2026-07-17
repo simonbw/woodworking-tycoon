@@ -1,4 +1,5 @@
 import { GameAction } from "../GameState";
+import { addConsumables, CONSUMABLE_TYPES, ConsumableId } from "../Consumable";
 import { getActiveCommission } from "../commissionSequence";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
@@ -24,6 +25,24 @@ export function buyMaterialAction(
         ...gameState.player,
         inventory: [...gameState.player.inventory, material],
       },
+    };
+  };
+}
+
+/** Buys one pack of a consumable — supplies go straight to the shop stock. */
+export function buyConsumablePackAction(consumableId: ConsumableId): GameAction {
+  return (gameState) => {
+    const { packSize, packPrice } = CONSUMABLE_TYPES[consumableId];
+    if (gameState.money < packPrice) {
+      console.warn("Tried to buy supplies without enough money");
+      return gameState;
+    }
+    return {
+      ...gameState,
+      money: gameState.money - packPrice,
+      consumables: addConsumables(gameState.consumables, [
+        { id: consumableId, amount: packSize },
+      ]),
     };
   };
 }

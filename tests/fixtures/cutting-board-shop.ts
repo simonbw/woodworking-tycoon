@@ -1,3 +1,4 @@
+import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 import { MachineState } from "../../src/game/Machine";
@@ -36,6 +37,7 @@ export const cuttingBoardShop: GameState = {
   tick: 0,
   money: 100,
   reputation: 17,
+  consumables: NO_CONSUMABLES,
   materialPiles: [],
   player: {
     name: "Player",

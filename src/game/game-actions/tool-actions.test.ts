@@ -64,11 +64,11 @@ describe("mountToolAction", () => {
     assert.ok(operationIds.includes("dismantlePallet"));
   });
 
-  it("refuses when all slots are full (workspace has 1)", () => {
+  it("refuses when all slots are full (workspace has 2)", () => {
     const state = toolState(
       initialGameState,
       ["randomOrbitSander"],
-      ["sandingBlock"],
+      ["hammer", "sandingBlock"],
     );
     const result = mountToolAction(
       workspaceOf(state),

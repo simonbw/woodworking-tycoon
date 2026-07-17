@@ -1,3 +1,4 @@
+import { ConsumableStock } from "./Consumable";
 import { MachineState, MachineId } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
@@ -35,6 +36,11 @@ export interface GameState {
   readonly money: number;
   readonly reputation: number;
   readonly materialPiles: ReadonlyArray<MaterialPile>;
+  /**
+   * Shop-wide supplies (nails, finish oil, …). Not physical items — recipes
+   * draw amounts straight from this stock. See Consumable.ts.
+   */
+  readonly consumables: ConsumableStock;
   readonly machines: ReadonlyArray<MachineState>;
   readonly shopInfo: ShopInfo;
   readonly player: Person;

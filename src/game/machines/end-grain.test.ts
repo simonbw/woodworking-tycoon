@@ -256,6 +256,8 @@ describe("shop-made tooling", () => {
           ...withSled.machines[0],
           machineTypeId: "jobsiteTableSaw",
           selectedOperationId: "ripBoard",
+          // The starter hammer stays at the bench — the saw's slot is free
+          tools: [],
         },
       ],
     };

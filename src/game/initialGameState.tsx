@@ -1,5 +1,7 @@
+import { NO_CONSUMABLES } from "./Consumable";
 import { GameState } from "./GameState";
 import { STARTER_SKILLS } from "./Skill";
+import { ToolId } from "./Tool";
 import {
   MACHINE_TYPES,
   MachineId,
@@ -20,6 +22,9 @@ export const initialGameState: GameState = {
       position: [2, 4], // Positioned for easy access to workspace
     },
   ],
+  // No starter kit: supplies come from the store, or back out of salvage
+  // (prying a pallet apart recovers its nails)
+  consumables: NO_CONSUMABLES,
   player: {
     name: "Player",
     position: [0, 0],
@@ -30,8 +35,8 @@ export const initialGameState: GameState = {
     away: null,
   },
   machines: [
-    // Single workspace for tutorial
-    machine("workspace", [1, 2], 0),
+    // Single workspace for tutorial, with the starter hammer mounted
+    machine("workspace", [1, 2], 0, ["hammer"]),
     // Garbage can for disposing unwanted materials
     machine("garbageCan", [0, 5], 0),
   ],
@@ -64,6 +69,7 @@ function machine(
   machineTypeId: MachineId,
   position: [number, number],
   rotation: Direction,
+  tools: ReadonlyArray<ToolId> = [],
 ): MachineState {
   const machineType = MACHINE_TYPES[machineTypeId];
   const firstOperation = machineType.operations[0];
@@ -84,7 +90,7 @@ function machine(
     inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
-    tools: [],
+    tools,
     selectedOperationId: firstOperation.id,
     selectedParameters,
     operationProgress: {

@@ -1,7 +1,7 @@
 import { array } from "../../utils/arrayUtils";
 import { board, isBoard } from "../board-helpers";
 import { MachineType, OperationPhase } from "../Machine";
-import { makeMaterial } from "../material-helpers";
+import { isFinishedProduct, makeMaterial } from "../material-helpers";
 import {
   Pallet,
   EndGrainSlice,
@@ -54,7 +54,8 @@ export const workspace: MachineType = {
   operationPosition: [0, 1],
   cost: 0,
   materialStorage: 0,
-  toolSlots: 1,
+  // Two slots: the starter hammer plus room for a sander
+  toolSlots: 2,
   inputSpaces: 5,
   operations: [
     {
@@ -72,6 +73,8 @@ export const workspace: MachineType = {
         const deckBoardsCount = inputPallet.deckBoards.filter(
           (board: boolean) => board
         ).length;
+        // Every board pried loose gives its nails back — one per board.
+        // A whole pallet worth of prying keeps the rustic shelf free.
         if (deckBoardsCount <= 1) {
           const stringers = array(3).map(() => board("pallet", 4, 6, 3));
           const deckBoards = array(deckBoardsCount).map(() =>
@@ -80,6 +83,9 @@ export const workspace: MachineType = {
           return {
             inputs: [],
             outputs: [...stringers, ...deckBoards],
+            consumableOutputs: [
+              { id: "nails" as const, amount: 3 + deckBoardsCount },
+            ],
           };
         } else {
           const deckBoardsLeft = [
@@ -95,35 +101,9 @@ export const workspace: MachineType = {
               }),
             ],
             outputs: [board("pallet", 3, 4, 1)],
+            consumableOutputs: [{ id: "nails" as const, amount: 1 }],
           };
         }
-      },
-    },
-    {
-      name: "Build Rustic Pallet Shelf",
-      id: "buildRusticPalletShelf",
-      requiredSkill: "rusticCarpentry",
-      duration: 30,
-      inputMaterials: [
-        { type: ["board"], species: ["pallet"], width: [6], length: [4], quantity: 2 }, // stringers as shelves
-        { type: ["board"], species: ["pallet"], width: [4], length: [3], quantity: 3 }, // deck boards as back support
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        // Validate inputs
-        const boards = materials.filter((m: MaterialInstance): m is Board => m.type === "board");
-        if (boards.length !== 5) {
-          throw new Error("Need exactly 5 boards to build a rustic shelf");
-        }
-
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "rusticShelf",
-              species: "pallet",
-            }),
-          ],
-        };
       },
     },
     {
@@ -516,6 +496,48 @@ export const workspace: MachineType = {
               type: "sunriseCuttingBoard",
               species,
               accentSpecies,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Oil Cutting Board",
+      id: "oilCuttingBoard",
+      requiredSkill: "surfacePrep",
+      duration: 6 + 24,
+      // The second consumer of hands-free phases: a quick wipe-down, then
+      // the oil soaks in on its own time
+      phases: [
+        { name: "Wipe On Oil", duration: 6, attended: true },
+        { name: "Soaking In", duration: 24, attended: false },
+      ],
+      requiredConsumables: [{ id: "mineralOil", amount: 4 }],
+      inputMaterials: [
+        {
+          type: [
+            "simpleCuttingBoard",
+            "stripedCuttingBoard",
+            "sunriseCuttingBoard",
+            "endGrainCuttingBoard",
+          ],
+          quantity: 1,
+          // Boards only get oiled once
+          matches: (material) =>
+            isFinishedProduct(material) && material.finish === undefined,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const rawBoard = materials[0];
+        if (!isFinishedProduct(rawBoard)) {
+          throw new Error("Input material is not a cutting board");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              ...rawBoard,
+              finish: "mineralOil",
             }),
           ],
         };

@@ -1,3 +1,4 @@
+import { ConsumableStock, hasConsumables, NO_CONSUMABLES } from "./Consumable";
 import { InputMaterialWithQuantity, Machine } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { createMockMaterial, materialMeetsInput } from "./material-helpers";
@@ -127,7 +128,10 @@ export function playerAttendsMachine(
   return !playerIsAway && vectorEquals(playerPosition, operationCell);
 }
 
-export function machineCanOperate(machine: Machine): boolean {
+export function machineCanOperate(
+  machine: Machine,
+  consumables: ConsumableStock = NO_CONSUMABLES,
+): boolean {
   const operation = machine.selectedOperationOrNull;
   if (!operation) {
     return false;
@@ -139,6 +143,10 @@ export function machineCanOperate(machine: Machine): boolean {
 
   const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);
 
-  // Machine can operate if all slots have valid materials (no placeholders, all valid)
-  return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
+  // Machine can operate if all slots have valid materials (no placeholders,
+  // all valid) and the shop stock covers the recipe's supplies
+  return (
+    slots.every((slot) => slot.isValid && !slot.isPlaceholder) &&
+    hasConsumables(consumables, operation.requiredConsumables ?? [])
+  );
 }

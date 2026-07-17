@@ -1,4 +1,5 @@
 import { LRUCache } from "typescript-lru-cache";
+import type { ConsumableAmount } from "./Consumable";
 import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
@@ -62,6 +63,11 @@ export interface MachineOperation {
   readonly phases?: ReadonlyArray<OperationPhase>;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
+  /**
+   * Shop supplies drawn from GameState.consumables when the operation
+   * starts (no refunds — the glue is already out of the bottle).
+   */
+  readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
   readonly inputMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly output: (
     materials: ReadonlyArray<MaterialInstance>,
@@ -94,6 +100,11 @@ export interface OperationOutput {
    * recipes produce tooling, not product.
    */
   toolOutputs?: ReadonlyArray<ToolId>;
+  /**
+   * Supplies recovered on completion (added to GameState.consumables) —
+   * e.g. the nails that come out of a dismantled pallet.
+   */
+  consumableOutputs?: ReadonlyArray<ConsumableAmount>;
 }
 
 // Parameterized operation system
@@ -116,6 +127,8 @@ export interface ParameterizedOperation<
   readonly phases?: ReadonlyArray<OperationPhase>;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
+  /** See MachineOperation.requiredConsumables. */
+  readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
   readonly parameters: ReadonlyArray<OperationParameter>;
   readonly getInputMaterials: (
     params: TParams,

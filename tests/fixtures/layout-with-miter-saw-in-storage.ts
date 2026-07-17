@@ -1,3 +1,4 @@
+import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
@@ -5,6 +6,7 @@ export const layoutWithMiterSawInStorage: GameState = {
   tick: 0,
   money: 50,
   reputation: 2,
+  consumables: NO_CONSUMABLES,
   materialPiles: [],
   player: {
     name: "Player",

@@ -245,6 +245,7 @@ describe("tickAction", () => {
       board("pallet", 3, 4, 1),
     ];
     const machine = workspaceMachine({
+      tools: ["hammer"],
       selectedOperationId: "buildRusticPalletShelf",
       processingMaterials: shelfBoards,
       operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 1 },

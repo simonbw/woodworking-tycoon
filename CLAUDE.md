@@ -58,6 +58,7 @@ The game follows a state-driven architecture with clear separation between game 
 - **Machines** (`src/game/Machine.ts`): Woodworking equipment with input/output specifications
 - **Tools** (`src/game/Tool.ts`, `src/game/tools/`): Handheld tools that mount into a workstation's tool slots and add operations there (see `docs/tools-and-surfaces.md`)
 - **Operations**: Each machine can perform specific operations transforming materials; a station's operation list combines its own operations with its mounted tools'
+- **Consumables** (`src/game/Consumable.ts`): Shop-wide supplies (nails, finishes) that operations consume and salvage can return (see `docs/consumables.md`)
 - **Material Piles**: Physical placement of materials in the shop space
 
 ### Rendering Architecture

@@ -120,6 +120,14 @@ export function panelSpecies(panel: Panel): ReadonlyArray<Species> {
   return [...new Set(panel.strips.map((strip) => strip.species))];
 }
 
+/**
+ * Applied finishes. Mineral oil is the food-safe one — the only finish a
+ * cutting board takes. Film finishes (wax oil, lacquer, poly) join this
+ * union when the wider finishing system lands.
+ */
+export const FINISHES = ["mineralOil"] as const;
+export type Finish = (typeof FINISHES)[number];
+
 export type FinishedProduct = {
   readonly id: string;
   readonly type:
@@ -133,6 +141,8 @@ export type FinishedProduct = {
   readonly species: Species;
   /** Second wood in a two-tone piece (e.g. striped cutting boards). */
   readonly accentSpecies?: Species;
+  /** Absent means raw wood — finishing is a separate, value-adding step. */
+  readonly finish?: Finish;
 };
 
 export type Pallet = {
