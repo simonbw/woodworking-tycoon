@@ -4,9 +4,11 @@ import { MachineType, OperationPhase } from "../Machine";
 import { makeMaterial } from "../material-helpers";
 import {
   Pallet,
+  EndGrainSlice,
   FinishedProduct,
   Board,
   MaterialInstance,
+  Panel,
   panelSpecies,
   panelWidth,
   REAL_WOOD_SPECIES,
@@ -262,6 +264,95 @@ export const workspace: MachineType = {
               panels[0].thickness,
               "rough",
             ),
+          ],
+        };
+      },
+    },
+    {
+      name: "Build Crosscut Sled",
+      id: "buildCrosscutSled",
+      requiredSkill: "jigsAndFixtures",
+      duration: 40,
+      inputMaterials: [
+        // A plywood base plus scrap runners and a fence
+        { type: ["plywood"], length: [4], width: [4], quantity: 1 },
+        { type: ["board"], width: [4], length: [3], thickness: [1], quantity: 2 },
+      ],
+      output: () => {
+        // The output is tooling, not product: the sled lands in tool
+        // storage, ready to mount on the table saw
+        return {
+          inputs: [],
+          outputs: [],
+          toolOutputs: ["crosscutSled" as const],
+        };
+      },
+    },
+    {
+      name: "Glue Up End-Grain Panel",
+      id: "glueUpEndGrain",
+      requiredSkill: "endGrainBoards",
+      duration: 8 + GLUE_CURE_TICKS,
+      phases: gluePhases(8),
+      inputMaterials: [{ type: ["endGrainSlice"], quantity: 4 }],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const slices = materials.filter(
+          (m): m is EndGrainSlice => m.type === "endGrainSlice",
+        );
+        if (slices.length !== 4) {
+          throw new Error("Need exactly 4 slices for an end-grain glue-up");
+        }
+        // Stood on end and clamped: a short, thick blank showing the
+        // source pattern as its face. 8/4 thick — butcher-block territory.
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<Panel>({
+              type: "panel",
+              grain: "end",
+              strips: slices[0].strips,
+              length: 1,
+              thickness: 8,
+              surface: "rough",
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Finish End-Grain Board",
+      id: "finishEndGrainBoard",
+      requiredSkill: "endGrainBoards",
+      duration: 45,
+      inputMaterials: [
+        {
+          type: ["panel"],
+          length: [1],
+          thickness: [8],
+          surface: ["sanded"],
+          quantity: 1,
+          // v1 is the single-species butcher block; checkerboards come
+          // with slice orientation later
+          matches: (material) =>
+            isPanel(material) &&
+            material.grain === "end" &&
+            panelWidth(material) >= 10 &&
+            panelSpecies(material).length === 1 &&
+            material.strips[0].species !== "pallet",
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const blank = materials[0];
+        if (!isPanel(blank)) {
+          throw new Error("Input material is not a panel");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "endGrainCuttingBoard",
+              species: blank.strips[0].species,
+            }),
           ],
         };
       },

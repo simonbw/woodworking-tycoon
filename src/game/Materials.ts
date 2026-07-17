@@ -89,6 +89,25 @@ export interface Panel {
   readonly thickness: BoardDimension;
   readonly strips: ReadonlyArray<PanelStrip>;
   readonly surface: SurfaceCondition;
+  /**
+   * Which way the fibers face. "end" panels (crosscut slices re-glued
+   * grain-up) can never be planed — a planer tears end grain apart — so
+   * sanding is the only way to flatten them. Absent means "long".
+   */
+  readonly grain?: "long" | "end";
+}
+
+/**
+ * One crosscut slice of a long-grain panel, destined to be stood on end
+ * and glued into an end-grain panel. Carries the source panel's strip
+ * pattern — that's what makes checkerboards possible later.
+ */
+export interface EndGrainSlice {
+  readonly id: string;
+  readonly type: "endGrainSlice";
+  readonly strips: ReadonlyArray<PanelStrip>;
+  /** Thickness of the source panel — the slice's glue-face width. */
+  readonly thickness: BoardDimension;
 }
 
 /** Total width is derived from the strips — never stored. */
@@ -109,7 +128,8 @@ export type FinishedProduct = {
     | "jewelryBox"
     | "simpleCuttingBoard"
     | "stripedCuttingBoard"
-    | "sunriseCuttingBoard";
+    | "sunriseCuttingBoard"
+    | "endGrainCuttingBoard";
   readonly species: Species;
   /** Second wood in a two-tone piece (e.g. striped cutting boards). */
   readonly accentSpecies?: Species;
@@ -128,6 +148,12 @@ export type UnknownMaterial = {
 };
 
 export type MaterialInstance =
-  Pallet | Board | SheetGood | Panel | FinishedProduct | UnknownMaterial;
+  | Pallet
+  | Board
+  | SheetGood
+  | Panel
+  | EndGrainSlice
+  | FinishedProduct
+  | UnknownMaterial;
 
 export type MaterialType = MaterialInstance["type"];

@@ -1,4 +1,5 @@
-import { MachineOperation } from "./Machine";
+import type { MachineId, MachineOperation } from "./Machine";
+import { crosscutSled } from "./tools/crosscutSled";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
 import { sandingBlock } from "./tools/sandingBlock";
 
@@ -15,12 +16,23 @@ export interface ToolType {
   readonly name: string;
   readonly description: string;
   readonly cost: number;
+  /**
+   * Shop-made tooling: never sold in the store, only produced by a recipe
+   * (see OperationOutput.toolOutputs).
+   */
+  readonly craftedOnly?: boolean;
+  /**
+   * Machines this tool can mount on. Absent means any station with a free
+   * tool slot — right for sanders, wrong for a crosscut sled.
+   */
+  readonly compatibleMachines?: ReadonlyArray<MachineId>;
   readonly operations: ReadonlyArray<MachineOperation>;
 }
 
 export const TOOL_TYPES = {
   sandingBlock,
   randomOrbitSander,
+  crosscutSled,
 } satisfies { [id: string]: ToolType };
 
 export type ToolId = keyof typeof TOOL_TYPES;

@@ -422,7 +422,12 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
           </li>
         ))}
         {freeSlots > 0 &&
-          gameState.storage.tools.map((toolId, index) => (
+          gameState.storage.tools
+            .filter((toolId) => {
+              const compatible = TOOL_TYPES[toolId].compatibleMachines;
+              return !compatible || compatible.includes(machine.state.machineTypeId);
+            })
+            .map((toolId, index) => (
             <li
               key={`stored-${toolId}-${index}`}
               className="flex items-center gap-2 py-1 text-ink-fade"

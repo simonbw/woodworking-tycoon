@@ -4,6 +4,7 @@ import { useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
 import { StoreMachinesSection } from "./StoreMachinesSection";
 import { StoreSellingSection } from "./StoreSellingSection";
+import { StoreSuppliesSection } from "./StoreSuppliesSection";
 import { StoreToolsSection } from "./StoreToolsSection";
 
 export const StorePage: React.FC = () => {
@@ -17,6 +18,7 @@ export const StorePage: React.FC = () => {
           <div className="grid grid-cols-3 gap-4">
             <section className="space-y-4">
               <BoardSelector />
+              <StoreSuppliesSection />
             </section>
             <div className="space-y-6">
               <StoreToolsSection />

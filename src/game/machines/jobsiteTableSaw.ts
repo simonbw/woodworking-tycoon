@@ -14,7 +14,8 @@ export const jobsiteTableSaw: MachineType = {
   operationPosition: [0, 1],
   cost: 300,
   materialStorage: 0,
-  toolSlots: 0,
+  // One jig at a time — the crosscut sled is the first
+  toolSlots: 1,
   inputSpaces: 1,
   operations: [
     {

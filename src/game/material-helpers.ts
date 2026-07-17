@@ -5,6 +5,7 @@ import {
   Board,
   BOARD_DIMENSIONS,
   BoardDimension,
+  EndGrainSlice,
   FinishedProduct,
   MaterialInstance,
   Pallet,
@@ -53,6 +54,7 @@ const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
   "simpleCuttingBoard",
   "stripedCuttingBoard",
   "sunriseCuttingBoard",
+  "endGrainCuttingBoard",
 ];
 
 export function isFinishedProduct(
@@ -73,9 +75,16 @@ export function getMaterialName(material: MaterialInstance): string {
       const species = panelSpecies(material);
       const speciesName =
         species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
-      return `${speciesName} Panel (${material.length}'x${panelWidth(
+      const grainTag = material.grain === "end" ? "End-Grain " : "";
+      return `${speciesName} ${grainTag}Panel (${material.length}'x${panelWidth(
         material,
       )}"x${material.thickness}/4, ${material.surface})`;
+    }
+    case "endGrainSlice": {
+      const species = [...new Set(material.strips.map((s) => s.species))];
+      const speciesName =
+        species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
+      return `${speciesName} End-Grain Slice`;
     }
     default:
       if (isFinishedProduct(material) && material.accentSpecies) {
@@ -117,6 +126,8 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard":
+    case "endGrainSlice":
       return 10;
 
     case "plywood": {
@@ -218,12 +229,24 @@ export function createMockMaterial(
         stringerBoardsLeft: 3,
       });
 
+    case "endGrainSlice":
+      // Placeholder display only; a representative single-species slice
+      return makeMaterial<EndGrainSlice>({
+        type: "endGrainSlice",
+        thickness: 4,
+        strips: Array.from({ length: 5 }, () => ({
+          species: "maple",
+          width: 2,
+        })),
+      });
+
     case "jewelryBox":
     case "rusticShelf":
     case "shelf":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard":
       return makeMaterial<FinishedProduct>({
         type: requirement.type[0],
         species:

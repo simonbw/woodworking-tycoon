@@ -88,6 +88,12 @@ export type InputMaterialWithQuantity<
 export interface OperationOutput {
   inputs: ReadonlyArray<MaterialInstance>;
   outputs: ReadonlyArray<MaterialInstance>;
+  /**
+   * Tools granted on completion (delivered to tool storage). This is how
+   * shop-made jigs like the crosscut sled come into the world — some
+   * recipes produce tooling, not product.
+   */
+  toolOutputs?: ReadonlyArray<ToolId>;
 }
 
 // Parameterized operation system

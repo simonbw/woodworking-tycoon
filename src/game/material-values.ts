@@ -22,6 +22,8 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   // The strip-board tiers: same materials, fancier patterns, better money
   stripedCuttingBoard: 60,
   sunriseCuttingBoard: 100,
+  // Two glue-ups, two flattenings, and a jig you built yourself
+  endGrainCuttingBoard: 150,
   jewelryBox: 90,
 };
 
@@ -84,6 +86,20 @@ export function getSellValue(material: MaterialInstance): number {
           0,
         ) * SURFACE_VALUE_MULTIPLIER[material.surface],
       );
+    case "endGrainSlice":
+      // A short crosscut of a panel: same per-strip volume math
+      return roundToCents(
+        material.strips.reduce(
+          (sum, strip) =>
+            sum +
+            strip.width *
+              2 *
+              material.thickness *
+              BOARD_VALUE_PER_UNIT *
+              SPECIES_VALUE_MULTIPLIER[strip.species],
+          0,
+        ),
+      );
     case "pallet":
       return WHOLE_PALLET_VALUE;
     case "shelf":
@@ -91,7 +107,8 @@ export function getSellValue(material: MaterialInstance): number {
     case "jewelryBox":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
-    case "sunriseCuttingBoard": {
+    case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard": {
       // Two-tone pieces average their species and add a style premium
       const speciesMultiplier = material.accentSpecies
         ? ((SPECIES_VALUE_MULTIPLIER[material.species] +

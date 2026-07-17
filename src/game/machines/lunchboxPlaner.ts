@@ -84,6 +84,10 @@ export const lunchboxPlaner: MachineType = {
             type: ["panel"],
             thickness: validThicknesses,
             quantity: 1,
+            // Never feed end grain into a planer — it tears out in chunks.
+            // Sanding is the only way to flatten an end-grain panel.
+            matches: (material) =>
+              isPanel(material) && material.grain !== "end",
           },
         ];
       },
