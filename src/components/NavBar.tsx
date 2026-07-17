@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { ShortcutId } from "../game/shortcuts";
 import { classNames } from "../utils/classNames";
 import { SettingsMenu } from "./SettingsMenu";
+import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
+import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useGameState, useQuitToMenu } from "./useGameState";
@@ -11,18 +14,31 @@ export const NavBar: React.FC = () => {
   const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
   const quitToMenu = useQuitToMenu();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const help = useHelpOverlay();
+
+  useShortcut("nav-home", () => setMode({ mode: "normal" }));
+  useShortcut("nav-store", () => setMode({ mode: "store" }), storeUnlocked);
+  useShortcut(
+    "nav-layout",
+    () => setMode({ mode: "shopLayout" }),
+    shopLayoutUnlocked,
+  );
+  useShortcut("nav-skills", () => setMode({ mode: "skills" }));
+  useShortcut("open-settings", () => setSettingsOpen(true));
 
   return (
     <nav className="relative">
       <div className="flex gap-1 items-end pr-2">
         <FolderTab
           label="Home"
+          shortcut="nav-home"
           active={mode.mode === "normal"}
           onClick={() => setMode({ mode: "normal" })}
         />
         {storeUnlocked && (
           <FolderTab
             label="Store"
+            shortcut="nav-store"
             active={mode.mode === "store"}
             onClick={() => setMode({ mode: "store" })}
           />
@@ -30,6 +46,7 @@ export const NavBar: React.FC = () => {
         {shopLayoutUnlocked && (
           <FolderTab
             label="Shop Layout"
+            shortcut="nav-layout"
             active={mode.mode === "shopLayout"}
             onClick={() => setMode({ mode: "shopLayout" })}
           />
@@ -40,11 +57,21 @@ export const NavBar: React.FC = () => {
               ? `Skills (${gameState.progression.skillPoints})`
               : "Skills"
           }
+          shortcut="nav-skills"
           active={mode.mode === "skills"}
           onClick={() => setMode({ mode: "skills" })}
         />
         <div className="grow" />
-        <Tooltip content="Settings">
+        <Tooltip content="Keyboard shortcuts" shortcut="toggle-help">
+          <button
+            className="button-ghost mb-1.5 self-center text-lg leading-none font-mono"
+            onClick={help.open}
+            aria-label="Keyboard shortcuts"
+          >
+            ?
+          </button>
+        </Tooltip>
+        <Tooltip content="Settings" shortcut="open-settings">
           <button
             className="button-ghost mb-1.5 self-center text-lg leading-none"
             onClick={() => setSettingsOpen(true)}
@@ -72,21 +99,24 @@ export const NavBar: React.FC = () => {
 
 const FolderTab: React.FC<{
   label: string;
+  shortcut: ShortcutId;
   active: boolean;
   onClick: () => void;
-}> = ({ label, active, onClick }) => {
+}> = ({ label, shortcut, active, onClick }) => {
   return (
-    <button
-      onClick={onClick}
-      data-sfx="ui-tab"
-      className={classNames(
-        "relative px-5 pt-2 pb-1 rounded-t-md font-condensed uppercase tracking-[0.15em] text-sm transition-colors",
-        active
-          ? "bg-paper-manila text-ink-black font-bold pb-2 -mb-0.5 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]"
-          : "bg-paper-manila/40 text-paper-manila hover:bg-paper-manila/60 hover:text-ink-black mb-0",
-      )}
-    >
-      {label}
-    </button>
+    <Tooltip content={label} shortcut={shortcut}>
+      <button
+        onClick={onClick}
+        data-sfx="ui-tab"
+        className={classNames(
+          "relative px-5 pt-2 pb-1 rounded-t-md font-condensed uppercase tracking-[0.15em] text-sm transition-colors",
+          active
+            ? "bg-paper-manila text-ink-black font-bold pb-2 -mb-0.5 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]"
+            : "bg-paper-manila/40 text-paper-manila hover:bg-paper-manila/60 hover:text-ink-black mb-0",
+        )}
+      >
+        {label}
+      </button>
+    </Tooltip>
   );
 };

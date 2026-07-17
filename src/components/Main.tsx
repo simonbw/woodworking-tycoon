@@ -11,7 +11,8 @@ import { StorePage } from "./store-page/StorePage";
 import { SkillsPage } from "./skills-page/SkillsPage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { UiSoundLayer } from "./UiSoundLayer";
-import { ActionKeyContextProvider } from "./consumerCountContext";
+import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
+import { ShortcutHelpProvider } from "./shortcuts/ShortcutHelpOverlay";
 import { GameStateProvider, useGameState } from "./useGameState";
 
 export const Main: React.FC = () => {
@@ -33,12 +34,14 @@ export const Main: React.FC = () => {
           onQuitToMenu={handleQuitToMenu}
         >
           <UiModeProvider>
-            <ActionKeyContextProvider>
-              <ScreenSwitcher />
-              <GameSoundLayer />
-              <DebugView />
-              <FixtureLoader />
-            </ActionKeyContextProvider>
+            <ShortcutProvider>
+              <ShortcutHelpProvider>
+                <ScreenSwitcher />
+                <GameSoundLayer />
+                <DebugView />
+                <FixtureLoader />
+              </ShortcutHelpProvider>
+            </ShortcutProvider>
           </UiModeProvider>
         </GameStateProvider>
       )}

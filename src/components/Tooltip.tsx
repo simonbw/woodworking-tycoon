@@ -23,6 +23,8 @@ import {
   useMergeRefs,
   useRole,
 } from "@floating-ui/react";
+import { ShortcutId } from "../game/shortcuts";
+import { ShortcutKeys } from "./shortcuts/Kbd";
 
 // Paperwork palette (see tailwind.config.ts) — used for the arrow, which is an
 // inline SVG and can't take Tailwind fill/stroke utility classes cleanly.
@@ -35,6 +37,11 @@ export interface TooltipProps {
    * nullish, no tooltip is attached and the child renders untouched.
    */
   content?: ReactNode;
+  /**
+   * Shortcut this control is also bound to. Its key caps render after the
+   * content, so any tooltipped button advertises its hotkey for free.
+   */
+  shortcut?: ShortcutId;
   /** The trigger. Must be a single element that can hold a ref + event props. */
   children: ReactElement;
   /** Preferred side; flips automatically near screen edges. Default "top". */
@@ -53,6 +60,7 @@ export interface TooltipProps {
  */
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
+  shortcut,
   children,
   placement = "top",
   delay = 250,
@@ -92,7 +100,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const childRef = (children as { ref?: React.Ref<unknown> }).ref;
   const mergedRef = useMergeRefs([refs.setReference, childRef]);
 
-  if (content == null || !isValidElement(children)) {
+  if ((content == null && shortcut == null) || !isValidElement(children)) {
     return <>{children}</>;
   }
 
@@ -120,7 +128,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
               (className ? " " + className : "")
             }
           >
-            {content}
+            {shortcut ? (
+              <span className="inline-flex items-baseline gap-1.5">
+                {content}
+                <ShortcutKeys shortcut={shortcut} />
+              </span>
+            ) : (
+              content
+            )}
             <FloatingArrow
               ref={arrowRef}
               context={context}

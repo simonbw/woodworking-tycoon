@@ -1,9 +1,10 @@
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
+import { ShortcutId } from "../game/shortcuts";
 import { classNames } from "../utils/classNames";
+import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
-import { useKeyDown } from "./useKeyDown";
 
 const PAUSED = 0;
 const NORMAL = 5;
@@ -13,12 +14,20 @@ const FASTER = 20;
 const SpeedButton: React.FC<{
   speed: number;
   title: string;
+  shortcut: ShortcutId;
   children: ReactNode;
   ticksPerSecond: number;
   setTicksPerSecond: (speed: number) => void;
-}> = ({ speed, children, title, ticksPerSecond, setTicksPerSecond }) => {
+}> = ({
+  speed,
+  children,
+  title,
+  shortcut,
+  ticksPerSecond,
+  setTicksPerSecond,
+}) => {
   return (
-    <Tooltip content={title}>
+    <Tooltip content={title} shortcut={shortcut}>
       <button
         className={classNames(
           "p-1 text-center text-sm grow font-condensed",
@@ -54,23 +63,34 @@ export const Ticker: React.FC = () => {
     return () => clearInterval(interval);
   }, [ticksPerSecond]);
 
-  useKeyDown((event) => {
-    if (!controlsUnlocked) return;
-    switch (event.key) {
-      case "`":
-        setTicksPerSecond(PAUSED);
-        break;
-      case "1":
-        setTicksPerSecond(NORMAL);
-        break;
-      case "2":
-        setTicksPerSecond(FAST);
-        break;
-      case "3":
-        setTicksPerSecond(FASTER);
-        break;
-    }
-  });
+  useShortcut("speed-pause", () => setTicksPerSecond(PAUSED), controlsUnlocked);
+  useShortcut(
+    "speed-normal",
+    () => setTicksPerSecond(NORMAL),
+    controlsUnlocked,
+  );
+  useShortcut("speed-fast", () => setTicksPerSecond(FAST), controlsUnlocked);
+  useShortcut(
+    "speed-faster",
+    () => setTicksPerSecond(FASTER),
+    controlsUnlocked,
+  );
+  useShortcut("speed-step", () => applyAction(tickAction), controlsUnlocked);
+  // Resume at whatever speed was running before the pause, rather than
+  // silently dropping the player back to NORMAL from FAST/FASTER.
+  const speedBeforePause = useRef<number>(NORMAL);
+  useShortcut(
+    "speed-toggle",
+    () =>
+      setTicksPerSecond((current) => {
+        if (current !== PAUSED) {
+          speedBeforePause.current = current;
+          return PAUSED;
+        }
+        return speedBeforePause.current;
+      }),
+    controlsUnlocked,
+  );
 
   return (
     <section className="max-w-fit">
@@ -81,12 +101,13 @@ export const Ticker: React.FC = () => {
             <SpeedButton
               speed={PAUSED}
               title="Pause game"
+              shortcut="speed-pause"
               ticksPerSecond={ticksPerSecond}
               setTicksPerSecond={setTicksPerSecond}
             >
               ⏸
             </SpeedButton>
-            <Tooltip content="Step forward one tick">
+            <Tooltip content="Step forward one tick" shortcut="speed-step">
               <button
                 className="p-1 text-center text-sm grow font-condensed text-ink-black/70 hover:bg-ink-black/10"
                 onClick={(e) => {
@@ -100,6 +121,7 @@ export const Ticker: React.FC = () => {
             </Tooltip>
             <SpeedButton
               title="Play at normal speed"
+              shortcut="speed-normal"
               speed={NORMAL}
               ticksPerSecond={ticksPerSecond}
               setTicksPerSecond={setTicksPerSecond}
@@ -108,6 +130,7 @@ export const Ticker: React.FC = () => {
             </SpeedButton>
             <SpeedButton
               title="Play at fast speed"
+              shortcut="speed-fast"
               speed={FAST}
               ticksPerSecond={ticksPerSecond}
               setTicksPerSecond={setTicksPerSecond}
@@ -116,6 +139,7 @@ export const Ticker: React.FC = () => {
             </SpeedButton>
             <SpeedButton
               title="Play at faster speed"
+              shortcut="speed-faster"
               speed={FASTER}
               ticksPerSecond={ticksPerSecond}
               setTicksPerSecond={setTicksPerSecond}

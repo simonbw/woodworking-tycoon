@@ -1,5 +1,6 @@
 import React from "react";
 import { Machine } from "../../game/Machine";
+import { Hint } from "../shortcuts/Kbd";
 
 type EditMode = "none" | "placing" | "moving";
 
@@ -37,9 +38,9 @@ export const EditorModeIndicator: React.FC<EditorModeIndicatorProps> = ({
       <ul className="mt-3 text-xs space-y-1 font-typewriter border-t border-ink-black/20 pt-2">
         {editMode === "placing" && (
           <>
-            <Hint keys={["Click"]}>Place machine</Hint>
-            <Hint keys={["R"]}>Rotate</Hint>
-            <Hint keys={["Esc"]}>Cancel</Hint>
+            <Hint keys={[["Click"]]}>Place machine</Hint>
+            <Hint shortcut="layout-rotate" />
+            <Hint shortcut="layout-cancel">Cancel</Hint>
           </>
         )}
         {editMode === "moving" && (
@@ -47,36 +48,19 @@ export const EditorModeIndicator: React.FC<EditorModeIndicatorProps> = ({
             {movingName && (
               <li className="text-ink-fade italic">Moving: {movingName}</li>
             )}
-            <Hint keys={["Click"]}>Move</Hint>
-            <Hint keys={["R"]}>Rotate</Hint>
-            <Hint keys={["Del"]}>Remove to storage</Hint>
-            <Hint keys={["Esc"]}>Cancel</Hint>
+            <Hint keys={[["Click"]]}>Move</Hint>
+            <Hint shortcut="layout-rotate" />
+            <Hint shortcut="layout-remove" />
+            <Hint shortcut="layout-cancel">Cancel</Hint>
           </>
         )}
         {editMode === "none" && (
           <>
-            <Hint keys={["Click"]}>Select machine</Hint>
-            <Hint keys={["Place"]}>Add from storage</Hint>
+            <Hint keys={[["Click"]]}>Select machine</Hint>
+            <Hint keys={[["Place"]]}>Add from storage</Hint>
           </>
         )}
       </ul>
     </div>
   );
 };
-
-const Hint: React.FC<{ keys: string[]; children: React.ReactNode }> = ({
-  keys,
-  children,
-}) => (
-  <li className="flex items-center gap-2">
-    {keys.map((k) => (
-      <kbd
-        key={k}
-        className="font-mono text-[0.65rem] px-1.5 py-0 rounded border border-ink-black/40 bg-paper-cream"
-      >
-        {k}
-      </kbd>
-    ))}
-    <span>{children}</span>
-  </li>
-);

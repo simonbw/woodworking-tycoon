@@ -5,6 +5,8 @@ import { InputMaterialWithQuantity } from "../game/Machine";
 import { completeCommissionAction } from "../game/game-actions/store-actions";
 import { materialMeetsInput } from "../game/material-helpers";
 import { humanizeString } from "../utils/humanizeString";
+import { useShortcut } from "./shortcuts/ShortcutProvider";
+import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 export const CommissionsSection: React.FC = () => {
@@ -50,6 +52,12 @@ const WorkOrder: React.FC<{
   });
 
   const canComplete = lineItems.every((item) => item.have >= item.need);
+
+  useShortcut(
+    "complete-commission",
+    () => applyAction(completeCommissionAction()),
+    canComplete,
+  );
 
   // Slight alternating rotation for that pinned-paper feel
   const rotation = index % 2 === 0 ? "-rotate-[0.5deg]" : "rotate-[0.6deg]";
@@ -114,13 +122,18 @@ const WorkOrder: React.FC<{
               </span>
             </div>
           </div>
-          <button
-            disabled={!canComplete}
-            className="button-paper text-xs"
-            onClick={() => applyAction(completeCommissionAction())}
+          <Tooltip
+            content="Mark complete"
+            shortcut={canComplete ? "complete-commission" : undefined}
           >
-            Mark Complete
-          </button>
+            <button
+              disabled={!canComplete}
+              className="button-paper text-xs"
+              onClick={() => applyAction(completeCommissionAction())}
+            >
+              Mark Complete
+            </button>
+          </Tooltip>
         </div>
       </div>
     </article>

@@ -4,6 +4,8 @@ import { MaterialPile } from "../../game/GameState";
 import { pickUpMaterialAction } from "../../game/game-actions/player-actions";
 import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
+import { ShiftHint } from "../shortcuts/Kbd";
+import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { MaterialIcon } from "./MaterialIcon";
 
@@ -49,18 +51,20 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
           ×{piles.length}
         </span>
       )}
-      <button
-        className="button-paper text-xs"
-        onClick={(event) => {
-          if (event.shiftKey) {
-            applyAction(pickUpMaterialAction(piles));
-          } else {
-            applyAction(pickUpMaterialAction([piles[0]]));
-          }
-        }}
-      >
-        Pick Up
-      </button>
+      <Tooltip content={<ShiftHint verb="Pick up" plural={piles.length > 1} />} shortcut="pick-up">
+        <button
+          className="button-paper text-xs"
+          onClick={(event) => {
+            if (event.shiftKey) {
+              applyAction(pickUpMaterialAction(piles));
+            } else {
+              applyAction(pickUpMaterialAction([piles[0]]));
+            }
+          }}
+        >
+          Pick Up
+        </button>
+      </Tooltip>
     </li>
   );
 };

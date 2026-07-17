@@ -7,6 +7,8 @@ import {
 } from "../../game/game-actions/player-actions";
 import { getMaterialName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
+import { ShiftHint } from "../shortcuts/Kbd";
+import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { MaterialIcon } from "./MaterialIcon";
 
@@ -60,34 +62,48 @@ const InventoryListItem: React.FC<{
           ×{materials.length}
         </span>
       )}
-      <button
-        className="button-paper text-xs"
-        onClick={(event) => {
-          if (event.shiftKey) {
-            applyAction(dropMaterialAction(materials));
-          } else {
-            applyAction(dropMaterialAction([materials[0]]));
-          }
-        }}
+      <Tooltip
+        content={<ShiftHint verb="Drop" plural={materials.length > 1} />}
+        shortcut="put-down"
       >
-        Drop
-      </button>
-      {operableMachines?.map((machine, index) => (
         <button
-          key={index}
           className="button-paper text-xs"
           onClick={(event) => {
             if (event.shiftKey) {
-              applyAction(moveMaterialsToMachineAction(materials, machine));
+              applyAction(dropMaterialAction(materials));
             } else {
-              applyAction(
-                moveMaterialsToMachineAction([materials[0]], machine),
-              );
+              applyAction(dropMaterialAction([materials[0]]));
             }
           }}
         >
-          → {machine.type.name}
+          Drop
         </button>
+      </Tooltip>
+      {operableMachines?.map((machine, index) => (
+        <Tooltip
+          key={index}
+          content={
+            <ShiftHint
+              verb={`Load into ${machine.type.name}`}
+              plural={materials.length > 1}
+            />
+          }
+        >
+          <button
+            className="button-paper text-xs"
+            onClick={(event) => {
+              if (event.shiftKey) {
+                applyAction(moveMaterialsToMachineAction(materials, machine));
+              } else {
+                applyAction(
+                  moveMaterialsToMachineAction([materials[0]], machine),
+                );
+              }
+            }}
+          >
+            → {machine.type.name}
+          </button>
+        </Tooltip>
       ))}
     </li>
   );
