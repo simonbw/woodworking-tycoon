@@ -99,7 +99,7 @@ describe("describeMaterialRequirement", () => {
         species: REAL_WOOD_SPECIES,
         quantity: 2,
       }),
-      "Simple cutting board (Pine, Oak, Maple, Cherry, Walnut, Mahogany, or Purple heart)",
+      "Simple cutting board (Pine, Poplar, Oak, Maple, Cherry, Walnut, Mahogany, or Purple heart)",
     );
   });
 
@@ -129,6 +129,40 @@ describe("describeMaterialRequirement", () => {
     assert.strictEqual(
       describeMaterialRequirement({ type: ["pallet"], quantity: 1 }),
       "Pallet",
+    );
+  });
+
+  it("phrases milling constraints as shop language, silent when absent", () => {
+    // The planer's threshold: any flat reference face will do
+    assert.strictEqual(
+      describeMaterialRequirement({
+        type: ["board"],
+        jointedFaces: [1, 2],
+        quantity: 1,
+      }),
+      "Board (any species, any surface, a flat face, any length, any width, any thickness)",
+    );
+    // The glue-up's completion: both edges ripped parallel
+    assert.strictEqual(
+      describeMaterialRequirement({
+        type: ["board"],
+        length: [2],
+        width: [2],
+        thickness: [4],
+        surface: ["smooth", "sanded"],
+        jointedEdges: [2],
+        quantity: 5,
+      }),
+      "Board (any species, Smooth or Sanded, edges ripped parallel, 2'×2\"×4/4)",
+    );
+    // The jointer wants untouched stock — and unconstrained axes say nothing
+    assert.strictEqual(
+      describeMaterialRequirement({
+        type: ["board"],
+        jointedFaces: [0],
+        quantity: 1,
+      }),
+      "Board (any species, any surface, faces not yet jointed, any length, any width, any thickness)",
     );
   });
 });

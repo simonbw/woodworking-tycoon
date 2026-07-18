@@ -337,7 +337,15 @@ const DIMENSION_KEYS: ReadonlyArray<DimensionKey> = [
 const DESCRIBABLE_ATTRIBUTES: Partial<
   Record<MaterialInstance["type"], ReadonlyArray<string>>
 > = {
-  board: ["species", "surface", "length", "width", "thickness"],
+  board: [
+    "species",
+    "surface",
+    "jointedFaces",
+    "jointedEdges",
+    "length",
+    "width",
+    "thickness",
+  ],
   plywood: ["kind", "length", "width", "thickness"],
   panel: ["surface", "grain", "length", "thickness"],
 };
@@ -350,10 +358,39 @@ const DESCRIBABLE_KEYS: ReadonlyArray<string> = [
   "kind",
   "surface",
   "grain",
+  "jointedFaces",
+  "jointedEdges",
   "length",
   "width",
   "thickness",
 ];
+
+/** The milling axes only speak up when a requirement actually constrains them. */
+const JOINTED_KEYS = ["jointedFaces", "jointedEdges"] as const;
+type JointedKey = (typeof JOINTED_KEYS)[number];
+
+/**
+ * Phrase a milling constraint (see JointedCount in Materials.ts) as shop
+ * language instead of counts. Today's operations use thresholds ("at least
+ * a reference face": [1, 2]), completions ([2]), or untouched stock ([0]).
+ */
+function describeJointedConstraint(
+  key: JointedKey,
+  values: ReadonlyArray<unknown>,
+): string {
+  const set = new Set(values as number[]);
+  const faces = key === "jointedFaces";
+  if (set.has(1) && set.has(2)) {
+    return faces ? "a flat face" : "a straight edge";
+  }
+  if (set.has(2)) {
+    return faces ? "faces planed parallel" : "edges ripped parallel";
+  }
+  if (set.has(1)) {
+    return faces ? "one flat face" : "one straight edge";
+  }
+  return faces ? "faces not yet jointed" : "edges not yet jointed";
+}
 
 function requirementValues(
   req: InputMaterialWithQuantity,
@@ -395,7 +432,13 @@ export function describeMaterialRequirement(
       continue;
     }
     const values = requirementValues(req, key);
-    if (values === undefined) {
+    if (JOINTED_KEYS.includes(key as JointedKey)) {
+      // Unconstrained milling state stays silent — "any jointed faces" is
+      // noise on the many requirements that don't care about milling.
+      if (values !== undefined) {
+        qualifiers.push(describeJointedConstraint(key as JointedKey, values));
+      }
+    } else if (values === undefined) {
       qualifiers.push(`any ${humanizeString(key).toLowerCase()}`);
     } else if (key === "grain") {
       qualifiers.push(
