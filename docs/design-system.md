@@ -48,11 +48,12 @@ stack of equal-weight cards:
   commission (pinned legal sheet, foldable to a stub via its header) and
   the errands note (pinned cream memo). No label — a corkboard of work
   orders explains itself.
-- **Controls** (`ActionBar`, bottom-center) — the live-key legend drawn
-  straight on the dark background, in two columns, *overlaid* on the
-  bottom of the center well so its changing row count never moves the
-  canvas. Hint chrome on the dark background wraps in
-  `HintSurfaceContext.Provider value="chrome"` so key caps stay readable.
+- **Controls** (`ActionBar`, center) — the live-key legend drawn straight
+  on the dark background, in two columns, hanging directly under the
+  top-anchored shop view; its changing row count grows downward into the
+  void, so the canvas never moves. Hint chrome on the dark background
+  wraps in `HintSurfaceContext.Provider value="chrome"` so key caps stay
+  readable.
 - **Shop manifest** (`ShopManifest`, top-right) — one manila folder
   holding the Inventory, Floor, and Supplies sheets, all always visible;
   long lists scroll inside the folder. Supplies is the one ruled tally
@@ -74,7 +75,8 @@ Spacing discipline for the anchored layout: **one gutter unit (`gap-6` /
 `p-6`) everywhere** — page margin, column gutters, and panel gaps — and the
 two side rails share one width (`max-w-96`), so the edge-anchored
 composition reads as a deliberate grid rather than scattered cards. The
-shop view centers in the space the rails leave it.
+shop view anchors to the top of the space the rails leave it, with the
+controls legend directly beneath.
 
 When adding a new panel, first ask which existing object it belongs *inside*.
 Only mint a new top-level object if it's genuinely a new piece of furniture,

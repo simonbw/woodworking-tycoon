@@ -35,14 +35,13 @@ const HomePageContent: React.FC = () => {
         <div className="w-full max-w-96 min-h-0 overflow-y-auto">
           <JobBoard />
         </div>
-        <div className="relative grow min-h-0 min-w-0 overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <ShopView />
-          </div>
-          <div className="absolute inset-x-0 bottom-0 flex justify-center">
-            <div className="w-full max-w-md">
-              <ActionBar />
-            </div>
+        {/* Canvas anchors to the top with the controls legend hanging
+            directly under it — the legend's changing row count grows into
+            the void below, so the canvas never moves. */}
+        <div className="grow flex flex-col items-center gap-6 min-h-0 min-w-0 overflow-hidden">
+          <ShopView />
+          <div className="w-full max-w-md shrink-0">
+            <ActionBar />
           </div>
         </div>
         <div className="w-full max-w-96 flex flex-col gap-6 min-h-0">
