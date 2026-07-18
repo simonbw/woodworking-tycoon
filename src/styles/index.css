@@ -8,7 +8,9 @@
 @layer base {
   html {
     font-size: 18px;
-    @apply bg-workshop-bg text-paper-manila select-none font-typewriter;
+    /* Condensed is the quiet workhorse; typewriter is opt-in for document
+       surfaces only (see docs/design-system.md) */
+    @apply bg-workshop-bg text-paper-manila select-none font-condensed;
   }
 
   select {
@@ -58,15 +60,15 @@
   /* Paper card primitives. These have *light* backgrounds so any text inside
      should default to ink-black (handled by .paper-card text color). */
   .paper-card {
-    @apply bg-paper-manila text-ink-black p-4 rounded-sm shadow-md font-typewriter;
+    @apply bg-paper-manila text-ink-black p-4 rounded-sm shadow-md;
   }
 
   .paper-card-ivory {
-    @apply bg-paper-ivory text-ink-black p-4 rounded-sm shadow-md font-typewriter;
+    @apply bg-paper-ivory text-ink-black p-4 rounded-sm shadow-md;
   }
 
   .paper-card-legal {
-    @apply bg-paper-legal text-ink-black p-4 rounded-sm shadow-md font-typewriter;
+    @apply bg-paper-legal text-ink-black p-4 rounded-sm shadow-md;
   }
 
   /* Receipt strip — narrow ivory paper with monospace digits */
@@ -76,7 +78,7 @@
 
   /* Lined sheet — ruled-paper feel for inventory-style lists */
   .lined-sheet {
-    @apply bg-paper-cream text-ink-black p-3 rounded-sm shadow font-typewriter;
+    @apply bg-paper-cream text-ink-black p-3 rounded-sm shadow;
     background-image: repeating-linear-gradient(
       to bottom,
       transparent,

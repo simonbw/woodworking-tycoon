@@ -1,14 +1,11 @@
 import React from "react";
 import { ActionBar } from "./ActionBar";
-import { CommissionsSection } from "./CommissionsSection";
-import { ErrandsSection } from "./ErrandsSection";
-import { MoneySection } from "./MoneySection";
+import { JobBoard } from "./JobBoard";
 import { NavBar } from "./NavBar";
-import { SuppliesSection } from "./SuppliesSection";
+import { ShopLedger } from "./ShopLedger";
+import { ShopManifest } from "./ShopManifest";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
 import { Ticker } from "./Ticker";
-import { FloorListSection } from "./current-cell-info/FloorListSection";
-import { InventorySection } from "./current-cell-info/InventorySection";
 import { MachinesSection } from "./current-cell-info/MachinesSection";
 import { ShopView } from "./shop-view/ShopView";
 
@@ -20,6 +17,12 @@ export const HomePage: React.FC = () => {
   );
 };
 
+/**
+ * The home screen is a handful of physical objects, not a pile of cards:
+ * calendar, ledger, and job board on the left; the manifest folder, the
+ * contextual machine spec sheet, and the controls card on the right.
+ * See docs/design-system.md.
+ */
 const HomePageContent: React.FC = () => {
   return (
     <main className="p-8 space-y-6">
@@ -28,23 +31,14 @@ const HomePageContent: React.FC = () => {
       <div className="flex gap-8">
         <div className="space-y-6 w-full max-w-80">
           <Ticker />
-          <MoneySection />
-          <SuppliesSection />
-          <CommissionsSection />
-          <ErrandsSection />
+          <ShopLedger />
+          <JobBoard />
         </div>
         <div className="space-y-1 flex flex-col items-center">
           <ShopView />
         </div>
         <div className="space-y-6 w-full max-w-96">
-          <section>
-            <h2 className="section-heading">Inventory</h2>
-            <InventorySection />
-          </section>
-          <section>
-            <h2 className="section-heading">Floor</h2>
-            <FloorListSection />
-          </section>
+          <ShopManifest />
           <MachinesSection />
           <ActionBar />
         </div>

@@ -47,7 +47,8 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
       <MaterialIcon material={piles[0].material} size="small" />
       <span className="grow text-sm">{getMaterialName(piles[0].material)}</span>
       {piles.length > 1 && (
-        <span className="font-mono text-sm text-ink-fade tabular-nums">
+        // Handwritten tally — this sheet is maintained by hand
+        <span className="font-ink text-lg leading-none text-ink-fade">
           ×{piles.length}
         </span>
       )}

@@ -58,7 +58,8 @@ const InventoryListItem: React.FC<{
       <MaterialIcon material={materials[0]} size="small" />
       <span className="grow text-sm">{getMaterialName(materials[0])}</span>
       {materials.length > 1 && (
-        <span className="font-mono text-sm text-ink-fade tabular-nums">
+        // Handwritten tally — this sheet is maintained by hand
+        <span className="font-ink text-lg leading-none text-ink-fade">
           ×{materials.length}
         </span>
       )}

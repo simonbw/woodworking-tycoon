@@ -35,7 +35,7 @@ export const EditorModeIndicator: React.FC<EditorModeIndicatorProps> = ({
         {MODE_LABEL[editMode]}
       </div>
 
-      <ul className="mt-3 text-xs space-y-1 font-typewriter border-t border-ink-black/20 pt-2">
+      <ul className="mt-3 text-xs space-y-1 border-t border-ink-black/20 pt-2">
         {editMode === "placing" && (
           <>
             <Hint keys={[["Click"]]}>Place machine</Hint>

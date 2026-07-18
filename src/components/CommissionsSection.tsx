@@ -6,29 +6,29 @@ import { completeCommissionAction } from "../game/game-actions/store-actions";
 import { materialMeetsInput } from "../game/material-helpers";
 import { humanizeString } from "../utils/humanizeString";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
+import { Thumbtack } from "./Thumbtack";
 import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
+/** The active commission's work order, pinned to the job board. */
 export const CommissionsSection: React.FC = () => {
   const gameState = useGameState();
   const commission = getActiveCommission(gameState.progression);
 
+  if (commission === null) {
+    // Chalk scrawl straight on the cork
+    return (
+      <p className="font-ink text-lg text-paper-manila/70 text-center py-4 -rotate-1">
+        No more work orders (yet)
+      </p>
+    );
+  }
+
   return (
-    <section className="space-y-3">
-      <h2 className="section-heading">Commissions</h2>
-      <div className="bg-corkboard-dark rounded-md p-4 shadow-inner border border-black/40 corkboard-bg space-y-4">
-        {commission === null ? (
-          <p className="text-paper-manila/60 italic font-typewriter text-center py-6">
-            No more work orders (yet)
-          </p>
-        ) : (
-          <WorkOrder
-            commission={commission}
-            index={gameState.progression.commissionsCompleted}
-          />
-        )}
-      </div>
-    </section>
+    <WorkOrder
+      commission={commission}
+      index={gameState.progression.commissionsCompleted}
+    />
   );
 };
 
@@ -67,11 +67,7 @@ const WorkOrder: React.FC<{
     <article
       className={`relative bg-paper-legal text-ink-black p-4 pt-5 rounded-sm shadow-md ${rotation}`}
     >
-      {/* Thumbtack */}
-      <span
-        className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-ink-red shadow-md ring-1 ring-ink-red/50"
-        aria-hidden
-      />
+      <Thumbtack />
 
       <header className="flex items-baseline justify-between border-b border-ink-black/30 pb-1.5 mb-2">
         <h3 className="font-stencil text-base uppercase tracking-widest">

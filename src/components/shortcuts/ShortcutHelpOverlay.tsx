@@ -67,7 +67,7 @@ export const ShortcutHelpOverlay: React.FC<{ onClose: () => void }> = ({
           ))}
         </div>
 
-        <p className="mt-5 border-t border-ink-black/20 pt-3 font-typewriter text-[0.7rem] text-ink-fade">
+        <p className="mt-5 border-t border-ink-black/20 pt-3 text-[0.7rem] text-ink-fade">
           Hold <span className="not-italic">Shift</span> while clicking Pick Up,
           Drop, Take or a machine slot to move the whole stack at once.
         </p>
@@ -115,7 +115,7 @@ const ShortcutGroupList: React.FC<{
     <h3 className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade border-b border-ink-black/20 pb-1">
       {group}
     </h3>
-    <ul className="mt-2 space-y-1 font-typewriter text-xs">
+    <ul className="mt-2 space-y-1 text-xs">
       {defs.map((def) => (
         <Hint key={def.id} shortcut={def.id} />
       ))}

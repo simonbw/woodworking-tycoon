@@ -40,7 +40,7 @@ export const ActionBar: React.FC = () => {
         </button>
       </div>
 
-      <ul className="mt-2 space-y-1 font-typewriter text-xs">
+      <ul className="mt-2 space-y-1 text-xs">
         <Hint keys={[["W"], ["A"], ["S"], ["D"], ["Arrows"]]}>Move</Hint>
         <Hint shortcut="pick-up" showShift={false}>
           Pick up

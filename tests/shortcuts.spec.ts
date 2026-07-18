@@ -59,7 +59,10 @@ test.describe("Keyboard shortcuts", () => {
       await expect(page.getByText(/Craft Level/)).toBeVisible();
 
       await page.keyboard.press("h");
-      await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
+      // Home's inventory lives on a folder tab now, not under a heading
+      await expect(
+        page.getByRole("button", { name: /Inventory/ }),
+      ).toBeVisible();
     });
 
     await test.step("? opens the cheat sheet and Escape closes it", async () => {
@@ -93,7 +96,9 @@ test.describe("Keyboard shortcuts", () => {
       await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible();
 
       await page.keyboard.press("h");
-      await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Inventory/ }),
+      ).toBeVisible();
     });
 
     await test.step("a modal swallows the game's movement keys", async () => {

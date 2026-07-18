@@ -32,9 +32,9 @@ test.describe("Tooltip", () => {
     });
 
     await test.step("tooltip uses the paperwork surface styling", async () => {
-      // The typewriter font class is part of the tooltip surface — a cheap
+      // The ivory paper class is part of the tooltip surface — a cheap
       // proxy that it rendered through our component, not a native title.
-      await expect(tooltip).toHaveClass(/font-typewriter/);
+      await expect(tooltip).toHaveClass(/bg-paper-ivory/);
     });
 
     await test.step("moving the pointer away hides the tooltip", async () => {
