@@ -169,7 +169,7 @@ const CalendarPage: React.FC<{ tick: number }> = ({ tick }) => {
         <span className="text-[0.625rem] uppercase tracking-[0.3em] text-ink-fade leading-none">
           Day
         </span>
-        <span className="font-stencil text-3xl leading-none mt-0.5">
+        <span className="font-condensed font-bold text-3xl leading-none mt-0.5">
           {day + 1}
         </span>
       </div>

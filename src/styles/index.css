@@ -47,9 +47,10 @@
     @apply disabled:text-ink-fade disabled:border-ink-black/20 disabled:pointer-events-none;
   }
 
-  /* Section heading — stencil, uppercase, like a workshop sign */
+  /* Section heading — quiet uppercase label for a top-level object.
+     Stencil is reserved for the store's retail signage. */
   .section-heading {
-    @apply font-stencil font-bold text-xl uppercase tracking-wide text-paper-manila;
+    @apply font-condensed font-bold text-lg uppercase tracking-[0.2em] text-paper-manila;
   }
 
   /* Smaller subsection header */

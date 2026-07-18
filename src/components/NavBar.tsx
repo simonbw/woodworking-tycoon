@@ -111,7 +111,7 @@ const FolderTab: React.FC<{
         className={classNames(
           "relative px-5 pt-2 pb-1 rounded-t-md font-condensed uppercase tracking-[0.15em] text-sm transition-colors",
           active
-            ? "bg-paper-manila text-ink-black font-bold pb-2 -mb-0.5 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]"
+            ? "bg-paper-manila text-ink-black pb-2 -mb-0.5 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]"
             : "bg-paper-manila/40 text-paper-manila hover:bg-paper-manila/60 hover:text-ink-black mb-0",
         )}
       >

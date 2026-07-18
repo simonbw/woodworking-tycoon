@@ -17,7 +17,7 @@ Character fonts and loud surfaces are a budget to be spent, not a default.
 | Barlow Condensed | `font-condensed` | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free. | Unlimited — it's the quiet default. |
 | JetBrains Mono | `font-mono` | **Machine-printed numbers.** Money, counts, timers, order numbers. Pair with `tabular-nums`. | Numbers only. Never prose. |
 | Special Elite (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork: commission sheets, the calendar page, receipt fine print. Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
-| Stardos Stencil | `font-stencil` | **Signage.** Spray-painted-on-a-crate energy: top-level object titles (`.section-heading`), spec-sheet names, stamps (`.stamp`), store aisle headings, the big day number. | 3–5 uses per screen. If a screen has more stencil than a real shop has stenciled crates, cut some. |
+| Stardos Stencil | `font-stencil` | **Retail signage.** Reserved for the big-box store fiction: aisle headings, price tags, buy buttons, the skills catalog that mimics it, and `.stamp`. **Not used anywhere on the home screen** — shop-side object titles are bold condensed (`.section-heading`), and document titles are typewriter. | Store/skills pages only. |
 | Caveat | `font-ink` | **Handwriting.** Human margin notes: a client's note on a work order, a scribbled errand, a tally next to a quantity, a "nothing here" note pinned to the board. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else. |
 
 Legacy fonts (`sans`/Nunito, `serif`/Bree Serif, `lumberjack`) are for the
@@ -44,14 +44,22 @@ stack of equal-weight cards:
 - **Ledger** (`ShopLedger`) — one receipt strip: balance on top, supply
   stock below a perforated rule. Appears as one piece of paper.
 - **Job board** (`JobBoard`) — one corkboard holding the active commission
-  (pinned legal sheet) and the errands note (pinned lined sheet).
-- **Shop manifest** (`ShopManifest`) — one manila folder with file-folder
-  tabs for Inventory and Floor. The lined sheets live *inside* the folder.
+  (pinned legal sheet, foldable to a stub via its header) and the errands
+  note (pinned lined sheet).
+- **Shop manifest** (`ShopManifest`) — one manila folder holding the
+  Inventory and Floor sheets, both always visible; long lists scroll
+  inside the folder.
 - **Machine spec sheet** (`MachinesSection`) — contextual; appears only
   when standing at a machine. It stays outside the folder because the core
   loop (load from inventory → operate) needs it visible *alongside* the
   inventory list.
 - **Controls** (`ActionBar`) — small ivory reference card of live keys.
+
+The home screen is viewport-sized (`h-screen` + `overflow-hidden`) and each
+side rail anchors its panels — manifest hangs from the top, controls sit on
+the bottom, the spec sheet pops into the gap between them. Panels appearing
+or growing must never shove their neighbors around: long content scrolls
+*inside* its panel, and the page itself never grows a scrollbar.
 
 When adding a new panel, first ask which existing object it belongs *inside*.
 Only mint a new top-level object if it's genuinely a new piece of furniture,

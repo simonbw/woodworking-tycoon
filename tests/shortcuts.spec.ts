@@ -59,9 +59,8 @@ test.describe("Keyboard shortcuts", () => {
       await expect(page.getByText(/Craft Level/)).toBeVisible();
 
       await page.keyboard.press("h");
-      // Home's inventory lives on a folder tab now, not under a heading
       await expect(
-        page.getByRole("button", { name: /Inventory/ }),
+        page.getByRole("heading", { name: "Inventory" }),
       ).toBeVisible();
     });
 
@@ -97,7 +96,7 @@ test.describe("Keyboard shortcuts", () => {
 
       await page.keyboard.press("h");
       await expect(
-        page.getByRole("button", { name: /Inventory/ }),
+        page.getByRole("heading", { name: "Inventory" }),
       ).toBeVisible();
     });
 

@@ -47,7 +47,7 @@ export const ShortcutHelpOverlay: React.FC<{ onClose: () => void }> = ({
             <div className="font-condensed uppercase tracking-[0.25em] text-[0.65rem] text-ink-fade leading-none">
               Reference
             </div>
-            <h2 className="font-stencil text-2xl uppercase tracking-wide mt-0.5">
+            <h2 className="font-condensed font-bold text-2xl uppercase tracking-wide mt-0.5">
               Keyboard Shortcuts
             </h2>
           </div>

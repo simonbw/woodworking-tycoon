@@ -22,24 +22,34 @@ export const HomePage: React.FC = () => {
  * calendar, ledger, and job board on the left; the manifest folder, the
  * contextual machine spec sheet, and the controls card on the right.
  * See docs/design-system.md.
+ *
+ * The screen is viewport-sized and each rail anchors its panels: the
+ * manifest hangs from the top, the controls card sits on the bottom, and
+ * the spec sheet pops into the gap between them — so panels appearing,
+ * disappearing, or growing never shove their neighbors around, and long
+ * content scrolls inside its panel instead of scrolling the page.
  */
 const HomePageContent: React.FC = () => {
   return (
-    <main className="p-8 space-y-6">
+    <main className="h-screen flex flex-col gap-6 px-8 pt-8 pb-6 overflow-hidden">
       <NavBar />
 
-      <div className="flex gap-8">
-        <div className="space-y-6 w-full max-w-80">
+      <div className="flex gap-8 grow min-h-0">
+        <div className="w-full max-w-80 flex flex-col gap-6 min-h-0">
           <Ticker />
           <ShopLedger />
-          <JobBoard />
+          <div className="grow min-h-0 overflow-y-auto">
+            <JobBoard />
+          </div>
         </div>
-        <div className="space-y-1 flex flex-col items-center">
+        <div className="grow flex items-start justify-center min-h-0 min-w-0 overflow-hidden">
           <ShopView />
         </div>
-        <div className="space-y-6 w-full max-w-96">
+        <div className="w-full max-w-96 flex flex-col gap-6 min-h-0">
           <ShopManifest />
-          <MachinesSection />
+          <div className="grow min-h-0 overflow-y-auto">
+            <MachinesSection />
+          </div>
           <ActionBar />
         </div>
       </div>
