@@ -4,14 +4,12 @@ import { classNames } from "../utils/classNames";
 import { SettingsMenu } from "./SettingsMenu";
 import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
+import { Ticker } from "./Ticker";
 import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useGameState, useQuitToMenu } from "./useGameState";
 
-export const NavBar: React.FC<{
-  /** Status chrome (day, balance, …) docked into the bar's right side. */
-  aside?: React.ReactNode;
-}> = ({ aside }) => {
+export const NavBar: React.FC = () => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
   const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
@@ -65,11 +63,10 @@ export const NavBar: React.FC<{
           onClick={() => setMode({ mode: "skills" })}
         />
         <div className="grow" />
-        {aside && (
-          <div className="self-center mb-1.5 mr-6 flex items-center gap-6">
-            {aside}
-          </div>
-        )}
+        <div className="self-center mb-1.5 mr-6 flex items-center gap-6">
+          <Ticker />
+          <Balance />
+        </div>
         <Tooltip content="Keyboard shortcuts" shortcut="toggle-help">
           <button
             className="button-ghost mb-1.5 self-center text-lg leading-none font-mono"
@@ -102,6 +99,21 @@ export const NavBar: React.FC<{
       <div className="h-0.5 bg-paper-manila/40" />
       {settingsOpen && <SettingsMenu onClose={() => setSettingsOpen(false)} />}
     </nav>
+  );
+};
+
+/** The shop's cash balance, drawn on the bar in the money accent. */
+const Balance: React.FC = () => {
+  const gameState = useGameState();
+  return (
+    <section className="flex items-baseline gap-2">
+      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/60">
+        Balance
+      </span>
+      <div className="font-mono text-lg text-gold tabular-nums leading-none">
+        ${gameState.money.toFixed(2)}
+      </div>
+    </section>
   );
 };
 

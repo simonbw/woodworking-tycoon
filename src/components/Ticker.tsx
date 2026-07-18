@@ -4,6 +4,7 @@ import { ShortcutId } from "../game/shortcuts";
 import { classNames } from "../utils/classNames";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Tooltip } from "./Tooltip";
+import { useUiMode } from "./UiMode";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 const PAUSED = 0;
@@ -50,23 +51,27 @@ const SpeedButton: React.FC<{
 
 /**
  * Drives the game loop and shows the day + speed controls as a compact
- * strip docked in the top bar. Only mounted on the home screen, so time
- * stands still while the player is off shopping or editing the layout.
+ * strip docked in the top bar on every screen. Time only advances while
+ * the player is actually on the shop floor — the store and layout editor
+ * still pause the world.
  */
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
+  const { mode } = useUiMode();
+  const onShopFloor = mode.mode === "normal";
   const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
   const [ticksPerSecond, setTicksPerSecond] = useState<number>(NORMAL);
 
   useEffect(() => {
+    if (!onShopFloor) return;
     const interval = setInterval(() => {
       if (ticksPerSecond > 0) {
         applyAction(tickAction);
       }
     }, 1000 / ticksPerSecond);
     return () => clearInterval(interval);
-  }, [ticksPerSecond]);
+  }, [ticksPerSecond, onShopFloor]);
 
   useShortcut("speed-pause", () => setTicksPerSecond(PAUSED), controlsUnlocked);
   useShortcut(

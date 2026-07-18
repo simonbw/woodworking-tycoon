@@ -1,22 +1,41 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useContext } from "react";
 import { classNames } from "../../utils/classNames";
 import { getShortcut, ShortcutId } from "../../game/shortcuts";
+
+/**
+ * Which surface the hint chrome sits on: "paper" (ink on a light card) or
+ * "chrome" (manila on the dark workshop background). Wrap dark-background
+ * hint lists in the provider so key caps and muted text stay readable.
+ */
+export const HintSurfaceContext = React.createContext<"paper" | "chrome">(
+  "paper",
+);
+
+const mutedText = {
+  paper: "text-ink-fade",
+  chrome: "text-paper-manila/50",
+};
 
 /** A single key cap, in the paperwork style. */
 export const Kbd: React.FC<{
   children: React.ReactNode;
   className?: string;
-}> = ({ children, className }) => (
-  <kbd
-    className={classNames(
-      "font-mono text-[0.65rem] px-1.5 py-0 rounded border",
-      "border-ink-black/40 bg-paper-cream text-ink-black whitespace-nowrap",
-      className,
-    )}
-  >
-    {children}
-  </kbd>
-);
+}> = ({ children, className }) => {
+  const surface = useContext(HintSurfaceContext);
+  return (
+    <kbd
+      className={classNames(
+        "font-mono text-[0.65rem] px-1.5 py-0 rounded border whitespace-nowrap",
+        surface === "paper"
+          ? "border-ink-black/40 bg-paper-cream text-ink-black"
+          : "border-paper-manila/40 bg-paper-manila/10 text-paper-manila",
+        className,
+      )}
+    >
+      {children}
+    </kbd>
+  );
+};
 
 /**
  * Renders a shortcut's key alternatives — `[["W"], ["↑"]]` becomes `W / ↑`,
@@ -25,21 +44,24 @@ export const Kbd: React.FC<{
 export const KeyChips: React.FC<{
   keys: readonly (readonly string[])[];
   className?: string;
-}> = ({ keys, className }) => (
-  <span className={classNames("inline-flex items-center gap-1", className)}>
-    {keys.map((chord, i) => (
-      <Fragment key={i}>
-        {i > 0 && <span className="text-ink-fade text-[0.65rem]">/</span>}
-        {chord.map((key, j) => (
-          <Fragment key={key}>
-            {j > 0 && <span className="text-ink-fade text-[0.65rem]">+</span>}
-            <Kbd>{key}</Kbd>
-          </Fragment>
-        ))}
-      </Fragment>
-    ))}
-  </span>
-);
+}> = ({ keys, className }) => {
+  const muted = mutedText[useContext(HintSurfaceContext)];
+  return (
+    <span className={classNames("inline-flex items-center gap-1", className)}>
+      {keys.map((chord, i) => (
+        <Fragment key={i}>
+          {i > 0 && <span className={`${muted} text-[0.65rem]`}>/</span>}
+          {chord.map((key, j) => (
+            <Fragment key={key}>
+              {j > 0 && <span className={`${muted} text-[0.65rem]`}>+</span>}
+              <Kbd>{key}</Kbd>
+            </Fragment>
+          ))}
+        </Fragment>
+      ))}
+    </span>
+  );
+};
 
 /** The chips for a registered shortcut, looked up by id. */
 export const ShortcutKeys: React.FC<{
@@ -78,6 +100,7 @@ export const Hint: React.FC<{
   showShift?: boolean;
   children?: React.ReactNode;
 }> = ({ shortcut, keys, showShift = true, children }) => {
+  const muted = mutedText[useContext(HintSurfaceContext)];
   const def = shortcut ? getShortcut(shortcut) : null;
   const chords = keys ?? def?.keys ?? [];
   return (
@@ -85,7 +108,7 @@ export const Hint: React.FC<{
       <KeyChips keys={chords} />
       <span>{children ?? def?.description}</span>
       {showShift && def?.shiftHint && (
-        <span className="text-ink-fade italic text-[0.65rem]">
+        <span className={`${muted} italic text-[0.65rem]`}>
           (+Shift: {def.shiftHint})
         </span>
       )}

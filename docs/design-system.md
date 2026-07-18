@@ -31,7 +31,7 @@ logo and old sprites only. Don't use them in new UI.
 | Manila | `.paper-card`, `paper-manila` | Folders and general shop paperwork. The default card. |
 | Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-mono`. |
 | Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people: commission work orders. |
-| Lined sheet | `.lined-sheet` (cream) | Ruled paper for lists people maintain by hand: inventory manifests, the supplies tally. Quantities here are handwritten (`font-ink`). **Content must sit on the rules**: the ruling is 2rem, so every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules themselves are the row dividers (no `divide-y`). If content can't hold the ruling, use a plain cream note instead of faking it. |
+| Lined sheet | `.lined-sheet` (cream) | Ruled paper — but only for **pure text tallies** (the supplies list). **Content must sit on the rules**: the ruling is 2rem, every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules are the row dividers. Anything with icons or buttons cannot hold the ruling honestly — those lists (inventory, floor) use a plain cream sheet instead. |
 | Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | StorePage (and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 
@@ -40,8 +40,9 @@ logo and old sprites only. Don't use them in new UI.
 The home screen is composed of a small number of physical objects, not a
 stack of equal-weight cards:
 
-- **Top bar** — nav tabs plus status chrome docked beside them: the day +
-  speed controls (`Ticker`, which also drives the game loop) and the
+- **Top bar** (every screen, not just Home) — nav tabs plus status chrome
+  docked beside them: the day + speed controls (`Ticker`, which also
+  drives the game loop — time only advances on the shop floor) and the
   balance, both drawn directly on the dark bar, no paper.
 - **Job board** (`JobBoard`, left) — one corkboard holding the active
   commission (pinned legal sheet, foldable to a stub via its header) and
@@ -49,8 +50,10 @@ stack of equal-weight cards:
   orders explains itself.
 - **Supply cabinet** (`SuppliesSection`, bottom-left) — a small lined
   tally of consumables; hidden until something is stocked.
-- **Controls** (`ActionBar`, bottom-center) — small ivory reference card
-  of live keys, under the shop view.
+- **Controls** (`ActionBar`, bottom-center) — the live-key legend drawn
+  straight on the dark background under the shop view (no card), in two
+  columns. Hint chrome on the dark background wraps in
+  `HintSurfaceContext.Provider value="chrome"` so key caps stay readable.
 - **Shop manifest** (`ShopManifest`, top-right) — one manila folder
   holding the Inventory and Floor sheets, both always visible; long lists
   scroll inside the folder.
@@ -64,6 +67,12 @@ side rail anchors its panels — manifest hangs from the top, controls sit on
 the bottom, the spec sheet pops into the gap between them. Panels appearing
 or growing must never shove their neighbors around: long content scrolls
 *inside* its panel, and the page itself never grows a scrollbar.
+
+Spacing discipline for the anchored layout: **one gutter unit (`gap-6` /
+`p-6`) everywhere** — page margin, column gutters, and panel gaps — and the
+two side rails share one width (`max-w-96`), so the edge-anchored
+composition reads as a deliberate grid rather than scattered cards. The
+shop view centers in the space the rails leave it.
 
 When adding a new panel, first ask which existing object it belongs *inside*.
 Only mint a new top-level object if it's genuinely a new piece of furniture,
