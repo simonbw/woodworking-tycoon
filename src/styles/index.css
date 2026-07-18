@@ -77,22 +77,25 @@
     @apply bg-paper-ivory text-ink-black px-4 py-2 rounded-sm shadow font-mono;
   }
 
-  /* Lined sheet — ruled-paper feel for inventory-style lists */
+  /* Lined sheet — ruled paper for hand-kept lists. The ruling is 2rem;
+     content must sit ON the rules: give every text line leading-[2rem]
+     (2 wrapped lines = 2 rules), keep rows flush (no vertical padding or
+     dividers — the rules are the dividers). */
   .lined-sheet {
-    @apply bg-paper-cream text-ink-black p-3 rounded-sm shadow;
+    @apply bg-paper-cream text-ink-black px-3 pb-1 rounded-sm shadow;
+    padding-top: 0.65rem;
     background-image: repeating-linear-gradient(
       to bottom,
       transparent,
-      transparent 27px,
-      rgba(31, 58, 110, 0.18) 27px,
-      rgba(31, 58, 110, 0.18) 28px
+      transparent calc(2rem - 1px),
+      rgba(31, 58, 110, 0.18) calc(2rem - 1px),
+      rgba(31, 58, 110, 0.18) 2rem
     );
-    background-position: 0 0.5rem;
   }
 
   /* Stamp — diagonal red ink stamp overlay */
   .stamp {
-    @apply font-stencil font-bold uppercase text-ink-red border-2 border-ink-red px-2 py-0.5 rounded-sm tracking-widest;
+    @apply font-condensed font-bold uppercase text-ink-red border-2 border-ink-red px-2 py-0.5 rounded-sm tracking-widest;
     transform: rotate(-8deg);
     opacity: 0.85;
   }
@@ -104,12 +107,12 @@
 
   /* Aisle-tag heading — used inside the store for section headers */
   .aisle-heading {
-    @apply font-stencil font-bold text-2xl uppercase tracking-wide text-store-orange-dark border-b-4 border-store-orange pb-1 mb-3;
+    @apply font-condensed font-bold text-2xl uppercase tracking-wide text-store-orange-dark border-b-4 border-store-orange pb-1 mb-3;
   }
 
   /* Big block price — for product cards in the store */
   .price-tag {
-    @apply font-stencil font-bold text-2xl text-ink-black tabular-nums leading-none;
+    @apply font-condensed font-bold text-2xl text-ink-black tabular-nums leading-none;
   }
 
   /* Subtle cork texture — small flecks of color over the corkboard tone */

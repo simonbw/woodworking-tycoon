@@ -24,14 +24,16 @@ export const InventorySection: React.FC = () => {
   if (groupedInventory.length === 0) {
     return (
       <div className="lined-sheet text-center">
-        <p className="italic text-ink-fade">Inventory is empty</p>
+        <p className="italic text-ink-fade leading-[2rem]">
+          Inventory is empty
+        </p>
       </div>
     );
   }
 
   return (
     <div className="lined-sheet">
-      <ul className="divide-y divide-ink-black/15">
+      <ul>
         {groupedInventory.map(([materialName, materials]) => (
           <InventoryListItem key={materialName} materials={materials} />
         ))}
@@ -54,12 +56,14 @@ const InventoryListItem: React.FC<{
     : playerCell?.operableMachines;
 
   return (
-    <li className="flex items-center gap-2 py-1.5">
+    <li className="flex items-center gap-2">
       <MaterialIcon material={materials[0]} size="small" />
-      <span className="grow text-sm">{getMaterialName(materials[0])}</span>
+      <span className="grow text-sm leading-[2rem]">
+        {getMaterialName(materials[0])}
+      </span>
       {materials.length > 1 && (
         // Handwritten tally — this sheet is maintained by hand
-        <span className="font-ink text-lg leading-none text-ink-fade">
+        <span className="font-ink text-lg leading-[2rem] text-ink-fade">
           ×{materials.length}
         </span>
       )}

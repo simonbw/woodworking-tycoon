@@ -49,7 +49,7 @@ export const StorageSection: React.FC<StorageSectionProps> = ({
       />
 
       <div className="paper-card">
-        <h3 className="font-stencil text-base uppercase tracking-widest border-b border-ink-black/40 pb-1 mb-3">
+        <h3 className="font-condensed font-bold text-base uppercase tracking-widest border-b border-ink-black/40 pb-1 mb-3">
           Storage
         </h3>
         {groupedMachines.length === 0 ? (

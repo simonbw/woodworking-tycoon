@@ -31,7 +31,7 @@ export const EditorModeIndicator: React.FC<EditorModeIndicatorProps> = ({
       <div className="font-condensed uppercase tracking-[0.25em] text-[0.65rem] text-ink-fade leading-none">
         Mode
       </div>
-      <div className="font-stencil text-xl uppercase tracking-wide mt-0.5">
+      <div className="font-condensed font-bold text-xl uppercase tracking-wide mt-0.5">
         {MODE_LABEL[editMode]}
       </div>
 

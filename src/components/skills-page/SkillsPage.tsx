@@ -51,7 +51,7 @@ export const SkillsPage: React.FC = () => {
       <div className="rounded-md overflow-hidden shadow-2xl border border-ink-black/40">
         <div className="bg-workshop-panel text-paper-ivory px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="font-stencil text-3xl uppercase tracking-[0.2em] leading-none">
+            <span className="font-condensed font-bold text-3xl uppercase tracking-[0.2em] leading-none">
               Skills
             </span>
             <span className="font-condensed uppercase tracking-[0.3em] text-xs opacity-80">
@@ -96,7 +96,7 @@ const BranchColumn: React.FC<{ branch: SkillBranch }> = ({ branch }) => {
   const skills = SKILL_IDS.filter((id) => SKILL_TYPES[id].branch === branch);
   return (
     <section>
-      <h2 className="font-stencil text-lg uppercase tracking-[0.2em] border-b-2 border-ink-black/40 pb-1 mb-3">
+      <h2 className="font-condensed font-bold text-lg uppercase tracking-[0.2em] border-b-2 border-ink-black/40 pb-1 mb-3">
         {humanizeString(branch)}
       </h2>
       <ul className="space-y-3">
@@ -123,7 +123,7 @@ const SkillCard: React.FC<{ skill: SkillType }> = ({ skill }) => {
   return (
     <li className="paper-card p-3 space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="font-stencil text-sm uppercase tracking-wide">
+        <span className="font-condensed font-bold text-sm uppercase tracking-wide">
           {skill.name}
         </span>
         {unlocked ? (
@@ -132,7 +132,7 @@ const SkillCard: React.FC<{ skill: SkillType }> = ({ skill }) => {
           </span>
         ) : prerequisitesMet ? (
           <button
-            className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-[0.65rem] px-2 py-0.5 rounded-sm shadow"
+            className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-[0.65rem] px-2 py-0.5 rounded-sm shadow"
             disabled={!canBuy}
             onClick={() => applyAction(spendSkillPointAction(skill.id))}
           >

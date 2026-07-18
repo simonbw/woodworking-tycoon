@@ -28,7 +28,7 @@ export const ErrandsSection: React.FC = () => {
   }
 
   return (
-    <div className="relative lined-sheet pt-4 rotate-[0.8deg]">
+    <div className="relative bg-paper-cream text-ink-black rounded-sm shadow p-3 pt-4 rotate-[0.8deg]">
       <Thumbtack />
       <div className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
         Errands

@@ -8,7 +8,10 @@ import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useGameState, useQuitToMenu } from "./useGameState";
 
-export const NavBar: React.FC = () => {
+export const NavBar: React.FC<{
+  /** Status chrome (day, balance, …) docked into the bar's right side. */
+  aside?: React.ReactNode;
+}> = ({ aside }) => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
   const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
@@ -62,6 +65,11 @@ export const NavBar: React.FC = () => {
           onClick={() => setMode({ mode: "skills" })}
         />
         <div className="grow" />
+        {aside && (
+          <div className="self-center mb-1.5 mr-6 flex items-center gap-6">
+            {aside}
+          </div>
+        )}
         <Tooltip content="Keyboard shortcuts" shortcut="toggle-help">
           <button
             className="button-ghost mb-1.5 self-center text-lg leading-none font-mono"

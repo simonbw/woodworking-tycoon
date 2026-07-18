@@ -37,7 +37,7 @@ const StoreBrandBar: React.FC = () => {
   return (
     <div className="bg-store-orange text-white px-6 py-3 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <span className="font-stencil text-3xl uppercase tracking-[0.2em] leading-none">
+        <span className="font-condensed font-bold text-3xl uppercase tracking-[0.2em] leading-none">
           Store
         </span>
         <span className="font-condensed uppercase tracking-[0.3em] text-xs text-white/80">

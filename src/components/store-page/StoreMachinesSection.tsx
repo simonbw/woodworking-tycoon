@@ -42,7 +42,7 @@ const MachineProductCard: React.FC<MachineSaleInfo> = ({ machine, price }) => {
   return (
     <li className="product-card flex items-center gap-3">
       <div className="grow">
-        <div className="font-stencil text-base uppercase tracking-wide text-ink-black">
+        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
           {machine.name}
         </div>
         <div className="text-xs text-ink-fade">
@@ -57,7 +57,7 @@ const MachineProductCard: React.FC<MachineSaleInfo> = ({ machine, price }) => {
       <div className="flex flex-col items-end gap-1">
         <PriceTag price={price} />
         <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={!canAfford}
           data-sfx="ui-purchase"
           onClick={() => {
