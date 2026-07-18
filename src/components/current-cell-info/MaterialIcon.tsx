@@ -164,7 +164,8 @@ const Wrapper: React.FC<{
     <Tooltip content={tooltip}>
       <span
         className={classNames(
-          "rounded inline-block overflow-hidden relative",
+          // shrink-0 so crowded flex rows can't squash the icon
+          "rounded inline-block overflow-hidden relative shrink-0",
           sizeToClassname[size],
           borderStyle,
           bgStyle,

@@ -9,22 +9,25 @@ import { StoreToolsSection } from "./StoreToolsSection";
 
 export const StorePage: React.FC = () => {
   return (
-    <main className="p-8 space-y-6">
+    <main className="h-screen flex flex-col gap-6 p-6 overflow-hidden">
       <NavBar />
 
-      <div className="rounded-md overflow-hidden shadow-2xl border border-store-orange-dark">
+      <div className="rounded-md overflow-hidden shadow-2xl border border-store-orange-dark grow min-h-0 flex flex-col">
         <StoreBrandBar />
-        <div className="bg-store-concrete text-ink-black p-6">
-          <div className="grid grid-cols-3 gap-4">
-            <section className="space-y-4">
+        <div className="bg-store-concrete text-ink-black p-6 grow min-h-0">
+          {/* Each aisle scrolls on its own; the page never does */}
+          <div className="grid grid-cols-3 gap-4 h-full">
+            <section className="space-y-4 min-h-0 overflow-y-auto">
               <BoardSelector />
               <StoreSuppliesSection />
             </section>
-            <div className="space-y-6">
+            <div className="space-y-6 min-h-0 overflow-y-auto">
               <StoreToolsSection />
               <StoreMachinesSection />
             </div>
-            <StoreSellingSection />
+            <div className="min-h-0 overflow-y-auto">
+              <StoreSellingSection />
+            </div>
           </div>
         </div>
       </div>

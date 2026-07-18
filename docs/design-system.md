@@ -48,25 +48,27 @@ stack of equal-weight cards:
   commission (pinned legal sheet, foldable to a stub via its header) and
   the errands note (pinned cream memo). No label — a corkboard of work
   orders explains itself.
-- **Supply cabinet** (`SuppliesSection`, bottom-left) — a small lined
-  tally of consumables; hidden until something is stocked.
 - **Controls** (`ActionBar`, bottom-center) — the live-key legend drawn
-  straight on the dark background under the shop view (no card), in two
-  columns. Hint chrome on the dark background wraps in
+  straight on the dark background, in two columns, *overlaid* on the
+  bottom of the center well so its changing row count never moves the
+  canvas. Hint chrome on the dark background wraps in
   `HintSurfaceContext.Provider value="chrome"` so key caps stay readable.
 - **Shop manifest** (`ShopManifest`, top-right) — one manila folder
-  holding the Inventory and Floor sheets, both always visible; long lists
-  scroll inside the folder.
-- **Machine spec sheet** (`MachinesSection`, right) — contextual; appears
-  only when standing at a machine. It stays outside the folder because the
-  core loop (load from inventory → operate) needs it visible *alongside*
-  the inventory list.
+  holding the Inventory, Floor, and Supplies sheets, all always visible;
+  long lists scroll inside the folder. Supplies is the one ruled tally
+  and hides entirely while the cabinet is empty.
+- **Machine spec sheet** (`MachinesSection`, bottom-right) — contextual;
+  appears from the bottom corner only when standing at a machine. It
+  stays outside the folder because the core loop (load from inventory →
+  operate) needs it visible *alongside* the inventory list.
 
-The home screen is viewport-sized (`h-screen` + `overflow-hidden`) and each
-side rail anchors its panels — manifest hangs from the top, controls sit on
-the bottom, the spec sheet pops into the gap between them. Panels appearing
-or growing must never shove their neighbors around: long content scrolls
-*inside* its panel, and the page itself never grows a scrollbar.
+**Every screen is viewport-sized** (`h-screen` + `overflow-hidden`, `p-6`
+margin) — Home, Store, Skills, and the Layout editor alike — so switching
+pages never adds or removes a page scrollbar and nothing shifts. Long
+content scrolls *inside* its own panel, aisle, or column. On Home, each
+side rail anchors its panels — manifest hangs from the top-right, the spec
+sheet rises from the bottom-right — and panels appearing or growing must
+never shove their neighbors around.
 
 Spacing discipline for the anchored layout: **one gutter unit (`gap-6` /
 `p-6`) everywhere** — page margin, column gutters, and panel gaps — and the

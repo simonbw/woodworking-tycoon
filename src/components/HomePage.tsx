@@ -3,7 +3,6 @@ import { ActionBar } from "./ActionBar";
 import { JobBoard } from "./JobBoard";
 import { NavBar } from "./NavBar";
 import { ShopManifest } from "./ShopManifest";
-import { SuppliesSection } from "./SuppliesSection";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
 import { MachinesSection } from "./current-cell-info/MachinesSection";
 import { ShopView } from "./shop-view/ShopView";
@@ -23,7 +22,9 @@ export const HomePage: React.FC = () => {
  * between panels, and the two side rails share a width, so the anchored
  * composition stays symmetric. Panels appearing, disappearing, or
  * growing never shove their neighbors around; long content scrolls
- * inside its panel and the page itself never grows a scrollbar.
+ * inside its panel and the page itself never grows a scrollbar. The
+ * controls legend overlays the bottom of the center well so its row
+ * count can't move the canvas.
  */
 const HomePageContent: React.FC = () => {
   return (
@@ -31,23 +32,22 @@ const HomePageContent: React.FC = () => {
       <NavBar />
 
       <div className="flex gap-6 grow min-h-0">
-        <div className="w-full max-w-96 flex flex-col gap-6 min-h-0">
-          <div className="grow min-h-0 overflow-y-auto">
-            <JobBoard />
-          </div>
-          <SuppliesSection />
+        <div className="w-full max-w-96 min-h-0 overflow-y-auto">
+          <JobBoard />
         </div>
-        <div className="grow flex flex-col gap-6 min-h-0 min-w-0 overflow-hidden">
-          <div className="grow flex items-center justify-center min-h-0">
+        <div className="relative grow min-h-0 min-w-0 overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center">
             <ShopView />
           </div>
-          <div className="w-full max-w-md self-center shrink-0">
-            <ActionBar />
+          <div className="absolute inset-x-0 bottom-0 flex justify-center">
+            <div className="w-full max-w-md">
+              <ActionBar />
+            </div>
           </div>
         </div>
         <div className="w-full max-w-96 flex flex-col gap-6 min-h-0">
           <ShopManifest />
-          <div className="grow min-h-0 overflow-y-auto">
+          <div className="mt-auto min-h-0 overflow-y-auto">
             <MachinesSection />
           </div>
         </div>

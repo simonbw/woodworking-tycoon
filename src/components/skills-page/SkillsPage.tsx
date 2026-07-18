@@ -45,10 +45,10 @@ export const SkillsPage: React.FC = () => {
   const progress = xpProgress(xp);
 
   return (
-    <main className="p-8 space-y-6">
+    <main className="h-screen flex flex-col gap-6 p-6 overflow-hidden">
       <NavBar />
 
-      <div className="rounded-md overflow-hidden shadow-2xl border border-ink-black/40">
+      <div className="rounded-md overflow-hidden shadow-2xl border border-ink-black/40 grow min-h-0 flex flex-col">
         <div className="bg-workshop-panel text-paper-ivory px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="font-condensed font-bold text-3xl uppercase tracking-[0.2em] leading-none">
@@ -76,13 +76,14 @@ export const SkillsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-paper-manila text-ink-black p-6">
-          <div className="grid grid-cols-3 gap-4">
+        <div className="bg-paper-manila text-ink-black p-6 grow min-h-0 flex flex-col">
+          {/* Each branch scrolls on its own; the page never does */}
+          <div className="grid grid-cols-3 gap-4 grow min-h-0">
             {SKILL_BRANCHES.map((branch) => (
               <BranchColumn key={branch} branch={branch} />
             ))}
           </div>
-          <p className="text-xs text-ink-fade font-typewriter mt-4">
+          <p className="text-xs text-ink-fade font-typewriter mt-4 shrink-0">
             Finish products and commissions to earn craft XP. Each level
             grants a skill point.
           </p>
@@ -95,7 +96,7 @@ export const SkillsPage: React.FC = () => {
 const BranchColumn: React.FC<{ branch: SkillBranch }> = ({ branch }) => {
   const skills = SKILL_IDS.filter((id) => SKILL_TYPES[id].branch === branch);
   return (
-    <section>
+    <section className="min-h-0 overflow-y-auto">
       <h2 className="font-condensed font-bold text-lg uppercase tracking-[0.2em] border-b-2 border-ink-black/40 pb-1 mb-3">
         {humanizeString(branch)}
       </h2>

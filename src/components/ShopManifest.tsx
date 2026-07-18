@@ -2,12 +2,13 @@ import React from "react";
 import { useCellMap } from "../game/CellMap";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
 import { InventorySection } from "./current-cell-info/InventorySection";
+import { SuppliesSection } from "./SuppliesSection";
 import { useGameState } from "./useGameState";
 
 /**
- * One manila folder holding the shop's material paperwork: what's in hand
- * and what's underfoot, both always visible. Long lists scroll inside the
- * folder rather than growing the panel.
+ * One manila folder holding the shop's material paperwork: what's in hand,
+ * what's underfoot, and what's in the supply cabinet — all always visible.
+ * Long lists scroll inside the folder rather than growing the panel.
  */
 export const ShopManifest: React.FC = () => {
   const gameState = useGameState();
@@ -18,20 +19,21 @@ export const ShopManifest: React.FC = () => {
     cellMap.at(gameState.player.position)?.materialPiles.length ?? 0;
 
   return (
-    <section className="bg-paper-manila rounded-sm shadow-md p-3 space-y-3 shrink-0 max-h-[45%] overflow-y-auto">
-      <div>
+    <div className="bg-paper-manila rounded-sm shadow-md p-3 space-y-3 shrink-0 max-h-[55%] overflow-y-auto">
+      <section>
         <SheetLabel title="Inventory" count={inventoryCount} />
         <InventorySection />
-      </div>
-      <div>
+      </section>
+      <section>
         <SheetLabel title="Floor" count={floorCount} />
         <FloorListSection />
-      </div>
-    </section>
+      </section>
+      <SuppliesSection />
+    </div>
   );
 };
 
-const SheetLabel: React.FC<{ title: string; count: number }> = ({
+export const SheetLabel: React.FC<{ title: string; count?: number }> = ({
   title,
   count,
 }) => (
@@ -39,7 +41,7 @@ const SheetLabel: React.FC<{ title: string; count: number }> = ({
     <h2 className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-black/60">
       {title}
     </h2>
-    {count > 0 && (
+    {count != null && count > 0 && (
       <span className="font-ink text-base leading-none text-ink-black/50">
         ×{count}
       </span>
