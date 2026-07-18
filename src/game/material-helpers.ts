@@ -8,6 +8,7 @@ import {
   EndGrainSlice,
   FinishedProduct,
   MaterialInstance,
+  millingLabel,
   Pallet,
   Panel,
   panelSpecies,
@@ -67,9 +68,17 @@ export function getMaterialName(material: MaterialInstance): string {
   switch (material.type) {
     case "board": {
       const { species, width, length, thickness, surface } = material;
+      const milling = millingLabel(material);
+      // "rough sawn" already says the surface is rough — don't stutter
+      const stateTag =
+        milling === "rough sawn" && surface === "rough"
+          ? milling
+          : milling
+            ? `${surface}, ${milling}`
+            : surface;
       return `${humanizeString(
         species,
-      )} Board (${length}'x${width}"x${thickness}/4, ${surface})`;
+      )} Board (${length}'x${width}"x${thickness}/4, ${stateTag})`;
     }
     case "panel": {
       const species = panelSpecies(material);
@@ -204,6 +213,8 @@ export function createMockMaterial(
         thickness: r.thickness?.[0] || 2,
         species: r.species?.[0] || "pine",
         surface: r.surface?.[0] || "rough",
+        jointedFaces: r.jointedFaces?.[0] ?? 2,
+        jointedEdges: r.jointedEdges?.[0] ?? 2,
       });
     }
     case "plywood": {

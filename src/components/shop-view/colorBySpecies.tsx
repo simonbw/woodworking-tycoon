@@ -11,6 +11,7 @@ export const colorBySpecies: Record<
   maple: { primary: "#F1D5A2", secondary: "#EABA68" },
   oak: { primary: "#B19F7A", secondary: "#8D7C59" },
   pine: { primary: "#DAC3B2", secondary: "#C7A88F" },
+  poplar: { primary: "#E5DFAE", secondary: "#C3BD85" },
   walnut: { primary: "#5F4530", secondary: "#483622" },
   purpleHeart: { primary: "#885368", secondary: "#6D4354" },
 };

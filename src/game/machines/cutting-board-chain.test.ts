@@ -157,11 +157,13 @@ describe("planePanel", () => {
     assert.deepStrictEqual(result.strips, blank.strips);
   });
 
-  it("only accepts panels thicker than the target", () => {
+  it("accepts panels at or above the target thickness, never below", () => {
     const requirement = planePanel.getInputMaterials({ targetThickness: 3 })[0];
     assert.ok(materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4), requirement));
+    // Equal thickness is a skim pass — squeeze-out is sacrificial material
+    assert.ok(materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3), requirement));
     assert.ok(
-      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3), requirement),
+      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 2), requirement),
     );
   });
 });

@@ -70,7 +70,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await expect(page.getByText("A Proper Cutting Board")).toBeVisible();
     });
 
-    await test.step("store: tool wall, S4S and rough lumber prices", async () => {
+    await test.step("store: tool wall and reputation-gated lumber channels", async () => {
       await page.getByText("Store", { exact: true }).click();
       await page.waitForTimeout(300);
       await expect(page.getByText("Tool Wall")).toBeVisible();
@@ -80,18 +80,17 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         page.locator("section", { hasText: "Tool Wall" }).getByText("$10.00"),
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
-      // Default finish is S4S: workhorse pine at full price
+      // Cheap channels: framing pine and marked-up big-box S4S hardwood
+      await expect(page.getByText("Construction Lumber")).toBeVisible();
       await expect(
-        page.getByText("Pine Board (8'x4\"x4/4, smooth)"),
+        page.getByText("Pine Board (8'x4\"x4/4, smooth, S4S)"),
       ).toBeVisible();
       await expect(page.getByText("$38.40")).toBeVisible();
-      // Rough sawn is 65% of that
-      await page.locator("select").nth(1).selectOption("rough");
-      await page.waitForTimeout(200);
-      await expect(
-        page.getByText("Pine Board (8'x4\"x4/4, rough)"),
-      ).toBeVisible();
-      await expect(page.getByText("$24.96")).toBeVisible();
+      await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
+      // At 17 reputation the lumberyard (12) has appeared...
+      await expect(page.getByText("Lumberyard — S2S")).toBeVisible();
+      // ...but the rough rack (22) doesn't exist yet — not even greyed out
+      await expect(page.getByText("Rough Rack")).not.toBeVisible();
       await page.getByText("Home", { exact: true }).click();
       await page.waitForTimeout(300);
     });

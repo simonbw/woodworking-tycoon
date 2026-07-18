@@ -50,6 +50,8 @@ function palletBoard(id: string): Board {
     width: 4,
     thickness: 1,
     surface: "rough",
+    jointedFaces: 1,
+    jointedEdges: 2,
   };
 }
 

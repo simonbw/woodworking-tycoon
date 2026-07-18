@@ -10,6 +10,7 @@ export type SheetThickness = (typeof SHEET_THICKNESSES)[number];
 export const SPECIES = [
   "pallet",
   "pine",
+  "poplar",
   "oak",
   "maple",
   "cherry",
@@ -28,11 +29,23 @@ export const REAL_WOOD_SPECIES: ReadonlyArray<Species> = SPECIES.filter(
 /**
  * Surface quality ladder (see docs/tools-and-surfaces.md). Sanding bumps a
  * material one step up; planing produces "smooth" (never "sanded"); glue-ups
- * always come out "rough". Scalar for now — widens to per-face state if S2S
- * lumber or face-specific operations ever matter.
+ * always come out "rough". Finish quality only — geometry (flat, straight)
+ * lives on the jointed axes below. Sanding never flattens anything.
  */
 export const SURFACE_CONDITIONS = ["rough", "smooth", "sanded"] as const;
 export type SurfaceCondition = (typeof SURFACE_CONDITIONS)[number];
+
+/**
+ * How many of a board's faces (or edges) are jointed true. Milling is two
+ * independent axes, not a ladder: after a reference face and edge exist,
+ * planing (faces 2) and ripping (edges 2) can happen in either order.
+ *
+ * Faces: 0 = rough/possibly warped, 1 = one flat reference face,
+ * 2 = faces parallel ("planed"). Ends are never tracked — crosscuts have no
+ * prerequisites. Milling never consumes nominal dimension: "rough" stock
+ * carries sacrificial material beyond its listed size.
+ */
+export type JointedCount = 0 | 1 | 2;
 
 /** The next step up the surface ladder, or null at the top. */
 export function improvedSurface(
@@ -50,6 +63,26 @@ export interface Board {
   readonly thickness: BoardDimension;
   readonly species: Species;
   readonly surface: SurfaceCondition;
+  /** Flat faces: planing requires 1 (a reference face) and produces 2. */
+  readonly jointedFaces: JointedCount;
+  /** Straight edges: ripping and gluing require them (see board-helpers). */
+  readonly jointedEdges: JointedCount;
+}
+
+/**
+ * Short label for a board's milled state, or null when it's the unremarkable
+ * default (a flat-enough, straight-edged board — pallet stock and any board
+ * from before the milling system).
+ */
+export function millingLabel(board: Board): string | null {
+  const { jointedFaces: faces, jointedEdges: edges } = board;
+  if (faces === 2) {
+    return edges === 2 ? "S4S" : edges === 1 ? "S3S" : "S2S";
+  }
+  if (faces === 0) {
+    return "rough sawn";
+  }
+  return edges === 2 ? null : "face jointed";
 }
 
 export type SheetGoodKind =

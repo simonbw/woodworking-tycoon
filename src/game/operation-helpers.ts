@@ -100,6 +100,8 @@ function generateSingleMockMaterial(
         thickness: (reqAny.thickness?.[0] || 2) as BoardDimension,
         species: (reqAny.species?.[0] || "pine") as Species,
         surface: (reqAny.surface?.[0] || "rough") as Board["surface"],
+        jointedFaces: (reqAny.jointedFaces?.[0] ?? 2) as Board["jointedFaces"],
+        jointedEdges: (reqAny.jointedEdges?.[0] ?? 2) as Board["jointedEdges"],
       });
       return board;
     }
@@ -160,6 +162,8 @@ function generateSingleMockMaterial(
         thickness: 2 as BoardDimension,
         species: "pine" as Species,
         surface: "rough",
+        jointedFaces: 1,
+        jointedEdges: 2,
       });
   }
 }
