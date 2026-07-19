@@ -43,11 +43,17 @@ describe("sound-actions", () => {
 
 describe("material movement sound cues", () => {
   it("pickUpMaterialAction emits a pickup cue", () => {
-    const pile = { material: makePallet(), position: [0, 0] as [number, number] };
+    const pile = {
+      material: makePallet(),
+      position: [0, 0] as [number, number],
+    };
     const state = {
       ...initialGameState,
       materialPiles: [pile],
-      player: { ...initialGameState.player, position: [0, 0] as [number, number] },
+      player: {
+        ...initialGameState.player,
+        position: [0, 0] as [number, number],
+      },
     };
     const result = pickUpMaterialAction([pile])(state);
     assert.deepStrictEqual(result.pendingSounds, [{ kind: "material-pickup" }]);
@@ -64,11 +70,17 @@ describe("material movement sound cues", () => {
   });
 
   it("emits no cue when a pickup is rejected", () => {
-    const pile = { material: makePallet(), position: [3, 3] as [number, number] };
+    const pile = {
+      material: makePallet(),
+      position: [3, 3] as [number, number],
+    };
     const state = {
       ...initialGameState,
       materialPiles: [pile],
-      player: { ...initialGameState.player, position: [0, 0] as [number, number] },
+      player: {
+        ...initialGameState.player,
+        position: [0, 0] as [number, number],
+      },
     };
     const result = pickUpMaterialAction([pile])(state);
     assert.strictEqual(result.pendingSounds?.length, 0);

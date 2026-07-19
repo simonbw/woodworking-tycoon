@@ -2,7 +2,13 @@ import { materialMeetsInput } from "../material-helpers";
 import { hasConsumables, subtractConsumables } from "../Consumable";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
-import { Machine, MachineOperation, ParameterizedOperation, ParameterValues, MACHINE_TYPES } from "../Machine";
+import {
+  Machine,
+  MachineOperation,
+  ParameterizedOperation,
+  ParameterValues,
+  MACHINE_TYPES,
+} from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
@@ -14,7 +20,7 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
     const cellMap = CellMap.fromGameState(gameState);
     const destinationPosition = translateVec(
       gameState.player.position,
-      rotateVec([1, 0], direction)
+      rotateVec([1, 0], direction),
     );
     const destinationCell = cellMap.at(destinationPosition);
     if (destinationCell === undefined || destinationCell.machine) {
@@ -33,7 +39,7 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
 }
 
 export function pickUpMaterialAction(
-  materialPiles: ReadonlyArray<MaterialPile>
+  materialPiles: ReadonlyArray<MaterialPile>,
 ): GameAction {
   return (gameState) => {
     for (const materialPile of materialPiles) {
@@ -53,7 +59,7 @@ export function pickUpMaterialAction(
           ],
         },
         materialPiles: gameState.materialPiles.filter(
-          (pile) => !materialPiles.includes(pile)
+          (pile) => !materialPiles.includes(pile),
         ),
       },
       { kind: "material-pickup" },
@@ -62,7 +68,7 @@ export function pickUpMaterialAction(
 }
 
 export function dropMaterialAction(
-  materials: ReadonlyArray<MaterialInstance>
+  materials: ReadonlyArray<MaterialInstance>,
 ): GameAction {
   return (gameState) => {
     for (const material of materials) {
@@ -77,7 +83,7 @@ export function dropMaterialAction(
         player: {
           ...gameState.player,
           inventory: gameState.player.inventory.filter(
-            (item) => !materials.includes(item)
+            (item) => !materials.includes(item),
           ),
         },
         materialPiles: [
@@ -95,7 +101,7 @@ export function dropMaterialAction(
 
 export function moveMaterialsToMachineAction(
   materials: ReadonlyArray<MaterialInstance>,
-  machine: Machine
+  machine: Machine,
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
@@ -119,13 +125,13 @@ export function moveMaterialsToMachineAction(
         player: {
           ...gameState.player,
           inventory: gameState.player.inventory.filter(
-            (item) => !materials.includes(item)
+            (item) => !materials.includes(item),
           ),
         },
         machines: gameState.machines.map((m) =>
           vectorEquals(m.position, machineState.position)
             ? { ...m, inputMaterials: [...m.inputMaterials, ...materials] }
-            : m
+            : m,
         ),
       },
       { kind: "material-drop" },
@@ -135,7 +141,7 @@ export function moveMaterialsToMachineAction(
 
 export function takeInputsFromMachineAction(
   materials: ReadonlyArray<MaterialInstance>,
-  machine: Machine
+  machine: Machine,
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
@@ -157,10 +163,10 @@ export function takeInputsFromMachineAction(
             ? {
                 ...m,
                 inputMaterials: m.inputMaterials.filter(
-                  (item: MaterialInstance) => !materials.includes(item)
+                  (item: MaterialInstance) => !materials.includes(item),
                 ),
               }
-            : m
+            : m,
         ),
       },
       { kind: "material-pickup" },
@@ -170,7 +176,7 @@ export function takeInputsFromMachineAction(
 
 export function takeOutputsFromMachineAction(
   materials: ReadonlyArray<MaterialInstance>,
-  machine: Machine
+  machine: Machine,
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
@@ -192,10 +198,10 @@ export function takeOutputsFromMachineAction(
             ? {
                 ...m,
                 outputMaterials: m.outputMaterials.filter(
-                  (item: MaterialInstance) => !materials.includes(item)
+                  (item: MaterialInstance) => !materials.includes(item),
                 ),
               }
-            : m
+            : m,
         ),
       },
       { kind: "material-pickup" },
@@ -206,11 +212,13 @@ export function takeOutputsFromMachineAction(
 export function setMachineOperationAction(
   machine: Machine,
   operation: MachineOperation | ParameterizedOperation,
-  parameters?: ParameterValues
+  parameters?: ParameterValues,
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
-    if (!availableOperations(machine, gameState.progression).includes(operation)) {
+    if (
+      !availableOperations(machine, gameState.progression).includes(operation)
+    ) {
       throw new Error("Tried to set machine operation to invalid operation");
     }
 
@@ -218,8 +226,12 @@ export function setMachineOperationAction(
       ...gameState,
       machines: gameState.machines.map((m) =>
         vectorEquals(m.position, machineState.position)
-          ? { ...m, selectedOperationId: operation.id, selectedParameters: parameters }
-          : m
+          ? {
+              ...m,
+              selectedOperationId: operation.id,
+              selectedParameters: parameters,
+            }
+          : m,
       ),
     };
   };
@@ -240,13 +252,13 @@ export function operateMachineAction(machine: Machine): GameAction {
     // Validate that we have all required materials
     const inputMaterials = getOperationInputMaterials(
       machine.selectedOperation,
-      machineState.selectedParameters
+      machineState.selectedParameters,
     );
 
     for (const inputMaterial of inputMaterials) {
       for (let i = 0; i < inputMaterial.quantity; i++) {
         const index = inventory.findIndex((m) =>
-          materialMeetsInput(m, inputMaterial)
+          materialMeetsInput(m, inputMaterial),
         );
         if (index === -1) {
           console.warn("Tried to perform operation without required materials");
@@ -285,7 +297,7 @@ export function operateMachineAction(machine: Machine): GameAction {
                 ticksRemaining: firstPhase.duration,
               },
             }
-          : m
+          : m,
       ),
     };
   };

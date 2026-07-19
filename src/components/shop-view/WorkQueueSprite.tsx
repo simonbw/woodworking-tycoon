@@ -33,7 +33,7 @@ export const WorkQueueSprite: React.FC = () => {
       }
       g.stroke({ width: 8, color: 0x87ceeb, alpha: 0.5 });
     },
-    [positions]
+    [positions],
   );
 
   if (positions.length === 1) {

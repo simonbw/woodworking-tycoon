@@ -102,7 +102,9 @@ export const ShortcutHelpProvider: React.FC<{
 export function useHelpOverlay(): { open: () => void } {
   const value = useContext(helpContext);
   if (!value) {
-    throw new Error("useHelpOverlay must be used within a ShortcutHelpProvider");
+    throw new Error(
+      "useHelpOverlay must be used within a ShortcutHelpProvider",
+    );
   }
   return value;
 }

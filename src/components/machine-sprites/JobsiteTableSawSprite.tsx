@@ -15,10 +15,16 @@ import { extractFirstNumber } from "./extractFirstNumber";
 
 const AnimatedPixiContainer = animated("pixiContainer");
 
-export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
+export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
+  machine,
+}) => {
   const { inputMaterials, outputMaterials } = machine;
-  const tableSawTableTexture = useTexture("/images/jobsite-table-saw-table.png");
-  const tableSawFenceTexture = useTexture("/images/jobsite-table-saw-fence.png");
+  const tableSawTableTexture = useTexture(
+    "/images/jobsite-table-saw-table.png",
+  );
+  const tableSawFenceTexture = useTexture(
+    "/images/jobsite-table-saw-fence.png",
+  );
 
   const ripWidth =
     extractFirstNumber(machine.selectedOperation.id) ||
@@ -26,7 +32,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({ machine 
   const fencePosition = ripWidth * PIXELS_PER_INCH;
 
   const springProps = useSpring({
-    x: fencePosition
+    x: fencePosition,
   });
 
   return (

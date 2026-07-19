@@ -71,14 +71,14 @@ export const workspace: MachineType = {
         }
 
         const deckBoardsCount = inputPallet.deckBoards.filter(
-          (board: boolean) => board
+          (board: boolean) => board,
         ).length;
         // Every board pried loose gives its nails back — one per board.
         // A whole pallet worth of prying keeps the rustic shelf free.
         if (deckBoardsCount <= 1) {
           const stringers = array(3).map(() => board("pallet", 4, 6, 3));
           const deckBoards = array(deckBoardsCount).map(() =>
-            board("pallet", 3, 4, 1)
+            board("pallet", 3, 4, 1),
           );
           return {
             inputs: [],
@@ -91,7 +91,9 @@ export const workspace: MachineType = {
           const deckBoardsLeft = [
             ...inputPallet.deckBoards,
           ] as typeof inputPallet.deckBoards;
-          const index = deckBoardsLeft.findLastIndex((board: boolean) => board === true);
+          const index = deckBoardsLeft.findLastIndex(
+            (board: boolean) => board === true,
+          );
           deckBoardsLeft[index] = false;
           return {
             inputs: [
@@ -260,7 +262,13 @@ export const workspace: MachineType = {
       inputMaterials: [
         // A plywood base plus scrap runners and a fence
         { type: ["plywood"], length: [4], width: [4], quantity: 1 },
-        { type: ["board"], width: [4], length: [3], thickness: [1], quantity: 2 },
+        {
+          type: ["board"],
+          width: [4],
+          length: [3],
+          thickness: [1],
+          quantity: 2,
+        },
       ],
       output: () => {
         // The output is tooling, not product: the sled lands in tool
@@ -281,7 +289,13 @@ export const workspace: MachineType = {
         // A long plywood base with toggle clamps to carry wavy-edged stock;
         // same pallet-scrap ingredients as the crosscut sled
         { type: ["plywood"], length: [4], width: [4], quantity: 1 },
-        { type: ["board"], width: [4], length: [3], thickness: [1], quantity: 2 },
+        {
+          type: ["board"],
+          width: [4],
+          length: [3],
+          thickness: [1],
+          quantity: 2,
+        },
       ],
       output: () => {
         return {
