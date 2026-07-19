@@ -66,9 +66,6 @@ describe("spendSkillPointAction", () => {
 
   it("refuses to buy an already-owned starter skill", () => {
     const state = stateWithPoints(1);
-    assert.strictEqual(
-      spendSkillPointAction(STARTER_SKILLS[0])(state),
-      state,
-    );
+    assert.strictEqual(spendSkillPointAction(STARTER_SKILLS[0])(state), state);
   });
 });

@@ -30,7 +30,10 @@ function recipesForSkill(skillId: SkillId): ReadonlyArray<string> {
   }
   for (const toolType of Object.values(TOOL_TYPES)) {
     for (const operation of toolType.operations) {
-      if (operation.requiredSkill === skillId && !names.includes(operation.name)) {
+      if (
+        operation.requiredSkill === skillId &&
+        !names.includes(operation.name)
+      ) {
         names.push(operation.name);
       }
     }
@@ -83,8 +86,8 @@ export const SkillsPage: React.FC = () => {
             ))}
           </div>
           <p className="text-xs text-ink-fade font-typewriter mt-4">
-            Finish products and commissions to earn craft XP. Each level
-            grants a skill point.
+            Finish products and commissions to earn craft XP. Each level grants
+            a skill point.
           </p>
         </div>
       </div>

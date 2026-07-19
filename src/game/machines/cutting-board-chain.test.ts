@@ -80,22 +80,34 @@ describe("finishCuttingBoard", () => {
 
   it("accepts full-thickness sanded panels — the planer is optional", () => {
     assert.ok(
-      materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4, "sanded"), requirement),
+      materialMeetsInput(
+        uniformPanel("maple", 5, 2, 2, 4, "sanded"),
+        requirement,
+      ),
     );
   });
 
   it("rejects panels that aren't sanded", () => {
     assert.ok(
-      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3, "rough"), requirement),
+      !materialMeetsInput(
+        uniformPanel("maple", 5, 2, 2, 3, "rough"),
+        requirement,
+      ),
     );
     assert.ok(
-      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3, "smooth"), requirement),
+      !materialMeetsInput(
+        uniformPanel("maple", 5, 2, 2, 3, "smooth"),
+        requirement,
+      ),
     );
   });
 
   it("rejects a panel that is too narrow", () => {
     assert.ok(
-      !materialMeetsInput(uniformPanel("maple", 4, 2, 2, 3, "sanded"), requirement),
+      !materialMeetsInput(
+        uniformPanel("maple", 4, 2, 2, 3, "sanded"),
+        requirement,
+      ),
     );
   });
 
@@ -159,9 +171,13 @@ describe("planePanel", () => {
 
   it("accepts panels at or above the target thickness, never below", () => {
     const requirement = planePanel.getInputMaterials({ targetThickness: 3 })[0];
-    assert.ok(materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4), requirement));
+    assert.ok(
+      materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4), requirement),
+    );
     // Equal thickness is a skim pass — squeeze-out is sacrificial material
-    assert.ok(materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3), requirement));
+    assert.ok(
+      materialMeetsInput(uniformPanel("maple", 5, 2, 2, 3), requirement),
+    );
     assert.ok(
       !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 2), requirement),
     );

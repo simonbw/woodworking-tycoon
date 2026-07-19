@@ -1,10 +1,5 @@
 import { MachineOperation } from "../Machine";
-import {
-  Board,
-  improvedSurface,
-  MaterialInstance,
-  Panel,
-} from "../Materials";
+import { Board, improvedSurface, MaterialInstance, Panel } from "../Materials";
 import { isBoard } from "../board-helpers";
 import { isPanel } from "../panel-helpers";
 import { makeMaterial } from "../material-helpers";

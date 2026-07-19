@@ -33,7 +33,9 @@ export const lunchboxPlaner: MachineType = {
         // Equal thickness is a skim pass: rough stock carries sacrificial
         // material beyond its nominal size, so milling never shrinks the
         // listed dimensions.
-        const validThicknesses = BOARD_DIMENSIONS.filter(d => d >= targetThickness);
+        const validThicknesses = BOARD_DIMENSIONS.filter(
+          (d) => d >= targetThickness,
+        );
         return [
           {
             type: ["board"],
@@ -82,7 +84,9 @@ export const lunchboxPlaner: MachineType = {
         const targetThickness = params.targetThickness as BoardDimension;
         // Equal thickness is a skim pass — glue squeeze-out and alignment
         // ridges are sacrificial, same as rough stock's extra material.
-        const validThicknesses = BOARD_DIMENSIONS.filter(d => d >= targetThickness);
+        const validThicknesses = BOARD_DIMENSIONS.filter(
+          (d) => d >= targetThickness,
+        );
         return [
           {
             type: ["panel"],

@@ -46,7 +46,12 @@ const MachineSelectionHighlight: React.FC<{
       const offsetY = ((minY + maxY) / 2) * cellSize;
 
       // Yellow selection outline
-      g.rect(offsetX - width / 2 - 4, offsetY - height / 2 - 4, width + 8, height + 8);
+      g.rect(
+        offsetX - width / 2 - 4,
+        offsetY - height / 2 - 4,
+        width + 8,
+        height + 8,
+      );
       g.stroke({ width: 3, color: 0xfcd34d });
     },
     [machine.type.cellsOccupied],
@@ -125,7 +130,8 @@ const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
       ? phases[progress.phaseIndex + 1]
       : phases[Math.min(progress.phaseIndex, phases.length - 1)]
     : undefined;
-  const needsYou = relevantPhase !== undefined && relevantPhase.attended && !attending;
+  const needsYou =
+    relevantPhase !== undefined && relevantPhase.attended && !attending;
 
   const total = phases.reduce((sum, phase) => sum + phase.duration, 0);
   const remaining = isOperating

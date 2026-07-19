@@ -25,7 +25,13 @@ export const SalesTableSprite: React.FC<{ machine: Machine }> = ({
 
           // Cash box in the corner
           const boxSize = size * 0.28;
-          g.roundRect(half - boxSize - 3, -half + 3, boxSize, boxSize * 0.75, 2);
+          g.roundRect(
+            half - boxSize - 3,
+            -half + 3,
+            boxSize,
+            boxSize * 0.75,
+            2,
+          );
           g.fill({ color: 0x4a5d23 }); // money-green box
           g.circle(half - boxSize / 2 - 3, -half + 3 + boxSize * 0.375, 1.5);
           g.fill({ color: 0xc9b783 }); // latch

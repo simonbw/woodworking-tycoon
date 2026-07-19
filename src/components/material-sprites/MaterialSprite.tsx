@@ -22,15 +22,19 @@ export const MaterialSprite: React.FC<{
       return <PalletSprite pallet={material} alpha={alpha} tint={tint} />;
 
     case "jewelryBox":
-      return <FinishedBoxSprite material={material as FinishedProduct} alpha={alpha} tint={tint} />;
+      return (
+        <FinishedBoxSprite
+          material={material as FinishedProduct}
+          alpha={alpha}
+          tint={tint}
+        />
+      );
 
     case "panel":
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
     case "endGrainSlice":
-      return (
-        <EndGrainSliceSprite slice={material} alpha={alpha} tint={tint} />
-      );
+      return <EndGrainSliceSprite slice={material} alpha={alpha} tint={tint} />;
 
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":

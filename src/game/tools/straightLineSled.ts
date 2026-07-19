@@ -24,9 +24,7 @@ export const straightLineSled: ToolType = {
       name: "Straight-Line Rip",
       requiredSkill: "jigsAndFixtures",
       duration: 18,
-      inputMaterials: [
-        { type: ["board"], jointedEdges: [0], quantity: 1 },
-      ],
+      inputMaterials: [{ type: ["board"], jointedEdges: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {
@@ -34,9 +32,7 @@ export const straightLineSled: ToolType = {
         }
         return {
           inputs: [],
-          outputs: [
-            makeMaterial<Board>({ ...inputBoard, jointedEdges: 1 }),
-          ],
+          outputs: [makeMaterial<Board>({ ...inputBoard, jointedEdges: 1 })],
         };
       },
     },

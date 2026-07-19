@@ -33,7 +33,9 @@ export const jobsiteTableSaw: MachineType = {
       getInputMaterials: (params) => [
         {
           type: ["board"],
-          width: BOARD_DIMENSIONS.filter((d) => d > (params.targetWidth as BoardDimension)),
+          width: BOARD_DIMENSIONS.filter(
+            (d) => d > (params.targetWidth as BoardDimension),
+          ),
           // Never rip a rough edge against the fence — kickback city.
           // Straight-line it first (jointer, sled, or hand plane).
           jointedEdges: [1, 2],
@@ -45,7 +47,11 @@ export const jobsiteTableSaw: MachineType = {
         if (!isBoard(inputBoard)) {
           throw new Error("Input material is not a board");
         }
-        const result = cutBoard(inputBoard, params.targetWidth as BoardDimension, "width");
+        const result = cutBoard(
+          inputBoard,
+          params.targetWidth as BoardDimension,
+          "width",
+        );
         // The fence-side piece gains a saw-straight second edge; the offcut
         // keeps whatever the input had (its far edge is unchanged).
         const [kept, ...offcuts] = result.outputs;

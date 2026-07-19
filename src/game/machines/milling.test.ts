@@ -98,8 +98,12 @@ describe("straight-line sled", () => {
 
 describe("hand plane", () => {
   it("flattens a face and straightens an edge, slowly", () => {
-    const faceOp = handPlane.operations.find((op) => op.id === "handPlaneFace")!;
-    const edgeOp = handPlane.operations.find((op) => op.id === "handPlaneEdge")!;
+    const faceOp = handPlane.operations.find(
+      (op) => op.id === "handPlaneFace",
+    )!;
+    const edgeOp = handPlane.operations.find(
+      (op) => op.id === "handPlaneEdge",
+    )!;
     const flattened = faceOp.output([roughBoard()]).outputs[0];
     assert.ok(isBoard(flattened));
     assert.strictEqual(flattened.jointedFaces, 1);

@@ -1,5 +1,11 @@
 // Type declarations for @pixi/react v8 components
-import type { Container, Graphics, Sprite, TilingSprite, Texture } from "pixi.js";
+import type {
+  Container,
+  Graphics,
+  Sprite,
+  TilingSprite,
+  Texture,
+} from "pixi.js";
 
 type PixiProps<T> = Partial<T> & {
   x?: number;

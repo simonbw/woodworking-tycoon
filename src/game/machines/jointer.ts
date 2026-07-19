@@ -32,9 +32,7 @@ export const jointer: MachineType = {
       requiredSkill: "basicMilling",
       name: "Joint Face",
       duration: 10,
-      inputMaterials: [
-        { type: ["board"], jointedFaces: [0], quantity: 1 },
-      ],
+      inputMaterials: [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {
@@ -43,9 +41,7 @@ export const jointer: MachineType = {
         // One flat face; the rest of the board is as rough as it came
         return {
           inputs: [],
-          outputs: [
-            makeMaterial<Board>({ ...inputBoard, jointedFaces: 1 }),
-          ],
+          outputs: [makeMaterial<Board>({ ...inputBoard, jointedFaces: 1 })],
         };
       },
     },
@@ -70,9 +66,7 @@ export const jointer: MachineType = {
         }
         return {
           inputs: [],
-          outputs: [
-            makeMaterial<Board>({ ...inputBoard, jointedEdges: 1 }),
-          ],
+          outputs: [makeMaterial<Board>({ ...inputBoard, jointedEdges: 1 })],
         };
       },
     },

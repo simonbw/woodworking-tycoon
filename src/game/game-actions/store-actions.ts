@@ -4,14 +4,17 @@ import { getActiveCommission } from "../commissionSequence";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
-import { incrementCommissionsCompletedAction, checkProgressionMilestonesAction } from "./progression-actions";
+import {
+  incrementCommissionsCompletedAction,
+  checkProgressionMilestonesAction,
+} from "./progression-actions";
 import { combineActions } from "./misc-actions";
 import { withXp } from "./skill-actions";
 import { emitSound } from "./sound-actions";
 
 export function buyMaterialAction(
   material: MaterialInstance,
-  price: number
+  price: number,
 ): GameAction {
   return (gameState) => {
     if (gameState.money < price) {
@@ -30,7 +33,9 @@ export function buyMaterialAction(
 }
 
 /** Buys one pack of a consumable — supplies go straight to the shop stock. */
-export function buyConsumablePackAction(consumableId: ConsumableId): GameAction {
+export function buyConsumablePackAction(
+  consumableId: ConsumableId,
+): GameAction {
   return (gameState) => {
     const { packSize, packPrice } = CONSUMABLE_TYPES[consumableId];
     if (gameState.money < packPrice) {
@@ -49,7 +54,7 @@ export function buyConsumablePackAction(consumableId: ConsumableId): GameAction 
 
 export function sellMaterialAction(
   material: MaterialInstance,
-  price: number
+  price: number,
 ): GameAction {
   return (gameState) => {
     if (!gameState.player.inventory.some((item) => item === material)) {
@@ -62,7 +67,7 @@ export function sellMaterialAction(
       player: {
         ...gameState.player,
         inventory: gameState.player.inventory.filter(
-          (item) => item !== material
+          (item) => item !== material,
         ),
       },
     };
@@ -71,7 +76,7 @@ export function sellMaterialAction(
 
 export function buyMachineAction(
   machineTypeId: MachineId,
-  price: number
+  price: number,
 ): GameAction {
   return (gameState) => {
     if (gameState.money < price) {
@@ -105,7 +110,7 @@ export function completeCommissionAction(): GameAction {
     // Check if player has all required materials
     for (const requiredMaterial of commission.requiredMaterials) {
       const matchingMaterials = gameState.player.inventory.filter((material) =>
-        materialMeetsInput(material, requiredMaterial)
+        materialMeetsInput(material, requiredMaterial),
       );
       if (matchingMaterials.length < requiredMaterial.quantity) {
         console.warn("Player doesn't have required materials for commission");
@@ -118,7 +123,10 @@ export function completeCommissionAction(): GameAction {
     for (const requiredMaterial of commission.requiredMaterials) {
       let remainingQuantity = requiredMaterial.quantity;
       updatedInventory = updatedInventory.filter((material) => {
-        if (remainingQuantity > 0 && materialMeetsInput(material, requiredMaterial)) {
+        if (
+          remainingQuantity > 0 &&
+          materialMeetsInput(material, requiredMaterial)
+        ) {
           remainingQuantity--;
           return false; // Remove this material
         }
@@ -146,7 +154,7 @@ export function completeCommissionAction(): GameAction {
     // Progression must only advance when the commission actually completes
     return combineActions(
       incrementCommissionsCompletedAction(),
-      checkProgressionMilestonesAction()
+      checkProgressionMilestonesAction(),
     )(completedState);
   };
 }

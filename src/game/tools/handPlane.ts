@@ -21,9 +21,7 @@ export const handPlane: ToolType = {
       name: "Flatten Face by Hand",
       requiredSkill: "basicMilling",
       duration: 35,
-      inputMaterials: [
-        { type: ["board"], jointedFaces: [0], quantity: 1 },
-      ],
+      inputMaterials: [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {
@@ -31,9 +29,7 @@ export const handPlane: ToolType = {
         }
         return {
           inputs: [],
-          outputs: [
-            makeMaterial<Board>({ ...inputBoard, jointedFaces: 1 }),
-          ],
+          outputs: [makeMaterial<Board>({ ...inputBoard, jointedFaces: 1 })],
         };
       },
     },
@@ -42,9 +38,7 @@ export const handPlane: ToolType = {
       name: "Straighten Edge by Hand",
       requiredSkill: "basicMilling",
       duration: 30,
-      inputMaterials: [
-        { type: ["board"], jointedEdges: [0], quantity: 1 },
-      ],
+      inputMaterials: [{ type: ["board"], jointedEdges: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {
@@ -52,9 +46,7 @@ export const handPlane: ToolType = {
         }
         return {
           inputs: [],
-          outputs: [
-            makeMaterial<Board>({ ...inputBoard, jointedEdges: 1 }),
-          ],
+          outputs: [makeMaterial<Board>({ ...inputBoard, jointedEdges: 1 })],
         };
       },
     },

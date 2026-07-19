@@ -12,13 +12,13 @@ export function canPlaceMachine(
   machineType: MachineType,
   position: Vector,
   rotation: Direction,
-  excludeMachineIndex?: number
+  excludeMachineIndex?: number,
 ): boolean {
   // Check all cells the machine occupies
   for (const relativeCell of machineType.cellsOccupied) {
     const absolutePosition = translateVec(
       rotateVec(relativeCell, rotation),
-      position
+      position,
     );
 
     // Check if cell exists in the map
@@ -31,8 +31,9 @@ export function canPlaceMachine(
     if (cell?.machine !== undefined) {
       // If we're excluding a specific machine (during move), check if this is it
       if (excludeMachineIndex !== undefined) {
-        const machines = cellMap.getCells()
-          .flatMap(c => c.machine ? [c.machine] : []);
+        const machines = cellMap
+          .getCells()
+          .flatMap((c) => (c.machine ? [c.machine] : []));
         const machineAtCell = cell.machine;
         const machineIndex = machines.indexOf(machineAtCell);
 
@@ -49,7 +50,7 @@ export function canPlaceMachine(
   for (const relativeCell of machineType.freeCellsNeeded) {
     const absolutePosition = translateVec(
       rotateVec(relativeCell, rotation),
-      position
+      position,
     );
 
     // Check if cell exists in the map
@@ -62,8 +63,9 @@ export function canPlaceMachine(
     if (cell?.machine !== undefined) {
       // If we're excluding a specific machine (during move), check if this is it
       if (excludeMachineIndex !== undefined) {
-        const machines = cellMap.getCells()
-          .flatMap(c => c.machine ? [c.machine] : []);
+        const machines = cellMap
+          .getCells()
+          .flatMap((c) => (c.machine ? [c.machine] : []));
         const machineAtCell = cell.machine;
         const machineIndex = machines.indexOf(machineAtCell);
 
@@ -86,10 +88,10 @@ export function canPlaceMachine(
 export function getMachineOccupiedCells(
   machineType: MachineType,
   position: Vector,
-  rotation: Direction
+  rotation: Direction,
 ): Vector[] {
   return machineType.cellsOccupied.map((relativeCell) =>
-    translateVec(rotateVec(relativeCell, rotation), position)
+    translateVec(rotateVec(relativeCell, rotation), position),
   );
 }
 
@@ -100,10 +102,10 @@ export function getMachineOccupiedCells(
 export function getMachineFreeCells(
   machineType: MachineType,
   position: Vector,
-  rotation: Direction
+  rotation: Direction,
 ): Vector[] {
   return machineType.freeCellsNeeded.map((relativeCell) =>
-    translateVec(rotateVec(relativeCell, rotation), position)
+    translateVec(rotateVec(relativeCell, rotation), position),
   );
 }
 
@@ -113,7 +115,7 @@ export function getMachineFreeCells(
 function dropMachineMaterials(
   gameState: GameAction extends (state: infer S) => any ? S : never,
   position: Vector,
-  materials: ReadonlyArray<any>
+  materials: ReadonlyArray<any>,
 ): any {
   if (materials.length === 0) {
     return gameState;
@@ -137,13 +139,13 @@ function dropMachineMaterials(
 export function placeMachineAction(
   machineTypeId: MachineId,
   position: Vector,
-  rotation: Direction = 0
+  rotation: Direction = 0,
 ): GameAction {
   return (gameState) => {
     // Verify machine is in storage
     if (!gameState.storage.machines.includes(machineTypeId)) {
       console.warn(
-        `Tried to place machine ${machineTypeId} but it's not in storage`
+        `Tried to place machine ${machineTypeId} but it's not in storage`,
       );
       return gameState;
     }
@@ -166,9 +168,9 @@ export function placeMachineAction(
     const unlockedOps = machineType.operations.filter(
       (op: { requiredSkill?: string }) =>
         !op.requiredSkill ||
-        (gameState.progression.unlockedSkills as ReadonlyArray<string>).includes(
-          op.requiredSkill,
-        ),
+        (
+          gameState.progression.unlockedSkills as ReadonlyArray<string>
+        ).includes(op.requiredSkill),
     );
     const newMachine = {
       machineTypeId,
@@ -205,7 +207,7 @@ export function placeMachineAction(
 export function moveMachineAction(
   machineIndex: number,
   newPosition: Vector,
-  newRotation: Direction
+  newRotation: Direction,
 ): GameAction {
   return (gameState) => {
     if (machineIndex < 0 || machineIndex >= gameState.machines.length) {
@@ -224,7 +226,11 @@ export function moveMachineAction(
     ];
 
     // Drop materials at old position
-    let updatedState = dropMachineMaterials(gameState, oldPosition, allMaterials);
+    let updatedState = dropMachineMaterials(
+      gameState,
+      oldPosition,
+      allMaterials,
+    );
 
     // Update machine with new position/rotation and clear materials
     const updatedMachines = [...updatedState.machines];
@@ -265,7 +271,11 @@ export function removeMachineToStorageAction(machineIndex: number): GameAction {
     ];
 
     // Drop materials at machine position
-    let updatedState = dropMachineMaterials(gameState, machine.position, allMaterials);
+    let updatedState = dropMachineMaterials(
+      gameState,
+      machine.position,
+      allMaterials,
+    );
 
     // Remove machine from placed machines
     const updatedMachines = [

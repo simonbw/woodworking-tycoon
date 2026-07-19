@@ -29,7 +29,9 @@ export const miterSaw: MachineType = {
       getInputMaterials: (params) => [
         {
           type: ["board"],
-          length: BOARD_DIMENSIONS.filter((d) => d > (params.targetLength as BoardDimension)),
+          length: BOARD_DIMENSIONS.filter(
+            (d) => d > (params.targetLength as BoardDimension),
+          ),
           quantity: 1,
         },
       ],
@@ -38,7 +40,11 @@ export const miterSaw: MachineType = {
         if (!isBoard(inputBoard)) {
           throw new Error("Input material is not a board");
         }
-        return cutBoard(inputBoard, params.targetLength as BoardDimension, "length");
+        return cutBoard(
+          inputBoard,
+          params.targetLength as BoardDimension,
+          "length",
+        );
       },
     } as ParameterizedOperation,
   ],
