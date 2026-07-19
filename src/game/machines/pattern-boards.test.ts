@@ -39,14 +39,10 @@ function strips(...pairs: [Species, PanelStrip["width"]][]): PanelStrip[] {
 describe("stripsAlternate", () => {
   it("accepts strict alternation and rejects repeats", () => {
     assert.ok(
-      stripsAlternate(
-        strips(["walnut", 2], ["maple", 2], ["walnut", 2]),
-      ),
+      stripsAlternate(strips(["walnut", 2], ["maple", 2], ["walnut", 2])),
     );
     assert.ok(
-      !stripsAlternate(
-        strips(["walnut", 2], ["walnut", 2], ["maple", 2]),
-      ),
+      !stripsAlternate(strips(["walnut", 2], ["walnut", 2], ["maple", 2])),
     );
   });
 });
@@ -173,12 +169,8 @@ describe("extendPanel", () => {
     assert.ok(
       materialMeetsInput(panel(strips(["walnut", 3]), 2, 4, "rough"), panelReq),
     );
-    assert.ok(
-      !materialMeetsInput(board("maple", 2, 2, 4, "rough"), stripReq),
-    );
-    assert.ok(
-      materialMeetsInput(board("maple", 2, 2, 4, "smooth"), stripReq),
-    );
+    assert.ok(!materialMeetsInput(board("maple", 2, 2, 4, "rough"), stripReq));
+    assert.ok(materialMeetsInput(board("maple", 2, 2, 4, "smooth"), stripReq));
   });
 });
 
@@ -220,7 +212,10 @@ describe("glue-up phases", () => {
     ];
     for (const op of allOperations) {
       if (op.phases) {
-        const sum = op.phases.reduce((total, phase) => total + phase.duration, 0);
+        const sum = op.phases.reduce(
+          (total, phase) => total + phase.duration,
+          0,
+        );
         assert.strictEqual(sum, op.duration, `${op.id} phases sum`);
       }
     }
@@ -264,7 +259,13 @@ describe("finishStripedBoard", () => {
 
   it("rejects single-species and pallet-tainted panels", () => {
     const uniform = panel(
-      strips(["maple", 2], ["maple", 2], ["maple", 2], ["maple", 2], ["maple", 2]),
+      strips(
+        ["maple", 2],
+        ["maple", 2],
+        ["maple", 2],
+        ["maple", 2],
+        ["maple", 2],
+      ),
       2,
       3,
       "sanded",

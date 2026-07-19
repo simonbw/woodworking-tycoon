@@ -30,6 +30,8 @@ export const freeSellingShop: GameState = {
         length: 3,
         thickness: 1,
         surface: "rough",
+        jointedFaces: 1,
+        jointedEdges: 2,
       },
     ],
     workQueue: [],

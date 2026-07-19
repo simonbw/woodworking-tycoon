@@ -23,6 +23,7 @@ import {
 import { TOOL_TYPES } from "../../game/Tool";
 import {
   createMockMaterial,
+  describeMaterialRequirement,
   getMaterialName,
 } from "../../game/material-helpers";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
@@ -233,7 +234,9 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
               </span>
               <select
                 className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
-                value={machine.selectedParameters?.[param.id] || param.values[0]}
+                value={
+                  machine.selectedParameters?.[param.id] || param.values[0]
+                }
                 onChange={(event) => {
                   const newParams = {
                     ...machine.selectedParameters,
@@ -310,7 +313,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 isValid={slot.isValid}
                 tooltip={
                   slot.isPlaceholder
-                    ? `Needs: ${getMaterialName(slot.material)}`
+                    ? `Needs: ${describeMaterialRequirement(slot.requirement)}`
                     : getMaterialName(slot.material)
                 }
               />
@@ -475,22 +478,24 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
           gameState.storage.tools
             .filter((toolId) => {
               const compatible = TOOL_TYPES[toolId].compatibleMachines;
-              return !compatible || compatible.includes(machine.state.machineTypeId);
+              return (
+                !compatible || compatible.includes(machine.state.machineTypeId)
+              );
             })
             .map((toolId, index) => (
-            <li
-              key={`stored-${toolId}-${index}`}
-              className="flex items-center gap-2 py-1 text-ink-fade"
-            >
-              <span className="grow">{TOOL_TYPES[toolId].name} (stored)</span>
-              <button
-                className="button-paper text-xs"
-                onClick={() => applyAction(mountToolAction(machine, toolId))}
+              <li
+                key={`stored-${toolId}-${index}`}
+                className="flex items-center gap-2 py-1 text-ink-fade"
               >
-                Attach
-              </button>
-            </li>
-          ))}
+                <span className="grow">{TOOL_TYPES[toolId].name} (stored)</span>
+                <button
+                  className="button-paper text-xs"
+                  onClick={() => applyAction(mountToolAction(machine, toolId))}
+                >
+                  Attach
+                </button>
+              </li>
+            ))}
         {machine.state.tools.length === 0 &&
           gameState.storage.tools.length === 0 && (
             <li className="py-1 italic text-ink-fade text-xs">
@@ -542,7 +547,9 @@ const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
                 className="button-paper text-xs"
                 onClick={(event) => {
                   if (event.shiftKey) {
-                    applyAction(takeInputsFromMachineAction(materials, machine));
+                    applyAction(
+                      takeInputsFromMachineAction(materials, machine),
+                    );
                   } else {
                     applyAction(
                       takeInputsFromMachineAction([materials[0]], machine),

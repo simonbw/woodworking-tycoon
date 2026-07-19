@@ -110,12 +110,12 @@ test.describe("Attended Operations", () => {
       await page.waitForTimeout(200);
       // 4 smooth strips (shift = move all of the row) + the sanded one
       await page
-        .locator("li", { hasText: "Maple Board (2'x2\"x4/4, smooth)" })
+        .locator("li", { hasText: "Maple Board (2'x2\"x4/4, smooth, S4S)" })
         .getByRole("button", { name: "→ Workspace" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
       await page
-        .locator("li", { hasText: "Maple Board (2'x2\"x4/4, sanded)" })
+        .locator("li", { hasText: "Maple Board (2'x2\"x4/4, sanded, S4S)" })
         .getByRole("button", { name: "→ Workspace" })
         .click();
       await page.waitForTimeout(200);

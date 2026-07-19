@@ -41,6 +41,8 @@ function strip(
     width,
     thickness: 4,
     surface: "smooth",
+    jointedFaces: 2,
+    jointedEdges: 2,
   };
 }
 

@@ -111,7 +111,9 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
               <MachineSprite
                 machine={machinePlacement}
                 isSelected={selectedMachineIndex === index}
-                onClick={editMode === "none" ? () => onMachineClick(index) : undefined}
+                onClick={
+                  editMode === "none" ? () => onMachineClick(index) : undefined
+                }
               />
             </pixiContainer>
           ))}

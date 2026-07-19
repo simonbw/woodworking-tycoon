@@ -103,7 +103,10 @@ describe("unmountToolAction", () => {
       ),
     };
     const result = unmountToolAction(workspaceOf(state), "sandingBlock")(state);
-    assert.strictEqual(result.machines[0].selectedOperationId, "dismantlePallet");
+    assert.strictEqual(
+      result.machines[0].selectedOperationId,
+      "dismantlePallet",
+    );
   });
 
   it("refuses while the station is mid-operation", () => {

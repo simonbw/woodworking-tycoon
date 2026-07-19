@@ -12,9 +12,16 @@ paid paths. Players spend money to convert it into throughput, not to unlock
 recipes. (Example: sanding block → random orbit sander → wide-belt sander all
 perform "sanding"; each tier is just faster.)
 
-The planer is the canonical case: you never *need* it to make a cutting
-board — a sander gets you there slowly. The planer earns its $450 by being
-fast and by unlocking the rough-lumber discount (see Lumber tiers).
+The milling steps are the canonical case: every jointing step has a machine
+path and a budget path. Face jointing is the jointer or a $35 hand plane;
+edge jointing is the jointer or a shop-built straight-line sled on the table
+saw. The machines earn their price by being fast, and by making the cheap
+rough-lumber channels economical at volume (see Lumber channels).
+
+One correction to an older framing: sanding is NOT a slow substitute for
+milling. Sanding never flattens or straightens anything — it only refines
+surface quality. The slow-cheap paths into rough lumber are hand tools and
+jigs, not abrasives.
 
 ## Attended vs hands-free operation phases (Now: v1)
 
@@ -52,11 +59,13 @@ CNC-style machines that run a whole job unattended.
 ## Shop-made jigs (Now: v1)
 
 Some tools are never sold — you build them (`ToolType.craftedOnly`, granted
-via `OperationOutput.toolOutputs`). The crosscut sled is the first: plywood
+via `OperationOutput.toolOutputs`). The crosscut sled came first: plywood
 base plus scrap runners, built at the workspace under `jigs-and-fixtures`,
 mounts only on the table saw (`ToolType.compatibleMachines`) and unlocks
-wide panel crosscuts — the doorway to end-grain boards. Later jigs live
-here too: tapering jigs, box-joint jigs, router sleds.
+wide panel crosscuts — the doorway to end-grain boards. The straight-line
+sled is its milling sibling: same ingredients, same station, and it turns
+the table saw into a no-prerequisites edge jointer (see Milling). Later
+jigs live here too: tapering jigs, box-joint jigs, router sleds.
 
 Related hard rule: **end grain never meets the planer** (`Panel.grain`).
 Planing an end-grain panel tears it apart in real life, so `planePanel`
@@ -75,6 +84,8 @@ sanders relevant deep into the planer era and sets up a future drum sander.
   Wall; mount/unmount from the station's card.
 - First tools: **sanding block** ($10, slow) and **random orbit sander**
   ($120, fast). Same operations, different durations.
+- The **hand plane** ($35) is the budget mill: flattens a face or
+  straightens an edge at any bench, slowly — the jointer's cheap rival.
 
 ### Later
 
@@ -93,48 +104,76 @@ sanders relevant deep into the planer era and sets up a future drum sander.
 
 `surface: "rough" | "smooth" | "sanded"` on **Board** and **Panel** (scalar —
 the whole piece has one state). Finished products don't carry it; recipes
-bake it in.
+bake it in. Surface is **finish quality only** — geometry (flat, straight)
+lives on the milling axes below, and the two never substitute for each other.
 
 - **Sanding** (tool op) bumps surface one step: rough → smooth → sanded.
-  Never changes thickness.
-- **Planing** takes a thickness step off and leaves the surface **smooth**.
-  It cannot produce "sanded" — only sanding reaches the top state.
+  Never changes thickness, never flattens, never joints.
+- **Planing** leaves the surface **smooth**. It cannot produce "sanded" —
+  only sanding reaches the top state.
 - **Glue-ups always output rough** panels (squeeze-out, alignment ridges),
   regardless of strip surfaces. Gluing requires smooth-or-better strips
-  (clean faces make good joints) — this is what makes S4S lumber worth its
-  premium and gives the planer its rough-lumber niche.
+  AND fully ripped edges (`jointedEdges: 2`) — edge joints need straight,
+  clean edges.
 - Cutting boards require a **sanded** panel. Rustic products accept anything
   (rough is the point of rustic).
 - Value: sell multiplier rough ×1 / smooth ×1.15 / sanded ×1.3 on boards and
   panels.
 
-## Lumber tiers (Now: v1)
+## Milling: jointed faces and edges (Now — issue #6)
 
-The store sells each SKU in two finishes:
+Boards carry two independent axes, not a ladder:
 
-- **S4S** (surface: smooth) at full price — work with it immediately.
-- **Rough sawn** at ~65% of the S4S price — needs planing (fast, loses a
-  thickness step) or sanding (slow) before it can be glued.
+- `jointedFaces: 0 | 1 | 2` — 0 = rough/possibly warped, 1 = one flat
+  reference face, 2 = faces parallel ("planed")
+- `jointedEdges: 0 | 1 | 2` — 0 = wavy, 1 = one straight edge,
+  2 = edges parallel ("ripped to width")
 
-Pallet wood is always rough and always scavenged, never sold.
+Two axes because milling order genuinely varies: after a reference face and
+edge exist, `plane → rip` and `rip → plane` are both correct. Ends are never
+tracked — crosscuts have no prerequisites. **Milling never consumes nominal
+dimension**: rough stock carries sacrificial material beyond its listed
+size, so a 4/4 rough board skim-planes to a finished 4/4 board (the planer
+accepts a target equal to the current thickness).
+
+Operation prerequisites and providers:
+
+| Step | Effect | Providers |
+|---|---|---|
+| Joint face | faces 0→1 | jointer; hand plane (slow) |
+| Plane | faces →2, surface→smooth; needs faces ≥ 1 | planer; later router sled/CNC |
+| Joint edge | edges 0→1 | jointer (needs faces ≥ 1 — fence reference); straight-line sled on the table saw (**no prerequisites** — the board rides the sled, not the fence); hand plane |
+| Rip to width | edges →2; needs edges ≥ 1 (never rip a wavy edge against the fence) | table saw |
+| Crosscut | length only, no prerequisites | miter saw, crosscut sled |
+
+Pallet boards scavenge as `{ jointedFaces: 1, jointedEdges: 2 }` — they were
+factory-milled once, weathered rough — which keeps the whole early game
+(rip, crosscut, sand, glue) running without any milling equipment.
+`millingLabel()` names the classic states (S4S / S3S / S2S / rough sawn) in
+material names; the pallet-ish default state gets no label.
+
+## Lumber channels (Now — issue #6)
+
+The lumber aisle is organized as purchase channels modeled on the real
+woodworker's journey. Channels are **reputation-gated and completely hidden
+until unlocked** — no grayed-out teasers; sections appearing is the reward.
+See `lumberStock.ts` for the data.
+
+| Channel | Species | State | Price factor | Unlock |
+|---|---|---|---|---|
+| The curb | pallet | faces 1 / edges 2, rough | free | start |
+| Construction Lumber | pine | S4S | ×1 | with store |
+| S4S Hardwood Rack | poplar, oak, maple | S4S | ×1.6 (the big-box markup) | with store |
+| Lumberyard — S2S | maple, oak, cherry, walnut | faces 2 / edges 0 | ×1 | 12 reputation |
+| Rough Rack | maple, oak, cherry, walnut | faces 0 / edges 0 | ×0.55 | 22 reputation |
+
+Exotics (mahogany, purple heart) are not sold anywhere yet — a future
+"specialty dealer" brings them back as the channel past the rough rack.
 
 ### Later
 
-- S2S as a middle tier if per-face state lands.
-
-## Flatness and the jointer (Later — deliberately separate axis)
-
-Smoothness ≠ flatness. A planer makes faces parallel and smooth but cannot
-remove warp without a flat reference face; that's the jointer's job. When the
-jointer lands it brings its **own** dimension — e.g. `flat: boolean` or a
-"warped" condition appearing on rough/scavenged stock — additive to the
-surface ladder, not a change to it. Until then, we pretend all stock is flat.
-
-## Per-face state (Later)
-
-The scalar `surface` widens to per-face (`faces: { top, bottom, edges }`)
-when S2S lumber or face-specific operations matter. Migration is mechanical:
-scalar reads as "worst face", recipes already match via `matches` predicates
-(edit one function), and save compatibility is handled by version-bumping
-(old saves are discarded on structure changes). Don't build this until a
-feature actually needs to distinguish faces.
+- Router sled / CNC: whole-ladder unattended milling (pairs with the
+  hands-free phase system).
+- True per-face state (which face is jointed, S1S) — only if a feature ever
+  needs to distinguish orientation; the two-count model covers everything
+  current gameplay cares about.

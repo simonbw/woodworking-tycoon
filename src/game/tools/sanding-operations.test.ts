@@ -39,8 +39,12 @@ describe("sanding operations", () => {
 
   it("won't accept an already-sanded material", () => {
     const requirement = blockSandBoard.inputMaterials[0];
-    assert.ok(!materialMeetsInput(board("pallet", 3, 4, 1, "sanded"), requirement));
-    assert.ok(materialMeetsInput(board("pallet", 3, 4, 1, "rough"), requirement));
+    assert.ok(
+      !materialMeetsInput(board("pallet", 3, 4, 1, "sanded"), requirement),
+    );
+    assert.ok(
+      materialMeetsInput(board("pallet", 3, 4, 1, "rough"), requirement),
+    );
   });
 
   it("sands panels and preserves their strips", () => {

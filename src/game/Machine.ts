@@ -6,6 +6,7 @@ import { TOOL_TYPES, ToolId } from "./Tool";
 import { Direction, rotateVec, translateVec, Vector } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
+import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { makeshiftBench } from "./machines/makeshiftBench";
 import { miterSaw } from "./machines/miterSaw";
@@ -33,6 +34,7 @@ export const MACHINE_TYPES = {
   jobsiteTableSaw,
   miterSaw,
   lunchboxPlaner,
+  jointer,
   garbageCan,
   salesTable,
 } satisfies { [id: string]: MachineType };
@@ -214,7 +216,9 @@ export class Machine {
    * station whose recipes are all still locked, or "none").
    */
   get selectedOperationOrNull():
-    MachineOperation | ParameterizedOperation | null {
+    | MachineOperation
+    | ParameterizedOperation
+    | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null

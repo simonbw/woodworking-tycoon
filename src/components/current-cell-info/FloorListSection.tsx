@@ -52,7 +52,10 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
           ×{piles.length}
         </span>
       )}
-      <Tooltip content={<ShiftHint verb="Pick up" plural={piles.length > 1} />} shortcut="pick-up">
+      <Tooltip
+        content={<ShiftHint verb="Pick up" plural={piles.length > 1} />}
+        shortcut="pick-up"
+      >
         <button
           className="button-paper text-xs whitespace-nowrap"
           onClick={(event) => {

@@ -44,7 +44,9 @@ export const ShopView: React.FC = () => {
         backgroundAlpha={0}
         antialias={true}
       >
-        <gameStateContext.Provider value={{ gameState, updateGameState, saveGame, quitToMenu }}>
+        <gameStateContext.Provider
+          value={{ gameState, updateGameState, saveGame, quitToMenu }}
+        >
           <pixiTilingSprite
             eventMode="static"
             texture={floorTexture}
@@ -80,9 +82,7 @@ export const ShopView: React.FC = () => {
             />
           ))}
           <WorkQueueSprite />
-          {!gameState.player.away && (
-            <PersonSprite person={gameState.player} />
-          )}
+          {!gameState.player.away && <PersonSprite person={gameState.player} />}
         </gameStateContext.Provider>
       </Application>
     </>

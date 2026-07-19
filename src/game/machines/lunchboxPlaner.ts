@@ -25,20 +25,24 @@ export const lunchboxPlaner: MachineType = {
         {
           id: "targetThickness",
           name: "Target Thickness",
-          values: BOARD_DIMENSIONS.filter(
-            // you can't plane something down to the maximum dimension
-            (dimension) => dimension < Math.max(...BOARD_DIMENSIONS)
-          ),
+          values: BOARD_DIMENSIONS,
         },
       ],
       getInputMaterials: (params) => {
         const targetThickness = params.targetThickness as BoardDimension;
-        // Need boards thicker than target
-        const validThicknesses = BOARD_DIMENSIONS.filter(d => d > targetThickness);
+        // Equal thickness is a skim pass: rough stock carries sacrificial
+        // material beyond its nominal size, so milling never shrinks the
+        // listed dimensions.
+        const validThicknesses = BOARD_DIMENSIONS.filter(
+          (d) => d >= targetThickness,
+        );
         return [
           {
             type: ["board"],
             thickness: validThicknesses,
+            // A planer needs a flat reference face — it can't fix warp,
+            // only copy flatness to the other side. Joint a face first.
+            jointedFaces: [1, 2],
             quantity: 1,
           },
         ];
@@ -49,13 +53,15 @@ export const lunchboxPlaner: MachineType = {
           throw new Error("Input material is not a board");
         }
         const targetThickness = params.targetThickness as BoardDimension;
-        // Thinner, and freshly surfaced (but only sanding reaches "sanded")
+        // Thinner, faces parallel, and freshly surfaced (but only sanding
+        // reaches "sanded")
         return {
           inputs: [],
           outputs: [
             makeMaterial<Board>({
               ...inputBoard,
               thickness: targetThickness,
+              jointedFaces: 2,
               surface: "smooth",
             }),
           ],
@@ -71,14 +77,16 @@ export const lunchboxPlaner: MachineType = {
         {
           id: "targetThickness",
           name: "Target Thickness",
-          values: BOARD_DIMENSIONS.filter(
-            (dimension) => dimension < Math.max(...BOARD_DIMENSIONS)
-          ),
+          values: BOARD_DIMENSIONS,
         },
       ],
       getInputMaterials: (params) => {
         const targetThickness = params.targetThickness as BoardDimension;
-        const validThicknesses = BOARD_DIMENSIONS.filter(d => d > targetThickness);
+        // Equal thickness is a skim pass — glue squeeze-out and alignment
+        // ridges are sacrificial, same as rough stock's extra material.
+        const validThicknesses = BOARD_DIMENSIONS.filter(
+          (d) => d >= targetThickness,
+        );
         return [
           {
             type: ["panel"],

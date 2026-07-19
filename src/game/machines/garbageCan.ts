@@ -4,7 +4,8 @@ import { MaterialInstance } from "../Materials";
 export const garbageCan: MachineType = {
   id: "garbageCan",
   name: "Garbage Can",
-  description: "Dispose of unwanted materials and scraps. Materials are permanently removed.",
+  description:
+    "Dispose of unwanted materials and scraps. Materials are permanently removed.",
   cellsOccupied: [[0, 0]],
   freeCellsNeeded: [],
   cost: 0, // Free - basic quality of life feature

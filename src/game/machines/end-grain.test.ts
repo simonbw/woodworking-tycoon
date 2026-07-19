@@ -6,7 +6,11 @@ import { getMachines, MachineOperation, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { mountToolAction } from "../game-actions/tool-actions";
 import { tickAction } from "../game-actions/tickAction";
-import { isFinishedProduct, makeMaterial, materialMeetsInput } from "../material-helpers";
+import {
+  isFinishedProduct,
+  makeMaterial,
+  materialMeetsInput,
+} from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { EndGrainSlice, SheetGood } from "../Materials";
 import { panel, uniformPanel } from "../panel-helpers";
@@ -67,10 +71,16 @@ describe("crosscutPanel", () => {
 
   it("takes a clean long-grain panel, never an end-grain one", () => {
     assert.ok(
-      materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4, "sanded"), requirement),
+      materialMeetsInput(
+        uniformPanel("maple", 5, 2, 2, 4, "sanded"),
+        requirement,
+      ),
     );
     assert.ok(
-      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4, "rough"), requirement),
+      !materialMeetsInput(
+        uniformPanel("maple", 5, 2, 2, 4, "rough"),
+        requirement,
+      ),
     );
     const endGrain = {
       ...uniformPanel("maple", 5, 2, 2, 4, "sanded"),
@@ -142,7 +152,10 @@ describe("finishEndGrainBoard", () => {
 
   it("rejects long-grain panels of the same shape", () => {
     assert.ok(
-      !materialMeetsInput(uniformPanel("maple", 5, 2, 1, 8, "sanded"), requirement),
+      !materialMeetsInput(
+        uniformPanel("maple", 5, 2, 1, 8, "sanded"),
+        requirement,
+      ),
     );
   });
 
@@ -196,11 +209,17 @@ describe("planer vs end grain", () => {
     }
     const requirement = planePanel.getInputMaterials({ targetThickness: 4 })[0];
     assert.ok(
-      materialMeetsInput(uniformPanel("maple", 5, 2, 1, 8, "rough"), requirement),
+      materialMeetsInput(
+        uniformPanel("maple", 5, 2, 1, 8, "rough"),
+        requirement,
+      ),
     );
     assert.ok(
       !materialMeetsInput(
-        { ...uniformPanel("maple", 5, 2, 1, 8, "rough"), grain: "end" as const },
+        {
+          ...uniformPanel("maple", 5, 2, 1, 8, "rough"),
+          grain: "end" as const,
+        },
         requirement,
       ),
     );

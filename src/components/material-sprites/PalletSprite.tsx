@@ -19,7 +19,7 @@ export const PalletSprite: React.FC<{
   const bottom = pallet.deckBoards.slice(0, MAX_BOTTOM_DECK);
   const top = pallet.deckBoards.slice(
     MAX_BOTTOM_DECK,
-    MAX_BOTTOM_DECK + MAX_TOP_DECK
+    MAX_BOTTOM_DECK + MAX_TOP_DECK,
   );
 
   const deckBoard = useMemo(() => board("pallet", 3, 4, 2), []);
@@ -42,12 +42,9 @@ export const PalletSprite: React.FC<{
               x={lerp(0, totalWidth, i / (MAX_BOTTOM_DECK - 1))}
               y={totalHeight / 2}
             >
-              <BoardSprite
-                board={deckBoard}
-                tint={tint}
-              />
+              <BoardSprite board={deckBoard} tint={tint} />
             </pixiContainer>
-          )
+          ),
       )}
 
       {array(pallet.stringerBoardsLeft).map((_, i) => (
@@ -57,10 +54,7 @@ export const PalletSprite: React.FC<{
           y={lerp(0, totalHeight, i / (MAX_STRINGERS - 1))}
           angle={90}
         >
-          <BoardSprite
-            board={stringerBoard}
-            tint={tint}
-          />
+          <BoardSprite board={stringerBoard} tint={tint} />
         </pixiContainer>
       ))}
 
@@ -72,12 +66,9 @@ export const PalletSprite: React.FC<{
               x={lerp(0, totalWidth, i / (MAX_TOP_DECK - 1))}
               y={totalHeight / 2}
             >
-              <BoardSprite
-                board={deckBoard}
-                tint={tint}
-              />
+              <BoardSprite board={deckBoard} tint={tint} />
             </pixiContainer>
-          )
+          ),
       )}
     </pixiContainer>
   );

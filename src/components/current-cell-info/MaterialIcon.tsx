@@ -49,7 +49,14 @@ export const MaterialIcon: React.FC<{
   placeholder?: boolean;
   isValid?: boolean;
   tooltip?: ReactNode;
-}> = ({ material, size = "medium", quantity, placeholder = false, isValid = true, tooltip }) => {
+}> = ({
+  material,
+  size = "medium",
+  quantity,
+  placeholder = false,
+  isValid = true,
+  tooltip,
+}) => {
   switch (material.type) {
     // Make the board with SVG so we don't have to use Pixi to render it
     case "board": {
@@ -59,7 +66,13 @@ export const MaterialIcon: React.FC<{
       const depth = (board.thickness * PIXELS_PER_INCH) / 4;
 
       return (
-        <Wrapper size={size} quantity={quantity} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
+        <Wrapper
+          size={size}
+          quantity={quantity}
+          isValid={isValid}
+          tooltip={tooltip}
+          placeholder={placeholder}
+        >
           <svg
             viewBox={`0 0 ${PIXELS_PER_CELL} ${PIXELS_PER_CELL}`}
             className="w-full"
@@ -90,7 +103,12 @@ export const MaterialIcon: React.FC<{
       const depth = (board.thickness * PIXELS_PER_INCH) / 4;
 
       return (
-        <Wrapper size={size} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
+        <Wrapper
+          size={size}
+          isValid={isValid}
+          tooltip={tooltip}
+          placeholder={placeholder}
+        >
           <svg
             viewBox={`0 0 ${PIXELS_PER_CELL} ${PIXELS_PER_CELL}`}
             className="w-full"
@@ -116,14 +134,24 @@ export const MaterialIcon: React.FC<{
 
     case "pallet":
       return (
-        <Wrapper size={size} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
+        <Wrapper
+          size={size}
+          isValid={isValid}
+          tooltip={tooltip}
+          placeholder={placeholder}
+        >
           <img src="/images/pallet.png" />
         </Wrapper>
       );
 
     default:
       return (
-        <Wrapper size={size} isValid={isValid} tooltip={tooltip} placeholder={placeholder}>
+        <Wrapper
+          size={size}
+          isValid={isValid}
+          tooltip={tooltip}
+          placeholder={placeholder}
+        >
           <SimpleSpriteStage scale={sizeToScale[size]}>
             <MaterialSprite material={material} />
           </SimpleSpriteStage>
@@ -146,7 +174,14 @@ const Wrapper: React.FC<{
   isValid?: boolean;
   tooltip?: ReactNode;
   placeholder?: boolean;
-}> = ({ children, size, quantity, isValid = true, tooltip, placeholder = false }) => {
+}> = ({
+  children,
+  size,
+  quantity,
+  isValid = true,
+  tooltip,
+  placeholder = false,
+}) => {
   // Determine border style based on state
   const borderStyle = placeholder
     ? "border-2 border-dashed border-zinc-600"
@@ -169,7 +204,7 @@ const Wrapper: React.FC<{
           sizeToClassname[size],
           borderStyle,
           bgStyle,
-          placeholder ? "opacity-50" : ""
+          placeholder ? "opacity-50" : "",
         )}
       >
         {children}

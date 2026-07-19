@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  CONSUMABLE_TYPES,
-  ConsumableId,
-} from "../../game/Consumable";
+import { CONSUMABLE_TYPES, ConsumableId } from "../../game/Consumable";
 import {
   buyConsumablePackAction,
   buyMaterialAction,

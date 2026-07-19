@@ -25,7 +25,7 @@ export const BoardSprite: React.FC<
           -width / 2 - shadowWidth,
           -height / 2 - shadowWidth,
           width + depth + shadowWidth * 2,
-          height + shadowWidth * 2
+          height + shadowWidth * 2,
         );
         g.fill({ color: 0x000000, alpha: 0.1 });
       }
@@ -38,7 +38,7 @@ export const BoardSprite: React.FC<
       g.rect(width / 2, -height / 2, depth, height);
       g.fill(colorBySpecies[species].secondary);
     },
-    [boardWidth, boardLength, thickness, species]
+    [boardWidth, boardLength, thickness, species],
   );
 
   return <pixiGraphics {...omitUndefined(rest)} draw={draw} />;

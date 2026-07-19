@@ -20,7 +20,7 @@ export const PersonSprite: React.FC<{ person: Person }> = ({ person }) => {
     to: {
       x: position[0],
       y: position[1],
-      angle
+      angle,
     },
     config: {
       mass: 0.1,
@@ -31,7 +31,11 @@ export const PersonSprite: React.FC<{ person: Person }> = ({ person }) => {
   });
 
   return (
-    <AnimatedPixiContainer x={springProps.x} y={springProps.y} angle={springProps.angle}>
+    <AnimatedPixiContainer
+      x={springProps.x}
+      y={springProps.y}
+      angle={springProps.angle}
+    >
       {person.inventory.map((material, index) => (
         <pixiContainer angle={index * 1} x={inchesToPixels(6)} key={index}>
           <MaterialSprite material={material} key={index} />
