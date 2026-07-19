@@ -53,9 +53,7 @@ export const StorageSection: React.FC<StorageSectionProps> = ({
           Storage
         </h3>
         {groupedMachines.length === 0 ? (
-          <p className="italic text-ink-fade text-sm">
-            No machines in storage
-          </p>
+          <p className="italic text-ink-fade text-sm">No machines in storage</p>
         ) : (
           <ul className="divide-y divide-ink-black/15">
             {groupedMachines.map((machineIds) => {

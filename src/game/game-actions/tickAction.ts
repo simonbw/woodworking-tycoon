@@ -81,7 +81,7 @@ export const tickAction: GameAction = (gameState) => {
     );
     if (!selectedOperation) {
       throw new Error(
-        `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`
+        `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`,
       );
     }
 
@@ -155,7 +155,7 @@ export const tickAction: GameAction = (gameState) => {
       executeOperation(
         selectedOperation,
         machineState.processingMaterials,
-        machineState.selectedParameters
+        machineState.selectedParameters,
       );
 
     for (const output of outputs) {
@@ -207,7 +207,10 @@ export const tickAction: GameAction = (gameState) => {
     const [sold, ...remaining] = machineState.inputMaterials;
     // Round to cents so repeated sales don't accumulate float error
     money = Math.round((money + getSellValue(sold)) * 100) / 100;
-    soundEvents.push({ kind: "sale", machineTypeId: machineState.machineTypeId });
+    soundEvents.push({
+      kind: "sale",
+      machineTypeId: machineState.machineTypeId,
+    });
     return { ...machineState, inputMaterials: remaining };
   });
 

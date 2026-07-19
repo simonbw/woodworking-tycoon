@@ -72,6 +72,8 @@ test.describe("Skill Tree", () => {
                 width: 2,
                 thickness: 4,
                 surface: "smooth",
+                jointedFaces: 2,
+                jointedEdges: 2,
               }),
             ),
           },

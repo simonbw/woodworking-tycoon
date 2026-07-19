@@ -30,7 +30,10 @@ export function checkProgressionMilestonesAction(): GameAction {
         // The sales table can't be bought — it's granted once, here, so the
         // player can never be priced out of their only way to earn money.
         if (key === "freeSelling") {
-          storage = { ...storage, machines: [...storage.machines, "salesTable"] };
+          storage = {
+            ...storage,
+            machines: [...storage.machines, "salesTable"],
+          };
         }
       }
     }
@@ -41,8 +44,10 @@ export function checkProgressionMilestonesAction(): GameAction {
       tutorialStageFor(updatedState),
     );
 
-    if (progression === gameState.progression &&
-        tutorialStage === progression.tutorialStage) {
+    if (
+      progression === gameState.progression &&
+      tutorialStage === progression.tutorialStage
+    ) {
       return gameState;
     }
     return {

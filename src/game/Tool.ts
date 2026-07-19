@@ -1,8 +1,10 @@
 import type { MachineId, MachineOperation } from "./Machine";
 import { crosscutSled } from "./tools/crosscutSled";
 import { hammer } from "./tools/hammer";
+import { handPlane } from "./tools/handPlane";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
 import { sandingBlock } from "./tools/sandingBlock";
+import { straightLineSled } from "./tools/straightLineSled";
 
 /**
  * A handheld tool. Tools aren't placed in the shop like machines — they
@@ -34,7 +36,9 @@ export const TOOL_TYPES = {
   hammer,
   sandingBlock,
   randomOrbitSander,
+  handPlane,
   crosscutSled,
+  straightLineSled,
 } satisfies { [id: string]: ToolType };
 
 export type ToolId = keyof typeof TOOL_TYPES;

@@ -51,6 +51,8 @@ export const cuttingBoardShop: GameState = {
       width: 2 as const,
       thickness: 4 as const,
       surface: "smooth" as const,
+      jointedFaces: 2 as const,
+      jointedEdges: 2 as const,
     })),
     workQueue: [],
     canWork: true,

@@ -37,6 +37,7 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
 export const SPECIES_VALUE_MULTIPLIER: Record<Species, number> = {
   pallet: 1,
   pine: 1,
+  poplar: 1.2,
   oak: 2.5,
   maple: 3,
   cherry: 4,
@@ -140,20 +141,21 @@ export function getSellValue(material: MaterialInstance): number {
 
 /**
  * Store prices for buying lumber. Kept well above sell value so buying and
- * flipping always loses money. Rough-sawn stock is discounted — it needs
- * planing (or slow sanding) before it can be glued, which is the planer's
- * economic niche.
+ * flipping always loses money. Each lumber channel scales the base price by
+ * its own multiplier (see lumberStock.ts): big-box S4S charges a premium
+ * for milling you didn't do; rough stock is discounted because your jointer
+ * and planer are about to do it.
  */
 const BUY_MARKUP = 3;
-const ROUGH_DISCOUNT = 0.65;
 
-export function getBoardBuyPrice(board: Board): number {
+export function getBoardBuyPrice(
+  board: Board,
+  channelPriceMultiplier: number = 1,
+): number {
   // Priced from raw wood volume (rough sell value), so the small surface
   // sell-bonus doesn't inflate store prices.
-  const s4sPrice = getSellValue({ ...board, surface: "rough" }) * BUY_MARKUP;
-  return roundToCents(
-    board.surface === "rough" ? s4sPrice * ROUGH_DISCOUNT : s4sPrice,
-  );
+  const basePrice = getSellValue({ ...board, surface: "rough" }) * BUY_MARKUP;
+  return roundToCents(basePrice * channelPriceMultiplier);
 }
 
 function roundToCents(value: number): number {

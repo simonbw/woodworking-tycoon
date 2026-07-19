@@ -23,7 +23,11 @@ function workspaceMachine(overrides: Partial<MachineState>): MachineState {
     outputMaterials: [],
     selectedOperationId: "dismantlePallet",
     selectedParameters: undefined,
-    operationProgress: { status: "notStarted", phaseIndex: 0, ticksRemaining: 0 },
+    operationProgress: {
+      status: "notStarted",
+      phaseIndex: 0,
+      ticksRemaining: 0,
+    },
     tools: [],
     ...overrides,
   };
@@ -89,7 +93,11 @@ describe("tickAction", () => {
   it("counts down an attended operation while the player is at the machine", () => {
     const machine = workspaceMachine({
       processingMaterials: [nearlyDismantledPallet()],
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 3 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 3,
+      },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
     assert.deepStrictEqual(result.machines[0].operationProgress, {
@@ -102,7 +110,11 @@ describe("tickAction", () => {
   it("pauses an attended operation while the player is elsewhere", () => {
     const machine = workspaceMachine({
       processingMaterials: [nearlyDismantledPallet()],
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 3 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 3,
+      },
     });
     // Player at [0,0], not the operation cell — no progress, no cancel
     const result = tickAction(stateWith({ machines: [machine] }));
@@ -112,7 +124,11 @@ describe("tickAction", () => {
   it("emits an operation-complete sound cue when an operation finishes", () => {
     const machine = workspaceMachine({
       processingMaterials: [nearlyDismantledPallet()],
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 1 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 1,
+      },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
     assert.deepStrictEqual(result.pendingSounds, [
@@ -174,7 +190,11 @@ describe("tickAction", () => {
   it("pauses attended work during away trips — you're not there to do it", () => {
     const machine = workspaceMachine({
       processingMaterials: [nearlyDismantledPallet()],
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 5 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 5,
+      },
     });
     const state = stateWith({
       tick: 10,
@@ -189,10 +209,7 @@ describe("tickAction", () => {
     });
     const result = tickAction(state);
     assert.strictEqual(result.player.workQueue.length, 1);
-    assert.strictEqual(
-      result.machines[0].operationProgress.ticksRemaining,
-      5,
-    );
+    assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });
 
   it("delivers scavenged loot to the dropoff spot on return", () => {
@@ -218,7 +235,11 @@ describe("tickAction", () => {
   it("applies the operation output when the countdown finishes", () => {
     const machine = workspaceMachine({
       processingMaterials: [nearlyDismantledPallet()],
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 1 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 1,
+      },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
     const finished = result.machines[0];
@@ -248,7 +269,11 @@ describe("tickAction", () => {
       tools: ["hammer"],
       selectedOperationId: "buildRusticPalletShelf",
       processingMaterials: shelfBoards,
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 1 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 1,
+      },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
     // Rustic shelf sells for $60 -> 60 XP
@@ -261,7 +286,11 @@ describe("tickAction operation phases", () => {
     const machine = workspaceMachine({
       selectedOperationId: "glueUpPanel",
       processingMaterials: glueStrips(),
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 1 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 1,
+      },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
     assert.deepStrictEqual(result.machines[0].operationProgress, {
@@ -275,7 +304,11 @@ describe("tickAction operation phases", () => {
     const machine = workspaceMachine({
       selectedOperationId: "glueUpPanel",
       processingMaterials: glueStrips(),
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 4 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 4,
+      },
     });
     const result = tickAction(stateWith({ machines: [machine] }));
     assert.strictEqual(result.machines[0], machine);
@@ -285,7 +318,11 @@ describe("tickAction operation phases", () => {
     const machine = workspaceMachine({
       selectedOperationId: "glueUpPanel",
       processingMaterials: glueStrips(),
-      operationProgress: { status: "inProgress", phaseIndex: 1, ticksRemaining: 10 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 1,
+        ticksRemaining: 10,
+      },
     });
     const state = stateWith({
       tick: 10,
@@ -303,7 +340,11 @@ describe("tickAction operation phases", () => {
     const machine = workspaceMachine({
       selectedOperationId: "glueUpPanel",
       processingMaterials: glueStrips(),
-      operationProgress: { status: "inProgress", phaseIndex: 1, ticksRemaining: 1 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 1,
+        ticksRemaining: 1,
+      },
     });
     // Player at [0,0], nowhere near the bench
     const result = tickAction(stateWith({ machines: [machine] }));
@@ -319,7 +360,11 @@ describe("tickAction operation phases", () => {
     const machine = workspaceMachine({
       selectedOperationId: "glueUpPanel",
       processingMaterials: glueStrips(),
-      operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 0 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
     });
     const result = tickAction(stateWith({ machines: [machine] }));
     assert.deepStrictEqual(result.machines[0].operationProgress, {

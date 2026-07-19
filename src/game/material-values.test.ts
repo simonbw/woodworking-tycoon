@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
-import { LUMBER_SKUS, STORE_SPECIES } from "./lumberStock";
+import { LUMBER_CHANNELS } from "./lumberStock";
 import { makeMaterial, makePallet } from "./material-helpers";
 import { FinishedProduct, REAL_WOOD_SPECIES } from "./Materials";
 import {
@@ -100,37 +100,50 @@ describe("getBoardBuyPrice", () => {
     );
   });
 
-  it("keeps buy-and-flip unprofitable for every store SKU, species, and finish", () => {
-    for (const species of STORE_SPECIES) {
-      for (const sku of LUMBER_SKUS) {
-        for (const surface of ["rough", "smooth"] as const) {
+  it("keeps buy-and-flip unprofitable for every channel, species, and SKU", () => {
+    for (const channel of LUMBER_CHANNELS) {
+      for (const species of channel.species) {
+        for (const sku of channel.skus) {
           const b = board(
             species,
             sku.length,
             sku.width,
             sku.thickness,
-            surface,
+            channel.surface,
+            { faces: channel.jointedFaces, edges: channel.jointedEdges },
           );
           assert.ok(
-            getBoardBuyPrice(b) > getSellValue(b),
-            `${species} ${sku.length}x${sku.width}x${sku.thickness} ${surface} should cost more than it sells for`,
+            getBoardBuyPrice(b, channel.priceMultiplier) > getSellValue(b),
+            `${channel.id}: ${species} ${sku.length}x${sku.width}x${sku.thickness} should cost more than it sells for`,
           );
         }
       }
     }
   });
 
-  it("discounts rough sawn lumber to 65% of S4S", () => {
-    const s4s = getBoardBuyPrice(board("maple", 8, 4, 4, "smooth"));
-    const rough = getBoardBuyPrice(board("maple", 8, 4, 4, "rough"));
-    assert.strictEqual(rough, Math.round(s4s * 0.65 * 100) / 100);
+  it("prices the same wood cheaper the less milled it comes", () => {
+    const bigBox = LUMBER_CHANNELS.find((c) => c.id === "bigBoxRack")!;
+    const lumberyard = LUMBER_CHANNELS.find((c) => c.id === "lumberyard")!;
+    const roughRack = LUMBER_CHANNELS.find((c) => c.id === "roughRack")!;
+    const b = board("maple", 8, 4, 4);
+    const bigBoxPrice = getBoardBuyPrice(b, bigBox.priceMultiplier);
+    const s2sPrice = getBoardBuyPrice(b, lumberyard.priceMultiplier);
+    const roughPrice = getBoardBuyPrice(b, roughRack.priceMultiplier);
+    assert.ok(bigBoxPrice > s2sPrice && s2sPrice > roughPrice);
   });
 
-  it("keeps plane-and-flip unprofitable too", () => {
-    // Buy rough, plane it (losing a thickness step), sell smooth
-    const roughCost = getBoardBuyPrice(board("maple", 8, 4, 4, "rough"));
-    const planedValue = getSellValue(board("maple", 8, 4, 3, "smooth"));
-    assert.ok(roughCost > planedValue);
+  it("keeps mill-and-flip unprofitable even from the rough rack", () => {
+    // Buy rough at the deepest discount, mill it to S4S (a skim pass keeps
+    // the nominal thickness), sell smooth
+    const roughRack = LUMBER_CHANNELS.find((c) => c.id === "roughRack")!;
+    const roughCost = getBoardBuyPrice(
+      board("maple", 8, 4, 4, "rough", { faces: 0, edges: 0 }),
+      roughRack.priceMultiplier,
+    );
+    const milledValue = getSellValue(
+      board("maple", 8, 4, 4, "smooth", { faces: 2, edges: 2 }),
+    );
+    assert.ok(roughCost > milledValue);
   });
 });
 
@@ -146,24 +159,33 @@ describe("surface value", () => {
 });
 
 describe("cutting board economics", () => {
-  it("is profitable for every real species, on both lumber paths", () => {
-    // One 8' x 4" x 4/4 board rips into 8 strips (2' x 2" x 4/4);
-    // a cutting board consumes 5 of them. S4S glues directly; rough sawn
-    // is cheaper but needs surfacing first (planer or sanding time).
-    for (const species of REAL_WOOD_SPECIES) {
-      const sellValue = getSellValue(
-        makeMaterial<FinishedProduct>({
-          type: "simpleCuttingBoard",
-          species,
-        }),
-      );
-      for (const surface of ["smooth", "rough"] as const) {
-        const lumberCost = getBoardBuyPrice(board(species, 8, 4, 4, surface));
-        const costPerCuttingBoard = (lumberCost * 5) / 8;
-        assert.ok(
-          sellValue > costPerCuttingBoard,
-          `${species} (${surface}): sells $${sellValue} vs $${costPerCuttingBoard} in lumber`,
+  it("is profitable from every channel that sells cutting-board stock", () => {
+    // A cutting board consumes five 2' x 2" x 4/4 strips. Any 4/4 SKU rips
+    // and crosscuts into floor(length/2) * floor(width/2) strips. Less-milled
+    // channels cost more shop labor but must never cost more money.
+    for (const channel of LUMBER_CHANNELS) {
+      for (const species of channel.species) {
+        const sellValue = getSellValue(
+          makeMaterial<FinishedProduct>({
+            type: "simpleCuttingBoard",
+            species,
+          }),
         );
+        const stripSkus = channel.skus.filter(
+          (sku) => sku.thickness === 4 && sku.width >= 2 && sku.length >= 2,
+        );
+        for (const sku of stripSkus) {
+          const strips = Math.floor(sku.length / 2) * Math.floor(sku.width / 2);
+          const lumberCost = getBoardBuyPrice(
+            board(species, sku.length, sku.width, sku.thickness),
+            channel.priceMultiplier,
+          );
+          const costPerCuttingBoard = (lumberCost * 5) / strips;
+          assert.ok(
+            sellValue > costPerCuttingBoard,
+            `${channel.id} ${species}: sells $${sellValue} vs $${costPerCuttingBoard} in lumber`,
+          );
+        }
       }
     }
   });

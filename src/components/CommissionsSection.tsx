@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Commission } from "../game/GameState";
 import { getActiveCommission } from "../game/commissionSequence";
-import { InputMaterialWithQuantity } from "../game/Machine";
 import { completeCommissionAction } from "../game/game-actions/store-actions";
-import { materialMeetsInput } from "../game/material-helpers";
-import { humanizeString } from "../utils/humanizeString";
+import {
+  describeMaterialRequirement,
+  materialMeetsInput,
+} from "../game/material-helpers";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Thumbtack } from "./Thumbtack";
 import { Tooltip } from "./Tooltip";
@@ -104,7 +105,7 @@ const WorkOrder: React.FC<{
                   <span className="tabular-nums">
                     {item.have}/{item.need}
                   </span>
-                  <span>{describeRequirement(item.req)}</span>
+                  <span>{describeMaterialRequirement(item.req)}</span>
                 </li>
               ))}
             </ul>
@@ -164,12 +165,3 @@ const FoldedSummary: React.FC<{
     </div>
   );
 };
-
-function describeRequirement(req: InputMaterialWithQuantity): string {
-  const types = req.type?.map(humanizeString).join(" / ") ?? "Material";
-  const speciesArr = (req as { species?: ReadonlyArray<string> }).species;
-  const species = speciesArr?.length
-    ? ` (${speciesArr.map(humanizeString).join(" / ")})`
-    : "";
-  return `${types}${species}`;
-}

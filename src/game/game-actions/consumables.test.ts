@@ -62,9 +62,7 @@ function rawMapleBoard(): FinishedProduct {
 
 describe("consumable stock helpers", () => {
   it("checks, adds, and subtracts amounts", () => {
-    const stock = addConsumables(NO_CONSUMABLES, [
-      { id: "nails", amount: 10 },
-    ]);
+    const stock = addConsumables(NO_CONSUMABLES, [{ id: "nails", amount: 10 }]);
     assert.strictEqual(stock.nails, 10);
     assert.ok(hasConsumables(stock, [{ id: "nails", amount: 10 }]));
     assert.ok(!hasConsumables(stock, [{ id: "nails", amount: 11 }]));

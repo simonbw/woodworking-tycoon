@@ -69,11 +69,7 @@ export const CuttingBoardSprite: React.FC<
         for (let row = 0; -height / 2 + row * block < height / 2; row++) {
           const y = -height / 2 + row * block;
           const offset = row % 2 === 0 ? 0 : block / 2;
-          for (
-            let x = -width / 2 - block + offset;
-            x < width / 2;
-            x += block
-          ) {
+          for (let x = -width / 2 - block + offset; x < width / 2; x += block) {
             g.rect(
               Math.max(x + inset, -width / 2 + inset),
               y + inset,

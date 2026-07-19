@@ -15,6 +15,7 @@ export const StoreMachinesSection: React.FC = () => {
     { machine: MACHINE_TYPES.miterSaw, price: 200 },
     { machine: MACHINE_TYPES.makeshiftBench, price: 100 },
     { machine: MACHINE_TYPES.lunchboxPlaner, price: 450 },
+    { machine: MACHINE_TYPES.jointer, price: 600 },
   ];
   return (
     <section>
@@ -73,9 +74,7 @@ const MachineProductCard: React.FC<MachineSaleInfo> = ({ machine, price }) => {
 
 const PriceTag: React.FC<{ price: number }> = ({ price }) => {
   if (price === 0) {
-    return (
-      <span className="price-tag text-store-orange-dark">FREE</span>
-    );
+    return <span className="price-tag text-store-orange-dark">FREE</span>;
   }
   const dollars = Math.floor(price);
   const cents = Math.round((price - dollars) * 100)

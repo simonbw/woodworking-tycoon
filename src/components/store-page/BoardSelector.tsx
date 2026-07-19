@@ -3,77 +3,99 @@ import { Species } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
-import { getMaterialName, materialMeetsInput } from "../../game/material-helpers";
+import {
+  getMaterialName,
+  materialMeetsInput,
+} from "../../game/material-helpers";
 import { humanizeString } from "../../utils/humanizeString";
-import { LUMBER_SKUS, LumberSku, STORE_SPECIES } from "../../game/lumberStock";
+import {
+  LumberChannel,
+  LumberSku,
+  unlockedLumberChannels,
+} from "../../game/lumberStock";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * The lumber rack: a few common sizes per species. No custom cutting —
- * ripping, crosscutting, and planing stock to size is the player's job.
+ * The lumber aisle, one section per purchase channel (see lumberStock.ts).
+ * Locked channels are completely absent — new sections appear as
+ * reputation grows. No custom cutting anywhere: milling stock down to what
+ * a project needs is the game.
  */
 export const BoardSelector: React.FC = () => {
-  const [species, setSpecies] = useState<Species>("pine");
-  const [finish, setFinish] = useState<StoreFinish>("smooth");
+  const gameState = useGameState();
+  const channels = unlockedLumberChannels(gameState.reputation);
 
   return (
     <section>
-      <h2 className="aisle-heading">Lumber Rack</h2>
-      <div className="mb-2 flex gap-2">
-        <SelectField
-          label="Species"
-          value={species}
-          onChange={(v) => setSpecies(v as Species)}
-          options={STORE_SPECIES.map((s) => ({
-            value: s,
-            label: humanizeString(s),
-          }))}
-        />
-        <SelectField
-          label="Finish"
-          value={finish}
-          onChange={(v) => setFinish(v as StoreFinish)}
-          options={[
-            { value: "smooth", label: "S4S (surfaced)" },
-            { value: "rough", label: "Rough sawn" },
-          ]}
-        />
-      </div>
-      <ul className="space-y-2">
-        {LUMBER_SKUS.map((sku) => (
-          <LumberSkuCard
-            key={`${sku.length}x${sku.width}x${sku.thickness}`}
-            sku={sku}
-            species={species}
-            finish={finish}
-          />
+      <h2 className="aisle-heading">Lumber</h2>
+      <div className="space-y-4">
+        {channels.map((channel) => (
+          <LumberChannelSection key={channel.id} channel={channel} />
         ))}
-      </ul>
-      <p className="text-xs text-ink-fade font-typewriter mt-2">
-        We stock what we stock. Need a different size? That's what your saws
-        are for. Rough sawn is cheaper for a reason — surface it yourself.
-      </p>
+      </div>
     </section>
   );
 };
 
-/** The two finishes the store stocks: surfaced-four-sides or rough sawn. */
-type StoreFinish = "smooth" | "rough";
+const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
+  channel,
+}) => {
+  const [species, setSpecies] = useState<Species>(channel.species[0]);
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="font-stencil uppercase tracking-wide text-sm text-ink-black">
+          {channel.name}
+        </h3>
+        {channel.species.length > 1 && (
+          <select
+            className="bg-paper-ivory border border-ink-black/30 text-ink-black px-2 py-0.5 rounded font-condensed text-sm"
+            value={species}
+            onChange={(e) => setSpecies(e.target.value as Species)}
+          >
+            {channel.species.map((s) => (
+              <option key={s} value={s}>
+                {humanizeString(s)}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <p className="text-xs text-ink-fade font-typewriter mb-1">
+        {channel.tagline}
+      </p>
+      <ul className="space-y-2">
+        {channel.skus.map((sku) => (
+          <LumberSkuCard
+            key={`${sku.length}x${sku.width}x${sku.thickness}`}
+            sku={sku}
+            species={species}
+            channel={channel}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const LumberSkuCard: React.FC<{
   sku: LumberSku;
   species: Species;
-  finish: StoreFinish;
-}> = ({ sku, species, finish }) => {
+  channel: LumberChannel;
+}> = ({ sku, species, channel }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  const material = useMemo(
-    () => board(species, sku.length, sku.width, sku.thickness, finish),
-    [species, sku, finish],
-  );
-  const price = getBoardBuyPrice(material);
+  const makeBoard = () =>
+    board(species, sku.length, sku.width, sku.thickness, channel.surface, {
+      faces: channel.jointedFaces,
+      edges: channel.jointedEdges,
+    });
+
+  const material = useMemo(makeBoard, [species, sku, channel]);
+  const price = getBoardBuyPrice(material, channel.priceMultiplier);
 
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
@@ -82,7 +104,9 @@ const LumberSkuCard: React.FC<{
       length: [sku.length],
       width: [sku.width],
       thickness: [sku.thickness],
-      surface: [finish],
+      surface: [channel.surface],
+      jointedFaces: [channel.jointedFaces],
+      jointedEdges: [channel.jointedEdges],
     }),
   ).length;
 
@@ -109,14 +133,8 @@ const LumberSkuCard: React.FC<{
         <button
           className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={gameState.money < price}
-          onClick={() =>
-            applyAction(
-              buyMaterialAction(
-                board(species, sku.length, sku.width, sku.thickness, finish),
-                price,
-              ),
-            )
-          }
+          data-sfx="ui-purchase"
+          onClick={() => applyAction(buyMaterialAction(makeBoard(), price))}
         >
           Buy
         </button>
@@ -124,27 +142,3 @@ const LumberSkuCard: React.FC<{
     </li>
   );
 };
-
-const SelectField: React.FC<{
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: ReadonlyArray<{ value: string; label: string }>;
-}> = ({ label, value, onChange, options }) => (
-  <label className="flex flex-col">
-    <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade leading-none mb-0.5">
-      {label}
-    </span>
-    <select
-      className="bg-paper-ivory border border-ink-black/30 text-ink-black px-2 py-0.5 rounded font-condensed"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  </label>
-);

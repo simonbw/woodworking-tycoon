@@ -1,5 +1,10 @@
 import { OperationOutput } from "./Machine";
-import { Board, BoardDimension, MaterialInstance } from "./Materials";
+import {
+  Board,
+  BoardDimension,
+  JointedCount,
+  MaterialInstance,
+} from "./Materials";
 import { makeMaterial } from "./material-helpers";
 
 /** Syntactic sugar to create a board material instance */
@@ -10,6 +15,7 @@ export function board(
   width: Board["width"] = 1,
   thickness: Board["thickness"] = 1,
   surface: Board["surface"] = "rough",
+  jointed: { faces?: JointedCount; edges?: JointedCount } = {},
 ): MaterialInstance & { type: "board" } {
   return makeMaterial({
     type: "board",
@@ -18,6 +24,12 @@ export function board(
     width,
     thickness,
     surface,
+    // Defaults keep pre-milling content working: smooth stock is fully
+    // milled, and rough boards still have one flat face and factory-cut
+    // edges — true for pallet wood, which was milled once before it
+    // weathered. Genuinely unmilled lumber passes explicit zeros.
+    jointedFaces: jointed.faces ?? (surface === "rough" ? 1 : 2),
+    jointedEdges: jointed.edges ?? 2,
   });
 }
 

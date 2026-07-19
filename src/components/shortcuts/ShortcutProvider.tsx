@@ -140,10 +140,7 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const value = useMemo(
-    () => ({ register, pushModal }),
-    [register, pushModal],
-  );
+  const value = useMemo(() => ({ register, pushModal }), [register, pushModal]);
 
   return (
     <shortcutContext.Provider value={value}>

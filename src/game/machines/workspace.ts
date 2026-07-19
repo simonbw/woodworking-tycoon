@@ -71,14 +71,14 @@ export const workspace: MachineType = {
         }
 
         const deckBoardsCount = inputPallet.deckBoards.filter(
-          (board: boolean) => board
+          (board: boolean) => board,
         ).length;
         // Every board pried loose gives its nails back — one per board.
         // A whole pallet worth of prying keeps the rustic shelf free.
         if (deckBoardsCount <= 1) {
           const stringers = array(3).map(() => board("pallet", 4, 6, 3));
           const deckBoards = array(deckBoardsCount).map(() =>
-            board("pallet", 3, 4, 1)
+            board("pallet", 3, 4, 1),
           );
           return {
             inputs: [],
@@ -91,7 +91,9 @@ export const workspace: MachineType = {
           const deckBoardsLeft = [
             ...inputPallet.deckBoards,
           ] as typeof inputPallet.deckBoards;
-          const index = deckBoardsLeft.findLastIndex((board: boolean) => board === true);
+          const index = deckBoardsLeft.findLastIndex(
+            (board: boolean) => board === true,
+          );
           deckBoardsLeft[index] = false;
           return {
             inputs: [
@@ -118,7 +120,9 @@ export const workspace: MachineType = {
           width: [2],
           length: [2],
           thickness: [4],
-          // Clean faces make good glue joints — rough stock won't do
+          // Edge joints need straight edges, and clean faces make good
+          // glue joints — rough stock won't do
+          jointedEdges: [2],
           surface: ["smooth", "sanded"],
           quantity: 5,
         },
@@ -158,6 +162,7 @@ export const workspace: MachineType = {
           type: ["board"],
           length: [2],
           thickness: [4],
+          jointedEdges: [2],
           surface: ["smooth", "sanded"],
           quantity: 2,
         },
@@ -195,6 +200,7 @@ export const workspace: MachineType = {
           type: ["board"],
           length: [2],
           thickness: [4],
+          jointedEdges: [2],
           surface: ["smooth", "sanded"],
           quantity: 1,
         },
@@ -256,7 +262,13 @@ export const workspace: MachineType = {
       inputMaterials: [
         // A plywood base plus scrap runners and a fence
         { type: ["plywood"], length: [4], width: [4], quantity: 1 },
-        { type: ["board"], width: [4], length: [3], thickness: [1], quantity: 2 },
+        {
+          type: ["board"],
+          width: [4],
+          length: [3],
+          thickness: [1],
+          quantity: 2,
+        },
       ],
       output: () => {
         // The output is tooling, not product: the sled lands in tool
@@ -265,6 +277,31 @@ export const workspace: MachineType = {
           inputs: [],
           outputs: [],
           toolOutputs: ["crosscutSled" as const],
+        };
+      },
+    },
+    {
+      name: "Build Straight-Line Sled",
+      id: "buildStraightLineSled",
+      requiredSkill: "jigsAndFixtures",
+      duration: 30,
+      inputMaterials: [
+        // A long plywood base with toggle clamps to carry wavy-edged stock;
+        // same pallet-scrap ingredients as the crosscut sled
+        { type: ["plywood"], length: [4], width: [4], quantity: 1 },
+        {
+          type: ["board"],
+          width: [4],
+          length: [3],
+          thickness: [1],
+          quantity: 2,
+        },
+      ],
+      output: () => {
+        return {
+          inputs: [],
+          outputs: [],
+          toolOutputs: ["straightLineSled" as const],
         };
       },
     },

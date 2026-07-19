@@ -82,9 +82,10 @@ describe("sellMaterialAction", () => {
 
 describe("buyMachineAction", () => {
   it("deducts the price and adds the machine to storage", () => {
-    const result = buyMachineAction("jobsiteTableSaw", 150)(
-      stateWith({ money: 200 }),
-    );
+    const result = buyMachineAction(
+      "jobsiteTableSaw",
+      150,
+    )(stateWith({ money: 200 }));
     assert.strictEqual(result.money, 50);
     assert.deepStrictEqual(result.storage.machines, ["jobsiteTableSaw"]);
   });
@@ -96,17 +97,16 @@ describe("buyMachineAction", () => {
   });
 
   it("unlocks shop layout and advances the tutorial when buying a miter saw", () => {
-    const result = buyMachineAction("miterSaw", 150)(
-      stateWith({ money: 200 }),
-    );
+    const result = buyMachineAction("miterSaw", 150)(stateWith({ money: 200 }));
     assert.strictEqual(result.progression.shopLayoutUnlocked, true);
     assert.strictEqual(result.progression.tutorialStage, 2);
   });
 
   it("does not unlock shop layout for other machines", () => {
-    const result = buyMachineAction("jobsiteTableSaw", 150)(
-      stateWith({ money: 200 }),
-    );
+    const result = buyMachineAction(
+      "jobsiteTableSaw",
+      150,
+    )(stateWith({ money: 200 }));
     assert.strictEqual(result.progression.shopLayoutUnlocked, false);
   });
 });

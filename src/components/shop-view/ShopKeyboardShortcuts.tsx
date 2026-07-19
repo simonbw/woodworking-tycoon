@@ -63,7 +63,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // Emptying the queue stays available while away — it only affects what
   // happens once the player is back.
   useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));
-  useShortcut("cancel-last-move", () => applyAction(cancelLastWorkItemAction()));
+  useShortcut("cancel-last-move", () =>
+    applyAction(cancelLastWorkItemAction()),
+  );
 
   useShortcut("cycle-machine", cycleTarget, present);
 
@@ -191,7 +193,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         }
       }
 
-      applyAction(setMachineOperationAction(machine, nextOperation, parameters));
+      applyAction(
+        setMachineOperationAction(machine, nextOperation, parameters),
+      );
     },
     present,
   );

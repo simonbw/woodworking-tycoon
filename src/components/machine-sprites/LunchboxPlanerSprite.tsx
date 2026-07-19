@@ -12,7 +12,9 @@ import { extractFirstNumber } from "./extractFirstNumber";
 
 const AnimatedPixiSprite = animated("pixiSprite");
 
-export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
+export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
+  machine,
+}) => {
   const { inputMaterials, outputMaterials } = machine;
   const planerBottomTexture = useTexture("/images/lunchbox-planer-bottom.png");
   const planerTopTexture = useTexture("/images/lunchbox-planer-top.png");
@@ -23,7 +25,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({ machine }
     Math.max(...BOARD_DIMENSIONS);
 
   const springProps = useSpring({
-    scale: IMAGE_SCALE + cutThickness * 0.005
+    scale: IMAGE_SCALE + cutThickness * 0.005,
   });
 
   return (
@@ -40,7 +42,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({ machine }
           x={lerp(
             -inputMaterials.length * PIXELS_PER_INCH,
             inputMaterials.length * PIXELS_PER_INCH,
-            index / inputMaterials.length
+            index / inputMaterials.length,
           )}
           y={feetToPixels(board.length / 2)}
         >
@@ -54,7 +56,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({ machine }
           x={lerp(
             -outputMaterials.length * PIXELS_PER_INCH,
             outputMaterials.length * PIXELS_PER_INCH,
-            index / outputMaterials.length
+            index / outputMaterials.length,
           )}
           y={-feetToPixels(board.length / 2)}
         >
