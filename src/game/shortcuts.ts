@@ -258,6 +258,14 @@ const defs = [
     group: "Navigation",
   },
   {
+    id: "nav-marketplace",
+    codes: ["KeyM"],
+    keys: [["M"]],
+    description: "Marketplace",
+    scope: "global",
+    group: "Navigation",
+  },
+  {
     id: "nav-skills",
     codes: ["KeyK"],
     keys: [["K"]],

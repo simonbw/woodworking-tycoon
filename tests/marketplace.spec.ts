@@ -8,8 +8,8 @@ declare global {
   }
 }
 
-test.describe("Free Selling", () => {
-  test("should handle sales table and scavenging workflow", async ({
+test.describe("Marketplace", () => {
+  test("should handle listings, sales, and scavenging workflow", async ({
     page,
   }) => {
     await page.goto("http://localhost:3002");
@@ -17,79 +17,75 @@ test.describe("Free Selling", () => {
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     await page.waitForTimeout(500);
 
-    await test.step("locked before free selling unlocks", async () => {
+    await test.step("locked before the marketplace unlocks", async () => {
       await expect(page.getByText("Errands")).not.toBeVisible();
-      // Unlock the store: the Sales Table is a one-time grant, never sold
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          progression: { ...state.progression, storeUnlocked: true },
-        }));
-      });
-      await page.waitForTimeout(300);
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
       await expect(
-        page.getByText("Sales Table", { exact: true }),
+        page.getByText("Marketplace", { exact: true }),
       ).not.toBeVisible();
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
     });
 
-    await test.step("load free-selling fixture", async () => {
+    await test.step("load marketplace fixture", async () => {
       await page.evaluate(() => {
         const fixtures = (window as any).__TEST_FIXTURES__;
         (window as any).__UPDATE_GAME_STATE__(
-          () => fixtures["free-selling-shop"],
+          () => fixtures["marketplace-shop"],
         );
       });
       await page.waitForTimeout(300);
       await expect(page.getByText("Errands")).toBeVisible();
-      await expect(page.getByText("Scavenge for pallets")).toBeVisible();
+      await expect(
+        page.getByText("Marketplace", { exact: true }),
+      ).toBeVisible();
     });
 
-    await test.step("selling a shelf on the sales table", async () => {
-      // Player stands at the table's operation cell, so the transfer button shows
+    await test.step("list a shelf at fair value", async () => {
+      await page.getByText("Marketplace", { exact: true }).click();
+      await page.waitForTimeout(300);
+      await expect(page.getByText("SawdustList")).toBeVisible();
+
+      // The shelf row in "List an item" is pre-priced at fair value ($60)
       await page
         .locator("li", { hasText: /Rustic/i })
-        .getByRole("button", { name: "→ Sales Table" })
+        .getByRole("button", { name: "List" })
         .click();
-      // Table drains automatically: money 100 -> 160
+      await page.waitForTimeout(300);
+
+      const state = await page.evaluate(() =>
+        (window as any).__GET_GAME_STATE__(),
+      );
+      expect(state.listings.length).toBe(1);
+      expect(state.listings[0].askingPrice).toBe(60);
+      // Listing boxes the item up: it leaves the inventory unpaid
+      expect(state.money).toBe(100);
+      expect(
+        state.player.inventory.some((m: any) => m.type === "rusticShelf"),
+      ).toBe(false);
+    });
+
+    await test.step("a fairly priced listing sells within the pity window", async () => {
+      // Fast-forward past the pity window rather than waiting out the roll
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          tick: state.listings[0].listedAtTick + 2 * 600,
+        }));
+      });
       await page.waitForFunction(
         () => (window as any).__GET_GAME_STATE__().money === 160,
         undefined,
         { timeout: 5000 },
       );
-      await expect(page.getByText("$160.00").first()).toBeVisible();
-    });
-
-    await test.step("selling a board prices by volume", async () => {
-      await page
-        .locator("li", { hasText: /Board/i })
-        .getByRole("button", { name: "→ Sales Table" })
-        .click();
-      // 3x4x1 pallet board = $1.20
-      await page.waitForFunction(
-        () => (window as any).__GET_GAME_STATE__().money === 161.2,
-        undefined,
-        { timeout: 5000 },
+      const state = await page.evaluate(() =>
+        (window as any).__GET_GAME_STATE__(),
       );
-    });
-
-    await test.step("priced lumber in the store, no sales table for sale", async () => {
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
-      // Even with freeSelling unlocked the table is not purchasable
-      await expect(
-        page.getByText("Sales Table", { exact: true }),
-      ).not.toBeVisible();
-      // BoardSelector now shows a price (default 8' x 4" x 4/4 pine = $38.40)
-      await expect(page.getByText("$38.40")).toBeVisible();
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      expect(state.listings.length).toBe(0);
+      // The buyer left a review
+      expect(state.reputation).toBeGreaterThan(5);
     });
 
     await test.step("scavenging trip", async () => {
+      await page.getByText("Home", { exact: true }).click();
+      await page.waitForTimeout(300);
       await page.getByRole("button", { name: "Go" }).click();
       await page.waitForTimeout(300);
       await expect(page.getByText(/Out scavenging/)).toBeVisible();

@@ -1,6 +1,7 @@
 import { hasCompletedCommission } from "./commissionSequence";
 import { GameState } from "./GameState";
 import { MachineId } from "./Machine";
+import { ToolId } from "./Tool";
 
 export function ownsMachine(
   gameState: GameState,
@@ -12,6 +13,13 @@ export function ownsMachine(
   );
 }
 
+export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
+  return (
+    gameState.storage.tools.includes(toolId) ||
+    gameState.machines.some((m) => m.tools.includes(toolId))
+  );
+}
+
 /**
  * Each unlockable feature declares the condition it depends on. Unlocks are
  * one-way: once a flag in ProgressionState is true it stays true, even if the
@@ -20,13 +28,13 @@ export function ownsMachine(
  * Keyed by the ProgressionState flag the condition controls.
  */
 export const UNLOCK_CONDITIONS: Record<
-  "storeUnlocked" | "shopLayoutUnlocked" | "freeSelling",
+  "storeUnlocked" | "shopLayoutUnlocked" | "marketplaceUnlocked",
   (gameState: GameState) => boolean
 > = {
   storeUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "first-shelf"),
   shopLayoutUnlocked: (gameState) => ownsMachine(gameState, "miterSaw"),
-  freeSelling: (gameState) =>
+  marketplaceUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "cut-to-order"),
 };
 

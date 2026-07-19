@@ -11,7 +11,7 @@ export const ErrandsSection: React.FC = () => {
 
   const away = gameState.player.away;
   const ticksLeft = away ? Math.max(0, away.returnTick - gameState.tick) : 0;
-  const canScavenge = gameState.progression.freeSelling && !away;
+  const canScavenge = gameState.progression.marketplaceUnlocked && !away;
 
   useShortcut(
     "scavenge",
@@ -19,7 +19,7 @@ export const ErrandsSection: React.FC = () => {
     canScavenge,
   );
 
-  if (!gameState.progression.freeSelling) {
+  if (!gameState.progression.marketplaceUnlocked) {
     return null;
   }
 

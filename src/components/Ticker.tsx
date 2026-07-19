@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
 import { ShortcutId } from "../game/shortcuts";
+import { TICKS_PER_DAY } from "../game/time";
 import { classNames } from "../utils/classNames";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Tooltip } from "./Tooltip";
@@ -153,12 +154,10 @@ export const Ticker: React.FC = () => {
   );
 };
 
-const ticksPerDay = 600;
-
 const CalendarPage: React.FC<{ tick: number }> = ({ tick }) => {
-  const day = Math.floor(tick / ticksPerDay);
-  const time = tick % ticksPerDay;
-  const dayPercent = (time / ticksPerDay) * 100;
+  const day = Math.floor(tick / TICKS_PER_DAY);
+  const time = tick % TICKS_PER_DAY;
+  const dayPercent = (time / TICKS_PER_DAY) * 100;
 
   return (
     <div className="relative bg-paper-ivory text-ink-black rounded-t-sm shadow-md border border-paper-manila-edge overflow-hidden w-48">

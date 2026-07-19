@@ -21,24 +21,15 @@ export function incrementCommissionsCompletedAction(): GameAction {
 export function checkProgressionMilestonesAction(): GameAction {
   return (gameState) => {
     let progression = gameState.progression;
-    let storage = gameState.storage;
 
     for (const [flag, conditionMet] of Object.entries(UNLOCK_CONDITIONS)) {
       const key = flag as keyof typeof UNLOCK_CONDITIONS;
       if (!progression[key] && conditionMet(gameState)) {
         progression = { ...progression, [key]: true };
-        // The sales table can't be bought — it's granted once, here, so the
-        // player can never be priced out of their only way to earn money.
-        if (key === "freeSelling") {
-          storage = {
-            ...storage,
-            machines: [...storage.machines, "salesTable"],
-          };
-        }
       }
     }
 
-    const updatedState = { ...gameState, progression, storage };
+    const updatedState = { ...gameState, progression };
     const tutorialStage = Math.max(
       progression.tutorialStage,
       tutorialStageFor(updatedState),

@@ -3,7 +3,6 @@ import { NavBar } from "../NavBar";
 import { useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
 import { StoreMachinesSection } from "./StoreMachinesSection";
-import { StoreSellingSection } from "./StoreSellingSection";
 import { StoreSuppliesSection } from "./StoreSuppliesSection";
 import { StoreToolsSection } from "./StoreToolsSection";
 
@@ -24,7 +23,6 @@ export const StorePage: React.FC = () => {
               <StoreToolsSection />
               <StoreMachinesSection />
             </div>
-            <StoreSellingSection />
           </div>
         </div>
       </div>

@@ -93,7 +93,6 @@ export const patternBoardShop: GameState = {
   },
   machines: [
     idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
-    idleMachine("salesTable", [3, 2], "none"),
   ],
   storage: {
     machines: [],
@@ -109,7 +108,7 @@ export const patternBoardShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     shopLayoutUnlocked: true,
-    freeSelling: true,
+    marketplaceUnlocked: true,
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
     tickSpeedControlsUnlocked: true,
@@ -117,4 +116,8 @@ export const patternBoardShop: GameState = {
     skillPoints: 3,
     unlockedSkills: [...STARTER_SKILLS, "twoToneBoards"],
   },
+  listings: [],
+  jobBoard: [],
+  acceptedJobs: [],
+  categoryDemand: {},
 };
