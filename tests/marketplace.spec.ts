@@ -41,7 +41,9 @@ test.describe("Marketplace", () => {
     await test.step("list a shelf at fair value", async () => {
       await page.getByText("Marketplace", { exact: true }).click();
       await page.waitForTimeout(300);
-      await expect(page.getByText("SawdustList")).toBeVisible();
+      await expect(
+        page.getByText("SawdustList", { exact: true }),
+      ).toBeVisible();
 
       // The shelf row in "List an item" is pre-priced at fair value ($60)
       await page

@@ -1,5 +1,6 @@
 import React from "react";
 import { NavBar } from "../NavBar";
+import { Ticker } from "../Ticker";
 import { useGameState } from "../useGameState";
 import { JobBoardSection } from "./JobBoardSection";
 import { ListingsSection } from "./ListingsSection";
@@ -13,6 +14,10 @@ export const MarketplacePage: React.FC = () => {
   return (
     <main className="p-8 space-y-6">
       <NavBar />
+
+      {/* The sim keeps running while you browse — otherwise listings could
+          never sell and the job board would never refresh on this screen */}
+      <Ticker />
 
       <div className="max-w-5xl rounded-md overflow-hidden shadow-2xl border border-workshop-edge">
         <BrowserChrome />

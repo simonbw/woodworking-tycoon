@@ -10,7 +10,6 @@ declare global {
 
 const WORKSPACE_CELL: [number, number] = [1, 3];
 const SAW_CELL: [number, number] = [2, 5];
-const SALES_CELL: [number, number] = [3, 3];
 
 function card(page: any, name: string) {
   return page.locator("section", { hasText: name });
@@ -239,11 +238,20 @@ test.describe("End-Grain Boards", () => {
       const moneyBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      await teleportPlayer(page, SALES_CELL);
+      await page.getByText("Marketplace", { exact: true }).click();
+      await page.waitForTimeout(300);
       await page
         .locator("li", { hasText: "End Grain Cutting Board" })
-        .getByRole("button", { name: "→ Sales Table" })
+        .getByRole("button", { name: "List" })
         .click();
+      // Fair-value listings are guaranteed by the pity timer — jump past it
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) =>
+          state.listings.length === 0
+            ? state
+            : { ...state, tick: state.listings[0].listedAtTick + 2 * 600 },
+        );
+      });
       await page.waitForFunction(
         (before: number) =>
           (window as any).__GET_GAME_STATE__().money === before + 450,
