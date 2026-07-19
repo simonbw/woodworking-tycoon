@@ -1,6 +1,7 @@
 import React from "react";
 import { NavBar } from "../NavBar";
 import { useGameState } from "../useGameState";
+import { JobBoardSection } from "./JobBoardSection";
 import { ListingsSection } from "./ListingsSection";
 
 /**
@@ -19,12 +20,7 @@ export const MarketplacePage: React.FC = () => {
           <SiteHeader />
           <div className="grid grid-cols-2 gap-6 mt-4">
             <ListingsSection />
-            <section className="space-y-3">
-              <h2 className="font-condensed font-bold uppercase tracking-[0.2em] text-sm border-b-2 border-ink-black/20 pb-1">
-                Job Board
-              </h2>
-              <p className="text-sm italic text-ink-fade">Coming soon.</p>
-            </section>
+            <JobBoardSection />
           </div>
         </div>
       </div>
