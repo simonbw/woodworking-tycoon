@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -26,11 +27,12 @@ async function teleportPlayer(page: any, position: [number, number]) {
 }
 
 async function workspaceProgress(page: any) {
-  return page.evaluate(() =>
-    (window as any)
-      .__GET_GAME_STATE__()
-      .machines.find((m: any) => m.machineTypeId === "workspace")
-      .operationProgress,
+  return page.evaluate(
+    () =>
+      (window as any)
+        .__GET_GAME_STATE__()
+        .machines.find((m: any) => m.machineTypeId === "workspace")
+        .operationProgress,
   );
 }
 
@@ -54,11 +56,7 @@ test.describe("Attended Operations", () => {
     await test.step("sanding pauses when you walk away, resumes when you return", async () => {
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Sand Board" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Sand Board");
       await page
         .locator("li", { hasText: "Maple Board" })
         .getByRole("button", { name: "→ Workspace" })
@@ -89,8 +87,7 @@ test.describe("Attended Operations", () => {
             .__GET_GAME_STATE__()
             .machines.some((m: any) =>
               m.outputMaterials.some(
-                (mat: any) =>
-                  mat.type === "board" && mat.surface === "sanded",
+                (mat: any) => mat.type === "board" && mat.surface === "sanded",
               ),
             ),
         undefined,
@@ -103,11 +100,7 @@ test.describe("Attended Operations", () => {
     });
 
     await test.step("glue-up: clamping needs you, curing runs without you", async () => {
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Glue Up Panel" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Glue Up Panel");
       // 4 smooth strips (shift = move all of the row) + the sanded one
       await page
         .locator("li", { hasText: "Maple Board (2'x2\"x4/4, smooth, S4S)" })

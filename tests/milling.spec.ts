@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -66,7 +67,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
 
     await test.step("rough stock announces itself in the inventory", async () => {
       await expect(
-        page.getByText('Walnut Board (8\'x6"x4/4, rough sawn)').first(),
+        page.getByText("Walnut Board (8'x6\"x4/4, rough sawn)").first(),
       ).toBeVisible();
     });
 
@@ -86,7 +87,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await lumberAisle.locator("select").last().selectOption("walnut");
       await page.waitForTimeout(200);
       await expect(
-        page.getByText('Walnut Board (8\'x6"x4/4, rough sawn)').first(),
+        page.getByText("Walnut Board (8'x6\"x4/4, rough sawn)").first(),
       ).toBeVisible();
       await expect(page.getByText("$158.40")).toBeVisible();
       await page.getByText("Home", { exact: true }).click();
@@ -110,13 +111,11 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await page.waitForTimeout(200);
       // One flat face and the label says so
       await expect(
-        page.getByText('Walnut Board (8\'x6"x4/4, rough, face jointed)').first(),
+        page
+          .getByText("Walnut Board (8'x6\"x4/4, rough, face jointed)")
+          .first(),
       ).toBeVisible();
-      await machineCard(page, "Jointer")
-        .locator("select")
-        .first()
-        .selectOption({ label: "Joint Edge" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Jointer", "Joint Edge");
       await page
         .locator("li", { hasText: "face jointed" })
         .getByRole("button", { name: "→ Jointer" })
@@ -135,7 +134,9 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
     await test.step("table saw: rip to width before planing — order doesn't matter", async () => {
       await movePlayerTo(page, [1, 5]);
       await page
-        .locator("li", { hasText: 'Walnut Board (8\'x6"x4/4, rough, face jointed)' })
+        .locator("li", {
+          hasText: "Walnut Board (8'x6\"x4/4, rough, face jointed)",
+        })
         .getByRole("button", { name: "→ Jobsite Table Saw" })
         .click();
       await page.waitForTimeout(200);
@@ -153,7 +154,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
     await test.step("planer: skim pass finishes the faces at nominal thickness", async () => {
       await movePlayerTo(page, [3, 2]);
       await page
-        .locator("li", { hasText: 'Walnut Board (8\'x4"x4/4, rough)' })
+        .locator("li", { hasText: "Walnut Board (8'x4\"x4/4, rough)" })
         .getByRole("button", { name: "→ Planer" })
         .click();
       await page.waitForTimeout(200);
@@ -170,20 +171,16 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await page.waitForTimeout(200);
       // The inventory names the finished state
       await expect(
-        page.getByText('Walnut Board (8\'x4"x4/4, smooth, S4S)').first(),
+        page.getByText("Walnut Board (8'x4\"x4/4, smooth, S4S)").first(),
       ).toBeVisible();
     });
 
     await test.step("straight-line sled: no prerequisites, edges from nothing", async () => {
       await movePlayerTo(page, [1, 5]);
       // The sled's operation joined the table saw's mode list
-      await machineCard(page, "Jobsite Table Saw")
-        .locator("select")
-        .first()
-        .selectOption({ label: "Straight-Line Rip" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Jobsite Table Saw", "Straight-Line Rip");
       await page
-        .locator("li", { hasText: 'Walnut Board (8\'x6"x4/4, rough sawn)' })
+        .locator("li", { hasText: "Walnut Board (8'x6\"x4/4, rough sawn)" })
         .getByRole("button", { name: "→ Jobsite Table Saw" })
         .click();
       await page.waitForTimeout(200);

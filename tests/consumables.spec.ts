@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -31,20 +32,14 @@ test.describe("Consumables", () => {
 
     await page.evaluate(() => {
       const fixtures = (window as any).__TEST_FIXTURES__;
-      (window as any).__UPDATE_GAME_STATE__(
-        () => fixtures["consumables-shop"],
-      );
+      (window as any).__UPDATE_GAME_STATE__(() => fixtures["consumables-shop"]);
     });
     await page.waitForTimeout(300);
     // 20 ticks/second so the timed operations fly by
     await page.keyboard.press("3");
 
     await test.step("shelf recipe shows its nail shortfall", async () => {
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Build Rustic Pallet Shelf" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Build Rustic Pallet Shelf");
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
       await expect(
         workspaceCard(page).getByRole("button", { name: "Operate" }),
@@ -54,11 +49,7 @@ test.describe("Consumables", () => {
     });
 
     await test.step("dismantling the pallet returns its nails", async () => {
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Dismantle Pallet" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Dismantle Pallet");
       // Four single deck boards, then the final pry-apart (3 stringers + 1
       // deck board): 8 boards and 8 nails all told
       const outputsAfterRun = [1, 2, 3, 4, 8];
@@ -92,11 +83,7 @@ test.describe("Consumables", () => {
         .getByRole("button", { name: /Take All/ })
         .click();
       await page.waitForTimeout(200);
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Build Rustic Pallet Shelf" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Build Rustic Pallet Shelf");
       await expect(page.getByText("8 nails (have 8)")).toBeVisible();
 
       // Load exactly 2 stringers and 3 deck boards
@@ -159,11 +146,7 @@ test.describe("Consumables", () => {
     await test.step("mineral oil turns the board into an oiled board", async () => {
       // The ticker remounts on returning Home, so speed up again
       await page.keyboard.press("3");
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Oil Cutting Board" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Oil Cutting Board");
       await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
 
       await page
@@ -195,9 +178,7 @@ test.describe("Consumables", () => {
         .getByRole("button", { name: /Take All/ })
         .click();
       await page.waitForTimeout(200);
-      await expect(
-        page.getByText("Oiled Simple cutting board"),
-      ).toBeVisible();
+      await expect(page.getByText("Oiled Simple cutting board")).toBeVisible();
     });
   });
 });

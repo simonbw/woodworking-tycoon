@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { modesOf, selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -33,7 +34,9 @@ async function sandPanelOnce(page: any, expectSurface: string) {
     expectSurface,
     { timeout: 15000 },
   );
-  await workspaceCard(page).getByRole("button", { name: /Take All/ }).click();
+  await workspaceCard(page)
+    .getByRole("button", { name: /Take All/ })
+    .click();
   await page.waitForTimeout(200);
 }
 
@@ -90,20 +93,12 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await page.waitForTimeout(200);
       await expect(page.getByText("1/2 slots")).toBeVisible();
       // The sander's operations joined the workspace's Mode list
-      const modeOptions = await workspaceCard(page)
-        .locator("select")
-        .first()
-        .locator("option")
-        .allTextContents();
+      const modeOptions = await modesOf(page, "Workspace");
       expect(modeOptions).toContain("Sand Panel");
     });
 
     await test.step("glue up five smooth maple strips", async () => {
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Glue Up Panel" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Glue Up Panel");
       await page
         .locator("li", { hasText: "Maple Board" })
         .getByRole("button", { name: "→ Workspace" })
@@ -133,11 +128,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     });
 
     await test.step("sand the panel to smooth, then to sanded", async () => {
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Sand Panel" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Sand Panel");
       await sandPanelOnce(page, "smooth");
       await expect(
         page.getByText("Maple Panel (2'x10\"x4/4, smooth)").first(),
@@ -149,11 +140,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     });
 
     await test.step("finish the cutting board — full thickness, no planer", async () => {
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Finish Cutting Board" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Finish Cutting Board");
       await page
         .locator("li", { hasText: "Maple Panel" })
         .getByRole("button", { name: "→ Workspace" })
