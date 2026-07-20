@@ -336,3 +336,57 @@ describe("parameterValueSatisfiable", () => {
     );
   });
 });
+
+describe("absoluteOutputPosition", () => {
+  function machineAt(rotation: 0 | 1 | 2 | 3): Machine {
+    return new Machine({
+      machineTypeId: "lunchboxPlaner",
+      position: [2, 2],
+      rotation,
+      selectedOperationId: "planeBoard",
+      selectedParameters: undefined,
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: [],
+    });
+  }
+
+  it("mirrors the operation cell through the machine at every rotation", () => {
+    for (const rotation of [0, 1, 2, 3] as const) {
+      const machine = machineAt(rotation);
+      const operation = machine.absoluteOperationPosition!;
+      const output = machine.absoluteOutputPosition!;
+      // The planer's outfeed is directly opposite its infeed
+      assert.deepStrictEqual(output, [
+        2 * machine.position[0] - operation[0],
+        2 * machine.position[1] - operation[1],
+      ]);
+    }
+  });
+
+  it("is null for single-point stations like the miter saw", () => {
+    const machine = new Machine({
+      machineTypeId: "miterSaw",
+      position: [2, 2],
+      rotation: 0,
+      selectedOperationId: "cutBoard",
+      selectedParameters: undefined,
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: [],
+    });
+    assert.strictEqual(machine.absoluteOutputPosition, null);
+  });
+});

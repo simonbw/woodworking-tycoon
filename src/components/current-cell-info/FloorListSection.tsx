@@ -14,7 +14,9 @@ export const FloorListSection: React.FC = () => {
   const cellMap = useCellMap();
   const playerCell = cellMap.at(gameState.player.position);
 
-  if (!playerCell?.materialPiles.length) {
+  // Anything overlapping this cell is within reach — a long board is
+  // grabbable anywhere along its length, not just at its anchor cell.
+  if (!playerCell?.grabbablePiles.length) {
     return (
       <div className="bg-paper-cream text-ink-black rounded-sm shadow p-3 text-center">
         <p className="italic text-ink-fade">Floor is empty</p>
@@ -23,7 +25,7 @@ export const FloorListSection: React.FC = () => {
   }
 
   const groupedMaterials = [
-    ...groupBy(playerCell.materialPiles, (pile) =>
+    ...groupBy(playerCell.grabbablePiles, (pile) =>
       getMaterialName(pile.material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));

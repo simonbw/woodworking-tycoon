@@ -9,8 +9,14 @@ export const lunchboxPlaner: MachineType = {
   name: "Planer",
   description: "A lunchbox planer",
   cellsOccupied: [[0, 0]],
-  freeCellsNeeded: [],
+  // Feed-through: room to stand at the infeed and to catch stock at the
+  // outfeed — a planer can't back onto a wall
+  freeCellsNeeded: [
+    [0, 1],
+    [0, -1],
+  ],
   operationPosition: [0, 1],
+  outputPosition: [0, -1],
   cost: 450,
   materialStorage: 0,
   toolSlots: 0,

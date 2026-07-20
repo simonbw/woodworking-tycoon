@@ -12,6 +12,7 @@ import {
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
+import { pileCoversCell } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
 import { emitSound } from "./sound-actions";
 
@@ -43,7 +44,9 @@ export function pickUpMaterialAction(
 ): GameAction {
   return (gameState) => {
     for (const materialPile of materialPiles) {
-      if (!vectorEquals(gameState.player.position, materialPile.position)) {
+      // Long stock overhangs its anchor cell — any overlapped cell is
+      // close enough to grab from (see pileFootprint).
+      if (!pileCoversCell(materialPile, gameState.player.position)) {
         console.warn("Tried to pick up material from wrong position");
         return gameState;
       }

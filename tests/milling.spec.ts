@@ -105,6 +105,8 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .getByRole("button", { name: "Operate" })
         .click();
       await waitForBoard(page, "b.jointedFaces === 1");
+      // Finished stock lands at the outfeed side — collect it there
+      await movePlayerTo(page, [1, 0]);
       await machineCard(page, "Jointer")
         .getByRole("button", { name: /Take All/ })
         .click();
@@ -115,6 +117,8 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
           .getByText("Walnut Board (8'x6\"x4/4, rough, face jointed)")
           .first(),
       ).toBeVisible();
+      // Back around to the infeed to set up the next pass
+      await movePlayerTo(page, [1, 2]);
       await selectMode(page, "Jointer", "Joint Edge");
       await page
         .locator("li", { hasText: "face jointed" })
@@ -125,6 +129,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .getByRole("button", { name: "Operate" })
         .click();
       await waitForBoard(page, "b.jointedFaces === 1 && b.jointedEdges === 1");
+      await movePlayerTo(page, [1, 0]);
       await machineCard(page, "Jointer")
         .getByRole("button", { name: /Take All/ })
         .click();
@@ -145,6 +150,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .click();
       // The kept piece has both edges straight; the offcut keeps one
       await waitForBoard(page, "b.width === 4 && b.jointedEdges === 2");
+      await movePlayerTo(page, [1, 3]);
       await machineCard(page, "Jobsite Table Saw")
         .getByRole("button", { name: /Take All/ })
         .click();
@@ -165,6 +171,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         page,
         "b.jointedFaces === 2 && b.jointedEdges === 2 && b.thickness === 4 && b.surface === 'smooth'",
       );
+      await movePlayerTo(page, [3, 0]);
       await machineCard(page, "Planer")
         .getByRole("button", { name: /Take All/ })
         .click();
