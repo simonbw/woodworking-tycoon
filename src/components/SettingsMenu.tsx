@@ -43,7 +43,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({ onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-stencil font-bold text-2xl uppercase tracking-wide text-ink-black">
+          <h2 className="font-condensed font-bold text-2xl uppercase tracking-wide text-ink-black">
             Settings
           </h2>
           <button

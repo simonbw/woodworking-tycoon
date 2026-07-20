@@ -181,11 +181,11 @@ export const LayoutPage: React.FC = () => {
   }, []);
 
   return (
-    <main className="p-8 space-y-6">
+    <main className="h-screen flex flex-col gap-6 p-6 overflow-hidden">
       <NavBar />
 
-      <div className="grid grid-cols-2">
-        <section>
+      <div className="grid grid-cols-2 grow min-h-0">
+        <section className="min-h-0 overflow-hidden">
           <LayoutEditorCanvas
             cellMap={cellMap}
             placementMode={placementMode}
@@ -200,13 +200,15 @@ export const LayoutPage: React.FC = () => {
             onBackgroundClick={handleBackgroundClick}
           />
         </section>
-        <StorageSection
-          placementMode={placementMode}
-          setPlacementMode={setPlacementMode}
-          editMode={editMode}
-          selectedMachineIndex={selectedMachineIndex}
-          machines={machines}
-        />
+        <div className="min-h-0 overflow-y-auto">
+          <StorageSection
+            placementMode={placementMode}
+            setPlacementMode={setPlacementMode}
+            editMode={editMode}
+            selectedMachineIndex={selectedMachineIndex}
+            machines={machines}
+          />
+        </div>
       </div>
     </main>
   );

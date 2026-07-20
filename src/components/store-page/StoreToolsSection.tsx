@@ -40,7 +40,7 @@ const ToolProductCard: React.FC<{ tool: ToolType }> = ({ tool }) => {
   return (
     <li className="product-card flex items-center gap-3">
       <div className="grow">
-        <div className="font-stencil text-base uppercase tracking-wide text-ink-black">
+        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
           {tool.name}
         </div>
         <div className="text-xs text-ink-fade">
@@ -55,7 +55,7 @@ const ToolProductCard: React.FC<{ tool: ToolType }> = ({ tool }) => {
       <div className="flex flex-col items-end gap-1">
         <span className="price-tag tabular-nums">${tool.cost.toFixed(2)}</span>
         <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={!canAfford}
           onClick={() => applyAction(buyToolAction(tool.id as ToolId))}
         >

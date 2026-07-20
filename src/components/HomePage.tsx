@@ -1,14 +1,9 @@
 import React from "react";
 import { ActionBar } from "./ActionBar";
-import { CommissionsSection } from "./CommissionsSection";
-import { ErrandsSection } from "./ErrandsSection";
-import { MoneySection } from "./MoneySection";
+import { JobBoard } from "./JobBoard";
 import { NavBar } from "./NavBar";
-import { SuppliesSection } from "./SuppliesSection";
+import { ShopManifest } from "./ShopManifest";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
-import { Ticker } from "./Ticker";
-import { FloorListSection } from "./current-cell-info/FloorListSection";
-import { InventorySection } from "./current-cell-info/InventorySection";
 import { MachinesSection } from "./current-cell-info/MachinesSection";
 import { ShopView } from "./shop-view/ShopView";
 
@@ -20,33 +15,40 @@ export const HomePage: React.FC = () => {
   );
 };
 
+/**
+ * The home screen is a handful of physical objects anchored to the edges
+ * of a viewport-sized page (see docs/design-system.md). One spacing unit
+ * (gap-6) is used for the page margin, the column gutters, and the gaps
+ * between panels, and the two side rails share a width, so the anchored
+ * composition stays symmetric. Panels appearing, disappearing, or
+ * growing never shove their neighbors around; long content scrolls
+ * inside its panel and the page itself never grows a scrollbar. The
+ * controls legend overlays the bottom of the center well so its row
+ * count can't move the canvas.
+ */
 const HomePageContent: React.FC = () => {
   return (
-    <main className="p-8 space-y-6">
+    <main className="h-screen flex flex-col gap-6 p-6 overflow-hidden">
       <NavBar />
 
-      <div className="flex gap-8">
-        <div className="space-y-6 w-full max-w-80">
-          <Ticker />
-          <MoneySection />
-          <SuppliesSection />
-          <CommissionsSection />
-          <ErrandsSection />
+      <div className="flex gap-6 grow min-h-0">
+        <div className="w-full max-w-96 min-h-0 overflow-y-auto">
+          <JobBoard />
         </div>
-        <div className="space-y-1 flex flex-col items-center">
+        {/* Canvas anchors to the top with the controls legend hanging
+            directly under it — the legend's changing row count grows into
+            the void below, so the canvas never moves. */}
+        <div className="grow flex flex-col items-center gap-6 min-h-0 min-w-0 overflow-hidden">
           <ShopView />
+          <div className="w-full max-w-md shrink-0">
+            <ActionBar />
+          </div>
         </div>
-        <div className="space-y-6 w-full max-w-96">
-          <section>
-            <h2 className="section-heading">Inventory</h2>
-            <InventorySection />
-          </section>
-          <section>
-            <h2 className="section-heading">Floor</h2>
-            <FloorListSection />
-          </section>
-          <MachinesSection />
-          <ActionBar />
+        <div className="w-full max-w-96 flex flex-col gap-6 min-h-0">
+          <ShopManifest />
+          <div className="mt-auto min-h-0 overflow-y-auto">
+            <MachinesSection />
+          </div>
         </div>
       </div>
     </main>

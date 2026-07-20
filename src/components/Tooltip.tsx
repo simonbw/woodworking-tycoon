@@ -123,7 +123,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             {...getFloatingProps()}
             className={
               "z-50 max-w-xs rounded-sm border border-paper-manila-edge " +
-              "bg-paper-ivory px-2 py-1 font-typewriter text-xs leading-snug " +
+              "bg-paper-ivory px-2 py-1 text-xs leading-snug " +
               "text-ink-black shadow-lg" +
               (className ? " " + className : "")
             }

@@ -175,7 +175,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   return (
     <section className="paper-card space-y-3">
       <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
-        <h3 className="font-stencil text-lg uppercase tracking-wide">
+        <h3 className="font-condensed font-bold text-lg uppercase tracking-wide">
           {machine.type.name}
         </h3>
         <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
@@ -523,7 +523,7 @@ const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
   return (
     <section className="paper-card space-y-3">
       <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
-        <h3 className="font-stencil text-lg uppercase tracking-wide">
+        <h3 className="font-condensed font-bold text-lg uppercase tracking-wide">
           {machine.type.name}
         </h3>
         <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">

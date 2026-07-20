@@ -23,14 +23,14 @@ export const InventorySection: React.FC = () => {
 
   if (groupedInventory.length === 0) {
     return (
-      <div className="lined-sheet text-center">
+      <div className="bg-paper-cream text-ink-black rounded-sm shadow p-3 text-center">
         <p className="italic text-ink-fade">Inventory is empty</p>
       </div>
     );
   }
 
   return (
-    <div className="lined-sheet">
+    <div className="bg-paper-cream text-ink-black rounded-sm shadow px-3 py-1">
       <ul className="divide-y divide-ink-black/15">
         {groupedInventory.map(([materialName, materials]) => (
           <InventoryListItem key={materialName} materials={materials} />
@@ -58,7 +58,8 @@ const InventoryListItem: React.FC<{
       <MaterialIcon material={materials[0]} size="small" />
       <span className="grow text-sm">{getMaterialName(materials[0])}</span>
       {materials.length > 1 && (
-        <span className="font-mono text-sm text-ink-fade tabular-nums">
+        // Handwritten tally — this sheet is maintained by hand
+        <span className="font-ink text-lg leading-none text-ink-fade">
           ×{materials.length}
         </span>
       )}
@@ -67,7 +68,7 @@ const InventoryListItem: React.FC<{
         shortcut="put-down"
       >
         <button
-          className="button-paper text-xs"
+          className="button-paper text-xs whitespace-nowrap"
           onClick={(event) => {
             if (event.shiftKey) {
               applyAction(dropMaterialAction(materials));
@@ -90,7 +91,7 @@ const InventoryListItem: React.FC<{
           }
         >
           <button
-            className="button-paper text-xs"
+            className="button-paper text-xs whitespace-nowrap"
             onClick={(event) => {
               if (event.shiftKey) {
                 applyAction(moveMaterialsToMachineAction(materials, machine));

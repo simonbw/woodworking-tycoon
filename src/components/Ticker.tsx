@@ -4,6 +4,7 @@ import { ShortcutId } from "../game/shortcuts";
 import { classNames } from "../utils/classNames";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Tooltip } from "./Tooltip";
+import { useUiMode } from "./UiMode";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 const PAUSED = 0;
@@ -30,11 +31,11 @@ const SpeedButton: React.FC<{
     <Tooltip content={title} shortcut={shortcut}>
       <button
         className={classNames(
-          "p-1 text-center text-sm grow font-condensed",
-          "hover:bg-ink-black/10",
+          "px-1.5 py-0.5 text-xs text-center font-condensed",
+          "hover:bg-paper-manila/10",
           ticksPerSecond === speed
-            ? "bg-ink-black/15 text-ink-black"
-            : "bg-transparent text-ink-black/70",
+            ? "bg-paper-manila/20 text-paper-manila"
+            : "text-paper-manila/60",
         )}
         onClick={(e) => {
           setTicksPerSecond(speed);
@@ -48,20 +49,29 @@ const SpeedButton: React.FC<{
   );
 };
 
+/**
+ * Drives the game loop and shows the day + speed controls as a compact
+ * strip docked in the top bar on every screen. Time only advances while
+ * the player is actually on the shop floor — the store and layout editor
+ * still pause the world.
+ */
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
+  const { mode } = useUiMode();
+  const onShopFloor = mode.mode === "normal";
   const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
   const [ticksPerSecond, setTicksPerSecond] = useState<number>(NORMAL);
 
   useEffect(() => {
+    if (!onShopFloor) return;
     const interval = setInterval(() => {
       if (ticksPerSecond > 0) {
         applyAction(tickAction);
       }
     }, 1000 / ticksPerSecond);
     return () => clearInterval(interval);
-  }, [ticksPerSecond]);
+  }, [ticksPerSecond, onShopFloor]);
 
   useShortcut("speed-pause", () => setTicksPerSecond(PAUSED), controlsUnlocked);
   useShortcut(
@@ -92,95 +102,81 @@ export const Ticker: React.FC = () => {
     controlsUnlocked,
   );
 
+  const day = Math.floor(gameState.tick / ticksPerDay) + 1;
+  const dayPercent = ((gameState.tick % ticksPerDay) / ticksPerDay) * 100;
+
   return (
-    <section className="max-w-fit">
-      <CalendarPage tick={gameState.tick} />
-      {controlsUnlocked && (
-        <div className="bg-paper-cream border-x border-b border-paper-manila-edge rounded-b-sm overflow-hidden">
-          <menu className="flex gap-0 justify-stretch">
-            <SpeedButton
-              speed={PAUSED}
-              title="Pause game"
-              shortcut="speed-pause"
-              ticksPerSecond={ticksPerSecond}
-              setTicksPerSecond={setTicksPerSecond}
-            >
-              ⏸
-            </SpeedButton>
-            <Tooltip content="Step forward one tick" shortcut="speed-step">
-              <button
-                className="p-1 text-center text-sm grow font-condensed text-ink-black/70 hover:bg-ink-black/10"
-                onClick={(e) => {
-                  applyAction(tickAction);
-                  e.currentTarget.blur();
-                }}
-                tabIndex={-1}
-              >
-                ❯
-              </button>
-            </Tooltip>
-            <SpeedButton
-              title="Play at normal speed"
-              shortcut="speed-normal"
-              speed={NORMAL}
-              ticksPerSecond={ticksPerSecond}
-              setTicksPerSecond={setTicksPerSecond}
-            >
-              ▶
-            </SpeedButton>
-            <SpeedButton
-              title="Play at fast speed"
-              shortcut="speed-fast"
-              speed={FAST}
-              ticksPerSecond={ticksPerSecond}
-              setTicksPerSecond={setTicksPerSecond}
-            >
-              ▶▶
-            </SpeedButton>
-            <SpeedButton
-              title="Play at faster speed"
-              shortcut="speed-faster"
-              speed={FASTER}
-              ticksPerSecond={ticksPerSecond}
-              setTicksPerSecond={setTicksPerSecond}
-            >
-              ▶▶▶
-            </SpeedButton>
-          </menu>
+    <section className="flex items-center gap-3">
+      <div className="w-24">
+        <div className="flex items-baseline justify-between leading-none">
+          <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/60">
+            Day
+          </span>
+          <span className="font-condensed font-bold text-base text-paper-manila tabular-nums">
+            {day}
+          </span>
         </div>
+        <div className="relative h-1 bg-paper-manila/20 rounded-full overflow-hidden mt-1">
+          <span
+            style={{ width: dayPercent + "%" }}
+            className="absolute inset-y-0 left-0 bg-gold/80 transition-[width] ease-linear"
+          />
+        </div>
+      </div>
+      {controlsUnlocked && (
+        <menu className="flex rounded border border-paper-manila/25 overflow-hidden">
+          <SpeedButton
+            speed={PAUSED}
+            title="Pause game"
+            shortcut="speed-pause"
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
+            ⏸
+          </SpeedButton>
+          <Tooltip content="Step forward one tick" shortcut="speed-step">
+            <button
+              className="px-1.5 py-0.5 text-xs text-center font-condensed text-paper-manila/60 hover:bg-paper-manila/10"
+              onClick={(e) => {
+                applyAction(tickAction);
+                e.currentTarget.blur();
+              }}
+              tabIndex={-1}
+            >
+              ❯
+            </button>
+          </Tooltip>
+          <SpeedButton
+            title="Play at normal speed"
+            shortcut="speed-normal"
+            speed={NORMAL}
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
+            ▶
+          </SpeedButton>
+          <SpeedButton
+            title="Play at fast speed"
+            shortcut="speed-fast"
+            speed={FAST}
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
+            ▶▶
+          </SpeedButton>
+          <SpeedButton
+            title="Play at faster speed"
+            shortcut="speed-faster"
+            speed={FASTER}
+            ticksPerSecond={ticksPerSecond}
+            setTicksPerSecond={setTicksPerSecond}
+          >
+            ▶▶▶
+          </SpeedButton>
+        </menu>
       )}
     </section>
   );
 };
 
 const ticksPerDay = 600;
-
-const CalendarPage: React.FC<{ tick: number }> = ({ tick }) => {
-  const day = Math.floor(tick / ticksPerDay);
-  const time = tick % ticksPerDay;
-  const dayPercent = (time / ticksPerDay) * 100;
-
-  return (
-    <div className="relative bg-paper-ivory text-ink-black rounded-t-sm shadow-md border border-paper-manila-edge overflow-hidden w-48">
-      {/* Tear-off perforation at the top */}
-      <div className="h-1.5 bg-ink-red/85" />
-
-      <div className="px-3 pt-2 pb-1 flex flex-col items-center font-typewriter">
-        <span className="text-[0.625rem] uppercase tracking-[0.3em] text-ink-fade leading-none">
-          Day
-        </span>
-        <span className="font-stencil text-3xl leading-none mt-0.5">
-          {day + 1}
-        </span>
-      </div>
-
-      {/* Day-progress rule along the bottom */}
-      <div className="relative h-1 bg-paper-manila-edge/40 mx-3 mb-2">
-        <span
-          style={{ width: dayPercent + "%" }}
-          className="absolute top-0 bottom-0 left-0 bg-ink-blue/80 transition-[width] ease-linear"
-        />
-      </div>
-    </div>
-  );
-};
