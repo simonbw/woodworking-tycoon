@@ -6,6 +6,7 @@ import {
   BOARD_DIMENSIONS,
   BoardDimension,
   EndGrainSlice,
+  endsLabel,
   FinishedProduct,
   MaterialInstance,
   millingLabel,
@@ -54,6 +55,7 @@ const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
   "shelf",
   "rusticShelf",
   "jewelryBox",
+  "pictureFrame",
   "simpleCuttingBoard",
   "stripedCuttingBoard",
   "sunriseCuttingBoard",
@@ -104,9 +106,12 @@ export function getMaterialName(material: MaterialInstance): string {
           : milling
             ? `${surface}, ${milling}`
             : surface;
+      // Mitered ends read like a cut list entry: "45° both ends"
+      const ends = endsLabel(material);
+      const tags = ends ? `${stateTag}, ${ends}` : stateTag;
       return `${humanizeString(
         species,
-      )} Board (${length}'x${width}"x${thickness}/4, ${stateTag})`;
+      )} Board (${length}'x${width}"x${thickness}/4, ${tags})`;
     }
     case "panel": {
       const species = panelSpecies(material);
@@ -300,6 +305,7 @@ export function createMockMaterial(
     case "jewelryBox":
     case "rusticShelf":
     case "shelf":
+    case "pictureFrame":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":

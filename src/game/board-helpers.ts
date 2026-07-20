@@ -2,8 +2,12 @@ import { OperationOutput } from "./Machine";
 import {
   Board,
   BoardDimension,
+  BoardEnd,
+  boardEnds,
   JointedCount,
   MaterialInstance,
+  MiterAngle,
+  SQUARE_END,
 } from "./Materials";
 import { makeMaterial } from "./material-helpers";
 
@@ -37,12 +41,44 @@ export function isBoard(material: MaterialInstance): material is Board {
   return material.type === "board";
 }
 
-/** Takes an input board and cuts it into two boards of the specified size */
+/** True when both of a board's ends are mitered at the given angle. */
+export function isMiteredBothEnds(board: Board, angle: MiterAngle): boolean {
+  const { left, right } = boardEnds(board);
+  return (
+    left.kind === "mitered" &&
+    left.angle === angle &&
+    right.kind === "mitered" &&
+    right.angle === angle
+  );
+}
+
+/**
+ * How a length cut lands on the board's ends. The saw's fence stop measures
+ * the kept piece; `cutEnd` is the end that faces the blade — the kept
+ * piece's fresh face — while its other end rides the stop untouched.
+ */
+export interface LengthCutSetup {
+  /** 0° is a square crosscut; anything else miters the fresh faces. */
+  readonly angle: MiterAngle | 0;
+  /** Which end of the input board gets cut off (and freshly re-faced). */
+  readonly cutEnd: "left" | "right";
+}
+
+const SQUARE_LENGTH_CUT: LengthCutSetup = { angle: 0, cutEnd: "left" };
+
+/**
+ * Takes an input board and cuts it into two boards of the specified size.
+ * Length cuts track end treatments: the blade leaves a fresh face (square
+ * or mitered, per `lengthCut`) on both resulting pieces, and each piece
+ * keeps the input's end on its far side. Width and thickness cuts run along
+ * the board, so both pieces inherit the input's ends unchanged.
+ */
 export function cutBoard(
   inputBoard: Board,
   outputSize: BoardDimension,
   dimension: "length" | "width" | "thickness",
   waste: number = 0,
+  lengthCut: LengthCutSetup = SQUARE_LENGTH_CUT,
 ): OperationOutput {
   const startingDimension = inputBoard[dimension];
 
@@ -50,15 +86,37 @@ export function cutBoard(
     throw new Error("Board is too small to cut");
   }
 
-  const outputs = [{ ...inputBoard, [dimension]: outputSize }];
-
   const offcutSize = startingDimension - outputSize - waste;
-  if (offcutSize > 0) {
-    outputs.push({ ...inputBoard, [dimension]: offcutSize });
+
+  if (dimension !== "length") {
+    const outputs = [{ ...inputBoard, [dimension]: outputSize }];
+    if (offcutSize > 0) {
+      outputs.push({ ...inputBoard, [dimension]: offcutSize });
+    }
+    return { inputs: [], outputs };
   }
 
-  return {
-    inputs: [],
-    outputs,
+  const { angle, cutEnd } = lengthCut;
+  const freshEnd: BoardEnd =
+    angle === 0 ? SQUARE_END : { kind: "mitered", angle };
+  const ends = boardEnds(inputBoard);
+
+  // The kept piece's fresh face is on the cut end; the offcut's fresh face
+  // is on its side toward the blade — the opposite label.
+  const kept = {
+    ...inputBoard,
+    length: outputSize,
+    ends: { ...ends, [cutEnd]: freshEnd },
   };
+  const outputs = [kept];
+  if (offcutSize > 0) {
+    const offcutFreshEnd = cutEnd === "left" ? "right" : "left";
+    outputs.push({
+      ...inputBoard,
+      length: offcutSize as BoardDimension,
+      ends: { ...ends, [offcutFreshEnd]: freshEnd },
+    });
+  }
+
+  return { inputs: [], outputs };
 }

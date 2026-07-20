@@ -34,7 +34,7 @@ visible on the Skills page (that's where aspiration lives).
 - Levels follow an increasing-cost curve; each level grants 1 skill point.
   Points are spent on the Skills page. No respec (nothing is a trap yet).
 
-## The tree (Now: 14 nodes, 3 branches)
+## The tree (Now: 15 nodes, 3 branches)
 
 **Milling** — `basic-milling`★ (dismantle, crosscut, rip, plane) →
 `quick-dry-glue` (all glue-up cures 40% faster) and → `jigs-and-fixtures`
@@ -44,6 +44,9 @@ the first recipe whose output is a tool, not a product)
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
 cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →
 `box-joinery` (Jewelry Box: thin sanded stock — planer-era product, $90 base).
+`rustic-carpentry` also → `mitered-frames` (Picture Frame: four sanded
+real-wood rails mitered 45° both ends on the saw's angle stops, joined with
+brads, $55 base — see Board ends in `docs/tools-and-surfaces.md`).
 `panel-work` also → `freeform-lamination` (Glue Up Pair + Glue On Strip +
 Join Panels: build panels of any width and strip pattern, staged like a real
 wide glue-up — the machinery for every pattern board, and later for custom
