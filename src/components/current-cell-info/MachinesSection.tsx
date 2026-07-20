@@ -257,7 +257,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 {param.values.map((value) => (
                   <option key={value} value={value}>
                     {value}
-                    {typeof value === "number" ? '"' : ""}
+                    {typeof value === "number" ? (param.unit ?? '"') : ""}
                   </option>
                 ))}
               </select>

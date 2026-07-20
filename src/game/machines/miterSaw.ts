@@ -24,6 +24,7 @@ export const miterSaw: MachineType = {
           id: "targetLength",
           name: "Target Length",
           values: BOARD_DIMENSIONS,
+          unit: "'",
         },
       ],
       getInputMaterials: (params) => [
