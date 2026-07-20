@@ -17,6 +17,7 @@ import { MachineSprite } from "./MachineSprite";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
+import { ShopVacSprite } from "./ShopVacSprite";
 import { WorkQueueSprite } from "./WorkQueueSprite";
 import { cellToPixel, cellToPixelVec } from "./shop-scale";
 
@@ -88,6 +89,7 @@ export const ShopView: React.FC = () => {
             />
           ))}
           <WorkQueueSprite />
+          <ShopVacSprite />
           {!gameState.player.away && <PersonSprite person={gameState.player} />}
         </gameStateContext.Provider>
       </Application>

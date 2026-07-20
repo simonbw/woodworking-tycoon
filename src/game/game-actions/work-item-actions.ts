@@ -1,7 +1,9 @@
 import { GameAction } from "../GameState";
 import { WorkItem } from "../Person";
+import { carryingShopVac } from "../ShopVac";
 import { sweepAction } from "./dust-actions";
 import { instaMovePlayerAction } from "./player-actions";
+import { vacuumAction } from "./shop-vac-actions";
 
 /** Applies a work item to the game state */
 export function applyWorkItemAction(workItem: WorkItem): GameAction {
@@ -10,7 +12,10 @@ export function applyWorkItemAction(workItem: WorkItem): GameAction {
       case "move":
         return instaMovePlayerAction(workItem.direction)(gameState);
       case "sweep":
-        return sweepAction()(gameState);
+        // One clean-up key: the tool in hand decides what it does
+        return carryingShopVac(gameState)
+          ? vacuumAction()(gameState)
+          : sweepAction()(gameState);
       default:
         throw new Error("Invalid work item type");
     }

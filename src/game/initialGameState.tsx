@@ -69,6 +69,7 @@ export const initialGameState: GameState = {
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},
+  shopVac: null,
   pendingSounds: [],
 };
 

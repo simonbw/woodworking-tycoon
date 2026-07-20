@@ -1,6 +1,7 @@
 import { materialMeetsInput } from "../material-helpers";
 import { hasConsumables, subtractConsumables } from "../Consumable";
 import { machineDustMultiplier, moveDustPenalty } from "../Dust";
+import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "../ShopVac";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
 import {
@@ -33,8 +34,10 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
       player: {
         ...gameState.player,
         canWork: false,
-        // Deep sawdust is slow going: extra ticks before the next step
-        busyTicks: moveDustPenalty(gameState.dust, destinationPosition),
+        // Deep sawdust is slow going, and dragging the vac slower still
+        busyTicks:
+          moveDustPenalty(gameState.dust, destinationPosition) +
+          (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0),
         position: destinationPosition,
         direction,
       },

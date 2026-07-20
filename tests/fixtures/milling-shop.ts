@@ -105,4 +105,5 @@ export const millingShop: GameState = {
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},
+  shopVac: null,
 };

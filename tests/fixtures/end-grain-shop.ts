@@ -115,4 +115,5 @@ export const endGrainShop: GameState = {
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},
+  shopVac: null,
 };

@@ -1,6 +1,9 @@
 import React from "react";
 import { canSweepAt } from "../game/game-actions/dust-actions";
+import { canVacuumAt } from "../game/game-actions/shop-vac-actions";
+import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
 import { availableOperations } from "../game/skill-helpers";
+import { vectorEquals } from "../game/Vectors";
 import { Hint, HintSurfaceContext } from "./shortcuts/Kbd";
 import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
 import { useTargetedMachine } from "./TargetedMachineContext";
@@ -26,6 +29,10 @@ export const ActionBar: React.FC = () => {
   const operable =
     machine != null &&
     availableOperations(machine, gameState.progression).length > 0;
+  const draggingVac = carryingShopVac(gameState);
+  const standingOnVac =
+    gameState.shopVac?.position != null &&
+    vectorEquals(gameState.shopVac.position, gameState.player.position);
 
   return (
     <HintSurfaceContext.Provider value="chrome">
@@ -53,8 +60,25 @@ export const ActionBar: React.FC = () => {
               Put down
             </Hint>
           )}
-          {gameState.progression.sweepingUnlocked && canSweepAt(gameState) && (
-            <Hint shortcut="sweep">Sweep sawdust</Hint>
+          {gameState.progression.sweepingUnlocked &&
+            !draggingVac &&
+            canSweepAt(gameState) && (
+              <Hint shortcut="sweep">Sweep sawdust</Hint>
+            )}
+          {draggingVac && canVacuumAt(gameState) && (
+            <Hint shortcut="sweep">Vacuum</Hint>
+          )}
+          {standingOnVac && <Hint shortcut="vac-toggle">Grab shop vac</Hint>}
+          {draggingVac && (
+            <>
+              <Hint shortcut="vac-toggle">Set down vac</Hint>
+              <li className="font-condensed text-paper-manila/60">
+                Canister{" "}
+                {Math.round(canisterFillFraction(gameState.shopVac!) * 100)}%
+                {canisterFillFraction(gameState.shopVac!) >= 1 &&
+                  " — empty it at the garbage can"}
+              </li>
+            </>
           )}
           {operable && (
             <>

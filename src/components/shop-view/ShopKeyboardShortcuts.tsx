@@ -9,6 +9,7 @@ import {
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
+import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import {
   addWorkItemAction,
   cancelLastWorkItemAction,
@@ -68,6 +69,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         applyAction(addWorkItemAction({ type: "sweep" }));
       }
     },
+    present,
+  );
+
+  useShortcut(
+    "vac-toggle",
+    () => applyAction(toggleCarryShopVacAction()),
     present,
   );
 

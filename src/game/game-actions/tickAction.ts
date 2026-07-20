@@ -5,6 +5,7 @@ import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
+import { shopVacTickPass } from "./shop-vac-actions";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
@@ -77,6 +78,10 @@ export const tickAction: GameAction = (gameState) => {
       },
     };
   }
+
+  // The dragged shop vac trickle-cleans underfoot and self-empties at
+  // the garbage can
+  gameState = shopVacTickPass()(gameState);
 
   // Process machines that are operating. Attended phases only tick while
   // the player stands at the operation cell; hands-free phases (glue

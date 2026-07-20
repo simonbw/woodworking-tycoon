@@ -124,4 +124,5 @@ export const patternBoardShop: GameState = {
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},
+  shopVac: null,
 };

@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 12; // Increment this when GameState structure changes
+const SAVE_VERSION = 13; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -46,6 +46,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 11) {
       saveData.gameState = migrateV11toV12(saveData.gameState);
       saveData.version = 12;
+    }
+
+    if (saveData.version === 12) {
+      saveData.gameState = migrateV12toV13(saveData.gameState);
+      saveData.version = 13;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -138,6 +143,11 @@ function migrateV11toV12(old: any): GameState {
       dustTipDismissed: false,
     },
   };
+}
+
+/** v12 → v13: the shop vac exists (nobody owns one yet). */
+function migrateV12toV13(old: any): GameState {
+  return { ...old, shopVac: null };
 }
 
 export function hasSavedGame(): boolean {

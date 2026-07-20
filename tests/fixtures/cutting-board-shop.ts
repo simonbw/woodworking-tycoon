@@ -89,4 +89,5 @@ export const cuttingBoardShop: GameState = {
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},
+  shopVac: null,
 };

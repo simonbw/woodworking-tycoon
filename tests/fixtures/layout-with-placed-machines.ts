@@ -122,4 +122,5 @@ export const layoutWithPlacedMachines: GameState = {
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},
+  shopVac: null,
 };

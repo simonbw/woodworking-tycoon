@@ -8,7 +8,7 @@ only containers destroy it.** Brooms relocate dust, the shop vac and
 emptied into the garbage can.
 
 There is deliberately no HUD meter — the dust you can see on the floor
-*is* the indicator.
+_is_ the indicator.
 
 ## State model
 
@@ -44,7 +44,7 @@ machines cost proportionally less.
 
 ## Penalties
 
-- **Machine slowdown**: attended-phase durations scale with the *average*
+- **Machine slowdown**: attended-phase durations scale with the _average_
   dust across the cells a machine occupies or is orthogonally adjacent
   to. Dead zone below ~30% of cap (a working shop is never spotless, and
   players shouldn't be nickel-and-dimed), then ramps to **+300% duration
@@ -73,23 +73,28 @@ machines cost proportionally less.
   it, at a reduced rate — everything is broom-cleanable, under-machine
   just takes longer.
 - The broom leaves a ~10% film (tunable): a broom-only shop is workably
-  clean, never *spotless*.
+  clean, never _spotless_.
 - **Dustpan phase**: a pile is picked up like any carried material and
   dumped in the garbage can (infinite, v1). Sweeping and dumping grant a
   token amount of XP so shopkeeping feeds progression instead of feeling
   like pure tax.
 - Drag-select a region of tiles to queue a sweeping route.
 
-### Shop vac (mid-game store purchase)
+### Shop vac (mid-game store purchase — built)
 
-- A carried item: grab it and it **passively cleans the tile you stand
-  on**; press/hold the clean key to actively clean the current tile plus
-  adjacent ones, including under machines, faster. Cleans to zero — the
-  vac is how you erase the broom's film and reach tight spots quickly.
-- No pile step: dust goes into the **canister** (capacity ~5 tiles'
-  worth, species mix preserved), emptied at the garbage can — the same
-  verb as the dustpan, so garbage-can placement keeps mattering.
-- While carrying the vac you move at reduced speed.
+- A canister on casters (`GameState.shopVac`, save v13): buy it at the
+  store ($350, hidden until the sawdust tutorial fires), grab or park it
+  with `V` while standing on it. While dragging it, it **passively
+  trickle-cleans the tile underfoot** every tick, and the clean-up key
+  (`T`, same key as the broom — the tool in hand decides) fires a
+  vacuum burst: the current tile to zero, orthogonal neighbors — under
+  machines included — at 60%. Cleans to zero — the vac erases the
+  broom's film and reaches the tight spots.
+- No pile step: dust goes into the **canister** (5 tiles' worth, species
+  mix preserved), which **dumps itself when you stop next to the garbage
+  can** — the trip is the chore, not a button. The ActionBar shows the
+  fill while dragging.
+- Dragging costs +1 tick per step, on top of any dust penalty.
 
 ## Rendering
 
@@ -110,7 +115,7 @@ machines cost proportionally less.
 - **Floor bake — already built** (`DustLayer` + `dustStampBus`,
   `src/components/shop-view/`): settling chips come to rest and bake
   into a shop-sized `RenderTexture` where they stopped — the chip you
-  watched fly *is* the smudge it left, at constant render cost
+  watched fly _is_ the smudge it left, at constant render cost
   regardless of filth. On load the texture is rebuilt from
   `GameState.dust` with a seeded RNG keyed on cell coords, so saves
   look stable and keep their species colors. Particles stay purely
@@ -120,11 +125,11 @@ machines cost proportionally less.
 ## Disclosure & tutorial
 
 No unlock latch for the system itself — dust simply starts appearing when
-power tools run. Once *cumulative dust generated* crosses a threshold, a
+power tools run. Once _cumulative dust generated_ crosses a threshold, a
 one-time tutorial message fires (one-way latch in `ProgressionState`, per
-`UNLOCK_CONDITIONS` pattern): *"You're making a lot of sawdust. Left on
+`UNLOCK_CONDITIONS` pattern): _"You're making a lot of sawdust. Left on
 the floor it'll slow your work down. You can sweep it up with that broom
-in the corner."* The broom object appears with the message; the shop vac
+in the corner."_ The broom object appears with the message; the shop vac
 is hidden from the store until the message has fired.
 
 ## v1 scope and roadmap
@@ -141,8 +146,9 @@ garbage, under-machine pull at half rate, ~10% film), and the tutorial
 latch (`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
 one-time note appear, sweep hint joins the controls legend on dusty
 ground). Emission is scaled by 1/multiplier so a slowed operation sheds
-the same total dust rather than compounding. Still to come from v1: the
-shop vac.
+the same total dust rather than compounding. The shop vac (above)
+completes the v1 scope — next up is the mitigation ladder, starting
+with dust bags.
 
 Then, in order:
 
@@ -165,14 +171,14 @@ before finishing day"), sellable pure-species sawdust.
 
 ## Implementation map
 
-| Concern             | Where                                                        |
-| ------------------- | ------------------------------------------------------------ |
-| Dust map            | `src/game/GameState.ts` (+ migration in `src/game/saveLoad.ts`) |
-| Emission            | `src/game/game-actions/tickAction.ts`                        |
-| Slowdown hook       | `getOperationPhases` in `src/game/skill-helpers.ts`          |
-| Movement penalty    | move-queue processing in `tickAction`                        |
-| Sweep/vac actions   | `src/game/game-actions/` (new), work-queue like `move`       |
-| Tile surfacing      | `src/game/CellMap.ts` (`CellInfo`)                           |
-| Particles (done)    | `src/components/machine-sprites/CutParticles.tsx`           |
-| Floor stamps        | `src/components/shop-view/` (new layer in `ShopView.tsx`)    |
-| Tutorial latch      | `src/game/progression-helpers.ts` (`UNLOCK_CONDITIONS`)      |
+| Concern           | Where                                                           |
+| ----------------- | --------------------------------------------------------------- |
+| Dust map          | `src/game/GameState.ts` (+ migration in `src/game/saveLoad.ts`) |
+| Emission          | `src/game/game-actions/tickAction.ts`                           |
+| Slowdown hook     | `getOperationPhases` in `src/game/skill-helpers.ts`             |
+| Movement penalty  | move-queue processing in `tickAction`                           |
+| Sweep/vac actions | `src/game/game-actions/` (new), work-queue like `move`          |
+| Tile surfacing    | `src/game/CellMap.ts` (`CellInfo`)                              |
+| Particles (done)  | `src/components/machine-sprites/CutParticles.tsx`               |
+| Floor stamps      | `src/components/shop-view/` (new layer in `ShopView.tsx`)       |
+| Tutorial latch    | `src/game/progression-helpers.ts` (`UNLOCK_CONDITIONS`)         |

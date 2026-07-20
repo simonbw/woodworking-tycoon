@@ -139,6 +139,16 @@ const defs = [
     group: "Materials",
     hidden: true,
   },
+  {
+    // Contextual like sweep: grab the parked shop vac, or set it down.
+    id: "vac-toggle",
+    codes: ["KeyV"],
+    keys: [["V"]],
+    description: "Grab / set down the shop vac",
+    scope: "home",
+    group: "Materials",
+    hidden: true,
+  },
 
   // ---------------------------------------------------------------- Machines
   {

@@ -1,5 +1,6 @@
 import { ConsumableStock } from "./Consumable";
 import { DustMap } from "./Dust";
+import { ShopVacState } from "./ShopVac";
 import { MachineState, MachineId } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
@@ -74,6 +75,8 @@ export interface GameState {
    * See Dust.ts and docs/dust-and-cleaning.md.
    */
   readonly dust: DustMap;
+  /** The shop vac, once bought (see ShopVac.ts). Null until then. */
+  readonly shopVac: ShopVacState | null;
   /**
    * Transient queue of sound cues emitted by the action(s) that produced this
    * state, drained by `GameSoundLayer` each render. Optional and never
