@@ -9,7 +9,7 @@ import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { PIXELS_PER_INCH, feetToPixels } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
-import { CutParticles } from "./CutParticles";
+import { CutParticles, dustEscapeFraction } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
 
 const AnimatedPixiSprite = animated("pixiSprite");
@@ -94,6 +94,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
       />
       {cutting && (
         <CutParticles
+          intensity={dustEscapeFraction(machine)}
           kind="shavings"
           species={cutting.species}
           active={isOperating && !needsYou}

@@ -6,13 +6,19 @@ import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const StoreToolsSection: React.FC = () => {
+  const gameState = useGameState();
   return (
     <section>
       <h2 className="aisle-heading">Tool Wall</h2>
       <ul className="space-y-2">
         {Object.values(TOOL_TYPES)
-          // Shop-made jigs aren't for sale — you build those
+          // Shop-made jigs aren't for sale — you build those. The dust
+          // bag stays off the wall until sawdust is a revealed problem.
           .filter((tool) => !tool.craftedOnly)
+          .filter(
+            (tool) =>
+              tool.id !== "dustBag" || gameState.progression.sweepingUnlocked,
+          )
           .map((tool) => (
             <ToolProductCard key={tool.id} tool={tool} />
           ))}

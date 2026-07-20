@@ -1,5 +1,6 @@
 import { addConsumables, ConsumableAmount } from "../Consumable";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
+import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction } from "../GameState";
 import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
@@ -157,17 +158,21 @@ export const tickAction: GameAction = (gameState) => {
     // The cut is happening this tick, so the sawdust flies now too —
     // hands-free phases (glue curing) make no mess. Scaled down by the
     // slowdown so a dust-choked operation sheds the same total dust over
-    // its longer run, instead of compounding into a runaway.
+    // its longer run, instead of compounding into a runaway. A mounted
+    // dust bag catches most of it at the port.
     const dustOutput = selectedOperation.dustOutput ?? 0;
     if (dustOutput > 0 && currentPhase.attended) {
       const species = [
         ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
       ];
+      const bagFactor = machineState.tools.includes("dustBag")
+        ? 1 - DUST_BAG_CAPTURE
+        : 1;
       if (species.length > 0) {
         dustEmissions.push({
           machine,
           species,
-          amount: dustOutput / dustMultiplier,
+          amount: (dustOutput * bagFactor) / dustMultiplier,
         });
       }
     }

@@ -409,6 +409,19 @@ describe("tickAction dust emission", () => {
     assert.strictEqual(result.dust, before.dust);
   });
 
+  it("a mounted dust bag catches most of the emission at the port", () => {
+    const bagged = planingStateWith();
+    const withBag = {
+      ...bagged,
+      machines: [{ ...bagged.machines[0], tools: ["dustBag" as const] }],
+    };
+    const result = tickAction(withBag);
+    // Planer emits 2/tick bare; the bag captures 60%, so 0.8 lands —
+    // 70% split over the two core cells
+    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.28) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.04) < 1e-9);
+  });
+
   it("unlocks sweeping once the floor crosses the dust threshold", () => {
     const before = stateWith({
       dust: { "0,0": { pine: 30 }, "0,1": { oak: 30 } },

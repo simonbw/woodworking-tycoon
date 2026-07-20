@@ -83,6 +83,9 @@ export const MachineSprite: React.FC<{
 
       <LocalMachineSprite machine={machine} />
 
+      {/* A mounted dust bag hangs off the machine's corner */}
+      {machine.state.tools.includes("dustBag") && <DustBagSprite />}
+
       {machine.type.operationPosition && (
         <pixiSprite
           texture={operatorPositionTexture}
@@ -253,6 +256,36 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       );
     }
   }
+};
+
+/**
+ * The canvas collection bag on a machine's dust port: a plump little
+ * sack cinched at the neck, tucked against the machine's corner so it
+ * reads at a glance which stations are bagged.
+ */
+const DustBagSprite: React.FC = () => {
+  const draw = useCallback((g: Graphics) => {
+    g.clear();
+    const x = PIXELS_PER_CELL * 0.32;
+    const y = PIXELS_PER_CELL * 0.3;
+    // The bag: a soft sack, slightly slumped
+    g.ellipse(x, y, 12, 14);
+    g.fill(0xcbb489);
+    g.ellipse(x, y, 12, 14);
+    g.stroke({ width: 2, color: 0x9a865e });
+    // Slump crease
+    g.moveTo(x - 8, y + 2);
+    g.quadraticCurveTo(x, y + 7, x + 8, y + 1);
+    g.stroke({ width: 1.5, color: 0x9a865e });
+    // Cinched neck + port stub toward the machine
+    g.rect(x - 3, y - 19, 6, 6);
+    g.fill(0x4b5563);
+    g.moveTo(x - 4, y - 13);
+    g.lineTo(x + 4, y - 13);
+    g.stroke({ width: 3, color: 0x7c2d12 });
+  }, []);
+
+  return <pixiGraphics draw={draw} />;
 };
 
 const DefaultMachineSprite: React.FC = () => {

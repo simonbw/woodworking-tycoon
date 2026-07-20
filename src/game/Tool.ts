@@ -1,5 +1,6 @@
 import type { MachineId, MachineOperation } from "./Machine";
 import { crosscutSled } from "./tools/crosscutSled";
+import { dustBag } from "./tools/dustBag";
 import { hammer } from "./tools/hammer";
 import { handPlane } from "./tools/handPlane";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
@@ -39,6 +40,7 @@ export const TOOL_TYPES = {
   handPlane,
   crosscutSled,
   straightLineSled,
+  dustBag,
 } satisfies { [id: string]: ToolType };
 
 export type ToolId = keyof typeof TOOL_TYPES;

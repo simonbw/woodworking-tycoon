@@ -82,6 +82,40 @@ describe("mountToolAction", () => {
     const result = mountToolAction(workspaceOf(state), "sandingBlock")(state);
     assert.strictEqual(result, state);
   });
+
+  it("mounts a dust bag on a dusty machine but not the workspace", () => {
+    const planer: MachineState = {
+      machineTypeId: "lunchboxPlaner",
+      position: [1, 4],
+      rotation: 0,
+      selectedOperationId: "planeBoard",
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: [],
+    };
+    const state = toolState(
+      stateWith({ machines: [...initialGameState.machines, planer] }),
+      ["dustBag"],
+    );
+    // The workspace isn't on the bag's compatible list
+    const refused = mountToolAction(workspaceOf(state), "dustBag")(state);
+    assert.strictEqual(refused, state);
+    // The planer is
+    const planerView = getMachines(state.machines).find(
+      (machine) => machine.type.id === "planer",
+    )!;
+    const mounted = mountToolAction(planerView, "dustBag")(state);
+    assert.deepStrictEqual(
+      mounted.machines[mounted.machines.length - 1].tools,
+      ["dustBag"],
+    );
+  });
 });
 
 describe("unmountToolAction", () => {

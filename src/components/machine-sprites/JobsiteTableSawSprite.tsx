@@ -14,7 +14,7 @@ import {
   inchesToPixels,
 } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
-import { CutParticles } from "./CutParticles";
+import { CutParticles, dustEscapeFraction } from "./CutParticles";
 
 const AnimatedPixiContainer = animated("pixiContainer");
 const AnimatedPixiSprite = animated("pixiSprite");
@@ -119,6 +119,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
       )}
       {cutting && (
         <CutParticles
+          intensity={dustEscapeFraction(machine)}
           kind="dust"
           species={cutting.species}
           active={isOperating && !needsYou}

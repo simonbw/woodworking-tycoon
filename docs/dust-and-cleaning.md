@@ -152,8 +152,13 @@ with dust bags.
 
 Then, in order:
 
-1. **Dust bags** — a tool-slot item per machine (the slot system already
-   exists), cutting that machine's emission ~60%.
+1. **Dust bags — built**: a $45 tool-slot item (`tools/dustBag.ts`)
+   mountable on the four dusty machines (each grew a slot; the table
+   saw has two so a sled and bag coexist). Captures 60% of emission at
+   the port (`DUST_BAG_CAPTURE`), thins the particle spray to match,
+   hangs visibly off the machine, and stays out of the store until the
+   sawdust tutorial has fired. Bags never fill — that chore arrives
+   with the collector.
 2. **Central dust collector** — a placed 240V machine that captures
    emission from machines it serves; its bag fills (species mix and all)
    and gets emptied at the garbage — the classic tycoon trade of a

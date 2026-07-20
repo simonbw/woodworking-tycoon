@@ -19,7 +19,7 @@ export const lunchboxPlaner: MachineType = {
   outputPosition: [0, -1],
   cost: 450,
   materialStorage: 0,
-  toolSlots: 0,
+  toolSlots: 1,
   inputSpaces: 1,
   operations: [
     {

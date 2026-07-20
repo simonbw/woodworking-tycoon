@@ -11,7 +11,7 @@ import {
   feetToPixels,
 } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
-import { CutParticles } from "./CutParticles";
+import { CutParticles, dustEscapeFraction } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
 
 /** Where the fence's working face sits (see the fence rect in draw). */
@@ -104,6 +104,7 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       ))}
       {cutting && (
         <CutParticles
+          intensity={dustEscapeFraction(machine)}
           kind="shavings"
           species={cutting.species}
           active={isOperating && !needsYou}

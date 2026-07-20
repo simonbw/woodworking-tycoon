@@ -1,11 +1,22 @@
 import { useTick } from "@pixi/react";
 import { Graphics, Ticker } from "pixi.js";
 import React, { useRef } from "react";
+import { Machine } from "../../game/Machine";
 import { Species } from "../../game/Materials";
+import { DUST_BAG_CAPTURE } from "../../game/tools/dustBag";
 import { mixColors } from "../../utils/colorUtils";
 import { rBool, rUniform } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { emitDustStamp } from "../shop-view/dustStampBus";
+
+/**
+ * Fraction of a machine's mess that escapes its dust port — what the
+ * particle spray (and the floor) actually sees. Mirrors the emission
+ * math in tickAction.
+ */
+export function dustEscapeFraction(machine: Machine): number {
+  return machine.state.tools.includes("dustBag") ? 1 - DUST_BAG_CAPTURE : 1;
+}
 
 interface Particle {
   x: number;
@@ -52,13 +63,27 @@ export const CutParticles: React.FC<{
   /** Spray direction in radians (0 = +x, π/2 = +y). */
   direction: number;
   spread?: number;
-}> = ({ kind, species, active, x = 0, y = 0, direction, spread }) => {
+  /**
+   * Scales the spray density (1 = full mess). A mounted dust bag passes
+   * its escape fraction here so the capture is visible at the blade.
+   */
+  intensity?: number;
+}> = ({
+  kind,
+  species,
+  active,
+  x = 0,
+  y = 0,
+  direction,
+  spread,
+  intensity = 1,
+}) => {
   const graphicsRef = useRef<Graphics>(null);
   const particles = useRef<Particle[]>([]);
   const spawnDebt = useRef(0);
 
   const dust = kind === "dust";
-  const rate = dust ? 70 : 22;
+  const rate = (dust ? 70 : 22) * intensity;
   const arc = spread ?? (dust ? 0.7 : 1.1);
 
   useTick((ticker: Ticker) => {
