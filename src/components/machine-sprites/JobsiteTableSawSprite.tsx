@@ -1,8 +1,10 @@
+import { Texture } from "pixi.js";
 import React from "react";
 import { animated, useSpring } from "react-spring";
 import { Machine } from "../../game/Machine";
 import { BOARD_DIMENSIONS } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
+import { lerp } from "../../utils/mathUtils";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
@@ -13,9 +15,9 @@ import {
 } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
 import { CutParticles } from "./CutParticles";
-import { FeedingBoard } from "./FeedingBoard";
 
 const AnimatedPixiContainer = animated("pixiContainer");
+const AnimatedPixiSprite = animated("pixiSprite");
 
 export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
   machine,
@@ -41,6 +43,19 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
     x: fencePosition,
   });
 
+  // One spring drives both the feeding board and the kerf that opens
+  // behind the blade (the blade sits at the machine's center, x = 0).
+  const cutLength = cutting ? feetToPixels(cutting.length) : 0;
+  const feed = useSpring({
+    y: cutting
+      ? lerp(
+          cutLength / 2 + inchesToPixels(2),
+          -cutLength / 2 - inchesToPixels(3),
+          fraction,
+        )
+      : 0,
+  });
+
   return (
     <pixiContainer>
       <pixiSprite
@@ -61,16 +76,14 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
             </pixiContainer>
           );
         })}
-        {processingMaterials.filter(isBoard).map((board, index) => (
-          <FeedingBoard
-            board={board}
-            fraction={fraction}
-            fromY={feetToPixels(board.length / 2) + inchesToPixels(2)}
-            toY={-feetToPixels(board.length / 2) - inchesToPixels(3)}
-            x={-inchesToPixels(board.width / 2 + board.thickness / 4)}
-            key={`proc-${index}`}
-          />
-        ))}
+        {cutting && (
+          <AnimatedPixiContainer
+            y={feed.y}
+            x={-inchesToPixels(cutting.width / 2 + cutting.thickness / 4)}
+          >
+            <MaterialSprite material={cutting} />
+          </AnimatedPixiContainer>
+        )}
         {outputMaterials.filter(isBoard).map((board, index) => {
           return (
             <pixiContainer
@@ -89,6 +102,21 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
           anchor={0.5}
         />
       </AnimatedPixiContainer>
+      {cutting && (
+        // The kerf: a dark slit that opens behind the blade as the board
+        // feeds through, splitting the already-cut portion in two
+        <AnimatedPixiSprite
+          texture={Texture.WHITE}
+          tint={0x120d08}
+          alpha={0.9}
+          width={3}
+          anchor={{ x: 0.5, y: 1 }}
+          y={feed.y.to((y) => Math.min(y + cutLength / 2, 0))}
+          height={feed.y.to((y) =>
+            Math.max(0, Math.min(y + cutLength / 2, 0) - (y - cutLength / 2)),
+          )}
+        />
+      )}
       {cutting && (
         <CutParticles
           kind="dust"
