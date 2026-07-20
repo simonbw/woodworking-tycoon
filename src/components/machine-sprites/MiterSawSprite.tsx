@@ -15,7 +15,9 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const miterSawTopTexture = useTexture("/images/miter-saw-top.png");
 
   const inputBoards = inputMaterials.filter(isBoard);
-  const stock = inputBoards[0];
+  const processingBoards = machine.processingMaterials.filter(isBoard);
+  // Mid-cut the stock has moved to processing; it stays clamped in place.
+  const stock = inputBoards[0] ?? processingBoards[0];
 
   // The length stop is set targetLength right of the blade, so that much of
   // the stock slides out past the cut line — the board tracks the Target
@@ -36,7 +38,7 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         anchor={{ x: 0.5, y: 0.5 }}
       />
       <AnimatedPixiContainer x={springProps.x}>
-        {inputBoards.map((board, index) => {
+        {[...inputBoards, ...processingBoards].map((board, index) => {
           const x = feetToPixels(-board.length / 2) - 3;
           const y = inchesToPixels(board.width / 2 - 3);
           return (

@@ -11,13 +11,16 @@ import {
   feetToPixels,
   inchesToPixels,
 } from "../shop-view/shop-scale";
+import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { FeedingBoard } from "./FeedingBoard";
 
 const AnimatedPixiContainer = animated("pixiContainer");
 
 export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
-  const { inputMaterials, outputMaterials } = machine;
+  const { inputMaterials, processingMaterials, outputMaterials } = machine;
+  const { fraction } = useMachineActivity(machine);
   const tableSawTableTexture = useTexture(
     "/images/jobsite-table-saw-table.png",
   );
@@ -56,6 +59,16 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
             </pixiContainer>
           );
         })}
+        {processingMaterials.filter(isBoard).map((board, index) => (
+          <FeedingBoard
+            board={board}
+            fraction={fraction}
+            fromY={feetToPixels(board.length / 2) + inchesToPixels(2)}
+            toY={-feetToPixels(board.length / 2) - inchesToPixels(3)}
+            x={-inchesToPixels(board.width / 2 + board.thickness / 4)}
+            key={`proc-${index}`}
+          />
+        ))}
         {outputMaterials.filter(isBoard).map((board, index) => {
           return (
             <pixiContainer

@@ -8,13 +8,16 @@ import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { PIXELS_PER_INCH, feetToPixels } from "../shop-view/shop-scale";
+import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { FeedingBoard } from "./FeedingBoard";
 
 const AnimatedPixiSprite = animated("pixiSprite");
 
 export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
-  const { inputMaterials, outputMaterials } = machine;
+  const { inputMaterials, processingMaterials, outputMaterials } = machine;
+  const { fraction } = useMachineActivity(machine);
   const planerBottomTexture = useTexture("/images/lunchbox-planer-bottom.png");
   const planerTopTexture = useTexture("/images/lunchbox-planer-top.png");
   const planerScrewsTexture = useTexture("/images/lunchbox-planer-screws.png");
@@ -62,6 +65,20 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
         >
           <MaterialSprite material={board} key={index} />
         </pixiContainer>
+      ))}
+      {processingMaterials.filter(isBoard).map((board, index) => (
+        <FeedingBoard
+          board={board}
+          fraction={fraction}
+          fromY={feetToPixels(board.length / 2)}
+          toY={-feetToPixels(board.length / 2)}
+          x={lerp(
+            -processingMaterials.length * PIXELS_PER_INCH,
+            processingMaterials.length * PIXELS_PER_INCH,
+            index / processingMaterials.length,
+          )}
+          key={`proc-${index}`}
+        />
       ))}
       <AnimatedPixiSprite
         texture={planerTopTexture}

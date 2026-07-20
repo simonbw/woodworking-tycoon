@@ -4,6 +4,8 @@ import { Machine } from "../../game/Machine";
 import { isBoard } from "../../game/board-helpers";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PIXELS_PER_CELL, feetToPixels } from "../shop-view/shop-scale";
+import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { FeedingBoard } from "./FeedingBoard";
 
 /**
  * Top-down vector jointer: long infeed/outfeed tables split by the
@@ -11,7 +13,8 @@ import { PIXELS_PER_CELL, feetToPixels } from "../shop-view/shop-scale";
  * it earns a hand-made texture like the other machines.
  */
 export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
-  const { inputMaterials, outputMaterials } = machine;
+  const { inputMaterials, processingMaterials, outputMaterials } = machine;
+  const { fraction } = useMachineActivity(machine);
 
   const draw = useCallback((g: Graphics) => {
     g.clear();
@@ -50,6 +53,16 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         >
           <MaterialSprite material={board} />
         </pixiContainer>
+      ))}
+      {processingMaterials.filter(isBoard).map((board, index) => (
+        <FeedingBoard
+          board={board}
+          fraction={fraction}
+          fromY={feetToPixels(board.length / 2)}
+          toY={-feetToPixels(board.length / 2)}
+          x={index * 4}
+          key={`proc-${index}`}
+        />
       ))}
       {outputMaterials.filter(isBoard).map((board, index) => (
         <pixiContainer
