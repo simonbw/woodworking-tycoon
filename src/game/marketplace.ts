@@ -141,10 +141,7 @@ export function reviewReputationGain(
  * expected wait implied by the current sale chance.
  */
 export type ListingInterest =
-  | "priced to move"
-  | "should sell soon"
-  | "expect a wait"
-  | "ambitious";
+  "priced to move" | "should sell soon" | "expect a wait" | "ambitious";
 
 export function listingInterest(
   material: MaterialInstance,

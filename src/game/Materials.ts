@@ -190,6 +190,17 @@ export type UnknownMaterial = {
   readonly type: "unknown";
 };
 
+/**
+ * Sawdust swept off the floor, waiting for the dustpan trip to the
+ * garbage can. Carries the species mix it was swept from (in dust units,
+ * see Dust.ts) so a pile of walnut shavings looks like one.
+ */
+export type SawdustPile = {
+  readonly id: string;
+  readonly type: "sawdustPile";
+  readonly contents: Readonly<Partial<Record<Species, number>>>;
+};
+
 export type MaterialInstance =
   | Pallet
   | Board
@@ -197,6 +208,7 @@ export type MaterialInstance =
   | Panel
   | EndGrainSlice
   | FinishedProduct
+  | SawdustPile
   | UnknownMaterial;
 
 export type MaterialType = MaterialInstance["type"];

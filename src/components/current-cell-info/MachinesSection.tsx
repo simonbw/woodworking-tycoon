@@ -1,5 +1,6 @@
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
+import { machineDustMultiplier } from "../../game/Dust";
 import { Machine } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import {
@@ -126,8 +127,19 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const canOperate = machineCanOperate(machine, gameState.consumables);
   const isOperating = machine.operationProgress.status === "inProgress";
+  // Durations shown include the dust slowdown, so the sheet stays honest
+  // about what starting the operation right now would cost
+  const dustMultiplier = machineDustMultiplier(
+    gameState.dust,
+    machine,
+    gameState.shopInfo.size,
+  );
   const phases = selectedOperation
-    ? getOperationPhases(selectedOperation, gameState.progression)
+    ? getOperationPhases(
+        selectedOperation,
+        gameState.progression,
+        dustMultiplier,
+      )
     : [];
   const { phaseIndex, ticksRemaining } = machine.operationProgress;
   const totalDuration = phases.reduce((sum, phase) => sum + phase.duration, 0);
@@ -220,6 +232,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             )
           }
           progression={gameState.progression}
+          dustMultiplier={dustMultiplier}
           showShortcut={isTargeted(machine)}
         />
 

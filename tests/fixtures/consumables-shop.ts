@@ -28,6 +28,7 @@ export const consumablesShop: GameState = {
     ],
     workQueue: [],
     canWork: true,
+    busyTicks: 0,
     away: null,
   },
   machines: [
@@ -83,6 +84,8 @@ export const consumablesShop: GameState = {
     marketplaceUnlocked: true,
     commissionsCompleted: 2,
     tickSpeedControlsUnlocked: true,
+    sweepingUnlocked: false,
+    dustTipDismissed: false,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,

@@ -57,8 +57,57 @@ export interface DustDeposit {
   readonly amount: number;
 }
 
-function inBounds([x, y]: Vector, [width, height]: Vector): boolean {
+export function inBounds([x, y]: Vector, [width, height]: Vector): boolean {
   return x >= 0 && x < width && y >= 0 && y < height;
+}
+
+/** Dust below this fraction of a full cell costs nothing — a working
+ * shop is never spotless, and players shouldn't be nickel-and-dimed. */
+const PENALTY_DEAD_ZONE = 0.3;
+/** At a completely buried machine, attended work takes 4× as long. */
+const MAX_SLOWDOWN = 3;
+
+/**
+ * Extra-duration fraction (0 to MAX_SLOWDOWN) for an average dust level:
+ * zero through the dead zone, then a linear ramp to +300% at a full cell.
+ */
+export function dustSlowdown(averageDust: number): number {
+  const fraction = Math.min(averageDust / DUST_MAX_PER_CELL, 1);
+  if (fraction <= PENALTY_DEAD_ZONE) {
+    return 0;
+  }
+  return (
+    ((fraction - PENALTY_DEAD_ZONE) / (1 - PENALTY_DEAD_ZONE)) * MAX_SLOWDOWN
+  );
+}
+
+/**
+ * Attended-phase duration multiplier for a machine: 1 with a clean floor,
+ * up to 1 + MAX_SLOWDOWN when the cells it occupies and touches (the same
+ * core + ring it emits onto) are buried.
+ */
+export function machineDustMultiplier(
+  dust: DustMap,
+  machine: Machine,
+  shopSize: Vector,
+): number {
+  const { core, ring } = machineDustCells(machine);
+  const cells = [...core, ...ring].filter((cell) => inBounds(cell, shopSize));
+  if (cells.length === 0) {
+    return 1;
+  }
+  const average =
+    cells.reduce((sum, cell) => sum + cellDust(dust, cell), 0) / cells.length;
+  return 1 + dustSlowdown(average);
+}
+
+/**
+ * Extra ticks to step onto this cell: +1 per full +100% of the cell's
+ * machine-slowdown equivalent (0 on a clean aisle, 3 wading through a
+ * full drift). Discrete, so it drops into the one-move-per-tick queue.
+ */
+export function moveDustPenalty(dust: DustMap, position: Vector): number {
+  return Math.floor(dustSlowdown(cellDust(dust, position)));
 }
 
 type MutableDustMap = Record<string, Partial<Record<Species, number>>>;

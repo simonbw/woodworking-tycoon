@@ -1,9 +1,10 @@
 import { addConsumables, ConsumableAmount } from "../Consumable";
-import { emitMachineDust } from "../Dust";
+import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { GameAction } from "../GameState";
 import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
 import { marketplaceTickPass } from "./marketplace-actions";
+import { checkProgressionMilestonesAction } from "./progression-actions";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
@@ -43,6 +44,21 @@ export const tickAction: GameAction = (gameState) => {
       player: {
         ...gameState.player,
         canWork: true,
+      },
+    };
+  }
+
+  // Still trudging through dust (or mid-sweep): this tick goes to that,
+  // not to the work queue. Attendance is positional, so a machine the
+  // player is standing at keeps running.
+  const busyTicks = gameState.player.busyTicks ?? 0;
+  if (busyTicks > 0 && gameState.player.canWork) {
+    gameState = {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        canWork: false,
+        busyTicks: busyTicks - 1,
       },
     };
   }
@@ -93,7 +109,16 @@ export const tickAction: GameAction = (gameState) => {
       );
     }
 
-    const phases = getOperationPhases(selectedOperation, gameState.progression);
+    const dustMultiplier = machineDustMultiplier(
+      gameState.dust,
+      machine,
+      gameState.shopInfo.size,
+    );
+    const phases = getOperationPhases(
+      selectedOperation,
+      gameState.progression,
+      dustMultiplier,
+    );
     const attended = playerAttendsMachine(
       machine,
       gameState.player.position,
@@ -125,14 +150,20 @@ export const tickAction: GameAction = (gameState) => {
     }
 
     // The cut is happening this tick, so the sawdust flies now too —
-    // hands-free phases (glue curing) make no mess.
+    // hands-free phases (glue curing) make no mess. Scaled down by the
+    // slowdown so a dust-choked operation sheds the same total dust over
+    // its longer run, instead of compounding into a runaway.
     const dustOutput = selectedOperation.dustOutput ?? 0;
     if (dustOutput > 0 && currentPhase.attended) {
       const species = [
         ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
       ];
       if (species.length > 0) {
-        dustEmissions.push({ machine, species, amount: dustOutput });
+        dustEmissions.push({
+          machine,
+          species,
+          amount: dustOutput / dustMultiplier,
+        });
       }
     }
 
@@ -268,6 +299,9 @@ export const tickAction: GameAction = (gameState) => {
       : withTools;
 
   // Marketplace: listings roll their sale chance, demand recovers, and the
-  // job board refreshes at day boundaries.
-  return withXp(marketplaceTickPass()(withConsumables), xpEarned);
+  // job board refreshes at day boundaries. Milestones run last so unlocks
+  // that hinge on tick-driven state (a dusty floor) fire on their own.
+  return checkProgressionMilestonesAction()(
+    withXp(marketplaceTickPass()(withConsumables), xpEarned),
+  );
 };

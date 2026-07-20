@@ -89,4 +89,12 @@ describe("getOperationDuration", () => {
       clamp.duration + Math.round(cure.duration * 0.6),
     );
   });
+
+  it("dust slows the attended handwork but never the cure", () => {
+    const [clamp, cure] = glueUp.phases!;
+    assert.strictEqual(
+      getOperationDuration(glueUp, initialGameState.progression, 2.5),
+      Math.round(clamp.duration * 2.5) + cure.duration,
+    );
+  });
 });

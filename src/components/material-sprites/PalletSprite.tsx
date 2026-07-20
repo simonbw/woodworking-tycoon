@@ -54,7 +54,11 @@ export const PalletSprite: React.FC<{
           y={lerp(0, totalHeight, i / (MAX_STRINGERS - 1))}
           angle={90}
         >
-          <BoardSprite board={stringerBoard} seed={`stringer-${i}`} tint={tint} />
+          <BoardSprite
+            board={stringerBoard}
+            seed={`stringer-${i}`}
+            tint={tint}
+          />
         </pixiContainer>
       ))}
 

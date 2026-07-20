@@ -113,6 +113,9 @@ export function getSellValue(material: MaterialInstance): number {
       );
     case "pallet":
       return WHOLE_PALLET_VALUE;
+    case "sawdustPile":
+      // Waste, for now — someday bedding or briquettes
+      return 0;
     case "shelf":
     case "rusticShelf":
     case "jewelryBox":

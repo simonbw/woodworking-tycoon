@@ -1,5 +1,6 @@
 import { materialMeetsInput } from "../material-helpers";
 import { hasConsumables, subtractConsumables } from "../Consumable";
+import { machineDustMultiplier, moveDustPenalty } from "../Dust";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
 import {
@@ -31,6 +32,8 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
       player: {
         ...gameState.player,
         canWork: false,
+        // Deep sawdust is slow going: extra ticks before the next step
+        busyTicks: moveDustPenalty(gameState.dust, destinationPosition),
         position: destinationPosition,
         direction,
       },
@@ -281,6 +284,7 @@ export function operateMachineAction(machine: Machine): GameAction {
     const [firstPhase] = getOperationPhases(
       machine.selectedOperation,
       gameState.progression,
+      machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
     );
     return {
       ...gameState,

@@ -6,9 +6,12 @@ import {
   DUST_MAX_PER_CELL,
   dustKey,
   dustKeyToVec,
+  dustSlowdown,
   dustTotal,
   emitMachineDust,
   machineDustCells,
+  machineDustMultiplier,
+  moveDustPenalty,
 } from "./Dust";
 import { Machine, MachineState } from "./Machine";
 import { Vector } from "./Vectors";
@@ -162,5 +165,60 @@ describe("emitMachineDust", () => {
       emitMachineDust(dust, planerAt([1, 1]), ["pine"], 0, SHOP),
       dust,
     );
+  });
+});
+
+describe("dustSlowdown", () => {
+  it("costs nothing through the dead zone", () => {
+    assert.strictEqual(dustSlowdown(0), 0);
+    assert.strictEqual(dustSlowdown(DUST_MAX_PER_CELL * 0.3), 0);
+  });
+
+  it("ramps linearly to +300% at a full cell", () => {
+    assert.strictEqual(dustSlowdown(DUST_MAX_PER_CELL), 3);
+    // Midway through the ramp (65% of cap): half the max slowdown
+    assert.ok(Math.abs(dustSlowdown(DUST_MAX_PER_CELL * 0.65) - 1.5) < 1e-9);
+    // Overfull (spilled cells) still caps at 3
+    assert.strictEqual(dustSlowdown(DUST_MAX_PER_CELL * 2), 3);
+  });
+});
+
+describe("machineDustMultiplier", () => {
+  it("is 1 on a clean floor", () => {
+    assert.strictEqual(machineDustMultiplier({}, planerAt([1, 1]), SHOP), 1);
+  });
+
+  it("averages the core and ring cells", () => {
+    // All 8 cells (2 core + 6 ring) buried: full +300%
+    const buried = Object.fromEntries(
+      [
+        [1, 1],
+        [1, 2],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 3],
+        [2, 1],
+        [2, 2],
+      ].map((cell) => [dustKey(cell as [number, number]), { pine: 100 }]),
+    );
+    assert.strictEqual(
+      machineDustMultiplier(buried, planerAt([1, 1]), SHOP),
+      4,
+    );
+    // One buried cell out of eight averages inside the dead zone
+    assert.strictEqual(
+      machineDustMultiplier({ "1,1": { pine: 100 } }, planerAt([1, 1]), SHOP),
+      1,
+    );
+  });
+});
+
+describe("moveDustPenalty", () => {
+  it("adds one tick per full +100% slowdown", () => {
+    assert.strictEqual(moveDustPenalty({}, [1, 1]), 0);
+    assert.strictEqual(moveDustPenalty({ "1,1": { pine: 100 } }, [1, 1]), 3);
+    // 65% of cap: +150% slowdown floors to 1 extra tick
+    assert.strictEqual(moveDustPenalty({ "1,1": { pine: 65 } }, [1, 1]), 1);
   });
 });

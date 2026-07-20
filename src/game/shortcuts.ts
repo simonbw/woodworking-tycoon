@@ -127,6 +127,18 @@ const defs = [
     group: "Materials",
     shiftHint: "put down everything",
   },
+  {
+    // Contextual (ActionBar shows it on dusty ground once sweeping is
+    // unlocked); hidden from the static cheat sheet so the broom doesn't
+    // leak before its reveal.
+    id: "sweep",
+    codes: ["KeyT"],
+    keys: [["T"]],
+    description: "Sweep sawdust",
+    scope: "home",
+    group: "Materials",
+    hidden: true,
+  },
 
   // ---------------------------------------------------------------- Machines
   {

@@ -1,6 +1,14 @@
 import { GameAction } from "../GameState";
 import { tutorialStageFor, UNLOCK_CONDITIONS } from "../progression-helpers";
 
+/** The player has read the one-time "sweep it up" note. */
+export function dismissDustTipAction(): GameAction {
+  return (gameState) => ({
+    ...gameState,
+    progression: { ...gameState.progression, dustTipDismissed: true },
+  });
+}
+
 export function incrementCommissionsCompletedAction(): GameAction {
   return (gameState) => {
     return {

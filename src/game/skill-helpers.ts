@@ -67,14 +67,18 @@ const GLUE_OPERATION_IDS = [
 ];
 
 /**
- * The operation's phase list with passive skills applied per phase. Ops
- * that declare no phases are one attended stretch of hand work. Phase
- * durations are read as each phase is entered, so a skill bought
- * mid-operation speeds the remaining phases but not the current one.
+ * The operation's phase list with passive skills applied per phase, then
+ * the dust slowdown (see Dust.ts machineDustMultiplier) applied to the
+ * attended phases — a buried machine slows your handwork, not the glue's
+ * cure. Ops that declare no phases are one attended stretch of hand
+ * work. Phase durations are read as each phase is entered, so a skill
+ * bought (or a floor swept) mid-operation affects the remaining phases
+ * but not the current one.
  */
 export function getOperationPhases(
   operation: MachineOperation | ParameterizedOperation,
   progression: ProgressionState,
+  dustMultiplier: number = 1,
 ): ReadonlyArray<OperationPhase> {
   const phases = operation.phases ?? [
     { name: operation.name, duration: operation.duration, attended: true },
@@ -95,16 +99,20 @@ export function getOperationPhases(
     ) {
       duration = Math.round(duration * 0.6);
     }
+    if (phase.attended && dustMultiplier !== 1) {
+      duration = Math.round(duration * dustMultiplier);
+    }
     return { ...phase, duration };
   });
 }
 
-/** Total operation duration after passive skills (all phases). */
+/** Total operation duration after passive skills and dust (all phases). */
 export function getOperationDuration(
   operation: MachineOperation | ParameterizedOperation,
   progression: ProgressionState,
+  dustMultiplier: number = 1,
 ): number {
-  return getOperationPhases(operation, progression).reduce(
+  return getOperationPhases(operation, progression, dustMultiplier).reduce(
     (sum, phase) => sum + phase.duration,
     0,
   );

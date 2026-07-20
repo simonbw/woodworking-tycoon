@@ -48,7 +48,10 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       if (!cutting || fraction === 0) return;
       // The cut deepens across the board as the chop comes down
       g.moveTo(0, kerfY - kerfHalf);
-      g.lineTo(0, kerfY - kerfHalf + 2 * kerfHalf * Math.min(1, fraction * 1.2));
+      g.lineTo(
+        0,
+        kerfY - kerfHalf + 2 * kerfHalf * Math.min(1, fraction * 1.2),
+      );
       g.stroke({ width: 2.5, color: 0x120d08, alpha: 0.85 });
     },
     [cutting, fraction, kerfY, kerfHalf],

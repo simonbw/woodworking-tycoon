@@ -15,6 +15,7 @@ export const layoutWithMiterSawInStorage: GameState = {
     inventory: [],
     workQueue: [],
     canWork: true,
+    busyTicks: 0,
     away: null,
   },
   machines: [
@@ -52,6 +53,8 @@ export const layoutWithMiterSawInStorage: GameState = {
     marketplaceUnlocked: false,
     commissionsCompleted: 1,
     tickSpeedControlsUnlocked: false,
+    sweepingUnlocked: false,
+    dustTipDismissed: false,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,

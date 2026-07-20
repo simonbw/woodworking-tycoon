@@ -1,7 +1,7 @@
 import { useApplication } from "@pixi/react";
-import { Graphics, RenderTexture } from "pixi.js";
+import { Container, Graphics, RenderTexture } from "pixi.js";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { DustMap, dustKeyToVec } from "../../game/Dust";
+import { DustMap, dustKeyToVec, dustTotal } from "../../game/Dust";
 import { Species } from "../../game/Materials";
 import { mixColors } from "../../utils/colorUtils";
 import { seededRandom } from "../../utils/randUtils";
@@ -100,12 +100,20 @@ export const DustLayer: React.FC<{ width: number; height: number }> = ({
     };
   }, [texture]);
 
+  // The eraser draws through a wrapper because a blend mode on the root
+  // of a renderer.render() call is ignored — blending happens when a
+  // child composites into its parent's render.
   const scratch = useMemo(() => new Graphics(), []);
+  const wrapper = useMemo(() => {
+    const container = new Container();
+    container.addChild(scratch);
+    return container;
+  }, [scratch]);
   useEffect(() => {
     return () => {
-      scratch.destroy();
+      wrapper.destroy({ children: true });
     };
-  }, [scratch]);
+  }, [wrapper]);
 
   const bakeStamp = useCallback(
     (stamp: DustStamp) => {
@@ -135,6 +143,47 @@ export const DustLayer: React.FC<{ width: number; height: number }> = ({
     }
     return onDustStamp(bakeStamp);
   }, [app, texture, scratch, bakeStamp]);
+
+  // Sweeping: when a cell's dust drops, erase its patch of the texture
+  // and redraw whatever film remains — the rest of the floor keeps its
+  // live-settled look untouched.
+  const prevDust = useRef(gameState.dust);
+  useEffect(() => {
+    const prev = prevDust.current;
+    const next = gameState.dust;
+    prevDust.current = next;
+    if (prev === next || !app?.renderer || !wrapper) {
+      return;
+    }
+    const cleaned = Object.keys(prev).filter(
+      (key) => dustTotal(next[key]) < dustTotal(prev[key]) - 1e-6,
+    );
+    if (cleaned.length === 0) {
+      return;
+    }
+    scratch.clear();
+    for (const key of cleaned) {
+      const [cellX, cellY] = dustKeyToVec(key);
+      scratch.rect(
+        cellX * PIXELS_PER_CELL,
+        cellY * PIXELS_PER_CELL,
+        PIXELS_PER_CELL,
+        PIXELS_PER_CELL,
+      );
+      scratch.fill(0xffffff);
+    }
+    scratch.blendMode = "erase";
+    app.renderer.render({ container: wrapper, target: texture, clear: false });
+    scratch.blendMode = "normal";
+    scratch.clear();
+    for (const key of cleaned) {
+      const remaining = next[key];
+      if (remaining) {
+        drawRebuiltCell(scratch, key, remaining);
+      }
+    }
+    app.renderer.render({ container: scratch, target: texture, clear: false });
+  }, [gameState.dust, app, texture, scratch, wrapper]);
 
   return <pixiSprite texture={texture} x={0} y={0} />;
 };

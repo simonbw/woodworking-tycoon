@@ -13,6 +13,7 @@ import {
   Panel,
   panelSpecies,
   panelWidth,
+  SawdustPile,
   SheetGood,
   Species,
   UnknownMaterial,
@@ -121,6 +122,17 @@ export function getMaterialName(material: MaterialInstance): string {
       const speciesName =
         species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
       return `${speciesName} End-Grain Slice`;
+    }
+    case "sawdustPile": {
+      // Named for its dominant wood when one clearly leads the mix
+      const entries = Object.entries(material.contents) as Array<
+        [Species, number]
+      >;
+      const total = entries.reduce((sum, [, amount]) => sum + amount, 0);
+      const dominant = entries.sort(([, a], [, b]) => b - a)[0];
+      return dominant && total > 0 && dominant[1] / total >= 0.8
+        ? `${humanizeString(dominant[0])} Sawdust`
+        : "Mixed Sawdust";
     }
     default:
       if (isFinishedProduct(material)) {
@@ -318,6 +330,12 @@ export function createMockMaterial(
     case "unknown":
       return makeMaterial<UnknownMaterial>({
         type: "unknown",
+      });
+
+    case "sawdustPile":
+      return makeMaterial<SawdustPile>({
+        type: "sawdustPile",
+        contents: {},
       });
 
     default:

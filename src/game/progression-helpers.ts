@@ -1,7 +1,14 @@
 import { hasCompletedCommission } from "./commissionSequence";
+import { dustTotal } from "./Dust";
 import { GameState } from "./GameState";
 import { MachineId } from "./Machine";
 import { ToolId } from "./Tool";
+
+/**
+ * Floor dust (total units) that triggers the sweeping reveal — low enough
+ * that the first real milling session brings the broom out.
+ */
+export const DUST_TUTORIAL_THRESHOLD = 60;
 
 export function ownsMachine(
   gameState: GameState,
@@ -28,7 +35,10 @@ export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
  * Keyed by the ProgressionState flag the condition controls.
  */
 export const UNLOCK_CONDITIONS: Record<
-  "storeUnlocked" | "shopLayoutUnlocked" | "marketplaceUnlocked",
+  | "storeUnlocked"
+  | "shopLayoutUnlocked"
+  | "marketplaceUnlocked"
+  | "sweepingUnlocked",
   (gameState: GameState) => boolean
 > = {
   storeUnlocked: (gameState) =>
@@ -36,6 +46,12 @@ export const UNLOCK_CONDITIONS: Record<
   shopLayoutUnlocked: (gameState) => ownsMachine(gameState, "miterSaw"),
   marketplaceUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "cut-to-order"),
+  // The broom comes out once there's visibly something to sweep
+  sweepingUnlocked: (gameState) =>
+    Object.values(gameState.dust).reduce(
+      (sum, amounts) => sum + dustTotal(amounts),
+      0,
+    ) >= DUST_TUTORIAL_THRESHOLD,
 };
 
 /**

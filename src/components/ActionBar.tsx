@@ -1,4 +1,5 @@
 import React from "react";
+import { canSweepAt } from "../game/game-actions/dust-actions";
 import { availableOperations } from "../game/skill-helpers";
 import { Hint, HintSurfaceContext } from "./shortcuts/Kbd";
 import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
@@ -51,6 +52,9 @@ export const ActionBar: React.FC = () => {
             <Hint shortcut="put-down" showShift={false}>
               Put down
             </Hint>
+          )}
+          {gameState.progression.sweepingUnlocked && canSweepAt(gameState) && (
+            <Hint shortcut="sweep">Sweep sawdust</Hint>
           )}
           {operable && (
             <>

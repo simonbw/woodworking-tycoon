@@ -1,5 +1,6 @@
 import React from "react";
 import { ActionBar } from "./ActionBar";
+import { DustTutorialCard } from "./DustTutorialCard";
 import { JobBoard } from "./JobBoard";
 import { NavBar } from "./NavBar";
 import { ShopManifest } from "./ShopManifest";
@@ -33,6 +34,7 @@ const HomePageContent: React.FC = () => {
 
       <div className="flex gap-6 grow min-h-0">
         <div className="w-full max-w-96 min-h-0 overflow-y-auto">
+          <DustTutorialCard />
           <JobBoard />
         </div>
         {/* Canvas anchors to the top with the controls legend hanging

@@ -7,6 +7,7 @@ import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
 import { FinishedBoxSprite } from "./FinishedBoxSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
+import { SawdustPileSprite } from "./SawdustPileSprite";
 
 // Just choose the correct sprite for a material
 export const MaterialSprite: React.FC<{
@@ -42,6 +43,9 @@ export const MaterialSprite: React.FC<{
 
     case "endGrainSlice":
       return <EndGrainSliceSprite slice={material} alpha={alpha} tint={tint} />;
+
+    case "sawdustPile":
+      return <SawdustPileSprite pile={material} alpha={alpha} tint={tint} />;
 
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":

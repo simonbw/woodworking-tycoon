@@ -89,6 +89,7 @@ export const patternBoardShop: GameState = {
     ],
     workQueue: [],
     canWork: true,
+    busyTicks: 0,
     away: null,
   },
   machines: [
@@ -112,6 +113,8 @@ export const patternBoardShop: GameState = {
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
     tickSpeedControlsUnlocked: true,
+    sweepingUnlocked: false,
+    dustTipDismissed: false,
     xp: 0,
     skillPoints: 3,
     unlockedSkills: [...STARTER_SKILLS, "twoToneBoards"],

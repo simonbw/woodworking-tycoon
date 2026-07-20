@@ -1,5 +1,6 @@
 import { GameAction } from "../GameState";
 import { WorkItem } from "../Person";
+import { sweepAction } from "./dust-actions";
 import { instaMovePlayerAction } from "./player-actions";
 
 /** Applies a work item to the game state */
@@ -8,6 +9,8 @@ export function applyWorkItemAction(workItem: WorkItem): GameAction {
     switch (workItem.type) {
       case "move":
         return instaMovePlayerAction(workItem.direction)(gameState);
+      case "sweep":
+        return sweepAction()(gameState);
       default:
         throw new Error("Invalid work item type");
     }

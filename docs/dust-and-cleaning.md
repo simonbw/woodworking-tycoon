@@ -133,11 +133,16 @@ is hidden from the store until the message has fired.
 broom + shop vac. No capture/mitigation — players live the full chore
 first so the first mitigation purchase lands as relief.
 
-**Built so far**: the state model (`GameState.dust`, save v11), per-tick
-emission in `tickAction` (`dustOutput` on the cutting operations), and
-the full particle → floor-bake render pipeline. Still to come from v1:
-penalties, per-tile stamp buckets for heavy accumulation, broom, vac,
-and the tutorial latch.
+**Built so far** (save v12): the state model, per-tick emission, the
+full particle → floor-bake render pipeline, both penalties (machine
+slowdown via `getOperationPhases`; movement via `Person.busyTicks`, +1
+tick per full +100%), the broom loop (sweep on `T`, piles, dustpan to
+garbage, under-machine pull at half rate, ~10% film), and the tutorial
+latch (`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
+one-time note appear, sweep hint joins the controls legend on dusty
+ground). Emission is scaled by 1/multiplier so a slowed operation sheds
+the same total dust rather than compounding. Still to come from v1: the
+shop vac.
 
 Then, in order:
 

@@ -28,9 +28,18 @@ export const ModeControl: React.FC<{
   selected: Operation | null;
   onSelect: (operation: Operation) => void;
   progression: ProgressionState;
+  /** Dust slowdown at this station, folded into the shown durations. */
+  dustMultiplier?: number;
   /** Advertise the cycle-operation key next to the control. */
   showShortcut?: boolean;
-}> = ({ operations, selected, onSelect, progression, showShortcut }) => {
+}> = ({
+  operations,
+  selected,
+  onSelect,
+  progression,
+  dustMultiplier,
+  showShortcut,
+}) => {
   const label = (
     <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5">
       Mode
@@ -90,6 +99,7 @@ export const ModeControl: React.FC<{
       selected={selected}
       onSelect={onSelect}
       progression={progression}
+      dustMultiplier={dustMultiplier}
       label={label}
     />
   );
@@ -108,8 +118,16 @@ const RecipeIndex: React.FC<{
   selected: Operation | null;
   onSelect: (operation: Operation) => void;
   progression: ProgressionState;
+  dustMultiplier?: number;
   label: React.ReactNode;
-}> = ({ operations, selected, onSelect, progression, label }) => {
+}> = ({
+  operations,
+  selected,
+  onSelect,
+  progression,
+  dustMultiplier,
+  label,
+}) => {
   const [open, setOpen] = useState(false);
 
   // Ingredient/product summaries come from actually running each recipe on
@@ -179,7 +197,12 @@ const RecipeIndex: React.FC<{
                       {operation.name}
                     </span>
                     <span className="shrink-0 font-mono text-[0.65rem] tabular-nums text-ink-fade">
-                      {getOperationDuration(operation, progression)} ticks
+                      {getOperationDuration(
+                        operation,
+                        progression,
+                        dustMultiplier,
+                      )}{" "}
+                      ticks
                     </span>
                   </span>
                   {io && (

@@ -79,6 +79,7 @@ export const endGrainShop: GameState = {
     ],
     workQueue: [],
     canWork: true,
+    busyTicks: 0,
     away: null,
   },
   machines: [
@@ -103,6 +104,8 @@ export const endGrainShop: GameState = {
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
     tickSpeedControlsUnlocked: true,
+    sweepingUnlocked: false,
+    dustTipDismissed: false,
     xp: 0,
     skillPoints: 2,
     unlockedSkills: STARTER_SKILLS,

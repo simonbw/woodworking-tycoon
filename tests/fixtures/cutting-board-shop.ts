@@ -56,11 +56,10 @@ export const cuttingBoardShop: GameState = {
     })),
     workQueue: [],
     canWork: true,
+    busyTicks: 0,
     away: null,
   },
-  machines: [
-    idleMachine("workspace", [1, 2], "dismantlePallet"),
-  ],
+  machines: [idleMachine("workspace", [1, 2], "dismantlePallet")],
   storage: {
     machines: [],
     tools: ["randomOrbitSander"],
@@ -79,6 +78,8 @@ export const cuttingBoardShop: GameState = {
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
     tickSpeedControlsUnlocked: true,
+    sweepingUnlocked: false,
+    dustTipDismissed: false,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,

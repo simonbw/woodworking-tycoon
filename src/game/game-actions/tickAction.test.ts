@@ -408,4 +408,45 @@ describe("tickAction dust emission", () => {
     const result = tickAction(before);
     assert.strictEqual(result.dust, before.dust);
   });
+
+  it("unlocks sweeping once the floor crosses the dust threshold", () => {
+    const before = stateWith({
+      dust: { "0,0": { pine: 30 }, "0,1": { oak: 30 } },
+    });
+    assert.strictEqual(before.progression.sweepingUnlocked, false);
+    const result = tickAction(before);
+    assert.strictEqual(result.progression.sweepingUnlocked, true);
+    // One-way latch: sweeping the floor clean doesn't relock it
+    const cleaned = tickAction({ ...result, dust: {} });
+    assert.strictEqual(cleaned.progression.sweepingUnlocked, true);
+  });
+});
+
+describe("tickAction dust movement penalty", () => {
+  it("costs extra ticks to step onto a deep drift", () => {
+    let state = stateWith({
+      dust: { "1,0": { pine: 100 } },
+      player: {
+        ...initialGameState.player,
+        position: [0, 0],
+        workQueue: [
+          { type: "move", direction: 0 },
+          { type: "move", direction: 0 },
+        ],
+      },
+    });
+    // Tick 1: steps onto the drift and starts trudging
+    state = tickAction(state);
+    assert.deepStrictEqual(state.player.position, [1, 0]);
+    assert.strictEqual(state.player.busyTicks, 3);
+    assert.strictEqual(state.player.workQueue.length, 1);
+    // Ticks 2–4: still wading, second step waits
+    for (let i = 0; i < 3; i++) {
+      state = tickAction(state);
+      assert.deepStrictEqual(state.player.position, [1, 0]);
+    }
+    // Tick 5: free again — the second step happens
+    state = tickAction(state);
+    assert.deepStrictEqual(state.player.position, [2, 0]);
+  });
 });

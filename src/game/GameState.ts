@@ -26,6 +26,10 @@ export interface ProgressionState {
   readonly marketplaceUnlocked: boolean;
   readonly commissionsCompleted: number;
   readonly tickSpeedControlsUnlocked: boolean;
+  /** Reveals the broom and the sweep verb once the floor gets dusty. */
+  readonly sweepingUnlocked: boolean;
+  /** The one-time "sweep it up" note has been read. */
+  readonly dustTipDismissed: boolean;
   /** Lifetime craft XP (never spent — levels derive from it). */
   readonly xp: number;
   /** Unspent skill points (1 per level gained). */

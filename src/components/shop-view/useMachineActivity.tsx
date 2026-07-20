@@ -1,3 +1,4 @@
+import { machineDustMultiplier } from "../../game/Dust";
 import { Machine } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { getOperationPhases } from "../../game/skill-helpers";
@@ -13,7 +14,11 @@ export function useMachineActivity(machine: Machine) {
   const operation = machine.selectedOperationOrNull;
 
   const phases = operation
-    ? getOperationPhases(operation, gameState.progression)
+    ? getOperationPhases(
+        operation,
+        gameState.progression,
+        machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
+      )
     : [];
   const attending = playerAttendsMachine(
     machine,

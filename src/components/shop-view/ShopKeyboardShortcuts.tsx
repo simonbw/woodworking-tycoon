@@ -61,6 +61,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present,
   );
 
+  useShortcut(
+    "sweep",
+    () => {
+      if (gameState.current.progression.sweepingUnlocked) {
+        applyAction(addWorkItemAction({ type: "sweep" }));
+      }
+    },
+    present,
+  );
+
   // Emptying the queue stays available while away — it only affects what
   // happens once the player is back.
   useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));

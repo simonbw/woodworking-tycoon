@@ -10,6 +10,7 @@ import {
   useQuitToMenu,
   useSaveGame,
 } from "../useGameState";
+import { BroomSprite } from "./BroomSprite";
 import { DustLayer } from "./DustLayer";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { MachineSprite } from "./MachineSprite";
@@ -64,6 +65,7 @@ export const ShopView: React.FC = () => {
           ))}
           {/* Settled sawdust sits on the floor, under everything that moves */}
           <DustLayer width={width} height={height} />
+          {gameState.progression.sweepingUnlocked && <BroomSprite />}
 
           {materialPileGroups.map((materialPiles, i) => {
             const [x, y] = cellToPixelVec(materialPiles[0].position);

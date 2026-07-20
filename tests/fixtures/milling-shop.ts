@@ -64,6 +64,7 @@ export const millingShop: GameState = {
     inventory: [roughWalnut("test-rough-1"), roughWalnut("test-rough-2")],
     workQueue: [],
     canWork: true,
+    busyTicks: 0,
     away: null,
   },
   machines: [
@@ -71,13 +72,9 @@ export const millingShop: GameState = {
     idleMachine("lunchboxPlaner", [3, 1], "planeBoard", {
       targetThickness: 4,
     }),
-    idleMachine(
-      "jobsiteTableSaw",
-      [1, 4],
-      "ripBoard",
-      { targetWidth: 4 },
-      ["straightLineSled"],
-    ),
+    idleMachine("jobsiteTableSaw", [1, 4], "ripBoard", { targetWidth: 4 }, [
+      "straightLineSled",
+    ]),
     idleMachine("workspace", [3, 4], "glueUpPanel"),
   ],
   storage: {
@@ -97,6 +94,8 @@ export const millingShop: GameState = {
     marketplaceUnlocked: true,
     commissionsCompleted: 7,
     tickSpeedControlsUnlocked: true,
+    sweepingUnlocked: false,
+    dustTipDismissed: false,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: [...STARTER_SKILLS, "jigsAndFixtures"],
