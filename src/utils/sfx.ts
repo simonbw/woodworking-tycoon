@@ -4,22 +4,22 @@ import { getAudioContext } from "./getAudioContext";
 /**
  * Lightweight sound-effect player built on the shared AudioContext.
  *
- * Sounds live under `static/sounds/` and are served at `/sounds/<name>.mp3`.
- * Each clip is fetched and decoded on first use, then cached so subsequent
- * plays are instant. Playback goes through a per-play gain node (for relative
- * per-sound trim) into the shared SFX bus, so master/SFX volume and mute from
- * the settings menu apply uniformly (see `audioBus.ts`).
+ * Sounds live under `static/sounds/` and are served at `/sounds/<name>.ogg`.
+ * Everything is Ogg — MP3 can't loop gaplessly and the Electron target means
+ * Chromium's decoder everywhere (see `docs/sound-design.md`). Each clip is
+ * fetched and decoded on first use, then cached so subsequent plays are
+ * instant. Playback goes through a per-play gain node (for relative per-sound
+ * trim) into the shared SFX bus, so master/SFX volume and mute from the
+ * settings menu apply uniformly (see `audioBus.ts`).
  *
  * `playUiSound` covers the named UI clicks; `playSound` plays any clip by name
  * and is what the game-event → sound bridge (`GameSoundLayer`) uses.
+ * `loadSoundBuffer` exposes the decode cache to the continuous machine-sound
+ * player (`loopingSound.ts`), which manages its own sources.
  */
 
 export type UiSoundName =
-  | "ui-click"
-  | "ui-hover"
-  | "ui-tab"
-  | "ui-purchase"
-  | "ui-back";
+  "ui-click" | "ui-hover" | "ui-tab" | "ui-purchase" | "ui-back";
 
 // Per-sound gain. Hover is deliberately subtle so it doesn't fatigue.
 const SOUND_GAIN: Record<UiSoundName, number> = {
@@ -32,17 +32,20 @@ const SOUND_GAIN: Record<UiSoundName, number> = {
 
 const bufferCache = new Map<string, Promise<AudioBuffer>>();
 
-function loadBuffer(name: string): Promise<AudioBuffer> {
+async function fetchClip(name: string): Promise<ArrayBuffer> {
+  const res = await fetch(`/sounds/${name}.ogg`);
+  if (!res.ok) throw new Error(`sfx: failed to fetch ${name} (${res.status})`);
+  return res.arrayBuffer();
+}
+
+/** Fetch and decode a clip by bare name, cached across all users. */
+export function loadSoundBuffer(name: string): Promise<AudioBuffer> {
   const cached = bufferCache.get(name);
   if (cached) return cached;
 
-  const promise = fetch(`/sounds/${name}.mp3`)
-    .then((res) => {
-      if (!res.ok)
-        throw new Error(`sfx: failed to fetch ${name} (${res.status})`);
-      return res.arrayBuffer();
-    })
-    .then((data) => getAudioContext().decodeAudioData(data));
+  const promise = fetchClip(name).then((data) =>
+    getAudioContext().decodeAudioData(data),
+  );
 
   // Don't poison the cache on a transient failure — allow a later retry.
   promise.catch(() => bufferCache.delete(name));
@@ -64,7 +67,7 @@ export function playSound(name: string, gain = 1): void {
       if (ctx.state === "suspended") {
         await ctx.resume();
       }
-      const buffer = await loadBuffer(name);
+      const buffer = await loadSoundBuffer(name);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       const gainNode = ctx.createGain();
@@ -85,6 +88,6 @@ export function playUiSound(name: UiSoundName): void {
 /** Warm the decode cache so the first play has no fetch/decode latency. */
 export function preloadUiSounds(): void {
   (Object.keys(SOUND_GAIN) as UiSoundName[]).forEach((name) => {
-    void loadBuffer(name).catch(() => {});
+    void loadSoundBuffer(name).catch(() => {});
   });
 }

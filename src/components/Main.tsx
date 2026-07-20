@@ -6,6 +6,7 @@ import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
+import { MachineSoundLayer } from "./MachineSoundLayer";
 import { MarketplacePage } from "./marketplace-page/MarketplacePage";
 import { StartMenu } from "./StartMenu";
 import { StorePage } from "./store-page/StorePage";
@@ -39,6 +40,7 @@ export const Main: React.FC = () => {
               <ShortcutHelpProvider>
                 <ScreenSwitcher />
                 <GameSoundLayer />
+                <MachineSoundLayer />
                 <DebugView />
                 <FixtureLoader />
               </ShortcutHelpProvider>
