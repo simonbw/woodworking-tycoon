@@ -11,7 +11,6 @@ import {
   feetToPixels,
   inchesToPixels,
 } from "../shop-view/shop-scale";
-import { extractFirstNumber } from "./extractFirstNumber";
 
 const AnimatedPixiContainer = animated("pixiContainer");
 
@@ -26,8 +25,10 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
     "/images/jobsite-table-saw-fence.png",
   );
 
+  // Ops without a width parameter (sled crosscuts) park the fence out of
+  // the way at the far end of the rail.
   const ripWidth =
-    extractFirstNumber(machine.selectedOperation.id) ||
+    Number(machine.selectedParameters?.targetWidth) ||
     Math.max(...BOARD_DIMENSIONS);
   const fencePosition = ripWidth * PIXELS_PER_INCH;
 

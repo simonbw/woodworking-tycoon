@@ -8,7 +8,6 @@ import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { PIXELS_PER_INCH, feetToPixels } from "../shop-view/shop-scale";
-import { extractFirstNumber } from "./extractFirstNumber";
 
 const AnimatedPixiSprite = animated("pixiSprite");
 
@@ -20,8 +19,9 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
   const planerTopTexture = useTexture("/images/lunchbox-planer-top.png");
   const planerScrewsTexture = useTexture("/images/lunchbox-planer-screws.png");
 
+  // The cutter head rides at the target thickness
   const cutThickness =
-    extractFirstNumber(machine.selectedOperation.id) ||
+    Number(machine.selectedParameters?.targetThickness) ||
     Math.max(...BOARD_DIMENSIONS);
 
   const springProps = useSpring({

@@ -1,21 +1,32 @@
 import React from "react";
+import { animated, useSpring } from "react-spring";
 import { Machine } from "../../game/Machine";
-import { BOARD_DIMENSIONS } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
-import { extractFirstNumber } from "./extractFirstNumber";
+
+const AnimatedPixiContainer = animated("pixiContainer");
 
 export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
   const miterSawBaseTexture = useTexture("/images/miter-saw-base.png");
   const miterSawTopTexture = useTexture("/images/miter-saw-top.png");
 
-  const cutLength =
-    extractFirstNumber(machine.selectedOperation.id) ||
-    Math.max(...BOARD_DIMENSIONS);
+  const inputBoards = inputMaterials.filter(isBoard);
+  const stock = inputBoards[0];
+
+  // The length stop is set targetLength right of the blade, so that much of
+  // the stock slides out past the cut line — the board tracks the Target
+  // Length setting. Clamped to the board so an uncuttable setting (stop past
+  // the board's far end) parks the whole board beyond the blade instead of
+  // detaching it from the saw.
+  const targetLength = Number(machine.selectedParameters?.targetLength) || 0;
+  const stopOffset = stock
+    ? feetToPixels(Math.min(targetLength, stock.length))
+    : 0;
+  const springProps = useSpring({ x: stopOffset });
 
   return (
     <pixiContainer>
@@ -24,15 +35,17 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         scale={IMAGE_SCALE}
         anchor={{ x: 0.5, y: 0.5 }}
       />
-      {inputMaterials.filter(isBoard).map((board, index) => {
-        const x = feetToPixels(-board.length / 2) - 3;
-        const y = inchesToPixels(board.width / 2 - 3);
-        return (
-          <pixiContainer angle={90} x={x} y={y} key={index}>
-            <MaterialSprite material={board} />
-          </pixiContainer>
-        );
-      })}
+      <AnimatedPixiContainer x={springProps.x}>
+        {inputBoards.map((board, index) => {
+          const x = feetToPixels(-board.length / 2) - 3;
+          const y = inchesToPixels(board.width / 2 - 3);
+          return (
+            <pixiContainer angle={90} x={x} y={y} key={index}>
+              <MaterialSprite material={board} />
+            </pixiContainer>
+          );
+        })}
+      </AnimatedPixiContainer>
       {outputMaterials.filter(isBoard).map((board, index) => {
         const x = feetToPixels(board.length / 2) + 3;
         const y = inchesToPixels(board.width / 2 - 3);
