@@ -6,11 +6,14 @@ import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
+import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { CutParticles } from "./CutParticles";
 
 const AnimatedPixiContainer = animated("pixiContainer");
 
 export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
+  const { isOperating, needsYou } = useMachineActivity(machine);
   const miterSawBaseTexture = useTexture("/images/miter-saw-base.png");
   const miterSawTopTexture = useTexture("/images/miter-saw-top.png");
 
@@ -62,6 +65,16 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         scale={IMAGE_SCALE}
         anchor={{ x: 0.5, y: 0.5 }}
       />
+      {processingBoards[0] && (
+        <CutParticles
+          kind="dust"
+          species={processingBoards[0].species}
+          active={isOperating && !needsYou}
+          // The blade throws dust back behind the fence
+          direction={-Math.PI / 2}
+          spread={0.9}
+        />
+      )}
     </pixiContainer>
   );
 };

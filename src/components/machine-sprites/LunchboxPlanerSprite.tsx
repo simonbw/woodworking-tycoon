@@ -9,6 +9,7 @@ import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { PIXELS_PER_INCH, feetToPixels } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { CutParticles } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
 
 const AnimatedPixiSprite = animated("pixiSprite");
@@ -17,7 +18,8 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
-  const { fraction } = useMachineActivity(machine);
+  const { fraction, isOperating, needsYou } = useMachineActivity(machine);
+  const cutting = processingMaterials.filter(isBoard)[0];
   const planerBottomTexture = useTexture("/images/lunchbox-planer-bottom.png");
   const planerTopTexture = useTexture("/images/lunchbox-planer-top.png");
   const planerScrewsTexture = useTexture("/images/lunchbox-planer-screws.png");
@@ -90,6 +92,18 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
         scale={IMAGE_SCALE + 0.01}
         anchor={0.5}
       />
+      {cutting && (
+        <CutParticles
+          kind="shavings"
+          species={cutting.species}
+          active={isOperating && !needsYou}
+          // A lunchbox planer is a snow machine out the outfeed side;
+          // wide spread so the curls scatter off the exiting board
+          y={-26}
+          direction={-Math.PI / 2}
+          spread={1.7}
+        />
+      )}
     </pixiContainer>
   );
 };

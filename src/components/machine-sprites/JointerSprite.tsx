@@ -5,6 +5,7 @@ import { isBoard } from "../../game/board-helpers";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PIXELS_PER_CELL, feetToPixels } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { CutParticles } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
 
 /**
@@ -14,7 +15,8 @@ import { FeedingBoard } from "./FeedingBoard";
  */
 export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
-  const { fraction } = useMachineActivity(machine);
+  const { fraction, isOperating, needsYou } = useMachineActivity(machine);
+  const cutting = processingMaterials.filter(isBoard)[0];
 
   const draw = useCallback((g: Graphics) => {
     g.clear();
@@ -73,6 +75,16 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           <MaterialSprite material={board} />
         </pixiContainer>
       ))}
+      {cutting && (
+        <CutParticles
+          kind="shavings"
+          species={cutting.species}
+          active={isOperating && !needsYou}
+          // Curls spill off the cutterhead toward the outfeed table
+          direction={-Math.PI / 2}
+          spread={1.5}
+        />
+      )}
     </pixiContainer>
   );
 };

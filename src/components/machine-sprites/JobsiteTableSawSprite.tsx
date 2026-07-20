@@ -12,6 +12,7 @@ import {
   inchesToPixels,
 } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
+import { CutParticles } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
 
 const AnimatedPixiContainer = animated("pixiContainer");
@@ -20,7 +21,8 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
-  const { fraction } = useMachineActivity(machine);
+  const { fraction, isOperating, needsYou } = useMachineActivity(machine);
+  const cutting = processingMaterials.filter(isBoard)[0];
   const tableSawTableTexture = useTexture(
     "/images/jobsite-table-saw-table.png",
   );
@@ -87,6 +89,15 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
           anchor={0.5}
         />
       </AnimatedPixiContainer>
+      {cutting && (
+        <CutParticles
+          kind="dust"
+          species={cutting.species}
+          active={isOperating && !needsYou}
+          // The blade kicks dust back toward the infeed side
+          direction={Math.PI / 2}
+        />
+      )}
     </pixiContainer>
   );
 };
