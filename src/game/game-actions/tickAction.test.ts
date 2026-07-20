@@ -5,8 +5,7 @@ import { GameState } from "../GameState";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
-import { getSellValue } from "../material-values";
-import { FinishedProduct, Pallet } from "../Materials";
+import { Pallet } from "../Materials";
 import { GLUE_CURE_TICKS } from "../machines/workspace";
 import { tickAction } from "./tickAction";
 
@@ -140,51 +139,10 @@ describe("tickAction", () => {
     ]);
   });
 
-  it("emits a sale cue for each item a sales table sells", () => {
-    const shelf = makeMaterial<FinishedProduct>({
-      type: "rusticShelf",
-      species: "pallet",
-    });
-    const table: MachineState = {
-      ...workspaceMachine({}),
-      machineTypeId: "salesTable",
-      selectedOperationId: "none",
-      inputMaterials: [shelf],
-    };
-    const result = tickAction(stateWith({ machines: [table] }));
-    assert.deepStrictEqual(result.pendingSounds, [
-      { kind: "sale", machineTypeId: "salesTable" },
-    ]);
-  });
-
   it("keeps the pendingSounds reference stable on a tick with no completions", () => {
     const before = stateWith({ tick: 1 });
     const result = tickAction(before);
     assert.strictEqual(result.pendingSounds, before.pendingSounds);
-  });
-
-  it("sells one item per tick from a sales table", () => {
-    const shelf = makeMaterial<FinishedProduct>({
-      type: "rusticShelf",
-      species: "pallet",
-    });
-    const deckBoard = board("pallet", 3, 4, 1);
-    const table: MachineState = {
-      ...workspaceMachine({}),
-      machineTypeId: "salesTable",
-      selectedOperationId: "none",
-      inputMaterials: [shelf, deckBoard],
-    };
-    const afterOne = tickAction(stateWith({ money: 0, machines: [table] }));
-    assert.strictEqual(afterOne.money, getSellValue(shelf));
-    assert.deepStrictEqual(afterOne.machines[0].inputMaterials, [deckBoard]);
-
-    const afterTwo = tickAction(afterOne);
-    assert.strictEqual(
-      afterTwo.money,
-      getSellValue(shelf) + getSellValue(deckBoard),
-    );
-    assert.deepStrictEqual(afterTwo.machines[0].inputMaterials, []);
   });
 
   it("pauses attended work during away trips — you're not there to do it", () => {

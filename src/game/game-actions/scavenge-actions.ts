@@ -51,7 +51,7 @@ export function startScavengingAction(
   rng: () => number = Math.random,
 ): GameAction {
   return (gameState) => {
-    if (!gameState.progression.freeSelling) {
+    if (!gameState.progression.marketplaceUnlocked) {
       console.warn("Scavenging is not unlocked yet");
       return gameState;
     }

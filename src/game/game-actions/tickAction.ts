@@ -1,6 +1,7 @@
 import { addConsumables, ConsumableAmount } from "../Consumable";
 import { GameAction } from "../GameState";
 import { SoundEvent } from "../SoundEvent";
+import { marketplaceTickPass } from "./marketplace-actions";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct } from "../material-helpers";
@@ -195,40 +196,19 @@ export const tickAction: GameAction = (gameState) => {
     };
   });
 
-  // Sales tables automatically sell one item per tick
-  let money = gameState.money;
-  const machinesAfterSales = updatedMachines.map((machineState) => {
-    if (
-      machineState.machineTypeId !== "salesTable" ||
-      machineState.inputMaterials.length === 0
-    ) {
-      return machineState;
-    }
-    const [sold, ...remaining] = machineState.inputMaterials;
-    // Round to cents so repeated sales don't accumulate float error
-    money = Math.round((money + getSellValue(sold)) * 100) / 100;
-    soundEvents.push({
-      kind: "sale",
-      machineTypeId: machineState.machineTypeId,
-    });
-    return { ...machineState, inputMaterials: remaining };
-  });
-
   // Only override pendingSounds when there's something to add, so quiet ticks
   // keep the queue's reference stable and don't re-trigger the sound drain.
   const nextState =
     soundEvents.length > 0
       ? {
           ...gameState,
-          money,
-          machines: machinesAfterSales,
+          machines: updatedMachines,
           tick: gameState.tick + 1,
           pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
         }
       : {
           ...gameState,
-          money,
-          machines: machinesAfterSales,
+          machines: updatedMachines,
           tick: gameState.tick + 1,
         };
 
@@ -254,5 +234,7 @@ export const tickAction: GameAction = (gameState) => {
         }
       : withTools;
 
-  return withXp(withConsumables, xpEarned);
+  // Marketplace: listings roll their sale chance, demand recovers, and the
+  // job board refreshes at day boundaries.
+  return withXp(marketplaceTickPass()(withConsumables), xpEarned);
 };

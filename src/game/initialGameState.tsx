@@ -54,13 +54,17 @@ export const initialGameState: GameState = {
     tutorialStage: 0,
     storeUnlocked: false,
     shopLayoutUnlocked: false,
-    freeSelling: false,
+    marketplaceUnlocked: false,
     commissionsCompleted: 0,
     tickSpeedControlsUnlocked: false,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,
   },
+  listings: [],
+  jobBoard: [],
+  acceptedJobs: [],
+  categoryDemand: {},
   pendingSounds: [],
 };
 

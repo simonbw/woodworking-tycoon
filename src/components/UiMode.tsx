@@ -4,6 +4,7 @@ export type UiMode =
   | { mode: "normal" }
   | { mode: "store" }
   | { mode: "shopLayout" }
+  | { mode: "marketplace" }
   | { mode: "skills" };
 const uiModeContext = createContext<
   { mode: UiMode; setMode: (mode: UiMode) => void } | undefined

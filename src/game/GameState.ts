@@ -21,7 +21,8 @@ export interface ProgressionState {
   readonly tutorialStage: number;
   readonly storeUnlocked: boolean;
   readonly shopLayoutUnlocked: boolean;
-  readonly freeSelling: boolean;
+  /** Reveals the Marketplace tab (listings + job board) and scavenging. */
+  readonly marketplaceUnlocked: boolean;
   readonly commissionsCompleted: number;
   readonly tickSpeedControlsUnlocked: boolean;
   /** Lifetime craft XP (never spent — levels derive from it). */
@@ -49,12 +50,66 @@ export interface GameState {
     tools: ReadonlyArray<ToolId>;
   };
   readonly progression: ProgressionState;
+  /** Items up for sale on the marketplace, awaiting a buyer. */
+  readonly listings: ReadonlyArray<MarketListing>;
+  /** Open job offers the player hasn't accepted (refreshed daily). */
+  readonly jobBoard: ReadonlyArray<JobOffer>;
+  /** Jobs the player has accepted and not yet delivered or cancelled. */
+  readonly acceptedJobs: ReadonlyArray<AcceptedJob>;
+  /**
+   * Per-product-category demand saturation, 0–1. Each sale of a category
+   * dips its meter; meters recover over time. A missing key means full
+   * demand (1) — keys are dropped once fully recovered.
+   */
+  readonly categoryDemand: Readonly<Record<string, number>>;
   /**
    * Transient queue of sound cues emitted by the action(s) that produced this
    * state, drained by `GameSoundLayer` each render. Optional and never
    * persisted (stripped in `saveLoad`); treat a missing value as empty.
    */
   readonly pendingSounds?: ReadonlyArray<SoundEvent>;
+}
+
+/** An item the player has put up for sale on the marketplace. */
+export interface MarketListing {
+  readonly id: string;
+  readonly material: MaterialInstance;
+  readonly askingPrice: number;
+  /**
+   * When the item went up at its current price. Repricing resets this —
+   * the pity timer (see marketplace.ts) runs from here, and a price change
+   * is a new offer to the market.
+   */
+  readonly listedAtTick: number;
+}
+
+/**
+ * A generated one-off request on the job board. Jobs pay guaranteed money
+ * for specific deliverables but never advance the story — that's what the
+ * authored commission sequence is for.
+ */
+export interface JobOffer {
+  readonly id: string;
+  /** Who's asking — generated flavor. */
+  readonly name: string;
+  readonly description: string;
+  readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
+  /** Guaranteed payout. Never decays. */
+  readonly basePay: number;
+  /** Guaranteed reputation gain. Never decays. */
+  readonly baseReputation: number;
+  /** Offers rotate off the board a few days after this (see marketplace.ts). */
+  readonly postedAtTick: number;
+  /**
+   * Fulfillable from scavenged pallet wood alone. The board always keeps at
+   * least one such offer — a broke player's guaranteed path back to solvency.
+   */
+  readonly materialCostFree: boolean;
+}
+
+/** An accepted job: the tip and bonus reputation decay from acceptance. */
+export interface AcceptedJob extends JobOffer {
+  readonly acceptedAtTick: number;
 }
 
 /**

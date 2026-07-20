@@ -83,7 +83,6 @@ export const endGrainShop: GameState = {
   },
   machines: [
     idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
-    idleMachine("salesTable", [3, 2], "none"),
     idleMachine("jobsiteTableSaw", [2, 4], "ripBoard"),
   ],
   storage: {
@@ -100,7 +99,7 @@ export const endGrainShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     shopLayoutUnlocked: true,
-    freeSelling: true,
+    marketplaceUnlocked: true,
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
     tickSpeedControlsUnlocked: true,
@@ -108,4 +107,8 @@ export const endGrainShop: GameState = {
     skillPoints: 2,
     unlockedSkills: STARTER_SKILLS,
   },
+  listings: [],
+  jobBoard: [],
+  acceptedJobs: [],
+  categoryDemand: {},
 };

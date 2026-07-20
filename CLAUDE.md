@@ -47,10 +47,12 @@ The game follows a state-driven architecture with clear separation between game 
 
 1. **State Management**: Uses React Context via `GameStateProvider` (`src/components/useGameState.tsx`)
 2. **Game Loop**: Managed by `Ticker` component for regular game updates
-3. **UI Modes**: Three main screens controlled by `UiModeProvider`:
+3. **UI Modes**: Main screens controlled by `UiModeProvider`:
    - `normal`: Main game view (`HomePage`)
    - `store`: Shopping interface (`StorePage`)
    - `shopLayout`: Machine placement interface (`LayoutPage`)
+   - `marketplace`: Sell listings & job board (`MarketplacePage`)
+   - `skills`: Skill tree (`SkillsPage`)
 
 ### Material and Machine System
 

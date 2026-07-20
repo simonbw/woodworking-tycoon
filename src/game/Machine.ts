@@ -10,7 +10,6 @@ import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { makeshiftBench } from "./machines/makeshiftBench";
 import { miterSaw } from "./machines/miterSaw";
-import { salesTable } from "./machines/salesTable";
 import { workspace } from "./machines/workspace";
 
 export interface MachineType {
@@ -36,7 +35,6 @@ export const MACHINE_TYPES = {
   lunchboxPlaner,
   jointer,
   garbageCan,
-  salesTable,
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;
 
@@ -216,7 +214,9 @@ export class Machine {
    * station whose recipes are all still locked, or "none").
    */
   get selectedOperationOrNull():
-    MachineOperation | ParameterizedOperation | null {
+    | MachineOperation
+    | ParameterizedOperation
+    | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null

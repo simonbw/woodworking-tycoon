@@ -11,6 +11,15 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3002',
     trace: 'on-first-retry',
+    // Escape hatch for environments with a preinstalled browser instead of
+    // the exact build this Playwright version would download.
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? {
+          launchOptions: {
+            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+          },
+        }
+      : {}),
   },
 
   projects: [

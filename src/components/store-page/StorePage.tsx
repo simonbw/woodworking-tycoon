@@ -3,7 +3,6 @@ import { NavBar } from "../NavBar";
 import { useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
 import { StoreMachinesSection } from "./StoreMachinesSection";
-import { StoreSellingSection } from "./StoreSellingSection";
 import { StoreSuppliesSection } from "./StoreSuppliesSection";
 import { StoreToolsSection } from "./StoreToolsSection";
 
@@ -24,9 +23,6 @@ export const StorePage: React.FC = () => {
             <div className="space-y-6 min-h-0 overflow-y-auto">
               <StoreToolsSection />
               <StoreMachinesSection />
-            </div>
-            <div className="min-h-0 overflow-y-auto">
-              <StoreSellingSection />
             </div>
           </div>
         </div>

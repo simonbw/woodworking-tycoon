@@ -370,7 +370,7 @@ describe("quickDryGlue covers the freeform ops", () => {
     tutorialStage: 2,
     storeUnlocked: true,
     shopLayoutUnlocked: true,
-    freeSelling: true,
+    marketplaceUnlocked: true,
     commissionsCompleted: 0,
     tickSpeedControlsUnlocked: false,
     xp: 0,

@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
 import { ShortcutId } from "../game/shortcuts";
+import { TICKS_PER_DAY } from "../game/time";
 import { classNames } from "../utils/classNames";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Tooltip } from "./Tooltip";
@@ -51,27 +52,28 @@ const SpeedButton: React.FC<{
 
 /**
  * Drives the game loop and shows the day + speed controls as a compact
- * strip docked in the top bar on every screen. Time only advances while
- * the player is actually on the shop floor — the store and layout editor
- * still pause the world.
+ * strip docked in the top bar on every screen. Time advances on the shop
+ * floor and the marketplace (listings must be able to sell and the job
+ * board to refresh while you browse) — the store and layout editor still
+ * pause the world.
  */
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const { mode } = useUiMode();
-  const onShopFloor = mode.mode === "normal";
+  const timeRuns = mode.mode === "normal" || mode.mode === "marketplace";
   const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
   const [ticksPerSecond, setTicksPerSecond] = useState<number>(NORMAL);
 
   useEffect(() => {
-    if (!onShopFloor) return;
+    if (!timeRuns) return;
     const interval = setInterval(() => {
       if (ticksPerSecond > 0) {
         applyAction(tickAction);
       }
     }, 1000 / ticksPerSecond);
     return () => clearInterval(interval);
-  }, [ticksPerSecond, onShopFloor]);
+  }, [ticksPerSecond, timeRuns]);
 
   useShortcut("speed-pause", () => setTicksPerSecond(PAUSED), controlsUnlocked);
   useShortcut(
@@ -102,8 +104,8 @@ export const Ticker: React.FC = () => {
     controlsUnlocked,
   );
 
-  const day = Math.floor(gameState.tick / ticksPerDay) + 1;
-  const dayPercent = ((gameState.tick % ticksPerDay) / ticksPerDay) * 100;
+  const day = Math.floor(gameState.tick / TICKS_PER_DAY) + 1;
+  const dayPercent = ((gameState.tick % TICKS_PER_DAY) / TICKS_PER_DAY) * 100;
 
   return (
     <section className="flex items-center gap-3">
@@ -178,5 +180,3 @@ export const Ticker: React.FC = () => {
     </section>
   );
 };
-
-const ticksPerDay = 600;

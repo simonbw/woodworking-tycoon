@@ -4,7 +4,15 @@ Design doc for replacing free selling (the sales table) with a marketplace
 listing system, and adding a second, generated tier of paid work ("jobs")
 alongside the authored commission sequence.
 
-**Status: design.** Nothing here is implemented yet.
+**Status: implemented.** The sale model and listing actions live in
+`src/game/marketplace.ts` and
+`src/game/game-actions/marketplace-actions.ts`, job generation in
+`src/game/job-generation.ts`, and the UI in
+`src/components/marketplace-page/`. Notable deltas from the design below:
+job offers carry a `materialCostFree` flag so the board refresh can enforce
+the income-floor guarantee, raw stock shares one "lumber" demand bucket
+instead of per-type buckets, and the Ticker is mounted on the Marketplace
+tab so the sim keeps running while you browse.
 
 ## Why
 

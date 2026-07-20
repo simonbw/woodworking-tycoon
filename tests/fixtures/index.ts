@@ -1,7 +1,7 @@
 import { GameState } from "../../src/game/GameState";
 import { consumablesShop } from "./consumables-shop";
 import { cuttingBoardShop } from "./cutting-board-shop";
-import { freeSellingShop } from "./free-selling-shop";
+import { marketplaceShop } from "./marketplace-shop";
 import { layoutWithMiterSawInStorage } from "./layout-with-miter-saw-in-storage";
 import { layoutWithPlacedMachines } from "./layout-with-placed-machines";
 import { millingShop } from "./milling-shop";
@@ -11,7 +11,7 @@ import { endGrainShop } from "./end-grain-shop";
 export const TEST_FIXTURES: Record<string, GameState> = {
   "layout-with-miter-saw-in-storage": layoutWithMiterSawInStorage,
   "layout-with-placed-machines": layoutWithPlacedMachines,
-  "free-selling-shop": freeSellingShop,
+  "marketplace-shop": marketplaceShop,
   "cutting-board-shop": cuttingBoardShop,
   "pattern-board-shop": patternBoardShop,
   "end-grain-shop": endGrainShop,

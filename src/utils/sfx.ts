@@ -15,7 +15,11 @@ import { getAudioContext } from "./getAudioContext";
  */
 
 export type UiSoundName =
-  "ui-click" | "ui-hover" | "ui-tab" | "ui-purchase" | "ui-back";
+  | "ui-click"
+  | "ui-hover"
+  | "ui-tab"
+  | "ui-purchase"
+  | "ui-back";
 
 // Per-sound gain. Hover is deliberately subtle so it doesn't fatigue.
 const SOUND_GAIN: Record<UiSoundName, number> = {

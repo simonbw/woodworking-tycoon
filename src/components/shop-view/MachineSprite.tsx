@@ -13,7 +13,6 @@ import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite"
 import { JointerSprite } from "../machine-sprites/JointerSprite";
 import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
 import { MiterSawSprite } from "../machine-sprites/MiterSawSprite";
-import { SalesTableSprite } from "../machine-sprites/SalesTableSprite";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import {
   PIXELS_PER_CELL,
@@ -261,9 +260,6 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
     case MACHINE_TYPES.garbageCan.id:
       return <GarbageCanSprite machine={machine} />;
-
-    case MACHINE_TYPES.salesTable.id:
-      return <SalesTableSprite machine={machine} />;
 
     case MACHINE_TYPES.workspace.id:
       return (

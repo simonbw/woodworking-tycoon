@@ -3,10 +3,10 @@ import { GameState } from "../../src/game/GameState";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
 /**
- * Free selling unlocked, a sales table placed, and the player standing at its
- * operation position with sellable items in inventory.
+ * Marketplace unlocked, with sellable items in the player's inventory —
+ * ready to exercise listing, sale rolls, the job board, and scavenging.
  */
-export const freeSellingShop: GameState = {
+export const marketplaceShop: GameState = {
   tick: 0,
   money: 100,
   reputation: 5,
@@ -14,7 +14,7 @@ export const freeSellingShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 3], // the sales table's operation cell
+    position: [0, 0],
     direction: 0,
     inventory: [
       {
@@ -38,23 +38,7 @@ export const freeSellingShop: GameState = {
     canWork: true,
     away: null,
   },
-  machines: [
-    {
-      machineTypeId: "salesTable",
-      position: [1, 2],
-      rotation: 0,
-      inputMaterials: [],
-      processingMaterials: [],
-      outputMaterials: [],
-      tools: [],
-      selectedOperationId: "none",
-      operationProgress: {
-        status: "notStarted",
-        phaseIndex: 0,
-        ticksRemaining: 0,
-      },
-    },
-  ],
+  machines: [],
   storage: {
     machines: [],
     tools: [],
@@ -69,11 +53,15 @@ export const freeSellingShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     shopLayoutUnlocked: true,
-    freeSelling: true,
+    marketplaceUnlocked: true,
     commissionsCompleted: 2,
     tickSpeedControlsUnlocked: false,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,
   },
+  listings: [],
+  jobBoard: [],
+  acceptedJobs: [],
+  categoryDemand: {},
 };

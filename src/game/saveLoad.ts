@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 9; // Increment this when GameState structure changes
+const SAVE_VERSION = 10; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -33,6 +33,11 @@ export function loadGame(): GameState | null {
 
     const saveData = JSON.parse(serialized) as SaveData;
 
+    if (saveData.version === 9) {
+      saveData.gameState = migrateV9toV10(saveData.gameState);
+      saveData.version = 10;
+    }
+
     // Check version - if it doesn't match, the save is incompatible
     if (!saveData.version || saveData.version !== SAVE_VERSION) {
       console.warn("Save file version mismatch, ignoring old save");
@@ -60,6 +65,51 @@ export function loadGame(): GameState | null {
     deleteSave();
     return null;
   }
+}
+
+/**
+ * v9 → v10: the sales table was replaced by the marketplace. Drop any sales
+ * tables (their items land at the material dropoff as piles), rename the
+ * `freeSelling` flag to `marketplaceUnlocked`, and add the empty marketplace
+ * state. Works on the raw parsed JSON, so the old shape is `any` here.
+ */
+function migrateV9toV10(old: any): GameState {
+  const { freeSelling, ...progression } = old.progression;
+  const salesTables = old.machines.filter(
+    (machine: any) => machine.machineTypeId === "salesTable",
+  );
+  const strandedMaterials = salesTables.flatMap((machine: any) => [
+    ...machine.inputMaterials,
+    ...machine.processingMaterials,
+    ...machine.outputMaterials,
+  ]);
+  return {
+    ...old,
+    machines: old.machines.filter(
+      (machine: any) => machine.machineTypeId !== "salesTable",
+    ),
+    materialPiles: [
+      ...old.materialPiles,
+      ...strandedMaterials.map((material: any) => ({
+        material,
+        position: old.shopInfo.materialDropoffPosition,
+      })),
+    ],
+    storage: {
+      ...old.storage,
+      machines: old.storage.machines.filter(
+        (machineId: string) => machineId !== "salesTable",
+      ),
+    },
+    progression: {
+      ...progression,
+      marketplaceUnlocked: freeSelling ?? false,
+    },
+    listings: [],
+    jobBoard: [],
+    acceptedJobs: [],
+    categoryDemand: {},
+  };
 }
 
 export function hasSavedGame(): boolean {

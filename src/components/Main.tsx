@@ -6,6 +6,7 @@ import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { LayoutPage } from "./LayoutPage";
+import { MarketplacePage } from "./marketplace-page/MarketplacePage";
 import { StartMenu } from "./StartMenu";
 import { StorePage } from "./store-page/StorePage";
 import { SkillsPage } from "./skills-page/SkillsPage";
@@ -52,7 +53,8 @@ export const Main: React.FC = () => {
 const ScreenSwitcher: React.FC = () => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
-  const { storeUnlocked, shopLayoutUnlocked } = gameState.progression;
+  const { storeUnlocked, shopLayoutUnlocked, marketplaceUnlocked } =
+    gameState.progression;
 
   // Safety check: if user is in a tab that's no longer unlocked, redirect to home
   useEffect(() => {
@@ -60,8 +62,16 @@ const ScreenSwitcher: React.FC = () => {
       setMode({ mode: "normal" });
     } else if (mode.mode === "shopLayout" && !shopLayoutUnlocked) {
       setMode({ mode: "normal" });
+    } else if (mode.mode === "marketplace" && !marketplaceUnlocked) {
+      setMode({ mode: "normal" });
     }
-  }, [mode.mode, storeUnlocked, shopLayoutUnlocked, setMode]);
+  }, [
+    mode.mode,
+    storeUnlocked,
+    shopLayoutUnlocked,
+    marketplaceUnlocked,
+    setMode,
+  ]);
 
   switch (mode.mode) {
     case "normal":
@@ -70,6 +80,8 @@ const ScreenSwitcher: React.FC = () => {
       return storeUnlocked ? <StorePage /> : <HomePage />;
     case "shopLayout":
       return shopLayoutUnlocked ? <LayoutPage /> : <HomePage />;
+    case "marketplace":
+      return marketplaceUnlocked ? <MarketplacePage /> : <HomePage />;
     case "skills":
       return <SkillsPage />;
   }

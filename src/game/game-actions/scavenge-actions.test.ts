@@ -17,7 +17,7 @@ function fakeRng(values: number[]): () => number {
 function stateWithFreeSelling(): GameState {
   return {
     ...initialGameState,
-    progression: { ...initialGameState.progression, freeSelling: true },
+    progression: { ...initialGameState.progression, marketplaceUnlocked: true },
   };
 }
 

@@ -8,17 +8,6 @@ declare global {
   }
 }
 
-/** Teleport the player so we don't depend on movement UI for machine hops. */
-async function movePlayerTo(page: any, position: [number, number]) {
-  await page.evaluate((pos: [number, number]) => {
-    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-      ...state,
-      player: { ...state.player, position: pos },
-    }));
-  }, position);
-  await page.waitForTimeout(300);
-}
-
 /** The workspace's spec-sheet card. */
 function workspaceCard(page: any) {
   return page.locator("section", { hasText: "Workspace" });
@@ -203,11 +192,20 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       const moneyBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      await movePlayerTo(page, [3, 3]);
+      await page.getByText("Marketplace", { exact: true }).click();
+      await page.waitForTimeout(300);
       await page
         .locator("li", { hasText: "Simple Cutting Board" })
-        .getByRole("button", { name: "→ Sales Table" })
+        .getByRole("button", { name: "List" })
         .click();
+      // Fair-value listings are guaranteed by the pity timer — jump past it
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) =>
+          state.listings.length === 0
+            ? state
+            : { ...state, tick: state.listings[0].listedAtTick + 2 * 600 },
+        );
+      });
       // simpleCuttingBoard base 40 x maple multiplier 3 = $120
       await page.waitForFunction(
         (before: number) =>
