@@ -87,4 +87,5 @@ export const cuttingBoardShop: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
 };

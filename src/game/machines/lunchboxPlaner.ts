@@ -21,6 +21,7 @@ export const lunchboxPlaner: MachineType = {
       requiredSkill: "basicMilling",
       name: "Plane Board",
       duration: 15,
+      dustOutput: 2,
       parameters: [
         {
           id: "targetThickness",
@@ -74,6 +75,7 @@ export const lunchboxPlaner: MachineType = {
       requiredSkill: "basicMilling",
       name: "Plane Panel",
       duration: 15,
+      dustOutput: 2,
       parameters: [
         {
           id: "targetThickness",

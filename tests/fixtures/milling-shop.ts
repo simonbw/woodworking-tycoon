@@ -105,4 +105,5 @@ export const millingShop: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
 };

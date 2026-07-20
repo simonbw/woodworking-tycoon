@@ -32,6 +32,7 @@ export const jointer: MachineType = {
       requiredSkill: "basicMilling",
       name: "Joint Face",
       duration: 10,
+      dustOutput: 1.2,
       inputMaterials: [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
@@ -50,6 +51,7 @@ export const jointer: MachineType = {
       requiredSkill: "basicMilling",
       name: "Joint Edge",
       duration: 8,
+      dustOutput: 0.8,
       inputMaterials: [
         {
           type: ["board"],

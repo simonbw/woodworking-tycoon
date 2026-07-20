@@ -107,13 +107,15 @@ machines cost proportionally less.
   scattered piles → drifts), tinted by the tile's species mix via
   `colorBySpecies`. Layered between the floor tiles and machines in
   `ShopView`.
-- **Fast-follow (tier 2)**: particles settle (speed threshold) instead of
-  fading, then bake into a shop-sized `RenderTexture` so the chip you
-  watched fly *is* the smudge it left — constant render cost regardless
-  of filth. Cleaning erases the region;
-  on load the texture is rebuilt from the dust map with a seeded RNG
-  keyed on cell coords so saves look stable. Particles stay purely
-  cosmetic: state is authoritative, landings are the delivery animation.
+- **Floor bake — already built** (`DustLayer` + `dustStampBus`,
+  `src/components/shop-view/`): settling chips come to rest and bake
+  into a shop-sized `RenderTexture` where they stopped — the chip you
+  watched fly *is* the smudge it left, at constant render cost
+  regardless of filth. On load the texture is rebuilt from
+  `GameState.dust` with a seeded RNG keyed on cell coords, so saves
+  look stable and keep their species colors. Particles stay purely
+  cosmetic: state is authoritative, landings are the delivery
+  animation. Cleaning will erase regions of the same texture.
 
 ## Disclosure & tutorial
 
@@ -130,6 +132,12 @@ is hidden from the store until the message has fired.
 **v1** = generation + penalties + rendering (particle tier 1 + stamps) +
 broom + shop vac. No capture/mitigation — players live the full chore
 first so the first mitigation purchase lands as relief.
+
+**Built so far**: the state model (`GameState.dust`, save v11), per-tick
+emission in `tickAction` (`dustOutput` on the cutting operations), and
+the full particle → floor-bake render pipeline. Still to come from v1:
+penalties, per-tile stamp buckets for heavy accumulation, broom, vac,
+and the tutorial latch.
 
 Then, in order:
 

@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 10; // Increment this when GameState structure changes
+const SAVE_VERSION = 11; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -36,6 +36,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 9) {
       saveData.gameState = migrateV9toV10(saveData.gameState);
       saveData.version = 10;
+    }
+
+    if (saveData.version === 10) {
+      saveData.gameState = migrateV10toV11(saveData.gameState);
+      saveData.version = 11;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -110,6 +115,11 @@ function migrateV9toV10(old: any): GameState {
     acceptedJobs: [],
     categoryDemand: {},
   };
+}
+
+/** v10 → v11: machines shed sawdust. Existing saves start with a clean floor. */
+function migrateV10toV11(old: any): GameState {
+  return { ...old, dust: {} };
 }
 
 export function hasSavedGame(): boolean {

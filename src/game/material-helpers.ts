@@ -14,6 +14,7 @@ import {
   panelSpecies,
   panelWidth,
   SheetGood,
+  Species,
   UnknownMaterial,
 } from "./Materials";
 
@@ -57,6 +58,32 @@ const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
   "sunriseCuttingBoard",
   "endGrainCuttingBoard",
 ];
+
+/**
+ * The distinct species a material sheds when machined — what color its
+ * sawdust is. Strip-built materials (panels, end-grain slices) report
+ * every species they contain; sheet goods report none (their dust will
+ * get pseudo-species of its own when they matter).
+ */
+export function materialSpecies(
+  material: MaterialInstance,
+): ReadonlyArray<Species> {
+  if ("strips" in material) {
+    return [...new Set(material.strips.map((strip) => strip.species))];
+  }
+  if ("species" in material) {
+    const species: Species[] = [material.species];
+    if (
+      "accentSpecies" in material &&
+      material.accentSpecies !== undefined &&
+      material.accentSpecies !== material.species
+    ) {
+      species.push(material.accentSpecies);
+    }
+    return species;
+  }
+  return [];
+}
 
 export function isFinishedProduct(
   material: MaterialInstance,

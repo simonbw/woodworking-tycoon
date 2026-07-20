@@ -60,4 +60,5 @@ export const layoutWithMiterSawInStorage: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
 };

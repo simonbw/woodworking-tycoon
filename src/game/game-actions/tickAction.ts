@@ -1,10 +1,12 @@
 import { addConsumables, ConsumableAmount } from "../Consumable";
+import { emitMachineDust } from "../Dust";
 import { GameAction } from "../GameState";
+import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
-import { isFinishedProduct } from "../material-helpers";
+import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
 import { Machine } from "../Machine";
 import { getSellValue } from "../material-values";
@@ -69,6 +71,11 @@ export const tickAction: GameAction = (gameState) => {
   const soundEvents: SoundEvent[] = [];
   const toolsGranted: ToolId[] = [];
   const consumablesGranted: ConsumableAmount[] = [];
+  const dustEmissions: Array<{
+    machine: Machine;
+    species: ReadonlyArray<Species>;
+    amount: number;
+  }> = [];
   const updatedMachines = gameState.machines.map((machineState) => {
     if (machineState.operationProgress.status !== "inProgress") {
       return machineState;
@@ -115,6 +122,18 @@ export const tickAction: GameAction = (gameState) => {
     const currentPhase = phases[Math.min(phaseIndex, phases.length - 1)];
     if (currentPhase.attended && !attended) {
       return machineState;
+    }
+
+    // The cut is happening this tick, so the sawdust flies now too —
+    // hands-free phases (glue curing) make no mess.
+    const dustOutput = selectedOperation.dustOutput ?? 0;
+    if (dustOutput > 0 && currentPhase.attended) {
+      const species = [
+        ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
+      ];
+      if (species.length > 0) {
+        dustEmissions.push({ machine, species, amount: dustOutput });
+      }
     }
 
     const newTicksRemaining = ticksRemaining - 1;
@@ -196,6 +215,18 @@ export const tickAction: GameAction = (gameState) => {
     };
   });
 
+  // Reference stays stable on dustless ticks so caches keyed on it hold
+  let dust = gameState.dust;
+  for (const emission of dustEmissions) {
+    dust = emitMachineDust(
+      dust,
+      emission.machine,
+      emission.species,
+      emission.amount,
+      gameState.shopInfo.size,
+    );
+  }
+
   // Only override pendingSounds when there's something to add, so quiet ticks
   // keep the queue's reference stable and don't re-trigger the sound drain.
   const nextState =
@@ -204,12 +235,14 @@ export const tickAction: GameAction = (gameState) => {
           ...gameState,
           machines: updatedMachines,
           tick: gameState.tick + 1,
+          dust,
           pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
         }
       : {
           ...gameState,
           machines: updatedMachines,
           tick: gameState.tick + 1,
+          dust,
         };
 
   const withTools =

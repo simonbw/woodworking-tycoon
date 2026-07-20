@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
+import { cellDust } from "../Dust";
 import { GameState } from "../GameState";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
@@ -330,5 +331,81 @@ describe("tickAction operation phases", () => {
       phaseIndex: 1,
       ticksRemaining: GLUE_CURE_TICKS,
     });
+  });
+});
+
+describe("tickAction dust emission", () => {
+  /** A planer at [1,1] (operation cell [1,2]) mid-way through planing walnut. */
+  function planingStateWith(overrides: Partial<GameState> = {}): GameState {
+    const planer: MachineState = {
+      machineTypeId: "lunchboxPlaner",
+      position: [1, 1],
+      rotation: 0,
+      selectedOperationId: "planeBoard",
+      selectedParameters: { targetThickness: 4 },
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 5,
+      },
+      inputMaterials: [],
+      processingMaterials: [board("walnut", 4, 4, 4)],
+      outputMaterials: [],
+      tools: [],
+    };
+    return stateWith({
+      machines: [planer],
+      player: { ...initialGameState.player, position: [1, 2] },
+      ...overrides,
+    });
+  }
+
+  it("lands species-tagged dust around the machine while it cuts", () => {
+    const result = tickAction(planingStateWith());
+    assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 4);
+    // The planer's dustOutput (2/tick): 70% split over the two core cells
+    // (machine + operation position), 30% over the six ring cells
+    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.7) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [1, 2]) - 0.7) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.1) < 1e-9);
+    assert.ok((result.dust["1,1"].walnut ?? 0) > 0);
+  });
+
+  it("accumulates across ticks", () => {
+    let state = planingStateWith();
+    for (let i = 0; i < 5; i++) {
+      state = tickAction(state);
+    }
+    assert.ok(Math.abs(cellDust(state.dust, [1, 1]) - 3.5) < 1e-9);
+  });
+
+  it("makes no dust while the operation is paused", () => {
+    const result = tickAction(
+      planingStateWith({
+        player: { ...initialGameState.player, position: [0, 0] },
+      }),
+    );
+    assert.deepStrictEqual(result.dust, {});
+    assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
+  });
+
+  it("emits nothing for operations without a dustOutput", () => {
+    const machine = workspaceMachine({
+      processingMaterials: [nearlyDismantledPallet()],
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 3,
+      },
+    });
+    const result = tickAction(attendingStateWith({ machines: [machine] }));
+    assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 2);
+    assert.deepStrictEqual(result.dust, {});
+  });
+
+  it("keeps the dust reference stable on dustless ticks", () => {
+    const before = stateWith({ dust: { "0,0": { pine: 1 } } });
+    const result = tickAction(before);
+    assert.strictEqual(result.dust, before.dust);
   });
 });

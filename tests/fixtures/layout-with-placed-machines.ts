@@ -118,4 +118,5 @@ export const layoutWithPlacedMachines: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
 };

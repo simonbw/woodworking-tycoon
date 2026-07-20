@@ -68,6 +68,11 @@ export interface MachineOperation {
    * starts (no refunds — the glue is already out of the bottle).
    */
   readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
+  /**
+   * Sawdust thrown per attended tick while this runs, landed around the
+   * machine (see Dust.ts). Omitted: no appreciable mess (assembly, glue).
+   */
+  readonly dustOutput?: number;
   readonly inputMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly output: (
     materials: ReadonlyArray<MaterialInstance>,
@@ -131,6 +136,8 @@ export interface ParameterizedOperation<
   readonly requiredSkill?: SkillId;
   /** See MachineOperation.requiredConsumables. */
   readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
+  /** See MachineOperation.dustOutput. */
+  readonly dustOutput?: number;
   readonly parameters: ReadonlyArray<OperationParameter>;
   readonly getInputMaterials: (
     params: TParams,
@@ -223,13 +230,18 @@ export class Machine {
     );
   }
 
+  /** Convert a machine-local cell offset into a shop cell. */
+  localToShop(local: Vector): Vector {
+    return translateVec(rotateVec(local, this.rotation), this.position);
+  }
+
   /** The shop cell the player stands in to work this machine, or null. */
   get absoluteOperationPosition(): Vector | null {
     const local = this.type.operationPosition;
     if (local === undefined) {
       return null;
     }
-    return translateVec(rotateVec(local, this.rotation), this.position);
+    return this.localToShop(local);
   }
 
   // Pass-through properties for convenience

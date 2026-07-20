@@ -91,4 +91,5 @@ export const consumablesShop: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
 };

@@ -64,4 +64,5 @@ export const marketplaceShop: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
 };

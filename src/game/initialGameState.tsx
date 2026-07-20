@@ -65,6 +65,7 @@ export const initialGameState: GameState = {
   jobBoard: [],
   acceptedJobs: [],
   categoryDemand: {},
+  dust: {},
   pendingSounds: [],
 };
 

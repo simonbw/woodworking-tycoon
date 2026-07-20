@@ -1,4 +1,5 @@
 import { ConsumableStock } from "./Consumable";
+import { DustMap } from "./Dust";
 import { MachineState, MachineId } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
@@ -62,6 +63,13 @@ export interface GameState {
    * demand (1) — keys are dropped once fully recovered.
    */
   readonly categoryDemand: Readonly<Record<string, number>>;
+  /**
+   * Sawdust on the shop floor: per-cell (keyed "x,y"), per-species
+   * amounts, dropped when clean. Machines lay it down while they cut;
+   * the render layer draws it and rebuilds the grime from this on load.
+   * See Dust.ts and docs/dust-and-cleaning.md.
+   */
+  readonly dust: DustMap;
   /**
    * Transient queue of sound cues emitted by the action(s) that produced this
    * state, drained by `GameSoundLayer` each render. Optional and never
