@@ -38,7 +38,7 @@ test.describe("Game sound bridge", () => {
 
     const requested: string[] = [];
     page.on("request", (req) => {
-      const m = req.url().match(/\/sounds\/([^/?]+\.mp3)/);
+      const m = req.url().match(/\/sounds\/([^/?]+\.ogg)/);
       if (m) requested.push(m[1]);
     });
 
@@ -53,7 +53,7 @@ test.describe("Game sound bridge", () => {
       });
       await expect
         .poll(() => requested)
-        .toContain("table-saw-rip.mp3");
+        .toContain("table-saw-rip.ogg");
     });
 
     await test.step("the queue is drained after playing", async () => {
@@ -71,7 +71,7 @@ test.describe("Game sound bridge", () => {
         kind: "operation-complete",
         operationId: "orbitSandPanel",
       });
-      await expect.poll(() => requested).toContain("orbital-sander.mp3");
+      await expect.poll(() => requested).toContain("orbital-sander.ogg");
     });
 
     await test.step("an unmapped operation falls back to the generic clip", async () => {
@@ -79,17 +79,17 @@ test.describe("Game sound bridge", () => {
         kind: "operation-complete",
         operationId: "someFutureOperation",
       });
-      await expect.poll(() => requested).toContain("assembly-mallet.mp3");
+      await expect.poll(() => requested).toContain("assembly-mallet.ogg");
     });
 
     await test.step("the commission reward stinger plays", async () => {
       await queueCue(page, { kind: "commission-complete" });
-      await expect.poll(() => requested).toContain("commission-complete.mp3");
+      await expect.poll(() => requested).toContain("commission-complete.ogg");
     });
 
     await test.step("material handling cues play", async () => {
       await queueCue(page, { kind: "material-pickup" });
-      await expect.poll(() => requested).toContain("material-pickup.mp3");
+      await expect.poll(() => requested).toContain("material-pickup.ogg");
     });
 
     await test.step("no console errors from audio", async () => {
