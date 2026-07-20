@@ -42,7 +42,7 @@ export const PalletSprite: React.FC<{
               x={lerp(0, totalWidth, i / (MAX_BOTTOM_DECK - 1))}
               y={totalHeight / 2}
             >
-              <BoardSprite board={deckBoard} tint={tint} />
+              <BoardSprite board={deckBoard} seed={`bottom-${i}`} tint={tint} />
             </pixiContainer>
           ),
       )}
@@ -54,7 +54,7 @@ export const PalletSprite: React.FC<{
           y={lerp(0, totalHeight, i / (MAX_STRINGERS - 1))}
           angle={90}
         >
-          <BoardSprite board={stringerBoard} tint={tint} />
+          <BoardSprite board={stringerBoard} seed={`stringer-${i}`} tint={tint} />
         </pixiContainer>
       ))}
 
@@ -66,7 +66,7 @@ export const PalletSprite: React.FC<{
               x={lerp(0, totalWidth, i / (MAX_TOP_DECK - 1))}
               y={totalHeight / 2}
             >
-              <BoardSprite board={deckBoard} tint={tint} />
+              <BoardSprite board={deckBoard} seed={`top-${i}`} tint={tint} />
             </pixiContainer>
           ),
       )}

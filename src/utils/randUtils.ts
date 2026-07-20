@@ -94,6 +94,27 @@ export function seededShuffle<T>(a: T[], seed: number = getSeed()): T[] {
   return a;
 }
 
+/**
+ * Deterministic [0, 1) generator from a string/number seed (FNV-1a hash
+ * into mulberry32). Use for stable procedural detail (e.g. the wavy
+ * outline of a rough board) that must not shimmer between renders.
+ */
+export function seededRandom(seed: string | number): () => number {
+  const s = String(seed);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export function getSeed(): number {
   const urlSeed = Number(
     new URLSearchParams(window.location.search).get("seed"),

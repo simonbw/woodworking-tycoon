@@ -16,7 +16,14 @@ export const MaterialSprite: React.FC<{
 }> = ({ material, alpha, tint }) => {
   switch (material.type) {
     case "board":
-      return <BoardSprite board={material} alpha={alpha} tint={tint} />;
+      return (
+        <BoardSprite
+          board={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />
+      );
 
     case "pallet":
       return <PalletSprite pallet={material} alpha={alpha} tint={tint} />;
