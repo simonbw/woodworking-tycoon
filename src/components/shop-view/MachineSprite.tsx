@@ -1,6 +1,8 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
+import { animated, useSpring } from "react-spring";
 import { MACHINE_TYPES, Machine } from "../../game/Machine";
+import { MaterialInstance } from "../../game/Materials";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { getOperationPhases } from "../../game/skill-helpers";
 import { colors } from "../../utils/colors";
@@ -103,12 +105,10 @@ export const MachineSprite: React.FC<{
 };
 
 /**
- * Floating status over a working machine: a progress bar (amber while an
- * attended phase needs you at the machine, green while a hands-free phase
- * runs on its own) or a pulsing amber pause marker when an attended phase
- * is waiting for the player to come back.
+ * Live status of a machine's current operation, shared by the floating
+ * badge and the processing-material animation.
  */
-const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
+function useMachineActivity(machine: Machine) {
   const gameState = useGameState();
   const progress = machine.operationProgress;
   const operation = machine.selectedOperationOrNull;
@@ -140,6 +140,19 @@ const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
         .reduce((sum, phase) => sum + phase.duration, 0)
     : 0;
   const fraction = total > 0 ? (total - remaining) / total : 0;
+
+  return { isOperating, needsYou, fraction, relevantPhase };
+}
+
+/**
+ * Floating status over a working machine: a progress bar (amber while an
+ * attended phase needs you at the machine, green while a hands-free phase
+ * runs on its own) or a pulsing amber pause marker when an attended phase
+ * is waiting for the player to come back.
+ */
+const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const { isOperating, needsYou, fraction, relevantPhase } =
+    useMachineActivity(machine);
 
   const draw = useCallback(
     (g: Graphics) => {
@@ -173,8 +186,62 @@ const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
   return <pixiGraphics draw={draw} />;
 };
 
+const AnimatedPixiContainer = animated("pixiContainer");
+
+/**
+ * A material mid-operation, rendered exactly as it sat on the machine but
+ * with a gentle rocking to show it's being worked on. The rocking pauses
+ * while the machine is waiting for the player to come back.
+ */
+const ProcessingMaterialSprite: React.FC<{
+  material: MaterialInstance;
+  angle: number;
+  working: boolean;
+}> = ({ material, angle, working }) => {
+  const { wobble } = useSpring({
+    from: { wobble: -2 },
+    to: { wobble: 2 },
+    loop: { reverse: true },
+    config: { duration: 400 },
+    pause: !working,
+  });
+
+  return (
+    <AnimatedPixiContainer angle={wobble.to((w) => angle + w)}>
+      <MaterialSprite material={material} />
+    </AnimatedPixiContainer>
+  );
+};
+
+const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const { isOperating, needsYou } = useMachineActivity(machine);
+  const working = isOperating && !needsYou;
+
+  return (
+    <>
+      {machine.inputMaterials.map((material, index) => (
+        <pixiContainer angle={index * 10} key={`in-${index}`}>
+          <MaterialSprite material={material} />
+        </pixiContainer>
+      ))}
+      {machine.processingMaterials.map((material, index) => (
+        <ProcessingMaterialSprite
+          material={material}
+          angle={index * 10}
+          working={working}
+          key={`proc-${index}`}
+        />
+      ))}
+      {machine.outputMaterials.map((material, index) => (
+        <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
+          <MaterialSprite material={material} />
+        </pixiContainer>
+      ))}
+    </>
+  );
+};
+
 const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
-  const { inputMaterials, processingMaterials, outputMaterials } = machine;
   const workspaceTexture = useTexture("/images/workspace.png");
   const makeshiftBenchTexture = useTexture("/images/makeshift-bench.png");
 
@@ -203,26 +270,7 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
             anchor={{ x: 0.5, y: 0.5 }}
             alpha={0.3}
           />
-          {inputMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10} key={`in-${index}`}>
-              <MaterialSprite material={material} key={index} />
-            </pixiContainer>
-          ))}
-          {processingMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
-              <MaterialSprite
-                material={material}
-                key={index}
-                alpha={0.6}
-                tint={0xffb366}
-              />
-            </pixiContainer>
-          ))}
-          {outputMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
-              <MaterialSprite material={material} key={index} />
-            </pixiContainer>
-          ))}
+          <MachineMaterials machine={machine} />
         </pixiContainer>
       );
 
@@ -234,26 +282,7 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
             scale={IMAGE_SCALE}
             anchor={{ x: 0.5, y: 0.5 }}
           />
-          {inputMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10} key={`in-${index}`}>
-              <MaterialSprite material={material} key={index} />
-            </pixiContainer>
-          ))}
-          {processingMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
-              <MaterialSprite
-                material={material}
-                key={index}
-                alpha={0.6}
-                tint={0xffb366}
-              />
-            </pixiContainer>
-          ))}
-          {outputMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
-              <MaterialSprite material={material} key={index} />
-            </pixiContainer>
-          ))}
+          <MachineMaterials machine={machine} />
         </pixiContainer>
       );
 
@@ -261,26 +290,7 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       return (
         <pixiContainer>
           <DefaultMachineSprite />
-          {inputMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10} key={`in-${index}`}>
-              <MaterialSprite material={material} key={index} />
-            </pixiContainer>
-          ))}
-          {processingMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10 + 2.5} key={`proc-${index}`}>
-              <MaterialSprite
-                material={material}
-                key={index}
-                alpha={0.6}
-                tint={0xffb366}
-              />
-            </pixiContainer>
-          ))}
-          {outputMaterials.map((material, index) => (
-            <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
-              <MaterialSprite material={material} key={index} />
-            </pixiContainer>
-          ))}
+          <MachineMaterials machine={machine} />
         </pixiContainer>
       );
     }

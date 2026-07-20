@@ -16,7 +16,7 @@ export const FloorListSection: React.FC = () => {
 
   if (!playerCell?.materialPiles.length) {
     return (
-      <div className="lined-sheet text-center">
+      <div className="bg-paper-cream text-ink-black rounded-sm shadow p-3 text-center">
         <p className="italic text-ink-fade">Floor is empty</p>
       </div>
     );
@@ -29,7 +29,7 @@ export const FloorListSection: React.FC = () => {
   ].sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="lined-sheet">
+    <div className="bg-paper-cream text-ink-black rounded-sm shadow px-3 py-1">
       <ul className="divide-y divide-ink-black/15">
         {groupedMaterials.map(([materialName, piles]) => (
           <FloorListItem key={materialName} piles={piles} />
@@ -47,7 +47,8 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
       <MaterialIcon material={piles[0].material} size="small" />
       <span className="grow text-sm">{getMaterialName(piles[0].material)}</span>
       {piles.length > 1 && (
-        <span className="font-mono text-sm text-ink-fade tabular-nums">
+        // Handwritten tally — this sheet is maintained by hand
+        <span className="font-ink text-lg leading-none text-ink-fade">
           ×{piles.length}
         </span>
       )}
@@ -56,7 +57,7 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
         shortcut="pick-up"
       >
         <button
-          className="button-paper text-xs"
+          className="button-paper text-xs whitespace-nowrap"
           onClick={(event) => {
             if (event.shiftKey) {
               applyAction(pickUpMaterialAction(piles));

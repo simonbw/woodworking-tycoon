@@ -1,6 +1,5 @@
 import React from "react";
 import { NavBar } from "../NavBar";
-import { Ticker } from "../Ticker";
 import { useGameState } from "../useGameState";
 import { JobBoardSection } from "./JobBoardSection";
 import { ListingsSection } from "./ListingsSection";
@@ -12,20 +11,21 @@ import { ListingsSection } from "./ListingsSection";
  */
 export const MarketplacePage: React.FC = () => {
   return (
-    <main className="p-8 space-y-6">
+    <main className="h-screen flex flex-col gap-6 p-6 overflow-hidden">
       <NavBar />
 
-      {/* The sim keeps running while you browse — otherwise listings could
-          never sell and the job board would never refresh on this screen */}
-      <Ticker />
-
-      <div className="max-w-5xl rounded-md overflow-hidden shadow-2xl border border-workshop-edge">
+      <div className="max-w-5xl w-full rounded-md overflow-hidden shadow-2xl border border-workshop-edge grow min-h-0 flex flex-col">
         <BrowserChrome />
-        <div className="bg-paper-ivory text-ink-black p-6">
+        <div className="bg-paper-ivory text-ink-black p-6 grow min-h-0 flex flex-col">
           <SiteHeader />
-          <div className="grid grid-cols-2 gap-6 mt-4">
-            <ListingsSection />
-            <JobBoardSection />
+          {/* Each pane scrolls on its own; the page never does */}
+          <div className="grid grid-cols-2 gap-6 mt-4 grow min-h-0">
+            <div className="min-h-0 overflow-y-auto">
+              <ListingsSection />
+            </div>
+            <div className="min-h-0 overflow-y-auto">
+              <JobBoardSection />
+            </div>
           </div>
         </div>
       </div>
@@ -54,7 +54,7 @@ const SiteHeader: React.FC = () => {
   return (
     <header className="flex items-baseline justify-between border-b-4 border-ink-blue pb-2">
       <div className="flex items-baseline gap-3">
-        <span className="font-stencil text-3xl text-ink-blue leading-none">
+        <span className="font-condensed font-bold text-3xl text-ink-blue leading-none tracking-tight">
           SawdustList
         </span>
         <span className="font-condensed uppercase tracking-[0.25em] text-xs text-ink-fade">

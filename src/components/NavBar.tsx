@@ -4,6 +4,7 @@ import { classNames } from "../utils/classNames";
 import { SettingsMenu } from "./SettingsMenu";
 import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
+import { Ticker } from "./Ticker";
 import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useGameState, useQuitToMenu } from "./useGameState";
@@ -76,6 +77,10 @@ export const NavBar: React.FC = () => {
           onClick={() => setMode({ mode: "skills" })}
         />
         <div className="grow" />
+        <div className="self-center mb-1.5 mr-6 flex items-center gap-6">
+          <Ticker />
+          <Balance />
+        </div>
         <Tooltip content="Keyboard shortcuts" shortcut="toggle-help">
           <button
             className="button-ghost mb-1.5 self-center text-lg leading-none font-mono"
@@ -111,6 +116,21 @@ export const NavBar: React.FC = () => {
   );
 };
 
+/** The shop's cash balance, drawn on the bar in the money accent. */
+const Balance: React.FC = () => {
+  const gameState = useGameState();
+  return (
+    <section className="flex items-baseline gap-2">
+      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/60">
+        Balance
+      </span>
+      <div className="font-mono text-lg text-gold tabular-nums leading-none">
+        ${gameState.money.toFixed(2)}
+      </div>
+    </section>
+  );
+};
+
 const FolderTab: React.FC<{
   label: string;
   shortcut: ShortcutId;
@@ -125,7 +145,7 @@ const FolderTab: React.FC<{
         className={classNames(
           "relative px-5 pt-2 pb-1 rounded-t-md font-condensed uppercase tracking-[0.15em] text-sm transition-colors",
           active
-            ? "bg-paper-manila text-ink-black font-bold pb-2 -mb-0.5 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]"
+            ? "bg-paper-manila text-ink-black pb-2 -mb-0.5 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]"
             : "bg-paper-manila/40 text-paper-manila hover:bg-paper-manila/60 hover:text-ink-black mb-0",
         )}
       >

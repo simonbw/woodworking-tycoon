@@ -35,7 +35,7 @@ export const StoreSuppliesSection: React.FC = () => {
       <ul className="space-y-2">
         <li className="product-card flex items-center gap-3">
           <div className="grow">
-            <div className="font-stencil text-base uppercase tracking-wide text-ink-black">
+            <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
               Plywood Sheet
             </div>
             <div className="text-xs text-ink-fade">
@@ -47,7 +47,7 @@ export const StoreSuppliesSection: React.FC = () => {
               ${PLYWOOD_PRICE.toFixed(2)}
             </span>
             <button
-              className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+              className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
               disabled={!canAfford}
               onClick={() =>
                 applyAction(
@@ -87,7 +87,7 @@ const ConsumablePackCard: React.FC<{ consumableId: ConsumableId }> = ({
   return (
     <li className="product-card flex items-center gap-3">
       <div className="grow">
-        <div className="font-stencil text-base uppercase tracking-wide text-ink-black">
+        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
           {type.packName}
         </div>
         <div className="text-xs text-ink-fade">
@@ -105,7 +105,7 @@ const ConsumablePackCard: React.FC<{ consumableId: ConsumableId }> = ({
           ${type.packPrice.toFixed(2)}
         </span>
         <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={!canAfford}
           onClick={() => applyAction(buyConsumablePackAction(consumableId))}
         >

@@ -116,7 +116,7 @@ const LumberSkuCard: React.FC<{
         <MaterialIcon material={material} />
       </div>
       <div className="grow">
-        <div className="font-stencil text-sm uppercase tracking-wide text-ink-black leading-none">
+        <div className="font-condensed font-bold text-sm uppercase tracking-wide text-ink-black leading-none">
           {getMaterialName(material)}
         </div>
         <div className="text-xs text-ink-fade tabular-nums mt-1">
@@ -131,7 +131,7 @@ const LumberSkuCard: React.FC<{
       <div className="flex items-center gap-2">
         <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
         <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-stencil uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={gameState.money < price}
           data-sfx="ui-purchase"
           onClick={() => applyAction(buyMaterialAction(makeBoard(), price))}
