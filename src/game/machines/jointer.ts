@@ -22,6 +22,7 @@ export const jointer: MachineType = {
     [0, -1],
   ],
   operationPosition: [0, 1],
+  outputPosition: [0, -1],
   cost: 600,
   materialStorage: 0,
   toolSlots: 0,

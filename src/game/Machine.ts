@@ -20,6 +20,13 @@ export interface MachineType {
   readonly cellsOccupied: ReadonlyArray<Vector>;
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
   readonly operationPosition?: Vector;
+  /**
+   * Where finished stock lands on feed-through machines (planer, jointer,
+   * table saw): the cell opposite the operation cell. Outputs are collected
+   * standing there, not at the infeed. Omitted for single-point stations
+   * like the miter saw and benches, where outputs stay at the machine.
+   */
+  readonly outputPosition?: Vector;
   readonly cost: number;
   readonly materialStorage: number;
   readonly toolSlots: number;
@@ -242,6 +249,16 @@ export class Machine {
       return null;
     }
     return this.localToShop(local);
+  }
+
+  /** The shop cell where this machine's outputs are collected, or null
+   * when outputs stay at the machine itself. */
+  get absoluteOutputPosition(): Vector | null {
+    const local = this.type.outputPosition;
+    if (local === undefined) {
+      return null;
+    }
+    return translateVec(rotateVec(local, this.rotation), this.position);
   }
 
   // Pass-through properties for convenience

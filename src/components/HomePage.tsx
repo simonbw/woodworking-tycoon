@@ -6,6 +6,7 @@ import { NavBar } from "./NavBar";
 import { ShopManifest } from "./ShopManifest";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
 import { MachinesSection } from "./current-cell-info/MachinesSection";
+import { OutfeedSection } from "./current-cell-info/OutfeedSection";
 import { ShopView } from "./shop-view/ShopView";
 
 export const HomePage: React.FC = () => {
@@ -48,7 +49,8 @@ const HomePageContent: React.FC = () => {
         </div>
         <div className="w-full max-w-96 flex flex-col gap-6 min-h-0">
           <ShopManifest />
-          <div className="mt-auto min-h-0 overflow-y-auto">
+          <div className="mt-auto min-h-0 overflow-y-auto space-y-6">
+            <OutfeedSection />
             <MachinesSection />
           </div>
         </div>

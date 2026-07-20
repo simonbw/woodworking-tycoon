@@ -134,6 +134,9 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
     machine,
     gameState.shopInfo.size,
   );
+  // Feed-through machines deliver finished stock to their outfeed cell;
+  // it's collected there (see OutfeedSection), not from this spec sheet.
+  const outputsCollectedHere = machine.type.outputPosition === undefined;
   const phases = selectedOperation
     ? getOperationPhases(
         selectedOperation,
@@ -347,6 +350,9 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             <span
               key={name}
               onClick={(event) => {
+                if (!outputsCollectedHere) {
+                  return;
+                }
                 if (event.shiftKey) {
                   applyAction(takeOutputsFromMachineAction(materials, machine));
                 } else {
@@ -359,7 +365,11 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
               <MaterialIcon
                 material={materials[0]}
                 quantity={materials.length}
-                tooltip={`Ready: ${name}`}
+                tooltip={
+                  outputsCollectedHere
+                    ? `Ready: ${name}`
+                    : `${name} — waiting at the outfeed side`
+                }
               />
             </span>
           ))}
@@ -421,18 +431,28 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             "Idle"
           )}
         </span>
-        {machine.outputMaterials.length > 0 && (
-          <button
-            className="button-paper text-xs"
-            onClick={() =>
-              applyAction(
-                takeOutputsFromMachineAction(machine.outputMaterials, machine),
-              )
-            }
-          >
-            Take All ({machine.outputMaterials.length})
-          </button>
-        )}
+        {machine.outputMaterials.length > 0 &&
+          (outputsCollectedHere ? (
+            <button
+              className="button-paper text-xs"
+              onClick={() =>
+                applyAction(
+                  takeOutputsFromMachineAction(
+                    machine.outputMaterials,
+                    machine,
+                  ),
+                )
+              }
+            >
+              Take All ({machine.outputMaterials.length})
+            </button>
+          ) : (
+            // Finished stock comes off the far side of a feed-through
+            // machine — walk around to the outfeed cell to collect it.
+            <span className="text-ink-fade">
+              Collect at outfeed ({machine.outputMaterials.length})
+            </span>
+          ))}
       </div>
 
       <Tooltip

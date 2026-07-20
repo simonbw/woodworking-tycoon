@@ -95,7 +95,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         ...(cell?.operableMachines ?? []),
       ].filter((machine) => machine != null);
 
-      for (const machine of candidates) {
+      // Outputs are collected where they land: at this cell for machines
+      // whose outfeed points here, at the machine itself for single-point
+      // stations (no outputPosition).
+      const outputSources = [
+        ...(cell?.outputMachines ?? []),
+        ...candidates.filter(
+          (machine) => machine.type.outputPosition === undefined,
+        ),
+      ];
+      for (const machine of outputSources) {
         if (machine.outputMaterials.length) {
           return applyAction(
             takeOutputsFromMachineAction(
@@ -106,6 +115,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
             ),
           );
         }
+      }
+
+      for (const machine of candidates) {
         if (machine.inputMaterials.length) {
           return applyAction(
             takeInputsFromMachineAction(
@@ -118,10 +130,10 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         }
       }
 
-      if (cell?.materialPiles.length) {
+      if (cell?.grabbablePiles.length) {
         return applyAction(
           pickUpMaterialAction(
-            event.shiftKey ? cell.materialPiles : [cell.materialPiles[0]],
+            event.shiftKey ? cell.grabbablePiles : [cell.grabbablePiles[0]],
           ),
         );
       }
