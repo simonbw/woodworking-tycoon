@@ -26,10 +26,16 @@ async function teleportPlayer(page: any, position: [number, number]) {
   await page.waitForTimeout(200);
 }
 
+/**
+ * Operate the machine and collect the results. Feed-through machines
+ * deliver to their outfeed cell — pass `takeAt` to walk there for the
+ * Take All (single-point stations collect right at the card).
+ */
 async function operateAndWait(
   page: any,
   machineName: string,
   isDoneSource: string,
+  takeAt?: [number, number],
 ) {
   await card(page, machineName)
     .getByRole("button", { name: "Operate" })
@@ -44,6 +50,9 @@ async function operateAndWait(
     isDoneSource,
     { timeout: 30000 },
   );
+  if (takeAt) {
+    await teleportPlayer(page, takeAt);
+  }
   await card(page, machineName)
     .getByRole("button", { name: /Take All/ })
     .click();
@@ -146,6 +155,7 @@ test.describe("End-Grain Boards", () => {
         page,
         "Jobsite Table Saw",
         `(mat) => mat.type === "endGrainSlice"`,
+        [2, 3], // the saw's outfeed cell
       );
       const sliceCount = await page.evaluate(
         () =>
