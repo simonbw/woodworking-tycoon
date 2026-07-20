@@ -20,12 +20,14 @@ export const FeedingBoard: React.FC<{
   toY: number;
   x?: number;
   angle?: number;
-}> = ({ board, fraction, fromY, toY, x = 0, angle = 0 }) => {
+  /** Override how the board is drawn (e.g. on edge against a fence). */
+  children?: React.ReactNode;
+}> = ({ board, fraction, fromY, toY, x = 0, angle = 0, children }) => {
   const springProps = useSpring({ y: lerp(fromY, toY, fraction) });
 
   return (
     <AnimatedPixiContainer x={x} y={springProps.y} angle={angle}>
-      <MaterialSprite material={board} />
+      {children ?? <MaterialSprite material={board} />}
     </AnimatedPixiContainer>
   );
 };

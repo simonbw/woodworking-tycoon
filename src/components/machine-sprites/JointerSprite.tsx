@@ -1,12 +1,21 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { Machine } from "../../game/Machine";
+import { Board } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
-import { PIXELS_PER_CELL, feetToPixels } from "../shop-view/shop-scale";
+import { OnEdgeBoardSprite } from "../material-sprites/OnEdgeBoardSprite";
+import {
+  PIXELS_PER_CELL,
+  PIXELS_PER_INCH,
+  feetToPixels,
+} from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
 import { CutParticles } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
+
+/** Where the fence's working face sits (see the fence rect in draw). */
+const FENCE_INNER_X = PIXELS_PER_CELL * 0.25 - 3;
 
 /**
  * Top-down vector jointer: long infeed/outfeed tables split by the
@@ -17,6 +26,22 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
   const { fraction, isOperating, needsYou } = useMachineActivity(machine);
   const cutting = processingMaterials.filter(isBoard)[0];
+
+  // Edge jointing stands the board on edge against the fence; face
+  // jointing lays it flat on the beds.
+  const edgeMode = machine.state.selectedOperationId === "jointEdge";
+  const boardX = (board: Board, index: number) =>
+    edgeMode
+      ? FENCE_INNER_X -
+        Math.max(3, (board.thickness * PIXELS_PER_INCH) / 4) / 2 -
+        index * 5
+      : index * 4;
+  const boardSprite = (board: Board & { id: string }) =>
+    edgeMode ? (
+      <OnEdgeBoardSprite board={board} seed={board.id} />
+    ) : (
+      <MaterialSprite material={board} />
+    );
 
   const draw = useCallback((g: Graphics) => {
     g.clear();
@@ -50,10 +75,10 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       {inputMaterials.filter(isBoard).map((board, index) => (
         <pixiContainer
           key={`in-${index}`}
-          x={index * 4}
+          x={boardX(board, index)}
           y={feetToPixels(board.length / 2)}
         >
-          <MaterialSprite material={board} />
+          {boardSprite(board)}
         </pixiContainer>
       ))}
       {processingMaterials.filter(isBoard).map((board, index) => (
@@ -62,17 +87,19 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           fraction={fraction}
           fromY={feetToPixels(board.length / 2)}
           toY={-feetToPixels(board.length / 2)}
-          x={index * 4}
+          x={boardX(board, index)}
           key={`proc-${index}`}
-        />
+        >
+          {edgeMode ? boardSprite(board) : undefined}
+        </FeedingBoard>
       ))}
       {outputMaterials.filter(isBoard).map((board, index) => (
         <pixiContainer
           key={`out-${index}`}
-          x={index * 4}
+          x={boardX(board, index)}
           y={-feetToPixels(board.length / 2)}
         >
-          <MaterialSprite material={board} />
+          {boardSprite(board)}
         </pixiContainer>
       ))}
       {cutting && (
