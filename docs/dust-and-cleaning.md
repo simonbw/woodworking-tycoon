@@ -93,20 +93,24 @@ machines cost proportionally less.
 
 ## Rendering
 
-- **Particle layer (ships with v1)**: one component owning an imperative
-  particle pool inside `useTick` — never per-particle React elements.
-  Chips spray from the blade position while
-  `useMachineActivity(machine).isOperating && !needsYou`, scatter with
-  friction (top-down: no gravity, just a per-machine directional bias —
-  the planer hoses its chip port, the table saw plumes behind the blade),
-  and fade. Particle counts are art-directed, not 1:1 with dust units.
+- **Particle layer — already built** (`CutParticles`,
+  `src/components/machine-sprites/CutParticles.tsx`): an imperative
+  particle pool inside `useTick` drawing to one `pixiGraphics` — no
+  per-particle React. Species-colored chips spray while
+  `useMachineActivity(machine).isOperating && !needsYou`; saws throw fast
+  dust flecks, jointer/planer throw tumbling shaving curls, each machine
+  sprite sets its own spray direction. Particle counts are art-directed,
+  not 1:1 with dust units. Note: emitters live inside each machine
+  sprite's rotated local container — tier 2 stamping must convert settle
+  positions to shop space (`toGlobal` at stamp time).
 - **Floor stamps**: per-tile dust drawn in 3–4 visual buckets (film →
   scattered piles → drifts), tinted by the tile's species mix via
   `colorBySpecies`. Layered between the floor tiles and machines in
   `ShopView`.
-- **Fast-follow (tier 2)**: settled particles bake into a shop-sized
-  `RenderTexture` so the chip you watched fly *is* the smudge it left —
-  constant render cost regardless of filth. Cleaning erases the region;
+- **Fast-follow (tier 2)**: particles settle (speed threshold) instead of
+  fading, then bake into a shop-sized `RenderTexture` so the chip you
+  watched fly *is* the smudge it left — constant render cost regardless
+  of filth. Cleaning erases the region;
   on load the texture is rebuilt from the dust map with a seeded RNG
   keyed on cell coords so saves look stable. Particles stay purely
   cosmetic: state is authoritative, landings are the delivery animation.
@@ -156,5 +160,6 @@ before finishing day"), sellable pure-species sawdust.
 | Movement penalty    | move-queue processing in `tickAction`                        |
 | Sweep/vac actions   | `src/game/game-actions/` (new), work-queue like `move`       |
 | Tile surfacing      | `src/game/CellMap.ts` (`CellInfo`)                           |
-| Stamps & particles  | `src/components/shop-view/` (new layers in `ShopView.tsx`)   |
+| Particles (done)    | `src/components/machine-sprites/CutParticles.tsx`           |
+| Floor stamps        | `src/components/shop-view/` (new layer in `ShopView.tsx`)    |
 | Tutorial latch      | `src/game/progression-helpers.ts` (`UNLOCK_CONDITIONS`)      |
