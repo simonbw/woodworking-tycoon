@@ -53,7 +53,9 @@ test.describe("Keyboard shortcuts", () => {
 
     await test.step("letter keys switch tabs", async () => {
       await page.keyboard.press("b");
-      await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Machines" }),
+      ).toBeVisible();
 
       await page.keyboard.press("k");
       await expect(page.getByText(/Craft Level/)).toBeVisible();
@@ -72,8 +74,12 @@ test.describe("Keyboard shortcuts", () => {
       await expect(sheet).toBeVisible();
 
       // Every group from the registry should have rendered.
-      await expect(sheet.getByRole("heading", { name: "Movement" })).toBeVisible();
-      await expect(sheet.getByRole("heading", { name: "Machines" })).toBeVisible();
+      await expect(
+        sheet.getByRole("heading", { name: "Movement" }),
+      ).toBeVisible();
+      await expect(
+        sheet.getByRole("heading", { name: "Machines" }),
+      ).toBeVisible();
 
       // `?` toggles: the sheet claims the modal scope, so this only works
       // because it re-binds the key inside that scope.
@@ -92,7 +98,9 @@ test.describe("Keyboard shortcuts", () => {
       const tab = page.getByRole("button", { name: "Store" });
       await tab.focus();
       await page.keyboard.press("Space");
-      await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Machines" }),
+      ).toBeVisible();
 
       await page.keyboard.press("h");
       await expect(
@@ -114,7 +122,9 @@ test.describe("Keyboard shortcuts", () => {
 
       // Nothing focused, so there's no input to guard — this stays put purely
       // because `modal` outranks `home`.
-      await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur(),
+      );
       await page.keyboard.press("d");
 
       await page.waitForTimeout(500);
@@ -131,23 +141,21 @@ test.describe("Keyboard shortcuts", () => {
     });
 
     await test.step("a focused form control keeps its own keys", async () => {
-      // Stand at the workspace so its Mode dropdown renders. No modal here, so
-      // this exercises the focus guard rather than the modal scope.
+      // The machine panel no longer uses native selects, so plant a text
+      // input to exercise the focus guard (typing must not drive the player).
+      // No modal here, so this hits the guard rather than the modal scope.
       await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((s: any) => ({
-          ...s,
-          player: { ...s.player, position: [1, 3] },
-        }));
+        const input = document.createElement("input");
+        input.id = "focus-guard-probe";
+        document.body.appendChild(input);
+        input.focus();
       });
-      const mode = page.getByRole("combobox").first();
-      await expect(mode).toBeVisible();
 
       await expect
         .poll(async () => (await getState(page)).player.workQueue.length)
         .toBe(0);
       const before = await playerPosition(page);
 
-      await mode.focus();
       await page.keyboard.press("d");
       await page.keyboard.press("ArrowDown");
       await page.waitForTimeout(400);
@@ -155,6 +163,10 @@ test.describe("Keyboard shortcuts", () => {
       const after = await getState(page);
       expect(after.player.workQueue).toEqual([]);
       expect(after.player.position).toEqual(before);
+
+      await page.evaluate(() => {
+        document.getElementById("focus-guard-probe")?.remove();
+      });
     });
 
     await test.step("the keys go quiet while the player is out of the shop", async () => {

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { modesOf, selectMode as selectMachineMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -13,16 +14,11 @@ function workspaceCard(page: any) {
 }
 
 async function workspaceModes(page: any): Promise<string[]> {
-  return workspaceCard(page)
-    .locator("select")
-    .first()
-    .locator("option")
-    .allTextContents();
+  return modesOf(page, "Workspace");
 }
 
 async function selectMode(page: any, label: string) {
-  await workspaceCard(page).locator("select").first().selectOption({ label });
-  await page.waitForTimeout(200);
+  await selectMachineMode(page, "Workspace", label);
 }
 
 async function moveToWorkspace(page: any, rowText: string) {
@@ -35,7 +31,11 @@ async function moveToWorkspace(page: any, rowText: string) {
 }
 
 /** Operate the workspace, wait for an output matching the predicate source, take it. */
-async function operateAndTake(page: any, isDoneSource: string, timeout: number) {
+async function operateAndTake(
+  page: any,
+  isDoneSource: string,
+  timeout: number,
+) {
   await workspaceCard(page).getByRole("button", { name: "Operate" }).click();
   await page.waitForFunction(
     (src: string) => {
@@ -130,11 +130,7 @@ test.describe("Pattern Boards", () => {
       await selectMode(page, "Glue Up Pair");
       await moveToWorkspace(page, `Walnut Board (2'x3"`);
       await moveToWorkspace(page, `Maple Board (2'x1"`);
-      await operateAndTake(
-        page,
-        `(mat) => mat.type === "panel"`,
-        30000,
-      );
+      await operateAndTake(page, `(mat) => mat.type === "panel"`, 30000);
 
       // Extend with the remaining fade: 2" walnut, 2" maple, 1" walnut, 3" maple
       const fade = [
@@ -149,8 +145,8 @@ test.describe("Pattern Boards", () => {
         await moveToWorkspace(page, row);
         const expectedStrips = 3 + i;
         await operateAndTake(
-        page,
-        `(mat) => mat.type === "panel" && mat.strips.length === ${expectedStrips}`,
+          page,
+          `(mat) => mat.type === "panel" && mat.strips.length === ${expectedStrips}`,
           30000,
         );
       }
@@ -165,8 +161,8 @@ test.describe("Pattern Boards", () => {
       for (const surface of ["smooth", "sanded"]) {
         await moveToWorkspace(page, "Mixed Wood Panel");
         await operateAndTake(
-        page,
-        `(mat) => mat.type === "panel" && mat.surface === "${surface}"`,
+          page,
+          `(mat) => mat.type === "panel" && mat.surface === "${surface}"`,
           30000,
         );
       }

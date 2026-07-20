@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { modesOf, selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -13,22 +14,6 @@ const SAW_CELL: [number, number] = [2, 5];
 
 function card(page: any, name: string) {
   return page.locator("section", { hasText: name });
-}
-
-async function modesOf(page: any, name: string): Promise<string[]> {
-  return card(page, name)
-    .locator("select")
-    .first()
-    .locator("option")
-    .allTextContents();
-}
-
-async function selectMode(page: any, machineName: string, label: string) {
-  await card(page, machineName)
-    .locator("select")
-    .first()
-    .selectOption({ label });
-  await page.waitForTimeout(200);
 }
 
 async function teleportPlayer(page: any, position: [number, number]) {
@@ -166,9 +151,8 @@ test.describe("End-Grain Boards", () => {
         () =>
           (window as any)
             .__GET_GAME_STATE__()
-            .player.inventory.filter(
-              (mat: any) => mat.type === "endGrainSlice",
-            ).length,
+            .player.inventory.filter((mat: any) => mat.type === "endGrainSlice")
+            .length,
       );
       expect(sliceCount).toBe(4);
     });

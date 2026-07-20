@@ -1,6 +1,6 @@
 import React from "react";
 import { useCellMap } from "../../game/CellMap";
-import { Machine, ParameterValues } from "../../game/Machine";
+import { Machine } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import {
   operateMachineAction,
@@ -11,6 +11,7 @@ import {
 import {
   machineCanOperate,
   matchMaterialsToSlots,
+  parameterValueSatisfiable,
 } from "../../game/machine-helpers";
 import {
   mountToolAction,
@@ -28,6 +29,7 @@ import {
 } from "../../game/material-helpers";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
 import {
+  defaultParametersFor,
   executeOperation,
   generateOperationPreview,
   getOperationInputMaterials,
@@ -40,7 +42,28 @@ import { useTargetedMachine } from "../TargetedMachineContext";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ProgressButton } from "../ProgressButton";
+import { DetentScale } from "./DetentScale";
 import { MaterialIcon } from "./MaterialIcon";
+import { ModeControl } from "./ModeControl";
+
+/**
+ * Parameter ids follow the "targetLength" pattern; the matching bare
+ * dimension on the loaded stock anchors the scale's "you are here" mark.
+ */
+function loadedStockDimension(
+  machine: Machine,
+  paramId: string,
+): number | undefined {
+  if (!paramId.startsWith("target")) {
+    return undefined;
+  }
+  const key = paramId.slice("target".length);
+  const dimension = key.charAt(0).toLowerCase() + key.slice(1);
+  const stock = machine.inputMaterials[0] as unknown as
+    Record<string, unknown> | undefined;
+  const value = stock?.[dimension];
+  return typeof value === "number" ? value : undefined;
+}
 
 export const MachinesSection: React.FC = () => {
   const gameState = useGameState();
@@ -184,84 +207,60 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
       </header>
 
       <div className="space-y-2 text-sm">
-        <label className="flex flex-row items-center gap-2">
-          <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16">
-            Mode
-          </span>
-          <select
-            className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
-            value={selectedOperation?.id ?? ""}
-            onChange={(event) => {
-              const operation = operations.find(
-                (op) => op.id === event.target.value,
-              )!;
-
-              let parameters: ParameterValues | undefined;
-              if (isParameterizedOperation(operation)) {
-                parameters = {};
-                for (const param of operation.parameters) {
-                  parameters[param.id] = param.values[0];
-                }
-              }
-
-              applyAction(
-                setMachineOperationAction(machine, operation, parameters),
-              );
-            }}
-          >
-            {!selectedOperation && (
-              <option value="" disabled>
-                Select mode…
-              </option>
-            )}
-            {operations.map((operation) => (
-              <option key={operation.id} value={operation.id}>
-                {operation.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ModeControl
+          operations={operations}
+          selected={selectedOperation}
+          onSelect={(operation) =>
+            applyAction(
+              setMachineOperationAction(
+                machine,
+                operation,
+                defaultParametersFor(operation),
+              ),
+            )
+          }
+          progression={gameState.progression}
+          showShortcut={isTargeted(machine)}
+        />
 
         {selectedOperation &&
           isParameterizedOperation(selectedOperation) &&
-          selectedOperation.parameters.map((param) => (
-            <label
+          selectedOperation.parameters.map((param, index) => (
+            <div
               key={param.id}
-              className="flex flex-row items-center gap-2 text-xs"
+              className="flex flex-row items-start gap-2 text-xs"
             >
-              <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16">
+              <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5 pt-2.5">
                 {param.name}
+                {/* Z drives the first parameter of the targeted machine */}
+                {index === 0 && isTargeted(machine) && (
+                  <ShortcutKeys shortcut="cycle-parameter" />
+                )}
               </span>
-              <select
-                className="bg-paper-ivory text-ink-black border border-ink-black/30 px-2 py-0.5 rounded font-condensed grow"
+              <DetentScale
+                param={param}
                 value={
-                  machine.selectedParameters?.[param.id] || param.values[0]
+                  machine.selectedParameters?.[param.id] ?? param.values[0]
                 }
-                onChange={(event) => {
-                  const newParams = {
-                    ...machine.selectedParameters,
-                    [param.id]:
-                      typeof param.values[0] === "number"
-                        ? Number(event.target.value)
-                        : event.target.value,
-                  };
+                onSelect={(value) =>
                   applyAction(
-                    setMachineOperationAction(
-                      machine,
-                      selectedOperation,
-                      newParams,
-                    ),
-                  );
-                }}
-              >
-                {param.values.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                    {typeof value === "number" ? '"' : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+                    setMachineOperationAction(machine, selectedOperation, {
+                      ...machine.selectedParameters,
+                      [param.id]: value,
+                    }),
+                  )
+                }
+                satisfiable={(value) =>
+                  parameterValueSatisfiable(
+                    machine,
+                    selectedOperation,
+                    param.id,
+                    value,
+                  )
+                }
+                stockValue={loadedStockDimension(machine, param.id)}
+              />
+            </div>
           ))}
       </div>
 

@@ -1,6 +1,5 @@
 import React, { useRef } from "react";
 import { CellMap } from "../../game/CellMap";
-import { ParameterValues } from "../../game/Machine";
 import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
@@ -17,9 +16,11 @@ import {
 } from "../../game/game-actions/work-item-actions";
 import { materialMeetsInput } from "../../game/material-helpers";
 import {
+  defaultParametersFor,
   getOperationInputMaterials,
   isParameterizedOperation,
 } from "../../game/operation-helpers";
+import { availableOperations } from "../../game/skill-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -170,31 +171,32 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const machine = targeted.current;
       if (!machine) return;
 
-      const operationIndex = machine.operations.indexOf(
-        machine.selectedOperation,
+      // Cycle only what the spec sheet offers — skill-locked recipes are
+      // hidden there and shouldn't be reachable from the keyboard either.
+      const operations = availableOperations(
+        machine,
+        gameState.current.progression,
       );
-      if (operationIndex === -1) {
-        console.warn("Machine set to an operation it doesn't have");
-        return;
-      }
-      const nextOperation =
-        machine.operations[
-          mod(
-            operationIndex + (event.shiftKey ? -1 : 1),
-            machine.operations.length,
-          )
-        ];
+      if (operations.length === 0) return;
 
-      let parameters: ParameterValues | undefined = undefined;
-      if (isParameterizedOperation(nextOperation)) {
-        parameters = {};
-        for (const param of nextOperation.parameters) {
-          parameters[param.id] = param.values[0];
-        }
-      }
+      // An unset (or no-longer-available) selection cycles in from either
+      // end of the list rather than crashing or skipping an entry.
+      const operationIndex = machine.selectedOperationOrNull
+        ? operations.indexOf(machine.selectedOperationOrNull)
+        : -1;
+      const nextOperation =
+        operationIndex === -1
+          ? operations[event.shiftKey ? operations.length - 1 : 0]
+          : operations[
+              mod(operationIndex + (event.shiftKey ? -1 : 1), operations.length)
+            ];
 
       applyAction(
-        setMachineOperationAction(machine, nextOperation, parameters),
+        setMachineOperationAction(
+          machine,
+          nextOperation,
+          defaultParametersFor(nextOperation),
+        ),
       );
     },
     present,
@@ -208,8 +210,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const machine = targeted.current;
       if (!machine) return;
 
-      const operation = machine.selectedOperation;
-      if (!isParameterizedOperation(operation)) return;
+      const operation = machine.selectedOperationOrNull;
+      if (!operation || !isParameterizedOperation(operation)) return;
 
       const param = operation.parameters[0];
       if (!param || param.values.length < 2) return;

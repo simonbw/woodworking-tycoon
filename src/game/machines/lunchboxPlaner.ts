@@ -26,6 +26,7 @@ export const lunchboxPlaner: MachineType = {
           id: "targetThickness",
           name: "Target Thickness",
           values: BOARD_DIMENSIONS,
+          unit: "/4",
         },
       ],
       getInputMaterials: (params) => {
@@ -78,6 +79,7 @@ export const lunchboxPlaner: MachineType = {
           id: "targetThickness",
           name: "Target Thickness",
           values: BOARD_DIMENSIONS,
+          unit: "/4",
         },
       ],
       getInputMaterials: (params) => {

@@ -1,8 +1,17 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
-import { InputMaterialWithQuantity } from "./Machine";
-import { matchMaterialsToSlots } from "./machine-helpers";
+import {
+  InputMaterialWithQuantity,
+  Machine,
+  MachineId,
+  ParameterizedOperation,
+  ParameterValues,
+} from "./Machine";
+import {
+  matchMaterialsToSlots,
+  parameterValueSatisfiable,
+} from "./machine-helpers";
 import { MaterialInstance } from "./Materials";
 
 describe("matchMaterialsToSlots", () => {
@@ -246,5 +255,84 @@ describe("matchMaterialsToSlots", () => {
     // Slot 1 (stringer): gets the deck board ✗ (shows red/invalid)
     // Slots 2-4 (decks): placeholders
     // The deck board shows as INVALID even though it's a correct material!
+  });
+});
+
+describe("parameterValueSatisfiable", () => {
+  function machineWith(
+    machineTypeId: MachineId,
+    operationId: string,
+    parameters: ParameterValues,
+    inputs: MaterialInstance[],
+  ): { machine: Machine; operation: ParameterizedOperation } {
+    const machine = new Machine({
+      machineTypeId,
+      position: [0, 0],
+      rotation: 0,
+      selectedOperationId: operationId,
+      selectedParameters: parameters,
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: inputs,
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: [],
+    });
+    return {
+      machine,
+      operation: machine.selectedOperation as ParameterizedOperation,
+    };
+  }
+
+  it("treats every value as satisfiable while nothing is loaded", () => {
+    const { machine, operation } = machineWith(
+      "miterSaw",
+      "cutBoard",
+      { targetLength: 4 },
+      [],
+    );
+    for (const value of operation.parameters[0].values) {
+      assert.ok(
+        parameterValueSatisfiable(machine, operation, "targetLength", value),
+      );
+    }
+  });
+
+  it("rules out lengths a loaded board can't be cut to", () => {
+    const { machine, operation } = machineWith(
+      "miterSaw",
+      "cutBoard",
+      { targetLength: 4 },
+      [board("pine", 6, 4, 4)],
+    );
+    // A crosscut only shortens: strictly-below values work, 6' and up don't
+    assert.ok(parameterValueSatisfiable(machine, operation, "targetLength", 4));
+    assert.ok(
+      !parameterValueSatisfiable(machine, operation, "targetLength", 6),
+    );
+    assert.ok(
+      !parameterValueSatisfiable(machine, operation, "targetLength", 8),
+    );
+  });
+
+  it("allows a planer skim pass at the loaded thickness but nothing above", () => {
+    const { machine, operation } = machineWith(
+      "lunchboxPlaner",
+      "planeBoard",
+      { targetThickness: 2 },
+      [board("pine", 6, 4, 4)],
+    );
+    assert.ok(
+      parameterValueSatisfiable(machine, operation, "targetThickness", 2),
+    );
+    assert.ok(
+      parameterValueSatisfiable(machine, operation, "targetThickness", 4),
+    );
+    assert.ok(
+      !parameterValueSatisfiable(machine, operation, "targetThickness", 6),
+    );
   });
 });

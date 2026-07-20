@@ -9,12 +9,18 @@ import {
   MaterialInstance,
   Board,
   Pallet,
+  Panel,
   SheetGood,
   FinishedProduct,
   BoardDimension,
   Species,
 } from "./Materials";
-import { makeMaterial } from "./material-helpers";
+import {
+  describeMaterialRequirement,
+  getMaterialName,
+  makeMaterial,
+} from "./material-helpers";
+import { TOOL_TYPES } from "./Tool";
 
 /**
  * Type guard to check if an operation is parameterized
@@ -23,6 +29,23 @@ export function isParameterizedOperation(
   operation: MachineOperation | ParameterizedOperation,
 ): operation is ParameterizedOperation {
   return "parameters" in operation && "getInputMaterials" in operation;
+}
+
+/**
+ * The parameter values a freshly-selected operation starts with: the first
+ * listed value of each parameter. Undefined for plain operations.
+ */
+export function defaultParametersFor(
+  operation: MachineOperation | ParameterizedOperation,
+): ParameterValues | undefined {
+  if (!isParameterizedOperation(operation)) {
+    return undefined;
+  }
+  const params: ParameterValues = {};
+  for (const param of operation.parameters) {
+    params[param.id] = param.values[0];
+  }
+  return params;
 }
 
 /**
@@ -104,6 +127,25 @@ function generateSingleMockMaterial(
         jointedEdges: (reqAny.jointedEdges?.[0] ?? 2) as Board["jointedEdges"],
       });
       return board;
+    }
+
+    case "panel": {
+      const reqAny = req as any;
+      // Width is derived from the strip list; five 2" strips make a 10"
+      // panel, wide enough for every current panel recipe.
+      const species = (reqAny.species?.[0] || "pine") as Species;
+      const mockPanel: Panel = makeMaterial<Panel>({
+        type: "panel",
+        strips: Array.from({ length: 5 }, () => ({
+          species,
+          width: 2 as BoardDimension,
+        })),
+        length: (reqAny.length?.[0] || 2) as BoardDimension,
+        thickness: (reqAny.thickness?.[0] || 4) as BoardDimension,
+        surface: (reqAny.surface?.[0] || "rough") as Panel["surface"],
+        grain: reqAny.grain?.[0] as Panel["grain"],
+      });
+      return mockPanel;
     }
 
     case "pallet": {
@@ -194,4 +236,49 @@ export function generateOperationPreview(
     mockMaterials,
     expectedOutputs: result.outputs,
   };
+}
+
+/**
+ * One-line ingredient/product summary for a recipe listing ("2× Board →
+ * Panel"), computed from the operation's own requirement and output
+ * functions so the listing can't drift from what the recipe actually does.
+ * Parameterized operations are summarized at their default parameters.
+ * Recipes whose preview can't run from mock materials just list inputs.
+ */
+export function describeOperationIO(
+  operation: MachineOperation | ParameterizedOperation,
+): { inputs: string[]; outputs: string[] } {
+  const params = defaultParametersFor(operation);
+  const requirements = getOperationInputMaterials(operation, params);
+
+  const inputs = requirements.map((req) =>
+    req.quantity > 1
+      ? `${req.quantity}× ${describeMaterialRequirement(req)}`
+      : describeMaterialRequirement(req),
+  );
+
+  let outputs: string[] = [];
+  try {
+    const result = executeOperation(
+      operation,
+      generateMockMaterials(requirements),
+      params,
+    );
+    const names = [
+      ...result.outputs.map((material) => getMaterialName(material)),
+      ...(result.toolOutputs ?? []).map((toolId) => TOOL_TYPES[toolId].name),
+    ];
+    // Collapse repeats: ["Board", "Board"] → ["2× Board"]
+    const counts = new Map<string, number>();
+    for (const name of names) {
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    outputs = [...counts.entries()].map(([name, count]) =>
+      count > 1 ? `${count}× ${name}` : name,
+    );
+  } catch (error) {
+    outputs = [];
+  }
+
+  return { inputs, outputs };
 }

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { modesOf, selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -13,12 +14,7 @@ function workspaceCard(page: any) {
 }
 
 async function workspaceModes(page: any): Promise<string[]> {
-  return page
-    .locator("section", { hasText: "Workspace" })
-    .locator("select")
-    .first()
-    .locator("option")
-    .allTextContents();
+  return modesOf(page, "Workspace");
 }
 
 test.describe("Skill Tree", () => {
@@ -113,11 +109,7 @@ test.describe("Skill Tree", () => {
       expect(modes).toContain("Finish Two-Tone Board");
 
       // Glue the five mixed strips
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Glue Up Panel" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Glue Up Panel");
       for (const rowName of ["Walnut Board", "Maple Board"]) {
         await page
           .locator("li", { hasText: rowName })
@@ -147,11 +139,7 @@ test.describe("Skill Tree", () => {
       ).toBeVisible();
 
       // Two sanding passes
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Sand Panel" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Sand Panel");
       for (const surface of ["smooth", "sanded"]) {
         await page
           .locator("li", { hasText: "Mixed Wood Panel" })
@@ -181,11 +169,7 @@ test.describe("Skill Tree", () => {
       }
 
       // Finish it
-      await workspaceCard(page)
-        .locator("select")
-        .first()
-        .selectOption({ label: "Finish Two-Tone Board" });
-      await page.waitForTimeout(200);
+      await selectMode(page, "Workspace", "Finish Two-Tone Board");
       await page
         .locator("li", { hasText: "Mixed Wood Panel" })
         .getByRole("button", { name: "→ Workspace" })

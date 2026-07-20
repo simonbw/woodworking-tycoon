@@ -1,8 +1,15 @@
 import { ConsumableStock, hasConsumables, NO_CONSUMABLES } from "./Consumable";
-import { InputMaterialWithQuantity, Machine } from "./Machine";
+import {
+  InputMaterialWithQuantity,
+  Machine,
+  ParameterizedOperation,
+} from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { createMockMaterial, materialMeetsInput } from "./material-helpers";
-import { getOperationInputMaterials } from "./operation-helpers";
+import {
+  defaultParametersFor,
+  getOperationInputMaterials,
+} from "./operation-helpers";
 import { Vector, vectorEquals } from "./Vectors";
 
 export interface MaterialSlot {
@@ -126,6 +133,34 @@ export function playerAttendsMachine(
     return true;
   }
   return !playerIsAway && vectorEquals(playerPosition, operationCell);
+}
+
+/**
+ * Whether the machine's loaded inputs could run this operation with
+ * `paramId` set to `value` (other parameters kept as currently selected).
+ * With nothing loaded there's nothing to contradict, so every value counts
+ * as satisfiable — the player may well be dialing in the machine before
+ * fetching stock.
+ */
+export function parameterValueSatisfiable(
+  machine: Machine,
+  operation: ParameterizedOperation,
+  paramId: string,
+  value: number | string,
+): boolean {
+  if (machine.inputMaterials.length === 0) {
+    return true;
+  }
+  const params = {
+    ...defaultParametersFor(operation),
+    ...machine.selectedParameters,
+    [paramId]: value,
+  };
+  const slots = matchMaterialsToSlots(
+    machine.inputMaterials,
+    operation.getInputMaterials(params),
+  );
+  return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
 }
 
 export function machineCanOperate(

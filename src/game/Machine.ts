@@ -112,6 +112,8 @@ export interface OperationParameter<T = number | string> {
   readonly id: string;
   readonly name: string;
   readonly values: ReadonlyArray<T>;
+  /** Suffix appended to numeric values in the UI. Defaults to inches. */
+  readonly unit?: string;
 }
 
 export type ParameterValues = Record<string, number | string>;
@@ -214,9 +216,7 @@ export class Machine {
    * station whose recipes are all still locked, or "none").
    */
   get selectedOperationOrNull():
-    | MachineOperation
-    | ParameterizedOperation
-    | null {
+    MachineOperation | ParameterizedOperation | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null
