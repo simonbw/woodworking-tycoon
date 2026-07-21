@@ -8,6 +8,7 @@ import { FinishedBoxSprite } from "./FinishedBoxSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
 import { PictureFrameSprite } from "./PictureFrameSprite";
+import { PlanterBoxSprite } from "./PlanterBoxSprite";
 import { SawdustPileSprite } from "./SawdustPileSprite";
 
 // Just choose the correct sprite for a material
@@ -45,6 +46,15 @@ export const MaterialSprite: React.FC<{
     case "pictureFrame":
       return (
         <PictureFrameSprite
+          material={material as FinishedProduct}
+          alpha={alpha}
+          tint={tint}
+        />
+      );
+
+    case "planterBox":
+      return (
+        <PlanterBoxSprite
           material={material as FinishedProduct}
           alpha={alpha}
           tint={tint}

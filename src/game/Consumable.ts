@@ -27,6 +27,16 @@ export const CONSUMABLE_TYPES = {
     packSize: 50,
     packPrice: 6,
   },
+  screws: {
+    id: "screws",
+    name: "Screws",
+    description:
+      "Wood screws. Sturdier than nails, and they don't come back as salvage.",
+    unit: "screws",
+    packName: "Box of Screws",
+    packSize: 50,
+    packPrice: 8,
+  },
   mineralOil: {
     id: "mineralOil",
     name: "Mineral Oil",
@@ -51,6 +61,7 @@ export type ConsumableStock = Readonly<Record<ConsumableId, number>>;
 
 export const NO_CONSUMABLES: ConsumableStock = {
   nails: 0,
+  screws: 0,
   mineralOil: 0,
 };
 

@@ -1,8 +1,14 @@
-import type { MachineId, MachineOperation } from "./Machine";
+import type {
+  MachineId,
+  MachineOperation,
+  ParameterizedOperation,
+} from "./Machine";
 import { crosscutSled } from "./tools/crosscutSled";
+import { drill } from "./tools/drill";
 import { dustBag } from "./tools/dustBag";
 import { hammer } from "./tools/hammer";
 import { handPlane } from "./tools/handPlane";
+import { handSaw } from "./tools/handSaw";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
 import { sandingBlock } from "./tools/sandingBlock";
 import { straightLineSled } from "./tools/straightLineSled";
@@ -30,11 +36,13 @@ export interface ToolType {
    * tool slot — right for sanders, wrong for a crosscut sled.
    */
   readonly compatibleMachines?: ReadonlyArray<MachineId>;
-  readonly operations: ReadonlyArray<MachineOperation>;
+  readonly operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
 }
 
 export const TOOL_TYPES = {
   hammer,
+  handSaw,
+  drill,
   sandingBlock,
   randomOrbitSander,
   handPlane,

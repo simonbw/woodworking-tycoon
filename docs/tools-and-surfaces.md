@@ -88,12 +88,20 @@ drum sander.
   ($120, fast). Same operations, different durations.
 - The **hand plane** ($35) is the budget mill: flattens a face or
   straightens an edge at any bench, slowly — the jointer's cheap rival.
+- The **hand saw** ($18) is the budget crosscut: a backsaw and miter box
+  with the miter saw's exact operation (same angle stops, same
+  parameters — it's a `ParameterizedOperation` on a tool) at roughly
+  triple the duration.
+- The **drill** ($70) is the hammer's screw-driving sibling: screwed
+  assembly recipes are drill operations. Its first recipe is the Rustic
+  Planter Box (5 pallet slats crosscut to 2', 8 screws) — screws come only
+  from the store, never salvage (see `docs/consumables.md`).
 
 ### Later
 
-- More tools from the brainstorm doc: hand plane (fine smoothing without
-  thickness loss), chisels (hand-cut joinery), router (edge profiles),
-  drill (hardware).
+- More tools from the brainstorm doc: chisels (hand-cut joinery), router
+  (edge profiles).
+- More screw-assembly recipes on the drill (the furniture arc).
 - **Tool scarcity → logistics**: once you own more tools than slots, you're
   choosing loadouts per station. Then: dedicated stations (a "finishing
   bench" with sanders + finishes), tool storage furniture (wall racks,
@@ -146,7 +154,7 @@ Operation prerequisites and providers:
 | Plane | faces →2, surface→smooth; needs faces ≥ 1 | planer; later router sled/CNC |
 | Joint edge | edges 0→1 | jointer (needs faces ≥ 1 — fence reference); straight-line sled on the table saw (**no prerequisites** — the board rides the sled, not the fence); hand plane |
 | Rip to width | edges →2; needs edges ≥ 1 (never rip a wavy edge against the fence) | table saw |
-| Crosscut | length only, rewrites board ends (see Board ends), no prerequisites | miter saw, crosscut sled |
+| Crosscut | length only, rewrites board ends (see Board ends), no prerequisites | miter saw, crosscut sled, hand saw (slow) |
 
 Pallet boards scavenge as `{ jointedFaces: 1, jointedEdges: 2 }` — they were
 factory-milled once, weathered rough — which keeps the whole early game

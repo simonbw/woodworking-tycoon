@@ -216,6 +216,29 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     },
   },
   {
+    // Screwed assembly: work for the drill. The wood is free pallet
+    // stock, but the screws are bought — so it never anchors the board.
+    // The box's slats are 2' crosscuts, so a saw has to be on hand too.
+    tier: 2,
+    zeroMaterialCost: false,
+    available: (gameState) =>
+      ownsTool(gameState, "drill") &&
+      (ownsMachine(gameState, "miterSaw") || ownsTool(gameState, "handSaw")),
+    generate: (rng) => {
+      const quantity = intBetween(rng, 1, 2);
+      return {
+        description:
+          quantity === 1
+            ? "Wants a pallet-wood planter box for the balcony herbs. Screwed together, please — it'll live outside."
+            : "Wants two matching pallet-wood planter boxes for the front steps.",
+        requiredMaterials: [
+          { type: ["planterBox"], species: ["pallet"], quantity },
+        ],
+        baseReputation: 2,
+      };
+    },
+  },
+  {
     // Hardwood work: requires bought lumber, so it's never the only job.
     tier: 4,
     zeroMaterialCost: false,
