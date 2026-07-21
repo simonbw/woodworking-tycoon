@@ -49,11 +49,9 @@ test.describe("Game sound bridge", () => {
     await test.step("an operation cue fetches that operation's clip", async () => {
       await queueCue(page, {
         kind: "operation-complete",
-        operationId: "ripBoard",
+        operationId: "dismantlePallet",
       });
-      await expect
-        .poll(() => requested)
-        .toContain("table-saw-rip.ogg");
+      await expect.poll(() => requested).toContain("pallet-dismantle.ogg");
     });
 
     await test.step("the queue is drained after playing", async () => {
@@ -64,6 +62,28 @@ test.describe("Game sound bridge", () => {
           ),
         )
         .toBe(0);
+    });
+
+    await test.step("machines with a continuous voice complete silently", async () => {
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "ripBoard",
+      });
+      // Drained means it was mapped (to silence) — then prove a later cue
+      // still plays, so the silent one had its chance to fetch and didn't.
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () => (window as any).__GET_GAME_STATE__().pendingSounds.length,
+          ),
+        )
+        .toBe(0);
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "glueUpPanel",
+      });
+      await expect.poll(() => requested).toContain("glue-clamp.ogg");
+      expect(requested).not.toContain("table-saw-rip.ogg");
     });
 
     await test.step("a tool operation sounds like the tool, not the bench", async () => {

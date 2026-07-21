@@ -24,7 +24,7 @@ const FENCE_INNER_X = PIXELS_PER_CELL * 0.25 - 3;
  */
 export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
-  const { fraction, isOperating, needsYou } = useMachineActivity(machine);
+  const { fraction, working } = useMachineActivity(machine);
   const cutting = processingMaterials.filter(isBoard)[0];
 
   // Edge jointing stands the board on edge against the fence; face
@@ -107,7 +107,7 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           intensity={dustEscapeFraction(machine)}
           kind="shavings"
           species={cutting.species}
-          active={isOperating && !needsYou}
+          active={working}
           // Curls spill off the cutterhead toward the outfeed table
           direction={-Math.PI / 2}
           spread={1.5}

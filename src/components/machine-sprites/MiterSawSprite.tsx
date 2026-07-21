@@ -15,13 +15,12 @@ const AnimatedPixiContainer = animated("pixiContainer");
 
 export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
-  const { isOperating, needsYou, fraction } = useMachineActivity(machine);
+  const { fraction, working, powered } = useMachineActivity(machine);
   const miterSawBaseTexture = useTexture("/images/miter-saw-base.png");
   const miterSawTopTexture = useTexture("/images/miter-saw-top.png");
 
   const inputBoards = inputMaterials.filter(isBoard);
   const processingBoards = machine.processingMaterials.filter(isBoard);
-  const working = isOperating && !needsYou;
   // Mid-cut the stock has moved to processing; it stays clamped in place.
   const stock = inputBoards[0] ?? processingBoards[0];
 
@@ -85,7 +84,7 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         );
       })}
       <pixiGraphics draw={drawKerf} />
-      <Vibrating active={working}>
+      <Vibrating active={powered}>
         <AnimatedPixiContainer
           scale={plunge.p.to((p) => 1 - 0.05 * p)}
           y={plunge.p.to((p) => p * 2.5)}

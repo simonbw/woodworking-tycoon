@@ -4,27 +4,28 @@ import { getAudioContext } from "./getAudioContext";
 import { MachineVoice, PHASE_RANK } from "./machineVoice";
 
 /**
- * A fully synthesized lunchbox planer, no samples (see `docs/sound-design.md`,
- * "Pure-synth experiment"). Three modules, each modeling a physical noise
- * source, all driven by a single `rpm` scalar:
+ * Fully synthesized machine voices, no samples (see `docs/sound-design.md`,
+ * "Pure-synth experiment"). One model, four machines: every powered machine
+ * in the shop is a motor spinning a cutter, so they share three modules —
+ * each a physical noise source, all driven by a single `rpm` scalar:
  *
- *  MOTOR — a ~10k RPM universal motor (≈168 Hz rotation). The low growl is a
- *    sawtooth at rotation frequency through a lowpass; the signature planer
- *    scream is NOT the rotation but the armature slot-pass partial up around
- *    14× rotation (~2.3 kHz) — modeled as two slightly detuned sines whose
- *    beating gives the shimmer real motors have.
+ *  MOTOR — a universal motor at the machine's rotation speed. The low growl
+ *    is a sawtooth at rotation frequency through a lowpass; the signature
+ *    scream is NOT the rotation but the armature slot-pass partial many
+ *    times higher — modeled as two slightly detuned sines (plus an octave
+ *    partial) whose beating gives the shimmer real motors have.
  *
- *  AIR — fan + cutterhead windage: broadband noise through a bandpass whose
+ *  AIR — fan and cutter windage: broadband noise through a bandpass whose
  *    center frequency and level both track rpm (aerodynamic noise rises
  *    steeply with speed, so it also dies fastest on wind-down).
  *
- *  CUT — a 2-knife cutterhead at 168 Hz rotation strikes the board ~336
- *    times a second: far too fast to hear as impacts, it fuses into the
- *    pitched buzz that IS the planer-cut sound. Modeled as noise
- *    amplitude-modulated by a square wave at knife-pass frequency, shaped by
- *    three "wood body" formant resonances plus a broadband bed, with a slow
- *    filtered-noise wander on the whole cut level so the texture breathes
- *    like grain variation instead of holding statically.
+ *  CUT — teeth striking wood, modeled as noise amplitude-modulated by a
+ *    square wave at tooth-pass frequency, shaped by wood-body formant
+ *    resonances plus a broadband bed, with slow filtered-noise wander so
+ *    the texture breathes like grain variation. The tooth-pass rate IS the
+ *    machine's cut character: a 2-knife planer head lands at ~336 Hz — a
+ *    pitched chop-buzz — while a 24-tooth saw blade lands in the kHz,
+ *    reading as a hard ring over hiss.
  *
  * Because every frequency derives from `rpm`, spin-up and wind-down are just
  * ramps on that one scalar (`setTargetAtTime`'s exponential approach is a
@@ -35,71 +36,234 @@ import { MachineVoice, PHASE_RANK } from "./machineVoice";
  * Like the sample player, everything is best-effort: any Web Audio failure
  * silences the voice without throwing.
  */
+export interface MachineSynthParams {
+  /** Overall trim into the room bus. */
+  readonly master: number;
+  /** Cutter rotation at full speed, Hz (RPM / 60). Everything scales off this. */
+  readonly rotationHz: number;
+  /** rpm is 1 at idle; cutting bogs the motor down to this. */
+  readonly cutRpmSag: number;
+  readonly motor: {
+    /** Sawtooth growl at rotation frequency, kept dark by the lowpass. */
+    readonly gain: number;
+    readonly cutGainBoost: number;
+    readonly lowpassHz: number;
+    /** Slot-pass scream: partial number, detune between the sine pair. */
+    readonly whineRatio: number;
+    readonly whineDetune: number;
+    readonly whineGain: number;
+    /** Second slot-pass harmonic, relative to whineGain — adds the edge. */
+    readonly whineOctave: number;
+    /** The scream hardens as motor current rises under load. */
+    readonly whineCutBoost: number;
+  };
+  readonly air: {
+    readonly gain: number;
+    /** A cutter churning chips throws far more air than free spinning. */
+    readonly cutBoost: number;
+    /** Bandpass center at full speed; tracks rpm so the whoosh pitches up. */
+    readonly bandpassHz: number;
+    readonly q: number;
+  };
+  readonly cut: {
+    readonly gain: number;
+    /** Teeth/knives per rotation: sets the tooth-pass (AM) frequency. */
+    readonly knives: number;
+    readonly chopDepth: number;
+    /** Wood-body resonances the chopped noise rings through. */
+    readonly formants: ReadonlyArray<{
+      readonly hz: number;
+      readonly q: number;
+      readonly gain: number;
+    }>;
+    /** Unresonant broadband tearing under the formants. */
+    readonly bedLowpassHz: number;
+    readonly bedGain: number;
+    /**
+     * Grain wander: noise lowpassed to ~wanderHz modulates the cut level.
+     * The scale looks huge because a few-Hz-lowpassed unit noise has tiny
+     * RMS (~0.015); ~18 lands the wobble around ±30%.
+     */
+    readonly wanderHz: number;
+    readonly wanderScale: number;
+  };
+  /** Time constants (s). Wind-down pitch outlasts its noise: coasting. */
+  readonly spinUp: { readonly freqTau: number; readonly gainTau: number };
+  readonly windDown: {
+    readonly freqTau: number;
+    readonly motorGainTau: number;
+    readonly airGainTau: number;
+  };
+  /** Cut gate + load sag speed for running ↔ cutting. */
+  readonly cutTau: {
+    readonly engage: number;
+    readonly release: number;
+    readonly rpm: number;
+  };
+  /** Debounce for downward transitions (attendance flapping). */
+  readonly downwardDebounceMs: number;
+}
 
-/** All tuning in one place — tweak freely, nothing else encodes sound. */
-export const PLANER_SYNTH_PARAMS = {
-  /** Overall trim into the SFX bus. */
+/**
+ * Lunchbox planer: small, light, screamy — its idle is nearly all slot-pass
+ * whine over a thin growl floor. 2-knife head at ~10k RPM puts the chop at
+ * ~336 Hz: the classic planer buzz.
+ */
+export const PLANER_SYNTH_PARAMS: MachineSynthParams = {
   master: 0.35,
-  /** Cutterhead rotation at full speed: ≈10k RPM. Everything scales off this. */
   rotationHz: 168,
-  /** rpm is 1 at idle; cutting bogs the motor down a touch. */
   cutRpmSag: 0.94,
   motor: {
-    /**
-     * Sawtooth growl at rotation frequency, kept dark by this lowpass. A
-     * lunchbox planer is a small, light machine — its idle is nearly all
-     * scream, so the growl sits low and mostly earns its keep under load.
-     */
     gain: 0.08,
     cutGainBoost: 2.4,
     lowpassHz: 1400,
-    /** Slot-pass scream: partial number and detune between the sine pair. */
     whineRatio: 14,
     whineDetune: 1.006,
     whineGain: 0.1,
-    /** Second slot-pass harmonic, relative to whineGain — adds the edge. */
     whineOctave: 0.35,
-    /** The scream hardens as motor current rises under load. */
     whineCutBoost: 1.6,
   },
-  air: {
-    gain: 0.12,
-    /** The knives churning chips throw far more air than free spinning. */
-    cutBoost: 1.5,
-    /** Bandpass center at full speed; tracks rpm so the whoosh pitches up. */
-    bandpassHz: 1500,
-    q: 0.5,
-  },
+  air: { gain: 0.12, cutBoost: 1.5, bandpassHz: 1500, q: 0.5 },
   cut: {
     gain: 1.0,
-    /** AM depth of the knife-pass chop (square wave, 2 knives). */
     knives: 2,
     chopDepth: 0.45,
-    /** Wood-body resonances the chopped noise rings through. */
     formants: [
       { hz: 900, q: 3, gain: 1.0 },
       { hz: 1850, q: 4, gain: 0.6 },
       { hz: 3200, q: 5, gain: 0.45 },
     ],
-    /** Unresonant broadband tearing under the formants. */
     bedLowpassHz: 4500,
     bedGain: 0.5,
-    /**
-     * Grain wander: noise lowpassed to ~5 Hz modulates the cut level. The
-     * scale looks huge because a 5 Hz-lowpassed unit noise has tiny RMS
-     * (~0.015); this lands the wobble around ±30%.
-     */
     wanderHz: 5,
     wanderScale: 18,
   },
-  /** Time constants (s). Wind-down pitch outlasts its noise: coasting. */
   spinUp: { freqTau: 0.22, gainTau: 0.15 },
   windDown: { freqTau: 0.7, motorGainTau: 0.35, airGainTau: 0.2 },
-  /** Cut gate + load sag speed for running ↔ cutting. */
   cutTau: { engage: 0.05, release: 0.15, rpm: 0.25 },
-  /** Debounce for downward transitions (attendance flapping). */
   downwardDebounceMs: 250,
-} as const;
+};
+
+/**
+ * Benchtop jointer: the planer's cousin — 3-knife head a bit slower, but
+ * edge jointing is a light, shallow cut: smoother chop, gentler jump.
+ */
+export const JOINTER_SYNTH_PARAMS: MachineSynthParams = {
+  master: 0.33,
+  rotationHz: 150,
+  cutRpmSag: 0.95,
+  motor: {
+    gain: 0.08,
+    cutGainBoost: 2.0,
+    lowpassHz: 1400,
+    whineRatio: 13,
+    whineDetune: 1.006,
+    whineGain: 0.09,
+    whineOctave: 0.3,
+    whineCutBoost: 1.4,
+  },
+  air: { gain: 0.11, cutBoost: 1.4, bandpassHz: 1400, q: 0.5 },
+  cut: {
+    gain: 0.8,
+    knives: 3,
+    chopDepth: 0.3,
+    formants: [
+      { hz: 1100, q: 3, gain: 0.9 },
+      { hz: 2200, q: 4, gain: 0.5 },
+      { hz: 3600, q: 5, gain: 0.35 },
+    ],
+    bedLowpassHz: 5000,
+    bedGain: 0.45,
+    wanderHz: 5,
+    wanderScale: 18,
+  },
+  spinUp: { freqTau: 0.22, gainTau: 0.15 },
+  windDown: { freqTau: 0.7, motorGainTau: 0.35, airGainTau: 0.2 },
+  cutTau: { engage: 0.05, release: 0.15, rpm: 0.25 },
+  downwardDebounceMs: 250,
+};
+
+/**
+ * Jobsite table saw: direct-drive universal motor at ~5800 RPM swinging a
+ * 24-tooth rip blade — tooth-pass lands at ~2.3 kHz, so the cut is a hard
+ * ring over hiss instead of the planer's chop-buzz. Big blade inertia:
+ * slower spin-up, long coast-down. The loudest thing in the shop, and it
+ * bogs hardest ripping.
+ */
+export const TABLE_SAW_SYNTH_PARAMS: MachineSynthParams = {
+  master: 0.4,
+  rotationHz: 97,
+  cutRpmSag: 0.9,
+  motor: {
+    gain: 0.1,
+    cutGainBoost: 2.6,
+    lowpassHz: 1200,
+    whineRatio: 24,
+    whineDetune: 1.004,
+    whineGain: 0.09,
+    whineOctave: 0.3,
+    whineCutBoost: 1.7,
+  },
+  air: { gain: 0.16, cutBoost: 1.6, bandpassHz: 2000, q: 0.5 },
+  cut: {
+    gain: 1.1,
+    knives: 24,
+    chopDepth: 0.35,
+    formants: [
+      { hz: 1600, q: 3, gain: 0.9 },
+      { hz: 2800, q: 4, gain: 0.7 },
+      { hz: 4800, q: 5, gain: 0.5 },
+    ],
+    bedLowpassHz: 6000,
+    bedGain: 0.6,
+    wanderHz: 5,
+    wanderScale: 18,
+  },
+  spinUp: { freqTau: 0.35, gainTau: 0.2 },
+  windDown: { freqTau: 1.2, motorGainTau: 0.55, airGainTau: 0.3 },
+  cutTau: { engage: 0.05, release: 0.15, rpm: 0.3 },
+  downwardDebounceMs: 250,
+};
+
+/**
+ * Miter saw: a trigger tool — near-instant spin-up, hard bog in the chop,
+ * electric blade brake on release. Fine crosscut blade (60T) pushes the
+ * tooth-pass past 4 kHz: a bright zing.
+ */
+export const MITER_SAW_SYNTH_PARAMS: MachineSynthParams = {
+  master: 0.38,
+  rotationHz: 70,
+  cutRpmSag: 0.88,
+  motor: {
+    gain: 0.07,
+    cutGainBoost: 2.2,
+    lowpassHz: 1100,
+    whineRatio: 30,
+    whineDetune: 1.005,
+    whineGain: 0.09,
+    whineOctave: 0.3,
+    whineCutBoost: 1.6,
+  },
+  air: { gain: 0.13, cutBoost: 1.5, bandpassHz: 2200, q: 0.5 },
+  cut: {
+    gain: 1.0,
+    knives: 60,
+    chopDepth: 0.3,
+    formants: [
+      { hz: 2000, q: 3, gain: 0.9 },
+      { hz: 3500, q: 4, gain: 0.6 },
+      { hz: 5500, q: 5, gain: 0.45 },
+    ],
+    bedLowpassHz: 6500,
+    bedGain: 0.6,
+    wanderHz: 5,
+    wanderScale: 18,
+  },
+  spinUp: { freqTau: 0.06, gainTau: 0.06 },
+  windDown: { freqTau: 0.3, motorGainTau: 0.25, airGainTau: 0.15 },
+  cutTau: { engage: 0.04, release: 0.12, rpm: 0.15 },
+  downwardDebounceMs: 250,
+};
 
 let noiseBuffer: AudioBuffer | null = null;
 
@@ -128,7 +292,9 @@ interface SynthGraph {
   readonly sources: ReadonlyArray<AudioScheduledSourceNode>;
 }
 
-export class PlanerSynthVoice implements MachineVoice {
+export class MachineSynthVoice implements MachineVoice {
+  constructor(private readonly params: MachineSynthParams) {}
+
   private desired: MachineSoundPhase = "off";
   private applied: MachineSoundPhase = "off";
   private pendingTimer: ReturnType<typeof setTimeout> | undefined;
@@ -143,7 +309,7 @@ export class PlanerSynthVoice implements MachineVoice {
     if (PHASE_RANK[phase] < PHASE_RANK[this.applied]) {
       this.pendingTimer = setTimeout(
         () => this.apply(),
-        PLANER_SYNTH_PARAMS.downwardDebounceMs,
+        this.params.downwardDebounceMs,
       );
     } else {
       this.apply();
@@ -195,7 +361,7 @@ export class PlanerSynthVoice implements MachineVoice {
 
   /** Construct the full node graph, all gains at zero, sources running. */
   private build(): SynthGraph {
-    const P = PLANER_SYNTH_PARAMS;
+    const P = this.params;
     const ctx = getAudioContext();
     if (ctx.state === "suspended") {
       void ctx.resume().catch(() => {});
@@ -316,7 +482,7 @@ export class PlanerSynthVoice implements MachineVoice {
 
   /** Ramp the graph from one phase's targets to another's. */
   private transition(from: MachineSoundPhase, to: MachineSoundPhase): void {
-    const P = PLANER_SYNTH_PARAMS;
+    const P = this.params;
     const graph = this.graph!;
     const ctx = getAudioContext();
     if (ctx.state === "suspended") {

@@ -169,30 +169,42 @@ via the existing `SoundEvent` queue.
 
 ### Pure-synth experiment (`src/utils/planerSynth.ts`)
 
-The planer currently uses **no samples at all** — `PlanerSynthVoice` is a
-fully procedural voice behind the same `MachineVoice` interface that
+All four powered machines use **no samples at all** — `MachineSynthVoice` is
+a fully procedural voice behind the same `MachineVoice` interface that
 `LoopingSoundPlayer` implements, so the two approaches are swappable per
-machine in `MACHINE_VOICES` (`MachineSoundLayer.tsx`). Three modules, each a
-physical noise source, all derived from one `rpm` scalar:
+machine in `MACHINE_VOICES` (`MachineSoundLayer.tsx`). One model, one param
+set per machine (`*_SYNTH_PARAMS` in `machineSynth.ts`). Three modules, each
+a physical noise source, all derived from one `rpm` scalar:
 
-- **Motor**: sawtooth growl at cutterhead rotation (~168 Hz ≈ 10k RPM)
-  through a lowpass, plus the signature scream — the armature slot-pass
-  partial at 14× rotation, modeled as two detuned sines that beat.
+- **Motor**: sawtooth growl at cutter rotation through a lowpass, plus the
+  signature scream — the armature slot-pass partial many times higher,
+  modeled as detuned sines (plus an octave partial) that beat.
 - **Air**: bandpassed noise whose center frequency and level track rpm.
-- **Cut**: noise amplitude-modulated by a square wave at knife-pass rate
-  (2 knives × rotation ≈ 336 Hz — too fast to hear as impacts, it fuses
-  into the pitched buzz a planer cut actually is), shaped through three
-  wood-body formant resonances plus a broadband bed, with slow
-  filtered-noise wander so the texture breathes like grain variation.
+- **Cut**: noise amplitude-modulated by a square wave at tooth-pass rate,
+  shaped through wood-body formant resonances plus a broadband bed, with
+  slow filtered-noise wander so the texture breathes like grain variation.
+  The tooth-pass rate IS the cut character: the planer's 2-knife head lands
+  at ~336 Hz (pitched chop-buzz) while the saws' blades land in the kHz
+  (hard ring over hiss).
 
 Because every frequency hangs off `rpm`, spin-up/wind-down are ramps on one
-scalar and cutting sags the whole spectrum ~6% (motor bogging down) — the
-detail that makes it read as one machine under load. All tuning lives in
-`PLANER_SYNTH_PARAMS`. If the recorded samples win, the swap back is one
-line; if the synth wins, the motor/air/load-sag skeleton carries straight
-over to the table saw and jointer — only the cut model changes (a saw's
-tooth-pass rate is in the kHz, so its cut reads as hiss-with-a-snarl rather
-than the planer's chop-buzz).
+scalar and cutting sags the whole spectrum (motor bogging down) — the
+detail that makes it read as one machine under load. Per-machine character
+beyond the spectrum: the table saw spins up slowly and coasts down long
+(blade inertia), the miter saw is a trigger tool with a blade brake, and
+every machine's idle → cutting jump is large because every module boosts
+under load.
+
+### Audio drives the visuals (`machineSoundState.ts`)
+
+The audible phase of each voiced machine is published to a small store
+(`PhaseReportingVoice`, sitting inside the `LeadInOutVoice` wrapper so what
+it publishes is the *sequenced* phase). `useMachineActivity` exposes it as
+`working` (audibly cutting → drives `CutParticles` and material wobble) and
+`powered` (motor on → drives shake/animation), so chips fly exactly while
+the cut is audible instead of during spin-up or wind-out. Machines without
+a voice fall back to the game-state approximation. The floating progress
+badge intentionally stays on game-state progress.
 
 ### One-shot variation (small upgrade to `sfx.ts`)
 

@@ -23,8 +23,12 @@ import { useApplyGameAction, useGameState } from "./useGameState";
  * down — a completion chirp on top of that is double audio.
  */
 const OPERATION_CLIP: Record<string, string | null> = {
-  ripBoard: "table-saw-rip",
-  cutBoard: "miter-cut",
+  ripBoard: null,
+  straightLineRip: null,
+  crosscutPanel: null,
+  cutBoard: null,
+  jointFace: null,
+  jointEdge: null,
   planeBoard: null,
   planePanel: null,
   blockSandBoard: "hand-sanding",
@@ -45,8 +49,6 @@ const FALLBACK_OPERATION_CLIP = "assembly-mallet";
 
 /** Relative level per clip. Frequent cues sit low so they don't fatigue. */
 const CLIP_GAIN: Record<string, number> = {
-  "table-saw-rip": 0.7,
-  "miter-cut": 0.7,
   "hand-sanding": 0.5,
   "orbital-sander": 0.6,
   "pallet-dismantle": 0.7,

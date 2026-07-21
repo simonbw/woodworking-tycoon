@@ -2,11 +2,20 @@ import { machineDustMultiplier } from "../../game/Dust";
 import { Machine } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { getOperationPhases } from "../../game/skill-helpers";
+import { useAudiblePhase } from "../../utils/machineSoundState";
+import { machineHasVoice, machineKey } from "../MachineSoundLayer";
 import { useGameState } from "../useGameState";
 
 /**
  * Live status of a machine's current operation, shared by the floating
  * badge and the machine sprites' processing-material animations.
+ *
+ * `working` and `powered` are the fields to drive visuals from: for machines
+ * with a continuous voice they follow the machine's *audible* phase, so cut
+ * particles and blade animation line up with what the ear hears — the
+ * machine idles through the sound layer's lead-in/lead-out even while the
+ * game already counts the operation as underway. Machines without a voice
+ * fall back to the game-state approximation.
  */
 export function useMachineActivity(machine: Machine) {
   const gameState = useGameState();
@@ -45,5 +54,14 @@ export function useMachineActivity(machine: Machine) {
     : 0;
   const fraction = total > 0 ? (total - remaining) / total : 0;
 
-  return { isOperating, needsYou, fraction, relevantPhase };
+  const audiblePhase = useAudiblePhase(machineKey(machine.state));
+  const hasVoice = machineHasVoice(machine.state.machineTypeId);
+  /** The machine is audibly biting wood — drive cut particles from this. */
+  const working = hasVoice
+    ? audiblePhase === "cutting"
+    : isOperating && !needsYou;
+  /** The motor is audibly on (incl. spin-up idle) — drive animation/shake. */
+  const powered = hasVoice ? audiblePhase !== "off" : working;
+
+  return { isOperating, needsYou, fraction, relevantPhase, working, powered };
 }

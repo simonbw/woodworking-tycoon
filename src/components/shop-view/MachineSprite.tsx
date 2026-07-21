@@ -175,8 +175,7 @@ const ProcessingMaterialSprite: React.FC<{
 };
 
 const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
-  const { isOperating, needsYou } = useMachineActivity(machine);
-  const working = isOperating && !needsYou;
+  const { working } = useMachineActivity(machine);
 
   return (
     <>

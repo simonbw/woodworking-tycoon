@@ -18,7 +18,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
-  const { fraction, isOperating, needsYou } = useMachineActivity(machine);
+  const { fraction, working } = useMachineActivity(machine);
   const cutting = processingMaterials.filter(isBoard)[0];
   const planerBottomTexture = useTexture("/images/lunchbox-planer-bottom.png");
   const planerTopTexture = useTexture("/images/lunchbox-planer-top.png");
@@ -97,7 +97,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
           intensity={dustEscapeFraction(machine)}
           kind="shavings"
           species={cutting.species}
-          active={isOperating && !needsYou}
+          active={working}
           // A lunchbox planer is a snow machine out the outfeed side;
           // wide spread so the curls scatter off the exiting board
           y={-26}

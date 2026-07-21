@@ -1,8 +1,16 @@
 import React, { useEffect, useRef } from "react";
 import { getMachines, MachineId, MachineState } from "../game/Machine";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
-import { LeadInOutVoice, MachineVoice } from "../utils/machineVoice";
-import { PlanerSynthVoice } from "../utils/planerSynth";
+import { PhaseReportingVoice } from "../utils/machineSoundState";
+import {
+  JOINTER_SYNTH_PARAMS,
+  MachineSynthParams,
+  MachineSynthVoice,
+  MITER_SAW_SYNTH_PARAMS,
+  PLANER_SYNTH_PARAMS,
+  TABLE_SAW_SYNTH_PARAMS,
+} from "../utils/machineSynth";
+import { LeadInOutVoice, LeadTimes, MachineVoice } from "../utils/machineVoice";
 import { useGameState } from "./useGameState";
 
 /**
@@ -18,29 +26,59 @@ import { useGameState } from "./useGameState";
 
 /**
  * Machines with a continuous voice. Machines not listed here (benches, the
- * miter saw — whose whole cycle is one short one-shot) keep the existing
- * one-shot path; both systems coexist.
+ * garbage can) keep the one-shot path; both systems coexist. Every powered
+ * machine uses the shared synth with its own params; a sample-based machine
+ * would register a `LoopingSoundPlayer` inside the same wrappers.
  *
- * The planer pilots the pure-synth direction; a sample-based machine would
- * register `() => new LoopingSoundPlayer({ start: ..., runLoop: ..., ... })`
- * here instead (the placeholder planer-*.ogg clips are still in
- * static/sounds/ for that path).
+ * Wrapper order matters: LeadInOut sequences the phases, PhaseReporting
+ * publishes the *sequenced* result to `machineSoundState` (which the
+ * sprites' particles and animation read), and the synth renders it.
+ *
+ * Leads: how long the machine runs idle before the wood engages / after it
+ * clears. The saws spin big blades (longer wind-up feels right); the miter
+ * saw is a trigger tool — grab, squeeze, cut.
  */
-const MACHINE_VOICES: Partial<Record<MachineId, () => MachineVoice>> = {
-  // Lead-in: the spin-up (~0.9s to full pitch) gets heard before the wood
-  // bites. Lead-out: the motor audibly unloads before switching off.
-  lunchboxPlaner: () =>
-    new LeadInOutVoice(new PlanerSynthVoice(), {
-      leadInMs: 1100,
-      leadOutMs: 800,
-    }),
+function synthVoice(params: MachineSynthParams, leads: LeadTimes) {
+  return (key: string) =>
+    new LeadInOutVoice(
+      new PhaseReportingVoice(key, new MachineSynthVoice(params)),
+      leads,
+    );
+}
+
+const MACHINE_VOICES: Partial<
+  Record<MachineId, (key: string) => MachineVoice>
+> = {
+  lunchboxPlaner: synthVoice(PLANER_SYNTH_PARAMS, {
+    leadInMs: 1100,
+    leadOutMs: 800,
+  }),
+  jointer: synthVoice(JOINTER_SYNTH_PARAMS, {
+    leadInMs: 900,
+    leadOutMs: 600,
+  }),
+  jobsiteTableSaw: synthVoice(TABLE_SAW_SYNTH_PARAMS, {
+    leadInMs: 1400,
+    leadOutMs: 1000,
+  }),
+  miterSaw: synthVoice(MITER_SAW_SYNTH_PARAMS, {
+    leadInMs: 250,
+    leadOutMs: 200,
+  }),
 };
+
+/** Whether this machine type's visuals should follow the audible phase. */
+export function machineHasVoice(machineTypeId: MachineId): boolean {
+  return MACHINE_VOICES[machineTypeId] !== undefined;
+}
 
 /**
  * Machines have no id; position is their identity (moving one in the layout
  * editor is a remove + re-add, which correctly retires the old player).
+ * Shared with `useMachineActivity`, which reads the audible phase published
+ * under the same key.
  */
-function machineKey(state: MachineState): string {
+export function machineKey(state: MachineState): string {
   return `${state.machineTypeId}@${state.position[0]},${state.position[1]}`;
 }
 
@@ -58,7 +96,7 @@ export const MachineSoundLayer: React.FC = () => {
       seen.add(key);
       let player = players.get(key);
       if (!player) {
-        player = makeVoice();
+        player = makeVoice(key);
         players.set(key, player);
       }
       player.setPhase(

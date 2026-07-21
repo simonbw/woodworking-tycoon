@@ -23,7 +23,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
-  const { fraction, isOperating, needsYou } = useMachineActivity(machine);
+  const { fraction, working } = useMachineActivity(machine);
   const cutting = processingMaterials.filter(isBoard)[0];
   const tableSawTableTexture = useTexture(
     "/images/jobsite-table-saw-table.png",
@@ -122,7 +122,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
           intensity={dustEscapeFraction(machine)}
           kind="dust"
           species={cutting.species}
-          active={isOperating && !needsYou}
+          active={working}
           // The blade kicks dust back toward the infeed side
           direction={Math.PI / 2}
         />
