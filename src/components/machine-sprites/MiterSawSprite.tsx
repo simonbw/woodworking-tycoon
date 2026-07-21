@@ -38,6 +38,16 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   // The head sinks through the chop and lifts once the cut releases
   const plunge = useSpring({ p: processingBoards.length > 0 ? fraction : 0 });
 
+  // The head swings to the set detent about the fence pivot — the shop
+  // reads "the saw's still set to 45" at a glance. Cutting the right end
+  // mirrors the swing, so both settings are visible on the machine.
+  const angleSetting = Number(machine.selectedParameters?.angle) || 0;
+  const swingSign = machine.selectedParameters?.cutEnd === "right" ? -1 : 1;
+  const headSwing = useSpring({ a: angleSetting * swingSign });
+  // A miter saw's head pivots where the blade meets the fence, behind the
+  // board (the stock's back edge sits 3" behind the machine's center line)
+  const pivotY = inchesToPixels(-3);
+
   const cutting = processingBoards[0];
   const kerfY = cutting ? inchesToPixels(cutting.width / 2 - 3) : 0;
   const kerfHalf = cutting ? inchesToPixels(cutting.width / 2) : 0;
@@ -83,27 +93,35 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           </pixiContainer>
         );
       })}
-      <pixiGraphics draw={drawKerf} />
-      <Vibrating active={powered}>
-        <AnimatedPixiContainer
-          scale={plunge.p.to((p) => 1 - 0.05 * p)}
-          y={plunge.p.to((p) => p * 2.5)}
-        >
-          <pixiSprite
-            texture={miterSawTopTexture}
-            scale={IMAGE_SCALE}
-            anchor={{ x: 0.5, y: 0.5 }}
-          />
-        </AnimatedPixiContainer>
-      </Vibrating>
+      {/* Kerf and head swing together about the fence pivot, so the cut
+          line on the board always lies under the blade */}
+      <AnimatedPixiContainer y={pivotY} angle={headSwing.a}>
+        <pixiContainer y={-pivotY}>
+          <pixiGraphics draw={drawKerf} />
+          <Vibrating active={powered}>
+            <AnimatedPixiContainer
+              scale={plunge.p.to((p) => 1 - 0.05 * p)}
+              y={plunge.p.to((p) => p * 2.5)}
+            >
+              <pixiSprite
+                texture={miterSawTopTexture}
+                scale={IMAGE_SCALE}
+                anchor={{ x: 0.5, y: 0.5 }}
+              />
+            </AnimatedPixiContainer>
+          </Vibrating>
+        </pixiContainer>
+      </AnimatedPixiContainer>
       {cutting && (
         <CutParticles
           intensity={cutSprayIntensity(machine)}
           kind="dust"
           species={cutting.species}
           active={working}
-          // The blade throws dust back behind the fence
-          direction={-Math.PI / 2}
+          // The blade throws dust back behind the fence, tilted with the head
+          direction={
+            -Math.PI / 2 + (angleSetting * swingSign * Math.PI) / 180
+          }
           spread={0.9}
         />
       )}
