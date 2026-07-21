@@ -348,7 +348,7 @@ describe("tickAction dust emission", () => {
       machineTypeId: "lunchboxPlaner",
       position: [1, 1],
       rotation: 0,
-      selectedOperationId: "planeBoard",
+      selectedOperationId: "plane",
       selectedParameters: { targetThickness: 4 },
       operationProgress: {
         status: "inProgress",

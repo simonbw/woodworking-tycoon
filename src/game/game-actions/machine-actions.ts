@@ -16,6 +16,7 @@ import {
   vectorEquals,
 } from "../Vectors";
 import { CellMap } from "../CellMap";
+import { defaultParametersFor } from "../operation-helpers";
 import { carryingShopVac } from "../ShopVac";
 import { emitSound } from "./sound-actions";
 
@@ -165,7 +166,12 @@ export function freshMachineState(
     position: [0, 0],
     rotation: 0,
     selectedOperationId: unlockedOps.length > 0 ? unlockedOps[0].id : "none",
-    selectedParameters: undefined,
+    // Parameterized defaults up front: an operation started without the
+    // player ever touching the scale must still complete cleanly.
+    selectedParameters:
+      unlockedOps.length > 0
+        ? defaultParametersFor(unlockedOps[0])
+        : undefined,
     operationProgress: {
       status: "notStarted",
       phaseIndex: 0,

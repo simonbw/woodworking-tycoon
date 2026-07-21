@@ -48,10 +48,14 @@ const InventoryListItem: React.FC<{
 
   const cellMap = useCellMap();
   const playerCell = cellMap.at(gameState.player.position);
-  // No loading machines while the player is out of the shop
+  // No loading machines while the player is out of the shop. Direct-feed
+  // machines have no input bay to load — stock goes in via their Feed
+  // control, straight from the hands.
   const operableMachines = gameState.player.away
     ? undefined
-    : playerCell?.operableMachines;
+    : playerCell?.operableMachines.filter(
+        (machine) => !machine.type.directFeed,
+      );
 
   return (
     <li className="flex items-center gap-2 py-1.5">

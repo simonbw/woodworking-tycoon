@@ -14,8 +14,8 @@ const glueUp = workspace.operations.find(
 const finish = workspace.operations.find(
   (op) => op.id === "finishCuttingBoard",
 ) as MachineOperation;
-const planePanel = lunchboxPlaner.operations.find(
-  (op) => op.id === "planePanel",
+const plane = lunchboxPlaner.operations.find(
+  (op) => op.id === "plane",
 ) as ParameterizedOperation;
 
 describe("glueUpPanel", () => {
@@ -158,10 +158,10 @@ describe("finishCuttingBoard", () => {
   });
 });
 
-describe("planePanel", () => {
+describe("planing panels", () => {
   it("thins the panel, smooths it, and preserves its strips", () => {
     const blank = uniformPanel("maple", 5, 2, 2, 4, "rough");
-    const { outputs } = planePanel.output([blank], { targetThickness: 3 });
+    const { outputs } = plane.output([blank], { targetThickness: 3 });
     const result = outputs[0];
     assert.ok(isPanel(result));
     assert.strictEqual(result.thickness, 3);
@@ -169,8 +169,8 @@ describe("planePanel", () => {
     assert.deepStrictEqual(result.strips, blank.strips);
   });
 
-  it("accepts panels at or above the target thickness, never below", () => {
-    const requirement = planePanel.getInputMaterials({ targetThickness: 3 })[0];
+  it("accepts panels at the cut height or one detent above, nothing else", () => {
+    const requirement = plane.getInputMaterials({ targetThickness: 3 })[0];
     assert.ok(
       materialMeetsInput(uniformPanel("maple", 5, 2, 2, 4), requirement),
     );
@@ -180,6 +180,10 @@ describe("planePanel", () => {
     );
     assert.ok(
       !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 2), requirement),
+    );
+    // Two detents above needs a pass at a higher setting first
+    assert.ok(
+      !materialMeetsInput(uniformPanel("maple", 5, 2, 2, 5), requirement),
     );
   });
 });

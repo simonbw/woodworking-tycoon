@@ -88,7 +88,7 @@ describe("mountToolAction", () => {
       machineTypeId: "lunchboxPlaner",
       position: [1, 4],
       rotation: 0,
-      selectedOperationId: "planeBoard",
+      selectedOperationId: "plane",
       operationProgress: {
         status: "notStarted",
         phaseIndex: 0,

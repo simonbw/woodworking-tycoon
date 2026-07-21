@@ -37,7 +37,7 @@ function planerMachine(
   poweredOn = true,
 ): Machine {
   return new Machine({
-    ...machineWith("lunchboxPlaner", "planeBoard", operationProgress, poweredOn)
+    ...machineWith("lunchboxPlaner", "plane", operationProgress, poweredOn)
       .state,
     selectedParameters: { targetThickness: 4 },
   });

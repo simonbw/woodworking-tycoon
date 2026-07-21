@@ -56,6 +56,14 @@ export interface MachineType {
    * miter saw and unpowered benches don't.
    */
   readonly powerSwitch?: boolean;
+  /**
+   * Stock feeds straight from the player's hands into the running machine —
+   * there is no staged input bay (`inputSpaces` should be 0) and no mode to
+   * pick. Operating a direct-feed machine consumes the first carried
+   * material its operation accepts. The planer works this way; a real one
+   * has no "load" step separate from feeding the board in.
+   */
+  readonly directFeed?: boolean;
   /** A small machine that can sit on a worktable instead of the floor. */
   readonly benchtop?: boolean;
   /** A work surface benchtop machines can be mounted onto. */

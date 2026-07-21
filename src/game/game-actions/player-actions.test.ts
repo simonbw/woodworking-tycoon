@@ -127,3 +127,78 @@ describe("machine power switch", () => {
     assert.strictEqual(result.machines[0].processingMaterials.length, 1);
   });
 });
+
+/** A powered planer set to a 4/4 cut height, with nothing staged. */
+function planer(overrides: Partial<MachineState> = {}): MachineState {
+  return {
+    machineTypeId: "lunchboxPlaner",
+    position: [1, 1],
+    rotation: 0,
+    selectedOperationId: "plane",
+    selectedParameters: { targetThickness: 4 },
+    operationProgress: {
+      status: "notStarted",
+      phaseIndex: 0,
+      ticksRemaining: 0,
+    },
+    inputMaterials: [],
+    processingMaterials: [],
+    outputMaterials: [],
+    tools: [],
+    poweredOn: true,
+    ...overrides,
+  };
+}
+
+function carrying(
+  machine: MachineState,
+  inventory: GameState["player"]["inventory"],
+): GameState {
+  return {
+    ...initialGameState,
+    machines: [machine],
+    player: { ...initialGameState.player, inventory },
+  };
+}
+
+describe("direct feed (planer)", () => {
+  it("feeds the carried board straight into the cut", () => {
+    // 4/4 rough with a flat face: a skim pass at cut height 4
+    const stock = board("walnut", 8, 6, 4, "rough");
+    const state = carrying(planer(), [stock]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.strictEqual(
+      result.machines[0].operationProgress.status,
+      "inProgress",
+    );
+    assert.deepStrictEqual(result.machines[0].processingMaterials, [stock]);
+    // Out of the hands, and never in the (nonexistent) input bay
+    assert.deepStrictEqual(result.player.inventory, []);
+    assert.deepStrictEqual(result.machines[0].inputMaterials, []);
+  });
+
+  it("feeds the first carried piece the machine is set up to take", () => {
+    const tooThick = board("walnut", 8, 6, 6, "rough");
+    const fits = board("walnut", 8, 6, 5, "rough");
+    const state = carrying(planer(), [tooThick, fits]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.deepStrictEqual(result.machines[0].processingMaterials, [fits]);
+    assert.deepStrictEqual(result.player.inventory, [tooThick]);
+  });
+
+  it("refuses stock the cut height can't take", () => {
+    // Two detents above the cut height won't fit under the head
+    const state = carrying(planer(), [board("walnut", 8, 6, 6, "rough")]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.strictEqual(result, state);
+  });
+
+  it("refuses while switched off, leaving the hands full", () => {
+    const state = carrying(planer({ poweredOn: false }), [
+      board("walnut", 8, 6, 4, "rough"),
+    ]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.strictEqual(result, state);
+    assert.strictEqual(result.player.inventory.length, 1);
+  });
+});

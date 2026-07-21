@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { selectMode } from "./machine-panel";
+import { selectMode, setParameter } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -176,19 +176,27 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await page.waitForTimeout(200);
     });
 
-    await test.step("planer: skim pass finishes the faces at nominal thickness", async () => {
+    await test.step("planer: no load step — stock feeds straight from the hands", async () => {
       await movePlayerTo(page, [3, 2]);
-      await page
-        .locator("li", { hasText: "Walnut Board (8'x4\"x4/4, rough)" })
-        .getByRole("button", { name: "→ Planer" })
-        .click();
-      await page.waitForTimeout(200);
-      await machineCard(page, "Planer")
-        .getByRole("button", { name: "Switch On" })
-        .click();
-      await machineCard(page, "Planer")
-        .getByRole("button", { name: "Operate" })
-        .click();
+      const planerCard = machineCard(page, "Planer");
+      // No input bay: the inventory offers no load button for the planer
+      await expect(
+        page.getByRole("button", { name: "→ Planer" }),
+      ).toHaveCount(0);
+      // Switched off, nothing feeds
+      await expect(
+        planerCard.getByRole("button", { name: "Feed" }),
+      ).toBeDisabled();
+      await planerCard.getByRole("button", { name: "Switch On" }).click();
+      await expect(planerCard.getByText("Idling")).toBeVisible();
+      // Two detents under the carried 4/4 stock: it won't fit under the head
+      await setParameter(page, "Planer", "Cut Height", "2/4");
+      await expect(
+        planerCard.getByRole("button", { name: "Feed" }),
+      ).toBeDisabled();
+      // Back to a skim pass at the stock's own thickness
+      await setParameter(page, "Planer", "Cut Height", "4/4");
+      await planerCard.getByRole("button", { name: "Feed" }).click();
       await waitForBoard(
         page,
         "b.jointedFaces === 2 && b.jointedEdges === 2 && b.thickness === 4 && b.surface === 'smooth'",
@@ -201,6 +209,28 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       // The inventory names the finished state
       await expect(
         page.getByText("Walnut Board (8'x4\"x4/4, smooth, S4S)").first(),
+      ).toBeVisible();
+    });
+
+    await test.step("planer: a full-depth pass takes exactly one detent off", async () => {
+      await movePlayerTo(page, [3, 2]);
+      // One detent under the 4/4 stock: a full bite. The first carried
+      // piece this setting can take is the 2"-wide rip offcut.
+      await setParameter(page, "Planer", "Cut Height", "3/4");
+      await machineCard(page, "Planer")
+        .getByRole("button", { name: "Feed" })
+        .click();
+      await waitForBoard(
+        page,
+        "b.width === 2 && b.thickness === 3 && b.surface === 'smooth'",
+      );
+      await movePlayerTo(page, [3, 0]);
+      await machineCard(page, "Planer")
+        .getByRole("button", { name: /Take All/ })
+        .click();
+      await page.waitForTimeout(200);
+      await expect(
+        page.getByText("Walnut Board (8'x2\"x3/4, smooth, S3S)").first(),
       ).toBeVisible();
     });
 

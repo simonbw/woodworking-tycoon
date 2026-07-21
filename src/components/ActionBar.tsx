@@ -134,9 +134,14 @@ export const ActionBar: React.FC = () => {
               {operable && (
                 <>
                   <Hint shortcut="operate-machine">
-                    Operate {machine!.type.name}
+                    {/* Feeding stock into a running machine, not pressing
+                        an Operate button — direct-feed machines say so */}
+                    {machine!.type.directFeed ? "Feed" : "Operate"}{" "}
+                    {machine!.type.name}
                   </Hint>
-                  <Hint shortcut="cycle-operation" showShift={false} />
+                  {!machine!.type.directFeed && (
+                    <Hint shortcut="cycle-operation" showShift={false} />
+                  )}
                 </>
               )}
               {machine?.type.powerSwitch && (
