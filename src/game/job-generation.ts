@@ -4,6 +4,7 @@ import { createMockMaterial } from "./material-helpers";
 import { getSellValue } from "./material-values";
 import { roundToCents } from "./marketplace";
 import { ownsMachine, ownsTool } from "./progression-helpers";
+import { hasSkill } from "./skill-helpers";
 import { BoardDimension, REAL_WOOD_SPECIES } from "./Materials";
 import { idMaker } from "../utils/idMaker";
 
@@ -234,6 +235,25 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
             species: REAL_WOOD_SPECIES,
             quantity,
           },
+        ],
+        baseReputation: 3,
+      };
+    },
+  },
+  {
+    // Precision work: offered once the player has learned the angle stops.
+    tier: 4,
+    zeroMaterialCost: false,
+    available: (gameState) => hasSkill(gameState.progression, "miteredFrames"),
+    generate: (rng) => {
+      const quantity = intBetween(rng, 1, 2);
+      return {
+        description:
+          quantity === 1
+            ? "Wants a hardwood picture frame for a wedding photo. Tight miters, please."
+            : "The gallery around the corner needs two matching hardwood picture frames.",
+        requiredMaterials: [
+          { type: ["pictureFrame"], species: REAL_WOOD_SPECIES, quantity },
         ],
         baseReputation: 3,
       };

@@ -19,6 +19,8 @@ const WEATHERED_GRAY = 0x9a9186;
  *   edge first — it carries the visible edge face).
  * - Rough surface shows cross-grain saw marks, smooth shows long grain
  *   lines, sanded adds a lighter tone and a sheen band.
+ * - Mitered ends draw as diagonals: the left end is the sprite's top, the
+ *   right end its bottom, and the angle sets the diagonal's run.
  * All irregularity is seeded so a board never shimmers between renders.
  */
 export const BoardSprite: React.FC<
@@ -36,6 +38,7 @@ export const BoardSprite: React.FC<
     surface,
     jointedFaces,
     jointedEdges,
+    ends,
   } = board;
 
   const draw = useCallback(
@@ -60,23 +63,47 @@ export const BoardSprite: React.FC<
           ? colorToNumber(secondary)
           : mixColors(secondary, WEATHERED_GRAY, 0.5);
 
+      // Mitered ends slant across the face: the right-edge corner stays at
+      // the board's true end and the left-edge corner falls back by the
+      // angle's run, so the polygon's closing end lines draw the miters.
+      // Clamped so two steep miters on a short, wide board can't cross
+      const skewFor = (end: { kind: string; angle?: number } | undefined) =>
+        end?.kind === "mitered" && end.angle !== undefined
+          ? Math.min(
+              width * Math.tan((end.angle * Math.PI) / 180),
+              height * 0.45,
+            )
+          : 0;
+      const topSkew = skewFor(ends?.left);
+      const bottomSkew = skewFor(ends?.right);
+
       // Long edges: jointing snaps them straight, right edge first
       const amp = Math.min(1.5, width * 0.12);
       const rightAmp = jointedEdges >= 1 ? 0 : amp;
       const leftAmp = jointedEdges >= 2 ? 0 : amp;
-      const edgePoints = (x: number, edgeAmp: number): [number, number][] => {
+      const edgePoints = (
+        x: number,
+        edgeAmp: number,
+        yStart: number,
+        yEnd: number,
+      ): [number, number][] => {
         const segments = Math.max(2, Math.round(height / 16));
         const points: [number, number][] = [];
         for (let i = 0; i <= segments; i++) {
-          const y = lerp(-height / 2, height / 2, i / segments);
+          const y = lerp(yStart, yEnd, i / segments);
           // Ends stay near-true so corners read as crosscut clean
           const jitter = i === 0 || i === segments ? edgeAmp * 0.3 : edgeAmp;
           points.push([x + (rng() * 2 - 1) * jitter, y]);
         }
         return points;
       };
-      const leftEdge = edgePoints(-width / 2, leftAmp);
-      const rightEdge = edgePoints(width / 2, rightAmp);
+      const leftEdge = edgePoints(
+        -width / 2,
+        leftAmp,
+        -height / 2 + topSkew,
+        height / 2 - bottomSkew,
+      );
+      const rightEdge = edgePoints(width / 2, rightAmp, -height / 2, height / 2);
 
       // shadow
       for (const shadowWidth of [1, 2]) {
@@ -103,11 +130,14 @@ export const BoardSprite: React.FC<
       g.fill(edgeColor);
 
       const inset = amp + 1.5;
+      // Surface detail stays inside the mitered silhouette
+      const detailTop = -height / 2 + topSkew;
+      const detailBottom = height / 2 - bottomSkew;
       if (surface === "rough") {
         // Cross-grain saw marks, fainter once the face is milled clean
         const markAlpha = colorRevealed ? 0.07 : 0.13;
-        let y = -height / 2 + 3 + rng() * 6;
-        while (y < height / 2 - 3) {
+        let y = detailTop + 3 + rng() * 6;
+        while (y < detailBottom - 3) {
           const slope = (rng() * 2 - 1) * 1.5;
           g.moveTo(-width / 2 + inset, y - slope);
           g.lineTo(width / 2 - inset, y + slope);
@@ -126,14 +156,14 @@ export const BoardSprite: React.FC<
             ) +
             (rng() * 2 - 1) * 1.5;
           const wander = (rng() * 2 - 1) * 1.2;
-          g.moveTo(x, -height / 2 + 2);
+          g.moveTo(x, detailTop + 2);
           g.bezierCurveTo(
             x + wander,
             -height / 6,
             x - wander,
             height / 6,
             x + (rng() * 2 - 1) * 1.2,
-            height / 2 - 2,
+            detailBottom - 2,
           );
           g.stroke({ width: 1, color: secondary, alpha: 0.35 });
         }
@@ -143,9 +173,9 @@ export const BoardSprite: React.FC<
         // Soft sheen band along one side of the face
         g.rect(
           -width / 2 + inset,
-          -height / 2 + 2,
+          detailTop + 2,
           Math.max(1.5, width / 4),
-          height - 4,
+          detailBottom - detailTop - 4,
         );
         g.fill({ color: 0xffffff, alpha: 0.14 });
       }
@@ -158,6 +188,7 @@ export const BoardSprite: React.FC<
       surface,
       jointedFaces,
       jointedEdges,
+      ends,
       seed,
     ],
   );

@@ -1,5 +1,5 @@
 import { array } from "../../utils/arrayUtils";
-import { board, isBoard } from "../board-helpers";
+import { board, isBoard, isMiteredBothEnds } from "../board-helpers";
 import { MachineType, OperationPhase } from "../Machine";
 import { isFinishedProduct, makeMaterial } from "../material-helpers";
 import {
@@ -607,6 +607,45 @@ export const workspace: MachineType = {
             makeMaterial<FinishedProduct>({
               type: "shelf",
               species: boards[0].species,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Build Picture Frame",
+      id: "buildPictureFrame",
+      requiredSkill: "miteredFrames",
+      duration: 30,
+      // Frames are joined with brads across the miters — the nail
+      // economy's second consumer
+      requiredConsumables: [{ id: "nails", amount: 4 }],
+      inputMaterials: [
+        {
+          type: ["board"],
+          species: REAL_WOOD_SPECIES,
+          length: [2],
+          width: [1],
+          thickness: [1],
+          surface: ["sanded"],
+          quantity: 4,
+          // Four rails, each mitered 45° on BOTH ends — the whole point
+          // of the saw's angle stops
+          matches: (material) =>
+            isBoard(material) && isMiteredBothEnds(material, 45),
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const rails = materials.filter(isBoard);
+        if (rails.length !== 4) {
+          throw new Error("Need exactly 4 rails to build a picture frame");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "pictureFrame",
+              species: rails[0].species,
             }),
           ],
         };

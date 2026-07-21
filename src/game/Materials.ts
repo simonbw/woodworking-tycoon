@@ -47,6 +47,30 @@ export type SurfaceCondition = (typeof SURFACE_CONDITIONS)[number];
  */
 export type JointedCount = 0 | 1 | 2;
 
+/**
+ * The angle stops a saw swings to, measured off square — 0° is a plain
+ * crosscut. 45° makes rectangular frames; 30° and 22.5° are the hexagon
+ * and octagon stops.
+ */
+export const MITER_ANGLES = [22.5, 30, 45] as const;
+export type MiterAngle = (typeof MITER_ANGLES)[number];
+
+/**
+ * What one end of a board looks like. A discriminated union so future end
+ * features (tenons, dowel holes) slot in as new kinds; per-end state exists
+ * because advanced work cares WHICH end carries the treatment.
+ */
+export type BoardEnd =
+  | { readonly kind: "square" }
+  | { readonly kind: "mitered"; readonly angle: MiterAngle };
+
+export interface BoardEnds {
+  readonly left: BoardEnd;
+  readonly right: BoardEnd;
+}
+
+export const SQUARE_END: BoardEnd = { kind: "square" };
+
 /** The next step up the surface ladder, or null at the top. */
 export function improvedSurface(
   surface: SurfaceCondition,
@@ -67,6 +91,32 @@ export interface Board {
   readonly jointedFaces: JointedCount;
   /** Straight edges: ripping and gluing require them (see board-helpers). */
   readonly jointedEdges: JointedCount;
+  /**
+   * End treatments, left and right as the board lies on the saw. Absent
+   * means both ends square (pre-miter saves and untouched stock — the
+   * Panel.grain precedent). Length cuts rewrite these (see cutBoard).
+   */
+  readonly ends?: BoardEnds;
+}
+
+/** A board's end state with the square/square default applied. */
+export function boardEnds(board: Board): BoardEnds {
+  return board.ends ?? { left: SQUARE_END, right: SQUARE_END };
+}
+
+/**
+ * Short label for a board's end treatments, or null when both ends are the
+ * unremarkable square default. Reads like a cut list: "45° both ends".
+ */
+export function endsLabel(board: Board): string | null {
+  const { left, right } = boardEnds(board);
+  if (left.kind === "mitered" && right.kind === "mitered") {
+    return left.angle === right.angle
+      ? `${left.angle}° both ends`
+      : `${left.angle}°/${right.angle}° ends`;
+  }
+  const mitered = left.kind === "mitered" ? left : right;
+  return mitered.kind === "mitered" ? `${mitered.angle}° one end` : null;
 }
 
 /**
@@ -167,6 +217,7 @@ export type FinishedProduct = {
     | "shelf"
     | "rusticShelf"
     | "jewelryBox"
+    | "pictureFrame"
     | "simpleCuttingBoard"
     | "stripedCuttingBoard"
     | "sunriseCuttingBoard"

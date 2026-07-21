@@ -144,13 +144,39 @@ Operation prerequisites and providers:
 | Plane | faces →2, surface→smooth; needs faces ≥ 1 | planer; later router sled/CNC |
 | Joint edge | edges 0→1 | jointer (needs faces ≥ 1 — fence reference); straight-line sled on the table saw (**no prerequisites** — the board rides the sled, not the fence); hand plane |
 | Rip to width | edges →2; needs edges ≥ 1 (never rip a wavy edge against the fence) | table saw |
-| Crosscut | length only, no prerequisites | miter saw, crosscut sled |
+| Crosscut | length only, rewrites board ends (see Board ends), no prerequisites | miter saw, crosscut sled |
 
 Pallet boards scavenge as `{ jointedFaces: 1, jointedEdges: 2 }` — they were
 factory-milled once, weathered rough — which keeps the whole early game
 (rip, crosscut, sand, glue) running without any milling equipment.
 `millingLabel()` names the classic states (S4S / S3S / S2S / rough sawn) in
 material names; the pallet-ish default state gets no label.
+
+## Board ends & miter cuts (Now)
+
+Boards carry per-end state: `Board.ends = { left, right }`, each a
+`BoardEnd` — `{ kind: "square" }` or `{ kind: "mitered", angle }` with
+angles from `MITER_ANGLES` (22.5 / 30 / 45). Absent means both ends square
+(the `Panel.grain` precedent — old saves and untouched stock need no
+migration). Per-end rather than a count because advanced work cares WHICH
+end carries a treatment; tenons and dowel holes join the union as new
+kinds later.
+
+The miter saw's one operation models a real saw setup instead of a recipe
+list: **Angle** (detents 0° / 22.5° / 30° / 45° — a crosscut is just the 0°
+stop), **Cut End** (which end of the stock faces the blade), and **Target
+Length** (the kept piece, measured from the stop). The blade leaves a fresh
+face on both pieces: the kept piece keeps its stop-side end untouched, the
+offcut keeps its far end. A frame rail is therefore two cuts — miter the
+left end, then flip and cut to length mitering the right. Rips and resaws
+run along the board, so both pieces inherit the input's ends; any square
+crosscut squares the end it re-cuts.
+
+`endsLabel()` names mitered ends in material names ("45° both ends"), and
+the board sprite draws them as diagonal ends. First consumer: the Picture
+Frame (`mitered-frames` skill, joinery branch) — four sanded real-wood
+rails, 45° both ends, joined with brads from the nail stock. 30° and 22.5°
+are seeded for future hexagonal/octagonal frames.
 
 ## Lumber channels (Now — issue #6)
 

@@ -11,6 +11,7 @@ export const SKILL_IDS = [
   "panelWork",
   "fineShelving",
   "boxJoinery",
+  "miteredFrames",
   "surfacePrep",
   "efficientSanding",
   "twoToneBoards",
@@ -84,6 +85,14 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
       "Jewelry boxes from thin sanded stock. You'll want a planer for this.",
     branch: "joinery",
     requires: ["fineShelving"],
+  },
+  miteredFrames: {
+    id: "miteredFrames",
+    name: "Mitered Frames",
+    description:
+      "Eight 45° cuts that all have to agree. Picture frames from mitered stock.",
+    branch: "joinery",
+    requires: ["rusticCarpentry"],
   },
   surfacePrep: {
     id: "surfacePrep",

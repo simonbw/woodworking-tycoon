@@ -5,6 +5,7 @@ import { marketplaceShop } from "./marketplace-shop";
 import { layoutWithMiterSawInStorage } from "./layout-with-miter-saw-in-storage";
 import { layoutWithPlacedMachines } from "./layout-with-placed-machines";
 import { millingShop } from "./milling-shop";
+import { miterFrameShop } from "./miter-frame-shop";
 import { patternBoardShop } from "./pattern-board-shop";
 import { endGrainShop } from "./end-grain-shop";
 
@@ -17,6 +18,7 @@ export const TEST_FIXTURES: Record<string, GameState> = {
   "end-grain-shop": endGrainShop,
   "consumables-shop": consumablesShop,
   "milling-shop": millingShop,
+  "miter-frame-shop": miterFrameShop,
 };
 
 // Expose fixtures to window for manual testing

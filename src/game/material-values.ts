@@ -26,6 +26,8 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   // Two glue-ups, two flattenings, and a jig you built yourself
   endGrainCuttingBoard: 150,
   jewelryBox: 90,
+  // Eight miters that all have to close up — precision money
+  pictureFrame: 55,
 };
 
 /**
@@ -119,6 +121,7 @@ export function getSellValue(material: MaterialInstance): number {
     case "shelf":
     case "rusticShelf":
     case "jewelryBox":
+    case "pictureFrame":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
