@@ -2,6 +2,7 @@ import { Assets } from "pixi.js";
 
 // List of all texture assets used in the game
 const TEXTURE_ASSETS = [
+  "/images/benchtop-jointer.png",
   "/images/concrete-floor-2-big.png",
   "/images/jobsite-table-saw-table.png",
   "/images/jobsite-table-saw-fence.png",
