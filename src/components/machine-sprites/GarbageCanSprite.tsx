@@ -14,41 +14,50 @@ export const GarbageCanSprite: React.FC<{ machine: Machine }> = ({
       <pixiGraphics
         draw={useCallback((g: Graphics) => {
           g.clear();
-          const size = PIXELS_PER_CELL * 0.6;
-          const halfSize = size / 2;
+          const radius = (PIXELS_PER_CELL * 0.7) / 2;
 
-          // Draw garbage can body (trapezoid shape)
-          g.moveTo(-halfSize * 0.8, -halfSize);
-          g.lineTo(halfSize * 0.8, -halfSize);
-          g.lineTo(halfSize, halfSize);
-          g.lineTo(-halfSize, halfSize);
-          g.lineTo(-halfSize * 0.8, -halfSize);
-          g.fill({ color: 0x4a5568 }); // Gray color
+          // Drop shadow offset toward the lower right
+          g.circle(radius * 0.08, radius * 0.1, radius);
+          g.fill({ color: 0x000000, alpha: 0.15 });
 
-          // Draw lid
-          g.rect(-halfSize * 0.9, -halfSize * 1.1, size * 0.9, size * 0.15);
-          g.fill({ color: 0x2d3748 }); // Darker gray
+          // Rolled outer rim
+          g.circle(0, 0, radius);
+          g.fill({ color: 0x718096 });
+          g.circle(0, 0, radius);
+          g.stroke({ width: 1.5, color: 0x2d3748 });
 
-          // Draw handle on lid
-          g.circle(0, -halfSize * 1.1, size * 0.08);
-          g.fill({ color: 0x1a202c }); // Very dark gray
+          // Lid surface inset within the rim
+          g.circle(0, 0, radius * 0.85);
+          g.fill({ color: 0x4a5568 });
+
+          // Concentric ridges pressed into the lid
+          g.circle(0, 0, radius * 0.62);
+          g.stroke({ width: 1.5, color: 0x3b475c });
+          g.circle(0, 0, radius * 0.38);
+          g.stroke({ width: 1.5, color: 0x3b475c });
+
+          // Highlight catching light from the upper left
+          const highlightRadius = radius * 0.92;
+          const highlightStart = Math.PI * 1.05;
+          g.moveTo(
+            Math.cos(highlightStart) * highlightRadius,
+            Math.sin(highlightStart) * highlightRadius,
+          );
+          g.arc(0, 0, highlightRadius, highlightStart, Math.PI * 1.45);
+          g.stroke({ width: 2, color: 0xa0aec0, alpha: 0.8 });
+
+          // Handle bar across the center of the lid
+          g.roundRect(-radius * 0.4, -radius * 0.09, radius * 0.8, radius * 0.18, radius * 0.09);
+          g.fill({ color: 0x2d3748 });
         }, [])}
       />
       {inputMaterials.map((material, index) => (
-        <pixiContainer
-          y={-PIXELS_PER_CELL * 0.3}
-          angle={index * 10}
-          key={`in-${index}`}
-        >
+        <pixiContainer angle={index * 25 + 10} scale={0.7} key={`in-${index}`}>
           <MaterialSprite material={material} key={index} alpha={0.7} />
         </pixiContainer>
       ))}
       {processingMaterials.map((material, index) => (
-        <pixiContainer
-          y={PIXELS_PER_CELL * 0.1}
-          angle={index * 10}
-          key={`proc-${index}`}
-        >
+        <pixiContainer angle={index * 25 + 10} scale={0.7} key={`proc-${index}`}>
           <MaterialSprite
             material={material}
             key={index}
