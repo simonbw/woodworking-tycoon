@@ -200,14 +200,12 @@ describe("finishEndGrainBoard", () => {
 });
 
 describe("planer vs end grain", () => {
-  it("planePanel refuses end-grain panels — sanding only", () => {
-    const planePanel = lunchboxPlaner.operations.find(
-      (op) => op.id === "planePanel",
-    )!;
-    if (!("getInputMaterials" in planePanel)) {
-      assert.fail("planePanel should be parameterized");
+  it("the planer refuses end-grain panels — sanding only", () => {
+    const plane = lunchboxPlaner.operations.find((op) => op.id === "plane")!;
+    if (!("getInputMaterials" in plane)) {
+      assert.fail("plane should be parameterized");
     }
-    const requirement = planePanel.getInputMaterials({ targetThickness: 4 })[0];
+    const requirement = plane.getInputMaterials({ targetThickness: 8 })[0];
     assert.ok(
       materialMeetsInput(
         uniformPanel("maple", 5, 2, 1, 8, "rough"),

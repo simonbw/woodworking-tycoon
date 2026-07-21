@@ -318,21 +318,55 @@ describe("parameterValueSatisfiable", () => {
     );
   });
 
-  it("allows a planer skim pass at the loaded thickness but nothing above", () => {
+  it("planer cut height reads against carried stock: skim or one detent", () => {
+    // Direct feed: the planer has no input bay, so the stock under test
+    // rides in the explicit `stock` argument (the player's hands).
     const { machine, operation } = machineWith(
       "lunchboxPlaner",
-      "planeBoard",
-      { targetThickness: 2 },
-      [board("pine", 6, 4, 4)],
+      "plane",
+      { targetThickness: 4 },
+      [],
     );
+    const carried = [board("pine", 6, 4, 4)];
+    // Skim pass at the loaded thickness
     assert.ok(
-      parameterValueSatisfiable(machine, operation, "targetThickness", 2),
+      parameterValueSatisfiable(
+        machine,
+        operation,
+        "targetThickness",
+        4,
+        carried,
+      ),
     );
+    // One detent below: a full-depth bite
     assert.ok(
-      parameterValueSatisfiable(machine, operation, "targetThickness", 4),
+      parameterValueSatisfiable(
+        machine,
+        operation,
+        "targetThickness",
+        3,
+        carried,
+      ),
     );
+    // Two below won't fit under the cutter head in one pass
     assert.ok(
-      !parameterValueSatisfiable(machine, operation, "targetThickness", 6),
+      !parameterValueSatisfiable(
+        machine,
+        operation,
+        "targetThickness",
+        2,
+        carried,
+      ),
+    );
+    // Above the board the knives never touch it
+    assert.ok(
+      !parameterValueSatisfiable(
+        machine,
+        operation,
+        "targetThickness",
+        6,
+        carried,
+      ),
     );
   });
 });
@@ -343,7 +377,7 @@ describe("absoluteOutputPosition", () => {
       machineTypeId: "lunchboxPlaner",
       position: [2, 2],
       rotation,
-      selectedOperationId: "planeBoard",
+      selectedOperationId: "plane",
       selectedParameters: undefined,
       operationProgress: {
         status: "notStarted",

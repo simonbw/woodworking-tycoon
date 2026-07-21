@@ -21,8 +21,8 @@ const jointEdge = jointer.operations.find(
 const straightLineRip = straightLineSled.operations.find(
   (op) => op.id === "straightLineRip",
 ) as MachineOperation;
-const planeBoard = lunchboxPlaner.operations.find(
-  (op) => op.id === "planeBoard",
+const plane = lunchboxPlaner.operations.find(
+  (op) => op.id === "plane",
 ) as ParameterizedOperation;
 const ripBoard = jobsiteTableSaw.operations.find(
   (op) => op.id === "ripBoard",
@@ -117,7 +117,7 @@ describe("hand plane", () => {
 
 describe("planer face prerequisites", () => {
   it("refuses boards without a flat reference face", () => {
-    const requirement = planeBoard.getInputMaterials({ targetThickness: 4 })[0];
+    const requirement = plane.getInputMaterials({ targetThickness: 4 })[0];
     assert.ok(!materialMeetsInput(roughBoard(), requirement));
     assert.ok(
       materialMeetsInput(
@@ -129,7 +129,7 @@ describe("planer face prerequisites", () => {
 
   it("skim-passes at nominal thickness and makes faces parallel", () => {
     // Rough stock carries sacrificial material: 4/4 rough planes to 4/4 done
-    const { outputs } = planeBoard.output(
+    const { outputs } = plane.output(
       [board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 })],
       { targetThickness: 4 },
     );
@@ -139,6 +139,46 @@ describe("planer face prerequisites", () => {
     assert.strictEqual(result.jointedFaces, 2);
     assert.strictEqual(result.surface, "smooth");
     assert.strictEqual(result.jointedEdges, 0);
+  });
+
+  it("takes stock at the cut height or one detent above, nothing thicker", () => {
+    const requirement = plane.getInputMaterials({ targetThickness: 4 })[0];
+    const atHeight = (thickness: 4 | 5 | 6) =>
+      board("walnut", 8, 6, thickness, "rough", { faces: 1, edges: 0 });
+    // Skim pass and full-depth bite
+    assert.ok(materialMeetsInput(atHeight(4), requirement));
+    assert.ok(materialMeetsInput(atHeight(5), requirement));
+    // Two detents above won't fit under the cutter head
+    assert.ok(!materialMeetsInput(atHeight(6), requirement));
+  });
+
+  it("removes one detent per pass — thicknessing is sequential passes", () => {
+    // 8/4 down to 4/4: four passes, cranking the head down between each
+    let stock = board("walnut", 8, 6, 8, "rough", { faces: 1, edges: 0 });
+    for (const cutHeight of [7, 6, 5, 4]) {
+      const requirement = plane.getInputMaterials({
+        targetThickness: cutHeight,
+      })[0];
+      assert.ok(materialMeetsInput(stock, requirement));
+      const result = plane.output([stock], { targetThickness: cutHeight })
+        .outputs[0];
+      assert.ok(isBoard(result));
+      assert.strictEqual(result.thickness, cutHeight);
+      stock = result;
+    }
+    assert.strictEqual(stock.thickness, 4);
+    assert.strictEqual(stock.jointedFaces, 2);
+    assert.strictEqual(stock.surface, "smooth");
+  });
+
+  it("at the top of the scale only a skim pass fits", () => {
+    const requirement = plane.getInputMaterials({ targetThickness: 8 })[0];
+    assert.ok(
+      materialMeetsInput(
+        board("walnut", 8, 6, 8, "rough", { faces: 1, edges: 0 }),
+        requirement,
+      ),
+    );
   });
 });
 
@@ -188,7 +228,7 @@ describe("milling ladder integration", () => {
     assert.ok(isBoard(a));
     a = jointEdge.output([a]).outputs[0];
     assert.ok(isBoard(a));
-    a = planeBoard.output([a], { targetThickness: 4 }).outputs[0];
+    a = plane.output([a], { targetThickness: 4 }).outputs[0];
     assert.ok(isBoard(a));
     a = ripBoard.output([a], { targetWidth: 4 }).outputs[0];
     assert.ok(isBoard(a));
@@ -201,7 +241,7 @@ describe("milling ladder integration", () => {
     assert.ok(isBoard(b));
     b = ripBoard.output([b], { targetWidth: 4 }).outputs[0];
     assert.ok(isBoard(b));
-    b = planeBoard.output([b], { targetThickness: 4 }).outputs[0];
+    b = plane.output([b], { targetThickness: 4 }).outputs[0];
     assert.ok(isBoard(b));
     assert.strictEqual(millingLabel(b), "S4S");
   });

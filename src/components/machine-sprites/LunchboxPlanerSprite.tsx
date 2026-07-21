@@ -1,6 +1,7 @@
 import React from "react";
 import { animated, useSpring } from "react-spring";
 import { Machine } from "../../game/Machine";
+import { thicknessStepBelow } from "../../game/machines/lunchboxPlaner";
 import { BOARD_DIMENSIONS, BoardDimension } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
 import { lerp } from "../../utils/mathUtils";
@@ -71,11 +72,14 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
       {processingMaterials.filter(isBoard).map((board, index) => (
         <FeedingBoard
           board={board}
-          // Mirrors planeBoard's output: the smooth surface emerges from
-          // the outfeed as the board passes the cutter head
+          // Mirrors the plane operation's output: one detent off at most,
+          // smooth surface emerging from the outfeed past the cutter head
           exitedAs={{
             ...board,
-            thickness: cutThickness as BoardDimension,
+            thickness: Math.max(
+              cutThickness,
+              thicknessStepBelow(board.thickness) ?? board.thickness,
+            ) as BoardDimension,
             jointedFaces: 2,
             surface: "smooth",
           }}

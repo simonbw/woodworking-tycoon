@@ -5,8 +5,8 @@ import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { workspace } from "./machines/workspace";
 import { defaultParametersFor, describeOperationIO } from "./operation-helpers";
 
-const planeBoard = lunchboxPlaner.operations.find(
-  (op) => op.id === "planeBoard",
+const plane = lunchboxPlaner.operations.find(
+  (op) => op.id === "plane",
 ) as ParameterizedOperation;
 const dismantlePallet = workspace.operations.find(
   (op) => op.id === "dismantlePallet",
@@ -17,8 +17,8 @@ const buildCrosscutSled = workspace.operations.find(
 
 describe("defaultParametersFor", () => {
   it("starts each parameter at its first listed value", () => {
-    assert.deepStrictEqual(defaultParametersFor(planeBoard), {
-      targetThickness: planeBoard.parameters[0].values[0],
+    assert.deepStrictEqual(defaultParametersFor(plane), {
+      targetThickness: plane.parameters[0].values[0],
     });
   });
 
@@ -29,7 +29,7 @@ describe("defaultParametersFor", () => {
 
 describe("describeOperationIO", () => {
   it("summarizes a parameterized recipe from its default parameters", () => {
-    const io = describeOperationIO(planeBoard);
+    const io = describeOperationIO(plane);
     assert.strictEqual(io.inputs.length, 1);
     assert.ok(io.inputs[0].length > 0);
     assert.ok(io.outputs.length > 0);

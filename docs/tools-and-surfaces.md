@@ -68,9 +68,10 @@ the table saw into a no-prerequisites edge jointer (see Milling). Later
 jigs live here too: tapering jigs, box-joint jigs, router sleds.
 
 Related hard rule: **end grain never meets the planer** (`Panel.grain`).
-Planing an end-grain panel tears it apart in real life, so `planePanel`
-rejects them and sanding is the only way to flatten one — which keeps
-sanders relevant deep into the planer era and sets up a future drum sander.
+Planing an end-grain panel tears it apart in real life, so the planer's
+`plane` operation rejects them and sanding is the only way to flatten one —
+which keeps sanders relevant deep into the planer era and sets up a future
+drum sander.
 
 ## Handheld tools (Now: v1)
 

@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useCellMap } from "../../game/CellMap";
 import { machineDustMultiplier } from "../../game/Dust";
-import { Machine } from "../../game/Machine";
+import {
+  Machine,
+  MachineOperation,
+  ParameterizedOperation,
+} from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import {
   operateMachineAction,
@@ -57,10 +61,10 @@ import { ModeControl } from "./ModeControl";
 
 /**
  * Parameter ids follow the "targetLength" pattern; the matching bare
- * dimension on the loaded stock anchors the scale's "you are here" mark.
+ * dimension on a piece of stock anchors the scale's "you are here" mark.
  */
-function loadedStockDimension(
-  machine: Machine,
+function stockDimension(
+  stock: MaterialInstance | undefined,
   paramId: string,
 ): number | undefined {
   if (!paramId.startsWith("target")) {
@@ -68,10 +72,17 @@ function loadedStockDimension(
   }
   const key = paramId.slice("target".length);
   const dimension = key.charAt(0).toLowerCase() + key.slice(1);
-  const stock = machine.inputMaterials[0] as unknown as
-    Record<string, unknown> | undefined;
-  const value = stock?.[dimension];
+  const value = (stock as unknown as Record<string, unknown> | undefined)?.[
+    dimension
+  ];
   return typeof value === "number" ? value : undefined;
+}
+
+function loadedStockDimension(
+  machine: Machine,
+  paramId: string,
+): number | undefined {
+  return stockDimension(machine.inputMaterials[0], paramId);
 }
 
 export const MachinesSection: React.FC = () => {
@@ -128,6 +139,12 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const operations = availableOperations(machine, gameState.progression);
   if (operations.length === 0) {
     return <OperationlessMachineCard machine={machine} />;
+  }
+
+  // Direct-feed machines (the planer) get the stripped-down card: their
+  // whole interface is the machine's own physical controls.
+  if (machine.type.directFeed) {
+    return <DirectFeedMachineCard machine={machine} operations={operations} />;
   }
 
   // Null when nothing is selected yet (e.g. a freshly-placed station whose
@@ -521,6 +538,189 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             {isOperating ? "Operating..." : "Operate"}
           </ProgressButton>
         </Tooltip>
+      </div>
+    </section>
+  );
+};
+
+/**
+ * The stripped-down card for direct-feed machines: like standing at the
+ * real thing, all you get is the machine's own controls — the height
+ * scale, the power switch, and stock fed from your hands. No mode picker,
+ * no input bay, no output tray (finished stock lands at the outfeed).
+ * Everything secondary (tools, description) folds away, collapsed by
+ * default.
+ */
+const DirectFeedMachineCard: React.FC<{
+  machine: Machine;
+  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
+}> = ({ machine, operations }) => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+  const { isTargeted } = useTargetedMachine();
+  const [expanded, setExpanded] = useState(false);
+
+  // Direct-feed machines run one operation; it doubles as the settings rack.
+  const operation = machine.selectedOperationOrNull ?? operations[0];
+  const carried = gameState.player.inventory;
+
+  const isOperating = machine.operationProgress.status === "inProgress";
+  const switchedOff = !machine.isPowered;
+  const canFeed =
+    !isOperating &&
+    machineCanOperate(machine, gameState.consumables, carried);
+
+  const dustMultiplier = machineDustMultiplier(
+    gameState.dust,
+    machine,
+    gameState.shopInfo.size,
+  );
+  const phases = getOperationPhases(
+    operation,
+    gameState.progression,
+    dustMultiplier,
+    machine.workSpeed,
+  );
+  const totalDuration = phases.reduce((sum, phase) => sum + phase.duration, 0);
+  const progressPercent =
+    isOperating && totalDuration > 0
+      ? ((totalDuration - machine.operationProgress.ticksRemaining) /
+          totalDuration) *
+        100
+      : 0;
+
+  return (
+    <section className="paper-card space-y-2">
+      <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
+        <h3 className="font-condensed font-bold text-lg uppercase tracking-wide">
+          {machine.type.name}
+        </h3>
+        <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+          {isOperating ? (
+            switchedOff ? (
+              <span className="text-store-orange-dark">
+                Paused · switched off
+              </span>
+            ) : (
+              <span className="text-ink-blue">
+                Running · {machine.operationProgress.ticksRemaining} ticks
+              </span>
+            )
+          ) : switchedOff ? (
+            "Switched off"
+          ) : (
+            <span className="text-ink-blue">Idling</span>
+          )}
+        </span>
+      </header>
+
+      {isParameterizedOperation(operation) &&
+        operation.parameters.map((param, index) => (
+          <div
+            key={param.id}
+            className="flex flex-row items-start gap-2 text-xs"
+          >
+            <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5 pt-2.5">
+              {param.name}
+              {/* Z drives the first parameter of the targeted machine */}
+              {index === 0 && isTargeted(machine) && (
+                <ShortcutKeys shortcut="cycle-parameter" />
+              )}
+            </span>
+            <DetentScale
+              param={param}
+              value={machine.selectedParameters?.[param.id] ?? param.values[0]}
+              onSelect={(value) =>
+                applyAction(
+                  setMachineOperationAction(machine, operation, {
+                    ...machine.selectedParameters,
+                    [param.id]: value,
+                  }),
+                )
+              }
+              satisfiable={(value) =>
+                parameterValueSatisfiable(
+                  machine,
+                  operation,
+                  param.id,
+                  value,
+                  carried,
+                )
+              }
+              stockValue={
+                carried
+                  .map((material) => stockDimension(material, param.id))
+                  .find((value) => value !== undefined)
+              }
+            />
+          </div>
+        ))}
+
+      <div className="flex items-stretch gap-2">
+        {machine.type.powerSwitch && (
+          <Tooltip
+            content={
+              switchedOff ? "Flip the power on" : "Shut the machine down"
+            }
+            shortcut={isTargeted(machine) ? "power-toggle" : undefined}
+          >
+            <button
+              className={classNames(
+                "button-paper text-xs whitespace-nowrap shrink-0",
+                !switchedOff && "text-ink-blue",
+              )}
+              onClick={() => applyAction(toggleMachinePowerAction(machine))}
+            >
+              {switchedOff ? "Switch On" : "Switch Off"}
+            </button>
+          </Tooltip>
+        )}
+        <Tooltip
+          content={
+            switchedOff
+              ? "Switch the machine on first"
+              : isOperating || canFeed
+                ? "Feed the carried stock through"
+                : "Carry stock the machine is set up to take"
+          }
+          shortcut={
+            isTargeted(machine) && !switchedOff ? "operate-machine" : undefined
+          }
+        >
+          <ProgressButton
+            progress={progressPercent / 100}
+            disabled={!canFeed || switchedOff}
+            onClick={() => applyAction(operateMachineAction(machine))}
+          >
+            {isOperating ? "Feeding..." : "Feed"}
+          </ProgressButton>
+        </Tooltip>
+      </div>
+
+      {machine.outputMaterials.length > 0 && (
+        // Finished stock comes off the far side of a feed-through machine —
+        // walk around to the outfeed cell to collect it.
+        <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+          Collect at outfeed ({machine.outputMaterials.length})
+        </div>
+      )}
+
+      <div>
+        <button
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+          className="font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade hover:text-ink-black"
+        >
+          {expanded ? "▾ Details" : "▸ Details"}
+        </button>
+        {expanded && (
+          <div className="space-y-3 pt-2">
+            <p className="text-xs italic text-ink-fade">
+              {machine.type.description}
+            </p>
+            <ToolRack machine={machine} />
+          </div>
+        )}
       </div>
     </section>
   );

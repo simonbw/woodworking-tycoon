@@ -23,7 +23,7 @@ function planerAt(position: Vector, rotation: 0 | 1 | 2 | 3 = 0): Machine {
     machineTypeId: "lunchboxPlaner",
     position,
     rotation,
-    selectedOperationId: "planeBoard",
+    selectedOperationId: "plane",
     operationProgress: {
       status: "notStarted",
       phaseIndex: 0,

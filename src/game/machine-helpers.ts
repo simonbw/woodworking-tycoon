@@ -141,14 +141,18 @@ export function playerAttendsMachine(
  * With nothing loaded there's nothing to contradict, so every value counts
  * as satisfiable — the player may well be dialing in the machine before
  * fetching stock.
+ *
+ * Direct-feed machines have no input bay; pass what the player is carrying
+ * as `stock` so the scale reads against the board in their hands.
  */
 export function parameterValueSatisfiable(
   machine: Machine,
   operation: ParameterizedOperation,
   paramId: string,
   value: number | string,
+  stock: ReadonlyArray<MaterialInstance> = machine.inputMaterials,
 ): boolean {
-  if (machine.inputMaterials.length === 0) {
+  if (stock.length === 0) {
     return true;
   }
   const params = {
@@ -157,15 +161,20 @@ export function parameterValueSatisfiable(
     [paramId]: value,
   };
   const slots = matchMaterialsToSlots(
-    machine.inputMaterials,
+    stock,
     operation.getInputMaterials(params),
   );
   return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
 }
 
+/**
+ * Direct-feed machines run on what the player is carrying, so callers pass
+ * the inventory as `carried`; everything else runs on its staged input bay.
+ */
 export function machineCanOperate(
   machine: Machine,
   consumables: ConsumableStock = NO_CONSUMABLES,
+  carried: ReadonlyArray<MaterialInstance> = [],
 ): boolean {
   const operation = machine.selectedOperationOrNull;
   if (!operation) {
@@ -176,7 +185,8 @@ export function machineCanOperate(
     machine.selectedParameters,
   );
 
-  const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);
+  const stock = machine.type.directFeed ? carried : machine.inputMaterials;
+  const slots = matchMaterialsToSlots(stock, inputMaterials);
 
   // Machine can operate if all slots have valid materials (no placeholders,
   // all valid) and the shop stock covers the recipe's supplies

@@ -4,6 +4,27 @@ import { isPanel } from "../panel-helpers";
 import { makeMaterial } from "../material-helpers";
 import { MachineType, ParameterizedOperation } from "../Machine";
 
+/** The next detent up the thickness scale, or undefined at the top. */
+export function thicknessStepAbove(
+  dimension: BoardDimension,
+): BoardDimension | undefined {
+  return BOARD_DIMENSIONS[BOARD_DIMENSIONS.indexOf(dimension) + 1];
+}
+
+/** The next detent down the thickness scale, or undefined at the bottom. */
+export function thicknessStepBelow(
+  dimension: BoardDimension,
+): BoardDimension | undefined {
+  return BOARD_DIMENSIONS[BOARD_DIMENSIONS.indexOf(dimension) - 1];
+}
+
+/**
+ * The planer has no modes — like the real thing, its whole interface is a
+ * power switch, a height crank, and stock fed in from your hands. One
+ * operation covers boards and panels alike (the cutter head can't tell),
+ * and each pass takes at most one thickness detent off: deeper cuts mean
+ * sequential passes, cranking the head down between each.
+ */
 export const lunchboxPlaner: MachineType = {
   id: "planer",
   name: "Planer",
@@ -20,113 +41,80 @@ export const lunchboxPlaner: MachineType = {
   cost: 450,
   materialStorage: 0,
   toolSlots: 1,
-  inputSpaces: 1,
+  // Stock feeds straight from the player's hands — no staged input bay
+  inputSpaces: 0,
+  directFeed: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
   powerSwitch: true,
   operations: [
     {
-      id: "planeBoard",
+      id: "plane",
       requiredSkill: "basicMilling",
-      name: "Plane Board",
-      duration: 15,
+      name: "Plane",
+      duration: 8,
       dustOutput: 4,
       parameters: [
         {
           id: "targetThickness",
-          name: "Target Thickness",
+          name: "Cut Height",
           values: BOARD_DIMENSIONS,
           unit: "/4",
         },
       ],
       getInputMaterials: (params) => {
-        const targetThickness = params.targetThickness as BoardDimension;
+        const cutHeight = params.targetThickness as BoardDimension;
         // Equal thickness is a skim pass: rough stock carries sacrificial
         // material beyond its nominal size, so milling never shrinks the
-        // listed dimensions.
-        const validThicknesses = BOARD_DIMENSIONS.filter(
-          (d) => d >= targetThickness,
-        );
+        // listed dimensions. One detent above is a full-depth bite; any
+        // thicker won't fit under the cutter head at this setting.
+        const above = thicknessStepAbove(cutHeight);
         return [
           {
-            type: ["board"],
-            thickness: validThicknesses,
-            // A planer needs a flat reference face — it can't fix warp,
-            // only copy flatness to the other side. Joint a face first.
-            jointedFaces: [1, 2],
+            type: ["board", "panel"],
+            thickness: above === undefined ? [cutHeight] : [cutHeight, above],
             quantity: 1,
-          },
-        ];
-      },
-      output: (materials, params) => {
-        const inputBoard = materials[0];
-        if (!isBoard(inputBoard)) {
-          throw new Error("Input material is not a board");
-        }
-        const targetThickness = params.targetThickness as BoardDimension;
-        // Thinner, faces parallel, and freshly surfaced (but only sanding
-        // reaches "sanded")
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<Board>({
-              ...inputBoard,
-              thickness: targetThickness,
-              jointedFaces: 2,
-              surface: "smooth",
-            }),
-          ],
-        };
-      },
-    } as ParameterizedOperation,
-    {
-      id: "planePanel",
-      requiredSkill: "basicMilling",
-      name: "Plane Panel",
-      duration: 15,
-      dustOutput: 4,
-      parameters: [
-        {
-          id: "targetThickness",
-          name: "Target Thickness",
-          values: BOARD_DIMENSIONS,
-          unit: "/4",
-        },
-      ],
-      getInputMaterials: (params) => {
-        const targetThickness = params.targetThickness as BoardDimension;
-        // Equal thickness is a skim pass — glue squeeze-out and alignment
-        // ridges are sacrificial, same as rough stock's extra material.
-        const validThicknesses = BOARD_DIMENSIONS.filter(
-          (d) => d >= targetThickness,
-        );
-        return [
-          {
-            type: ["panel"],
-            thickness: validThicknesses,
-            quantity: 1,
-            // Never feed end grain into a planer — it tears out in chunks.
-            // Sanding is the only way to flatten an end-grain panel.
             matches: (material) =>
-              isPanel(material) && material.grain !== "end",
+              isBoard(material)
+                ? // A planer needs a flat reference face — it can't fix warp,
+                  // only copy flatness to the other side. Joint a face first.
+                  material.jointedFaces >= 1
+                : // Never feed end grain into a planer — it tears out in
+                  // chunks. Sanding is the only way to flatten an end-grain
+                  // panel.
+                  isPanel(material) && material.grain !== "end",
           },
         ];
       },
       output: (materials, params) => {
-        const inputPanel = materials[0];
-        if (!isPanel(inputPanel)) {
-          throw new Error("Input material is not a panel");
+        const stock = materials[0];
+        if (!isBoard(stock) && !isPanel(stock)) {
+          throw new Error("Input material is not a board or panel");
         }
-        const targetThickness = params.targetThickness as BoardDimension;
-        // Thinner, and freshly surfaced (but only sanding reaches "sanded")
+        const cutHeight = params.targetThickness as BoardDimension;
+        // One detent per pass, never more. Equal thickness is a skim: same
+        // size out, freshly surfaced.
+        const planedThickness =
+          stock.thickness > cutHeight
+            ? (thicknessStepBelow(stock.thickness) ?? stock.thickness)
+            : stock.thickness;
+        // Freshly surfaced either way (but only sanding reaches "sanded");
+        // a board's faces additionally come out parallel.
         return {
           inputs: [],
           outputs: [
-            makeMaterial<Panel>({
-              ...inputPanel,
-              thickness: targetThickness,
-              surface: "smooth",
-            }),
+            isBoard(stock)
+              ? makeMaterial<Board>({
+                  ...stock,
+                  thickness: planedThickness,
+                  jointedFaces: 2,
+                  surface: "smooth",
+                })
+              : makeMaterial<Panel>({
+                  ...stock,
+                  thickness: planedThickness,
+                  surface: "smooth",
+                }),
           ],
         };
       },

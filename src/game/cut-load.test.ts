@@ -9,7 +9,7 @@ function cuttingMachine(
   machineTypeId: MachineId,
   processingMaterials: MaterialInstance[],
   inputMaterials: MaterialInstance[] = [],
-  operationId = "planeBoard",
+  operationId = "plane",
 ): Machine {
   const state: MachineState = {
     machineTypeId,

@@ -1,10 +1,10 @@
 import { freshMachineState } from "./game-actions/machine-actions";
 import { GameState } from "./GameState";
-import { MachineId } from "./Machine";
+import { Machine, MachineId } from "./Machine";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 16; // Increment this when GameState structure changes
+const SAVE_VERSION = 17; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -69,6 +69,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 15) {
       saveData.gameState = migrateV15toV16(saveData.gameState);
       saveData.version = 16;
+    }
+
+    if (saveData.version === 16) {
+      saveData.gameState = migrateV16toV17(saveData.gameState);
+      saveData.version = 17;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -224,5 +229,53 @@ export function migrateV15toV16(old: any): GameState {
       position: entrancePosition,
     })),
     storage,
+  };
+}
+
+/**
+ * v16 → v17: the planer became a direct-feed machine. planeBoard and
+ * planePanel merged into the single `plane` operation, and the input bay
+ * disappeared — stock now feeds straight from the player's hands. Anything
+ * staged in a planer's bay lands as piles at its infeed cell; mid-cut
+ * stock finishes under the new operation (which takes one thickness
+ * detent per pass).
+ */
+export function migrateV16toV17(old: any): GameState {
+  const migratePlaner = (machineState: any) =>
+    machineState.machineTypeId === "lunchboxPlaner"
+      ? {
+          ...machineState,
+          selectedOperationId: "plane",
+          // The crank position carries over; planers never dialed in start
+          // at the bottom of the scale like a fresh machine would.
+          selectedParameters: machineState.selectedParameters ?? {
+            targetThickness: 1,
+          },
+          inputMaterials: [],
+        }
+      : machineState;
+
+  const strandedPiles = old.machines
+    .filter(
+      (machineState: any) =>
+        machineState.machineTypeId === "lunchboxPlaner" &&
+        machineState.inputMaterials.length > 0,
+    )
+    .flatMap((machineState: any) => {
+      const infeed = new Machine(machineState).absoluteOperationPosition!;
+      return machineState.inputMaterials.map((material: any) => ({
+        material,
+        position: infeed,
+      }));
+    });
+
+  return {
+    ...old,
+    machines: old.machines.map(migratePlaner),
+    machineCrates: old.machineCrates.map((crate: any) => ({
+      ...crate,
+      machine: migratePlaner(crate.machine),
+    })),
+    materialPiles: [...old.materialPiles, ...strandedPiles],
   };
 }

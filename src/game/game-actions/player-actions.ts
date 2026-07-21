@@ -370,7 +370,12 @@ export function operateMachineAction(machine: Machine): GameAction {
       return gameState;
     }
 
-    const inventory = [...machineState.inputMaterials];
+    // Direct-feed machines take stock straight from the player's hands;
+    // everything else works from its staged input bay.
+    const directFeed = machine.type.directFeed === true;
+    const inventory = directFeed
+      ? [...gameState.player.inventory]
+      : [...machineState.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
     // Validate that we have all required materials
@@ -411,11 +416,14 @@ export function operateMachineAction(machine: Machine): GameAction {
     return {
       ...gameState,
       consumables: subtractConsumables(gameState.consumables, consumableCosts),
+      player: directFeed
+        ? { ...gameState.player, inventory }
+        : gameState.player,
       machines: gameState.machines.map((m) =>
         isSameMachine(m, machineState)
           ? {
               ...m,
-              inputMaterials: inventory,
+              inputMaterials: directFeed ? m.inputMaterials : inventory,
               processingMaterials: materialsToConsume,
               operationProgress: {
                 status: "inProgress" as const,

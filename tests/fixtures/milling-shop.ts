@@ -69,7 +69,7 @@ export const millingShop: GameState = {
   },
   machines: [
     idleMachine("jointer", [1, 1], "jointFace"),
-    idleMachine("lunchboxPlaner", [3, 1], "planeBoard", {
+    idleMachine("lunchboxPlaner", [3, 1], "plane", {
       targetThickness: 4,
     }),
     idleMachine("jobsiteTableSaw", [1, 4], "ripBoard", { targetWidth: 4 }, [
