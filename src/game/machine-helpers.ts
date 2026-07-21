@@ -1,15 +1,20 @@
 import { ConsumableStock, hasConsumables, NO_CONSUMABLES } from "./Consumable";
+import { ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
   Machine,
+  MachineOperation,
   ParameterizedOperation,
+  ParameterValues,
 } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { createMockMaterial, materialMeetsInput } from "./material-helpers";
 import {
   defaultParametersFor,
   getOperationInputMaterials,
+  isParameterizedOperation,
 } from "./operation-helpers";
+import { availableOperations } from "./skill-helpers";
 import { Vector, vectorEquals } from "./Vectors";
 
 export interface MaterialSlot {
@@ -167,15 +172,86 @@ export function parameterValueSatisfiable(
   return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
 }
 
+/** What feeding a direct-feed machine right now would run. */
+export interface FeedMatch {
+  readonly operation: MachineOperation | ParameterizedOperation;
+  /**
+   * The operation's parameters resolved against the machine's settings bag
+   * (its defaults filled in under whatever the player has dialed).
+   */
+  readonly parameters?: ParameterValues;
+  /** Carried materials the operation would consume, in match order. */
+  readonly materials: ReadonlyArray<MaterialInstance>;
+  /** What stays in the player's hands. */
+  readonly remaining: ReadonlyArray<MaterialInstance>;
+}
+
+/**
+ * The operation feeding this machine would run, inferred from what the
+ * player is carrying: the first of `operations` whose inputs are fully
+ * covered by carried stock under the machine's current settings. On real
+ * direct-feed machines the operations' input specs are disjoint (a rough
+ * board can only be face-jointed, a panel can only be crosscut), so the
+ * stock itself picks — there is no mode.
+ */
+export function findFeedableOperation(
+  machine: Machine,
+  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  carried: ReadonlyArray<MaterialInstance>,
+): FeedMatch | null {
+  for (const operation of operations) {
+    // The settings bag is shared across operations; each reads its own ids
+    // and falls back to its defaults for anything never dialed in.
+    const parameters = isParameterizedOperation(operation)
+      ? { ...defaultParametersFor(operation), ...machine.selectedParameters }
+      : machine.selectedParameters;
+    const requirements = getOperationInputMaterials(operation, parameters);
+    const remaining = [...carried];
+    const materials: MaterialInstance[] = [];
+    let satisfied = true;
+    for (const requirement of requirements) {
+      for (let i = 0; i < requirement.quantity && satisfied; i++) {
+        const index = remaining.findIndex((material) =>
+          materialMeetsInput(material, requirement),
+        );
+        if (index === -1) {
+          satisfied = false;
+        } else {
+          materials.push(remaining[index]);
+          remaining.splice(index, 1);
+        }
+      }
+    }
+    // Zero-input recipes aren't "fed" — feeding means presenting stock
+    if (satisfied && materials.length > 0) {
+      return { operation, parameters, materials, remaining };
+    }
+  }
+  return null;
+}
+
 /**
  * Direct-feed machines run on what the player is carrying, so callers pass
- * the inventory as `carried`; everything else runs on its staged input bay.
+ * the inventory as `carried` (plus `progression`, so skill-locked recipes
+ * can't be fed); everything else runs on its staged input bay.
  */
 export function machineCanOperate(
   machine: Machine,
   consumables: ConsumableStock = NO_CONSUMABLES,
   carried: ReadonlyArray<MaterialInstance> = [],
+  progression?: ProgressionState,
 ): boolean {
+  if (machine.type.directFeed) {
+    const operations = progression
+      ? availableOperations(machine, progression)
+      : machine.operations;
+    const match = findFeedableOperation(machine, operations, carried);
+    return (
+      match !== null &&
+      hasConsumables(consumables, match.operation.requiredConsumables ?? [])
+    );
+  }
+
   const operation = machine.selectedOperationOrNull;
   if (!operation) {
     return false;
@@ -185,8 +261,7 @@ export function machineCanOperate(
     machine.selectedParameters,
   );
 
-  const stock = machine.type.directFeed ? carried : machine.inputMaterials;
-  const slots = matchMaterialsToSlots(stock, inputMaterials);
+  const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);
 
   // Machine can operate if all slots have valid materials (no placeholders,
   // all valid) and the shop stock covers the recipe's supplies

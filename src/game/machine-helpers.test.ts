@@ -9,6 +9,7 @@ import {
   ParameterValues,
 } from "./Machine";
 import {
+  findFeedableOperation,
   matchMaterialsToSlots,
   parameterValueSatisfiable,
 } from "./machine-helpers";
@@ -422,5 +423,65 @@ describe("absoluteOutputPosition", () => {
       tools: [],
     });
     assert.strictEqual(machine.absoluteOutputPosition, null);
+  });
+});
+
+describe("findFeedableOperation", () => {
+  /** A table saw with both shop-made sleds mounted. */
+  function loadedSaw(selectedParameters?: ParameterValues): Machine {
+    return new Machine({
+      machineTypeId: "jobsiteTableSaw",
+      position: [2, 2],
+      rotation: 0,
+      selectedOperationId: "ripBoard",
+      selectedParameters,
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: ["crosscutSled", "straightLineSled"],
+    });
+  }
+
+  it("the carried stock decides the cut — the specs are disjoint", () => {
+    const saw = loadedSaw({ targetWidth: 4 });
+    // A rough edge can't ride the fence: it goes on the straight-line sled
+    const rough = board("walnut", 8, 6, 4, "rough", { faces: 0, edges: 0 });
+    assert.strictEqual(
+      findFeedableOperation(saw, saw.operations, [rough])?.operation.id,
+      "straightLineRip",
+    );
+    // An edge-jointed board rips against the fence
+    const jointed = board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 1 });
+    assert.strictEqual(
+      findFeedableOperation(saw, saw.operations, [jointed])?.operation.id,
+      "ripBoard",
+    );
+  });
+
+  it("reads the machine's settings bag, with defaults underneath", () => {
+    // Fence at 6": a 6"-wide board can't be ripped narrower than it is
+    const saw = loadedSaw({ targetWidth: 6 });
+    const jointed = board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 1 });
+    assert.strictEqual(
+      findFeedableOperation(saw, saw.operations, [jointed]),
+      null,
+    );
+  });
+
+  it("consumes the matching piece and returns the rest", () => {
+    const saw = loadedSaw({ targetWidth: 4 });
+    const rough = board("walnut", 8, 6, 4, "rough", { faces: 0, edges: 0 });
+    const spare = board("pine", 2, 2, 1);
+    const match = findFeedableOperation(saw, saw.operations, [spare, rough]);
+    // The pine offcut satisfies neither op at these settings; walnut rides
+    // the sled and the pine stays in hand
+    assert.strictEqual(match?.operation.id, "straightLineRip");
+    assert.deepStrictEqual(match?.materials, [rough]);
+    assert.deepStrictEqual(match?.remaining, [spare]);
   });
 });

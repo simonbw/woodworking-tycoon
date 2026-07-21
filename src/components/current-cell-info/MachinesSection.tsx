@@ -4,12 +4,14 @@ import { machineDustMultiplier } from "../../game/Dust";
 import {
   Machine,
   MachineOperation,
+  OperationParameter,
   ParameterizedOperation,
 } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import {
   operateMachineAction,
   setMachineOperationAction,
+  setMachineSettingsAction,
   stowMaterialsInMachineAction,
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
@@ -273,6 +275,14 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           dustMultiplier={dustMultiplier}
           workSpeed={machine.workSpeed}
           showShortcut={isTargeted(machine)}
+          // A bench is honestly recipe-driven: you're picking which plan
+          // is clipped above it, not flipping a machine mode
+          labelText={
+            machine.type.worktable ||
+            machine.state.machineTypeId === "workspace"
+              ? "Plan"
+              : "Mode"
+          }
         />
 
         {selectedOperation &&
@@ -545,9 +555,10 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
 /**
  * The stripped-down card for direct-feed machines: like standing at the
- * real thing, all you get is the machine's own controls — the height
- * scale, the power switch, and stock fed from your hands. No mode picker,
- * no input bay, no output tray (finished stock lands at the outfeed).
+ * real thing, all you get is the machine's own physical controls — its
+ * settings scales (fence, angle, height crank), the power switch if it
+ * has one, and stock presented from your hands. No mode picker and no
+ * input bay: which operation runs is decided by what you're carrying.
  * Everything secondary (tools, description) folds away, collapsed by
  * default.
  */
@@ -560,27 +571,46 @@ const DirectFeedMachineCard: React.FC<{
   const { isTargeted } = useTargetedMachine();
   const [expanded, setExpanded] = useState(false);
 
-  // Direct-feed machines run one operation; it doubles as the settings rack.
-  const operation = machine.selectedOperationOrNull ?? operations[0];
   const carried = gameState.player.inventory;
+  const verb = machine.type.feedVerb ?? "Feed";
+
+  // The machine's settings rack: every scale any of its operations reads,
+  // each shown once. The owning operation drives the reachability marks.
+  const settings: Array<{
+    param: OperationParameter;
+    operation: ParameterizedOperation;
+  }> = [];
+  for (const op of operations) {
+    if (!isParameterizedOperation(op)) continue;
+    for (const param of op.parameters) {
+      if (!settings.some((s) => s.param.id === param.id)) {
+        settings.push({ param, operation: op });
+      }
+    }
+  }
 
   const isOperating = machine.operationProgress.status === "inProgress";
-  const switchedOff = !machine.isPowered;
+  const hasSwitch = machine.type.powerSwitch === true;
+  const switchedOff = hasSwitch && !machine.isPowered;
   const canFeed =
     !isOperating &&
-    machineCanOperate(machine, gameState.consumables, carried);
+    machineCanOperate(
+      machine,
+      gameState.consumables,
+      carried,
+      gameState.progression,
+    );
 
-  const dustMultiplier = machineDustMultiplier(
-    gameState.dust,
-    machine,
-    gameState.shopInfo.size,
-  );
-  const phases = getOperationPhases(
-    operation,
-    gameState.progression,
-    dustMultiplier,
-    machine.workSpeed,
-  );
+  // Progress reads off the running operation (recorded when it was fed)
+  const runningOperation = machine.selectedOperationOrNull;
+  const phases = runningOperation
+    ? getOperationPhases(
+        runningOperation,
+        gameState.progression,
+        machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
+        machine.workSpeed,
+      )
+    : [];
   const totalDuration = phases.reduce((sum, phase) => sum + phase.duration, 0);
   const progressPercent =
     isOperating && totalDuration > 0
@@ -588,6 +618,15 @@ const DirectFeedMachineCard: React.FC<{
           totalDuration) *
         100
       : 0;
+
+  // Single-point stations (miter saw) keep their cut pieces on the table;
+  // feed-through machines deliver to the outfeed cell instead.
+  const outputsCollectedHere = machine.type.outputPosition === undefined;
+  const outputMaterials = [
+    ...groupBy(machine.outputMaterials, (material) =>
+      getMaterialName(material),
+    ).entries(),
+  ].sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <section className="paper-card space-y-2">
@@ -608,56 +647,49 @@ const DirectFeedMachineCard: React.FC<{
             )
           ) : switchedOff ? (
             "Switched off"
-          ) : (
+          ) : hasSwitch ? (
             <span className="text-ink-blue">Idling</span>
+          ) : (
+            "Idle"
           )}
         </span>
       </header>
 
-      {isParameterizedOperation(operation) &&
-        operation.parameters.map((param, index) => (
-          <div
-            key={param.id}
-            className="flex flex-row items-start gap-2 text-xs"
-          >
-            <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5 pt-2.5">
-              {param.name}
-              {/* Z drives the first parameter of the targeted machine */}
-              {index === 0 && isTargeted(machine) && (
-                <ShortcutKeys shortcut="cycle-parameter" />
-              )}
-            </span>
-            <DetentScale
-              param={param}
-              value={machine.selectedParameters?.[param.id] ?? param.values[0]}
-              onSelect={(value) =>
-                applyAction(
-                  setMachineOperationAction(machine, operation, {
-                    ...machine.selectedParameters,
-                    [param.id]: value,
-                  }),
-                )
-              }
-              satisfiable={(value) =>
-                parameterValueSatisfiable(
-                  machine,
-                  operation,
-                  param.id,
-                  value,
-                  carried,
-                )
-              }
-              stockValue={
-                carried
-                  .map((material) => stockDimension(material, param.id))
-                  .find((value) => value !== undefined)
-              }
-            />
-          </div>
-        ))}
+      {settings.map(({ param, operation }, index) => (
+        <div key={param.id} className="flex flex-row items-start gap-2 text-xs">
+          <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5 pt-2.5">
+            {param.name}
+            {/* Z drives the first setting of the targeted machine */}
+            {index === 0 && isTargeted(machine) && (
+              <ShortcutKeys shortcut="cycle-parameter" />
+            )}
+          </span>
+          <DetentScale
+            param={param}
+            value={machine.selectedParameters?.[param.id] ?? param.values[0]}
+            onSelect={(value) =>
+              applyAction(setMachineSettingsAction(machine, {
+                [param.id]: value,
+              }))
+            }
+            satisfiable={(value) =>
+              parameterValueSatisfiable(
+                machine,
+                operation,
+                param.id,
+                value,
+                carried,
+              )
+            }
+            stockValue={carried
+              .map((material) => stockDimension(material, param.id))
+              .find((value) => value !== undefined)}
+          />
+        </div>
+      ))}
 
       <div className="flex items-stretch gap-2">
-        {machine.type.powerSwitch && (
+        {hasSwitch && (
           <Tooltip
             content={
               switchedOff ? "Flip the power on" : "Shut the machine down"
@@ -680,7 +712,7 @@ const DirectFeedMachineCard: React.FC<{
             switchedOff
               ? "Switch the machine on first"
               : isOperating || canFeed
-                ? "Feed the carried stock through"
+                ? `${verb} the carried stock`
                 : "Carry stock the machine is set up to take"
           }
           shortcut={
@@ -692,18 +724,57 @@ const DirectFeedMachineCard: React.FC<{
             disabled={!canFeed || switchedOff}
             onClick={() => applyAction(operateMachineAction(machine))}
           >
-            {isOperating ? "Feeding..." : "Feed"}
+            {isOperating ? `${verb}ing...` : verb}
           </ProgressButton>
         </Tooltip>
       </div>
 
-      {machine.outputMaterials.length > 0 && (
-        // Finished stock comes off the far side of a feed-through machine —
-        // walk around to the outfeed cell to collect it.
-        <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-          Collect at outfeed ({machine.outputMaterials.length})
-        </div>
-      )}
+      {machine.outputMaterials.length > 0 &&
+        (outputsCollectedHere ? (
+          // Cut pieces sit on the saw table — take them right here
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1">
+              {outputMaterials.map(([name, materials]) => (
+                <span
+                  key={name}
+                  onClick={(event) => {
+                    if (event.shiftKey) {
+                      applyAction(
+                        takeOutputsFromMachineAction(materials, machine),
+                      );
+                    } else {
+                      applyAction(
+                        takeOutputsFromMachineAction([materials[0]], machine),
+                      );
+                    }
+                  }}
+                >
+                  <MaterialIcon
+                    material={materials[0]}
+                    quantity={materials.length}
+                    tooltip={`Take: ${name}`}
+                  />
+                </span>
+              ))}
+            </div>
+            <button
+              className="button-paper text-xs whitespace-nowrap"
+              onClick={() =>
+                applyAction(
+                  takeOutputsFromMachineAction(machine.outputMaterials, machine),
+                )
+              }
+            >
+              Take All ({machine.outputMaterials.length})
+            </button>
+          </div>
+        ) : (
+          // Finished stock comes off the far side of a feed-through
+          // machine — walk around to the outfeed cell to collect it.
+          <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+            Collect at outfeed ({machine.outputMaterials.length})
+          </div>
+        ))}
 
       <div>
         <button

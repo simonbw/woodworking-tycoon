@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { selectMode, setParameter } from "./machine-panel";
+import { setParameter } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -95,28 +95,31 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
     });
 
     await test.step("power switch: no cut until the jointer is switched on", async () => {
-      // Player starts on the jointer's operation cell
+      // Player starts on the jointer's operation cell, boards in hand.
+      // With two rough boards carried the machine would grab the first —
+      // park the spare on the floor so the jointer reads one board.
       await page
         .locator("li", { hasText: "Walnut Board" })
-        .getByRole("button", { name: "→ Jointer" })
+        .getByRole("button", { name: "Drop" })
         .click();
       await page.waitForTimeout(200);
       const jointerCard = machineCard(page, "Jointer");
-      // Loaded and ready, but the switch hasn't been flipped
+      // Stock in hand and ready, but the switch hasn't been flipped
       await expect(jointerCard.getByText("Switched off")).toBeVisible();
       await expect(
-        jointerCard.getByRole("button", { name: "Operate" }),
+        jointerCard.getByRole("button", { name: "Feed" }),
       ).toBeDisabled();
       await jointerCard.getByRole("button", { name: "Switch On" }).click();
       await expect(jointerCard.getByText("Idling")).toBeVisible();
       await expect(
-        jointerCard.getByRole("button", { name: "Operate" }),
+        jointerCard.getByRole("button", { name: "Feed" }),
       ).toBeEnabled();
     });
 
-    await test.step("jointer: flatten a face, then straighten an edge", async () => {
+    await test.step("jointer: the stock decides — face pass, then edge pass", async () => {
+      // No mode was ever picked: a rough board can only take a face pass
       await machineCard(page, "Jointer")
-        .getByRole("button", { name: "Operate" })
+        .getByRole("button", { name: "Feed" })
         .click();
       await waitForBoard(page, "b.jointedFaces === 1");
       // Finished stock lands at the outfeed side — collect it there
@@ -131,16 +134,11 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
           .getByText("Walnut Board (8'x6\"x4/4, rough, face jointed)")
           .first(),
       ).toBeVisible();
-      // Back around to the infeed to set up the next pass
+      // Back around to the infeed; feeding the same board again is now an
+      // edge pass — the flat face rides the fence
       await movePlayerTo(page, [1, 2]);
-      await selectMode(page, "Jointer", "Joint Edge");
-      await page
-        .locator("li", { hasText: "face jointed" })
-        .getByRole("button", { name: "→ Jointer" })
-        .click();
-      await page.waitForTimeout(200);
       await machineCard(page, "Jointer")
-        .getByRole("button", { name: "Operate" })
+        .getByRole("button", { name: "Feed" })
         .click();
       await waitForBoard(page, "b.jointedFaces === 1 && b.jointedEdges === 1");
       await movePlayerTo(page, [1, 0]);
@@ -150,22 +148,15 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await page.waitForTimeout(200);
     });
 
-    await test.step("table saw: rip to width before planing — order doesn't matter", async () => {
+    await test.step("table saw: an edge-jointed board rips against the fence", async () => {
       await movePlayerTo(page, [1, 5]);
-      await page
-        .locator("li", {
-          hasText: "Walnut Board (8'x6\"x4/4, rough, face jointed)",
-        })
-        .getByRole("button", { name: "→ Jobsite Table Saw" })
-        .click();
-      await page.waitForTimeout(200);
       // P flips the switch on the machine the player is standing at
       await page.keyboard.press("p");
       await expect(
         machineCard(page, "Jobsite Table Saw").getByText("Idling"),
       ).toBeVisible();
       await machineCard(page, "Jobsite Table Saw")
-        .getByRole("button", { name: "Operate" })
+        .getByRole("button", { name: "Feed" })
         .click();
       // The kept piece has both edges straight; the offcut keeps one
       await waitForBoard(page, "b.width === 4 && b.jointedEdges === 2");
@@ -234,17 +225,16 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       ).toBeVisible();
     });
 
-    await test.step("straight-line sled: no prerequisites, edges from nothing", async () => {
-      await movePlayerTo(page, [1, 5]);
-      // The sled's operation joined the table saw's mode list
-      await selectMode(page, "Jobsite Table Saw", "Straight-Line Rip");
-      await page
-        .locator("li", { hasText: "Walnut Board (8'x6\"x4/4, rough sawn)" })
-        .getByRole("button", { name: "→ Jobsite Table Saw" })
-        .click();
+    await test.step("straight-line sled: a rough board rides the sled, not the fence", async () => {
+      // Fetch the spare rough board parked by the jointer at the start
+      await movePlayerTo(page, [1, 2]);
+      await page.getByRole("button", { name: "Pick Up" }).click();
       await page.waitForTimeout(200);
+      await movePlayerTo(page, [1, 5]);
+      // No mode: a rough edge can't ride the fence, so feeding this board
+      // runs the mounted straight-line sled
       await machineCard(page, "Jobsite Table Saw")
-        .getByRole("button", { name: "Operate" })
+        .getByRole("button", { name: "Feed" })
         .click();
       await waitForBoard(
         page,

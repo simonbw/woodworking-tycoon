@@ -1,10 +1,11 @@
 import { freshMachineState } from "./game-actions/machine-actions";
 import { GameState } from "./GameState";
 import { Machine, MachineId } from "./Machine";
+import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 17; // Increment this when GameState structure changes
+const SAVE_VERSION = 18; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -74,6 +75,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 16) {
       saveData.gameState = migrateV16toV17(saveData.gameState);
       saveData.version = 17;
+    }
+
+    if (saveData.version === 17) {
+      saveData.gameState = migrateV17toV18(saveData.gameState);
+      saveData.version = 18;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -275,6 +281,66 @@ export function migrateV16toV17(old: any): GameState {
     machineCrates: old.machineCrates.map((crate: any) => ({
       ...crate,
       machine: migratePlaner(crate.machine),
+    })),
+    materialPiles: [...old.materialPiles, ...strandedPiles],
+  };
+}
+
+/** The machines that became direct-feed in v18 (the planer already was). */
+const V18_DIRECT_FEED: ReadonlyArray<string> = [
+  "jointer",
+  "jobsiteTableSaw",
+  "miterSaw",
+];
+
+/**
+ * v17 → v18: the jointer, table saw, and miter saw became direct-feed —
+ * their input bays disappeared (stock feeds from the player's hands, and
+ * the stock decides which operation runs). Operation ids are unchanged;
+ * anything staged in a bay lands as piles at the machine's operator cell,
+ * and the settings bag gets the selected operation's defaults filled in
+ * underneath whatever was already dialed.
+ */
+export function migrateV17toV18(old: any): GameState {
+  const migrate = (machineState: any) => {
+    if (!V18_DIRECT_FEED.includes(machineState.machineTypeId)) {
+      return machineState;
+    }
+    const operation = new Machine(machineState).selectedOperationOrNull;
+    return {
+      ...machineState,
+      selectedParameters: operation
+        ? {
+            ...defaultParametersFor(operation),
+            ...machineState.selectedParameters,
+          }
+        : machineState.selectedParameters,
+      inputMaterials: [],
+    };
+  };
+
+  const strandedPiles = old.machines
+    .filter(
+      (machineState: any) =>
+        V18_DIRECT_FEED.includes(machineState.machineTypeId) &&
+        machineState.inputMaterials.length > 0,
+    )
+    .flatMap((machineState: any) => {
+      const operatorCell =
+        new Machine(machineState).absoluteOperationPosition ??
+        machineState.position;
+      return machineState.inputMaterials.map((material: any) => ({
+        material,
+        position: operatorCell,
+      }));
+    });
+
+  return {
+    ...old,
+    machines: old.machines.map(migrate),
+    machineCrates: old.machineCrates.map((crate: any) => ({
+      ...crate,
+      machine: migrate(crate.machine),
     })),
     materialPiles: [...old.materialPiles, ...strandedPiles],
   };

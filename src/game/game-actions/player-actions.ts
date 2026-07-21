@@ -3,6 +3,7 @@ import { hasConsumables, subtractConsumables } from "../Consumable";
 import { machineDustMultiplier, moveDustPenalty } from "../Dust";
 import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "../ShopVac";
 import { CellMap } from "../CellMap";
+import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
   isSameMachine,
@@ -355,6 +356,29 @@ export function toggleMachinePowerAction(machine: Machine): GameAction {
   };
 }
 
+/**
+ * Adjust a machine's persistent settings (fence position, saw angle, cut
+ * height) without touching which operation is selected or running. On
+ * direct-feed machines `selectedParameters` is exactly this: the physical
+ * state of the machine's cranks and stops, shared by all its operations.
+ */
+export function setMachineSettingsAction(
+  machine: Machine,
+  settings: ParameterValues,
+): GameAction {
+  return (gameState) => ({
+    ...gameState,
+    machines: gameState.machines.map((m) =>
+      isSameMachine(m, machine.state)
+        ? {
+            ...m,
+            selectedParameters: { ...m.selectedParameters, ...settings },
+          }
+        : m,
+    ),
+  });
+}
+
 export function operateMachineAction(machine: Machine): GameAction {
   return (gameState) => {
     const machineState = machine.state;
@@ -370,12 +394,57 @@ export function operateMachineAction(machine: Machine): GameAction {
       return gameState;
     }
 
-    // Direct-feed machines take stock straight from the player's hands;
-    // everything else works from its staged input bay.
-    const directFeed = machine.type.directFeed === true;
-    const inventory = directFeed
-      ? [...gameState.player.inventory]
-      : [...machineState.inputMaterials];
+    // Direct-feed machines take stock straight from the player's hands,
+    // and the stock decides which operation runs (see findFeedableOperation)
+    if (machine.type.directFeed) {
+      const match = findFeedableOperation(
+        machine,
+        availableOperations(machine, gameState.progression),
+        gameState.player.inventory,
+      );
+      if (!match) {
+        console.warn("Nothing in hand that this machine is set up to take");
+        return gameState;
+      }
+      const consumableCosts = match.operation.requiredConsumables ?? [];
+      if (!hasConsumables(gameState.consumables, consumableCosts)) {
+        console.warn("Tried to perform operation without required supplies");
+        return gameState;
+      }
+      const [firstPhase] = getOperationPhases(
+        match.operation,
+        gameState.progression,
+        machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
+        machine.workSpeed,
+      );
+      return {
+        ...gameState,
+        consumables: subtractConsumables(
+          gameState.consumables,
+          consumableCosts,
+        ),
+        player: { ...gameState.player, inventory: [...match.remaining] },
+        machines: gameState.machines.map((m) =>
+          isSameMachine(m, machineState)
+            ? {
+                ...m,
+                // The inferred operation is recorded (with its resolved
+                // parameters) so completion knows what it's finishing
+                selectedOperationId: match.operation.id,
+                selectedParameters: match.parameters,
+                processingMaterials: [...match.materials],
+                operationProgress: {
+                  status: "inProgress" as const,
+                  phaseIndex: 0,
+                  ticksRemaining: firstPhase.duration,
+                },
+              }
+            : m,
+        ),
+      };
+    }
+
+    const inventory = [...machineState.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
     // Validate that we have all required materials
@@ -416,14 +485,11 @@ export function operateMachineAction(machine: Machine): GameAction {
     return {
       ...gameState,
       consumables: subtractConsumables(gameState.consumables, consumableCosts),
-      player: directFeed
-        ? { ...gameState.player, inventory }
-        : gameState.player,
       machines: gameState.machines.map((m) =>
         isSameMachine(m, machineState)
           ? {
               ...m,
-              inputMaterials: directFeed ? m.inputMaterials : inventory,
+              inputMaterials: inventory,
               processingMaterials: materialsToConsume,
               operationProgress: {
                 status: "inProgress" as const,

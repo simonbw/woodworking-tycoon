@@ -13,23 +13,39 @@ Operate button. The direct-feed model splits that into what a real machine
 actually has:
 
 1. **Machine settings** — physical, persistent state of the machine itself
-   (the planer's cut height). Stored in `MachineState.selectedParameters`,
-   which persists across passes; there is only one operation, so nothing
-   ever resets it. Rendered as the `DetentScale` — the scale printed on
-   the machine.
+   (the planer's cut height, the table saw's fence, the miter saw's angle
+   and stop). Stored in `MachineState.selectedParameters`, which on
+   direct-feed machines is a **settings bag shared by all the machine's
+   operations**: each operation reads its own parameter ids and falls back
+   to its defaults for anything never dialed in. Settings are adjusted via
+   `setMachineSettingsAction` (which never touches which operation is
+   selected or running) and rendered as `DetentScale`s — the scales
+   printed on the machine.
 2. **The workpiece in your hands** — there is no input bay
-   (`inputSpaces: 0`) and no load step. `operateMachineAction` on a
-   direct-feed machine consumes the first *carried* material the operation
-   accepts, straight into `processingMaterials`.
-3. **One verb** — Feed. The UI (`DirectFeedMachineCard` in
-   `MachinesSection`) collapses to name + status, the settings scale, the
-   power switch, and a Feed button; everything secondary (tools,
-   description) sits behind a Details toggle, collapsed by default. The
-   inventory list offers no "→ Planer" load buttons, and the action bar
-   hint reads "Feed Planer".
+   (`inputSpaces: 0`) and no load step. Feeding runs
+   `findFeedableOperation`: the first operation whose inputs are covered
+   by carried stock under the current settings. Operations on a real
+   direct-feed machine have naturally disjoint input specs, so the stock
+   itself decides — a rough board at the jointer can only take a face
+   pass; once face-jointed, feeding it again is the edge pass. At the
+   table saw an edge-jointed board rips against the fence, a rough one
+   rides the straight-line sled, and a panel goes on the crosscut sled —
+   mounting a jig is the only "mode switch", and it's a physical act.
+3. **One verb** — Feed (the miter saw says **Cut**, via
+   `MachineType.feedVerb`). The UI (`DirectFeedMachineCard` in
+   `MachinesSection`) collapses to name + status, the settings scales, the
+   power switch if the machine has one, and the verb button; everything
+   secondary (tools, description) sits behind a Details toggle, collapsed
+   by default. The inventory list offers no "→ Machine" load buttons, and
+   the action bar hint reads "Feed Planer" / "Cut Miter Saw". Single-point
+   stations (the miter saw) show their cut pieces on the card for
+   collection; feed-through machines deliver to the outfeed cell.
 
 The *operation* stops being selected and becomes implied: given what
 you're feeding and how the machine is set, only one thing can happen.
+Direct-feed machines: the planer, jointer, jobsite table saw, and miter
+saw. Benches keep explicit recipe selection, relabeled **Plan** — a bench
+really is recipe-driven; you're choosing which drawing is pinned above it.
 
 ## The planer (the pilot)
 
@@ -54,18 +70,31 @@ you're feeding and how the machine is set, only one thing can happen.
   from `attended: false` phases (glue curing), which are inert waiting,
   not machine work.
 
-Save migration (v16 → v17): planer op ids collapse to `plane`, staged
-input-bay stock lands as piles at the infeed cell, and crated planers
-migrate the same way.
+Save migrations: v16 → v17 collapsed the planer's op ids to `plane` and
+flushed its input bay to piles at the infeed; v17 → v18 did the bay flush
+for the jointer, table saw, and miter saw (their op ids are unchanged —
+inference picks among them) and filled each machine's settings bag with
+its selected operation's defaults.
+
+## The other machines, briefly
+
+- **Jointer** (hand-fed, power switch, no settings): face-vs-edge is
+  inferred from the stock — `jointFace` only takes `jointedFaces: 0`
+  boards, `jointEdge` only face-jointed ones with a rough edge. Fully
+  milled stock is refused; the jointer has nothing to add.
+- **Table saw** (hand-fed, power switch): the fence (`targetWidth`) is its
+  one setting; the mounted jig decides everything else.
+- **Miter saw** (trigger tool — no switch, verb "Cut"): angle, cut end,
+  and stop length persist as settings; cut pieces stay on the saw table.
+- **Garbage can and benches** keep the classic sheet: per-item choice
+  matters when the action is destructive, and a bench is honestly
+  recipe-driven (its picker is labeled "Plan").
 
 ## Where this is headed (not yet built)
 
-- **Jointer**: infer face-vs-edge from the stock (face first, then edge)
-  instead of a mode switch.
-- **Table saw**: `targetWidth` becomes the fence position (a machine
-  setting); rip-vs-crosscut is already physical via the mounted sled.
-- **Miter saw**: the angle is a machine setting shown on the sprite; length
-  and cut end become one spatial "slide the board under the blade" gesture;
-  a stop block accessory turns length into a persistent setting.
-- **Benches** keep recipe selection, reframed as the plan pinned above the
-  bench — a bench really is recipe-driven.
+- **In-world settings**: the miter saw head rotating to its set angle on
+  the sprite, the fence line on the table saw's table.
+- **Stop block accessory** for the miter saw: without one, each cut pays a
+  measure-and-mark cost; with it, repeat cuts at the set length are quick.
+- **Spatial cut widget**: slide the board under the blade line to set
+  length and kept end in one gesture, replacing the two scales.
