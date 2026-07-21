@@ -1,6 +1,7 @@
 import { MachineSoundPhase } from "../game/machine-sound-helpers";
 import { getSfxBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
+import { MachineVoice, PHASE_RANK } from "./machineVoice";
 import { loadSoundBuffer } from "./sfx";
 
 /**
@@ -44,12 +45,6 @@ const DOWNWARD_DEBOUNCE_MS = 250;
 /** Idle-loop level while the cutting loop is dominant. */
 const RUN_GAIN_WHILE_CUTTING = 0.15;
 
-const PHASE_RANK: Record<MachineSoundPhase, number> = {
-  off: 0,
-  running: 1,
-  cutting: 2,
-};
-
 interface LoopGraph {
   readonly master: GainNode;
   readonly runGain: GainNode;
@@ -64,7 +59,7 @@ interface LoadedBuffers {
   readonly stop: AudioBuffer | null;
 }
 
-export class LoopingSoundPlayer {
+export class LoopingSoundPlayer implements MachineVoice {
   private readonly def: MachineSoundDef;
   /** What the game wants right now. */
   private desired: MachineSoundPhase = "off";

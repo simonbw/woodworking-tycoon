@@ -161,6 +161,33 @@ keep the existing one-shot path. The two systems coexist: continuous sound
 *during* the operation, one-shot at completion (board drop, offcut clatter)
 via the existing `SoundEvent` queue.
 
+### Pure-synth experiment (`src/utils/planerSynth.ts`)
+
+The planer currently uses **no samples at all** — `PlanerSynthVoice` is a
+fully procedural voice behind the same `MachineVoice` interface that
+`LoopingSoundPlayer` implements, so the two approaches are swappable per
+machine in `MACHINE_VOICES` (`MachineSoundLayer.tsx`). Three modules, each a
+physical noise source, all derived from one `rpm` scalar:
+
+- **Motor**: sawtooth growl at cutterhead rotation (~168 Hz ≈ 10k RPM)
+  through a lowpass, plus the signature scream — the armature slot-pass
+  partial at 14× rotation, modeled as two detuned sines that beat.
+- **Air**: bandpassed noise whose center frequency and level track rpm.
+- **Cut**: noise amplitude-modulated by a square wave at knife-pass rate
+  (2 knives × rotation ≈ 336 Hz — too fast to hear as impacts, it fuses
+  into the pitched buzz a planer cut actually is), shaped through three
+  wood-body formant resonances plus a broadband bed, with slow
+  filtered-noise wander so the texture breathes like grain variation.
+
+Because every frequency hangs off `rpm`, spin-up/wind-down are ramps on one
+scalar and cutting sags the whole spectrum ~6% (motor bogging down) — the
+detail that makes it read as one machine under load. All tuning lives in
+`PLANER_SYNTH_PARAMS`. If the recorded samples win, the swap back is one
+line; if the synth wins, the motor/air/load-sag skeleton carries straight
+over to the table saw and jointer — only the cut model changes (a saw's
+tooth-pass rate is in the kHz, so its cut reads as hiss-with-a-snarl rather
+than the planer's chop-buzz).
+
 ### One-shot variation (small upgrade to `sfx.ts`)
 
 To use the multi-take recordings: name files `material-drop-1.ogg`,

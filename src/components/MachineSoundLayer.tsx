@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { getMachines, MachineId, MachineState } from "../game/Machine";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
-import { LoopingSoundPlayer, MachineSoundDef } from "../utils/loopingSound";
+import { MachineVoice } from "../utils/machineVoice";
+import { PlanerSynthVoice } from "../utils/planerSynth";
 import { useGameState } from "./useGameState";
 
 /**
@@ -10,24 +11,23 @@ import { useGameState } from "./useGameState";
  * resume, and survive save reloads — a missed "stop" event would leave a saw
  * screaming forever. Instead this headless component derives each machine's
  * desired sound phase from game state on every render and lets a
- * `LoopingSoundPlayer` per placed machine converge on it.
+ * `MachineVoice` per placed machine converge on it.
  *
  * Mounted once inside the GameStateProvider (see `Main.tsx`).
  */
 
 /**
- * Machines with a continuous sound set. Machines not listed here (benches,
- * the miter saw — whose whole cycle is one short one-shot) keep the existing
+ * Machines with a continuous voice. Machines not listed here (benches, the
+ * miter saw — whose whole cycle is one short one-shot) keep the existing
  * one-shot path; both systems coexist.
+ *
+ * The planer pilots the pure-synth direction; a sample-based machine would
+ * register `() => new LoopingSoundPlayer({ start: ..., runLoop: ..., ... })`
+ * here instead (the placeholder planer-*.ogg clips are still in
+ * static/sounds/ for that path).
  */
-const MACHINE_SOUND_DEFS: Partial<Record<MachineId, MachineSoundDef>> = {
-  lunchboxPlaner: {
-    start: "planer-start",
-    runLoop: "planer-run-loop",
-    cutLoop: "planer-cut-loop",
-    stop: "planer-stop",
-    gain: 0.5,
-  },
+const MACHINE_VOICES: Partial<Record<MachineId, () => MachineVoice>> = {
+  lunchboxPlaner: () => new PlanerSynthVoice(),
 };
 
 /**
@@ -40,19 +40,19 @@ function machineKey(state: MachineState): string {
 
 export const MachineSoundLayer: React.FC = () => {
   const gameState = useGameState();
-  const playersRef = useRef(new Map<string, LoopingSoundPlayer>());
+  const playersRef = useRef(new Map<string, MachineVoice>());
 
   useEffect(() => {
     const players = playersRef.current;
     const seen = new Set<string>();
     for (const machine of getMachines(gameState.machines)) {
-      const def = MACHINE_SOUND_DEFS[machine.state.machineTypeId];
-      if (!def) continue;
+      const makeVoice = MACHINE_VOICES[machine.state.machineTypeId];
+      if (!makeVoice) continue;
       const key = machineKey(machine.state);
       seen.add(key);
       let player = players.get(key);
       if (!player) {
-        player = new LoopingSoundPlayer(def);
+        player = makeVoice();
         players.set(key, player);
       }
       player.setPhase(
