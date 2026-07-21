@@ -330,12 +330,39 @@ export function setMachineOperationAction(
   };
 }
 
+/**
+ * Flip a machine's power switch. Only meaningful on types with
+ * `powerSwitch`; switching off mid-operation pauses the cut (the wood
+ * stays put) until the machine is switched back on.
+ */
+export function toggleMachinePowerAction(machine: Machine): GameAction {
+  return (gameState) => {
+    if (!machine.type.powerSwitch) {
+      return gameState;
+    }
+    return {
+      ...gameState,
+      machines: gameState.machines.map((m) =>
+        isSameMachine(m, machine.state)
+          ? { ...m, poweredOn: !(m.poweredOn ?? false) }
+          : m,
+      ),
+    };
+  };
+}
+
 export function operateMachineAction(machine: Machine): GameAction {
   return (gameState) => {
     const machineState = machine.state;
     // Can't start a new operation if one is in progress
     if (machineState.operationProgress.status === "inProgress") {
       console.warn("Machine is already operating");
+      return gameState;
+    }
+
+    // Flipping the switch is its own step — no power, no cut
+    if (!machine.isPowered) {
+      console.warn("Machine is switched off");
       return gameState;
     }
 

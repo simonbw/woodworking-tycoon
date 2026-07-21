@@ -25,6 +25,9 @@ function idleMachine(
       phaseIndex: 0,
       ticksRemaining: 0,
     },
+    // This spec is about the end-grain chain, not the power switch — the
+    // saw starts switched on (milling.spec covers the switch itself).
+    poweredOn: true,
   };
 }
 

@@ -29,6 +29,7 @@ export const jointer: MachineType = {
   inputSpaces: 1,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
+  powerSwitch: true,
   operations: [
     {
       id: "jointFace",

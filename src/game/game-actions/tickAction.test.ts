@@ -359,6 +359,7 @@ describe("tickAction dust emission", () => {
       processingMaterials: [stock],
       outputMaterials: [],
       tools: [],
+      poweredOn: true,
     };
     return stateWith({
       machines: [planer],
@@ -408,6 +409,17 @@ describe("tickAction dust emission", () => {
     );
     assert.deepStrictEqual(result.dust, {});
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
+  });
+
+  it("pauses the cut (and its dust) while the machine is switched off", () => {
+    const state = planingStateWith();
+    const off = {
+      ...state,
+      machines: [{ ...state.machines[0], poweredOn: false }],
+    };
+    const result = tickAction(off);
+    assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
+    assert.deepStrictEqual(result.dust, {});
   });
 
   it("emits nothing for operations without a dustOutput", () => {

@@ -48,6 +48,13 @@ export interface MachineType {
    * phases (glue curing) don't care where the clamps sit.
    */
   readonly workSpeed?: number;
+  /**
+   * The machine has an on/off switch the player must flip before operating
+   * it, and the motor keeps running until switched off. Stationary power
+   * tools (planer, jointer, table saw) have one; trigger tools like the
+   * miter saw and unpowered benches don't.
+   */
+  readonly powerSwitch?: boolean;
   /** A small machine that can sit on a worktable instead of the floor. */
   readonly benchtop?: boolean;
   /** A work surface benchtop machines can be mounted onto. */
@@ -216,6 +223,12 @@ export interface MachineState {
    * Optional so pre-shelf saves load untouched.
    */
   readonly storedMaterials?: ReadonlyArray<MaterialInstance>;
+  /**
+   * Whether the machine's power switch is flipped on. Only meaningful on
+   * types with `powerSwitch`; optional so pre-switch saves load untouched
+   * (machines come up switched off, like after any power outage).
+   */
+  readonly poweredOn?: boolean;
 }
 
 /**
@@ -283,6 +296,14 @@ export class Machine {
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null
     );
+  }
+
+  /**
+   * True when the machine has the power it needs to run: either it has no
+   * power switch, or the switch is flipped on.
+   */
+  get isPowered(): boolean {
+    return !this.type.powerSwitch || (this.state.poweredOn ?? false);
   }
 
   /** Convert a machine-local cell offset into a shop cell. */

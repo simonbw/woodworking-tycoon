@@ -8,6 +8,7 @@ import {
   setMachineOperationAction,
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
+  toggleMachinePowerAction,
 } from "../../game/game-actions/player-actions";
 import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import {
@@ -190,6 +191,17 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     () => {
       const machine = targeted.current;
       if (machine) applyAction(operateMachineAction(machine));
+    },
+    present,
+  );
+
+  useShortcut(
+    "power-toggle",
+    () => {
+      const machine = targeted.current;
+      if (machine?.type.powerSwitch) {
+        applyAction(toggleMachinePowerAction(machine));
+      }
     },
     present,
   );

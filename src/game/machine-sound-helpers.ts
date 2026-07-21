@@ -11,10 +11,11 @@ import { Vector } from "./Vectors";
  * operation that pauses when the player walks off, resumes, or comes back
  * from a save reload just sounds right, with no events to miss.
  *
- *  - "off":     nothing in progress (or a hands-free phase like glue curing)
- *  - "running": in progress but not cutting — the player stepped away
- *               mid-operation or the machine is waiting at a phase boundary,
- *               so the motor idles
+ *  - "off":     no power — nothing in progress (or a hands-free phase like
+ *               glue curing), or the machine's power switch is off
+ *  - "running": the motor idles — a switched machine is on but not biting
+ *               wood, the player stepped away mid-operation, or the machine
+ *               is waiting at a phase boundary
  *  - "cutting": an attended phase is actively ticking
  */
 export type MachineSoundPhase = "off" | "running" | "cutting";
@@ -25,13 +26,23 @@ export function deriveMachineSoundPhase(
   playerIsAway: boolean,
   progression: ProgressionState,
 ): MachineSoundPhase {
+  // A machine with a power switch is audible from the switch, not the work:
+  // off is silent even mid-operation (the cut is paused), and on means the
+  // motor idles between cuts — the running sound is what reminds the player
+  // they left the planer on.
+  const switched = machine.type.powerSwitch === true;
+  if (switched && !machine.isPowered) {
+    return "off";
+  }
+  const idle: MachineSoundPhase = switched ? "running" : "off";
+
   const progress = machine.operationProgress;
   if (progress.status !== "inProgress") {
-    return "off";
+    return idle;
   }
   const operation = machine.selectedOperationOrNull;
   if (!operation) {
-    return "off";
+    return idle;
   }
 
   // Waiting at a phase boundary for the player: the motor idles until they
@@ -45,7 +56,7 @@ export function deriveMachineSoundPhase(
 
   // Hands-free phases (glue curing) make no machine noise.
   if (!phase.attended) {
-    return "off";
+    return idle;
   }
 
   return playerAttendsMachine(machine, playerPosition, playerIsAway)
