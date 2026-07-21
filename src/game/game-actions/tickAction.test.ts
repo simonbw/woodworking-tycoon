@@ -370,11 +370,11 @@ describe("tickAction dust emission", () => {
   it("lands species-tagged dust around the machine while it cuts", () => {
     const result = tickAction(planingStateWith());
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 4);
-    // The planer's dustOutput (2/tick): 70% split over the two core cells
+    // The planer's dustOutput (4/tick): 70% split over the two core cells
     // (machine + operation position), 30% over the six ring cells
-    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.7) < 1e-9);
-    assert.ok(Math.abs(cellDust(result.dust, [1, 2]) - 0.7) < 1e-9);
-    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.1) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 1.4) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [1, 2]) - 1.4) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.2) < 1e-9);
     assert.ok((result.dust["1,1"].walnut ?? 0) > 0);
   });
 
@@ -397,7 +397,7 @@ describe("tickAction dust emission", () => {
     for (let i = 0; i < 5; i++) {
       state = tickAction(state);
     }
-    assert.ok(Math.abs(cellDust(state.dust, [1, 1]) - 3.5) < 1e-9);
+    assert.ok(Math.abs(cellDust(state.dust, [1, 1]) - 7) < 1e-9);
   });
 
   it("makes no dust while the operation is paused", () => {
@@ -437,10 +437,10 @@ describe("tickAction dust emission", () => {
       machines: [{ ...bagged.machines[0], tools: ["dustBag" as const] }],
     };
     const result = tickAction(withBag);
-    // Planer emits 2/tick bare; the bag captures 60%, so 0.8 lands —
+    // Planer emits 4/tick bare; the bag captures 60%, so 1.6 lands —
     // 70% split over the two core cells
-    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.28) < 1e-9);
-    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.04) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.56) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.08) < 1e-9);
   });
 
   it("unlocks sweeping once the floor crosses the dust threshold", () => {

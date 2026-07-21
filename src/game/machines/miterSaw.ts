@@ -27,7 +27,7 @@ export const miterSaw: MachineType = {
       requiredSkill: "basicMilling",
       name: "Cut Board",
       duration: 15,
-      dustOutput: 0.5,
+      dustOutput: 1,
       // Set up the saw, don't pick a recipe: swing the blade to an angle
       // stop, choose which end of the stock faces the blade, and set the
       // stop for the kept piece's length.

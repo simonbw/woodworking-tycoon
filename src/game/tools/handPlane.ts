@@ -21,7 +21,7 @@ export const handPlane: ToolType = {
       name: "Flatten Face by Hand",
       requiredSkill: "basicMilling",
       duration: 35,
-      dustOutput: 0.1,
+      dustOutput: 0.2,
       inputMaterials: [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
@@ -39,7 +39,7 @@ export const handPlane: ToolType = {
       name: "Straighten Edge by Hand",
       requiredSkill: "basicMilling",
       duration: 30,
-      dustOutput: 0.1,
+      dustOutput: 0.2,
       inputMaterials: [{ type: ["board"], jointedEdges: [0], quantity: 1 }],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
