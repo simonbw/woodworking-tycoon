@@ -401,12 +401,34 @@ describe("tickAction dust emission", () => {
     assert.ok(Math.abs(cellDust(state.dust, [1, 1]) - 7) < 1e-9);
   });
 
-  it("makes no dust while the operation is paused", () => {
+  it("power feed keeps cutting (and shedding dust) with the player away", () => {
+    // The planer's feed rollers don't care where the player stands
     const result = tickAction(
       planingStateWith({
         player: { ...initialGameState.player, position: [0, 0] },
       }),
     );
+    assert.ok(cellDust(result.dust, [1, 1]) > 0);
+    assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 4);
+  });
+
+  it("attended work makes no dust while the player is elsewhere", () => {
+    // The jointer has no power feed: stepping away pauses cut and dust
+    const state = planingStateWith({
+      player: { ...initialGameState.player, position: [0, 0] },
+    });
+    const jointing = {
+      ...state,
+      machines: [
+        {
+          ...state.machines[0],
+          machineTypeId: "jointer" as const,
+          selectedOperationId: "jointFace",
+          selectedParameters: undefined,
+        },
+      ],
+    };
+    const result = tickAction(jointing);
     assert.deepStrictEqual(result.dust, {});
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });

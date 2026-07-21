@@ -47,6 +47,12 @@ you're feeding and how the machine is set, only one thing can happen.
   about what the old single-shot operation did.
 - Prerequisites unchanged: boards need a jointed reference face, end-grain
   panels are refused (see `docs/tools-and-surfaces.md`).
+- **Power feed** (`MachineOperation.powerFeed`): the feed rollers pull the
+  board through on their own, so the pass keeps ticking — dust, noise, and
+  dust-slowdown included — while the player walks off. Power is still
+  required: switching the machine off pauses the cut. This is distinct
+  from `attended: false` phases (glue curing), which are inert waiting,
+  not machine work.
 
 Save migration (v16 → v17): planer op ids collapse to `plane`, staged
 input-bay stock lands as piles at the infeed cell, and crated planers

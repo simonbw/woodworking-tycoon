@@ -54,6 +54,9 @@ export const lunchboxPlaner: MachineType = {
       name: "Plane",
       duration: 8,
       dustOutput: 4,
+      // Feed rollers pull the board through on their own — once it's in,
+      // the pass finishes whether or not anyone is standing there
+      powerFeed: true,
       parameters: [
         {
           id: "targetThickness",

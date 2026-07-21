@@ -117,15 +117,15 @@ describe("deriveMachineSoundPhase", () => {
     );
   });
 
-  it("idles when the player steps away mid-operation", () => {
+  it("power feed keeps cutting when the player steps away", () => {
     const machine = planerMachine(MID_CUT);
     assert.equal(
       deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
-      "running",
+      "cutting",
     );
   });
 
-  it("idles while the player is on an away trip", () => {
+  it("power feed keeps cutting while the player is on an away trip", () => {
     const machine = planerMachine(MID_CUT);
     assert.equal(
       deriveMachineSoundPhase(
@@ -134,6 +134,14 @@ describe("deriveMachineSoundPhase", () => {
         true,
         progression,
       ),
+      "cutting",
+    );
+  });
+
+  it("an attended cut idles when the player steps away (jointer)", () => {
+    const machine = machineWith("jointer", "jointFace", MID_CUT, true);
+    assert.equal(
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
       "running",
     );
   });

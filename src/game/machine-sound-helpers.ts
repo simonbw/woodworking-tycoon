@@ -59,7 +59,9 @@ export function deriveMachineSoundPhase(
     return idle;
   }
 
-  return playerAttendsMachine(machine, playerPosition, playerIsAway)
+  // Power feed keeps cutting (and screaming) with nobody standing there.
+  return operation.powerFeed ||
+    playerAttendsMachine(machine, playerPosition, playerIsAway)
     ? "cutting"
     : "running";
 }

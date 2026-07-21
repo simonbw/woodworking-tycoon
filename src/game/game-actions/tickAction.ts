@@ -134,12 +134,17 @@ export const tickAction: GameAction = (gameState) => {
     );
     // Attended phases need the player at the machine AND the machine
     // powered — switching off mid-cut pauses the work like stepping away.
+    // Power-feed operations (the planer) pull the stock through on their
+    // own: the player's whereabouts stop mattering, but the switch still
+    // does.
     const attended =
-      playerAttendsMachine(
+      (playerAttendsMachine(
         machine,
         gameState.player.position,
         gameState.player.away !== null,
-      ) && machine.isPowered;
+      ) ||
+        selectedOperation.powerFeed === true) &&
+      machine.isPowered;
     const { phaseIndex, ticksRemaining } = machineState.operationProgress;
 
     // Waiting at a phase boundary: the previous phase is done but the next

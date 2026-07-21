@@ -43,8 +43,12 @@ export function useMachineActivity(machine: Machine) {
       ? phases[progress.phaseIndex + 1]
       : phases[Math.min(progress.phaseIndex, phases.length - 1)]
     : undefined;
+  // Power-feed operations never wait on the player once running
   const needsYou =
-    relevantPhase !== undefined && relevantPhase.attended && !attending;
+    relevantPhase !== undefined &&
+    relevantPhase.attended &&
+    !attending &&
+    operation?.powerFeed !== true;
 
   const total = phases.reduce((sum, phase) => sum + phase.duration, 0);
   const remaining = isOperating

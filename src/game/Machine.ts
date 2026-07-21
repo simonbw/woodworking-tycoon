@@ -112,6 +112,15 @@ export interface MachineOperation {
    * phase. Declared only when part of the operation runs without you.
    */
   readonly phases?: ReadonlyArray<OperationPhase>;
+  /**
+   * The machine pulls the stock through on its own once fed (the planer's
+   * power feed): the player doesn't have to stand there, so attended
+   * phases keep ticking — with the dust, noise, and dust-slowdown of any
+   * machine cut — while they walk off. Power is still required; switching
+   * the machine off still pauses the cut. Unlike a phase with
+   * `attended: false` (glue curing), this is active machine work.
+   */
+  readonly powerFeed?: boolean;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
   /**
@@ -195,6 +204,8 @@ export interface ParameterizedOperation<
   readonly duration: number;
   /** See MachineOperation.phases. */
   readonly phases?: ReadonlyArray<OperationPhase>;
+  /** See MachineOperation.powerFeed. */
+  readonly powerFeed?: boolean;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
   /** See MachineOperation.requiredConsumables. */
