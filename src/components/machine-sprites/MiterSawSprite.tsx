@@ -16,8 +16,14 @@ const AnimatedPixiContainer = animated("pixiContainer");
 export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { inputMaterials, outputMaterials } = machine;
   const { fraction, working, powered } = useMachineActivity(machine);
-  const miterSawBaseTexture = useTexture("/images/miter-saw-base.png");
   const miterSawTopTexture = useTexture("/images/miter-saw-top.png");
+
+  const miterSawStationaryTexture = useTexture(
+    "/images/miter-saw-stationary-base.png",
+  );
+  const miterSawTurntableTexture = useTexture(
+    "/images/miter-saw-rotating-base.png",
+  );
 
   const inputBoards = inputMaterials.filter(isBoard);
   const processingBoards = machine.processingMaterials.filter(isBoard);
@@ -38,15 +44,16 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   // The head sinks through the chop and lifts once the cut releases
   const plunge = useSpring({ p: processingBoards.length > 0 ? fraction : 0 });
 
-  // The head swings to the set detent about the fence pivot — the shop
-  // reads "the saw's still set to 45" at a glance. Cutting the right end
-  // mirrors the swing, so both settings are visible on the machine.
+  // The whole swing assembly — turntable, detent handle, kerf, and head —
+  // rotates to the set detent, so the shop reads "the saw's still set to
+  // 45" at a glance. Cutting the right end mirrors the swing, so both
+  // settings are visible on the machine.
   const angleSetting = Number(machine.selectedParameters?.angle) || 0;
   const swingSign = machine.selectedParameters?.cutEnd === "right" ? -1 : 1;
   const headSwing = useSpring({ a: angleSetting * swingSign });
-  // A miter saw's head pivots where the blade meets the fence, behind the
-  // board (the stock's back edge sits 3" behind the machine's center line)
-  const pivotY = inchesToPixels(-3);
+  // The pivot is the turntable circle's center, measured off the art:
+  // 10 image pixels above the canvas center in miter-saw-rotating-base.png
+  const pivotY = -10 * IMAGE_SCALE;
 
   const cutting = processingBoards[0];
   const kerfY = cutting ? inchesToPixels(cutting.width / 2 - 3) : 0;
@@ -69,10 +76,20 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   return (
     <pixiContainer>
       <pixiSprite
-        texture={miterSawBaseTexture}
+        texture={miterSawStationaryTexture}
         scale={IMAGE_SCALE}
         anchor={{ x: 0.5, y: 0.5 }}
       />
+      {/* The turntable swings under the stock (the board stays put against
+          the fence while the table turns beneath it) */}
+      <AnimatedPixiContainer y={pivotY} angle={headSwing.a}>
+        <pixiSprite
+          texture={miterSawTurntableTexture}
+          scale={IMAGE_SCALE}
+          anchor={{ x: 0.5, y: 0.5 }}
+          y={-pivotY}
+        />
+      </AnimatedPixiContainer>
       <AnimatedPixiContainer x={springProps.x}>
         {[...inputBoards, ...processingBoards].map((board, index) => {
           const x = feetToPixels(-board.length / 2) - 3;
@@ -93,8 +110,8 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           </pixiContainer>
         );
       })}
-      {/* Kerf and head swing together about the fence pivot, so the cut
-          line on the board always lies under the blade */}
+      {/* Kerf and head swing about the same pivot as the turntable, so the
+          cut line on the board always lies under the blade */}
       <AnimatedPixiContainer y={pivotY} angle={headSwing.a}>
         <pixiContainer y={-pivotY}>
           <pixiGraphics draw={drawKerf} />
