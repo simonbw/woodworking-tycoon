@@ -20,7 +20,12 @@ export const miterSaw: MachineType = {
   cost: 150,
   materialStorage: 0,
   toolSlots: 1,
-  inputSpaces: 1,
+  // Direct feed, trigger-style: set the head to an angle stop, hold the
+  // carried board against the fence, pull the trigger. Nothing is "loaded";
+  // the cut pieces stay on the saw table until collected.
+  inputSpaces: 0,
+  directFeed: true,
+  feedVerb: "Cut",
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
   operations: [

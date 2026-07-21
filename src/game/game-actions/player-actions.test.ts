@@ -63,8 +63,8 @@ describe("pickUpMaterialAction", () => {
   });
 });
 
-/** A jointer loaded with a rough board, ready to joint a face. */
-function loadedJointer(overrides: Partial<MachineState> = {}): MachineState {
+/** An idle jointer; the stock rides in the player's hands (direct feed). */
+function jointer(overrides: Partial<MachineState> = {}): MachineState {
   return {
     machineTypeId: "jointer",
     position: [1, 1],
@@ -76,7 +76,7 @@ function loadedJointer(overrides: Partial<MachineState> = {}): MachineState {
       phaseIndex: 0,
       ticksRemaining: 0,
     },
-    inputMaterials: [board("walnut", 4, 5, 4, "rough", { faces: 0, edges: 0 })],
+    inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
     tools: [],
@@ -84,13 +84,28 @@ function loadedJointer(overrides: Partial<MachineState> = {}): MachineState {
   };
 }
 
+const roughStock = () =>
+  board("walnut", 4, 5, 4, "rough", { faces: 0, edges: 0 });
+
 function stateWithMachine(machine: MachineState): GameState {
   return { ...initialGameState, machines: [machine] };
 }
 
+/** Like stateWithMachine, with materials in the player's hands. */
+function carryingAt(
+  machine: MachineState,
+  inventory: GameState["player"]["inventory"],
+): GameState {
+  return {
+    ...initialGameState,
+    machines: [machine],
+    player: { ...initialGameState.player, inventory },
+  };
+}
+
 describe("machine power switch", () => {
   it("toggleMachinePowerAction flips the switch both ways", () => {
-    const state = stateWithMachine(loadedJointer());
+    const state = stateWithMachine(jointer());
     const on = toggleMachinePowerAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(on.machines[0].poweredOn, true);
     const off = toggleMachinePowerAction(new Machine(on.machines[0]))(on);
@@ -98,7 +113,7 @@ describe("machine power switch", () => {
   });
 
   it("is a no-op on machines without a power switch", () => {
-    const bench = loadedJointer({
+    const bench = jointer({
       machineTypeId: "workspace",
       selectedOperationId: "dismantlePallet",
     });
@@ -108,7 +123,7 @@ describe("machine power switch", () => {
   });
 
   it("operateMachineAction refuses while the machine is switched off", () => {
-    const state = stateWithMachine(loadedJointer());
+    const state = carryingAt(jointer(), [roughStock()]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(result, state);
     assert.strictEqual(
@@ -118,13 +133,40 @@ describe("machine power switch", () => {
   });
 
   it("operateMachineAction starts the cut once switched on", () => {
-    const state = stateWithMachine(loadedJointer({ poweredOn: true }));
+    const state = carryingAt(jointer({ poweredOn: true }), [roughStock()]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(
       result.machines[0].operationProgress.status,
       "inProgress",
     );
     assert.strictEqual(result.machines[0].processingMaterials.length, 1);
+  });
+});
+
+describe("direct feed infers the operation from the stock (jointer)", () => {
+  it("a rough board gets a face pass", () => {
+    const state = carryingAt(jointer({ poweredOn: true }), [roughStock()]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.strictEqual(result.machines[0].selectedOperationId, "jointFace");
+    assert.deepStrictEqual(result.player.inventory, []);
+  });
+
+  it("a face-jointed board gets its edge — no mode was ever picked", () => {
+    const faceDone = board("walnut", 4, 5, 4, "rough", {
+      faces: 1,
+      edges: 0,
+    });
+    const state = carryingAt(jointer({ poweredOn: true }), [faceDone]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.strictEqual(result.machines[0].selectedOperationId, "jointEdge");
+    assert.deepStrictEqual(result.machines[0].processingMaterials, [faceDone]);
+  });
+
+  it("fully milled stock is refused — the jointer has nothing to add", () => {
+    const milled = board("walnut", 4, 5, 4, "smooth", { faces: 2, edges: 2 });
+    const state = carryingAt(jointer({ poweredOn: true }), [milled]);
+    const result = operateMachineAction(new Machine(state.machines[0]))(state);
+    assert.strictEqual(result, state);
   });
 });
 

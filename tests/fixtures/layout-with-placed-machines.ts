@@ -54,7 +54,11 @@ export const layoutWithPlacedMachines: GameState = {
       machineTypeId: "miterSaw",
       position: [2, 4],
       rotation: 0,
-      inputMaterials: [
+      inputMaterials: [],
+      processingMaterials: [],
+      // A cut piece still sitting on the saw table — enough to make the
+      // saw refuse to be lifted (direct-feed saws have no input bay)
+      outputMaterials: [
         {
           id: "test-board-2",
           type: "board",
@@ -67,8 +71,6 @@ export const layoutWithPlacedMachines: GameState = {
           jointedEdges: 2,
         },
       ],
-      processingMaterials: [],
-      outputMaterials: [],
       tools: [],
       selectedOperationId: "cutBoard",
       selectedParameters: { targetLength: 8 },

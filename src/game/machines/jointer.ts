@@ -26,7 +26,11 @@ export const jointer: MachineType = {
   cost: 600,
   materialStorage: 0,
   toolSlots: 1,
-  inputSpaces: 1,
+  // Direct feed: boards go from the hands over the knives. There is no
+  // face/edge mode — how the stock arrives decides (a rough board can
+  // only take a face pass; a face-jointed one gets its edge).
+  inputSpaces: 0,
+  directFeed: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
   powerSwitch: true,

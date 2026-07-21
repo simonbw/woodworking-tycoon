@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, selectMode } from "./machine-panel";
+import { selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -36,10 +36,9 @@ async function operateAndWait(
   machineName: string,
   isDoneSource: string,
   takeAt?: [number, number],
+  verb: string = "Operate",
 ) {
-  await card(page, machineName)
-    .getByRole("button", { name: "Operate" })
-    .click();
+  await card(page, machineName).getByRole("button", { name: verb }).click();
   await page.waitForFunction(
     (src: string) => {
       const matches = new Function("mat", `return (${src})(mat)`) as any;
@@ -134,28 +133,25 @@ test.describe("End-Grain Boards", () => {
 
     await test.step("mount the sled on the table saw", async () => {
       await teleportPlayer(page, SAW_CELL);
-      let modes = await modesOf(page, "Jobsite Table Saw");
-      expect(modes).not.toContain("Crosscut Panel");
-      await card(page, "Jobsite Table Saw")
-        .getByRole("button", { name: "Attach" })
-        .click();
+      const sawCard = card(page, "Jobsite Table Saw");
+      // Bare saw: nothing in hand it can cut — the carried panel can't
+      // ride the fence, so Feed stays dead until the sled is on the table
+      await expect(sawCard.getByRole("button", { name: "Feed" })).toBeDisabled();
+      // The tool rack lives behind the collapsed Details fold
+      await sawCard.getByRole("button", { name: "Details" }).click();
+      await sawCard.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
-      modes = await modesOf(page, "Jobsite Table Saw");
-      expect(modes).toContain("Crosscut Panel");
+      // Jig on the table: feeding the panel now means crosscutting it
+      await expect(sawCard.getByRole("button", { name: "Feed" })).toBeEnabled();
     });
 
     await test.step("crosscut the sanded panel into slices", async () => {
-      await selectMode(page, "Jobsite Table Saw", "Crosscut Panel");
-      await page
-        .locator("li", { hasText: "Maple Panel" })
-        .getByRole("button", { name: "→ Jobsite Table Saw" })
-        .click();
-      await page.waitForTimeout(200);
       await operateAndWait(
         page,
         "Jobsite Table Saw",
         `(mat) => mat.type === "endGrainSlice"`,
         [2, 3], // the saw's outfeed cell
+        "Feed",
       );
       const sliceCount = await page.evaluate(
         () =>

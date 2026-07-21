@@ -59,7 +59,7 @@ The game follows a state-driven architecture with clear separation between game 
 - **Machines** (`src/game/Machine.ts`): Woodworking equipment with input/output specifications
 - **Tools** (`src/game/Tool.ts`, `src/game/tools/`): Handheld tools that mount into a workstation's tool slots and add operations there (see `docs/tools-and-surfaces.md`)
 - **Operations**: Each machine can perform specific operations transforming materials; a station's operation list combines its own operations with its mounted tools'
-- **Direct-feed machines** (`MachineType.directFeed`, currently the planer): No mode picker and no input bay — persistent machine settings plus stock fed straight from the player's hands, one thickness detent per pass (see `docs/direct-feed-machines.md`)
+- **Direct-feed machines** (`MachineType.directFeed`: planer, jointer, table saw, miter saw): No mode picker and no input bay — persistent machine settings plus stock presented straight from the player's hands; which operation runs is inferred from the carried stock. Benches keep explicit recipe selection, labeled "Plan" (see `docs/direct-feed-machines.md`)
 - **Consumables** (`src/game/Consumable.ts`): Shop-wide supplies (nails, finishes) that operations consume and salvage can return (see `docs/consumables.md`)
 - **Material Piles**: Physical placement of materials in the shop space
 - **Machine Carrying** (`src/game/game-actions/machine-actions.ts`): Machines arrive as crates and are carried into place by the player on the home screen — there is no separate layout editor (see `docs/carrying-machines.md`)

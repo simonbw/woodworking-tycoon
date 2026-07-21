@@ -6,6 +6,7 @@ import {
   operateMachineAction,
   pickUpMaterialAction,
   setMachineOperationAction,
+  setMachineSettingsAction,
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
   toggleMachinePowerAction,
@@ -200,7 +201,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (inventory.length === 0) return;
 
       const machine = targeted.current;
-      if (machine) {
+      // Direct-feed machines have no input bay to put things into — the
+      // carried stock drops to the floor like anywhere else.
+      if (machine && !machine.type.directFeed) {
         const spacesLeft =
           machine.type.inputSpaces - machine.inputMaterials.length;
         const inputMaterials = getOperationInputMaterials(
@@ -254,6 +257,10 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const machine = targeted.current;
       if (!machine) return;
 
+      // Direct-feed machines have no mode to cycle — the stock in hand
+      // decides what a feed does.
+      if (machine.type.directFeed) return;
+
       // Cycle only what the spec sheet offers — skill-locked recipes are
       // hidden there and shouldn't be reachable from the keyboard either.
       const operations = availableOperations(
@@ -285,15 +292,22 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present,
   );
 
-  // Cycle the first parameter of the selected operation — the keyboard
-  // equivalent of the parameter dropdowns on the machine card.
+  // Cycle the machine's first setting — the keyboard equivalent of the
+  // scales on the machine card. On direct-feed machines the first setting
+  // of any available operation counts (the fence, the angle, the crank);
+  // elsewhere it's the selected operation's first parameter.
   useShortcut(
     "cycle-parameter",
     (event) => {
       const machine = targeted.current;
       if (!machine) return;
 
-      const operation = machine.selectedOperationOrNull;
+      const directFeed = machine.type.directFeed === true;
+      const operation = directFeed
+        ? availableOperations(machine, gameState.current.progression).find(
+            (op) => isParameterizedOperation(op) && op.parameters.length > 0,
+          )
+        : machine.selectedOperationOrNull;
       if (!operation || !isParameterizedOperation(operation)) return;
 
       const param = operation.parameters[0];
@@ -309,12 +323,17 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           mod(currentIndex + (event.shiftKey ? -1 : 1), param.values.length)
         ];
 
-      applyAction(
-        setMachineOperationAction(machine, operation, {
-          ...machine.selectedParameters,
-          [param.id]: next,
-        }),
-      );
+      if (directFeed) {
+        // Settings turn without touching what's selected or running
+        applyAction(setMachineSettingsAction(machine, { [param.id]: next }));
+      } else {
+        applyAction(
+          setMachineOperationAction(machine, operation, {
+            ...machine.selectedParameters,
+            [param.id]: next,
+          }),
+        );
+      }
     },
     present,
   );

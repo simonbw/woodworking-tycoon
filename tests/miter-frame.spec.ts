@@ -83,13 +83,10 @@ test.describe("Miter cuts and the picture frame", () => {
     await test.step("first cut: 45° at the left end miters the kept piece", async () => {
       await setParameter(page, "Miter Saw", "Angle", "45");
       await setParameter(page, "Miter Saw", "Target Length", "5");
-      await page
-        .locator("li", { hasText: "Walnut Board (8'x1\"x1/4" })
-        .getByRole("button", { name: "→ Miter Saw" })
-        .click();
-      await page.waitForTimeout(200);
+      // No load step: the saw cuts the carried board that fits the setup
+      // (the finished rails are already at length — only the 8' stock is)
       await machineCard(page, "Miter Saw")
-        .getByRole("button", { name: "Operate" })
+        .getByRole("button", { name: "Cut" })
         .click();
       await waitForMaterial(
         page,
@@ -109,13 +106,9 @@ test.describe("Miter cuts and the picture frame", () => {
     await test.step("second cut: flip to the right end to finish the rail", async () => {
       await setParameter(page, "Miter Saw", "Cut End", "right");
       await setParameter(page, "Miter Saw", "Target Length", "2");
-      await page
-        .locator("li", { hasText: "Walnut Board (5'x1\"x1/4" })
-        .getByRole("button", { name: "→ Miter Saw" })
-        .click();
-      await page.waitForTimeout(200);
+      // The 5' half-mitered rail is the only carried board longer than 2'
       await machineCard(page, "Miter Saw")
-        .getByRole("button", { name: "Operate" })
+        .getByRole("button", { name: "Cut" })
         .click();
       await waitForMaterial(
         page,

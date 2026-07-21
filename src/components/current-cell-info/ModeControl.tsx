@@ -34,6 +34,13 @@ export const ModeControl: React.FC<{
   workSpeed?: number;
   /** Advertise the cycle-operation key next to the control. */
   showShortcut?: boolean;
+  /**
+   * What the control calls itself. Benches say "Plan" — a bench really is
+   * recipe-driven, you're choosing which drawing is pinned above it —
+   * while machines say "Mode". (Direct-feed machines say nothing: they
+   * don't render this control at all.)
+   */
+  labelText?: string;
 }> = ({
   operations,
   selected,
@@ -42,10 +49,11 @@ export const ModeControl: React.FC<{
   dustMultiplier,
   workSpeed,
   showShortcut,
+  labelText = "Mode",
 }) => {
   const label = (
     <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5">
-      Mode
+      {labelText}
       {showShortcut && operations.length > 1 && (
         <ShortcutKeys shortcut="cycle-operation" />
       )}
@@ -67,7 +75,7 @@ export const ModeControl: React.FC<{
     return (
       <div className="flex flex-row items-center gap-2 text-sm">
         {label}
-        <div role="radiogroup" aria-label="Mode" className="flex flex-wrap">
+        <div role="radiogroup" aria-label={labelText} className="flex flex-wrap">
           {operations.map((operation, i) => {
             const isSelected = operation === selected;
             return (

@@ -57,13 +57,22 @@ export interface MachineType {
    */
   readonly powerSwitch?: boolean;
   /**
-   * Stock feeds straight from the player's hands into the running machine —
-   * there is no staged input bay (`inputSpaces` should be 0) and no mode to
-   * pick. Operating a direct-feed machine consumes the first carried
-   * material its operation accepts. The planer works this way; a real one
-   * has no "load" step separate from feeding the board in.
+   * Stock feeds straight from the player's hands into the machine — there
+   * is no staged input bay (`inputSpaces` should be 0) and no mode to
+   * pick. Operating a direct-feed machine runs the first operation that
+   * accepts something the player is carrying (see findFeedableOperation);
+   * on a machine with several operations their input specs are disjoint,
+   * so the stock itself decides — feed a rough board to the jointer and
+   * it's a face pass, feed a face-jointed one and it's the edge. A real
+   * machine has no "load" step separate from presenting the work.
    */
   readonly directFeed?: boolean;
+  /**
+   * The verb the UI uses for operating a direct-feed machine. Defaults to
+   * "Feed" (feed-through machines); the miter saw says "Cut" — nothing is
+   * fed through a chop saw.
+   */
+  readonly feedVerb?: string;
   /** A small machine that can sit on a worktable instead of the floor. */
   readonly benchtop?: boolean;
   /** A work surface benchtop machines can be mounted onto. */

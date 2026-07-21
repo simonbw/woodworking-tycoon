@@ -1,7 +1,12 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
-import { migrateV13toV14, migrateV15toV16, migrateV16toV17 } from "./saveLoad";
+import {
+  migrateV13toV14,
+  migrateV15toV16,
+  migrateV16toV17,
+  migrateV17toV18,
+} from "./saveLoad";
 import { STARTER_SKILLS } from "./Skill";
 
 describe("migrateV13toV14", () => {
@@ -103,5 +108,58 @@ describe("migrateV16toV17", () => {
     const crated = migrated.machineCrates[0].machine;
     assert.strictEqual(crated.selectedOperationId, "plane");
     assert.deepStrictEqual(crated.selectedParameters, { targetThickness: 1 });
+  });
+});
+
+describe("migrateV17toV18", () => {
+  it("empties the saws' and jointer's input bays and fills in settings", () => {
+    const staged = board("oak", 8, 6, 4);
+    const old: any = {
+      machines: [
+        {
+          machineTypeId: "miterSaw",
+          position: [2, 4],
+          rotation: 0,
+          selectedOperationId: "cutBoard",
+          selectedParameters: { targetLength: 5 },
+          inputMaterials: [staged],
+          tools: [],
+        },
+        {
+          machineTypeId: "jointer",
+          position: [1, 1],
+          rotation: 0,
+          selectedOperationId: "jointFace",
+          selectedParameters: undefined,
+          inputMaterials: [],
+          tools: [],
+        },
+        {
+          machineTypeId: "workspace",
+          position: [3, 1],
+          rotation: 0,
+          selectedOperationId: "dismantlePallet",
+          inputMaterials: [staged],
+          tools: [],
+        },
+      ],
+      machineCrates: [],
+      materialPiles: [],
+    };
+    const migrated = migrateV17toV18(old);
+    const saw = migrated.machines[0];
+    // The staged board lands at the saw's operator cell
+    assert.deepStrictEqual(saw.inputMaterials, []);
+    assert.deepStrictEqual(migrated.materialPiles, [
+      { material: staged, position: [2, 5] },
+    ]);
+    // Dialed settings survive, with the operation's other defaults beneath
+    assert.deepStrictEqual(saw.selectedParameters, {
+      angle: 0,
+      cutEnd: "left",
+      targetLength: 5,
+    });
+    // Benches keep their input bays — only direct-feed machines flush
+    assert.deepStrictEqual(migrated.machines[2].inputMaterials, [staged]);
   });
 });
