@@ -8,7 +8,7 @@ import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
-import { CutParticles, dustEscapeFraction } from "./CutParticles";
+import { CutParticles, cutSprayIntensity } from "./CutParticles";
 import { Vibrating } from "./Vibrating";
 
 const AnimatedPixiContainer = animated("pixiContainer");
@@ -98,7 +98,7 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       </Vibrating>
       {cutting && (
         <CutParticles
-          intensity={dustEscapeFraction(machine)}
+          intensity={cutSprayIntensity(machine)}
           kind="dust"
           species={cutting.species}
           active={working}

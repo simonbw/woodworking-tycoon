@@ -1,13 +1,8 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "./board-helpers";
 import { initialGameState } from "./initialGameState";
-import { Machine, MachineId, MachineState, OperationProgress } from "./Machine";
-import {
-  deriveMachineCutLoad,
-  deriveMachineSoundPhase,
-} from "./machine-sound-helpers";
-import { MaterialInstance, Panel } from "./Materials";
+import { Machine, MachineState, OperationProgress } from "./Machine";
+import { deriveMachineSoundPhase } from "./machine-sound-helpers";
 import { Vector } from "./Vectors";
 
 /** Planer at [2,2], rotation 0 — operation cell (infeed) is [2,3]. */
@@ -151,119 +146,5 @@ describe("deriveMachineSoundPhase", () => {
       ),
       "off",
     );
-  });
-});
-
-function cuttingMachine(
-  machineTypeId: MachineId,
-  processingMaterials: MaterialInstance[],
-  inputMaterials: MaterialInstance[] = [],
-): Machine {
-  const state: MachineState = {
-    machineTypeId,
-    position: [2, 2],
-    rotation: 0,
-    // The load derivation never reads the operation, only the stock.
-    selectedOperationId: "planeBoard",
-    selectedParameters: undefined,
-    operationProgress: {
-      status: "inProgress",
-      phaseIndex: 0,
-      ticksRemaining: 5,
-    },
-    inputMaterials,
-    processingMaterials,
-    outputMaterials: [],
-    tools: [],
-  };
-  return new Machine(state);
-}
-
-describe("deriveMachineCutLoad", () => {
-  it("defaults to 1 when there's no stock to measure", () => {
-    assert.equal(deriveMachineCutLoad(cuttingMachine("lunchboxPlaner", [])), 1);
-  });
-
-  it("strains the planer more for wide boards than narrow ones", () => {
-    const wide = deriveMachineCutLoad(
-      cuttingMachine("lunchboxPlaner", [board("pine", 4, 8, 4)]),
-    );
-    const narrow = deriveMachineCutLoad(
-      cuttingMachine("lunchboxPlaner", [board("pine", 4, 2, 4)]),
-    );
-    assert.ok(wide > 1, `wide=${wide}`);
-    assert.ok(narrow < 1, `narrow=${narrow}`);
-  });
-
-  it("planer load ignores thickness", () => {
-    const thick = deriveMachineCutLoad(
-      cuttingMachine("lunchboxPlaner", [board("pine", 4, 4, 8)]),
-    );
-    const thin = deriveMachineCutLoad(
-      cuttingMachine("lunchboxPlaner", [board("pine", 4, 4, 1)]),
-    );
-    assert.equal(thick, thin);
-  });
-
-  it("strains the table saw by thickness, not width", () => {
-    const thick = deriveMachineCutLoad(
-      cuttingMachine("jobsiteTableSaw", [board("pine", 4, 2, 8)]),
-    );
-    const thin = deriveMachineCutLoad(
-      cuttingMachine("jobsiteTableSaw", [board("pine", 4, 8, 2)]),
-    );
-    assert.ok(thick > thin, `thick=${thick} thin=${thin}`);
-  });
-
-  it("strains the miter saw by both width and thickness", () => {
-    const beefy = deriveMachineCutLoad(
-      cuttingMachine("miterSaw", [board("pine", 4, 6, 6)]),
-    );
-    const wideButThin = deriveMachineCutLoad(
-      cuttingMachine("miterSaw", [board("pine", 4, 6, 2)]),
-    );
-    const skinny = deriveMachineCutLoad(
-      cuttingMachine("miterSaw", [board("pine", 4, 2, 2)]),
-    );
-    assert.ok(beefy > wideButThin, `beefy=${beefy} wideThin=${wideButThin}`);
-    assert.ok(wideButThin > skinny, `wideThin=${wideButThin} skinny=${skinny}`);
-  });
-
-  it("clamps extreme stock to the strain range", () => {
-    const max = deriveMachineCutLoad(
-      cuttingMachine("lunchboxPlaner", [board("pine", 8, 8, 8)]),
-    );
-    const min = deriveMachineCutLoad(
-      cuttingMachine("lunchboxPlaner", [board("pine", 1, 1, 1)]),
-    );
-    assert.equal(max, 1.3);
-    assert.equal(min, 0.4);
-  });
-
-  it("measures a panel by its summed strip width", () => {
-    const panel: Panel = {
-      id: "p1",
-      type: "panel",
-      length: 4,
-      thickness: 4,
-      strips: [
-        { species: "pine", width: 6 },
-        { species: "pine", width: 6 },
-      ],
-      surface: "rough",
-    };
-    assert.equal(
-      deriveMachineCutLoad(cuttingMachine("lunchboxPlaner", [panel])),
-      1.3,
-    );
-  });
-
-  it("falls back to the infeed when nothing is processing yet", () => {
-    const machine = cuttingMachine(
-      "lunchboxPlaner",
-      [],
-      [board("pine", 4, 8, 4)],
-    );
-    assert.ok(deriveMachineCutLoad(machine) > 1);
   });
 });

@@ -335,8 +335,15 @@ describe("tickAction operation phases", () => {
 });
 
 describe("tickAction dust emission", () => {
-  /** A planer at [1,1] (operation cell [1,2]) mid-way through planing walnut. */
-  function planingStateWith(overrides: Partial<GameState> = {}): GameState {
+  /**
+   * A planer at [1,1] (operation cell [1,2]) mid-way through planing
+   * walnut. The 5"-wide board is exactly the cut-load reference, so the
+   * dust numbers below read straight off dustOutput.
+   */
+  function planingStateWith(
+    overrides: Partial<GameState> = {},
+    stock = board("walnut", 4, 5, 4),
+  ): GameState {
     const planer: MachineState = {
       machineTypeId: "lunchboxPlaner",
       position: [1, 1],
@@ -349,7 +356,7 @@ describe("tickAction dust emission", () => {
         ticksRemaining: 5,
       },
       inputMaterials: [],
-      processingMaterials: [board("walnut", 4, 4, 4)],
+      processingMaterials: [stock],
       outputMaterials: [],
       tools: [],
     };
@@ -369,6 +376,20 @@ describe("tickAction dust emission", () => {
     assert.ok(Math.abs(cellDust(result.dust, [1, 2]) - 0.7) < 1e-9);
     assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.1) < 1e-9);
     assert.ok((result.dust["1,1"].walnut ?? 0) > 0);
+  });
+
+  it("sheds dust in proportion to the stock being cut", () => {
+    const wide = tickAction(planingStateWith({}, board("walnut", 4, 8, 4)));
+    const narrow = tickAction(planingStateWith({}, board("walnut", 4, 2, 4)));
+    const reference = tickAction(planingStateWith());
+    assert.ok(
+      cellDust(wide.dust, [1, 1]) > cellDust(reference.dust, [1, 1]),
+      "a wide board should shed more dust than the reference",
+    );
+    assert.ok(
+      cellDust(narrow.dust, [1, 1]) < cellDust(reference.dust, [1, 1]),
+      "a narrow board should shed less dust than the reference",
+    );
   });
 
   it("accumulates across ticks", () => {

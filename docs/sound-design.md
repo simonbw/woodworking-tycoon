@@ -196,15 +196,19 @@ every machine's idle → cutting jump is large because every module boosts
 under load.
 
 **Load scales with the stock.** `deriveMachineCutLoad`
-(`machine-sound-helpers.ts`) turns the dimensions of the stock being cut
-into a strain scalar (0.4–1.3, 1 = the params' reference tuning) that rides
-along with the phase: it proportionally scales the rpm sag, every module's
-cut boost, the cut level, and the chop depth. Which dimension strains which
-machine is physical: the planer and jointer span the board's **width** with
-their knives, the table saw rips through the **thickness**, and the miter
-saw chops the whole **cross-section** (geometric mean of both). A wide
-glued-up panel through the planer maxes the bog; a skinny strip barely
-dents the idle.
+(`src/game/cut-load.ts`) turns the dimensions of the stock being cut into a
+strain scalar (0.4–1.3, 1 = the params' reference tuning) that rides along
+with the phase: it proportionally scales the rpm sag, every module's cut
+boost, the cut level, and the chop depth. Which dimension strains which
+machine is physical: the planer (and a jointer flattening a **face**) spans
+the board's **width** with its knives, the jointer straightening an
+**edge** only meets the **thickness**, the table saw rips through the
+**thickness**, and the miter saw chops the whole **cross-section**
+(geometric mean of both). A wide glued-up panel through the planer maxes
+the bog; a skinny strip barely dents the idle. The same scalar multiplies
+`dustOutput` in the tick and the sprites' `CutParticles` intensity, so the
+sound, the spray, and the floor mess all agree on how much wood is coming
+off.
 
 ### Audio drives the visuals (`machineSoundState.ts`)
 
