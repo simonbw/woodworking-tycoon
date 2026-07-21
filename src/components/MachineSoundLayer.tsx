@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { getMachines, MachineId, MachineState } from "../game/Machine";
-import {
-  deriveMachineCutLoad,
-  deriveMachineSoundPhase,
-} from "../game/machine-sound-helpers";
+import { deriveMachineCutLoad } from "../game/cut-load";
+import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
 import { PhaseReportingVoice } from "../utils/machineSoundState";
 import {
   JOINTER_SYNTH_PARAMS,

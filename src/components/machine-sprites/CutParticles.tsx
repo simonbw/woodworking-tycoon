@@ -1,6 +1,7 @@
 import { useTick } from "@pixi/react";
 import { Graphics, Ticker } from "pixi.js";
 import React, { useRef } from "react";
+import { deriveMachineCutLoad } from "../../game/cut-load";
 import { Machine } from "../../game/Machine";
 import { Species } from "../../game/Materials";
 import { DUST_BAG_CAPTURE } from "../../game/tools/dustBag";
@@ -10,12 +11,16 @@ import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { emitDustStamp } from "../shop-view/dustStampBus";
 
 /**
- * Fraction of a machine's mess that escapes its dust port — what the
- * particle spray (and the floor) actually sees. Mirrors the emission
- * math in tickAction.
+ * Emission intensity for a machine's cut spray: the fraction of its mess
+ * that escapes the dust port, scaled by how much wood the cut is taking
+ * off. Mirrors the emission math in tickAction, so what you see flying
+ * matches what lands on the floor.
  */
-export function dustEscapeFraction(machine: Machine): number {
-  return machine.state.tools.includes("dustBag") ? 1 - DUST_BAG_CAPTURE : 1;
+export function cutSprayIntensity(machine: Machine): number {
+  const escaped = machine.state.tools.includes("dustBag")
+    ? 1 - DUST_BAG_CAPTURE
+    : 1;
+  return escaped * deriveMachineCutLoad(machine);
 }
 
 interface Particle {

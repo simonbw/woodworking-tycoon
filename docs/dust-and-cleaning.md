@@ -33,6 +33,10 @@ _is_ the indicator.
 - Dust is emitted **per tick during attended phases** in `tickAction`
   (dust builds while the cut happens, which is also what drives the
   particle visuals). Hands-free phases (glue curing) emit nothing.
+- The rate is scaled by the **cut load** (`src/game/cut-load.ts`) — the
+  same stock-dimension scalar that strains the machine synths — so a wide
+  slab sheds proportionally more than a skinny strip, and the sound, the
+  particle spray, and the floor mess all agree.
 - Deposition pattern: the machine's occupied cells + operation position
   get the bulk; orthogonally adjacent cells get a falloff share. A small
   deterministic scatter (seeded by cell + tick) keeps piles organic.

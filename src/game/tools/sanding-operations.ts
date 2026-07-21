@@ -38,7 +38,7 @@ export function makeSandingOperations(
       id: `${idPrefix}SandBoard`,
       name: "Sand Board",
       duration,
-      dustOutput: 0.25,
+      dustOutput: 0.5,
       requiredSkill: "surfacePrep",
       inputMaterials: [
         { type: ["board"], surface: ["rough", "smooth"], quantity: 1 },
@@ -49,7 +49,7 @@ export function makeSandingOperations(
       id: `${idPrefix}SandPanel`,
       name: "Sand Panel",
       duration,
-      dustOutput: 0.25,
+      dustOutput: 0.5,
       requiredSkill: "surfacePrep",
       inputMaterials: [
         { type: ["panel"], surface: ["rough", "smooth"], quantity: 1 },
