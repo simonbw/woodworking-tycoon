@@ -60,8 +60,8 @@ export const cuttingBoardShop: GameState = {
     away: null,
   },
   machines: [idleMachine("workspace", [1, 2], "dismantlePallet")],
+  machineCrates: [],
   storage: {
-    machines: [],
     tools: ["randomOrbitSander"],
     upgrades: [],
   },
@@ -70,6 +70,7 @@ export const cuttingBoardShop: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: [2, 5],
   },
   progression: {
     tutorialStage: 2,

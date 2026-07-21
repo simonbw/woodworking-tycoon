@@ -81,13 +81,19 @@ describe("sellMaterialAction", () => {
 });
 
 describe("buyMachineAction", () => {
-  it("deducts the price and adds the machine to storage", () => {
+  it("deducts the price and delivers a crate at the entrance", () => {
     const result = buyMachineAction(
       "jobsiteTableSaw",
       150,
     )(stateWith({ money: 200 }));
     assert.strictEqual(result.money, 50);
-    assert.deepStrictEqual(result.storage.machines, ["jobsiteTableSaw"]);
+    assert.strictEqual(result.machineCrates.length, 1);
+    assert.strictEqual(
+      result.machineCrates[0].machine.machineTypeId,
+      "jobsiteTableSaw",
+    );
+    // The entrance cell itself is open in the starting shop
+    assert.deepStrictEqual(result.machineCrates[0].position, [2, 5]);
   });
 
   it("does nothing when the player cannot afford it", () => {
@@ -158,7 +164,7 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.progression.commissionsCompleted, 2);
     assert.strictEqual(result.progression.marketplaceUnlocked, true);
     // No machine grant — the marketplace is a tab, not equipment
-    assert.deepStrictEqual(result.storage.machines, []);
+    assert.deepStrictEqual(result.machineCrates, []);
   });
 
   it("does nothing, including progression, when materials are missing", () => {

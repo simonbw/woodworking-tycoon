@@ -154,9 +154,9 @@ export interface OperationOutput {
    */
   consumableOutputs?: ReadonlyArray<ConsumableAmount>;
   /**
-   * Machines granted on completion (delivered to machine storage, placed
-   * from the layout editor). Shop-built furniture — worktables — enters
-   * the world this way, the machine sibling of toolOutputs.
+   * Machines granted on completion (landed as delivery crates beside the
+   * bench, to be carried into place). Shop-built furniture — worktables —
+   * enters the world this way, the machine sibling of toolOutputs.
    */
   machineOutputs?: ReadonlyArray<MachineId>;
   /**

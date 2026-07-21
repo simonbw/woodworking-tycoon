@@ -10,22 +10,16 @@
  */
 
 /**
- * Which screen a shortcut is live on. `global` fires everywhere; `home` and
- * `shopLayout` only on their page. `modal` outranks everything: while any modal
- * is open only `modal` shortcuts fire, so Escape can't both close a dialog and
- * punch through to the game behind it.
+ * Which screen a shortcut is live on. `global` fires everywhere; `home` only
+ * on the home screen. `modal` outranks everything: while any modal is open
+ * only `modal` shortcuts fire, so Escape can't both close a dialog and punch
+ * through to the game behind it.
  */
-export type ShortcutScope = "global" | "home" | "shopLayout" | "modal";
+export type ShortcutScope = "global" | "home" | "modal";
 
 /** Cheat-sheet section. Order here is the order rendered. */
 export type ShortcutGroup =
-  | "Time"
-  | "Navigation"
-  | "Movement"
-  | "Materials"
-  | "Machines"
-  | "Layout Editor"
-  | "General";
+  "Time" | "Navigation" | "Movement" | "Materials" | "Machines" | "General";
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Movement",
@@ -33,7 +27,6 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Machines",
   "Time",
   "Navigation",
-  "Layout Editor",
   "General",
 ];
 
@@ -55,6 +48,13 @@ export interface ShortcutDef {
   readonly shiftHint?: string;
   /** Keep out of the cheat sheet (aliases already covered by another row). */
   readonly hidden?: boolean;
+  /**
+   * Deliberately shares its key with another shortcut in the same scope.
+   * Only sound when the two bindings' `enabled` conditions are mutually
+   * exclusive (a disabled binding steps aside in ShortcutProvider); the
+   * registry test skips these instead of flagging a collision.
+   */
+  readonly sharesKey?: boolean;
 }
 
 const defs = [
@@ -151,6 +151,31 @@ const defs = [
   },
 
   // ---------------------------------------------------------------- Machines
+  {
+    // Contextual like sweep (ActionBar offers it standing at a machine or on
+    // a crate once carrying is unlocked); hidden from the static cheat sheet
+    // so the verb doesn't leak before its reveal.
+    id: "carry-machine",
+    codes: ["KeyL"],
+    keys: [["L"]],
+    description: "Pick up / put down machine",
+    scope: "home",
+    group: "Machines",
+    hidden: true,
+  },
+  {
+    // Shares R with operate-machine; only bound while a machine is carried,
+    // and operate steps aside then (a disabled binding lets the key fall
+    // through — see ShortcutProvider).
+    id: "carry-rotate",
+    codes: ["KeyR"],
+    keys: [["R"]],
+    description: "Rotate carried machine",
+    scope: "home",
+    group: "Machines",
+    hidden: true,
+    sharesKey: true,
+  },
   {
     id: "operate-machine",
     codes: ["KeyR"],
@@ -280,14 +305,6 @@ const defs = [
     group: "Navigation",
   },
   {
-    id: "nav-layout",
-    codes: ["KeyL"],
-    keys: [["L"]],
-    description: "Shop Layout",
-    scope: "global",
-    group: "Navigation",
-  },
-  {
     id: "nav-marketplace",
     codes: ["KeyM"],
     keys: [["M"]],
@@ -302,32 +319,6 @@ const defs = [
     description: "Skills",
     scope: "global",
     group: "Navigation",
-  },
-
-  // ----------------------------------------------------------- Layout editor
-  {
-    id: "layout-rotate",
-    codes: ["KeyR"],
-    keys: [["R"]],
-    description: "Rotate",
-    scope: "shopLayout",
-    group: "Layout Editor",
-  },
-  {
-    id: "layout-remove",
-    codes: ["Delete", "Backspace"],
-    keys: [["Del"], ["Backspace"]],
-    description: "Remove to storage",
-    scope: "shopLayout",
-    group: "Layout Editor",
-  },
-  {
-    id: "layout-cancel",
-    codes: ["Escape"],
-    keys: [["Esc"]],
-    description: "Cancel placing / deselect",
-    scope: "shopLayout",
-    group: "Layout Editor",
   },
 
   // ---------------------------------------------------------------- General

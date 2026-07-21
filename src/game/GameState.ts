@@ -1,7 +1,7 @@
 import { ConsumableStock } from "./Consumable";
 import { DustMap } from "./Dust";
 import { ShopVacState } from "./ShopVac";
-import { MachineState, MachineId } from "./Machine";
+import { MachineState } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
@@ -15,6 +15,17 @@ import { Vector } from "./Vectors";
 export type MaterialPile = {
   material: MaterialInstance;
   position: Vector;
+};
+
+/**
+ * A machine boxed up on the shop floor, waiting to be carried into place.
+ * Purchases arrive as crates near the shop entrance and shop-built stations
+ * (worktables) land crated at the bench that produced them. Crates don't
+ * block walking — stand on one and pick it up. See docs/carrying-machines.md.
+ */
+export type MachineCrate = {
+  readonly machine: MachineState;
+  readonly position: Vector;
 };
 
 export type GameAction = (gameState: GameState) => GameState;
@@ -50,10 +61,11 @@ export interface GameState {
    */
   readonly consumables: ConsumableStock;
   readonly machines: ReadonlyArray<MachineState>;
+  /** Machines still in their delivery crates (see MachineCrate). */
+  readonly machineCrates: ReadonlyArray<MachineCrate>;
   readonly shopInfo: ShopInfo;
   readonly player: Person;
   readonly storage: {
-    machines: ReadonlyArray<MachineId>;
     tools: ReadonlyArray<ToolId>;
     /** Worktable upgrades owned but not installed (see Upgrade.ts). */
     upgrades: ReadonlyArray<UpgradeId>;

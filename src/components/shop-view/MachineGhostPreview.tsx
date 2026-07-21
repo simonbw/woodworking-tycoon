@@ -8,7 +8,7 @@ import {
   MachineState,
 } from "../../game/Machine";
 import { Direction } from "../../game/Vectors";
-import { MachineSprite } from "../shop-view/MachineSprite";
+import { MachineSprite } from "./MachineSprite";
 
 interface MachineGhostPreviewProps {
   machineTypeId: MachineId;

@@ -37,7 +37,10 @@ const MachineProductCard: React.FC<MachineSaleInfo> = ({ machine, price }) => {
 
   const numberOwned =
     machines.filter((m) => m.type.id === machine.id).length +
-    gameState.storage.machines.filter((id) => id === machine.id).length;
+    gameState.machineCrates.filter(
+      (crate) => crate.machine.machineTypeId === machine.id,
+    ).length +
+    (gameState.player.carriedMachine?.machineTypeId === machine.id ? 1 : 0);
 
   const canAfford = gameState.money >= price;
 

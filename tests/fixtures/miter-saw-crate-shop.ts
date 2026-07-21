@@ -2,7 +2,8 @@ import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
-export const layoutWithMiterSawInStorage: GameState = {
+/** A miter saw delivery waiting crated at the entrance, carrying unlocked. */
+export const miterSawCrateShop: GameState = {
   tick: 0,
   money: 50,
   reputation: 2,
@@ -36,8 +37,29 @@ export const layoutWithMiterSawInStorage: GameState = {
       },
     },
   ],
+  machineCrates: [
+    {
+      machine: {
+        machineTypeId: "miterSaw",
+        position: [0, 0],
+        rotation: 0,
+        inputMaterials: [],
+        processingMaterials: [],
+        outputMaterials: [],
+        tools: [],
+        storedMaterials: [],
+        upgrades: [],
+        selectedOperationId: "cutBoard",
+        operationProgress: {
+          status: "notStarted",
+          phaseIndex: 0,
+          ticksRemaining: 0,
+        },
+      },
+      position: [2, 5],
+    },
+  ],
   storage: {
-    machines: ["miterSaw"],
     tools: [],
     upgrades: [],
   },
@@ -46,6 +68,7 @@ export const layoutWithMiterSawInStorage: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: [2, 5],
   },
   progression: {
     tutorialStage: 2,

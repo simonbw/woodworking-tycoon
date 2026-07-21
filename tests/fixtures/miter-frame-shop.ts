@@ -89,8 +89,8 @@ export const miterFrameShop: GameState = {
     }),
     idleMachine("workspace", [3, 1], "buildPictureFrame"),
   ],
+  machineCrates: [],
   storage: {
-    machines: [],
     tools: [],
     upgrades: [],
   },
@@ -99,6 +99,7 @@ export const miterFrameShop: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: [2, 5],
   },
   progression: {
     tutorialStage: 2,

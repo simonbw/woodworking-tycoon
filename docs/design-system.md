@@ -64,7 +64,7 @@ stack of equal-weight cards:
   operate) needs it visible *alongside* the inventory list.
 
 **Every screen is viewport-sized** (`h-screen` + `overflow-hidden`, `p-6`
-margin) — Home, Store, Skills, and the Layout editor alike — so switching
+margin) — Home, Store, and Skills alike — so switching
 pages never adds or removes a page scrollbar and nothing shifts. Long
 content scrolls *inside* its own panel, aisle, or column. On Home, each
 side rail anchors its panels — manifest hangs from the top-right, the spec

@@ -5,6 +5,10 @@ import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
 import {
+  deliverMachineCrate,
+  freshMachineState,
+} from "./machine-actions";
+import {
   incrementCommissionsCompletedAction,
   checkProgressionMilestonesAction,
 } from "./progression-actions";
@@ -84,16 +88,14 @@ export function buyMachineAction(
       return gameState;
     }
 
-    const updatedState = {
-      ...gameState,
-      money: gameState.money - price,
-      storage: {
-        ...gameState.storage,
-        machines: [...gameState.storage.machines, machineTypeId],
-      },
-    };
+    // The purchase arrives crated at the shop entrance, to be carried into
+    // place (see docs/carrying-machines.md)
+    const updatedState = deliverMachineCrate(
+      { ...gameState, money: gameState.money - price },
+      freshMachineState(machineTypeId, gameState.progression),
+    );
 
-    // Owning a miter saw unlocks the shop layout tab (see UNLOCK_CONDITIONS)
+    // Owning a miter saw unlocks machine carrying (see UNLOCK_CONDITIONS)
     return checkProgressionMilestonesAction()(updatedState);
   };
 }

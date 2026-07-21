@@ -9,6 +9,7 @@ import {
   ParameterValues,
 } from "./Machine";
 import { Direction } from "./Vectors";
+import { defaultEntrancePosition } from "./ShopInfo";
 import { makePallet } from "./material-helpers";
 import { isParameterizedOperation } from "./operation-helpers";
 
@@ -41,8 +42,8 @@ export const initialGameState: GameState = {
     // Garbage can for disposing unwanted materials
     machine("garbageCan", [0, 5], 0),
   ],
+  machineCrates: [],
   storage: {
-    machines: [], // Empty - no machines available initially
     tools: [],
     upgrades: [],
   },
@@ -51,6 +52,7 @@ export const initialGameState: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: defaultEntrancePosition([4, 6]),
   },
   progression: {
     tutorialStage: 0,

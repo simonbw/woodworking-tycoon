@@ -2,9 +2,11 @@ import { addConsumables, ConsumableAmount } from "../Consumable";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
-import { GameAction } from "../GameState";
+import { GameAction, GameState } from "../GameState";
 import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
+import { Vector } from "../Vectors";
+import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { shopVacTickPass } from "./shop-vac-actions";
@@ -94,7 +96,7 @@ export const tickAction: GameAction = (gameState) => {
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
   const toolsGranted: ToolId[] = [];
-  const machinesGranted: MachineId[] = [];
+  const machinesGranted: Array<{ machineTypeId: MachineId; near: Vector }> = [];
   const upgradesGranted: UpgradeId[] = [];
   const consumablesGranted: ConsumableAmount[] = [];
   const dustEmissions: Array<{
@@ -247,10 +249,15 @@ export const tickAction: GameAction = (gameState) => {
       toolsGranted.push(...toolOutputs);
     }
 
-    // Shop-built furniture (worktables) lands in machine storage, to be
-    // placed from the layout editor
+    // Shop-built furniture (worktables) comes off the bench crated, ready
+    // to be carried into place
     if (machineOutputs) {
-      machinesGranted.push(...machineOutputs);
+      machinesGranted.push(
+        ...machineOutputs.map((machineTypeId) => ({
+          machineTypeId,
+          near: machine.absoluteOperationPosition ?? machine.position,
+        })),
+      );
     }
 
     // Shop-built worktable upgrades (drawers, shelves) land in upgrade
@@ -315,20 +322,26 @@ export const tickAction: GameAction = (gameState) => {
           dust,
         };
 
-  const withTools =
-    toolsGranted.length > 0 ||
-    machinesGranted.length > 0 ||
-    upgradesGranted.length > 0
+  let withTools: GameState =
+    toolsGranted.length > 0 || upgradesGranted.length > 0
       ? {
           ...nextState,
           storage: {
             ...nextState.storage,
             tools: [...nextState.storage.tools, ...toolsGranted],
-            machines: [...nextState.storage.machines, ...machinesGranted],
             upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
           },
         }
       : nextState;
+
+  // Shop-built machines land crated beside the bench that made them
+  for (const granted of machinesGranted) {
+    withTools = deliverMachineCrate(
+      withTools,
+      freshMachineState(granted.machineTypeId, withTools.progression),
+      granted.near,
+    );
+  }
 
   const withConsumables =
     consumablesGranted.length > 0

@@ -95,8 +95,8 @@ export const patternBoardShop: GameState = {
   machines: [
     idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
   ],
+  machineCrates: [],
   storage: {
-    machines: [],
     tools: [],
     upgrades: [],
   },
@@ -105,6 +105,7 @@ export const patternBoardShop: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: [2, 5],
   },
   progression: {
     tutorialStage: 2,

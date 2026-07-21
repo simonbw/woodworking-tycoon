@@ -10,12 +10,20 @@ import {
   takeOutputsFromMachineAction,
   toggleMachinePowerAction,
 } from "../../game/game-actions/player-actions";
+import {
+  canPickUpMachine,
+  pickUpCrateAction,
+  pickUpMachineAction,
+  putDownCarriedMachineAction,
+  rotateCarriedMachineAction,
+} from "../../game/game-actions/machine-actions";
 import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import {
   addWorkItemAction,
   cancelLastWorkItemAction,
   clearWorkQueueAction,
 } from "../../game/game-actions/work-item-actions";
+import { vectorEquals } from "../../game/Vectors";
 import { materialMeetsInput } from "../../game/material-helpers";
 import {
   defaultParametersFor,
@@ -41,6 +49,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // While the player is off scavenging they aren't in the shop, and the machine
   // panels are hidden — the keys shouldn't still reach into them.
   const present = !_gameState.player.away;
+  // A machine over the shoulders means the hands are full: material and
+  // machine verbs step aside until it's set down.
+  const carrying = _gameState.player.carriedMachine != null;
 
   useShortcut(
     "move-right",
@@ -70,13 +81,44 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         applyAction(addWorkItemAction({ type: "sweep" }));
       }
     },
-    present,
+    present && !carrying,
   );
 
   useShortcut(
     "vac-toggle",
     () => applyAction(toggleCarryShopVacAction()),
+    present && !carrying,
+  );
+
+  // Carry a machine: put down what's carried, else unpack the crate
+  // underfoot, else hoist the machine the player is standing at (the
+  // targeted one, so X picks between a table and what's mounted on it).
+  useShortcut(
+    "carry-machine",
+    () => {
+      const gs = gameState.current;
+      if (!gs.progression.shopLayoutUnlocked) return;
+      if (gs.player.carriedMachine) {
+        return applyAction(putDownCarriedMachineAction());
+      }
+      const crateUnderfoot = gs.machineCrates.some((crate) =>
+        vectorEquals(crate.position, gs.player.position),
+      );
+      if (crateUnderfoot) {
+        return applyAction(pickUpCrateAction());
+      }
+      const machine = targeted.current;
+      if (machine && canPickUpMachine(gs, machine.state)) {
+        applyAction(pickUpMachineAction(machine.state));
+      }
+    },
     present,
+  );
+
+  useShortcut(
+    "carry-rotate",
+    () => applyAction(rotateCarriedMachineAction()),
+    present && carrying,
   );
 
   // Emptying the queue stays available while away — it only affects what
@@ -146,7 +188,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         );
       }
     },
-    present,
+    present && !carrying,
   );
 
   // Put down: into the targeted machine if it takes what we're holding,
@@ -183,7 +225,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         dropMaterialAction(event.shiftKey ? inventory : [inventory[0]]),
       );
     },
-    present,
+    present && !carrying,
   );
 
   useShortcut(
@@ -192,7 +234,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const machine = targeted.current;
       if (machine) applyAction(operateMachineAction(machine));
     },
-    present,
+    present && !carrying,
   );
 
   useShortcut(

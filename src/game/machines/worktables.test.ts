@@ -15,8 +15,7 @@ import { SheetGood } from "../Materials";
 import {
   canPlaceMachine,
   machinesMountedOnTable,
-  moveMachineAction,
-  removeMachineToStorageAction,
+  pickUpMachineAction,
 } from "../game-actions/machine-actions";
 import {
   stowMaterialsInMachineAction,
@@ -115,7 +114,13 @@ describe("worktable build recipes", () => {
     });
 
     const result = tickAction(state);
-    assert.deepStrictEqual(result.storage.machines, ["worktable1x1"]);
+    // The finished table lands crated at the bench's operator cell
+    assert.strictEqual(result.machineCrates.length, 1);
+    assert.strictEqual(
+      result.machineCrates[0].machine.machineTypeId,
+      "worktable1x1",
+    );
+    assert.deepStrictEqual(result.machineCrates[0].position, [1, 3]);
     assert.strictEqual(
       result.machines[0].operationProgress.status,
       "notStarted",
@@ -232,21 +237,20 @@ describe("moving and removing tables", () => {
     assert.strictEqual(machinesMountedOnTable(state, 1).length, 0);
   });
 
-  it("refuses to move or remove a table with a machine mounted", () => {
+  it("refuses to pick up a table with a machine mounted", () => {
     const state = stateWith({ machines: [table, saw] });
-    assert.strictEqual(moveMachineAction(0, [0, 3], 0)(state), state);
-    assert.strictEqual(removeMachineToStorageAction(0)(state), state);
+    assert.strictEqual(pickUpMachineAction(table)(state), state);
   });
 
-  it("dumps shelf stock to the floor when a table is removed", () => {
+  it("keeps shelf stock aboard when a table is carried", () => {
     const stocked = machineAt("worktable1x1", [2, 2], {
       storedMaterials: [board("maple", 2, 2, 4)],
     });
     const state = stateWith({ machines: [stocked], materialPiles: [] });
-    const result = removeMachineToStorageAction(0)(state);
-    assert.strictEqual(result.materialPiles.length, 1);
-    assert.deepStrictEqual(result.materialPiles[0].position, [2, 2]);
-    assert.deepStrictEqual(result.storage.machines, ["worktable1x1"]);
+    const result = pickUpMachineAction(stocked)(state);
+    assert.strictEqual(result.machines.length, 0);
+    assert.strictEqual(result.materialPiles.length, 0);
+    assert.strictEqual(result.player.carriedMachine?.storedMaterials?.length, 1);
   });
 });
 

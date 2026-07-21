@@ -1,3 +1,4 @@
+import { MachineState } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { Direction, Vector } from "./Vectors";
 
@@ -6,6 +7,13 @@ export interface Person {
   position: Vector;
   direction: Direction;
   inventory: ReadonlyArray<MaterialInstance>;
+  /**
+   * The machine hoisted over the person's shoulders, mid-rearrangement.
+   * Mounted tools, installed upgrades, and shelf stock ride along; its
+   * position/rotation are stale until it's set back down. Optional so
+   * pre-carry saves load untouched. See docs/carrying-machines.md.
+   */
+  carriedMachine?: MachineState | null;
   workQueue: ReadonlyArray<WorkItem>;
   canWork: boolean;
   /**

@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
+import { freshMachineState } from "./machine-actions";
 import { GameState, JobOffer, MarketListing } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { generateJobBoard } from "../job-generation";
@@ -216,7 +217,12 @@ describe("generateJobBoard", () => {
 
   it("adds tool-gated work once the machine is owned", () => {
     const state = stateWith({
-      storage: { machines: ["miterSaw"], tools: [], upgrades: [] },
+      machineCrates: [
+        {
+          machine: freshMachineState("miterSaw", initialGameState.progression),
+          position: [2, 5],
+        },
+      ],
     });
     // Sample many boards: miter-saw jobs must show up somewhere
     let sawJobs = 0;
