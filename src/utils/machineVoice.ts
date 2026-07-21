@@ -7,7 +7,12 @@ import { MachineSoundPhase } from "../game/machine-sound-helpers";
  * pure synthesis (`PlanerSynthVoice`) — is its own business.
  */
 export interface MachineVoice {
-  setPhase(phase: MachineSoundPhase): void;
+  /**
+   * `load` is the strain scalar from `deriveMachineCutLoad` — how much wood
+   * the cut is taking off, 1 = the voice's reference tuning. Voices that
+   * can't express it (sample loops) just ignore it.
+   */
+  setPhase(phase: MachineSoundPhase, load?: number): void;
   /** Fast fade + release all audio resources. The voice is dead after this. */
   dispose(): void;
 }
@@ -45,6 +50,7 @@ export interface LeadTimes {
  */
 export class LeadInOutVoice implements MachineVoice {
   private desired: MachineSoundPhase = "off";
+  private load = 1;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
@@ -52,26 +58,42 @@ export class LeadInOutVoice implements MachineVoice {
     private readonly leads: LeadTimes,
   ) {}
 
-  setPhase(phase: MachineSoundPhase): void {
-    if (phase === this.desired) return;
+  setPhase(phase: MachineSoundPhase, load = 1): void {
+    const loadChanged = load !== this.load;
+    this.load = load;
+    if (phase === this.desired) {
+      // A load-only change (different stock, same phase): forward it unless
+      // a pending lead timer will deliver the stored load anyway.
+      if (loadChanged && this.timer === undefined) {
+        this.inner.setPhase(phase, load);
+      }
+      return;
+    }
     const previous = this.desired;
     this.desired = phase;
     clearTimeout(this.timer);
+    this.timer = undefined;
 
     if (phase === "cutting" && previous === "off") {
       // Spin up and settle at idle before the wood bites.
-      this.inner.setPhase("running");
+      this.inner.setPhase("running", load);
       this.timer = setTimeout(() => {
-        if (this.desired === "cutting") this.inner.setPhase("cutting");
+        this.timer = undefined;
+        if (this.desired === "cutting") {
+          this.inner.setPhase("cutting", this.load);
+        }
       }, this.leads.leadInMs);
     } else if (phase === "off" && previous === "cutting") {
       // The board clears the knives; the motor idles, then winds down.
-      this.inner.setPhase("running");
+      this.inner.setPhase("running", load);
       this.timer = setTimeout(() => {
-        if (this.desired === "off") this.inner.setPhase("off");
+        this.timer = undefined;
+        if (this.desired === "off") {
+          this.inner.setPhase("off", this.load);
+        }
       }, this.leads.leadOutMs);
     } else {
-      this.inner.setPhase(phase);
+      this.inner.setPhase(phase, load);
     }
   }
 

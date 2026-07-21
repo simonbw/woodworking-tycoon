@@ -2,12 +2,14 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { LeadInOutVoice, MachineVoice } from "./machineVoice";
 
-/** Records every phase the wrapper forwards. */
+/** Records every phase (and load) the wrapper forwards. */
 class RecordingVoice implements MachineVoice {
   readonly phases: string[] = [];
+  readonly loads: Array<number | undefined> = [];
   disposed = false;
-  setPhase(phase: string): void {
+  setPhase(phase: string, load?: number): void {
     this.phases.push(phase);
+    this.loads.push(load);
   }
   dispose(): void {
     this.disposed = true;
@@ -73,6 +75,36 @@ describe("LeadInOutVoice", () => {
     await wait(60);
     assert.ok(!inner.phases.includes("off"));
     assert.equal(inner.phases[inner.phases.length - 1], "cutting");
+  });
+
+  it("delivers the cut load through the lead-in timer", async () => {
+    const inner = new RecordingVoice();
+    const voice = new LeadInOutVoice(inner, LEADS);
+    voice.setPhase("cutting", 1.2);
+    await wait(60);
+    assert.deepEqual(inner.phases, ["running", "cutting"]);
+    assert.equal(inner.loads[1], 1.2);
+  });
+
+  it("forwards a load-only change once the cut is engaged", async () => {
+    const inner = new RecordingVoice();
+    const voice = new LeadInOutVoice(inner, LEADS);
+    voice.setPhase("cutting", 0.5);
+    await wait(60);
+    voice.setPhase("cutting", 1.1);
+    assert.deepEqual(inner.phases, ["running", "cutting", "cutting"]);
+    assert.equal(inner.loads[2], 1.1);
+  });
+
+  it("a load change during the lead-in waits for the timer", async () => {
+    const inner = new RecordingVoice();
+    const voice = new LeadInOutVoice(inner, LEADS);
+    voice.setPhase("cutting", 0.5);
+    voice.setPhase("cutting", 1.1);
+    assert.deepEqual(inner.phases, ["running"]);
+    await wait(60);
+    assert.deepEqual(inner.phases, ["running", "cutting"]);
+    assert.equal(inner.loads[1], 1.1);
   });
 
   it("dispose cancels pending transitions and disposes the inner voice", async () => {

@@ -33,6 +33,12 @@ import { MachineVoice, PHASE_RANK } from "./machineVoice";
  * spectrum drops together under load, which is the tell that makes it read
  * as one machine biting into wood rather than layered tracks.
  *
+ * How MUCH it strains is the `load` scalar handed in with the phase (see
+ * `deriveMachineCutLoad`): 1 means the params' reference tuning, and the
+ * scalar proportionally scales the rpm sag, every cut boost, the cut level,
+ * and the chop depth — a wide slab bogs the motor deep and loud, a skinny
+ * strip barely dents the idle.
+ *
  * Like the sample player, everything is best-effort: any Web Audio failure
  * silences the voice without throwing.
  */
@@ -41,7 +47,7 @@ export interface MachineSynthParams {
   readonly master: number;
   /** Cutter rotation at full speed, Hz (RPM / 60). Everything scales off this. */
   readonly rotationHz: number;
-  /** rpm is 1 at idle; cutting bogs the motor down to this. */
+  /** rpm is 1 at idle; a reference-load (1) cut bogs the motor down to this. */
   readonly cutRpmSag: number;
   readonly motor: {
     /** Sawtooth growl at rotation frequency, kept dark by the lowpass. */
@@ -286,6 +292,9 @@ interface SynthGraph {
   readonly whineGain: GainNode;
   readonly airGain: GainNode;
   readonly cutGate: GainNode;
+  /** AM carrier base level + modulation depth — reshaped per cut load. */
+  readonly chopBase: GainNode;
+  readonly chopDepth: GainNode;
   readonly airBandpass: BiquadFilterNode;
   /** Everything whose frequency scales with rpm: [node param, full-speed Hz]. */
   readonly pitched: ReadonlyArray<readonly [AudioParam, number]>;
@@ -296,15 +305,19 @@ export class MachineSynthVoice implements MachineVoice {
   constructor(private readonly params: MachineSynthParams) {}
 
   private desired: MachineSoundPhase = "off";
+  private desiredLoad = 1;
   private applied: MachineSoundPhase = "off";
+  private appliedLoad = 1;
   private pendingTimer: ReturnType<typeof setTimeout> | undefined;
   private graph: SynthGraph | null = null;
   private failed = false;
   private disposed = false;
 
-  setPhase(phase: MachineSoundPhase): void {
-    if (this.disposed || phase === this.desired) return;
+  setPhase(phase: MachineSoundPhase, load = 1): void {
+    if (this.disposed) return;
+    if (phase === this.desired && load === this.desiredLoad) return;
     this.desired = phase;
+    this.desiredLoad = load;
     clearTimeout(this.pendingTimer);
     if (PHASE_RANK[phase] < PHASE_RANK[this.applied]) {
       this.pendingTimer = setTimeout(
@@ -344,7 +357,7 @@ export class MachineSynthVoice implements MachineVoice {
     if (this.disposed || this.failed) return;
     const previous = this.applied;
     const phase = this.desired;
-    if (phase === previous) return;
+    if (phase === previous && this.desiredLoad === this.appliedLoad) return;
     try {
       // Never build the graph just to be silent.
       if (!this.graph) {
@@ -353,6 +366,7 @@ export class MachineSynthVoice implements MachineVoice {
       }
       this.transition(previous, phase);
       this.applied = phase;
+      this.appliedLoad = this.desiredLoad;
     } catch {
       // A broken graph must never break the game; go quiet instead.
       this.failed = true;
@@ -474,6 +488,8 @@ export class MachineSynthVoice implements MachineVoice {
       whineGain,
       airGain,
       cutGate,
+      chopBase: chop,
+      chopDepth,
       airBandpass,
       pitched,
       sources,
@@ -489,7 +505,13 @@ export class MachineSynthVoice implements MachineVoice {
       void ctx.resume().catch(() => {});
     }
     const now = ctx.currentTime;
-    const rpm = to === "off" ? 0 : to === "cutting" ? P.cutRpmSag : 1;
+    // Strain: at load 1 the params apply verbatim; lighter/heavier stock
+    // scales the sag and every boost proportionally around their idle
+    // values (a boost of 2.6 at load 0.5 becomes 1.8).
+    const load = Math.min(1.5, Math.max(0.2, this.desiredLoad));
+    const strained = (boost: number) => 1 + (boost - 1) * load;
+    const rpm =
+      to === "off" ? 0 : to === "cutting" ? 1 - (1 - P.cutRpmSag) * load : 1;
     const powerChange = (from === "off") !== (to === "off");
 
     // Pitch: one time constant for every rpm-scaled frequency, so the whole
@@ -519,25 +541,34 @@ export class MachineSynthVoice implements MachineVoice {
     const motorTau = off ? P.windDown.motorGainTau : P.spinUp.gainTau;
     const airTau = off ? P.windDown.airGainTau : P.spinUp.gainTau;
     graph.motorGain.gain.setTargetAtTime(
-      off ? 0 : P.motor.gain * (cutting ? P.motor.cutGainBoost : 1),
+      off ? 0 : P.motor.gain * (cutting ? strained(P.motor.cutGainBoost) : 1),
       now,
       motorTau,
     );
     graph.whineGain.gain.setTargetAtTime(
-      off ? 0 : P.motor.whineGain * (cutting ? P.motor.whineCutBoost : 1),
+      off
+        ? 0
+        : P.motor.whineGain * (cutting ? strained(P.motor.whineCutBoost) : 1),
       now,
       motorTau,
     );
     graph.airGain.gain.setTargetAtTime(
-      off ? 0 : P.air.gain * (cutting ? P.air.cutBoost : 1),
+      off ? 0 : P.air.gain * (cutting ? strained(P.air.cutBoost) : 1),
       now,
       airTau,
     );
     graph.cutGate.gain.setTargetAtTime(
-      to === "cutting" ? P.cut.gain : 0,
+      cutting ? P.cut.gain * (0.35 + 0.65 * load) : 0,
       now,
-      to === "cutting" ? P.cutTau.engage : P.cutTau.release,
+      cutting ? P.cutTau.engage : P.cutTau.release,
     );
+    if (cutting) {
+      // A deeper bite chops harder: the AM depth follows the load, so a
+      // heavy cut hammers at knife rate while a skinny strip just hisses.
+      const depth = Math.min(0.6, P.cut.chopDepth * (0.6 + 0.4 * load));
+      graph.chopBase.gain.setTargetAtTime(1 - depth, now, P.cutTau.engage);
+      graph.chopDepth.gain.setTargetAtTime(depth, now, P.cutTau.engage);
+    }
 
     // The power switch itself: a tiny filtered-noise thunk.
     if (powerChange) {

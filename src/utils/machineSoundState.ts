@@ -49,12 +49,12 @@ export class PhaseReportingVoice implements MachineVoice {
     private readonly inner: MachineVoice,
   ) {}
 
-  setPhase(phase: MachineSoundPhase): void {
+  setPhase(phase: MachineSoundPhase, load?: number): void {
     if (getAudiblePhase(this.key) !== phase) {
       phases.set(this.key, phase);
       notify();
     }
-    this.inner.setPhase(phase);
+    this.inner.setPhase(phase, load);
   }
 
   dispose(): void {

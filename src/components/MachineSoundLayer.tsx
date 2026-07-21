@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import { getMachines, MachineId, MachineState } from "../game/Machine";
-import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
+import {
+  deriveMachineCutLoad,
+  deriveMachineSoundPhase,
+} from "../game/machine-sound-helpers";
 import { PhaseReportingVoice } from "../utils/machineSoundState";
 import {
   JOINTER_SYNTH_PARAMS,
@@ -106,6 +109,7 @@ export const MachineSoundLayer: React.FC = () => {
           gameState.player.away !== null,
           gameState.progression,
         ),
+        deriveMachineCutLoad(machine),
       );
     }
     // Machines sold or picked up since last render: silence their players.
