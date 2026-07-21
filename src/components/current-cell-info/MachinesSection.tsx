@@ -78,8 +78,15 @@ export const MachinesSection: React.FC = () => {
   const gameState = useGameState();
   const { machines, isTargeted } = useTargetedMachine();
 
-  // The player can't work machines while out of the shop
-  if (gameState.player.away || machines.length === 0) {
+  // The player can't work machines while out of the shop, and can't work
+  // this one with another machine over their shoulders — the spec sheet
+  // (and its Operate button) would be a mouse-sized hole in the
+  // hands-full rule the keyboard already enforces.
+  if (
+    gameState.player.away ||
+    gameState.player.carriedMachine != null ||
+    machines.length === 0
+  ) {
     return null;
   }
 
