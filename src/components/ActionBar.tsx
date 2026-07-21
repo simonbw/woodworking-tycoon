@@ -88,6 +88,11 @@ export const ActionBar: React.FC = () => {
               <Hint shortcut="cycle-operation" showShift={false} />
             </>
           )}
+          {machine?.type.powerSwitch && (
+            <Hint shortcut="power-toggle">
+              Switch {machine.isPowered ? "off" : "on"} {machine.type.name}
+            </Hint>
+          )}
           {machines.length > 1 && <Hint shortcut="cycle-machine" />}
         </ul>
       </section>

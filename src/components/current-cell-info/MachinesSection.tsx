@@ -10,6 +10,7 @@ import {
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
   takeStoredMaterialsFromMachineAction,
+  toggleMachinePowerAction,
 } from "../../game/game-actions/player-actions";
 import {
   machineCanOperate,
@@ -134,6 +135,8 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const canOperate = machineCanOperate(machine, gameState.consumables);
   const isOperating = machine.operationProgress.status === "inProgress";
+  const hasSwitch = machine.type.powerSwitch === true;
+  const switchedOff = hasSwitch && !machine.isPowered;
   // Durations shown include the dust slowdown, so the sheet stays honest
   // about what starting the operation right now would cost
   const dustMultiplier = machineDustMultiplier(
@@ -425,7 +428,11 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
         <span>
           Status:{" "}
           {isOperating ? (
-            waitingPhase ? (
+            switchedOff ? (
+              <span className="text-store-orange-dark">
+                Paused · switched off
+              </span>
+            ) : waitingPhase ? (
               <span className="text-store-orange-dark">
                 Ready · {waitingPhase.name} needs you
               </span>
@@ -440,6 +447,10 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 Running · {ticksRemaining} ticks
               </span>
             )
+          ) : switchedOff ? (
+            "Switched off"
+          ) : hasSwitch ? (
+            <span className="text-ink-blue">Idling</span>
           ) : (
             "Idle"
           )}
@@ -468,18 +479,42 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           ))}
       </div>
 
-      <Tooltip
-        content="Operate this machine"
-        shortcut={isTargeted(machine) ? "operate-machine" : undefined}
-      >
-        <ProgressButton
-          progress={progressPercent / 100}
-          disabled={!canOperate}
-          onClick={() => applyAction(operateMachineAction(machine))}
+      <div className="flex items-stretch gap-2">
+        {hasSwitch && (
+          <Tooltip
+            content={
+              switchedOff ? "Flip the power on" : "Shut the machine down"
+            }
+            shortcut={isTargeted(machine) ? "power-toggle" : undefined}
+          >
+            <button
+              className={classNames(
+                "button-paper text-xs whitespace-nowrap shrink-0",
+                !switchedOff && "text-ink-blue",
+              )}
+              onClick={() => applyAction(toggleMachinePowerAction(machine))}
+            >
+              {switchedOff ? "Switch On" : "Switch Off"}
+            </button>
+          </Tooltip>
+        )}
+        <Tooltip
+          content={
+            switchedOff ? "Switch the machine on first" : "Operate this machine"
+          }
+          shortcut={
+            isTargeted(machine) && !switchedOff ? "operate-machine" : undefined
+          }
         >
-          {isOperating ? "Operating..." : "Operate"}
-        </ProgressButton>
-      </Tooltip>
+          <ProgressButton
+            progress={progressPercent / 100}
+            disabled={!canOperate || switchedOff}
+            onClick={() => applyAction(operateMachineAction(machine))}
+          >
+            {isOperating ? "Operating..." : "Operate"}
+          </ProgressButton>
+        </Tooltip>
+      </div>
     </section>
   );
 };

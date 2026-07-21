@@ -130,11 +130,14 @@ export const tickAction: GameAction = (gameState) => {
       dustMultiplier,
       machine.workSpeed,
     );
-    const attended = playerAttendsMachine(
-      machine,
-      gameState.player.position,
-      gameState.player.away !== null,
-    );
+    // Attended phases need the player at the machine AND the machine
+    // powered — switching off mid-cut pauses the work like stepping away.
+    const attended =
+      playerAttendsMachine(
+        machine,
+        gameState.player.position,
+        gameState.player.away !== null,
+      ) && machine.isPowered;
     const { phaseIndex, ticksRemaining } = machineState.operationProgress;
 
     // Waiting at a phase boundary: the previous phase is done but the next

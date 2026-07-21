@@ -99,6 +99,13 @@ inProgress, but paused (unattended phase boundary,
 inProgress and actively ticking an attended phase        → "cutting"
 ```
 
+Machines with a **power switch** (`MachineType.powerSwitch`: planer,
+jointer, table saw — the miter saw is a trigger tool and exempt) derive
+from the switch instead: switched off is `"off"` even mid-operation (the
+cut is paused), and switched on is at least `"running"` even with nothing
+queued — the idling motor is what reminds the player they left the
+machine on.
+
 This gives a nice touch for free: walk away mid-rip and the saw drops to idle;
 walk back and it bites into the wood again. Reload a save mid-operation and
 the sound is simply correct.

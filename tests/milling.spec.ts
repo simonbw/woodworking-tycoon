@@ -94,13 +94,27 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await page.waitForTimeout(300);
     });
 
-    await test.step("jointer: flatten a face, then straighten an edge", async () => {
+    await test.step("power switch: no cut until the jointer is switched on", async () => {
       // Player starts on the jointer's operation cell
       await page
         .locator("li", { hasText: "Walnut Board" })
         .getByRole("button", { name: "→ Jointer" })
         .click();
       await page.waitForTimeout(200);
+      const jointerCard = machineCard(page, "Jointer");
+      // Loaded and ready, but the switch hasn't been flipped
+      await expect(jointerCard.getByText("Switched off")).toBeVisible();
+      await expect(
+        jointerCard.getByRole("button", { name: "Operate" }),
+      ).toBeDisabled();
+      await jointerCard.getByRole("button", { name: "Switch On" }).click();
+      await expect(jointerCard.getByText("Idling")).toBeVisible();
+      await expect(
+        jointerCard.getByRole("button", { name: "Operate" }),
+      ).toBeEnabled();
+    });
+
+    await test.step("jointer: flatten a face, then straighten an edge", async () => {
       await machineCard(page, "Jointer")
         .getByRole("button", { name: "Operate" })
         .click();
@@ -145,6 +159,11 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .getByRole("button", { name: "→ Jobsite Table Saw" })
         .click();
       await page.waitForTimeout(200);
+      // P flips the switch on the machine the player is standing at
+      await page.keyboard.press("p");
+      await expect(
+        machineCard(page, "Jobsite Table Saw").getByText("Idling"),
+      ).toBeVisible();
       await machineCard(page, "Jobsite Table Saw")
         .getByRole("button", { name: "Operate" })
         .click();
@@ -164,6 +183,9 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .getByRole("button", { name: "→ Planer" })
         .click();
       await page.waitForTimeout(200);
+      await machineCard(page, "Planer")
+        .getByRole("button", { name: "Switch On" })
+        .click();
       await machineCard(page, "Planer")
         .getByRole("button", { name: "Operate" })
         .click();

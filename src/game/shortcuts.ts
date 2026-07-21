@@ -160,6 +160,14 @@ const defs = [
     group: "Machines",
   },
   {
+    id: "power-toggle",
+    codes: ["KeyP"],
+    keys: [["P"]],
+    description: "Switch machine on / off",
+    scope: "home",
+    group: "Machines",
+  },
+  {
     id: "cycle-operation",
     codes: ["KeyQ"],
     keys: [["Q"]],
