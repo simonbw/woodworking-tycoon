@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { getMachines, MachineId, MachineState } from "../game/Machine";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
-import { MachineVoice } from "../utils/machineVoice";
+import { LeadInOutVoice, MachineVoice } from "../utils/machineVoice";
 import { PlanerSynthVoice } from "../utils/planerSynth";
 import { useGameState } from "./useGameState";
 
@@ -27,7 +27,13 @@ import { useGameState } from "./useGameState";
  * static/sounds/ for that path).
  */
 const MACHINE_VOICES: Partial<Record<MachineId, () => MachineVoice>> = {
-  lunchboxPlaner: () => new PlanerSynthVoice(),
+  // Lead-in: the spin-up (~0.9s to full pitch) gets heard before the wood
+  // bites. Lead-out: the motor audibly unloads before switching off.
+  lunchboxPlaner: () =>
+    new LeadInOutVoice(new PlanerSynthVoice(), {
+      leadInMs: 1100,
+      leadOutMs: 800,
+    }),
 };
 
 /**

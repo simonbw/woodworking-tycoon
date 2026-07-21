@@ -145,6 +145,12 @@ Internals, phase by phase:
   and crossfade back in rather than replaying the full start.
 - Everything routes through `getSfxBus()` so existing volume/mute settings
   apply untouched.
+- **Lead-in/lead-out** (`LeadInOutVoice` in `machineVoice.ts`): off ↔ cutting
+  transitions are bracketed with idle time, the way the machine is really
+  used — switch on, come up to speed, *then* feed the board; the board clears
+  the knives before the switch goes off. Without it the spin-up gets buried
+  under the cut and the cut buzz dies at the exact instant the operation
+  completes.
 
 ### `MachineSoundLayer` (`src/components/MachineSoundLayer.tsx`)
 
