@@ -107,9 +107,6 @@ const Balance: React.FC = () => {
   const gameState = useGameState();
   return (
     <section className="flex items-baseline gap-2">
-      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/60">
-        Balance
-      </span>
       <div className="font-mono text-lg text-gold tabular-nums leading-none">
         ${gameState.money.toFixed(2)}
       </div>
