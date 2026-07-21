@@ -100,10 +100,10 @@ describe("hand plane", () => {
   it("flattens a face and straightens an edge, slowly", () => {
     const faceOp = handPlane.operations.find(
       (op) => op.id === "handPlaneFace",
-    )!;
+    ) as MachineOperation;
     const edgeOp = handPlane.operations.find(
       (op) => op.id === "handPlaneEdge",
-    )!;
+    ) as MachineOperation;
     const flattened = faceOp.output([roughBoard()]).outputs[0];
     assert.ok(isBoard(flattened));
     assert.strictEqual(flattened.jointedFaces, 1);

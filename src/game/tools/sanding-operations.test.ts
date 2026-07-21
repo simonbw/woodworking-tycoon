@@ -4,14 +4,15 @@ import { board } from "../board-helpers";
 import { materialMeetsInput } from "../material-helpers";
 import { isPanel, uniformPanel } from "../panel-helpers";
 import { isBoard } from "../board-helpers";
+import { MachineOperation } from "../Machine";
 import { TOOL_TYPES } from "../Tool";
 
 const blockSandBoard = TOOL_TYPES.sandingBlock.operations.find(
   (op) => op.id === "blockSandBoard",
-)!;
+) as MachineOperation;
 const orbitSandPanel = TOOL_TYPES.randomOrbitSander.operations.find(
   (op) => op.id === "orbitSandPanel",
-)!;
+) as MachineOperation;
 
 describe("sanding operations", () => {
   it("bumps a rough board to smooth", () => {

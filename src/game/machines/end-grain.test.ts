@@ -18,7 +18,7 @@ import { crosscutSled, SLICES_PER_PANEL } from "../tools/crosscutSled";
 import { lunchboxPlaner } from "./lunchboxPlaner";
 import { workspace } from "./workspace";
 
-const crosscut = crosscutSled.operations[0];
+const crosscut = crosscutSled.operations[0] as MachineOperation;
 const buildSled = workspace.operations.find(
   (op) => op.id === "buildCrosscutSled",
 ) as MachineOperation;

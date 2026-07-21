@@ -18,6 +18,8 @@ const WHOLE_PALLET_VALUE = 5;
 
 const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   rusticShelf: 60,
+  // Screwed joinery and bought fasteners edge it past the nailed shelf
+  planterBox: 65,
   shelf: 45,
   simpleCuttingBoard: 40,
   // The strip-board tiers: same materials, fancier patterns, better money
@@ -120,6 +122,7 @@ export function getSellValue(material: MaterialInstance): number {
       return 0;
     case "shelf":
     case "rusticShelf":
+    case "planterBox":
     case "jewelryBox":
     case "pictureFrame":
     case "simpleCuttingBoard":

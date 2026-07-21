@@ -216,6 +216,7 @@ export type FinishedProduct = {
   readonly type:
     | "shelf"
     | "rusticShelf"
+    | "planterBox"
     | "jewelryBox"
     | "pictureFrame"
     | "simpleCuttingBoard"

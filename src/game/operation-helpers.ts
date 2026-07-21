@@ -183,6 +183,7 @@ function generateSingleMockMaterial(
 
     case "shelf":
     case "rusticShelf":
+    case "planterBox":
     case "jewelryBox":
     case "pictureFrame":
     case "simpleCuttingBoard":

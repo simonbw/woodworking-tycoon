@@ -22,13 +22,18 @@ system lives in `src/game/Consumable.ts`.
 
 ## Current consumables
 
-| id           | unit  | consumers                       | sources                   |
-| ------------ | ----- | ------------------------------- | ------------------------- |
-| `nails`      | nails | Build Rustic Pallet Shelf (8)   | store pack (50), salvage  |
-| `mineralOil` | oz    | Oil Cutting Board (4)           | store bottle (16 oz)      |
+| id           | unit   | consumers                       | sources                   |
+| ------------ | ------ | ------------------------------- | ------------------------- |
+| `nails`      | nails  | Build Rustic Pallet Shelf (8)   | store pack (50), salvage  |
+| `screws`     | screws | Build Rustic Planter Box (8)    | store pack (50) — no salvage |
+| `mineralOil` | oz     | Oil Cutting Board (4)           | store bottle (16 oz)      |
 
-Planned next: glue (all glue-ups), screws (furniture arc), sandpaper
-(sanding passes), and the film finishes (hard wax oil, lacquer, poly).
+Screwed assembly is the drill's trade the way nailed joinery is the
+hammer's (`src/game/tools/drill.ts`); unlike nails, screws never come back
+as pallet salvage, so they're a true money sink.
+
+Planned next: glue (all glue-ups), sandpaper (sanding passes), and the
+film finishes (hard wax oil, lacquer, poly).
 
 ## The hammer
 

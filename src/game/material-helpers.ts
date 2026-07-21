@@ -54,6 +54,7 @@ export function makePallet() {
 const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
   "shelf",
   "rusticShelf",
+  "planterBox",
   "jewelryBox",
   "pictureFrame",
   "simpleCuttingBoard",
@@ -181,6 +182,7 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
       return 10;
 
     case "shelf":
+    case "planterBox":
       return 20;
 
     case "simpleCuttingBoard":
@@ -305,6 +307,7 @@ export function createMockMaterial(
     case "jewelryBox":
     case "rusticShelf":
     case "shelf":
+    case "planterBox":
     case "pictureFrame":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
