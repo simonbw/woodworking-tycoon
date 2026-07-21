@@ -45,23 +45,33 @@ export const PLANER_SYNTH_PARAMS = {
   /** rpm is 1 at idle; cutting bogs the motor down a touch. */
   cutRpmSag: 0.94,
   motor: {
-    /** Sawtooth growl at rotation frequency, kept dark by this lowpass. */
-    gain: 0.2,
-    cutGainBoost: 1.3,
-    lowpassHz: 1600,
+    /**
+     * Sawtooth growl at rotation frequency, kept dark by this lowpass. A
+     * lunchbox planer is a small, light machine — its idle is nearly all
+     * scream, so the growl sits low and mostly earns its keep under load.
+     */
+    gain: 0.08,
+    cutGainBoost: 2.4,
+    lowpassHz: 1400,
     /** Slot-pass scream: partial number and detune between the sine pair. */
     whineRatio: 14,
     whineDetune: 1.006,
-    whineGain: 0.045,
+    whineGain: 0.1,
+    /** Second slot-pass harmonic, relative to whineGain — adds the edge. */
+    whineOctave: 0.35,
+    /** The scream hardens as motor current rises under load. */
+    whineCutBoost: 1.6,
   },
   air: {
-    gain: 0.14,
+    gain: 0.12,
+    /** The knives churning chips throw far more air than free spinning. */
+    cutBoost: 1.5,
     /** Bandpass center at full speed; tracks rpm so the whoosh pitches up. */
     bandpassHz: 1500,
     q: 0.5,
   },
   cut: {
-    gain: 0.8,
+    gain: 1.0,
     /** AM depth of the knife-pass chop (square wave, 2 knives). */
     knives: 2,
     chopDepth: 0.45,
@@ -230,6 +240,12 @@ export class PlanerSynthVoice implements MachineVoice {
     const whineHz = P.rotationHz * P.motor.whineRatio;
     osc("sine", whineHz).connect(whineGain);
     osc("sine", whineHz * P.motor.whineDetune).connect(whineGain);
+    // Octave partial rides inside whineGain at a fixed relative level, so
+    // level and boost changes move the whole scream together.
+    const whineOctave = ctx.createGain();
+    whineOctave.gain.value = P.motor.whineOctave;
+    osc("sine", whineHz * 2 * P.motor.whineDetune).connect(whineOctave);
+    whineOctave.connect(whineGain);
     whineGain.connect(master);
 
     // ----- AIR: rpm-tracking whoosh ----------------------------------------
@@ -328,20 +344,29 @@ export class PlanerSynthVoice implements MachineVoice {
     );
 
     // Levels. On wind-down the air noise dies faster than the pitch falls
-    // (a coasting cutterhead moves less air but still whistles down).
+    // (a coasting cutterhead moves less air but still whistles down). Under
+    // load EVERY module gets louder — the real idle → cutting jump is huge,
+    // and it has to come from the whole machine working harder, not just
+    // the cut layer appearing.
     const off = to === "off";
+    const cutting = to === "cutting";
     const motorTau = off ? P.windDown.motorGainTau : P.spinUp.gainTau;
     const airTau = off ? P.windDown.airGainTau : P.spinUp.gainTau;
-    const motorTarget = off
-      ? 0
-      : P.motor.gain * (to === "cutting" ? P.motor.cutGainBoost : 1);
-    graph.motorGain.gain.setTargetAtTime(motorTarget, now, motorTau);
-    graph.whineGain.gain.setTargetAtTime(
-      off ? 0 : P.motor.whineGain,
+    graph.motorGain.gain.setTargetAtTime(
+      off ? 0 : P.motor.gain * (cutting ? P.motor.cutGainBoost : 1),
       now,
       motorTau,
     );
-    graph.airGain.gain.setTargetAtTime(off ? 0 : P.air.gain, now, airTau);
+    graph.whineGain.gain.setTargetAtTime(
+      off ? 0 : P.motor.whineGain * (cutting ? P.motor.whineCutBoost : 1),
+      now,
+      motorTau,
+    );
+    graph.airGain.gain.setTargetAtTime(
+      off ? 0 : P.air.gain * (cutting ? P.air.cutBoost : 1),
+      now,
+      airTau,
+    );
     graph.cutGate.gain.setTargetAtTime(
       to === "cutting" ? P.cut.gain : 0,
       now,
