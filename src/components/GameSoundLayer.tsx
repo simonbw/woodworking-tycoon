@@ -17,13 +17,16 @@ import { useApplyGameAction, useGameState } from "./useGameState";
  * Clip per operation. Keyed by operation rather than machine so tool-provided
  * operations sound like the tool (sanding on a bench sounds like sandpaper,
  * not like a bench). Operations with no entry fall back to `assembly-mallet`,
- * which reads as generic "hand work finished".
+ * which reads as generic "hand work finished". An explicit `null` means
+ * silence: operations on machines with a continuous voice
+ * (`MachineSoundLayer`) already end with the machine unloading and winding
+ * down — a completion chirp on top of that is double audio.
  */
-const OPERATION_CLIP: Record<string, string> = {
+const OPERATION_CLIP: Record<string, string | null> = {
   ripBoard: "table-saw-rip",
   cutBoard: "miter-cut",
-  planeBoard: "planer-pass",
-  planePanel: "planer-pass",
+  planeBoard: null,
+  planePanel: null,
   blockSandBoard: "hand-sanding",
   blockSandPanel: "hand-sanding",
   orbitSandBoard: "orbital-sander",
@@ -44,7 +47,6 @@ const FALLBACK_OPERATION_CLIP = "assembly-mallet";
 const CLIP_GAIN: Record<string, number> = {
   "table-saw-rip": 0.7,
   "miter-cut": 0.7,
-  "planer-pass": 0.7,
   "hand-sanding": 0.5,
   "orbital-sander": 0.6,
   "pallet-dismantle": 0.7,
@@ -71,11 +73,12 @@ const lastPlayedAt = new Map<string, number>();
 
 function clipFor(event: SoundEvent): string | null {
   switch (event.kind) {
-    case "operation-complete":
-      return (
-        (event.operationId && OPERATION_CLIP[event.operationId]) ??
-        FALLBACK_OPERATION_CLIP
-      );
+    case "operation-complete": {
+      if (event.operationId === undefined) return FALLBACK_OPERATION_CLIP;
+      const clip = OPERATION_CLIP[event.operationId];
+      // Distinguish "explicitly silent" (null) from "no entry" (undefined).
+      return clip === undefined ? FALLBACK_OPERATION_CLIP : clip;
+    }
     case "commission-complete":
       return "commission-complete";
     case "sale":
