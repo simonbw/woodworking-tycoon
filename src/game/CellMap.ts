@@ -7,7 +7,17 @@ import { Vector, rotateVec, translateVec } from "./Vectors";
 
 export type CellInfo = {
   readonly position: Vector;
+  /**
+   * The topmost machine here: a benchtop machine if one is mounted on a
+   * worktable at this cell, otherwise the machine (or table) itself. This
+   * is what blocks walking and placement — everything physical.
+   */
   readonly machine: Machine | undefined;
+  /**
+   * The worktable underneath, when a benchtop machine sits on it here.
+   * (A table cell with nothing mounted is just `machine`.)
+   */
+  readonly tableMachine: Machine | undefined;
   readonly operableMachines: ReadonlyArray<Machine>;
   /** Machines whose outfeed lands here — outputs are collected from this cell. */
   readonly outputMachines: ReadonlyArray<Machine>;
@@ -26,6 +36,7 @@ const vecToKey = (vec: Vector): string => vec.join(",");
 type MutableCellInfo = {
   readonly position: Vector;
   machine: Machine | undefined;
+  tableMachine: Machine | undefined;
   readonly operableMachines: Machine[];
   readonly outputMachines: Machine[];
   readonly materialPiles: MaterialPile[];
@@ -100,6 +111,7 @@ export class CellMap {
       const cell = {
         position,
         machine: partial.machine ?? undefined,
+        tableMachine: partial.tableMachine ?? undefined,
         operableMachines: partial.operableMachines ?? [],
         outputMachines: partial.outputMachines ?? [],
         materialPiles: partial.materialPiles ?? [],
@@ -115,7 +127,19 @@ export class CellMap {
       translateVec(rotateVec(cell, machine.rotation), machine.position),
     );
     for (const position of machineCells) {
-      this._at(position)!.machine = machine;
+      const cell = this._at(position)!;
+      // A benchtop machine mounted on a worktable shares the table's cell:
+      // the machine goes on top, the table underneath. Machines can be
+      // added in either order (gameState.machines is unordered).
+      const occupant = cell.machine;
+      if (occupant !== undefined && machine.type.worktable) {
+        cell.tableMachine = machine;
+      } else {
+        if (occupant?.type.worktable) {
+          cell.tableMachine = occupant;
+        }
+        cell.machine = machine;
+      }
     }
 
     if (machine.type.operationPosition !== undefined) {

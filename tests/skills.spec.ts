@@ -10,11 +10,11 @@ declare global {
 }
 
 function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Workspace" });
+  return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
 async function workspaceModes(page: any): Promise<string[]> {
-  return modesOf(page, "Workspace");
+  return modesOf(page, "Makeshift Workbench");
 }
 
 test.describe("Skill Tree", () => {
@@ -109,11 +109,11 @@ test.describe("Skill Tree", () => {
       expect(modes).toContain("Finish Two-Tone Board");
 
       // Glue the five mixed strips
-      await selectMode(page, "Workspace", "Glue Up Panel");
+      await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
       for (const rowName of ["Walnut Board", "Maple Board"]) {
         await page
           .locator("li", { hasText: rowName })
-          .getByRole("button", { name: "→ Workspace" })
+          .getByRole("button", { name: "→ Makeshift Workbench" })
           .click({ modifiers: ["Shift"] });
         await page.waitForTimeout(200);
       }
@@ -139,11 +139,11 @@ test.describe("Skill Tree", () => {
       ).toBeVisible();
 
       // Two sanding passes
-      await selectMode(page, "Workspace", "Sand Panel");
+      await selectMode(page, "Makeshift Workbench", "Sand Panel");
       for (const surface of ["smooth", "sanded"]) {
         await page
           .locator("li", { hasText: "Mixed Wood Panel" })
-          .getByRole("button", { name: "→ Workspace" })
+          .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(200);
         await workspaceCard(page)
@@ -169,10 +169,10 @@ test.describe("Skill Tree", () => {
       }
 
       // Finish it
-      await selectMode(page, "Workspace", "Finish Two-Tone Board");
+      await selectMode(page, "Makeshift Workbench", "Finish Two-Tone Board");
       await page
         .locator("li", { hasText: "Mixed Wood Panel" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
       await workspaceCard(page)

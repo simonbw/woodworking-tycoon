@@ -9,11 +9,12 @@ interface MachineSaleInfo {
 }
 
 export const StoreMachinesSection: React.FC = () => {
+  // Worktables aren't sold — you build them at a bench (see the
+  // build-worktable recipes in benchOperations.ts)
   const machinesToSell: MachineSaleInfo[] = [
     { machine: MACHINE_TYPES.garbageCan, price: 0 },
     { machine: MACHINE_TYPES.jobsiteTableSaw, price: 200 },
     { machine: MACHINE_TYPES.miterSaw, price: 200 },
-    { machine: MACHINE_TYPES.makeshiftBench, price: 100 },
     { machine: MACHINE_TYPES.lunchboxPlaner, price: 450 },
     { machine: MACHINE_TYPES.jointer, price: 600 },
   ];

@@ -30,6 +30,8 @@ export const ModeControl: React.FC<{
   progression: ProgressionState;
   /** Dust slowdown at this station, folded into the shown durations. */
   dustMultiplier?: number;
+  /** Station work speed (worktables), folded into the shown durations. */
+  workSpeed?: number;
   /** Advertise the cycle-operation key next to the control. */
   showShortcut?: boolean;
 }> = ({
@@ -38,6 +40,7 @@ export const ModeControl: React.FC<{
   onSelect,
   progression,
   dustMultiplier,
+  workSpeed,
   showShortcut,
 }) => {
   const label = (
@@ -100,6 +103,7 @@ export const ModeControl: React.FC<{
       onSelect={onSelect}
       progression={progression}
       dustMultiplier={dustMultiplier}
+      workSpeed={workSpeed}
       label={label}
     />
   );
@@ -119,6 +123,7 @@ const RecipeIndex: React.FC<{
   onSelect: (operation: Operation) => void;
   progression: ProgressionState;
   dustMultiplier?: number;
+  workSpeed?: number;
   label: React.ReactNode;
 }> = ({
   operations,
@@ -126,6 +131,7 @@ const RecipeIndex: React.FC<{
   onSelect,
   progression,
   dustMultiplier,
+  workSpeed,
   label,
 }) => {
   const [open, setOpen] = useState(false);
@@ -201,6 +207,7 @@ const RecipeIndex: React.FC<{
                         operation,
                         progression,
                         dustMultiplier,
+                        workSpeed,
                       )}{" "}
                       ticks
                     </span>

@@ -11,7 +11,7 @@ declare global {
 
 /** The workspace's spec-sheet card. */
 function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Workspace" });
+  return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
 async function nailCount(page: any): Promise<number> {
@@ -39,7 +39,7 @@ test.describe("Consumables", () => {
     await page.keyboard.press("3");
 
     await test.step("shelf recipe shows its nail shortfall", async () => {
-      await selectMode(page, "Workspace", "Build Rustic Pallet Shelf");
+      await selectMode(page, "Makeshift Workbench", "Build Rustic Pallet Shelf");
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
       await expect(
         workspaceCard(page).getByRole("button", { name: "Operate" }),
@@ -49,7 +49,7 @@ test.describe("Consumables", () => {
     });
 
     await test.step("dismantling the pallet returns its nails", async () => {
-      await selectMode(page, "Workspace", "Dismantle Pallet");
+      await selectMode(page, "Makeshift Workbench", "Dismantle Pallet");
       // Four single deck boards, then the final pry-apart (3 stringers + 1
       // deck board): 8 boards and 8 nails all told
       const outputsAfterRun = [1, 2, 3, 4, 8];
@@ -83,21 +83,21 @@ test.describe("Consumables", () => {
         .getByRole("button", { name: /Take All/ })
         .click();
       await page.waitForTimeout(200);
-      await selectMode(page, "Workspace", "Build Rustic Pallet Shelf");
+      await selectMode(page, "Makeshift Workbench", "Build Rustic Pallet Shelf");
       await expect(page.getByText("8 nails (have 8)")).toBeVisible();
 
       // Load exactly 2 stringers and 3 deck boards
       for (let i = 0; i < 2; i++) {
         await page
           .locator("li", { hasText: 'x6"x3/4' })
-          .getByRole("button", { name: "→ Workspace" })
+          .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(150);
       }
       for (let i = 0; i < 3; i++) {
         await page
           .locator("li", { hasText: 'x4"x1/4' })
-          .getByRole("button", { name: "→ Workspace" })
+          .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(150);
       }
@@ -146,12 +146,12 @@ test.describe("Consumables", () => {
     await test.step("mineral oil turns the board into an oiled board", async () => {
       // The ticker remounts on returning Home, so speed up again
       await page.keyboard.press("3");
-      await selectMode(page, "Workspace", "Oil Cutting Board");
+      await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
       await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
 
       await page
         .locator("li", { hasText: "Simple cutting board" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
       await workspaceCard(page)

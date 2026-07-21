@@ -1,7 +1,12 @@
 import React from "react";
 import { CellMap } from "../../game/CellMap";
 import { canPlaceMachine } from "../../game/game-actions/machine-actions";
-import { MACHINE_TYPES, Machine, MachineId } from "../../game/Machine";
+import {
+  MACHINE_TYPES,
+  Machine,
+  MachineId,
+  MachineState,
+} from "../../game/Machine";
 import { Direction } from "../../game/Vectors";
 import { MachineSprite } from "../shop-view/MachineSprite";
 
@@ -10,7 +15,7 @@ interface MachineGhostPreviewProps {
   position: [number, number] | null;
   rotation: Direction;
   cellMap: CellMap;
-  excludeMachineIndex?: number;
+  excludeMachine?: MachineState;
 }
 
 export const MachineGhostPreview: React.FC<MachineGhostPreviewProps> = ({
@@ -18,7 +23,7 @@ export const MachineGhostPreview: React.FC<MachineGhostPreviewProps> = ({
   position,
   rotation,
   cellMap,
-  excludeMachineIndex,
+  excludeMachine,
 }) => {
   if (!position || !cellMap.has(position)) {
     return null;
@@ -30,7 +35,7 @@ export const MachineGhostPreview: React.FC<MachineGhostPreviewProps> = ({
     machineType,
     position,
     rotation,
-    excludeMachineIndex,
+    excludeMachine,
   );
 
   // Create a temporary machine state for rendering

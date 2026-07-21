@@ -27,6 +27,7 @@ export function useMachineActivity(machine: Machine) {
         operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
+        machine.type.workSpeed,
       )
     : [];
   const attending = playerAttendsMachine(

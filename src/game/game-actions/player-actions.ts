@@ -5,6 +5,7 @@ import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "../ShopVac";
 import { CellMap } from "../CellMap";
 import { GameAction, MaterialPile } from "../GameState";
 import {
+  isSameMachine,
   Machine,
   MachineOperation,
   ParameterizedOperation,
@@ -12,7 +13,7 @@ import {
   MACHINE_TYPES,
 } from "../Machine";
 import { MaterialInstance } from "../Materials";
-import { Direction, rotateVec, translateVec, vectorEquals } from "../Vectors";
+import { Direction, rotateVec, translateVec } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
 import { pileCoversCell } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
@@ -138,7 +139,7 @@ export function moveMaterialsToMachineAction(
           ),
         },
         machines: gameState.machines.map((m) =>
-          vectorEquals(m.position, machineState.position)
+          isSameMachine(m, machineState)
             ? { ...m, inputMaterials: [...m.inputMaterials, ...materials] }
             : m,
         ),
@@ -168,10 +169,93 @@ export function takeInputsFromMachineAction(
           inventory: [...gameState.player.inventory, ...materials],
         },
         machines: gameState.machines.map((m) =>
-          vectorEquals(m.position, machineState.position)
+          isSameMachine(m, machineState)
             ? {
                 ...m,
                 inputMaterials: m.inputMaterials.filter(
+                  (item: MaterialInstance) => !materials.includes(item),
+                ),
+              }
+            : m,
+        ),
+      },
+      { kind: "material-pickup" },
+    );
+  };
+}
+
+/**
+ * Parks carried materials on a station's shelf (MachineType.materialStorage
+ * spaces). The shelf is a parking spot, not an input queue — stock there
+ * never feeds operations until it's taken back out.
+ */
+export function stowMaterialsInMachineAction(
+  materials: ReadonlyArray<MaterialInstance>,
+  machine: Machine,
+): GameAction {
+  return (gameState) => {
+    const machineState = machine.state;
+    const spacesRemaining =
+      machine.type.materialStorage - machine.storedMaterials.length;
+    if (materials.length > spacesRemaining) {
+      console.warn("Tried to stow more materials than the shelf holds");
+      return gameState;
+    }
+
+    for (const material of materials) {
+      if (!gameState.player.inventory.some((item) => item === material)) {
+        console.warn("Tried to stow material not in inventory");
+        return gameState;
+      }
+    }
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: gameState.player.inventory.filter(
+            (item) => !materials.includes(item),
+          ),
+        },
+        machines: gameState.machines.map((m) =>
+          isSameMachine(m, machineState)
+            ? {
+                ...m,
+                storedMaterials: [...(m.storedMaterials ?? []), ...materials],
+              }
+            : m,
+        ),
+      },
+      { kind: "material-drop" },
+    );
+  };
+}
+
+/** Takes materials back off a station's shelf into the player's arms. */
+export function takeStoredMaterialsFromMachineAction(
+  materials: ReadonlyArray<MaterialInstance>,
+  machine: Machine,
+): GameAction {
+  return (gameState) => {
+    const machineState = machine.state;
+    for (const material of materials) {
+      if (!machine.storedMaterials.includes(material)) {
+        console.warn("Tried to take material not on the shelf");
+        return gameState;
+      }
+    }
+    return emitSound(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          inventory: [...gameState.player.inventory, ...materials],
+        },
+        machines: gameState.machines.map((m) =>
+          isSameMachine(m, machineState)
+            ? {
+                ...m,
+                storedMaterials: (m.storedMaterials ?? []).filter(
                   (item: MaterialInstance) => !materials.includes(item),
                 ),
               }
@@ -203,7 +287,7 @@ export function takeOutputsFromMachineAction(
           inventory: [...gameState.player.inventory, ...materials],
         },
         machines: gameState.machines.map((m) =>
-          vectorEquals(m.position, machineState.position)
+          isSameMachine(m, machineState)
             ? {
                 ...m,
                 outputMaterials: m.outputMaterials.filter(
@@ -234,7 +318,7 @@ export function setMachineOperationAction(
     return {
       ...gameState,
       machines: gameState.machines.map((m) =>
-        vectorEquals(m.position, machineState.position)
+        isSameMachine(m, machineState)
           ? {
               ...m,
               selectedOperationId: operation.id,
@@ -291,12 +375,13 @@ export function operateMachineAction(machine: Machine): GameAction {
       machine.selectedOperation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
+      machine.type.workSpeed,
     );
     return {
       ...gameState,
       consumables: subtractConsumables(gameState.consumables, consumableCosts),
       machines: gameState.machines.map((m) =>
-        vectorEquals(m.position, machineState.position)
+        isSameMachine(m, machineState)
           ? {
               ...m,
               inputMaterials: inventory,

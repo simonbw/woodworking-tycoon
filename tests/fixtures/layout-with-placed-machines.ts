@@ -79,7 +79,7 @@ export const layoutWithPlacedMachines: GameState = {
       },
     },
     {
-      machineTypeId: "makeshiftBench",
+      machineTypeId: "worktable1x1",
       position: [0, 4],
       rotation: 0,
       inputMaterials: [],

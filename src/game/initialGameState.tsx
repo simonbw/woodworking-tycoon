@@ -100,6 +100,7 @@ function machine(
     processingMaterials: [],
     outputMaterials: [],
     tools,
+    storedMaterials: [],
     selectedOperationId: firstOperation.id,
     selectedParameters,
     operationProgress: {

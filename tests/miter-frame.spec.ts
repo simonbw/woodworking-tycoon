@@ -129,20 +129,20 @@ test.describe("Miter cuts and the picture frame", () => {
 
     await test.step("four rails and four nails become a walnut picture frame", async () => {
       await movePlayerTo(page, [3, 2]);
-      await selectMode(page, "Workspace", "Build Picture Frame");
+      await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
       for (let i = 0; i < 4; i++) {
         await page
           .locator("li", { hasText: "45° both ends" })
           .first()
-          .getByRole("button", { name: "→ Workspace" })
+          .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(200);
       }
-      await machineCard(page, "Workspace")
+      await machineCard(page, "Makeshift Workbench")
         .getByRole("button", { name: "Operate" })
         .click();
       await waitForMaterial(page, "m.type === 'pictureFrame'");
-      await machineCard(page, "Workspace")
+      await machineCard(page, "Makeshift Workbench")
         .getByRole("button", { name: /Take All/ })
         .click();
       await page.waitForTimeout(200);

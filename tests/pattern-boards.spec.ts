@@ -10,22 +10,22 @@ declare global {
 }
 
 function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Workspace" });
+  return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
 async function workspaceModes(page: any): Promise<string[]> {
-  return modesOf(page, "Workspace");
+  return modesOf(page, "Makeshift Workbench");
 }
 
 async function selectMode(page: any, label: string) {
-  await selectMachineMode(page, "Workspace", label);
+  await selectMachineMode(page, "Makeshift Workbench", label);
 }
 
 async function moveToWorkspace(page: any, rowText: string) {
   await page
     .locator("li", { hasText: rowText })
     .first()
-    .getByRole("button", { name: "→ Workspace" })
+    .getByRole("button", { name: "→ Makeshift Workbench" })
     .click();
   await page.waitForTimeout(200);
 }

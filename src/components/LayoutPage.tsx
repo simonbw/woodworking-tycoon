@@ -114,7 +114,7 @@ export const LayoutPage: React.FC = () => {
             machineType,
             position,
             moveRotation,
-            selectedMachineIndex, // Exclude the machine being moved
+            selectedMachine, // Exclude the machine being moved
           );
 
           if (isValid) {

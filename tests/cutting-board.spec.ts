@@ -11,14 +11,14 @@ declare global {
 
 /** The workspace's spec-sheet card. */
 function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Workspace" });
+  return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
 /** Run one sanding pass on the panel currently in inventory. */
 async function sandPanelOnce(page: any, expectSurface: string) {
   await page
     .locator("li", { hasText: "Maple Panel" })
-    .getByRole("button", { name: "→ Workspace" })
+    .getByRole("button", { name: "→ Makeshift Workbench" })
     .click();
   await page.waitForTimeout(200);
   await workspaceCard(page).getByRole("button", { name: "Operate" }).click();
@@ -93,15 +93,15 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await page.waitForTimeout(200);
       await expect(page.getByText("1/2 slots")).toBeVisible();
       // The sander's operations joined the workspace's Mode list
-      const modeOptions = await modesOf(page, "Workspace");
+      const modeOptions = await modesOf(page, "Makeshift Workbench");
       expect(modeOptions).toContain("Sand Panel");
     });
 
     await test.step("glue up five smooth maple strips", async () => {
-      await selectMode(page, "Workspace", "Glue Up Panel");
+      await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
       await page
         .locator("li", { hasText: "Maple Board" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
       await workspaceCard(page)
@@ -128,7 +128,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     });
 
     await test.step("sand the panel to smooth, then to sanded", async () => {
-      await selectMode(page, "Workspace", "Sand Panel");
+      await selectMode(page, "Makeshift Workbench", "Sand Panel");
       await sandPanelOnce(page, "smooth");
       await expect(
         page.getByText("Maple Panel (2'x10\"x4/4, smooth)").first(),
@@ -140,10 +140,10 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     });
 
     await test.step("finish the cutting board — full thickness, no planer", async () => {
-      await selectMode(page, "Workspace", "Finish Cutting Board");
+      await selectMode(page, "Makeshift Workbench", "Finish Cutting Board");
       await page
         .locator("li", { hasText: "Maple Panel" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
       await workspaceCard(page)

@@ -6,8 +6,10 @@ import { MaterialInstance } from "../../game/Materials";
 import {
   operateMachineAction,
   setMachineOperationAction,
+  stowMaterialsInMachineAction,
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
+  takeStoredMaterialsFromMachineAction,
 } from "../../game/game-actions/player-actions";
 import {
   machineCanOperate,
@@ -142,6 +144,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
         selectedOperation,
         gameState.progression,
         dustMultiplier,
+        machine.type.workSpeed,
       )
     : [];
   const { phaseIndex, ticksRemaining } = machine.operationProgress;
@@ -236,6 +239,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           }
           progression={gameState.progression}
           dustMultiplier={dustMultiplier}
+          workSpeed={machine.type.workSpeed}
           showShortcut={isTargeted(machine)}
         />
 
@@ -281,6 +285,8 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
       </div>
 
       <ToolRack machine={machine} />
+
+      <MaterialShelf machine={machine} />
 
       {/* Supplies drawn from the shop-wide stock when the op starts */}
       {selectedOperation?.requiredConsumables &&
@@ -535,6 +541,67 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
             </li>
           )}
       </ul>
+    </div>
+  );
+};
+
+/**
+ * The shelf under a station (MachineType.materialStorage spaces): parked
+ * stock, out of the way of the floor and the input bay. Click a stored
+ * material to take it back; Stow parks everything you're carrying that
+ * fits.
+ */
+const MaterialShelf: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+
+  if (machine.type.materialStorage === 0) {
+    return null;
+  }
+
+  const stored = machine.storedMaterials;
+  const freeSpaces = machine.type.materialStorage - stored.length;
+  const stowable = gameState.player.inventory.slice(0, freeSpaces);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+        <span>
+          Shelf · {stored.length}/{machine.type.materialStorage}
+        </span>
+        {stowable.length > 0 && (
+          <button
+            className="button-paper text-xs normal-case tracking-normal"
+            onClick={() =>
+              applyAction(stowMaterialsInMachineAction(stowable, machine))
+            }
+          >
+            Stow carried ({stowable.length})
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {stored.map((material, index) => (
+          <span
+            key={index}
+            onClick={() =>
+              applyAction(
+                takeStoredMaterialsFromMachineAction([material], machine),
+              )
+            }
+          >
+            <MaterialIcon
+              material={material}
+              tooltip={`Take: ${getMaterialName(material)}`}
+            />
+          </span>
+        ))}
+        {stored.length === 0 && (
+          <span className="italic text-ink-fade text-xs">
+            Empty — stow carried stock here to keep the floor clear.
+          </span>
+        )}
+      </div>
     </div>
   );
 };

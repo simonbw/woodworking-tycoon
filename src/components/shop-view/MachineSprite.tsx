@@ -11,6 +11,7 @@ import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite"
 import { JointerSprite } from "../machine-sprites/JointerSprite";
 import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
 import { MiterSawSprite } from "../machine-sprites/MiterSawSprite";
+import { WorktableSprite } from "../machine-sprites/WorktableSprite";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import {
   PIXELS_PER_CELL,
@@ -202,8 +203,16 @@ const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
 };
 
 const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
-  const workspaceTexture = useTexture("/images/workspace.png");
   const makeshiftBenchTexture = useTexture("/images/makeshift-bench.png");
+
+  if (machine.type.worktable) {
+    return (
+      <pixiContainer>
+        <WorktableSprite machine={machine} />
+        <MachineMaterials machine={machine} />
+      </pixiContainer>
+    );
+  }
 
   switch (machine.type.id) {
     case MACHINE_TYPES.jobsiteTableSaw.id:
@@ -221,20 +230,10 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
     case MACHINE_TYPES.garbageCan.id:
       return <GarbageCanSprite machine={machine} />;
 
+    // The makeshift workbench: the plywood-on-buckets art (this was the
+    // makeshift bench's sprite; the bench identity moved to the starting
+    // station — see machines/workspace.ts)
     case MACHINE_TYPES.workspace.id:
-      return (
-        <pixiContainer>
-          <pixiSprite
-            texture={workspaceTexture}
-            scale={IMAGE_SCALE}
-            anchor={{ x: 0.5, y: 0.5 }}
-            alpha={0.3}
-          />
-          <MachineMaterials machine={machine} />
-        </pixiContainer>
-      );
-
-    case MACHINE_TYPES.makeshiftBench.id:
       return (
         <pixiContainer>
           <pixiSprite

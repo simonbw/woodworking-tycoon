@@ -8,9 +8,14 @@ import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
-import { makeshiftBench } from "./machines/makeshiftBench";
 import { miterSaw } from "./machines/miterSaw";
 import { workspace } from "./machines/workspace";
+import {
+  worktable1x1,
+  worktable1x2,
+  worktable1x3,
+  worktable2x2,
+} from "./machines/worktables";
 
 export interface MachineType {
   readonly id: string;
@@ -28,15 +33,33 @@ export interface MachineType {
    */
   readonly outputPosition?: Vector;
   readonly cost: number;
+  /**
+   * Materials the station can hold on its shelf (0 = no shelf). Stored
+   * stock lives in MachineState.storedMaterials — a parking spot, not an
+   * input queue.
+   */
   readonly materialStorage: number;
   readonly toolSlots: number;
   readonly className?: string;
   readonly inputSpaces: number;
+  /**
+   * Attended hand work at this station runs this much faster (1 = the
+   * makeshift baseline). A solid worktable holds the work still; hands-free
+   * phases (glue curing) don't care where the clamps sit.
+   */
+  readonly workSpeed?: number;
+  /** A small machine that can sit on a worktable instead of the floor. */
+  readonly benchtop?: boolean;
+  /** A work surface benchtop machines can be mounted onto. */
+  readonly worktable?: boolean;
 }
 
 export const MACHINE_TYPES = {
-  makeshiftBench,
   workspace,
+  worktable1x1,
+  worktable1x2,
+  worktable1x3,
+  worktable2x2,
   jobsiteTableSaw,
   miterSaw,
   lunchboxPlaner,
@@ -117,6 +140,12 @@ export interface OperationOutput {
    * e.g. the nails that come out of a dismantled pallet.
    */
   consumableOutputs?: ReadonlyArray<ConsumableAmount>;
+  /**
+   * Machines granted on completion (delivered to machine storage, placed
+   * from the layout editor). Shop-built furniture — worktables — enters
+   * the world this way, the machine sibling of toolOutputs.
+   */
+  machineOutputs?: ReadonlyArray<MachineId>;
 }
 
 // Parameterized operation system
@@ -182,6 +211,25 @@ export interface MachineState {
   readonly outputMaterials: ReadonlyArray<MaterialInstance>;
   /** Handheld tools mounted at this station (max: type.toolSlots) */
   readonly tools: ReadonlyArray<ToolId>;
+  /**
+   * Materials parked on the station's shelf (max: type.materialStorage).
+   * Optional so pre-shelf saves load untouched.
+   */
+  readonly storedMaterials?: ReadonlyArray<MaterialInstance>;
+}
+
+/**
+ * Whether two machine states refer to the same placed machine. Position
+ * alone isn't enough: a benchtop machine mounted on a worktable shares the
+ * table's anchor cell, so identity is position plus type. (Two machines of
+ * the same type can never share a cell.)
+ */
+export function isSameMachine(a: MachineState, b: MachineState): boolean {
+  return (
+    a.machineTypeId === b.machineTypeId &&
+    a.position[0] === b.position[0] &&
+    a.position[1] === b.position[1]
+  );
 }
 
 /**
@@ -288,6 +336,10 @@ export class Machine {
 
   get outputMaterials(): ReadonlyArray<MaterialInstance> {
     return this.state.outputMaterials;
+  }
+
+  get storedMaterials(): ReadonlyArray<MaterialInstance> {
+    return this.state.storedMaterials ?? [];
   }
 }
 

@@ -21,6 +21,8 @@ export const miterSaw: MachineType = {
   materialStorage: 0,
   toolSlots: 1,
   inputSpaces: 1,
+  // Small enough to mount on a worktable cell instead of the floor
+  benchtop: true,
   operations: [
     {
       id: "cutBoard",

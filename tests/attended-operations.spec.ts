@@ -13,7 +13,7 @@ const WORKSPACE_CELL: [number, number] = [1, 3];
 const FAR_AWAY: [number, number] = [0, 0];
 
 function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Workspace" });
+  return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
 async function teleportPlayer(page: any, position: [number, number]) {
@@ -56,10 +56,10 @@ test.describe("Attended Operations", () => {
     await test.step("sanding pauses when you walk away, resumes when you return", async () => {
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
-      await selectMode(page, "Workspace", "Sand Board");
+      await selectMode(page, "Makeshift Workbench", "Sand Board");
       await page
         .locator("li", { hasText: "Maple Board" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
 
@@ -100,16 +100,16 @@ test.describe("Attended Operations", () => {
     });
 
     await test.step("glue-up: clamping needs you, curing runs without you", async () => {
-      await selectMode(page, "Workspace", "Glue Up Panel");
+      await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
       // 4 smooth strips (shift = move all of the row) + the sanded one
       await page
         .locator("li", { hasText: "Maple Board (2'x2\"x4/4, smooth, S4S)" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
       await page
         .locator("li", { hasText: "Maple Board (2'x2\"x4/4, sanded, S4S)" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
 

@@ -11,7 +11,7 @@ import { applyWorkItemAction } from "./work-item-actions";
 import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
-import { Machine } from "../Machine";
+import { Machine, MachineId } from "../Machine";
 import { getSellValue } from "../material-values";
 import { getOperationPhases } from "../skill-helpers";
 import { ToolId } from "../Tool";
@@ -92,6 +92,7 @@ export const tickAction: GameAction = (gameState) => {
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
   const toolsGranted: ToolId[] = [];
+  const machinesGranted: MachineId[] = [];
   const consumablesGranted: ConsumableAmount[] = [];
   const dustEmissions: Array<{
     machine: Machine;
@@ -124,6 +125,7 @@ export const tickAction: GameAction = (gameState) => {
       selectedOperation,
       gameState.progression,
       dustMultiplier,
+      machine.type.workSpeed,
     );
     const attended = playerAttendsMachine(
       machine,
@@ -212,7 +214,7 @@ export const tickAction: GameAction = (gameState) => {
     }
 
     // Operation completed - apply the transformation
-    const { inputs, outputs, toolOutputs, consumableOutputs } =
+    const { inputs, outputs, toolOutputs, consumableOutputs, machineOutputs } =
       executeOperation(
         selectedOperation,
         machineState.processingMaterials,
@@ -228,6 +230,12 @@ export const tickAction: GameAction = (gameState) => {
     // Shop-made tooling (e.g. the crosscut sled) lands in tool storage
     if (toolOutputs) {
       toolsGranted.push(...toolOutputs);
+    }
+
+    // Shop-built furniture (worktables) lands in machine storage, to be
+    // placed from the layout editor
+    if (machineOutputs) {
+      machinesGranted.push(...machineOutputs);
     }
 
     // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock
@@ -287,12 +295,13 @@ export const tickAction: GameAction = (gameState) => {
         };
 
   const withTools =
-    toolsGranted.length > 0
+    toolsGranted.length > 0 || machinesGranted.length > 0
       ? {
           ...nextState,
           storage: {
             ...nextState.storage,
             tools: [...nextState.storage.tools, ...toolsGranted],
+            machines: [...nextState.storage.machines, ...machinesGranted],
           },
         }
       : nextState;

@@ -1,19 +1,39 @@
-import { GameAction } from "../GameState";
-import { MachineId, MachineType } from "../Machine";
+import { GameAction, GameState } from "../GameState";
+import {
+  isSameMachine,
+  Machine,
+  MACHINE_TYPES,
+  MachineId,
+  MachineState,
+  MachineType,
+} from "../Machine";
+import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec, Vector } from "../Vectors";
 import { CellMap } from "../CellMap";
 
 /**
- * Validates whether a machine can be placed at the given position and rotation
- * @param excludeMachineIndex - Optional machine index to exclude from collision checks (for moving)
+ * Validates whether a machine can be placed at the given position and
+ * rotation. Benchtop machines (MachineType.benchtop) may land on free
+ * worktable cells as well as empty floor; everything else needs bare
+ * floor. Free cells (infeed/outfeed/operator) must be genuinely walkable —
+ * a table top doesn't count.
+ * @param excludeMachine - Optional machine to ignore in collision checks
+ * (the machine being moved)
  */
 export function canPlaceMachine(
   cellMap: CellMap,
   machineType: MachineType,
   position: Vector,
   rotation: Direction,
-  excludeMachineIndex?: number,
+  excludeMachine?: MachineState,
 ): boolean {
+  const unlessExcluded = (occupant: Machine | undefined): Machine | undefined =>
+    occupant !== undefined &&
+    excludeMachine !== undefined &&
+    isSameMachine(occupant.state, excludeMachine)
+      ? undefined
+      : occupant;
+
   // Check all cells the machine occupies
   for (const relativeCell of machineType.cellsOccupied) {
     const absolutePosition = translateVec(
@@ -21,27 +41,20 @@ export function canPlaceMachine(
       position,
     );
 
-    // Check if cell exists in the map
-    if (!cellMap.has(absolutePosition)) {
+    const cell = cellMap.at(absolutePosition);
+    if (cell === undefined) {
       return false;
     }
 
-    // Check if cell is free (no machine, or the machine is the one being moved)
-    const cell = cellMap.at(absolutePosition);
-    if (cell?.machine !== undefined) {
-      // If we're excluding a specific machine (during move), check if this is it
-      if (excludeMachineIndex !== undefined) {
-        const machines = cellMap
-          .getCells()
-          .flatMap((c) => (c.machine ? [c.machine] : []));
-        const machineAtCell = cell.machine;
-        const machineIndex = machines.indexOf(machineAtCell);
+    const top = unlessExcluded(cell.machine);
+    const table = unlessExcluded(cell.tableMachine);
 
-        // If this is the machine being moved, allow it
-        if (machineIndex === excludeMachineIndex) {
-          continue;
-        }
+    if (machineType.benchtop) {
+      // Empty floor, or a worktable cell with nothing mounted on it yet
+      if (top !== undefined && !top.type.worktable) {
+        return false;
       }
+    } else if (top !== undefined || table !== undefined) {
       return false;
     }
   }
@@ -53,27 +66,15 @@ export function canPlaceMachine(
       position,
     );
 
-    // Check if cell exists in the map
-    if (!cellMap.has(absolutePosition)) {
+    const cell = cellMap.at(absolutePosition);
+    if (cell === undefined) {
       return false;
     }
 
-    // Check if cell is free (no machine, or the machine is the one being moved)
-    const cell = cellMap.at(absolutePosition);
-    if (cell?.machine !== undefined) {
-      // If we're excluding a specific machine (during move), check if this is it
-      if (excludeMachineIndex !== undefined) {
-        const machines = cellMap
-          .getCells()
-          .flatMap((c) => (c.machine ? [c.machine] : []));
-        const machineAtCell = cell.machine;
-        const machineIndex = machines.indexOf(machineAtCell);
-
-        // If this is the machine being moved, allow it
-        if (machineIndex === excludeMachineIndex) {
-          continue;
-        }
-      }
+    if (
+      unlessExcluded(cell.machine) !== undefined ||
+      unlessExcluded(cell.tableMachine) !== undefined
+    ) {
       return false;
     }
   }
@@ -110,13 +111,45 @@ export function getMachineFreeCells(
 }
 
 /**
+ * The benchtop machines sitting on a worktable's cells. A table with
+ * machines mounted can't be moved or removed — take the machines off
+ * first.
+ */
+export function machinesMountedOnTable(
+  gameState: GameState,
+  tableIndex: number,
+): ReadonlyArray<MachineState> {
+  const table = gameState.machines[tableIndex];
+  const tableType = MACHINE_TYPES[table.machineTypeId];
+  if (!tableType.worktable) {
+    return [];
+  }
+  const tableCells = getMachineOccupiedCells(
+    tableType,
+    table.position,
+    table.rotation,
+  ).map((cell) => cell.join(","));
+  return gameState.machines.filter((machine, index) => {
+    if (index === tableIndex) {
+      return false;
+    }
+    const machineType = MACHINE_TYPES[machine.machineTypeId];
+    return getMachineOccupiedCells(
+      machineType,
+      machine.position,
+      machine.rotation,
+    ).some((cell) => tableCells.includes(cell.join(",")));
+  });
+}
+
+/**
  * Drops materials from a machine at a specific position
  */
 function dropMachineMaterials(
-  gameState: GameAction extends (state: infer S) => any ? S : never,
+  gameState: GameState,
   position: Vector,
-  materials: ReadonlyArray<any>,
-): any {
+  materials: ReadonlyArray<MaterialInstance>,
+): GameState {
   if (materials.length === 0) {
     return gameState;
   }
@@ -157,8 +190,7 @@ export function placeMachineAction(
       ...gameState.storage.machines.slice(storageIndex + 1),
     ];
 
-    // Get the machine type to find its default operation
-    const machineType = require("../Machine").MACHINE_TYPES[machineTypeId];
+    const machineType = MACHINE_TYPES[machineTypeId];
     if (!machineType) {
       console.warn(`Unknown machine type: ${machineTypeId}`);
       return gameState;
@@ -187,6 +219,7 @@ export function placeMachineAction(
       processingMaterials: [],
       outputMaterials: [],
       tools: [],
+      storedMaterials: [],
     };
 
     return {
@@ -202,7 +235,8 @@ export function placeMachineAction(
 
 /**
  * Moves a placed machine to a new position and/or rotation
- * Drops all materials at the old position
+ * Drops all materials at the old position (shelf stock rides along —
+ * that's what the shelf is for)
  */
 export function moveMachineAction(
   machineIndex: number,
@@ -212,6 +246,11 @@ export function moveMachineAction(
   return (gameState) => {
     if (machineIndex < 0 || machineIndex >= gameState.machines.length) {
       console.warn(`Invalid machine index: ${machineIndex}`);
+      return gameState;
+    }
+
+    if (machinesMountedOnTable(gameState, machineIndex).length > 0) {
+      console.warn("Can't move a worktable with machines mounted on it");
       return gameState;
     }
 
@@ -261,13 +300,20 @@ export function removeMachineToStorageAction(machineIndex: number): GameAction {
       return gameState;
     }
 
+    if (machinesMountedOnTable(gameState, machineIndex).length > 0) {
+      console.warn("Can't remove a worktable with machines mounted on it");
+      return gameState;
+    }
+
     const machine = gameState.machines[machineIndex];
 
-    // Collect all materials from the machine
+    // Collect all materials from the machine — the shelf empties too, since
+    // a machine in storage is just an id
     const allMaterials = [
       ...machine.inputMaterials,
       ...machine.processingMaterials,
       ...machine.outputMaterials,
+      ...(machine.storedMaterials ?? []),
     ];
 
     // Drop materials at machine position

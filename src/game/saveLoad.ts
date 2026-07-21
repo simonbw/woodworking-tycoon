@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 13; // Increment this when GameState structure changes
+const SAVE_VERSION = 14; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -51,6 +51,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 12) {
       saveData.gameState = migrateV12toV13(saveData.gameState);
       saveData.version = 13;
+    }
+
+    if (saveData.version === 13) {
+      saveData.gameState = migrateV13toV14(saveData.gameState);
+      saveData.version = 14;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -148,6 +153,29 @@ function migrateV11toV12(old: any): GameState {
 /** v12 → v13: the shop vac exists (nobody owns one yet). */
 function migrateV12toV13(old: any): GameState {
   return { ...old, shopVac: null };
+}
+
+/**
+ * v13 → v14: the store-bought makeshift bench became the shop-built small
+ * worktable (same footprint, same recipes and more; 3 tool slots covers
+ * the bench's 3). Placed benches convert in place; stored ones convert in
+ * storage. `storedMaterials` is optional, so no backfill needed.
+ */
+export function migrateV13toV14(old: any): GameState {
+  return {
+    ...old,
+    machines: old.machines.map((machine: any) =>
+      machine.machineTypeId === "makeshiftBench"
+        ? { ...machine, machineTypeId: "worktable1x1" }
+        : machine,
+    ),
+    storage: {
+      ...old.storage,
+      machines: old.storage.machines.map((machineId: string) =>
+        machineId === "makeshiftBench" ? "worktable1x1" : machineId,
+      ),
+    },
+  };
 }
 
 export function hasSavedGame(): boolean {

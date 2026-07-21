@@ -68,17 +68,19 @@ const GLUE_OPERATION_IDS = [
 
 /**
  * The operation's phase list with passive skills applied per phase, then
- * the dust slowdown (see Dust.ts machineDustMultiplier) applied to the
- * attended phases — a buried machine slows your handwork, not the glue's
- * cure. Ops that declare no phases are one attended stretch of hand
- * work. Phase durations are read as each phase is entered, so a skill
- * bought (or a floor swept) mid-operation affects the remaining phases
- * but not the current one.
+ * the dust slowdown (see Dust.ts machineDustMultiplier) and the station's
+ * work speed (MachineType.workSpeed — a solid worktable beats the wobbly
+ * makeshift bench) applied to the attended phases — a buried machine or a
+ * bad bench slows your handwork, not the glue's cure. Ops that declare no
+ * phases are one attended stretch of hand work. Phase durations are read
+ * as each phase is entered, so a skill bought (or a floor swept)
+ * mid-operation affects the remaining phases but not the current one.
  */
 export function getOperationPhases(
   operation: MachineOperation | ParameterizedOperation,
   progression: ProgressionState,
   dustMultiplier: number = 1,
+  workSpeed: number = 1,
 ): ReadonlyArray<OperationPhase> {
   const phases = operation.phases ?? [
     { name: operation.name, duration: operation.duration, attended: true },
@@ -102,18 +104,25 @@ export function getOperationPhases(
     if (phase.attended && dustMultiplier !== 1) {
       duration = Math.round(duration * dustMultiplier);
     }
+    if (phase.attended && workSpeed !== 1) {
+      duration = Math.max(1, Math.round(duration / workSpeed));
+    }
     return { ...phase, duration };
   });
 }
 
-/** Total operation duration after passive skills and dust (all phases). */
+/** Total operation duration after passive skills, dust, and the station's
+ * work speed (all phases). */
 export function getOperationDuration(
   operation: MachineOperation | ParameterizedOperation,
   progression: ProgressionState,
   dustMultiplier: number = 1,
+  workSpeed: number = 1,
 ): number {
-  return getOperationPhases(operation, progression, dustMultiplier).reduce(
-    (sum, phase) => sum + phase.duration,
-    0,
-  );
+  return getOperationPhases(
+    operation,
+    progression,
+    dustMultiplier,
+    workSpeed,
+  ).reduce((sum, phase) => sum + phase.duration, 0);
 }

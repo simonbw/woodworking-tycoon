@@ -78,8 +78,9 @@ sanders relevant deep into the planer era and sets up a future drum sander.
   `src/game/Tool.ts`, definitions in `src/game/tools/`.
 - Workstations have **tool slots** (`MachineType.toolSlots`). Mounting a tool
   at a station adds that tool's operations to the station's operation list.
-  - Workspace: 1 slot. Makeshift bench: 3 slots (this is what the bench is
-    *for* — it previously had no operations at all).
+  - Makeshift workbench (id `workspace`): 2 slots. Worktables: 3–6 slots by
+    size (see `docs/worktables.md` — the old store-bought makeshift bench
+    retired in favor of shop-built worktables).
 - Unmounted tools live in `GameState.storage.tools`. Buy at the store's Tool
   Wall; mount/unmount from the station's card.
 - First tools: **sanding block** ($10, slow) and **random orbit sander**

@@ -18,6 +18,8 @@ export const jobsiteTableSaw: MachineType = {
   // One jig at a time — the crosscut sled is the first
   toolSlots: 2,
   inputSpaces: 1,
+  // Small enough to mount on a worktable cell instead of the floor
+  benchtop: true,
   operations: [
     {
       id: "ripBoard",

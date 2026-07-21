@@ -106,17 +106,30 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
               <MaterialPilesSprite materialPiles={materialPiles} />
             </pixiContainer>
           ))}
-          {machines.map((machinePlacement, index) => (
-            <pixiContainer key={`machine-${index}`} zIndex={1000 + index}>
-              <MachineSprite
-                machine={machinePlacement}
-                isSelected={selectedMachineIndex === index}
-                onClick={
-                  editMode === "none" ? () => onMachineClick(index) : undefined
-                }
-              />
-            </pixiContainer>
-          ))}
+          {machines
+            .map((machinePlacement, index) => ({ machinePlacement, index }))
+            // Worktables draw first so mounted benchtop machines sit on top
+            .sort(
+              (a, b) =>
+                Number(b.machinePlacement.type.worktable ?? false) -
+                Number(a.machinePlacement.type.worktable ?? false),
+            )
+            .map(({ machinePlacement, index }, renderIndex) => (
+              <pixiContainer
+                key={`machine-${index}`}
+                zIndex={1000 + renderIndex}
+              >
+                <MachineSprite
+                  machine={machinePlacement}
+                  isSelected={selectedMachineIndex === index}
+                  onClick={
+                    editMode === "none"
+                      ? () => onMachineClick(index)
+                      : undefined
+                  }
+                />
+              </pixiContainer>
+            ))}
           {placementMode && (
             <MachineGhostPreview
               machineTypeId={placementMode.machineTypeId}
@@ -133,7 +146,7 @@ export const LayoutEditorCanvas: React.FC<LayoutEditorCanvasProps> = ({
               position={hoverPosition}
               rotation={moveRotation}
               cellMap={cellMap}
-              excludeMachineIndex={selectedMachineIndex}
+              excludeMachine={gameState.machines[selectedMachineIndex]}
             />
           )}
         </pixiContainer>

@@ -108,18 +108,18 @@ test.describe("End-Grain Boards", () => {
       await page.getByText("Home", { exact: true }).click();
       await page.waitForTimeout(300);
       await page.keyboard.press("3"); // the cures are long by design
-      await selectMode(page, "Workspace", "Build Crosscut Sled");
+      await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await page
         .locator("li", { hasText: "Plywood" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
       await page
         .locator("li", { hasText: "Pallet Board" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
-      await card(page, "Workspace")
+      await card(page, "Makeshift Workbench")
         .getByRole("button", { name: "Operate" })
         .click();
       await page.waitForFunction(
@@ -169,46 +169,46 @@ test.describe("End-Grain Boards", () => {
 
     await test.step("glue the slices grain-up and sand the blank", async () => {
       await teleportPlayer(page, WORKSPACE_CELL);
-      await selectMode(page, "Workspace", "Glue Up End-Grain Panel");
+      await selectMode(page, "Makeshift Workbench", "Glue Up End-Grain Panel");
       await page
         .locator("li", { hasText: "Maple End-Grain Slice" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
       await operateAndWait(
         page,
-        "Workspace",
+        "Makeshift Workbench",
         `(mat) => mat.type === "panel" && mat.grain === "end"`,
       );
       await expect(
         page.getByText(`Maple End-Grain Panel (1'x10"x8/4, rough)`).first(),
       ).toBeVisible();
 
-      await selectMode(page, "Workspace", "Sand Panel");
+      await selectMode(page, "Makeshift Workbench", "Sand Panel");
       for (const surface of ["smooth", "sanded"]) {
         await page
           .locator("li", { hasText: "Maple End-Grain Panel" })
-          .getByRole("button", { name: "→ Workspace" })
+          .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(200);
         await operateAndWait(
           page,
-          "Workspace",
+          "Makeshift Workbench",
           `(mat) => mat.type === "panel" && mat.surface === "${surface}"`,
         );
       }
     });
 
     await test.step("finish the end-grain board", async () => {
-      await selectMode(page, "Workspace", "Finish End-Grain Board");
+      await selectMode(page, "Makeshift Workbench", "Finish End-Grain Board");
       await page
         .locator("li", { hasText: "Maple End-Grain Panel" })
-        .getByRole("button", { name: "→ Workspace" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
       await operateAndWait(
         page,
-        "Workspace",
+        "Makeshift Workbench",
         `(mat) => mat.type === "endGrainCuttingBoard"`,
       );
       const board = await page.evaluate(() =>

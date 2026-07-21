@@ -14,7 +14,7 @@ function escapeRegExp(text: string): string {
 export function machineCard(page: any, machineName: string) {
   // Anchor on the spec sheet's heading — plain hasText also matches other
   // panels that merely mention the machine ("Operate Jointer" in the
-  // controls legend, "→ Workspace" buttons in the inventory).
+  // controls legend, "→ Makeshift Workbench" buttons in the inventory).
   return page.locator("section", {
     has: page.getByRole("heading", { name: machineName, exact: true }),
   });

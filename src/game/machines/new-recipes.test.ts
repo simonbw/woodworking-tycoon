@@ -5,7 +5,6 @@ import { MachineOperation } from "../Machine";
 import { isFinishedProduct, materialMeetsInput } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { panel } from "../panel-helpers";
-import { makeshiftBench } from "./makeshiftBench";
 import { workspace } from "./workspace";
 
 const buildShelf = workspace.operations.find(
@@ -14,7 +13,9 @@ const buildShelf = workspace.operations.find(
 const finishTwoTone = workspace.operations.find(
   (op) => op.id === "finishTwoToneBoard",
 ) as MachineOperation;
-const buildJewelryBox = makeshiftBench.operations.find(
+// The jewelry box moved to the shared bench list when the makeshift bench
+// retired — any bench station carries it now
+const buildJewelryBox = workspace.operations.find(
   (op) => op.id === "buildJewelryBox",
 ) as MachineOperation;
 

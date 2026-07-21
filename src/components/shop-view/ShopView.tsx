@@ -80,14 +80,21 @@ export const ShopView: React.FC = () => {
               </pixiContainer>
             );
           })}
-          {machines.map((machinePlacement) => (
-            <MachineSprite
-              key={
-                machinePlacement.type.id + machinePlacement.position.join(",")
-              }
-              machine={machinePlacement}
-            />
-          ))}
+          {[...machines]
+            // Worktables draw first so mounted benchtop machines sit on top
+            .sort(
+              (a, b) =>
+                Number(b.type.worktable ?? false) -
+                Number(a.type.worktable ?? false),
+            )
+            .map((machinePlacement) => (
+              <MachineSprite
+                key={
+                  machinePlacement.type.id + machinePlacement.position.join(",")
+                }
+                machine={machinePlacement}
+              />
+            ))}
           <WorkQueueSprite />
           <ShopVacSprite />
           {!gameState.player.away && <PersonSprite person={gameState.player} />}
