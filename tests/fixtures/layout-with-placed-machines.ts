@@ -1,5 +1,6 @@
 import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
+import { ALL_ARTICLE_IDS } from "../../src/game/manual";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
 export const layoutWithPlacedMachines: GameState = {
@@ -117,6 +118,8 @@ export const layoutWithPlacedMachines: GameState = {
     tickSpeedControlsUnlocked: false,
     sweepingUnlocked: false,
     dustTipDismissed: false,
+    unlockedArticles: ALL_ARTICLE_IDS,
+    readArticles: ALL_ARTICLE_IDS,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,

@@ -375,6 +375,8 @@ describe("quickDryGlue covers the freeform ops", () => {
     tickSpeedControlsUnlocked: false,
     sweepingUnlocked: false,
     dustTipDismissed: false,
+    unlockedArticles: [],
+    readArticles: [],
     xp: 0,
     skillPoints: 0,
     unlockedSkills: ["quickDryGlue" as const],

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { hasUnreadArticles } from "../game/manual";
 import { ShortcutId } from "../game/shortcuts";
 import { classNames } from "../utils/classNames";
+import { useManual } from "./manual/ManualProvider";
 import { SettingsMenu } from "./SettingsMenu";
-import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Ticker } from "./Ticker";
 import { Tooltip } from "./Tooltip";
@@ -15,7 +16,8 @@ export const NavBar: React.FC = () => {
   const { storeUnlocked, marketplaceUnlocked } = gameState.progression;
   const quitToMenu = useQuitToMenu();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const help = useHelpOverlay();
+  const manual = useManual();
+  const manualHasNews = hasUnreadArticles(gameState.progression);
 
   useShortcut("nav-home", () => setMode({ mode: "normal" }));
   useShortcut("nav-store", () => setMode({ mode: "store" }), storeUnlocked);
@@ -67,13 +69,20 @@ export const NavBar: React.FC = () => {
           <Ticker />
           <Balance />
         </div>
-        <Tooltip content="Keyboard shortcuts" shortcut="toggle-help">
+        <Tooltip content="Shop manual" shortcut="toggle-help">
           <button
-            className="button-ghost mb-1.5 self-center text-lg leading-none font-mono"
-            onClick={help.open}
-            aria-label="Keyboard shortcuts"
+            className="button-ghost relative mb-1.5 self-center text-lg leading-none font-mono"
+            onClick={() => manual.open()}
+            aria-label="Shop manual"
           >
             ?
+            {manualHasNews && (
+              <span
+                className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-gold"
+                data-testid="manual-badge"
+                aria-hidden
+              />
+            )}
           </button>
         </Tooltip>
         <Tooltip content="Settings" shortcut="open-settings">

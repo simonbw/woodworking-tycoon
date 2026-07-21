@@ -23,6 +23,14 @@ test.describe('Woodworking Tycoon Basic Functionality', () => {
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
     });
 
+    await test.step('the shop manual greets a new game and closes for good', async () => {
+      const manual = page.getByRole('dialog', { name: 'Shop manual' });
+      await expect(manual).toBeVisible();
+      await expect(manual.getByRole('heading', { name: 'Welcome to the Shop' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(manual).toHaveCount(0);
+    });
+
     await test.step('page loads under 30 seconds', async () => {
       const loadTime = Date.now() - startTime;
       expect(loadTime).toBeLessThan(30000);
@@ -47,11 +55,13 @@ test.describe('Woodworking Tycoon Basic Functionality', () => {
     });
 
     await test.step('money section displays with correct format', async () => {
-      const moneySection = page.locator('section').filter({ hasText: 'Balance' }).filter({ hasText: '$' });
-      await expect(moneySection).toBeVisible();
-
-      const moneyText = await moneySection.locator('div.font-mono').textContent();
-      expect(moneyText).toMatch(/^\$\d+\.\d{2}$/);
+      // The balance is the gold machine-printed number in the top bar (its
+      // "BALANCE" label was removed as redundant).
+      const money = page
+        .locator('div.font-mono')
+        .filter({ hasText: /^\$\d+\.\d{2}$/ })
+        .first();
+      await expect(money).toBeVisible();
     });
 
     await test.step('day job button is not present', async () => {

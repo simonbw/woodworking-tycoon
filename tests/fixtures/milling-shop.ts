@@ -1,5 +1,6 @@
 import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
+import { ALL_ARTICLE_IDS } from "../../src/game/manual";
 import { Board } from "../../src/game/Materials";
 import { MachineState } from "../../src/game/Machine";
 import { STARTER_SKILLS } from "../../src/game/Skill";
@@ -98,6 +99,8 @@ export const millingShop: GameState = {
     tickSpeedControlsUnlocked: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
+    unlockedArticles: ALL_ARTICLE_IDS,
+    readArticles: ALL_ARTICLE_IDS,
     xp: 0,
     skillPoints: 0,
     unlockedSkills: [...STARTER_SKILLS, "jigsAndFixtures"],

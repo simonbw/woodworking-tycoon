@@ -1,5 +1,6 @@
 import { ConsumableStock } from "./Consumable";
 import { DustMap } from "./Dust";
+import type { ManualArticleId } from "./manual";
 import { ShopVacState } from "./ShopVac";
 import { MachineState } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
@@ -43,6 +44,10 @@ export interface ProgressionState {
   readonly sweepingUnlocked: boolean;
   /** The one-time "sweep it up" note has been read. */
   readonly dustTipDismissed: boolean;
+  /** Shop-manual articles revealed so far (one-way, like the flags above). */
+  readonly unlockedArticles: ReadonlyArray<ManualArticleId>;
+  /** Articles the player has opened — drives the manual's NEW markers. */
+  readonly readArticles: ReadonlyArray<ManualArticleId>;
   /** Lifetime craft XP (never spent — levels derive from it). */
   readonly xp: number;
   /** Unspent skill points (1 per level gained). */

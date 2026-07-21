@@ -2,8 +2,17 @@
 
 A dismissible reference modal: categories on the left, an article on the
 right, opened from the `?` button in the top bar. Articles unlock as the
-features they explain unlock. **Now** = this design; nothing is
-implemented yet.
+features they explain unlock.
+
+**Status: implemented.** The article registry and unlock predicates live
+in `src/game/manual.ts`, the modal and provider in
+`src/components/manual/`, and the article bodies in
+`src/components/manual/articles/`. Sidebar categories: Basics / The
+Craft / The Shop / Business. One delta from the design below: the
+welcome auto-open is state-driven (the manual shows itself while
+`welcome` is unlocked-but-unread and closing acknowledges it) rather
+than a mount-time effect, so a migrated or fixture-loaded save dissolves
+it automatically.
 
 ## Why
 
