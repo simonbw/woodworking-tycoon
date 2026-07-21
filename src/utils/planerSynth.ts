@@ -1,5 +1,5 @@
 import { MachineSoundPhase } from "../game/machine-sound-helpers";
-import { getSfxBus } from "./audioBus";
+import { getRoomBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
 import { MachineVoice, PHASE_RANK } from "./machineVoice";
 
@@ -206,7 +206,7 @@ export class PlanerSynthVoice implements MachineVoice {
 
     const master = ctx.createGain();
     master.gain.value = P.master;
-    master.connect(getSfxBus());
+    master.connect(getRoomBus());
 
     const osc = (type: OscillatorType, fullSpeedHz: number) => {
       const node = ctx.createOscillator();

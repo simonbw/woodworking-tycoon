@@ -69,6 +69,13 @@ const CLIP_MIN_GAP_MS: Record<string, number> = {
   "cash-register": 250,
 };
 
+/**
+ * Clips that are NOT physical events in the shop: reward stingers and
+ * marketplace bookkeeping play dry, while everything else goes through the
+ * room bus and picks up the shop's acoustics (see `audioBus.ts`).
+ */
+const NON_DIEGETIC_CLIPS = new Set(["commission-complete", "cash-register"]);
+
 const lastPlayedAt = new Map<string, number>();
 
 function clipFor(event: SoundEvent): string | null {
@@ -96,7 +103,11 @@ function playThrottled(clip: string): void {
   const minGap = CLIP_MIN_GAP_MS[clip] ?? DEFAULT_MIN_GAP_MS;
   if (last !== undefined && now - last < minGap) return;
   lastPlayedAt.set(clip, now);
-  playSound(clip, CLIP_GAIN[clip] ?? 1);
+  playSound(
+    clip,
+    CLIP_GAIN[clip] ?? 1,
+    NON_DIEGETIC_CLIPS.has(clip) ? "sfx" : "room",
+  );
 }
 
 export const GameSoundLayer: React.FC = () => {

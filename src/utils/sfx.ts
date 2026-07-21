@@ -1,4 +1,4 @@
-import { getSfxBus } from "./audioBus";
+import { getRoomBus, getSfxBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
 
 /**
@@ -57,8 +57,15 @@ export function loadSoundBuffer(name: string): Promise<AudioBuffer> {
  * Play a clip by file name (without extension) at the given relative gain.
  * Never throws and never blocks the caller — failures (missing file, decode
  * error, locked audio) are swallowed so a missing asset can't break anything.
+ *
+ * `bus: "room"` places the sound in the shop's acoustics (see `audioBus.ts`);
+ * use it for diegetic sounds and leave UI feedback on the default sfx bus.
  */
-export function playSound(name: string, gain = 1): void {
+export function playSound(
+  name: string,
+  gain = 1,
+  bus: "sfx" | "room" = "sfx",
+): void {
   void (async () => {
     try {
       const ctx = getAudioContext();
@@ -72,7 +79,9 @@ export function playSound(name: string, gain = 1): void {
       source.buffer = buffer;
       const gainNode = ctx.createGain();
       gainNode.gain.value = gain;
-      source.connect(gainNode).connect(getSfxBus());
+      source
+        .connect(gainNode)
+        .connect(bus === "room" ? getRoomBus() : getSfxBus());
       source.start();
     } catch {
       // Audio is a nice-to-have; ignore any failure.

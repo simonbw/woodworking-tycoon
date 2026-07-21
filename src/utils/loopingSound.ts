@@ -1,5 +1,5 @@
 import { MachineSoundPhase } from "../game/machine-sound-helpers";
-import { getSfxBus } from "./audioBus";
+import { getRoomBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
 import { MachineVoice, PHASE_RANK } from "./machineVoice";
 import { loadSoundBuffer } from "./sfx";
@@ -182,7 +182,7 @@ export class LoopingSoundPlayer implements MachineVoice {
 
     const master = ctx.createGain();
     master.gain.value = this.def.gain ?? 1;
-    master.connect(getSfxBus());
+    master.connect(getRoomBus());
 
     // Loops enter under the tail of the spin-up clip.
     let loopStart = ctx.currentTime;
