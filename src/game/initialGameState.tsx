@@ -44,6 +44,7 @@ export const initialGameState: GameState = {
   storage: {
     machines: [], // Empty - no machines available initially
     tools: [],
+    upgrades: [],
   },
   shopInfo: {
     name: "One Car Garage",

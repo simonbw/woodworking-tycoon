@@ -3,6 +3,8 @@ import { buyShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import { buyToolAction } from "../../game/game-actions/tool-actions";
 import { SHOP_VAC_COST } from "../../game/ShopVac";
 import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
+import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
+import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const StoreToolsSection: React.FC = () => {
@@ -22,6 +24,13 @@ export const StoreToolsSection: React.FC = () => {
           .map((tool) => (
             <ToolProductCard key={tool.id} tool={tool} />
           ))}
+        {/* Bought worktable upgrades hang on the tool wall too — only the
+            vise today; drawers and shelves are shop-built */}
+        {Object.values(UPGRADE_TYPES)
+          .filter((upgrade) => !upgrade.craftedOnly)
+          .map((upgrade) => (
+            <UpgradeProductCard key={upgrade.id} upgrade={upgrade} />
+          ))}
         <ShopVacProductCard />
       </ul>
       <p className="text-xs text-ink-fade font-typewriter mt-2">
@@ -29,6 +38,56 @@ export const StoreToolsSection: React.FC = () => {
         the same work faster.
       </p>
     </section>
+  );
+};
+
+const UpgradeProductCard: React.FC<{ upgrade: UpgradeType }> = ({
+  upgrade,
+}) => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+
+  const numberOwned =
+    gameState.storage.upgrades.filter((id) => id === upgrade.id).length +
+    gameState.machines.reduce(
+      (sum, machine) =>
+        sum + (machine.upgrades ?? []).filter((id) => id === upgrade.id).length,
+      0,
+    );
+
+  const canAfford = gameState.money >= upgrade.cost;
+
+  return (
+    <li className="product-card flex items-center gap-3">
+      <div className="grow">
+        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
+          {upgrade.name}
+        </div>
+        <div className="text-xs text-ink-fade">
+          {numberOwned > 0 && (
+            <span className="text-store-orange-dark font-semibold">
+              {numberOwned} owned ·{" "}
+            </span>
+          )}
+          {upgrade.description} Installs into a worktable's upgrade slot.
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <span className="price-tag tabular-nums">
+          ${upgrade.cost.toFixed(2)}
+        </span>
+        <button
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          disabled={!canAfford}
+          data-sfx="ui-purchase"
+          onClick={() =>
+            applyAction(buyUpgradeAction(upgrade.id as UpgradeId))
+          }
+        >
+          Buy
+        </button>
+      </div>
+    </li>
   );
 };
 

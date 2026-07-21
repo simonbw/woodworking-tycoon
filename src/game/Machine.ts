@@ -3,6 +3,7 @@ import type { ConsumableAmount } from "./Consumable";
 import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
+import { UPGRADE_TYPES, UpgradeId } from "./Upgrade";
 import { Direction, rotateVec, translateVec, Vector } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
@@ -52,6 +53,11 @@ export interface MachineType {
   readonly benchtop?: boolean;
   /** A work surface benchtop machines can be mounted onto. */
   readonly worktable?: boolean;
+  /**
+   * How many upgrades (vise, drawers, …) this station can carry. Only
+   * worktables have any; see Upgrade.ts.
+   */
+  readonly upgradeSlots?: number;
 }
 
 export const MACHINE_TYPES = {
@@ -146,6 +152,12 @@ export interface OperationOutput {
    * the world this way, the machine sibling of toolOutputs.
    */
   machineOutputs?: ReadonlyArray<MachineId>;
+  /**
+   * Worktable upgrades granted on completion (delivered to upgrade
+   * storage) — how the shop-built drawers and shelves come into the
+   * world.
+   */
+  upgradeOutputs?: ReadonlyArray<UpgradeId>;
 }
 
 // Parameterized operation system
@@ -212,10 +224,15 @@ export interface MachineState {
   /** Handheld tools mounted at this station (max: type.toolSlots) */
   readonly tools: ReadonlyArray<ToolId>;
   /**
-   * Materials parked on the station's shelf (max: type.materialStorage).
-   * Optional so pre-shelf saves load untouched.
+   * Materials parked on the station's shelf (max: the Machine view's
+   * materialStorage). Optional so pre-shelf saves load untouched.
    */
   readonly storedMaterials?: ReadonlyArray<MaterialInstance>;
+  /**
+   * Upgrades installed at this station (max: type.upgradeSlots).
+   * Optional so pre-upgrade saves load untouched.
+   */
+  readonly upgrades?: ReadonlyArray<UpgradeId>;
 }
 
 /**
@@ -340,6 +357,36 @@ export class Machine {
 
   get storedMaterials(): ReadonlyArray<MaterialInstance> {
     return this.state.storedMaterials ?? [];
+  }
+
+  get upgrades(): ReadonlyArray<UpgradeId> {
+    return this.state.upgrades ?? [];
+  }
+
+  /**
+   * The station's effective stats — the type's base values with installed
+   * upgrades folded in. Anything reading capacity or speed off a placed
+   * machine should come through these, not the raw MachineType.
+   */
+  get toolSlots(): number {
+    return this.upgrades.reduce(
+      (slots, id) => slots + (UPGRADE_TYPES[id].extraToolSlots ?? 0),
+      this.type.toolSlots,
+    );
+  }
+
+  get materialStorage(): number {
+    return this.upgrades.reduce(
+      (spaces, id) => spaces + (UPGRADE_TYPES[id].extraMaterialStorage ?? 0),
+      this.type.materialStorage,
+    );
+  }
+
+  get workSpeed(): number {
+    return this.upgrades.reduce(
+      (speed, id) => speed * (UPGRADE_TYPES[id].workSpeedFactor ?? 1),
+      this.type.workSpeed ?? 1,
+    );
   }
 }
 

@@ -21,6 +21,11 @@ import {
   unmountToolAction,
 } from "../../game/game-actions/tool-actions";
 import {
+  installUpgradeAction,
+  uninstallUpgradeAction,
+} from "../../game/game-actions/upgrade-actions";
+import { UPGRADE_TYPES } from "../../game/Upgrade";
+import {
   availableOperations,
   getOperationPhases,
 } from "../../game/skill-helpers";
@@ -144,7 +149,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
         selectedOperation,
         gameState.progression,
         dustMultiplier,
-        machine.type.workSpeed,
+        machine.workSpeed,
       )
     : [];
   const { phaseIndex, ticksRemaining } = machine.operationProgress;
@@ -239,7 +244,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           }
           progression={gameState.progression}
           dustMultiplier={dustMultiplier}
-          workSpeed={machine.type.workSpeed}
+          workSpeed={machine.workSpeed}
           showShortcut={isTargeted(machine)}
         />
 
@@ -285,6 +290,8 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
       </div>
 
       <ToolRack machine={machine} />
+
+      <UpgradeRack machine={machine} />
 
       <MaterialShelf machine={machine} />
 
@@ -486,16 +493,16 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  if (machine.type.toolSlots === 0) {
+  if (machine.toolSlots === 0) {
     return null;
   }
 
-  const freeSlots = machine.type.toolSlots - machine.state.tools.length;
+  const freeSlots = machine.toolSlots - machine.state.tools.length;
 
   return (
     <div className="space-y-1">
       <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-        Tools · {machine.state.tools.length}/{machine.type.toolSlots} slots
+        Tools · {machine.state.tools.length}/{machine.toolSlots} slots
       </div>
       <ul className="divide-y divide-ink-black/15 text-sm">
         {machine.state.tools.map((toolId, index) => (
@@ -546,6 +553,76 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
 };
 
 /**
+ * Upgrade slots on a worktable: installed upgrades can be removed to
+ * storage, and stored upgrades installed while slots are free. Effects
+ * (speed, tool slots, shelf spaces) fold into the station's stats
+ * immediately.
+ */
+const UpgradeRack: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+
+  const slots = machine.type.upgradeSlots ?? 0;
+  if (slots === 0) {
+    return null;
+  }
+
+  const freeSlots = slots - machine.upgrades.length;
+
+  return (
+    <div className="space-y-1">
+      <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+        Upgrades · {machine.upgrades.length}/{slots} slots
+      </div>
+      <ul className="divide-y divide-ink-black/15 text-sm">
+        {machine.upgrades.map((upgradeId, index) => (
+          <li
+            key={`${upgradeId}-${index}`}
+            className="flex items-center gap-2 py-1"
+          >
+            <span className="grow">{UPGRADE_TYPES[upgradeId].name}</span>
+            <button
+              className="button-paper text-xs"
+              onClick={() =>
+                applyAction(uninstallUpgradeAction(machine, upgradeId))
+              }
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+        {freeSlots > 0 &&
+          gameState.storage.upgrades.map((upgradeId, index) => (
+            <li
+              key={`stored-${upgradeId}-${index}`}
+              className="flex items-center gap-2 py-1 text-ink-fade"
+            >
+              <span className="grow">
+                {UPGRADE_TYPES[upgradeId].name} (stored)
+              </span>
+              <button
+                className="button-paper text-xs"
+                onClick={() =>
+                  applyAction(installUpgradeAction(machine, upgradeId))
+                }
+              >
+                Install
+              </button>
+            </li>
+          ))}
+        {machine.upgrades.length === 0 &&
+          gameState.storage.upgrades.length === 0 && (
+            <li className="py-1 italic text-ink-fade text-xs">
+              No upgrades yet — build drawers and shelves at a bench, or buy
+              a vise at the store.
+            </li>
+          )}
+      </ul>
+    </div>
+  );
+};
+
+/**
  * The shelf under a station (MachineType.materialStorage spaces): parked
  * stock, out of the way of the floor and the input bay. Click a stored
  * material to take it back; Stow parks everything you're carrying that
@@ -555,19 +632,19 @@ const MaterialShelf: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  if (machine.type.materialStorage === 0) {
+  if (machine.materialStorage === 0) {
     return null;
   }
 
   const stored = machine.storedMaterials;
-  const freeSpaces = machine.type.materialStorage - stored.length;
+  const freeSpaces = machine.materialStorage - stored.length;
   const stowable = gameState.player.inventory.slice(0, freeSpaces);
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
         <span>
-          Shelf · {stored.length}/{machine.type.materialStorage}
+          Shelf · {stored.length}/{machine.materialStorage}
         </span>
         {stowable.length > 0 && (
           <button

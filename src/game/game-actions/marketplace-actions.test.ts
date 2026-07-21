@@ -216,7 +216,7 @@ describe("generateJobBoard", () => {
 
   it("adds tool-gated work once the machine is owned", () => {
     const state = stateWith({
-      storage: { machines: ["miterSaw"], tools: [] },
+      storage: { machines: ["miterSaw"], tools: [], upgrades: [] },
     });
     // Sample many boards: miter-saw jobs must show up somewhere
     let sawJobs = 0;

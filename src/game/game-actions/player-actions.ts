@@ -196,7 +196,7 @@ export function stowMaterialsInMachineAction(
   return (gameState) => {
     const machineState = machine.state;
     const spacesRemaining =
-      machine.type.materialStorage - machine.storedMaterials.length;
+      machine.materialStorage - machine.storedMaterials.length;
     if (materials.length > spacesRemaining) {
       console.warn("Tried to stow more materials than the shelf holds");
       return gameState;
@@ -375,7 +375,7 @@ export function operateMachineAction(machine: Machine): GameAction {
       machine.selectedOperation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-      machine.type.workSpeed,
+      machine.workSpeed,
     );
     return {
       ...gameState,

@@ -60,12 +60,40 @@ Rules (see `canPlaceMachine` / `CellMap`):
 - A table with machines mounted can't be moved or removed; take the
   machines off first.
 
+## Upgrades (Now)
+
+Worktables carry **upgrade slots** (`MachineType.upgradeSlots`: 1/2/3/3
+by size — worktables only, the makeshift workbench stays humble).
+Upgrades live in `src/game/Upgrade.ts`, are owned in
+`GameState.storage.upgrades`, install/uninstall from the station card
+(`MachineState.upgrades`), and their effects fold into the Machine
+view's computed stats — anything reading a placed station's capacity or
+speed goes through `machine.toolSlots` / `machine.materialStorage` /
+`machine.workSpeed`, never the raw type. Duplicates stack (a front vise
+and a tail vise is a real bench).
+
+| Upgrade | Effect | Acquired |
+|---|---|---|
+| Bench Vise | ×1.25 attended work speed (stacks with the table's own ×1.25) | store, $80 — it's cast iron |
+| Tool Drawers | +2 tool slots | built at a bench (plywood + thin boards + nails) |
+| Material Shelf | +4 shelf spaces | built at a bench (two planks + nails) |
+
+Shop-built upgrades arrive via `OperationOutput.upgradeOutputs` (the
+upgrade sibling of `toolOutputs`/`machineOutputs`). Uninstalling is
+refused while the station works, or when it would strand more mounted
+tools / shelved stock than the remaining capacity holds. Removing a
+table to storage returns its upgrades to upgrade storage, like tools.
+The sprite shows the vise's jaws and the drawer fronts on the table's
+front edge.
+
 ## Later
 
-- **Specialized tables**: recipes that take a basic worktable plus parts
-  and produce a special-purpose station — a finishing bench (finishing
-  bonuses, wants distance from dust), an assembly table, an outfeed
-  table. The upgrade-a-machine recipe shape doesn't exist yet.
+- **More upgrades**: bench dogs (another hand-work speed source),
+  downdraft top (less sanding dust), clamp rack (shorter glue-and-clamp
+  phases), pegboard backer (+tool slots, wall-adjacent tables only),
+  outfeed extension (bonus to an adjacent feed-through machine),
+  casters (move a loaded table, machines and all — deferred until the
+  layout/moving rework).
 - **Floor penalty for benchtop machines**: today a saw on the floor
   works at full speed; the incentive to mount is space-sharing and the
   shelf. If mounting should matter more, add a duration penalty for

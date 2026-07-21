@@ -13,6 +13,7 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
   const cells = machine.type.cellsOccupied;
+  const upgrades = machine.upgrades;
 
   const draw = useCallback(
     (g: Graphics) => {
@@ -74,8 +75,39 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
       g.lineTo(left + 3, top + 3);
       g.lineTo(left + width * 0.35, top + 3);
       g.stroke({ width: 1.5, color: 0xd8b478, alpha: 0.8 });
+
+      // Installed upgrades read at a glance. The front edge (toward the
+      // operator cell) is +y in machine-local coordinates.
+      const front = top + height;
+      const viseCount = upgrades.filter((id) => id === "vise").length;
+      for (let i = 0; i < Math.min(viseCount, 2); i++) {
+        // Cast-iron jaws clamped over the front edge (second vise goes
+        // to the other corner)
+        const vx = i === 0 ? left + width * 0.18 : left + width * 0.82;
+        g.rect(vx - 8, front - 6, 16, 10);
+        g.fill({ color: 0x4a5568 });
+        g.rect(vx - 8, front - 6, 16, 10);
+        g.stroke({ width: 1.5, color: 0x2d3748 });
+        // The screw and handle poking out
+        g.rect(vx - 1.5, front + 4, 3, 5);
+        g.fill({ color: 0x2d3748 });
+        g.rect(vx - 6, front + 8, 12, 2.5);
+        g.fill({ color: 0x718096 });
+      }
+      if (upgrades.includes("toolDrawers")) {
+        // Drawer fronts with pulls, tucked under the top's front edge
+        const drawerWidth = Math.min(width * 0.32, 34);
+        for (const dx of [left + width * 0.36, left + width * 0.64]) {
+          g.rect(dx - drawerWidth / 2, front - 7, drawerWidth, 6);
+          g.fill({ color: 0x8a6536 });
+          g.rect(dx - drawerWidth / 2, front - 7, drawerWidth, 6);
+          g.stroke({ width: 1, color: 0x5c3b1e });
+          g.rect(dx - 4, front - 5.5, 8, 2.5);
+          g.fill({ color: 0x2d3748 });
+        }
+      }
     },
-    [cells],
+    [cells, upgrades],
   );
 
   return <pixiGraphics draw={draw} />;

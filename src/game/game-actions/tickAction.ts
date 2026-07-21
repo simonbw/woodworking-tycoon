@@ -16,6 +16,7 @@ import { Machine, MachineId } from "../Machine";
 import { getSellValue } from "../material-values";
 import { getOperationPhases } from "../skill-helpers";
 import { ToolId } from "../Tool";
+import { UpgradeId } from "../Upgrade";
 import { withXp } from "./skill-actions";
 
 export const tickAction: GameAction = (gameState) => {
@@ -94,6 +95,7 @@ export const tickAction: GameAction = (gameState) => {
   const soundEvents: SoundEvent[] = [];
   const toolsGranted: ToolId[] = [];
   const machinesGranted: MachineId[] = [];
+  const upgradesGranted: UpgradeId[] = [];
   const consumablesGranted: ConsumableAmount[] = [];
   const dustEmissions: Array<{
     machine: Machine;
@@ -126,7 +128,7 @@ export const tickAction: GameAction = (gameState) => {
       selectedOperation,
       gameState.progression,
       dustMultiplier,
-      machine.type.workSpeed,
+      machine.workSpeed,
     );
     const attended = playerAttendsMachine(
       machine,
@@ -218,8 +220,14 @@ export const tickAction: GameAction = (gameState) => {
     }
 
     // Operation completed - apply the transformation
-    const { inputs, outputs, toolOutputs, consumableOutputs, machineOutputs } =
-      executeOperation(
+    const {
+      inputs,
+      outputs,
+      toolOutputs,
+      consumableOutputs,
+      machineOutputs,
+      upgradeOutputs,
+    } = executeOperation(
         selectedOperation,
         machineState.processingMaterials,
         machineState.selectedParameters,
@@ -240,6 +248,12 @@ export const tickAction: GameAction = (gameState) => {
     // placed from the layout editor
     if (machineOutputs) {
       machinesGranted.push(...machineOutputs);
+    }
+
+    // Shop-built worktable upgrades (drawers, shelves) land in upgrade
+    // storage, to be installed from a table's card
+    if (upgradeOutputs) {
+      upgradesGranted.push(...upgradeOutputs);
     }
 
     // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock
@@ -299,13 +313,16 @@ export const tickAction: GameAction = (gameState) => {
         };
 
   const withTools =
-    toolsGranted.length > 0 || machinesGranted.length > 0
+    toolsGranted.length > 0 ||
+    machinesGranted.length > 0 ||
+    upgradesGranted.length > 0
       ? {
           ...nextState,
           storage: {
             ...nextState.storage,
             tools: [...nextState.storage.tools, ...toolsGranted],
             machines: [...nextState.storage.machines, ...machinesGranted],
+            upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
           },
         }
       : nextState;

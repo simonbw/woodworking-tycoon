@@ -36,6 +36,9 @@ function worktable(
     // runs a quarter faster than on the wobbly makeshift bench
     workSpeed: 1.25,
     worktable: true,
+    // Room for a vise, drawers, a second shelf… bigger tables carry more
+    // (see Upgrade.ts)
+    upgradeSlots: Math.min(cells.length, 3),
     operations: BENCH_OPERATIONS,
   };
 }

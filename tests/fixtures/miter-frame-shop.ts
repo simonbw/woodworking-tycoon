@@ -92,6 +92,7 @@ export const miterFrameShop: GameState = {
   storage: {
     machines: [],
     tools: [],
+    upgrades: [],
   },
   shopInfo: {
     name: "One Car Garage",

@@ -220,6 +220,7 @@ export function placeMachineAction(
       outputMaterials: [],
       tools: [],
       storedMaterials: [],
+      upgrades: [],
     };
 
     return {
@@ -329,13 +330,17 @@ export function removeMachineToStorageAction(machineIndex: number): GameAction {
       ...updatedState.machines.slice(machineIndex + 1),
     ];
 
-    // Add machine back to storage; mounted tools go to tool storage so
-    // they're never destroyed with the station
+    // Add machine back to storage; mounted tools and installed upgrades
+    // go to their own storage so they're never destroyed with the station
     const updatedStorage = [
       ...updatedState.storage.machines,
       machine.machineTypeId,
     ];
     const updatedTools = [...updatedState.storage.tools, ...machine.tools];
+    const updatedUpgrades = [
+      ...updatedState.storage.upgrades,
+      ...(machine.upgrades ?? []),
+    ];
 
     return {
       ...updatedState,
@@ -344,6 +349,7 @@ export function removeMachineToStorageAction(machineIndex: number): GameAction {
         ...updatedState.storage,
         machines: updatedStorage,
         tools: updatedTools,
+        upgrades: updatedUpgrades,
       },
     };
   };

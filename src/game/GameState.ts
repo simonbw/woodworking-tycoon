@@ -7,6 +7,7 @@ import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
 import { SoundEvent } from "./SoundEvent";
 import { ToolId } from "./Tool";
+import { UpgradeId } from "./Upgrade";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
 import { Vector } from "./Vectors";
@@ -54,6 +55,8 @@ export interface GameState {
   readonly storage: {
     machines: ReadonlyArray<MachineId>;
     tools: ReadonlyArray<ToolId>;
+    /** Worktable upgrades owned but not installed (see Upgrade.ts). */
+    upgrades: ReadonlyArray<UpgradeId>;
   };
   readonly progression: ProgressionState;
   /** Items up for sale on the marketplace, awaiting a buyer. */

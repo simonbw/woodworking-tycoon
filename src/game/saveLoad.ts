@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 14; // Increment this when GameState structure changes
+const SAVE_VERSION = 15; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -56,6 +56,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 13) {
       saveData.gameState = migrateV13toV14(saveData.gameState);
       saveData.version = 14;
+    }
+
+    if (saveData.version === 14) {
+      saveData.gameState = migrateV14toV15(saveData.gameState);
+      saveData.version = 15;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -185,4 +190,12 @@ export function hasSavedGame(): boolean {
 export function deleteSave(): void {
   localStorage.removeItem(SAVE_KEY);
   console.log("Save deleted");
+}
+
+/** v14 → v15: worktable upgrades exist; nobody owns any yet. */
+export function migrateV14toV15(old: any): GameState {
+  return {
+    ...old,
+    storage: { ...old.storage, upgrades: [] },
+  };
 }

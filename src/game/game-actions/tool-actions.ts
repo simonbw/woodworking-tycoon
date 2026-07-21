@@ -31,7 +31,7 @@ export function mountToolAction(machine: Machine, toolId: ToolId): GameAction {
       console.warn(`Tried to mount ${toolId} but it's not in storage`);
       return gameState;
     }
-    if (machine.state.tools.length >= machine.type.toolSlots) {
+    if (machine.state.tools.length >= machine.toolSlots) {
       console.warn(`No free tool slots on ${machine.type.name}`);
       return gameState;
     }

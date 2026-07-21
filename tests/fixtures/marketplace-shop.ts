@@ -43,6 +43,7 @@ export const marketplaceShop: GameState = {
   storage: {
     machines: [],
     tools: [],
+    upgrades: [],
   },
   shopInfo: {
     name: "One Car Garage",

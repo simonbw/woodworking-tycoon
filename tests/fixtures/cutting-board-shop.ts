@@ -63,6 +63,7 @@ export const cuttingBoardShop: GameState = {
   storage: {
     machines: [],
     tools: ["randomOrbitSander"],
+    upgrades: [],
   },
   shopInfo: {
     name: "One Car Garage",

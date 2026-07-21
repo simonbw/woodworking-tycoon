@@ -80,6 +80,7 @@ export const millingShop: GameState = {
   storage: {
     machines: [],
     tools: [],
+    upgrades: [],
   },
   shopInfo: {
     name: "One Car Garage",

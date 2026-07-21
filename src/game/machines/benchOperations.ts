@@ -708,6 +708,43 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
       6,
       16,
     ),
+    // Shop-built worktable upgrades (the vise is bought — it's cast iron).
+    // Output goes to upgrade storage; install from a worktable's card.
+    {
+      name: "Build Tool Drawers",
+      id: "buildToolDrawers",
+      duration: 30,
+      requiredConsumables: [{ id: "nails", amount: 8 }],
+      inputMaterials: [
+        // A plywood carcass with thin drawer stock — deck boards qualify
+        { type: ["plywood"], length: [4], width: [4], quantity: 1 },
+        { type: ["board"], thickness: [1, 2], length: [2, 3], quantity: 2 },
+      ],
+      output: () => {
+        return {
+          inputs: [],
+          outputs: [],
+          upgradeOutputs: ["toolDrawers" as const],
+        };
+      },
+    },
+    {
+      name: "Build Material Shelf",
+      id: "buildMaterialShelf",
+      duration: 20,
+      requiredConsumables: [{ id: "nails", amount: 6 }],
+      inputMaterials: [
+        // Two planks spanning the stretchers — that's the whole build
+        { type: ["board"], thickness: [1, 2], length: [3, 4], quantity: 2 },
+      ],
+      output: () => {
+        return {
+          inputs: [],
+          outputs: [],
+          upgradeOutputs: ["materialShelf" as const],
+        };
+      },
+    },
 ];
 
 /**
