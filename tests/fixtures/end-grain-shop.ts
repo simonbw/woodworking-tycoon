@@ -89,8 +89,8 @@ export const endGrainShop: GameState = {
     idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
     idleMachine("jobsiteTableSaw", [2, 4], "ripBoard"),
   ],
+  machineCrates: [],
   storage: {
-    machines: [],
     tools: [],
     upgrades: [],
   },
@@ -99,6 +99,7 @@ export const endGrainShop: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: [2, 5],
   },
   progression: {
     tutorialStage: 2,

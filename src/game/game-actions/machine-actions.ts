@@ -1,4 +1,4 @@
-import { GameAction, GameState } from "../GameState";
+import { GameAction, GameState, ProgressionState } from "../GameState";
 import {
   isSameMachine,
   Machine,
@@ -7,9 +7,17 @@ import {
   MachineState,
   MachineType,
 } from "../Machine";
-import { MaterialInstance } from "../Materials";
-import { Direction, rotateVec, translateVec, Vector } from "../Vectors";
+import {
+  Direction,
+  rotateVec,
+  scaleVec,
+  translateVec,
+  Vector,
+  vectorEquals,
+} from "../Vectors";
 import { CellMap } from "../CellMap";
+import { carryingShopVac } from "../ShopVac";
+import { emitSound } from "./sound-actions";
 
 /**
  * Validates whether a machine can be placed at the given position and
@@ -142,214 +150,234 @@ export function machinesMountedOnTable(
   });
 }
 
-/**
- * Drops materials from a machine at a specific position
- */
-function dropMachineMaterials(
-  gameState: GameState,
-  position: Vector,
-  materials: ReadonlyArray<MaterialInstance>,
-): GameState {
-  if (materials.length === 0) {
-    return gameState;
-  }
+/** A factory-fresh MachineState; defaults to the first UNLOCKED operation. */
+export function freshMachineState(
+  machineTypeId: MachineId,
+  progression: ProgressionState,
+): MachineState {
+  const machineType = MACHINE_TYPES[machineTypeId];
+  const unlockedOps = machineType.operations.filter(
+    (op) =>
+      !op.requiredSkill || progression.unlockedSkills.includes(op.requiredSkill),
+  );
+  return {
+    machineTypeId,
+    position: [0, 0],
+    rotation: 0,
+    selectedOperationId: unlockedOps.length > 0 ? unlockedOps[0].id : "none",
+    selectedParameters: undefined,
+    operationProgress: {
+      status: "notStarted",
+      phaseIndex: 0,
+      ticksRemaining: 0,
+    },
+    inputMaterials: [],
+    processingMaterials: [],
+    outputMaterials: [],
+    tools: [],
+    storedMaterials: [],
+    upgrades: [],
+  };
+}
 
+/**
+ * Lands a machine crate on the open floor nearest `near` (walkable, no
+ * crate there yet), falling back to sharing a cell when the shop is that
+ * full. Purchases pass the entrance; build recipes pass the bench.
+ */
+export function deliverMachineCrate(
+  gameState: GameState,
+  machine: MachineState,
+  near: Vector = gameState.shopInfo.entrancePosition,
+): GameState {
+  const cellMap = CellMap.fromGameState(gameState);
+  const distance = (cell: Vector) =>
+    Math.abs(cell[0] - near[0]) + Math.abs(cell[1] - near[1]);
+  const openCells = cellMap
+    .getFreeCells()
+    .map((cell) => cell.position)
+    .filter(
+      (position) =>
+        !gameState.machineCrates.some((crate) =>
+          vectorEquals(crate.position, position),
+        ),
+    )
+    .sort((a, b) => distance(a) - distance(b));
+  const position = openCells[0] ?? near;
   return {
     ...gameState,
-    materialPiles: [
-      ...gameState.materialPiles,
-      ...materials.map((material) => ({
-        material,
-        position,
-      })),
-    ],
+    machineCrates: [...gameState.machineCrates, { machine, position }],
   };
 }
 
 /**
- * Places a machine from storage onto the shop floor
+ * Per-step busy ticks while lugging a machine. Benchtop machines tuck
+ * under an arm; floor machines and benches are a slow shuffle that gets
+ * slower the bigger the footprint.
  */
-export function placeMachineAction(
-  machineTypeId: MachineId,
-  position: Vector,
-  rotation: Direction = 0,
-): GameAction {
+export function carryMoveBusyTicks(machineType: MachineType): number {
+  return machineType.benchtop ? 0 : 1 + machineType.cellsOccupied.length;
+}
+
+/** The player's hands are genuinely free: no machine, no boards, no vac. */
+function handsFree(gameState: GameState): boolean {
+  return (
+    gameState.player.carriedMachine == null &&
+    gameState.player.inventory.length === 0 &&
+    !carryingShopVac(gameState)
+  );
+}
+
+/**
+ * Whether the player could hoist this machine right now: hands free, the
+ * machine idle and emptied of work materials (shelf stock, mounted tools,
+ * and installed upgrades ride along), and no benchtop machines mounted on
+ * it if it's a table. Position isn't checked here — the caller picks
+ * machines the player is standing at.
+ */
+export function canPickUpMachine(
+  gameState: GameState,
+  machineState: MachineState,
+): boolean {
+  const machineIndex = gameState.machines.findIndex((m) =>
+    isSameMachine(m, machineState),
+  );
+  return (
+    handsFree(gameState) &&
+    machineIndex !== -1 &&
+    machineState.operationProgress.status !== "inProgress" &&
+    machineState.inputMaterials.length === 0 &&
+    machineState.processingMaterials.length === 0 &&
+    machineState.outputMaterials.length === 0 &&
+    machinesMountedOnTable(gameState, machineIndex).length === 0
+  );
+}
+
+/** Hoists a placed machine onto the player's shoulders. */
+export function pickUpMachineAction(machineState: MachineState): GameAction {
   return (gameState) => {
-    // Verify machine is in storage
-    if (!gameState.storage.machines.includes(machineTypeId)) {
-      console.warn(
-        `Tried to place machine ${machineTypeId} but it's not in storage`,
-      );
+    if (!canPickUpMachine(gameState, machineState)) {
+      console.warn("Tried to pick up a machine that can't be carried");
       return gameState;
     }
-
-    // Remove one instance of this machine from storage
-    const storageIndex = gameState.storage.machines.indexOf(machineTypeId);
-    const updatedStorage = [
-      ...gameState.storage.machines.slice(0, storageIndex),
-      ...gameState.storage.machines.slice(storageIndex + 1),
-    ];
-
-    const machineType = MACHINE_TYPES[machineTypeId];
-    if (!machineType) {
-      console.warn(`Unknown machine type: ${machineTypeId}`);
-      return gameState;
-    }
-
-    // Create new machine state; default to the first UNLOCKED operation
-    const unlockedOps = machineType.operations.filter(
-      (op: { requiredSkill?: string }) =>
-        !op.requiredSkill ||
-        (
-          gameState.progression.unlockedSkills as ReadonlyArray<string>
-        ).includes(op.requiredSkill),
+    return emitSound(
+      {
+        ...gameState,
+        machines: gameState.machines.filter(
+          (m) => !isSameMachine(m, machineState),
+        ),
+        player: { ...gameState.player, carriedMachine: machineState },
+      },
+      { kind: "material-pickup" },
     );
-    const newMachine = {
-      machineTypeId,
+  };
+}
+
+/** Unpacks the crate underfoot straight into the player's arms. */
+export function pickUpCrateAction(): GameAction {
+  return (gameState) => {
+    const crate = gameState.machineCrates.find((candidate) =>
+      vectorEquals(candidate.position, gameState.player.position),
+    );
+    if (!crate || !handsFree(gameState)) {
+      console.warn("No crate underfoot, or hands are full");
+      return gameState;
+    }
+    return emitSound(
+      {
+        ...gameState,
+        machineCrates: gameState.machineCrates.filter(
+          (candidate) => candidate !== crate,
+        ),
+        player: { ...gameState.player, carriedMachine: crate.machine },
+      },
+      { kind: "material-pickup" },
+    );
+  };
+}
+
+/**
+ * Where the carried machine would land if set down right now: anchored so
+ * the player is standing at its operator cell — you place a machine by
+ * standing where you'd work it, which guarantees the operator cell is
+ * genuinely reachable. Machines with no operator cell (the garbage can)
+ * land on the cell the player faces instead.
+ */
+export function carriedMachinePlacement(
+  gameState: GameState,
+): { machineType: MachineType; position: Vector; rotation: Direction } | null {
+  const carried = gameState.player.carriedMachine;
+  if (!carried) {
+    return null;
+  }
+  const machineType = MACHINE_TYPES[carried.machineTypeId];
+  const rotation = carried.rotation;
+  const position = machineType.operationPosition
+    ? translateVec(
+        gameState.player.position,
+        scaleVec(rotateVec(machineType.operationPosition, rotation), -1),
+      )
+    : translateVec(
+        gameState.player.position,
+        rotateVec([1, 0], gameState.player.direction),
+      );
+  return { machineType, position, rotation };
+}
+
+/** Whether the carried machine fits where it would land right now. */
+export function canPutDownCarriedMachine(gameState: GameState): boolean {
+  const placement = carriedMachinePlacement(gameState);
+  if (!placement) {
+    return false;
+  }
+  const { machineType, position, rotation } = placement;
+  const occupied = getMachineOccupiedCells(machineType, position, rotation);
+  return (
+    !occupied.some((cell) => vectorEquals(cell, gameState.player.position)) &&
+    canPlaceMachine(
+      CellMap.fromGameState(gameState),
+      machineType,
       position,
       rotation,
-      selectedOperationId: unlockedOps.length > 0 ? unlockedOps[0].id : "none",
-      selectedParameters: undefined,
-      operationProgress: {
-        status: "notStarted" as const,
-        phaseIndex: 0,
-        ticksRemaining: 0,
-      },
-      inputMaterials: [],
-      processingMaterials: [],
-      outputMaterials: [],
-      tools: [],
-      storedMaterials: [],
-      upgrades: [],
-    };
+    )
+  );
+}
 
+/** Sets the carried machine down with its operator cell underfoot. */
+export function putDownCarriedMachineAction(): GameAction {
+  return (gameState) => {
+    const carried = gameState.player.carriedMachine;
+    if (!carried || !canPutDownCarriedMachine(gameState)) {
+      console.warn("No room to set the machine down here");
+      return gameState;
+    }
+    const { position, rotation } = carriedMachinePlacement(gameState)!;
+    return emitSound(
+      {
+        ...gameState,
+        machines: [...gameState.machines, { ...carried, position, rotation }],
+        player: { ...gameState.player, carriedMachine: null },
+      },
+      { kind: "material-drop" },
+    );
+  };
+}
+
+/** Spins the carried machine a quarter turn around the player. */
+export function rotateCarriedMachineAction(): GameAction {
+  return (gameState) => {
+    const carried = gameState.player.carriedMachine;
+    if (!carried) {
+      return gameState;
+    }
     return {
       ...gameState,
-      storage: {
-        ...gameState.storage,
-        machines: updatedStorage,
-      },
-      machines: [...gameState.machines, newMachine],
-    };
-  };
-}
-
-/**
- * Moves a placed machine to a new position and/or rotation
- * Drops all materials at the old position (shelf stock rides along —
- * that's what the shelf is for)
- */
-export function moveMachineAction(
-  machineIndex: number,
-  newPosition: Vector,
-  newRotation: Direction,
-): GameAction {
-  return (gameState) => {
-    if (machineIndex < 0 || machineIndex >= gameState.machines.length) {
-      console.warn(`Invalid machine index: ${machineIndex}`);
-      return gameState;
-    }
-
-    if (machinesMountedOnTable(gameState, machineIndex).length > 0) {
-      console.warn("Can't move a worktable with machines mounted on it");
-      return gameState;
-    }
-
-    const machine = gameState.machines[machineIndex];
-    const oldPosition = machine.position;
-
-    // Collect all materials from the machine
-    const allMaterials = [
-      ...machine.inputMaterials,
-      ...machine.processingMaterials,
-      ...machine.outputMaterials,
-    ];
-
-    // Drop materials at old position
-    let updatedState = dropMachineMaterials(
-      gameState,
-      oldPosition,
-      allMaterials,
-    );
-
-    // Update machine with new position/rotation and clear materials
-    const updatedMachines = [...updatedState.machines];
-    updatedMachines[machineIndex] = {
-      ...machine,
-      position: newPosition,
-      rotation: newRotation,
-      inputMaterials: [],
-      processingMaterials: [],
-      outputMaterials: [],
-    };
-
-    return {
-      ...updatedState,
-      machines: updatedMachines,
-    };
-  };
-}
-
-/**
- * Removes a machine from the shop floor and returns it to storage
- * Drops all materials at the machine's position
- */
-export function removeMachineToStorageAction(machineIndex: number): GameAction {
-  return (gameState) => {
-    if (machineIndex < 0 || machineIndex >= gameState.machines.length) {
-      console.warn(`Invalid machine index: ${machineIndex}`);
-      return gameState;
-    }
-
-    if (machinesMountedOnTable(gameState, machineIndex).length > 0) {
-      console.warn("Can't remove a worktable with machines mounted on it");
-      return gameState;
-    }
-
-    const machine = gameState.machines[machineIndex];
-
-    // Collect all materials from the machine — the shelf empties too, since
-    // a machine in storage is just an id
-    const allMaterials = [
-      ...machine.inputMaterials,
-      ...machine.processingMaterials,
-      ...machine.outputMaterials,
-      ...(machine.storedMaterials ?? []),
-    ];
-
-    // Drop materials at machine position
-    let updatedState = dropMachineMaterials(
-      gameState,
-      machine.position,
-      allMaterials,
-    );
-
-    // Remove machine from placed machines
-    const updatedMachines = [
-      ...updatedState.machines.slice(0, machineIndex),
-      ...updatedState.machines.slice(machineIndex + 1),
-    ];
-
-    // Add machine back to storage; mounted tools and installed upgrades
-    // go to their own storage so they're never destroyed with the station
-    const updatedStorage = [
-      ...updatedState.storage.machines,
-      machine.machineTypeId,
-    ];
-    const updatedTools = [...updatedState.storage.tools, ...machine.tools];
-    const updatedUpgrades = [
-      ...updatedState.storage.upgrades,
-      ...(machine.upgrades ?? []),
-    ];
-
-    return {
-      ...updatedState,
-      machines: updatedMachines,
-      storage: {
-        ...updatedState.storage,
-        machines: updatedStorage,
-        tools: updatedTools,
-        upgrades: updatedUpgrades,
+      player: {
+        ...gameState.player,
+        carriedMachine: {
+          ...carried,
+          rotation: ((carried.rotation + 1) % 4) as Direction,
+        },
       },
     };
   };

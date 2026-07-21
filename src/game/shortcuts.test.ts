@@ -19,9 +19,12 @@ describe("shortcut registry", () => {
     // Deliberately ignores `requiresShift`: shift is a modifier on several
     // actions (E/F/Q all use it to mean "do all"), so a plain and a shift-gated
     // binding on the same key in the same scope would both match one event and
-    // the winner would come down to registry order.
+    // the winner would come down to registry order. Defs marked `sharesKey`
+    // opt out: their enabled conditions are mutually exclusive (carry-rotate
+    // vs operate-machine on R).
     const seen = new Set<string>();
     for (const def of SHORTCUTS) {
+      if (def.sharesKey) continue;
       for (const code of def.codes) {
         const slot = `${def.scope}:${code}`;
         assert.ok(
@@ -68,11 +71,11 @@ describe("shortcutsForEvent", () => {
     assert.deepEqual(ids, ["pick-up"]);
   });
 
-  it("returns both scopes' shortcuts for a shared key", () => {
-    // R is Operate on the shop floor and Rotate in the layout editor; the
-    // provider picks between them by scope.
+  it("returns every binding for a shared key", () => {
+    // R is Rotate while a machine is carried and Operate otherwise; the
+    // provider picks between them by which handler is enabled.
     const ids = shortcutsForEvent(keyEvent("KeyR")).map((d) => d.id);
-    assert.deepEqual(ids, ["operate-machine", "layout-rotate"]);
+    assert.deepEqual(ids, ["carry-rotate", "operate-machine"]);
   });
 
   it("only matches shift-gated shortcuts when shift is held", () => {

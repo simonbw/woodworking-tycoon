@@ -1,6 +1,11 @@
 import React from "react";
 import { canSweepAt } from "../game/game-actions/dust-actions";
+import {
+  canPickUpMachine,
+  canPutDownCarriedMachine,
+} from "../game/game-actions/machine-actions";
 import { canVacuumAt } from "../game/game-actions/shop-vac-actions";
+import { MACHINE_TYPES } from "../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
 import { availableOperations } from "../game/skill-helpers";
 import { vectorEquals } from "../game/Vectors";
@@ -34,6 +39,23 @@ export const ActionBar: React.FC = () => {
     gameState.shopVac?.position != null &&
     vectorEquals(gameState.shopVac.position, gameState.player.position);
 
+  // The carry verb: revealed contextually once machine moving is unlocked
+  const carryUnlocked = gameState.progression.shopLayoutUnlocked;
+  const carried = gameState.player.carriedMachine ?? null;
+  const crateUnderfoot = carryUnlocked
+    ? gameState.machineCrates.find((crate) =>
+        vectorEquals(crate.position, gameState.player.position),
+      )
+    : undefined;
+  const liftable =
+    carryUnlocked &&
+    !carried &&
+    !crateUnderfoot &&
+    machine != null &&
+    canPickUpMachine(gameState, machine.state)
+      ? machine
+      : null;
+
   return (
     <HintSurfaceContext.Provider value="chrome">
       <section className="text-paper-manila/90">
@@ -52,48 +74,79 @@ export const ActionBar: React.FC = () => {
 
         <ul className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
           <Hint keys={[["W"], ["A"], ["S"], ["D"]]}>Move</Hint>
-          <Hint shortcut="pick-up" showShift={false}>
-            Pick up
-          </Hint>
-          {holding && (
-            <Hint shortcut="put-down" showShift={false}>
-              Put down
-            </Hint>
-          )}
-          {gameState.progression.sweepingUnlocked &&
-            !draggingVac &&
-            canSweepAt(gameState) && (
-              <Hint shortcut="sweep">Sweep sawdust</Hint>
-            )}
-          {draggingVac && canVacuumAt(gameState) && (
-            <Hint shortcut="sweep">Vacuum</Hint>
-          )}
-          {standingOnVac && <Hint shortcut="vac-toggle">Grab shop vac</Hint>}
-          {draggingVac && (
+          {carried ? (
+            // Hands full: the whole legend narrows to the carry
             <>
-              <Hint shortcut="vac-toggle">Set down vac</Hint>
-              <li className="font-condensed text-paper-manila/60">
-                Canister{" "}
-                {Math.round(canisterFillFraction(gameState.shopVac!) * 100)}%
-                {canisterFillFraction(gameState.shopVac!) >= 1 &&
-                  " — empty it at the garbage can"}
-              </li>
-            </>
-          )}
-          {operable && (
-            <>
-              <Hint shortcut="operate-machine">
-                Operate {machine!.type.name}
+              <Hint shortcut="carry-machine">
+                Put down {MACHINE_TYPES[carried.machineTypeId].name}
               </Hint>
-              <Hint shortcut="cycle-operation" showShift={false} />
+              <Hint shortcut="carry-rotate">Rotate</Hint>
+              {!canPutDownCarriedMachine(gameState) && (
+                <li className="font-condensed text-paper-manila/60">
+                  No room to set it down here
+                </li>
+              )}
+            </>
+          ) : (
+            <>
+              <Hint shortcut="pick-up" showShift={false}>
+                Pick up
+              </Hint>
+              {holding && (
+                <Hint shortcut="put-down" showShift={false}>
+                  Put down
+                </Hint>
+              )}
+              {crateUnderfoot && (
+                <Hint shortcut="carry-machine">
+                  Unpack{" "}
+                  {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
+                </Hint>
+              )}
+              {liftable && (
+                <Hint shortcut="carry-machine">
+                  Pick up {liftable.type.name}
+                </Hint>
+              )}
+              {gameState.progression.sweepingUnlocked &&
+                !draggingVac &&
+                canSweepAt(gameState) && (
+                  <Hint shortcut="sweep">Sweep sawdust</Hint>
+                )}
+              {draggingVac && canVacuumAt(gameState) && (
+                <Hint shortcut="sweep">Vacuum</Hint>
+              )}
+              {standingOnVac && (
+                <Hint shortcut="vac-toggle">Grab shop vac</Hint>
+              )}
+              {draggingVac && (
+                <>
+                  <Hint shortcut="vac-toggle">Set down vac</Hint>
+                  <li className="font-condensed text-paper-manila/60">
+                    Canister{" "}
+                    {Math.round(canisterFillFraction(gameState.shopVac!) * 100)}
+                    %
+                    {canisterFillFraction(gameState.shopVac!) >= 1 &&
+                      " — empty it at the garbage can"}
+                  </li>
+                </>
+              )}
+              {operable && (
+                <>
+                  <Hint shortcut="operate-machine">
+                    Operate {machine!.type.name}
+                  </Hint>
+                  <Hint shortcut="cycle-operation" showShift={false} />
+                </>
+              )}
+              {machine?.type.powerSwitch && (
+                <Hint shortcut="power-toggle">
+                  Switch {machine.isPowered ? "off" : "on"} {machine.type.name}
+                </Hint>
+              )}
+              {machines.length > 1 && <Hint shortcut="cycle-machine" />}
             </>
           )}
-          {machine?.type.powerSwitch && (
-            <Hint shortcut="power-toggle">
-              Switch {machine.isPowered ? "off" : "on"} {machine.type.name}
-            </Hint>
-          )}
-          {machines.length > 1 && <Hint shortcut="cycle-machine" />}
         </ul>
       </section>
     </HintSurfaceContext.Provider>

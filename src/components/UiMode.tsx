@@ -3,7 +3,6 @@ import React, { ReactNode, createContext, useContext, useState } from "react";
 export type UiMode =
   | { mode: "normal" }
   | { mode: "store" }
-  | { mode: "shopLayout" }
   | { mode: "marketplace" }
   | { mode: "skills" };
 const uiModeContext = createContext<

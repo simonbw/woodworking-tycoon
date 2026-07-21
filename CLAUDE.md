@@ -48,9 +48,8 @@ The game follows a state-driven architecture with clear separation between game 
 1. **State Management**: Uses React Context via `GameStateProvider` (`src/components/useGameState.tsx`)
 2. **Game Loop**: Managed by `Ticker` component for regular game updates
 3. **UI Modes**: Main screens controlled by `UiModeProvider`:
-   - `normal`: Main game view (`HomePage`)
+   - `normal`: Main game view (`HomePage`) — includes all shop layout management: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
    - `store`: Shopping interface (`StorePage`)
-   - `shopLayout`: Machine placement interface (`LayoutPage`)
    - `marketplace`: Sell listings & job board (`MarketplacePage`)
    - `skills`: Skill tree (`SkillsPage`)
 
@@ -62,6 +61,7 @@ The game follows a state-driven architecture with clear separation between game 
 - **Operations**: Each machine can perform specific operations transforming materials; a station's operation list combines its own operations with its mounted tools'
 - **Consumables** (`src/game/Consumable.ts`): Shop-wide supplies (nails, finishes) that operations consume and salvage can return (see `docs/consumables.md`)
 - **Material Piles**: Physical placement of materials in the shop space
+- **Machine Carrying** (`src/game/game-actions/machine-actions.ts`): Machines arrive as crates and are carried into place by the player on the home screen — there is no separate layout editor (see `docs/carrying-machines.md`)
 
 ### Rendering Architecture
 
@@ -74,7 +74,6 @@ src/
 ├── components/            # React components
 │   ├── shop-view/         # Main game area rendering (PIXI)
 │   ├── store-page/        # Equipment purchasing UI
-│   ├── layout-page/       # Machine placement / layout editor UI
 │   ├── current-cell-info/ # Inspector panels
 │   ├── machine-sprites/   # PIXI machine renderers
 │   ├── material-sprites/  # PIXI material renderers

@@ -84,8 +84,8 @@ After this change the game has three income tracks with distinct roles:
 
 ## The Marketplace tab
 
-A new top-level UI surface (a fourth `UiMode`, alongside normal / store /
-shopLayout), styled as the player's phone or laptop. It has two panes:
+A new top-level UI surface (another `UiMode`, alongside normal / store),
+styled as the player's phone or laptop. It has two panes:
 
 1. **For Sale** — your active listings: item, asking price, how long it's
    been up, and an interest indicator.

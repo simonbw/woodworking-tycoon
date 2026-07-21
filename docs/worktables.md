@@ -21,8 +21,9 @@ bench from plywood, stout boards (pallet stringers or 2×4s), and nails.
 The build recipes live in the shared bench list with no skill gate:
 building a real bench is every woodworker's first project. The output is
 equipment, not product (`OperationOutput.machineOutputs`, the machine
-sibling of the jigs' `toolOutputs`): the finished table lands in machine
-storage and is placed from the layout editor.
+sibling of the jigs' `toolOutputs`): the finished table comes off the
+bench crated, ready to be carried into place (see
+`carrying-machines.md`).
 
 A bare worktable improves on the makeshift workbench three ways:
 
@@ -35,8 +36,7 @@ A bare worktable improves on the makeshift workbench three ways:
 3. **The shelf** (`MachineType.materialStorage`, 3 per cell): parked
    stock lives on `MachineState.storedMaterials` — out of the input
    bay, off the floor. Stow/take from the station card. Shelf stock
-   rides along when a table moves, and dumps to the floor if the table
-   is returned to storage.
+   rides along when a table is carried.
 
 More benches also parallelize hands-free work (more simultaneous glue
 cures) — the "extra benches convert money into throughput" economy from
@@ -92,8 +92,8 @@ front edge.
   downdraft top (less sanding dust), clamp rack (shorter glue-and-clamp
   phases), pegboard backer (+tool slots, wall-adjacent tables only),
   outfeed extension (bonus to an adjacent feed-through machine),
-  casters (move a loaded table, machines and all — deferred until the
-  layout/moving rework).
+  casters (move a loaded table, machines and all — today the carry
+  system refuses a table with machines mounted).
 - **Floor penalty for benchtop machines**: today a saw on the floor
   works at full speed; the incentive to mount is space-sharing and the
   shelf. If mounting should matter more, add a duration penalty for

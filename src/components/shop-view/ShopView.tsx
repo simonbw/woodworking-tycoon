@@ -11,8 +11,11 @@ import {
   useSaveGame,
 } from "../useGameState";
 import { BroomSprite } from "./BroomSprite";
+import { CarriedMachineLayer } from "./CarriedMachineLayer";
 import { DustLayer } from "./DustLayer";
+import { EntranceSprite } from "./EntranceSprite";
 import { FloorTileSprite } from "./FloorTileSprite";
+import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
@@ -64,9 +67,17 @@ export const ShopView: React.FC = () => {
               key={`cell-${cell.position.join(",")}`}
             />
           ))}
+          <EntranceSprite />
           {/* Settled sawdust sits on the floor, under everything that moves */}
           <DustLayer width={width} height={height} />
           {gameState.progression.sweepingUnlocked && <BroomSprite />}
+
+          {gameState.machineCrates.map((crate, index) => (
+            <MachineCrateSprite
+              crate={crate}
+              key={`crate-${index}-${crate.position.join(",")}`}
+            />
+          ))}
 
           {materialPileGroups.map((materialPiles, i) => {
             const [x, y] = cellToPixelVec(materialPiles[0].position);
@@ -98,6 +109,7 @@ export const ShopView: React.FC = () => {
           <WorkQueueSprite />
           <ShopVacSprite />
           {!gameState.player.away && <PersonSprite person={gameState.player} />}
+          <CarriedMachineLayer />
         </gameStateContext.Provider>
       </Application>
     </>

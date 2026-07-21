@@ -1,7 +1,10 @@
+import { freshMachineState } from "./game-actions/machine-actions";
 import { GameState } from "./GameState";
+import { MachineId } from "./Machine";
+import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 15; // Increment this when GameState structure changes
+const SAVE_VERSION = 16; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -61,6 +64,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 14) {
       saveData.gameState = migrateV14toV15(saveData.gameState);
       saveData.version = 15;
+    }
+
+    if (saveData.version === 15) {
+      saveData.gameState = migrateV15toV16(saveData.gameState);
+      saveData.version = 16;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -197,5 +205,24 @@ export function migrateV14toV15(old: any): GameState {
   return {
     ...old,
     storage: { ...old.storage, upgrades: [] },
+  };
+}
+
+/**
+ * v15 → v16: the layout editor became the carry system. Abstract machine
+ * storage no longer exists — anything stored converts to delivery crates
+ * at the shop's (new) entrance, ready to be carried into place.
+ */
+export function migrateV15toV16(old: any): GameState {
+  const { machines: storedMachines, ...storage } = old.storage;
+  const entrancePosition = defaultEntrancePosition(old.shopInfo.size);
+  return {
+    ...old,
+    shopInfo: { ...old.shopInfo, entrancePosition },
+    machineCrates: (storedMachines as MachineId[]).map((machineTypeId) => ({
+      machine: freshMachineState(machineTypeId, old.progression),
+      position: entrancePosition,
+    })),
+    storage,
   };
 }

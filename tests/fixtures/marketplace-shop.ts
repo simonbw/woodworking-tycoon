@@ -40,8 +40,8 @@ export const marketplaceShop: GameState = {
     away: null,
   },
   machines: [],
+  machineCrates: [],
   storage: {
-    machines: [],
     tools: [],
     upgrades: [],
   },
@@ -50,6 +50,7 @@ export const marketplaceShop: GameState = {
     electricity: 120,
     size: [4, 6],
     materialDropoffPosition: [3, 5],
+    entrancePosition: [2, 5],
   },
   progression: {
     tutorialStage: 2,

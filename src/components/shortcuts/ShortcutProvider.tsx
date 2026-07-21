@@ -33,14 +33,7 @@ const shortcutContext = createContext<ShortcutContextValue | undefined>(
 
 /** Which non-global scope is live, given the screen the player is on. */
 function scopeForMode(mode: string): ShortcutScope | null {
-  switch (mode) {
-    case "normal":
-      return "home";
-    case "shopLayout":
-      return "shopLayout";
-    default:
-      return null;
-  }
+  return mode === "normal" ? "home" : null;
 }
 
 /** Typing in a field shouldn't drive the player around the shop. */

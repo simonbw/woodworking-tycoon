@@ -9,7 +9,7 @@ import {
   mountToolAction,
   unmountToolAction,
 } from "./tool-actions";
-import { removeMachineToStorageAction } from "./machine-actions";
+import { pickUpMachineAction } from "./machine-actions";
 
 function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
@@ -165,11 +165,12 @@ describe("unmountToolAction", () => {
   });
 });
 
-describe("removeMachineToStorageAction", () => {
-  it("returns mounted tools to tool storage instead of destroying them", () => {
+describe("pickUpMachineAction", () => {
+  it("keeps mounted tools with the carried machine", () => {
     const state = toolState(initialGameState, [], ["sandingBlock"]);
-    const result = removeMachineToStorageAction(0)(state);
-    assert.deepStrictEqual(result.storage.tools, ["sandingBlock"]);
-    assert.ok(result.storage.machines.includes("workspace"));
+    const result = pickUpMachineAction(state.machines[0])(state);
+    assert.deepStrictEqual(result.player.carriedMachine?.tools, [
+      "sandingBlock",
+    ]);
   });
 });

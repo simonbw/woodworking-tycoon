@@ -15,8 +15,11 @@ export function ownsMachine(
   machineId: MachineId,
 ): boolean {
   return (
-    gameState.storage.machines.includes(machineId) ||
-    gameState.machines.some((m) => m.machineTypeId === machineId)
+    gameState.machines.some((m) => m.machineTypeId === machineId) ||
+    gameState.machineCrates.some(
+      (crate) => crate.machine.machineTypeId === machineId,
+    ) ||
+    gameState.player.carriedMachine?.machineTypeId === machineId
   );
 }
 
@@ -43,6 +46,8 @@ export const UNLOCK_CONDITIONS: Record<
 > = {
   storeUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "first-shelf"),
+  // The flag now gates the carry verb (pick up and move machines on the
+  // home screen); the name is kept for save compatibility.
   shopLayoutUnlocked: (gameState) => ownsMachine(gameState, "miterSaw"),
   marketplaceUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "cut-to-order"),

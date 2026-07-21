@@ -12,19 +12,13 @@ import { useGameState, useQuitToMenu } from "./useGameState";
 export const NavBar: React.FC = () => {
   const { mode, setMode } = useUiMode();
   const gameState = useGameState();
-  const { storeUnlocked, shopLayoutUnlocked, marketplaceUnlocked } =
-    gameState.progression;
+  const { storeUnlocked, marketplaceUnlocked } = gameState.progression;
   const quitToMenu = useQuitToMenu();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const help = useHelpOverlay();
 
   useShortcut("nav-home", () => setMode({ mode: "normal" }));
   useShortcut("nav-store", () => setMode({ mode: "store" }), storeUnlocked);
-  useShortcut(
-    "nav-layout",
-    () => setMode({ mode: "shopLayout" }),
-    shopLayoutUnlocked,
-  );
   useShortcut(
     "nav-marketplace",
     () => setMode({ mode: "marketplace" }),
@@ -48,14 +42,6 @@ export const NavBar: React.FC = () => {
             shortcut="nav-store"
             active={mode.mode === "store"}
             onClick={() => setMode({ mode: "store" })}
-          />
-        )}
-        {shopLayoutUnlocked && (
-          <FolderTab
-            label="Shop Layout"
-            shortcut="nav-layout"
-            active={mode.mode === "shopLayout"}
-            onClick={() => setMode({ mode: "shopLayout" })}
           />
         )}
         {marketplaceUnlocked && (

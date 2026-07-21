@@ -15,6 +15,7 @@ import {
 import { MaterialInstance } from "../Materials";
 import { Direction, rotateVec, translateVec } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
+import { carryMoveBusyTicks } from "./machine-actions";
 import { pileCoversCell } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
 import { emitSound } from "./sound-actions";
@@ -30,15 +31,18 @@ export function instaMovePlayerAction(direction: Direction): GameAction {
     if (destinationCell === undefined || destinationCell.machine) {
       return { ...gameState, player: { ...gameState.player, direction } };
     }
+    const carried = gameState.player.carriedMachine;
     return {
       ...gameState,
       player: {
         ...gameState.player,
         canWork: false,
-        // Deep sawdust is slow going, and dragging the vac slower still
+        // Deep sawdust is slow going, dragging the vac slower still, and a
+        // machine over the shoulders slowest of all
         busyTicks:
           moveDustPenalty(gameState.dust, destinationPosition) +
-          (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0),
+          (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0) +
+          (carried ? carryMoveBusyTicks(MACHINE_TYPES[carried.machineTypeId]) : 0),
         position: destinationPosition,
         direction,
       },
