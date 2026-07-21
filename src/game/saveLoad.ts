@@ -1,11 +1,12 @@
 import { freshMachineState } from "./game-actions/machine-actions";
 import { GameState } from "./GameState";
 import { Machine, MachineId } from "./Machine";
+import { articlesUnlockedFor } from "./manual";
 import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 18; // Increment this when GameState structure changes
+const SAVE_VERSION = 19; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -80,6 +81,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 17) {
       saveData.gameState = migrateV17toV18(saveData.gameState);
       saveData.version = 18;
+    }
+
+    if (saveData.version === 18) {
+      saveData.gameState = migrateV18toV19(saveData.gameState);
+      saveData.version = 19;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -343,5 +349,22 @@ export function migrateV17toV18(old: any): GameState {
       machine: migrate(crate.machine),
     })),
     materialPiles: [...old.materialPiles, ...strandedPiles],
+  };
+}
+
+/**
+ * v18 → v19: the shop manual exists. Every article this save has already
+ * earned unlocks silently pre-read — an established shop shouldn't get
+ * badge-spammed with a binder full of NEW tabs on load.
+ */
+export function migrateV18toV19(old: any): GameState {
+  const unlockedArticles = articlesUnlockedFor(old as GameState);
+  return {
+    ...old,
+    progression: {
+      ...old.progression,
+      unlockedArticles,
+      readArticles: unlockedArticles,
+    },
   };
 }

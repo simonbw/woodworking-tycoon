@@ -9,8 +9,8 @@ import { MACHINE_TYPES } from "../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
 import { availableOperations } from "../game/skill-helpers";
 import { vectorEquals } from "../game/Vectors";
+import { useManual } from "./manual/ManualProvider";
 import { Hint, HintSurfaceContext } from "./shortcuts/Kbd";
-import { useHelpOverlay } from "./shortcuts/ShortcutHelpOverlay";
 import { useTargetedMachine } from "./TargetedMachineContext";
 import { useGameState } from "./useGameState";
 
@@ -24,7 +24,7 @@ import { useGameState } from "./useGameState";
 export const ActionBar: React.FC = () => {
   const gameState = useGameState();
   const { machine, machines } = useTargetedMachine();
-  const help = useHelpOverlay();
+  const manual = useManual();
 
   if (gameState.player.away) return null;
 
@@ -65,7 +65,7 @@ export const ActionBar: React.FC = () => {
           </h2>
           <button
             className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-paper-manila/50 hover:text-paper-manila"
-            onClick={help.open}
+            onClick={() => manual.open("controls")}
             data-sfx="none"
           >
             All shortcuts

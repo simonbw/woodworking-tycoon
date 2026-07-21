@@ -1,5 +1,6 @@
 import { NO_CONSUMABLES } from "./Consumable";
 import { GameState } from "./GameState";
+import { STARTING_ARTICLES } from "./manual";
 import { STARTER_SKILLS } from "./Skill";
 import { ToolId } from "./Tool";
 import {
@@ -63,6 +64,9 @@ export const initialGameState: GameState = {
     tickSpeedControlsUnlocked: false,
     sweepingUnlocked: false,
     dustTipDismissed: false,
+    // Welcome starts unread on purpose: the manual auto-opens to it once.
+    unlockedArticles: STARTING_ARTICLES,
+    readArticles: [],
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,

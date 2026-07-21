@@ -8,6 +8,11 @@ async function startNewGame(page: import("@playwright/test").Page) {
   await page.waitForSelector("main");
   await page.getByRole("button", { name: "New Game" }).click();
   await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
+  // Dismiss the shop manual's one-time welcome so it can't cover the UI.
+  const manual = page.getByRole("dialog", { name: "Shop manual" });
+  await manual.waitFor();
+  await page.keyboard.press("Escape");
+  await expect(manual).toHaveCount(0);
 }
 
 test.describe("Settings menu & audio volume", () => {
@@ -90,6 +95,11 @@ test.describe("Settings menu & audio volume", () => {
     await test.step("the reloaded store rehydrates into the UI", async () => {
       await page.getByRole("button", { name: "New Game" }).click();
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
+      // A second fresh game greets us with the manual again; dismiss it.
+      const manual = page.getByRole("dialog", { name: "Shop manual" });
+      await manual.waitFor();
+      await page.keyboard.press("Escape");
+      await expect(manual).toHaveCount(0);
       await page.getByRole("button", { name: "Settings" }).click();
       await expect(page.getByRole("slider", { name: "Master" })).toHaveValue(
         "30",

@@ -334,7 +334,7 @@ const defs = [
     id: "toggle-help",
     codes: ["Slash"],
     keys: [["?"]],
-    description: "Show keyboard shortcuts",
+    description: "Open the shop manual",
     scope: "global",
     group: "General",
     requiresShift: true,

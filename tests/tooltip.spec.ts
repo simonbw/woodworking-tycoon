@@ -9,6 +9,11 @@ test.describe("Tooltip", () => {
       await page.waitForLoadState("domcontentloaded");
       await page.getByRole("button", { name: "New Game" }).click();
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
+      // Dismiss the shop manual's one-time welcome so it can't cover the UI.
+      const manual = page.getByRole("dialog", { name: "Shop manual" });
+      await manual.waitFor();
+      await page.keyboard.press("Escape");
+      await manual.waitFor({ state: "detached" });
     });
 
     const quitButton = page.getByRole("button", { name: /Save & Quit/i });

@@ -66,30 +66,32 @@ test.describe("Keyboard shortcuts", () => {
       ).toBeVisible();
     });
 
-    await test.step("? opens the cheat sheet and Escape closes it", async () => {
-      const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-      await expect(sheet).toHaveCount(0);
+    await test.step("? opens the shop manual and Escape closes it", async () => {
+      const manual = page.getByRole("dialog", { name: "Shop manual" });
+      await expect(manual).toHaveCount(0);
 
       await page.keyboard.press("Shift+/");
-      await expect(sheet).toBeVisible();
+      await expect(manual).toBeVisible();
 
-      // Every group from the registry should have rendered.
+      // The keyboard reference lives in the Controls article, rendered
+      // straight from the registry — every group should be there.
+      await manual.getByRole("button", { name: "Controls" }).click();
       await expect(
-        sheet.getByRole("heading", { name: "Movement" }),
+        manual.getByRole("heading", { name: "Movement" }),
       ).toBeVisible();
       await expect(
-        sheet.getByRole("heading", { name: "Machines" }),
+        manual.getByRole("heading", { name: "Machines" }),
       ).toBeVisible();
 
-      // `?` toggles: the sheet claims the modal scope, so this only works
+      // `?` toggles: the manual claims the modal scope, so this only works
       // because it re-binds the key inside that scope.
       await page.keyboard.press("Shift+/");
-      await expect(sheet).toHaveCount(0);
+      await expect(manual).toHaveCount(0);
 
       await page.keyboard.press("Shift+/");
-      await expect(sheet).toBeVisible();
+      await expect(manual).toBeVisible();
       await page.keyboard.press("Escape");
-      await expect(sheet).toHaveCount(0);
+      await expect(manual).toHaveCount(0);
     });
 
     await test.step("Space still activates a focused button", async () => {

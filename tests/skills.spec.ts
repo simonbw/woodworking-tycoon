@@ -25,6 +25,11 @@ test.describe("Skill Tree", () => {
     await page.goto("http://localhost:3002");
     await page.getByRole("button", { name: "New Game" }).click();
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
+    // Dismiss the shop manual's one-time welcome so it can't cover the UI.
+    const manual = page.getByRole("dialog", { name: "Shop manual" });
+    await manual.waitFor();
+    await page.keyboard.press("Escape");
+    await manual.waitFor({ state: "detached" });
     await page.waitForTimeout(500);
 
     await test.step("starter skills come pre-certified", async () => {
