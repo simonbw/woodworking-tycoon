@@ -16,12 +16,22 @@ export const colorBySpecies: Record<
   purpleHeart: { primary: "#885368", secondary: "#6D4354" },
 };
 
-export const colorBySheetGoodKind: Record<SheetGoodKind, { primary: string }> =
-  {
-    mdf: { primary: "#846046" },
-    osb: { primary: "#BA9D59" },
-    particleBoard: { primary: "#D0D0D0" },
-    plywoodA: { primary: "#B19F7A" },
-    plywoodB: { primary: "#F1D5A2" },
-    plywoodC: { primary: "#DAC3B2" },
-  };
+export const colorBySheetGoodKind: Record<
+  SheetGoodKind,
+  { primary: string; secondary: string }
+> = {
+  mdf: { primary: "#846046", secondary: "#6E4F39" },
+  osb: { primary: "#BA9D59", secondary: "#8F7440" },
+  particleBoard: { primary: "#D0D0D0", secondary: "#A8A198" },
+  plywoodA: { primary: "#B19F7A", secondary: "#8D7C59" },
+  plywoodB: { primary: "#F1D5A2", secondary: "#EABA68" },
+  plywoodC: { primary: "#DAC3B2", secondary: "#C7A88F" },
+};
+
+/** The strand palette OSB chips draw from — varied tans over the base. */
+export const osbFlakeColors: ReadonlyArray<string> = [
+  "#C9AC66",
+  "#A98B4B",
+  "#93773E",
+  "#D2B87A",
+];

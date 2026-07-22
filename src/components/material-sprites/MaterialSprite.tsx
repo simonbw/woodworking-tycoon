@@ -10,6 +10,7 @@ import { PanelSprite } from "./PanelSprite";
 import { PictureFrameSprite } from "./PictureFrameSprite";
 import { PlanterBoxSprite } from "./PlanterBoxSprite";
 import { SawdustPileSprite } from "./SawdustPileSprite";
+import { SheetGoodSprite } from "./SheetGoodSprite";
 
 // Just choose the correct sprite for a material
 export const MaterialSprite: React.FC<{
@@ -30,6 +31,16 @@ export const MaterialSprite: React.FC<{
 
     case "pallet":
       return <PalletSprite pallet={material} alpha={alpha} tint={tint} />;
+
+    case "plywood":
+      return (
+        <SheetGoodSprite
+          sheet={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />
+      );
 
     case "jewelryBox":
       return (
