@@ -18,9 +18,9 @@ export const WelcomeArticle: React.FC = () => (
     <P>
       Move with <ShortcutKeys shortcut="move-up" />{" "}
       <ShortcutKeys shortcut="move-left" /> <ShortcutKeys shortcut="move-down" />{" "}
-      <ShortcutKeys shortcut="move-right" />. Steps queue up and play out over
-      time — everything in the shop takes time, and time only passes while
-      you're on the shop floor. Pick things up off the floor with{" "}
+      <ShortcutKeys shortcut="move-right" /> — hold a key and you walk.
+      Everything in the shop takes time, and time only passes while you're on
+      the shop floor. Pick things up off the floor with{" "}
       <ShortcutKeys shortcut="pick-up" />, and put them down (or load them into
       a machine) with <ShortcutKeys shortcut="put-down" />. Pause any moment
       with <ShortcutKeys shortcut="speed-toggle" />.

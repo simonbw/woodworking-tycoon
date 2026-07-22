@@ -1,6 +1,6 @@
 import { NO_CONSUMABLES } from "../../src/game/Consumable";
-import { GameState } from "../../src/game/GameState";
 import { ALL_ARTICLE_IDS } from "../../src/game/manual";
+import { GameState } from "../../src/game/GameState";
 import { Board } from "../../src/game/Materials";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 

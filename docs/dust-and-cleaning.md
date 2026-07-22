@@ -57,10 +57,11 @@ machines cost proportionally less.
   already goes through; its two game callers (`tickAction`,
   `operateMachineAction`) and the UI display path (`getOperationDuration`)
   thread the dust context in.
-- **Movement slowdown**: crossing a tile costs **+1 tick per full +100%**
-  of that tile's machine-slowdown equivalent — 0 extra ticks on a clean
-  aisle, up to +3 at max dust. Discrete ticks, so it drops straight into
-  the existing move-queue processing with no fractional-speed machinery.
+- **Movement slowdown**: a tile's machine-slowdown equivalent divides
+  walking speed while standing on it (`playerWalkSpeed` in
+  `src/game/player-motion.ts`) — full pace on a clean aisle, down to
+  quarter speed wading through a full drift. See
+  docs/continuous-movement.md.
 
 ## Cleaning
 
@@ -98,7 +99,7 @@ machines cost proportionally less.
   mix preserved), which **dumps itself when you stop next to the garbage
   can** — the trip is the chore, not a button. The ActionBar shows the
   fill while dragging.
-- Dragging costs +1 tick per step, on top of any dust penalty.
+- Dragging halves walking speed, stacking with any dust penalty.
 
 ## Rendering
 
@@ -185,8 +186,8 @@ before finishing day"), sellable pure-species sawdust.
 | Dust map          | `src/game/GameState.ts` (+ migration in `src/game/saveLoad.ts`) |
 | Emission          | `src/game/game-actions/tickAction.ts`                           |
 | Slowdown hook     | `getOperationPhases` in `src/game/skill-helpers.ts`             |
-| Movement penalty  | move-queue processing in `tickAction`                           |
-| Sweep/vac actions | `src/game/game-actions/` (new), work-queue like `move`          |
+| Movement penalty  | `playerWalkSpeed` in `src/game/player-motion.ts`                |
+| Sweep/vac actions | `src/game/game-actions/` (busyTicks work-queue items)           |
 | Tile surfacing    | `src/game/CellMap.ts` (`CellInfo`)                              |
 | Particles (done)  | `src/components/machine-sprites/CutParticles.tsx`               |
 | Floor stamps      | `src/components/shop-view/` (new layer in `ShopView.tsx`)       |

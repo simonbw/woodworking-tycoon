@@ -15,7 +15,7 @@ import {
   putDownCarriedMachineAction,
   rotateCarriedMachineAction,
 } from "./machine-actions";
-import { instaMovePlayerAction } from "./player-actions";
+import { BASE_WALK_SPEED, playerWalkSpeed } from "../player-motion";
 
 function machineAt(
   machineTypeId: MachineState["machineTypeId"],
@@ -186,7 +186,7 @@ describe("carry weight", () => {
     assert.strictEqual(carryMoveBusyTicks(MACHINE_TYPES.worktable2x2), 5);
   });
 
-  it("adds busy ticks to each step while carrying", () => {
+  it("slows the walk while carrying", () => {
     const state = stateWith({
       machines: [],
       player: {
@@ -195,9 +195,8 @@ describe("carry weight", () => {
         carriedMachine: machineAt("worktable1x1", [0, 0]),
       },
     });
-    const result = instaMovePlayerAction(0)(state);
-    assert.deepStrictEqual(result.player.position, [3, 2]);
-    assert.strictEqual(result.player.busyTicks, 2);
+    // worktable1x1 weighs 2 tick-equivalents: a third of walking pace
+    assert.strictEqual(playerWalkSpeed(state), BASE_WALK_SPEED / 3);
   });
 });
 

@@ -1,17 +1,24 @@
-import React, { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, useEffect, useRef } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
 import { ShortcutId } from "../game/shortcuts";
 import { TICKS_PER_DAY } from "../game/time";
 import { classNames } from "../utils/classNames";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
+import {
+  TICK_SPEED_FAST,
+  TICK_SPEED_FASTER,
+  TICK_SPEED_NORMAL,
+  TICK_SPEED_PAUSED,
+  useTickSpeed,
+} from "./TickSpeedContext";
 import { Tooltip } from "./Tooltip";
 import { useUiMode } from "./UiMode";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
-const PAUSED = 0;
-const NORMAL = 5;
-const FAST = 10;
-const FASTER = 20;
+const PAUSED = TICK_SPEED_PAUSED;
+const NORMAL = TICK_SPEED_NORMAL;
+const FAST = TICK_SPEED_FAST;
+const FASTER = TICK_SPEED_FASTER;
 
 const SpeedButton: React.FC<{
   speed: number;
@@ -63,7 +70,7 @@ export const Ticker: React.FC = () => {
   const { mode } = useUiMode();
   const timeRuns = mode.mode === "normal" || mode.mode === "marketplace";
   const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
-  const [ticksPerSecond, setTicksPerSecond] = useState<number>(NORMAL);
+  const { ticksPerSecond, setTicksPerSecond } = useTickSpeed();
 
   useEffect(() => {
     if (!timeRuns) return;

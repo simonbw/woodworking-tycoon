@@ -21,7 +21,6 @@ import {
 import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import {
   addWorkItemAction,
-  cancelLastWorkItemAction,
   clearWorkQueueAction,
 } from "../../game/game-actions/work-item-actions";
 import { vectorEquals } from "../../game/Vectors";
@@ -55,26 +54,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // machine verbs step aside until it's set down.
   const carrying = _gameState.player.carriedMachine != null;
 
-  useShortcut(
-    "move-right",
-    () => applyAction(addWorkItemAction({ type: "move", direction: 0 })),
-    present,
-  );
-  useShortcut(
-    "move-up",
-    () => applyAction(addWorkItemAction({ type: "move", direction: 1 })),
-    present,
-  );
-  useShortcut(
-    "move-left",
-    () => applyAction(addWorkItemAction({ type: "move", direction: 2 })),
-    present,
-  );
-  useShortcut(
-    "move-down",
-    () => applyAction(addWorkItemAction({ type: "move", direction: 3 })),
-    present,
-  );
+  // Movement is deliberately absent here: walking is continuous (held
+  // keys, not presses) and lives in HeldMovementListener + PlayerMotionLayer.
 
   useShortcut(
     "sweep",
@@ -126,9 +107,6 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // Emptying the queue stays available while away — it only affects what
   // happens once the player is back.
   useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));
-  useShortcut("cancel-last-move", () =>
-    applyAction(cancelLastWorkItemAction()),
-  );
 
   useShortcut("cycle-machine", cycleTarget, present);
 

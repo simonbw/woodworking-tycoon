@@ -1,14 +1,14 @@
-import React from "react";
-import { animated, useSpring } from "react-spring";
+import { useTick } from "@pixi/react";
+import { Container } from "pixi.js";
+import React, { useRef } from "react";
 import { useCellMap } from "../../game/CellMap";
 import { carriedMachinePlacement } from "../../game/game-actions/machine-actions";
 import { Machine } from "../../game/Machine";
 import { useGameState } from "../useGameState";
 import { MachineGhostPreview } from "./MachineGhostPreview";
 import { MachineSprite } from "./MachineSprite";
-import { PIXELS_PER_CELL, cellToPixelCenter } from "./shop-scale";
-
-const AnimatedPixiContainer = animated("pixiContainer");
+import { PIXELS_PER_CELL, cellToPixel } from "./shop-scale";
+import { playerMotion } from "./playerMotionStore";
 
 /**
  * Everything drawn while the player is lugging a machine: the machine
@@ -21,13 +21,15 @@ export const CarriedMachineLayer: React.FC = () => {
   const cellMap = useCellMap();
   const carried = gameState.player.carriedMachine;
   const placement = carriedMachinePlacement(gameState);
+  const containerRef = useRef<Container>(null);
 
-  // Glide with the same spring as PersonSprite so the load tracks the
-  // shoulders it's on.
-  const [x, y] = cellToPixelCenter(gameState.player.position);
-  const spring = useSpring({
-    to: { x, y },
-    config: { mass: 0.1, tension: 150, friction: 12, clamp: true },
+  // Ride the continuous body directly — the load tracks the shoulders
+  // it's on, frame by frame.
+  useTick(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.x = cellToPixel(playerMotion.pos[0]);
+    container.y = cellToPixel(playerMotion.pos[1]);
   });
 
   if (!carried || !placement || gameState.player.away) {
@@ -45,7 +47,11 @@ export const CarriedMachineLayer: React.FC = () => {
         rotation={placement.rotation}
         cellMap={cellMap}
       />
-      <AnimatedPixiContainer x={spring.x} y={spring.y}>
+      <pixiContainer
+        ref={containerRef}
+        x={cellToPixel(playerMotion.pos[0])}
+        y={cellToPixel(playerMotion.pos[1])}
+      >
         <pixiContainer scale={0.45} y={-PIXELS_PER_CELL * 0.3}>
           {/* MachineSprite centers itself a half-cell in; pull it back to
               the container origin so it hovers centered on the player */}
@@ -53,7 +59,7 @@ export const CarriedMachineLayer: React.FC = () => {
             <MachineSprite machine={overhead} />
           </pixiContainer>
         </pixiContainer>
-      </AnimatedPixiContainer>
+      </pixiContainer>
     </>
   );
 };
