@@ -21,6 +21,7 @@ import {
   toggleMachinePowerAction,
 } from "../../game/game-actions/player-actions";
 import {
+  explainFeedRefusal,
   machineCanOperate,
   matchMaterialsToSlots,
   parameterValueSatisfiable,
@@ -604,6 +605,13 @@ const DirectFeedMachineCard: React.FC<{
       carried,
       gameState.progression,
     );
+  // Why the machine won't take what's in hand — the teaching moment. Power
+  // problems trump stock problems, so a switched-off machine keeps its
+  // "switch on first" line instead.
+  const refusal =
+    !isOperating && !canFeed && !switchedOff
+      ? explainFeedRefusal(machine, operations, carried, gameState.consumables)
+      : null;
 
   // Progress reads off the running operation (recorded when it was fed)
   const runningOperation = machine.selectedOperationOrNull;
@@ -750,7 +758,7 @@ const DirectFeedMachineCard: React.FC<{
               ? "Switch the machine on first"
               : isOperating || canFeed
                 ? `${verb} the carried stock`
-                : "Carry stock the machine is set up to take"
+                : (refusal ?? "Carry stock the machine is set up to take")
           }
           shortcut={
             isTargeted(machine) && !switchedOff ? "operate-machine" : undefined
@@ -765,6 +773,14 @@ const DirectFeedMachineCard: React.FC<{
           </ProgressButton>
         </Tooltip>
       </div>
+
+      {/* The machine explains itself: with stock in hand it won't take,
+          the specific blocker shows as a penciled note under the button */}
+      {refusal && carried.length > 0 && (
+        <p className="text-[0.65rem] italic leading-snug text-ink-fade">
+          {refusal}
+        </p>
+      )}
 
       {machine.outputMaterials.length > 0 &&
         (outputsCollectedHere ? (

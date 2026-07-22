@@ -1,4 +1,9 @@
-import { ConsumableStock, hasConsumables, NO_CONSUMABLES } from "./Consumable";
+import {
+  CONSUMABLE_TYPES,
+  ConsumableStock,
+  hasConsumables,
+  NO_CONSUMABLES,
+} from "./Consumable";
 import { ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
@@ -9,7 +14,12 @@ import {
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
 import { isBoard } from "./board-helpers";
-import { createMockMaterial, materialMeetsInput } from "./material-helpers";
+import {
+  createMockMaterial,
+  describeMaterialRequirement,
+  materialInputMismatches,
+  materialMeetsInput,
+} from "./material-helpers";
 import {
   defaultParametersFor,
   getOperationInputMaterials,
@@ -229,6 +239,96 @@ export function findFeedableOperation(
     }
   }
   return null;
+}
+
+/**
+ * Why feeding this direct-feed machine right now would do nothing, in
+ * words a mentor would use — or null when a feed would run. The specs
+ * that refuse the stock also explain it: the reason comes from the
+ * **nearest miss**, the (operation, carried material) pair failing the
+ * fewest requirement fields, ties broken by operation order — the same
+ * order feed inference uses. The operation's own `explainRejection` gets
+ * first say (it knows its machine's vocabulary and can blame a setting
+ * instead of the wood); the fallback states the unmet requirement.
+ */
+export function explainFeedRefusal(
+  machine: Machine,
+  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  carried: ReadonlyArray<MaterialInstance>,
+  consumables: ConsumableStock = NO_CONSUMABLES,
+): string | null {
+  const match = findFeedableOperation(machine, operations, carried);
+  if (match) {
+    // The stock qualifies — the only thing that can still block is supply
+    const short = (match.operation.requiredConsumables ?? []).find(
+      (cost) => (consumables[cost.id] ?? 0) < cost.amount,
+    );
+    if (!short) {
+      return null;
+    }
+    const type = CONSUMABLE_TYPES[short.id];
+    return `Out of ${type.name.toLowerCase()} — this needs ${short.amount}, the shop has ${consumables[short.id] ?? 0}.`;
+  }
+
+  if (carried.length === 0) {
+    return "Your hands are empty — stock feeds straight from them.";
+  }
+
+  let best: {
+    operation: MachineOperation | ParameterizedOperation;
+    parameters?: ParameterValues;
+    requirement: InputMaterialWithQuantity;
+    material: MaterialInstance;
+    misses: number;
+  } | null = null;
+  for (const operation of operations) {
+    const parameters = isParameterizedOperation(operation)
+      ? { ...defaultParametersFor(operation), ...machine.selectedParameters }
+      : machine.selectedParameters;
+    const requirements = getOperationInputMaterials(operation, parameters);
+    // Fill requirements the way feeding would, to find the one that blocks
+    const remaining = [...carried];
+    let blocking: InputMaterialWithQuantity | null = null;
+    for (const requirement of requirements) {
+      for (let i = 0; i < requirement.quantity && !blocking; i++) {
+        const index = remaining.findIndex((material) =>
+          materialMeetsInput(material, requirement),
+        );
+        if (index === -1) {
+          blocking = requirement;
+        } else {
+          remaining.splice(index, 1);
+        }
+      }
+      if (blocking) {
+        break;
+      }
+    }
+    if (!blocking) {
+      continue;
+    }
+    for (const material of remaining) {
+      const misses = materialInputMismatches(material, blocking).length;
+      if (!best || misses < best.misses) {
+        best = {
+          operation,
+          parameters,
+          requirement: blocking,
+          material,
+          misses,
+        };
+      }
+    }
+  }
+  if (!best) {
+    // Nothing carried was left over to diagnose (everything went to
+    // earlier requirement slots) — fall back to the old generic line
+    return "Carry stock the machine is set up to take.";
+  }
+  return (
+    best.operation.explainRejection?.(best.material, best.parameters) ??
+    `Needs: ${describeMaterialRequirement(best.requirement)}.`
+  );
 }
 
 /**

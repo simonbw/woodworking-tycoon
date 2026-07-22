@@ -89,6 +89,28 @@ export const lunchboxPlaner: MachineType = {
           },
         ];
       },
+      explainRejection: (material, params) => {
+        // The workflow prerequisite comes first: thickness only matters
+        // once the stock has a face to ride the bed on
+        if (isBoard(material) && material.jointedFaces === 0) {
+          return "No flat reference face — a planer copies flatness to the far side, it can't create it. Joint a face first.";
+        }
+        if (isPanel(material) && material.grain === "end") {
+          return "End grain tears out under a cutter head — an end-grain panel gets flattened by sanding instead.";
+        }
+        if (!isBoard(material) && !isPanel(material)) {
+          return null;
+        }
+        const cutHeight = params?.targetThickness as BoardDimension;
+        const bite = thicknessStepAbove(cutHeight);
+        if (bite !== undefined && material.thickness > bite) {
+          return `Won't fit under the cutter head — raise the cut height to ${thicknessStepBelow(material.thickness)}/4 for the first pass.`;
+        }
+        if (material.thickness < cutHeight) {
+          return `The cutter head is set above the stock — lower the cut height to ${material.thickness}/4 to surface it.`;
+        }
+        return null;
+      },
       output: (materials, params) => {
         const stock = materials[0];
         if (!isBoard(stock) && !isPanel(stock)) {

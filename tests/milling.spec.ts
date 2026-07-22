@@ -180,13 +180,20 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       ).toBeDisabled();
       await planerCard.getByRole("button", { name: "Switch On" }).click();
       await expect(planerCard.getByText("Idling")).toBeVisible();
-      // Two detents under the carried 4/4 stock: it won't fit under the head
+      // Two detents under the carried 4/4 stock: it won't fit under the
+      // head — and the machine says so, with the crank mark to hit
       await setParameter(page, "Planer", "Cut Height", "2/4");
       await expect(
         planerCard.getByRole("button", { name: "Feed" }),
       ).toBeDisabled();
-      // Back to a skim pass at the stock's own thickness
+      await expect(
+        planerCard.getByText(
+          "Won't fit under the cutter head — raise the cut height to 3/4 for the first pass.",
+        ),
+      ).toBeVisible();
+      // Back to a skim pass at the stock's own thickness; the note clears
       await setParameter(page, "Planer", "Cut Height", "4/4");
+      await expect(planerCard.getByText(/cutter head/)).toHaveCount(0);
       await planerCard.getByRole("button", { name: "Feed" }).click();
       await waitForBoard(
         page,

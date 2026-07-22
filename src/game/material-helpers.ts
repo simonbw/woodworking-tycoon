@@ -217,28 +217,41 @@ export function materialToInput<T extends MaterialInstance = MaterialInstance>(
   return result as InputMaterial<T>;
 }
 
-export function materialMeetsInput(
+/**
+ * The requirement fields this material fails ("matches" stands in for the
+ * escape-hatch predicate). Empty means the material qualifies —
+ * materialMeetsInput is exactly that check, so the two can never drift.
+ * Refusal explanations key off these field names to say what's wrong.
+ */
+export function materialInputMismatches(
   material: MaterialInstance,
   inputMaterial: InputMaterial,
-) {
+): string[] {
+  const mismatches: string[] = [];
   if (inputMaterial.matches && !inputMaterial.matches(material)) {
-    return false;
+    mismatches.push("matches");
   }
   for (const key of Object.keys(inputMaterial)) {
     // Skip quantity and matches: they're not properties of the material
     if (key === "quantity" || key === "matches") {
       continue;
-    } else if (!(key in material)) {
-      return false;
     } else if (
+      !(key in material) ||
       !(inputMaterial as Record<string, unknown[]>)[key].includes(
         (material as Record<string, unknown>)[key],
       )
     ) {
-      return false;
+      mismatches.push(key);
     }
   }
-  return true;
+  return mismatches;
+}
+
+export function materialMeetsInput(
+  material: MaterialInstance,
+  inputMaterial: InputMaterial,
+) {
+  return materialInputMismatches(material, inputMaterial).length === 0;
 }
 
 // Helper to create a mock material from a requirement for placeholder display

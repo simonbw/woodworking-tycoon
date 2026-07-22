@@ -76,6 +76,26 @@ for the jointer, table saw, and miter saw (their op ids are unchanged —
 inference picks among them) and filled each machine's settings bag with
 its selected operation's defaults.
 
+## Machines teach their refusals
+
+A greyed-out Feed button used to keep its reasons to itself (a
+`console.warn`, at best). Now the specs that refuse the stock also explain
+it: `explainFeedRefusal` (machine-helpers) diagnoses the **nearest miss**
+— the (operation, carried material) pair failing the fewest requirement
+fields, computed by `materialInputMismatches`, the same walk
+`materialMeetsInput` is built on so the two can't drift. The operation's
+optional `explainRejection` turns the miss into a mentor line in the
+machine's own vocabulary — "no flat reference face — joint a face first",
+"a rough edge can't ride the fence", "won't fit under the cutter head —
+raise the cut height to 7/4" — and can blame a *setting* instead of the
+wood (the miter saw says "slide the cut line", the planer names the crank
+mark to hit). Unauthored cases fall back to the generic requirement
+description ("Needs: …"), so new machines get serviceable messages for
+free. The line shows as a penciled note under the verb button whenever
+stock is in hand and refused, and in the button's tooltip; a switched-off
+machine still leads with "switch it on first", and a feedable match that's
+only missing supplies reports that ("out of nails — this needs 4").
+
 ## The other machines, briefly
 
 - **Jointer** (hand-fed, power switch, no settings): face-vs-edge is
