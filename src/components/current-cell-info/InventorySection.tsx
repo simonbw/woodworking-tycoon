@@ -5,8 +5,9 @@ import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
 } from "../../game/game-actions/player-actions";
-import { getMaterialName } from "../../game/material-helpers";
+import { getMaterialFullName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
+import { MaterialLabel } from "../MaterialLabel";
 import { ShiftHint } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
@@ -17,7 +18,7 @@ export const InventorySection: React.FC = () => {
 
   const groupedInventory = [
     ...groupBy(gameState.player.inventory, (material) =>
-      getMaterialName(material),
+      getMaterialFullName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -60,7 +61,7 @@ const InventoryListItem: React.FC<{
   return (
     <li className="flex items-center gap-2 py-1.5">
       <MaterialIcon material={materials[0]} size="small" />
-      <span className="grow text-sm">{getMaterialName(materials[0])}</span>
+      <MaterialLabel material={materials[0]} />
       {materials.length > 1 && (
         // Handwritten tally — this sheet is maintained by hand
         <span className="font-ink text-lg leading-none text-ink-fade">

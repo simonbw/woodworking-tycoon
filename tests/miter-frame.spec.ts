@@ -64,7 +64,8 @@ test.describe("Miter cuts and the picture frame", () => {
     await test.step("mitered stock announces its ends in the inventory", async () => {
       await expect(
         page
-          .getByText("Walnut Board (2'x1\"x1/4, sanded, S4S, 45° both ends)")
+          .locator("li", { hasText: "Walnut 1/4 — 1\" × 2'" })
+          .filter({ hasText: "45° both ends" })
           .first(),
       ).toBeVisible();
     });
@@ -110,7 +111,8 @@ test.describe("Miter cuts and the picture frame", () => {
       await page.waitForTimeout(200);
       await expect(
         page
-          .getByText("Walnut Board (5'x1\"x1/4, sanded, S4S, 45° one end)")
+          .locator("li", { hasText: "Walnut 1/4 — 1\" × 5'" })
+          .filter({ hasText: "45° one end" })
           .first(),
       ).toBeVisible();
     });

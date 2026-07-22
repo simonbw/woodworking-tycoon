@@ -89,14 +89,14 @@ test.describe("Consumables", () => {
       // Load exactly 2 stringers and 3 deck boards
       for (let i = 0; i < 2; i++) {
         await page
-          .locator("li", { hasText: 'x6"x3/4' })
+          .locator("li", { hasText: '3/4 — 6"' })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(150);
       }
       for (let i = 0; i < 3; i++) {
         await page
-          .locator("li", { hasText: 'x4"x1/4' })
+          .locator("li", { hasText: '1/4 — 4"' })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(150);

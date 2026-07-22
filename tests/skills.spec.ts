@@ -115,7 +115,7 @@ test.describe("Skill Tree", () => {
 
       // Glue the five mixed strips
       await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
-      for (const rowName of ["Walnut Board", "Maple Board"]) {
+      for (const rowName of ["Walnut 4/4", "Maple 4/4"]) {
         await page
           .locator("li", { hasText: rowName })
           .getByRole("button", { name: "→ Makeshift Workbench" })
@@ -140,7 +140,7 @@ test.describe("Skill Tree", () => {
         .click();
       await page.waitForTimeout(200);
       await expect(
-        page.getByText("Mixed Wood Panel (2'x10\"x4/4, rough)").first(),
+        page.getByText("Mixed Wood Panel 4/4 — 10\" × 2'").first(),
       ).toBeVisible();
 
       // Two sanding passes

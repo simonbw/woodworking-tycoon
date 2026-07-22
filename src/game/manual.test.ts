@@ -17,6 +17,7 @@ describe("manual article unlock conditions", () => {
   it("starts a fresh game with only the always-on articles", () => {
     assert.ok(unlocked("welcome", initialGameState));
     assert.ok(unlocked("controls", initialGameState));
+    assert.ok(unlocked("lumber", initialGameState));
     for (const id of [
       "milling",
       "finishing",
@@ -31,6 +32,7 @@ describe("manual article unlock conditions", () => {
     assert.deepStrictEqual(initialGameState.progression.unlockedArticles, [
       "welcome",
       "controls",
+      "lumber",
     ]);
   });
 
@@ -169,6 +171,7 @@ describe("migrateV18toV19", () => {
       "controls",
       "dust",
       "finishing",
+      "lumber",
       "marketplace",
       "milling",
       "shop-layout",
@@ -184,10 +187,12 @@ describe("migrateV18toV19", () => {
     assert.deepStrictEqual(migrated.progression.unlockedArticles, [
       "welcome",
       "controls",
+      "lumber",
     ]);
     assert.deepStrictEqual(migrated.progression.readArticles, [
       "welcome",
       "controls",
+      "lumber",
     ]);
   });
 });

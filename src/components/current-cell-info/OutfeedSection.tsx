@@ -2,8 +2,9 @@ import React from "react";
 import { useCellMap } from "../../game/CellMap";
 import { Machine } from "../../game/Machine";
 import { takeOutputsFromMachineAction } from "../../game/game-actions/player-actions";
-import { getMaterialName } from "../../game/material-helpers";
+import { getMaterialFullName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
+import { MaterialLabel } from "../MaterialLabel";
 import { ShiftHint } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
@@ -48,7 +49,7 @@ const OutfeedCard: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const groupedOutputs = [
     ...groupBy(machine.outputMaterials, (material) =>
-      getMaterialName(material),
+      getMaterialFullName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -66,7 +67,7 @@ const OutfeedCard: React.FC<{ machine: Machine }> = ({ machine }) => {
         {groupedOutputs.map(([name, materials]) => (
           <li key={name} className="flex items-center gap-2 py-1.5">
             <MaterialIcon material={materials[0]} size="small" />
-            <span className="grow">{name}</span>
+            <MaterialLabel material={materials[0]} />
             {materials.length > 1 && (
               <span className="font-ink text-lg leading-none text-ink-fade">
                 ×{materials.length}

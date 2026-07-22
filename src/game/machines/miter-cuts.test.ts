@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
 import { MachineOperation, ParameterizedOperation } from "../Machine";
 import {
-  getMaterialName,
+  getMaterialFullName,
   materialMeetsInput,
   makeMaterial,
 } from "../material-helpers";
@@ -173,7 +173,7 @@ describe("end labels", () => {
       "45° parallel ends",
     );
     assert.match(
-      getMaterialName(
+      getMaterialFullName(
         withEnds(base, { left: MITERED_NEG_45, right: MITERED_45 }),
       ),
       /45° both ends/,

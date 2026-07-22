@@ -58,7 +58,7 @@ test.describe("Attended Operations", () => {
       await page.waitForTimeout(200);
       await selectMode(page, "Makeshift Workbench", "Sand Board");
       await page
-        .locator("li", { hasText: "Maple Board" })
+        .locator("li", { hasText: "Maple 4/4" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
@@ -103,12 +103,14 @@ test.describe("Attended Operations", () => {
       await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
       // 4 smooth strips (shift = move all of the row) + the sanded one
       await page
-        .locator("li", { hasText: "Maple Board (2'x2\"x4/4, smooth, S4S)" })
+        .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
+        .filter({ hasText: "smooth, S4S" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
       await page
-        .locator("li", { hasText: "Maple Board (2'x2\"x4/4, sanded, S4S)" })
+        .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
+        .filter({ hasText: "sanded, S4S" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);

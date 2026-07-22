@@ -17,7 +17,7 @@ import {
 } from "./Materials";
 import {
   describeMaterialRequirement,
-  getMaterialName,
+  getMaterialFullName,
   makeMaterial,
 } from "./material-helpers";
 import { TOOL_TYPES } from "./Tool";
@@ -263,7 +263,7 @@ export function describeOperationIO(
       params,
     );
     const names = [
-      ...result.outputs.map((material) => getMaterialName(material)),
+      ...result.outputs.map((material) => getMaterialFullName(material)),
       ...(result.toolOutputs ?? []).map((toolId) => TOOL_TYPES[toolId].name),
     ];
     // Collapse repeats: ["Board", "Board"] → ["2× Board"]

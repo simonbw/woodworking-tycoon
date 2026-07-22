@@ -90,7 +90,7 @@ test.describe("Hand tools", () => {
       await setParameter(page, "Makeshift Workbench", "Target Length", "2");
 
       await page
-        .locator("li", { hasText: "Pallet Board (3'" })
+        .locator("li", { hasText: "Pallet Wood 1/4 — 4\" × 3'" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
@@ -116,7 +116,7 @@ test.describe("Hand tools", () => {
 
       // Shift-click loads every matching 2' slat — all five at once
       await page
-        .locator("li", { hasText: "Pallet Board (2'" })
+        .locator("li", { hasText: "Pallet Wood 1/4 — 4\" × 2'" })
         .first()
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });

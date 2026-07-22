@@ -51,6 +51,14 @@ test.describe("Shop manual", () => {
       ).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(manual).toHaveCount(0);
+      // Lumber is next in the unread stack — the badge holds until it's read
+      await expect(page.getByTestId("manual-badge")).toBeVisible();
+      await page.keyboard.press("Shift+/");
+      await expect(
+        manual.getByRole("heading", { name: "Reading Lumber Sizes" }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(manual).toHaveCount(0);
       await expect(page.getByTestId("manual-badge")).toHaveCount(0);
     });
 
