@@ -3,22 +3,35 @@ import { describe, it } from "node:test";
 import { initialGameState } from "./initialGameState";
 import {
   BASE_WALK_SPEED,
+  CellInsets,
   cellCenter,
   directionFromInput,
   motionCell,
   PLAYER_RADIUS,
   playerWalkSpeed,
+  SOLID_CELL,
   stepPlayerMotion,
 } from "./player-motion";
 import { Vector } from "./Vectors";
 
-const openFloor = () => false;
+const openFloor = () => undefined;
 
-/** A 3-wide corridor with a machine at [2, 1]. */
+/** Whole-tile machines at the given cells (walls, boxless machines). */
 const machineAt =
   (...blocked: Vector[]) =>
   ([x, y]: Vector) =>
-    blocked.some(([bx, by]) => bx === x && by === y);
+    blocked.some(([bx, by]) => bx === x && by === y) ? SOLID_CELL : undefined;
+
+/** A slim machine at one cell, its solid area inset from every tile edge. */
+const insetMachineAt =
+  (
+    [mx, my]: Vector,
+    inset: number,
+  ): ((cell: Vector) => CellInsets | undefined) =>
+  ([x, y]: Vector) =>
+    x === mx && y === my
+      ? { left: inset, right: inset, top: inset, bottom: inset }
+      : undefined;
 
 describe("stepPlayerMotion", () => {
   it("moves in the input direction at speed * dt", () => {
@@ -58,7 +71,7 @@ describe("stepPlayerMotion", () => {
 
   it("slides along a wall on diagonal input", () => {
     // Wall of machines along y = -1; pushing up-right should still travel right
-    const isBlocked = ([, y]: Vector) => y < 0;
+    const isBlocked = ([, y]: Vector) => (y < 0 ? SOLID_CELL : undefined);
     const next = stepPlayerMotion([0.5, 0.5], [1, -1], 2, 0.5, isBlocked);
     assert.ok(next[0] > 0.5, "should slide along the x axis");
     assert.ok(next[1] >= PLAYER_RADIUS, "should stay off the wall");
@@ -82,6 +95,62 @@ describe("stepPlayerMotion", () => {
       machineAt([1, 0]),
     );
     assert.ok(next[0] <= 1 - PLAYER_RADIUS);
+  });
+
+  it("walks up to a slim machine's box, past its tile edge", () => {
+    // A machine at [1, 0] inset 0.2 from every edge: the body's leading
+    // edge should rest at the box face (x = 1.2), not the tile edge.
+    const next = stepPlayerMotion(
+      [0.5, 0.5],
+      [1, 0],
+      10,
+      1,
+      insetMachineAt([1, 0], 0.2),
+    );
+    assert.ok(next[0] <= 1.2 - PLAYER_RADIUS);
+    assert.ok(next[0] > 1.2 - PLAYER_RADIUS - 0.01);
+  });
+
+  it("stops at the far face approaching a slim machine from the right", () => {
+    const next = stepPlayerMotion(
+      [0.5, 0.5],
+      [-1, 0],
+      10,
+      1,
+      insetMachineAt([-1, 0], 0.2),
+    );
+    assert.ok(next[0] >= -0.2 + PLAYER_RADIUS);
+    assert.ok(next[0] < -0.2 + PLAYER_RADIUS + 0.01);
+  });
+
+  it("slides along a slim machine's face while pressed into its tile", () => {
+    // Pressed flush against the box at [1, 0] (leading edge just short of
+    // x = 1.2, inside the machine's tile), walking down must not catch on
+    // the tile boundary.
+    const pressed: Vector = [1.2 - PLAYER_RADIUS - 1e-4, 0.5];
+    const next = stepPlayerMotion(
+      pressed,
+      [0, 1],
+      2,
+      1,
+      insetMachineAt([1, 0], 0.2),
+    );
+    assert.strictEqual(next[0], pressed[0]);
+    assert.ok(next[1] > 2, "should walk down freely along the face");
+  });
+
+  it("lets a shoulder pass a neighbor cell whose box is inset out of reach", () => {
+    // Standing low in row 1 the body pokes into row 2, but the machine at
+    // [1, 2] holds its solid area 0.25 in from the shared edge — beyond
+    // the shoulder's reach, so the old corner clip doesn't happen.
+    const next = stepPlayerMotion(
+      [0.5, 1.8],
+      [1, 0],
+      10,
+      1,
+      insetMachineAt([1, 2], 0.25),
+    );
+    assert.ok(next[0] > 1, "shoulder passes the inset box");
   });
 });
 

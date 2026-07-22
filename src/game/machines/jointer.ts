@@ -2,6 +2,7 @@ import { Board, MaterialInstance } from "../Materials";
 import { isBoard } from "../board-helpers";
 import { makeMaterial } from "../material-helpers";
 import { MachineType } from "../Machine";
+import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
 
 /**
  * The flattening machine. A jointer makes one face flat (the reference the
@@ -16,6 +17,7 @@ export const jointer: MachineType = {
   description:
     "Flattens a reference face and straightens an edge. Rough lumber starts here.",
   cellsOccupied: [[0, 0]],
+  collisionBox: GENERATED_COLLISION_BOXES.jointer,
   // Infeed and outfeed: boards travel the long way across the tables
   freeCellsNeeded: [
     [0, 1],

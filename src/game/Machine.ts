@@ -18,12 +18,34 @@ import {
   worktable2x2,
 } from "./machines/worktables";
 
+/**
+ * The solid part of a machine, as an axis-aligned box in cell units in the
+ * machine's local (unrotated) frame, with the origin cell's center at
+ * [0, 0] — so a box exactly filling a 1×1 machine's tile is
+ * min [-0.5, -0.5], max [0.5, 0.5]. The player's body collides with this
+ * instead of the full cellsOccupied tiles, so a slim machine doesn't cast
+ * an invisible wall (see docs/continuous-movement.md). Everything else —
+ * placement, targeting, attendance — still works on whole cells, and
+ * collision insets are capped below the player's radius so the cell
+ * underfoot can never be a machine's (see machine-collision.ts).
+ */
+export interface CollisionBox {
+  readonly min: Vector;
+  readonly max: Vector;
+}
+
 export interface MachineType {
   readonly id: string;
   readonly name: string;
   readonly description: string;
   readonly operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
   readonly cellsOccupied: ReadonlyArray<Vector>;
+  /**
+   * See CollisionBox. Measured from the sprite art for image-based
+   * machines (machine-collision-boxes.generated.ts), hand-set for
+   * procedurally drawn ones. Omitted: the full cellsOccupied tiles block.
+   */
+  readonly collisionBox?: CollisionBox;
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
   readonly operationPosition?: Vector;
   /**
