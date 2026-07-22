@@ -5,32 +5,29 @@ import { FigureRow, H, Note, P, Photo, Term, UL } from "./elements";
 export const WelcomeArticle: React.FC = () => (
   <>
     <P>
-      You've got a one-car garage, a workbench made of a plywood offcut and
-      some paint buckets, and a pallet somebody left behind. That's a
-      woodworking shop. Everything else gets earned.
+      You start with a one-car garage, a makeshift workbench, and a pallet of
+      free lumber. The first commission can be built from exactly that.
     </P>
     <FigureRow>
-      <Photo src="/images/makeshift-bench.png" caption='the "workbench"' />
-      <Photo src="/images/pallet.png" caption="your inheritance" />
+      <Photo src="/images/makeshift-bench.png" caption="the makeshift bench" />
+      <Photo src="/images/pallet.png" caption="the starting pallet" />
     </FigureRow>
 
     <H>Getting Around</H>
     <P>
       Move with <ShortcutKeys shortcut="move-up" />{" "}
       <ShortcutKeys shortcut="move-left" /> <ShortcutKeys shortcut="move-down" />{" "}
-      <ShortcutKeys shortcut="move-right" /> — hold a key and you walk.
-      Everything in the shop takes time, and time only passes while you're on
-      the shop floor. Pick things up off the floor with{" "}
-      <ShortcutKeys shortcut="pick-up" />, and put them down (or load them into
-      a machine) with <ShortcutKeys shortcut="put-down" />. Pause any moment
-      with <ShortcutKeys shortcut="speed-toggle" />.
+      <ShortcutKeys shortcut="move-right" />. Pick up whatever is at your feet
+      with <ShortcutKeys shortcut="pick-up" />, and put it down — or load it
+      into a machine — with <ShortcutKeys shortcut="put-down" />. Pause the
+      game at any time with <ShortcutKeys shortcut="speed-toggle" />.
     </P>
 
     <H>Your First Commission</H>
     <P>
-      The corkboard on the left holds your current <Term>work order</Term>. The
-      first one wants a rustic shelf, and that pallet is exactly enough wood.
-      The whole job, start to finish:
+      The corkboard on the left shows your current <Term>work order</Term>.
+      The first one asks for a rustic shelf, and the pallet has enough wood
+      for it:
     </P>
     <UL>
       <li>
@@ -42,26 +39,29 @@ export const WelcomeArticle: React.FC = () => (
         <ShortcutKeys shortcut="put-down" />.
       </li>
       <li>
-        Operate the bench with <ShortcutKeys shortcut="operate-machine" /> to{" "}
-        <Term>dismantle</Term> it: the pry bar yields deck boards and stringers,
-        and every board freed gives back the nail that held it.
+        Run the bench with <ShortcutKeys shortcut="operate-machine" /> to{" "}
+        <Term>dismantle</Term> the pallet into deck boards and stringers.
+        Prying a board free also recovers the nail that held it.
       </li>
       <li>
         Switch the bench's plan with <ShortcutKeys shortcut="cycle-operation" />{" "}
         to <Term>Build Rustic Shelf</Term>: two stringers, three deck boards,
-        and eight of those salvaged nails.
+        and eight of the salvaged nails.
       </li>
       <li>
-        Pick the shelf up and mark the commission complete with{" "}
+        Pick up the finished shelf and deliver it with{" "}
         <ShortcutKeys shortcut="complete-commission" />.
       </li>
     </UL>
     <P>
-      Commissions are the story of this shop: each one pays well, builds your
-      reputation, and asks for something you've never made before. The first
-      payment is enough to open an account at the hardware store.
+      Completing a commission pays money and builds reputation, and each new
+      commission asks for something more advanced. The first payment is
+      enough to start shopping at the hardware store.
     </P>
 
-    <Note>Rough is fine. Rustic means the splinters are free.</Note>
+    <Note>
+      New pages show up in this notebook as the shop grows — the ? button
+      reopens it any time.
+    </Note>
   </>
 );

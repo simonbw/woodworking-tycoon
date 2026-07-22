@@ -4,42 +4,38 @@ import { H, Note, P, Term } from "./elements";
 export const ToolsArticle: React.FC = () => (
   <>
     <P>
-      A bench is only as smart as what's bolted to it. Workstations have{" "}
-      <Term>tool slots</Term>, and mounting a handheld tool teaches the
-      station that tool's operations — a bench with a sanding block mounted
-      knows how to sand; take the block away and it forgets.
+      Workstations have <Term>tool slots</Term>. Mounting a handheld tool
+      adds that tool's operations to the station — a bench with a sanding
+      block mounted can sand; unmount the block and it can't.
     </P>
 
     <H>Buying and Mounting</H>
     <P>
-      Tools come from the store's <Term>Tool Wall</Term>. A tool you own but
-      haven't mounted sits in storage doing nothing; mount and unmount from
-      the station's card while you're standing at it. The makeshift workbench
-      has two slots; proper worktables have three to six, by size — one more
-      reason to build real benches.
+      Tools are sold on the store's <Term>Tool Wall</Term>. A tool has to be
+      mounted somewhere before it can be used; mount and unmount from the
+      station's card while standing at it. The makeshift workbench has two
+      slots. Built worktables have three to six, depending on size.
     </P>
 
-    <H>Better Tools Buy Time, Not Recipes</H>
+    <H>Tool Tiers</H>
     <P>
-      Tiers never gate what you can make — only how long it takes. The $10
-      sanding block and the $120 random orbit sander perform the same
-      operations; the sander is just several times faster. The $35 hand plane
-      does the jointer's flattening work at a fraction of the price and a
-      multiple of the time. Spend money to convert it into throughput when
-      the waiting starts to hurt.
+      Higher-tier tools work faster, not differently. The $10 sanding block
+      and the $120 random orbit sander perform the same operations — the
+      sander is just several times quicker. Likewise, the $35 hand plane
+      does the same flattening work as the jointer, at a fraction of the
+      price and several times the time.
     </P>
 
-    <H>Jigs: Tools You Build</H>
+    <H>Jigs</H>
     <P>
-      Some tools are never sold. Jigs like the <Term>crosscut sled</Term> and
-      the <Term>straight-line sled</Term> are built at a bench from plywood
-      and scrap, and they mount only where they fit — both ride the table
-      saw, where the sled you've mounted decides what feeding a piece will
-      do. The sleds come with the Jigs &amp; Fixtures skill; building shop
-      furniture for the shop is half of woodworking.
+      Some tools are built rather than bought. Jigs like the{" "}
+      <Term>crosscut sled</Term> and <Term>straight-line sled</Term> are
+      made at a bench from plywood and scrap, and they mount only on the
+      machines they fit — both sleds ride the table saw, where the mounted
+      sled determines what feeding a piece will do. The sled recipes come
+      with the Jigs &amp; Fixtures skill.
     </P>
 
-    <Note>Ten dollars of sandpaper beats a hundred dollars of waiting —
-    until it doesn't.</Note>
+    <Note>Jigs are built from plywood and offcuts — keep some scrap around.</Note>
   </>
 );
