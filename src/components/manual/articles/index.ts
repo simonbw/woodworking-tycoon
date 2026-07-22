@@ -10,7 +10,11 @@ import { SkillsArticle } from "./SkillsArticle";
 import { ToolsArticle } from "./ToolsArticle";
 import { WelcomeArticle } from "./WelcomeArticle";
 
-/** Article metadata lives in src/game/manual.ts; the bodies live here. */
+/**
+ * Article metadata lives in src/game/manual.ts; the bodies live here.
+ * Before writing or editing article prose, read the "Voice & copy
+ * rules" section of docs/shop-manual.md.
+ */
 export const ARTICLE_BODIES: Record<ManualArticleId, React.ComponentType> = {
   welcome: WelcomeArticle,
   controls: ControlsArticle,

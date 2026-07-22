@@ -97,6 +97,31 @@ with nine "NEW" tabs on load.
 Whether the manual is open (and which article) is UI state, not
 `GameState`.
 
+## Voice & copy rules
+
+Article prose is written for a player seeing the game for the first
+time, in plain instruction-manual style. The rules, learned the hard
+way in the first copy pass:
+
+1. **Never explain what the game isn't, lacks, or used to be.** "The
+   planer has no menus", "there is no blueprint mode", "there's no
+   meter to watch" — a first-time player never expected those things,
+   so mentioning them only plants doubt. Describe what *is*.
+2. **No internal design vocabulary or invariants.** Words like "verb",
+   or axioms like "dust is a substance that moves; only containers
+   destroy it", belong in design docs. The articles teach the same
+   facts through concrete actions ("sweep with T to push the dust into
+   a pile").
+3. **Don't spell out what players will assume anyway** ("everything in
+   the shop takes time"). Drawing attention to the intuitive reads as
+   if there's a catch.
+4. **State facts, not theses.** Openers give information ("Skills
+   determine what you know how to build"), not metaphors ("two ledgers
+   track this shop's rise") or sales copy ("where the money hides").
+5. **Personality lives only in the handwritten margin `Note`s** — and
+   even those are practical tips ("Never feed end grain through the
+   planer"), not aphorisms ("Nobody's born knowing end grain").
+
 ## Content format
 
 Articles are **TSX content**, not markdown strings — headings, key-cap
