@@ -146,6 +146,17 @@ export interface MachineOperation {
   readonly output: (
     materials: ReadonlyArray<MaterialInstance>,
   ) => OperationOutput;
+  /**
+   * The mentor line for stock this operation refuses: given a carried
+   * material that doesn't meet the inputs (and the resolved parameters),
+   * say why in the machine's own vocabulary — "no flat reference face",
+   * "can't ride the fence". Return null to fall back to the generic
+   * requirement description. See explainFeedRefusal in machine-helpers.
+   */
+  readonly explainRejection?: (
+    material: MaterialInstance,
+    params?: ParameterValues,
+  ) => string | null;
 }
 
 export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
@@ -242,6 +253,11 @@ export interface ParameterizedOperation<
     materials: ReadonlyArray<MaterialInstance>,
     params: TParams,
   ) => OperationOutput;
+  /** See MachineOperation.explainRejection. */
+  readonly explainRejection?: (
+    material: MaterialInstance,
+    params?: ParameterValues,
+  ) => string | null;
 }
 
 export interface OperationProgress {

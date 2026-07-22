@@ -82,6 +82,17 @@ export const miterSaw: MachineType = {
           quantity: 1,
         },
       ],
+      explainRejection: (material, params) => {
+        if (!isBoard(material)) {
+          return null;
+        }
+        const line = params?.cutPosition as number;
+        if (material.length <= line) {
+          // The wood isn't wrong, the setting is — say so
+          return `The ${line}' mark is past the end of this board — slide the cut line inside it.`;
+        }
+        return null;
+      },
       output: (materials, params) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {

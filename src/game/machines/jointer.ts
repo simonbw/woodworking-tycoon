@@ -42,6 +42,15 @@ export const jointer: MachineType = {
       duration: 10,
       dustOutput: 2.4,
       inputMaterials: [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
+      // Only reached when no jointer op takes the board — a flat-faced
+      // board with a rough edge feeds the edge pass instead, so landing
+      // here means the stock is already flat AND straight
+      explainRejection: (material) =>
+        isBoard(material) &&
+        material.jointedFaces >= 1 &&
+        material.jointedEdges >= 1
+          ? "Flat face, straight edge — nothing left to joint. Parallel is the planer's job for faces and the table saw's for edges."
+          : null,
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {

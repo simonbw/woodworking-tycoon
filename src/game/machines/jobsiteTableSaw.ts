@@ -52,6 +52,19 @@ export const jobsiteTableSaw: MachineType = {
           quantity: 1,
         },
       ],
+      explainRejection: (material, params) => {
+        if (!isBoard(material)) {
+          return null;
+        }
+        if (material.jointedEdges === 0) {
+          return "A rough edge can't ride the fence — that's kickback. Joint an edge first, or straight-line it on a sled.";
+        }
+        const fence = params?.targetWidth as number;
+        if (material.width <= fence) {
+          return `The fence is set to ${fence}" — the stock is no wider than that. Move the fence in to rip it.`;
+        }
+        return null;
+      },
       output: (materials, params) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {
