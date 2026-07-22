@@ -24,6 +24,7 @@ import {
   machineCanOperate,
   matchMaterialsToSlots,
   parameterValueSatisfiable,
+  slideStock,
 } from "../../game/machine-helpers";
 import {
   mountToolAction,
@@ -59,6 +60,7 @@ import { useTargetedMachine } from "../TargetedMachineContext";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ProgressButton } from "../ProgressButton";
+import { CutLineScale } from "./CutLineScale";
 import { DetentScale } from "./DetentScale";
 import { MaterialIcon } from "./MaterialIcon";
 import { ModeControl } from "./ModeControl";
@@ -666,27 +668,60 @@ const DirectFeedMachineCard: React.FC<{
               <ShortcutKeys shortcut="cycle-parameter" />
             )}
           </span>
-          <DetentScale
-            param={param}
-            value={machine.selectedParameters?.[param.id] ?? param.values[0]}
-            onSelect={(value) =>
-              applyAction(setMachineSettingsAction(machine, {
-                [param.id]: value,
-              }))
-            }
-            satisfiable={(value) =>
-              parameterValueSatisfiable(
-                machine,
-                operation,
-                param.id,
-                value,
-                carried,
-              )
-            }
-            stockValue={carried
-              .map((material) => stockDimension(material, param.id))
-              .find((value) => value !== undefined)}
-          />
+          {param.presentation === "slide" ? (
+            // The carried board itself under the blade line — sliding it
+            // is the input, and the head's set lean shows on the line
+            <CutLineScale
+              param={param}
+              value={
+                machine.selectedParameters?.[param.id] ??
+                param.defaultValue ??
+                param.values[0]
+              }
+              onSelect={(value) =>
+                applyAction(
+                  setMachineSettingsAction(machine, { [param.id]: value }),
+                )
+              }
+              satisfiable={(value) =>
+                parameterValueSatisfiable(
+                  machine,
+                  operation,
+                  param.id,
+                  value,
+                  carried,
+                )
+              }
+              board={slideStock(machine, operations, carried)}
+              angle={Number(machine.selectedParameters?.angle ?? 0)}
+            />
+          ) : (
+            <DetentScale
+              param={param}
+              value={
+                machine.selectedParameters?.[param.id] ??
+                param.defaultValue ??
+                param.values[0]
+              }
+              onSelect={(value) =>
+                applyAction(
+                  setMachineSettingsAction(machine, { [param.id]: value }),
+                )
+              }
+              satisfiable={(value) =>
+                parameterValueSatisfiable(
+                  machine,
+                  operation,
+                  param.id,
+                  value,
+                  carried,
+                )
+              }
+              stockValue={carried
+                .map((material) => stockDimension(material, param.id))
+                .find((value) => value !== undefined)}
+            />
+          )}
         </div>
       ))}
 

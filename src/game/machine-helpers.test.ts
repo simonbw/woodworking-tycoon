@@ -292,31 +292,29 @@ describe("parameterValueSatisfiable", () => {
     const { machine, operation } = machineWith(
       "miterSaw",
       "cutBoard",
-      { targetLength: 4 },
+      { cutPosition: 4 },
       [],
     );
     for (const value of operation.parameters[0].values) {
       assert.ok(
-        parameterValueSatisfiable(machine, operation, "targetLength", value),
+        parameterValueSatisfiable(machine, operation, "cutPosition", value),
       );
     }
   });
 
-  it("rules out lengths a loaded board can't be cut to", () => {
+  it("rules out cut lines the loaded board doesn't reach", () => {
     const { machine, operation } = machineWith(
       "miterSaw",
       "cutBoard",
-      { targetLength: 4 },
+      { cutPosition: 4 },
       [board("pine", 6, 4, 4)],
     );
-    // A crosscut only shortens: strictly-below values work, 6' and up don't
-    assert.ok(parameterValueSatisfiable(machine, operation, "targetLength", 4));
-    assert.ok(
-      !parameterValueSatisfiable(machine, operation, "targetLength", 6),
-    );
-    assert.ok(
-      !parameterValueSatisfiable(machine, operation, "targetLength", 8),
-    );
+    // The line must land inside the board: marks short of 6' work, the
+    // board's own end and beyond don't
+    assert.ok(parameterValueSatisfiable(machine, operation, "cutPosition", 4));
+    assert.ok(parameterValueSatisfiable(machine, operation, "cutPosition", 5));
+    assert.ok(!parameterValueSatisfiable(machine, operation, "cutPosition", 6));
+    assert.ok(!parameterValueSatisfiable(machine, operation, "cutPosition", 7));
   });
 
   it("planer cut height reads against carried stock: skim or one detent", () => {

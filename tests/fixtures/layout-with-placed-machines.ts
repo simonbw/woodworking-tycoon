@@ -74,7 +74,7 @@ export const layoutWithPlacedMachines: GameState = {
       ],
       tools: [],
       selectedOperationId: "cutBoard",
-      selectedParameters: { targetLength: 8 },
+      selectedParameters: { cutPosition: 4 },
       operationProgress: {
         status: "notStarted",
         phaseIndex: 0,

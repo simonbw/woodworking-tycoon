@@ -25,6 +25,7 @@ import {
   clearWorkQueueAction,
 } from "../../game/game-actions/work-item-actions";
 import { vectorEquals } from "../../game/Vectors";
+import { parameterValueSatisfiable } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 import {
   defaultParametersFor,
@@ -318,10 +319,31 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const current = machine.selectedParameters?.[param.id];
       const currentIndex =
         current === undefined ? -1 : param.values.indexOf(current);
-      const next =
-        param.values[
-          mod(currentIndex + (event.shiftKey ? -1 : 1), param.values.length)
-        ];
+      const step = event.shiftKey ? -1 : 1;
+      let next = param.values[mod(currentIndex + step, param.values.length)];
+
+      // A slide param moves the carried stock itself, so the key steps
+      // between the marks the stock can actually reach — a 4' board slides
+      // among its own foot marks, not the whole table's.
+      if (param.presentation === "slide") {
+        const carried = gameState.current.player.inventory;
+        let nextIndex = param.values.indexOf(next);
+        for (
+          let tries = 0;
+          tries < param.values.length &&
+          !parameterValueSatisfiable(
+            machine,
+            operation,
+            param.id,
+            param.values[nextIndex],
+            carried,
+          );
+          tries++
+        ) {
+          nextIndex = mod(nextIndex + step, param.values.length);
+        }
+        next = param.values[nextIndex];
+      }
 
       if (directFeed) {
         // Settings turn without touching what's selected or running

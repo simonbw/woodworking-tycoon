@@ -84,14 +84,22 @@ its selected operation's defaults.
   milled stock is refused; the jointer has nothing to add.
 - **Table saw** (hand-fed, power switch): the fence (`targetWidth`) is its
   one setting; the mounted jig decides everything else.
-- **Miter saw** (trigger tool — no switch, verb "Cut"): angle, cut end,
-  and stop length persist as settings; cut pieces stay on the saw table.
-  The head swings **both ways** (−45…45, resting square), and mitered end
-  angles are **signed** (`SignedMiterAngle`): ends with opposite signs
-  mirror — the frame-rail pair the picture frame demands — while equal
-  signs are parallel (a parallelogram, which can't close a corner). The
-  turntable-and-head sprite swings to the signed stop, and which end
-  faces the blade never moves the head.
+- **Miter saw** (trigger tool — no switch, verb "Cut"): two settings —
+  the head angle and the **cut line** (`cutPosition`, feet from the
+  stock's left end); cut pieces stay on the saw table. The cut line is a
+  slide input (`OperationParameter.presentation: "slide"`, drawn by
+  `CutLineScale`): the carried board itself lies under the blade line,
+  the readouts inside it are the two pieces the cut makes, and the
+  shortcut key slides the board between the marks it actually reaches.
+  There is no "kept piece" or "cut end" — one line, two pieces, both
+  freshly faced at the head's signed angle. The head swings **both ways**
+  (−45…45, resting square), and mitered end angles are **signed**
+  (`SignedMiterAngle`): ends with opposite signs mirror — the frame-rail
+  pair the picture frame demands — while equal signs are parallel (a
+  parallelogram, which can't close a corner). In the shop the
+  turntable-and-head sprite swings to the signed stop, and standing at
+  the saw with cuttable stock ghosts the board on the table, slid to the
+  set line.
 - **Garbage can and benches** keep the classic sheet: per-item choice
   matters when the action is destructive, and a bench is honestly
   recipe-driven (its picker is labeled "Plan").
@@ -102,5 +110,3 @@ its selected operation's defaults.
   miter saw's swinging turntable and head are done).
 - **Stop block accessory** for the miter saw: without one, each cut pays a
   measure-and-mark cost; with it, repeat cuts at the set length are quick.
-- **Spatial cut widget**: slide the board under the blade line to set
-  length and kept end in one gesture, replacing the two scales.

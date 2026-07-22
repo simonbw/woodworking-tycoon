@@ -7,7 +7,8 @@ import {
   ParameterizedOperation,
   ParameterValues,
 } from "./Machine";
-import { MaterialInstance } from "./Materials";
+import { Board, MaterialInstance } from "./Materials";
+import { isBoard } from "./board-helpers";
 import { createMockMaterial, materialMeetsInput } from "./material-helpers";
 import {
   defaultParametersFor,
@@ -228,6 +229,28 @@ export function findFeedableOperation(
     }
   }
   return null;
+}
+
+/**
+ * The carried board a slide-presented setting positions (the stock under
+ * the miter saw's blade): the board feeding right now would consume, or —
+ * when the set mark doesn't land inside anything carried — the first board
+ * that could take a cut at some other mark, shown with the line off its
+ * end.
+ */
+export function slideStock(
+  machine: Machine,
+  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  carried: ReadonlyArray<MaterialInstance>,
+): Board | undefined {
+  const match = findFeedableOperation(machine, operations, carried);
+  const fed = match?.materials.find(isBoard);
+  if (fed) {
+    return fed;
+  }
+  return carried.find(
+    (material): material is Board => isBoard(material) && material.length >= 2,
+  );
 }
 
 /**

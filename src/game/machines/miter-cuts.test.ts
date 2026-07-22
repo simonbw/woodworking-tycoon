@@ -32,81 +32,55 @@ const MITERED_45 = { kind: "mitered", angle: 45 } as const;
 const SQUARE = { kind: "square" } as const;
 
 describe("miter saw angle stops", () => {
-  it("a 45° cut miters the kept piece's cut end and the offcut's facing end", () => {
+  it("a 45° cut at the 5' mark miters both fresh faces at the cut line", () => {
     const { outputs } = cutBoardOp.output([board("oak", 8, 4, 4)], {
       angle: 45,
-      cutEnd: "left",
-      targetLength: 5,
+      cutPosition: 5,
     });
-    const [kept, offcut] = outputs;
-    assert.ok(isBoard(kept) && isBoard(offcut));
-    assert.strictEqual(kept.length, 5);
-    assert.deepStrictEqual(boardEnds(kept).left, MITERED_45);
-    assert.deepStrictEqual(boardEnds(kept).right, SQUARE);
-    assert.strictEqual(offcut.length, 3);
-    assert.deepStrictEqual(boardEnds(offcut).right, MITERED_45);
-    assert.deepStrictEqual(boardEnds(offcut).left, SQUARE);
+    const [left, right] = outputs;
+    assert.ok(isBoard(left) && isBoard(right));
+    // The cut line is 5' from the board's left end: a 5' and a 3' piece,
+    // each freshly mitered on the side that faced the blade
+    assert.strictEqual(left.length, 5);
+    assert.deepStrictEqual(boardEnds(left).right, MITERED_45);
+    assert.deepStrictEqual(boardEnds(left).left, SQUARE);
+    assert.strictEqual(right.length, 3);
+    assert.deepStrictEqual(boardEnds(right).left, MITERED_45);
+    assert.deepStrictEqual(boardEnds(right).right, SQUARE);
   });
 
-  it("cutEnd chooses which end of the kept piece gets the fresh face", () => {
-    const { outputs } = cutBoardOp.output([board("oak", 8, 4, 4)], {
-      angle: 30,
-      cutEnd: "right",
-      targetLength: 6,
-    });
-    const [kept, offcut] = outputs;
-    assert.ok(isBoard(kept) && isBoard(offcut));
-    assert.deepStrictEqual(boardEnds(kept).right, {
-      kind: "mitered",
-      angle: 30,
-    });
-    assert.deepStrictEqual(boardEnds(kept).left, SQUARE);
-    assert.deepStrictEqual(boardEnds(offcut).left, {
-      kind: "mitered",
-      angle: 30,
-    });
-  });
-
-  it("a square crosscut squares the end it cuts and keeps the far end's miter", () => {
+  it("a square crosscut squares the cut line and keeps the far ends' miters", () => {
     const mitered = withEnds(board("oak", 6, 4, 4), {
       left: MITERED_45,
       right: MITERED_45,
     });
     const { outputs } = cutBoardOp.output([mitered], {
       angle: 0,
-      cutEnd: "left",
-      targetLength: 4,
+      cutPosition: 4,
     });
-    const kept = outputs[0];
-    assert.ok(isBoard(kept));
-    assert.deepStrictEqual(boardEnds(kept).left, SQUARE);
-    assert.deepStrictEqual(boardEnds(kept).right, MITERED_45);
-  });
-
-  it("pre-angle-stop saves cut square on the left, as the saw always did", () => {
-    const { outputs } = cutBoardOp.output([board("pallet", 3, 4, 1)], {
-      targetLength: 2,
-    });
-    const kept = outputs[0];
-    assert.ok(isBoard(kept));
-    assert.deepStrictEqual(boardEnds(kept), { left: SQUARE, right: SQUARE });
+    const [left, right] = outputs;
+    assert.ok(isBoard(left) && isBoard(right));
+    assert.deepStrictEqual(boardEnds(left).left, MITERED_45);
+    assert.deepStrictEqual(boardEnds(left).right, SQUARE);
+    assert.deepStrictEqual(boardEnds(right).left, SQUARE);
+    assert.deepStrictEqual(boardEnds(right).right, MITERED_45);
   });
 
   it("a frame rail takes both stops: +45 one end, -45 the other", () => {
     const first = cutBoardOp.output([board("walnut", 8, 1, 1, "sanded")], {
       angle: 45,
-      cutEnd: "left",
-      targetLength: 4,
+      cutPosition: 4,
     });
     const halfDone = first.outputs[0];
     assert.ok(isBoard(halfDone));
-    // Swing the head the other way for the mirrored end
+    assert.deepStrictEqual(boardEnds(halfDone).right, MITERED_45);
+    // Swing the head the other way for the mirrored end: the piece right
+    // of the new line carries -45 on its left and the old +45 on its right
     const second = cutBoardOp.output([halfDone], {
       angle: -45,
-      cutEnd: "right",
-      targetLength: 2,
+      cutPosition: 2,
     });
-    const rail = second.outputs[0];
+    const rail = second.outputs[1];
     assert.ok(isBoard(rail));
     assert.strictEqual(rail.length, 2);
     assert.ok(isMiteredFrameRail(rail, 45));
@@ -115,18 +89,16 @@ describe("miter saw angle stops", () => {
   it("the same stop twice makes parallel ends, not a rail", () => {
     const first = cutBoardOp.output([board("walnut", 8, 1, 1, "sanded")], {
       angle: 45,
-      cutEnd: "left",
-      targetLength: 4,
+      cutPosition: 4,
     });
     const halfDone = first.outputs[0];
     assert.ok(isBoard(halfDone));
     // Head never moves: both end lines are parallel — a parallelogram
     const second = cutBoardOp.output([halfDone], {
       angle: 45,
-      cutEnd: "right",
-      targetLength: 2,
+      cutPosition: 2,
     });
-    const skewed = second.outputs[0];
+    const skewed = second.outputs[1];
     assert.ok(isBoard(skewed));
     assert.deepStrictEqual(boardEnds(skewed).left, MITERED_45);
     assert.deepStrictEqual(boardEnds(skewed).right, MITERED_45);
@@ -136,20 +108,30 @@ describe("miter saw angle stops", () => {
   it("a negative stop records the signed angle on both fresh ends", () => {
     const { outputs } = cutBoardOp.output([board("oak", 8, 4, 4)], {
       angle: -30,
-      cutEnd: "left",
-      targetLength: 5,
+      cutPosition: 5,
     });
-    const [kept, offcut] = outputs;
-    assert.ok(isBoard(kept) && isBoard(offcut));
+    const [left, right] = outputs;
+    assert.ok(isBoard(left) && isBoard(right));
     // Both pieces share the cut line, so both record -30
-    assert.deepStrictEqual(boardEnds(kept).left, {
+    assert.deepStrictEqual(boardEnds(left).right, {
       kind: "mitered",
       angle: -30,
     });
-    assert.deepStrictEqual(boardEnds(offcut).right, {
+    assert.deepStrictEqual(boardEnds(right).left, {
       kind: "mitered",
       angle: -30,
     });
+  });
+
+  it("only boards the cut line lands inside are accepted", () => {
+    const requirement = cutBoardOp.getInputMaterials({
+      angle: 0,
+      cutPosition: 4,
+    })[0];
+    assert.ok(materialMeetsInput(board("oak", 6, 4, 4), requirement));
+    // The blade needs wood on both sides of the line
+    assert.ok(!materialMeetsInput(board("oak", 4, 4, 4), requirement));
+    assert.ok(!materialMeetsInput(board("oak", 3, 4, 4), requirement));
   });
 
   it("ripping runs along the board, so both pieces keep their ends", () => {
