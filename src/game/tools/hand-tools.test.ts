@@ -20,9 +20,17 @@ const buildPlanterBox = drill.operations.find(
 
 describe("hand saw", () => {
   it("makes the same cut as the miter saw", () => {
-    const params = { angle: 45, cutEnd: "left", targetLength: 5 } as const;
-    const bySaw = handSawCut.output([board("oak", 8, 4, 4)], params);
-    const byMachine = miterSawCut.output([board("oak", 8, 4, 4)], params);
+    const bySaw = handSawCut.output([board("oak", 8, 4, 4)], {
+      angle: 45,
+      cutEnd: "left",
+      targetLength: 5,
+    });
+    // The machine states the same cut as a blade line 3' from the left
+    // end; its left piece is the hand saw's offcut and vice versa
+    const byMachine = miterSawCut.output([board("oak", 8, 4, 4)], {
+      angle: 45,
+      cutPosition: 3,
+    });
     const [kept, offcut] = bySaw.outputs;
     assert.ok(isBoard(kept) && isBoard(offcut));
     assert.strictEqual(kept.length, 5);
@@ -38,7 +46,7 @@ describe("hand saw", () => {
     };
     assert.deepStrictEqual(
       bySaw.outputs.map(strip),
-      byMachine.outputs.map(strip),
+      [...byMachine.outputs].reverse().map(strip),
     );
   });
 

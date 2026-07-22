@@ -6,7 +6,7 @@ import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 20; // Increment this when GameState structure changes
+const SAVE_VERSION = 21; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -91,6 +91,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 19) {
       saveData.gameState = migrateV19toV20(saveData.gameState);
       saveData.version = 20;
+    }
+
+    if (saveData.version === 20) {
+      saveData.gameState = migrateV20toV21(saveData.gameState);
+      saveData.version = 21;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -429,6 +434,38 @@ export function migrateV19toV20(old: any): GameState {
     listings: old.listings.map((listing: any) => ({
       ...listing,
       material: signEnds(listing.material),
+    })),
+  };
+}
+
+/**
+ * v20 → v21: the miter saw's "Cut End" + "Target Length" scales became one
+ * physical input — where along the board the blade lands (`cutPosition`,
+ * feet from the left end). The old stop length is the best stand-in for
+ * where the board sat, and the end choice has no equivalent, so it's
+ * dropped.
+ */
+export function migrateV20toV21(old: any): GameState {
+  const migrateMachine = (machineState: any) => {
+    if (machineState.machineTypeId !== "miterSaw") {
+      return machineState;
+    }
+    const { cutEnd, targetLength, ...rest } =
+      machineState.selectedParameters ?? {};
+    void cutEnd;
+    const cutPosition = Math.min(Math.max(Number(targetLength) || 4, 1), 7);
+    return {
+      ...machineState,
+      selectedParameters: { ...rest, cutPosition },
+    };
+  };
+
+  return {
+    ...old,
+    machines: old.machines.map(migrateMachine),
+    machineCrates: (old.machineCrates ?? []).map((crate: any) => ({
+      ...crate,
+      machine: migrateMachine(crate.machine),
     })),
   };
 }

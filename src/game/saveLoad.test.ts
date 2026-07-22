@@ -7,6 +7,7 @@ import {
   migrateV16toV17,
   migrateV17toV18,
   migrateV19toV20,
+  migrateV20toV21,
 } from "./saveLoad";
 import { STARTER_SKILLS } from "./Skill";
 
@@ -155,9 +156,10 @@ describe("migrateV17toV18", () => {
       { material: staged, position: [2, 5] },
     ]);
     // Dialed settings survive, with the operation's other defaults beneath
+    // (the stray targetLength rides along until v20 → v21 converts it)
     assert.deepStrictEqual(saw.selectedParameters, {
       angle: 0,
-      cutEnd: "left",
+      cutPosition: 4,
       targetLength: 5,
     });
     // Benches keep their input bays — only direct-feed machines flush
@@ -217,5 +219,41 @@ describe("migrateV19toV20", () => {
       left: { kind: "mitered", angle: 45 },
       right: { kind: "square" },
     });
+  });
+});
+
+describe("migrateV20toV21", () => {
+  it("folds the saw's cut end and stop length into one cut line", () => {
+    const old: any = {
+      machines: [
+        {
+          machineTypeId: "miterSaw",
+          selectedParameters: { angle: -45, cutEnd: "left", targetLength: 5 },
+        },
+        {
+          machineTypeId: "jointer",
+          selectedParameters: undefined,
+        },
+      ],
+      machineCrates: [
+        {
+          position: [1, 1],
+          machine: { machineTypeId: "miterSaw", selectedParameters: {} },
+        },
+      ],
+    };
+    const migrated = migrateV20toV21(old);
+    // The stop length becomes where the blade lands; the end choice goes
+    assert.deepStrictEqual(migrated.machines[0].selectedParameters, {
+      angle: -45,
+      cutPosition: 5,
+    });
+    // Other machines untouched
+    assert.strictEqual(migrated.machines[1].selectedParameters, undefined);
+    // Crated saws with nothing dialed land mid-table
+    assert.deepStrictEqual(
+      migrated.machineCrates[0].machine.selectedParameters,
+      { cutPosition: 4 },
+    );
   });
 });

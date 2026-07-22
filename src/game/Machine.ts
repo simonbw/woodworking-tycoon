@@ -206,6 +206,13 @@ export interface OperationParameter<T = number | string> {
   readonly defaultValue?: T;
   /** Suffix appended to numeric values in the UI. Defaults to inches. */
   readonly unit?: string;
+  /**
+   * How the setting is drawn and driven. "slide" positions the carried
+   * stock itself (the board under the miter saw's blade) instead of a
+   * printed detent scale; the shortcut key slides the stock between marks
+   * it can actually reach.
+   */
+  readonly presentation?: "slide";
 }
 
 export type ParameterValues = Record<string, number | string>;

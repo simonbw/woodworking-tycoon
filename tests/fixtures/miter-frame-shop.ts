@@ -85,8 +85,7 @@ export const miterFrameShop: GameState = {
   machines: [
     idleMachine("miterSaw", [1, 1], "cutBoard", {
       angle: 0,
-      cutEnd: "left",
-      targetLength: 4,
+      cutPosition: 4,
     }),
     idleMachine("workspace", [3, 1], "buildPictureFrame"),
   ],

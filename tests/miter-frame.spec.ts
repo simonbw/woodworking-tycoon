@@ -69,28 +69,40 @@ test.describe("Miter cuts and the picture frame", () => {
       ).toBeVisible();
     });
 
-    await test.step("the saw exposes angle, cut end, and length like a real setup", async () => {
+    await test.step("the saw exposes the cut line and head angle, nothing more", async () => {
       const card = machineCard(page, "Miter Saw");
       await expect(card.getByRole("radiogroup", { name: "Angle" })).toBeVisible();
       await expect(
-        card.getByRole("radiogroup", { name: "Cut End" }),
+        card.getByRole("radiogroup", { name: "Cut Line" }),
       ).toBeVisible();
+      // The old recipe-flavored scales are gone: the board's position under
+      // the blade decides both pieces at once
+      await expect(
+        card.getByRole("radiogroup", { name: "Cut End" }),
+      ).toHaveCount(0);
       await expect(
         card.getByRole("radiogroup", { name: "Target Length" }),
-      ).toBeVisible();
+      ).toHaveCount(0);
     });
 
-    await test.step("first cut: 45° at the left end miters the kept piece", async () => {
+    await test.step("first cut: 45° at the 5' mark makes a 5' and a 3' piece", async () => {
       await setParameter(page, "Miter Saw", "Angle", "45");
-      await setParameter(page, "Miter Saw", "Target Length", "5");
-      // No load step: the saw cuts the carried board that fits the setup
-      // (the finished rails are already at length — only the 8' stock is)
+      await setParameter(page, "Miter Saw", "Cut Line", "5");
+      // The slide widget reads out the pieces this cut would make
+      await expect(
+        machineCard(page, "Miter Saw").getByText("5′"),
+      ).toBeVisible();
+      await expect(
+        machineCard(page, "Miter Saw").getByText("3′"),
+      ).toBeVisible();
+      // No load step: the saw cuts the carried board the line lands inside
+      // (the finished rails are too short — only the 8' stock reaches)
       await machineCard(page, "Miter Saw")
         .getByRole("button", { name: "Cut" })
         .click();
       await waitForMaterial(
         page,
-        "m.type === 'board' && m.length === 5 && m.ends && m.ends.left.kind === 'mitered' && m.ends.right.kind === 'square'",
+        "m.type === 'board' && m.length === 5 && m.ends && m.ends.right.kind === 'mitered' && m.ends.left.kind === 'square'",
       );
       await machineCard(page, "Miter Saw")
         .getByRole("button", { name: /Take All/ })
@@ -105,11 +117,11 @@ test.describe("Miter cuts and the picture frame", () => {
 
     await test.step("second cut: swing to -45 for the mirrored miter", async () => {
       // The other end of a frame rail leans the other way — that's what
-      // the saw's negative stops are for. Same 45° magnitude, mirrored.
+      // the saw's negative stops are for. Same 45° magnitude, mirrored:
+      // the piece right of the 3' line carries -45/+45 ends at 2' long.
       await setParameter(page, "Miter Saw", "Angle", "-45");
-      await setParameter(page, "Miter Saw", "Cut End", "right");
-      await setParameter(page, "Miter Saw", "Target Length", "2");
-      // The 5' half-mitered rail is the only carried board longer than 2'
+      await setParameter(page, "Miter Saw", "Cut Line", "3");
+      // The 5' half-mitered piece is the only carried board past the line
       await machineCard(page, "Miter Saw")
         .getByRole("button", { name: "Cut" })
         .click();

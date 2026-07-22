@@ -15,6 +15,16 @@ export const SAW_ANGLE_STOPS = [
   -45, -30, -22.5, 0, 22.5, 30, 45,
 ] as const;
 
+/**
+ * Where along the stock the blade can land, measured in feet from the
+ * board's left end — you slide the board under the blade to a foot mark,
+ * you don't dial in "how long the kept piece is". A cut needs wood on both
+ * sides of the line, so the marks stop one foot shy of the longest board.
+ */
+export const CUT_POSITIONS = BOARD_DIMENSIONS.filter(
+  (d) => d < BOARD_DIMENSIONS[BOARD_DIMENSIONS.length - 1],
+);
+
 export const miterSaw: MachineType = {
   id: "miterSaw",
   name: "Miter Saw",
@@ -41,9 +51,18 @@ export const miterSaw: MachineType = {
       duration: 15,
       dustOutput: 1,
       // Set up the saw, don't pick a recipe: swing the blade to an angle
-      // stop, choose which end of the stock faces the blade, and set the
-      // stop for the kept piece's length.
+      // stop and slide the stock under it — the cut line's position along
+      // the board decides both pieces' lengths at once.
       parameters: [
+        {
+          id: "cutPosition",
+          name: "Cut Line",
+          values: CUT_POSITIONS,
+          // Fresh out of the crate the stock sits mid-table
+          defaultValue: 4,
+          unit: "'",
+          presentation: "slide",
+        },
         {
           id: "angle",
           name: "Angle",
@@ -52,24 +71,13 @@ export const miterSaw: MachineType = {
           defaultValue: 0,
           unit: "°",
         },
-        {
-          id: "cutEnd",
-          name: "Cut End",
-          values: ["left", "right"],
-          unit: "",
-        },
-        {
-          id: "targetLength",
-          name: "Target Length",
-          values: BOARD_DIMENSIONS,
-          unit: "'",
-        },
       ],
       getInputMaterials: (params) => [
         {
           type: ["board"],
+          // The blade must land inside the board — wood on both sides
           length: BOARD_DIMENSIONS.filter(
-            (d) => d > (params.targetLength as BoardDimension),
+            (d) => d > (params.cutPosition as BoardDimension),
           ),
           quantity: 1,
         },
@@ -79,16 +87,16 @@ export const miterSaw: MachineType = {
         if (!isBoard(inputBoard)) {
           throw new Error("Input material is not a board");
         }
+        // The cut line sits cutPosition feet from the left end, so the
+        // left piece is that long and its fresh face is its right end.
         return cutBoard(
           inputBoard,
-          params.targetLength as BoardDimension,
+          params.cutPosition as BoardDimension,
           "length",
           0,
           {
-            // Saves from before the angle stops carry only targetLength;
-            // they cut the way the saw always did — square, left end.
             angle: (params.angle as SignedMiterAngle | 0) ?? 0,
-            cutEnd: (params.cutEnd as "left" | "right") ?? "left",
+            cutEnd: "right",
           },
         );
       },
