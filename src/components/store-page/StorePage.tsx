@@ -3,6 +3,7 @@ import { NavBar } from "../NavBar";
 import { useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
 import { StoreMachinesSection } from "./StoreMachinesSection";
+import { StoreSheetGoodsSection } from "./StoreSheetGoodsSection";
 import { StoreSuppliesSection } from "./StoreSuppliesSection";
 import { StoreToolsSection } from "./StoreToolsSection";
 
@@ -18,12 +19,15 @@ export const StorePage: React.FC = () => {
           <div className="grid grid-cols-3 gap-4 h-full">
             <section className="space-y-4 min-h-0 overflow-y-auto">
               <BoardSelector />
-              <StoreSuppliesSection />
+              <StoreSheetGoodsSection />
             </section>
             <div className="space-y-6 min-h-0 overflow-y-auto">
               <StoreToolsSection />
               <StoreMachinesSection />
             </div>
+            <section className="space-y-4 min-h-0 overflow-y-auto">
+              <StoreSuppliesSection />
+            </section>
           </div>
         </div>
       </div>
