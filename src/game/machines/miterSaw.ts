@@ -2,13 +2,18 @@ import { MachineType, ParameterizedOperation } from "../Machine";
 import {
   BOARD_DIMENSIONS,
   BoardDimension,
-  MITER_ANGLES,
-  MiterAngle,
+  SignedMiterAngle,
 } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
 
-/** The saw's detents, measured off square — 0° is a plain crosscut. */
-export const SAW_ANGLE_STOPS = [0, ...MITER_ANGLES] as const;
+/**
+ * The saw's detents — the head swings both ways off square, like the real
+ * detent plate, because mirrored cuts are how a frame rail's two ends get
+ * made without flipping the stock. 0° is a plain crosscut.
+ */
+export const SAW_ANGLE_STOPS = [
+  -45, -30, -22.5, 0, 22.5, 30, 45,
+] as const;
 
 export const miterSaw: MachineType = {
   id: "miterSaw",
@@ -43,6 +48,8 @@ export const miterSaw: MachineType = {
           id: "angle",
           name: "Angle",
           values: SAW_ANGLE_STOPS,
+          // The head rests square, mid-swing
+          defaultValue: 0,
           unit: "°",
         },
         {
@@ -80,7 +87,7 @@ export const miterSaw: MachineType = {
           {
             // Saves from before the angle stops carry only targetLength;
             // they cut the way the saw always did — square, left end.
-            angle: (params.angle as MiterAngle | 0) ?? 0,
+            angle: (params.angle as SignedMiterAngle | 0) ?? 0,
             cutEnd: (params.cutEnd as "left" | "right") ?? "left",
           },
         );

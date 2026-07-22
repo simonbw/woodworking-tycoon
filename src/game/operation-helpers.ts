@@ -32,8 +32,9 @@ export function isParameterizedOperation(
 }
 
 /**
- * The parameter values a freshly-selected operation starts with: the first
- * listed value of each parameter. Undefined for plain operations.
+ * The parameter values a freshly-selected operation starts with: each
+ * parameter's declared resting value, or its first listed one. Undefined
+ * for plain operations.
  */
 export function defaultParametersFor(
   operation: MachineOperation | ParameterizedOperation,
@@ -43,7 +44,7 @@ export function defaultParametersFor(
   }
   const params: ParameterValues = {};
   for (const param of operation.parameters) {
-    params[param.id] = param.values[0];
+    params[param.id] = param.defaultValue ?? param.values[0];
   }
   return params;
 }
@@ -57,12 +58,7 @@ export function getOperationInputMaterials(
 ): ReadonlyArray<InputMaterialWithQuantity> {
   if (isParameterizedOperation(operation)) {
     if (!params) {
-      // Return requirements for first parameter value as default
-      const defaultParams: ParameterValues = {};
-      for (const param of operation.parameters) {
-        defaultParams[param.id] = param.values[0];
-      }
-      return operation.getInputMaterials(defaultParams);
+      return operation.getInputMaterials(defaultParametersFor(operation)!);
     }
     return operation.getInputMaterials(params);
   } else {

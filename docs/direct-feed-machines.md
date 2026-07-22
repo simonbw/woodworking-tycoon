@@ -86,14 +86,20 @@ its selected operation's defaults.
   one setting; the mounted jig decides everything else.
 - **Miter saw** (trigger tool — no switch, verb "Cut"): angle, cut end,
   and stop length persist as settings; cut pieces stay on the saw table.
+  The head swings **both ways** (−45…45, resting square), and mitered end
+  angles are **signed** (`SignedMiterAngle`): ends with opposite signs
+  mirror — the frame-rail pair the picture frame demands — while equal
+  signs are parallel (a parallelogram, which can't close a corner). The
+  turntable-and-head sprite swings to the signed stop, and which end
+  faces the blade never moves the head.
 - **Garbage can and benches** keep the classic sheet: per-item choice
   matters when the action is destructive, and a bench is honestly
   recipe-driven (its picker is labeled "Plan").
 
 ## Where this is headed (not yet built)
 
-- **In-world settings**: the miter saw head rotating to its set angle on
-  the sprite, the fence line on the table saw's table.
+- **In-world settings**: the fence line on the table saw's table (the
+  miter saw's swinging turntable and head are done).
 - **Stop block accessory** for the miter saw: without one, each cut pays a
   measure-and-mark cost; with it, repeat cuts at the set length are quick.
 - **Spatial cut widget**: slide the board under the blade line to set

@@ -44,12 +44,12 @@ function frameStock(id: string, length: BoardDimension): Board {
   };
 }
 
-/** A finished rail: mitered 45° on both ends, ready for the frame. */
+/** A finished rail: mirrored 45° miters — the ends lean toward each other. */
 function rail(id: string): Board {
   return {
     ...frameStock(id, 2),
     ends: {
-      left: { kind: "mitered", angle: 45 },
+      left: { kind: "mitered", angle: -45 },
       right: { kind: "mitered", angle: 45 },
     },
   };

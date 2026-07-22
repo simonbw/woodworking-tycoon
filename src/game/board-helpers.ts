@@ -7,6 +7,7 @@ import {
   JointedCount,
   MaterialInstance,
   MiterAngle,
+  SignedMiterAngle,
   SQUARE_END,
 } from "./Materials";
 import { makeMaterial } from "./material-helpers";
@@ -41,14 +42,19 @@ export function isBoard(material: MaterialInstance): material is Board {
   return material.type === "board";
 }
 
-/** True when both of a board's ends are mitered at the given angle. */
-export function isMiteredBothEnds(board: Board, angle: MiterAngle): boolean {
+/**
+ * True when the board is a frame rail at the given stop: both ends
+ * mitered at that magnitude, leaning toward each other (opposite signs —
+ * see SignedMiterAngle). Equal-signed ends are a parallelogram, whose
+ * corners can never close a frame.
+ */
+export function isMiteredFrameRail(board: Board, angle: MiterAngle): boolean {
   const { left, right } = boardEnds(board);
   return (
     left.kind === "mitered" &&
-    left.angle === angle &&
     right.kind === "mitered" &&
-    right.angle === angle
+    Math.abs(left.angle) === angle &&
+    left.angle === -right.angle
   );
 }
 
@@ -58,8 +64,12 @@ export function isMiteredBothEnds(board: Board, angle: MiterAngle): boolean {
  * piece's fresh face — while its other end rides the stop untouched.
  */
 export interface LengthCutSetup {
-  /** 0° is a square crosscut; anything else miters the fresh faces. */
-  readonly angle: MiterAngle | 0;
+  /**
+   * 0° is a square crosscut; anything else miters the fresh faces. Signed:
+   * the head swings both ways, and both pieces' fresh ends record the same
+   * signed angle (they share the cut line).
+   */
+  readonly angle: SignedMiterAngle | 0;
   /** Which end of the input board gets cut off (and freshly re-faced). */
   readonly cutEnd: "left" | "right";
 }

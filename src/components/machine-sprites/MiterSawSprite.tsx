@@ -46,11 +46,10 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   // The whole swing assembly — turntable, detent handle, kerf, and head —
   // rotates to the set detent, so the shop reads "the saw's still set to
-  // 45" at a glance. Cutting the right end mirrors the swing, so both
-  // settings are visible on the machine.
+  // 45" at a glance. The angle is signed — the head swings both ways off
+  // square — and which end faces the blade never moves the head.
   const angleSetting = Number(machine.selectedParameters?.angle) || 0;
-  const swingSign = machine.selectedParameters?.cutEnd === "right" ? -1 : 1;
-  const headSwing = useSpring({ a: angleSetting * swingSign });
+  const headSwing = useSpring({ a: angleSetting });
   // The pivot is the turntable circle's center, measured off the art:
   // 10 image pixels above the canvas center in miter-saw-rotating-base.png
   const pivotY = -10 * IMAGE_SCALE;
@@ -137,7 +136,7 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           active={working}
           // The blade throws dust back behind the fence, tilted with the head
           direction={
-            -Math.PI / 2 + (angleSetting * swingSign * Math.PI) / 180
+            -Math.PI / 2 + (angleSetting * Math.PI) / 180
           }
           spread={0.9}
         />

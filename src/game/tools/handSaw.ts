@@ -1,5 +1,9 @@
 import { ParameterizedOperation } from "../Machine";
-import { BOARD_DIMENSIONS, BoardDimension, MiterAngle } from "../Materials";
+import {
+  BOARD_DIMENSIONS,
+  BoardDimension,
+  SignedMiterAngle,
+} from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
 import { SAW_ANGLE_STOPS } from "../machines/miterSaw";
 import { ToolType } from "../Tool";
@@ -29,6 +33,8 @@ export const handSaw: ToolType = {
           id: "angle",
           name: "Angle",
           values: SAW_ANGLE_STOPS,
+          // The head rests square, mid-swing
+          defaultValue: 0,
           unit: "°",
         },
         {
@@ -64,7 +70,7 @@ export const handSaw: ToolType = {
           "length",
           0,
           {
-            angle: (params.angle as MiterAngle | 0) ?? 0,
+            angle: (params.angle as SignedMiterAngle | 0) ?? 0,
             cutEnd: (params.cutEnd as "left" | "right") ?? "left",
           },
         );

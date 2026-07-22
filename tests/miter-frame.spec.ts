@@ -103,7 +103,10 @@ test.describe("Miter cuts and the picture frame", () => {
       ).toBeVisible();
     });
 
-    await test.step("second cut: flip to the right end to finish the rail", async () => {
+    await test.step("second cut: swing to -45 for the mirrored miter", async () => {
+      // The other end of a frame rail leans the other way — that's what
+      // the saw's negative stops are for. Same 45° magnitude, mirrored.
+      await setParameter(page, "Miter Saw", "Angle", "-45");
       await setParameter(page, "Miter Saw", "Cut End", "right");
       await setParameter(page, "Miter Saw", "Target Length", "2");
       // The 5' half-mitered rail is the only carried board longer than 2'

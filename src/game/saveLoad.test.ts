@@ -6,6 +6,7 @@ import {
   migrateV15toV16,
   migrateV16toV17,
   migrateV17toV18,
+  migrateV19toV20,
 } from "./saveLoad";
 import { STARTER_SKILLS } from "./Skill";
 
@@ -161,5 +162,60 @@ describe("migrateV17toV18", () => {
     });
     // Benches keep their input bays — only direct-feed machines flush
     assert.deepStrictEqual(migrated.machines[2].inputMaterials, [staged]);
+  });
+});
+
+describe("migrateV19toV20", () => {
+  it("signs mitered ends: both-mitered boards become mirrored rails", () => {
+    const unsignedRail = {
+      ...board("walnut", 2, 1, 1, "sanded"),
+      ends: {
+        left: { kind: "mitered", angle: 45 },
+        right: { kind: "mitered", angle: 45 },
+      },
+    };
+    const oneEnd = {
+      ...board("oak", 5, 1, 1, "sanded"),
+      ends: {
+        left: { kind: "mitered", angle: 45 },
+        right: { kind: "square" },
+      },
+    };
+    const old: any = {
+      player: {
+        inventory: [unsignedRail],
+        away: { kind: "scavenging", returnTick: 5, loot: [] },
+      },
+      materialPiles: [{ material: oneEnd, position: [1, 1] }],
+      machines: [
+        {
+          machineTypeId: "miterSaw",
+          inputMaterials: [],
+          processingMaterials: [],
+          outputMaterials: [unsignedRail],
+          storedMaterials: [],
+        },
+      ],
+      machineCrates: [],
+      listings: [{ id: "l1", material: unsignedRail, askingPrice: 5 }],
+    };
+    const migrated = migrateV19toV20(old);
+    const mirrored = {
+      left: { kind: "mitered", angle: -45 },
+      right: { kind: "mitered", angle: 45 },
+    };
+    const endsOf = (material: unknown) => (material as any).ends;
+    // Frame stock converts to the mirrored pair wherever it lives
+    assert.deepStrictEqual(endsOf(migrated.player.inventory[0]), mirrored);
+    assert.deepStrictEqual(
+      endsOf(migrated.machines[0].outputMaterials[0]),
+      mirrored,
+    );
+    assert.deepStrictEqual(endsOf(migrated.listings[0].material), mirrored);
+    // Lone miters keep their positive magnitude untouched
+    assert.deepStrictEqual(endsOf(migrated.materialPiles[0].material), {
+      left: { kind: "mitered", angle: 45 },
+      right: { kind: "square" },
+    });
   });
 });

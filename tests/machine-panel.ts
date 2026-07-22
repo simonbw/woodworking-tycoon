@@ -74,7 +74,12 @@ export async function setParameter(
 ) {
   await machineCard(page, machineName)
     .getByRole("radiogroup", { name: paramName })
-    .getByRole("radio", { name: String(value) })
+    // Anchored to the whole label with only a unit suffix allowed, so
+    // "45" matches "45°" but never "-45°", and "5" matches "5'" but not
+    // "45°". Substring matching broke once scales gained signed values.
+    .getByRole("radio", {
+      name: new RegExp(`^${escapeRegExp(String(value))}\\D*$`),
+    })
     .click();
   await page.waitForTimeout(200);
 }

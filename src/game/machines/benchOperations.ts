@@ -1,5 +1,5 @@
 import { array } from "../../utils/arrayUtils";
-import { board, isBoard, isMiteredBothEnds } from "../board-helpers";
+import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
 import { MachineOperation, OperationPhase } from "../Machine";
 import { isFinishedProduct, makeMaterial } from "../material-helpers";
 import {
@@ -623,10 +623,11 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
           thickness: [1],
           surface: ["sanded"],
           quantity: 4,
-          // Four rails, each mitered 45° on BOTH ends — the whole point
-          // of the saw's angle stops
+          // Four true frame rails: 45° both ends, mirrored so the corners
+          // close. Parallel-mitered stock (a parallelogram) won't frame —
+          // that's the whole point of the saw swinging both ways.
           matches: (material) =>
-            isBoard(material) && isMiteredBothEnds(material, 45),
+            isBoard(material) && isMiteredFrameRail(material, 45),
         },
       ],
       output: (materials: ReadonlyArray<MaterialInstance>) => {

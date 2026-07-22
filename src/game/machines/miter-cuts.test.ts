@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board, isBoard, isMiteredBothEnds } from "../board-helpers";
+import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
 import { MachineOperation, ParameterizedOperation } from "../Machine";
 import {
   getMaterialName,
@@ -92,7 +92,7 @@ describe("miter saw angle stops", () => {
     assert.deepStrictEqual(boardEnds(kept), { left: SQUARE, right: SQUARE });
   });
 
-  it("two cuts make a frame rail: miter one end, then the other", () => {
+  it("a frame rail takes both stops: +45 one end, -45 the other", () => {
     const first = cutBoardOp.output([board("walnut", 8, 1, 1, "sanded")], {
       angle: 45,
       cutEnd: "left",
@@ -100,15 +100,56 @@ describe("miter saw angle stops", () => {
     });
     const halfDone = first.outputs[0];
     assert.ok(isBoard(halfDone));
+    // Swing the head the other way for the mirrored end
     const second = cutBoardOp.output([halfDone], {
-      angle: 45,
+      angle: -45,
       cutEnd: "right",
       targetLength: 2,
     });
     const rail = second.outputs[0];
     assert.ok(isBoard(rail));
     assert.strictEqual(rail.length, 2);
-    assert.ok(isMiteredBothEnds(rail, 45));
+    assert.ok(isMiteredFrameRail(rail, 45));
+  });
+
+  it("the same stop twice makes parallel ends, not a rail", () => {
+    const first = cutBoardOp.output([board("walnut", 8, 1, 1, "sanded")], {
+      angle: 45,
+      cutEnd: "left",
+      targetLength: 4,
+    });
+    const halfDone = first.outputs[0];
+    assert.ok(isBoard(halfDone));
+    // Head never moves: both end lines are parallel — a parallelogram
+    const second = cutBoardOp.output([halfDone], {
+      angle: 45,
+      cutEnd: "right",
+      targetLength: 2,
+    });
+    const skewed = second.outputs[0];
+    assert.ok(isBoard(skewed));
+    assert.deepStrictEqual(boardEnds(skewed).left, MITERED_45);
+    assert.deepStrictEqual(boardEnds(skewed).right, MITERED_45);
+    assert.ok(!isMiteredFrameRail(skewed, 45));
+  });
+
+  it("a negative stop records the signed angle on both fresh ends", () => {
+    const { outputs } = cutBoardOp.output([board("oak", 8, 4, 4)], {
+      angle: -30,
+      cutEnd: "left",
+      targetLength: 5,
+    });
+    const [kept, offcut] = outputs;
+    assert.ok(isBoard(kept) && isBoard(offcut));
+    // Both pieces share the cut line, so both record -30
+    assert.deepStrictEqual(boardEnds(kept).left, {
+      kind: "mitered",
+      angle: -30,
+    });
+    assert.deepStrictEqual(boardEnds(offcut).right, {
+      kind: "mitered",
+      angle: -30,
+    });
   });
 
   it("ripping runs along the board, so both pieces keep their ends", () => {
@@ -126,6 +167,8 @@ describe("miter saw angle stops", () => {
 });
 
 describe("end labels", () => {
+  const MITERED_NEG_45 = { kind: "mitered", angle: -45 } as const;
+
   it("names mitered ends like a cut list", () => {
     const base = board("oak", 2, 1, 1, "sanded");
     assert.strictEqual(endsLabel(base), null);
@@ -133,36 +176,69 @@ describe("end labels", () => {
       endsLabel(withEnds(base, { left: MITERED_45, right: SQUARE })),
       "45° one end",
     );
+    // Sign alone is meaningless on a lone end — the magnitude labels it
     assert.strictEqual(
-      endsLabel(withEnds(base, { left: MITERED_45, right: MITERED_45 })),
+      endsLabel(withEnds(base, { left: SQUARE, right: MITERED_NEG_45 })),
+      "45° one end",
+    );
+    // Mirrored ends are the frame-rail pair; equal-signed are parallel
+    assert.strictEqual(
+      endsLabel(withEnds(base, { left: MITERED_NEG_45, right: MITERED_45 })),
       "45° both ends",
     );
+    assert.strictEqual(
+      endsLabel(withEnds(base, { left: MITERED_45, right: MITERED_45 })),
+      "45° parallel ends",
+    );
     assert.match(
-      getMaterialName(withEnds(base, { left: MITERED_45, right: MITERED_45 })),
+      getMaterialName(
+        withEnds(base, { left: MITERED_NEG_45, right: MITERED_45 }),
+      ),
       /45° both ends/,
     );
   });
 });
 
 describe("picture frame", () => {
-  const rail = () =>
-    withEnds(board("walnut", 2, 1, 1, "sanded"), {
-      left: MITERED_45,
-      right: MITERED_45,
-    });
+  const MIRRORED_45 = {
+    left: { kind: "mitered", angle: -45 },
+    right: { kind: "mitered", angle: 45 },
+  } as const;
+  const rail = () => withEnds(board("walnut", 2, 1, 1, "sanded"), MIRRORED_45);
 
-  it("takes only rails mitered 45° on both ends", () => {
+  it("takes only true rails: 45° ends mirrored so the corners close", () => {
     const requirement = buildPictureFrame.inputMaterials[0];
     assert.ok(materialMeetsInput(rail(), requirement));
+    // Either flip of the rail counts — flipping the board over negates
+    // both ends at once
+    assert.ok(
+      materialMeetsInput(
+        withEnds(board("walnut", 2, 1, 1, "sanded"), {
+          left: { kind: "mitered", angle: 45 },
+          right: { kind: "mitered", angle: -45 },
+        }),
+        requirement,
+      ),
+    );
     // A square-ended board of the right size is not a rail
     assert.ok(
       !materialMeetsInput(board("walnut", 2, 1, 1, "sanded"), requirement),
+    );
+    // A parallelogram has two 45° ends and still can't close a corner
+    assert.ok(
+      !materialMeetsInput(
+        withEnds(board("walnut", 2, 1, 1, "sanded"), {
+          left: MITERED_45,
+          right: MITERED_45,
+        }),
+        requirement,
+      ),
     );
     // Neither is one mitered at the wrong stop
     assert.ok(
       !materialMeetsInput(
         withEnds(board("walnut", 2, 1, 1, "sanded"), {
-          left: { kind: "mitered", angle: 30 },
+          left: { kind: "mitered", angle: -30 },
           right: { kind: "mitered", angle: 30 },
         }),
         requirement,
@@ -171,10 +247,7 @@ describe("picture frame", () => {
     // Pallet wood stays out of fine work
     assert.ok(
       !materialMeetsInput(
-        withEnds(board("pallet", 2, 1, 1, "sanded"), {
-          left: MITERED_45,
-          right: MITERED_45,
-        }),
+        withEnds(board("pallet", 2, 1, 1, "sanded"), MIRRORED_45),
         requirement,
       ),
     );

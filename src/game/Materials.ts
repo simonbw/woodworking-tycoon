@@ -48,12 +48,24 @@ export type SurfaceCondition = (typeof SURFACE_CONDITIONS)[number];
 export type JointedCount = 0 | 1 | 2;
 
 /**
- * The angle stops a saw swings to, measured off square — 0° is a plain
- * crosscut. 45° makes rectangular frames; 30° and 22.5° are the hexagon
- * and octagon stops.
+ * The magnitudes of a saw's angle stops, measured off square — 0° is a
+ * plain crosscut. 45° makes rectangular frames; 30° and 22.5° are the
+ * hexagon and octagon stops.
  */
 export const MITER_ANGLES = [22.5, 30, 45] as const;
 export type MiterAngle = (typeof MITER_ANGLES)[number];
+
+/**
+ * A mitered end's angle is SIGNED — a real saw head swings both ways off
+ * square, and the sign is what distinguishes the two shapes two 45° ends
+ * can make. Convention: both ends are measured with the same rotational
+ * sense (the angle of the cut line off the width axis, board laid along
+ * x), so ends with EQUAL angles are parallel (a parallelogram) and ends
+ * with OPPOSITE angles mirror (a frame rail). Because a faceless board
+ * can be flipped over — which negates both ends at once — anything
+ * comparing ends must compare their relative sign, never absolute.
+ */
+export type SignedMiterAngle = MiterAngle | -22.5 | -30 | -45;
 
 /**
  * What one end of a board looks like. A discriminated union so future end
@@ -62,7 +74,7 @@ export type MiterAngle = (typeof MITER_ANGLES)[number];
  */
 export type BoardEnd =
   | { readonly kind: "square" }
-  | { readonly kind: "mitered"; readonly angle: MiterAngle };
+  | { readonly kind: "mitered"; readonly angle: SignedMiterAngle };
 
 export interface BoardEnds {
   readonly left: BoardEnd;
@@ -106,17 +118,26 @@ export function boardEnds(board: Board): BoardEnds {
 
 /**
  * Short label for a board's end treatments, or null when both ends are the
- * unremarkable square default. Reads like a cut list: "45° both ends".
+ * unremarkable square default. Reads like a cut list: "45° both ends" is
+ * the mirrored (frame-rail) pair; equal-signed ends — the same magnitude
+ * leaning the same way — read "parallel ends". A lone miter's sign is
+ * meaningless on a faceless board, so single ends show the magnitude.
  */
 export function endsLabel(board: Board): string | null {
   const { left, right } = boardEnds(board);
   if (left.kind === "mitered" && right.kind === "mitered") {
-    return left.angle === right.angle
-      ? `${left.angle}° both ends`
-      : `${left.angle}°/${right.angle}° ends`;
+    if (left.angle === -right.angle) {
+      return `${Math.abs(left.angle)}° both ends`;
+    }
+    if (left.angle === right.angle) {
+      return `${Math.abs(left.angle)}° parallel ends`;
+    }
+    return `${left.angle}°/${right.angle}° ends`;
   }
   const mitered = left.kind === "mitered" ? left : right;
-  return mitered.kind === "mitered" ? `${mitered.angle}° one end` : null;
+  return mitered.kind === "mitered"
+    ? `${Math.abs(mitered.angle)}° one end`
+    : null;
 }
 
 /**

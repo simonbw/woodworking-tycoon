@@ -198,6 +198,12 @@ export interface OperationParameter<T = number | string> {
   readonly id: string;
   readonly name: string;
   readonly values: ReadonlyArray<T>;
+  /**
+   * Where a fresh machine's setting rests. Defaults to the first value —
+   * declare this when the natural resting detent sits mid-scale, like the
+   * saw head parked square in the middle of its swing.
+   */
+  readonly defaultValue?: T;
   /** Suffix appended to numeric values in the UI. Defaults to inches. */
   readonly unit?: string;
 }

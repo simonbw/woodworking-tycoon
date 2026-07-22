@@ -63,17 +63,19 @@ export const BoardSprite: React.FC<
           ? colorToNumber(secondary)
           : mixColors(secondary, WEATHERED_GRAY, 0.5);
 
-      // Mitered ends slant across the face: the right-edge corner stays at
-      // the board's true end and the left-edge corner falls back by the
-      // angle's run, so the polygon's closing end lines draw the miters.
-      // Clamped so two steep miters on a short, wide board can't cross
-      const skewFor = (end: { kind: string; angle?: number } | undefined) =>
-        end?.kind === "mitered" && end.angle !== undefined
-          ? Math.min(
-              width * Math.tan((end.angle * Math.PI) / 180),
-              height * 0.45,
-            )
-          : 0;
+      // Mitered ends slant across the face by the angle's SIGNED run —
+      // both end lines rise the same way for the same angle, so equal
+      // angles draw parallel (a parallelogram) and opposite angles draw
+      // the mirror pair (a frame rail), matching SignedMiterAngle's
+      // convention. Clamped so two steep miters on a short, wide board
+      // can't cross.
+      const skewFor = (end: { kind: string; angle?: number } | undefined) => {
+        if (end?.kind !== "mitered" || end.angle === undefined) {
+          return 0;
+        }
+        const run = width * Math.tan((end.angle * Math.PI) / 180);
+        return Math.sign(run) * Math.min(Math.abs(run), height * 0.45);
+      };
       const topSkew = skewFor(ends?.left);
       const bottomSkew = skewFor(ends?.right);
 
@@ -97,13 +99,21 @@ export const BoardSprite: React.FC<
         }
         return points;
       };
+      // Positive skew pulls back the left-edge corner at the top and the
+      // right-edge corner at the bottom (and vice versa for negative), so
+      // each end line rises left-to-right by its angle's signed run.
       const leftEdge = edgePoints(
         -width / 2,
         leftAmp,
-        -height / 2 + topSkew,
-        height / 2 - bottomSkew,
+        -height / 2 + Math.max(0, topSkew),
+        height / 2 - Math.max(0, bottomSkew),
       );
-      const rightEdge = edgePoints(width / 2, rightAmp, -height / 2, height / 2);
+      const rightEdge = edgePoints(
+        width / 2,
+        rightAmp,
+        -height / 2 + Math.max(0, -topSkew),
+        height / 2 - Math.max(0, -bottomSkew),
+      );
 
       // shadow
       for (const shadowWidth of [1, 2]) {
@@ -131,8 +141,8 @@ export const BoardSprite: React.FC<
 
       const inset = amp + 1.5;
       // Surface detail stays inside the mitered silhouette
-      const detailTop = -height / 2 + topSkew;
-      const detailBottom = height / 2 - bottomSkew;
+      const detailTop = -height / 2 + Math.abs(topSkew);
+      const detailBottom = height / 2 - Math.abs(bottomSkew);
       if (surface === "rough") {
         // Cross-grain saw marks, fainter once the face is milled clean
         const markAlpha = colorRevealed ? 0.07 : 0.13;

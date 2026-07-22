@@ -6,7 +6,7 @@ import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 19; // Increment this when GameState structure changes
+const SAVE_VERSION = 20; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -86,6 +86,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 18) {
       saveData.gameState = migrateV18toV19(saveData.gameState);
       saveData.version = 19;
+    }
+
+    if (saveData.version === 19) {
+      saveData.gameState = migrateV19toV20(saveData.gameState);
+      saveData.version = 20;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -366,5 +371,64 @@ export function migrateV18toV19(old: any): GameState {
       unlockedArticles,
       readArticles: unlockedArticles,
     },
+  };
+}
+
+/**
+ * v19 → v20: mitered end angles became signed (see SignedMiterAngle) —
+ * ends with opposite signs mirror (a frame rail), equal signs are
+ * parallel (a parallelogram). Unsigned saves couldn't tell the two apart,
+ * and every both-ends board was cut as frame stock, so both-mitered
+ * boards convert to the mirrored pair; lone miters keep their positive
+ * magnitude. Applied to every material wherever it lives.
+ */
+export function migrateV19toV20(old: any): GameState {
+  const signEnds = (material: any) => {
+    if (material?.type !== "board" || !material.ends) {
+      return material;
+    }
+    const { left, right } = material.ends;
+    if (left?.kind !== "mitered" || right?.kind !== "mitered") {
+      return material;
+    }
+    return {
+      ...material,
+      ends: {
+        left: { ...left, angle: -Math.abs(left.angle) },
+        right: { ...right, angle: Math.abs(right.angle) },
+      },
+    };
+  };
+
+  const migrateMachine = (machineState: any) => ({
+    ...machineState,
+    inputMaterials: machineState.inputMaterials.map(signEnds),
+    processingMaterials: machineState.processingMaterials.map(signEnds),
+    outputMaterials: machineState.outputMaterials.map(signEnds),
+    storedMaterials: (machineState.storedMaterials ?? []).map(signEnds),
+  });
+
+  return {
+    ...old,
+    player: {
+      ...old.player,
+      inventory: old.player.inventory.map(signEnds),
+      away: old.player.away
+        ? { ...old.player.away, loot: old.player.away.loot.map(signEnds) }
+        : null,
+    },
+    materialPiles: old.materialPiles.map((pile: any) => ({
+      ...pile,
+      material: signEnds(pile.material),
+    })),
+    machines: old.machines.map(migrateMachine),
+    machineCrates: old.machineCrates.map((crate: any) => ({
+      ...crate,
+      machine: migrateMachine(crate.machine),
+    })),
+    listings: old.listings.map((listing: any) => ({
+      ...listing,
+      material: signEnds(listing.material),
+    })),
   };
 }
