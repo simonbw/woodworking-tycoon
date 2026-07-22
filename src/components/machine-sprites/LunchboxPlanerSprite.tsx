@@ -105,17 +105,41 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
         anchor={0.5}
       />
       {cutting && (
-        <CutParticles
-          intensity={cutSprayIntensity(machine)}
-          kind="shavings"
-          species={cutting.species}
-          active={working}
-          // A lunchbox planer is a snow machine out the outfeed side;
-          // wide spread so the curls scatter off the exiting board
-          y={-26}
-          direction={-Math.PI / 2}
-          spread={1.7}
-        />
+        <>
+          {/* A lunchbox planer is a snow machine out the outfeed side;
+              wide spread so the curls scatter off the exiting board */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="shavings"
+            species={cutting.species}
+            active={working}
+            y={-26}
+            direction={-Math.PI / 2}
+            spread={1.7}
+            density={1.3}
+          />
+          {/* The chip port blasts a hard jet of dust alongside the curls */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            y={-26}
+            direction={-Math.PI / 2}
+            spread={1}
+            density={0.9}
+          />
+          {/* Fine dust leaks out around the board at the cutter head */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            direction={0}
+            ambient
+            density={0.7}
+          />
+        </>
       )}
     </pixiContainer>
   );

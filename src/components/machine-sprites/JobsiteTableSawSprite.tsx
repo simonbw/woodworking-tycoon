@@ -118,14 +118,39 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
         />
       )}
       {cutting && (
-        <CutParticles
-          intensity={cutSprayIntensity(machine)}
-          kind="dust"
-          species={cutting.species}
-          active={working}
-          // The blade kicks dust back toward the infeed side
-          direction={Math.PI / 2}
-        />
+        <>
+          {/* The blade's teeth come up out of the table spinning toward the
+              operator, kicking dust back over the infeed side */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            direction={Math.PI / 2}
+            density={1.2}
+          />
+          {/* Below the table, the guard funnels the rest out the chip port
+              at the back in a tight jet */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            y={-10}
+            direction={-Math.PI / 2}
+            spread={0.5}
+          />
+          {/* ...and fine dust hangs in the air around the blade */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            direction={0}
+            ambient
+            density={0.7}
+          />
+        </>
       )}
     </pixiContainer>
   );

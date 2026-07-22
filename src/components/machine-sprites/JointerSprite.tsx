@@ -74,15 +74,40 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         </pixiContainer>
       ))}
       {cutting && (
-        <CutParticles
-          intensity={cutSprayIntensity(machine)}
-          kind="shavings"
-          species={cutting.species}
-          active={working}
-          // Curls spill off the cutterhead toward the outfeed table
-          direction={-Math.PI / 2}
-          spread={1.5}
-        />
+        <>
+          {/* Curls spill off the cutterhead toward the outfeed table */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="shavings"
+            species={cutting.species}
+            active={working}
+            direction={-Math.PI / 2}
+            spread={1.5}
+            density={1.3}
+          />
+          {/* The chip port ejects a jet of dust out the side, away from
+              the fence */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            x={-8}
+            direction={Math.PI}
+            spread={0.7}
+            density={0.9}
+          />
+          {/* Fine dust boils up around the cutterhead and the board */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            direction={0}
+            ambient
+            density={0.7}
+          />
+        </>
       )}
     </pixiContainer>
   );

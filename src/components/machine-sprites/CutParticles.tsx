@@ -6,6 +6,7 @@ import { Machine } from "../../game/Machine";
 import { Species } from "../../game/Materials";
 import { DUST_BAG_CAPTURE } from "../../game/tools/dustBag";
 import { mixColors } from "../../utils/colorUtils";
+import { lerp } from "../../utils/mathUtils";
 import { rBool, rUniform } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { emitDustStamp } from "../shop-view/dustStampBus";
@@ -34,26 +35,42 @@ interface Particle {
   color: number;
   angle: number;
   spin: number;
+  /** Drawn as a tumbling curl (planer/jointer shaving) instead of a fleck. */
+  curl: boolean;
+  /**
+   * How fast this particle sheds speed. Individual per particle: heavy
+   * chips punch through the air; fine dust stalls almost immediately.
+   */
+  drag: number;
+  /**
+   * Airborne wander (px/s² of random acceleration). Fine dust doesn't
+   * fall out of the air when it stalls — it hangs and drifts. Zero for
+   * chips and curls, which just fly and land.
+   */
+  drift: number;
   /** Settling chips bake into the DustLayer floor when they come to rest. */
   settles: boolean;
 }
 
-const MAX_PARTICLES = 90;
+const MAX_PARTICLES = 220;
 
 /**
- * Of the fine dust flecks, how many visibly stay on the floor. The rest
+ * Of the coarse dust flecks, how many visibly stay on the floor. The rest
  * read as "too fine to see" and fade — full stamping of the saws' dense
  * spray would grime the floor much faster than the shavings' sparse one.
  */
 const DUST_SETTLE_FRACTION = 0.3;
 
 /**
- * Wood leaving the cut. Saws throw `dust` — small fast flecks; jointers
- * and planers throw `shavings` — bigger, slower curls that tumble. Both
- * are colored like the species' freshly cut interior, so walnut throws
- * dark chips and maple throws pale ones. While `active` is false the
- * emitter stops spawning but live particles finish their arcs, so the
- * spray winds down naturally when an operation pauses or completes.
+ * Wood leaving the cut. Saws throw `dust` — flecks on a spectrum from
+ * heavy chips that fly hard and land, down to fines that stall, hang in
+ * the air, and drift for seconds before fading. Jointers and planers
+ * throw `shavings` — big tumbling curls with a load of flecks mixed in
+ * (a cutterhead makes both). Everything is colored like the species'
+ * freshly cut interior, so walnut throws dark chips and maple throws
+ * pale ones. While `active` is false the emitter stops spawning but live
+ * particles finish their arcs, so the spray winds down naturally when an
+ * operation pauses or completes.
  *
  * Chips don't just vanish: settling particles come to rest and hand
  * themselves off to the DustLayer (via the dust stamp bus), which bakes
@@ -65,7 +82,7 @@ export const CutParticles: React.FC<{
   active: boolean;
   x?: number;
   y?: number;
-  /** Spray direction in radians (0 = +x, π/2 = +y). */
+  /** Spray direction in radians (0 = +x, π/2 = +y). Ignored by `ambient`. */
   direction: number;
   spread?: number;
   /**
@@ -73,6 +90,16 @@ export const CutParticles: React.FC<{
    * its escape fraction here so the capture is visible at the blade.
    */
   intensity?: number;
+  /**
+   * Extra multiplier on spawn rate, for balancing multiple emitters on
+   * one machine (e.g. a heavy chip-port jet next to a light blade haze).
+   */
+  density?: number;
+  /**
+   * Ambient mode: slow, omnidirectional fine dust that hangs around the
+   * blade instead of jetting out of it. Use as a secondary emitter.
+   */
+  ambient?: boolean;
 }> = ({
   kind,
   species,
@@ -82,14 +109,17 @@ export const CutParticles: React.FC<{
   direction,
   spread,
   intensity = 1,
+  density = 1,
+  ambient = false,
 }) => {
   const graphicsRef = useRef<Graphics>(null);
   const particles = useRef<Particle[]>([]);
   const spawnDebt = useRef(0);
 
   const dust = kind === "dust";
-  const rate = (dust ? 70 : 22) * intensity;
-  const arc = spread ?? (dust ? 0.7 : 1.1);
+  const rate = (ambient ? 55 : dust ? 140 : 45) * intensity * density;
+  const arc = ambient ? Math.PI * 2 : (spread ?? (dust ? 0.8 : 1.4));
+  const spawnRadius = ambient ? 5 : 1.5;
 
   useTick((ticker: Ticker) => {
     const g = graphicsRef.current;
@@ -103,30 +133,50 @@ export const CutParticles: React.FC<{
       while (spawnDebt.current >= 1 && pool.length < MAX_PARTICLES) {
         spawnDebt.current -= 1;
         const heading = direction + rUniform(-arc / 2, arc / 2);
-        // Fast enough to clear the machine sprite before drag wins —
-        // settled chips should land on visible floor, not under the tool
-        const speed = dust ? rUniform(140, 320) : rUniform(90, 260);
-        const maxLife = dust ? rUniform(0.35, 0.7) : rUniform(0.7, 1.3);
+        // Roughly half of a shavings spray is curls; the cutterhead makes
+        // plenty of plain dust alongside them.
+        const curl = !dust && !ambient && rBool(0.5);
+        // Where this fleck sits on the heavy-chip → fine-dust spectrum.
+        // Ambient haze is all fines; jets get the full range.
+        const fineness = curl ? 0 : ambient ? rUniform(0.6, 1) : rUniform(0, 1);
+        // Heavy chips launch hard and clear the machine sprite before
+        // drag wins — settled chips should land on visible floor, not
+        // under the tool. Fines leave the cut slower and stall sooner.
+        const speed = ambient
+          ? rUniform(20, 90)
+          : curl
+            ? rUniform(110, 320)
+            : rUniform(200, 560) * (1 - 0.55 * fineness);
+        const maxLife = curl
+          ? rUniform(0.7, 1.3)
+          : lerp(rUniform(0.4, 0.75), rUniform(1.8, 3.2), fineness);
         pool.push({
-          x: x + rUniform(-1.5, 1.5),
-          y: y + rUniform(-1.5, 1.5),
+          x: x + rUniform(-spawnRadius, spawnRadius),
+          y: y + rUniform(-spawnRadius, spawnRadius),
           vx: Math.cos(heading) * speed,
           vy: Math.sin(heading) * speed,
           life: maxLife,
           maxLife,
-          size: dust ? rUniform(1.2, 2.4) : rUniform(3, 5),
-          // Freshly cut wood is brighter than the weathered surface
-          color: mixColors(base, 0xffffff, rUniform(0.15, 0.45)),
+          size: curl
+            ? rUniform(3, 5)
+            : lerp(2.8, 1, fineness) * rUniform(0.8, 1.2),
+          // Freshly cut wood is a touch brighter than the weathered
+          // surface — a touch only, so walnut dust still reads dark
+          color: mixColors(base, 0xffffff, rUniform(0.05, 0.25)),
           angle: rUniform(0, Math.PI * 2),
           spin: rUniform(-6, 6),
-          settles: dust ? rBool(DUST_SETTLE_FRACTION) : true,
+          curl,
+          drag: curl ? rUniform(2, 3) : lerp(3.5, 8, fineness),
+          drift: fineness * 260,
+          settles: curl
+            ? true
+            : rBool(DUST_SETTLE_FRACTION * (1 - fineness)),
         });
       }
     } else {
       spawnDebt.current = 0;
     }
 
-    const drag = dust ? 5 : 2.5;
     for (let i = pool.length - 1; i >= 0; i--) {
       const p = pool[i];
       p.life -= dt;
@@ -141,7 +191,7 @@ export const CutParticles: React.FC<{
             y: resting.y,
             color: p.color,
             size: p.size,
-            kind,
+            kind: p.curl ? "shavings" : "dust",
             angle: p.angle,
           });
         }
@@ -150,8 +200,13 @@ export const CutParticles: React.FC<{
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx -= p.vx * drag * dt;
-      p.vy -= p.vy * drag * dt;
+      p.vx -= p.vx * p.drag * dt;
+      p.vy -= p.vy * p.drag * dt;
+      // Fines hang and wander once drag has eaten their launch speed
+      if (p.drift > 0) {
+        p.vx += rUniform(-1, 1) * p.drift * dt;
+        p.vy += rUniform(-1, 1) * p.drift * dt;
+      }
       p.angle += p.spin * dt;
     }
 
@@ -160,10 +215,7 @@ export const CutParticles: React.FC<{
       // Settling chips hold their color to the end — the baked stamp
       // continues them seamlessly. Fading is for dust too fine to keep.
       const alpha = p.settles ? 0.95 : Math.min(1, (p.life / p.maxLife) * 1.6);
-      if (dust) {
-        g.rect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-        g.fill({ color: p.color, alpha });
-      } else {
+      if (p.curl) {
         // A shaving: a short curl, drawn as an open arc that tumbles.
         // moveTo first, or the path connects from the previous curl.
         g.moveTo(
@@ -172,6 +224,9 @@ export const CutParticles: React.FC<{
         );
         g.arc(p.x, p.y, p.size, p.angle, p.angle + Math.PI * 1.3);
         g.stroke({ width: 1.4, color: p.color, alpha });
+      } else {
+        g.rect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        g.fill({ color: p.color, alpha });
       }
     }
   });

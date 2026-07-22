@@ -159,17 +159,29 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         </pixiContainer>
       </AnimatedPixiContainer>
       {cutting && (
-        <CutParticles
-          intensity={cutSprayIntensity(machine)}
-          kind="dust"
-          species={cutting.species}
-          active={working}
-          // The blade throws dust back behind the fence, tilted with the head
-          direction={
-            -Math.PI / 2 + (angleSetting * Math.PI) / 180
-          }
-          spread={0.9}
-        />
+        <>
+          {/* The blade hurls a thick rooster tail back behind the fence,
+              tilted with the head */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            direction={-Math.PI / 2 + (angleSetting * Math.PI) / 180}
+            spread={0.7}
+            density={1.6}
+          />
+          {/* ...and fine dust boils out around the blade in every direction */}
+          <CutParticles
+            intensity={cutSprayIntensity(machine)}
+            kind="dust"
+            species={cutting.species}
+            active={working}
+            direction={0}
+            ambient
+            density={0.8}
+          />
+        </>
       )}
     </pixiContainer>
   );
