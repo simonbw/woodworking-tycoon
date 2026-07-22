@@ -141,28 +141,76 @@ export const ShopManualModal: React.FC<{
 };
 
 /**
- * The spiral: a column of wire rings through punched holes along the
- * page's left edge. Each ring is drawn in two parts so the paper occludes
- * it honestly: a true circle layered BELOW the page (so the half that
- * wraps behind the paper disappears behind it), and the front run of
- * wire — hole to edge — layered above. Pure chrome; screen readers skip
- * it.
+ * One turn of the wire coil, drawn as a single continuous SVG path so
+ * there are no seams: out of the punched hole, up over the page's left
+ * edge, around the outside, and back down to dive behind the paper. The
+ * path simply ENDS at the page edge with a flat cut — the part of the
+ * turn hidden behind the paper is never drawn — and the hole's rim is
+ * painted over the wire's other end so it visibly enters the hole.
+ *
+ * Coordinates: 56×28 viewBox, positioned so the page's left edge is at
+ * SVG x=20 and the punched hole is centered at (50, 10).
  */
+const WIRE_PATH =
+  "M 50 10 C 40 3, 26 1, 14 6 C 5 10, 3 18, 12 22 C 14.5 23.2, 17.5 24.3, 20.5 25.1";
+
+/** The full binding: a column of coil turns. Pure chrome; screen readers
+ * skip it. */
 const SpiralBinding: React.FC = () => (
   <div
     aria-hidden
-    className="pointer-events-none absolute inset-y-4 left-0 flex flex-col justify-between"
+    className="pointer-events-none absolute inset-y-4 left-0 z-30 flex flex-col justify-between"
   >
     {Array.from({ length: 14 }).map((_, i) => (
-      <div key={i} className="relative h-5 w-12">
-        {/* punched hole in the page — big enough that its rim reads
-            around the wire passing through it */}
-        <div className="absolute left-[25px] top-1/2 z-20 h-3 w-3 -translate-y-1/2 rounded-full bg-ink-black/30 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]" />
-        {/* the ring itself, mostly off the page; the page hides the arc
-            that wraps behind the paper */}
-        <div className="absolute left-[-16px] top-1/2 z-[5] h-[22px] w-[22px] -translate-y-1/2 rounded-full border-[3.5px] border-zinc-400" />
-        {/* the front run of wire, out of the hole and over the edge */}
-        <div className="absolute left-[-5px] top-[calc(50%-6px)] z-30 h-[3.5px] w-[37px] origin-left rotate-[12deg] rounded-full bg-zinc-400 shadow-[0_1px_1px_rgba(0,0,0,0.35)]" />
+      <div key={i} className="relative h-7 w-12">
+        <svg
+          width="56"
+          height="28"
+          viewBox="0 0 56 28"
+          className="absolute left-[-20px] top-1/2 -translate-y-1/2"
+        >
+          {/* soft shadow of the wire on whatever lies beneath it */}
+          <path
+            d={WIRE_PATH}
+            fill="none"
+            stroke="rgba(0,0,0,0.35)"
+            strokeWidth="5"
+            strokeLinecap="butt"
+            transform="translate(0.5, 1.5)"
+          />
+          {/* the wire itself */}
+          <path
+            d={WIRE_PATH}
+            fill="none"
+            stroke="#a1a1aa"
+            strokeWidth="3.25"
+            strokeLinecap="butt"
+          />
+          {/* a thin highlight along the top of the wire for roundness */}
+          <path
+            d={WIRE_PATH}
+            fill="none"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="1"
+            strokeLinecap="butt"
+            transform="translate(0, -0.8)"
+          />
+          {/* the punched hole, rim over the wire so the wire enters it */}
+          <circle
+            cx="50"
+            cy="10"
+            r="4.5"
+            fill="rgba(26,26,26,0.28)"
+          />
+          <circle
+            cx="50"
+            cy="10"
+            r="4.5"
+            fill="none"
+            stroke="rgba(26,26,26,0.25)"
+            strokeWidth="1"
+          />
+        </svg>
       </div>
     ))}
   </div>
