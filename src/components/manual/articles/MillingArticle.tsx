@@ -1,5 +1,5 @@
 import React from "react";
-import { H, Note, P, Term, UL } from "./elements";
+import { FigureRow, H, Note, P, Photo, Term, UL } from "./elements";
 
 export const MillingArticle: React.FC = () => (
   <>
@@ -11,6 +11,14 @@ export const MillingArticle: React.FC = () => (
       buy, the less you pay, because the mill's work becomes yours. That work
       is milling.
     </P>
+    <FigureRow>
+      <Photo src="/images/benchtop-jointer.png" caption="jointer — flattens" />
+      <Photo
+        src="/images/lunchbox-planer.png"
+        caption="planer — thicknesses"
+      />
+      <Photo src="/images/jobsite-table-saw.png" caption="table saw — rips" />
+    </FigureRow>
 
     <H>Two Things to True Up</H>
     <P>

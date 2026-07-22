@@ -1,6 +1,7 @@
 import { hasCompletedCommission } from "./commissionSequence";
 import { GameState, ProgressionState } from "./GameState";
 import { unlockedLumberChannels } from "./lumberStock";
+import type { MachineId } from "./Machine";
 import { ownsMachine, ownsTool } from "./progression-helpers";
 import { levelForXp } from "./skill-helpers";
 import { ToolId } from "./Tool";
@@ -132,6 +133,17 @@ export const STARTING_ARTICLES: ReadonlyArray<ManualArticleId> = [
   "welcome",
   "controls",
 ];
+
+/**
+ * Inspector deep links: which article explains a machine. Machines not
+ * listed here are self-explanatory (benches teach through their recipes).
+ */
+export const MACHINE_ARTICLES: Partial<Record<MachineId, ManualArticleId>> = {
+  jointer: "milling",
+  lunchboxPlaner: "milling",
+  jobsiteTableSaw: "milling",
+  miterSaw: "milling",
+};
 
 export function getArticle(id: ManualArticleId): ManualArticleDef {
   const def = MANUAL_ARTICLES.find((article) => article.id === id);

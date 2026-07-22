@@ -36,3 +36,31 @@ export const Note: React.FC<{ children: React.ReactNode }> = ({
 }) => (
   <p className="font-ink text-base text-ink-blue -rotate-1 pl-4">{children}</p>
 );
+
+/**
+ * A row of Photos, alternating their tilt so they read as prints laid on
+ * the page rather than a web image grid.
+ */
+export const FigureRow: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <div className="flex flex-wrap justify-center gap-5 py-2 [&>*:nth-child(even)]:rotate-[1.5deg] [&>*:nth-child(odd)]:rotate-[-1.5deg]">
+    {children}
+  </div>
+);
+
+/**
+ * A photo print taped into the binder: white border, handwritten caption.
+ * `src` is a path under static/ (e.g. "/images/pallet.png").
+ */
+export const Photo: React.FC<{ src: string; caption: string }> = ({
+  src,
+  caption,
+}) => (
+  <figure className="border border-ink-black/10 bg-white px-1.5 pt-1.5 shadow-md">
+    <img src={src} alt={caption} className="h-24 w-24 object-contain" />
+    <figcaption className="pb-0.5 text-center font-ink text-sm leading-tight text-ink-black/70">
+      {caption}
+    </figcaption>
+  </figure>
+);

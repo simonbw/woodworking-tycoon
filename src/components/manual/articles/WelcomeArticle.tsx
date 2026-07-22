@@ -1,6 +1,6 @@
 import React from "react";
 import { ShortcutKeys } from "../../shortcuts/Kbd";
-import { H, Note, P, Term, UL } from "./elements";
+import { FigureRow, H, Note, P, Photo, Term, UL } from "./elements";
 
 export const WelcomeArticle: React.FC = () => (
   <>
@@ -9,6 +9,10 @@ export const WelcomeArticle: React.FC = () => (
       some paint buckets, and a pallet somebody left behind. That's a
       woodworking shop. Everything else gets earned.
     </P>
+    <FigureRow>
+      <Photo src="/images/makeshift-bench.png" caption='the "workbench"' />
+      <Photo src="/images/pallet.png" caption="your inheritance" />
+    </FigureRow>
 
     <H>Getting Around</H>
     <P>

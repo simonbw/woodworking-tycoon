@@ -1,5 +1,6 @@
 import React from "react";
 import { dismissDustTipAction } from "../game/game-actions/progression-actions";
+import { ManualLink } from "./manual/ManualLink";
 import { ShortcutKeys } from "./shortcuts/Kbd";
 import { Thumbtack } from "./Thumbtack";
 import { useApplyGameAction, useGameState } from "./useGameState";
@@ -32,7 +33,8 @@ export const DustTutorialCard: React.FC = () => {
         the dust underfoot into a pile in front of you. Scoop the pile up and
         dump it in the garbage can.
       </p>
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <ManualLink article="dust" />
         <button
           className="button px-3 py-1 text-sm tracking-[0.15em]"
           onClick={() => applyAction(dismissDustTipAction())}

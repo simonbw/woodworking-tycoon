@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useCellMap } from "../../game/CellMap";
 import { machineDustMultiplier } from "../../game/Dust";
+import { MACHINE_ARTICLES } from "../../game/manual";
+import { ManualLink } from "../manual/ManualLink";
 import {
   Machine,
   MachineOperation,
@@ -790,11 +792,18 @@ const DirectFeedMachineCard: React.FC<{
               {machine.type.description}
             </p>
             <ToolRack machine={machine} />
+            <MachineManualLink machine={machine} />
           </div>
         )}
       </div>
     </section>
   );
+};
+
+/** The spec sheet's pointer to the article that explains this machine. */
+const MachineManualLink: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const article = MACHINE_ARTICLES[machine.state.machineTypeId];
+  return article ? <ManualLink article={article} /> : null;
 };
 
 /**
@@ -814,8 +823,11 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   return (
     <div className="space-y-1">
-      <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-        Tools · {machine.state.tools.length}/{machine.toolSlots} slots
+      <div className="flex items-baseline justify-between">
+        <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+          Tools · {machine.state.tools.length}/{machine.toolSlots} slots
+        </div>
+        <ManualLink article="tools" />
       </div>
       <ul className="divide-y divide-ink-black/15 text-sm">
         {machine.state.tools.map((toolId, index) => (

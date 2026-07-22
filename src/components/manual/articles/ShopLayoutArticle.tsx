@@ -1,6 +1,6 @@
 import React from "react";
 import { ShortcutKeys } from "../../shortcuts/Kbd";
-import { H, Note, P, Term } from "./elements";
+import { FigureRow, H, Note, P, Photo, Term } from "./elements";
 
 export const ShopLayoutArticle: React.FC = () => (
   <>
@@ -9,6 +9,12 @@ export const ShopLayoutArticle: React.FC = () => (
       up and you carry it — the shop gets arranged the way real shops do,
       one heavy object at a time.
     </P>
+    <FigureRow>
+      <Photo
+        src="/images/miter-saw.png"
+        caption="the first heavy thing you'll lug"
+      />
+    </FigureRow>
 
     <H>The Carry Verb</H>
     <P>

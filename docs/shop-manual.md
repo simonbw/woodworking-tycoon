@@ -103,11 +103,18 @@ references never go stale. Article components and the registry live in
 `src/components/manual/`; the registry maps `ArticleId` → title,
 category, unlock predicate (for migration), and component.
 
+## Deep links & illustrations (implemented)
+
+- `ManualLink` (`src/components/manual/ManualLink.tsx`) is the
+  moment-of-need pointer: a small "Shop Manual → <article>" link that
+  renders nothing while the article is locked. Used by the dust card,
+  the machine spec sheets (`MACHINE_ARTICLES` in `src/game/manual.ts`
+  maps machine → article), and every tool rack (→ Tools & Tool Slots).
+- Articles carry photo prints (`Photo` / `FigureRow` in the article
+  elements): the machine PNGs from `static/images/` presented as tilted
+  white-bordered prints with handwritten captions.
+
 ## Later
 
-- Contextual deep links: inspector panels and one-shot cards link
-  straight to the relevant article.
 - Articles for systems as they land (worktable building, offcut
   recovery, dust collection tiers).
-- Possibly per-article illustrations in the sprite style once content
-  settles.

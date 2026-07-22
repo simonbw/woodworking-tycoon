@@ -96,5 +96,19 @@ test.describe("Shop manual", () => {
       await expect(manual).toHaveCount(0);
       await expect(page.getByTestId("manual-badge")).toHaveCount(0);
     });
+
+    await test.step("the dust card deep-links into its article", async () => {
+      // The one-shot sawdust note is still up (never dismissed); its manual
+      // link opens the binder straight to Sawdust & Cleaning.
+      await page
+        .getByRole("button", { name: "Shop Manual → Sawdust & Cleaning" })
+        .click();
+      await expect(manual).toBeVisible();
+      await expect(
+        manual.getByRole("heading", { name: "Sawdust & Cleaning" }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(manual).toHaveCount(0);
+    });
   });
 });
