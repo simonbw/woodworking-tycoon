@@ -68,7 +68,9 @@ export const ShopManualModal: React.FC<{
         />
 
         {/* Index tabs, emerging from between the pages */}
-        <nav className="absolute inset-y-10 left-full z-20 flex w-36 flex-col justify-start gap-1.5">
+        {/* items-start lets each tab shrink-wrap its label instead of all
+            sharing one fixed width */}
+        <nav className="absolute inset-y-10 left-full z-20 flex w-36 flex-col items-start justify-start gap-1.5">
           {sections.map((articles, sectionIndex) => (
             <React.Fragment key={articles[0].category}>
               {sectionIndex > 0 && <div className="h-4" aria-hidden />}
@@ -84,7 +86,9 @@ export const ShopManualModal: React.FC<{
                     aria-label={article.title}
                     aria-current={isActive ? "page" : undefined}
                     className={classNames(
-                      "flex items-baseline gap-1.5 rounded-r-md border border-ink-black/25 py-1 pl-2.5 pr-2 text-left font-condensed text-[0.65rem] uppercase tracking-[0.15em] transition-transform",
+                      // max-w + wrap: a long label folds to a second line
+                      // rather than growing an absurdly wide tab
+                      "flex max-w-full items-baseline gap-1.5 rounded-r-md border border-ink-black/25 py-1 pl-2.5 pr-2 text-left font-condensed text-[0.65rem] leading-tight uppercase tracking-[0.15em] transition-transform",
                       isActive
                         ? "-ml-px border-l-transparent bg-paper-ivory font-semibold text-ink-black shadow-[2px_2px_3px_rgba(0,0,0,0.25)]"
                         : "border-l-ink-black/10 bg-paper-manila text-ink-black/70 shadow-[1px_1px_2px_rgba(0,0,0,0.3)] hover:translate-x-0.5 hover:text-ink-black",

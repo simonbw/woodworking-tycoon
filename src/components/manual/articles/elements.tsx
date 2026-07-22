@@ -6,9 +6,37 @@ import React from "react";
  * whole binder stays typographically consistent.
  */
 
+/**
+ * The old typists' convention: two spaces after a sentence. The typewriter
+ * face crams sentences together with a single space, so every string
+ * inside body copy gets an extra non-breaking space after sentence-ending
+ * punctuation (nbsp first, so the line still breaks at the real space and
+ * a new line can't open with a stray indent). Applied automatically by
+ * P and UL — article authors just write normal prose. The handwritten
+ * Note deliberately doesn't participate; nobody double-spaces a pen.
+ */
+function doubleSentenceSpacing(node: React.ReactNode): React.ReactNode {
+  if (typeof node === "string") {
+    return node.replace(/([.!?…])( )(?=[A-Z0-9"“(])/g, "$1\u00A0$2");
+  }
+  if (Array.isArray(node)) {
+    return React.Children.map(node, doubleSentenceSpacing);
+  }
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    const children = node.props.children;
+    if (children === undefined) return node;
+    return React.cloneElement(node, {
+      children: doubleSentenceSpacing(children),
+    });
+  }
+  return node;
+}
+
 /** Body paragraph — typewriter, like every typed document in the game. */
 export const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="font-typewriter text-sm leading-relaxed">{children}</p>
+  <p className="font-typewriter text-sm leading-relaxed">
+    {doubleSentenceSpacing(children)}
+  </p>
 );
 
 /** Section heading within an article. */
@@ -21,7 +49,7 @@ export const H: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 /** Bulleted list in the article voice. */
 export const UL: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ul className="list-disc pl-5 space-y-1.5 font-typewriter text-sm leading-relaxed">
-    {children}
+    {doubleSentenceSpacing(children)}
   </ul>
 );
 
@@ -30,7 +58,8 @@ export const Term: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <strong className="font-semibold">{children}</strong>;
 
-/** A margin note from whoever owned this binder before you. */
+/** A margin note from whoever owned this binder before you. Handwriting,
+ * so it does NOT get the typist's double sentence spacing. */
 export const Note: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (

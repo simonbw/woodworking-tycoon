@@ -103,7 +103,6 @@ export function loadGame(): GameState | null {
       saveData.version = 22;
     }
 
-
     // Check version - if it doesn't match, the save is incompatible
     if (!saveData.version || saveData.version !== SAVE_VERSION) {
       console.warn("Save file version mismatch, ignoring old save");
