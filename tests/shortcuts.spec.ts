@@ -35,20 +35,25 @@ test.describe("Keyboard shortcuts", () => {
       });
     });
 
-    // A move only applies immediately when the player `canWork`; otherwise it
-    // joins the work queue and lands on a later tick. So every movement
-    // assertion polls rather than reading straight back.
-    await test.step("WASD and the arrow keys both move the player", async () => {
+    // Movement is continuous: hold a key and the body walks, and GameState's
+    // cell updates as the body crosses boundaries. Each assertion holds the
+    // key until the cell changes, polling fast enough not to overshoot.
+    const walkUntil = async (key: string, expected: [number, number]) => {
+      await page.keyboard.down(key);
+      try {
+        await expect
+          .poll(() => playerPosition(page), { intervals: [50], timeout: 10000 })
+          .toEqual(expected);
+      } finally {
+        await page.keyboard.up(key);
+      }
+    };
+
+    await test.step("WASD and the arrow keys both walk the player", async () => {
       expect(await playerPosition(page)).toEqual([0, 0]);
-
-      await page.keyboard.press("d");
-      await expect.poll(() => playerPosition(page)).toEqual([1, 0]);
-
-      await page.keyboard.press("ArrowDown");
-      await expect.poll(() => playerPosition(page)).toEqual([1, 1]);
-
-      await page.keyboard.press("a");
-      await expect.poll(() => playerPosition(page)).toEqual([0, 1]);
+      await walkUntil("d", [1, 0]);
+      await walkUntil("ArrowDown", [1, 1]);
+      await walkUntil("a", [0, 1]);
     });
 
     await test.step("letter keys switch tabs", async () => {
@@ -111,11 +116,6 @@ test.describe("Keyboard shortcuts", () => {
     });
 
     await test.step("a modal swallows the game's movement keys", async () => {
-      // Let any queued moves drain, so a late tick can't be mistaken for a
-      // leaked keypress.
-      await expect
-        .poll(async () => (await getState(page)).player.workQueue.length)
-        .toBe(0);
       const before = await playerPosition(page);
 
       await page.keyboard.press(",");
@@ -123,13 +123,13 @@ test.describe("Keyboard shortcuts", () => {
       await expect(settings).toBeVisible();
 
       // Nothing focused, so there's no input to guard — this stays put purely
-      // because `modal` outranks `home`.
+      // because an open modal disables the held-movement listener.
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur(),
       );
-      await page.keyboard.press("d");
-
+      await page.keyboard.down("d");
       await page.waitForTimeout(500);
+      await page.keyboard.up("d");
       expect(await playerPosition(page)).toEqual(before);
 
       await page.keyboard.press("Escape");
@@ -138,8 +138,14 @@ test.describe("Keyboard shortcuts", () => {
 
     await test.step("keys work again once the modal is closed", async () => {
       const before = await playerPosition(page);
-      await page.keyboard.press("d");
-      await expect.poll(() => playerPosition(page)).not.toEqual(before);
+      await page.keyboard.down("d");
+      try {
+        await expect
+          .poll(() => playerPosition(page), { intervals: [50] })
+          .not.toEqual(before);
+      } finally {
+        await page.keyboard.up("d");
+      }
     });
 
     await test.step("a focused form control keeps its own keys", async () => {
@@ -153,18 +159,15 @@ test.describe("Keyboard shortcuts", () => {
         input.focus();
       });
 
-      await expect
-        .poll(async () => (await getState(page)).player.workQueue.length)
-        .toBe(0);
       const before = await playerPosition(page);
 
-      await page.keyboard.press("d");
-      await page.keyboard.press("ArrowDown");
+      await page.keyboard.down("d");
+      await page.keyboard.down("ArrowDown");
       await page.waitForTimeout(400);
+      await page.keyboard.up("d");
+      await page.keyboard.up("ArrowDown");
 
-      const after = await getState(page);
-      expect(after.player.workQueue).toEqual([]);
-      expect(after.player.position).toEqual(before);
+      expect(await playerPosition(page)).toEqual(before);
 
       await page.evaluate(() => {
         document.getElementById("focus-guard-probe")?.remove();
@@ -172,9 +175,6 @@ test.describe("Keyboard shortcuts", () => {
     });
 
     await test.step("the keys go quiet while the player is out of the shop", async () => {
-      await expect
-        .poll(async () => (await getState(page)).player.workQueue.length)
-        .toBe(0);
       const before = await playerPosition(page);
 
       // Regression: the machine panels hide themselves while away, but the
@@ -191,14 +191,11 @@ test.describe("Keyboard shortcuts", () => {
       // touch the keyboard; injecting state skips that.)
       await expect(page.getByText("Controls")).toHaveCount(0);
 
-      await page.keyboard.press("d");
+      await page.keyboard.down("d");
       await page.waitForTimeout(400);
+      await page.keyboard.up("d");
 
-      // An away player can't act, so a leaked keypress lands in the work queue
-      // rather than moving them — the queue is what actually proves the guard.
-      const after = await getState(page);
-      expect(after.player.workQueue).toEqual([]);
-      expect(after.player.position).toEqual(before);
+      expect(await playerPosition(page)).toEqual(before);
 
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((s: any) => ({

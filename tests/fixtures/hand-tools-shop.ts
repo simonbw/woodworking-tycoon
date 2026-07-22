@@ -1,4 +1,5 @@
 import { NO_CONSUMABLES } from "../../src/game/Consumable";
+import { ALL_ARTICLE_IDS } from "../../src/game/manual";
 import { GameState } from "../../src/game/GameState";
 import { Board } from "../../src/game/Materials";
 import { STARTER_SKILLS } from "../../src/game/Skill";
@@ -86,6 +87,8 @@ export const handToolsShop: GameState = {
     xp: 0,
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,
+    unlockedArticles: ALL_ARTICLE_IDS,
+    readArticles: ALL_ARTICLE_IDS,
   },
   listings: [],
   jobBoard: [],

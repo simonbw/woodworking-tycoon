@@ -101,15 +101,6 @@ export function machineDustMultiplier(
   return 1 + dustSlowdown(average);
 }
 
-/**
- * Extra ticks to step onto this cell: +1 per full +100% of the cell's
- * machine-slowdown equivalent (0 on a clean aisle, 3 wading through a
- * full drift). Discrete, so it drops into the one-move-per-tick queue.
- */
-export function moveDustPenalty(dust: DustMap, position: Vector): number {
-  return Math.floor(dustSlowdown(cellDust(dust, position)));
-}
-
 type MutableDustMap = Record<string, Partial<Record<Species, number>>>;
 
 /**

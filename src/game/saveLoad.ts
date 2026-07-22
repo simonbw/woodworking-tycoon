@@ -6,7 +6,7 @@ import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 19; // Increment this when GameState structure changes
+const SAVE_VERSION = 20; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -86,6 +86,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 18) {
       saveData.gameState = migrateV18toV19(saveData.gameState);
       saveData.version = 19;
+    }
+
+    if (saveData.version === 19) {
+      saveData.gameState = migrateV19toV20(saveData.gameState);
+      saveData.version = 20;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -365,6 +370,23 @@ export function migrateV18toV19(old: any): GameState {
       ...old.progression,
       unlockedArticles,
       readArticles: unlockedArticles,
+    },
+  };
+}
+
+/**
+ * v19 → v20: walking went continuous, so queued `move` work items no
+ * longer exist. A save captured mid-stride just drops its pending steps
+ * (sweeps keep their place in line).
+ */
+export function migrateV19toV20(old: any): GameState {
+  return {
+    ...old,
+    player: {
+      ...old.player,
+      workQueue: (old.player.workQueue ?? []).filter(
+        (item: { type: string }) => item.type === "sweep",
+      ),
     },
   };
 }

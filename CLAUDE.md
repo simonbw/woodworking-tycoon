@@ -46,7 +46,7 @@ The game follows a state-driven architecture with clear separation between game 
 ### Key Systems
 
 1. **State Management**: Uses React Context via `GameStateProvider` (`src/components/useGameState.tsx`)
-2. **Game Loop**: Managed by `Ticker` component for regular game updates
+2. **Game Loop**: Managed by `Ticker` component for regular game updates; the player's body moves continuously between ticks with WASD (see `docs/continuous-movement.md`) while `GameState` tracks only the cell underfoot
 3. **UI Modes**: Main screens controlled by `UiModeProvider`:
    - `normal`: Main game view (`HomePage`) — includes all shop layout management: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
    - `store`: Shopping interface (`StorePage`)

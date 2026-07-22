@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { dustTotal } from "../Dust";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { BASE_WALK_SPEED, playerWalkSpeed } from "../player-motion";
 import { SHOP_VAC_CANISTER_CAPACITY, SHOP_VAC_COST } from "../ShopVac";
 import {
   buyShopVacAction,
@@ -138,17 +139,11 @@ describe("shopVacTickPass", () => {
 });
 
 describe("dragging the vac through the shop", () => {
-  it("slows every step by one tick", () => {
-    let state = draggingState({
-      player: {
-        ...initialGameState.player,
-        position: [2, 0],
-        workQueue: [{ type: "move", direction: 3 }],
-      },
-    });
-    state = tickAction(state);
-    assert.deepStrictEqual(state.player.position, [2, 1]);
-    assert.strictEqual(state.player.busyTicks, 1);
+  it("halves walking speed", () => {
+    assert.strictEqual(
+      playerWalkSpeed(draggingState()),
+      BASE_WALK_SPEED / 2,
+    );
   });
 
   it("vacuums instead of sweeping on the clean-up key", () => {

@@ -45,9 +45,11 @@ machine riding over the player's shoulders.
 ## Weight
 
 `carryMoveBusyTicks`: benchtop machines carry at full walking speed;
-floor machines and worktables add `1 + cellsOccupied.length` busy ticks
-per step (same busy-tick system as deep sawdust and the vac drag), so
-rearranging heavy benches costs real shop time.
+floor machines and worktables weigh `1 + cellsOccupied.length`
+tick-equivalents, which divide walking speed in `playerWalkSpeed` (same
+penalty pool as deep sawdust and the vac drag — see
+docs/continuous-movement.md), so rearranging heavy benches costs real
+shop time.
 
 ## Crates
 

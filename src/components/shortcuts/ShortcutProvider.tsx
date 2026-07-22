@@ -31,6 +31,13 @@ const shortcutContext = createContext<ShortcutContextValue | undefined>(
   undefined,
 );
 
+/**
+ * Whether any modal currently claims the keyboard. Split from the main
+ * context so only components that care (the held-movement listener)
+ * re-render when a dialog opens.
+ */
+const modalOpenContext = createContext<boolean>(false);
+
 /** Which non-global scope is live, given the screen the player is on. */
 function scopeForMode(mode: string): ShortcutScope | null {
   return mode === "normal" ? "home" : null;
@@ -137,10 +144,17 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <shortcutContext.Provider value={value}>
-      {children}
+      <modalOpenContext.Provider value={modalDepth > 0}>
+        {children}
+      </modalOpenContext.Provider>
     </shortcutContext.Provider>
   );
 };
+
+/** True while any modal is open (and thus owns the keyboard). */
+export function useModalOpen(): boolean {
+  return useContext(modalOpenContext);
+}
 
 function useShortcutContext(): ShortcutContextValue {
   const value = useContext(shortcutContext);

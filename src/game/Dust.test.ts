@@ -11,7 +11,6 @@ import {
   emitMachineDust,
   machineDustCells,
   machineDustMultiplier,
-  moveDustPenalty,
 } from "./Dust";
 import { Machine, MachineState } from "./Machine";
 import { Vector } from "./Vectors";
@@ -211,14 +210,5 @@ describe("machineDustMultiplier", () => {
       machineDustMultiplier({ "1,1": { pine: 100 } }, planerAt([1, 1]), SHOP),
       1,
     );
-  });
-});
-
-describe("moveDustPenalty", () => {
-  it("adds one tick per full +100% slowdown", () => {
-    assert.strictEqual(moveDustPenalty({}, [1, 1]), 0);
-    assert.strictEqual(moveDustPenalty({ "1,1": { pine: 100 } }, [1, 1]), 3);
-    // 65% of cap: +150% slowdown floors to 1 extra tick
-    assert.strictEqual(moveDustPenalty({ "1,1": { pine: 65 } }, [1, 1]), 1);
   });
 });

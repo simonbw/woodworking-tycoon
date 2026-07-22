@@ -1,8 +1,6 @@
 import { materialMeetsInput } from "../material-helpers";
 import { hasConsumables, subtractConsumables } from "../Consumable";
-import { machineDustMultiplier, moveDustPenalty } from "../Dust";
-import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "../ShopVac";
-import { CellMap } from "../CellMap";
+import { machineDustMultiplier } from "../Dust";
 import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
@@ -14,39 +12,33 @@ import {
   MACHINE_TYPES,
 } from "../Machine";
 import { MaterialInstance } from "../Materials";
-import { Direction, rotateVec, translateVec } from "../Vectors";
+import { Direction, Vector, vectorEquals } from "../Vectors";
 import { getOperationInputMaterials } from "../operation-helpers";
-import { carryMoveBusyTicks } from "./machine-actions";
 import { pileCoversCell } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
 import { emitSound } from "./sound-actions";
 
-export function instaMovePlayerAction(direction: Direction): GameAction {
+/**
+ * Stamp the cell (and facing) the continuously-moving body currently
+ * occupies into the simulation. The motion layer has already handled
+ * collision and speed — this is bookkeeping, not movement, so it costs
+ * no ticks. Everything cell-based (targeting, sweeping, attendance)
+ * reads the position this writes.
+ */
+export function setPlayerPositionAction(
+  position: Vector,
+  direction: Direction,
+): GameAction {
   return (gameState) => {
-    const cellMap = CellMap.fromGameState(gameState);
-    const destinationPosition = translateVec(
-      gameState.player.position,
-      rotateVec([1, 0], direction),
-    );
-    const destinationCell = cellMap.at(destinationPosition);
-    if (destinationCell === undefined || destinationCell.machine) {
-      return { ...gameState, player: { ...gameState.player, direction } };
+    if (
+      vectorEquals(gameState.player.position, position) &&
+      gameState.player.direction === direction
+    ) {
+      return gameState;
     }
-    const carried = gameState.player.carriedMachine;
     return {
       ...gameState,
-      player: {
-        ...gameState.player,
-        canWork: false,
-        // Deep sawdust is slow going, dragging the vac slower still, and a
-        // machine over the shoulders slowest of all
-        busyTicks:
-          moveDustPenalty(gameState.dust, destinationPosition) +
-          (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0) +
-          (carried ? carryMoveBusyTicks(MACHINE_TYPES[carried.machineTypeId]) : 0),
-        position: destinationPosition,
-        direction,
-      },
+      player: { ...gameState.player, position, direction },
     };
   };
 }

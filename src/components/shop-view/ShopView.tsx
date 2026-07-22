@@ -10,18 +10,21 @@ import {
   useQuitToMenu,
   useSaveGame,
 } from "../useGameState";
+import { useModalOpen } from "../shortcuts/ShortcutProvider";
+import { TICK_SPEED_PAUSED, useTickSpeed } from "../TickSpeedContext";
 import { BroomSprite } from "./BroomSprite";
 import { CarriedMachineLayer } from "./CarriedMachineLayer";
 import { DustLayer } from "./DustLayer";
 import { EntranceSprite } from "./EntranceSprite";
 import { FloorTileSprite } from "./FloorTileSprite";
+import { HeldMovementListener } from "./heldMovementInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
+import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
-import { WorkQueueSprite } from "./WorkQueueSprite";
 import { cellToPixel, cellToPixelVec } from "./shop-scale";
 
 export const ShopView: React.FC = () => {
@@ -32,6 +35,8 @@ export const ShopView: React.FC = () => {
   const quitToMenu = useQuitToMenu();
   const cellMap = useCellMap();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
+  const modalOpen = useModalOpen();
+  const { ticksPerSecond } = useTickSpeed();
 
   const materialPileGroups = cellMap
     .getCells()
@@ -44,6 +49,7 @@ export const ShopView: React.FC = () => {
   return (
     <>
       <ShopKeyboardShortcuts />
+      <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
       <Application
         width={width}
         height={height}
@@ -106,7 +112,7 @@ export const ShopView: React.FC = () => {
                 machine={machinePlacement}
               />
             ))}
-          <WorkQueueSprite />
+          <PlayerMotionLayer paused={ticksPerSecond === TICK_SPEED_PAUSED} />
           <ShopVacSprite />
           {!gameState.player.away && <PersonSprite person={gameState.player} />}
           <CarriedMachineLayer />

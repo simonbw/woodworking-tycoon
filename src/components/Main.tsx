@@ -13,6 +13,7 @@ import { SkillsPage } from "./skills-page/SkillsPage";
 import { UiModeProvider, useUiMode } from "./UiMode";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
+import { TickSpeedProvider } from "./TickSpeedContext";
 import { ManualProvider } from "./manual/ManualProvider";
 import { GameStateProvider, useGameState } from "./useGameState";
 
@@ -36,13 +37,15 @@ export const Main: React.FC = () => {
         >
           <UiModeProvider>
             <ShortcutProvider>
-              <ManualProvider>
-                <ScreenSwitcher />
-                <GameSoundLayer />
-                <MachineSoundLayer />
-                <DebugView />
-                <FixtureLoader />
-              </ManualProvider>
+              <TickSpeedProvider>
+                <ManualProvider>
+                  <ScreenSwitcher />
+                  <GameSoundLayer />
+                  <MachineSoundLayer />
+                  <DebugView />
+                  <FixtureLoader />
+                </ManualProvider>
+              </TickSpeedProvider>
             </ShortcutProvider>
           </UiModeProvider>
         </GameStateProvider>

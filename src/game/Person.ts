@@ -33,12 +33,7 @@ export type AwayTrip = {
   readonly loot: ReadonlyArray<MaterialInstance>;
 };
 
-export type WorkItem =
-  | {
-      type: "move";
-      direction: Direction;
-    }
-  | {
-      /** Sweep the cell underfoot, pushing its dust the way we're facing. */
-      type: "sweep";
-    };
+export type WorkItem = {
+  /** Sweep the cell underfoot, pushing its dust the way we're facing. */
+  type: "sweep";
+};

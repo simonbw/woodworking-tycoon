@@ -68,20 +68,24 @@ describe("tickAction", () => {
     assert.strictEqual(result.tick, 8);
   });
 
-  it("processes one queued move and leaves the rest for later ticks", () => {
+  it("processes one queued work item and leaves the rest for later ticks", () => {
+    // Two queued sweeps: the first runs and leaves the player busy, so
+    // the second has to wait for a later tick.
     const state = stateWith({
+      dust: { "0,0": { pine: 50 } },
+      progression: { ...initialGameState.progression, sweepingUnlocked: true },
       player: {
         ...initialGameState.player,
         position: [0, 0],
-        workQueue: [
-          { type: "move", direction: 0 },
-          { type: "move", direction: 0 },
-        ],
+        workQueue: [{ type: "sweep" }, { type: "sweep" }],
       },
     });
     const result = tickAction(state);
-    assert.deepStrictEqual(result.player.position, [1, 0]);
+    assert.ok(
+      result.materialPiles.some((pile) => pile.material.type === "sawdustPile"),
+    );
     assert.strictEqual(result.player.workQueue.length, 1);
+    assert.ok(result.player.busyTicks > 0);
   });
 
   it("leaves idle machines untouched", () => {
@@ -163,7 +167,7 @@ describe("tickAction", () => {
         // Standing at the cell doesn't count while away
         position: WORKSPACE_OPERATION_CELL,
         away: { kind: "scavenging", returnTick: 20, loot: [] },
-        workQueue: [{ type: "move", direction: 0 }],
+        workQueue: [{ type: "sweep" }],
       },
     });
     const result = tickAction(state);
@@ -487,34 +491,5 @@ describe("tickAction dust emission", () => {
     // One-way latch: sweeping the floor clean doesn't relock it
     const cleaned = tickAction({ ...result, dust: {} });
     assert.strictEqual(cleaned.progression.sweepingUnlocked, true);
-  });
-});
-
-describe("tickAction dust movement penalty", () => {
-  it("costs extra ticks to step onto a deep drift", () => {
-    let state = stateWith({
-      dust: { "1,0": { pine: 100 } },
-      player: {
-        ...initialGameState.player,
-        position: [0, 0],
-        workQueue: [
-          { type: "move", direction: 0 },
-          { type: "move", direction: 0 },
-        ],
-      },
-    });
-    // Tick 1: steps onto the drift and starts trudging
-    state = tickAction(state);
-    assert.deepStrictEqual(state.player.position, [1, 0]);
-    assert.strictEqual(state.player.busyTicks, 3);
-    assert.strictEqual(state.player.workQueue.length, 1);
-    // Ticks 2–4: still wading, second step waits
-    for (let i = 0; i < 3; i++) {
-      state = tickAction(state);
-      assert.deepStrictEqual(state.player.position, [1, 0]);
-    }
-    // Tick 5: free again — the second step happens
-    state = tickAction(state);
-    assert.deepStrictEqual(state.player.position, [2, 0]);
   });
 });
