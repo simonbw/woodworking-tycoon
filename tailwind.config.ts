@@ -27,7 +27,7 @@ const config = {
         // Workshop UI typography (paperwork direction)
         condensed: ["Barlow Condensed", ...defaultTheme.fontFamily.sans],
         stencil: ["Stardos Stencil", ...defaultTheme.fontFamily.serif],
-        typewriter: ["Special Elite", "Courier New", "monospace"],
+        typewriter: ["Andada Pro", "Courier New", "monospace"],
         ink: ["Caveat", "cursive"],
         mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
 
