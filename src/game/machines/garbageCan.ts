@@ -7,6 +7,9 @@ export const garbageCan: MachineType = {
   description:
     "Dispose of unwanted materials and scraps. Materials are permanently removed.",
   cellsOccupied: [[0, 0]],
+  // Hand-set (the can is drawn procedurally, not from an image): the lid
+  // circle in GarbageCanSprite is 0.35 cells around the cell center.
+  collisionBox: { min: [-0.35, -0.35], max: [0.35, 0.35] },
   freeCellsNeeded: [],
   cost: 0, // Free - basic quality of life feature
   materialStorage: 0,

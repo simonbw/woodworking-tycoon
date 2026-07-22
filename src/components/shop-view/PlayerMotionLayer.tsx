@@ -2,6 +2,7 @@ import { useTick } from "@pixi/react";
 import { Ticker } from "pixi.js";
 import React, { useEffect, useRef } from "react";
 import { CellMap } from "../../game/CellMap";
+import { cellObstruction } from "../../game/machine-collision";
 import { setPlayerPositionAction } from "../../game/game-actions/player-actions";
 import {
   directionFromInput,
@@ -82,17 +83,15 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
     // Clamp dt so a hitch (tab switch, GC pause) can't fling the body.
     const dt = Math.min(ticker.deltaMS / 1000, 0.1);
     const cellMap = CellMap.fromGameState(gs);
-    const isBlocked = (cell: Vector) => {
-      const info = cellMap.at(cell);
-      return info === undefined || info.machine !== undefined;
-    };
+    const obstructionAt = (cell: Vector) =>
+      cellObstruction(cellMap.at(cell), cell);
 
     const next = stepPlayerMotion(
       playerMotion.pos,
       input,
       playerWalkSpeed(gs),
       dt,
-      isBlocked,
+      obstructionAt,
     );
     playerMotion.moving =
       next[0] !== playerMotion.pos[0] || next[1] !== playerMotion.pos[1];

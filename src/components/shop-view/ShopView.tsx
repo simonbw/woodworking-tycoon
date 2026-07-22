@@ -14,6 +14,10 @@ import { useModalOpen } from "../shortcuts/ShortcutProvider";
 import { TICK_SPEED_PAUSED, useTickSpeed } from "../TickSpeedContext";
 import { BroomSprite } from "./BroomSprite";
 import { CarriedMachineLayer } from "./CarriedMachineLayer";
+import {
+  CollisionDebugLayer,
+  collisionDebugRequested,
+} from "./CollisionDebugLayer";
 import { DustLayer } from "./DustLayer";
 import { EntranceSprite } from "./EntranceSprite";
 import { FloorTileSprite } from "./FloorTileSprite";
@@ -112,6 +116,7 @@ export const ShopView: React.FC = () => {
                 machine={machinePlacement}
               />
             ))}
+          {collisionDebugRequested() && <CollisionDebugLayer />}
           <PlayerMotionLayer paused={ticksPerSecond === TICK_SPEED_PAUSED} />
           <ShopVacSprite />
           {!gameState.player.away && <PersonSprite person={gameState.player} />}

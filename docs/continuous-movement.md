@@ -39,13 +39,27 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 
 ## Collision
 
-Axis-separated circle-vs-tile (`stepPlayerMotion`): each axis integrates
+Axis-separated circle-vs-box (`stepPlayerMotion`): each axis integrates
 independently and clamps the body's leading edge against blocked cells
 (machine footprints and anything off the floor — crates and piles don't
 block, same as before). Diagonal input into a machine slides along its
 face. Each axis sweeps every cell boundary it crosses, so a dropped frame
 can't tunnel through a machine. All pure and unit-tested
 (`player-motion.test.ts`).
+
+Machines that don't visually fill their tile don't block their whole tile
+either: `MachineType.collisionBox` is an AABB in the machine's local frame
+(rotated with the placement), and `machine-collision.ts` clips it to each
+occupied cell as per-edge insets the sweep collides against. Boxes for
+image-based machines are measured from their sprite art by
+`npm run generate:collision-boxes` (committed as
+`machine-collision-boxes.generated.ts`; re-run after art changes);
+procedurally drawn machines set theirs by hand. Insets are capped at
+`MAX_COLLISION_INSET` (0.25), strictly below the 0.3 body radius, so the
+player's *center* can never enter an occupied cell — the cell-underfoot
+bookkeeping below never sees the player standing "in" a machine. Load the
+game with `?collision` in the URL to see the solid areas painted over the
+shop.
 
 ## Speed, not busy-ticks
 

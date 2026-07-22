@@ -3,6 +3,7 @@ import { isBoard } from "../board-helpers";
 import { isPanel } from "../panel-helpers";
 import { makeMaterial } from "../material-helpers";
 import { MachineType, ParameterizedOperation } from "../Machine";
+import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
 
 /** The next detent up the thickness scale, or undefined at the top. */
 export function thicknessStepAbove(
@@ -30,6 +31,7 @@ export const lunchboxPlaner: MachineType = {
   name: "Planer",
   description: "A lunchbox planer",
   cellsOccupied: [[0, 0]],
+  collisionBox: GENERATED_COLLISION_BOXES.lunchboxPlaner,
   // Feed-through: room to stand at the infeed and to catch stock at the
   // outfeed — a planer can't back onto a wall
   freeCellsNeeded: [

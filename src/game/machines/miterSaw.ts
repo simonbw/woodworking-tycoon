@@ -5,6 +5,7 @@ import {
   SignedMiterAngle,
 } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
+import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
 
 /**
  * The saw's detents — the head swings both ways off square, like the real
@@ -30,6 +31,7 @@ export const miterSaw: MachineType = {
   name: "Miter Saw",
   description: "A portable saw for cross cutting wood, square or at an angle.",
   cellsOccupied: [[0, 0]],
+  collisionBox: GENERATED_COLLISION_BOXES.miterSaw,
   freeCellsNeeded: [],
   operationPosition: [0, 1],
   cost: 150,

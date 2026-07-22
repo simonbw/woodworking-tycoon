@@ -1,5 +1,6 @@
 import { MachineType } from "../Machine";
 import { BENCH_OPERATIONS } from "./benchOperations";
+import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
 
 export { GLUE_CURE_TICKS } from "./benchOperations";
 
@@ -15,6 +16,7 @@ export const workspace: MachineType = {
   description:
     "A plywood offcut over a few paint buckets. It wobbles, but it works.",
   cellsOccupied: [[0, 0]],
+  collisionBox: GENERATED_COLLISION_BOXES.workspace,
   freeCellsNeeded: [[0, 1]],
   operationPosition: [0, 1],
   cost: 0,

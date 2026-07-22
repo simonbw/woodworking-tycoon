@@ -8,6 +8,7 @@
     "build": "node esbuild-client.config.mjs",
     "dev": "node esbuild-client.config.mjs --dev",
     "tsc": "tsc --noEmit",
+    "generate:collision-boxes": "npx tsx scripts/generate-collision-boxes.ts",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "npx tsx --test 'src/**/*.test.ts'",
     "test:e2e": "npx playwright test",
@@ -59,6 +60,8 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.1"
+    "@playwright/test": "^1.56.1",
+    "@types/pngjs": "^6.0.5",
+    "pngjs": "^7.0.0"
   }
 }
