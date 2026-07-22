@@ -19,15 +19,23 @@ import { getAudioContext } from "./getAudioContext";
  */
 
 export type UiSoundName =
-  "ui-click" | "ui-hover" | "ui-tab" | "ui-purchase" | "ui-back";
+  | "ui-click"
+  | "ui-hover"
+  | "ui-tab"
+  | "ui-purchase"
+  | "ui-back"
+  | "ui-page-turn";
 
 // Per-sound gain. Hover is deliberately subtle so it doesn't fatigue.
+// The page-turn clip is recorded ~14 dB hotter than the click set, so its
+// gain sits low to land at a comparable level.
 const SOUND_GAIN: Record<UiSoundName, number> = {
   "ui-click": 0.6,
   "ui-hover": 0.25,
   "ui-tab": 0.6,
   "ui-purchase": 0.8,
   "ui-back": 0.6,
+  "ui-page-turn": 0.3,
 };
 
 const bufferCache = new Map<string, Promise<AudioBuffer>>();

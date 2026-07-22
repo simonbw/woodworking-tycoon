@@ -79,7 +79,8 @@ export const ShopManualModal: React.FC<{
                   <button
                     key={article.id}
                     onClick={() => onSelect(article.id)}
-                    data-sfx="ui-tab"
+                    // Turning to the page you're already on makes no sound
+                    data-sfx={isActive ? "none" : "ui-page-turn"}
                     aria-label={article.title}
                     aria-current={isActive ? "page" : undefined}
                     className={classNames(
@@ -140,21 +141,28 @@ export const ShopManualModal: React.FC<{
 };
 
 /**
- * The spiral: a column of wire loops through punched holes along the
- * page's left edge, each ring wrapping around into the dark behind the
- * notebook. Pure chrome — screen readers skip it.
+ * The spiral: a column of wire rings through punched holes along the
+ * page's left edge. Each ring is drawn in two parts so the paper occludes
+ * it honestly: a true circle layered BELOW the page (so the half that
+ * wraps behind the paper disappears behind it), and the front run of
+ * wire — hole to edge — layered above. Pure chrome; screen readers skip
+ * it.
  */
 const SpiralBinding: React.FC = () => (
   <div
     aria-hidden
-    className="pointer-events-none absolute inset-y-4 left-0 z-30 flex flex-col justify-between"
+    className="pointer-events-none absolute inset-y-4 left-0 flex flex-col justify-between"
   >
     {Array.from({ length: 14 }).map((_, i) => (
-      <div key={i} className="relative h-4 w-12">
-        {/* punched hole */}
-        <div className="absolute left-[26px] top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-ink-black/25 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]" />
-        {/* wire loop */}
-        <div className="absolute -left-2.5 top-1/2 h-3 w-9 -translate-y-1/2 rotate-[-16deg] rounded-full border-[3px] border-zinc-600 shadow-[1px_1px_1px_rgba(0,0,0,0.4)]" />
+      <div key={i} className="relative h-5 w-12">
+        {/* punched hole in the page — big enough that its rim reads
+            around the wire passing through it */}
+        <div className="absolute left-[25px] top-1/2 z-20 h-3 w-3 -translate-y-1/2 rounded-full bg-ink-black/30 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]" />
+        {/* the ring itself, mostly off the page; the page hides the arc
+            that wraps behind the paper */}
+        <div className="absolute left-[-16px] top-1/2 z-[5] h-[22px] w-[22px] -translate-y-1/2 rounded-full border-[3.5px] border-zinc-400" />
+        {/* the front run of wire, out of the hole and over the edge */}
+        <div className="absolute left-[-5px] top-[calc(50%-6px)] z-30 h-[3.5px] w-[37px] origin-left rotate-[12deg] rounded-full bg-zinc-400 shadow-[0_1px_1px_rgba(0,0,0,0.35)]" />
       </div>
     ))}
   </div>

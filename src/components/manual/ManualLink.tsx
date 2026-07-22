@@ -22,7 +22,7 @@ export const ManualLink: React.FC<{ article: ManualArticleId }> = ({
   return (
     <button
       onClick={() => manual.open(article)}
-      data-sfx="ui-click"
+      data-sfx="ui-page-turn"
       className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade underline decoration-ink-black/30 underline-offset-2 hover:text-ink-black"
     >
       Shop Manual → {getArticle(article).title}
