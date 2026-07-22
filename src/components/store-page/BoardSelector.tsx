@@ -4,7 +4,9 @@ import { board } from "../../game/board-helpers";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
 import {
+  describeStockDimensionsPlain,
   getMaterialName,
+  getMaterialState,
   materialMeetsInput,
 } from "../../game/material-helpers";
 import { humanizeString } from "../../utils/humanizeString";
@@ -14,6 +16,7 @@ import {
   unlockedLumberChannels,
 } from "../../game/lumberStock";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
+import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -116,16 +119,18 @@ const LumberSkuCard: React.FC<{
         <MaterialIcon material={material} />
       </div>
       <div className="grow">
-        <div className="font-condensed font-bold text-sm uppercase tracking-wide text-ink-black leading-none">
-          {getMaterialName(material)}
-        </div>
+        <Tooltip content={describeStockDimensionsPlain(material)}>
+          <div className="font-condensed font-bold text-sm uppercase tracking-wide text-ink-black leading-none">
+            {getMaterialName(material)}
+          </div>
+        </Tooltip>
         <div className="text-xs text-ink-fade tabular-nums mt-1">
           {numberOwned > 0 && (
             <span className="text-store-orange-dark font-semibold">
               {numberOwned} owned ·{" "}
             </span>
           )}
-          In stock
+          {getMaterialState(material)} · In stock
         </div>
       </div>
       <div className="flex items-center gap-2">

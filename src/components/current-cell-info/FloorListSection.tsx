@@ -2,8 +2,9 @@ import React from "react";
 import { useCellMap } from "../../game/CellMap";
 import { MaterialPile } from "../../game/GameState";
 import { pickUpMaterialAction } from "../../game/game-actions/player-actions";
-import { getMaterialName } from "../../game/material-helpers";
+import { getMaterialFullName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
+import { MaterialLabel } from "../MaterialLabel";
 import { ShiftHint } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
@@ -26,7 +27,7 @@ export const FloorListSection: React.FC = () => {
 
   const groupedMaterials = [
     ...groupBy(playerCell.grabbablePiles, (pile) =>
-      getMaterialName(pile.material),
+      getMaterialFullName(pile.material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -47,7 +48,7 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
   return (
     <li className="flex items-center gap-2 py-1.5">
       <MaterialIcon material={piles[0].material} size="small" />
-      <span className="grow text-sm">{getMaterialName(piles[0].material)}</span>
+      <MaterialLabel material={piles[0].material} />
       {piles.length > 1 && (
         // Handwritten tally — this sheet is maintained by hand
         <span className="font-ink text-lg leading-none text-ink-fade">

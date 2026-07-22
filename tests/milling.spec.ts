@@ -67,7 +67,10 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
 
     await test.step("rough stock announces itself in the inventory", async () => {
       await expect(
-        page.getByText("Walnut Board (8'x6\"x4/4, rough sawn)").first(),
+        page
+          .locator("li", { hasText: "Walnut 4/4 — 6\" × 8'" })
+          .filter({ hasText: "rough sawn" })
+          .first(),
       ).toBeVisible();
     });
 
@@ -87,7 +90,10 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await lumberAisle.locator("select").last().selectOption("walnut");
       await page.waitForTimeout(200);
       await expect(
-        page.getByText("Walnut Board (8'x6\"x4/4, rough sawn)").first(),
+        page
+          .locator("li", { hasText: "Walnut 4/4 — 6\" × 8'" })
+          .filter({ hasText: "rough sawn" })
+          .first(),
       ).toBeVisible();
       await expect(page.getByText("$158.40")).toBeVisible();
       await page.getByText("Home", { exact: true }).click();
@@ -99,7 +105,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       // With two rough boards carried the machine would grab the first —
       // park the spare on the floor so the jointer reads one board.
       await page
-        .locator("li", { hasText: "Walnut Board" })
+        .locator("li", { hasText: "Walnut 4/4" })
         .getByRole("button", { name: "Drop" })
         .click();
       await page.waitForTimeout(200);
@@ -131,7 +137,8 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       // One flat face and the label says so
       await expect(
         page
-          .getByText("Walnut Board (8'x6\"x4/4, rough, face jointed)")
+          .locator("li", { hasText: "Walnut 4/4 — 6\" × 8'" })
+          .filter({ hasText: "rough, face jointed" })
           .first(),
       ).toBeVisible();
       // Back around to the infeed; feeding the same board again is now an
@@ -206,7 +213,10 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await page.waitForTimeout(200);
       // The inventory names the finished state
       await expect(
-        page.getByText("Walnut Board (8'x4\"x4/4, smooth, S4S)").first(),
+        page
+          .locator("li", { hasText: "Walnut 4/4 — 4\" × 8'" })
+          .filter({ hasText: "smooth, S4S" })
+          .first(),
       ).toBeVisible();
     });
 
@@ -228,7 +238,10 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .click();
       await page.waitForTimeout(200);
       await expect(
-        page.getByText("Walnut Board (8'x2\"x3/4, smooth, S3S)").first(),
+        page
+          .locator("li", { hasText: "Walnut 3/4 — 2\" × 8'" })
+          .filter({ hasText: "smooth, S3S" })
+          .first(),
       ).toBeVisible();
     });
 

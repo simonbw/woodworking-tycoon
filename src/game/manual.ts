@@ -65,6 +65,14 @@ const defs = [
     unlocked: () => true,
   },
   {
+    id: "lumber",
+    tab: "Lumber",
+    title: "Reading Lumber Sizes",
+    category: "The Craft",
+    // The store speaks both notations from minute one.
+    unlocked: () => true,
+  },
+  {
     id: "milling",
     tab: "Milling",
     title: "Milling & Surfaces",
@@ -143,6 +151,7 @@ export const ALL_ARTICLE_IDS: ReadonlyArray<ManualArticleId> = defs.map(
 export const STARTING_ARTICLES: ReadonlyArray<ManualArticleId> = [
   "welcome",
   "controls",
+  "lumber",
 ];
 
 /**

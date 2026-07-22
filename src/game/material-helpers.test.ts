@@ -3,10 +3,14 @@ import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import {
   describeMaterialRequirement,
+  describeStockDimensionsPlain,
+  getMaterialFullName,
   getMaterialName,
+  getMaterialState,
+  makeMaterial,
   materialMeetsInput,
 } from "./material-helpers";
-import { REAL_WOOD_SPECIES } from "./Materials";
+import { FinishedProduct, REAL_WOOD_SPECIES } from "./Materials";
 import { panel, uniformPanel } from "./panel-helpers";
 
 describe("materialMeetsInput", () => {
@@ -59,7 +63,7 @@ describe("describeMaterialRequirement", () => {
         thickness: [1],
         quantity: 4,
       }),
-      "Board (Pallet, any surface, 2'×4\"×1/4)",
+      "Board (Pallet, any surface, 1/4×4\"×2')",
     );
   });
 
@@ -74,7 +78,7 @@ describe("describeMaterialRequirement", () => {
         surface: ["sanded"],
         quantity: 4,
       }),
-      "Board (Pallet, Sanded, 3'×4\"×1/4)",
+      "Board (Pallet, Sanded, 1/4×4\"×3')",
     );
   });
 
@@ -88,7 +92,7 @@ describe("describeMaterialRequirement", () => {
         surface: ["smooth", "sanded"],
         quantity: 2,
       }),
-      "Board (any species, Smooth or Sanded, length 2', any width, thickness 4/4)",
+      "Board (any species, Smooth or Sanded, thickness 4/4, any width, length 2')",
     );
   });
 
@@ -140,7 +144,7 @@ describe("describeMaterialRequirement", () => {
         jointedFaces: [1, 2],
         quantity: 1,
       }),
-      "Board (any species, any surface, a flat face, any length, any width, any thickness)",
+      "Board (any species, any surface, a flat face, any thickness, any width, any length)",
     );
     // The glue-up's completion: both edges ripped parallel
     assert.strictEqual(
@@ -153,7 +157,7 @@ describe("describeMaterialRequirement", () => {
         jointedEdges: [2],
         quantity: 5,
       }),
-      "Board (any species, Smooth or Sanded, edges ripped parallel, 2'×2\"×4/4)",
+      "Board (any species, Smooth or Sanded, edges ripped parallel, 4/4×2\"×2')",
     );
     // The jointer wants untouched stock — and unconstrained axes say nothing
     assert.strictEqual(
@@ -162,16 +166,64 @@ describe("describeMaterialRequirement", () => {
         jointedFaces: [0],
         quantity: 1,
       }),
-      "Board (any species, any surface, faces not yet jointed, any length, any width, any thickness)",
+      "Board (any species, any surface, faces not yet jointed, any thickness, any width, any length)",
     );
   });
 });
 
 describe("getMaterialName", () => {
-  it("names single-species panels by species, width, and surface", () => {
+  it("gives construction pine the nominal callout, length last", () => {
+    assert.strictEqual(
+      getMaterialName(board("pine", 8, 4, 8, "smooth")),
+      "Pine 2x4 — 8'",
+    );
+    assert.strictEqual(
+      getMaterialName(board("pine", 8, 4, 4, "smooth")),
+      "Pine 1x4 — 8'",
+    );
+    // Crosscuts keep the callout: a 4' 2x4 is still a 2x4
+    assert.strictEqual(
+      getMaterialName(board("pine", 4, 4, 8, "smooth")),
+      "Pine 2x4 — 4'",
+    );
+  });
+
+  it("drops the callout when the board leaves a nominal size", () => {
+    // Planed to 6/4: no longer a true 2" — quarters take over
+    assert.strictEqual(
+      getMaterialName(board("pine", 8, 4, 6, "smooth")),
+      "Pine 6/4 — 4\" × 8'",
+    );
+    // Ripped to a 1" strip
+    assert.strictEqual(
+      getMaterialName(board("pine", 8, 1, 8, "smooth")),
+      "Pine 8/4 — 1\" × 8'",
+    );
+  });
+
+  it("names hardwood in quarters, cut-list order", () => {
+    assert.strictEqual(
+      getMaterialName(board("walnut", 8, 6, 8, "rough")),
+      "Walnut 8/4 — 6\" × 8'",
+    );
+    // Hardwood is never nominal, even on a nominal size
+    assert.strictEqual(
+      getMaterialName(board("oak", 8, 4, 8, "smooth")),
+      "Oak 8/4 — 4\" × 8'",
+    );
+  });
+
+  it("names pallet stock as pallet wood", () => {
+    assert.strictEqual(
+      getMaterialName(board("pallet", 3, 4, 1)),
+      "Pallet Wood 1/4 — 4\" × 3'",
+    );
+  });
+
+  it("names single-species panels by species and size", () => {
     assert.strictEqual(
       getMaterialName(uniformPanel("maple", 5, 2, 2, 4)),
-      "Maple Panel (2'x10\"x4/4, rough)",
+      "Maple Panel 4/4 — 10\" × 2'",
     );
   });
 
@@ -187,7 +239,76 @@ describe("getMaterialName", () => {
     );
     assert.strictEqual(
       getMaterialName(striped),
-      "Mixed Wood Panel (2'x4\"x4/4, smooth)",
+      "Mixed Wood Panel 4/4 — 4\" × 2'",
+    );
+  });
+});
+
+describe("getMaterialState", () => {
+  it("carries surface and milling, without the rough-sawn stutter", () => {
+    assert.strictEqual(
+      getMaterialState(
+        board("walnut", 8, 6, 4, "rough", { faces: 0, edges: 0 }),
+      ),
+      "rough sawn",
+    );
+    assert.strictEqual(
+      getMaterialState(board("maple", 2, 2, 4, "sanded")),
+      "sanded, S4S",
+    );
+    assert.strictEqual(
+      getMaterialState(uniformPanel("maple", 5, 2, 2, 4)),
+      "rough",
+    );
+  });
+
+  it("stays null for materials whose state never varies", () => {
+    assert.strictEqual(
+      getMaterialState(
+        makeMaterial<FinishedProduct>({
+          type: "simpleCuttingBoard",
+          species: "maple",
+        }),
+      ),
+      null,
+    );
+  });
+});
+
+describe("getMaterialFullName", () => {
+  it("joins name and state for grouping keys", () => {
+    assert.strictEqual(
+      getMaterialFullName(board("pine", 8, 4, 8, "smooth")),
+      "Pine 2x4 — 8' (smooth, S4S)",
+    );
+  });
+});
+
+describe("describeStockDimensionsPlain", () => {
+  it("translates quarters into fractional inches", () => {
+    assert.strictEqual(
+      describeStockDimensionsPlain(board("walnut", 8, 6, 8)),
+      '2" thick · 6" wide · 8\' long',
+    );
+    assert.strictEqual(
+      describeStockDimensionsPlain(board("walnut", 8, 6, 6)),
+      '1-1/2" thick · 6" wide · 8\' long',
+    );
+    assert.strictEqual(
+      describeStockDimensionsPlain(board("pallet", 3, 4, 1)),
+      '1/4" thick · 4" wide · 3\' long',
+    );
+  });
+
+  it("has nothing to say about finished products", () => {
+    assert.strictEqual(
+      describeStockDimensionsPlain(
+        makeMaterial<FinishedProduct>({
+          type: "simpleCuttingBoard",
+          species: "maple",
+        }),
+      ),
+      null,
     );
   });
 });

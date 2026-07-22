@@ -95,33 +95,54 @@ export function isFinishedProduct(
   return FINISHED_PRODUCT_TYPES.includes(material.type);
 }
 
+/** Species display names for material names; humanizeString for the rest. */
+const SPECIES_LABELS: Partial<Record<Species, string>> = {
+  pallet: "Pallet Wood",
+  purpleHeart: "Purple Heart",
+};
+
+export function speciesLabel(species: Species): string {
+  return SPECIES_LABELS[species] ?? humanizeString(species);
+}
+
+/**
+ * The construction-lumber callout ("2x4") for boards on a true nominal
+ * size, or null. Softwood only — hardwood always reads in quarters, no
+ * matter its size — and only at a full 1" or 2" thickness. Crosscuts keep
+ * the callout (a 4' 2x4 is still a 2x4); ripping or planing off the
+ * nominal size dissolves it. See docs/lumber-naming.md.
+ */
+export function nominalSizeLabel(board: Board): string | null {
+  if (board.species !== "pine") {
+    return null;
+  }
+  if (board.thickness !== 4 && board.thickness !== 8) {
+    return null;
+  }
+  if (board.width < 2) {
+    return null;
+  }
+  return `${board.thickness / 4}x${board.width}`;
+}
+
 export function getMaterialName(material: MaterialInstance): string {
   switch (material.type) {
     case "board": {
-      const { species, width, length, thickness, surface } = material;
-      const milling = millingLabel(material);
-      // "rough sawn" already says the surface is rough — don't stutter
-      const stateTag =
-        milling === "rough sawn" && surface === "rough"
-          ? milling
-          : milling
-            ? `${surface}, ${milling}`
-            : surface;
-      // Mitered ends read like a cut list entry: "45° both ends"
-      const ends = endsLabel(material);
-      const tags = ends ? `${stateTag}, ${ends}` : stateTag;
-      return `${humanizeString(
-        species,
-      )} Board (${length}'x${width}"x${thickness}/4, ${tags})`;
+      const { species, width, length, thickness } = material;
+      const nominal = nominalSizeLabel(material);
+      if (nominal) {
+        return `${speciesLabel(species)} ${nominal} — ${length}'`;
+      }
+      return `${speciesLabel(species)} ${thickness}/4 — ${width}" × ${length}'`;
     }
     case "panel": {
       const species = panelSpecies(material);
       const speciesName =
-        species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
+        species.length === 1 ? speciesLabel(species[0]) : "Mixed Wood";
       const grainTag = material.grain === "end" ? "End-Grain " : "";
-      return `${speciesName} ${grainTag}Panel (${material.length}'x${panelWidth(
+      return `${speciesName} ${grainTag}Panel ${material.thickness}/4 — ${panelWidth(
         material,
-      )}"x${material.thickness}/4, ${material.surface})`;
+      )}" × ${material.length}'`;
     }
     case "endGrainSlice": {
       const species = [...new Set(material.strips.map((s) => s.species))];
@@ -155,6 +176,73 @@ export function getMaterialName(material: MaterialInstance): string {
       }
       return humanizeString(material.type);
   }
+}
+
+/**
+ * What's been done to a piece of stock — surface, milling, end
+ * treatments — rendered as the faded line under its name, never inside
+ * it (see docs/lumber-naming.md). Null for materials whose state never
+ * varies.
+ */
+export function getMaterialState(material: MaterialInstance): string | null {
+  switch (material.type) {
+    case "board": {
+      const milling = millingLabel(material);
+      // "rough sawn" already says the surface is rough — don't stutter
+      const stateTag =
+        milling === "rough sawn" && material.surface === "rough"
+          ? milling
+          : milling
+            ? `${material.surface}, ${milling}`
+            : material.surface;
+      // Mitered ends read like a cut list entry: "45° both ends"
+      const ends = endsLabel(material);
+      return ends ? `${stateTag}, ${ends}` : stateTag;
+    }
+    case "panel":
+      return material.surface;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Name and state in one string — the identity for grouping keys,
+ * tooltips, and recipe output lists. Two boards may only share a list
+ * row when their full names match: a smooth board and a sanded one are
+ * different materials.
+ */
+export function getMaterialFullName(material: MaterialInstance): string {
+  const name = getMaterialName(material);
+  const state = getMaterialState(material);
+  return state ? `${name} (${state})` : name;
+}
+
+/** "1-1/2" from 6 quarters — fractional inches as a woodworker writes them. */
+function quartersToInches(quarters: number): string {
+  const whole = Math.floor(quarters / 4);
+  const rem = quarters % 4;
+  const fraction = rem === 0 ? "" : rem === 2 ? "1/2" : `${rem}/4`;
+  if (whole === 0) {
+    return fraction;
+  }
+  return fraction ? `${whole}-${fraction}` : `${whole}`;
+}
+
+/**
+ * A board or panel's size spelled out in plain inches — the teaching
+ * tooltip that translates quarters notation ('2" thick · 4" wide · 8'
+ * long'). Null for materials without the three axes.
+ */
+export function describeStockDimensionsPlain(
+  material: MaterialInstance,
+): string | null {
+  if (material.type !== "board" && material.type !== "panel") {
+    return null;
+  }
+  const width =
+    material.type === "panel" ? panelWidth(material) : material.width;
+  return `${quartersToInches(material.thickness)}" thick · ${width}" wide · ${material.length}' long`;
 }
 
 // Returns the amount of space an item takes up in the inventory
@@ -388,10 +476,11 @@ const DIMENSION_UNITS = {
   thickness: "/4",
 } as const;
 type DimensionKey = keyof typeof DIMENSION_UNITS;
+// Cut-list order: thickness × width × length (see docs/lumber-naming.md).
 const DIMENSION_KEYS: ReadonlyArray<DimensionKey> = [
-  "length",
-  "width",
   "thickness",
+  "width",
+  "length",
 ];
 
 /**
@@ -409,12 +498,12 @@ const DESCRIBABLE_ATTRIBUTES: Partial<
     "surface",
     "jointedFaces",
     "jointedEdges",
-    "length",
-    "width",
     "thickness",
+    "width",
+    "length",
   ],
-  plywood: ["kind", "length", "width", "thickness"],
-  panel: ["surface", "grain", "length", "thickness"],
+  plywood: ["kind", "thickness", "width", "length"],
+  panel: ["surface", "grain", "thickness", "length"],
 };
 
 // Constraint keys we know how to phrase, in the order they read best. Keeping
@@ -427,9 +516,9 @@ const DESCRIBABLE_KEYS: ReadonlyArray<string> = [
   "grain",
   "jointedFaces",
   "jointedEdges",
-  "length",
-  "width",
   "thickness",
+  "width",
+  "length",
 ];
 
 /** The milling axes only speak up when a requirement actually constrains them. */

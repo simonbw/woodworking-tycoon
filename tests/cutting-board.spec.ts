@@ -74,9 +74,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
       // Cheap channels: framing pine and marked-up big-box S4S hardwood
       await expect(page.getByText("Construction Lumber")).toBeVisible();
-      await expect(
-        page.getByText("Pine Board (8'x4\"x4/4, smooth, S4S)"),
-      ).toBeVisible();
+      await expect(page.getByText("Pine 1x4 — 8'")).toBeVisible();
       await expect(page.getByText("$38.40")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
       // At 17 reputation the lumberyard (12) has appeared...
@@ -100,7 +98,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     await test.step("glue up five smooth maple strips", async () => {
       await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
       await page
-        .locator("li", { hasText: "Maple Board" })
+        .locator("li", { hasText: "Maple 4/4" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
@@ -123,7 +121,10 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await page.waitForTimeout(200);
       // Fresh glue-up is rough
       await expect(
-        page.getByText("Maple Panel (2'x10\"x4/4, rough)").first(),
+        page
+          .locator("li", { hasText: "Maple Panel 4/4 — 10\" × 2'" })
+          .filter({ hasText: "rough" })
+          .first(),
       ).toBeVisible();
     });
 
@@ -131,11 +132,17 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await selectMode(page, "Makeshift Workbench", "Sand Panel");
       await sandPanelOnce(page, "smooth");
       await expect(
-        page.getByText("Maple Panel (2'x10\"x4/4, smooth)").first(),
+        page
+          .locator("li", { hasText: "Maple Panel 4/4 — 10\" × 2'" })
+          .filter({ hasText: "smooth" })
+          .first(),
       ).toBeVisible();
       await sandPanelOnce(page, "sanded");
       await expect(
-        page.getByText("Maple Panel (2'x10\"x4/4, sanded)").first(),
+        page
+          .locator("li", { hasText: "Maple Panel 4/4 — 10\" × 2'" })
+          .filter({ hasText: "sanded" })
+          .first(),
       ).toBeVisible();
     });
 

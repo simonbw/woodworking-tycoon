@@ -6,7 +6,7 @@ import {
   repriceListingAction,
 } from "../../game/game-actions/marketplace-actions";
 import { ListingInterest, listingInterest } from "../../game/marketplace";
-import { getMaterialName } from "../../game/material-helpers";
+import { MaterialLabel } from "../MaterialLabel";
 import { getSellValue } from "../../game/material-values";
 import { MaterialInstance } from "../../game/Materials";
 import { TICKS_PER_DAY } from "../../game/time";
@@ -122,7 +122,7 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
   return (
     <li className="bg-white border border-ink-black/15 rounded-sm p-2 space-y-1 shadow-sm">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm">{getMaterialName(listing.material)}</span>
+        <MaterialLabel material={listing.material} />
         <InterestTag
           material={listing.material}
           askingPrice={priceChanged ? parsedPrice : listing.askingPrice}
@@ -171,7 +171,7 @@ const ListItemRow: React.FC<{ material: MaterialInstance }> = ({
   return (
     <li className="bg-paper-cream border border-ink-black/10 rounded-sm p-2 space-y-1">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm">{getMaterialName(material)}</span>
+        <MaterialLabel material={material} />
         {priceValid && (
           <InterestTag material={material} askingPrice={parsedPrice} />
         )}

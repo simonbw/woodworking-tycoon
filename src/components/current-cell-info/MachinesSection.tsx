@@ -44,7 +44,7 @@ import { TOOL_TYPES } from "../../game/Tool";
 import {
   createMockMaterial,
   describeMaterialRequirement,
-  getMaterialName,
+  getMaterialFullName,
 } from "../../game/material-helpers";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
 import {
@@ -60,6 +60,7 @@ import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { MaterialLabel } from "../MaterialLabel";
 import { ProgressButton } from "../ProgressButton";
 import { CutLineScale } from "./CutLineScale";
 import { DetentScale } from "./DetentScale";
@@ -160,7 +161,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const outputMaterials = [
     ...groupBy(machine.outputMaterials, (material) =>
-      getMaterialName(material),
+      getMaterialFullName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -384,7 +385,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 tooltip={
                   slot.isPlaceholder
                     ? `Needs: ${describeMaterialRequirement(slot.requirement)}`
-                    : getMaterialName(slot.material)
+                    : getMaterialFullName(slot.material)
                 }
               />
             </span>
@@ -436,7 +437,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 key={`exact-${i}`}
                 material={output}
                 placeholder={true}
-                tooltip={`Will produce: ${getMaterialName(output)}`}
+                tooltip={`Will produce: ${getMaterialFullName(output)}`}
               />
             ))}
 
@@ -447,7 +448,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 key={`preview-${i}`}
                 material={output}
                 placeholder={true}
-                tooltip={`Will produce: ${getMaterialName(output)}`}
+                tooltip={`Will produce: ${getMaterialFullName(output)}`}
               />
             ))}
 
@@ -636,7 +637,7 @@ const DirectFeedMachineCard: React.FC<{
   const outputsCollectedHere = machine.type.outputPosition === undefined;
   const outputMaterials = [
     ...groupBy(machine.outputMaterials, (material) =>
-      getMaterialName(material),
+      getMaterialFullName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -1045,7 +1046,7 @@ const MaterialShelf: React.FC<{ machine: Machine }> = ({ machine }) => {
           >
             <MaterialIcon
               material={material}
-              tooltip={`Take: ${getMaterialName(material)}`}
+              tooltip={`Take: ${getMaterialFullName(material)}`}
             />
           </span>
         ))}
@@ -1068,7 +1069,7 @@ const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
 
   const groupedContents = [
     ...groupBy(machine.inputMaterials, (material) =>
-      getMaterialName(material),
+      getMaterialFullName(material),
     ).entries(),
   ].sort(([a], [b]) => a.localeCompare(b));
 
@@ -1089,7 +1090,7 @@ const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
         <ul className="divide-y divide-ink-black/15 text-sm">
           {groupedContents.map(([materialName, materials]) => (
             <li key={materialName} className="flex items-center gap-2 py-1.5">
-              <span className="grow">{materialName}</span>
+              <MaterialLabel material={materials[0]} />
               {materials.length > 1 && (
                 <span className="font-mono text-ink-fade tabular-nums">
                   ×{materials.length}

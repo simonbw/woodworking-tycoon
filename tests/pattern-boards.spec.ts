@@ -128,16 +128,16 @@ test.describe("Pattern Boards", () => {
     await test.step("glue the sunrise fade strip by strip", async () => {
       // Seed pair: 3" walnut then 1" maple
       await selectMode(page, "Glue Up Pair");
-      await moveToWorkspace(page, `Walnut Board (2'x3"`);
-      await moveToWorkspace(page, `Maple Board (2'x1"`);
+      await moveToWorkspace(page, `Walnut 4/4 — 3" × 2'`);
+      await moveToWorkspace(page, `Maple 4/4 — 1" × 2'`);
       await operateAndTake(page, `(mat) => mat.type === "panel"`, 30000);
 
       // Extend with the remaining fade: 2" walnut, 2" maple, 1" walnut, 3" maple
       const fade = [
-        `Walnut Board (2'x2"`,
-        `Maple Board (2'x2"`,
-        `Walnut Board (2'x1"`,
-        `Maple Board (2'x3"`,
+        `Walnut 4/4 — 2" × 2'`,
+        `Maple 4/4 — 2" × 2'`,
+        `Walnut 4/4 — 1" × 2'`,
+        `Maple 4/4 — 3" × 2'`,
       ];
       await selectMode(page, "Glue On Strip");
       for (const [i, row] of fade.entries()) {
@@ -152,7 +152,7 @@ test.describe("Pattern Boards", () => {
       }
       // 3+1+2+2+1+3 = a 12" wide blank
       await expect(
-        page.getByText(`Mixed Wood Panel (2'x12"x4/4, rough)`).first(),
+        page.getByText(`Mixed Wood Panel 4/4 — 12" × 2'`).first(),
       ).toBeVisible();
     });
 

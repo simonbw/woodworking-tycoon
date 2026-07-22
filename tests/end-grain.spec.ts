@@ -114,7 +114,7 @@ test.describe("End-Grain Boards", () => {
         .click();
       await page.waitForTimeout(200);
       await page
-        .locator("li", { hasText: "Pallet Board" })
+        .locator("li", { hasText: "Pallet Wood" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
@@ -177,7 +177,7 @@ test.describe("End-Grain Boards", () => {
         `(mat) => mat.type === "panel" && mat.grain === "end"`,
       );
       await expect(
-        page.getByText(`Maple End-Grain Panel (1'x10"x8/4, rough)`).first(),
+        page.getByText(`Maple End-Grain Panel 8/4 — 10" × 1'`).first(),
       ).toBeVisible();
 
       await selectMode(page, "Makeshift Workbench", "Sand Panel");
