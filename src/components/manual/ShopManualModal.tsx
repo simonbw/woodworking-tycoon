@@ -141,76 +141,37 @@ export const ShopManualModal: React.FC<{
 };
 
 /**
- * One turn of the wire coil, drawn as a single continuous SVG path so
- * there are no seams: out of the punched hole, up over the page's left
- * edge, around the outside, and back down to dive behind the paper. The
- * path simply ENDS at the page edge with a flat cut — the part of the
- * turn hidden behind the paper is never drawn — and the hole's rim is
- * painted over the wire's other end so it visibly enters the hole.
- *
- * Coordinates: 56×28 viewBox, positioned so the page's left edge is at
- * SVG x=20 and the punched hole is centered at (50, 10).
+ * The wire coil, as the classic front-on illustration: each turn is a
+ * light line from a punched hole running down-left IN FRONT of the page,
+ * then a darker line running down-right toward the next hole BEHIND the
+ * page (z below it — the paper hides all but the sliver that pokes past
+ * the left edge). The dark run aims at roughly where the next hole sits;
+ * any small miss is behind the paper, so the two-tone zigzag always
+ * reads as one continuous coil. Pure chrome; screen readers skip it.
  */
-const WIRE_PATH =
-  "M 50 10 C 40 3, 26 1, 14 6 C 5 10, 3 18, 12 22 C 14.5 23.2, 17.5 24.3, 20.5 25.1";
-
-/** The full binding: a column of coil turns. Pure chrome; screen readers
- * skip it. */
 const SpiralBinding: React.FC = () => (
   <div
     aria-hidden
-    className="pointer-events-none absolute inset-y-4 left-0 z-30 flex flex-col justify-between"
+    className="pointer-events-none absolute inset-y-3 left-0 flex flex-col justify-between"
   >
-    {Array.from({ length: 14 }).map((_, i) => (
-      <div key={i} className="relative h-7 w-12">
-        <svg
-          width="56"
-          height="28"
-          viewBox="0 0 56 28"
-          className="absolute left-[-20px] top-1/2 -translate-y-1/2"
-        >
-          {/* soft shadow of the wire on whatever lies beneath it */}
-          <path
-            d={WIRE_PATH}
-            fill="none"
-            stroke="rgba(0,0,0,0.35)"
-            strokeWidth="5"
-            strokeLinecap="butt"
-            transform="translate(0.5, 1.5)"
-          />
-          {/* the wire itself */}
-          <path
-            d={WIRE_PATH}
-            fill="none"
-            stroke="#a1a1aa"
-            strokeWidth="3.25"
-            strokeLinecap="butt"
-          />
-          {/* a thin highlight along the top of the wire for roundness */}
-          <path
-            d={WIRE_PATH}
-            fill="none"
-            stroke="rgba(255,255,255,0.55)"
-            strokeWidth="1"
-            strokeLinecap="butt"
-            transform="translate(0, -0.8)"
-          />
-          {/* the punched hole, rim over the wire so the wire enters it */}
-          <circle
-            cx="50"
-            cy="10"
-            r="4.5"
-            fill="rgba(26,26,26,0.28)"
-          />
-          <circle
-            cx="50"
-            cy="10"
-            r="4.5"
-            fill="none"
-            stroke="rgba(26,26,26,0.25)"
-            strokeWidth="1"
-          />
-        </svg>
+    {Array.from({ length: 28 }).map((_, i) => (
+      <div key={i} className="relative h-[10px] w-12">
+        {/* front run: out of the hole, down and to the left, over the page */}
+        <div
+          className="absolute z-30 h-[2.5px] w-[38px] origin-right rotate-[-16deg] rounded-full bg-zinc-400"
+          style={{ left: -11, top: 3.75 }}
+        />
+        {/* back run: from the front run's tip, down and to the right toward
+            the next hole, behind the page */}
+        <div
+          className="absolute z-[5] h-[2.5px] w-[40px] origin-left rotate-[20deg] rounded-full bg-zinc-600"
+          style={{ left: -9.5, top: 14.25 }}
+        />
+        {/* punched hole, translucent so the wire shows through its rim */}
+        <div
+          className="absolute z-40 h-[7px] w-[7px] rounded-full bg-ink-black/30 shadow-[inset_0_1px_1px_rgba(0,0,0,0.5)]"
+          style={{ left: 23.5, top: 1.5 }}
+        />
       </div>
     ))}
   </div>
