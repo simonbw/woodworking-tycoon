@@ -31,6 +31,8 @@ export const MANUAL_CATEGORIES: readonly ManualCategory[] = [
 export interface ManualArticleDef {
   readonly id: ManualArticleId;
   readonly title: string;
+  /** Short label for the notebook's index tab; the title is the fallback. */
+  readonly tab?: string;
   readonly category: ManualCategory;
   /** When the article reveals itself. Checked after every milestone-worthy action. */
   readonly unlocked: (gameState: GameState) => boolean;
@@ -50,18 +52,21 @@ function ownsBoughtTool(gameState: GameState): boolean {
 const defs = [
   {
     id: "welcome",
+    tab: "Welcome",
     title: "Welcome to the Shop",
     category: "Basics",
     unlocked: () => true,
   },
   {
     id: "controls",
+    tab: "Controls",
     title: "Controls",
     category: "Basics",
     unlocked: () => true,
   },
   {
     id: "milling",
+    tab: "Milling",
     title: "Milling & Surfaces",
     category: "The Craft",
     // The concept arrives with the first stock that needs truing up — a
@@ -76,6 +81,7 @@ const defs = [
   },
   {
     id: "finishing",
+    tab: "Finishing",
     title: "Finishing",
     category: "The Craft",
     // First bottle of finish, or the commission that first demands a
@@ -86,12 +92,14 @@ const defs = [
   },
   {
     id: "tools",
+    tab: "Tools",
     title: "Tools & Tool Slots",
     category: "The Craft",
     unlocked: ownsBoughtTool,
   },
   {
     id: "shop-layout",
+    tab: "Layout",
     title: "Moving Machines",
     category: "The Shop",
     unlocked: (gameState: GameState) =>
@@ -99,12 +107,14 @@ const defs = [
   },
   {
     id: "dust",
+    tab: "Dust",
     title: "Sawdust & Cleaning",
     category: "The Shop",
     unlocked: (gameState: GameState) => gameState.progression.sweepingUnlocked,
   },
   {
     id: "marketplace",
+    tab: "Market",
     title: "Marketplace & Jobs",
     category: "Business",
     unlocked: (gameState: GameState) =>
@@ -112,6 +122,7 @@ const defs = [
   },
   {
     id: "skills",
+    tab: "Skills",
     title: "Skills & XP",
     category: "Business",
     // The first skill point lands at level 2.

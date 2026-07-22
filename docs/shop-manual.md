@@ -25,9 +25,12 @@ interactive step-by-step tutorial — it's the binder on the shelf.
 ## Fiction & presentation
 
 The paperwork design system carries this: the manual is an in-fiction
-**shop binder** — manila category tabs down the left, typewriter-set
-articles on the right, paper card surfaces throughout. Standard fonts and
-surface roles from `docs/design-system.md`; no new chrome invented.
+**spiral-bound shop notebook**. One ivory page at a time, a wire coil
+punched through the left edge, a faint red margin rule, the rest of the
+page stack peeking out underneath, and physical index tabs sticking out
+the right edge — manila tabs clustered by category, the open article's
+tab pulled forward in page-ivory. Tab labels are the registry's short
+`tab` names; typewriter-set article text per `docs/design-system.md`.
 
 ## Entry point: the `?` button
 
