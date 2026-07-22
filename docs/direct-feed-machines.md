@@ -103,7 +103,12 @@ only missing supplies reports that ("out of nails — this needs 4").
   boards, `jointEdge` only face-jointed ones with a rough edge. Fully
   milled stock is refused; the jointer has nothing to add.
 - **Table saw** (hand-fed, power switch): the fence (`targetWidth`) is its
-  one setting; the mounted jig decides everything else.
+  one setting; the mounted jig decides everything else — and you can see
+  it. The fence sprite rides its rail to the set width (and parks at the
+  far end for jig cuts), mounted sleds sit on the table aligned with the
+  blade (a second one stacks askew on top), and a sled cut shows the jig
+  traveling through the blade with the stock clamped to it — panels
+  included, with the same kerf and dust as a rip.
 - **Miter saw** (trigger tool — no switch, verb "Cut"): two settings —
   the head angle and the **cut line** (`cutPosition`, feet from the
   stock's left end); cut pieces stay on the saw table. The cut line is a
@@ -126,7 +131,5 @@ only missing supplies reports that ("out of nails — this needs 4").
 
 ## Where this is headed (not yet built)
 
-- **In-world settings**: the fence line on the table saw's table (the
-  miter saw's swinging turntable and head are done).
 - **Stop block accessory** for the miter saw: without one, each cut pays a
   measure-and-mark cost; with it, repeat cuts at the set length are quick.
