@@ -23,17 +23,20 @@ import {
 const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 
+/**
+ * The in-world targeting outline: the machine the keyboard acts on wears
+ * it while the player stands at its operator position. A soft dark
+ * underlay keeps the amber line readable over any floor or machine art.
+ */
 const MachineSelectionHighlight: React.FC<{
   machine: Machine;
 }> = ({ machine }) => {
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
-      // Draw highlight around the machine
       const cellSize = PIXELS_PER_CELL;
       const occupiedCells = machine.type.cellsOccupied;
 
-      // Calculate bounding box
       const xs = occupiedCells.map(([x]) => x);
       const ys = occupiedCells.map(([, y]) => y);
       const minX = Math.min(...xs);
@@ -46,14 +49,23 @@ const MachineSelectionHighlight: React.FC<{
       const offsetX = ((minX + maxX) / 2) * cellSize;
       const offsetY = ((minY + maxY) / 2) * cellSize;
 
-      // Yellow selection outline
-      g.rect(
-        offsetX - width / 2 - 4,
-        offsetY - height / 2 - 4,
-        width + 8,
-        height + 8,
+      const pad = 3;
+      g.roundRect(
+        offsetX - width / 2 - pad,
+        offsetY - height / 2 - pad,
+        width + pad * 2,
+        height + pad * 2,
+        6,
       );
-      g.stroke({ width: 3, color: 0xfcd34d });
+      g.stroke({ width: 6, color: 0x1c1917, alpha: 0.35 });
+      g.roundRect(
+        offsetX - width / 2 - pad,
+        offsetY - height / 2 - pad,
+        width + pad * 2,
+        height + pad * 2,
+        6,
+      );
+      g.stroke({ width: 2.5, color: 0xf59e0b, alpha: 0.9 });
     },
     [machine.type.cellsOccupied],
   );

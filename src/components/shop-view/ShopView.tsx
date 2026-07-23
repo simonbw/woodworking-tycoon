@@ -24,6 +24,9 @@ import { FloorTileSprite } from "./FloorTileSprite";
 import { HeldMovementListener } from "./heldMovementInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
+import { useTargetedMachine } from "../TargetedMachineContext";
+import { availableOperations } from "../../game/skill-helpers";
+import { ShopOverlayLayer } from "../shop-overlay/ShopOverlayLayer";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
 import { PlayerMotionLayer } from "./PlayerMotionLayer";
@@ -41,6 +44,34 @@ export const ShopView: React.FC = () => {
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
   const modalOpen = useModalOpen();
   const { ticksPerSecond } = useTickSpeed();
+  const {
+    machines: operableHere,
+    isTargeted,
+    setTarget,
+    toggleSheet,
+  } = useTargetedMachine();
+
+  // Clicking a machine you're standing at aims the keyboard at it; a
+  // second click on a recipe-driven station spreads its sheet open. The
+  // mouse can't reach machines you're not at — walk over first.
+  const machineClickHandler = (machine: (typeof machines)[number]) => {
+    const reachable = operableHere.some(
+      (candidate) =>
+        candidate.type.name === machine.type.name &&
+        candidate.position.join(",") === machine.position.join(","),
+    );
+    if (!reachable) return undefined;
+    return () => {
+      if (!isTargeted(machine)) {
+        setTarget(machine);
+      } else if (
+        !machine.type.directFeed &&
+        availableOperations(machine, gameState.progression).length > 0
+      ) {
+        toggleSheet();
+      }
+    };
+  };
 
   const materialPileGroups = cellMap
     .getCells()
@@ -51,7 +82,7 @@ export const ShopView: React.FC = () => {
   const height = cellToPixel(cellMap.getHeight());
 
   return (
-    <>
+    <div className="relative" style={{ width, height }}>
       <ShopKeyboardShortcuts />
       <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
       <Application
@@ -114,6 +145,12 @@ export const ShopView: React.FC = () => {
                   machinePlacement.type.id + machinePlacement.position.join(",")
                 }
                 machine={machinePlacement}
+                isSelected={
+                  !gameState.player.away &&
+                  gameState.player.carriedMachine == null &&
+                  isTargeted(machinePlacement)
+                }
+                onClick={machineClickHandler(machinePlacement)}
               />
             ))}
           {collisionDebugRequested() && <CollisionDebugLayer />}
@@ -123,6 +160,8 @@ export const ShopView: React.FC = () => {
           <CarriedMachineLayer />
         </gameStateContext.Provider>
       </Application>
-    </>
+      {/* Everything you can do, shown at the thing you'd do it to */}
+      <ShopOverlayLayer width={width} height={height} />
+    </div>
   );
 };

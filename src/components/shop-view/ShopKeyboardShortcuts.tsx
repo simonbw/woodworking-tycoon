@@ -24,7 +24,10 @@ import {
   clearWorkQueueAction,
 } from "../../game/game-actions/work-item-actions";
 import { vectorEquals } from "../../game/Vectors";
-import { parameterValueSatisfiable } from "../../game/machine-helpers";
+import {
+  machineCanOperate,
+  parameterValueSatisfiable,
+} from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 import {
   defaultParametersFor,
@@ -43,7 +46,13 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   const gameState = useRef(_gameState);
   gameState.current = _gameState;
 
-  const { machine: targetedMachine, cycleTarget } = useTargetedMachine();
+  const {
+    machine: targetedMachine,
+    cycleTarget,
+    sheetMachine,
+    toggleSheet,
+    closeSheet,
+  } = useTargetedMachine();
   const targeted = useRef(targetedMachine);
   targeted.current = targetedMachine;
 
@@ -104,11 +113,25 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present && carrying,
   );
 
-  // Emptying the queue stays available while away — it only affects what
-  // happens once the player is back.
+  // An open station sheet claims Escape (the binding steps aside
+  // otherwise); emptying the queue stays available while away — it only
+  // affects what happens once the player is back.
+  useShortcut("close-sheet", closeSheet, sheetMachine != null);
   useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));
 
   useShortcut("cycle-machine", cycleTarget, present);
+
+  // Enter spreads out (or folds up) the station sheet of recipe-driven
+  // stations. Direct-feed machines have no sheet — their placard already
+  // is their whole interface.
+  useShortcut(
+    "open-station-sheet",
+    toggleSheet,
+    present &&
+      !carrying &&
+      (sheetMachine != null ||
+        (targetedMachine != null && !targetedMachine.type.directFeed)),
+  );
 
   // Pick up: the targeted machine first, then any other machine on this square
   // that has something, then the floor. Checking the other machines matters —
@@ -171,17 +194,28 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present && !carrying,
   );
 
-  // Put down: into the targeted machine if it takes what we're holding,
-  // otherwise onto the floor.
+  // Put down: give to the targeted machine if it takes what we're
+  // holding — loading a bay, or feeding a direct-feed machine straight
+  // from the hands — otherwise onto the floor.
   useShortcut(
     "put-down",
     (event) => {
-      const inventory = gameState.current.player.inventory;
+      const gs = gameState.current;
+      const inventory = gs.player.inventory;
       if (inventory.length === 0) return;
 
       const machine = targeted.current;
-      // Direct-feed machines have no input bay to put things into — the
-      // carried stock drops to the floor like anywhere else.
+      // On a direct-feed machine "putting the stock in" is feeding it:
+      // same physical act, so F and R agree. If the machine refuses the
+      // stock (or is busy or off), the wood goes to the floor like
+      // anywhere else.
+      if (
+        machine?.type.directFeed &&
+        machine.operationProgress.status !== "inProgress" &&
+        machineCanOperate(machine, gs.consumables, inventory, gs.progression)
+      ) {
+        return applyAction(operateMachineAction(machine));
+      }
       if (machine && !machine.type.directFeed) {
         const spacesLeft =
           machine.type.inputSpaces - machine.inputMaterials.length;

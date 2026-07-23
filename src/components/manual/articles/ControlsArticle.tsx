@@ -20,8 +20,8 @@ export const ControlsArticle: React.FC = () => {
   return (
     <>
       <P>
-        A reference for every keyboard control. The on-screen legend shows the
-        ones available where you're standing.
+        A reference for every keyboard control. Walk up to something and its
+        placard shows the keys that work right there.
       </P>
 
       <div className="mt-4 grid grid-cols-1 xs:grid-cols-2 gap-x-8 gap-y-5">

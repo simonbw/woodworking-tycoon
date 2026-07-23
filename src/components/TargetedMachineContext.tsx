@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useCellMap } from "../game/CellMap";
 import { Machine } from "../game/Machine";
+import { Direction, Vector, rotateVec, translateVec } from "../game/Vectors";
 import { useGameState } from "./useGameState";
 
 interface TargetedMachineValue {
@@ -17,6 +18,18 @@ interface TargetedMachineValue {
   machines: readonly Machine[];
   isTargeted: (machine: Machine) => boolean;
   cycleTarget: () => void;
+  /** Aim the keyboard at a specific machine on this square (mouse path). */
+  setTarget: (machine: Machine) => void;
+  /**
+   * The station whose full sheet is spread open (benches and other
+   * recipe-driven stations). Cleared automatically when the player walks
+   * away — the sheet belongs to the cell, not the screen.
+   */
+  sheetMachine: Machine | undefined;
+  openSheet: (machine: Machine) => void;
+  closeSheet: () => void;
+  /** Open the targeted machine's sheet, or close it if already open. */
+  toggleSheet: () => void;
 }
 
 const targetedMachineContext = createContext<TargetedMachineValue | undefined>(
@@ -26,43 +39,134 @@ const targetedMachineContext = createContext<TargetedMachineValue | undefined>(
 const machineKey = (machine: Machine) =>
   `${machine.type.name}@${machine.position.join(",")}`;
 
+const DIRECTION_VECTORS: Record<Direction, Vector> = {
+  0: [1, 0],
+  1: [0, -1],
+  2: [-1, 0],
+  3: [0, 1],
+};
+
+/** The center of a machine's occupied cells, in world cell coordinates. */
+function machineCenter(machine: Machine): Vector {
+  const cells = machine.type.cellsOccupied.map((cell) =>
+    translateVec(rotateVec(cell, machine.rotation), machine.position),
+  );
+  const sum = cells.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1]]);
+  return [sum[0] / cells.length, sum[1] / cells.length];
+}
+
 /**
- * Tracks which machine on the player's square the keyboard acts on.
+ * The machine the player is most facing: highest alignment between the
+ * facing direction and the offset toward each machine's center. Machines
+ * sharing the player's own cell (a bench underfoot) score as straight
+ * ahead, so they never lose to something behind the player.
+ */
+function facingIndex(
+  machines: readonly Machine[],
+  playerCell: Vector,
+  direction: Direction,
+): number {
+  if (machines.length < 2) return 0;
+  const facing = DIRECTION_VECTORS[direction];
+  let best = 0;
+  let bestScore = -Infinity;
+  machines.forEach((machine, index) => {
+    const [cx, cy] = machineCenter(machine);
+    const [dx, dy] = [cx - playerCell[0], cy - playerCell[1]];
+    const length = Math.hypot(dx, dy);
+    const score = length === 0 ? 1 : (dx * facing[0] + dy * facing[1]) / length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = index;
+    }
+  });
+  return best;
+}
+
+/**
+ * Tracks which machine on the player's square the keyboard acts on, and
+ * which station's full sheet is open.
  *
- * The shop shortcuts used to hardcode `operableMachines[0]`, which made a
- * second machine on the same square unreachable from the keyboard entirely.
- * The target resets whenever the player moves, so stepping onto a square always
- * starts you on its first machine.
+ * The default target follows the player's facing — turning toward a
+ * machine is selecting it, and the in-world highlight shows the choice.
+ * X (`cycleTarget`) still steps through the square's machines for the
+ * stacked cases facing can't split (a benchtop machine on its table);
+ * the manual choice lasts until the player moves or turns.
  */
 export const TargetedMachineProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const gameState = useGameState();
   const cellMap = useCellMap();
-  const [index, setIndex] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [sheetKey, setSheetKey] = useState<string | undefined>(undefined);
 
   const machines =
     cellMap.at(gameState.player.position)?.operableMachines ?? [];
   const positionKey = gameState.player.position.join(",");
+  const direction = gameState.player.direction;
 
-  useEffect(() => setIndex(0), [positionKey]);
+  useEffect(() => setOffset(0), [positionKey, direction]);
 
-  // The machine list can shrink under us (a machine is moved away in the
-  // layout editor), so never index past the end.
-  const safeIndex = machines.length > 0 ? index % machines.length : 0;
-  const machine = machines[safeIndex];
+  const defaultIndex = facingIndex(
+    machines,
+    gameState.player.position,
+    direction,
+  );
+  const machine =
+    machines.length > 0
+      ? machines[(defaultIndex + offset) % machines.length]
+      : undefined;
 
-  const cycleTarget = useCallback(() => setIndex((i) => i + 1), []);
+  const cycleTarget = useCallback(() => setOffset((i) => i + 1), []);
+
+  // The sheet stays open only while its station is still at hand; walking
+  // away (or carrying the station off) folds it up.
+  const sheetMachine = sheetKey
+    ? machines.find((candidate) => machineKey(candidate) === sheetKey)
+    : undefined;
+
+  const openSheet = useCallback(
+    (target: Machine) => setSheetKey(machineKey(target)),
+    [],
+  );
+  const closeSheet = useCallback(() => setSheetKey(undefined), []);
 
   const value = useMemo(
     () => ({
       machine,
       machines,
       cycleTarget,
+      setTarget: (candidate: Machine) => {
+        const index = machines.findIndex(
+          (m) => machineKey(m) === machineKey(candidate),
+        );
+        if (index === -1) return;
+        const len = machines.length;
+        setOffset((((index - defaultIndex) % len) + len) % len);
+      },
       isTargeted: (candidate: Machine) =>
         machine != null && machineKey(candidate) === machineKey(machine),
+      sheetMachine,
+      openSheet,
+      closeSheet,
+      toggleSheet: () => {
+        if (sheetMachine) {
+          setSheetKey(undefined);
+        } else if (machine) {
+          setSheetKey(machineKey(machine));
+        }
+      },
     }),
-    [machine, machines, cycleTarget],
+    [
+      machine,
+      machines,
+      defaultIndex,
+      cycleTarget,
+      sheetMachine,
+      openSheet,
+      closeSheet,
+    ],
   );
 
   return (

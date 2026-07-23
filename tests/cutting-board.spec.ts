@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, selectMode } from "./machine-panel";
+import { modesOf, openStationSheet, selectMode } from "./machine-panel";
 import {
   goToLumberyard,
   goToStore,
@@ -101,6 +101,8 @@ test.describe("Cutting Board Chain (no planer required)", () => {
 
     await test.step("mount the sander at the workspace", async () => {
       await expect(page.getByText("1/2 slots")).not.toBeVisible();
+      // The tool rack lives on the station sheet
+      await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
       await expect(page.getByText("1/2 slots")).toBeVisible();

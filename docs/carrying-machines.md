@@ -6,7 +6,7 @@ down. There is no separate layout editor.
 
 ## The carry verb
 
-`L` (shortcut `carry-machine`, contextual — the ActionBar offers it only
+`L` (shortcut `carry-machine`, contextual — the placards offer it only
 when it applies) is a three-way toggle:
 
 1. **Carrying something** → put it down (if there's room).

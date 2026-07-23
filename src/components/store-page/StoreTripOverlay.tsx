@@ -10,7 +10,7 @@ import { StoreToolsSection } from "./StoreToolsSection";
 
 /**
  * A trip to Orange Box, the big-box hardware store. Reached by walking out
- * the garage door (see DoorSection); shown while the player's away trip is
+ * the garage door (see DoorPrompt); shown while the player's away trip is
  * a shopping one to the big box (the lumberyard has its own overlay). The
  * shop keeps ticking back home — browsing the aisles is what the trip
  * costs — and Head Home is the only way back.

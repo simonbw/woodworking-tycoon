@@ -52,7 +52,8 @@ The game follows a state-driven architecture with clear separation between game 
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
-   - **Garage door** (`DoorSection`): stand at the entrance cell to see places to go — shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging
+   - **Garage door** (`DoorPrompt`): stand at the entrance cell and the door lists places to go on numbered keys — shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging
+   - **In-world interaction UI** (`src/components/shop-overlay/`, `src/components/station/`): the machine the player stands at is highlighted in the shop view and wears a placard with its controls and key hints; recipe stations open a centered station sheet (Enter) for plans/tools/shelf; a hint cluster follows the player for floor verbs. The hands strip under the canvas shows inventory/underfoot/supplies
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
 
 ### Material and Machine System
@@ -80,10 +81,12 @@ src/
 │   ├── lumberyard-page/   # The Sawyer & Sons lumberyard trip overlay
 │   ├── phone/             # Phone overlay (SawdustList: listings + job board)
 │   ├── journal/           # Journal overlay (skill tree)
-│   ├── current-cell-info/ # Inspector panels (incl. the garage-door panel)
+│   ├── current-cell-info/ # Shared cell/material widgets (scales, icons, lists)
 │   ├── machine-sprites/   # PIXI machine renderers
 │   ├── material-sprites/  # PIXI material renderers
-│   └── *.tsx              # Top-level UI (ActionBar, NavBar, HomePage, Ticker, …)
+│   ├── shop-overlay/      # DOM layer pinned over the canvas (placards, prompts)
+│   ├── station/           # Machine placard + station sheet + racks
+│   └── *.tsx              # Top-level UI (NavBar, HomePage, HandsStrip, Ticker, …)
 ├── game/                  # Core game logic
 │   ├── game-actions/      # State transformation functions
 │   ├── machines/          # Machine type definitions

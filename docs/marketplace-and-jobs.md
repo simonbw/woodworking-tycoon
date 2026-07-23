@@ -14,7 +14,7 @@ guarantee, and raw stock shares one "lumber" demand bucket instead of
 per-type buckets. The "Marketplace tab" described below was later made
 diegetic: SawdustList now renders inside a phone overlay (`PhoneModal`)
 opened from the top bar, the sim keeps ticking while you browse, and
-scavenging errands start at the garage door (`DoorSection`) instead of a
+scavenging errands start at the garage door (`DoorPrompt`) instead of a
 corkboard note.
 
 ## Why

@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   machineCard,
   modesOf,
+  openStationSheet,
   selectMode,
   setParameter,
 } from "./machine-panel";
@@ -65,6 +66,8 @@ test.describe("Hand tools", () => {
     });
 
     await test.step("both tools mount at the workbench and add their trades", async () => {
+      // The tool rack lives on the station sheet
+      await openStationSheet(page);
       await page
         .locator("li", { hasText: "Hand Saw (stored)" })
         .getByRole("button", { name: "Attach" })

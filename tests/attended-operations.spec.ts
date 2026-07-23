@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { selectMode } from "./machine-panel";
+import { openStationSheet, selectMode } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -54,6 +54,8 @@ test.describe("Attended Operations", () => {
     await page.waitForTimeout(300);
 
     await test.step("sanding pauses when you walk away, resumes when you return", async () => {
+      // The tool rack lives on the station sheet
+      await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
       await selectMode(page, "Makeshift Workbench", "Sand Board");

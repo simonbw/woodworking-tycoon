@@ -18,10 +18,12 @@ export const WelcomeArticle: React.FC = () => (
       Move with <ShortcutKeys shortcut="move-up" />{" "}
       <ShortcutKeys shortcut="move-left" />{" "}
       <ShortcutKeys shortcut="move-down" />{" "}
-      <ShortcutKeys shortcut="move-right" />. Pick up whatever is at your feet
-      with <ShortcutKeys shortcut="pick-up" />, and put it down — or load it
-      into a machine — with <ShortcutKeys shortcut="put-down" />. Pause the game
-      at any time with <ShortcutKeys shortcut="speed-toggle" />.
+      <ShortcutKeys shortcut="move-right" />. Walk up to a machine and its
+      placard appears on it, showing what you can do there. Pick up whatever is
+      at your feet with <ShortcutKeys shortcut="pick-up" />, and put it down —
+      or give it to a machine — with <ShortcutKeys shortcut="put-down" />.
+      Pause the game at any time with{" "}
+      <ShortcutKeys shortcut="speed-toggle" />.
     </P>
 
     <H>Your First Commission</H>

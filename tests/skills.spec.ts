@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, selectMode } from "./machine-panel";
+import { modesOf, openStationSheet, selectMode } from "./machine-panel";
 import { closeJournal, openJournal, openPhone } from "./navigation";
 
 declare global {
@@ -106,6 +106,8 @@ test.describe("Skill Tree", () => {
     });
 
     await test.step("build a two-tone board: mount sander, glue, sand, finish", async () => {
+      // The tool rack lives on the station sheet
+      await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
 

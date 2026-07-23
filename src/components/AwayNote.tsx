@@ -6,7 +6,7 @@ import { useGameState } from "./useGameState";
 /**
  * A handwritten "back soon" note pinned to the corkboard while the player
  * is out scavenging — the shop-floor record of an absence started at the
- * garage door (see DoorSection). Shopping trips don't need one: the store
+ * garage door (see DoorPrompt). Shopping trips don't need one: the store
  * overlay covers the whole screen.
  */
 export const AwayNote: React.FC = () => {

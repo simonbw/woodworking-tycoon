@@ -136,8 +136,9 @@ category, unlock predicate (for migration), and component.
 - `ManualLink` (`src/components/manual/ManualLink.tsx`) is the
   moment-of-need pointer: a small "Shop Manual → <article>" link that
   renders nothing while the article is locked. Used by the dust card,
-  the machine spec sheets (`MACHINE_ARTICLES` in `src/game/manual.ts`
-  maps machine → article), and every tool rack (→ Tools & Tool Slots).
+  the machine placards and station sheets (`MACHINE_ARTICLES` in
+  `src/game/manual.ts` maps machine → article), and every tool rack
+  (→ Tools & Tool Slots).
 - Articles carry photo prints (`Photo` / `FigureRow` in the article
   elements): the machine PNGs from `static/images/` presented as tilted
   white-bordered prints with handwritten captions.

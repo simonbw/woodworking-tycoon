@@ -91,6 +91,19 @@ const defs = [
     group: "Movement",
   },
   {
+    // Placed before clear-work-queue so an open station sheet claims the
+    // key; when no sheet is open the binding is disabled and Escape falls
+    // through to the queue. Same step-aside trick as carry-rotate on R.
+    id: "close-sheet",
+    codes: ["Escape"],
+    keys: [["Esc"]],
+    description: "Put the station sheet away",
+    scope: "home",
+    group: "Machines",
+    hidden: true,
+    sharesKey: true,
+  },
+  {
     id: "clear-work-queue",
     codes: ["Escape"],
     keys: [["Esc"]],
@@ -113,7 +126,7 @@ const defs = [
     id: "put-down",
     codes: ["KeyF"],
     keys: [["F"]],
-    description: "Load machine, or drop on floor",
+    description: "Give to the machine, or drop on floor",
     scope: "home",
     group: "Materials",
     shiftHint: "put down everything",
@@ -171,7 +184,15 @@ const defs = [
     id: "operate-machine",
     codes: ["KeyR"],
     keys: [["R"]],
-    description: "Operate machine",
+    description: "Operate / feed the machine you're at",
+    scope: "home",
+    group: "Machines",
+  },
+  {
+    id: "open-station-sheet",
+    codes: ["Enter"],
+    keys: [["Enter"]],
+    description: "Look over the station — plans, tools, shelf",
     scope: "home",
     group: "Machines",
   },
@@ -220,35 +241,40 @@ const defs = [
     group: "General",
   },
   {
-    // Contextual like sweep: only offered standing at the garage door
-    // (the door panel and action bar advertise it there).
-    id: "scavenge",
-    codes: ["KeyG"],
-    keys: [["G"]],
-    description: "Go scavenging for pallets (at the door)",
+    // The door's destinations answer to the row numbers shown on its
+    // prompt. They deliberately shadow the speed presets (also 1/2/3):
+    // these bindings only enable while the player stands at the garage
+    // door with free hands, and a disabled binding steps aside, so the
+    // digits mean "head out" at the door and "set speed" everywhere else.
+    // Registry order is what puts the door first — keep these above Time.
+    id: "door-option-1",
+    codes: ["Digit1"],
+    keys: [["1"]],
+    description: "Head out — first destination (at the door)",
     scope: "home",
     group: "General",
     hidden: true,
+    sharesKey: true,
   },
   {
-    // Contextual like scavenge: the door is how you get to the store.
-    id: "go-to-store",
-    codes: ["KeyB"],
-    keys: [["B"]],
-    description: "Head out to the store (at the door)",
+    id: "door-option-2",
+    codes: ["Digit2"],
+    keys: [["2"]],
+    description: "Head out — second destination (at the door)",
     scope: "home",
     group: "General",
     hidden: true,
+    sharesKey: true,
   },
   {
-    // Contextual like go-to-store: the yard is the door's other shopping trip.
-    id: "go-to-lumberyard",
-    codes: ["KeyY"],
-    keys: [["Y"]],
-    description: "Head out to the lumberyard (at the door)",
+    id: "door-option-3",
+    codes: ["Digit3"],
+    keys: [["3"]],
+    description: "Head out — third destination (at the door)",
     scope: "home",
     group: "General",
     hidden: true,
+    sharesKey: true,
   },
 
   // ------------------------------------------------------------------- Time

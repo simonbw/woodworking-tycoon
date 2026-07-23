@@ -42,8 +42,9 @@ describe("shortcut registry", () => {
     );
     for (const def of SHORTCUTS.filter((d) => d.scope !== "global")) {
       // `modal` is exempt: it suppresses every other scope, so it can reuse
-      // a key that is global elsewhere.
-      if (def.scope === "modal") continue;
+      // a key that is global elsewhere. `sharesKey` defs shadow deliberately
+      // (the door's 1/2/3 outrank the speed presets only at the door).
+      if (def.scope === "modal" || def.sharesKey) continue;
       for (const code of def.codes) {
         assert.ok(
           !globalCodes.has(code),
@@ -98,6 +99,23 @@ describe("shortcutsForEvent", () => {
 
   it("ignores unbound keys", () => {
     assert.deepEqual(shortcutsForEvent(keyEvent("KeyU")), []);
+  });
+
+  it("lets the door's digits outrank the speed presets", () => {
+    // Registry order is dispatch priority for a shared key: at the door the
+    // destination binding is enabled and wins; elsewhere it's disabled and
+    // the key falls through to the speed preset.
+    assert.deepEqual(
+      shortcutsForEvent(keyEvent("Digit1")).map((d) => d.id),
+      ["door-option-1", "speed-normal"],
+    );
+  });
+
+  it("lets an open station sheet claim Escape before the work queue", () => {
+    assert.deepEqual(
+      shortcutsForEvent(keyEvent("Escape")).map((d) => d.id),
+      ["close-sheet", "clear-work-queue", "close-modal"],
+    );
   });
 });
 

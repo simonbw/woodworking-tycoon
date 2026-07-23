@@ -97,7 +97,7 @@ machines cost proportionally less.
   broom's film and reaches the tight spots.
 - No pile step: dust goes into the **canister** (5 tiles' worth, species
   mix preserved), which **dumps itself when you stop next to the garbage
-  can** — the trip is the chore, not a button. The ActionBar shows the
+  can** — the trip is the chore, not a button. The player prompt shows the
   fill while dragging.
 - Dragging halves walking speed, stacking with any dust penalty.
 
@@ -149,7 +149,7 @@ slowdown via `getOperationPhases`; movement via `Person.busyTicks`, +1
 tick per full +100%), the broom loop (sweep on `T`, piles, dustpan to
 garbage, under-machine pull at half rate, ~10% film), and the tutorial
 latch (`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
-one-time note appear, sweep hint joins the controls legend on dusty
+one-time note appear, sweep hint joins the player prompt on dusty
 ground). Emission is scaled by 1/multiplier so a slowed operation sheds
 the same total dust rather than compounding. The shop vac (above)
 completes the v1 scope — next up is the mitigation ladder, starting

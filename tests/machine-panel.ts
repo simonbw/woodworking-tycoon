@@ -12,12 +12,44 @@ function escapeRegExp(text: string): string {
 }
 
 export function machineCard(page: any, machineName: string) {
-  // Anchor on the spec sheet's heading — plain hasText also matches other
-  // panels that merely mention the machine ("Operate Jointer" in the
-  // controls legend, "→ Makeshift Workbench" buttons in the inventory).
+  // Anchor on the placard/sheet heading — plain hasText also matches other
+  // panels that merely mention the machine ("→ Makeshift Workbench"
+  // buttons in the hands strip). Only one of the placard and the station
+  // sheet is on screen at a time, so this stays unambiguous.
   return page.locator("section", {
     has: page.getByRole("heading", { name: machineName, exact: true }),
   });
+}
+
+/**
+ * Spread out the targeted station's sheet (Enter), where plan selection
+ * and the tool/upgrade/shelf racks live. No-op if a sheet is already
+ * open. Blurs first: Enter activates a focused button before the game
+ * ever sees it, and specs click buttons constantly.
+ */
+export async function openStationSheet(page: any) {
+  if (await page.getByTestId("station-sheet").isVisible()) {
+    return;
+  }
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press("Enter");
+  await page.getByTestId("station-sheet").waitFor({ state: "visible" });
+  await page.waitForTimeout(200);
+}
+
+/**
+ * Expand a direct-feed placard's Details fold, where its tool rack
+ * lives. (Recipe stations keep their racks on the station sheet — use
+ * `openStationSheet` there.)
+ */
+export async function expandDetails(page: any, machineName: string) {
+  const toggle = machineCard(page, machineName).locator(
+    "button[aria-expanded]",
+  );
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+    await page.waitForTimeout(200);
+  }
 }
 
 /** Open a collapsed recipe index; no-op for the other control shapes. */
@@ -37,6 +69,7 @@ export async function selectMode(
   machineName: string,
   label: string,
 ) {
+  await openStationSheet(page);
   const card = machineCard(page, machineName);
   await openRecipeIndex(card);
   await card
@@ -51,6 +84,7 @@ export async function modesOf(
   page: any,
   machineName: string,
 ): Promise<string[]> {
+  await openStationSheet(page);
   const card = machineCard(page, machineName);
   await openRecipeIndex(card);
   const modes = await card.locator("[data-mode-option]").allTextContents();
