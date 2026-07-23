@@ -72,9 +72,10 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         page.locator("section", { hasText: "Tool Wall" }).getByText("$10.00"),
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
-      // Cheap channels: framing pine and marked-up big-box S4S hardwood
+      // Cheap channels: framing pine and marked-up big-box S4S hardwood.
+      // Rows carry dimensions only — species lives in the channel header.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
-      await expect(page.getByText("Pine 1x4 — 8'")).toBeVisible();
+      await expect(page.getByText("1x4 — 8'")).toBeVisible();
       await expect(page.getByText("$38.40")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
       // At 17 reputation the lumberyard (12) has appeared...

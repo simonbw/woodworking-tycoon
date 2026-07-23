@@ -5,9 +5,9 @@ import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
 import {
   describeStockDimensionsPlain,
-  getMaterialName,
   getMaterialState,
   materialMeetsInput,
+  nominalSizeLabel,
 } from "../../game/material-helpers";
 import { humanizeString } from "../../utils/humanizeString";
 import {
@@ -20,9 +20,9 @@ import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * Every board in the aisle shares one scale: a card's board spans the
- * card's width in proportion to the longest board sold anywhere, so
- * lengths compare at a glance across channels.
+ * Every board in the aisle shares one scale: a row's board spans the
+ * rack lane in proportion to the longest board sold anywhere, so lengths
+ * compare at a glance across channels.
  */
 const RACK_MAX_FEET = 8;
 
@@ -31,6 +31,10 @@ const RACK_MAX_FEET = 8;
  * Locked channels are completely absent — new sections appear as
  * reputation grows. No custom cutting anywhere: milling stock down to what
  * a project needs is the game.
+ *
+ * Species and milled state are channel facts, so they live in the channel
+ * header; each row is just the board itself, its dimensions, and a price.
+ * Rows sit tight so widths compare board-against-board like a real rack.
  */
 export const BoardSelector: React.FC = () => {
   const gameState = useGameState();
@@ -53,12 +57,26 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
 }) => {
   const [species, setSpecies] = useState<Species>(channel.species[0]);
 
+  // All of a channel's stock shares one milled state — say it once here
+  const stateLabel = useMemo(() => {
+    const sku = channel.skus[0];
+    return getMaterialState(
+      board(species, sku.length, sku.width, sku.thickness, channel.surface, {
+        faces: channel.jointedFaces,
+        edges: channel.jointedEdges,
+      }),
+    );
+  }, [species, channel]);
+
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-2">
+      <div className="flex items-baseline gap-2">
         <h3 className="font-stencil uppercase tracking-wide text-sm text-ink-black">
           {channel.name}
         </h3>
+        <span className="text-xs text-ink-fade font-typewriter grow">
+          {stateLabel}
+        </span>
         {channel.species.length > 1 && (
           <select
             className="bg-paper-ivory border border-ink-black/30 text-ink-black px-2 py-0.5 rounded font-condensed text-sm"
@@ -76,9 +94,9 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
       <p className="text-xs text-ink-fade font-typewriter mb-1">
         {channel.tagline}
       </p>
-      <ul className="space-y-2">
+      <ul className="product-card p-2 space-y-0.5">
         {channel.skus.map((sku) => (
-          <LumberSkuCard
+          <LumberSkuRow
             key={`${sku.length}x${sku.width}x${sku.thickness}`}
             sku={sku}
             species={species}
@@ -90,7 +108,7 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
   );
 };
 
-const LumberSkuCard: React.FC<{
+const LumberSkuRow: React.FC<{
   sku: LumberSku;
   species: Species;
   channel: LumberChannel;
@@ -107,6 +125,12 @@ const LumberSkuCard: React.FC<{
   const material = useMemo(makeBoard, [species, sku, channel]);
   const price = getBoardBuyPrice(material, channel.priceMultiplier);
 
+  // Dimensions only — species and milled state live in the channel header
+  const nominal = nominalSizeLabel(material);
+  const dimsLabel = nominal
+    ? `${nominal} — ${sku.length}'`
+    : `${sku.thickness}/4 — ${sku.width}" × ${sku.length}'`;
+
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
       type: ["board"],
@@ -121,38 +145,37 @@ const LumberSkuCard: React.FC<{
   ).length;
 
   return (
-    <li className="product-card">
-      <div className="flex items-center gap-2">
-        <div className="grow">
-          <Tooltip content={describeStockDimensionsPlain(material)}>
-            <div className="font-condensed font-bold text-sm uppercase tracking-wide text-ink-black leading-none">
-              {getMaterialName(material)}
-            </div>
-          </Tooltip>
-          <div className="text-xs text-ink-fade tabular-nums mt-1">
-            {numberOwned > 0 && (
-              <span className="text-store-orange-dark font-semibold">
-                {numberOwned} owned ·{" "}
-              </span>
-            )}
-            {getMaterialState(material)} · In stock
-          </div>
-        </div>
-        <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
-          disabled={gameState.money < price}
-          data-sfx="ui-purchase"
-          onClick={() => applyAction(buyMaterialAction(makeBoard(), price))}
-        >
-          Buy
-        </button>
+    <li className="flex items-center gap-2">
+      <div className="grow flex items-center">
+        <BoardFaceSvg
+          board={material}
+          className="block"
+          style={{ width: `${(sku.length / RACK_MAX_FEET) * 100}%` }}
+        />
       </div>
-      <BoardFaceSvg
-        board={material}
-        className="mt-2 block"
-        style={{ width: `${(sku.length / RACK_MAX_FEET) * 100}%` }}
-      />
+      {numberOwned > 0 && (
+        <Tooltip content={`${numberOwned} in your inventory`}>
+          <span className="text-[10px] text-store-orange-dark font-semibold tabular-nums whitespace-nowrap">
+            ×{numberOwned}
+          </span>
+        </Tooltip>
+      )}
+      <Tooltip content={describeStockDimensionsPlain(material)}>
+        <span className="font-condensed text-xs uppercase tracking-wide text-ink-black tabular-nums whitespace-nowrap w-24">
+          {dimsLabel}
+        </span>
+      </Tooltip>
+      <span className="font-condensed font-bold text-sm text-ink-black tabular-nums whitespace-nowrap w-14 text-right">
+        ${price.toFixed(2)}
+      </span>
+      <button
+        className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-[10px] px-2 py-0.5 rounded-sm shadow"
+        disabled={gameState.money < price}
+        data-sfx="ui-purchase"
+        onClick={() => applyAction(buyMaterialAction(makeBoard(), price))}
+      >
+        Buy
+      </button>
     </li>
   );
 };

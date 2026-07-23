@@ -89,11 +89,16 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .last();
       await lumberAisle.locator("select").last().selectOption("walnut");
       await page.waitForTimeout(200);
+      // Rows carry dimensions only; the channel header names the milled
+      // state once for all of its stock
+      const roughRack = lumberAisle
+        .locator("div")
+        .filter({ has: page.getByText("Rough Rack", { exact: true }) })
+        .filter({ has: page.locator("li") })
+        .last();
+      await expect(roughRack.getByText("rough sawn")).toBeVisible();
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 4/4 — 6\" × 8'" })
-          .filter({ hasText: "rough sawn" })
-          .first(),
+        roughRack.locator("li", { hasText: '4/4 — 6" × 8\'' }).first(),
       ).toBeVisible();
       await expect(page.getByText("$158.40")).toBeVisible();
       await page.getByText("Home", { exact: true }).click();
