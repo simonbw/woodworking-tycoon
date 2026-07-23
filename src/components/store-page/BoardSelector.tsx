@@ -55,7 +55,11 @@ export const BoardSelector: React.FC = () => {
   );
 };
 
-const channelBoard = (channel: LumberChannel, sku: LumberSku, species: Species) =>
+const channelBoard = (
+  channel: LumberChannel,
+  sku: LumberSku,
+  species: Species,
+) =>
   board(species, sku.length, sku.width, sku.thickness, channel.surface, {
     faces: channel.jointedFaces,
     edges: channel.jointedEdges,
@@ -180,7 +184,9 @@ const SkuRow: React.FC<{
         data-sfx="ui-purchase"
         aria-label={`Buy ${fullName}`}
         onClick={() =>
-          applyAction(buyMaterialAction(channelBoard(channel, sku, species), price))
+          applyAction(
+            buyMaterialAction(channelBoard(channel, sku, species), price),
+          )
         }
       >
         Buy

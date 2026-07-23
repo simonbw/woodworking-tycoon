@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { selectMode } from "./machine-panel";
+import { goToStore, leaveStore } from "./navigation";
 
 declare global {
   interface Window {
@@ -39,7 +40,11 @@ test.describe("Consumables", () => {
     await page.keyboard.press("3");
 
     await test.step("shelf recipe shows its nail shortfall", async () => {
-      await selectMode(page, "Makeshift Workbench", "Build Rustic Pallet Shelf");
+      await selectMode(
+        page,
+        "Makeshift Workbench",
+        "Build Rustic Pallet Shelf",
+      );
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
       await expect(
         workspaceCard(page).getByRole("button", { name: "Operate" }),
@@ -83,7 +88,11 @@ test.describe("Consumables", () => {
         .getByRole("button", { name: /Take All/ })
         .click();
       await page.waitForTimeout(200);
-      await selectMode(page, "Makeshift Workbench", "Build Rustic Pallet Shelf");
+      await selectMode(
+        page,
+        "Makeshift Workbench",
+        "Build Rustic Pallet Shelf",
+      );
       await expect(page.getByText("8 nails (have 8)")).toBeVisible();
 
       // Load exactly 2 stringers and 3 deck boards
@@ -123,8 +132,7 @@ test.describe("Consumables", () => {
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
+      const returnTo = await goToStore(page);
       await expect(page.getByText("Shop Supplies")).toBeVisible();
       await expect(page.getByText("Box of Nails")).toBeVisible();
       await expect(page.getByText("Mineral Oil Bottle")).toBeVisible();
@@ -139,12 +147,11 @@ test.describe("Consumables", () => {
         () => (window as any).__GET_GAME_STATE__().money,
       );
       expect(money).toBe(10);
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await leaveStore(page, returnTo);
     });
 
     await test.step("mineral oil turns the board into an oiled board", async () => {
-      // The ticker remounts on returning Home, so speed up again
+      // Speed keys are modal-blocked during the store trip, so speed up now
       await page.keyboard.press("3");
       await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
       await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();

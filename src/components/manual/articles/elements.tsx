@@ -54,15 +54,13 @@ export const UL: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 /** A term being introduced — the manual's version of bold ink. */
-export const Term: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => <strong className="font-semibold">{children}</strong>;
+export const Term: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <strong className="font-semibold">{children}</strong>
+);
 
 /** A margin note from whoever owned this binder before you. Handwriting,
  * so it does NOT get the typist's double sentence spacing. */
-export const Note: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
+export const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="font-ink text-base text-ink-blue -rotate-1 pl-4">{children}</p>
 );
 

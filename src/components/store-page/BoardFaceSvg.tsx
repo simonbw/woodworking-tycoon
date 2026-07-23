@@ -88,10 +88,9 @@ export const BoardFaceSvg: React.FC<{
     // edge face: the bottom edge extruded by the board's thickness
     const edgeFacePoints = toPoints([
       ...bottomEdge,
-      ...[...bottomEdge].reverse().map(([x, y]): [number, number] => [
-        x,
-        y + depth,
-      ]),
+      ...[...bottomEdge]
+        .reverse()
+        .map(([x, y]): [number, number] => [x, y + depth]),
     ]);
 
     const inset = amp + 1.5;
@@ -137,7 +136,16 @@ export const BoardFaceSvg: React.FC<{
           ? { x: 2, y: inset, w: length - 4, h: Math.max(1.5, width / 4) }
           : undefined,
     };
-  }, [boardWidth, boardLength, thickness, species, surface, jointedFaces, jointedEdges, seed]);
+  }, [
+    boardWidth,
+    boardLength,
+    thickness,
+    species,
+    surface,
+    jointedFaces,
+    jointedEdges,
+    seed,
+  ]);
 
   return (
     <svg
@@ -154,7 +162,9 @@ export const BoardFaceSvg: React.FC<{
           key={i}
           d={d}
           fill="none"
-          stroke={drawing.markAlpha !== undefined ? "#000000" : drawing.secondary}
+          stroke={
+            drawing.markAlpha !== undefined ? "#000000" : drawing.secondary
+          }
           strokeOpacity={drawing.markAlpha ?? 0.35}
           strokeWidth={1}
         />

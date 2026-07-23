@@ -19,14 +19,17 @@ export type ShortcutScope = "global" | "home" | "modal";
 
 /** Cheat-sheet section. Order here is the order rendered. */
 export type ShortcutGroup =
-  "Time" | "Navigation" | "Movement" | "Materials" | "Machines" | "General";
+  | "Time"
+  | "Movement"
+  | "Materials"
+  | "Machines"
+  | "General";
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Movement",
   "Materials",
   "Machines",
   "Time",
-  "Navigation",
   "General",
 ];
 
@@ -221,12 +224,25 @@ const defs = [
     group: "General",
   },
   {
+    // Contextual like sweep: only offered standing at the garage door
+    // (the door panel and action bar advertise it there).
     id: "scavenge",
     codes: ["KeyG"],
     keys: [["G"]],
-    description: "Go scavenging for pallets",
+    description: "Go scavenging for pallets (at the door)",
     scope: "home",
     group: "General",
+    hidden: true,
+  },
+  {
+    // Contextual like scavenge: the door is how you get to the store.
+    id: "go-to-store",
+    codes: ["KeyB"],
+    keys: [["B"]],
+    description: "Head out to the store (at the door)",
+    scope: "home",
+    group: "General",
+    hidden: true,
   },
 
   // ------------------------------------------------------------------- Time
@@ -279,41 +295,23 @@ const defs = [
     group: "Time",
   },
 
-  // ------------------------------------------------------------- Navigation
+  // ---------------------------------------------------------------- General
   {
-    id: "nav-home",
-    codes: ["KeyH"],
-    keys: [["H"]],
-    description: "Home",
-    scope: "global",
-    group: "Navigation",
-  },
-  {
-    id: "nav-store",
-    codes: ["KeyB"],
-    keys: [["B"]],
-    description: "Store",
-    scope: "global",
-    group: "Navigation",
-  },
-  {
-    id: "nav-marketplace",
+    id: "open-phone",
     codes: ["KeyM"],
     keys: [["M"]],
-    description: "Marketplace",
+    description: "Take out your phone",
     scope: "global",
-    group: "Navigation",
+    group: "General",
   },
   {
-    id: "nav-skills",
+    id: "open-journal",
     codes: ["KeyK"],
     keys: [["K"]],
-    description: "Skills",
+    description: "Open your journal",
     scope: "global",
-    group: "Navigation",
+    group: "General",
   },
-
-  // ---------------------------------------------------------------- General
   {
     id: "open-settings",
     codes: ["Comma"],
@@ -351,6 +349,26 @@ const defs = [
     scope: "modal",
     group: "General",
     requiresShift: true,
+    hidden: true,
+  },
+  // Same trick for the phone and journal: their open keys re-bound inside
+  // the modal scope, so M and K toggle rather than only open.
+  {
+    id: "close-phone",
+    codes: ["KeyM"],
+    keys: [["M"]],
+    description: "Put the phone away",
+    scope: "modal",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "close-journal",
+    codes: ["KeyK"],
+    keys: [["K"]],
+    description: "Close the journal",
+    scope: "modal",
+    group: "General",
     hidden: true,
   },
 ] as const;

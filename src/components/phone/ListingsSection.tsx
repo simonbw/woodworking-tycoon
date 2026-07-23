@@ -13,8 +13,9 @@ import { TICKS_PER_DAY } from "../../game/time";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * The "For Sale" pane: active listings with their interest level, and the
- * player's inventory ready to be priced and listed.
+ * The "For Sale" pane of the phone: active listings with their interest
+ * level, and the player's inventory ready to be priced and listed. The
+ * phone's tab bar provides the pane's title.
  */
 export const ListingsSection: React.FC = () => {
   const gameState = useGameState();
@@ -24,10 +25,6 @@ export const ListingsSection: React.FC = () => {
 
   return (
     <section className="space-y-4">
-      <h2 className="font-condensed font-bold uppercase tracking-[0.2em] text-sm border-b-2 border-ink-black/20 pb-1">
-        For Sale
-      </h2>
-
       {gameState.listings.length === 0 ? (
         <p className="text-sm italic text-ink-fade">
           Nothing listed yet. Price something below and see who bites.

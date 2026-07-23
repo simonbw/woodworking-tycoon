@@ -116,8 +116,7 @@ export const SheetGoodSprite: React.FC<
           const y = lerp(-height / 2 + 1, height / 2 - 1, rng());
           g.circle(x, y, 0.5 + rng() * 0.4);
           g.fill({
-            color:
-              rng() < 0.5 ? secondary : mixColors(primary, 0xffffff, 0.25),
+            color: rng() < 0.5 ? secondary : mixColors(primary, 0xffffff, 0.25),
             alpha: 0.25,
           });
         }
@@ -128,7 +127,11 @@ export const SheetGoodSprite: React.FC<
         const grainLines = Math.max(2, Math.round(width / 24));
         for (let i = 0; i < grainLines; i++) {
           const x =
-            lerp(-width / 2 + inset, width / 2 - inset, (i + 0.5) / grainLines) +
+            lerp(
+              -width / 2 + inset,
+              width / 2 - inset,
+              (i + 0.5) / grainLines,
+            ) +
             (rng() * 2 - 1) * 3;
           const wander = (rng() * 2 - 1) * 2;
           g.moveTo(x, -height / 2 + 2);
@@ -213,7 +216,11 @@ export const SheetGoodSprite: React.FC<
             g.ellipse(cx, cy, rx, ry);
             g.fill(mixColors(secondary, 0x000000, 0.45));
             g.ellipse(cx, cy, rx + 0.5, ry + 0.5);
-            g.stroke({ width: 1, color: mixColors(secondary, 0x000000, 0.2), alpha: 0.5 });
+            g.stroke({
+              width: 1,
+              color: mixColors(secondary, 0x000000, 0.2),
+              alpha: 0.5,
+            });
           }
         }
       }

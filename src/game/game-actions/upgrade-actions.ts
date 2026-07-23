@@ -83,7 +83,8 @@ export function uninstallUpgradeAction(
     }
 
     const upgradeType = UPGRADE_TYPES[upgradeId];
-    const remainingSlots = machine.toolSlots - (upgradeType.extraToolSlots ?? 0);
+    const remainingSlots =
+      machine.toolSlots - (upgradeType.extraToolSlots ?? 0);
     if (machine.state.tools.length > remainingSlots) {
       console.warn("Remove mounted tools before uninstalling the drawers");
       return gameState;

@@ -168,9 +168,7 @@ export const CutParticles: React.FC<{
           curl,
           drag: curl ? rUniform(2, 3) : lerp(3.5, 8, fineness),
           drift: fineness * 260,
-          settles: curl
-            ? true
-            : rBool(DUST_SETTLE_FRACTION * (1 - fineness)),
+          settles: curl ? true : rBool(DUST_SETTLE_FRACTION * (1 - fineness)),
         });
       }
     } else {

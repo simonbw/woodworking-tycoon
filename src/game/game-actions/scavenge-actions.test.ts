@@ -14,9 +14,14 @@ function fakeRng(values: number[]): () => number {
   return () => values[i++ % values.length];
 }
 
+/** Marketplace unlocked and the player standing at the garage door. */
 function stateWithFreeSelling(): GameState {
   return {
     ...initialGameState,
+    player: {
+      ...initialGameState.player,
+      position: initialGameState.shopInfo.entrancePosition,
+    },
     progression: { ...initialGameState.progression, marketplaceUnlocked: true },
   };
 }
@@ -47,17 +52,29 @@ describe("startScavengingAction", () => {
     const result = startScavengingAction(fakeRng([0.1]))(
       stateWithFreeSelling(),
     );
-    assert.ok(result.player.away);
-    assert.strictEqual(
-      result.player.away?.returnTick,
-      result.tick + SCAVENGE_DURATION_TICKS,
-    );
-    assert.strictEqual(result.player.away?.loot.length, 1);
+    const away = result.player.away;
+    assert.ok(away);
+    assert.strictEqual(away?.kind, "scavenging");
+    if (away?.kind === "scavenging") {
+      assert.strictEqual(
+        away.returnTick,
+        result.tick + SCAVENGE_DURATION_TICKS,
+      );
+      assert.strictEqual(away.loot.length, 1);
+    }
     assert.strictEqual(result.player.canWork, false);
   });
 
   it("does nothing before free selling is unlocked", () => {
     const state = initialGameState;
+    assert.strictEqual(startScavengingAction(fakeRng([0.1]))(state), state);
+  });
+
+  it("does nothing away from the garage door", () => {
+    const state: GameState = {
+      ...stateWithFreeSelling(),
+      player: { ...stateWithFreeSelling().player, position: [0, 0] },
+    };
     assert.strictEqual(startScavengingAction(fakeRng([0.1]))(state), state);
   });
 

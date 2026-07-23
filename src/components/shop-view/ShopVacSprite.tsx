@@ -43,9 +43,11 @@ export const ShopVacSprite: React.FC = () => {
     let y: number;
     if (carried) {
       const targetX =
-        playerCenter[0] - Math.cos(playerMotion.heading) * PIXELS_PER_CELL * 0.55;
+        playerCenter[0] -
+        Math.cos(playerMotion.heading) * PIXELS_PER_CELL * 0.55;
       const targetY =
-        playerCenter[1] - Math.sin(playerMotion.heading) * PIXELS_PER_CELL * 0.55;
+        playerCenter[1] -
+        Math.sin(playerMotion.heading) * PIXELS_PER_CELL * 0.55;
       const dt = ticker.deltaMS / 1000;
       const ease = Math.min(1, dt * FOLLOW_RATE);
       const previous = dragPos.current ?? [targetX, targetY];

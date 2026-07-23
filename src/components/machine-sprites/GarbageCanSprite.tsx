@@ -47,7 +47,13 @@ export const GarbageCanSprite: React.FC<{ machine: Machine }> = ({
           g.stroke({ width: 2, color: 0xa0aec0, alpha: 0.8 });
 
           // Handle bar across the center of the lid
-          g.roundRect(-radius * 0.4, -radius * 0.09, radius * 0.8, radius * 0.18, radius * 0.09);
+          g.roundRect(
+            -radius * 0.4,
+            -radius * 0.09,
+            radius * 0.8,
+            radius * 0.18,
+            radius * 0.09,
+          );
           g.fill({ color: 0x2d3748 });
         }, [])}
       />
@@ -57,7 +63,11 @@ export const GarbageCanSprite: React.FC<{ machine: Machine }> = ({
         </pixiContainer>
       ))}
       {processingMaterials.map((material, index) => (
-        <pixiContainer angle={index * 25 + 10} scale={0.7} key={`proc-${index}`}>
+        <pixiContainer
+          angle={index * 25 + 10}
+          scale={0.7}
+          key={`proc-${index}`}
+        >
           <MaterialSprite
             material={material}
             key={index}

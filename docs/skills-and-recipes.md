@@ -23,7 +23,7 @@ instead of some recipes being mysteriously dependency-free. One rule,
 uniformly applied.
 
 Locked recipes are hidden at the workstation (no clutter at the bench) and
-visible on the Skills page (that's where aspiration lives).
+visible in the journal (that's where aspiration lives).
 
 ## XP (Now)
 
@@ -32,7 +32,7 @@ visible on the Skills page (that's where aspiration lives).
   Not per operation tick (that rewards busywork) and not per sale (that
   re-taxes selling).
 - Levels follow an increasing-cost curve; each level grants 1 skill point.
-  Points are spent on the Skills page. No respec (nothing is a trap yet).
+  Points are spent in the journal. No respec (nothing is a trap yet).
 
 ## The tree (Now: 15 nodes, 3 branches)
 

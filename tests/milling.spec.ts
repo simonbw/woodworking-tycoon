@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { setParameter } from "./machine-panel";
+import { goToStore, leaveStore } from "./navigation";
 
 declare global {
   interface Window {
@@ -75,8 +76,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
     });
 
     await test.step("store: all four channels open at 22 reputation", async () => {
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
+      const returnTo = await goToStore(page);
       await expect(page.getByText("Construction Lumber")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
       await expect(page.getByText("Lumberyard — S2S")).toBeVisible();
@@ -94,7 +94,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .filter({ has: page.locator("li") })
         .last();
       await expect(
-        roughRack.locator("li", { hasText: '4/4 — 6" × 8\'' }).first(),
+        roughRack.locator("li", { hasText: "4/4 — 6\" × 8'" }).first(),
       ).toBeVisible();
       await expect(
         roughRack.getByRole("button", {
@@ -104,9 +104,10 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await expect(page.getByText("$158.40")).toBeVisible();
       // The milled state moved into the channel-name tooltip — say it once
       await page.getByText("Rough Rack", { exact: true }).hover();
-      await expect(page.getByText(/rough sawn — Straight off the mill/)).toBeVisible();
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await expect(
+        page.getByText(/rough sawn — Straight off the mill/),
+      ).toBeVisible();
+      await leaveStore(page, returnTo);
     });
 
     await test.step("power switch: no cut until the jointer is switched on", async () => {
@@ -187,9 +188,9 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await movePlayerTo(page, [3, 2]);
       const planerCard = machineCard(page, "Planer");
       // No input bay: the inventory offers no load button for the planer
-      await expect(
-        page.getByRole("button", { name: "→ Planer" }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "→ Planer" })).toHaveCount(
+        0,
+      );
       // Switched off, nothing feeds
       await expect(
         planerCard.getByRole("button", { name: "Feed" }),

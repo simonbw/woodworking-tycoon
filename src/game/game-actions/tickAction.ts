@@ -24,7 +24,7 @@ import { withXp } from "./skill-actions";
 export const tickAction: GameAction = (gameState) => {
   const away = gameState.player.away;
   if (away) {
-    if (gameState.tick >= away.returnTick) {
+    if (away.kind === "scavenging" && gameState.tick >= away.returnTick) {
       // Welcome home: drop the haul at the material dropoff spot
       gameState = {
         ...gameState,
@@ -38,7 +38,9 @@ export const tickAction: GameAction = (gameState) => {
         player: { ...gameState.player, away: null, canWork: true },
       };
     } else {
-      // Still out of the shop: no player work, but machines keep running
+      // Still out of the shop (scavenging mid-trip, or browsing the store —
+      // shopping trips end via returnFromStoreAction, not a timer): no
+      // player work, but machines keep running
       gameState = {
         ...gameState,
         player: { ...gameState.player, canWork: false },
@@ -238,10 +240,10 @@ export const tickAction: GameAction = (gameState) => {
       machineOutputs,
       upgradeOutputs,
     } = executeOperation(
-        selectedOperation,
-        machineState.processingMaterials,
-        machineState.selectedParameters,
-      );
+      selectedOperation,
+      machineState.processingMaterials,
+      machineState.selectedParameters,
+    );
 
     for (const output of outputs) {
       if (isFinishedProduct(output)) {

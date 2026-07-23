@@ -10,9 +10,9 @@ import {
 } from "../../game/Skill";
 import { TOOL_TYPES } from "../../game/Tool";
 import { spendSkillPointAction } from "../../game/game-actions/skill-actions";
-import { hasSkill, xpProgress, levelForXp } from "../../game/skill-helpers";
+import { hasSkill, levelForXp, xpProgress } from "../../game/skill-helpers";
 import { humanizeString } from "../../utils/humanizeString";
-import { NavBar } from "../NavBar";
+import { useModalScope, useShortcut } from "../shortcuts/ShortcutProvider";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -23,7 +23,10 @@ function recipesForSkill(skillId: SkillId): ReadonlyArray<string> {
   const names: string[] = [];
   for (const machineType of Object.values(MACHINE_TYPES)) {
     for (const operation of machineType.operations) {
-      if (operation.requiredSkill === skillId) {
+      if (
+        operation.requiredSkill === skillId &&
+        !names.includes(operation.name)
+      ) {
         names.push(operation.name);
       }
     }
@@ -41,58 +44,83 @@ function recipesForSkill(skillId: SkillId): ReadonlyArray<string> {
   return names;
 }
 
-export const SkillsPage: React.FC = () => {
+/**
+ * The woodworker's journal, opened as an overlay while the shop keeps
+ * running: what you've learned, what you could learn next. The manual is
+ * what the world tells you; this notebook is what you know.
+ */
+export const JournalModal: React.FC<{ onClose: () => void }> = ({
+  onClose,
+}) => {
+  useModalScope();
+  useShortcut("close-modal", onClose);
+  useShortcut("close-journal", onClose);
+
   const gameState = useGameState();
   const { xp, skillPoints } = gameState.progression;
   const level = levelForXp(xp);
   const progress = xpProgress(xp);
 
   return (
-    <main className="h-screen flex flex-col gap-6 p-6 overflow-hidden">
-      <NavBar />
-
-      <div className="rounded-md overflow-hidden shadow-2xl border border-ink-black/40 grow min-h-0 flex flex-col">
-        <div className="bg-workshop-panel text-paper-ivory px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="font-condensed font-bold text-3xl uppercase tracking-[0.2em] leading-none">
-              Skills
-            </span>
-            <span className="font-condensed uppercase tracking-[0.3em] text-xs opacity-80">
-              Workshop Certifications
-            </span>
-          </div>
-          <div className="flex items-center gap-6 font-mono leading-tight">
-            <div className="flex flex-col items-end">
-              <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] opacity-80">
-                Craft Level {level}
-              </span>
-              <span className="text-sm tabular-nums">
-                {progress.current} / {progress.needed} XP
-              </span>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-black/60 p-4"
+      onClick={onClose}
+      role="presentation"
+    >
+      {/* The notebook: a worn cover peeking out around manila pages */}
+      <div
+        className="relative h-[85vh] w-full max-w-4xl rounded-md bg-ink-brown p-2 shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Journal"
+      >
+        <div className="flex h-full flex-col overflow-hidden rounded-sm bg-paper-manila text-ink-black">
+          <header className="flex items-center justify-between gap-4 border-b-2 border-ink-black/30 px-6 pb-2 pt-4">
+            <h2 className="font-ink text-3xl leading-none text-ink-blue whitespace-nowrap">
+              Woodworker&rsquo;s Journal
+            </h2>
+            <div className="flex items-center gap-6 font-mono leading-tight">
+              <div className="flex flex-col items-end">
+                <span className="font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-ink-fade whitespace-nowrap">
+                  Craft Level {level}
+                </span>
+                <span className="text-sm tabular-nums whitespace-nowrap">
+                  {progress.current} / {progress.needed} XP
+                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-ink-fade whitespace-nowrap">
+                  Skill Points
+                </span>
+                <span className="text-lg tabular-nums">{skillPoints}</span>
+              </div>
             </div>
-            <div className="flex flex-col items-end">
-              <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] opacity-80">
-                Skill Points
-              </span>
-              <span className="text-xl tabular-nums">{skillPoints}</span>
-            </div>
-          </div>
-        </div>
+            <button
+              className="button-paper px-2 py-0.5 text-lg leading-none"
+              onClick={onClose}
+              aria-label="Close journal"
+              data-sfx="ui-back"
+            >
+              ×
+            </button>
+          </header>
 
-        <div className="bg-paper-manila text-ink-black p-6 grow min-h-0 flex flex-col">
-          {/* Each branch scrolls on its own; the page never does */}
-          <div className="grid grid-cols-3 gap-4 grow min-h-0">
-            {SKILL_BRANCHES.map((branch) => (
-              <BranchColumn key={branch} branch={branch} />
-            ))}
+          <div className="flex min-h-0 grow flex-col p-6">
+            {/* Each branch scrolls on its own; the page never does */}
+            <div className="grid min-h-0 grow grid-cols-3 gap-4">
+              {SKILL_BRANCHES.map((branch) => (
+                <BranchColumn key={branch} branch={branch} />
+              ))}
+            </div>
+            <p className="mt-4 shrink-0 font-typewriter text-xs text-ink-fade">
+              Finish products and commissions to earn craft XP. Each level
+              grants a skill point.
+            </p>
           </div>
-          <p className="text-xs text-ink-fade font-typewriter mt-4 shrink-0">
-            Finish products and commissions to earn craft XP. Each level grants
-            a skill point.
-          </p>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 
@@ -100,9 +128,9 @@ const BranchColumn: React.FC<{ branch: SkillBranch }> = ({ branch }) => {
   const skills = SKILL_IDS.filter((id) => SKILL_TYPES[id].branch === branch);
   return (
     <section className="min-h-0 overflow-y-auto">
-      <h2 className="font-condensed font-bold text-lg uppercase tracking-[0.2em] border-b-2 border-ink-black/40 pb-1 mb-3">
+      <h3 className="mb-3 border-b-2 border-ink-black/40 pb-1 font-condensed text-lg font-bold uppercase tracking-[0.2em]">
         {humanizeString(branch)}
-      </h2>
+      </h3>
       <ul className="space-y-3">
         {skills.map((id) => (
           <SkillCard key={id} skill={SKILL_TYPES[id]} />

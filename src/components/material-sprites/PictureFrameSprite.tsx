@@ -53,9 +53,19 @@ export const PictureFrameSprite: React.FC<
       // clear so the floor shows through
       const pad = 2;
       for (const [x, y, w, h] of [
-        [-outer - pad, -outer - pad, (outer + pad) * 2, outer - inner + pad * 2],
+        [
+          -outer - pad,
+          -outer - pad,
+          (outer + pad) * 2,
+          outer - inner + pad * 2,
+        ],
         [-outer - pad, inner - pad, (outer + pad) * 2, outer - inner + pad * 2],
-        [-outer - pad, -outer - pad, outer - inner + pad * 2, (outer + pad) * 2],
+        [
+          -outer - pad,
+          -outer - pad,
+          outer - inner + pad * 2,
+          (outer + pad) * 2,
+        ],
         [inner - pad, -outer - pad, outer - inner + pad * 2, (outer + pad) * 2],
       ]) {
         g.rect(x, y, w, h);

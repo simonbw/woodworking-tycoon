@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { GameState } from "../game/GameState";
 import { saveGame } from "../game/saveLoad";
 import { DebugView } from "./DebugView";
@@ -6,17 +6,20 @@ import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
-import { MarketplacePage } from "./marketplace-page/MarketplacePage";
 import { StartMenu } from "./StartMenu";
-import { StorePage } from "./store-page/StorePage";
-import { SkillsPage } from "./skills-page/SkillsPage";
-import { UiModeProvider, useUiMode } from "./UiMode";
+import { StoreTripOverlay } from "./store-page/StoreTripOverlay";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
 import { TickSpeedProvider } from "./TickSpeedContext";
 import { ManualProvider } from "./manual/ManualProvider";
-import { GameStateProvider, useGameState } from "./useGameState";
+import { GameStateProvider } from "./useGameState";
 
+/**
+ * The shop floor is the game's only screen. Everything that used to be a
+ * tab is an object reached from it: the manual and journal open as
+ * overlays, the marketplace lives on the phone, and the store is a trip
+ * out the garage door (a full-screen overlay while the trip lasts).
+ */
 export const Main: React.FC = () => {
   const [activeGame, setActiveGame] = useState<GameState | null>(null);
 
@@ -35,47 +38,20 @@ export const Main: React.FC = () => {
           initialState={activeGame}
           onQuitToMenu={handleQuitToMenu}
         >
-          <UiModeProvider>
-            <ShortcutProvider>
-              <TickSpeedProvider>
-                <ManualProvider>
-                  <ScreenSwitcher />
-                  <GameSoundLayer />
-                  <MachineSoundLayer />
-                  <DebugView />
-                  <FixtureLoader />
-                </ManualProvider>
-              </TickSpeedProvider>
-            </ShortcutProvider>
-          </UiModeProvider>
+          <ShortcutProvider>
+            <TickSpeedProvider>
+              <ManualProvider>
+                <HomePage />
+                <StoreTripOverlay />
+                <GameSoundLayer />
+                <MachineSoundLayer />
+                <DebugView />
+                <FixtureLoader />
+              </ManualProvider>
+            </TickSpeedProvider>
+          </ShortcutProvider>
         </GameStateProvider>
       )}
     </>
   );
-};
-
-const ScreenSwitcher: React.FC = () => {
-  const { mode, setMode } = useUiMode();
-  const gameState = useGameState();
-  const { storeUnlocked, marketplaceUnlocked } = gameState.progression;
-
-  // Safety check: if user is in a tab that's no longer unlocked, redirect to home
-  useEffect(() => {
-    if (mode.mode === "store" && !storeUnlocked) {
-      setMode({ mode: "normal" });
-    } else if (mode.mode === "marketplace" && !marketplaceUnlocked) {
-      setMode({ mode: "normal" });
-    }
-  }, [mode.mode, storeUnlocked, marketplaceUnlocked, setMode]);
-
-  switch (mode.mode) {
-    case "normal":
-      return <HomePage />;
-    case "store":
-      return storeUnlocked ? <StorePage /> : <HomePage />;
-    case "marketplace":
-      return marketplaceUnlocked ? <MarketplacePage /> : <HomePage />;
-    case "skills":
-      return <SkillsPage />;
-  }
 };

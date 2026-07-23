@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { modesOf, selectMode as selectMachineMode } from "./machine-panel";
+import { closeJournal, openJournal, openPhone } from "./navigation";
 
 declare global {
   interface Window {
@@ -71,24 +72,21 @@ test.describe("Pattern Boards", () => {
     await page.waitForTimeout(300);
 
     await test.step("sunrise is gated behind both branches", async () => {
-      await page.getByText("Skills (3)", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openJournal(page);
       await expect(
         page
           .locator("li", { hasText: "Sunrise Boards" })
           .getByText("Requires Striped Boards, Freeform Lamination"),
       ).toBeVisible();
       // Freeform glue ops are hidden at the bench until learned
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await closeJournal(page);
       const modes = await workspaceModes(page);
       expect(modes).not.toContain("Glue Up Pair");
       expect(modes).not.toContain("Finish Striped Board");
     });
 
     await test.step("spend 3 points down to Sunrise Boards", async () => {
-      await page.getByText("Skills (3)", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openJournal(page);
       for (const skill of [
         "Striped Boards",
         "Freeform Lamination",
@@ -101,8 +99,7 @@ test.describe("Pattern Boards", () => {
         await page.waitForTimeout(200);
       }
       await expect(page.getByText("Certified")).toHaveCount(8);
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await closeJournal(page);
       const modes = await workspaceModes(page);
       expect(modes).toContain("Glue Up Pair");
       expect(modes).toContain("Glue On Strip");
@@ -207,8 +204,7 @@ test.describe("Pattern Boards", () => {
         }));
       });
       await page.waitForTimeout(300);
-      await page.getByText("Marketplace", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openPhone(page);
       await page
         .locator("li", { hasText: "Sunrise Cutting Board" })
         .getByRole("button", { name: "List" })

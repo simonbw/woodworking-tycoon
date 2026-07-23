@@ -1,4 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
+import { movePlayerToDoor } from "./navigation";
 
 const getState = (page: Page) =>
   page.evaluate(() => (window as any).__GET_GAME_STATE__());
@@ -10,6 +11,8 @@ test.describe("Keyboard shortcuts", () => {
   test("moves, navigates, scopes to modals, and labels its keys", async ({
     page,
   }) => {
+    // Many small steps; the default 30s budget is tight on slow machines
+    test.setTimeout(120000);
     page.on("dialog", (d) => d.accept());
 
     await test.step("start a game with every screen unlocked", async () => {
@@ -25,12 +28,16 @@ test.describe("Keyboard shortcuts", () => {
           () => fixtures["layout-with-placed-machines"],
         );
       });
-      // No fixture ships with the tick controls unlocked, and the speed keys
-      // are gated on them.
+      // No fixture ships with the tick controls unlocked (the speed keys are
+      // gated on them) or the marketplace (which gates the phone).
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((s: any) => ({
           ...s,
-          progression: { ...s.progression, tickSpeedControlsUnlocked: true },
+          progression: {
+            ...s.progression,
+            tickSpeedControlsUnlocked: true,
+            marketplaceUnlocked: true,
+          },
         }));
       });
     });
@@ -56,19 +63,33 @@ test.describe("Keyboard shortcuts", () => {
       await walkUntil("a", [0, 1]);
     });
 
-    await test.step("letter keys switch tabs", async () => {
-      await page.keyboard.press("b");
-      await expect(
-        page.getByRole("heading", { name: "Machines" }),
-      ).toBeVisible();
-
+    await test.step("letter keys open the pocket overlays and toggle shut", async () => {
       await page.keyboard.press("k");
+      const journal = page.getByRole("dialog", { name: "Journal" });
+      await expect(journal).toBeVisible();
       await expect(page.getByText(/Craft Level/)).toBeVisible();
+      // K re-binds inside the modal scope, so it toggles rather than only opens
+      await page.keyboard.press("k");
+      await expect(journal).toHaveCount(0);
 
-      await page.keyboard.press("h");
-      await expect(
-        page.getByRole("heading", { name: "Inventory" }),
-      ).toBeVisible();
+      await page.keyboard.press("m");
+      const phone = page.getByRole("dialog", { name: "Phone" });
+      await expect(phone).toBeVisible();
+      await page.keyboard.press("m");
+      await expect(phone).toHaveCount(0);
+    });
+
+    await test.step("B heads out to the store, but only at the garage door", async () => {
+      const store = page.getByRole("dialog", { name: "Orange Box" });
+      await page.keyboard.press("b");
+      await expect(store).toHaveCount(0);
+
+      await movePlayerToDoor(page);
+      await page.keyboard.press("b");
+      await expect(store).toBeVisible();
+      // Escape heads home
+      await page.keyboard.press("Escape");
+      await expect(store).toHaveCount(0);
     });
 
     await test.step("? opens the shop manual and Escape closes it", async () => {
@@ -102,17 +123,18 @@ test.describe("Keyboard shortcuts", () => {
     await test.step("Space still activates a focused button", async () => {
       // Space is bound to pause/resume globally, so the dispatcher has to let
       // a focused control keep its own activation key.
-      const tab = page.getByRole("button", { name: "Store" });
-      await tab.focus();
+      const button = page.getByRole("button", { name: "Phone" });
+      await button.focus();
       await page.keyboard.press("Space");
-      await expect(
-        page.getByRole("heading", { name: "Machines" }),
-      ).toBeVisible();
+      const phone = page.getByRole("dialog", { name: "Phone" });
+      await expect(phone).toBeVisible();
 
-      await page.keyboard.press("h");
-      await expect(
-        page.getByRole("heading", { name: "Inventory" }),
-      ).toBeVisible();
+      // Close with M rather than Escape: the focused button's tooltip is
+      // open (tooltips open on focus) and swallows the first Escape.
+      await page.keyboard.press("m");
+      await expect(phone).toHaveCount(0);
+      // Drop focus so the button's tooltip can't linger into later steps
+      await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
     });
 
     await test.step("a modal swallows the game's movement keys", async () => {
@@ -182,7 +204,14 @@ test.describe("Keyboard shortcuts", () => {
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((s: any) => ({
           ...s,
-          player: { ...s.player, away: { returnTick: s.tick + 100000 } },
+          player: {
+            ...s.player,
+            away: {
+              kind: "scavenging",
+              returnTick: s.tick + 100000,
+              loot: [],
+            },
+          },
         }));
       });
       // The legend hides itself while away. Waiting for that proves React has
@@ -207,8 +236,11 @@ test.describe("Keyboard shortcuts", () => {
 
     await test.step("the speed buttons advertise their keys", async () => {
       await page.getByRole("button", { name: "⏸" }).hover();
-      const tip = page.getByRole("tooltip");
-      await expect(tip).toContainText("Pause game");
+      // Scoped by text so a stale tooltip elsewhere can't shadow this one
+      const tip = page
+        .getByRole("tooltip")
+        .filter({ hasText: "Pause game" });
+      await expect(tip).toBeVisible();
       await expect(tip.locator("kbd")).toHaveText("`");
     });
 

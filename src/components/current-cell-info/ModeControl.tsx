@@ -75,7 +75,11 @@ export const ModeControl: React.FC<{
     return (
       <div className="flex flex-row items-center gap-2 text-sm">
         {label}
-        <div role="radiogroup" aria-label={labelText} className="flex flex-wrap">
+        <div
+          role="radiogroup"
+          aria-label={labelText}
+          className="flex flex-wrap"
+        >
           {operations.map((operation, i) => {
             const isSelected = operation === selected;
             return (

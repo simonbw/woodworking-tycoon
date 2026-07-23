@@ -16,18 +16,18 @@ export const WelcomeArticle: React.FC = () => (
     <H>Getting Around</H>
     <P>
       Move with <ShortcutKeys shortcut="move-up" />{" "}
-      <ShortcutKeys shortcut="move-left" /> <ShortcutKeys shortcut="move-down" />{" "}
+      <ShortcutKeys shortcut="move-left" />{" "}
+      <ShortcutKeys shortcut="move-down" />{" "}
       <ShortcutKeys shortcut="move-right" />. Pick up whatever is at your feet
       with <ShortcutKeys shortcut="pick-up" />, and put it down — or load it
-      into a machine — with <ShortcutKeys shortcut="put-down" />. Pause the
-      game at any time with <ShortcutKeys shortcut="speed-toggle" />.
+      into a machine — with <ShortcutKeys shortcut="put-down" />. Pause the game
+      at any time with <ShortcutKeys shortcut="speed-toggle" />.
     </P>
 
     <H>Your First Commission</H>
     <P>
-      The corkboard on the left shows your current <Term>work order</Term>.
-      The first one asks for a rustic shelf, and the pallet has enough wood
-      for it:
+      The corkboard on the left shows your current <Term>work order</Term>. The
+      first one asks for a rustic shelf, and the pallet has enough wood for it:
     </P>
     <UL>
       <li>
@@ -40,8 +40,8 @@ export const WelcomeArticle: React.FC = () => (
       </li>
       <li>
         Run the bench with <ShortcutKeys shortcut="operate-machine" /> to{" "}
-        <Term>dismantle</Term> the pallet into deck boards and stringers.
-        Prying a board free also recovers the nail that held it.
+        <Term>dismantle</Term> the pallet into deck boards and stringers. Prying
+        a board free also recovers the nail that held it.
       </li>
       <li>
         Switch the bench's plan with <ShortcutKeys shortcut="cycle-operation" />{" "}
@@ -55,8 +55,9 @@ export const WelcomeArticle: React.FC = () => (
     </UL>
     <P>
       Completing a commission pays money and builds reputation, and each new
-      commission asks for something more advanced. The first payment is
-      enough to start shopping at the hardware store.
+      commission asks for something more advanced. The first payment is enough
+      to start shopping at the hardware store — once you hear about it, walk up
+      to the garage door to head out.
     </P>
 
     <Note>

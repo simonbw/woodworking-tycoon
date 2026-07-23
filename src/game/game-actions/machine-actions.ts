@@ -36,7 +36,9 @@ export function canPlaceMachine(
   rotation: Direction,
   excludeMachine?: MachineState,
 ): boolean {
-  const unlessExcluded = (occupant: Machine | undefined): Machine | undefined =>
+  const unlessExcluded = (
+    occupant: Machine | undefined,
+  ): Machine | undefined =>
     occupant !== undefined &&
     excludeMachine !== undefined &&
     isSameMachine(occupant.state, excludeMachine)
@@ -159,7 +161,8 @@ export function freshMachineState(
   const machineType = MACHINE_TYPES[machineTypeId];
   const unlockedOps = machineType.operations.filter(
     (op) =>
-      !op.requiredSkill || progression.unlockedSkills.includes(op.requiredSkill),
+      !op.requiredSkill ||
+      progression.unlockedSkills.includes(op.requiredSkill),
   );
   return {
     machineTypeId,
@@ -169,9 +172,7 @@ export function freshMachineState(
     // Parameterized defaults up front: an operation started without the
     // player ever touching the scale must still complete cleanly.
     selectedParameters:
-      unlockedOps.length > 0
-        ? defaultParametersFor(unlockedOps[0])
-        : undefined,
+      unlockedOps.length > 0 ? defaultParametersFor(unlockedOps[0]) : undefined,
     operationProgress: {
       status: "notStarted",
       phaseIndex: 0,

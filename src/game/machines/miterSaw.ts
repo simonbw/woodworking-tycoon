@@ -12,9 +12,7 @@ import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated"
  * detent plate, because mirrored cuts are how a frame rail's two ends get
  * made without flipping the stock. 0° is a plain crosscut.
  */
-export const SAW_ANGLE_STOPS = [
-  -45, -30, -22.5, 0, 22.5, 30, 45,
-] as const;
+export const SAW_ANGLE_STOPS = [-45, -30, -22.5, 0, 22.5, 30, 45] as const;
 
 /**
  * Where along the stock the blade can land, measured in feet from the

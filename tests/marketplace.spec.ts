@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { closePhone, movePlayerToDoor, openPhone } from "./navigation";
 
 declare global {
   interface Window {
@@ -18,10 +19,12 @@ test.describe("Marketplace", () => {
     await page.waitForTimeout(500);
 
     await test.step("locked before the marketplace unlocks", async () => {
-      await expect(page.getByText("Errands")).not.toBeVisible();
       await expect(
-        page.getByText("Marketplace", { exact: true }),
+        page.getByRole("button", { name: "Phone" }),
       ).not.toBeVisible();
+      // Nothing to walk out for yet either: no door panel in a fresh game
+      await movePlayerToDoor(page);
+      await expect(page.getByTestId("door-panel")).not.toBeVisible();
     });
 
     await test.step("load marketplace fixture", async () => {
@@ -32,15 +35,11 @@ test.describe("Marketplace", () => {
         );
       });
       await page.waitForTimeout(300);
-      await expect(page.getByText("Errands")).toBeVisible();
-      await expect(
-        page.getByText("Marketplace", { exact: true }),
-      ).toBeVisible();
+      await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
     });
 
     await test.step("list a shelf at fair value", async () => {
-      await page.getByText("Marketplace", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openPhone(page);
       await expect(
         page.getByText("SawdustList", { exact: true }),
       ).toBeVisible();
@@ -99,6 +98,7 @@ test.describe("Marketplace", () => {
     });
 
     await test.step("job board fills with producible offers", async () => {
+      await page.getByRole("button", { name: "Job Board" }).click();
       // The tick pass fills an empty board once the marketplace is unlocked
       await page.waitForFunction(
         () => (window as any).__GET_GAME_STATE__().jobBoard.length >= 3,
@@ -109,9 +109,9 @@ test.describe("Marketplace", () => {
         (window as any).__GET_GAME_STATE__(),
       );
       // The income floor: always at least one zero-material-cost job
-      expect(
-        state.jobBoard.some((offer: any) => offer.materialCostFree),
-      ).toBe(true);
+      expect(state.jobBoard.some((offer: any) => offer.materialCostFree)).toBe(
+        true,
+      );
       await expect(
         page.getByRole("button", { name: "Accept" }).first(),
       ).toBeVisible();
@@ -161,10 +161,12 @@ test.describe("Marketplace", () => {
       const moneyBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
+      // force: the tip decays every tick, so the row's payout text keeps
+      // re-rendering and the stability check can starve on slow machines
       await page
         .locator("li", { hasText: "E2E Tester" })
         .getByRole("button", { name: "Deliver" })
-        .click();
+        .click({ force: true });
       await page.waitForTimeout(300);
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
@@ -177,10 +179,14 @@ test.describe("Marketplace", () => {
       ).toBe(false);
     });
 
-    await test.step("scavenging trip", async () => {
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
-      await page.getByRole("button", { name: "Go" }).click();
+    await test.step("scavenging trip starts at the garage door", async () => {
+      await closePhone(page);
+      await movePlayerToDoor(page);
+      await page
+        .getByTestId("door-panel")
+        .locator("li", { hasText: "Scavenge for pallets" })
+        .getByRole("button", { name: "Go" })
+        .click({ force: true });
       await page.waitForTimeout(300);
       await expect(page.getByText(/Out scavenging/)).toBeVisible();
 
@@ -217,7 +223,10 @@ test.describe("Marketplace", () => {
         expect(deckCount).toBeGreaterThanOrEqual(6);
         expect(deckCount).toBeLessThanOrEqual(11);
       }
-      await expect(page.getByText("Scavenge for pallets")).toBeVisible();
+      // Back at the door, the errand is on offer again
+      await expect(
+        page.getByTestId("door-panel").getByText("Scavenge for pallets"),
+      ).toBeVisible();
     });
   });
 });

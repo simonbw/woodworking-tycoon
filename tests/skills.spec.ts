@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { modesOf, selectMode } from "./machine-panel";
+import { closeJournal, openJournal, openPhone } from "./navigation";
 
 declare global {
   interface Window {
@@ -33,9 +34,10 @@ test.describe("Skill Tree", () => {
     await page.waitForTimeout(500);
 
     await test.step("starter skills come pre-certified", async () => {
-      await page.getByText("Skills", { exact: true }).click();
-      await page.waitForTimeout(300);
-      await expect(page.getByText("Workshop Certifications")).toBeVisible();
+      await openJournal(page);
+      await expect(
+        page.getByRole("heading", { name: /Woodworker/ }),
+      ).toBeVisible();
       // 4 starter skills show as certified
       await expect(page.getByText("Certified")).toHaveCount(4);
       // Locked-with-prereqs-met shows a disabled Learn button (0 points)
@@ -48,6 +50,7 @@ test.describe("Skill Tree", () => {
         page.locator("li", { hasText: "Box Joinery" }).getByText(/Requires/),
       ).toBeVisible();
       await expect(page.getByText("Craft Level 1")).toBeVisible();
+      await closeJournal(page);
     });
 
     await test.step("load fixture with mixed strips and 2 skill points", async () => {
@@ -81,32 +84,28 @@ test.describe("Skill Tree", () => {
         }));
       });
       await page.waitForTimeout(300);
-      // Tab badge shows the unspent points
-      await expect(page.getByText("Skills (2)")).toBeVisible();
+      // The journal button's badge shows the unspent points
+      await expect(page.getByTestId("journal-badge")).toHaveText("2");
     });
 
     await test.step("locked recipe is hidden at the workspace", async () => {
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
       const modes = await workspaceModes(page);
       expect(modes).not.toContain("Finish Two-Tone Board");
     });
 
-    await test.step("learn Two-Tone Boards on the skills page", async () => {
-      await page.getByText("Skills (2)", { exact: true }).click();
-      await page.waitForTimeout(300);
+    await test.step("learn Two-Tone Boards in the journal", async () => {
+      await openJournal(page);
       await page
         .locator("li", { hasText: "Two-Tone Boards" })
         .getByRole("button", { name: /Learn/ })
         .click();
       await page.waitForTimeout(300);
       await expect(page.getByText("Certified")).toHaveCount(5);
-      await expect(page.getByText("Skills (1)")).toBeVisible();
+      await closeJournal(page);
+      await expect(page.getByTestId("journal-badge")).toHaveText("1");
     });
 
     await test.step("build a two-tone board: mount sander, glue, sand, finish", async () => {
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
 
@@ -234,8 +233,7 @@ test.describe("Skill Tree", () => {
         }));
       });
       await page.waitForTimeout(300);
-      await page.getByText("Marketplace", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openPhone(page);
       await page
         .locator("li", { hasText: "Walnut & Maple" })
         .getByRole("button", { name: "List" })

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { goToStore } from "./navigation";
 
 declare global {
   interface Window {
@@ -40,8 +41,10 @@ test.describe("Carrying machines", () => {
     await page.waitForTimeout(500);
     await loadFixture(page, "miter-saw-crate-shop");
 
-    await test.step("the layout tab is gone", async () => {
-      await expect(page.getByText("Home")).toBeVisible();
+    await test.step("no layout tab — no tabs at all, just the chrome strip", async () => {
+      await expect(
+        page.getByRole("heading", { name: "One Car Garage" }),
+      ).toBeVisible();
       await expect(page.getByText("Shop Layout")).toHaveCount(0);
     });
 
@@ -157,12 +160,13 @@ test.describe("Carrying machines", () => {
           progression: { ...state.progression, storeUnlocked: true },
         }));
       });
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await goToStore(page);
+      // force: the store keeps ticking now (a trip costs time), so the
+      // stability check can starve on slow machines
       await page
         .locator("li", { hasText: "Jobsite Table Saw" })
         .getByRole("button", { name: "Buy" })
-        .click();
+        .click({ force: true });
       await page.waitForTimeout(300);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.machineCrates).toHaveLength(1);
