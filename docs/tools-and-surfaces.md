@@ -190,18 +190,21 @@ are seeded for future hexagonal/octagonal frames.
 
 ## Lumber channels (Now — issue #6)
 
-The lumber aisle is organized as purchase channels modeled on the real
-woodworker's journey. Channels are **reputation-gated and completely hidden
-until unlocked** — no grayed-out teasers; sections appearing is the reward.
-See `lumberStock.ts` for the data.
+Lumber is sold as purchase channels modeled on the real woodworker's
+journey, split across two stores: Orange Box carries only ready-to-use
+wood, and Sawyer & Sons (the lumberyard, its own trip out the garage door)
+carries everything milled short of S4S. Channels are **reputation-gated and
+completely hidden until unlocked** — no grayed-out teasers; sections
+appearing is the reward, and the lumberyard itself appearing at the door is
+the 12-reputation reward. See `lumberStock.ts` for the data.
 
-| Channel | Species | State | Price factor | Unlock |
-|---|---|---|---|---|
-| The curb | pallet | faces 1 / edges 2, rough | free | start |
-| Construction Lumber | pine | S4S | ×1 | with store |
-| S4S Hardwood Rack | poplar, oak, maple | S4S | ×1.6 (the big-box markup) | with store |
-| Lumberyard — S2S | maple, oak, cherry, walnut | faces 2 / edges 0 | ×1 | 12 reputation |
-| Rough Rack | maple, oak, cherry, walnut | faces 0 / edges 0 | ×0.55 | 22 reputation |
+| Channel | Store | Species | State | Price factor | Unlock |
+|---|---|---|---|---|---|
+| The curb | — | pallet | faces 1 / edges 2, rough | free | start |
+| Construction Lumber | Orange Box | pine | S4S | ×1 | with store |
+| S4S Hardwood Rack | Orange Box | poplar, oak, maple | S4S | ×1.6 (the big-box markup) | with store |
+| S2S Rack | Sawyer & Sons | maple, oak, cherry, walnut | faces 2 / edges 0 | ×1 | 12 reputation |
+| Rough Rack | Sawyer & Sons | maple, oak, cherry, walnut | faces 0 / edges 0 | ×0.55 | 22 reputation |
 
 Exotics (mahogany, purple heart) are not sold anywhere yet — a future
 "specialty dealer" brings them back as the channel past the rough rack.

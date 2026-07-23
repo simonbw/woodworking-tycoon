@@ -159,6 +159,11 @@ export const ActionBar: React.FC = () => {
               {atDoor && gameState.progression.storeUnlocked && (
                 <Hint shortcut="go-to-store">Head out to Orange Box</Hint>
               )}
+              {atDoor && gameState.progression.lumberyardUnlocked && (
+                <Hint shortcut="go-to-lumberyard">
+                  Head out to Sawyer &amp; Sons
+                </Hint>
+              )}
               {atDoor && gameState.progression.marketplaceUnlocked && (
                 <Hint shortcut="scavenge">Scavenge for pallets</Hint>
               )}

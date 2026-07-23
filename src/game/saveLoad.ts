@@ -1,12 +1,13 @@
 import { freshMachineState } from "./game-actions/machine-actions";
 import { GameState } from "./GameState";
+import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import { Machine, MachineId } from "./Machine";
 import { articlesUnlockedFor } from "./manual";
 import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 22; // Increment this when GameState structure changes
+const SAVE_VERSION = 23; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -101,6 +102,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 21) {
       saveData.gameState = migrateV21toV22(saveData.gameState);
       saveData.version = 22;
+    }
+
+    if (saveData.version === 22) {
+      saveData.gameState = migrateV22toV23(saveData.gameState);
+      saveData.version = 23;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -488,6 +494,30 @@ export function migrateV21toV22(old: any): GameState {
       workQueue: (old.player.workQueue ?? []).filter(
         (item: { type: string }) => item.type === "sweep",
       ),
+    },
+  };
+}
+
+/**
+ * v22 → v23: the S2S and rough lumber channels moved from Orange Box to
+ * the lumberyard, a second store out the garage door. The yard opens at
+ * the reputation the S2S rack used to appear at, so nobody loses access
+ * they already had; a save captured mid-shopping-trip was at Orange Box,
+ * the only store that existed.
+ */
+export function migrateV22toV23(old: any): GameState {
+  return {
+    ...old,
+    player: {
+      ...old.player,
+      away:
+        old.player.away?.kind === "shopping"
+          ? { ...old.player.away, store: "orangeBox" }
+          : old.player.away,
+    },
+    progression: {
+      ...old.progression,
+      lumberyardUnlocked: old.reputation >= LUMBERYARD_MIN_REPUTATION,
     },
   };
 }

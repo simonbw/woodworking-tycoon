@@ -261,16 +261,20 @@ describe("millingLabel", () => {
 });
 
 describe("lumber channels", () => {
-  it("hides higher channels until reputation earns them", () => {
-    const atStart = unlockedLumberChannels(0).map((c) => c.id);
+  it("stocks Orange Box with ready-to-use wood from the start", () => {
+    const atStart = unlockedLumberChannels(0, "orangeBox").map((c) => c.id);
     assert.deepStrictEqual(atStart, ["constructionLumber", "bigBoxRack"]);
-    const all = unlockedLumberChannels(30).map((c) => c.id);
-    assert.deepStrictEqual(all, [
-      "constructionLumber",
-      "bigBoxRack",
-      "lumberyard",
-      "roughRack",
-    ]);
+    // Reputation never changes the big box's racks
+    const later = unlockedLumberChannels(30, "orangeBox").map((c) => c.id);
+    assert.deepStrictEqual(later, atStart);
+  });
+
+  it("hides the lumberyard's higher channels until reputation earns them", () => {
+    assert.deepStrictEqual(unlockedLumberChannels(0, "lumberyard"), []);
+    const atTwelve = unlockedLumberChannels(12, "lumberyard").map((c) => c.id);
+    assert.deepStrictEqual(atTwelve, ["s2sRack"]);
+    const all = unlockedLumberChannels(30, "lumberyard").map((c) => c.id);
+    assert.deepStrictEqual(all, ["s2sRack", "roughRack"]);
   });
 
   it("keeps every unlock threshold reachable within the commission sequence", () => {

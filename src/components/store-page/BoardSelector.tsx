@@ -14,6 +14,7 @@ import {
 import {
   LumberChannel,
   LumberSku,
+  StoreId,
   unlockedLumberChannels,
 } from "../../game/lumberStock";
 import { BoardFaceSvg } from "./BoardFaceSvg";
@@ -28,30 +29,28 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 const RACK_MAX_FEET = 8;
 
 /**
- * The lumber aisle, one section per purchase channel (see lumberStock.ts).
- * Locked channels are completely absent — new sections appear as
- * reputation grows. No custom cutting anywhere: milling stock down to what
- * a project needs is the game.
+ * One store's lumber racks, one section per purchase channel carried there
+ * (see lumberStock.ts). Locked channels are completely absent — new
+ * sections appear as reputation grows. No custom cutting anywhere: milling
+ * stock down to what a project needs is the game.
  *
- * The aisle is built to be read by eye: a channel card holds one bundle
+ * The racks are built to be read by eye: a channel card holds one bundle
  * per species — named once on the left rail, confirmed by the boards'
  * color — with that species' sizes stacked inside it. Row text is the
  * dims and the price; the milled state and the channel's flavor line
- * wait in the channel-name tooltip.
+ * wait in the channel-name tooltip. The surrounding overlay owns the
+ * section heading, so each store keeps its own signage.
  */
-export const BoardSelector: React.FC = () => {
+export const BoardSelector: React.FC<{ store: StoreId }> = ({ store }) => {
   const gameState = useGameState();
-  const channels = unlockedLumberChannels(gameState.reputation);
+  const channels = unlockedLumberChannels(gameState.reputation, store);
 
   return (
-    <section>
-      <h2 className="aisle-heading">Lumber</h2>
-      <div className="space-y-3">
-        {channels.map((channel) => (
-          <LumberChannelSection key={channel.id} channel={channel} />
-        ))}
-      </div>
-    </section>
+    <div className="space-y-3">
+      {channels.map((channel) => (
+        <LumberChannelSection key={channel.id} channel={channel} />
+      ))}
+    </div>
   );
 };
 
@@ -165,7 +164,13 @@ const SkuRow: React.FC<{
       </div>
       {numberOwned > 0 && (
         <Tooltip content={`${numberOwned} in your inventory`}>
-          <span className="text-[10px] text-store-orange-dark font-semibold tabular-nums whitespace-nowrap">
+          <span
+            className={`text-[10px] font-semibold tabular-nums whitespace-nowrap ${
+              channel.store === "lumberyard"
+                ? "text-mill-green"
+                : "text-store-orange-dark"
+            }`}
+          >
             ×{numberOwned}
           </span>
         </Tooltip>
@@ -179,7 +184,11 @@ const SkuRow: React.FC<{
         ${price.toFixed(2)}
       </span>
       <button
-        className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-[10px] px-2 py-0.5 rounded-sm shadow"
+        className={`disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-[10px] px-2 py-0.5 rounded-sm shadow ${
+          channel.store === "lumberyard"
+            ? "bg-mill-green hover:bg-mill-green-dark"
+            : "bg-store-orange hover:bg-store-orange-dark"
+        }`}
         disabled={gameState.money < price}
         data-sfx="ui-purchase"
         aria-label={`Buy ${fullName}`}

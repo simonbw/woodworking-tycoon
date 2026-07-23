@@ -21,18 +21,25 @@ export const DoorSection: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
 
-  const { storeUnlocked, marketplaceUnlocked } = gameState.progression;
+  const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
+    gameState.progression;
   const atDoor =
     !gameState.player.away &&
     isAtShopDoor(gameState.shopInfo, gameState.player.position);
-  const anywhereToGo = storeUnlocked || marketplaceUnlocked;
+  const anywhereToGo =
+    storeUnlocked || lumberyardUnlocked || marketplaceUnlocked;
   const handsFree = canLeaveShop(gameState);
   const carried = gameState.player.carriedMachine ?? null;
 
   useShortcut(
     "go-to-store",
-    () => applyAction(goToStoreAction()),
+    () => applyAction(goToStoreAction("orangeBox")),
     atDoor && storeUnlocked && handsFree,
+  );
+  useShortcut(
+    "go-to-lumberyard",
+    () => applyAction(goToStoreAction("lumberyard")),
+    atDoor && lumberyardUnlocked && handsFree,
   );
   useShortcut(
     "scavenge",
@@ -61,7 +68,16 @@ export const DoorSection: React.FC = () => {
             description="The big-box store: lumber, tools, machines, and supplies. Takes as long as you spend in the aisles."
             shortcut="go-to-store"
             enabled={handsFree}
-            onGo={() => applyAction(goToStoreAction())}
+            onGo={() => applyAction(goToStoreAction("orangeBox"))}
+          />
+        )}
+        {lumberyardUnlocked && (
+          <Destination
+            name="Sawyer & Sons"
+            description="The hardwood lumberyard: rough and S2S stock, priced for people who mill their own. Takes as long as you spend in the racks."
+            shortcut="go-to-lumberyard"
+            enabled={handsFree}
+            onGo={() => applyAction(goToStoreAction("lumberyard"))}
           />
         )}
         {marketplaceUnlocked && (

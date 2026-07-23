@@ -74,6 +74,7 @@ export const miterSawCrateShop: GameState = {
   progression: {
     tutorialStage: 2,
     storeUnlocked: true,
+    lumberyardUnlocked: false,
     shopLayoutUnlocked: true,
     marketplaceUnlocked: false,
     commissionsCompleted: 1,

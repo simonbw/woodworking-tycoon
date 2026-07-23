@@ -8,7 +8,9 @@ export const MillingArticle: React.FC = () => (
       four sides — is flat, straight, and ready to use. <Term>S2S</Term> has
       surfaced faces but rough edges. <Term>Rough sawn</Term> lumber is neither
       flat nor straight. The rougher the stock, the cheaper it is, because the
-      surfacing work is left to you. That work is milling.
+      surfacing work is left to you. That work is milling. The hardware store
+      only sells surfaced wood; S2S and rough stock hang in the racks at the
+      lumberyard.
     </P>
     <FigureRow>
       <Photo src="/images/benchtop-jointer.png" caption="jointer — flattens" />

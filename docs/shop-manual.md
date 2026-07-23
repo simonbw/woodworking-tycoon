@@ -47,7 +47,7 @@ directly to it. The standalone overlay component retires.
 | ----------------------------- | ---------------------------------------------- |
 | Welcome to the Shop           | always (auto-opens once on a brand-new game)   |
 | Controls                      | always                                         |
-| Milling & Surfaces            | first rough (non-S4S) lumber enters the shop   |
+| Milling & Surfaces            | the lumberyard opens, or a milling machine/tool |
 | Finishing                     | first time a finish is required or bought      |
 | Tools & Tool Slots            | first mountable tool owned                     |
 | Shop Layout: Moving Machines  | `shopLayoutUnlocked`                           |

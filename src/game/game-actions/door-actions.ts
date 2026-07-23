@@ -1,4 +1,5 @@
 import { GameAction, GameState } from "../GameState";
+import { StoreId } from "../lumberStock";
 import { isAtShopDoor } from "../ShopInfo";
 
 /**
@@ -14,15 +15,22 @@ export function canLeaveShop(gameState: GameState): boolean {
   );
 }
 
+/** Whether the player has heard of this store yet. */
+export function storeUnlocked(gameState: GameState, store: StoreId): boolean {
+  return store === "orangeBox"
+    ? gameState.progression.storeUnlocked
+    : gameState.progression.lumberyardUnlocked;
+}
+
 /**
- * Walk out the door to the store. The player is away for as long as they
+ * Walk out the door to a store. The player is away for as long as they
  * browse — the shop keeps ticking without them (see Person.ShoppingTrip) —
  * and comes home via returnFromStoreAction.
  */
-export function goToStoreAction(): GameAction {
+export function goToStoreAction(store: StoreId): GameAction {
   return (gameState) => {
-    if (!gameState.progression.storeUnlocked) {
-      console.warn("The store is not unlocked yet");
+    if (!storeUnlocked(gameState, store)) {
+      console.warn("That store is not unlocked yet");
       return gameState;
     }
     if (!canLeaveShop(gameState)) {
@@ -35,13 +43,13 @@ export function goToStoreAction(): GameAction {
         ...gameState.player,
         canWork: false,
         workQueue: [],
-        away: { kind: "shopping" },
+        away: { kind: "shopping", store },
       },
     };
   };
 }
 
-/** Head home from the store. The player walks back in through the door. */
+/** Head home from a store. The player walks back in through the door. */
 export function returnFromStoreAction(): GameAction {
   return (gameState) => {
     if (gameState.player.away?.kind !== "shopping") {

@@ -52,7 +52,7 @@ The game follows a state-driven architecture with clear separation between game 
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
-   - **Garage door** (`DoorSection`): stand at the entrance cell to see places to go — the Orange Box store trip (`StoreTripOverlay`, an `AwayTrip` of kind `shopping`) and pallet scavenging
+   - **Garage door** (`DoorSection`): stand at the entrance cell to see places to go — shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
 
 ### Material and Machine System
@@ -77,6 +77,7 @@ src/
 ├── components/            # React components
 │   ├── shop-view/         # Main game area rendering (PIXI)
 │   ├── store-page/        # The Orange Box store trip overlay
+│   ├── lumberyard-page/   # The Sawyer & Sons lumberyard trip overlay
 │   ├── phone/             # Phone overlay (SawdustList: listings + job board)
 │   ├── journal/           # Journal overlay (skill tree)
 │   ├── current-cell-info/ # Inspector panels (incl. the garage-door panel)

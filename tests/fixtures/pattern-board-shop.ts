@@ -111,6 +111,7 @@ export const patternBoardShop: GameState = {
   progression: {
     tutorialStage: 2,
     storeUnlocked: true,
+    lumberyardUnlocked: true,
     shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 5,

@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { modesOf, selectMode } from "./machine-panel";
-import { goToStore, leaveStore, openPhone } from "./navigation";
+import {
+  goToLumberyard,
+  goToStore,
+  leaveStore,
+  openPhone,
+} from "./navigation";
 
 declare global {
   interface Window {
@@ -78,8 +83,17 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await expect(page.getByText("1x4 — 8'")).toBeVisible();
       await expect(page.getByText("$38.40")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
-      // At 17 reputation the lumberyard (12) has appeared...
-      await expect(page.getByText("Lumberyard — S2S")).toBeVisible();
+      // The less-than-S4S channels live at the lumberyard, not here
+      await expect(page.getByText("S2S Rack")).not.toBeVisible();
+      await expect(page.getByText("Rough Rack")).not.toBeVisible();
+      await leaveStore(page, returnTo);
+    });
+
+    await test.step("lumberyard: open at 17 reputation, rough rack still hidden", async () => {
+      const returnTo = await goToLumberyard(page);
+      await expect(page.getByText("Sawyer & Sons")).toBeVisible();
+      // At 17 reputation the S2S rack (12) has appeared...
+      await expect(page.getByText("S2S Rack")).toBeVisible();
       // ...but the rough rack (22) doesn't exist yet — not even greyed out
       await expect(page.getByText("Rough Rack")).not.toBeVisible();
       await leaveStore(page, returnTo);

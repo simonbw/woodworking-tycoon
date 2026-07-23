@@ -8,6 +8,7 @@ import {
   migrateV17toV18,
   migrateV19toV20,
   migrateV20toV21,
+  migrateV22toV23,
 } from "./saveLoad";
 import { STARTER_SKILLS } from "./Skill";
 
@@ -254,6 +255,47 @@ describe("migrateV20toV21", () => {
     assert.deepStrictEqual(
       migrated.machineCrates[0].machine.selectedParameters,
       { cutPosition: 4 },
+    );
+  });
+});
+
+describe("migrateV22toV23", () => {
+  it("opens the lumberyard for saves that had already earned its racks", () => {
+    const old: any = {
+      reputation: 12,
+      player: { away: null },
+      progression: { storeUnlocked: true },
+    };
+    const migrated = migrateV22toV23(old) as any;
+    assert.strictEqual(migrated.progression.lumberyardUnlocked, true);
+    // Below the S2S rack's reputation the yard stays unheard-of
+    const fresh = migrateV22toV23({
+      ...old,
+      reputation: 11,
+    }) as any;
+    assert.strictEqual(fresh.progression.lumberyardUnlocked, false);
+  });
+
+  it("sends a save captured mid-trip back to Orange Box", () => {
+    const old: any = {
+      reputation: 0,
+      player: { away: { kind: "shopping" } },
+      progression: {},
+    };
+    const migrated = migrateV22toV23(old) as any;
+    assert.deepStrictEqual(migrated.player.away, {
+      kind: "shopping",
+      store: "orangeBox",
+    });
+    // Scavenging trips pass through untouched
+    const scavenging: any = {
+      reputation: 0,
+      player: { away: { kind: "scavenging", returnTick: 5, loot: [] } },
+      progression: {},
+    };
+    assert.deepStrictEqual(
+      (migrateV22toV23(scavenging) as any).player.away,
+      scavenging.player.away,
     );
   });
 });

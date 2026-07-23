@@ -1,3 +1,4 @@
+import { StoreId } from "./lumberStock";
 import { MachineState } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { Direction, Vector } from "./Vectors";
@@ -41,9 +42,11 @@ export type ScavengingTrip = {
   readonly loot: ReadonlyArray<MaterialInstance>;
 };
 
-/** Out at the store. No timer — browsing the aisles is what takes the time. */
+/** Out at a store. No timer — browsing the aisles is what takes the time. */
 export type ShoppingTrip = {
   readonly kind: "shopping";
+  /** Which store the trip is to; each is its own overlay. */
+  readonly store: StoreId;
 };
 
 export type WorkItem = {

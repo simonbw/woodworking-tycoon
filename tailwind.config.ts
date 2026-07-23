@@ -87,6 +87,15 @@ const config = {
           tag: "#1a1a1a",
         },
 
+        // Lumberyard palette (the Sawyer & Sons trip only): painted-sign
+        // green over stickered stacks and gravel
+        mill: {
+          green: "#2f5d3a",
+          "green-dark": "#22452b",
+          timber: "#cdb98e",
+          "timber-dark": "#a8935f",
+        },
+
         // Legacy brown palette retained for sprites/older components.
         brown: {
           50: "#fdf8f6",

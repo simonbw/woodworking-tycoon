@@ -1,6 +1,7 @@
 import { hasCompletedCommission } from "./commissionSequence";
 import { dustTotal } from "./Dust";
 import { GameState } from "./GameState";
+import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import { MachineId } from "./Machine";
 import { ToolId } from "./Tool";
 
@@ -39,6 +40,7 @@ export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
  */
 export const UNLOCK_CONDITIONS: Record<
   | "storeUnlocked"
+  | "lumberyardUnlocked"
   | "shopLayoutUnlocked"
   | "marketplaceUnlocked"
   | "sweepingUnlocked",
@@ -46,6 +48,9 @@ export const UNLOCK_CONDITIONS: Record<
 > = {
   storeUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "first-shelf"),
+  // Word of the yard gets around once your work has a reputation
+  lumberyardUnlocked: (gameState) =>
+    gameState.reputation >= LUMBERYARD_MIN_REPUTATION,
   // The flag now gates the carry verb (pick up and move machines on the
   // home screen); the name is kept for save compatibility.
   shopLayoutUnlocked: (gameState) => ownsMachine(gameState, "miterSaw"),

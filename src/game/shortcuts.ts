@@ -240,6 +240,16 @@ const defs = [
     group: "General",
     hidden: true,
   },
+  {
+    // Contextual like go-to-store: the yard is the door's other shopping trip.
+    id: "go-to-lumberyard",
+    codes: ["KeyY"],
+    keys: [["Y"]],
+    description: "Head out to the lumberyard (at the door)",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
 
   // ------------------------------------------------------------------- Time
   {

@@ -7,6 +7,7 @@ import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
 import { StartMenu } from "./StartMenu";
+import { LumberyardTripOverlay } from "./lumberyard-page/LumberyardTripOverlay";
 import { StoreTripOverlay } from "./store-page/StoreTripOverlay";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
@@ -43,6 +44,7 @@ export const Main: React.FC = () => {
               <ManualProvider>
                 <HomePage />
                 <StoreTripOverlay />
+                <LumberyardTripOverlay />
                 <GameSoundLayer />
                 <MachineSoundLayer />
                 <DebugView />
