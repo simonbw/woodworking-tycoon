@@ -81,26 +81,30 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
       await expect(page.getByText("Lumberyard — S2S")).toBeVisible();
       await expect(page.getByText("Rough Rack")).toBeVisible();
-      // Rough walnut sells at the deepest discount of the aisle. The rough
-      // rack's species select is the last one in the lumber aisle.
+      // Rough walnut sells at the deepest discount of the aisle. Every
+      // species hangs in the rack at once — boards carry no species text,
+      // so the Buy button's accessible name is the row's identity.
       const lumberAisle = page
         .locator("section")
         .filter({ has: page.getByText("Rough Rack", { exact: true }) })
         .last();
-      await lumberAisle.locator("select").last().selectOption("walnut");
-      await page.waitForTimeout(200);
-      // Rows carry dimensions only; the channel header names the milled
-      // state once for all of its stock
       const roughRack = lumberAisle
         .locator("div")
         .filter({ has: page.getByText("Rough Rack", { exact: true }) })
         .filter({ has: page.locator("li") })
         .last();
-      await expect(roughRack.getByText("rough sawn")).toBeVisible();
       await expect(
         roughRack.locator("li", { hasText: '4/4 — 6" × 8\'' }).first(),
       ).toBeVisible();
+      await expect(
+        roughRack.getByRole("button", {
+          name: `Buy Walnut 4/4 — 6" × 8' (rough sawn)`,
+        }),
+      ).toBeVisible();
       await expect(page.getByText("$158.40")).toBeVisible();
+      // The milled state moved into the channel-name tooltip — say it once
+      await page.getByText("Rough Rack", { exact: true }).hover();
+      await expect(page.getByText(/rough sawn — Straight off the mill/)).toBeVisible();
       await page.getByText("Home", { exact: true }).click();
       await page.waitForTimeout(300);
     });
