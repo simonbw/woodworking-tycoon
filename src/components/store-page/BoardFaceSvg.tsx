@@ -29,9 +29,11 @@ export const BoardFaceSvg: React.FC<{
   board: Omit<Board, "id" | "type">;
   /** Stable identity for procedural detail; defaults to species + dims. */
   seed?: string;
+  /** Stand the board on end — length runs down the page instead of across. */
+  vertical?: boolean;
   className?: string;
   style?: React.CSSProperties;
-}> = ({ board, seed, className, style }) => {
+}> = ({ board, seed, vertical, className, style }) => {
   const {
     width: boardWidth,
     length: boardLength,
@@ -122,7 +124,14 @@ export const BoardFaceSvg: React.FC<{
     // Pad the viewBox so edge jitter never clips
     const pad = amp + 1;
     return {
-      viewBox: `0 ${-pad} ${length} ${width + depth + 2 * pad}`,
+      // Vertical boards are the same drawing rotated 90°: the whole
+      // frame turns, so all the seeded geometry stays untouched.
+      viewBox: vertical
+        ? `0 0 ${r2(width + depth + 2 * pad)} ${r2(length)}`
+        : `0 ${-pad} ${length} ${width + depth + 2 * pad}`,
+      transform: vertical
+        ? `translate(${r2(width + depth + pad)} 0) rotate(90)`
+        : undefined,
       facePoints,
       edgeFacePoints,
       faceColor,
@@ -145,6 +154,7 @@ export const BoardFaceSvg: React.FC<{
     jointedFaces,
     jointedEdges,
     seed,
+    vertical,
   ]);
 
   return (
@@ -152,33 +162,35 @@ export const BoardFaceSvg: React.FC<{
       viewBox={drawing.viewBox}
       className={className}
       style={style}
-      preserveAspectRatio="xMinYMid meet"
+      preserveAspectRatio={vertical ? "xMidYMax meet" : "xMinYMid meet"}
       aria-hidden
     >
-      <polygon points={drawing.facePoints} fill={drawing.faceColor} />
-      <polygon points={drawing.edgeFacePoints} fill={drawing.edgeColor} />
-      {drawing.marks.map((d, i) => (
-        <path
-          key={i}
-          d={d}
-          fill="none"
-          stroke={
-            drawing.markAlpha !== undefined ? "#000000" : drawing.secondary
-          }
-          strokeOpacity={drawing.markAlpha ?? 0.35}
-          strokeWidth={1}
-        />
-      ))}
-      {drawing.sheen && (
-        <rect
-          x={drawing.sheen.x}
-          y={drawing.sheen.y}
-          width={drawing.sheen.w}
-          height={drawing.sheen.h}
-          fill="#ffffff"
-          fillOpacity={0.14}
-        />
-      )}
+      <g transform={drawing.transform}>
+        <polygon points={drawing.facePoints} fill={drawing.faceColor} />
+        <polygon points={drawing.edgeFacePoints} fill={drawing.edgeColor} />
+        {drawing.marks.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            fill="none"
+            stroke={
+              drawing.markAlpha !== undefined ? "#000000" : drawing.secondary
+            }
+            strokeOpacity={drawing.markAlpha ?? 0.35}
+            strokeWidth={1}
+          />
+        ))}
+        {drawing.sheen && (
+          <rect
+            x={drawing.sheen.x}
+            y={drawing.sheen.y}
+            width={drawing.sheen.w}
+            height={drawing.sheen.h}
+            fill="#ffffff"
+            fillOpacity={0.14}
+          />
+        )}
+      </g>
     </svg>
   );
 };

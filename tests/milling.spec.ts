@@ -92,15 +92,14 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await expect(page.getByText("Rough Rack")).toBeVisible();
       // Rough walnut sells at the deepest discount in town. Every
       // species hangs in the rack at once — boards carry no species text,
-      // so the Buy button's accessible name is the row's identity.
+      // so the Buy button's accessible name is the board's identity.
       const roughRack = page
         .locator("div")
         .filter({ has: page.getByText("Rough Rack", { exact: true }) })
         .filter({ has: page.locator("li") })
         .last();
-      await expect(
-        roughRack.locator("li", { hasText: "4/4 — 6\" × 8'" }).first(),
-      ).toBeVisible();
+      // Dims tags hang under each standing board: size, then length
+      await expect(roughRack.getByText(/4\/4×6"\s*8'/).first()).toBeVisible();
       await expect(
         roughRack.getByRole("button", {
           name: `Buy Walnut 4/4 — 6" × 8' (rough sawn)`,

@@ -78,9 +78,9 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
       // Cheap channels: framing pine and marked-up big-box S4S hardwood.
-      // Rows carry dimensions only — species lives in the channel header.
+      // Boards carry dimensions only — species lives on the bundle's tag.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
-      await expect(page.getByText("1x4 — 8'")).toBeVisible();
+      await expect(page.getByText(/1x4\s*8'/)).toBeVisible();
       await expect(page.getByText("$38.40")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
       // The less-than-S4S channels live at the lumberyard, not here
