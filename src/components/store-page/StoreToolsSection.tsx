@@ -5,6 +5,7 @@ import { SHOP_VAC_COST } from "../../game/ShopVac";
 import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
 import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
 import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
+import { ToolIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const StoreToolsSection: React.FC = () => {
@@ -147,6 +148,7 @@ const ToolProductCard: React.FC<{ tool: ToolType }> = ({ tool }) => {
 
   return (
     <li className="product-card flex items-center gap-3">
+      <ToolIcon toolId={tool.id as ToolId} />
       <div className="grow">
         <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
           {tool.name}

@@ -1,5 +1,6 @@
 import React from "react";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
+import { ConsumableIcon } from "./ItemIcon";
 import { SheetLabel } from "./ShopManifest";
 import { useGameState } from "./useGameState";
 
@@ -31,7 +32,13 @@ export const SuppliesSection: React.FC = () => {
                 key={id}
                 className="flex items-baseline justify-between gap-4"
               >
-                <span className="text-sm leading-[2rem]">{type.name}</span>
+                <span className="flex items-center gap-2 text-sm leading-[2rem]">
+                  <ConsumableIcon
+                    consumableId={id}
+                    className="size-6 shrink-0 [image-rendering:pixelated]"
+                  />
+                  {type.name}
+                </span>
                 <span className="font-ink text-lg leading-[2rem] text-ink-fade">
                   {/* "8" for nails (the name already says what they are),
                       "16 oz" for measured goods */}

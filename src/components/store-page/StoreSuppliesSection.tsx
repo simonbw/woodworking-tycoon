@@ -1,6 +1,7 @@
 import React from "react";
 import { CONSUMABLE_TYPES, ConsumableId } from "../../game/Consumable";
 import { buyConsumablePackAction } from "../../game/game-actions/store-actions";
+import { ConsumableIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const StoreSuppliesSection: React.FC = () => {
@@ -31,6 +32,7 @@ const ConsumablePackCard: React.FC<{ consumableId: ConsumableId }> = ({
 
   return (
     <li className="product-card flex items-center gap-3">
+      <ConsumableIcon consumableId={consumableId} />
       <div className="grow">
         <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
           {type.packName}

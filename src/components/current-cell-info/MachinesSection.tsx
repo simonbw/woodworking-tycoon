@@ -41,6 +41,7 @@ import {
   getOperationPhases,
 } from "../../game/skill-helpers";
 import { TOOL_TYPES } from "../../game/Tool";
+import { ToolIcon } from "../ItemIcon";
 import {
   createMockMaterial,
   describeMaterialRequirement,
@@ -890,6 +891,10 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
             key={`${toolId}-${index}`}
             className="flex items-center gap-2 py-1"
           >
+            <ToolIcon
+              toolId={toolId}
+              className="size-6 shrink-0 [image-rendering:pixelated]"
+            />
             <span className="grow">{TOOL_TYPES[toolId].name}</span>
             <button
               className="button-paper text-xs"
@@ -912,6 +917,10 @@ const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
                 key={`stored-${toolId}-${index}`}
                 className="flex items-center gap-2 py-1 text-ink-fade"
               >
+                <ToolIcon
+                  toolId={toolId}
+                  className="size-6 shrink-0 opacity-60 [image-rendering:pixelated]"
+                />
                 <span className="grow">{TOOL_TYPES[toolId].name} (stored)</span>
                 <button
                   className="button-paper text-xs"
