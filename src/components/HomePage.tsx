@@ -36,9 +36,11 @@ const HomePageContent: React.FC = () => {
         </div>
         <div className="grow flex flex-col items-center gap-6 min-h-0 min-w-0">
           <ShopView />
-          {/* min-h-0 lets the strip shrink into whatever the canvas
-              leaves and scroll internally on short viewports */}
-          <div className="w-full max-w-3xl min-h-0">
+          {/* The strip shrinks into whatever the canvas leaves and
+              scrolls internally, but never below a usable height — on
+              very short viewports it extends past the fold instead of
+              collapsing */}
+          <div className="w-full max-w-3xl min-h-28">
             <HandsStrip />
           </div>
         </div>
