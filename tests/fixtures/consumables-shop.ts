@@ -83,6 +83,7 @@ export const consumablesShop: GameState = {
   progression: {
     tutorialStage: 2,
     storeUnlocked: true,
+    lumberyardUnlocked: false,
     shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 2,

@@ -124,11 +124,11 @@ describe("getBoardBuyPrice", () => {
 
   it("prices the same wood cheaper the less milled it comes", () => {
     const bigBox = LUMBER_CHANNELS.find((c) => c.id === "bigBoxRack")!;
-    const lumberyard = LUMBER_CHANNELS.find((c) => c.id === "lumberyard")!;
+    const s2sRack = LUMBER_CHANNELS.find((c) => c.id === "s2sRack")!;
     const roughRack = LUMBER_CHANNELS.find((c) => c.id === "roughRack")!;
     const b = board("maple", 8, 4, 4);
     const bigBoxPrice = getBoardBuyPrice(b, bigBox.priceMultiplier);
-    const s2sPrice = getBoardBuyPrice(b, lumberyard.priceMultiplier);
+    const s2sPrice = getBoardBuyPrice(b, s2sRack.priceMultiplier);
     const roughPrice = getBoardBuyPrice(b, roughRack.priceMultiplier);
     assert.ok(bigBoxPrice > s2sPrice && s2sPrice > roughPrice);
   });

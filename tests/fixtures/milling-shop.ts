@@ -93,6 +93,7 @@ export const millingShop: GameState = {
   progression: {
     tutorialStage: 2,
     storeUnlocked: true,
+    lumberyardUnlocked: true,
     shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 7,

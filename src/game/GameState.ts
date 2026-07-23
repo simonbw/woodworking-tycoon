@@ -35,6 +35,8 @@ export type GameAction = (gameState: GameState) => GameState;
 export interface ProgressionState {
   readonly tutorialStage: number;
   readonly storeUnlocked: boolean;
+  /** Reveals the lumberyard (S2S and rough stock) at the garage door. */
+  readonly lumberyardUnlocked: boolean;
   readonly shopLayoutUnlocked: boolean;
   /** Reveals the phone (listings + job board) and scavenging at the door. */
   readonly marketplaceUnlocked: boolean;

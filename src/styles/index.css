@@ -110,6 +110,11 @@
     @apply font-condensed font-bold text-2xl uppercase tracking-wide text-store-orange-dark border-b-4 border-store-orange pb-1 mb-3;
   }
 
+  /* Stenciled-plank heading — used inside the lumberyard for section headers */
+  .yard-heading {
+    @apply font-stencil text-2xl uppercase tracking-wide text-mill-green-dark border-b-4 border-mill-green/70 pb-1 mb-3;
+  }
+
   /* Big block price — for product cards in the store */
   .price-tag {
     @apply font-condensed font-bold text-2xl text-ink-black tabular-nums leading-none;

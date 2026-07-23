@@ -11,13 +11,17 @@ import { StoreToolsSection } from "./StoreToolsSection";
 /**
  * A trip to Orange Box, the big-box hardware store. Reached by walking out
  * the garage door (see DoorSection); shown while the player's away trip is
- * a shopping one. The shop keeps ticking back home — browsing the aisles
- * is what the trip costs — and Head Home is the only way back.
+ * a shopping one to the big box (the lumberyard has its own overlay). The
+ * shop keeps ticking back home — browsing the aisles is what the trip
+ * costs — and Head Home is the only way back.
  */
 export const StoreTripOverlay: React.FC = () => {
   const gameState = useGameState();
 
-  if (gameState.player.away?.kind !== "shopping") {
+  if (
+    gameState.player.away?.kind !== "shopping" ||
+    gameState.player.away.store !== "orangeBox"
+  ) {
     return null;
   }
   return <StoreTrip />;
@@ -44,7 +48,10 @@ const StoreTrip: React.FC = () => {
           {/* Each aisle scrolls on its own; the page never does */}
           <div className="grid grid-cols-3 gap-4 h-full">
             <section className="space-y-4 min-h-0 overflow-y-auto">
-              <BoardSelector />
+              <section>
+                <h2 className="aisle-heading">Lumber</h2>
+                <BoardSelector store="orangeBox" />
+              </section>
               <StoreSheetGoodsSection />
             </section>
             <div className="space-y-6 min-h-0 overflow-y-auto">

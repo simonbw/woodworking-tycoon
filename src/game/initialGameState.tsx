@@ -58,6 +58,7 @@ export const initialGameState: GameState = {
   progression: {
     tutorialStage: 0,
     storeUnlocked: false,
+    lumberyardUnlocked: false,
     shopLayoutUnlocked: false,
     marketplaceUnlocked: false,
     commissionsCompleted: 0,

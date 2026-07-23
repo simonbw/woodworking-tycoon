@@ -46,10 +46,10 @@ describe("manual article unlock conditions", () => {
     assert.ok(unlocked("tools", withSander));
   });
 
-  it("unlocks milling with a non-S4S lumber channel or a milling machine", () => {
+  it("unlocks milling with the lumberyard or a milling machine", () => {
     assert.ok(
       unlocked("milling", { ...initialGameState, reputation: 12 }),
-      "lumberyard S2S reputation",
+      "lumberyard reputation",
     );
     assert.ok(!unlocked("milling", { ...initialGameState, reputation: 11 }));
     const withJointer: GameState = {

@@ -1,6 +1,6 @@
 import { hasCompletedCommission } from "./commissionSequence";
 import { GameState, ProgressionState } from "./GameState";
-import { unlockedLumberChannels } from "./lumberStock";
+import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import type { MachineId } from "./Machine";
 import { ownsMachine, ownsTool } from "./progression-helpers";
 import { levelForXp } from "./skill-helpers";
@@ -77,12 +77,12 @@ const defs = [
     tab: "Milling",
     title: "Milling & Surfaces",
     category: "The Craft",
-    // The concept arrives with the first stock that needs truing up — a
-    // non-S4S lumber channel — or the first machine/tool that does the truing.
+    // The concept arrives with the first stock that needs truing up — the
+    // lumberyard opening its gate — or the first machine/tool that does the
+    // truing. Same reputation the yard flag keys off, so they land together;
+    // checked directly so pre-flag saves migrate with the article earned.
     unlocked: (gameState: GameState) =>
-      unlockedLumberChannels(gameState.reputation).some(
-        (channel) => channel.jointedFaces < 2 || channel.jointedEdges < 2,
-      ) ||
+      gameState.reputation >= LUMBERYARD_MIN_REPUTATION ||
       ownsMachine(gameState, "jointer") ||
       ownsMachine(gameState, "lunchboxPlaner") ||
       ownsTool(gameState, "handPlane"),

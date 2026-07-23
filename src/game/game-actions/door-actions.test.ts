@@ -9,7 +9,7 @@ import {
   returnFromStoreAction,
 } from "./door-actions";
 
-/** Store unlocked and the player standing at the garage door. */
+/** Both stores unlocked and the player standing at the garage door. */
 function stateAtDoor(): GameState {
   return {
     ...initialGameState,
@@ -17,7 +17,11 @@ function stateAtDoor(): GameState {
       ...initialGameState.player,
       position: initialGameState.shopInfo.entrancePosition,
     },
-    progression: { ...initialGameState.progression, storeUnlocked: true },
+    progression: {
+      ...initialGameState.progression,
+      storeUnlocked: true,
+      lumberyardUnlocked: true,
+    },
   };
 }
 
@@ -60,8 +64,11 @@ describe("canLeaveShop", () => {
 
 describe("goToStoreAction / returnFromStoreAction", () => {
   it("starts a shopping trip at the door and comes home on request", () => {
-    const out = goToStoreAction()(stateAtDoor());
-    assert.deepStrictEqual(out.player.away, { kind: "shopping" });
+    const out = goToStoreAction("orangeBox")(stateAtDoor());
+    assert.deepStrictEqual(out.player.away, {
+      kind: "shopping",
+      store: "orangeBox",
+    });
     assert.strictEqual(out.player.canWork, false);
 
     const home = returnFromStoreAction()(out);
@@ -69,12 +76,33 @@ describe("goToStoreAction / returnFromStoreAction", () => {
     assert.strictEqual(home.player.canWork, true);
   });
 
+  it("remembers which store the trip is to", () => {
+    const out = goToStoreAction("lumberyard")(stateAtDoor());
+    assert.deepStrictEqual(out.player.away, {
+      kind: "shopping",
+      store: "lumberyard",
+    });
+  });
+
   it("does nothing before the store is unlocked", () => {
     const locked: GameState = {
       ...stateAtDoor(),
       progression: { ...initialGameState.progression, storeUnlocked: false },
     };
-    assert.strictEqual(goToStoreAction()(locked), locked);
+    assert.strictEqual(goToStoreAction("orangeBox")(locked), locked);
+  });
+
+  it("gates each store on its own unlock", () => {
+    const bigBoxOnly: GameState = {
+      ...stateAtDoor(),
+      progression: {
+        ...initialGameState.progression,
+        storeUnlocked: true,
+        lumberyardUnlocked: false,
+      },
+    };
+    assert.strictEqual(goToStoreAction("lumberyard")(bigBoxOnly), bigBoxOnly);
+    assert.notStrictEqual(goToStoreAction("orangeBox")(bigBoxOnly), bigBoxOnly);
   });
 
   it("does nothing away from the door", () => {
@@ -82,7 +110,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
       ...stateAtDoor(),
       player: { ...stateAtDoor().player, position: [0, 0] },
     };
-    assert.strictEqual(goToStoreAction()(elsewhere), elsewhere);
+    assert.strictEqual(goToStoreAction("orangeBox")(elsewhere), elsewhere);
   });
 
   it("ignores a return when nobody is out shopping", () => {
@@ -91,11 +119,14 @@ describe("goToStoreAction / returnFromStoreAction", () => {
   });
 
   it("stays out through ticks — shopping has no return timer", () => {
-    let state = goToStoreAction()(stateAtDoor());
+    let state = goToStoreAction("orangeBox")(stateAtDoor());
     for (let i = 0; i < 5; i++) {
       state = tickAction(state);
     }
-    assert.deepStrictEqual(state.player.away, { kind: "shopping" });
+    assert.deepStrictEqual(state.player.away, {
+      kind: "shopping",
+      store: "orangeBox",
+    });
     assert.strictEqual(state.player.canWork, false);
   });
 });

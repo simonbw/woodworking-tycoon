@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { setParameter } from "./machine-panel";
-import { goToStore, leaveStore } from "./navigation";
+import { goToLumberyard, goToStore, leaveStore } from "./navigation";
 
 declare global {
   interface Window {
@@ -75,20 +75,25 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       ).toBeVisible();
     });
 
-    await test.step("store: all four channels open at 22 reputation", async () => {
+    await test.step("Orange Box: only ready-to-use lumber on its racks", async () => {
       const returnTo = await goToStore(page);
       await expect(page.getByText("Construction Lumber")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
-      await expect(page.getByText("Lumberyard — S2S")).toBeVisible();
+      // Anything milled short of S4S moved across town to the lumberyard
+      await expect(page.getByText("S2S Rack")).not.toBeVisible();
+      await expect(page.getByText("Rough Rack")).not.toBeVisible();
+      await leaveStore(page, returnTo);
+    });
+
+    await test.step("lumberyard: both channels open at 22 reputation", async () => {
+      const returnTo = await goToLumberyard(page);
+      await expect(page.getByText("Sawyer & Sons")).toBeVisible();
+      await expect(page.getByText("S2S Rack")).toBeVisible();
       await expect(page.getByText("Rough Rack")).toBeVisible();
-      // Rough walnut sells at the deepest discount of the aisle. Every
+      // Rough walnut sells at the deepest discount in town. Every
       // species hangs in the rack at once — boards carry no species text,
       // so the Buy button's accessible name is the row's identity.
-      const lumberAisle = page
-        .locator("section")
-        .filter({ has: page.getByText("Rough Rack", { exact: true }) })
-        .last();
-      const roughRack = lumberAisle
+      const roughRack = page
         .locator("div")
         .filter({ has: page.getByText("Rough Rack", { exact: true }) })
         .filter({ has: page.locator("li") })

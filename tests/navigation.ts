@@ -36,7 +36,25 @@ export async function goToStore(page: any): Promise<[number, number]> {
   return previousPosition;
 }
 
-/** Head home from the store, optionally walking back to a remembered cell. */
+/**
+ * Walk out the door to Sawyer & Sons, the lumberyard. Same contract as
+ * `goToStore`: returns the player's previous cell for `leaveStore`.
+ */
+export async function goToLumberyard(page: any): Promise<[number, number]> {
+  const previousPosition = await page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().player.position,
+  );
+  await movePlayerToDoor(page);
+  await page
+    .getByTestId("door-panel")
+    .locator("li", { hasText: "Sawyer & Sons" })
+    .getByRole("button", { name: "Go" })
+    .click({ force: true });
+  await page.waitForTimeout(300);
+  return previousPosition;
+}
+
+/** Head home from either store, optionally walking back to a remembered cell. */
 export async function leaveStore(page: any, returnTo?: [number, number]) {
   await page
     .getByRole("button", { name: "Head Home" })

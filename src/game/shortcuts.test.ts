@@ -97,7 +97,7 @@ describe("shortcutsForEvent", () => {
   });
 
   it("ignores unbound keys", () => {
-    assert.deepEqual(shortcutsForEvent(keyEvent("KeyY")), []);
+    assert.deepEqual(shortcutsForEvent(keyEvent("KeyU")), []);
   });
 });
 
