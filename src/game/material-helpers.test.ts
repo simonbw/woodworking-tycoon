@@ -350,3 +350,18 @@ describe("sheet good naming", () => {
     );
   });
 });
+
+describe("describeMaterialRequirement for sheets", () => {
+  it("names kinds by their store signs and widths in feet", () => {
+    assert.strictEqual(
+      describeMaterialRequirement({
+        type: ["plywood"],
+        kind: ["plywoodB", "mdf"],
+        length: [4],
+        width: [4],
+        quantity: 1,
+      }),
+      "Plywood (Shop Plywood or MDF, any thickness, width 4', length 4')",
+    );
+  });
+});

@@ -1084,7 +1084,8 @@ const OperationlessMachineCard: React.FC<{ machine: Machine }> = ({
         </span>
       </header>
       <ToolRack machine={machine} />
-      {groupedContents.length === 0 ? (
+      <MaterialShelf machine={machine} />
+      {groupedContents.length === 0 && machine.materialStorage === 0 ? (
         <p className="italic text-ink-fade text-sm">Empty</p>
       ) : (
         <ul className="divide-y divide-ink-black/15 text-sm">

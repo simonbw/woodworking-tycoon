@@ -12,6 +12,7 @@ import {
   panelSpecies,
   panelWidth,
   REAL_WOOD_SPECIES,
+  SheetGoodKind,
   Species,
 } from "../Materials";
 import {
@@ -21,6 +22,31 @@ import {
   stripsAlternate,
   widthDominantSpecies,
 } from "../panel-helpers";
+
+/**
+ * Which sheet kinds a recipe accepts is a statement about the work, not
+ * the wood budget. A jig base must be flat and hold runner screws — any
+ * plywood or MDF, never the chip boards, which sag and crumble around
+ * screws. Shop furniture is less picky: particle board tops a worktable
+ * honestly, but OSB's lumpy face is fit for nothing that needs flat.
+ * The storage rack is the one build where the cheap stuff belongs — and
+ * it refuses the good sheets, so a rack never eats jig stock by mistake.
+ */
+export const JIG_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
+  "plywoodA",
+  "plywoodB",
+  "plywoodC",
+  "mdf",
+];
+export const SHOP_FURNITURE_KINDS: ReadonlyArray<SheetGoodKind> = [
+  ...JIG_GRADE_KINDS,
+  "particleBoard",
+];
+export const RACK_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
+  "osb",
+  "particleBoard",
+  "plywoodC",
+];
 
 /**
  * Every glue-up cures for the same long stretch once it's in the clamps —
@@ -254,8 +280,14 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
       requiredSkill: "jigsAndFixtures",
       duration: 40,
       inputMaterials: [
-        // A plywood base plus scrap runners and a fence
-        { type: ["plywood"], length: [4], width: [4], quantity: 1 },
+        // A flat sheet base plus scrap runners and a fence
+        {
+          type: ["plywood"],
+          kind: JIG_GRADE_KINDS,
+          length: [4],
+          width: [4],
+          quantity: 1,
+        },
         {
           type: ["board"],
           width: [4],
@@ -280,9 +312,15 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
       requiredSkill: "jigsAndFixtures",
       duration: 30,
       inputMaterials: [
-        // A long plywood base with toggle clamps to carry wavy-edged stock;
+        // A long flat base with toggle clamps to carry wavy-edged stock;
         // same pallet-scrap ingredients as the crosscut sled
-        { type: ["plywood"], length: [4], width: [4], quantity: 1 },
+        {
+          type: ["plywood"],
+          kind: JIG_GRADE_KINDS,
+          length: [4],
+          width: [4],
+          quantity: 1,
+        },
         {
           type: ["board"],
           width: [4],
@@ -709,6 +747,37 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
       6,
       16,
     ),
+    {
+      name: "Build Storage Rack",
+      id: "buildStorageRack",
+      duration: 30,
+      requiredConsumables: [{ id: "nails", amount: 10 }],
+      inputMaterials: [
+        // A cheap deck on stout legs — the one build where OSB belongs.
+        // Rack-grade only: good sheets are refused so a rack never eats
+        // jig stock by mistake.
+        {
+          type: ["plywood"],
+          kind: RACK_GRADE_KINDS,
+          length: [4],
+          width: [4],
+          quantity: 1,
+        },
+        {
+          type: ["board"],
+          thickness: [3, 4],
+          length: [3, 4],
+          quantity: 4,
+        },
+      ],
+      output: () => {
+        return {
+          inputs: [],
+          outputs: [],
+          machineOutputs: ["storageRack" as const],
+        };
+      },
+    },
     // Shop-built worktable upgrades (the vise is bought — it's cast iron).
     // Output goes to upgrade storage; install from a worktable's card.
     {
@@ -717,8 +786,14 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
       duration: 30,
       requiredConsumables: [{ id: "nails", amount: 8 }],
       inputMaterials: [
-        // A plywood carcass with thin drawer stock — deck boards qualify
-        { type: ["plywood"], length: [4], width: [4], quantity: 1 },
+        // A sheet carcass with thin drawer stock — deck boards qualify
+        {
+          type: ["plywood"],
+          kind: SHOP_FURNITURE_KINDS,
+          length: [4],
+          width: [4],
+          quantity: 1,
+        },
         { type: ["board"], thickness: [1, 2], length: [2, 3], quantity: 2 },
       ],
       output: () => {
@@ -771,7 +846,13 @@ function worktableBuildOperation(
       duration,
       requiredConsumables: [{ id: "nails", amount: nails }],
       inputMaterials: [
-        { type: ["plywood"], length: [4], width: [4], quantity: plywood },
+        {
+          type: ["plywood"],
+          kind: SHOP_FURNITURE_KINDS,
+          length: [4],
+          width: [4],
+          quantity: plywood,
+        },
         {
           // Legs and stretchers want stout stock — stringers and 2×4s
           // qualify; deck boards are too thin

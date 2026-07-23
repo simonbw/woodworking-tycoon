@@ -10,6 +10,7 @@ import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { miterSaw } from "./machines/miterSaw";
+import { storageRack } from "./machines/storageRack";
 import { workspace } from "./machines/workspace";
 import {
   worktable1x1,
@@ -117,6 +118,7 @@ export const MACHINE_TYPES = {
   lunchboxPlaner,
   jointer,
   garbageCan,
+  storageRack,
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;
 

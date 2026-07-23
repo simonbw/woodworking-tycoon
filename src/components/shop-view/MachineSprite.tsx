@@ -7,6 +7,7 @@ import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
 import { useMachineActivity } from "./useMachineActivity";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
+import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { JointerSprite } from "../machine-sprites/JointerSprite";
 import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
@@ -229,6 +230,9 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
     case MACHINE_TYPES.garbageCan.id:
       return <GarbageCanSprite machine={machine} />;
+
+    case MACHINE_TYPES.storageRack.id:
+      return <StorageRackSprite machine={machine} />;
 
     // The makeshift workbench: the plywood-on-buckets art (this was the
     // makeshift bench's sprite; the bench identity moved to the starting

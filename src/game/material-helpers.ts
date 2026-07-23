@@ -627,6 +627,11 @@ export function describeMaterialRequirement(
       qualifiers.push(
         `${joinOr(values.map((v) => humanizeString(String(v)).toLowerCase()))} grain`,
       );
+    } else if (key === "kind") {
+      // Sheet kinds read by their store-sign names, never letter grades
+      qualifiers.push(
+        joinOr(values.map((v) => sheetKindLabel(v as SheetGoodKind))),
+      );
     } else {
       qualifiers.push(joinOr(values.map((v) => humanizeString(String(v)))));
     }
@@ -638,11 +643,15 @@ export function describeMaterialRequirement(
     presentDims.length === DIMENSION_KEYS.length &&
     presentDims.every((key) => requirementValues(req, key)!.length === 1);
 
+  // Sheets measure width in feet, boards and panels in inches
+  const unitFor = (key: DimensionKey) =>
+    key === "width" && typeKey === "plywood" ? "'" : DIMENSION_UNITS[key];
+
   const dimClauses: string[] = [];
   if (allDimsSingle) {
     dimClauses.push(
       DIMENSION_KEYS.map(
-        (key) => `${requirementValues(req, key)![0]}${DIMENSION_UNITS[key]}`,
+        (key) => `${requirementValues(req, key)![0]}${unitFor(key)}`,
       ).join("×"),
     );
   } else {
@@ -655,7 +664,7 @@ export function describeMaterialRequirement(
         }
       } else {
         dimClauses.push(
-          `${label} ${joinOr(values.map((v) => `${v}${DIMENSION_UNITS[key]}`))}`,
+          `${label} ${joinOr(values.map((v) => `${v}${unitFor(key)}`))}`,
         );
       }
     }
