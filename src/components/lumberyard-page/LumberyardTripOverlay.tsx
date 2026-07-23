@@ -44,14 +44,8 @@ const LumberyardTrip: React.FC = () => {
       <div className="rounded-md overflow-hidden shadow-2xl border border-mill-green-dark grow min-h-0 flex flex-col">
         <YardSignBar onHeadHome={headHome} />
         <div className="bg-mill-timber text-ink-black p-6 grow min-h-0 overflow-y-auto">
-          <div className="max-w-2xl mx-auto">
-            <section>
-              <h2 className="yard-heading">In the Racks</h2>
-              <BoardSelector store="lumberyard" />
-            </section>
-            <p className="mt-4 font-ink text-lg text-ink-brown/80">
-              Sold as it comes off the stack. Milling's your department.
-            </p>
+          <div className="max-w-6xl mx-auto pt-2">
+            <BoardSelector store="lumberyard" />
           </div>
         </div>
       </div>
@@ -64,7 +58,7 @@ const YardSignBar: React.FC<{ onHeadHome: () => void }> = ({ onHeadHome }) => {
   return (
     <div className="bg-mill-green text-paper-cream px-6 py-3 flex items-center justify-between">
       <div className="flex items-baseline gap-4">
-        <span className="font-stencil text-3xl uppercase tracking-widest leading-none">
+        <span className="font-lumberjack text-4xl tracking-wide leading-none">
           Sawyer &amp; Sons
         </span>
         <span className="font-condensed uppercase tracking-[0.3em] text-xs text-paper-cream/80">

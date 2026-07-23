@@ -22,31 +22,41 @@ import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * Every board in the aisle shares one scale: a row's board spans the
- * rack lane in proportion to the longest board sold anywhere, so lengths
- * compare at a glance across channels.
+ * Every rack in town shares one pixels-per-foot, so lengths compare at a
+ * glance across bays, channels, and stores. Boards draw at true aspect —
+ * this is the whole scale knob.
  */
-const RACK_MAX_FEET = 8;
+const PX_PER_FOOT = 57;
+
+/** How high the safety chain hangs across each bay's boards. */
+const CHAIN_HEIGHT_FEET = 3.5;
+
+// Rack chrome is diegetic shop furniture, so it uses raw wood and steel
+// tones rather than the paperwork palette.
+const POST_BG = "linear-gradient(90deg, #5f462d, #8a6a45 45%, #4c3823)";
+const RAIL_BG = "linear-gradient(180deg, #8a6a45, #4c3823)";
+const CHAIN_BG = `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='13' height='8' viewBox='0 0 13 8'><ellipse cx='6.5' cy='4' rx='5.5' ry='3' fill='none' stroke='%23494f52' stroke-width='1.6'/></svg>")`;
 
 /**
- * One store's lumber racks, one section per purchase channel carried there
- * (see lumberStock.ts). Locked channels are completely absent — new
- * sections appear as reputation grows. No custom cutting anywhere: milling
- * stock down to what a project needs is the game.
+ * One store's lumber racks, one rack per purchase channel carried there
+ * (see lumberStock.ts). Locked channels are completely absent — new racks
+ * appear as reputation grows. No custom cutting anywhere: milling stock
+ * down to what a project needs is the game.
  *
- * The racks are built to be read by eye: a channel card holds one bundle
- * per species — named once on the left rail, confirmed by the boards'
- * color — with that species' sizes stacked inside it. Row text is the
- * dims and the price; the milled state and the channel's flavor line
- * wait in the channel-name tooltip. The surrounding overlay owns the
- * section heading, so each store keeps its own signage.
+ * The racks mimic a real hardwood aisle: one bay per species, boards
+ * standing on end and packed shoulder to shoulder, wooden posts between
+ * bays, a safety chain across the front, and a paper tag stapled to each
+ * board with its dims and price. The board itself is the buy button.
+ * Everything reads right to left. The milled state and the channel's
+ * flavor line wait in the channel-name tooltip; the surrounding overlay
+ * owns the section heading, so each store keeps its own signage.
  */
 export const BoardSelector: React.FC<{ store: StoreId }> = ({ store }) => {
   const gameState = useGameState();
   const channels = unlockedLumberChannels(gameState.reputation, store);
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-wrap items-end justify-center gap-x-2 gap-y-3">
       {channels.map((channel) => (
         <LumberChannelSection key={channel.id} channel={channel} />
       ))}
@@ -76,47 +86,75 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
   return (
     <div>
       <Tooltip content={`${stateLabel} — ${channel.tagline}`}>
-        <h3 className="inline-block font-stencil uppercase tracking-wide text-sm text-ink-black cursor-help mb-0.5">
+        <h3 className="inline-block font-condensed font-bold uppercase tracking-wider text-base text-ink-black cursor-help mb-1">
           {channel.name}
         </h3>
       </Tooltip>
-      <ul className="product-card p-2 space-y-1.5">
-        {channel.species.map((species) => (
-          <SpeciesBundle key={species} species={species} channel={channel} />
+      <ul className="flex items-end">
+        <RackPost />
+        {[...channel.species].reverse().map((species) => (
+          <React.Fragment key={species}>
+            <SpeciesBay species={species} channel={channel} />
+            <RackPost />
+          </React.Fragment>
         ))}
       </ul>
     </div>
   );
 };
 
+/** A wooden upright between bays, running down past the rail to the floor. */
+const RackPost: React.FC = () => (
+  <li aria-hidden className="w-1.5 shrink-0 self-stretch" style={{ background: POST_BG }} />
+);
+
 /**
- * One species of stock: named once on the left rail, then every size the
- * channel carries in it, stacked like a banded bundle.
+ * One species' bay: every size the channel carries standing shoulder to
+ * shoulder (read right to left), a rail at the boards' feet, and a chain
+ * across the front with the species name on a paper placard hung from it.
  */
-const SpeciesBundle: React.FC<{
+const SpeciesBay: React.FC<{
   species: Species;
   channel: LumberChannel;
 }> = ({ species, channel }) => {
+  const chainBottom = CHAIN_HEIGHT_FEET * PX_PER_FOOT;
   return (
-    <li className="flex items-center gap-2">
-      <span className="w-14 shrink-0 font-condensed font-bold text-xs uppercase tracking-wide text-ink-black">
-        {speciesLabel(species)}
-      </span>
-      <div className="grow space-y-px">
-        {channel.skus.map((sku) => (
-          <SkuRow
+    <li className="flex flex-col">
+      <div className="relative flex items-end justify-center gap-px px-0.5">
+        {[...channel.skus].reverse().map((sku) => (
+          <BoardForSale
             key={`${sku.length}x${sku.width}x${sku.thickness}`}
             sku={sku}
             species={species}
             channel={channel}
           />
         ))}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 z-10 h-2"
+          style={{
+            bottom: chainBottom,
+            backgroundImage: CHAIN_BG,
+            backgroundRepeat: "repeat-x",
+          }}
+        />
+        {/* Species placard hanging from the chain by a short wire */}
+        <div
+          className="pointer-events-none absolute inset-x-0 z-20 flex flex-col items-center"
+          style={{ top: `calc(100% - ${chainBottom + 4}px)` }}
+        >
+          <span aria-hidden className="h-1.5 w-px bg-[#494f52]" />
+          <span className="rounded-[1px] border border-paper-manila-edge bg-paper-manila px-1.5 py-0.5 font-condensed font-bold text-xs uppercase tracking-wide text-ink-black shadow-sm">
+            {speciesLabel(species)}
+          </span>
+        </div>
       </div>
+      <div aria-hidden className="h-2 w-full" style={{ background: RAIL_BG }} />
     </li>
   );
 };
 
-const SkuRow: React.FC<{
+const BoardForSale: React.FC<{
   sku: LumberSku;
   species: Species;
   channel: LumberChannel;
@@ -131,11 +169,9 @@ const SkuRow: React.FC<{
   const price = getBoardBuyPrice(material, channel.priceMultiplier);
   const fullName = getMaterialFullName(material);
 
-  // Dims distinguish the rows of a bundle — species is the bundle's rail
+  // The tag distinguishes the boards of a bay — species is on the floor
   const nominal = nominalSizeLabel(material);
-  const dimsLabel = nominal
-    ? `${nominal} — ${sku.length}'`
-    : `${sku.thickness}/4 — ${sku.width}" × ${sku.length}'`;
+  const sizeLine = nominal ?? `${sku.thickness}/4×${sku.width}"`;
 
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
@@ -150,45 +186,15 @@ const SkuRow: React.FC<{
     }),
   ).length;
 
+  const tooltip =
+    `${fullName} — ${describeStockDimensionsPlain(material)}` +
+    (numberOwned > 0 ? ` — ${numberOwned} in your inventory` : "");
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="grow">
-        <Tooltip content={fullName}>
-          <span
-            className="block"
-            style={{ width: `${(sku.length / RACK_MAX_FEET) * 100}%` }}
-          >
-            <BoardFaceSvg board={material} className="block w-full" />
-          </span>
-        </Tooltip>
-      </div>
-      {numberOwned > 0 && (
-        <Tooltip content={`${numberOwned} in your inventory`}>
-          <span
-            className={`text-[10px] font-semibold tabular-nums whitespace-nowrap ${
-              channel.store === "lumberyard"
-                ? "text-mill-green"
-                : "text-store-orange-dark"
-            }`}
-          >
-            ×{numberOwned}
-          </span>
-        </Tooltip>
-      )}
-      <Tooltip content={describeStockDimensionsPlain(material)}>
-        <span className="w-24 shrink-0 font-condensed text-xs uppercase tracking-wide text-ink-black tabular-nums whitespace-nowrap">
-          {dimsLabel}
-        </span>
-      </Tooltip>
-      <span className="font-condensed font-bold text-sm text-ink-black tabular-nums whitespace-nowrap w-14 text-right">
-        ${price.toFixed(2)}
-      </span>
+    <Tooltip content={tooltip}>
       <button
-        className={`disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-[10px] px-2 py-0.5 rounded-sm shadow ${
-          channel.store === "lumberyard"
-            ? "bg-mill-green hover:bg-mill-green-dark"
-            : "bg-store-orange hover:bg-store-orange-dark"
-        }`}
+        className="relative block shrink-0 transition-[filter] enabled:cursor-pointer enabled:hover:brightness-110 disabled:opacity-60"
+        style={{ height: sku.length * PX_PER_FOOT }}
         disabled={gameState.money < price}
         data-sfx="ui-purchase"
         aria-label={`Buy ${fullName}`}
@@ -198,8 +204,29 @@ const SkuRow: React.FC<{
           )
         }
       >
-        Buy
+        <BoardFaceSvg vertical board={material} className="block h-full w-auto" />
+        {/* The paper tag stapled near the board's foot */}
+        <span className="absolute left-1/2 bottom-2 z-20 -translate-x-1/2 flex flex-col items-center rounded-[1px] border border-paper-manila-edge bg-paper-ivory px-0.5 py-px font-condensed leading-tight text-ink-black shadow-sm">
+          <span className="text-[10px] uppercase whitespace-nowrap">
+            {sizeLine}
+          </span>
+          <span className="text-[10px] whitespace-nowrap">{`${sku.length}'`}</span>
+          <span className="text-[11px] font-bold tabular-nums whitespace-nowrap">
+            ${price.toFixed(2)}
+          </span>
+          {numberOwned > 0 && (
+            <span
+              className={`text-[10px] font-semibold tabular-nums ${
+                channel.store === "lumberyard"
+                  ? "text-mill-green"
+                  : "text-store-orange-dark"
+              }`}
+            >
+              ×{numberOwned}
+            </span>
+          )}
+        </span>
       </button>
-    </div>
+    </Tooltip>
   );
 };
