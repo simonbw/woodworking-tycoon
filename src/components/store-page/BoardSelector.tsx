@@ -9,6 +9,7 @@ import {
   getMaterialState,
   materialMeetsInput,
   nominalSizeLabel,
+  speciesLabel,
 } from "../../game/material-helpers";
 import {
   LumberChannel,
@@ -33,10 +34,10 @@ const RACK_MAX_FEET = 8;
  * a project needs is the game.
  *
  * The aisle is built to be read by eye: a channel card holds one bundle
- * per size, each bundle stacking every species of that size as bare
- * boards told apart by color. The only text is what can't be drawn — the
- * bundle's dimensions and each board's price. Everything else (species
- * name, milled state, the channel's flavor line) waits in tooltips.
+ * per species — named once on the left rail, confirmed by the boards'
+ * color — with that species' sizes stacked inside it. Row text is the
+ * dims and the price; the milled state and the channel's flavor line
+ * wait in the channel-name tooltip.
  */
 export const BoardSelector: React.FC = () => {
   const gameState = useGameState();
@@ -77,12 +78,8 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
         </h3>
       </Tooltip>
       <ul className="product-card p-2 space-y-1.5">
-        {channel.skus.map((sku) => (
-          <SkuBundle
-            key={`${sku.length}x${sku.width}x${sku.thickness}`}
-            sku={sku}
-            channel={channel}
-          />
+        {channel.species.map((species) => (
+          <SpeciesBundle key={species} species={species} channel={channel} />
         ))}
       </ul>
     </div>
@@ -90,30 +87,22 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
 };
 
 /**
- * One size of stock: the dims labeled once on the left, then that size in
- * every species the channel carries, stacked like a banded bundle.
+ * One species of stock: named once on the left rail, then every size the
+ * channel carries in it, stacked like a banded bundle.
  */
-const SkuBundle: React.FC<{
-  sku: LumberSku;
+const SpeciesBundle: React.FC<{
+  species: Species;
   channel: LumberChannel;
-}> = ({ sku, channel }) => {
-  const sample = channelBoard(channel, sku, channel.species[0]);
-  const nominal = nominalSizeLabel(sample);
-  const dimsLabel = nominal
-    ? `${nominal} — ${sku.length}'`
-    : `${sku.thickness}/4 — ${sku.width}" × ${sku.length}'`;
-
+}> = ({ species, channel }) => {
   return (
     <li className="flex items-center gap-2">
-      <Tooltip content={describeStockDimensionsPlain(sample)}>
-        <span className="w-24 shrink-0 font-condensed text-xs uppercase tracking-wide text-ink-black tabular-nums whitespace-nowrap">
-          {dimsLabel}
-        </span>
-      </Tooltip>
+      <span className="w-14 shrink-0 font-condensed font-bold text-xs uppercase tracking-wide text-ink-black">
+        {speciesLabel(species)}
+      </span>
       <div className="grow space-y-px">
-        {channel.species.map((species) => (
-          <SpeciesRow
-            key={species}
+        {channel.skus.map((sku) => (
+          <SkuRow
+            key={`${sku.length}x${sku.width}x${sku.thickness}`}
             sku={sku}
             species={species}
             channel={channel}
@@ -124,7 +113,7 @@ const SkuBundle: React.FC<{
   );
 };
 
-const SpeciesRow: React.FC<{
+const SkuRow: React.FC<{
   sku: LumberSku;
   species: Species;
   channel: LumberChannel;
@@ -138,6 +127,12 @@ const SpeciesRow: React.FC<{
   );
   const price = getBoardBuyPrice(material, channel.priceMultiplier);
   const fullName = getMaterialFullName(material);
+
+  // Dims distinguish the rows of a bundle — species is the bundle's rail
+  const nominal = nominalSizeLabel(material);
+  const dimsLabel = nominal
+    ? `${nominal} — ${sku.length}'`
+    : `${sku.thickness}/4 — ${sku.width}" × ${sku.length}'`;
 
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
@@ -171,6 +166,11 @@ const SpeciesRow: React.FC<{
           </span>
         </Tooltip>
       )}
+      <Tooltip content={describeStockDimensionsPlain(material)}>
+        <span className="w-24 shrink-0 font-condensed text-xs uppercase tracking-wide text-ink-black tabular-nums whitespace-nowrap">
+          {dimsLabel}
+        </span>
+      </Tooltip>
       <span className="font-condensed font-bold text-sm text-ink-black tabular-nums whitespace-nowrap w-14 text-right">
         ${price.toFixed(2)}
       </span>
