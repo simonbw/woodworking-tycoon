@@ -4,9 +4,11 @@ import { getAudioContext } from "./getAudioContext";
 /**
  * Lightweight sound-effect player built on the shared AudioContext.
  *
- * Sounds live under `static/sounds/` and are served at `/sounds/<name>.ogg`.
- * Everything is Ogg — MP3 can't loop gaplessly and the Electron target means
- * Chromium's decoder everywhere (see `docs/sound-design.md`). Each clip is
+ * Sounds live under `static/sounds/` and are served at `/sounds/<name>.<ext>`.
+ * Most clips are Ogg — MP3 can't loop gaplessly and the Electron target means
+ * Chromium's decoder everywhere (see `docs/sound-design.md`). A few are FLAC
+ * (lossless source the author prefers); Chromium decodes both. The extension
+ * defaults to `ogg`, with per-name overrides in `SOUND_EXTENSION`. Each clip is
  * fetched and decoded on first use, then cached so subsequent plays are
  * instant. Playback goes through a per-play gain node (for relative per-sound
  * trim) into the shared SFX bus, so master/SFX volume and mute from the
@@ -20,6 +22,8 @@ import { getAudioContext } from "./getAudioContext";
 
 export type UiSoundName =
   | "ui-click"
+  | "ui-click-start"
+  | "ui-click-end"
   | "ui-hover"
   | "ui-tab"
   | "ui-purchase"
@@ -31,6 +35,10 @@ export type UiSoundName =
 // gain sits low to land at a comparable level.
 const SOUND_GAIN: Record<UiSoundName, number> = {
   "ui-click": 0.6,
+  // Two-part press: down on pointerdown, up on release. Together they should
+  // land at roughly the level of the single "ui-click".
+  "ui-click-start": 0.6,
+  "ui-click-end": 0.6,
   "ui-hover": 0.25,
   "ui-tab": 0.6,
   "ui-purchase": 0.8,
@@ -40,8 +48,17 @@ const SOUND_GAIN: Record<UiSoundName, number> = {
 
 const bufferCache = new Map<string, Promise<AudioBuffer>>();
 
+// Clips authored as FLAC rather than the default Ogg.
+const SOUND_EXTENSION: Record<string, string> = {
+  "ui-click": "flac",
+  "ui-click-start": "flac",
+  "ui-click-end": "flac",
+  "ui-hover": "flac",
+};
+
 async function fetchClip(name: string): Promise<ArrayBuffer> {
-  const res = await fetch(`/sounds/${name}.ogg`);
+  const ext = SOUND_EXTENSION[name] ?? "ogg";
+  const res = await fetch(`/sounds/${name}.${ext}`);
   if (!res.ok) throw new Error(`sfx: failed to fetch ${name} (${res.status})`);
   return res.arrayBuffer();
 }

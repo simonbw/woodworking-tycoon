@@ -3,9 +3,11 @@ import { playUiSound, preloadUiSounds, UiSoundName } from "../utils/sfx";
 
 /**
  * Mounts once at the app root and gives every DOM `<button>` a UI sound:
- * a soft tick on hover and a click on press. Buttons that want a different
- * press sound declare `data-sfx="ui-purchase"` (etc.); `data-sfx="none"`
- * opts a button out of the click sound entirely. Hover is uniform.
+ * a soft tick on hover and a two-part click on press — `ui-click-start` when
+ * the pointer goes down and `ui-click-end` on release. Buttons that want a
+ * different press sound declare `data-sfx="ui-purchase"` (etc.); those keep
+ * their single sound on click (no down/up split), and `data-sfx="none"` opts a
+ * button out of the click sound entirely. Hover is uniform.
  * `<select>` changes (operation mode, target length/width/…) get a tick too,
  * since they're the one common control that isn't a button.
  *
@@ -28,13 +30,23 @@ export const UiSoundLayer: React.FC = () => {
       if (button) playUiSound("ui-hover");
     };
 
+    // First half of the default press. Buttons with a custom `data-sfx` keep
+    // their single sound on click, so they don't get a down tick here.
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      const button = target?.closest("button:not([disabled])");
+      if (!button) return;
+      if ((button as HTMLElement).dataset.sfx) return;
+      playUiSound("ui-click-start");
+    };
+
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       const button = target?.closest("button:not([disabled])");
       if (!button) return;
       const override = (button as HTMLElement).dataset.sfx;
       if (override === "none") return;
-      playUiSound((override as UiSoundName) ?? "ui-click");
+      playUiSound((override as UiSoundName) ?? "ui-click-end");
     };
 
     const onChange = (e: Event) => {
@@ -43,10 +55,12 @@ export const UiSoundLayer: React.FC = () => {
     };
 
     document.addEventListener("pointerover", onPointerOver);
+    document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("click", onClick);
     document.addEventListener("change", onChange);
     return () => {
       document.removeEventListener("pointerover", onPointerOver);
+      document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("click", onClick);
       document.removeEventListener("change", onChange);
     };
