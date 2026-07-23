@@ -19,11 +19,7 @@ export type ShortcutScope = "global" | "home" | "modal";
 
 /** Cheat-sheet section. Order here is the order rendered. */
 export type ShortcutGroup =
-  | "Time"
-  | "Movement"
-  | "Materials"
-  | "Machines"
-  | "General";
+  "Time" | "Movement" | "Materials" | "Machines" | "General";
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Movement",
