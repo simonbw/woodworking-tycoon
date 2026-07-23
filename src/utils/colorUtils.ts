@@ -12,6 +12,11 @@ export function colorToNumber(color: string | number): number {
     : parseInt(color.replace("#", ""), 16);
 }
 
+/** Format a color ("#B1754A" or 0xb1754a) as a CSS hex string. */
+export function colorToCss(color: string | number): string {
+  return `#${colorToNumber(color).toString(16).padStart(6, "0")}`;
+}
+
 /** Blend `a` toward `b` by `t` (0 = all a, 1 = all b), as a PIXI color number. */
 export function mixColors(
   a: string | number,

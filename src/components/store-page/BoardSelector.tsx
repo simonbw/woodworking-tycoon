@@ -15,9 +15,16 @@ import {
   LumberSku,
   unlockedLumberChannels,
 } from "../../game/lumberStock";
-import { MaterialIcon } from "../current-cell-info/MaterialIcon";
+import { BoardFaceSvg } from "./BoardFaceSvg";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
+
+/**
+ * Every board in the aisle shares one scale: a card's board spans the
+ * card's width in proportion to the longest board sold anywhere, so
+ * lengths compare at a glance across channels.
+ */
+const RACK_MAX_FEET = 8;
 
 /**
  * The lumber aisle, one section per purchase channel (see lumberStock.ts).
@@ -114,26 +121,23 @@ const LumberSkuCard: React.FC<{
   ).length;
 
   return (
-    <li className="product-card flex items-center gap-3">
-      <div className="w-12 flex items-center justify-center">
-        <MaterialIcon material={material} />
-      </div>
-      <div className="grow">
-        <Tooltip content={describeStockDimensionsPlain(material)}>
-          <div className="font-condensed font-bold text-sm uppercase tracking-wide text-ink-black leading-none">
-            {getMaterialName(material)}
-          </div>
-        </Tooltip>
-        <div className="text-xs text-ink-fade tabular-nums mt-1">
-          {numberOwned > 0 && (
-            <span className="text-store-orange-dark font-semibold">
-              {numberOwned} owned ·{" "}
-            </span>
-          )}
-          {getMaterialState(material)} · In stock
-        </div>
-      </div>
+    <li className="product-card">
       <div className="flex items-center gap-2">
+        <div className="grow">
+          <Tooltip content={describeStockDimensionsPlain(material)}>
+            <div className="font-condensed font-bold text-sm uppercase tracking-wide text-ink-black leading-none">
+              {getMaterialName(material)}
+            </div>
+          </Tooltip>
+          <div className="text-xs text-ink-fade tabular-nums mt-1">
+            {numberOwned > 0 && (
+              <span className="text-store-orange-dark font-semibold">
+                {numberOwned} owned ·{" "}
+              </span>
+            )}
+            {getMaterialState(material)} · In stock
+          </div>
+        </div>
         <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
         <button
           className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
@@ -144,6 +148,11 @@ const LumberSkuCard: React.FC<{
           Buy
         </button>
       </div>
+      <BoardFaceSvg
+        board={material}
+        className="mt-2 block"
+        style={{ width: `${(sku.length / RACK_MAX_FEET) * 100}%` }}
+      />
     </li>
   );
 };
