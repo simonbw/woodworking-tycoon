@@ -51,7 +51,15 @@ quarter inch thick).
 | Board, nominal size (see below) | `{Species} {t/4}x{w} — {l}'` | `Pine 2x4 — 8'` |
 | Board, everything else | `{Species} {t}/4 — {w}" × {l}'` | `Walnut 8/4 — 6" × 8'` |
 | Panel | `{Species} [End-Grain ]Panel {t}/4 — {w}" × {l}'` | `Maple Panel 4/4 — 10" × 2'` |
+| Sheet good | `{Kind} {t}/4 — {w}' × {l}'` | `Shop Plywood 2/4 — 4' × 4'` |
 | Everything else | unchanged (`Oiled Maple Simple Cutting Board`, …) | |
+
+Sheet goods measure **both** cross dimensions in feet — the tell that
+you're holding a sheet, not a board. Kind display names come from
+`sheetKindLabel`: the plywood grades read as what they're for
+("Cabinet Plywood", "Shop Plywood", "Sheathing Plywood"), never as
+letter grades; the engineered boards keep their shop names ("MDF",
+"OSB", "Particle Board").
 
 Species display names come from `speciesLabel`: `pallet` → "Pallet
 Wood" (so thin stock doesn't read "1/4 Pallet"), `purpleHeart` →
@@ -109,8 +117,6 @@ be a 2x4, so nominal callouts never appear there.
 
 ## Out of scope, deliberately
 
-- Sheet goods keep their bare type names until plywood actually enters
-  play; they'd take the `3/4" × 4' × 8'` sheet grammar then.
 - Real-world nominal shrinkage (a store 2x4 measuring 1.5" × 3.5") is
   not modeled; the sim treats nominal as actual and the labels follow
   the sim.

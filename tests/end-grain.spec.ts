@@ -79,8 +79,12 @@ test.describe("End-Grain Boards", () => {
       await expect(page.getByText("Sheet Goods")).toBeVisible();
       // The sled itself is NOT for sale on the tool wall
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
+      // The whole rack is out: cheap chip boards through cabinet ply
+      // (reputation 20 clears the rep-12 shelf)
+      await expect(page.getByText("OSB")).toBeVisible();
+      await expect(page.getByText("Cabinet Plywood")).toBeVisible();
       await page
-        .locator("li", { hasText: "Plywood Sheet" })
+        .locator("li", { hasText: "Shop Plywood" })
         .getByRole("button", { name: "Buy" })
         .click();
       await page.waitForTimeout(200);

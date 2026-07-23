@@ -3,10 +3,11 @@ import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { LUMBER_CHANNELS } from "./lumberStock";
 import { makeMaterial, makePallet } from "./material-helpers";
-import { FinishedProduct, REAL_WOOD_SPECIES } from "./Materials";
+import { FinishedProduct, REAL_WOOD_SPECIES, SheetGood } from "./Materials";
 import {
   getBoardBuyPrice,
   getSellValue,
+  getSheetBuyPrice,
   SPECIES_VALUE_MULTIPLIER,
 } from "./material-values";
 import { panel, uniformPanel } from "./panel-helpers";
@@ -198,5 +199,44 @@ describe("cutting board economics", () => {
       (getBoardBuyPrice(board(species, 8, 4, 4)) * 5) / 8;
     assert.ok(profit("maple") > profit("pine"));
     assert.ok(profit("purpleHeart") > profit("maple"));
+  });
+});
+
+describe("sheet good pricing", () => {
+  const sheet = (kind: SheetGood["kind"]) =>
+    makeMaterial<SheetGood>({
+      type: "plywood",
+      kind,
+      length: 4,
+      width: 4,
+      thickness: 2,
+    });
+
+  it("prices sheets by volume times the kind ladder", () => {
+    // Shop plywood sits at 1: the original aisle price, unchanged
+    assert.strictEqual(getSellValue(sheet("plywoodB")), 3.2);
+    assert.strictEqual(getSellValue(sheet("particleBoard")), 1.28);
+    assert.strictEqual(getSellValue(sheet("plywoodA")), 5.76);
+  });
+
+  it("orders every kind by the quality ladder", () => {
+    const rack: SheetGood["kind"][] = [
+      "particleBoard",
+      "osb",
+      "mdf",
+      "plywoodC",
+      "plywoodB",
+      "plywoodA",
+    ];
+    for (let i = 1; i < rack.length; i++) {
+      assert.ok(
+        getSellValue(sheet(rack[i])) > getSellValue(sheet(rack[i - 1])),
+      );
+    }
+  });
+
+  it("marks up sheet buy prices like lumber, so flipping loses money", () => {
+    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 9.6);
+    assert.ok(getSheetBuyPrice(sheet("osb")) > getSellValue(sheet("osb")));
   });
 });

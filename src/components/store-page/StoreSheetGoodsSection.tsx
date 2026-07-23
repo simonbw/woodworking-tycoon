@@ -1,61 +1,89 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
-import { makeMaterial } from "../../game/material-helpers";
-import { getSellValue } from "../../game/material-values";
+import {
+  describeStockDimensionsPlain,
+  getMaterialName,
+  makeMaterial,
+  materialMeetsInput,
+} from "../../game/material-helpers";
+import { getSheetBuyPrice } from "../../game/material-values";
 import { SheetGood } from "../../game/Materials";
+import { SheetSku, unlockedSheetSkus } from "../../game/sheetStock";
+import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
-/** The one sheet-good SKU: jig stock, not furniture wood. */
-function makePlywoodSheet(): SheetGood {
-  return makeMaterial<SheetGood>({
-    type: "plywood",
-    kind: "plywoodB",
-    length: 4,
-    width: 4,
-    thickness: 2,
-  });
-}
-
-// Same markup rule as lumber: buying and flipping always loses money
-const PLYWOOD_PRICE =
-  Math.round(getSellValue(makePlywoodSheet()) * 3 * 100) / 100;
-
+/**
+ * The sheet-good rack (see sheetStock.ts). One card per SKU, cheapest
+ * first; locked SKUs are completely absent until reputation reveals them.
+ */
 export const StoreSheetGoodsSection: React.FC = () => {
-  const applyAction = useApplyGameAction();
   const gameState = useGameState();
-  const canAfford = gameState.money >= PLYWOOD_PRICE;
+  const skus = unlockedSheetSkus(gameState.reputation);
 
   return (
     <section>
       <h2 className="aisle-heading">Sheet Goods</h2>
       <ul className="space-y-2">
-        <li className="product-card flex items-center gap-3">
-          <div className="grow">
-            <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
-              Plywood Sheet
-            </div>
-            <div className="text-xs text-ink-fade">
-              4'x4', 2/4 shop grade. Not pretty — perfect for jigs.
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="price-tag tabular-nums">
-              ${PLYWOOD_PRICE.toFixed(2)}
-            </span>
-            <button
-              className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
-              disabled={!canAfford}
-              onClick={() =>
-                applyAction(
-                  buyMaterialAction(makePlywoodSheet(), PLYWOOD_PRICE),
-                )
-              }
-            >
-              Buy
-            </button>
-          </div>
-        </li>
+        {skus.map((sku) => (
+          <SheetSkuCard key={sku.kind} sku={sku} />
+        ))}
       </ul>
     </section>
+  );
+};
+
+const SheetSkuCard: React.FC<{ sku: SheetSku }> = ({ sku }) => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+
+  const makeSheet = () =>
+    makeMaterial<SheetGood>({
+      type: "plywood",
+      kind: sku.kind,
+      length: sku.length,
+      width: sku.width,
+      thickness: sku.thickness,
+    });
+
+  const material = useMemo(makeSheet, [sku]);
+  const price = getSheetBuyPrice(material);
+
+  const numberOwned = gameState.player.inventory.filter((m) =>
+    materialMeetsInput(m, {
+      type: ["plywood"],
+      kind: [sku.kind],
+      length: [sku.length],
+      width: [sku.width],
+      thickness: [sku.thickness],
+    }),
+  ).length;
+
+  return (
+    <li className="product-card flex items-center gap-3">
+      <div className="grow">
+        <Tooltip content={describeStockDimensionsPlain(material)}>
+          <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
+            {getMaterialName(material)}
+          </div>
+        </Tooltip>
+        <div className="text-xs text-ink-fade">{sku.tagline}</div>
+        {numberOwned > 0 && (
+          <div className="text-xs text-store-orange-dark font-semibold tabular-nums">
+            {numberOwned} owned
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
+        <button
+          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+          disabled={gameState.money < price}
+          data-sfx="ui-purchase"
+          onClick={() => applyAction(buyMaterialAction(makeSheet(), price))}
+        >
+          Buy
+        </button>
+      </div>
+    </li>
   );
 };

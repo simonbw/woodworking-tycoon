@@ -10,7 +10,7 @@ import {
   makeMaterial,
   materialMeetsInput,
 } from "./material-helpers";
-import { FinishedProduct, REAL_WOOD_SPECIES } from "./Materials";
+import { FinishedProduct, REAL_WOOD_SPECIES, SheetGood } from "./Materials";
 import { panel, uniformPanel } from "./panel-helpers";
 
 describe("materialMeetsInput", () => {
@@ -309,6 +309,44 @@ describe("describeStockDimensionsPlain", () => {
         }),
       ),
       null,
+    );
+  });
+});
+
+describe("sheet good naming", () => {
+  const sheet = (
+    kind: SheetGood["kind"],
+    length: SheetGood["length"],
+    width: SheetGood["width"],
+    thickness: SheetGood["thickness"],
+  ) =>
+    makeMaterial<SheetGood>({
+      type: "plywood",
+      kind,
+      length,
+      width,
+      thickness,
+    });
+
+  it("names sheets by kind in sheet grammar — feet both ways", () => {
+    assert.strictEqual(
+      getMaterialName(sheet("plywoodB", 4, 4, 2)),
+      "Shop Plywood 2/4 — 4' × 4'",
+    );
+    assert.strictEqual(
+      getMaterialName(sheet("plywoodA", 8, 4, 3)),
+      "Cabinet Plywood 3/4 — 4' × 8'",
+    );
+    assert.strictEqual(
+      getMaterialName(sheet("mdf", 4, 4, 3)),
+      "MDF 3/4 — 4' × 4'",
+    );
+  });
+
+  it("spells sheet dimensions in plain feet and inches", () => {
+    assert.strictEqual(
+      describeStockDimensionsPlain(sheet("osb", 4, 4, 2)),
+      "1/2\" thick · 4' wide · 4' long",
     );
   });
 });

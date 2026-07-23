@@ -16,6 +16,7 @@ import {
   panelWidth,
   SawdustPile,
   SheetGood,
+  SheetGoodKind,
   Species,
   UnknownMaterial,
 } from "./Materials";
@@ -106,6 +107,23 @@ export function speciesLabel(species: Species): string {
 }
 
 /**
+ * Store-sign names for the sheet-good kinds. The plywood grades read as
+ * what they're for — cabinet, shop, sheathing — not as letter grades.
+ */
+const SHEET_KIND_LABELS: Record<SheetGoodKind, string> = {
+  plywoodA: "Cabinet Plywood",
+  plywoodB: "Shop Plywood",
+  plywoodC: "Sheathing Plywood",
+  mdf: "MDF",
+  osb: "OSB",
+  particleBoard: "Particle Board",
+};
+
+export function sheetKindLabel(kind: SheetGoodKind): string {
+  return SHEET_KIND_LABELS[kind];
+}
+
+/**
  * The construction-lumber callout ("2x4") for boards on a true nominal
  * size, or null. Softwood only — hardwood always reads in quarters, no
  * matter its size — and only at a full 1" or 2" thickness. Crosscuts keep
@@ -143,6 +161,11 @@ export function getMaterialName(material: MaterialInstance): string {
       return `${speciesName} ${grainTag}Panel ${material.thickness}/4 — ${panelWidth(
         material,
       )}" × ${material.length}'`;
+    }
+    case "plywood": {
+      // Sheet grammar: both cross dimensions are feet (see lumber-naming.md)
+      const { kind, thickness, width, length } = material;
+      return `${sheetKindLabel(kind)} ${thickness}/4 — ${width}' × ${length}'`;
     }
     case "endGrainSlice": {
       const species = [...new Set(material.strips.map((s) => s.species))];
@@ -237,6 +260,10 @@ function quartersToInches(quarters: number): string {
 export function describeStockDimensionsPlain(
   material: MaterialInstance,
 ): string | null {
+  if (material.type === "plywood") {
+    // Sheets measure both cross dimensions in feet
+    return `${quartersToInches(material.thickness)}" thick · ${material.width}' wide · ${material.length}' long`;
+  }
   if (material.type !== "board" && material.type !== "panel") {
     return null;
   }

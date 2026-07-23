@@ -3,6 +3,8 @@ import {
   Finish,
   FinishedProduct,
   MaterialInstance,
+  SheetGood,
+  SheetGoodKind,
   Species,
   SurfaceCondition,
 } from "./Materials";
@@ -51,6 +53,20 @@ export const SPECIES_VALUE_MULTIPLIER: Record<Species, number> = {
 };
 
 /**
+ * The sheet-good quality ladder, the kind axis's answer to the species
+ * ladder. Shop plywood sits at 1 so the original one-SKU aisle keeps its
+ * prices; the chip boards undercut it and cabinet ply clears it.
+ */
+export const SHEET_KIND_VALUE_MULTIPLIER: Record<SheetGoodKind, number> = {
+  particleBoard: 0.4,
+  osb: 0.5,
+  mdf: 0.7,
+  plywoodC: 0.8,
+  plywoodB: 1,
+  plywoodA: 1.8,
+};
+
+/**
  * Surface prep adds a little value to raw stock — enough to reward sanding
  * scavenged boards, not enough to beat turning them into products.
  */
@@ -85,7 +101,8 @@ export function getSellValue(material: MaterialInstance): number {
         material.length *
           material.width *
           material.thickness *
-          BOARD_VALUE_PER_UNIT,
+          BOARD_VALUE_PER_UNIT *
+          SHEET_KIND_VALUE_MULTIPLIER[material.kind],
       );
     case "panel":
       // Valued strip by strip, so multi-species panels price themselves
@@ -165,6 +182,11 @@ export function getBoardBuyPrice(
   // sell-bonus doesn't inflate store prices.
   const basePrice = getSellValue({ ...board, surface: "rough" }) * BUY_MARKUP;
   return roundToCents(basePrice * channelPriceMultiplier);
+}
+
+/** Store price for a sheet good — same markup rule as lumber. */
+export function getSheetBuyPrice(sheet: SheetGood): number {
+  return roundToCents(getSellValue(sheet) * BUY_MARKUP);
 }
 
 function roundToCents(value: number): number {

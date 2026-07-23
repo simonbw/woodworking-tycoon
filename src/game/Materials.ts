@@ -156,13 +156,16 @@ export function millingLabel(board: Board): string | null {
   return edges === 2 ? null : "face jointed";
 }
 
-export type SheetGoodKind =
-  | "plywoodA" // high quality
-  | "plywoodB" // medium quality
-  | "plywoodC" // low quality
-  | "mdf"
-  | "osb"
-  | "particleBoard";
+export const SHEET_GOOD_KINDS = [
+  "plywoodA", // high quality
+  "plywoodB", // medium quality
+  "plywoodC", // low quality
+  "mdf",
+  "osb",
+  "particleBoard",
+] as const;
+
+export type SheetGoodKind = (typeof SHEET_GOOD_KINDS)[number];
 
 export interface SheetGood {
   readonly id: string;
