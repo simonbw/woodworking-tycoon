@@ -100,12 +100,12 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .last();
       // Dims tags hang under each standing board: size, then length
       await expect(roughRack.getByText(/4\/4×6"\s*8'/).first()).toBeVisible();
-      await expect(
-        roughRack.getByRole("button", {
-          name: `Buy Walnut 4/4 — 6" × 8' (rough sawn)`,
-        }),
-      ).toBeVisible();
-      await expect(page.getByText("$158.40")).toBeVisible();
+      const roughWalnut = roughRack.getByRole("button", {
+        name: `Buy Walnut 4/4 — 6" × 8' (rough sawn)`,
+      });
+      await expect(roughWalnut).toBeVisible();
+      // 4 board feet of walnut at the rough rack's 0.55 discount
+      await expect(roughWalnut).toContainText("$26.40");
       // The milled state moved into the channel-name tooltip — say it once
       await page.getByText("Rough Rack", { exact: true }).hover();
       await expect(
