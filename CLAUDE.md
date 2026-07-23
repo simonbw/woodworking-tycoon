@@ -47,12 +47,13 @@ The game follows a state-driven architecture with clear separation between game 
 ### Key Systems
 
 1. **State Management**: Uses React Context via `GameStateProvider` (`src/components/useGameState.tsx`)
-2. **Game Loop**: Managed by `Ticker` component for regular game updates; the player's body moves continuously between ticks with WASD (see `docs/continuous-movement.md`) while `GameState` tracks only the cell underfoot
-3. **UI Modes**: Main screens controlled by `UiModeProvider`:
-   - `normal`: Main game view (`HomePage`) — includes all shop layout management: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
-   - `store`: Shopping interface (`StorePage`)
-   - `marketplace`: Sell listings & job board (`MarketplacePage`)
-   - `skills`: Skill tree (`SkillsPage`)
+2. **Game Loop**: Managed by `Ticker` component for regular game updates; the player's body moves continuously between ticks with WASD (see `docs/continuous-movement.md`) while `GameState` tracks only the cell underfoot. Time always advances unless paused — overlays don't stop the world.
+3. **Diegetic UI**: The shop floor (`HomePage`) is the game's only screen — there are no tabs. Everything else is an object reached from it:
+   - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
+   - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
+   - **Journal** (`JournalModal`): the skill tree, opened from the top bar
+   - **Garage door** (`DoorSection`): stand at the entrance cell to see places to go — the Orange Box store trip (`StoreTripOverlay`, an `AwayTrip` of kind `shopping`) and pallet scavenging
+   - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
 
 ### Material and Machine System
 
@@ -75,8 +76,10 @@ The game uses PIXI.js via `@pixi/react` for performant 2D rendering of the shop 
 src/
 ├── components/            # React components
 │   ├── shop-view/         # Main game area rendering (PIXI)
-│   ├── store-page/        # Equipment purchasing UI
-│   ├── current-cell-info/ # Inspector panels
+│   ├── store-page/        # The Orange Box store trip overlay
+│   ├── phone/             # Phone overlay (SawdustList: listings + job board)
+│   ├── journal/           # Journal overlay (skill tree)
+│   ├── current-cell-info/ # Inspector panels (incl. the garage-door panel)
 │   ├── machine-sprites/   # PIXI machine renderers
 │   ├── material-sprites/  # PIXI material renderers
 │   └── *.tsx              # Top-level UI (ActionBar, NavBar, HomePage, Ticker, …)

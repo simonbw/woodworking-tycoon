@@ -7,12 +7,15 @@ alongside the authored commission sequence.
 **Status: implemented.** The sale model and listing actions live in
 `src/game/marketplace.ts` and
 `src/game/game-actions/marketplace-actions.ts`, job generation in
-`src/game/job-generation.ts`, and the UI in
-`src/components/marketplace-page/`. Notable deltas from the design below:
-job offers carry a `materialCostFree` flag so the board refresh can enforce
-the income-floor guarantee, raw stock shares one "lumber" demand bucket
-instead of per-type buckets, and the Ticker is mounted on the Marketplace
-tab so the sim keeps running while you browse.
+`src/game/job-generation.ts`, and the UI in `src/components/phone/`.
+Notable deltas from the design below: job offers carry a
+`materialCostFree` flag so the board refresh can enforce the income-floor
+guarantee, and raw stock shares one "lumber" demand bucket instead of
+per-type buckets. The "Marketplace tab" described below was later made
+diegetic: SawdustList now renders inside a phone overlay (`PhoneModal`)
+opened from the top bar, the sim keeps ticking while you browse, and
+scavenging errands start at the garage door (`DoorSection`) instead of a
+corkboard note.
 
 ## Why
 

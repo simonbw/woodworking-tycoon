@@ -26,11 +26,24 @@ export interface Person {
   away: AwayTrip | null;
 }
 
-export type AwayTrip = {
+/**
+ * A trip out through the garage door. Scavenging runs on a timer and comes
+ * home on its own; a shopping trip lasts as long as the store overlay is
+ * open and ends when the player heads home. Either way the shop keeps
+ * running — hands-free work continues, attended work waits.
+ */
+export type AwayTrip = ScavengingTrip | ShoppingTrip;
+
+export type ScavengingTrip = {
   readonly kind: "scavenging";
   readonly returnTick: number;
   /** Determined when the trip starts; delivered as floor piles on return. */
   readonly loot: ReadonlyArray<MaterialInstance>;
+};
+
+/** Out at the store. No timer — browsing the aisles is what takes the time. */
+export type ShoppingTrip = {
+  readonly kind: "shopping";
 };
 
 export type WorkItem = {

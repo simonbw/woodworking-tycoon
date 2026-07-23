@@ -77,7 +77,10 @@ describe("drill", () => {
       false,
     );
     assert.strictEqual(
-      materialMeetsInput(board("pallet", 2, 4, 1), buildPlanterBox.inputMaterials[0]),
+      materialMeetsInput(
+        board("pallet", 2, 4, 1),
+        buildPlanterBox.inputMaterials[0],
+      ),
       true,
     );
   });

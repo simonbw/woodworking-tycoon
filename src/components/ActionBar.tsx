@@ -1,4 +1,5 @@
 import React from "react";
+import { canLeaveShop } from "../game/game-actions/door-actions";
 import { canSweepAt } from "../game/game-actions/dust-actions";
 import {
   canPickUpMachine,
@@ -38,6 +39,9 @@ export const ActionBar: React.FC = () => {
   const standingOnVac =
     gameState.shopVac?.position != null &&
     vectorEquals(gameState.shopVac.position, gameState.player.position);
+
+  // The door verbs: revealed contextually standing at the garage door
+  const atDoor = canLeaveShop(gameState);
 
   // The carry verb: revealed contextually once machine moving is unlocked
   const carryUnlocked = gameState.progression.shopLayoutUnlocked;
@@ -152,6 +156,12 @@ export const ActionBar: React.FC = () => {
                 </Hint>
               )}
               {machines.length > 1 && <Hint shortcut="cycle-machine" />}
+              {atDoor && gameState.progression.storeUnlocked && (
+                <Hint shortcut="go-to-store">Head out to Orange Box</Hint>
+              )}
+              {atDoor && gameState.progression.marketplaceUnlocked && (
+                <Hint shortcut="scavenge">Scavenge for pallets</Hint>
+              )}
             </>
           )}
         </ul>

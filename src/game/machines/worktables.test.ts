@@ -162,12 +162,7 @@ describe("benchtop mounting placement rules", () => {
     // Miter saw facing down from the table's middle cell: its operator
     // cell [1,1] is open floor
     assert.ok(
-      canPlaceMachine(
-        cellMapWith([table]),
-        MACHINE_TYPES.miterSaw,
-        [1, 0],
-        0,
-      ),
+      canPlaceMachine(cellMapWith([table]), MACHINE_TYPES.miterSaw, [1, 0], 0),
     );
   });
 
@@ -185,7 +180,12 @@ describe("benchtop mounting placement rules", () => {
 
   it("rejects a non-benchtop machine on a table cell", () => {
     assert.ok(
-      !canPlaceMachine(cellMapWith([table]), MACHINE_TYPES.garbageCan, [1, 0], 0),
+      !canPlaceMachine(
+        cellMapWith([table]),
+        MACHINE_TYPES.garbageCan,
+        [1, 0],
+        0,
+      ),
     );
   });
 
@@ -250,7 +250,10 @@ describe("moving and removing tables", () => {
     const result = pickUpMachineAction(stocked)(state);
     assert.strictEqual(result.machines.length, 0);
     assert.strictEqual(result.materialPiles.length, 0);
-    assert.strictEqual(result.player.carriedMachine?.storedMaterials?.length, 1);
+    assert.strictEqual(
+      result.player.carriedMachine?.storedMaterials?.length,
+      1,
+    );
   });
 });
 

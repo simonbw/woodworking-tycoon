@@ -58,7 +58,11 @@ export const StorageRackSprite: React.FC<{ machine: Machine }> = ({
       // The OSB deck, strands and all, inset so the posts peek out
       const deckInset = 4;
       const deck = half - deckInset;
-      const deckBase = mixColors(colorBySheetGoodKind.osb.primary, 0x000000, 0.2);
+      const deckBase = mixColors(
+        colorBySheetGoodKind.osb.primary,
+        0x000000,
+        0.2,
+      );
       g.roundRect(-deck, -deck, deck * 2, deck * 2, 4);
       g.fill(deckBase);
       for (let i = 0; i < 70; i++) {

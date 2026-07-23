@@ -1,15 +1,16 @@
 import React from "react";
+import { AwayNote } from "./AwayNote";
 import { CommissionsSection } from "./CommissionsSection";
-import { ErrandsSection } from "./ErrandsSection";
 
 /**
  * One corkboard holding everything there is to do: the active commission's
- * work order and the errands note, each pinned as its own piece of paper.
- * No label — a corkboard full of work orders explains itself.
+ * work order, plus a "back soon" note while the player is out on a trip.
+ * No label — a corkboard full of work orders explains itself. (Errands
+ * themselves start at the garage door — see DoorSection.)
  */
 export const JobBoard: React.FC = () => (
   <section className="bg-corkboard-dark rounded-md p-4 shadow-inner border border-black/40 corkboard-bg space-y-5">
     <CommissionsSection />
-    <ErrandsSection />
+    <AwayNote />
   </section>
 );

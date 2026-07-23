@@ -2,6 +2,7 @@ import { GameAction } from "../GameState";
 import { makeMaterial } from "../material-helpers";
 import { MaterialInstance, Pallet } from "../Materials";
 import { Tuple } from "../../utils/typeUtils";
+import { canLeaveShop } from "./door-actions";
 
 /** How long a scavenging trip takes — about a quarter of a 600-tick day. */
 export const SCAVENGE_DURATION_TICKS = 150;
@@ -43,7 +44,8 @@ function makeDamagedPallet(rng: () => number): Pallet {
 }
 
 /**
- * Leave the shop to hunt for free pallets. The player is gone for
+ * Walk out the door to hunt for free pallets. Starts at the garage door
+ * like any trip out of the shop. The player is gone for
  * SCAVENGE_DURATION_TICKS; the haul is rolled up front and delivered to the
  * material dropoff spot by tickAction when they get back.
  */
@@ -55,8 +57,8 @@ export function startScavengingAction(
       console.warn("Scavenging is not unlocked yet");
       return gameState;
     }
-    if (gameState.player.away) {
-      console.warn("Player is already away");
+    if (!canLeaveShop(gameState)) {
+      console.warn("Can't leave the shop right now");
       return gameState;
     }
     return {

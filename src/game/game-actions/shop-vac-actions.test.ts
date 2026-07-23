@@ -140,10 +140,7 @@ describe("shopVacTickPass", () => {
 
 describe("dragging the vac through the shop", () => {
   it("halves walking speed", () => {
-    assert.strictEqual(
-      playerWalkSpeed(draggingState()),
-      BASE_WALK_SPEED / 2,
-    );
+    assert.strictEqual(playerWalkSpeed(draggingState()), BASE_WALK_SPEED / 2);
   });
 
   it("vacuums instead of sweeping on the clean-up key", () => {

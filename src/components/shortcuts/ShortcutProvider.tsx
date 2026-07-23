@@ -12,7 +12,6 @@ import {
   ShortcutScope,
   shortcutsForEvent,
 } from "../../game/shortcuts";
-import { useUiMode } from "../UiMode";
 
 type Handler = (event: KeyboardEvent) => void;
 
@@ -37,11 +36,6 @@ const shortcutContext = createContext<ShortcutContextValue | undefined>(
  * re-render when a dialog opens.
  */
 const modalOpenContext = createContext<boolean>(false);
-
-/** Which non-global scope is live, given the screen the player is on. */
-function scopeForMode(mode: string): ShortcutScope | null {
-  return mode === "normal" ? "home" : null;
-}
 
 /** Typing in a field shouldn't drive the player around the shop. */
 function isEditable(target: EventTarget | null): boolean {
@@ -73,7 +67,6 @@ function activatesFocusedControl(event: KeyboardEvent): boolean {
 export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { mode } = useUiMode();
   // A stack per id, not a single entry: two modals can be open at once (the
   // cheat sheet plus Settings), and both bind `close-modal`. The innermost
   // registration wins, and unmounting one must not evict the other's.
@@ -81,8 +74,6 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
   const [modalDepth, setModalDepth] = useState(0);
 
   // Read through refs so the listener never needs re-subscribing.
-  const modeRef = useRef(mode.mode);
-  modeRef.current = mode.mode;
   const modalDepthRef = useRef(modalDepth);
   modalDepthRef.current = modalDepth;
 
@@ -114,12 +105,10 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
       if (isEditable(event.target) && event.code !== "Escape") return;
       if (activatesFocusedControl(event)) return;
 
+      // The shop floor is the only screen (everything else is an overlay
+      // that claims the modal scope), so outside a modal both scopes live.
       const allowed: readonly ShortcutScope[] =
-        modalDepthRef.current > 0
-          ? ["modal"]
-          : (["global", scopeForMode(modeRef.current)].filter(
-              Boolean,
-            ) as ShortcutScope[]);
+        modalDepthRef.current > 0 ? ["modal"] : ["global", "home"];
 
       for (const def of shortcutsForEvent(event)) {
         if (!allowed.includes(def.scope)) continue;

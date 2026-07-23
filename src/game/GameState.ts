@@ -36,7 +36,7 @@ export interface ProgressionState {
   readonly tutorialStage: number;
   readonly storeUnlocked: boolean;
   readonly shopLayoutUnlocked: boolean;
-  /** Reveals the Marketplace tab (listings + job board) and scavenging. */
+  /** Reveals the phone (listings + job board) and scavenging at the door. */
   readonly marketplaceUnlocked: boolean;
   readonly commissionsCompleted: number;
   readonly tickSpeedControlsUnlocked: boolean;

@@ -19,9 +19,10 @@ import { TICKS_PER_DAY } from "../../game/time";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * The Job Board pane: open offers to accept (limited by reputation-gated
- * slots) and accepted jobs with their decaying tips, ready to deliver from
- * the player's inventory.
+ * The Job Board pane of the phone: open offers to accept (limited by
+ * reputation-gated slots) and accepted jobs with their decaying tips,
+ * ready to deliver from the player's inventory. The phone's tab bar
+ * provides the pane's title.
  */
 export const JobBoardSection: React.FC = () => {
   const gameState = useGameState();
@@ -30,10 +31,6 @@ export const JobBoardSection: React.FC = () => {
 
   return (
     <section className="space-y-4">
-      <h2 className="font-condensed font-bold uppercase tracking-[0.2em] text-sm border-b-2 border-ink-black/20 pb-1">
-        Job Board
-      </h2>
-
       <h3 className="font-condensed font-semibold uppercase tracking-[0.15em] text-xs text-ink-fade">
         Your jobs ({gameState.acceptedJobs.length}/{slots})
       </h3>

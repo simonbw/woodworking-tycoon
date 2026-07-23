@@ -33,21 +33,24 @@ logo and old sprites only. Don't use them in new UI.
 | Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people: commission work orders. |
 | Lined sheet | `.lined-sheet` (cream) | Ruled paper — but only for **pure text tallies** (the supplies list). **Content must sit on the rules**: the ruling is 2rem, every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules are the row dividers. Anything with icons or buttons cannot hold the ruling honestly — those lists (inventory, floor) use a plain cream sheet instead. |
 | Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
-| Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | StorePage (and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
+| Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 
 ## Panel hierarchy (Home screen)
 
 The home screen is composed of a small number of physical objects, not a
 stack of equal-weight cards:
 
-- **Top bar** (every screen, not just Home) — nav tabs plus status chrome
-  docked beside them: the day + speed controls (`Ticker`, which also
-  drives the game loop — time only advances on the shop floor) and the
-  balance, both drawn directly on the dark bar, no paper.
+- **Top bar** (`NavBar`) — a thin chrome strip, no tabs: the shop's name,
+  the day + speed controls (`Ticker`, which also drives the game loop —
+  time always advances unless paused), the balance, and the pocket items
+  (Phone, Journal, the `?` manual), all drawn directly on the dark bar,
+  no paper. Everything that used to be a tab is an object in the world:
+  the marketplace is the phone overlay, skills are the journal overlay,
+  and the store is a trip out the garage door (`StoreTripOverlay`).
 - **Job board** (`JobBoard`, left) — one corkboard holding the active
-  commission (pinned legal sheet, foldable to a stub via its header) and
-  the errands note (pinned cream memo). No label — a corkboard of work
-  orders explains itself.
+  commission (pinned legal sheet, foldable to a stub via its header) and,
+  while the player is out scavenging, a "back soon" note (pinned cream
+  memo). No label — a corkboard of work orders explains itself.
 - **Controls** (`ActionBar`, center) — the live-key legend drawn straight
   on the dark background, in two columns, hanging directly under the
   top-anchored shop view; its changing row count grows downward into the
@@ -63,9 +66,9 @@ stack of equal-weight cards:
   stays outside the folder because the core loop (load from inventory →
   operate) needs it visible *alongside* the inventory list.
 
-**Every screen is viewport-sized** (`h-screen` + `overflow-hidden`, `p-6`
-margin) — Home, Store, and Skills alike — so switching
-pages never adds or removes a page scrollbar and nothing shifts. Long
+**Every surface is viewport-sized** (`h-screen`/`inset-0` +
+`overflow-hidden`, `p-6` margin) — the home screen and the store trip
+overlay alike — so nothing ever adds or removes a page scrollbar. Long
 content scrolls *inside* its own panel, aisle, or column. On Home, each
 side rail anchors its panels — manifest hangs from the top-right, the spec
 sheet rises from the bottom-right — and panels appearing or growing must

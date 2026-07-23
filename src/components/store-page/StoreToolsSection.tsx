@@ -80,9 +80,7 @@ const UpgradeProductCard: React.FC<{ upgrade: UpgradeType }> = ({
           className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
           disabled={!canAfford}
           data-sfx="ui-purchase"
-          onClick={() =>
-            applyAction(buyUpgradeAction(upgrade.id as UpgradeId))
-          }
+          onClick={() => applyAction(buyUpgradeAction(upgrade.id as UpgradeId))}
         >
           Buy
         </button>

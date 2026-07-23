@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { machineCard, modesOf, selectMode, setParameter } from "./machine-panel";
+import {
+  machineCard,
+  modesOf,
+  selectMode,
+  setParameter,
+} from "./machine-panel";
+import { goToStore, leaveStore } from "./navigation";
 
 declare global {
   interface Window {
@@ -31,8 +37,7 @@ test.describe("Hand tools", () => {
     await page.waitForTimeout(300);
 
     await test.step("the tool wall sells the hand saw and drill, supplies sell screws", async () => {
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
+      const returnTo = await goToStore(page);
       const toolWall = page.locator("section", { hasText: "Tool Wall" });
       await expect(toolWall.getByText("Hand Saw")).toBeVisible();
       await expect(toolWall.getByText("Drill")).toBeVisible();
@@ -56,8 +61,7 @@ test.describe("Hand tools", () => {
       await page.waitForTimeout(200);
       await expect(page.getByText("In your shop: 50 screws")).toBeVisible();
 
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await leaveStore(page, returnTo);
     });
 
     await test.step("both tools mount at the workbench and add their trades", async () => {
@@ -83,7 +87,9 @@ test.describe("Hand tools", () => {
       await page.keyboard.press("3");
       await selectMode(page, "Makeshift Workbench", "Cut Board by Hand");
       const card = workspaceCard(page);
-      await expect(card.getByRole("radiogroup", { name: "Angle" })).toBeVisible();
+      await expect(
+        card.getByRole("radiogroup", { name: "Angle" }),
+      ).toBeVisible();
       await expect(
         card.getByRole("radiogroup", { name: "Cut End" }),
       ).toBeVisible();

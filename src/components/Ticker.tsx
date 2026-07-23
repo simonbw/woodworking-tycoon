@@ -12,7 +12,6 @@ import {
   useTickSpeed,
 } from "./TickSpeedContext";
 import { Tooltip } from "./Tooltip";
-import { useUiMode } from "./UiMode";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 const PAUSED = TICK_SPEED_PAUSED;
@@ -59,28 +58,24 @@ const SpeedButton: React.FC<{
 
 /**
  * Drives the game loop and shows the day + speed controls as a compact
- * strip docked in the top bar on every screen. Time advances on the shop
- * floor and the marketplace (listings must be able to sell and the job
- * board to refresh while you browse) — the store and layout editor still
- * pause the world.
+ * strip docked in the top bar. Time always advances (unless paused): the
+ * phone, journal, and manual are objects you look at while standing in the
+ * shop, and a store run takes however long you spend in the aisles.
  */
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const { mode } = useUiMode();
-  const timeRuns = mode.mode === "normal" || mode.mode === "marketplace";
   const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
   const { ticksPerSecond, setTicksPerSecond } = useTickSpeed();
 
   useEffect(() => {
-    if (!timeRuns) return;
     const interval = setInterval(() => {
       if (ticksPerSecond > 0) {
         applyAction(tickAction);
       }
     }, 1000 / ticksPerSecond);
     return () => clearInterval(interval);
-  }, [ticksPerSecond, timeRuns]);
+  }, [ticksPerSecond]);
 
   useShortcut("speed-pause", () => setTicksPerSecond(PAUSED), controlsUnlocked);
   useShortcut(

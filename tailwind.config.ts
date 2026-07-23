@@ -78,7 +78,7 @@ const config = {
           dark: "#9c7e3f",
         },
 
-        // Big-box store palette (StorePage only)
+        // Big-box store palette (the Orange Box trip only)
         store: {
           orange: "#f47820",
           "orange-dark": "#cf5d10",

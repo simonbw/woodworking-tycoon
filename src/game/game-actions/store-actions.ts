@@ -4,10 +4,7 @@ import { getActiveCommission } from "../commissionSequence";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
-import {
-  deliverMachineCrate,
-  freshMachineState,
-} from "./machine-actions";
+import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import {
   incrementCommissionsCompletedAction,
   checkProgressionMilestonesAction,

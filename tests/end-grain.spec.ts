@@ -1,5 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { selectMode } from "./machine-panel";
+import {
+  closeJournal,
+  goToStore,
+  leaveStore,
+  openJournal,
+  openPhone,
+} from "./navigation";
 
 declare global {
   interface Window {
@@ -73,9 +80,9 @@ test.describe("End-Grain Boards", () => {
     });
     await page.waitForTimeout(300);
 
+    let afterStore: [number, number] | undefined;
     await test.step("buy jig plywood from the Sheet Goods aisle", async () => {
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
+      afterStore = await goToStore(page);
       await expect(page.getByText("Sheet Goods")).toBeVisible();
       // The sled itself is NOT for sale on the tool wall
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
@@ -95,8 +102,8 @@ test.describe("End-Grain Boards", () => {
     });
 
     await test.step("learn Jigs & Fixtures and End-Grain Boards", async () => {
-      await page.getByText("Skills (2)", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await leaveStore(page, afterStore);
+      await openJournal(page);
       for (const skill of ["Jigs & Fixtures", "End-Grain Boards"]) {
         await page
           .locator("li", { hasText: skill })
@@ -108,8 +115,7 @@ test.describe("End-Grain Boards", () => {
     });
 
     await test.step("build the crosscut sled at the workspace", async () => {
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await closeJournal(page);
       await page.keyboard.press("3"); // the cures are long by design
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await page
@@ -140,7 +146,9 @@ test.describe("End-Grain Boards", () => {
       const sawCard = card(page, "Jobsite Table Saw");
       // Bare saw: nothing in hand it can cut — the carried panel can't
       // ride the fence, so Feed stays dead until the sled is on the table
-      await expect(sawCard.getByRole("button", { name: "Feed" })).toBeDisabled();
+      await expect(
+        sawCard.getByRole("button", { name: "Feed" }),
+      ).toBeDisabled();
       // The tool rack lives behind the collapsed Details fold
       await sawCard.getByRole("button", { name: "Details" }).click();
       await sawCard.getByRole("button", { name: "Attach" }).click();
@@ -232,8 +240,7 @@ test.describe("End-Grain Boards", () => {
       const moneyBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      await page.getByText("Marketplace", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openPhone(page);
       await page
         .locator("li", { hasText: "End Grain Cutting Board" })
         .getByRole("button", { name: "List" })

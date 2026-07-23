@@ -142,7 +142,7 @@ const MachineSpecSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { isTargeted } = useTargetedMachine();
 
   // Only skill-unlocked recipes appear at the station; locked ones live on
-  // the Skills page. Stations with nothing usable (e.g. the sales table)
+  // the journal. Stations with nothing usable (e.g. the sales table)
   // get a simple contents card instead of the operation spec sheet.
   const operations = availableOperations(machine, gameState.progression);
   if (operations.length === 0) {
@@ -815,7 +815,10 @@ const DirectFeedMachineCard: React.FC<{
               className="button-paper text-xs whitespace-nowrap"
               onClick={() =>
                 applyAction(
-                  takeOutputsFromMachineAction(machine.outputMaterials, machine),
+                  takeOutputsFromMachineAction(
+                    machine.outputMaterials,
+                    machine,
+                  ),
                 )
               }
             >
@@ -990,8 +993,8 @@ const UpgradeRack: React.FC<{ machine: Machine }> = ({ machine }) => {
         {machine.upgrades.length === 0 &&
           gameState.storage.upgrades.length === 0 && (
             <li className="py-1 italic text-ink-fade text-xs">
-              No upgrades yet — build drawers and shelves at a bench, or buy
-              a vise at the store.
+              No upgrades yet — build drawers and shelves at a bench, or buy a
+              vise at the store.
             </li>
           )}
       </ul>

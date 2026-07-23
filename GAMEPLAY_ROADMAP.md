@@ -19,14 +19,14 @@ Woodworking Tycoon is an incremental/idle-inspired simulation game where players
 - **Equipment**: Single workspace
 - **Materials**: One pallet on the ground
 - **Money**: $0
-- **UI Access**: Only main workshop view (no store tab)
+- **UI Access**: Only main workshop view (the garage door goes nowhere yet)
 
 ### Tutorial Sequence (Commissions 1-2)
 1. **Commission 1: First Shelf**
    - Break down pallet using workspace
    - Build basic pallet wood shelf
    - Complete first commission → receive payment (enough for miter saw)
-   - **Unlocks**: Store tab access
+   - **Unlocks**: Store access (the Orange Box trip out the garage door)
 
 2. **Commission 2: Precise Cuts**
    - Purchase miter saw from store
@@ -122,7 +122,7 @@ Woodworking Tycoon is an incremental/idle-inspired simulation game where players
 - **Free Market**: Grinding option at reduced profitability
 
 ### Unlock System
-- **Feature Unlocks**: Store tab, machine carrying, free selling
+- **Feature Unlocks**: Store access, machine carrying, free selling
 - **Tool Requirements**: Higher-tier tools locked behind shop upgrades
 - **Material Access**: Better materials unlock with reputation/progression
 - **Technique Gates**: Complex operations require prerequisite tool mastery

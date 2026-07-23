@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { modesOf, selectMode } from "./machine-panel";
+import { goToStore, leaveStore, openPhone } from "./navigation";
 
 declare global {
   interface Window {
@@ -63,8 +64,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
     });
 
     await test.step("store: tool wall and reputation-gated lumber channels", async () => {
-      await page.getByText("Store", { exact: true }).click();
-      await page.waitForTimeout(300);
+      const returnTo = await goToStore(page);
       await expect(page.getByText("Tool Wall")).toBeVisible();
       await expect(page.getByText("Sanding Block")).toBeVisible();
       // Scoped: the supplies aisle sells a $10.00 oil bottle too
@@ -82,8 +82,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await expect(page.getByText("Lumberyard — S2S")).toBeVisible();
       // ...but the rough rack (22) doesn't exist yet — not even greyed out
       await expect(page.getByText("Rough Rack")).not.toBeVisible();
-      await page.getByText("Home", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await leaveStore(page, returnTo);
     });
 
     await test.step("mount the sander at the workspace", async () => {
@@ -187,8 +186,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       const moneyBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      await page.getByText("Marketplace", { exact: true }).click();
-      await page.waitForTimeout(300);
+      await openPhone(page);
       await page
         .locator("li", { hasText: "Simple Cutting Board" })
         .getByRole("button", { name: "List" })

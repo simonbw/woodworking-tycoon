@@ -1,7 +1,7 @@
 /**
  * The skill tree (see docs/skills-and-recipes.md). Every recipe in the game
  * belongs to a skill; skills the player can use from the start are
- * `startsUnlocked` — shown on the Skills page as already-earned
+ * `startsUnlocked` — shown in the journal as already-earned
  * certificates so the system explains itself.
  */
 export const SKILL_IDS = [
