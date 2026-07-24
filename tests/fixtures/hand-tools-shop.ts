@@ -93,6 +93,7 @@ export const handToolsShop: GameState = {
   },
   listings: [],
   jobBoard: [],
+  seenJobTemplateIds: [],
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},

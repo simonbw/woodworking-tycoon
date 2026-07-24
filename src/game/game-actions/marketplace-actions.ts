@@ -1,6 +1,6 @@
 import { GameAction, MarketListing } from "../GameState";
 import { MaterialInstance } from "../Materials";
-import { generateJobBoard } from "../job-generation";
+import { availableJobTemplateIds, generateJobBoard } from "../job-generation";
 import {
   DEMAND_DIP_PER_SALE,
   DEMAND_RECOVERY_PER_TICK,
@@ -348,5 +348,12 @@ function refreshJobBoard(
     }
     jobBoard.push(offer);
   }
-  return { ...gameState, jobBoard };
+  // Record what the board could offer this refresh: anything that appears
+  // in this list for the first time next refresh is a new capability and
+  // gets its guaranteed burst (see generateJobBoard).
+  return {
+    ...gameState,
+    jobBoard,
+    seenJobTemplateIds: availableJobTemplateIds(gameState),
+  };
 }

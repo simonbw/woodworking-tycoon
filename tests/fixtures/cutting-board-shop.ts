@@ -92,6 +92,7 @@ export const cuttingBoardShop: GameState = {
   },
   listings: [],
   jobBoard: [],
+  seenJobTemplateIds: [],
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},

@@ -109,6 +109,7 @@ export const millingShop: GameState = {
   },
   listings: [],
   jobBoard: [],
+  seenJobTemplateIds: [],
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},

@@ -62,6 +62,25 @@ export const CuttingBoardSprite: React.FC<
       g.roundRect(-width / 2, -height / 2, width, height, radius);
       g.fill(colorBySpecies[species].primary);
 
+      // checkers: a true two-tone grid, every other block the accent wood
+      if (type === "checkerboardCuttingBoard" && accentSpecies) {
+        const block = 2 * PIXELS_PER_INCH;
+        for (let row = 0; -height / 2 + row * block < height / 2; row++) {
+          for (let col = 0; -width / 2 + col * block < width / 2; col++) {
+            if ((row + col) % 2 === 0) {
+              continue;
+            }
+            g.rect(
+              -width / 2 + col * block,
+              -height / 2 + row * block,
+              Math.min(block, width / 2 - (-width / 2 + col * block)),
+              Math.min(block, height / 2 - (-height / 2 + row * block)),
+            );
+            g.fill(colorBySpecies[accentSpecies].primary);
+          }
+        }
+      }
+
       // end grain reads as a brick grid of glued blocks
       if (type === "endGrainCuttingBoard") {
         const block = 2 * PIXELS_PER_INCH;
@@ -81,8 +100,9 @@ export const CuttingBoardSprite: React.FC<
         }
       }
 
-      // accent stripes over the base wood, patterned by tier
-      if (accentSpecies) {
+      // accent stripes over the base wood, patterned by tier (the
+      // checkerboard already painted its accent as a grid)
+      if (accentSpecies && type !== "checkerboardCuttingBoard") {
         for (const [offset, stripeWidth] of accentStripes(type)) {
           g.rect(
             -width / 2 + offset * PIXELS_PER_INCH,

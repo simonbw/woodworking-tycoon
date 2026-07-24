@@ -620,3 +620,27 @@ export function migrateV22toV23(old: any): GameState {
     },
   };
 }
+
+/**
+ * v23 → v24: the job board tracks which job templates it has already
+ * offered work for, so newly-gained capabilities get a burst of matching
+ * offers. Seeded with the templates that existed before this version —
+ * the capabilities an old save already had shouldn't burst, while the
+ * templates new in this version announce themselves on the next refresh.
+ */
+export function migrateV23toV24(old: any): GameState {
+  return {
+    ...old,
+    seenJobTemplateIds: [
+      "pallet-boards",
+      "rustic-shelves",
+      "miter-crosscuts",
+      "ripped-slats",
+      "sanded-boards",
+      "planed-stringers",
+      "planter-boxes",
+      "cutting-boards",
+      "picture-frames",
+    ],
+  };
+}

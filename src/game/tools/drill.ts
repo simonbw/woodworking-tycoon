@@ -1,4 +1,8 @@
-import { FinishedProduct, MaterialInstance } from "../Materials";
+import {
+  FinishedProduct,
+  MaterialInstance,
+  REAL_WOOD_SPECIES,
+} from "../Materials";
 import { makeMaterial } from "../material-helpers";
 import { ToolType } from "../Tool";
 
@@ -47,6 +51,81 @@ export const drill: ToolType = {
             makeMaterial<FinishedProduct>({
               type: "planterBox",
               species: "pallet",
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Build Step Stool",
+      id: "buildStepStool",
+      requiredSkill: "rusticCarpentry",
+      duration: 30,
+      // It has to hold a person, so every joint gets a screw
+      requiredConsumables: [{ id: "screws", amount: 10 }],
+      inputMaterials: [
+        // Two stout sides — crosscut stringers or thick hardwood
+        {
+          type: ["board"],
+          width: [6],
+          length: [2],
+          thickness: [3, 4],
+          quantity: 2,
+        },
+        // Two treads of thinner stock
+        {
+          type: ["board"],
+          width: [4],
+          length: [2],
+          thickness: [1, 2],
+          quantity: 2,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const boards = materials.filter((m) => m.type === "board");
+        if (boards.length !== 4) {
+          throw new Error("Need exactly 4 boards to build a step stool");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "stepStool",
+              species: boards[0].species,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Build Bookshelf",
+      id: "buildBookshelf",
+      requiredSkill: "fineShelving",
+      duration: 40,
+      requiredConsumables: [{ id: "screws", amount: 12 }],
+      inputMaterials: [
+        // Twice the stock of a single shelf: two shelves, two sides
+        {
+          type: ["board"],
+          species: REAL_WOOD_SPECIES,
+          length: [4],
+          width: [6],
+          thickness: [4],
+          surface: ["sanded"],
+          quantity: 4,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const boards = materials.filter((m) => m.type === "board");
+        if (boards.length !== 4) {
+          throw new Error("Need exactly 4 boards to build a bookshelf");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "bookshelf",
+              species: boards[0].species,
             }),
           ],
         };

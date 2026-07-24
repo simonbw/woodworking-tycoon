@@ -43,6 +43,9 @@ export const MaterialSprite: React.FC<{
       );
 
     case "jewelryBox":
+    case "birdhouse":
+    case "crate":
+    case "stepStool":
       return (
         <FinishedBoxSprite
           material={material as FinishedProduct}
@@ -55,6 +58,7 @@ export const MaterialSprite: React.FC<{
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
     case "pictureFrame":
+    case "hexFrame":
       return (
         <PictureFrameSprite
           material={material as FinishedProduct}
@@ -82,6 +86,8 @@ export const MaterialSprite: React.FC<{
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
+    case "checkerboardCuttingBoard":
+    case "servingTray":
       return (
         <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
       );

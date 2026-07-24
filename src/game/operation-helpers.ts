@@ -184,7 +184,16 @@ function generateSingleMockMaterial(
     case "pictureFrame":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
-    case "sunriseCuttingBoard": {
+    case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard":
+    case "birdhouse":
+    case "crate":
+    case "stepStool":
+    case "hexFrame":
+    case "servingTray":
+    case "bookshelf":
+    case "sideTable":
+    case "checkerboardCuttingBoard": {
       const reqAny = req as any;
       const product: FinishedProduct = makeMaterial<FinishedProduct>({
         type: materialType as FinishedProduct["type"],
