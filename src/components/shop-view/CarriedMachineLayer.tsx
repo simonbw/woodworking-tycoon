@@ -1,7 +1,7 @@
 import { useTick } from "@pixi/react";
 import { Container } from "pixi.js";
 import React, { useRef } from "react";
-import { useCellMap } from "../../game/CellMap";
+import { useCellMap } from "../useCellMap";
 import { carriedMachinePlacement } from "../../game/game-actions/machine-actions";
 import { Machine } from "../../game/Machine";
 import { useGameState } from "../useGameState";

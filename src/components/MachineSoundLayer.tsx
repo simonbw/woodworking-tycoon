@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { getMachines, MachineId, MachineState } from "../game/Machine";
+import { getMachines, MachineId, machineKey } from "../game/Machine";
 import { deriveMachineCutLoad } from "../game/cut-load";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
 import { PhaseReportingVoice } from "../utils/machineSoundState";
@@ -71,16 +71,6 @@ const MACHINE_VOICES: Partial<
 /** Whether this machine type's visuals should follow the audible phase. */
 export function machineHasVoice(machineTypeId: MachineId): boolean {
   return MACHINE_VOICES[machineTypeId] !== undefined;
-}
-
-/**
- * Machines have no id; position is their identity (moving one in the layout
- * editor is a remove + re-add, which correctly retires the old player).
- * Shared with `useMachineActivity`, which reads the audible phase published
- * under the same key.
- */
-export function machineKey(state: MachineState): string {
-  return `${state.machineTypeId}@${state.position[0]},${state.position[1]}`;
 }
 
 export const MachineSoundLayer: React.FC = () => {

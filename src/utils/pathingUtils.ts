@@ -4,6 +4,7 @@ import {
   rotateVec,
   translateVec,
   vectorEquals,
+  vectorKey,
 } from "../game/Vectors";
 import { VectorSet } from "./VectorSet";
 
@@ -19,10 +20,6 @@ export function getNeighbors(
 
 type PathItem = { direction: Direction; position: Vector };
 type Path = PathItem[];
-
-function vecToKey(vec: Vector): string {
-  return vec.join(",");
-}
 
 // A simple breadth-first search to find a path from start to end
 export function findPath(
@@ -40,8 +37,8 @@ export function findPath(
     const current = queue.shift()!;
     if (vectorEquals(current.position, end)) {
       const result: Path = [current];
-      while (path.has(vecToKey(result[0].position))) {
-        const next = path.get(vecToKey(result[0].position))!;
+      while (path.has(vectorKey(result[0].position))) {
+        const next = path.get(vectorKey(result[0].position))!;
         result.unshift(next);
       }
       result.shift();
@@ -52,7 +49,7 @@ export function findPath(
       if (!visited.has(pathItem.position) && validSet.has(pathItem.position)) {
         visited.add(pathItem.position);
         queue.push(pathItem);
-        path.set(vecToKey(pathItem.position), current);
+        path.set(vectorKey(pathItem.position), current);
       }
     }
   }

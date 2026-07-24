@@ -1,5 +1,5 @@
 import React from "react";
-import { useCellMap } from "../../game/CellMap";
+import { useCellMap } from "../useCellMap";
 import { canSweepAt } from "../../game/game-actions/dust-actions";
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
 import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";

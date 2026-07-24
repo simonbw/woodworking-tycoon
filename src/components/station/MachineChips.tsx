@@ -1,6 +1,7 @@
 import React from "react";
 import { resolveInteract, interactLabel } from "../../game/interact";
 import {
+  isSameMachine,
   Machine,
   MachineOperation,
   ParameterizedOperation,
@@ -47,8 +48,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const interactHere =
     interact != null &&
     "machine" in interact &&
-    interact.machine.type.name === machine.type.name &&
-    interact.machine.position.join(",") === machine.position.join(",")
+    isSameMachine(interact.machine.state, machine.state)
       ? interact
       : null;
 

@@ -15,6 +15,7 @@ import {
   translateVec,
   Vector,
   vectorEquals,
+  vectorKey,
 } from "../Vectors";
 import { CellMap } from "../CellMap";
 import { defaultParametersFor } from "../operation-helpers";
@@ -140,7 +141,7 @@ export function machinesMountedOnTable(
     tableType,
     table.position,
     table.rotation,
-  ).map((cell) => cell.join(","));
+  ).map(vectorKey);
   return gameState.machines.filter((machine, index) => {
     if (index === tableIndex) {
       return false;
@@ -150,7 +151,7 @@ export function machinesMountedOnTable(
       machineType,
       machine.position,
       machine.rotation,
-    ).some((cell) => tableCells.includes(cell.join(",")));
+    ).some((cell) => tableCells.includes(vectorKey(cell)));
   });
 }
 

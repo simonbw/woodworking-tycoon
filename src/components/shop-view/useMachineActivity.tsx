@@ -1,9 +1,9 @@
 import { machineDustMultiplier } from "../../game/Dust";
-import { Machine } from "../../game/Machine";
+import { Machine, machineKey } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { getOperationPhases } from "../../game/skill-helpers";
 import { useAudiblePhase } from "../../utils/machineSoundState";
-import { machineHasVoice, machineKey } from "../MachineSoundLayer";
+import { machineHasVoice } from "../MachineSoundLayer";
 import { useGameState } from "../useGameState";
 
 /**

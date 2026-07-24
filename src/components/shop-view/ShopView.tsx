@@ -1,6 +1,8 @@
 import { Application, useApplication } from "@pixi/react";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useCellMap } from "../../game/CellMap";
+import { useCellMap } from "../useCellMap";
+import { isSameMachine, machineKey } from "../../game/Machine";
+import { vectorKey } from "../../game/Vectors";
 import { useTexture } from "../../utils/useTexture";
 import {
   gameStateContext,
@@ -75,10 +77,8 @@ export const ShopView: React.FC = () => {
   // second click on a recipe-driven station spreads its sheet open. The
   // mouse can't reach machines you're not at — walk over first.
   const machineClickHandler = (machine: (typeof machines)[number]) => {
-    const reachable = operableHere.some(
-      (candidate) =>
-        candidate.type.name === machine.type.name &&
-        candidate.position.join(",") === machine.position.join(","),
+    const reachable = operableHere.some((candidate) =>
+      isSameMachine(candidate.state, machine.state),
     );
     if (!reachable) return undefined;
     return () => {
@@ -169,7 +169,7 @@ export const ShopView: React.FC = () => {
               {cellMap.getCells().map((cell) => (
                 <FloorTileSprite
                   cell={cell}
-                  key={`cell-${cell.position.join(",")}`}
+                  key={`cell-${vectorKey(cell.position)}`}
                 />
               ))}
               <EntranceSprite />
@@ -180,7 +180,7 @@ export const ShopView: React.FC = () => {
               {gameState.machineCrates.map((crate, index) => (
                 <MachineCrateSprite
                   crate={crate}
-                  key={`crate-${index}-${crate.position.join(",")}`}
+                  key={`crate-${index}-${vectorKey(crate.position)}`}
                 />
               ))}
 
@@ -188,7 +188,7 @@ export const ShopView: React.FC = () => {
                 const [x, y] = cellToPixelVec(materialPiles[0].position);
                 return (
                   <pixiContainer
-                    key={`pile${materialPiles[0].position.join(",")}`}
+                    key={`pile${vectorKey(materialPiles[0].position)}`}
                     x={x}
                     y={y}
                   >
@@ -205,10 +205,7 @@ export const ShopView: React.FC = () => {
                 )
                 .map((machinePlacement) => (
                   <MachineSprite
-                    key={
-                      machinePlacement.type.id +
-                      machinePlacement.position.join(",")
-                    }
+                    key={machineKey(machinePlacement.state)}
                     machine={machinePlacement}
                     isSelected={
                       !gameState.player.away &&

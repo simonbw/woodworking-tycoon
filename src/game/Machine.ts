@@ -10,6 +10,7 @@ import {
   translateVec,
   Vector,
   vectorEquals,
+  vectorKey,
 } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
@@ -381,6 +382,15 @@ export function isSameMachine(a: MachineState, b: MachineState): boolean {
 }
 
 /**
+ * Stable string identity for a placed machine — the key form of
+ * isSameMachine (type + anchor cell). Used wherever a machine needs to key
+ * a Map or a React list (sound voices, sheet targeting, render keys).
+ */
+export function machineKey(state: MachineState): string {
+  return `${state.machineTypeId}@${vectorKey(state.position)}`;
+}
+
+/**
  * Machine view class - provides convenient access to MachineType and operations
  * Similar to CellMap pattern - a computed view over the raw state
  */
@@ -426,9 +436,7 @@ export class Machine {
    * station whose recipes are all still locked, or "none").
    */
   get selectedOperationOrNull():
-    | MachineOperation
-    | ParameterizedOperation
-    | null {
+    MachineOperation | ParameterizedOperation | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null

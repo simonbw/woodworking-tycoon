@@ -1,5 +1,5 @@
 import React from "react";
-import { useCellMap } from "../../game/CellMap";
+import { useCellMap } from "../useCellMap";
 import { MaterialInstance } from "../../game/Materials";
 import {
   dropMaterialAction,

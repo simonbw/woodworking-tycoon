@@ -44,6 +44,21 @@ export function vectorEquals(a: Vector, b: Vector): boolean {
   return a[0] === b[0] && a[1] === b[1];
 }
 
+/**
+ * The canonical "x,y" string key for a Vector, for use in Maps, Sets, and
+ * Records (DustMap, CellMap, pathfinding, render keys). Every cell-keyed
+ * structure shares this one encoding — never hand-roll `join(",")`.
+ */
+export function vectorKey([x, y]: Vector): string {
+  return `${x},${y}`;
+}
+
+/** Inverse of vectorKey. */
+export function keyToVector(key: string): Vector {
+  const [x, y] = key.split(",").map(Number);
+  return [x, y];
+}
+
 /** Chessboard distance in cells — 0 is the same cell, 1 is any neighbor. */
 export function chebyshevDistance(a: Vector, b: Vector): number {
   return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));

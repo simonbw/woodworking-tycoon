@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from "react";
-import { useCellMap } from "../../game/CellMap";
-import { Machine } from "../../game/Machine";
+import { useCellMap } from "../useCellMap";
+import { Machine, machineKey } from "../../game/Machine";
 import { Vector, rotateVec, translateVec } from "../../game/Vectors";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
 import { MachineChips, OutfeedChips } from "../station/MachineChips";
@@ -70,7 +70,7 @@ export const ShopOverlayLayer: React.FC<{
           sheetMachine == null &&
           outfeedMachines.map((machine) => (
             <MachineAnchored
-              key={`outfeed-${machine.type.name}@${machine.position.join(",")}`}
+              key={`outfeed-${machineKey(machine.state)}`}
               machine={machine}
               canvasWidth={width}
               canvasHeight={height}
