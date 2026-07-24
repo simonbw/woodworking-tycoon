@@ -101,6 +101,7 @@ describe("salvaged nails", () => {
       player: {
         ...initialGameState.player,
         position: WORKSPACE_OPERATION_CELL,
+        operating: true,
       },
       machines: [machine],
     });

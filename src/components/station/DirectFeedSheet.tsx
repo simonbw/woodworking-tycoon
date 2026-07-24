@@ -71,7 +71,7 @@ export const DirectFeedSheet: React.FC<{
 
   return (
     <>
-      {settings.map(({ param, operation }, index) => (
+      {settings.map(({ param, operation }) => (
         <ParameterScaleRow
           key={param.id}
           param={param}
@@ -80,7 +80,7 @@ export const DirectFeedSheet: React.FC<{
             param.defaultValue ??
             param.values[0]
           }
-          showShortcut={index === 0 && isTargeted(machine)}
+          showShortcut={isTargeted(machine)}
           onSelect={(value) =>
             applyAction(setMachineSettingsAction(machine, { [param.id]: value }))
           }

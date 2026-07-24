@@ -4,6 +4,7 @@ import {
   isSameMachine,
   Machine,
   Operation,
+  OperationParameter,
   operationParameters,
 } from "../../game/Machine";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
@@ -80,12 +81,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
         .some((input) => materialMeetsInput(material, input)),
     );
 
-  const firstSetting = firstParameter(machine, operations);
-  const settingValue = firstSetting
-    ? (machine.selectedParameters?.[firstSetting.id] ??
-      firstSetting.defaultValue ??
-      firstSetting.values[0])
-    : undefined;
+  const settings = machineSettings(machine, operations);
 
   const canOperate =
     isBenchLike && machineCanOperate(machine, gameState.consumables);
@@ -140,17 +136,31 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           {refusal}
         </li>
       )}
-      {firstSetting && isTargeted(machine) && (
-        <li>
-          <ShortcutKeys shortcut="cycle-parameter" />{" "}
-          {firstSetting.name.toLowerCase()}:{" "}
-          <span className="font-mono normal-case">
-            {typeof settingValue === "number"
-              ? `${settingValue}${firstSetting.unit ?? '"'}`
-              : String(settingValue)}
-          </span>
-        </li>
-      )}
+      {isTargeted(machine) &&
+        settings.map((param) => {
+          const value =
+            machine.selectedParameters?.[param.id] ??
+            param.defaultValue ??
+            param.values[0];
+          return (
+            <li key={param.id}>
+              {param.presentation === "rotate" ? (
+                <ShortcutKeys shortcut="rotate-setting" />
+              ) : (
+                <>
+                  <ShortcutKeys shortcut="setting-down" />
+                  <ShortcutKeys shortcut="setting-up" />
+                </>
+              )}{" "}
+              {param.name.toLowerCase()}:{" "}
+              <span className="font-mono normal-case">
+                {typeof value === "number"
+                  ? `${value}${param.unit ?? '"'}`
+                  : String(value)}
+              </span>
+            </li>
+          );
+        })}
       {isTargeted(machine) && (
         <li className="text-paper-manila/70">
           <ShortcutKeys shortcut="open-station-sheet" />{" "}
@@ -172,19 +182,28 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   );
 };
 
-/** The first adjustable setting the Z key drives on this machine. */
-function firstParameter(
+/**
+ * The settings the keys drive on this machine, each listed once. A
+ * direct-feed machine's settings can belong to any of its operations (the
+ * stock in hand decides which runs); a bench only offers the selected
+ * plan's. At most one is a "rotate" setting, so R never has to choose.
+ */
+function machineSettings(
   machine: Machine,
   operations: ReadonlyArray<Operation>,
-) {
-  if (machine.type.directFeed) {
-    const op = operations.find(
-      (candidate) => operationParameters(candidate).length > 0,
-    );
-    return op ? operationParameters(op)[0] : undefined;
+): ReadonlyArray<OperationParameter> {
+  const source = machine.type.directFeed
+    ? operations
+    : [machine.selectedOperationOrNull].filter((op) => op != null);
+  const settings: OperationParameter[] = [];
+  for (const op of source) {
+    for (const param of operationParameters(op)) {
+      if (param.values.length > 1 && !settings.some((s) => s.id === param.id)) {
+        settings.push(param);
+      }
+    }
   }
-  const selected = machine.selectedOperationOrNull;
-  return selected ? operationParameters(selected)[0] : undefined;
+  return settings;
 }
 
 /**

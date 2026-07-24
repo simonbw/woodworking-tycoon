@@ -21,7 +21,7 @@ describe("shortcut registry", () => {
     // binding on the same key in the same scope would both match one event and
     // the winner would come down to registry order. Defs marked `sharesKey`
     // opt out: their enabled conditions are mutually exclusive (carry-rotate
-    // vs operate-machine on R).
+    // vs rotate-setting on R).
     const seen = new Set<string>();
     for (const def of SHORTCUTS) {
       if (def.sharesKey) continue;
@@ -43,7 +43,7 @@ describe("shortcut registry", () => {
     for (const def of SHORTCUTS.filter((d) => d.scope !== "global")) {
       // `modal` is exempt: it suppresses every other scope, so it can reuse
       // a key that is global elsewhere. `sharesKey` defs shadow deliberately
-      // (the door's 1/2/3 outrank the speed presets only at the door).
+      // (carry-rotate outranks rotate-setting only while carrying).
       if (def.scope === "modal" || def.sharesKey) continue;
       for (const code of def.codes) {
         assert.ok(
@@ -73,10 +73,11 @@ describe("shortcutsForEvent", () => {
   });
 
   it("returns every binding for a shared key", () => {
-    // R is Rotate while a machine is carried and Operate otherwise; the
-    // provider picks between them by which handler is enabled.
+    // R rotates whatever is in front of you: the machine over your
+    // shoulders while carrying one, the saw head otherwise. The provider
+    // picks between them by which handler is enabled.
     const ids = shortcutsForEvent(keyEvent("KeyR")).map((d) => d.id);
-    assert.deepEqual(ids, ["carry-rotate", "operate-machine"]);
+    assert.deepEqual(ids, ["carry-rotate", "rotate-setting"]);
   });
 
   it("only matches shift-gated shortcuts when shift is held", () => {

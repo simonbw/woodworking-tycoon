@@ -169,9 +169,10 @@ const defs = [
     hidden: true,
   },
   {
-    // Shares R with operate-machine; only bound while a machine is carried,
-    // and operate steps aside then (a disabled binding lets the key fall
-    // through — see ShortcutProvider).
+    // R is "rotate whatever is in front of you": the machine over your
+    // shoulders while carrying one, the saw head otherwise. The two can't
+    // both apply — you can't work a machine with one in your arms — so
+    // they share the key and take turns via `enabled`, carrying first.
     id: "carry-rotate",
     codes: ["KeyR"],
     keys: [["R"]],
@@ -180,12 +181,26 @@ const defs = [
     group: "Machines",
     hidden: true,
     sharesKey: true,
+    shiftHint: "the other way",
   },
   {
-    id: "operate-machine",
+    id: "rotate-setting",
     codes: ["KeyR"],
     keys: [["R"]],
-    description: "Operate / feed the machine you're at",
+    description: "Swing the machine's head (the miter saw's angle)",
+    scope: "home",
+    group: "Machines",
+    shiftHint: "the other way",
+  },
+  {
+    // Held, not tapped: the press starts the machine and the hold is you
+    // pushing the stock through it. Let go and the cut pauses where it is.
+    // Power-feed machines (the planer) are the exception — the rollers do
+    // the pushing, so they finish whether you're holding it or not.
+    id: "operate-machine",
+    codes: ["Space"],
+    keys: [["Space"]],
+    description: "Hold to run the machine you're at",
     scope: "home",
     group: "Machines",
   },
@@ -215,18 +230,28 @@ const defs = [
     shiftHint: "go backwards",
   },
   {
-    id: "cycle-parameter",
+    // One setting, two keys, so it moves the way the thing moves: Z winds
+    // the planer's head down and pulls the fence in, X the other way. On
+    // the miter saw the pair slides the board itself along the cut line.
+    id: "setting-down",
     codes: ["KeyZ"],
     keys: [["Z"]],
-    description: "Next operation setting",
+    description: "Machine setting down / in / left",
     scope: "home",
     group: "Machines",
-    shiftHint: "go backwards",
+  },
+  {
+    id: "setting-up",
+    codes: ["KeyX"],
+    keys: [["X"]],
+    description: "Machine setting up / out / right",
+    scope: "home",
+    group: "Machines",
   },
   {
     id: "cycle-machine",
-    codes: ["KeyX"],
-    keys: [["X"]],
+    codes: ["KeyG"],
+    keys: [["G"]],
     description: "Target next machine on this square",
     scope: "home",
     group: "Machines",

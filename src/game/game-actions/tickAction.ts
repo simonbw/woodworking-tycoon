@@ -136,17 +136,19 @@ export function machineTickPass(): GameAction {
       dustMultiplier,
       machine.workSpeed,
     );
-    // Attended phases need the player at the machine AND the machine
-    // powered — switching off mid-cut pauses the work like stepping away.
-    // Power-feed operations (the planer) pull the stock through on their
-    // own: the player's whereabouts stop mattering, but the switch still
+    // Attended phases need the player at the machine, holding the operate
+    // key, AND the machine powered — switching off mid-cut pauses the work
+    // like stepping away, and so does letting go. Power-feed operations
+    // (the planer) pull the stock through on their own: neither the
+    // player's whereabouts nor their grip matters, but the switch still
     // does.
     const attended =
-      (playerAttendsMachine(
+      ((playerAttendsMachine(
         machine,
         gameState.player.position,
         gameState.player.away !== null,
-      ) ||
+      ) &&
+        gameState.player.operating === true) ||
         selectedOperation.powerFeed === true) &&
       machine.isPowered;
     const { phaseIndex, ticksRemaining } = machineState.operationProgress;

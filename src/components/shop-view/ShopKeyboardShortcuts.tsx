@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { CellMap } from "../../game/CellMap";
 import {
   defaultParametersFor,
+  OperationParameter,
   operationParameters,
 } from "../../game/Machine";
 import {
@@ -29,6 +30,7 @@ import { resolveInteract } from "../../game/interact";
 import {
   machineCanOperate,
   parameterValueSatisfiable,
+  slideStock,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 
@@ -299,71 +301,91 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present,
   );
 
-  // Cycle the machine's first setting — the keyboard equivalent of the
-  // scales on the machine card. On direct-feed machines the first setting
-  // of any available operation counts (the fence, the angle, the crank);
-  // elsewhere it's the selected operation's first parameter.
-  useShortcut(
-    "cycle-parameter",
-    (event) => {
-      const machine = targeted.current;
-      if (!machine) return;
+  // Step one of the machine's settings — the keyboard equivalent of the
+  // scales on its card. `kind` picks which: "linear" is the one Z and X
+  // drive (the fence, the cutter head, the cut line), "rotate" is the one
+  // R swings (the miter head). A machine carries at most one of each, so
+  // neither key ever has to disambiguate.
+  //
+  // On direct-feed machines the setting can belong to any available
+  // operation (what's in hand decides which one runs); on benches only the
+  // selected operation's settings are live.
+  const stepSetting = (kind: "linear" | "rotate", step: 1 | -1) => {
+    const machine = targeted.current;
+    if (!machine) return;
 
-      const directFeed = machine.type.directFeed === true;
-      const operation = directFeed
-        ? availableOperations(machine, gameState.current.progression).find(
-            (op) => operationParameters(op).length > 0,
-          )
-        : machine.selectedOperationOrNull;
-      if (!operation) return;
+    const isKind = (param: OperationParameter) =>
+      kind === "rotate"
+        ? param.presentation === "rotate"
+        : param.presentation !== "rotate";
 
-      const param = operationParameters(operation)[0];
-      if (!param || param.values.length < 2) return;
+    const directFeed = machine.type.directFeed === true;
+    const candidates = directFeed
+      ? availableOperations(machine, gameState.current.progression)
+      : [machine.selectedOperationOrNull].filter((op) => op != null);
+    const found = candidates
+      .flatMap((op) =>
+        operationParameters(op).map((param) => ({ op, param })),
+      )
+      .find(({ param }) => isKind(param) && param.values.length > 1);
+    if (!found) return;
+    const { op: operation, param } = found;
 
-      // Unset (or unrecognised) lands at -1, so a forward cycle starts at the
-      // first value.
-      const current = machine.selectedParameters?.[param.id];
-      const currentIndex =
-        current === undefined ? -1 : param.values.indexOf(current);
-      const step = event.shiftKey ? -1 : 1;
-      let next = param.values[mod(currentIndex + step, param.values.length)];
+    // Unset (or unrecognised) lands at -1, so a forward step starts at the
+    // first value.
+    const current = machine.selectedParameters?.[param.id];
+    const currentIndex =
+      current === undefined ? -1 : param.values.indexOf(current);
+    let next = param.values[mod(currentIndex + step, param.values.length)];
 
-      // A slide param moves the carried stock itself, so the key steps
-      // between the marks the stock can actually reach — a 4' board slides
-      // among its own foot marks, not the whole table's.
-      if (param.presentation === "slide") {
-        const carried = gameState.current.player.inventory;
-        let nextIndex = param.values.indexOf(next);
-        for (
-          let tries = 0;
-          tries < param.values.length &&
-          !parameterValueSatisfiable(
-            machine,
-            operation,
-            param.id,
-            param.values[nextIndex],
-            carried,
-          );
-          tries++
-        ) {
-          nextIndex = mod(nextIndex + step, param.values.length);
-        }
-        next = param.values[nextIndex];
-      }
-
-      if (directFeed) {
-        // Settings turn without touching what's selected or running
-        applyAction(setMachineSettingsAction(machine, { [param.id]: next }));
-      } else {
-        applyAction(
-          setMachineOperationAction(machine, operation, {
-            ...machine.selectedParameters,
-            [param.id]: next,
-          }),
+    // A slide param moves the stock itself, so the key steps between the
+    // marks the stock can actually reach — a 4' board slides among its own
+    // foot marks, not the whole table's.
+    if (param.presentation === "slide") {
+      const stock = slideStock(
+        machine,
+        [operation],
+        gameState.current.player.inventory,
+      );
+      let nextIndex = param.values.indexOf(next);
+      for (
+        let tries = 0;
+        tries < param.values.length &&
+        !parameterValueSatisfiable(
+          machine,
+          operation,
+          param.id,
+          param.values[nextIndex],
+          stock ? [stock] : [],
         );
+        tries++
+      ) {
+        nextIndex = mod(nextIndex + step, param.values.length);
       }
-    },
-    present,
+      next = param.values[nextIndex];
+    }
+
+    if (directFeed) {
+      // Settings turn without touching what's selected or running
+      applyAction(setMachineSettingsAction(machine, { [param.id]: next }));
+    } else {
+      applyAction(
+        setMachineOperationAction(machine, operation, {
+          ...machine.selectedParameters,
+          [param.id]: next,
+        }),
+      );
+    }
+  };
+
+  useShortcut("setting-down", () => stepSetting("linear", -1), present);
+  useShortcut("setting-up", () => stepSetting("linear", 1), present);
+  // R swings the head; while a machine is carried the carry binding claims
+  // the key instead and this one steps aside.
+  useShortcut(
+    "rotate-setting",
+    (event) => stepSetting("rotate", event.shiftKey ? -1 : 1),
+    present && !carrying,
   );
 
   return null;

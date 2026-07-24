@@ -13,6 +13,7 @@ import {
   useSaveGame,
 } from "../useGameState";
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
+import { setOperatingAction } from "../../game/game-actions/player-actions";
 import { usePaused } from "../PauseContext";
 import { BroomSprite } from "./BroomSprite";
 import { CarriedMachineLayer } from "./CarriedMachineLayer";
@@ -24,6 +25,7 @@ import { DustLayer } from "./DustLayer";
 import { EntranceSprite } from "./EntranceSprite";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { HeldMovementListener } from "./heldMovementInput";
+import { HeldOperateListener } from "./heldOperateInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -147,6 +149,10 @@ export const ShopView: React.FC = () => {
       >
         <ShopKeyboardShortcuts />
         <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
+        <HeldOperateListener
+          enabled={!gameState.player.away && !modalOpen}
+          onChange={(held) => updateGameState(setOperatingAction(held))}
+        />
         <Application
           width={scaledWidth}
           height={scaledHeight}

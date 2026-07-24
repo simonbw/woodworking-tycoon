@@ -38,8 +38,17 @@ export const ParameterScaleRow: React.FC<{
   <div className="flex flex-row items-start gap-2 text-xs">
     <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5 pt-2.5">
       {param.name}
-      {/* Z drives the first setting of the targeted machine */}
-      {showShortcut && <ShortcutKeys shortcut="cycle-parameter" />}
+      {/* The keys that drive this scale on the targeted machine: R swings
+          a rotating setting, Z/X step a linear one. */}
+      {showShortcut &&
+        (param.presentation === "rotate" ? (
+          <ShortcutKeys shortcut="rotate-setting" />
+        ) : (
+          <>
+            <ShortcutKeys shortcut="setting-down" />
+            <ShortcutKeys shortcut="setting-up" />
+          </>
+        ))}
     </span>
     {param.presentation === "slide" ? (
       // The carried board itself under the blade line — sliding it is

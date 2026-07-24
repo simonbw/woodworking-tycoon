@@ -23,6 +23,15 @@ export interface Person {
   busyTicks: number;
   /** Set while the person is out of the shop (e.g. scavenging for pallets). */
   away: AwayTrip | null;
+  /**
+   * Whether the operate key is held right now — you pushing stock through
+   * the machine you're standing at. Attended work only advances while this
+   * is true (power-feed operations excepted: the rollers do the pushing).
+   *
+   * Physical key state, so it's deliberately transient: it isn't in the
+   * save schema, and a load starts with hands empty of the key.
+   */
+  operating?: boolean;
 }
 
 /**

@@ -331,6 +331,18 @@ export function setMachineOperationAction(
  * `powerSwitch`; switching off mid-operation pauses the cut (the wood
  * stays put) until the machine is switched back on.
  */
+/**
+ * Record whether the player is holding the operate key. Attended work
+ * reads this every tick, so releasing the key pauses the cut exactly like
+ * walking away from it does.
+ */
+export function setOperatingAction(operating: boolean): GameAction {
+  return (gameState) =>
+    gameState.player.operating === operating
+      ? gameState
+      : { ...gameState, player: { ...gameState.player, operating } };
+}
+
 export function toggleMachinePowerAction(machine: Machine): GameAction {
   return (gameState) => {
     if (!machine.type.powerSwitch) {

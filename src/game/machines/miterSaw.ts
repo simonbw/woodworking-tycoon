@@ -83,6 +83,9 @@ export const miterSaw: MachineType = {
           // The head rests square, mid-swing
           defaultValue: 0,
           unit: "°",
+          // You swing the head, you don't slide it — so it's R's setting,
+          // leaving Z/X for the cut line.
+          presentation: "rotate",
         },
       ],
       getInputMaterials: (params) => [

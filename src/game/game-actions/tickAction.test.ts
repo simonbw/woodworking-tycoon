@@ -37,10 +37,17 @@ function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
 }
 
-/** Game state with the player standing at the workspace's operation cell. */
+/**
+ * Game state with the player standing at the workspace's operation cell
+ * and holding the operate key — attending a machine now takes both.
+ */
 function attendingStateWith(overrides: Partial<GameState>): GameState {
   return stateWith({
-    player: { ...initialGameState.player, position: WORKSPACE_OPERATION_CELL },
+    player: {
+      ...initialGameState.player,
+      position: WORKSPACE_OPERATION_CELL,
+      operating: true,
+    },
     ...overrides,
   });
 }
