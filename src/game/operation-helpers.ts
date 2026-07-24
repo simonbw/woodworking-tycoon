@@ -80,7 +80,10 @@ export function describeOperationIO(operation: Operation): {
 
   let outputs: string[] = [];
   try {
-    const result = operation.output(generateMockMaterials(requirements), params);
+    const result = operation.output(
+      generateMockMaterials(requirements),
+      params,
+    );
     const names = [
       ...result.outputs.map((material) => getMaterialFullName(material)),
       ...(result.toolOutputs ?? []).map((toolId) => TOOL_TYPES[toolId].name),

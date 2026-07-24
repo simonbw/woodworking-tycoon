@@ -12,6 +12,7 @@ import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { shopVacTickPass } from "./shop-vac-actions";
 import { applyWorkItemAction } from "./work-item-actions";
+import { combineActions } from "./misc-actions";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
 import { Machine, MachineId } from "../Machine";
@@ -21,68 +22,103 @@ import { ToolId } from "../Tool";
 import { UpgradeId } from "../Upgrade";
 import { withXp } from "./skill-actions";
 
-export const tickAction: GameAction = (gameState) => {
-  const away = gameState.player.away;
-  if (away?.kind === "scavenging" && gameState.tick >= away.returnTick) {
-    // Welcome home: drop the haul at the material dropoff spot. (Shopping
-    // trips end via returnFromStoreAction, not a timer.)
-    gameState = {
-      ...gameState,
-      materialPiles: [
-        ...gameState.materialPiles,
-        ...away.loot.map((material) => ({
-          material,
-          position: gameState.shopInfo.materialDropoffPosition,
-        })),
-      ],
-      player: { ...gameState.player, away: null },
-    };
-  }
+/**
+ * One simulation tick, as an explicit ordered pipeline. Ordering is
+ * load-bearing:
+ * - the shop vac runs before machines emit this tick's dust, so it always
+ *   cleans the floor as of last tick;
+ * - the tick counter advances after machine work (returnTick comparisons
+ *   read the pre-advance tick) and before the marketplace (day boundaries
+ *   read the post-advance tick);
+ * - milestones run last so unlocks that hinge on tick-driven state (a
+ *   dusty floor) fire on their own.
+ */
+export const tickAction: GameAction = combineActions(
+  playerTickPass(),
+  shopVacTickPass(),
+  machineTickPass(),
+  advanceTickPass(),
+  marketplaceTickPass(),
+  checkProgressionMilestonesAction(),
+);
 
-  // Still trudging through dust (or mid-sweep): this tick goes to that,
-  // not to the work queue. Attendance is positional, so a machine the
-  // player is standing at keeps running. Busy time doesn't burn down
-  // while away — the sweep waits where it was left.
-  const busyThisTick = (gameState.player.busyTicks ?? 0) > 0;
-  if (busyThisTick && gameState.player.away === null) {
-    gameState = {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        busyTicks: gameState.player.busyTicks - 1,
-      },
-    };
-  }
+/**
+ * The player's slice of the tick: come home from a finished trip, burn a
+ * busy tick, and drain queued work while free.
+ */
+function playerTickPass(): GameAction {
+  return (gameState) => {
+    const away = gameState.player.away;
+    if (away?.kind === "scavenging" && gameState.tick >= away.returnTick) {
+      // Welcome home: drop the haul at the material dropoff spot.
+      // (Shopping trips end via returnFromStoreAction, not a timer.)
+      gameState = {
+        ...gameState,
+        materialPiles: [
+          ...gameState.materialPiles,
+          ...away.loot.map((material) => ({
+            material,
+            position: gameState.shopInfo.materialDropoffPosition,
+          })),
+        ],
+        player: { ...gameState.player, away: null },
+      };
+    }
 
-  // Drain queued work while the player is free. A work item can occupy
-  // the player (sweeping sets busyTicks), which stops the drain.
-  while (
-    !busyThisTick &&
-    personCanWork(gameState.player) &&
-    gameState.player.workQueue.length > 0
-  ) {
-    const workQueue = [...gameState.player.workQueue];
-    const workItem = workQueue.shift()!;
+    // Still trudging through dust (or mid-sweep): this tick goes to that,
+    // not to the work queue. Attendance is positional, so a machine the
+    // player is standing at keeps running. Busy time doesn't burn down
+    // while away — the sweep waits where it was left.
+    const busyThisTick = (gameState.player.busyTicks ?? 0) > 0;
+    if (busyThisTick && gameState.player.away === null) {
+      gameState = {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          busyTicks: gameState.player.busyTicks - 1,
+        },
+      };
+    }
 
-    gameState = applyWorkItemAction(workItem)(gameState);
-    gameState = {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        workQueue,
-      },
-    };
-  }
+    // Drain queued work while the player is free. A work item can occupy
+    // the player (sweeping sets busyTicks), which stops the drain.
+    while (
+      !busyThisTick &&
+      personCanWork(gameState.player) &&
+      gameState.player.workQueue.length > 0
+    ) {
+      const workQueue = [...gameState.player.workQueue];
+      const workItem = workQueue.shift()!;
 
-  // The dragged shop vac trickle-cleans underfoot and self-empties at
-  // the garbage can
-  gameState = shopVacTickPass()(gameState);
+      gameState = applyWorkItemAction(workItem)(gameState);
+      gameState = {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          workQueue,
+        },
+      };
+    }
 
-  // Process machines that are operating. Attended phases only tick while
-  // the player stands at the operation cell; hands-free phases (glue
-  // curing) run regardless, even during away trips. Finished products earn
-  // craft XP when their operation completes — making things is how you
-  // learn.
+    return gameState;
+  };
+}
+
+/** The tick counter itself. */
+function advanceTickPass(): GameAction {
+  return (gameState) => ({ ...gameState, tick: gameState.tick + 1 });
+}
+
+/**
+ * Machines' slice of the tick: every in-progress operation advances (or
+ * waits for the player), sheds dust, and on completion delivers outputs,
+ * grants (tools, upgrades, crated machines, salvaged supplies), sounds,
+ * and craft XP. Attended phases only tick while the player stands at the
+ * operation cell; hands-free phases (glue curing) run regardless, even
+ * during away trips.
+ */
+export function machineTickPass(): GameAction {
+  return (gameState) => {
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
   const toolsGranted: ToolId[] = [];
@@ -305,14 +341,12 @@ export const tickAction: GameAction = (gameState) => {
       ? {
           ...gameState,
           machines: updatedMachines,
-          tick: gameState.tick + 1,
           dust,
           pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
         }
       : {
           ...gameState,
           machines: updatedMachines,
-          tick: gameState.tick + 1,
           dust,
         };
 
@@ -348,10 +382,6 @@ export const tickAction: GameAction = (gameState) => {
         }
       : withTools;
 
-  // Marketplace: listings roll their sale chance, demand recovers, and the
-  // job board refreshes at day boundaries. Milestones run last so unlocks
-  // that hinge on tick-driven state (a dusty floor) fire on their own.
-  return checkProgressionMilestonesAction()(
-    withXp(marketplaceTickPass()(withConsumables), xpEarned),
-  );
-};
+  return withXp(withConsumables, xpEarned);
+  };
+}

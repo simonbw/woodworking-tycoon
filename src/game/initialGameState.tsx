@@ -14,7 +14,6 @@ import { Direction } from "./Vectors";
 import { defaultEntrancePosition } from "./ShopInfo";
 import { makePallet } from "./material-helpers";
 
-
 export const initialGameState: GameState = {
   tick: 0,
   money: 0,
