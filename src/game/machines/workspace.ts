@@ -15,10 +15,23 @@ export const workspace: MachineType = {
   name: "Makeshift Workbench",
   description:
     "A plywood offcut over a few paint buckets. It wobbles, but it works.",
-  cellsOccupied: [[0, 0]],
+  // Plywood over paint buckets: about 31" × 21", so a 3×2-ft footprint
+  // with the front edge overhanging toward whoever's working at it (see
+  // the measured collision box).
+  cellsOccupied: [
+    [-1, -1],
+    [0, -1],
+    [1, -1],
+    [-1, 0],
+    [0, 0],
+    [1, 0],
+  ],
   collisionBox: GENERATED_COLLISION_BOXES.workspace,
-  freeCellsNeeded: [[0, 1]],
-  operationPosition: [0, 1],
+  freeCellsNeeded: [
+    [0, 1],
+    [0, 2],
+  ],
+  operationPosition: [0, 2],
   cost: 0,
   materialStorage: 0,
   // Two slots: the starter hammer plus room for a sander

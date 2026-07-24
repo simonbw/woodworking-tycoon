@@ -4,7 +4,13 @@ import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
 import { UPGRADE_TYPES, UpgradeId } from "./Upgrade";
-import { Direction, rotateVec, translateVec, Vector } from "./Vectors";
+import {
+  Direction,
+  rotateVec,
+  translateVec,
+  Vector,
+  vectorEquals,
+} from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
@@ -330,6 +336,26 @@ export interface MachineState {
 }
 
 /**
+ * A cell plus its eight neighbors, minus the given footprint cells.
+ * Empty when the anchor is null (machines with no operation position).
+ */
+function zoneAround(anchor: Vector | null, excluded: Vector[]): Vector[] {
+  if (anchor === null) {
+    return [];
+  }
+  const zone: Vector[] = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const cell: Vector = [anchor[0] + dx, anchor[1] + dy];
+      if (!excluded.some((occupied) => vectorEquals(occupied, cell))) {
+        zone.push(cell);
+      }
+    }
+  }
+  return zone;
+}
+
+/**
  * Whether two machine states refer to the same placed machine. Position
  * alone isn't enough: a benchtop machine mounted on a worktable shares the
  * table's anchor cell, so identity is position plus type. (Two machines of
@@ -389,7 +415,9 @@ export class Machine {
    * station whose recipes are all still locked, or "none").
    */
   get selectedOperationOrNull():
-    MachineOperation | ParameterizedOperation | null {
+    | MachineOperation
+    | ParameterizedOperation
+    | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null
@@ -407,6 +435,26 @@ export class Machine {
   /** Convert a machine-local cell offset into a shop cell. */
   localToShop(local: Vector): Vector {
     return translateVec(rotateVec(local, this.rotation), this.position);
+  }
+
+  /** The shop cells this machine's footprint occupies. */
+  get occupiedCells(): Vector[] {
+    return this.type.cellsOccupied.map((cell) => this.localToShop(cell));
+  }
+
+  /**
+   * The cells that count as standing at this machine to work it. A body
+   * is wider than one 1-ft cell, so the operator "cell" is really the
+   * canonical operation position plus its eight neighbors (minus the
+   * machine's own footprint) — a small apron in front of the machine.
+   */
+  get operationZone(): Vector[] {
+    return zoneAround(this.absoluteOperationPosition, this.occupiedCells);
+  }
+
+  /** Same apron, around the outfeed cell — where outputs are collected. */
+  get outputZone(): Vector[] {
+    return zoneAround(this.absoluteOutputPosition, this.occupiedCells);
   }
 
   /** The shop cell the player stands in to work this machine, or null. */

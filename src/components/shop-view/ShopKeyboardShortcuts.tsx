@@ -23,7 +23,7 @@ import {
   addWorkItemAction,
   clearWorkQueueAction,
 } from "../../game/game-actions/work-item-actions";
-import { vectorEquals } from "../../game/Vectors";
+import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
   machineCanOperate,
@@ -99,8 +99,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (gs.player.carriedMachine) {
         return applyAction(putDownCarriedMachineAction());
       }
-      const crateUnderfoot = gs.machineCrates.some((crate) =>
-        vectorEquals(crate.position, gs.player.position),
+      const crateUnderfoot = gs.machineCrates.some(
+        (crate) => chebyshevDistance(crate.position, gs.player.position) <= 1,
       );
       if (crateUnderfoot) {
         return applyAction(pickUpCrateAction());

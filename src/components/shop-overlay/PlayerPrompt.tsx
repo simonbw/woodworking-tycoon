@@ -6,7 +6,7 @@ import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { resolveInteract } from "../../game/interact";
-import { vectorEquals } from "../../game/Vectors";
+import { chebyshevDistance } from "../../game/Vectors";
 import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -31,11 +31,13 @@ export const PlayerPrompt: React.FC = () => {
   const draggingVac = carryingShopVac(gameState);
   const standingOnVac =
     gameState.shopVac?.position != null &&
-    vectorEquals(gameState.shopVac.position, gameState.player.position);
+    chebyshevDistance(gameState.shopVac.position, gameState.player.position) <=
+      1;
   const crateUnderfoot =
     gameState.progression.shopLayoutUnlocked && !carried
-      ? gameState.machineCrates.find((crate) =>
-          vectorEquals(crate.position, gameState.player.position),
+      ? gameState.machineCrates.find(
+          (crate) =>
+            chebyshevDistance(crate.position, gameState.player.position) <= 1,
         )
       : undefined;
 

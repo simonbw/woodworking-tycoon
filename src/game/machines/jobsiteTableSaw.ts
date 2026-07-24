@@ -7,14 +7,25 @@ export const jobsiteTableSaw: MachineType = {
   id: "jobsiteTableSaw",
   name: "Jobsite Table Saw",
   description: "A portable table saw for cutting wood.",
-  cellsOccupied: [[0, 0]],
+  // A jobsite saw on its stand: about 24" × 19", table biased toward the
+  // infeed side — a 3×2-ft footprint with the tabletop overhanging the
+  // operator side a few inches (see the measured collision box).
+  cellsOccupied: [
+    [-1, -1],
+    [0, -1],
+    [1, -1],
+    [-1, 0],
+    [0, 0],
+    [1, 0],
+  ],
   collisionBox: GENERATED_COLLISION_BOXES.jobsiteTableSaw,
   freeCellsNeeded: [
     [0, 1],
-    [0, -1],
+    [0, 2],
+    [0, -2],
   ],
-  operationPosition: [0, 1],
-  outputPosition: [0, -1],
+  operationPosition: [0, 2],
+  outputPosition: [0, -2],
   cost: 300,
   materialStorage: 0,
   // One jig at a time — the crosscut sled is the first

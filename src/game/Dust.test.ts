@@ -12,28 +12,28 @@ import {
   machineDustCells,
   machineDustMultiplier,
 } from "./Dust";
-import { Machine, MachineState } from "./Machine";
-import { Vector } from "./Vectors";
+import { Machine } from "./Machine";
+import { rotateVec, translateVec, Vector } from "./Vectors";
 
 const SHOP: Vector = [4, 6];
 
+/**
+ * A synthetic single-cell machine with its operator cell in front — the
+ * dust helpers only read the footprint, rotation, and operation position,
+ * so a fake keeps these tests independent of any real machine's footprint.
+ */
 function planerAt(position: Vector, rotation: 0 | 1 | 2 | 3 = 0): Machine {
-  const state: MachineState = {
-    machineTypeId: "lunchboxPlaner",
+  const operationPosition: Vector = [0, 1];
+  return {
+    type: { cellsOccupied: [[0, 0]], operationPosition },
     position,
     rotation,
-    selectedOperationId: "plane",
-    operationProgress: {
-      status: "notStarted",
-      phaseIndex: 0,
-      ticksRemaining: 0,
+    localToShop: (local: Vector) =>
+      translateVec(rotateVec(local, rotation), position),
+    get absoluteOperationPosition(): Vector {
+      return translateVec(rotateVec(operationPosition, rotation), position);
     },
-    inputMaterials: [],
-    processingMaterials: [],
-    outputMaterials: [],
-    tools: [],
-  };
-  return new Machine(state);
+  } as unknown as Machine;
 }
 
 describe("dust keys", () => {
@@ -199,7 +199,10 @@ describe("machineDustMultiplier", () => {
         [1, 3],
         [2, 1],
         [2, 2],
-      ].map((cell) => [dustKey(cell as [number, number]), { pine: 100 }]),
+      ].map((cell) => [
+        dustKey(cell as [number, number]),
+        { pine: DUST_MAX_PER_CELL },
+      ]),
     );
     assert.strictEqual(
       machineDustMultiplier(buried, planerAt([1, 1]), SHOP),
@@ -207,7 +210,11 @@ describe("machineDustMultiplier", () => {
     );
     // One buried cell out of eight averages inside the dead zone
     assert.strictEqual(
-      machineDustMultiplier({ "1,1": { pine: 100 } }, planerAt([1, 1]), SHOP),
+      machineDustMultiplier(
+        { "1,1": { pine: DUST_MAX_PER_CELL } },
+        planerAt([1, 1]),
+        SHOP,
+      ),
       1,
     );
   });

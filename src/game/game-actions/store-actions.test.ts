@@ -93,7 +93,10 @@ describe("buyMachineAction", () => {
       "jobsiteTableSaw",
     );
     // The entrance cell itself is open in the starting shop
-    assert.deepStrictEqual(result.machineCrates[0].position, [2, 5]);
+    assert.deepStrictEqual(
+      result.machineCrates[0].position,
+      initialGameState.shopInfo.entrancePosition,
+    );
   });
 
   it("does nothing when the player cannot afford it", () => {

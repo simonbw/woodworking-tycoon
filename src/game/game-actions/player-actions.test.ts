@@ -43,18 +43,19 @@ describe("pickUpMaterialAction", () => {
   });
 
   it("refuses cells the board does not reach", () => {
+    // An 8' board spans four cells past its anchor; [1, 8] is beyond it
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
       position: [1, 3],
     };
-    const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 5]));
+    const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 8]));
     assert.strictEqual(result.materialPiles.length, 1);
     assert.strictEqual(result.player.inventory.length, 0);
   });
 
-  it("keeps short stock a one-cell grab", () => {
+  it("keeps foot-long stock a one-cell grab", () => {
     const pile: MaterialPile = {
-      material: board("pine", 2, 4, 1),
+      material: board("pine", 1, 4, 1),
       position: [1, 3],
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));

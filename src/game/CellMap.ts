@@ -142,20 +142,18 @@ export class CellMap {
       }
     }
 
-    if (machine.type.operationPosition !== undefined) {
-      const operationPosition = translateVec(
-        rotateVec(machine.type.operationPosition, machine.rotation),
-        machine.position,
-      );
-
-      if (this.has(operationPosition)) {
-        this._at(operationPosition)!.operableMachines.push(machine);
+    // A body is bigger than a 1-ft cell, so machines are operable from a
+    // small apron of cells around the operation position, not one exact
+    // cell — and outputs are collected from an apron around the outfeed.
+    for (const cell of machine.operationZone) {
+      if (this.has(cell)) {
+        this._at(cell)!.operableMachines.push(machine);
       }
     }
-
-    const outputPosition = machine.absoluteOutputPosition;
-    if (outputPosition !== null && this.has(outputPosition)) {
-      this._at(outputPosition)!.outputMachines.push(machine);
+    for (const cell of machine.outputZone) {
+      if (this.has(cell)) {
+        this._at(cell)!.outputMachines.push(machine);
+      }
     }
   }
 

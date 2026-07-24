@@ -135,7 +135,7 @@ const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
       if (!isOperating || relevantPhase === undefined) {
         return;
       }
-      const y = -PIXELS_PER_CELL * 0.68;
+      const y = -PIXELS_PER_CELL * 1.8;
       if (needsYou) {
         // Amber pause marker: this machine is waiting for the player
         g.circle(0, y, 7);
@@ -149,7 +149,7 @@ const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
         return;
       }
       // Progress bar: amber while attended handwork, green while hands-free
-      const barWidth = PIXELS_PER_CELL * 0.7;
+      const barWidth = PIXELS_PER_CELL * 1.87;
       g.rect(-barWidth / 2 - 1, y - 3, barWidth + 2, 6);
       g.fill({ color: 0x1c1917, alpha: 0.75 });
       g.rect(-barWidth / 2, y - 2, barWidth * fraction, 4);
@@ -280,8 +280,8 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 const DustBagSprite: React.FC = () => {
   const draw = useCallback((g: Graphics) => {
     g.clear();
-    const x = PIXELS_PER_CELL * 0.32;
-    const y = PIXELS_PER_CELL * 0.3;
+    const x = PIXELS_PER_CELL * 0.85;
+    const y = PIXELS_PER_CELL * 0.8;
     // The bag: a soft sack, slightly slumped
     g.ellipse(x, y, 12, 14);
     g.fill(0xcbb489);

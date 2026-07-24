@@ -100,10 +100,11 @@ describe("migrateV16toV17", () => {
     assert.strictEqual(planer.selectedOperationId, "plane");
     // The crank position carries over
     assert.deepStrictEqual(planer.selectedParameters, { targetThickness: 3 });
-    // Staged stock lands as a pile at the infeed cell
+    // Staged stock lands as a pile at the infeed cell (computed with the
+    // current planer footprint — v24 relocates every pile anyway)
     assert.deepStrictEqual(planer.inputMaterials, []);
     assert.deepStrictEqual(migrated.materialPiles, [
-      { material: staged, position: [1, 2] },
+      { material: staged, position: [1, 3] },
     ]);
     // Other machines untouched
     assert.strictEqual(migrated.machines[1].selectedOperationId, "jointFace");
@@ -151,10 +152,11 @@ describe("migrateV17toV18", () => {
     };
     const migrated = migrateV17toV18(old);
     const saw = migrated.machines[0];
-    // The staged board lands at the saw's operator cell
+    // The staged board lands at the saw's operator cell (computed with
+    // the current footprint — v24 relocates every pile anyway)
     assert.deepStrictEqual(saw.inputMaterials, []);
     assert.deepStrictEqual(migrated.materialPiles, [
-      { material: staged, position: [2, 5] },
+      { material: staged, position: [2, 6] },
     ]);
     // Dialed settings survive, with the operation's other defaults beneath
     // (the stray targetLength rides along until v20 → v21 converts it)

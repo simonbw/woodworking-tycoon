@@ -110,7 +110,7 @@ describe("worktable build recipes", () => {
     const state = stateWith({
       machines: [machine],
       // The workspace operation cell for position [1,2] rotation 0
-      player: { ...initialGameState.player, position: [1, 3] },
+      player: { ...initialGameState.player, position: [1, 4] },
     });
 
     const result = tickAction(state);
@@ -120,7 +120,7 @@ describe("worktable build recipes", () => {
       result.machineCrates[0].machine.machineTypeId,
       "worktable1x1",
     );
-    assert.deepStrictEqual(result.machineCrates[0].position, [1, 3]);
+    assert.deepStrictEqual(result.machineCrates[0].position, [1, 4]);
     assert.strictEqual(
       result.machines[0].operationProgress.status,
       "notStarted",
@@ -158,21 +158,21 @@ describe("benchtop mounting placement rules", () => {
     return CellMap.fromGameState(stateWith({ machines }));
   }
 
-  it("allows a benchtop machine on a free worktable cell", () => {
-    // Miter saw facing down from the table's middle cell: its operator
-    // cell [1,1] is open floor
+  it("allows a benchtop machine on free worktable cells", () => {
+    // Miter saw anchored at [1,1]: its whole 3×2 footprint lands on the
+    // table top and its operator cells are open floor below
     assert.ok(
-      canPlaceMachine(cellMapWith([table]), MACHINE_TYPES.miterSaw, [1, 0], 0),
+      canPlaceMachine(cellMapWith([table]), MACHINE_TYPES.miterSaw, [1, 1], 0),
     );
   });
 
-  it("rejects a benchtop machine on a table cell already hosting one", () => {
-    const saw = machineAt("miterSaw", [1, 0]);
+  it("rejects a benchtop machine on table cells already hosting one", () => {
+    const saw = machineAt("miterSaw", [1, 1]);
     assert.ok(
       !canPlaceMachine(
         cellMapWith([table, saw]),
         MACHINE_TYPES.lunchboxPlaner,
-        [1, 0],
+        [1, 1],
         0,
       ),
     );
@@ -201,26 +201,26 @@ describe("benchtop mounting placement rules", () => {
   });
 
   it("counts table cells as blocked for another machine's free cells", () => {
-    // Planer at [1,1] facing down: its infeed/outfeed cells sit at [1,0]
-    // (the table top) and [1,2] — the table blocks it
+    // Planer just below the table, feeding toward it: its outfeed
+    // clearance cells land on the table top — the table blocks it
     assert.ok(
       !canPlaceMachine(
         cellMapWith([table]),
         MACHINE_TYPES.lunchboxPlaner,
-        [1, 1],
+        [1, 3],
         0,
       ),
     );
   });
 
   it("stacks the cell map: benchtop on top, table underneath", () => {
-    const saw = machineAt("miterSaw", [1, 0]);
+    const saw = machineAt("miterSaw", [1, 1]);
     // Order in gameState.machines must not matter
     for (const machines of [
       [table, saw],
       [saw, table],
     ]) {
-      const cell = cellMapWith(machines).at([1, 0])!;
+      const cell = cellMapWith(machines).at([1, 1])!;
       assert.strictEqual(cell.machine?.type.id, "miterSaw");
       assert.strictEqual(cell.tableMachine?.type.id, "worktable1x3");
     }
@@ -229,7 +229,7 @@ describe("benchtop mounting placement rules", () => {
 
 describe("moving and removing tables", () => {
   const table = machineAt("worktable1x3", [0, 0]);
-  const saw = machineAt("miterSaw", [1, 0]);
+  const saw = machineAt("miterSaw", [1, 1]);
 
   it("reports machines mounted on a table", () => {
     const state = stateWith({ machines: [table, saw] });

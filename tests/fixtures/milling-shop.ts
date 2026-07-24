@@ -46,11 +46,12 @@ function roughWalnut(id: string): Board {
 }
 
 /**
- * The full milling chain, ready to run: jointer (op cell [1,2], where the
- * player starts), planer (op cell [3,2]), table saw with the straight-line
- * sled mounted (op cell [1,5]), and a workspace ([3,5]). Two rough walnut
- * boards in the player's pockets, 22 reputation so every lumber channel is
- * open in the store, and jigsAndFixtures unlocked so the sled operates.
+ * The full milling chain, ready to run: jointer (op cell [2,4], where the
+ * player starts), planer (op cell [6,4]), table saw with the straight-line
+ * sled mounted (op cell [3,11]), and a workspace (op cell [8,11]). Two
+ * rough walnut boards in the player's pockets, 22 reputation so every
+ * lumber channel is open in the store, and jigsAndFixtures unlocked so
+ * the sled operates.
  */
 export const millingShop: GameState = {
   tick: 0,
@@ -60,7 +61,7 @@ export const millingShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 2], // the jointer's operation cell
+    position: [2, 4], // the jointer's operation cell
     direction: 0,
     inventory: [roughWalnut("test-rough-1"), roughWalnut("test-rough-2")],
     workQueue: [],
@@ -69,14 +70,14 @@ export const millingShop: GameState = {
     away: null,
   },
   machines: [
-    idleMachine("jointer", [1, 1], "jointFace"),
-    idleMachine("lunchboxPlaner", [3, 1], "plane", {
+    idleMachine("jointer", [2, 2], "jointFace"),
+    idleMachine("lunchboxPlaner", [6, 2], "plane", {
       targetThickness: 4,
     }),
-    idleMachine("jobsiteTableSaw", [1, 4], "ripBoard", { targetWidth: 4 }, [
+    idleMachine("jobsiteTableSaw", [3, 9], "ripBoard", { targetWidth: 4 }, [
       "straightLineSled",
     ]),
-    idleMachine("workspace", [3, 4], "glueUpPanel"),
+    idleMachine("workspace", [8, 9], "glueUpPanel"),
   ],
   machineCrates: [],
   storage: {
@@ -86,9 +87,9 @@ export const millingShop: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: [2, 5],
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: [6, 15],
   },
   progression: {
     tutorialStage: 2,

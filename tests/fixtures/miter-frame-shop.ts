@@ -56,8 +56,8 @@ function rail(id: string): Board {
 }
 
 /**
- * The picture frame chain, ready to run: a miter saw (op cell [1,2], where
- * the player starts) and a workspace ([3,2]). One long stick of walnut
+ * The picture frame chain, ready to run: a miter saw (op cell [2,4], where
+ * the player starts) and a workspace (op cell [7,4]). One long stick of walnut
  * frame stock to cut the last rail from, three rails already mitered,
  * nails in the drawer, and the miteredFrames skill unlocked.
  */
@@ -69,7 +69,7 @@ export const miterFrameShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 2], // the miter saw's operation cell
+    position: [2, 4], // the miter saw's operation cell
     direction: 0,
     inventory: [
       frameStock("test-stock-1", 8),
@@ -83,11 +83,11 @@ export const miterFrameShop: GameState = {
     away: null,
   },
   machines: [
-    idleMachine("miterSaw", [1, 1], "cutBoard", {
+    idleMachine("miterSaw", [2, 2], "cutBoard", {
       angle: 0,
       cutPosition: 4,
     }),
-    idleMachine("workspace", [3, 1], "buildPictureFrame"),
+    idleMachine("workspace", [7, 2], "buildPictureFrame"),
   ],
   machineCrates: [],
   storage: {
@@ -97,9 +97,9 @@ export const miterFrameShop: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: [2, 5],
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: [6, 15],
   },
   progression: {
     tutorialStage: 2,

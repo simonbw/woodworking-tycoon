@@ -120,7 +120,7 @@ describe("putting the carried machine down", () => {
       machines: [],
       player: {
         ...initialGameState.player,
-        position: [2, 2],
+        position: [5, 5],
         direction: 0,
         carriedMachine: carried,
         ...playerOverrides,
@@ -128,14 +128,14 @@ describe("putting the carried machine down", () => {
     });
 
   it("anchors the machine so the player stands at its operator cell", () => {
-    // The miter saw's operator cell is [0, 1] machine-local; at rotation 0
-    // the anchor lands one cell above the player (y - 1).
+    // The miter saw's operator cell is [0, 2] machine-local; at rotation 0
+    // the anchor lands two cells above the player (y - 2).
     const result = putDownCarriedMachineAction()(
       carryingState(machineAt("miterSaw", [0, 0])),
     );
     assert.strictEqual(result.player.carriedMachine, null);
     assert.strictEqual(result.machines.length, 1);
-    assert.deepStrictEqual(result.machines[0].position, [2, 1]);
+    assert.deepStrictEqual(result.machines[0].position, [5, 3]);
   });
 
   it("rotating spins the landing spot around the player", () => {
@@ -144,8 +144,8 @@ describe("putting the carried machine down", () => {
     );
     assert.strictEqual(rotated.player.carriedMachine?.rotation, 1);
     const placement = carriedMachinePlacement(rotated);
-    // Operator offset [0,1] rotated once becomes [1,0]: anchor sits left
-    assert.deepStrictEqual(placement?.position, [1, 2]);
+    // Operator offset [0,2] rotated once becomes [2,0]: anchor sits left
+    assert.deepStrictEqual(placement?.position, [3, 5]);
   });
 
   it("machines without an operator cell land on the faced cell", () => {
@@ -153,11 +153,11 @@ describe("putting the carried machine down", () => {
       carryingState(machineAt("garbageCan", [0, 0])),
     );
     // Facing direction 0 is +x
-    assert.deepStrictEqual(result.machines[0].position, [3, 2]);
+    assert.deepStrictEqual(result.machines[0].position, [6, 5]);
   });
 
   it("refuses when the landing cells are blocked", () => {
-    const blocker = machineAt("garbageCan", [2, 1]);
+    const blocker = machineAt("garbageCan", [4, 2]);
     const state = {
       ...carryingState(machineAt("miterSaw", [0, 0])),
       machines: [blocker],
@@ -166,16 +166,17 @@ describe("putting the carried machine down", () => {
     assert.strictEqual(putDownCarriedMachineAction()(state), state);
   });
 
-  it("sets a benchtop machine down onto an empty worktable cell", () => {
-    // Worktable at [2,1] with its operator cell at [2,2] (the player's cell)
-    const table = machineAt("worktable1x1", [2, 1]);
+  it("sets a benchtop machine down onto free worktable cells", () => {
+    // A long worktable spanning [1..6, 2..3]: the saw's whole 3×2
+    // footprint lands on the tabletop with the player at its operator cell
+    const table = machineAt("worktable1x3", [1, 2]);
     const state = {
       ...carryingState(machineAt("miterSaw", [0, 0])),
       machines: [table],
     };
     const result = putDownCarriedMachineAction()(state);
     assert.strictEqual(result.machines.length, 2);
-    assert.deepStrictEqual(result.machines[1].position, [2, 1]);
+    assert.deepStrictEqual(result.machines[1].position, [5, 3]);
   });
 });
 
@@ -204,7 +205,10 @@ describe("deliverMachineCrate", () => {
   it("lands the crate on the open floor nearest the entrance", () => {
     const machine = freshMachineState("miterSaw", initialGameState.progression);
     const result = deliverMachineCrate(initialGameState, machine);
-    assert.deepStrictEqual(result.machineCrates[0].position, [2, 5]);
+    assert.deepStrictEqual(
+      result.machineCrates[0].position,
+      initialGameState.shopInfo.entrancePosition,
+    );
   });
 
   it("skips cells that already hold a crate", () => {

@@ -57,10 +57,10 @@ test.describe("Keyboard shortcuts", () => {
     };
 
     await test.step("WASD and the arrow keys both walk the player", async () => {
-      expect(await playerPosition(page)).toEqual([0, 0]);
-      await walkUntil("d", [1, 0]);
-      await walkUntil("ArrowDown", [1, 1]);
-      await walkUntil("a", [0, 1]);
+      expect(await playerPosition(page)).toEqual([5, 6]);
+      await walkUntil("d", [6, 6]);
+      await walkUntil("ArrowDown", [6, 7]);
+      await walkUntil("a", [5, 7]);
     });
 
     await test.step("letter keys open the pocket overlays and toggle shut", async () => {

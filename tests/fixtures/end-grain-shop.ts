@@ -74,7 +74,7 @@ export const endGrainShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 3], // the workspace's operation cell
+    position: [1, 4], // the workspace's operation cell
     direction: 0,
     inventory: [
       sandedBlank,
@@ -88,7 +88,7 @@ export const endGrainShop: GameState = {
   },
   machines: [
     idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
-    idleMachine("jobsiteTableSaw", [2, 4], "ripBoard"),
+    idleMachine("jobsiteTableSaw", [6, 3], "ripBoard"),
   ],
   machineCrates: [],
   storage: {
@@ -98,9 +98,9 @@ export const endGrainShop: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: [2, 5],
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: [6, 15],
   },
   progression: {
     tutorialStage: 2,

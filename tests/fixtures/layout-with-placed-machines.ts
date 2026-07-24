@@ -21,12 +21,12 @@ export const layoutWithPlacedMachines: GameState = {
         jointedFaces: 1,
         jointedEdges: 2,
       },
-      position: [2, 1],
+      position: [4, 5],
     },
   ],
   player: {
     name: "Player",
-    position: [0, 0],
+    position: [5, 6],
     direction: 0,
     inventory: [],
     workQueue: [],
@@ -53,7 +53,7 @@ export const layoutWithPlacedMachines: GameState = {
     },
     {
       machineTypeId: "miterSaw",
-      position: [2, 4],
+      position: [6, 3],
       rotation: 0,
       inputMaterials: [],
       processingMaterials: [],
@@ -83,7 +83,7 @@ export const layoutWithPlacedMachines: GameState = {
     },
     {
       machineTypeId: "worktable1x1",
-      position: [0, 4],
+      position: [9, 2],
       rotation: 0,
       inputMaterials: [],
       processingMaterials: [],
@@ -105,9 +105,9 @@ export const layoutWithPlacedMachines: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: [2, 5],
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: [6, 15],
   },
   progression: {
     tutorialStage: 2,

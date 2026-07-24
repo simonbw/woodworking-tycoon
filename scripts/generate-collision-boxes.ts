@@ -11,8 +11,8 @@ import { PNG } from "pngjs";
  *
  * The geometry mirrors how MachineSprite renders: every layer is anchored
  * at 0.5 on the origin cell's center, drawn at 8 image pixels per inch
- * (times an optional per-layer scale), and a cell is 32 inches — so one
- * cell is 256 image pixels and the mapping from opaque-pixel bounds to
+ * (times an optional per-layer scale), and a cell is 12 inches — so one
+ * cell is 96 image pixels and the mapping from opaque-pixel bounds to
  * cell units is pure arithmetic. Machines drawn procedurally (garbage can,
  * worktables) have nothing to measure; their boxes are hand-set in their
  * defs, which always win over this file.
@@ -27,8 +27,8 @@ const OUT_FILE = path.join(
   "machine-collision-boxes.generated.ts",
 );
 
-/** 8 image pixels per inch × 32 inches per cell. */
-const IMAGE_PIXELS_PER_CELL = 256;
+/** 8 image pixels per inch × 12 inches per cell. */
+const IMAGE_PIXELS_PER_CELL = 96;
 
 /** A pixel this opaque counts as solid — fringes and soft shadows don't. */
 const ALPHA_THRESHOLD = 128;

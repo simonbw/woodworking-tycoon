@@ -9,11 +9,28 @@ import {
   VACUUM_TICKS,
 } from "../ShopVac";
 import { Species } from "../Materials";
-import { translateVec, Vector, vectorEquals } from "../Vectors";
+import {
+  chebyshevDistance,
+  translateVec,
+  Vector,
+  vectorEquals,
+} from "../Vectors";
 import { withXp } from "./skill-actions";
 
 /** Adjacent tiles get most of a burst — the hose reaches, the nozzle wins. */
 const VACUUM_ADJACENT_EFFICIENCY = 0.6;
+
+/** The eight cells around one — a burst covers the 3×3 patch at hand. */
+const NEIGHBORS: ReadonlyArray<Vector> = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
 /** Vacuuming this much or more earns the token XP (mirrors sweeping). */
 const XP_MINIMUM_GATHERED = 5;
 const VACUUM_XP = 1;
@@ -63,7 +80,7 @@ export function toggleCarryShopVacAction(): GameAction {
         shopVac: { ...vac, position: gameState.player.position },
       };
     }
-    if (vectorEquals(vac.position, gameState.player.position)) {
+    if (chebyshevDistance(vac.position, gameState.player.position) <= 1) {
       return { ...gameState, shopVac: { ...vac, position: null } };
     }
     return gameState;
@@ -101,7 +118,7 @@ export function vacuumAction(): GameAction {
     };
 
     gatherFrom(gameState.player.position, 1);
-    for (const delta of ORTHOGONALS) {
+    for (const delta of NEIGHBORS) {
       gatherFrom(
         translateVec(gameState.player.position, delta),
         VACUUM_ADJACENT_EFFICIENCY,
@@ -238,7 +255,7 @@ export function canVacuumAt(gameState: GameState): boolean {
   if (cellDust(gameState.dust, gameState.player.position) > 0.05) {
     return true;
   }
-  return ORTHOGONALS.some(
+  return NEIGHBORS.some(
     (delta) =>
       cellDust(gameState.dust, translateVec(gameState.player.position, delta)) >
       0.05,

@@ -16,8 +16,8 @@ declare global {
   }
 }
 
-const WORKSPACE_CELL: [number, number] = [1, 3];
-const SAW_CELL: [number, number] = [2, 5];
+const WORKSPACE_CELL: [number, number] = [1, 4];
+const SAW_CELL: [number, number] = [6, 5];
 
 function card(page: any, name: string) {
   return page.locator("section", { hasText: name });
@@ -166,7 +166,7 @@ test.describe("End-Grain Boards", () => {
         page,
         "Jobsite Table Saw",
         `(mat) => mat.type === "endGrainSlice"`,
-        [2, 3], // the saw's outfeed cell
+        [6, 1], // the saw's outfeed cell
         "Feed",
       );
       const sliceCount = await page.evaluate(

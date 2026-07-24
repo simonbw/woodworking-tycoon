@@ -49,7 +49,7 @@ test.describe("Carrying machines", () => {
     });
 
     await test.step("the carry verb hides until unlocked", async () => {
-      await teleportPlayer(page, [2, 5]);
+      await teleportPlayer(page, [6, 8]);
       // A miter saw anywhere re-unlocks the flag on the next tick, so gate
       // the check on a jointer crate — jointers don't trip the unlock
       await page.evaluate(() => {
@@ -68,7 +68,7 @@ test.describe("Carrying machines", () => {
       expect(await carried(page)).toBeNull();
       // Back to the real fixture for the rest of the walkthrough
       await loadFixture(page, "miter-saw-crate-shop");
-      await teleportPlayer(page, [2, 5]);
+      await teleportPlayer(page, [6, 8]);
     });
 
     await test.step("unpack the delivered crate underfoot", async () => {
@@ -95,7 +95,7 @@ test.describe("Carrying machines", () => {
     });
 
     await test.step("set it down standing at its operator cell", async () => {
-      await teleportPlayer(page, [2, 2]);
+      await teleportPlayer(page, [6, 8]);
       await page.keyboard.press("l");
       await page.waitForTimeout(200);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
@@ -103,8 +103,8 @@ test.describe("Carrying machines", () => {
       const saw = state.machines.find(
         (m: any) => m.machineTypeId === "miterSaw",
       );
-      // Anchored one cell in front: the player's cell is the operator cell
-      expect(saw.position).toEqual([2, 1]);
+      // Anchored two cells in front: the player's cell is the operator cell
+      expect(saw.position).toEqual([6, 6]);
     });
 
     await test.step("lift the placed machine back up from the same spot", async () => {
@@ -120,9 +120,9 @@ test.describe("Carrying machines", () => {
 
     await test.step("a loaded machine refuses to be lifted", async () => {
       await loadFixture(page, "layout-with-placed-machines");
-      // The fixture's miter saw at [2,4] holds a board; stand at its
+      // The fixture's miter saw at [6,3] holds a board; stand at its
       // operator cell and try
-      await teleportPlayer(page, [2, 5]);
+      await teleportPlayer(page, [6, 5]);
       await expect(page.getByText("Pick up Miter Saw")).toHaveCount(0);
       await page.keyboard.press("l");
       await page.waitForTimeout(200);
@@ -130,8 +130,8 @@ test.describe("Carrying machines", () => {
     });
 
     await test.step("carry a worktable to a new spot", async () => {
-      // The fixture's small worktable at [0,4] operates from [0,5]
-      await teleportPlayer(page, [0, 5]);
+      // The fixture's small worktable at [9,2] operates from [9,4]
+      await teleportPlayer(page, [9, 4]);
       const machineHint = page.getByText(/plans & tools/i);
       await expect(machineHint.first()).toBeVisible();
       await page.keyboard.press("l");
@@ -140,7 +140,7 @@ test.describe("Carrying machines", () => {
       // Hands full: the machine's hint chips are suppressed
       await expect(machineHint).toHaveCount(0);
 
-      await teleportPlayer(page, [1, 5]);
+      await teleportPlayer(page, [5, 10]);
       await page.keyboard.press("l");
       await page.waitForTimeout(200);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
@@ -148,7 +148,7 @@ test.describe("Carrying machines", () => {
       const table = state.machines.find(
         (m: any) => m.machineTypeId === "worktable1x1",
       );
-      expect(table.position).toEqual([1, 4]);
+      expect(table.position).toEqual([5, 8]);
       // Standing at the freshly placed table's operator cell brings it back
       await expect(page.getByText(/plans & tools/i).first()).toBeVisible();
     });
@@ -174,8 +174,8 @@ test.describe("Carrying machines", () => {
       expect(state.machineCrates[0].machine.machineTypeId).toBe(
         "jobsiteTableSaw",
       );
-      // Nearest open floor to the entrance [2,5]
-      expect(state.machineCrates[0].position).toEqual([2, 5]);
+      // Nearest open floor to the entrance [6,15]
+      expect(state.machineCrates[0].position).toEqual([6, 15]);
     });
   });
 });

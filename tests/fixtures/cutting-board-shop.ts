@@ -42,7 +42,7 @@ export const cuttingBoardShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 3], // the workspace's operation cell
+    position: [1, 4], // the workspace's operation cell
     direction: 0,
     inventory: Array.from({ length: 5 }, (_, i) => ({
       id: `test-strip-${i}`,
@@ -69,9 +69,9 @@ export const cuttingBoardShop: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: [2, 5],
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: [6, 15],
   },
   progression: {
     tutorialStage: 2,

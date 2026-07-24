@@ -30,16 +30,28 @@ export const lunchboxPlaner: MachineType = {
   id: "planer",
   name: "Planer",
   description: "A lunchbox planer",
-  cellsOccupied: [[0, 0]],
+  // A lunchbox planer on its stand: about 19" × 26", so a 2×3-ft
+  // footprint with stock feeding the long way (see the measured
+  // collision box for the exact solid area).
+  cellsOccupied: [
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [1, -1],
+    [1, 0],
+    [1, 1],
+  ],
   collisionBox: GENERATED_COLLISION_BOXES.lunchboxPlaner,
   // Feed-through: room to stand at the infeed and to catch stock at the
   // outfeed — a planer can't back onto a wall
   freeCellsNeeded: [
-    [0, 1],
-    [0, -1],
+    [0, 2],
+    [1, 2],
+    [0, -2],
+    [1, -2],
   ],
-  operationPosition: [0, 1],
-  outputPosition: [0, -1],
+  operationPosition: [0, 2],
+  outputPosition: [0, -2],
   cost: 450,
   materialStorage: 0,
   toolSlots: 1,

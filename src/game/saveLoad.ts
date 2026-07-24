@@ -7,7 +7,7 @@ import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 23; // Increment this when GameState structure changes
+const SAVE_VERSION = 24; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -107,6 +107,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 22) {
       saveData.gameState = migrateV22toV23(saveData.gameState);
       saveData.version = 23;
+    }
+
+    if (saveData.version === 23) {
+      saveData.gameState = migrateV23toV24(saveData.gameState);
+      saveData.version = 24;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -226,6 +231,100 @@ export function migrateV13toV14(old: any): GameState {
         machineId === "makeshiftBench" ? "worktable1x1" : machineId,
       ),
     },
+  };
+}
+
+/**
+ * v23 → v24: the grid went from 32-inch cells to 1-ft cells and every
+ * machine grew a real multi-cell footprint, so old-grid coordinates mean
+ * nothing anymore. There's no clean mapping (32/12 isn't an integer), so
+ * the migration is moving day: the shop becomes the new 12'×16' garage,
+ * every placed machine is re-crated by the door (tools, upgrades, and
+ * shelf stock ride along inside; work-in-progress materials land as piles
+ * at the dropoff), floor piles stack at the dropoff, and the floor comes
+ * up swept. Money, reputation, skills, listings, and jobs are untouched.
+ */
+export function migrateV23toV24(old: any): GameState {
+  const size: [number, number] = [12, 16];
+  const entrancePosition = defaultEntrancePosition(size);
+  const materialDropoffPosition: [number, number] = [10, 13];
+
+  // Crates line up in rows working back from the door, two cells apart so
+  // each stays reachable.
+  const cratePosition = (index: number): [number, number] => [
+    1 + (index % 5) * 2,
+    12 - Math.floor(index / 5) * 2,
+  ];
+
+  const strandedMaterials: any[] = [];
+  const crateMachine = (machineState: any) => {
+    strandedMaterials.push(
+      ...machineState.inputMaterials,
+      ...machineState.processingMaterials,
+      ...machineState.outputMaterials,
+    );
+    return {
+      ...machineState,
+      position: [0, 0],
+      rotation: 0,
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+    };
+  };
+
+  const cratedMachines = [
+    ...old.machines.map(crateMachine),
+    ...(old.player.carriedMachine
+      ? [crateMachine(old.player.carriedMachine)]
+      : []),
+    ...old.machineCrates.map((crate: any) => crateMachine(crate.machine)),
+  ];
+
+  return {
+    ...old,
+    shopInfo: {
+      ...old.shopInfo,
+      size,
+      entrancePosition,
+      materialDropoffPosition,
+    },
+    machines: [],
+    machineCrates: cratedMachines.map((machine: any, index: number) => ({
+      machine,
+      position: cratePosition(index),
+    })),
+    materialPiles: [
+      ...old.materialPiles.map((pile: any) => ({
+        ...pile,
+        position: materialDropoffPosition,
+      })),
+      ...strandedMaterials.map((material: any) => ({
+        material,
+        position: materialDropoffPosition,
+      })),
+    ],
+    shopVac: old.shopVac
+      ? {
+          ...old.shopVac,
+          position:
+            old.shopVac.position === null ? null : materialDropoffPosition,
+        }
+      : null,
+    player: {
+      ...old.player,
+      position: [6, 12],
+      direction: 1,
+      carriedMachine: null,
+      workQueue: [],
+      busyTicks: 0,
+    },
+    dust: {},
   };
 }
 

@@ -44,10 +44,10 @@ export const ShopVacSprite: React.FC = () => {
     if (carried) {
       const targetX =
         playerCenter[0] -
-        Math.cos(playerMotion.heading) * PIXELS_PER_CELL * 0.55;
+        Math.cos(playerMotion.heading) * PIXELS_PER_CELL * 1.47;
       const targetY =
         playerCenter[1] -
-        Math.sin(playerMotion.heading) * PIXELS_PER_CELL * 0.55;
+        Math.sin(playerMotion.heading) * PIXELS_PER_CELL * 1.47;
       const dt = ticker.deltaMS / 1000;
       const ease = Math.min(1, dt * FOLLOW_RATE);
       const previous = dragPos.current ?? [targetX, targetY];
@@ -59,7 +59,7 @@ export const ShopVacSprite: React.FC = () => {
       [x, y] = cellToPixelCenter(vac.position!);
     }
 
-    const radius = PIXELS_PER_CELL * 0.21;
+    const radius = PIXELS_PER_CELL * 0.56;
     // Shadow, casters
     g.ellipse(x, y + radius * 0.45, radius * 1.15, radius * 0.55);
     g.fill({ color: 0x000000, alpha: 0.22 });
