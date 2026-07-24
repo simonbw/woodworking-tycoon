@@ -58,6 +58,20 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   jewelryBox: 90,
   // Eight miters that all have to close up — precision money
   pictureFrame: 55,
+  // The rustic tier below the shelf: quick nailed builds from scrap
+  birdhouse: 35,
+  crate: 50,
+  // Screwed like the planter box, but it has to hold a person
+  stepStool: 70,
+  // Twelve 30° miters — the saw's other stops earning their keep
+  hexFrame: 75,
+  // A panel wrapped in mitered rails: two systems in one piece
+  servingTray: 90,
+  bookshelf: 130,
+  // The first real furniture: a wide glued top on four legs
+  sideTable: 220,
+  // Striped slices, alternated: the showpiece above the butcher block
+  checkerboardCuttingBoard: 250,
 };
 
 /**
@@ -182,7 +196,15 @@ export function getSellValue(material: MaterialInstance): number {
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
-    case "endGrainCuttingBoard": {
+    case "endGrainCuttingBoard":
+    case "birdhouse":
+    case "crate":
+    case "stepStool":
+    case "hexFrame":
+    case "servingTray":
+    case "bookshelf":
+    case "sideTable":
+    case "checkerboardCuttingBoard": {
       // Two-tone pieces average their species and add a style premium
       const speciesMultiplier = material.accentSpecies
         ? ((SPECIES_VALUE_MULTIPLIER[material.species] +

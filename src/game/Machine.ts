@@ -190,8 +190,19 @@ export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
    * Escape hatch for constraints the flat allowed-values fields can't
    * express (e.g. conditions on a panel's strip list). Checked in addition
    * to the flat fields by materialMeetsInput.
+   *
+   * NOT serializable — recipe constants only. Requirements that live in
+   * GameState (job offers, commissions) must stay declarative or they'd
+   * silently lose the predicate on save/load.
    */
   readonly matches?: (material: MaterialInstance) => boolean;
+  /**
+   * Minimum derived width in inches for panel requirements — a panel's
+   * width lives in its strip list, not a flat field, so allowed-value
+   * arrays can't express "at least this wide". Serializable, unlike
+   * `matches`, so generated job offers can ask for wide glue-ups.
+   */
+  readonly minPanelWidth?: number;
 };
 
 export type InputMaterialWithQuantity<
@@ -389,7 +400,9 @@ export class Machine {
    * station whose recipes are all still locked, or "none").
    */
   get selectedOperationOrNull():
-    MachineOperation | ParameterizedOperation | null {
+    | MachineOperation
+    | ParameterizedOperation
+    | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null

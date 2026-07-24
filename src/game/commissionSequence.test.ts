@@ -26,6 +26,38 @@ describe("COMMISSION_SEQUENCE", () => {
       );
     }
   });
+
+  it("has non-decreasing reputation rewards", () => {
+    for (let i = 1; i < COMMISSION_SEQUENCE.length; i++) {
+      assert.ok(
+        COMMISSION_SEQUENCE[i].rewardReputation >=
+          COMMISSION_SEQUENCE[i - 1].rewardReputation,
+        `${COMMISSION_SEQUENCE[i].id} should not drop reputation below ${COMMISSION_SEQUENCE[i - 1].id}`,
+      );
+    }
+  });
+
+  it("covers the full sequence through the butcher's block finale", () => {
+    assert.strictEqual(COMMISSION_SEQUENCE.length, 15);
+    assert.strictEqual(
+      COMMISSION_SEQUENCE[COMMISSION_SEQUENCE.length - 1].id,
+      "the-butchers-block",
+    );
+  });
+
+  it("never uses non-serializable matches predicates in requirements", () => {
+    // Commission requirements must stay declarative so the UI can render
+    // them and createMockMaterial can price them.
+    for (const commission of COMMISSION_SEQUENCE) {
+      for (const requirement of commission.requiredMaterials) {
+        assert.strictEqual(
+          requirement.matches,
+          undefined,
+          `${commission.id} uses a matches predicate`,
+        );
+      }
+    }
+  });
 });
 
 describe("getActiveCommission", () => {

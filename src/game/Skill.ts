@@ -20,6 +20,10 @@ export const SKILL_IDS = [
   "sunriseBoards",
   "jigsAndFixtures",
   "endGrainBoards",
+  "polygonJoinery",
+  "trayWork",
+  "furnitureBasics",
+  "checkerboards",
 ] as const;
 export type SkillId = (typeof SKILL_IDS)[number];
 
@@ -156,6 +160,38 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
       "Slice a panel, stand the grain on end, glue it again. Butcher-block money.",
     branch: "finishing",
     requires: ["surfacePrep", "jigsAndFixtures"],
+  },
+  polygonJoinery: {
+    id: "polygonJoinery",
+    name: "Polygon Joinery",
+    description:
+      "Six corners at 30°, eight at 22.5°. The saw's other angle stops finally earn their keep.",
+    branch: "joinery",
+    requires: ["miteredFrames"],
+  },
+  trayWork: {
+    id: "trayWork",
+    name: "Tray Work",
+    description:
+      "A sanded panel wrapped in mitered rails: the serving tray. Panels meet miters.",
+    branch: "joinery",
+    requires: ["miteredFrames", "panelWork"],
+  },
+  furnitureBasics: {
+    id: "furnitureBasics",
+    name: "Furniture Basics",
+    description:
+      "A wide glued top on four square legs. The side table is the first piece that furnishes a room.",
+    branch: "joinery",
+    requires: ["fineShelving", "freeformLamination"],
+  },
+  checkerboards: {
+    id: "checkerboards",
+    name: "Checkerboards",
+    description:
+      "Two-tone end-grain slices, every other one flipped. The pattern hiding inside the block.",
+    branch: "finishing",
+    requires: ["endGrainBoards"],
   },
 };
 

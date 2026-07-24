@@ -246,7 +246,15 @@ export type FinishedProduct = {
     | "simpleCuttingBoard"
     | "stripedCuttingBoard"
     | "sunriseCuttingBoard"
-    | "endGrainCuttingBoard";
+    | "endGrainCuttingBoard"
+    | "birdhouse"
+    | "crate"
+    | "stepStool"
+    | "hexFrame"
+    | "servingTray"
+    | "bookshelf"
+    | "sideTable"
+    | "checkerboardCuttingBoard";
   readonly species: Species;
   /** Second wood in a two-tone piece (e.g. striped cutting boards). */
   readonly accentSpecies?: Species;
