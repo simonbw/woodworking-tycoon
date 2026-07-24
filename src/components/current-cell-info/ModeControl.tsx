@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ConsumableAmount, CONSUMABLE_TYPES } from "../../game/Consumable";
+import { consumableLabel } from "../../game/Consumable";
 import { Operation } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
 import { describeOperationIO } from "../../game/operation-helpers";
@@ -118,14 +118,6 @@ export const ModeControl: React.FC<{
     />
   );
 };
-
-/** "8 nails", but "4 oz Mineral Oil" when the unit isn't the name. */
-function consumableLabel(cost: ConsumableAmount): string {
-  const type = CONSUMABLE_TYPES[cost.id];
-  return type.unit === type.name.toLowerCase()
-    ? `${cost.amount} ${type.unit}`
-    : `${cost.amount} ${type.unit} ${type.name}`;
-}
 
 const RecipeIndex: React.FC<{
   operations: ReadonlyArray<Operation>;

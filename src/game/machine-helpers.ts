@@ -180,6 +180,37 @@ export function parameterValueSatisfiable(
   return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
 }
 
+/**
+ * Greedily fill `requirements` from `materials`, in declaration order —
+ * the one matching order feeding, refusal explanations, and operability
+ * checks all share. Returns the materials consumed, what's left over, and
+ * the first requirement that couldn't be filled (null when all were).
+ */
+export function matchRequirements(
+  materials: ReadonlyArray<MaterialInstance>,
+  requirements: ReadonlyArray<InputMaterialWithQuantity>,
+): {
+  matched: MaterialInstance[];
+  remaining: MaterialInstance[];
+  firstUnmet: InputMaterialWithQuantity | null;
+} {
+  const remaining = [...materials];
+  const matched: MaterialInstance[] = [];
+  for (const requirement of requirements) {
+    for (let i = 0; i < requirement.quantity; i++) {
+      const index = remaining.findIndex((material) =>
+        materialMeetsInput(material, requirement),
+      );
+      if (index === -1) {
+        return { matched, remaining, firstUnmet: requirement };
+      }
+      matched.push(remaining[index]);
+      remaining.splice(index, 1);
+    }
+  }
+  return { matched, remaining, firstUnmet: null };
+}
+
 /** What feeding a direct-feed machine right now would run. */
 export interface FeedMatch {
   readonly operation: Operation;
@@ -212,25 +243,13 @@ export function findFeedableOperation(
     // and falls back to its defaults for anything never dialed in.
     const parameters = machine.resolvedParameters(operation);
     const requirements = operation.getInputMaterials(parameters);
-    const remaining = [...carried];
-    const materials: MaterialInstance[] = [];
-    let satisfied = true;
-    for (const requirement of requirements) {
-      for (let i = 0; i < requirement.quantity && satisfied; i++) {
-        const index = remaining.findIndex((material) =>
-          materialMeetsInput(material, requirement),
-        );
-        if (index === -1) {
-          satisfied = false;
-        } else {
-          materials.push(remaining[index]);
-          remaining.splice(index, 1);
-        }
-      }
-    }
+    const { matched, remaining, firstUnmet } = matchRequirements(
+      carried,
+      requirements,
+    );
     // Zero-input recipes aren't "fed" — feeding means presenting stock
-    if (satisfied && materials.length > 0) {
-      return { operation, parameters, materials, remaining };
+    if (firstUnmet === null && matched.length > 0) {
+      return { operation, parameters, materials: matched, remaining };
     }
   }
   return null;
@@ -280,23 +299,10 @@ export function explainFeedRefusal(
     const parameters = machine.resolvedParameters(operation);
     const requirements = operation.getInputMaterials(parameters);
     // Fill requirements the way feeding would, to find the one that blocks
-    const remaining = [...carried];
-    let blocking: InputMaterialWithQuantity | null = null;
-    for (const requirement of requirements) {
-      for (let i = 0; i < requirement.quantity && !blocking; i++) {
-        const index = remaining.findIndex((material) =>
-          materialMeetsInput(material, requirement),
-        );
-        if (index === -1) {
-          blocking = requirement;
-        } else {
-          remaining.splice(index, 1);
-        }
-      }
-      if (blocking) {
-        break;
-      }
-    }
+    const { remaining, firstUnmet: blocking } = matchRequirements(
+      carried,
+      requirements,
+    );
     if (!blocking) {
       continue;
     }

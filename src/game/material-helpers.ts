@@ -19,6 +19,8 @@ import {
   SheetGoodKind,
   Species,
   UnknownMaterial,
+  FINISHED_PRODUCT_TYPES,
+  FinishedProductType,
 } from "./Materials";
 
 const makeId = idMaker();
@@ -52,26 +54,6 @@ export function makePallet() {
   });
 }
 
-const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
-  "shelf",
-  "rusticShelf",
-  "planterBox",
-  "jewelryBox",
-  "pictureFrame",
-  "simpleCuttingBoard",
-  "stripedCuttingBoard",
-  "sunriseCuttingBoard",
-  "endGrainCuttingBoard",
-  "birdhouse",
-  "crate",
-  "stepStool",
-  "hexFrame",
-  "servingTray",
-  "bookshelf",
-  "sideTable",
-  "checkerboardCuttingBoard",
-];
-
 /**
  * The distinct species a material sheds when machined — what color its
  * sawdust is. Strip-built materials (panels, end-grain slices) report
@@ -101,7 +83,9 @@ export function materialSpecies(
 export function isFinishedProduct(
   material: MaterialInstance,
 ): material is FinishedProduct {
-  return FINISHED_PRODUCT_TYPES.includes(material.type);
+  return (FINISHED_PRODUCT_TYPES as ReadonlyArray<string>).includes(
+    material.type,
+  );
 }
 
 /** Species display names for material names; humanizeString for the rest. */
@@ -281,59 +265,64 @@ export function describeStockDimensionsPlain(
 }
 
 // Returns the amount of space an item takes up in the inventory
+/**
+ * Hand-inventory footprint per finished product (percent of a hand slot).
+ * Exhaustive over FINISHED_PRODUCT_TYPES, so a new product can't ship
+ * without deciding how big it is to carry.
+ */
+const PRODUCT_INVENTORY_SIZES: Record<FinishedProductType, number> = {
+  shelf: 20,
+  rusticShelf: 10,
+  planterBox: 20,
+  jewelryBox: 10,
+  pictureFrame: 10,
+  simpleCuttingBoard: 10,
+  stripedCuttingBoard: 10,
+  sunriseCuttingBoard: 10,
+  endGrainCuttingBoard: 10,
+  birdhouse: 10,
+  crate: 20,
+  stepStool: 20,
+  hexFrame: 10,
+  servingTray: 10,
+  bookshelf: 20,
+  sideTable: 20,
+  checkerboardCuttingBoard: 10,
+};
+
 export function getMaterialInventorySize(material: MaterialInstance): number {
+  if (isFinishedProduct(material)) {
+    return PRODUCT_INVENTORY_SIZES[material.type];
+  }
+
   switch (material.type) {
     case "pallet":
       return 100;
 
-    case "board": {
-      const { length, width, thickness } = material;
-      const size = length * width * thickness;
-      const maxDimension = Math.max(...BOARD_DIMENSIONS);
-      const maxSize = maxDimension * maxDimension * maxDimension;
-      return (size / maxSize) * 100;
-    }
+    case "board":
+    case "plywood":
+      return volumePercent(material.length, material.width, material.thickness);
 
-    case "panel": {
-      const size = material.length * panelWidth(material) * material.thickness;
-      const maxDimension = Math.max(...BOARD_DIMENSIONS);
-      const maxSize = maxDimension * maxDimension * maxDimension;
-      return (size / maxSize) * 100;
-    }
-
-    case "jewelryBox":
-      return 10;
-
-    case "shelf":
-    case "planterBox":
-    case "crate":
-    case "stepStool":
-    case "bookshelf":
-    case "sideTable":
-      return 20;
-
-    case "simpleCuttingBoard":
-    case "stripedCuttingBoard":
-    case "sunriseCuttingBoard":
-    case "endGrainCuttingBoard":
-    case "checkerboardCuttingBoard":
-    case "endGrainSlice":
-    case "birdhouse":
-    case "hexFrame":
-    case "servingTray":
-      return 10;
-
-    case "plywood": {
-      const { length, width, thickness } = material;
-      const size = length * width * thickness;
-      const maxDimension = Math.max(...BOARD_DIMENSIONS);
-      const maxSize = maxDimension * maxDimension * maxDimension;
-      return (size / maxSize) * 100;
-    }
+    case "panel":
+      return volumePercent(
+        material.length,
+        panelWidth(material),
+        material.thickness,
+      );
 
     default:
       return 10;
   }
+}
+
+/** Stock volume as a share of the largest possible board, in percent. */
+function volumePercent(
+  length: number,
+  width: number,
+  thickness: number,
+): number {
+  const maxDimension = Math.max(...BOARD_DIMENSIONS);
+  return ((length * width * thickness) / maxDimension ** 3) * 100;
 }
 
 export function materialToInput<T extends MaterialInstance = MaterialInstance>(

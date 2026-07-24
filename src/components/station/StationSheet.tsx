@@ -28,7 +28,7 @@ import {
   describeMaterialRequirement,
   getMaterialFullName,
 } from "../../game/material-helpers";
-import { CONSUMABLE_TYPES } from "../../game/Consumable";
+import { consumableLabel } from "../../game/Consumable";
 import { generateOperationPreview } from "../../game/operation-helpers";
 import {
   availableOperations,
@@ -632,15 +632,9 @@ const BenchSheetBody: React.FC<{
           <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
             Supplies:{" "}
             {selectedOperation.requiredConsumables.map((cost, i) => {
-              const type = CONSUMABLE_TYPES[cost.id];
               const stocked = gameState.consumables[cost.id] ?? 0;
               const enough = stocked >= cost.amount;
-              // "8 nails", but "4 oz Mineral Oil" when the unit isn't
-              // the name
-              const label =
-                type.unit === type.name.toLowerCase()
-                  ? `${cost.amount} ${type.unit}`
-                  : `${cost.amount} ${type.unit} ${type.name}`;
+              const label = consumableLabel(cost);
               return (
                 <span key={cost.id}>
                   {i > 0 && " · "}
