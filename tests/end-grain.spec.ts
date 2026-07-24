@@ -102,7 +102,7 @@ test.describe("End-Grain Boards", () => {
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      expect(money).toBe(90.4); // $9.60 of shop-grade plywood
+      expect(money).toBe(76); // $24 of shop-grade plywood
     });
 
     await test.step("learn Jigs & Fixtures and End-Grain Boards", async () => {

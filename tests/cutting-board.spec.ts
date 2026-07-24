@@ -81,7 +81,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       // Boards carry dimensions only — species lives on the bundle's tag.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
       await expect(page.getByText(/1x4\s*8'/)).toBeVisible();
-      await expect(page.getByText("$38.40")).toBeVisible();
+      await expect(page.getByText("$2.01")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
       // The less-than-S4S channels live at the lumberyard, not here
       await expect(page.getByText("S2S Rack")).not.toBeVisible();

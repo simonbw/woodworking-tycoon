@@ -13,11 +13,13 @@ import {
 import { panel, uniformPanel } from "./panel-helpers";
 
 describe("getSellValue", () => {
-  it("prices boards by volume", () => {
-    // 4 x 6 x 3 stringer at $0.10/unit
+  it("prices boards by board-foot volume", () => {
+    // 4' x 6" x 3/4 stringer: 1.5 bf at pallet wood's $4.80/bf craft rate
     assert.strictEqual(getSellValue(board("pallet", 4, 6, 3)), 7.2);
-    // 3 x 4 x 1 deck board
+    // 3' x 4" x 1/4 deck board: 0.25 bf
     assert.strictEqual(getSellValue(board("pallet", 3, 4, 1)), 1.2);
+    // A 2x4 stud is 8' x 4" x 8/4 = 5.33 bf of pine at $0.25/bf
+    assert.strictEqual(getSellValue(board("pine", 8, 4, 8)), 1.33);
   });
 
   it("prices a whole pallet below its dismantled boards", () => {
@@ -40,28 +42,29 @@ describe("getSellValue", () => {
     assert.ok(getSellValue(shelf) > 2 * inputWood);
   });
 
-  it("scales board value by species", () => {
-    // 2' x 2" x 4/4 pine: 2*2*4*0.1 = $1.60; maple multiplier 3 => $4.80
-    assert.strictEqual(getSellValue(board("pine", 2, 2, 4)), 1.6);
-    assert.strictEqual(getSellValue(board("maple", 2, 2, 4)), 4.8);
+  it("scales board value by species rate", () => {
+    // 3' x 4" x 4/4 is exactly one board foot
+    assert.strictEqual(getSellValue(board("pine", 3, 4, 4)), 0.25);
+    assert.strictEqual(getSellValue(board("maple", 3, 4, 4)), 1.75);
+    assert.strictEqual(getSellValue(board("walnut", 3, 4, 4)), 4);
   });
 
   it("prices panels strip by strip", () => {
-    // 5 maple strips at 2' x 2" x 4/4: each 2*2*4*0.1*3 = $4.80
-    assert.strictEqual(getSellValue(uniformPanel("maple", 5, 2, 2, 4)), 24);
+    // 5 maple strips at 3' x 4" x 4/4: one board foot each at $1.75/bf
+    assert.strictEqual(getSellValue(uniformPanel("maple", 5, 3, 4, 4)), 8.75);
   });
 
   it("prices multi-species panels by each strip's own species", () => {
     const striped = panel(
       [
-        { species: "walnut", width: 2 },
-        { species: "pine", width: 2 },
+        { species: "walnut", width: 4 },
+        { species: "pine", width: 4 },
       ],
-      2,
+      3,
       4,
     );
-    const walnutStrip = getSellValue(board("walnut", 2, 2, 4));
-    const pineStrip = getSellValue(board("pine", 2, 2, 4));
+    const walnutStrip = getSellValue(board("walnut", 3, 4, 4));
+    const pineStrip = getSellValue(board("pine", 3, 4, 4));
     assert.strictEqual(getSellValue(striped), walnutStrip + pineStrip);
   });
 
@@ -212,11 +215,11 @@ describe("sheet good pricing", () => {
       thickness: 2,
     });
 
-  it("prices sheets by volume times the kind ladder", () => {
-    // Shop plywood sits at 1: the original aisle price, unchanged
-    assert.strictEqual(getSellValue(sheet("plywoodB")), 3.2);
-    assert.strictEqual(getSellValue(sheet("particleBoard")), 1.28);
-    assert.strictEqual(getSellValue(sheet("plywoodA")), 5.76);
+  it("prices sheets by board footage times the kind rate", () => {
+    // A 4' x 4' half-inch sheet is 8 board feet
+    assert.strictEqual(getSellValue(sheet("plywoodB")), 8);
+    assert.strictEqual(getSellValue(sheet("particleBoard")), 3.2);
+    assert.strictEqual(getSellValue(sheet("plywoodA")), 8.8);
   });
 
   it("orders every kind by the quality ladder", () => {
@@ -236,7 +239,14 @@ describe("sheet good pricing", () => {
   });
 
   it("marks up sheet buy prices like lumber, so flipping loses money", () => {
-    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 9.6);
+    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 24);
     assert.ok(getSheetBuyPrice(sheet("osb")) > getSellValue(sheet("osb")));
+  });
+
+  it("puts store shelves near real-world prices", () => {
+    // The classic 2x4x8 stud: ~$4 at the big box
+    assert.strictEqual(getBoardBuyPrice(board("pine", 8, 4, 8)), 3.99);
+    // 4' x 4' half-inch particle board: ~$10
+    assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 9.6);
   });
 });
