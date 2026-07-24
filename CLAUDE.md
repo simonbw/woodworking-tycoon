@@ -52,7 +52,7 @@ The game follows a state-driven architecture with clear separation between game 
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
-   - **Garage door** (`DoorPrompt`): stand at the entrance cell and the door lists places to go on numbered keys — shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging
+   - **Garage door** (`DoorPrompt`): stand at the entrance cell and the door lists places to go on numbered keys — shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging (`ScavengeTripOverlay`: a route-map travel log that plays out while the timed trip runs)
    - **In-world interaction UI** (`src/components/shop-overlay/`, `src/components/station/`): the machine the player stands at is highlighted in the shop view and wears hint chips naming its live keys (E interacts, F feeds/loads, Z settings); every station opens a centered station sheet (Enter) holding its buttons, scales, plans, and racks; a hint cluster follows the player for floor verbs. The shop manifest on the right shows in-hand/underfoot/supplies
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
 

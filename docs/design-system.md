@@ -46,11 +46,12 @@ stack of equal-weight cards:
   (Phone, Journal, the `?` manual), all drawn directly on the dark bar,
   no paper. Everything that used to be a tab is an object in the world:
   the marketplace is the phone overlay, skills are the journal overlay,
-  and the store is a trip out the garage door (`StoreTripOverlay`).
+  and errands are trips out the garage door, each a full-screen overlay
+  (`StoreTripOverlay`, `LumberyardTripOverlay`, `ScavengeTripOverlay` —
+  the last a hand-drawn route map plus a handwritten travel log).
 - **Job board** (`JobBoard`, left) — one corkboard holding the active
-  commission (pinned legal sheet, foldable to a stub via its header) and,
-  while the player is out scavenging, a "back soon" note (pinned cream
-  memo). No label — a corkboard of work orders explains itself.
+  commission (pinned legal sheet, foldable to a stub via its header).
+  No label — a corkboard of work orders explains itself.
 - **The shop view is the screen** (`ShopView`, center) — the canvas
   scales to fill everything between the rails (renderer runs at the
   scaled resolution, so the 2×-resolution sprite art gains real detail).
