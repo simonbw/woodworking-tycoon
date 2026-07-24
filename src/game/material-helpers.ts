@@ -62,6 +62,14 @@ const FINISHED_PRODUCT_TYPES: ReadonlyArray<MaterialInstance["type"]> = [
   "stripedCuttingBoard",
   "sunriseCuttingBoard",
   "endGrainCuttingBoard",
+  "birdhouse",
+  "crate",
+  "stepStool",
+  "hexFrame",
+  "servingTray",
+  "bookshelf",
+  "sideTable",
+  "checkerboardCuttingBoard",
 ];
 
 /**
@@ -298,13 +306,21 @@ export function getMaterialInventorySize(material: MaterialInstance): number {
 
     case "shelf":
     case "planterBox":
+    case "crate":
+    case "stepStool":
+    case "bookshelf":
+    case "sideTable":
       return 20;
 
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
+    case "checkerboardCuttingBoard":
     case "endGrainSlice":
+    case "birdhouse":
+    case "hexFrame":
+    case "servingTray":
       return 10;
 
     case "plywood": {
@@ -346,9 +362,16 @@ export function materialInputMismatches(
   if (inputMaterial.matches && !inputMaterial.matches(material)) {
     mismatches.push("matches");
   }
+  if (
+    inputMaterial.minPanelWidth !== undefined &&
+    (material.type !== "panel" ||
+      panelWidth(material) < inputMaterial.minPanelWidth)
+  ) {
+    mismatches.push("minPanelWidth");
+  }
   for (const key of Object.keys(inputMaterial)) {
-    // Skip quantity and matches: they're not properties of the material
-    if (key === "quantity" || key === "matches") {
+    // Skip the constraint keys that aren't properties of the material
+    if (key === "quantity" || key === "matches" || key === "minPanelWidth") {
       continue;
     } else if (
       !(key in material) ||
@@ -441,23 +464,42 @@ export function createMockMaterial(
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
+    case "birdhouse":
+    case "crate":
+    case "stepStool":
+    case "hexFrame":
+    case "servingTray":
+    case "bookshelf":
+    case "sideTable":
+    case "checkerboardCuttingBoard": {
+      // Carry accent and finish through so requirement-priced work (job
+      // pay, commission previews) values an oiled or two-tone ask correctly
+      const r = requirement as InputMaterialWithQuantity<FinishedProduct>;
       return makeMaterial<FinishedProduct>({
         type: requirement.type[0],
-        species:
-          "species" in requirement
-            ? (requirement.species?.[0] ?? "pine")
-            : "pine",
+        species: r.species?.[0] ?? "pine",
+        ...(r.accentSpecies?.[0] !== undefined
+          ? { accentSpecies: r.accentSpecies[0] }
+          : {}),
+        ...(r.finish?.[0] !== undefined ? { finish: r.finish[0] } : {}),
       });
+    }
 
     case "panel": {
-      // Placeholder display only; a representative single-species blank
+      // Placeholder display only; a representative single-species blank.
+      // Wide-panel requirements get enough strips to actually meet (and
+      // price at) their minimum width.
       const r = requirement as InputMaterialWithQuantity<Panel>;
+      const stripCount = Math.max(
+        5,
+        Math.ceil((requirement.minPanelWidth ?? 0) / 2),
+      );
       return makeMaterial<Panel>({
         type: "panel",
         length: 2,
         thickness: r.thickness?.[0] || 4,
         surface: r.surface?.[0] || "rough",
-        strips: Array.from({ length: 5 }, () => ({
+        strips: Array.from({ length: stripCount }, () => ({
           species: "maple",
           width: 2,
         })),
@@ -538,6 +580,8 @@ const DESCRIBABLE_ATTRIBUTES: Partial<
 // description honest — every key here is a key the matcher enforces.
 const DESCRIBABLE_KEYS: ReadonlyArray<string> = [
   "species",
+  "accentSpecies",
+  "finish",
   "kind",
   "surface",
   "grain",
@@ -668,6 +712,10 @@ export function describeMaterialRequirement(
         );
       }
     }
+  }
+
+  if (req.minPanelWidth !== undefined) {
+    dimClauses.push(`at least ${req.minPanelWidth}" wide`);
   }
 
   const details = [...qualifiers, ...dimClauses];

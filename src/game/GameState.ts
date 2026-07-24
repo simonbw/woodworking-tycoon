@@ -82,6 +82,13 @@ export interface GameState {
   readonly listings: ReadonlyArray<MarketListing>;
   /** Open job offers the player hasn't accepted (refreshed daily). */
   readonly jobBoard: ReadonlyArray<JobOffer>;
+  /**
+   * Job template ids that were available at the last board refresh. A
+   * template appearing for the first time (new machine, tool, or skill)
+   * gets a guaranteed burst of offers — word gets around. See
+   * job-generation.ts.
+   */
+  readonly seenJobTemplateIds: ReadonlyArray<string>;
   /** Jobs the player has accepted and not yet delivered or cancelled. */
   readonly acceptedJobs: ReadonlyArray<AcceptedJob>;
   /**

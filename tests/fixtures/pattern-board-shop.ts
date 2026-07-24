@@ -127,6 +127,7 @@ export const patternBoardShop: GameState = {
   },
   listings: [],
   jobBoard: [],
+  seenJobTemplateIds: [],
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},

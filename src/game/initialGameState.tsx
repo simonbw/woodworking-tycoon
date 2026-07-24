@@ -74,6 +74,7 @@ export const initialGameState: GameState = {
   },
   listings: [],
   jobBoard: [],
+  seenJobTemplateIds: [],
   acceptedJobs: [],
   categoryDemand: {},
   dust: {},

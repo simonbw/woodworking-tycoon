@@ -589,6 +589,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
           "stripedCuttingBoard",
           "sunriseCuttingBoard",
           "endGrainCuttingBoard",
+          "checkerboardCuttingBoard",
         ],
         quantity: 1,
         // Boards only get oiled once
@@ -679,6 +680,179 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
           makeMaterial<FinishedProduct>({
             type: "pictureFrame",
             species: rails[0].species,
+          }),
+        ],
+      };
+    },
+  },
+  {
+    name: "Finish Checkerboard Board",
+    id: "finishCheckerboardBoard",
+    requiredSkill: "checkerboards",
+    duration: 55,
+    inputMaterials: [
+      {
+        type: ["panel"],
+        length: [1],
+        thickness: [8],
+        surface: ["sanded"],
+        quantity: 1,
+        // An end-grain blank glued from STRIPED slices: two real woods in
+        // strict alternation. Flipping every other slice at the glue-up is
+        // what turns the stripes into checkers.
+        matches: (material) =>
+          isPanel(material) &&
+          material.grain === "end" &&
+          panelWidth(material) >= 10 &&
+          panelSpecies(material).length === 2 &&
+          material.strips.every((strip) => strip.species !== "pallet") &&
+          stripsAlternate(material.strips),
+      },
+    ],
+    output: (materials: ReadonlyArray<MaterialInstance>) => {
+      const blank = materials[0];
+      if (!isPanel(blank)) {
+        throw new Error("Input material is not a panel");
+      }
+      const species = dominantSpecies(blank.strips);
+      const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
+      return {
+        inputs: [],
+        outputs: [
+          makeMaterial<FinishedProduct>({
+            type: "checkerboardCuttingBoard",
+            species,
+            accentSpecies,
+          }),
+        ],
+      };
+    },
+  },
+  {
+    name: "Build Hex Frame",
+    id: "buildHexFrame",
+    requiredSkill: "polygonJoinery",
+    duration: 35,
+    // Twelve miters joined with brads, like the picture frame's four
+    requiredConsumables: [{ id: "nails", amount: 6 }],
+    inputMaterials: [
+      {
+        type: ["board"],
+        species: REAL_WOOD_SPECIES,
+        length: [1],
+        width: [1],
+        thickness: [1],
+        surface: ["sanded"],
+        quantity: 6,
+        // Six rails mitered at the 30° stop, mirrored so a hexagon closes
+        matches: (material) =>
+          isBoard(material) && isMiteredFrameRail(material, 30),
+      },
+    ],
+    output: (materials: ReadonlyArray<MaterialInstance>) => {
+      const rails = materials.filter(isBoard);
+      if (rails.length !== 6) {
+        throw new Error("Need exactly 6 rails to build a hex frame");
+      }
+      return {
+        inputs: [],
+        outputs: [
+          makeMaterial<FinishedProduct>({
+            type: "hexFrame",
+            species: rails[0].species,
+          }),
+        ],
+      };
+    },
+  },
+  {
+    name: "Build Serving Tray",
+    id: "buildServingTray",
+    requiredSkill: "trayWork",
+    duration: 35,
+    requiredConsumables: [{ id: "nails", amount: 8 }],
+    inputMaterials: [
+      {
+        type: ["panel"],
+        length: [2],
+        thickness: [3, 4],
+        surface: ["sanded"],
+        quantity: 1,
+        // A real-wood panel bottom at least 8" wide
+        matches: (material) =>
+          isPanel(material) &&
+          panelWidth(material) >= 8 &&
+          material.strips.every((strip) => strip.species !== "pallet"),
+      },
+      {
+        // Four frame rails wrap the panel — the picture frame's stock
+        type: ["board"],
+        species: REAL_WOOD_SPECIES,
+        length: [2],
+        width: [1],
+        thickness: [1],
+        surface: ["sanded"],
+        quantity: 4,
+        matches: (material) =>
+          isBoard(material) && isMiteredFrameRail(material, 45),
+      },
+    ],
+    output: (materials: ReadonlyArray<MaterialInstance>) => {
+      const base = materials.find(isPanel);
+      if (!base) {
+        throw new Error("Serving tray needs a panel bottom");
+      }
+      return {
+        inputs: [],
+        outputs: [
+          makeMaterial<FinishedProduct>({
+            type: "servingTray",
+            species: dominantSpecies(base.strips),
+          }),
+        ],
+      };
+    },
+  },
+  {
+    name: "Build Side Table",
+    id: "buildSideTable",
+    requiredSkill: "furnitureBasics",
+    duration: 60,
+    requiredConsumables: [{ id: "screws", amount: 8 }],
+    inputMaterials: [
+      {
+        type: ["panel"],
+        length: [2],
+        thickness: [4],
+        surface: ["sanded"],
+        quantity: 1,
+        // A wide glued top — past what any single board can be
+        matches: (material) =>
+          isPanel(material) &&
+          panelWidth(material) >= 12 &&
+          material.strips.every((strip) => strip.species !== "pallet"),
+      },
+      {
+        // Four square legs from 8/4 stock, ripped and crosscut
+        type: ["board"],
+        length: [2],
+        width: [2],
+        thickness: [6, 8],
+        surface: ["smooth", "sanded"],
+        quantity: 4,
+      },
+    ],
+    output: (materials: ReadonlyArray<MaterialInstance>) => {
+      const top = materials.find(isPanel);
+      if (!top) {
+        throw new Error("Side table needs a panel top");
+      }
+      return {
+        inputs: [],
+        outputs: [
+          makeMaterial<FinishedProduct>({
+            type: "sideTable",
+            species: dominantSpecies(top.strips),
           }),
         ],
       };

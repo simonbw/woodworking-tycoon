@@ -58,5 +58,73 @@ export const hammer: ToolType = {
         };
       },
     },
+    {
+      name: "Build Birdhouse",
+      id: "buildBirdhouse",
+      requiredSkill: "rusticCarpentry",
+      duration: 20,
+      requiredConsumables: [{ id: "nails", amount: 6 }],
+      inputMaterials: [
+        // Short deck-board crosscuts: walls, floor, and a pitched roof
+        {
+          type: ["board"],
+          width: [4],
+          length: [1],
+          thickness: [1],
+          quantity: 4,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const boards = materials.filter(
+          (m: MaterialInstance): m is Board => m.type === "board",
+        );
+        if (boards.length !== 4) {
+          throw new Error("Need exactly 4 boards to build a birdhouse");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "birdhouse",
+              species: boards[0].species,
+            }),
+          ],
+        };
+      },
+    },
+    {
+      name: "Build Crate",
+      id: "buildCrate",
+      requiredSkill: "rusticCarpentry",
+      duration: 25,
+      requiredConsumables: [{ id: "nails", amount: 12 }],
+      inputMaterials: [
+        // Six whole deck boards: slatted sides and a bottom
+        {
+          type: ["board"],
+          width: [4],
+          length: [3],
+          thickness: [1],
+          quantity: 6,
+        },
+      ],
+      output: (materials: ReadonlyArray<MaterialInstance>) => {
+        const boards = materials.filter(
+          (m: MaterialInstance): m is Board => m.type === "board",
+        );
+        if (boards.length !== 6) {
+          throw new Error("Need exactly 6 boards to build a crate");
+        }
+        return {
+          inputs: [],
+          outputs: [
+            makeMaterial<FinishedProduct>({
+              type: "crate",
+              species: boards[0].species,
+            }),
+          ],
+        };
+      },
+    },
   ],
 };

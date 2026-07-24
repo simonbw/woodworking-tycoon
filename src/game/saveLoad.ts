@@ -7,7 +7,7 @@ import { defaultParametersFor } from "./operation-helpers";
 import { defaultEntrancePosition } from "./ShopInfo";
 
 const SAVE_KEY = "woodworking-tycoon-save";
-const SAVE_VERSION = 23; // Increment this when GameState structure changes
+const SAVE_VERSION = 24; // Increment this when GameState structure changes
 
 interface SaveData {
   version: number;
@@ -107,6 +107,11 @@ export function loadGame(): GameState | null {
     if (saveData.version === 22) {
       saveData.gameState = migrateV22toV23(saveData.gameState);
       saveData.version = 23;
+    }
+
+    if (saveData.version === 23) {
+      saveData.gameState = migrateV23toV24(saveData.gameState);
+      saveData.version = 24;
     }
 
     // Check version - if it doesn't match, the save is incompatible
@@ -519,5 +524,29 @@ export function migrateV22toV23(old: any): GameState {
       ...old.progression,
       lumberyardUnlocked: old.reputation >= LUMBERYARD_MIN_REPUTATION,
     },
+  };
+}
+
+/**
+ * v23 → v24: the job board tracks which job templates it has already
+ * offered work for, so newly-gained capabilities get a burst of matching
+ * offers. Seeded with the templates that existed before this version —
+ * the capabilities an old save already had shouldn't burst, while the
+ * templates new in this version announce themselves on the next refresh.
+ */
+export function migrateV23toV24(old: any): GameState {
+  return {
+    ...old,
+    seenJobTemplateIds: [
+      "pallet-boards",
+      "rustic-shelves",
+      "miter-crosscuts",
+      "ripped-slats",
+      "sanded-boards",
+      "planed-stringers",
+      "planter-boxes",
+      "cutting-boards",
+      "picture-frames",
+    ],
   };
 }
