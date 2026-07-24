@@ -45,7 +45,7 @@ machine riding over the player's shoulders.
 ## Weight
 
 `carryMoveBusyTicks`: benchtop machines carry at full walking speed;
-floor machines and worktables weigh `1 + cellsOccupied.length`
+floor machines and worktables weigh `1 + round(footprint sq ft / 4)`
 tick-equivalents, which divide walking speed in `playerWalkSpeed` (same
 penalty pool as deep sawdust and the vac drag — see
 docs/continuous-movement.md), so rearranging heavy benches costs real
@@ -53,8 +53,10 @@ shop time.
 
 ## Crates
 
-Machines enter the world as `GameState.machineCrates` — 1×1, walkable,
-drawn as stenciled boxes (`MachineCrateSprite`):
+Machines enter the world as `GameState.machineCrates` — anchored to one
+cell (drawn bigger than the 1-ft tile, and grabbable from any
+neighboring cell), walkable, drawn as stenciled boxes
+(`MachineCrateSprite`):
 
 - **Store purchases** (`buyMachineAction`) land on the open floor nearest
   the shop entrance (`ShopInfo.entrancePosition`, marked by the

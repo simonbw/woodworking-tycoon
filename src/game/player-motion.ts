@@ -12,21 +12,26 @@ import { Direction, Vector } from "./Vectors";
  * here is pure so it can be unit-tested without PIXI or React.
  */
 
-/** Walking pace on a clean floor, in cells per second. */
-export const BASE_WALK_SPEED = 3.5;
+/** Walking pace on a clean floor, in cells (feet) per second. */
+export const BASE_WALK_SPEED = 9.3;
 
-/** Body radius in cells — small enough to slip down one-cell aisles. */
-export const PLAYER_RADIUS = 0.3;
+/**
+ * Body radius in cells (feet) — just under 10 inches, so a 2-cell gap
+ * between machines is a walkable aisle and a 1-cell gap is not. The body
+ * spans several 1-ft cells; only the cell under its center is the "cell
+ * underfoot" the simulation tracks.
+ */
+export const PLAYER_RADIUS = 0.8;
 
-/** Keeps a resting body from straddling a cell boundary exactly. */
+/** Keeps a resting body from sitting exactly on a solid's face. */
 const EDGE_EPSILON = 1e-4;
 
 /**
  * The player's walking speed right now, in cells per second. The old
  * grid walk charged extra ticks per step (deep sawdust, dragging the
  * vac, a machine over the shoulders); those same penalties now stretch
- * the time a cell takes to cross instead: each extra tick-equivalent
- * divides speed by one more.
+ * the time a stretch of floor takes to cross instead: each extra
+ * tick-equivalent divides speed by one more.
  */
 export function playerWalkSpeed(gameState: GameState): number {
   const carried = gameState.player.carriedMachine;
@@ -57,42 +62,44 @@ export function directionFromInput(
 }
 
 /**
- * How far a blocked cell's solid area sits in from each tile edge, in
- * cells: `left`/`right` from the low-x/high-x edges, `top`/`bottom` from
- * the low-y/high-y edges (screen y grows downward). All zeros — the whole
- * tile is solid — is a wall or a machine with no collision box; a slim
- * machine reports positive insets so the body can walk up to what's
- * actually drawn. Insets are capped below PLAYER_RADIUS (see
- * MAX_COLLISION_INSET in machine-collision.ts) so the body's center can
- * never cross into a blocked cell.
+ * An axis-aligned solid the body cannot enter, in continuous cell
+ * coordinates (cell [x, y] spans x..x+1). Machines contribute their
+ * collision boxes (or their whole occupied tiles when they have none);
+ * the shop walls are handled separately as the world bounds. See
+ * machine-collision.ts.
  */
-export type CellInsets = {
-  readonly left: number;
-  readonly right: number;
-  readonly top: number;
-  readonly bottom: number;
-};
+export interface SolidBox {
+  readonly min: Vector;
+  readonly max: Vector;
+}
 
-/** A cell whose whole tile blocks: walls, and machines without a box. */
-export const SOLID_CELL: CellInsets = { left: 0, right: 0, top: 0, bottom: 0 };
+/** What the body collides with: the shop's floor rectangle and solids. */
+export interface CollisionWorld {
+  /** Shop size in cells; the walls are the rectangle's edges. */
+  readonly size: Vector;
+  readonly solids: ReadonlyArray<SolidBox>;
+}
 
 /**
  * Advance the player's continuous position by one frame: normalize the
- * input, integrate, and slide along anything solid. `obstructionAt` gives
- * a cell's solid area as edge insets, or undefined for open floor (see
- * cellObstruction in machine-collision.ts).
+ * input, integrate, and slide along anything solid.
  *
- * Collision is axis-separated circle-vs-box: each axis moves on its own
- * and clamps against the face of any solid area the body would overlap.
- * Running diagonally into a machine therefore glides along its face
- * instead of sticking — most of what makes walking feel physical.
+ * Collision is axis-separated body-vs-box: each axis moves on its own and
+ * clamps the body's leading edge against any solid whose cross-axis span
+ * it overlaps. Running diagonally into a machine therefore glides along
+ * its face instead of sticking — most of what makes walking feel physical.
+ * The clamp compares the start and end of the whole step, so a long step
+ * (a dropped frame) stops at the face instead of tunneling through. A box
+ * the body already overlaps (a fixture teleport, a machine set down over
+ * the body's margin) never clamps — the body can always walk out, it just
+ * can't press further in.
  */
 export function stepPlayerMotion(
   pos: Vector,
   input: Vector,
   speed: number,
   dt: number,
-  obstructionAt: (cell: Vector) => CellInsets | undefined,
+  world: CollisionWorld,
   radius: number = PLAYER_RADIUS,
 ): Vector {
   let [dx, dy] = input;
@@ -106,89 +113,59 @@ export function stepPlayerMotion(
   }
 
   let [x, y] = pos;
-
-  // Each axis sweeps every cell boundary the leading edge crosses, so a
-  // long step (a dropped frame) clamps at the first solid cell instead
-  // of tunneling through it. A lane only counts when the body actually
-  // overlaps its solid span on the cross axis — pressed flush against a
-  // slim machine, the body edge sits inside the machine's *tile* but not
-  // its box, and must still slide freely along its face.
-  x = sweepAxis(x, dx * speed * dt, radius, (lane, dir) => {
-    let inset: number | undefined;
-    for (const row of cellSpan(y, radius)) {
-      const o = obstructionAt([lane, row]);
-      if (o === undefined) continue;
-      if (y + radius - EDGE_EPSILON <= row + o.top) continue;
-      if (y - radius + EDGE_EPSILON >= row + 1 - o.bottom) continue;
-      const face = dir > 0 ? o.left : o.right;
-      inset = inset === undefined ? face : Math.min(inset, face);
-    }
-    return inset;
-  });
-  y = sweepAxis(y, dy * speed * dt, radius, (lane, dir) => {
-    let inset: number | undefined;
-    for (const col of cellSpan(x, radius)) {
-      const o = obstructionAt([col, lane]);
-      if (o === undefined) continue;
-      if (x + radius - EDGE_EPSILON <= col + o.left) continue;
-      if (x - radius + EDGE_EPSILON >= col + 1 - o.right) continue;
-      const face = dir > 0 ? o.top : o.bottom;
-      inset = inset === undefined ? face : Math.min(inset, face);
-    }
-    return inset;
-  });
-
+  x = sweepAxis(x, y, dx * speed * dt, radius, world, 0);
+  y = sweepAxis(y, x, dy * speed * dt, radius, world, 1);
   return [x, y];
 }
 
 /**
- * Move one coordinate by `step`, stopping the body's leading edge at the
- * first blocked lane (column when sweeping x, row when sweeping y).
- * `laneInset` reports how far the approached face of a lane's solid area
- * sits in from the tile boundary — undefined when the lane is passable at
- * the body's current cross-axis position.
+ * Move one coordinate by `step`, clamping the body's leading edge against
+ * the walls and every solid it would press into. `axis` is the moving
+ * axis (0 = x, 1 = y); `cross` is the body's current position on the
+ * other axis.
  */
 function sweepAxis(
   center: number,
+  cross: number,
   step: number,
   radius: number,
-  laneInset: (lane: number, dir: 1 | -1) => number | undefined,
+  world: CollisionWorld,
+  axis: 0 | 1,
 ): number {
-  if (step === 0) {
-    return center;
-  }
   let next = center + step;
-  if (step > 0) {
-    const first = Math.floor(center + radius + EDGE_EPSILON);
-    const last = Math.floor(next + radius);
-    for (let lane = first; lane <= last; lane++) {
-      const inset = laneInset(lane, 1);
-      if (inset !== undefined) {
-        return Math.min(next, lane + inset - radius - EDGE_EPSILON);
-      }
+
+  // The walls: clamp to the floor rectangle. This also gently pulls in a
+  // body teleported onto the margin (fixtures, loaded saves).
+  const wallMax = world.size[axis] - radius;
+  next = Math.min(Math.max(next, radius), wallMax);
+  if (step === 0) {
+    return next;
+  }
+
+  const crossAxis = (1 - axis) as 0 | 1;
+  for (const solid of world.solids) {
+    // Only solids whose cross-axis span the body actually overlaps can
+    // block this axis — pressed flush alongside a box, the body must
+    // still slide freely along its face.
+    if (
+      cross + radius - EDGE_EPSILON <= solid.min[crossAxis] ||
+      cross - radius + EDGE_EPSILON >= solid.max[crossAxis]
+    ) {
+      continue;
     }
-  } else {
-    const first = Math.floor(center - radius - EDGE_EPSILON);
-    const last = Math.floor(next - radius);
-    for (let lane = first; lane >= last; lane--) {
-      const inset = laneInset(lane, -1);
-      if (inset !== undefined) {
-        return Math.max(next, lane + 1 - inset + radius + EDGE_EPSILON);
+    if (step > 0) {
+      // Clamp only when the step starts outside the box, so a body that
+      // already overlaps one (teleport) can escape but never digs deeper.
+      if (center + radius - EDGE_EPSILON <= solid.min[axis]) {
+        next = Math.min(next, solid.min[axis] - radius - EDGE_EPSILON);
+      }
+    } else {
+      if (center - radius + EDGE_EPSILON >= solid.max[axis]) {
+        next = Math.max(next, solid.max[axis] + radius + EDGE_EPSILON);
       }
     }
   }
   return next;
-}
-
-/** The cell indices a body at `center` with `radius` overlaps on one axis. */
-function cellSpan(center: number, radius: number): number[] {
-  const first = Math.floor(center - radius + EDGE_EPSILON);
-  const last = Math.floor(center + radius - EDGE_EPSILON);
-  const span = [];
-  for (let i = first; i <= last; i++) {
-    span.push(i);
-  }
-  return span;
 }
 
 /** The cell a continuous position stands in. */

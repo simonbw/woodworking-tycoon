@@ -9,12 +9,14 @@ export const GarbageCanSprite: React.FC<{ machine: Machine }> = ({
 }) => {
   const { inputMaterials, processingMaterials, outputMaterials } = machine;
 
+  // The can is centered on its 2×2-ft footprint, whose center sits half a
+  // cell past the origin cell's center.
   return (
-    <pixiContainer>
+    <pixiContainer x={PIXELS_PER_CELL * 0.5} y={PIXELS_PER_CELL * 0.5}>
       <pixiGraphics
         draw={useCallback((g: Graphics) => {
           g.clear();
-          const radius = (PIXELS_PER_CELL * 0.7) / 2;
+          const radius = PIXELS_PER_CELL * 0.93;
 
           // Drop shadow offset toward the lower right
           g.circle(radius * 0.08, radius * 0.1, radius);

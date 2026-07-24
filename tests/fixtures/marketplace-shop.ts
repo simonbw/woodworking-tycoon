@@ -49,9 +49,9 @@ export const marketplaceShop: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: [2, 5],
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: [6, 15],
   },
   progression: {
     tutorialStage: 2,

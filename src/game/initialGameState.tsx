@@ -21,7 +21,7 @@ export const initialGameState: GameState = {
   materialPiles: [
     {
       material: makePallet(),
-      position: [2, 4], // Positioned for easy access to workspace
+      position: [2, 5], // Positioned for easy access to workspace
     },
   ],
   // No starter kit: supplies come from the store, or back out of salvage
@@ -29,8 +29,8 @@ export const initialGameState: GameState = {
   consumables: NO_CONSUMABLES,
   player: {
     name: "Player",
-    position: [0, 0],
-    direction: 0,
+    position: [6, 12],
+    direction: 1,
     inventory: [],
     workQueue: [],
     canWork: true,
@@ -39,9 +39,10 @@ export const initialGameState: GameState = {
   },
   machines: [
     // Single workspace for tutorial, with the starter hammer mounted
-    machine("workspace", [1, 2], 0, ["hammer"]),
-    // Garbage can for disposing unwanted materials
-    machine("garbageCan", [0, 5], 0),
+    // (3×2 ft, against the back wall with its front apron open)
+    machine("workspace", [2, 2], 0, ["hammer"]),
+    // Garbage can for disposing unwanted materials (2×2 ft, in a corner)
+    machine("garbageCan", [0, 13], 0),
   ],
   machineCrates: [],
   storage: {
@@ -51,9 +52,10 @@ export const initialGameState: GameState = {
   shopInfo: {
     name: "One Car Garage",
     electricity: 120,
-    size: [4, 6],
-    materialDropoffPosition: [3, 5],
-    entrancePosition: defaultEntrancePosition([4, 6]),
+    // 12' × 16', in 1-ft cells
+    size: [12, 16],
+    materialDropoffPosition: [10, 13],
+    entrancePosition: defaultEntrancePosition([12, 16]),
   },
   progression: {
     tutorialStage: 0,

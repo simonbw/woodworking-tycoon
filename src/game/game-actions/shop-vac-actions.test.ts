@@ -119,11 +119,12 @@ describe("shopVacTickPass", () => {
   });
 
   it("dumps the canister next to the garbage can", () => {
-    // The garbage can sits at [0,5]; standing at [0,4] is adjacent
+    // The garbage can occupies [0..1, 13..14]; standing at [0,12] is
+    // adjacent to its top edge
     const result = shopVacTickPass()(
       draggingState({
         shopVac: { position: null, canister: { walnut: 123 } },
-        player: { ...initialGameState.player, position: [0, 4], direction: 0 },
+        player: { ...initialGameState.player, position: [0, 12], direction: 0 },
       }),
     );
     assert.deepStrictEqual(result.shopVac?.canister, {});

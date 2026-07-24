@@ -1,31 +1,22 @@
-import { CellInfo } from "./CellMap";
 import { Machine } from "./Machine";
-import { CellInsets, SOLID_CELL } from "./player-motion";
+import { SolidBox } from "./player-motion";
 import { rotateVec, Vector } from "./Vectors";
 
 /**
- * Turns machines' collision boxes (MachineType.collisionBox) into the
- * per-cell edge insets the movement sweep collides against. Boxes live in
- * the machine's local frame; here they're rotated with the machine and
- * clipped to each occupied cell.
+ * Turns placed machines into the world-space solid boxes the movement
+ * sweep collides against (see stepPlayerMotion). A machine with a
+ * collision box (MachineType.collisionBox — measured from its sprite art
+ * or hand-set) blocks exactly that box, rotated with the placement; a
+ * machine without one blocks its whole occupied tiles. Placement,
+ * targeting, and attendance still work on whole cells — only the walking
+ * body sees these boxes.
  */
-
-/**
- * The most a machine's solid area may sit in from a tile edge. Strictly
- * below PLAYER_RADIUS so the player's center can never cross into an
- * occupied cell no matter how slim the art: GameState's cell-underfoot
- * bookkeeping (targeting, attendance, the inspector) never sees the player
- * standing "in" a machine. Enforced in machine-collision.test.ts.
- */
-export const MAX_COLLISION_INSET = 0.25;
 
 /**
  * A placed machine's collision box in world cell coordinates (cell [x, y]
  * spans x..x+1), or null when the type has none and its whole tiles block.
  */
-export function machineWorldBox(
-  machine: Machine,
-): { min: Vector; max: Vector } | null {
+export function machineWorldBox(machine: Machine): SolidBox | null {
   const box = machine.type.collisionBox;
   if (box === undefined) {
     return null;
@@ -39,55 +30,22 @@ export function machineWorldBox(
   };
 }
 
-const clampInset = (inset: number) =>
-  Math.min(Math.max(inset, 0), MAX_COLLISION_INSET);
-
-/** The machine's solid area clipped to one occupied cell, as edge insets. */
-export function machineCellInsets(
-  machine: Machine,
-  [x, y]: Vector,
-): CellInsets {
+/** The solid boxes one machine contributes: its collision box, or one
+ * full box per occupied tile when it has none. */
+export function machineSolids(machine: Machine): SolidBox[] {
   const box = machineWorldBox(machine);
-  if (box === null) {
-    return SOLID_CELL;
+  if (box !== null) {
+    return [box];
   }
-  return {
-    left: clampInset(box.min[0] - x),
-    right: clampInset(x + 1 - box.max[0]),
-    top: clampInset(box.min[1] - y),
-    bottom: clampInset(y + 1 - box.max[1]),
-  };
+  return machine.type.cellsOccupied.map((cell) => {
+    const [x, y] = machine.localToShop(cell);
+    return { min: [x, y] as Vector, max: [x + 1, y + 1] as Vector };
+  });
 }
 
-/** The tighter (more solid) of two obstructions, side by side. */
-function combineInsets(a: CellInsets, b: CellInsets): CellInsets {
-  return {
-    left: Math.min(a.left, b.left),
-    right: Math.min(a.right, b.right),
-    top: Math.min(a.top, b.top),
-    bottom: Math.min(a.bottom, b.bottom),
-  };
-}
-
-/**
- * What blocks walking at one cell: undefined for open floor, edge insets
- * otherwise. Off the floor entirely is solid wall; a machine blocks its
- * collision box; a benchtop machine mounted on a worktable contributes the
- * table's box too (the table is still under it).
- */
-export function cellObstruction(
-  info: CellInfo | undefined,
-  cell: Vector,
-): CellInsets | undefined {
-  if (info === undefined) {
-    return SOLID_CELL;
-  }
-  if (info.machine === undefined) {
-    return undefined;
-  }
-  let insets = machineCellInsets(info.machine, cell);
-  if (info.tableMachine !== undefined) {
-    insets = combineInsets(insets, machineCellInsets(info.tableMachine, cell));
-  }
-  return insets;
+/** Everything solid on the shop floor. A benchtop machine mounted on a
+ * worktable contributes its own box and the table contributes its tiles —
+ * overlapping solids just block twice, which is fine. */
+export function shopSolids(machines: ReadonlyArray<Machine>): SolidBox[] {
+  return machines.flatMap(machineSolids);
 }

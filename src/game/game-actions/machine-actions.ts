@@ -8,6 +8,7 @@ import {
   MachineType,
 } from "../Machine";
 import {
+  chebyshevDistance,
   Direction,
   rotateVec,
   scaleVec,
@@ -220,10 +221,13 @@ export function deliverMachineCrate(
 /**
  * Per-step busy ticks while lugging a machine. Benchtop machines tuck
  * under an arm; floor machines and benches are a slow shuffle that gets
- * slower the bigger the footprint.
+ * slower the bigger the footprint (measured in square feet — cells are
+ * 1 sq ft each).
  */
 export function carryMoveBusyTicks(machineType: MachineType): number {
-  return machineType.benchtop ? 0 : 1 + machineType.cellsOccupied.length;
+  return machineType.benchtop
+    ? 0
+    : 1 + Math.max(1, Math.round(machineType.cellsOccupied.length / 4));
 }
 
 /** The player's hands are genuinely free: no machine, no boards, no vac. */
@@ -280,11 +284,13 @@ export function pickUpMachineAction(machineState: MachineState): GameAction {
   };
 }
 
-/** Unpacks the crate underfoot straight into the player's arms. */
+/** Unpacks the crate at hand (underfoot or a neighboring cell — the body
+ * is bigger than a 1-ft cell) straight into the player's arms. */
 export function pickUpCrateAction(): GameAction {
   return (gameState) => {
-    const crate = gameState.machineCrates.find((candidate) =>
-      vectorEquals(candidate.position, gameState.player.position),
+    const crate = gameState.machineCrates.find(
+      (candidate) =>
+        chebyshevDistance(candidate.position, gameState.player.position) <= 1,
     );
     if (!crate || !handsFree(gameState)) {
       console.warn("No crate underfoot, or hands are full");

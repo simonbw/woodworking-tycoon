@@ -11,7 +11,7 @@ import { GLUE_CURE_TICKS } from "../machines/workspace";
 import { tickAction } from "./tickAction";
 
 /** The fixture workspace sits at [1,2] rotation 0 — its operation cell. */
-const WORKSPACE_OPERATION_CELL: [number, number] = [1, 3];
+const WORKSPACE_OPERATION_CELL: [number, number] = [1, 4];
 
 function workspaceMachine(overrides: Partial<MachineState>): MachineState {
   return {
@@ -340,9 +340,10 @@ describe("tickAction operation phases", () => {
 
 describe("tickAction dust emission", () => {
   /**
-   * A planer at [1,1] (operation cell [1,2]) mid-way through planing
-   * walnut. The 5"-wide board is exactly the cut-load reference, so the
-   * dust numbers below read straight off dustOutput.
+   * A planer at [1,1] (footprint [1..2, 0..2], operation cell [1,3])
+   * mid-way through planing walnut. The 5"-wide board is exactly the
+   * cut-load reference, so the dust numbers below read straight off
+   * dustOutput.
    */
   function planingStateWith(
     overrides: Partial<GameState> = {},
@@ -367,7 +368,7 @@ describe("tickAction dust emission", () => {
     };
     return stateWith({
       machines: [planer],
-      player: { ...initialGameState.player, position: [1, 2] },
+      player: { ...initialGameState.player, position: [1, 3] },
       ...overrides,
     });
   }
@@ -375,11 +376,12 @@ describe("tickAction dust emission", () => {
   it("lands species-tagged dust around the machine while it cuts", () => {
     const result = tickAction(planingStateWith());
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 4);
-    // The planer's dustOutput (4/tick): 70% split over the two core cells
-    // (machine + operation position), 30% over the six ring cells
-    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 1.4) < 1e-9);
-    assert.ok(Math.abs(cellDust(result.dust, [1, 2]) - 1.4) < 1e-9);
-    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.2) < 1e-9);
+    // The planer's dustOutput (4/tick): 70% split over the seven core
+    // cells (six footprint cells + operation position), 30% over the
+    // eleven ring cells
+    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.4) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [1, 3]) - 0.4) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [0, 1]) - 1.2 / 11) < 1e-9);
     assert.ok((result.dust["1,1"].walnut ?? 0) > 0);
   });
 
@@ -402,7 +404,7 @@ describe("tickAction dust emission", () => {
     for (let i = 0; i < 5; i++) {
       state = tickAction(state);
     }
-    assert.ok(Math.abs(cellDust(state.dust, [1, 1]) - 7) < 1e-9);
+    assert.ok(Math.abs(cellDust(state.dust, [1, 1]) - 2) < 1e-9);
   });
 
   it("power feed keeps cutting (and shedding dust) with the player away", () => {
@@ -476,9 +478,9 @@ describe("tickAction dust emission", () => {
     };
     const result = tickAction(withBag);
     // Planer emits 4/tick bare; the bag captures 60%, so 1.6 lands —
-    // 70% split over the two core cells
-    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.56) < 1e-9);
-    assert.ok(Math.abs(cellDust(result.dust, [2, 1]) - 0.08) < 1e-9);
+    // 70% split over the seven core cells, 30% over the eleven ring cells
+    assert.ok(Math.abs(cellDust(result.dust, [1, 1]) - 0.16) < 1e-9);
+    assert.ok(Math.abs(cellDust(result.dust, [0, 1]) - 0.48 / 11) < 1e-9);
   });
 
   it("unlocks sweeping once the floor crosses the dust threshold", () => {

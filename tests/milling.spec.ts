@@ -146,7 +146,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await waitForBoard(page, "b.jointedFaces === 1");
       // Finished stock lands at the outfeed side — collect it there
       // (Shift+E takes everything within reach)
-      await movePlayerTo(page, [1, 0]);
+      await movePlayerTo(page, [2, 0]);
       await takeAllHere(page);
       // One flat face and the label says so
       await expect(
@@ -157,18 +157,18 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       ).toBeVisible();
       // Back around to the infeed; feeding the same board again is now an
       // edge pass — the flat face rides the fence
-      await movePlayerTo(page, [1, 2]);
+      await movePlayerTo(page, [2, 4]);
       await openStationSheet(page);
       await machineCard(page, "Jointer")
         .getByRole("button", { name: "Feed" })
         .click();
       await waitForBoard(page, "b.jointedFaces === 1 && b.jointedEdges === 1");
-      await movePlayerTo(page, [1, 0]);
+      await movePlayerTo(page, [2, 0]);
       await takeAllHere(page);
     });
 
     await test.step("table saw: an edge-jointed board rips against the fence", async () => {
-      await movePlayerTo(page, [1, 5]);
+      await movePlayerTo(page, [3, 11]);
       // P flips the switch on the machine the player is standing at
       await page.keyboard.press("p");
       await openStationSheet(page);
@@ -180,12 +180,12 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .click();
       // The kept piece has both edges straight; the offcut keeps one
       await waitForBoard(page, "b.width === 4 && b.jointedEdges === 2");
-      await movePlayerTo(page, [1, 3]);
+      await movePlayerTo(page, [3, 7]);
       await takeAllHere(page);
     });
 
     await test.step("planer: no load step — stock feeds straight from the hands", async () => {
-      await movePlayerTo(page, [3, 2]);
+      await movePlayerTo(page, [6, 4]);
       // No input bay: the inventory offers no load button for the planer
       await expect(page.getByRole("button", { name: "→ Planer" })).toHaveCount(
         0,
@@ -217,7 +217,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         page,
         "b.jointedFaces === 2 && b.jointedEdges === 2 && b.thickness === 4 && b.surface === 'smooth'",
       );
-      await movePlayerTo(page, [3, 0]);
+      await movePlayerTo(page, [6, 0]);
       await takeAllHere(page);
       // The inventory names the finished state
       await expect(
@@ -229,7 +229,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
     });
 
     await test.step("planer: a full-depth pass takes exactly one detent off", async () => {
-      await movePlayerTo(page, [3, 2]);
+      await movePlayerTo(page, [6, 4]);
       // One detent under the 4/4 stock: a full bite. The first carried
       // piece this setting can take is the 2"-wide rip offcut.
       await setParameter(page, "Planer", "Cut Height", "3/4");
@@ -240,7 +240,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         page,
         "b.width === 2 && b.thickness === 3 && b.surface === 'smooth'",
       );
-      await movePlayerTo(page, [3, 0]);
+      await movePlayerTo(page, [6, 0]);
       await takeAllHere(page);
       await expect(
         page
@@ -252,10 +252,10 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
 
     await test.step("straight-line sled: a rough board rides the sled, not the fence", async () => {
       // Fetch the spare rough board parked by the jointer at the start
-      await movePlayerTo(page, [1, 2]);
+      await movePlayerTo(page, [2, 4]);
       await page.getByRole("button", { name: "Pick Up" }).click();
       await page.waitForTimeout(200);
-      await movePlayerTo(page, [1, 5]);
+      await movePlayerTo(page, [3, 11]);
       // No mode: a rough edge can't ride the fence, so feeding this board
       // runs the mounted straight-line sled
       await openStationSheet(page);

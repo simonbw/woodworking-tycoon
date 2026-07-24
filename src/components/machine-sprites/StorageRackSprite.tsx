@@ -35,7 +35,7 @@ export const StorageRackSprite: React.FC<{ machine: Machine }> = ({
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
-      const half = PIXELS_PER_CELL * 0.42;
+      const half = PIXELS_PER_CELL * 0.94;
       const size = half * 2;
       const rng = seededRandom("storage-rack");
 
@@ -44,7 +44,7 @@ export const StorageRackSprite: React.FC<{ machine: Machine }> = ({
       g.fill({ color: 0x000000, alpha: 0.18 });
 
       // Corner posts peeking out from under the deck
-      const post = PIXELS_PER_CELL * 0.14;
+      const post = PIXELS_PER_CELL * 0.31;
       for (const [px, py] of [
         [-half + 1, -half + 1],
         [half - post - 1, -half + 1],
@@ -94,5 +94,10 @@ export const StorageRackSprite: React.FC<{ machine: Machine }> = ({
     [stored],
   );
 
-  return <pixiGraphics draw={draw} />;
+  // Centered on the 2×2-ft footprint, half a cell past the origin center.
+  return (
+    <pixiContainer x={PIXELS_PER_CELL * 0.5} y={PIXELS_PER_CELL * 0.5}>
+      <pixiGraphics draw={draw} />
+    </pixiContainer>
+  );
 };

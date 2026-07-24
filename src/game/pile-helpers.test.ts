@@ -20,22 +20,23 @@ function boardPile(length: number, position: [number, number]): MaterialPile {
 }
 
 describe("pileFootprint", () => {
-  it("keeps short stock to its anchor cell", () => {
-    assert.deepStrictEqual(pileFootprint(boardPile(2, [3, 3])), [[3, 3]]);
-    assert.deepStrictEqual(pileFootprint(boardPile(4, [3, 3])), [[3, 3]]);
+  it("keeps foot-long stock to its anchor cell", () => {
+    assert.deepStrictEqual(pileFootprint(boardPile(1, [3, 3])), [[3, 3]]);
   });
 
-  it("extends long boards one cell each way along their length", () => {
-    assert.deepStrictEqual(pileFootprint(boardPile(6, [3, 3])), [
+  it("extends boards a cell per foot along their length", () => {
+    // Cells are a foot square, so a 2' board centered on its anchor
+    // reaches half a foot into each neighbor…
+    assert.deepStrictEqual(pileFootprint(boardPile(2, [3, 3])), [
       [3, 2],
       [3, 3],
       [3, 4],
     ]);
-    assert.deepStrictEqual(pileFootprint(boardPile(8, [3, 3])), [
-      [3, 2],
-      [3, 3],
-      [3, 4],
-    ]);
+    // …and an 8' board spans nine cells.
+    assert.deepStrictEqual(
+      pileFootprint(boardPile(8, [3, 5])),
+      [1, 2, 3, 4, 5, 6, 7, 8, 9].map((y) => [3, y]),
+    );
   });
 
   it("uses only the anchor cell for materials without a length", () => {
@@ -66,11 +67,12 @@ describe("pileFootprint", () => {
 
 describe("pileCoversCell", () => {
   it("accepts any overlapped cell and rejects the rest", () => {
-    const pile = boardPile(8, [3, 3]);
-    assert.ok(pileCoversCell(pile, [3, 3]));
-    assert.ok(pileCoversCell(pile, [3, 2]));
-    assert.ok(pileCoversCell(pile, [3, 4]));
-    assert.ok(!pileCoversCell(pile, [3, 5]));
-    assert.ok(!pileCoversCell(pile, [2, 3]));
+    const pile = boardPile(8, [3, 5]);
+    assert.ok(pileCoversCell(pile, [3, 5]));
+    assert.ok(pileCoversCell(pile, [3, 1]));
+    assert.ok(pileCoversCell(pile, [3, 9]));
+    assert.ok(!pileCoversCell(pile, [3, 0]));
+    assert.ok(!pileCoversCell(pile, [3, 10]));
+    assert.ok(!pileCoversCell(pile, [2, 5]));
   });
 });

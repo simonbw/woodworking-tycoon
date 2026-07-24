@@ -44,6 +44,11 @@ export function vectorEquals(a: Vector, b: Vector): boolean {
   return a[0] === b[0] && a[1] === b[1];
 }
 
+/** Chessboard distance in cells — 0 is the same cell, 1 is any neighbor. */
+export function chebyshevDistance(a: Vector, b: Vector): number {
+  return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
+}
+
 export function localToGlobal(
   origin: Vector,
   local: Vector,
