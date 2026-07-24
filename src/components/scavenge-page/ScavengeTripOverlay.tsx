@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { SCAVENGE_DURATION_TICKS } from "../../game/game-actions/scavenge-actions";
 import { ScavengingTrip } from "../../game/Person";
 import { classNames } from "../../utils/classNames";
+import { TripOverlay } from "../trip/TripOverlay";
 import { useGameState } from "../useGameState";
 import {
   buildScavengeLog,
@@ -50,12 +51,12 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip; tick: number }> = ({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex flex-col gap-6 overflow-hidden bg-workshop-bg p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Out scavenging"
-      data-testid="scavenge-trip"
+    // No Head Home handler: there's no way home but the clock, so this
+    // trip claims no keys.
+    <TripOverlay
+      label="Out scavenging"
+      className="gap-6"
+      testId="scavenge-trip"
     >
       <header className="flex items-baseline justify-between">
         <h1 className="section-heading">Out scavenging for pallets</h1>
@@ -70,7 +71,7 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip; tick: number }> = ({
         <NeighborhoodMap progress={progress} foundStops={foundStops} />
         <LogSheet entries={visibleEntries} />
       </div>
-    </div>
+    </TripOverlay>
   );
 };
 

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { TICKS_PER_DAY } from "../../game/time";
 import { classNames } from "../../utils/classNames";
-import { useModalScope, useShortcut } from "../shortcuts/ShortcutProvider";
+import { Modal } from "../Modal";
+import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useGameState } from "../useGameState";
 import { JobBoardSection } from "./JobBoardSection";
 import { ListingsSection } from "./ListingsSection";
@@ -15,47 +16,38 @@ type PhoneTab = "sell" | "jobs";
  * player's listings and a Job Board tab for one-off offers.
  */
 export const PhoneModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  useModalScope();
-  useShortcut("close-modal", onClose);
+  // The phone's own key (P) also puts it away; Escape comes with the shell.
   useShortcut("close-phone", onClose);
 
   const [tab, setTab] = useState<PhoneTab>("sell");
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-black/60 p-4"
-      onClick={onClose}
-      role="presentation"
+    <Modal
+      onClose={onClose}
+      label="Phone"
+      // The handset
+      panelClassName="relative flex h-[min(85vh,52rem)] w-[26rem] max-w-full flex-col rounded-[2.25rem] border border-black bg-zinc-900 p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
     >
-      {/* The handset */}
-      <div
-        className="relative flex h-[min(85vh,52rem)] w-[26rem] max-w-full flex-col rounded-[2.25rem] border border-black bg-zinc-900 p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Phone"
-      >
-        {/* The screen */}
-        <div className="flex min-h-0 grow flex-col overflow-hidden rounded-[1.75rem] bg-paper-ivory text-ink-black">
-          <StatusBar />
-          <SiteHeader />
-          <TabSwitcher tab={tab} onSelect={setTab} />
-          <div className="min-h-0 grow overflow-y-auto px-4 py-3">
-            {tab === "sell" ? <ListingsSection /> : <JobBoardSection />}
-          </div>
+      {/* The screen */}
+      <div className="flex min-h-0 grow flex-col overflow-hidden rounded-[1.75rem] bg-paper-ivory text-ink-black">
+        <StatusBar />
+        <SiteHeader />
+        <TabSwitcher tab={tab} onSelect={setTab} />
+        <div className="min-h-0 grow overflow-y-auto px-4 py-3">
+          {tab === "sell" ? <ListingsSection /> : <JobBoardSection />}
         </div>
-        {/* Home indicator */}
-        <div className="mx-auto mt-2 h-1 w-24 shrink-0 rounded-full bg-zinc-600" />
-        <button
-          className="absolute -right-2 -top-2 z-10 h-7 w-7 rounded-full border border-black bg-zinc-800 font-mono text-sm leading-none text-zinc-300 shadow hover:bg-zinc-700"
-          onClick={onClose}
-          aria-label="Put phone away"
-          data-sfx="ui-back"
-        >
-          ×
-        </button>
       </div>
-    </div>
+      {/* Home indicator */}
+      <div className="mx-auto mt-2 h-1 w-24 shrink-0 rounded-full bg-zinc-600" />
+      <button
+        className="absolute -right-2 -top-2 z-10 h-7 w-7 rounded-full border border-black bg-zinc-800 font-mono text-sm leading-none text-zinc-300 shadow hover:bg-zinc-700"
+        onClick={onClose}
+        aria-label="Put phone away"
+        data-sfx="ui-back"
+      >
+        ×
+      </button>
+    </Modal>
   );
 };
 

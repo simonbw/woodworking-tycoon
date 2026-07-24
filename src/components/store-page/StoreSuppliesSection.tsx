@@ -3,6 +3,7 @@ import { CONSUMABLE_TYPES, ConsumableId } from "../../game/Consumable";
 import { buyConsumablePackAction } from "../../game/game-actions/store-actions";
 import { ConsumableIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { BuyButton } from "./BuyButton";
 
 export const StoreSuppliesSection: React.FC = () => {
   return (
@@ -51,13 +52,12 @@ const ConsumablePackCard: React.FC<{ consumableId: ConsumableId }> = ({
         <span className="price-tag tabular-nums">
           ${type.packPrice.toFixed(2)}
         </span>
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+        <BuyButton
           disabled={!canAfford}
           onClick={() => applyAction(buyConsumablePackAction(consumableId))}
         >
           Buy
-        </button>
+        </BuyButton>
       </div>
     </li>
   );

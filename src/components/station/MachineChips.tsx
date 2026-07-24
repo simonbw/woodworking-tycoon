@@ -13,7 +13,8 @@ import {
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 import { availableOperations } from "../../game/skill-helpers";
-import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
+import { HintList } from "../shortcuts/HintList";
+import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
@@ -107,70 +108,67 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   ) : null;
 
   return (
-    <HintSurfaceContext.Provider value="chrome">
-      <ul className="flex flex-col items-center gap-0.5 rounded bg-ink-black/70 px-2 py-1 text-center font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
-        <li className="text-paper-manila/60">
-          {machine.type.name}
-          {status && <> · {status}</>}
+    <HintList>
+      <li className="text-paper-manila/60">
+        {machine.type.name}
+        {status && <> · {status}</>}
+      </li>
+      {interactHere && (
+        <li>
+          <ShortcutKeys shortcut="pick-up" /> {interactLabel(interactHere)}
         </li>
-        {interactHere && (
-          <li>
-            <ShortcutKeys shortcut="pick-up" /> {interactLabel(interactHere)}
-          </li>
-        )}
-        {canFeed && (
-          <li>
-            <ShortcutKeys shortcut="put-down" />{" "}
-            {(machine.type.feedVerb ?? "Feed").toLowerCase()}
-          </li>
-        )}
-        {canLoad && (
-          <li>
-            <ShortcutKeys shortcut="put-down" /> load
-          </li>
-        )}
-        {canOperate && !isOperating && (
-          <li>
-            <ShortcutKeys shortcut="operate-machine" />{" "}
-            {selectedOperation ? selectedOperation.name.toLowerCase() : "work"}
-          </li>
-        )}
-        {refusal && (
-          <li className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
-            {refusal}
-          </li>
-        )}
-        {firstSetting && isTargeted(machine) && (
-          <li>
-            <ShortcutKeys shortcut="cycle-parameter" />{" "}
-            {firstSetting.name.toLowerCase()}:{" "}
-            <span className="font-mono normal-case">
-              {typeof settingValue === "number"
-                ? `${settingValue}${firstSetting.unit ?? '"'}`
-                : String(settingValue)}
-            </span>
-          </li>
-        )}
-        {isTargeted(machine) && (
-          <li className="text-paper-manila/70">
-            <ShortcutKeys shortcut="open-station-sheet" />{" "}
-            {isBenchLike ? "plans & tools" : "controls"}
-          </li>
-        )}
-        {machines.length > 1 && (
-          <li className="text-paper-manila/70">
-            <ShortcutKeys shortcut="cycle-machine" /> next machine (
-            {machines.length} here)
-          </li>
-        )}
-        {liftable && (
-          <li className="text-paper-manila/70">
-            <ShortcutKeys shortcut="carry-machine" /> pick up{" "}
-            {machine.type.name}
-          </li>
-        )}
-      </ul>
-    </HintSurfaceContext.Provider>
+      )}
+      {canFeed && (
+        <li>
+          <ShortcutKeys shortcut="put-down" />{" "}
+          {(machine.type.feedVerb ?? "Feed").toLowerCase()}
+        </li>
+      )}
+      {canLoad && (
+        <li>
+          <ShortcutKeys shortcut="put-down" /> load
+        </li>
+      )}
+      {canOperate && !isOperating && (
+        <li>
+          <ShortcutKeys shortcut="operate-machine" />{" "}
+          {selectedOperation ? selectedOperation.name.toLowerCase() : "work"}
+        </li>
+      )}
+      {refusal && (
+        <li className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
+          {refusal}
+        </li>
+      )}
+      {firstSetting && isTargeted(machine) && (
+        <li>
+          <ShortcutKeys shortcut="cycle-parameter" />{" "}
+          {firstSetting.name.toLowerCase()}:{" "}
+          <span className="font-mono normal-case">
+            {typeof settingValue === "number"
+              ? `${settingValue}${firstSetting.unit ?? '"'}`
+              : String(settingValue)}
+          </span>
+        </li>
+      )}
+      {isTargeted(machine) && (
+        <li className="text-paper-manila/70">
+          <ShortcutKeys shortcut="open-station-sheet" />{" "}
+          {isBenchLike ? "plans & tools" : "controls"}
+        </li>
+      )}
+      {machines.length > 1 && (
+        <li className="text-paper-manila/70">
+          <ShortcutKeys shortcut="cycle-machine" /> next machine (
+          {machines.length} here)
+        </li>
+      )}
+      {liftable && (
+        <li className="text-paper-manila/70">
+          <ShortcutKeys shortcut="carry-machine" /> pick up {machine.type.name}
+        </li>
+      )}
+    </HintList>
   );
 };
 
@@ -194,13 +192,11 @@ function firstParameter(
  * offered while the player stands at its outfeed cell.
  */
 export const OutfeedChips: React.FC<{ machine: Machine }> = ({ machine }) => (
-  <HintSurfaceContext.Provider value="chrome">
-    <ul className="flex flex-col items-center gap-0.5 rounded bg-ink-black/70 px-2 py-1 text-center font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
-      <li className="text-paper-manila/60">{machine.type.name} · outfeed</li>
-      <li>
-        <ShortcutKeys shortcut="pick-up" /> take (
-        {machine.outputMaterials.length})
-      </li>
-    </ul>
-  </HintSurfaceContext.Provider>
+  <HintList>
+    <li className="text-paper-manila/60">{machine.type.name} · outfeed</li>
+    <li>
+      <ShortcutKeys shortcut="pick-up" /> take ({machine.outputMaterials.length}
+      )
+    </li>
+  </HintList>
 );

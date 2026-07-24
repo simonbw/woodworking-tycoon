@@ -10,7 +10,8 @@ import { isAtShopDoor } from "../../game/ShopInfo";
 import { resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
-import { HintSurfaceContext, Kbd, ShortcutKeys } from "../shortcuts/Kbd";
+import { HintList } from "../shortcuts/HintList";
+import { Kbd, ShortcutKeys } from "../shortcuts/Kbd";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { Tooltip } from "../Tooltip";
@@ -119,14 +120,12 @@ export const DoorPrompt: React.FC<{
           transform: "translate(-50%, -100%)",
         }}
       >
-        <HintSurfaceContext.Provider value="chrome">
-          <ul className="flex flex-col items-center gap-0.5 rounded bg-ink-black/70 px-2 py-1 text-center font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
-            <li className="text-paper-manila/60">Garage door</li>
-            <li>
-              <ShortcutKeys shortcut="pick-up" /> head out
-            </li>
-          </ul>
-        </HintSurfaceContext.Provider>
+        <HintList>
+          <li className="text-paper-manila/60">Garage door</li>
+          <li>
+            <ShortcutKeys shortcut="pick-up" /> head out
+          </li>
+        </HintList>
       </div>
     );
   }
