@@ -194,13 +194,33 @@ test.describe("Marketplace", () => {
         .getByRole("button", { name: "Go" })
         .click({ force: true });
       await page.waitForTimeout(300);
+
+      // The trip covers the screen with a travel log: a route map and
+      // field notes that fill in as the trip progresses
+      await expect(page.getByTestId("scavenge-trip")).toBeVisible();
       await expect(page.getByText(/Out scavenging/)).toBeVisible();
+      await expect(page.getByTestId("scavenge-log")).toContainText(
+        /Headed out/,
+      );
 
       const pilesBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().materialPiles.length,
       );
 
-      // Fast-forward to just before the return tick instead of waiting 30s
+      // Fast-forward most of the trip: every stop has been visited, so the
+      // log now records the haul (always at least one pallet)
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          tick: state.player.away.returnTick - 25,
+        }));
+      });
+      await expect(page.getByTestId("scavenge-log")).toContainText(/score!/);
+      await expect(page.getByTestId("scavenge-log")).toContainText(
+        /heading home/,
+      );
+
+      // Fast-forward to the return tick instead of waiting 30s
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
