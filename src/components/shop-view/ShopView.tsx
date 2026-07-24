@@ -1,5 +1,5 @@
-import { Application } from "@pixi/react";
-import React, { useLayoutEffect, useRef, useState } from "react";
+import { Application, useApplication } from "@pixi/react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../../game/CellMap";
 import { useTexture } from "../../utils/useTexture";
 import {
@@ -32,6 +32,24 @@ import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
 import { cellToPixel, cellToPixelVec } from "./shop-scale";
+
+/**
+ * Application's width/height props only apply at renderer init — this
+ * follows them afterwards, so the canvas tracks the fit-to-column scale
+ * (the wrapper and the world container already do).
+ */
+const RendererSize: React.FC<{ width: number; height: number }> = ({
+  width,
+  height,
+}) => {
+  const { app } = useApplication();
+  useEffect(() => {
+    if (app?.renderer && (app.renderer.width !== width || app.renderer.height !== height)) {
+      app.renderer.resize(width, height);
+    }
+  }, [app, width, height]);
+  return null;
+};
 
 export const ShopView: React.FC = () => {
   const gameState = useGameState();
@@ -121,6 +139,7 @@ export const ShopView: React.FC = () => {
           <gameStateContext.Provider
             value={{ gameState, updateGameState, saveGame, quitToMenu }}
           >
+            <RendererSize width={scaledWidth} height={scaledHeight} />
             <pixiContainer scale={scale}>
           <pixiTilingSprite
             eventMode="static"

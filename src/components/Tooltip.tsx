@@ -122,9 +122,11 @@ export const Tooltip: React.FC<TooltipProps> = ({
             style={floatingStyles}
             {...getFloatingProps()}
             className={
-              "z-50 max-w-xs rounded-sm border border-paper-manila-edge " +
-              "bg-paper-ivory px-2 py-1 text-xs leading-snug " +
-              "text-ink-black shadow-lg" +
+              // pointer-events-none: a hover hint must never swallow the
+              // click aimed at whatever sits under or beside it
+              "pointer-events-none z-50 max-w-xs rounded-sm border " +
+              "border-paper-manila-edge bg-paper-ivory px-2 py-1 text-xs " +
+              "leading-snug text-ink-black shadow-lg" +
               (className ? " " + className : "")
             }
           >
