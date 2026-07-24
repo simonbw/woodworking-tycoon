@@ -82,7 +82,6 @@ export const endGrainShop: GameState = {
       palletBoard("test-runner-2"),
     ],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

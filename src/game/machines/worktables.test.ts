@@ -6,7 +6,7 @@ import { GameState } from "../GameState";
 import {
   Machine,
   MACHINE_TYPES,
-  MachineOperation,
+  Operation,
   MachineState,
 } from "../Machine";
 import { initialGameState } from "../initialGameState";
@@ -68,7 +68,7 @@ function plywoodSheet(): SheetGood {
 describe("worktable build recipes", () => {
   const buildSmall = workspace.operations.find(
     (op) => op.id === "build-worktable1x1",
-  ) as MachineOperation;
+  ) as Operation;
 
   it("every bench station carries all four build recipes", () => {
     for (const stationType of [workspace, worktable1x1]) {
@@ -87,7 +87,7 @@ describe("worktable build recipes", () => {
   });
 
   it("outputs the table as a machine, not a material", () => {
-    const result = buildSmall.output([]);
+    const result = buildSmall.output([], {});
     assert.deepStrictEqual(result.outputs, []);
     assert.deepStrictEqual(result.machineOutputs, ["worktable1x1"]);
   });
@@ -138,7 +138,7 @@ describe("worktable stats", () => {
   it("work speed shortens attended phases but never the glue cure", () => {
     const glueUp = workspace.operations.find(
       (op) => op.id === "glueUpPanel",
-    ) as MachineOperation;
+    ) as Operation;
     const baseline = getOperationPhases(glueUp, initialGameState.progression);
     const atTable = getOperationPhases(
       glueUp,

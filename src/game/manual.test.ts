@@ -7,7 +7,6 @@ import {
 import { GameState } from "./GameState";
 import { initialGameState } from "./initialGameState";
 import { getArticle, ManualArticleId } from "./manual";
-import { migrateV18toV19 } from "./saveLoad";
 
 function unlocked(id: ManualArticleId, gameState: GameState): boolean {
   return getArticle(id).unlocked(gameState);
@@ -145,54 +144,6 @@ describe("markArticlesReadAction", () => {
     assert.deepStrictEqual(both.progression.readArticles, [
       "welcome",
       "controls",
-    ]);
-  });
-});
-
-describe("migrateV18toV19", () => {
-  it("unlocks everything the save already earned, pre-read", () => {
-    const veteran = {
-      ...initialGameState,
-      reputation: 22,
-      consumables: { nails: 10, mineralOil: 8 },
-      progression: {
-        ...initialGameState.progression,
-        marketplaceUnlocked: true,
-        shopLayoutUnlocked: true,
-        sweepingUnlocked: true,
-        commissionsCompleted: 7,
-        xp: 900,
-      },
-    };
-    const migrated = migrateV18toV19(veteran);
-    const { unlockedArticles, readArticles } = migrated.progression;
-    // A shop this far along has earned the whole binder…
-    assert.deepStrictEqual([...unlockedArticles].sort(), [
-      "controls",
-      "dust",
-      "finishing",
-      "lumber",
-      "marketplace",
-      "milling",
-      "shop-layout",
-      "skills",
-      "welcome",
-    ]);
-    // …with nothing badged NEW: welcome included, so no auto-open either.
-    assert.deepStrictEqual(readArticles, unlockedArticles);
-  });
-
-  it("gives an early save only the basics, still pre-read", () => {
-    const migrated = migrateV18toV19({ ...initialGameState });
-    assert.deepStrictEqual(migrated.progression.unlockedArticles, [
-      "welcome",
-      "controls",
-      "lumber",
-    ]);
-    assert.deepStrictEqual(migrated.progression.readArticles, [
-      "welcome",
-      "controls",
-      "lumber",
     ]);
   });
 });

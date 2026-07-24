@@ -7,6 +7,7 @@ import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
 import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
 import { ToolIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { BuyButton } from "./BuyButton";
 
 export const StoreToolsSection: React.FC = () => {
   const gameState = useGameState();
@@ -77,14 +78,13 @@ const UpgradeProductCard: React.FC<{ upgrade: UpgradeType }> = ({
         <span className="price-tag tabular-nums">
           ${upgrade.cost.toFixed(2)}
         </span>
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+        <BuyButton
           disabled={!canAfford}
           data-sfx="ui-purchase"
           onClick={() => applyAction(buyUpgradeAction(upgrade.id as UpgradeId))}
         >
           Buy
-        </button>
+        </BuyButton>
       </div>
     </li>
   );
@@ -120,13 +120,12 @@ const ShopVacProductCard: React.FC = () => {
         <span className="price-tag tabular-nums">
           ${SHOP_VAC_COST.toFixed(2)}
         </span>
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+        <BuyButton
           disabled={!canAfford}
           onClick={() => applyAction(buyShopVacAction())}
         >
           Buy
-        </button>
+        </BuyButton>
       </div>
     </li>
   );
@@ -164,13 +163,12 @@ const ToolProductCard: React.FC<{ tool: ToolType }> = ({ tool }) => {
       </div>
       <div className="flex flex-col items-end gap-1">
         <span className="price-tag tabular-nums">${tool.cost.toFixed(2)}</span>
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+        <BuyButton
           disabled={!canAfford}
           onClick={() => applyAction(buyToolAction(tool.id as ToolId))}
         >
           Buy
-        </button>
+        </BuyButton>
       </div>
     </li>
   );

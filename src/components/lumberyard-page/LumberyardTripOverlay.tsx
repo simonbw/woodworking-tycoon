@@ -1,8 +1,9 @@
 import React from "react";
 import { returnFromStoreAction } from "../../game/game-actions/door-actions";
-import { useModalScope, useShortcut } from "../shortcuts/ShortcutProvider";
-import { useApplyGameAction, useGameState } from "../useGameState";
 import { BoardSelector } from "../store-page/BoardSelector";
+import { TripHeader } from "../trip/TripHeader";
+import { TripOverlay } from "../trip/TripOverlay";
+import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
  * A trip to Sawyer & Sons, the hardwood lumberyard across town. Reached by
@@ -16,6 +17,8 @@ import { BoardSelector } from "../store-page/BoardSelector";
  */
 export const LumberyardTripOverlay: React.FC = () => {
   const gameState = useGameState();
+  const applyAction = useApplyGameAction();
+  const headHome = () => applyAction(returnFromStoreAction());
 
   if (
     gameState.player.away?.kind !== "shopping" ||
@@ -23,65 +26,29 @@ export const LumberyardTripOverlay: React.FC = () => {
   ) {
     return null;
   }
-  return <LumberyardTrip />;
-};
-
-/** Split out so the modal-scope hooks only run while the trip is live. */
-const LumberyardTrip: React.FC = () => {
-  const applyAction = useApplyGameAction();
-  const headHome = () => applyAction(returnFromStoreAction());
-
-  useModalScope();
-  useShortcut("close-modal", headHome);
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-workshop-bg p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sawyer & Sons"
-    >
+    <TripOverlay label="Sawyer & Sons" onHeadHome={headHome}>
       <div className="rounded-md overflow-hidden shadow-2xl border border-mill-green-dark grow min-h-0 flex flex-col">
-        <YardSignBar onHeadHome={headHome} />
+        <TripHeader
+          brand={
+            <span className="font-lumberjack text-4xl tracking-wide leading-none">
+              Sawyer &amp; Sons
+            </span>
+          }
+          tagline="Hardwoods · Rough & Surfaced · Since 1962"
+          barClassName="bg-mill-green text-paper-cream"
+          brandRowClassName="items-baseline"
+          mutedClassName="text-paper-cream/80"
+          homeButtonClassName="border-paper-cream/80 hover:bg-paper-cream/15"
+          onHeadHome={headHome}
+        />
         <div className="bg-mill-timber text-ink-black p-6 grow min-h-0 overflow-y-auto">
           <div className="max-w-6xl mx-auto pt-2">
             <BoardSelector store="lumberyard" />
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-const YardSignBar: React.FC<{ onHeadHome: () => void }> = ({ onHeadHome }) => {
-  const gameState = useGameState();
-  return (
-    <div className="bg-mill-green text-paper-cream px-6 py-3 flex items-center justify-between">
-      <div className="flex items-baseline gap-4">
-        <span className="font-lumberjack text-4xl tracking-wide leading-none">
-          Sawyer &amp; Sons
-        </span>
-        <span className="font-condensed uppercase tracking-[0.3em] text-xs text-paper-cream/80">
-          Hardwoods · Rough &amp; Surfaced · Since 1962
-        </span>
-      </div>
-      <div className="flex items-center gap-6">
-        <div className="flex flex-col items-end font-mono leading-tight">
-          <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-cream/80">
-            Your Wallet
-          </span>
-          <span className="text-xl tabular-nums">
-            ${gameState.money.toFixed(2)}
-          </span>
-        </div>
-        <button
-          className="border-2 border-paper-cream/80 rounded-sm px-3 py-1.5 font-condensed font-bold uppercase tracking-[0.2em] text-sm hover:bg-paper-cream/15"
-          onClick={onHeadHome}
-          data-sfx="ui-back"
-        >
-          Head Home
-        </button>
-      </div>
-    </div>
+    </TripOverlay>
   );
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { useCellMap } from "../../game/CellMap";
+import { useCellMap } from "../useCellMap";
 import { canSweepAt } from "../../game/game-actions/dust-actions";
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
 import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
@@ -7,7 +7,8 @@ import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { resolveInteract } from "../../game/interact";
 import { chebyshevDistance } from "../../game/Vectors";
-import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
+import { HintList } from "../shortcuts/HintList";
+import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
 import { CellAnchored } from "./ShopOverlayLayer";
@@ -127,11 +128,7 @@ export const PlayerPrompt: React.FC = () => {
 
   return (
     <CellAnchored cell={gameState.player.position}>
-      <HintSurfaceContext.Provider value="chrome">
-        <ul className="flex flex-col items-center gap-0.5 rounded bg-ink-black/70 px-2 py-1 text-center font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
-          {rows}
-        </ul>
-      </HintSurfaceContext.Provider>
+      <HintList>{rows}</HintList>
     </CellAnchored>
   );
 };

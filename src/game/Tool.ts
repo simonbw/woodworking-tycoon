@@ -1,8 +1,4 @@
-import type {
-  MachineId,
-  MachineOperation,
-  ParameterizedOperation,
-} from "./Machine";
+import type { MachineId, Operation } from "./Machine";
 import { crosscutSled } from "./tools/crosscutSled";
 import { drill } from "./tools/drill";
 import { dustBag } from "./tools/dustBag";
@@ -36,7 +32,7 @@ export interface ToolType {
    * tool slot — right for sanders, wrong for a crosscut sled.
    */
   readonly compatibleMachines?: ReadonlyArray<MachineId>;
-  readonly operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
+  readonly operations: ReadonlyArray<Operation>;
 }
 
 export const TOOL_TYPES = {

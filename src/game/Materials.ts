@@ -235,26 +235,38 @@ export function panelSpecies(panel: Panel): ReadonlyArray<Species> {
 export const FINISHES = ["mineralOil"] as const;
 export type Finish = (typeof FINISHES)[number];
 
+/**
+ * Every sellable finished-product type. The single source of truth: the
+ * FinishedProduct union, isFinishedProduct, pricing tables, and mock
+ * builders all derive from this list — add a product here and the
+ * exhaustiveness-checked Records (PRODUCT_VALUES et al.) flag every other
+ * site that needs a case.
+ */
+export const FINISHED_PRODUCT_TYPES = [
+  "shelf",
+  "rusticShelf",
+  "planterBox",
+  "jewelryBox",
+  "pictureFrame",
+  "simpleCuttingBoard",
+  "stripedCuttingBoard",
+  "sunriseCuttingBoard",
+  "endGrainCuttingBoard",
+  "birdhouse",
+  "crate",
+  "stepStool",
+  "hexFrame",
+  "servingTray",
+  "bookshelf",
+  "sideTable",
+  "checkerboardCuttingBoard",
+] as const;
+
+export type FinishedProductType = (typeof FINISHED_PRODUCT_TYPES)[number];
+
 export type FinishedProduct = {
   readonly id: string;
-  readonly type:
-    | "shelf"
-    | "rusticShelf"
-    | "planterBox"
-    | "jewelryBox"
-    | "pictureFrame"
-    | "simpleCuttingBoard"
-    | "stripedCuttingBoard"
-    | "sunriseCuttingBoard"
-    | "endGrainCuttingBoard"
-    | "birdhouse"
-    | "crate"
-    | "stepStool"
-    | "hexFrame"
-    | "servingTray"
-    | "bookshelf"
-    | "sideTable"
-    | "checkerboardCuttingBoard";
+  readonly type: FinishedProductType;
   readonly species: Species;
   /** Second wood in a two-tone piece (e.g. striped cutting boards). */
   readonly accentSpecies?: Species;

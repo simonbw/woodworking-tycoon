@@ -2,6 +2,7 @@ import React from "react";
 import { MACHINE_TYPES, MachineId, MachineType } from "../../game/Machine";
 import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { buyMachineAction } from "../../game/game-actions/store-actions";
+import { BuyButton } from "./BuyButton";
 
 interface MachineSaleInfo {
   machine: MachineType;
@@ -61,8 +62,7 @@ const MachineProductCard: React.FC<MachineSaleInfo> = ({ machine, price }) => {
       </div>
       <div className="flex flex-col items-end gap-1">
         <PriceTag price={price} />
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+        <BuyButton
           disabled={!canAfford}
           data-sfx="ui-purchase"
           onClick={() => {
@@ -70,7 +70,7 @@ const MachineProductCard: React.FC<MachineSaleInfo> = ({ machine, price }) => {
           }}
         >
           Buy
-        </button>
+        </BuyButton>
       </div>
     </li>
   );

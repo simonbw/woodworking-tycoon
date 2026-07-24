@@ -36,7 +36,6 @@ export const marketplaceShop: GameState = {
       },
     ],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

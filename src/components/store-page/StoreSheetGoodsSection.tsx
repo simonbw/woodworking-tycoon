@@ -11,6 +11,7 @@ import { SheetGood } from "../../game/Materials";
 import { SheetSku, unlockedSheetSkus } from "../../game/sheetStock";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { BuyButton } from "./BuyButton";
 
 /**
  * The sheet-good rack (see sheetStock.ts). One card per SKU, cheapest
@@ -75,14 +76,13 @@ const SheetSkuCard: React.FC<{ sku: SheetSku }> = ({ sku }) => {
       </div>
       <div className="flex flex-col items-end gap-1">
         <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
-        <button
-          className="bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest text-xs px-3 py-1 rounded-sm shadow"
+        <BuyButton
           disabled={gameState.money < price}
           data-sfx="ui-purchase"
           onClick={() => applyAction(buyMaterialAction(makeSheet(), price))}
         >
           Buy
-        </button>
+        </BuyButton>
       </div>
     </li>
   );

@@ -148,7 +148,6 @@ export function vacuumAction(): GameAction {
       shopVac: { ...vac, canister: moved },
       player: {
         ...gameState.player,
-        canWork: false,
         busyTicks: VACUUM_TICKS - 1,
       },
     };

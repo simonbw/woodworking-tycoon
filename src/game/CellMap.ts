@@ -1,9 +1,8 @@
 import { LRUCache } from "typescript-lru-cache";
-import { useGameState } from "../components/useGameState";
 import { GameState, MaterialPile } from "./GameState";
 import { getMachines, Machine } from "./Machine";
 import { pileFootprint } from "./pile-helpers";
-import { Vector, rotateVec, translateVec } from "./Vectors";
+import { Vector, rotateVec, translateVec, vectorKey } from "./Vectors";
 
 export type CellInfo = {
   readonly position: Vector;
@@ -29,8 +28,6 @@ export type CellInfo = {
    */
   readonly grabbablePiles: ReadonlyArray<MaterialPile>;
 };
-
-const vecToKey = (vec: Vector): string => vec.join(",");
 
 // The type used internally by the cell map to allow mutation
 type MutableCellInfo = {
@@ -81,17 +78,16 @@ export class CellMap {
   constructor(cells: CellInfo[] = []) {
     this._cells = [...cells];
     for (const cell of this._cells) {
-      this._map.set(vecToKey(cell.position), cell);
+      this._map.set(vectorKey(cell.position), cell);
     }
   }
 
-  has([x, y]: Vector): boolean {
-    return this._map.has(`${x},${y}`);
+  has(position: Vector): boolean {
+    return this._map.has(vectorKey(position));
   }
 
   at(position: Vector): CellInfo | undefined {
-    const [x, y] = position;
-    return this._map.get(vecToKey(position));
+    return this._map.get(vectorKey(position));
   }
 
   private _at(position: Vector): MutableCellInfo {
@@ -118,7 +114,7 @@ export class CellMap {
         grabbablePiles: partial.grabbablePiles ?? [],
       };
       this._cells.push(cell);
-      this._map.set(vecToKey(position), cell);
+      this._map.set(vectorKey(position), cell);
     }
   }
 
@@ -191,8 +187,3 @@ export class CellMap {
     return this.getMaxY() - this.getMinY() + 1;
   }
 }
-
-export const useCellMap = () => {
-  const gameState = useGameState();
-  return CellMap.fromGameState(gameState);
-};

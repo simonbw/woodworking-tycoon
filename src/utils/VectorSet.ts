@@ -1,4 +1,4 @@
-import { Vector } from "../game/Vectors";
+import { Vector, vectorKey } from "../game/Vectors";
 
 export class VectorSet {
   private set: Set<string> = new Set();
@@ -10,10 +10,10 @@ export class VectorSet {
   }
 
   add(vector: Vector) {
-    this.set.add(vector.join(","));
+    this.set.add(vectorKey(vector));
   }
 
   has(vector: Vector) {
-    return this.set.has(vector.join(","));
+    return this.set.has(vectorKey(vector));
   }
 }

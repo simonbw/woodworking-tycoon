@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard } from "../board-helpers";
-import { MachineOperation, ParameterizedOperation } from "../Machine";
+import { Operation,  } from "../Machine";
 import { LUMBER_CHANNELS, unlockedLumberChannels } from "../lumberStock";
 import { materialMeetsInput } from "../material-helpers";
 import { millingLabel } from "../Materials";
@@ -14,22 +14,22 @@ import { workspace } from "./workspace";
 
 const jointFace = jointer.operations.find(
   (op) => op.id === "jointFace",
-) as MachineOperation;
+) as Operation;
 const jointEdge = jointer.operations.find(
   (op) => op.id === "jointEdge",
-) as MachineOperation;
+) as Operation;
 const straightLineRip = straightLineSled.operations.find(
   (op) => op.id === "straightLineRip",
-) as MachineOperation;
+) as Operation;
 const plane = lunchboxPlaner.operations.find(
   (op) => op.id === "plane",
-) as ParameterizedOperation;
+) as Operation;
 const ripBoard = jobsiteTableSaw.operations.find(
   (op) => op.id === "ripBoard",
-) as ParameterizedOperation;
+) as Operation;
 const glueUp = workspace.operations.find(
   (op) => op.id === "glueUpPanel",
-) as MachineOperation;
+) as Operation;
 
 /** A board fresh off the rough rack: nothing flat, nothing straight. */
 const roughBoard = (thickness: 4 | 8 = 4) =>
@@ -37,7 +37,7 @@ const roughBoard = (thickness: 4 | 8 = 4) =>
 
 describe("jointer", () => {
   it("joints a face only on boards with no flat face", () => {
-    const requirement = jointFace.inputMaterials[0];
+    const requirement = jointFace.getInputMaterials({})[0];
     assert.ok(materialMeetsInput(roughBoard(), requirement));
     assert.ok(
       !materialMeetsInput(
@@ -48,7 +48,7 @@ describe("jointer", () => {
   });
 
   it("face jointing yields one flat face and touches nothing else", () => {
-    const { outputs } = jointFace.output([roughBoard()]);
+    const { outputs } = jointFace.output([roughBoard()], {});
     const result = outputs[0];
     assert.ok(isBoard(result));
     assert.strictEqual(result.jointedFaces, 1);
@@ -58,7 +58,7 @@ describe("jointer", () => {
   });
 
   it("edge jointing references a flat face against the fence", () => {
-    const requirement = jointEdge.inputMaterials[0];
+    const requirement = jointEdge.getInputMaterials({})[0];
     // No flat face: nothing to register on the fence
     assert.ok(!materialMeetsInput(roughBoard(), requirement));
     assert.ok(
@@ -69,7 +69,7 @@ describe("jointer", () => {
     );
     const { outputs } = jointEdge.output([
       board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 }),
-    ]);
+    ], {});
     const result = outputs[0];
     assert.ok(isBoard(result));
     assert.strictEqual(result.jointedEdges, 1);
@@ -79,9 +79,9 @@ describe("jointer", () => {
 describe("straight-line sled", () => {
   it("straightens an edge with no prerequisites at all", () => {
     // The sled rides the rails, not the fence — even fully rough stock works
-    const requirement = straightLineRip.inputMaterials[0];
+    const requirement = straightLineRip.getInputMaterials({})[0];
     assert.ok(materialMeetsInput(roughBoard(), requirement));
-    const { outputs } = straightLineRip.output([roughBoard()]);
+    const { outputs } = straightLineRip.output([roughBoard()], {});
     const result = outputs[0];
     assert.ok(isBoard(result));
     assert.strictEqual(result.jointedEdges, 1);
@@ -100,14 +100,14 @@ describe("hand plane", () => {
   it("flattens a face and straightens an edge, slowly", () => {
     const faceOp = handPlane.operations.find(
       (op) => op.id === "handPlaneFace",
-    ) as MachineOperation;
+    ) as Operation;
     const edgeOp = handPlane.operations.find(
       (op) => op.id === "handPlaneEdge",
-    ) as MachineOperation;
-    const flattened = faceOp.output([roughBoard()]).outputs[0];
+    ) as Operation;
+    const flattened = faceOp.output([roughBoard()], {}).outputs[0];
     assert.ok(isBoard(flattened));
     assert.strictEqual(flattened.jointedFaces, 1);
-    const straightened = edgeOp.output([roughBoard()]).outputs[0];
+    const straightened = edgeOp.output([roughBoard()], {}).outputs[0];
     assert.ok(isBoard(straightened));
     assert.strictEqual(straightened.jointedEdges, 1);
     // Slower than the machines that replace it
@@ -209,7 +209,7 @@ describe("table saw rip edge prerequisites", () => {
 
 describe("glue-ups demand straight edges", () => {
   it("rejects smooth S2S stock until its edges are jointed and ripped", () => {
-    const requirement = glueUp.inputMaterials[0];
+    const requirement = glueUp.getInputMaterials({})[0];
     // Right size and surface, straight-from-the-lumberyard edges: no glue
     const s2sStrip = board("maple", 2, 2, 4, "smooth", { faces: 2, edges: 0 });
     assert.ok(!materialMeetsInput(s2sStrip, requirement));
@@ -224,9 +224,9 @@ describe("glue-ups demand straight edges", () => {
 describe("milling ladder integration", () => {
   it("mills rough stock plane-then-rip or rip-then-plane — both work", () => {
     // jointer x2 -> planer -> table saw
-    let a = jointFace.output([roughBoard()]).outputs[0];
+    let a = jointFace.output([roughBoard()], {}).outputs[0];
     assert.ok(isBoard(a));
-    a = jointEdge.output([a]).outputs[0];
+    a = jointEdge.output([a], {}).outputs[0];
     assert.ok(isBoard(a));
     a = plane.output([a], { targetThickness: 4 }).outputs[0];
     assert.ok(isBoard(a));
@@ -235,9 +235,9 @@ describe("milling ladder integration", () => {
     assert.strictEqual(millingLabel(a), "S4S");
 
     // jointer x2 -> table saw -> planer
-    let b = jointFace.output([roughBoard()]).outputs[0];
+    let b = jointFace.output([roughBoard()], {}).outputs[0];
     assert.ok(isBoard(b));
-    b = jointEdge.output([b]).outputs[0];
+    b = jointEdge.output([b], {}).outputs[0];
     assert.ok(isBoard(b));
     b = ripBoard.output([b], { targetWidth: 4 }).outputs[0];
     assert.ok(isBoard(b));

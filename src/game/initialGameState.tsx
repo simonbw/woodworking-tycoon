@@ -4,6 +4,7 @@ import { STARTING_ARTICLES } from "./manual";
 import { STARTER_SKILLS } from "./Skill";
 import { ToolId } from "./Tool";
 import {
+  defaultParametersFor,
   MACHINE_TYPES,
   MachineId,
   MachineState,
@@ -12,7 +13,6 @@ import {
 import { Direction } from "./Vectors";
 import { defaultEntrancePosition } from "./ShopInfo";
 import { makePallet } from "./material-helpers";
-import { isParameterizedOperation } from "./operation-helpers";
 
 export const initialGameState: GameState = {
   tick: 0,
@@ -33,7 +33,6 @@ export const initialGameState: GameState = {
     direction: 1,
     inventory: [],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },
@@ -93,15 +92,9 @@ function machine(
 ): MachineState {
   const machineType = MACHINE_TYPES[machineTypeId];
   const firstOperation = machineType.operations[0];
-  let selectedParameters: ParameterValues | undefined;
-
-  // If the first operation is parameterized, set default parameter values
-  if (isParameterizedOperation(firstOperation)) {
-    selectedParameters = {};
-    for (const param of firstOperation.parameters) {
-      selectedParameters[param.id] = param.values[0];
-    }
-  }
+  const selectedParameters: ParameterValues | undefined = firstOperation
+    ? defaultParametersFor(firstOperation)
+    : undefined;
 
   return {
     machineTypeId,

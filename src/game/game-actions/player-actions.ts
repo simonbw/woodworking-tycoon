@@ -6,14 +6,13 @@ import { GameAction, MaterialPile } from "../GameState";
 import {
   isSameMachine,
   Machine,
-  MachineOperation,
-  ParameterizedOperation,
+  Operation,
+  
   ParameterValues,
   MACHINE_TYPES,
 } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, Vector, vectorEquals } from "../Vectors";
-import { getOperationInputMaterials } from "../operation-helpers";
 import { pileCoversCell } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
 import { emitSound } from "./sound-actions";
@@ -301,7 +300,7 @@ export function takeOutputsFromMachineAction(
 
 export function setMachineOperationAction(
   machine: Machine,
-  operation: MachineOperation | ParameterizedOperation,
+  operation: Operation,
   parameters?: ParameterValues,
 ): GameAction {
   return (gameState) => {
@@ -440,9 +439,8 @@ export function operateMachineAction(machine: Machine): GameAction {
     const materialsToConsume: MaterialInstance[] = [];
 
     // Validate that we have all required materials
-    const inputMaterials = getOperationInputMaterials(
-      machine.selectedOperation,
-      machineState.selectedParameters,
+    const inputMaterials = machine.selectedOperation.getInputMaterials(
+      machine.resolvedParameters(machine.selectedOperation),
     );
 
     for (const inputMaterial of inputMaterials) {

@@ -8,6 +8,7 @@ import {
   Species,
   SurfaceCondition,
 } from "./Materials";
+import { isFinishedProduct } from "./material-helpers";
 
 /**
  * Free-sell prices. Value comes from processing depth: raw stock is priced
@@ -150,6 +151,25 @@ export const FINISH_VALUE_MULTIPLIER: Record<Finish, number> = {
 };
 
 export function getSellValue(material: MaterialInstance): number {
+  // Finished products price from their table (times species and finish);
+  // isFinishedProduct keys off FINISHED_PRODUCT_TYPES, so a new product
+  // lands here automatically once PRODUCT_VALUES knows its base value.
+  if (isFinishedProduct(material)) {
+    // Two-tone pieces average their species and add a style premium
+    const speciesMultiplier = material.accentSpecies
+      ? ((SPECIES_VALUE_MULTIPLIER[material.species] +
+          SPECIES_VALUE_MULTIPLIER[material.accentSpecies]) /
+          2) *
+        1.5
+      : SPECIES_VALUE_MULTIPLIER[material.species];
+    const finishMultiplier = material.finish
+      ? FINISH_VALUE_MULTIPLIER[material.finish]
+      : 1;
+    return roundToCents(
+      PRODUCT_VALUES[material.type] * speciesMultiplier * finishMultiplier,
+    );
+  }
+
   switch (material.type) {
     case "board":
       return roundToCents(
@@ -188,37 +208,6 @@ export function getSellValue(material: MaterialInstance): number {
     case "sawdustPile":
       // Waste, for now — someday bedding or briquettes
       return 0;
-    case "shelf":
-    case "rusticShelf":
-    case "planterBox":
-    case "jewelryBox":
-    case "pictureFrame":
-    case "simpleCuttingBoard":
-    case "stripedCuttingBoard":
-    case "sunriseCuttingBoard":
-    case "endGrainCuttingBoard":
-    case "birdhouse":
-    case "crate":
-    case "stepStool":
-    case "hexFrame":
-    case "servingTray":
-    case "bookshelf":
-    case "sideTable":
-    case "checkerboardCuttingBoard": {
-      // Two-tone pieces average their species and add a style premium
-      const speciesMultiplier = material.accentSpecies
-        ? ((SPECIES_VALUE_MULTIPLIER[material.species] +
-            SPECIES_VALUE_MULTIPLIER[material.accentSpecies]) /
-            2) *
-          1.5
-        : SPECIES_VALUE_MULTIPLIER[material.species];
-      const finishMultiplier = material.finish
-        ? FINISH_VALUE_MULTIPLIER[material.finish]
-        : 1;
-      return roundToCents(
-        PRODUCT_VALUES[material.type] * speciesMultiplier * finishMultiplier,
-      );
-    }
     case "unknown":
       return 0;
   }

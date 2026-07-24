@@ -1,13 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { ConsumableAmount, CONSUMABLE_TYPES } from "../../game/Consumable";
-import { MachineOperation, ParameterizedOperation } from "../../game/Machine";
+import { consumableLabel } from "../../game/Consumable";
+import { Operation } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
 import { describeOperationIO } from "../../game/operation-helpers";
 import { getOperationDuration } from "../../game/skill-helpers";
 import { classNames } from "../../utils/classNames";
 import { ShortcutKeys } from "../shortcuts/Kbd";
-
-type Operation = MachineOperation | ParameterizedOperation;
 
 /**
  * How many operations a station can have before the mode switch stops
@@ -120,14 +118,6 @@ export const ModeControl: React.FC<{
     />
   );
 };
-
-/** "8 nails", but "4 oz Mineral Oil" when the unit isn't the name. */
-function consumableLabel(cost: ConsumableAmount): string {
-  const type = CONSUMABLE_TYPES[cost.id];
-  return type.unit === type.name.toLowerCase()
-    ? `${cost.amount} ${type.unit}`
-    : `${cost.amount} ${type.unit} ${type.name}`;
-}
 
 const RecipeIndex: React.FC<{
   operations: ReadonlyArray<Operation>;

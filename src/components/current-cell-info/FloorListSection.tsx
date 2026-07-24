@@ -1,5 +1,5 @@
 import React from "react";
-import { useCellMap } from "../../game/CellMap";
+import { useCellMap } from "../useCellMap";
 import { MaterialPile } from "../../game/GameState";
 import { pickUpMaterialAction } from "../../game/game-actions/player-actions";
 import { getMaterialFullName } from "../../game/material-helpers";

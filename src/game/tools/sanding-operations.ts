@@ -1,4 +1,4 @@
-import { MachineOperation } from "../Machine";
+import { Operation } from "../Machine";
 import { Board, improvedSurface, MaterialInstance, Panel } from "../Materials";
 import { isBoard } from "../board-helpers";
 import { isPanel } from "../panel-helpers";
@@ -13,7 +13,7 @@ import { makeMaterial } from "../material-helpers";
 export function makeSandingOperations(
   idPrefix: string,
   duration: number,
-): ReadonlyArray<MachineOperation> {
+): ReadonlyArray<Operation> {
   const sand = (materials: ReadonlyArray<MaterialInstance>) => {
     const material = materials[0];
     if (!isBoard(material) && !isPanel(material)) {
@@ -40,7 +40,7 @@ export function makeSandingOperations(
       duration,
       dustOutput: 0.5,
       requiredSkill: "surfacePrep",
-      inputMaterials: [
+      getInputMaterials: () => [
         { type: ["board"], surface: ["rough", "smooth"], quantity: 1 },
       ],
       output: sand,
@@ -51,7 +51,7 @@ export function makeSandingOperations(
       duration,
       dustOutput: 0.5,
       requiredSkill: "surfacePrep",
-      inputMaterials: [
+      getInputMaterials: () => [
         { type: ["panel"], surface: ["rough", "smooth"], quantity: 1 },
       ],
       output: sand,

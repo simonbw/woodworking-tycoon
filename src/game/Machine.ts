@@ -10,6 +10,7 @@ import {
   translateVec,
   Vector,
   vectorEquals,
+  vectorKey,
 } from "./Vectors";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
@@ -45,7 +46,7 @@ export interface MachineType {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
+  readonly operations: ReadonlyArray<Operation>;
   readonly cellsOccupied: ReadonlyArray<Vector>;
   /**
    * See CollisionBox. Measured from the sprite art for image-based
@@ -141,7 +142,7 @@ export interface OperationPhase {
   readonly attended: boolean;
 }
 
-export interface MachineOperation {
+export interface Operation<TParams extends ParameterValues = ParameterValues> {
   readonly id: string;
   readonly name: string;
   /** Total ticks; must equal the sum of phases when phases are declared. */
@@ -172,9 +173,22 @@ export interface MachineOperation {
    * machine (see Dust.ts). Omitted: no appreciable mess (assembly, glue).
    */
   readonly dustOutput?: number;
-  readonly inputMaterials: ReadonlyArray<InputMaterialWithQuantity>;
+  /**
+   * Settings this operation exposes (the saw's angle detents, the
+   * planer's depth stop). Omitted for ordinary fixed recipes; consumers
+   * read it through `operationParameters`.
+   */
+  readonly parameters?: ReadonlyArray<OperationParameter>;
+  /**
+   * The stock this operation takes, given its resolved settings. Fixed
+   * recipes ignore the argument and return a constant list.
+   */
+  readonly getInputMaterials: (
+    params: TParams,
+  ) => ReadonlyArray<InputMaterialWithQuantity>;
   readonly output: (
     materials: ReadonlyArray<MaterialInstance>,
+    params: TParams,
   ) => OperationOutput;
   /**
    * The mentor line for stock this operation refuses: given a carried
@@ -187,6 +201,26 @@ export interface MachineOperation {
     material: MaterialInstance,
     params?: ParameterValues,
   ) => string | null;
+}
+
+/** An operation's declared settings ([] for fixed recipes). */
+export function operationParameters(
+  operation: Operation,
+): ReadonlyArray<OperationParameter> {
+  return operation.parameters ?? [];
+}
+
+/**
+ * The parameter values a freshly-selected operation starts with: each
+ * parameter's declared resting value, or its first listed one. {} for
+ * fixed recipes.
+ */
+export function defaultParametersFor(operation: Operation): ParameterValues {
+  const params: ParameterValues = {};
+  for (const param of operationParameters(operation)) {
+    params[param.id] = param.defaultValue ?? param.values[0];
+  }
+  return params;
 }
 
 export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
@@ -269,38 +303,6 @@ export interface OperationParameter<T = number | string> {
 
 export type ParameterValues = Record<string, number | string>;
 
-export interface ParameterizedOperation<
-  TParams extends ParameterValues = ParameterValues,
-> {
-  readonly id: string;
-  readonly name: string;
-  /** Total ticks; must equal the sum of phases when phases are declared. */
-  readonly duration: number;
-  /** See MachineOperation.phases. */
-  readonly phases?: ReadonlyArray<OperationPhase>;
-  /** See MachineOperation.powerFeed. */
-  readonly powerFeed?: boolean;
-  /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
-  readonly requiredSkill?: SkillId;
-  /** See MachineOperation.requiredConsumables. */
-  readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
-  /** See MachineOperation.dustOutput. */
-  readonly dustOutput?: number;
-  readonly parameters: ReadonlyArray<OperationParameter>;
-  readonly getInputMaterials: (
-    params: TParams,
-  ) => ReadonlyArray<InputMaterialWithQuantity>;
-  readonly output: (
-    materials: ReadonlyArray<MaterialInstance>,
-    params: TParams,
-  ) => OperationOutput;
-  /** See MachineOperation.explainRejection. */
-  readonly explainRejection?: (
-    material: MaterialInstance,
-    params?: ParameterValues,
-  ) => string | null;
-}
-
 export interface OperationProgress {
   readonly status: "notStarted" | "inProgress" | "finished";
   /** Index into the operation's phase list (0 for single-phase ops). */
@@ -381,6 +383,15 @@ export function isSameMachine(a: MachineState, b: MachineState): boolean {
 }
 
 /**
+ * Stable string identity for a placed machine — the key form of
+ * isSameMachine (type + anchor cell). Used wherever a machine needs to key
+ * a Map or a React list (sound voices, sheet targeting, render keys).
+ */
+export function machineKey(state: MachineState): string {
+  return `${state.machineTypeId}@${vectorKey(state.position)}`;
+}
+
+/**
  * Machine view class - provides convenient access to MachineType and operations
  * Similar to CellMap pattern - a computed view over the raw state
  */
@@ -404,14 +415,14 @@ export class Machine {
    * All operations available at this station: the machine's own plus those
    * of every mounted tool.
    */
-  get operations(): ReadonlyArray<MachineOperation | ParameterizedOperation> {
+  get operations(): ReadonlyArray<Operation> {
     return [
       ...this.type.operations,
       ...this.state.tools.flatMap((toolId) => TOOL_TYPES[toolId].operations),
     ];
   }
 
-  get selectedOperation(): MachineOperation | ParameterizedOperation {
+  get selectedOperation(): Operation {
     const operation = this.selectedOperationOrNull;
     if (!operation) {
       throw new Error(
@@ -425,10 +436,7 @@ export class Machine {
    * Like selectedOperation, but null when the id doesn't resolve (e.g. a
    * station whose recipes are all still locked, or "none").
    */
-  get selectedOperationOrNull():
-    | MachineOperation
-    | ParameterizedOperation
-    | null {
+  get selectedOperationOrNull(): Operation | null {
     return (
       this.operations.find((op) => op.id === this.state.selectedOperationId) ??
       null
@@ -498,6 +506,19 @@ export class Machine {
 
   get selectedParameters(): ParameterValues | undefined {
     return this.state.selectedParameters;
+  }
+
+  /**
+   * An operation's parameters resolved against this machine's settings
+   * bag: its declared defaults filled in under whatever the player has
+   * dialed. The one way to get the params an operation would actually run
+   * with here. ({} for fixed recipes.)
+   */
+  resolvedParameters(operation: Operation): ParameterValues {
+    return {
+      ...defaultParametersFor(operation),
+      ...this.state.selectedParameters,
+    };
   }
 
   get operationProgress(): OperationProgress {

@@ -1,9 +1,10 @@
 import React from "react";
 import { resolveInteract, interactLabel } from "../../game/interact";
 import {
+  isSameMachine,
   Machine,
-  MachineOperation,
-  ParameterizedOperation,
+  Operation,
+  operationParameters,
 } from "../../game/Machine";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import {
@@ -11,12 +12,9 @@ import {
   machineCanOperate,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
-import {
-  getOperationInputMaterials,
-  isParameterizedOperation,
-} from "../../game/operation-helpers";
 import { availableOperations } from "../../game/skill-helpers";
-import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
+import { HintList } from "../shortcuts/HintList";
+import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
@@ -47,8 +45,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const interactHere =
     interact != null &&
     "machine" in interact &&
-    interact.machine.type.name === machine.type.name &&
-    interact.machine.position.join(",") === machine.position.join(",")
+    isSameMachine(interact.machine.state, machine.state)
       ? interact
       : null;
 
@@ -78,10 +75,9 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     machine.type.inputSpaces - machine.inputMaterials.length > 0 &&
     selectedOperation != null &&
     carried.some((material) =>
-      getOperationInputMaterials(
-        selectedOperation,
-        machine.selectedParameters,
-      ).some((input) => materialMeetsInput(material, input)),
+      selectedOperation
+        .getInputMaterials(machine.resolvedParameters(selectedOperation))
+        .some((input) => materialMeetsInput(material, input)),
     );
 
   const firstSetting = firstParameter(machine, operations);
@@ -112,89 +108,83 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   ) : null;
 
   return (
-    <HintSurfaceContext.Provider value="chrome">
-      <ul className="flex flex-col items-center gap-0.5 rounded bg-ink-black/70 px-2 py-1 text-center font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
-        <li className="text-paper-manila/60">
-          {machine.type.name}
-          {status && <> · {status}</>}
+    <HintList>
+      <li className="text-paper-manila/60">
+        {machine.type.name}
+        {status && <> · {status}</>}
+      </li>
+      {interactHere && (
+        <li>
+          <ShortcutKeys shortcut="pick-up" /> {interactLabel(interactHere)}
         </li>
-        {interactHere && (
-          <li>
-            <ShortcutKeys shortcut="pick-up" /> {interactLabel(interactHere)}
-          </li>
-        )}
-        {canFeed && (
-          <li>
-            <ShortcutKeys shortcut="put-down" />{" "}
-            {(machine.type.feedVerb ?? "Feed").toLowerCase()}
-          </li>
-        )}
-        {canLoad && (
-          <li>
-            <ShortcutKeys shortcut="put-down" /> load
-          </li>
-        )}
-        {canOperate && !isOperating && (
-          <li>
-            <ShortcutKeys shortcut="operate-machine" />{" "}
-            {selectedOperation ? selectedOperation.name.toLowerCase() : "work"}
-          </li>
-        )}
-        {refusal && (
-          <li className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
-            {refusal}
-          </li>
-        )}
-        {firstSetting && isTargeted(machine) && (
-          <li>
-            <ShortcutKeys shortcut="cycle-parameter" />{" "}
-            {firstSetting.name.toLowerCase()}:{" "}
-            <span className="font-mono normal-case">
-              {typeof settingValue === "number"
-                ? `${settingValue}${firstSetting.unit ?? '"'}`
-                : String(settingValue)}
-            </span>
-          </li>
-        )}
-        {isTargeted(machine) && (
-          <li className="text-paper-manila/70">
-            <ShortcutKeys shortcut="open-station-sheet" />{" "}
-            {isBenchLike ? "plans & tools" : "controls"}
-          </li>
-        )}
-        {machines.length > 1 && (
-          <li className="text-paper-manila/70">
-            <ShortcutKeys shortcut="cycle-machine" /> next machine (
-            {machines.length} here)
-          </li>
-        )}
-        {liftable && (
-          <li className="text-paper-manila/70">
-            <ShortcutKeys shortcut="carry-machine" /> pick up{" "}
-            {machine.type.name}
-          </li>
-        )}
-      </ul>
-    </HintSurfaceContext.Provider>
+      )}
+      {canFeed && (
+        <li>
+          <ShortcutKeys shortcut="put-down" />{" "}
+          {(machine.type.feedVerb ?? "Feed").toLowerCase()}
+        </li>
+      )}
+      {canLoad && (
+        <li>
+          <ShortcutKeys shortcut="put-down" /> load
+        </li>
+      )}
+      {canOperate && !isOperating && (
+        <li>
+          <ShortcutKeys shortcut="operate-machine" />{" "}
+          {selectedOperation ? selectedOperation.name.toLowerCase() : "work"}
+        </li>
+      )}
+      {refusal && (
+        <li className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
+          {refusal}
+        </li>
+      )}
+      {firstSetting && isTargeted(machine) && (
+        <li>
+          <ShortcutKeys shortcut="cycle-parameter" />{" "}
+          {firstSetting.name.toLowerCase()}:{" "}
+          <span className="font-mono normal-case">
+            {typeof settingValue === "number"
+              ? `${settingValue}${firstSetting.unit ?? '"'}`
+              : String(settingValue)}
+          </span>
+        </li>
+      )}
+      {isTargeted(machine) && (
+        <li className="text-paper-manila/70">
+          <ShortcutKeys shortcut="open-station-sheet" />{" "}
+          {isBenchLike ? "plans & tools" : "controls"}
+        </li>
+      )}
+      {machines.length > 1 && (
+        <li className="text-paper-manila/70">
+          <ShortcutKeys shortcut="cycle-machine" /> next machine (
+          {machines.length} here)
+        </li>
+      )}
+      {liftable && (
+        <li className="text-paper-manila/70">
+          <ShortcutKeys shortcut="carry-machine" /> pick up {machine.type.name}
+        </li>
+      )}
+    </HintList>
   );
 };
 
 /** The first adjustable setting the Z key drives on this machine. */
 function firstParameter(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
 ) {
   if (machine.type.directFeed) {
     const op = operations.find(
-      (candidate) =>
-        isParameterizedOperation(candidate) && candidate.parameters.length > 0,
+      (candidate) => operationParameters(candidate).length > 0,
     );
-    return op && isParameterizedOperation(op) ? op.parameters[0] : undefined;
+    return op ? operationParameters(op)[0] : undefined;
   }
   const selected = machine.selectedOperationOrNull;
-  return selected && isParameterizedOperation(selected)
-    ? selected.parameters[0]
-    : undefined;
+  return selected ? operationParameters(selected)[0] : undefined;
 }
 
 /**
@@ -202,13 +192,11 @@ function firstParameter(
  * offered while the player stands at its outfeed cell.
  */
 export const OutfeedChips: React.FC<{ machine: Machine }> = ({ machine }) => (
-  <HintSurfaceContext.Provider value="chrome">
-    <ul className="flex flex-col items-center gap-0.5 rounded bg-ink-black/70 px-2 py-1 text-center font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
-      <li className="text-paper-manila/60">{machine.type.name} · outfeed</li>
-      <li>
-        <ShortcutKeys shortcut="pick-up" /> take (
-        {machine.outputMaterials.length})
-      </li>
-    </ul>
-  </HintSurfaceContext.Provider>
+  <HintList>
+    <li className="text-paper-manila/60">{machine.type.name} · outfeed</li>
+    <li>
+      <ShortcutKeys shortcut="pick-up" /> take ({machine.outputMaterials.length}
+      )
+    </li>
+  </HintList>
 );

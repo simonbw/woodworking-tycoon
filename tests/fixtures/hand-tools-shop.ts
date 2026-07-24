@@ -42,7 +42,6 @@ export const handToolsShop: GameState = {
       deckBoard("fx-slat-4", 2),
     ],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

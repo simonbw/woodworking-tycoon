@@ -97,3 +97,11 @@ export function addConsumables(
     stock,
   );
 }
+
+/** "8 nails", but "4 oz Mineral Oil" when the unit isn't the name. */
+export function consumableLabel(cost: ConsumableAmount): string {
+  const type = CONSUMABLE_TYPES[cost.id];
+  return type.unit === type.name.toLowerCase()
+    ? `${cost.amount} ${type.unit}`
+    : `${cost.amount} ${type.unit} ${type.name}`;
+}

@@ -1,4 +1,3 @@
-import { ParameterizedOperation } from "../Machine";
 import {
   BOARD_DIMENSIONS,
   BoardDimension,
@@ -75,6 +74,6 @@ export const handSaw: ToolType = {
           },
         );
       },
-    } as ParameterizedOperation,
+    },
   ],
 };

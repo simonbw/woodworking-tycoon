@@ -154,7 +154,6 @@ export function sweepAction(): GameAction {
       materialPiles,
       player: {
         ...player,
-        canWork: false,
         busyTicks: SWEEP_TICKS - 1,
       },
     };

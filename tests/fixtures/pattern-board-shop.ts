@@ -89,7 +89,6 @@ export const patternBoardShop: GameState = {
       strip("test-sunrise-m3", "maple", 3),
     ],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

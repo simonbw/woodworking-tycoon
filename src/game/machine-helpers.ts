@@ -8,8 +8,7 @@ import { ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
   Machine,
-  MachineOperation,
-  ParameterizedOperation,
+  Operation,
   ParameterValues,
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
@@ -20,11 +19,6 @@ import {
   materialInputMismatches,
   materialMeetsInput,
 } from "./material-helpers";
-import {
-  defaultParametersFor,
-  getOperationInputMaterials,
-  isParameterizedOperation,
-} from "./operation-helpers";
 import { availableOperations } from "./skill-helpers";
 import { Vector, vectorEquals } from "./Vectors";
 
@@ -167,7 +161,7 @@ export function playerAttendsMachine(
  */
 export function parameterValueSatisfiable(
   machine: Machine,
-  operation: ParameterizedOperation,
+  operation: Operation,
   paramId: string,
   value: number | string,
   stock: ReadonlyArray<MaterialInstance> = machine.inputMaterials,
@@ -176,8 +170,7 @@ export function parameterValueSatisfiable(
     return true;
   }
   const params = {
-    ...defaultParametersFor(operation),
-    ...machine.selectedParameters,
+    ...machine.resolvedParameters(operation),
     [paramId]: value,
   };
   const slots = matchMaterialsToSlots(
@@ -187,14 +180,45 @@ export function parameterValueSatisfiable(
   return slots.every((slot) => slot.isValid && !slot.isPlaceholder);
 }
 
+/**
+ * Greedily fill `requirements` from `materials`, in declaration order —
+ * the one matching order feeding, refusal explanations, and operability
+ * checks all share. Returns the materials consumed, what's left over, and
+ * the first requirement that couldn't be filled (null when all were).
+ */
+export function matchRequirements(
+  materials: ReadonlyArray<MaterialInstance>,
+  requirements: ReadonlyArray<InputMaterialWithQuantity>,
+): {
+  matched: MaterialInstance[];
+  remaining: MaterialInstance[];
+  firstUnmet: InputMaterialWithQuantity | null;
+} {
+  const remaining = [...materials];
+  const matched: MaterialInstance[] = [];
+  for (const requirement of requirements) {
+    for (let i = 0; i < requirement.quantity; i++) {
+      const index = remaining.findIndex((material) =>
+        materialMeetsInput(material, requirement),
+      );
+      if (index === -1) {
+        return { matched, remaining, firstUnmet: requirement };
+      }
+      matched.push(remaining[index]);
+      remaining.splice(index, 1);
+    }
+  }
+  return { matched, remaining, firstUnmet: null };
+}
+
 /** What feeding a direct-feed machine right now would run. */
 export interface FeedMatch {
-  readonly operation: MachineOperation | ParameterizedOperation;
+  readonly operation: Operation;
   /**
    * The operation's parameters resolved against the machine's settings bag
    * (its defaults filled in under whatever the player has dialed).
    */
-  readonly parameters?: ParameterValues;
+  readonly parameters: ParameterValues;
   /** Carried materials the operation would consume, in match order. */
   readonly materials: ReadonlyArray<MaterialInstance>;
   /** What stays in the player's hands. */
@@ -211,35 +235,21 @@ export interface FeedMatch {
  */
 export function findFeedableOperation(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
 ): FeedMatch | null {
   for (const operation of operations) {
     // The settings bag is shared across operations; each reads its own ids
     // and falls back to its defaults for anything never dialed in.
-    const parameters = isParameterizedOperation(operation)
-      ? { ...defaultParametersFor(operation), ...machine.selectedParameters }
-      : machine.selectedParameters;
-    const requirements = getOperationInputMaterials(operation, parameters);
-    const remaining = [...carried];
-    const materials: MaterialInstance[] = [];
-    let satisfied = true;
-    for (const requirement of requirements) {
-      for (let i = 0; i < requirement.quantity && satisfied; i++) {
-        const index = remaining.findIndex((material) =>
-          materialMeetsInput(material, requirement),
-        );
-        if (index === -1) {
-          satisfied = false;
-        } else {
-          materials.push(remaining[index]);
-          remaining.splice(index, 1);
-        }
-      }
-    }
+    const parameters = machine.resolvedParameters(operation);
+    const requirements = operation.getInputMaterials(parameters);
+    const { matched, remaining, firstUnmet } = matchRequirements(
+      carried,
+      requirements,
+    );
     // Zero-input recipes aren't "fed" — feeding means presenting stock
-    if (satisfied && materials.length > 0) {
-      return { operation, parameters, materials, remaining };
+    if (firstUnmet === null && matched.length > 0) {
+      return { operation, parameters, materials: matched, remaining };
     }
   }
   return null;
@@ -257,7 +267,7 @@ export function findFeedableOperation(
  */
 export function explainFeedRefusal(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
   consumables: ConsumableStock = NO_CONSUMABLES,
 ): string | null {
@@ -279,35 +289,20 @@ export function explainFeedRefusal(
   }
 
   let best: {
-    operation: MachineOperation | ParameterizedOperation;
-    parameters?: ParameterValues;
+    operation: Operation;
+    parameters: ParameterValues;
     requirement: InputMaterialWithQuantity;
     material: MaterialInstance;
     misses: number;
   } | null = null;
   for (const operation of operations) {
-    const parameters = isParameterizedOperation(operation)
-      ? { ...defaultParametersFor(operation), ...machine.selectedParameters }
-      : machine.selectedParameters;
-    const requirements = getOperationInputMaterials(operation, parameters);
+    const parameters = machine.resolvedParameters(operation);
+    const requirements = operation.getInputMaterials(parameters);
     // Fill requirements the way feeding would, to find the one that blocks
-    const remaining = [...carried];
-    let blocking: InputMaterialWithQuantity | null = null;
-    for (const requirement of requirements) {
-      for (let i = 0; i < requirement.quantity && !blocking; i++) {
-        const index = remaining.findIndex((material) =>
-          materialMeetsInput(material, requirement),
-        );
-        if (index === -1) {
-          blocking = requirement;
-        } else {
-          remaining.splice(index, 1);
-        }
-      }
-      if (blocking) {
-        break;
-      }
-    }
+    const { remaining, firstUnmet: blocking } = matchRequirements(
+      carried,
+      requirements,
+    );
     if (!blocking) {
       continue;
     }
@@ -344,7 +339,7 @@ export function explainFeedRefusal(
  */
 export function slideStock(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
 ): Board | undefined {
   const match = findFeedableOperation(machine, operations, carried);
@@ -383,9 +378,8 @@ export function machineCanOperate(
   if (!operation) {
     return false;
   }
-  const inputMaterials = getOperationInputMaterials(
-    operation,
-    machine.selectedParameters,
+  const inputMaterials = operation.getInputMaterials(
+    machine.resolvedParameters(operation),
   );
 
   const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);

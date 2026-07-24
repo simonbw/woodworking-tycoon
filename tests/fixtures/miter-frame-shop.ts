@@ -78,7 +78,6 @@ export const miterFrameShop: GameState = {
       rail("test-rail-3"),
     ],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

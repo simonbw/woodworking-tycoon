@@ -1,3 +1,4 @@
+import { personCanWork } from "../Person";
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { GameState } from "../GameState";
@@ -69,11 +70,11 @@ describe("goToStoreAction / returnFromStoreAction", () => {
       kind: "shopping",
       store: "orangeBox",
     });
-    assert.strictEqual(out.player.canWork, false);
+    assert.strictEqual(personCanWork(out.player), false);
 
     const home = returnFromStoreAction()(out);
     assert.strictEqual(home.player.away, null);
-    assert.strictEqual(home.player.canWork, true);
+    assert.strictEqual(personCanWork(home.player), true);
   });
 
   it("remembers which store the trip is to", () => {
@@ -127,6 +128,6 @@ describe("goToStoreAction / returnFromStoreAction", () => {
       kind: "shopping",
       store: "orangeBox",
     });
-    assert.strictEqual(state.player.canWork, false);
+    assert.strictEqual(personCanWork(state.player), false);
   });
 });

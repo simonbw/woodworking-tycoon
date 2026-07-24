@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
-import { MachineOperation } from "../Machine";
+import { Operation } from "../Machine";
 import {
   isFinishedProduct,
   makeMaterial,
@@ -13,16 +13,16 @@ import { panel } from "../panel-helpers";
 import { TOOL_TYPES } from "../Tool";
 import { workspace } from "./workspace";
 
-function benchOp(id: string): MachineOperation {
+function benchOp(id: string): Operation {
   const op = workspace.operations.find((o) => o.id === id);
   assert.ok(op, `bench operation ${id} exists`);
-  return op as MachineOperation;
+  return op as Operation;
 }
 
-function toolOp(toolId: keyof typeof TOOL_TYPES, id: string): MachineOperation {
+function toolOp(toolId: keyof typeof TOOL_TYPES, id: string): Operation {
   const op = TOOL_TYPES[toolId].operations.find((o) => o.id === id);
   assert.ok(op, `${toolId} operation ${id} exists`);
-  return op as MachineOperation;
+  return op as Operation;
 }
 
 /** A frame rail: both ends mitered at the stop, mirrored so corners close. */
@@ -43,13 +43,13 @@ function rail(
 describe("buildBirdhouse", () => {
   it("takes short deck-board crosscuts and yields a birdhouse", () => {
     const op = toolOp("hammer", "buildBirdhouse");
-    const requirement = op.inputMaterials[0];
+    const requirement = op.getInputMaterials({})[0];
     assert.ok(materialMeetsInput(board("pallet", 1, 4, 1), requirement));
     // Whole deck boards are too long
     assert.ok(!materialMeetsInput(board("pallet", 3, 4, 1), requirement));
 
     const inputs = Array.from({ length: 4 }, () => board("pallet", 1, 4, 1));
-    const { outputs } = op.output(inputs);
+    const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "birdhouse");
     assert.strictEqual(outputs[0].species, "pallet");
@@ -60,7 +60,7 @@ describe("buildCrate", () => {
   it("takes six whole deck boards", () => {
     const op = toolOp("hammer", "buildCrate");
     const inputs = Array.from({ length: 6 }, () => board("pallet", 3, 4, 1));
-    const { outputs } = op.output(inputs);
+    const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "crate");
   });
@@ -69,7 +69,7 @@ describe("buildCrate", () => {
 describe("buildStepStool", () => {
   it("takes stout sides plus thinner treads", () => {
     const op = toolOp("drill", "buildStepStool");
-    const [sides, treads] = op.inputMaterials;
+    const [sides, treads] = op.getInputMaterials({});
     // Crosscut pallet stringers qualify as sides
     assert.ok(materialMeetsInput(board("pallet", 2, 6, 3), sides));
     // Deck-board crosscuts qualify as treads
@@ -82,7 +82,7 @@ describe("buildStepStool", () => {
       board("pallet", 2, 6, 3),
       board("pallet", 2, 4, 1),
       board("pallet", 2, 4, 1),
-    ]);
+    ], {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "stepStool");
   });
@@ -91,7 +91,7 @@ describe("buildStepStool", () => {
 describe("buildBookshelf", () => {
   it("takes four sanded hardwood boards — twice the single shelf", () => {
     const op = toolOp("drill", "buildBookshelf");
-    const requirement = op.inputMaterials[0];
+    const requirement = op.getInputMaterials({})[0];
     assert.ok(materialMeetsInput(board("oak", 4, 6, 4, "sanded"), requirement));
     assert.ok(
       !materialMeetsInput(board("pallet", 4, 6, 4, "sanded"), requirement),
@@ -100,7 +100,7 @@ describe("buildBookshelf", () => {
     const inputs = Array.from({ length: 4 }, () =>
       board("oak", 4, 6, 4, "sanded"),
     );
-    const { outputs } = op.output(inputs);
+    const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "bookshelf");
     assert.strictEqual(outputs[0].species, "oak");
@@ -109,7 +109,7 @@ describe("buildBookshelf", () => {
 
 describe("buildHexFrame", () => {
   const op = benchOp("buildHexFrame");
-  const requirement = op.inputMaterials[0];
+  const requirement = op.getInputMaterials({})[0];
 
   it("wants rails mitered at the 30° stop, mirrored", () => {
     assert.ok(materialMeetsInput(rail("cherry", 1, 30), requirement));
@@ -123,7 +123,7 @@ describe("buildHexFrame", () => {
 
   it("produces a hex frame of the rail species", () => {
     const inputs = Array.from({ length: 6 }, () => rail("cherry", 1, 30));
-    const { outputs } = op.output(inputs);
+    const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "hexFrame");
     assert.strictEqual(outputs[0].species, "cherry");
@@ -145,7 +145,7 @@ describe("buildServingTray", () => {
     );
 
   it("wants a sanded real-wood panel bottom and 45° rails", () => {
-    const [panelReq, railReq] = op.inputMaterials;
+    const [panelReq, railReq] = op.getInputMaterials({});
     assert.ok(materialMeetsInput(bottom(), panelReq));
     assert.ok(!materialMeetsInput(bottom("pallet"), panelReq));
     assert.ok(materialMeetsInput(rail("maple", 2, 45), railReq));
@@ -155,7 +155,7 @@ describe("buildServingTray", () => {
     const { outputs } = op.output([
       bottom(),
       ...Array.from({ length: 4 }, () => rail("maple", 2, 45)),
-    ]);
+    ], {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "servingTray");
     assert.strictEqual(outputs[0].species, "maple");
@@ -166,7 +166,7 @@ describe("buildSideTable", () => {
   const op = benchOp("buildSideTable");
 
   it("wants a wide sanded top — wider than any single board", () => {
-    const topReq = op.inputMaterials[0];
+    const topReq = op.getInputMaterials({})[0];
     const wide = panel(
       Array.from({ length: 6 }, () => ({
         species: "walnut" as const,
@@ -190,7 +190,7 @@ describe("buildSideTable", () => {
   });
 
   it("wants square 8/4 legs", () => {
-    const legReq = op.inputMaterials[1];
+    const legReq = op.getInputMaterials({})[1];
     assert.ok(materialMeetsInput(board("walnut", 2, 2, 8, "sanded"), legReq));
     // Thin stock can't hold up a table
     assert.ok(!materialMeetsInput(board("walnut", 2, 2, 4, "sanded"), legReq));
@@ -199,7 +199,7 @@ describe("buildSideTable", () => {
 
 describe("finishCheckerboardBoard", () => {
   const op = benchOp("finishCheckerboardBoard");
-  const requirement = op.inputMaterials[0];
+  const requirement = op.getInputMaterials({})[0];
 
   const blank = (
     strips: ReadonlyArray<{ species: "walnut" | "maple"; width: 2 }>,
@@ -236,7 +236,7 @@ describe("finishCheckerboardBoard", () => {
   });
 
   it("produces the priciest board on the roster", () => {
-    const { outputs } = op.output([blank(alternating)]);
+    const { outputs } = op.output([blank(alternating)], {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "checkerboardCuttingBoard");
     assert.strictEqual(outputs[0].species, "walnut");
@@ -251,7 +251,7 @@ describe("finishCheckerboardBoard", () => {
 
   it("is oilable like every other cutting board", () => {
     const oil = benchOp("oilCuttingBoard");
-    const { outputs } = op.output([blank(alternating)]);
-    assert.ok(materialMeetsInput(outputs[0], oil.inputMaterials[0]));
+    const { outputs } = op.output([blank(alternating)], {});
+    assert.ok(materialMeetsInput(outputs[0], oil.getInputMaterials({})[0]));
   });
 });

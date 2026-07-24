@@ -1,5 +1,5 @@
 import { GameAction } from "../GameState";
-import { WorkItem } from "../Person";
+import { personCanWork, WorkItem } from "../Person";
 import { carryingShopVac } from "../ShopVac";
 import { sweepAction } from "./dust-actions";
 import { vacuumAction } from "./shop-vac-actions";
@@ -22,7 +22,7 @@ export function applyWorkItemAction(workItem: WorkItem): GameAction {
 /** Adds a work item to the player's work queue */
 export function addWorkItemAction(workItem: WorkItem): GameAction {
   return (gameState) => {
-    if (gameState.player.canWork) {
+    if (personCanWork(gameState.player)) {
       return applyWorkItemAction(workItem)(gameState);
     } else {
       return {

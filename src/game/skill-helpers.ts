@@ -1,10 +1,5 @@
 import { ProgressionState } from "./GameState";
-import {
-  Machine,
-  MachineOperation,
-  OperationPhase,
-  ParameterizedOperation,
-} from "./Machine";
+import { Machine, Operation, OperationPhase } from "./Machine";
 import { SkillId } from "./Skill";
 
 /**
@@ -51,7 +46,7 @@ export function hasSkill(
 export function availableOperations(
   machine: Machine,
   progression: ProgressionState,
-): ReadonlyArray<MachineOperation | ParameterizedOperation> {
+): ReadonlyArray<Operation> {
   return machine.operations.filter(
     (operation) =>
       !operation.requiredSkill ||
@@ -77,7 +72,7 @@ const GLUE_OPERATION_IDS = [
  * mid-operation affects the remaining phases but not the current one.
  */
 export function getOperationPhases(
-  operation: MachineOperation | ParameterizedOperation,
+  operation: Operation,
   progression: ProgressionState,
   dustMultiplier: number = 1,
   workSpeed: number = 1,
@@ -114,7 +109,7 @@ export function getOperationPhases(
 /** Total operation duration after passive skills, dust, and the station's
  * work speed (all phases). */
 export function getOperationDuration(
-  operation: MachineOperation | ParameterizedOperation,
+  operation: Operation,
   progression: ProgressionState,
   dustMultiplier: number = 1,
   workSpeed: number = 1,

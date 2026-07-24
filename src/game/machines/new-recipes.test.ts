@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
-import { MachineOperation } from "../Machine";
+import { Operation } from "../Machine";
 import { isFinishedProduct, materialMeetsInput } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { panel } from "../panel-helpers";
@@ -9,19 +9,19 @@ import { workspace } from "./workspace";
 
 const buildShelf = workspace.operations.find(
   (op) => op.id === "buildShelf",
-) as MachineOperation;
+) as Operation;
 const finishTwoTone = workspace.operations.find(
   (op) => op.id === "finishTwoToneBoard",
-) as MachineOperation;
+) as Operation;
 // The jewelry box moved to the shared bench list when the makeshift bench
 // retired — any bench station carries it now
 const buildJewelryBox = workspace.operations.find(
   (op) => op.id === "buildJewelryBox",
-) as MachineOperation;
+) as Operation;
 
 describe("buildShelf", () => {
   it("requires sanded hardwood, not pallet wood", () => {
-    const requirement = buildShelf.inputMaterials[0];
+    const requirement = buildShelf.getInputMaterials({})[0];
     assert.ok(
       materialMeetsInput(board("maple", 4, 6, 4, "sanded"), requirement),
     );
@@ -38,7 +38,7 @@ describe("buildShelf", () => {
       board("cherry", 4, 6, 4, "sanded"),
       board("cherry", 4, 6, 4, "sanded"),
     ];
-    const { outputs } = buildShelf.output(inputs);
+    const { outputs } = buildShelf.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "shelf");
     assert.strictEqual(outputs[0].species, "cherry");
@@ -47,7 +47,7 @@ describe("buildShelf", () => {
 
 describe("buildJewelryBox", () => {
   it("requires thin sanded stock — the planer era", () => {
-    const requirement = buildJewelryBox.inputMaterials[0];
+    const requirement = buildJewelryBox.getInputMaterials({})[0];
     assert.ok(
       materialMeetsInput(board("walnut", 2, 4, 2, "sanded"), requirement),
     );
@@ -61,7 +61,7 @@ describe("buildJewelryBox", () => {
     const inputs = Array.from({ length: 4 }, () =>
       board("walnut", 2, 4, 2, "sanded"),
     );
-    const { outputs } = buildJewelryBox.output(inputs);
+    const { outputs } = buildJewelryBox.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "jewelryBox");
     assert.strictEqual(outputs[0].species, "walnut");
@@ -69,7 +69,7 @@ describe("buildJewelryBox", () => {
 });
 
 describe("finishTwoToneBoard", () => {
-  const requirement = finishTwoTone.inputMaterials[0];
+  const requirement = finishTwoTone.getInputMaterials({})[0];
   const twoTone = (surface: "rough" | "smooth" | "sanded") =>
     panel(
       [
@@ -102,14 +102,14 @@ describe("finishTwoToneBoard", () => {
   });
 
   it("names the majority species first and the accent second", () => {
-    const { outputs } = finishTwoTone.output([twoTone("sanded")]);
+    const { outputs } = finishTwoTone.output([twoTone("sanded")], {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].species, "walnut"); // 3 strips vs 2
     assert.strictEqual(outputs[0].accentSpecies, "maple");
   });
 
   it("sells at a premium over both solid versions", () => {
-    const { outputs } = finishTwoTone.output([twoTone("sanded")]);
+    const { outputs } = finishTwoTone.output([twoTone("sanded")], {});
     const twoToneValue = getSellValue(outputs[0]);
     // walnut 5, maple 3 -> avg 4 x 1.5 premium = x6 vs walnut's x5
     assert.strictEqual(twoToneValue, 40 * 6);

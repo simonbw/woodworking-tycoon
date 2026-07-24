@@ -16,7 +16,6 @@ export const miterSawCrateShop: GameState = {
     direction: 0,
     inventory: [],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

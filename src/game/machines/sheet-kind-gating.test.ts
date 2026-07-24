@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { MACHINE_TYPES, MachineOperation } from "../Machine";
+import { MACHINE_TYPES, Operation } from "../Machine";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
 import { SHEET_GOOD_KINDS, SheetGood, SheetGoodKind } from "../Materials";
 import {
@@ -23,9 +23,9 @@ function sheet(kind: SheetGoodKind): SheetGood {
 function sheetRequirementOf(operationId: string) {
   const operation = workspace.operations.find(
     (op) => op.id === operationId,
-  ) as MachineOperation;
+  ) as Operation;
   assert.ok(operation, `${operationId} should exist on the bench`);
-  const requirement = operation.inputMaterials.find((req) =>
+  const requirement = operation.getInputMaterials({}).find((req) =>
     (req.type as ReadonlyArray<string> | undefined)?.includes("plywood"),
   );
   assert.ok(requirement, `${operationId} should take a sheet`);
@@ -78,8 +78,8 @@ describe("storage rack", () => {
   it("builds as a machine from the bench", () => {
     const build = workspace.operations.find(
       (op) => op.id === "buildStorageRack",
-    ) as MachineOperation;
-    assert.deepStrictEqual(build.output([]).machineOutputs, ["storageRack"]);
+    ) as Operation;
+    assert.deepStrictEqual(build.output([], {}).machineOutputs, ["storageRack"]);
   });
 
   it("out-shelves a worktable of the same footprint, and does nothing else", () => {

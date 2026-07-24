@@ -6,10 +6,16 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useCellMap } from "../game/CellMap";
-import { Machine } from "../game/Machine";
+import { useCellMap } from "./useCellMap";
+import { Machine, machineKey as machineStateKey } from "../game/Machine";
 import { isAtShopDoor } from "../game/ShopInfo";
-import { Direction, Vector, rotateVec, translateVec } from "../game/Vectors";
+import {
+  Direction,
+  Vector,
+  rotateVec,
+  translateVec,
+  vectorKey,
+} from "../game/Vectors";
 import { useGameState } from "./useGameState";
 
 interface TargetedMachineValue {
@@ -44,8 +50,7 @@ const targetedMachineContext = createContext<TargetedMachineValue | undefined>(
   undefined,
 );
 
-const machineKey = (machine: Machine) =>
-  `${machine.type.name}@${machine.position.join(",")}`;
+const machineKey = (machine: Machine) => machineStateKey(machine.state);
 
 const DIRECTION_VECTORS: Record<Direction, Vector> = {
   0: [1, 0],
@@ -112,7 +117,7 @@ export const TargetedMachineProvider: React.FC<{
 
   const machines =
     cellMap.at(gameState.player.position)?.operableMachines ?? [];
-  const positionKey = gameState.player.position.join(",");
+  const positionKey = vectorKey(gameState.player.position);
   const direction = gameState.player.direction;
 
   useEffect(() => setOffset(0), [positionKey, direction]);

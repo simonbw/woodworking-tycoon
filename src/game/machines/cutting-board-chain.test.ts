@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
-import { MachineOperation, ParameterizedOperation } from "../Machine";
+import { Operation,  } from "../Machine";
 import { materialMeetsInput } from "../material-helpers";
 import { panelWidth } from "../Materials";
 import { isPanel, panel, uniformPanel } from "../panel-helpers";
@@ -10,13 +10,13 @@ import { workspace } from "./workspace";
 
 const glueUp = workspace.operations.find(
   (op) => op.id === "glueUpPanel",
-) as MachineOperation;
+) as Operation;
 const finish = workspace.operations.find(
   (op) => op.id === "finishCuttingBoard",
-) as MachineOperation;
+) as Operation;
 const plane = lunchboxPlaner.operations.find(
   (op) => op.id === "plane",
-) as ParameterizedOperation;
+) as Operation;
 
 describe("glueUpPanel", () => {
   const strips = Array.from({ length: 5 }, () =>
@@ -24,7 +24,7 @@ describe("glueUpPanel", () => {
   );
 
   it("requires five smooth 2x2x4 strips", () => {
-    const requirement = glueUp.inputMaterials[0];
+    const requirement = glueUp.getInputMaterials({})[0];
     assert.strictEqual(requirement.quantity, 5);
     assert.ok(materialMeetsInput(strips[0], requirement));
     assert.ok(
@@ -41,7 +41,7 @@ describe("glueUpPanel", () => {
   });
 
   it("glues five strips into a 10-inch panel that comes out rough", () => {
-    const { outputs } = glueUp.output(strips);
+    const { outputs } = glueUp.output(strips, {});
     assert.strictEqual(outputs.length, 1);
     const result = outputs[0];
     assert.ok(isPanel(result));
@@ -60,7 +60,7 @@ describe("glueUpPanel", () => {
       board("maple", 2, 2, 4, "smooth"),
       board("walnut", 2, 2, 4, "smooth"),
     ];
-    const { outputs } = glueUp.output(mixed);
+    const { outputs } = glueUp.output(mixed, {});
     const result = outputs[0];
     assert.ok(isPanel(result));
     assert.deepStrictEqual(
@@ -71,7 +71,7 @@ describe("glueUpPanel", () => {
 });
 
 describe("finishCuttingBoard", () => {
-  const requirement = finish.inputMaterials[0];
+  const requirement = finish.getInputMaterials({})[0];
   const goodBlank = uniformPanel("maple", 5, 2, 2, 3, "sanded");
 
   it("accepts a sanded single-species hardwood panel", () => {
@@ -151,7 +151,7 @@ describe("finishCuttingBoard", () => {
   });
 
   it("produces a cutting board of the panel's species", () => {
-    const { outputs } = finish.output([goodBlank]);
+    const { outputs } = finish.output([goodBlank], {});
     assert.strictEqual(outputs.length, 1);
     assert.deepStrictEqual(outputs[0].type, "simpleCuttingBoard");
     assert.ok("species" in outputs[0] && outputs[0].species === "maple");

@@ -108,7 +108,7 @@ describe("mountToolAction", () => {
     assert.strictEqual(refused, state);
     // The planer is
     const planerView = getMachines(state.machines).find(
-      (machine) => machine.type.id === "planer",
+      (machine) => machine.type.id === "lunchboxPlaner",
     )!;
     const mounted = mountToolAction(planerView, "dustBag")(state);
     assert.deepStrictEqual(

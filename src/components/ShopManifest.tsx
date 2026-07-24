@@ -1,5 +1,5 @@
 import React from "react";
-import { useCellMap } from "../game/CellMap";
+import { useCellMap } from "./useCellMap";
 import { FloorListSection } from "./current-cell-info/FloorListSection";
 import { InventorySection } from "./current-cell-info/InventorySection";
 import { SuppliesSection } from "./SuppliesSection";
