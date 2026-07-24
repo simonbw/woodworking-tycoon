@@ -20,7 +20,7 @@ export const ToolsArticle: React.FC = () => (
     <H>Tool Tiers</H>
     <P>
       Higher-tier tools work faster, not differently. The $10 sanding block and
-      the $120 random orbit sander perform the same operations — the sander is
+      the $80 random orbit sander perform the same operations — the sander is
       just several times quicker. Likewise, the $35 hand plane does the same
       flattening work as the jointer, at a fraction of the price and several
       times the time.
