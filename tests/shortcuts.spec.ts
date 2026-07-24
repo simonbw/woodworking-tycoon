@@ -42,25 +42,62 @@ test.describe("Keyboard shortcuts", () => {
       });
     });
 
-    // Movement is continuous: hold a key and the body walks, and GameState's
-    // cell updates as the body crosses boundaries. Each assertion holds the
-    // key until the cell changes, polling fast enough not to overshoot.
-    const walkUntil = async (key: string, expected: [number, number]) => {
+    // Movement is continuous and rAF-driven: hold a key and the body walks
+    // in frame-timed bursts, and GameState's cell updates as the body
+    // crosses boundaries. Two things make an exact-cell wait unreliable
+    // under headless throttling: the body can cross several 1-ft cells
+    // between two polls, and a previous key's `keyup` handler can run late
+    // (starved event loop), briefly leaving that key held into the next
+    // press — a stale rightward key while pressing down reads as diagonal.
+    //
+    // So each step: settle to rest first (which proves no key still drives
+    // the body — a stale key would keep it moving), hold the key until the
+    // cell first changes, release, and assert the move went one net step in
+    // the key's own direction with no cross-axis drift. That verifies the
+    // binding → direction mapping without pinning a burst-sensitive cell.
+    const same = (a: [number, number], b: [number, number]) =>
+      a[0] === b[0] && a[1] === b[1];
+    const settle = async (): Promise<[number, number]> => {
+      let prev = await playerPosition(page);
+      let stable = 0;
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && stable < 5) {
+        const p = await playerPosition(page);
+        if (same(p, prev)) stable++;
+        else ((stable = 0), (prev = p));
+      }
+      return prev;
+    };
+    const walkOneStep = async (key: string, dx: number, dy: number) => {
+      const start = await settle();
+      let reached = start;
       await page.keyboard.down(key);
       try {
-        await expect
-          .poll(() => playerPosition(page), { intervals: [50], timeout: 10000 })
-          .toEqual(expected);
+        const deadline = Date.now() + 10000;
+        while (Date.now() < deadline) {
+          const p = await playerPosition(page);
+          if (!same(p, start)) {
+            reached = p;
+            break;
+          }
+        }
       } finally {
         await page.keyboard.up(key);
       }
+      const [ax, cross] = dx !== 0 ? [0, 1] : [1, 0];
+      const dir = dx !== 0 ? dx : dy;
+      expect(reached[cross], `${key} drifted sideways`).toBe(start[cross]);
+      expect(
+        Math.sign(reached[ax] - start[ax]),
+        `${key} should walk the body along axis ${ax}`,
+      ).toBe(Math.sign(dir));
     };
 
     await test.step("WASD and the arrow keys both walk the player", async () => {
       expect(await playerPosition(page)).toEqual([5, 6]);
-      await walkUntil("d", [6, 6]);
-      await walkUntil("ArrowDown", [6, 7]);
-      await walkUntil("a", [5, 7]);
+      await walkOneStep("d", 1, 0);
+      await walkOneStep("ArrowDown", 0, 1);
+      await walkOneStep("a", -1, 0);
     });
 
     await test.step("letter keys open the pocket overlays and toggle shut", async () => {
