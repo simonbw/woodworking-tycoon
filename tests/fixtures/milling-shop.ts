@@ -65,7 +65,6 @@ export const millingShop: GameState = {
     direction: 0,
     inventory: [roughWalnut("test-rough-1"), roughWalnut("test-rough-2")],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

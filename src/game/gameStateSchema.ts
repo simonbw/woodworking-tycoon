@@ -84,7 +84,6 @@ const personSchema = z.object({
   inventory: z.array(materialSchema),
   carriedMachine: machineStateSchema.nullable().optional(),
   workQueue: z.array(z.object({ type: z.literal("sweep") })),
-  canWork: z.boolean(),
   busyTicks: z.number(),
   away: awayTripSchema.nullable(),
 });

@@ -1,3 +1,4 @@
+import { personCanWork } from "../Person";
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { dustTotal } from "../Dust";
@@ -80,7 +81,7 @@ describe("vacuumAction", () => {
     assert.ok(Math.abs((result.dust["1,2"]?.pine ?? 0) - 8) < 1e-9);
     assert.ok(Math.abs(dustTotal(result.shopVac?.canister) - 62) < 1e-9);
     assert.strictEqual(result.player.busyTicks, 1);
-    assert.strictEqual(result.player.canWork, false);
+    assert.strictEqual(personCanWork(result.player), false);
     assert.strictEqual(result.progression.xp, 1);
   });
 

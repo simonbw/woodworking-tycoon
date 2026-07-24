@@ -16,7 +16,6 @@ export interface Person {
    */
   carriedMachine?: MachineState | null;
   workQueue: ReadonlyArray<WorkItem>;
-  canWork: boolean;
   /**
    * Ticks the person is still occupied by their last action — trudging
    * through deep sawdust, finishing a sweep. While positive, each tick
@@ -48,6 +47,16 @@ export type ShoppingTrip = {
   /** Which store the trip is to; each is its own overlay. */
   readonly store: StoreId;
 };
+
+/**
+ * Whether the person is free to start work right now: in the shop and not
+ * still occupied by their last action (trudging, sweeping). Derived, never
+ * stored — tickAction and addWorkItemAction consult this instead of a
+ * persisted flag that would go stale.
+ */
+export function personCanWork(person: Person): boolean {
+  return person.away === null && person.busyTicks === 0;
+}
 
 export type WorkItem = {
   /** Sweep the cell underfoot, pushing its dust the way we're facing. */

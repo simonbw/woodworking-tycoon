@@ -1,3 +1,4 @@
+import { personCanWork } from "../Person";
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { dustTotal } from "../Dust";
@@ -46,7 +47,7 @@ describe("sweepAction", () => {
         Math.abs((pile.material.contents.walnut ?? 0) - 45) < 1e-9,
     );
     // Sweeping takes time: the rest of the sweep is busy ticks
-    assert.strictEqual(result.player.canWork, false);
+    assert.strictEqual(personCanWork(result.player), false);
     assert.strictEqual(result.player.busyTicks, 2);
     // A meaningful sweep earns token XP
     assert.strictEqual(

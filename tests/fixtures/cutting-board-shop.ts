@@ -56,7 +56,6 @@ export const cuttingBoardShop: GameState = {
       jointedEdges: 2 as const,
     })),
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

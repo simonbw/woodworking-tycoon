@@ -33,7 +33,6 @@ export const initialGameState: GameState = {
     direction: 1,
     inventory: [],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },

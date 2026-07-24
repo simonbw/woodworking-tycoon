@@ -3,6 +3,7 @@ import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
+import { personCanWork } from "../Person";
 import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
 import { Vector } from "../Vectors";
@@ -23,56 +24,44 @@ import { withXp } from "./skill-actions";
 
 export const tickAction: GameAction = (gameState) => {
   const away = gameState.player.away;
-  if (away) {
-    if (away.kind === "scavenging" && gameState.tick >= away.returnTick) {
-      // Welcome home: drop the haul at the material dropoff spot
-      gameState = {
-        ...gameState,
-        materialPiles: [
-          ...gameState.materialPiles,
-          ...away.loot.map((material) => ({
-            material,
-            position: gameState.shopInfo.materialDropoffPosition,
-          })),
-        ],
-        player: { ...gameState.player, away: null, canWork: true },
-      };
-    } else {
-      // Still out of the shop (scavenging mid-trip, or browsing the store —
-      // shopping trips end via returnFromStoreAction, not a timer): no
-      // player work, but machines keep running
-      gameState = {
-        ...gameState,
-        player: { ...gameState.player, canWork: false },
-      };
-    }
-  } else {
+  if (away?.kind === "scavenging" && gameState.tick >= away.returnTick) {
+    // Welcome home: drop the haul at the material dropoff spot. (Shopping
+    // trips end via returnFromStoreAction, not a timer.)
     gameState = {
       ...gameState,
-      player: {
-        ...gameState.player,
-        canWork: true,
-      },
+      materialPiles: [
+        ...gameState.materialPiles,
+        ...away.loot.map((material) => ({
+          material,
+          position: gameState.shopInfo.materialDropoffPosition,
+        })),
+      ],
+      player: { ...gameState.player, away: null },
     };
   }
 
   // Still trudging through dust (or mid-sweep): this tick goes to that,
   // not to the work queue. Attendance is positional, so a machine the
-  // player is standing at keeps running.
-  const busyTicks = gameState.player.busyTicks ?? 0;
-  if (busyTicks > 0 && gameState.player.canWork) {
+  // player is standing at keeps running. Busy time doesn't burn down
+  // while away — the sweep waits where it was left.
+  const busyThisTick = (gameState.player.busyTicks ?? 0) > 0;
+  if (busyThisTick && gameState.player.away === null) {
     gameState = {
       ...gameState,
       player: {
         ...gameState.player,
-        canWork: false,
-        busyTicks: busyTicks - 1,
+        busyTicks: gameState.player.busyTicks - 1,
       },
     };
   }
 
-  // TODO: This might be kinda inefficient
-  while (gameState.player.canWork && gameState.player.workQueue.length > 0) {
+  // Drain queued work while the player is free. A work item can occupy
+  // the player (sweeping sets busyTicks), which stops the drain.
+  while (
+    !busyThisTick &&
+    personCanWork(gameState.player) &&
+    gameState.player.workQueue.length > 0
+  ) {
     const workQueue = [...gameState.player.workQueue];
     const workItem = workQueue.shift()!;
 

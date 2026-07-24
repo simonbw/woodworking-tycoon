@@ -65,7 +65,6 @@ export function startScavengingAction(
       ...gameState,
       player: {
         ...gameState.player,
-        canWork: false,
         workQueue: [],
         away: {
           kind: "scavenging",

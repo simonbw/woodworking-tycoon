@@ -1,3 +1,4 @@
+import { personCanWork } from "../Person";
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { GameState } from "../GameState";
@@ -62,7 +63,7 @@ describe("startScavengingAction", () => {
       );
       assert.strictEqual(away.loot.length, 1);
     }
-    assert.strictEqual(result.player.canWork, false);
+    assert.strictEqual(personCanWork(result.player), false);
   });
 
   it("does nothing before free selling is unlocked", () => {

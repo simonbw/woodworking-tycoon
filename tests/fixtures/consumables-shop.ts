@@ -28,7 +28,6 @@ export const consumablesShop: GameState = {
       },
     ],
     workQueue: [],
-    canWork: true,
     busyTicks: 0,
     away: null,
   },
