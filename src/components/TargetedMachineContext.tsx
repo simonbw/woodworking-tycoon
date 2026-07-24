@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useCellMap } from "../game/CellMap";
 import { Machine } from "../game/Machine";
+import { isAtShopDoor } from "../game/ShopInfo";
 import { Direction, Vector, rotateVec, translateVec } from "../game/Vectors";
 import { useGameState } from "./useGameState";
 
@@ -30,6 +31,13 @@ interface TargetedMachineValue {
   closeSheet: () => void;
   /** Open the targeted machine's sheet, or close it if already open. */
   toggleSheet: () => void;
+  /**
+   * Whether the garage door's destination card is spread open (E at the
+   * door). Cleared automatically when the player walks off the door.
+   */
+  doorOpen: boolean;
+  openDoor: () => void;
+  closeDoor: () => void;
 }
 
 const targetedMachineContext = createContext<TargetedMachineValue | undefined>(
@@ -100,6 +108,7 @@ export const TargetedMachineProvider: React.FC<{
   const cellMap = useCellMap();
   const [offset, setOffset] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | undefined>(undefined);
+  const [doorOpenRaw, setDoorOpen] = useState(false);
 
   const machines =
     cellMap.at(gameState.player.position)?.operableMachines ?? [];
@@ -132,6 +141,15 @@ export const TargetedMachineProvider: React.FC<{
   );
   const closeSheet = useCallback(() => setSheetKey(undefined), []);
 
+  // The door card belongs to the door: walking off the door (or leaving
+  // the shop) folds it up.
+  const atDoor =
+    !gameState.player.away &&
+    isAtShopDoor(gameState.shopInfo, gameState.player.position);
+  const doorOpen = doorOpenRaw && atDoor;
+  const openDoor = useCallback(() => setDoorOpen(true), []);
+  const closeDoor = useCallback(() => setDoorOpen(false), []);
+
   const value = useMemo(
     () => ({
       machine,
@@ -157,6 +175,9 @@ export const TargetedMachineProvider: React.FC<{
           setSheetKey(machineKey(machine));
         }
       },
+      doorOpen,
+      openDoor,
+      closeDoor,
     }),
     [
       machine,
@@ -166,6 +187,9 @@ export const TargetedMachineProvider: React.FC<{
       sheetMachine,
       openSheet,
       closeSheet,
+      doorOpen,
+      openDoor,
+      closeDoor,
     ],
   );
 

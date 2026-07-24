@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { machineCard, selectMode, setParameter } from "./machine-panel";
+import {
+  machineCard,
+  openStationSheet,
+  selectMode,
+  setParameter,
+} from "./machine-panel";
 
 declare global {
   interface Window {
@@ -71,6 +76,8 @@ test.describe("Miter cuts and the picture frame", () => {
     });
 
     await test.step("the saw exposes the cut line and head angle, nothing more", async () => {
+      // The saw's scales live on its station sheet
+      await openStationSheet(page);
       const card = machineCard(page, "Miter Saw");
       await expect(card.getByRole("radiogroup", { name: "Angle" })).toBeVisible();
       await expect(

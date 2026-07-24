@@ -5,6 +5,7 @@ import { canPutDownCarriedMachine } from "../../game/game-actions/machine-action
 import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
+import { resolveInteract } from "../../game/interact";
 import { vectorEquals } from "../../game/Vectors";
 import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -66,7 +67,10 @@ export const PlayerPrompt: React.FC = () => {
         </li>,
       );
     }
-    if (cell?.grabbablePiles.length) {
+    // The E chip belongs to whatever the interact key resolved to —
+    // floor pickups render here; machine and door interactions render
+    // at the machine and the door.
+    if (resolveInteract(gameState, targetedMachine)?.kind === "pick-up-floor") {
       rows.push(
         <li key="pick-up">
           <ShortcutKeys shortcut="pick-up" /> pick up

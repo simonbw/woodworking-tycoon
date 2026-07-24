@@ -24,6 +24,7 @@ import {
   clearWorkQueueAction,
 } from "../../game/game-actions/work-item-actions";
 import { vectorEquals } from "../../game/Vectors";
+import { resolveInteract } from "../../game/interact";
 import {
   machineCanOperate,
   parameterValueSatisfiable,
@@ -52,9 +53,14 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     sheetMachine,
     toggleSheet,
     closeSheet,
+    doorOpen,
+    openDoor,
+    closeDoor,
   } = useTargetedMachine();
   const targeted = useRef(targetedMachine);
   targeted.current = targetedMachine;
+  const doorOpenRef = useRef(doorOpen);
+  doorOpenRef.current = doorOpen;
 
   // While the player is off scavenging they aren't in the shop, and the machine
   // panels are hidden — the keys shouldn't still reach into them.
@@ -113,82 +119,75 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present && carrying,
   );
 
-  // An open station sheet claims Escape (the binding steps aside
-  // otherwise); emptying the queue stays available while away — it only
-  // affects what happens once the player is back.
-  useShortcut("close-sheet", closeSheet, sheetMachine != null);
+  // An open station sheet (or door card) claims Escape — the binding
+  // steps aside otherwise; emptying the queue stays available while
+  // away — it only affects what happens once the player is back.
+  useShortcut(
+    "close-sheet",
+    () => {
+      closeSheet();
+      closeDoor();
+    },
+    sheetMachine != null || doorOpen,
+  );
   useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));
 
   useShortcut("cycle-machine", cycleTarget, present);
 
-  // Enter spreads out (or folds up) the station sheet of recipe-driven
-  // stations. Direct-feed machines have no sheet — their placard already
-  // is their whole interface.
+  // Enter spreads out (or folds up) the targeted station's sheet — the
+  // full paperwork behind the on-machine hints.
   useShortcut(
     "open-station-sheet",
     toggleSheet,
-    present &&
-      !carrying &&
-      (sheetMachine != null ||
-        (targetedMachine != null && !targetedMachine.type.directFeed)),
+    present && !carrying && (sheetMachine != null || targetedMachine != null),
   );
 
-  // Pick up: the targeted machine first, then any other machine on this square
-  // that has something, then the floor. Checking the other machines matters —
-  // otherwise standing at an empty bench next to a loaded saw would grab the
-  // floor pile instead of the boards.
+  // E is the interact key: take finished work, unload a bay, switch the
+  // machine on, pick up the floor, head out the door — whichever the
+  // shared resolver says applies here. The hint chip next to the player
+  // shows the same answer, so the key never surprises.
   useShortcut(
     "pick-up",
     (event) => {
-      const cellMap = CellMap.fromGameState(gameState.current);
-      const cell = cellMap.at(gameState.current.player.position);
-
-      const candidates = [
-        targeted.current,
-        ...(cell?.operableMachines ?? []),
-      ].filter((machine) => machine != null);
-
-      // Outputs are collected where they land: at this cell for machines
-      // whose outfeed points here, at the machine itself for single-point
-      // stations (no outputPosition).
-      const outputSources = [
-        ...(cell?.outputMachines ?? []),
-        ...candidates.filter(
-          (machine) => machine.type.outputPosition === undefined,
-        ),
-      ];
-      for (const machine of outputSources) {
-        if (machine.outputMaterials.length) {
+      const gs = gameState.current;
+      if (doorOpenRef.current) {
+        return closeDoor();
+      }
+      const action = resolveInteract(gs, targeted.current);
+      if (!action) return;
+      switch (action.kind) {
+        case "take-outputs":
           return applyAction(
             takeOutputsFromMachineAction(
               event.shiftKey
-                ? machine.outputMaterials
-                : [machine.outputMaterials[0]],
-              machine,
+                ? action.machine.outputMaterials
+                : [action.machine.outputMaterials[0]],
+              action.machine,
             ),
           );
-        }
-      }
-
-      for (const machine of candidates) {
-        if (machine.inputMaterials.length) {
+        case "take-inputs":
           return applyAction(
             takeInputsFromMachineAction(
               event.shiftKey
-                ? machine.inputMaterials
-                : [machine.inputMaterials[0]],
-              machine,
+                ? action.machine.inputMaterials
+                : [action.machine.inputMaterials[0]],
+              action.machine,
+            ),
+          );
+        case "switch-on":
+        case "switch-off":
+          return applyAction(toggleMachinePowerAction(action.machine));
+        case "pick-up-floor": {
+          const cell = CellMap.fromGameState(gs).at(gs.player.position);
+          if (!cell?.grabbablePiles.length) return;
+          return applyAction(
+            pickUpMaterialAction(
+              event.shiftKey ? cell.grabbablePiles : [cell.grabbablePiles[0]],
             ),
           );
         }
-      }
-
-      if (cell?.grabbablePiles.length) {
-        return applyAction(
-          pickUpMaterialAction(
-            event.shiftKey ? cell.grabbablePiles : [cell.grabbablePiles[0]],
-          ),
-        );
+        case "open-door":
+          return openDoor();
       }
     },
     present && !carrying,

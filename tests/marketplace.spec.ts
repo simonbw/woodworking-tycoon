@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { closePhone, movePlayerToDoor, openPhone } from "./navigation";
+import {
+  closePhone,
+  movePlayerToDoor,
+  openDoorPanel,
+  openPhone,
+} from "./navigation";
 
 declare global {
   interface Window {
@@ -182,6 +187,7 @@ test.describe("Marketplace", () => {
     await test.step("scavenging trip starts at the garage door", async () => {
       await closePhone(page);
       await movePlayerToDoor(page);
+      await openDoorPanel(page);
       await page
         .getByTestId("door-panel")
         .locator("li", { hasText: "Scavenge for pallets" })
@@ -224,6 +230,7 @@ test.describe("Marketplace", () => {
         expect(deckCount).toBeLessThanOrEqual(11);
       }
       // Back at the door, the errand is on offer again
+      await openDoorPanel(page);
       await expect(
         page.getByTestId("door-panel").getByText("Scavenge for pallets"),
       ).toBeVisible();

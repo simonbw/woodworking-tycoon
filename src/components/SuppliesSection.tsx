@@ -1,7 +1,7 @@
 import React from "react";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
 import { ConsumableIcon } from "./ItemIcon";
-import { SheetLabel } from "./HandsStrip";
+import { SheetLabel } from "./ShopManifest";
 import { useGameState } from "./useGameState";
 
 /**

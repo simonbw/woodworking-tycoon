@@ -46,7 +46,7 @@ const FloorListItem: React.FC<{ piles: MaterialPile[] }> = ({ piles }) => {
   const applyAction = useApplyGameAction();
 
   return (
-    <li className="flex items-center gap-2 py-1.5">
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5">
       <MaterialIcon material={piles[0].material} size="small" />
       <MaterialLabel material={piles[0].material} />
       {piles.length > 1 && (

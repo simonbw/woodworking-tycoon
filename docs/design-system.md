@@ -51,34 +51,35 @@ stack of equal-weight cards:
   commission (pinned legal sheet, foldable to a stub via its header) and,
   while the player is out scavenging, a "back soon" note (pinned cream
   memo). No label — a corkboard of work orders explains itself.
-- **In-world placards** (`ShopOverlayLayer`, over the canvas) — the
-  contextual UI is pinned to the thing it belongs to. The machine the
-  player stands at wears its placard (`MachinePlacard`: a paper card with
-  the machine's own controls and its live key caps), outfeed stock is
-  offered at the machine it came off of, the garage door lists its
-  numbered destinations on its own header (`DoorPrompt`), and a small
-  dark hint cluster follows the player for floor-aimed verbs
-  (`PlayerPrompt`, hint chrome wrapped in `HintSurfaceContext.Provider
-  value="chrome"`). Recipe stations open a centered **station sheet**
-  (`StationSheet`) — the full paperwork (plans, tools, shelf), spread out
-  over a dimmed shop that keeps ticking; walking away folds it up.
-- **Hands strip** (`HandsStrip`, under the canvas) — one manila folder
-  row holding the In Hand, Underfoot, and Supplies sheets; long lists
-  scroll inside their column. Supplies is the one ruled tally and hides
-  entirely while the cabinet is empty.
+- **The shop view is the screen** (`ShopView`, center) — the canvas
+  scales to fill everything between the rails (renderer runs at the
+  scaled resolution, so the 2×-resolution sprite art gains real detail).
+  Contextual UI lives on it as **hint chips** (`ShopOverlayLayer`): dark
+  chrome clusters in the "[F] put down" idiom, pinned to the thing they
+  belong to — the targeted machine's verbs, settings, and refusal notes
+  (`MachineChips`), outfeed stock at the machine it came off of, the
+  door's "[E] head out" (`DoorPrompt` — the keypress opens the full
+  destination card), and floor verbs beside the player (`PlayerPrompt`).
+  Chip chrome wraps in `HintSurfaceContext.Provider value="chrome"`.
+  Anything with buttons or scales lives on the centered **station
+  sheet** (`StationSheet`, Enter) — the full paperwork, spread out over
+  a dimmed shop that keeps ticking; walking away folds it up.
+- **Shop manifest** (`ShopManifest`, right) — one manila folder holding
+  the In Hand, Underfoot, and Supplies sheets; long lists scroll inside
+  the folder. Supplies is the one ruled tally and hides entirely while
+  the cabinet is empty.
 
 **Every surface is viewport-sized** (`h-screen`/`inset-0` +
 `overflow-hidden`, `p-6` margin) — the home screen and the store trip
 overlay alike — so nothing ever adds or removes a page scrollbar. Long
-content scrolls *inside* its own panel, aisle, or column. On Home,
-placards float over the canvas without ever moving it, and panels
-appearing or growing must never shove their neighbors around.
+content scrolls *inside* its own panel, aisle, or column. On Home, chips
+float over the canvas without ever moving it, and panels appearing or
+growing must never shove their neighbors around.
 
 Spacing discipline for the anchored layout: **one gutter unit (`gap-6` /
-`p-6`) everywhere** — page margin, column gutters, and panel gaps — so the
-edge-anchored composition reads as a deliberate grid rather than
-scattered cards. The shop view anchors to the top of the space the job
-board leaves it, with the hands strip directly beneath.
+`p-6`) everywhere** — page margin, column gutters, and panel gaps — and
+the two side rails share one width (`max-w-80`), so the edge-anchored
+composition stays symmetric around the shop view.
 
 When adding a new panel, first ask which existing object it belongs *inside*.
 Only mint a new top-level object if it's genuinely a new piece of furniture,

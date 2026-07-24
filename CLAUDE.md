@@ -53,7 +53,7 @@ The game follows a state-driven architecture with clear separation between game 
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
    - **Garage door** (`DoorPrompt`): stand at the entrance cell and the door lists places to go on numbered keys — shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging
-   - **In-world interaction UI** (`src/components/shop-overlay/`, `src/components/station/`): the machine the player stands at is highlighted in the shop view and wears a placard with its controls and key hints; recipe stations open a centered station sheet (Enter) for plans/tools/shelf; a hint cluster follows the player for floor verbs. The hands strip under the canvas shows inventory/underfoot/supplies
+   - **In-world interaction UI** (`src/components/shop-overlay/`, `src/components/station/`): the machine the player stands at is highlighted in the shop view and wears hint chips naming its live keys (E interacts, F feeds/loads, Z settings); every station opens a centered station sheet (Enter) holding its buttons, scales, plans, and racks; a hint cluster follows the player for floor verbs. The shop manifest on the right shows in-hand/underfoot/supplies
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
 
 ### Material and Machine System
@@ -84,8 +84,8 @@ src/
 │   ├── current-cell-info/ # Shared cell/material widgets (scales, icons, lists)
 │   ├── machine-sprites/   # PIXI machine renderers
 │   ├── material-sprites/  # PIXI material renderers
-│   ├── shop-overlay/      # DOM layer pinned over the canvas (placards, prompts)
-│   ├── station/           # Machine placard + station sheet + racks
+│   ├── shop-overlay/      # DOM layer pinned over the canvas (hint chips, prompts)
+│   ├── station/           # Machine hint chips + station sheet + racks
 │   └── *.tsx              # Top-level UI (NavBar, HomePage, HandsStrip, Ticker, …)
 ├── game/                  # Core game logic
 │   ├── game-actions/      # State transformation functions

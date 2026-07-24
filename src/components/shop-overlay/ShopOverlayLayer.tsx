@@ -1,9 +1,9 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { useCellMap } from "../../game/CellMap";
 import { Machine } from "../../game/Machine";
 import { Vector, rotateVec, translateVec } from "../../game/Vectors";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
-import { MachinePlacard, OutfeedPlacard } from "../station/MachinePlacard";
+import { MachineChips, OutfeedChips } from "../station/MachineChips";
 import { StationSheet } from "../station/StationSheet";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -11,18 +11,25 @@ import { DoorPrompt } from "./DoorPrompt";
 import { PlayerPrompt } from "./PlayerPrompt";
 
 /**
+ * How many screen pixels one world pixel occupies — the canvas scales to
+ * fill the center column, and the overlay's anchors scale with it.
+ */
+export const OverlayScaleContext = createContext(1);
+
+/**
  * The DOM layer floating over the shop canvas: everything you can do is
- * shown at the thing you'd do it to. The targeted machine wears its
- * placard, outfeed stock is offered at the machine it came off of, the
- * garage door lists its destinations on its own header, and the player
- * carries a small cluster of hints for verbs aimed at the floor
- * underfoot. Positions are in canvas pixels — the canvas renders 1:1, so
- * a cell's screen position is just `cell * PIXELS_PER_CELL`.
+ * shown at the thing you'd do it to, as small key-hint chips — the same
+ * weight as the player's own "[F] put down" hint. The targeted machine
+ * wears its chips, outfeed stock is offered at the machine it came off
+ * of, and the garage door offers "[E] head out" (its full destination
+ * card opens on the keypress). The station sheet is the one big surface,
+ * and only on request.
  */
 export const ShopOverlayLayer: React.FC<{
   width: number;
   height: number;
-}> = ({ width, height }) => {
+  scale: number;
+}> = ({ width, height, scale }) => {
   const gameState = useGameState();
   const cellMap = useCellMap();
   const {
@@ -41,45 +48,50 @@ export const ShopOverlayLayer: React.FC<{
     (machine) =>
       machine.outputMaterials.length > 0 &&
       // If the outfeed cell doubles as the operator cell, the machine's
-      // own placard already offers the stock.
+      // own chips already offer the stock.
       !isTargeted(machine),
   );
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {/* The placard folds away while a station sheet is spread out —
-          the sheet covers the same ground and more */}
-      {!carrying && targetedMachine && sheetMachine == null && (
-        <MachineAnchored
-          machine={targetedMachine}
-          canvasWidth={width}
-          canvasHeight={height}
-        >
-          <MachinePlacard machine={targetedMachine} />
-        </MachineAnchored>
-      )}
-
-      {!carrying &&
-        outfeedMachines.map((machine) => (
+    <OverlayScaleContext.Provider value={scale}>
+      <div className="absolute inset-0 pointer-events-none">
+        {/* The chips fold away while the station sheet is spread out */}
+        {!carrying && targetedMachine && sheetMachine == null && (
           <MachineAnchored
-            key={`outfeed-${machine.type.name}@${machine.position.join(",")}`}
-            machine={machine}
+            machine={targetedMachine}
             canvasWidth={width}
             canvasHeight={height}
           >
-            <OutfeedPlacard machine={machine} />
+            <MachineChips machine={targetedMachine} />
           </MachineAnchored>
-        ))}
+        )}
 
-      <DoorPrompt canvasWidth={width} canvasHeight={height} />
-      <PlayerPrompt />
-      <StationSheet />
-    </div>
+        {!carrying &&
+          sheetMachine == null &&
+          outfeedMachines.map((machine) => (
+            <MachineAnchored
+              key={`outfeed-${machine.type.name}@${machine.position.join(",")}`}
+              machine={machine}
+              canvasWidth={width}
+              canvasHeight={height}
+            >
+              <OutfeedChips machine={machine} />
+            </MachineAnchored>
+          ))}
+
+        <DoorPrompt canvasWidth={width} canvasHeight={height} />
+        <PlayerPrompt />
+        <StationSheet />
+      </div>
+    </OverlayScaleContext.Provider>
   );
 };
 
-/** A machine's occupied cells as a pixel bounding box on the canvas. */
-function machineBBoxPx(machine: Machine): {
+/** A machine's occupied cells as a screen-pixel bounding box. */
+function machineBBoxPx(
+  machine: Machine,
+  scale: number,
+): {
   left: number;
   top: number;
   width: number;
@@ -94,19 +106,19 @@ function machineBBoxPx(machine: Machine): {
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
+  const cellPx = PIXELS_PER_CELL * scale;
   return {
-    left: minX * PIXELS_PER_CELL,
-    top: minY * PIXELS_PER_CELL,
-    width: (maxX - minX + 1) * PIXELS_PER_CELL,
-    height: (maxY - minY + 1) * PIXELS_PER_CELL,
+    left: minX * cellPx,
+    top: minY * cellPx,
+    width: (maxX - minX + 1) * cellPx,
+    height: (maxY - minY + 1) * cellPx,
   };
 }
 
 /**
- * Positions a card against a machine: above it when there's more head
- * room, below otherwise, horizontally clamped so it stays over the
- * canvas. The card may overhang the canvas edge vertically — the placard
- * matters more than the floor it covers.
+ * Positions a hint cluster against a machine: above it by default (the
+ * player usually stands at the operator cell below or beside), flipped
+ * underneath when the machine hugs the canvas top.
  */
 export const MachineAnchored: React.FC<{
   machine: Machine;
@@ -114,24 +126,23 @@ export const MachineAnchored: React.FC<{
   canvasHeight: number;
   children: React.ReactNode;
 }> = ({ machine, canvasWidth, canvasHeight, children }) => {
-  const bbox = machineBBoxPx(machine);
+  const scale = useContext(OverlayScaleContext);
+  const bbox = machineBBoxPx(machine, scale);
   const centerX = bbox.left + bbox.width / 2;
-  const roomAbove = bbox.top;
-  const roomBelow = canvasHeight - (bbox.top + bbox.height);
-  const above = roomAbove >= roomBelow;
+  const above = bbox.top >= 64;
 
-  const halfCard = 168; // placard max-width 336px
+  const halfHint = 100;
   const left = Math.min(
-    Math.max(centerX, Math.min(halfCard, canvasWidth / 2)),
-    Math.max(canvasWidth - halfCard, canvasWidth / 2),
+    Math.max(centerX, Math.min(halfHint, canvasWidth / 2)),
+    Math.max(canvasWidth - halfHint, canvasWidth / 2),
   );
 
   return (
     <div
-      className="absolute z-20 w-[336px] pointer-events-auto"
+      className="absolute z-20"
       style={{
         left,
-        top: above ? bbox.top - 8 : bbox.top + bbox.height + 8,
+        top: above ? bbox.top - 4 : bbox.top + bbox.height + 4,
         transform: above ? "translate(-50%, -100%)" : "translate(-50%, 0)",
       }}
     >
@@ -145,15 +156,19 @@ export const CellAnchored: React.FC<{
   cell: Vector;
   children: React.ReactNode;
   className?: string;
-}> = ({ cell, children, className }) => (
-  <div
-    className={"absolute z-10 " + (className ?? "")}
-    style={{
-      left: (cell[0] + 0.5) * PIXELS_PER_CELL,
-      top: (cell[1] + 1) * PIXELS_PER_CELL + 4,
-      transform: "translate(-50%, 0)",
-    }}
-  >
-    {children}
-  </div>
-);
+}> = ({ cell, children, className }) => {
+  const scale = useContext(OverlayScaleContext);
+  const cellPx = PIXELS_PER_CELL * scale;
+  return (
+    <div
+      className={"absolute z-10 " + (className ?? "")}
+      style={{
+        left: (cell[0] + 0.5) * cellPx,
+        top: (cell[1] + 1) * cellPx + 4,
+        transform: "translate(-50%, 0)",
+      }}
+    >
+      {children}
+    </div>
+  );
+};

@@ -1,5 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
-import { movePlayerToDoor } from "./navigation";
+import { movePlayerToDoor, openDoorPanel } from "./navigation";
 
 const getState = (page: Page) =>
   page.evaluate(() => (window as any).__GET_GAME_STATE__());
@@ -79,16 +79,17 @@ test.describe("Keyboard shortcuts", () => {
       await expect(phone).toHaveCount(0);
     });
 
-    await test.step("1 heads out to the store, but only at the garage door", async () => {
+    await test.step("E opens the door card, 1 heads out to the store", async () => {
       const store = page.getByRole("dialog", { name: "Orange Box" });
       // Away from the door, 1 is the speed preset — no trip starts
       await page.keyboard.press("1");
       await expect(store).toHaveCount(0);
 
-      // At the door the destination rows claim their numbers; the store
-      // (first unlocked destination) answers to 1
+      // At the door, E spreads open the destination card; its rows claim
+      // the number keys, and the store (first unlocked destination)
+      // answers to 1
       await movePlayerToDoor(page);
-      await expect(page.getByTestId("door-panel")).toBeVisible();
+      await openDoorPanel(page);
       await page.keyboard.press("1");
       await expect(store).toBeVisible();
       // Escape heads home
@@ -218,11 +219,11 @@ test.describe("Keyboard shortcuts", () => {
           },
         }));
       });
-      // The hands strip hides itself while away. Waiting for that proves
+      // The shop manifest hides itself while away. Waiting for that proves
       // React has re-rendered with the new state, which is what the guard
       // reads. (A real player gets here by clicking "Go", which re-renders
       // before they can touch the keyboard; injecting state skips that.)
-      await expect(page.getByTestId("hands-strip")).toHaveCount(0);
+      await expect(page.getByTestId("shop-manifest")).toHaveCount(0);
 
       await page.keyboard.down("d");
       await page.waitForTimeout(400);
@@ -248,11 +249,11 @@ test.describe("Keyboard shortcuts", () => {
       await expect(tip.locator("kbd")).toHaveText("`");
     });
 
-    await test.step("the hands strip sits under the shop view", async () => {
-      const strip = page.getByTestId("hands-strip");
-      await expect(strip).toBeVisible();
-      await expect(strip.getByText("In Hand")).toBeVisible();
-      await expect(strip.getByText("Underfoot")).toBeVisible();
+    await test.step("the shop manifest hangs on the right rail", async () => {
+      const manifest = page.getByTestId("shop-manifest");
+      await expect(manifest).toBeVisible();
+      await expect(manifest.getByText("In Hand")).toBeVisible();
+      await expect(manifest.getByText("Underfoot")).toBeVisible();
     });
   });
 });

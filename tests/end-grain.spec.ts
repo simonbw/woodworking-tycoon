@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { selectMode } from "./machine-panel";
+import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
 import {
   closeJournal,
   goToStore,
@@ -34,9 +34,10 @@ async function teleportPlayer(page: any, position: [number, number]) {
 }
 
 /**
- * Operate the machine and collect the results. Feed-through machines
- * deliver to their outfeed cell — pass `takeAt` to walk there for the
- * Take All (single-point stations collect right at the card).
+ * Operate the machine (via its station sheet) and collect the results.
+ * Feed-through machines deliver to their outfeed cell — pass `takeAt`
+ * to walk there and take with Shift+E (single-point stations collect
+ * right off the sheet).
  */
 async function operateAndWait(
   page: any,
@@ -45,6 +46,7 @@ async function operateAndWait(
   takeAt?: [number, number],
   verb: string = "Operate",
 ) {
+  await openStationSheet(page);
   await card(page, machineName).getByRole("button", { name: verb }).click();
   await page.waitForFunction(
     (src: string) => {
@@ -58,10 +60,12 @@ async function operateAndWait(
   );
   if (takeAt) {
     await teleportPlayer(page, takeAt);
+    await takeAllHere(page);
+  } else {
+    await card(page, machineName)
+      .getByRole("button", { name: /Take All/ })
+      .click();
   }
-  await card(page, machineName)
-    .getByRole("button", { name: /Take All/ })
-    .click();
   await page.waitForTimeout(200);
 }
 
@@ -143,14 +147,14 @@ test.describe("End-Grain Boards", () => {
 
     await test.step("mount the sled on the table saw", async () => {
       await teleportPlayer(page, SAW_CELL);
+      // The saw's buttons and tool rack live on its station sheet
+      await openStationSheet(page);
       const sawCard = card(page, "Jobsite Table Saw");
       // Bare saw: nothing in hand it can cut — the carried panel can't
       // ride the fence, so Feed stays dead until the sled is on the table
       await expect(
         sawCard.getByRole("button", { name: "Feed" }),
       ).toBeDisabled();
-      // The tool rack lives behind the collapsed Details fold
-      await sawCard.getByRole("button", { name: "Details" }).click();
       await sawCard.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
       // Jig on the table: feeding the panel now means crosscutting it

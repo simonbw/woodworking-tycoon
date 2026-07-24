@@ -132,15 +132,13 @@ test.describe("Carrying machines", () => {
     await test.step("carry a worktable to a new spot", async () => {
       // The fixture's small worktable at [0,4] operates from [0,5]
       await teleportPlayer(page, [0, 5]);
-      const placardButton = page.getByRole("button", {
-        name: "Plans & Tools",
-      });
-      await expect(placardButton.first()).toBeVisible();
+      const machineHint = page.getByText(/plans & tools/i);
+      await expect(machineHint.first()).toBeVisible();
       await page.keyboard.press("l");
       await page.waitForTimeout(200);
       expect((await carried(page)).machineTypeId).toBe("worktable1x1");
-      // Hands full: the placard (and its Operate button) is suppressed
-      await expect(placardButton).toHaveCount(0);
+      // Hands full: the machine's hint chips are suppressed
+      await expect(machineHint).toHaveCount(0);
 
       await teleportPlayer(page, [1, 5]);
       await page.keyboard.press("l");
@@ -152,9 +150,7 @@ test.describe("Carrying machines", () => {
       );
       expect(table.position).toEqual([1, 4]);
       // Standing at the freshly placed table's operator cell brings it back
-      await expect(
-        page.getByRole("button", { name: "Plans & Tools" }).first(),
-      ).toBeVisible();
+      await expect(page.getByText(/plans & tools/i).first()).toBeVisible();
     });
 
     await test.step("buying a machine delivers a crate at the entrance", async () => {

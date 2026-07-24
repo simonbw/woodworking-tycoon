@@ -1,5 +1,5 @@
 import { Application } from "@pixi/react";
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../../game/CellMap";
 import { useTexture } from "../../utils/useTexture";
 import {
@@ -25,7 +25,6 @@ import { HeldMovementListener } from "./heldMovementInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { useTargetedMachine } from "../TargetedMachineContext";
-import { availableOperations } from "../../game/skill-helpers";
 import { ShopOverlayLayer } from "../shop-overlay/ShopOverlayLayer";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
@@ -64,10 +63,7 @@ export const ShopView: React.FC = () => {
     return () => {
       if (!isTargeted(machine)) {
         setTarget(machine);
-      } else if (
-        !machine.type.directFeed &&
-        availableOperations(machine, gameState.progression).length > 0
-      ) {
+      } else {
         toggleSheet();
       }
     };
@@ -81,19 +77,51 @@ export const ShopView: React.FC = () => {
   const width = cellToPixel(cellMap.getWidth());
   const height = cellToPixel(cellMap.getHeight());
 
+  // The shop is the screen: the canvas scales to fill whatever space the
+  // rails leave it. The renderer runs at the scaled resolution with the
+  // world drawn through one scaled root container, so the (2×-resolution)
+  // sprite art gains real detail instead of being CSS-stretched.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const measure = () => {
+      const rect = container.getBoundingClientRect();
+      const fit = Math.min(rect.width / width, rect.height / height);
+      // Quantized so ordinary layout jitter doesn't rebuild the renderer
+      setScale(Math.min(2, Math.max(0.5, Math.floor(fit * 20) / 20)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [width, height]);
+
+  const scaledWidth = Math.round(width * scale);
+  const scaledHeight = Math.round(height * scale);
+
   return (
-    <div className="relative" style={{ width, height }}>
-      <ShopKeyboardShortcuts />
-      <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
-      <Application
-        width={width}
-        height={height}
-        backgroundAlpha={0}
-        antialias={true}
+    <div
+      ref={containerRef}
+      className="h-full w-full min-h-0 min-w-0 flex items-center justify-center"
+    >
+      <div
+        className="relative"
+        style={{ width: scaledWidth, height: scaledHeight }}
       >
-        <gameStateContext.Provider
-          value={{ gameState, updateGameState, saveGame, quitToMenu }}
+        <ShopKeyboardShortcuts />
+        <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
+        <Application
+          width={scaledWidth}
+          height={scaledHeight}
+          backgroundAlpha={0}
+          antialias={true}
         >
+          <gameStateContext.Provider
+            value={{ gameState, updateGameState, saveGame, quitToMenu }}
+          >
+            <pixiContainer scale={scale}>
           <pixiTilingSprite
             eventMode="static"
             texture={floorTexture}
@@ -154,14 +182,22 @@ export const ShopView: React.FC = () => {
               />
             ))}
           {collisionDebugRequested() && <CollisionDebugLayer />}
-          <PlayerMotionLayer paused={ticksPerSecond === TICK_SPEED_PAUSED} />
-          <ShopVacSprite />
-          {!gameState.player.away && <PersonSprite person={gameState.player} />}
-          <CarriedMachineLayer />
-        </gameStateContext.Provider>
-      </Application>
-      {/* Everything you can do, shown at the thing you'd do it to */}
-      <ShopOverlayLayer width={width} height={height} />
+            <PlayerMotionLayer paused={ticksPerSecond === TICK_SPEED_PAUSED} />
+            <ShopVacSprite />
+            {!gameState.player.away && (
+              <PersonSprite person={gameState.player} />
+            )}
+            <CarriedMachineLayer />
+            </pixiContainer>
+          </gameStateContext.Provider>
+        </Application>
+        {/* Everything you can do, shown at the thing you'd do it to */}
+        <ShopOverlayLayer
+          width={scaledWidth}
+          height={scaledHeight}
+          scale={scale}
+        />
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openStationSheet, selectMode } from "./machine-panel";
+import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
 
 declare global {
   interface Window {
@@ -95,10 +95,7 @@ test.describe("Attended Operations", () => {
         undefined,
         { timeout: 15000 },
       );
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(200);
+      await takeAllHere(page);
     });
 
     await test.step("glue-up: clamping needs you, curing runs without you", async () => {
@@ -142,6 +139,8 @@ test.describe("Attended Operations", () => {
         undefined,
         { timeout: 15000 },
       );
+      // The phase-by-phase status reads off the station sheet
+      await openStationSheet(page);
       await expect(
         workspaceCard(page).getByText(/Curing \(hands-free\)/),
       ).toBeVisible();

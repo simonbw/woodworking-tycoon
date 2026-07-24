@@ -59,7 +59,7 @@ const InventoryListItem: React.FC<{
       );
 
   return (
-    <li className="flex items-center gap-2 py-1.5">
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5">
       <MaterialIcon material={materials[0]} size="small" />
       <MaterialLabel material={materials[0]} />
       {materials.length > 1 && (

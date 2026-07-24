@@ -4,7 +4,7 @@
  * panel that appears when the player stands at the entrance cell).
  */
 
-/** Teleport the player to the garage door so its panel appears. */
+/** Teleport the player to the garage door so its prompt appears. */
 export async function movePlayerToDoor(page: any) {
   await page.evaluate(() => {
     (window as any).__UPDATE_GAME_STATE__((state: any) => ({
@@ -13,6 +13,25 @@ export async function movePlayerToDoor(page: any) {
     }));
   });
   await page.waitForTimeout(300);
+}
+
+/**
+ * Spread open the door's destination card (E at the door). The interact
+ * key serves nearer things first — a machine to switch on, stock to
+ * take — so this presses through those until the door answers.
+ */
+export async function openDoorPanel(page: any) {
+  const panel = page.getByTestId("door-panel");
+  for (let tries = 0; tries < 4; tries++) {
+    if (await panel.isVisible()) break;
+    await page.evaluate(() =>
+      (document.activeElement as HTMLElement)?.blur?.(),
+    );
+    await page.keyboard.press("e");
+    await page.waitForTimeout(250);
+  }
+  await panel.waitFor({ state: "visible" });
+  await page.waitForTimeout(200);
 }
 
 /**
@@ -25,6 +44,7 @@ export async function goToStore(page: any): Promise<[number, number]> {
     () => (window as any).__GET_GAME_STATE__().player.position,
   );
   await movePlayerToDoor(page);
+  await openDoorPanel(page);
   // force: the world keeps ticking, so nearby text re-renders can make
   // Playwright's stability check starve on slow machines
   await page
@@ -45,6 +65,7 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
     () => (window as any).__GET_GAME_STATE__().player.position,
   );
   await movePlayerToDoor(page);
+  await openDoorPanel(page);
   await page
     .getByTestId("door-panel")
     .locator("li", { hasText: "Sawyer & Sons" })

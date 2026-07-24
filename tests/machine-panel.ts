@@ -38,18 +38,13 @@ export async function openStationSheet(page: any) {
 }
 
 /**
- * Expand a direct-feed placard's Details fold, where its tool rack
- * lives. (Recipe stations keep their racks on the station sheet — use
- * `openStationSheet` there.)
+ * Take everything the interact key can reach on this cell (Shift+E —
+ * machine outputs first, then a loaded bay, then the floor).
  */
-export async function expandDetails(page: any, machineName: string) {
-  const toggle = machineCard(page, machineName).locator(
-    "button[aria-expanded]",
-  );
-  if ((await toggle.getAttribute("aria-expanded")) === "false") {
-    await toggle.click();
-    await page.waitForTimeout(200);
-  }
+export async function takeAllHere(page: any) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press("Shift+E");
+  await page.waitForTimeout(200);
 }
 
 /** Open a collapsed recipe index; no-op for the other control shapes. */
@@ -99,13 +94,14 @@ export async function modesOf(
   return modes;
 }
 
-/** Set a parameter by clicking its detent on the scale. */
+/** Set a parameter by clicking its detent on the station sheet's scale. */
 export async function setParameter(
   page: any,
   machineName: string,
   paramName: string,
   value: number | string,
 ) {
+  await openStationSheet(page);
   await machineCard(page, machineName)
     .getByRole("radiogroup", { name: paramName })
     // Anchored to the whole label with only a unit suffix allowed, so

@@ -32,15 +32,17 @@ actually has:
    rides the straight-line sled, and a panel goes on the crosscut sled —
    mounting a jig is the only "mode switch", and it's a physical act.
 3. **One verb** — Feed (the miter saw says **Cut**, via
-   `MachineType.feedVerb`). The UI (the direct-feed placard in
-   `src/components/station/MachinePlacard.tsx`, pinned to the machine in
-   the shop view) collapses to name + status, the settings scales, the
-   power switch if the machine has one, and the verb button; everything
-   secondary (tools, description) sits behind a Details toggle, collapsed
-   by default. The inventory list offers no "→ Machine" load buttons, and
-   both `R` and `F` present the carried stock. Single-point
-   stations (the miter saw) show their cut pieces on the card for
-   collection; feed-through machines deliver to the outfeed cell.
+   `MachineType.feedVerb`). In the shop view the machine wears hint
+   chips (`src/components/station/MachineChips.tsx`): name + status,
+   "[E] switch on", "[F] feed", the first setting's value on `Z`, and
+   the refusal note when carried stock won't go. The full controls —
+   settings scales, the power switch, the verb button, the tool rack —
+   live on the machine's station sheet (Enter,
+   `src/components/station/StationSheet.tsx`). The inventory list
+   offers no "→ Machine" load buttons, and both `R` and `F` present the
+   carried stock; `E` flips the switch. Single-point stations (the
+   miter saw) offer their cut pieces where they lie (`E` takes them);
+   feed-through machines deliver to the outfeed cell.
 
 The *operation* stops being selected and becomes implied: given what
 you're feeding and how the machine is set, only one thing can happen.

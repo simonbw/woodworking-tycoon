@@ -6,12 +6,12 @@ import { SuppliesSection } from "./SuppliesSection";
 import { useGameState } from "./useGameState";
 
 /**
- * The strip under the shop view: the player's own paperwork — what's in
- * hand, what's underfoot, and the supply cabinet — kept directly below
- * where the eyes already are. Long lists scroll inside their column
- * rather than growing the strip.
+ * One manila folder holding the player's material paperwork: what's in
+ * hand, what's underfoot, and what's in the supply cabinet — the right
+ * rail beside the shop view. Long lists scroll inside the folder rather
+ * than growing the panel.
  */
-export const HandsStrip: React.FC = () => {
+export const ShopManifest: React.FC = () => {
   const gameState = useGameState();
   const cellMap = useCellMap();
 
@@ -23,20 +23,18 @@ export const HandsStrip: React.FC = () => {
 
   return (
     <div
-      className="bg-paper-manila rounded-sm shadow-md p-3 grid grid-cols-3 gap-3 max-h-48 min-h-0 h-full max-h-full overflow-y-auto"
-      data-testid="hands-strip"
+      className="bg-paper-manila rounded-sm shadow-md p-3 space-y-3 min-h-0 max-h-full overflow-y-auto"
+      data-testid="shop-manifest"
     >
-      <section className="min-h-0 overflow-y-auto">
+      <section>
         <SheetLabel title="In Hand" count={inventoryCount} />
         <InventorySection />
       </section>
-      <section className="min-h-0 overflow-y-auto">
+      <section>
         <SheetLabel title="Underfoot" count={floorCount} />
         <FloorListSection />
       </section>
-      <section className="min-h-0 overflow-y-auto">
-        <SuppliesSection />
-      </section>
+      <SuppliesSection />
     </div>
   );
 };

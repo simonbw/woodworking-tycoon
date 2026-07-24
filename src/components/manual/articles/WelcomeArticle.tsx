@@ -18,11 +18,13 @@ export const WelcomeArticle: React.FC = () => (
       Move with <ShortcutKeys shortcut="move-up" />{" "}
       <ShortcutKeys shortcut="move-left" />{" "}
       <ShortcutKeys shortcut="move-down" />{" "}
-      <ShortcutKeys shortcut="move-right" />. Walk up to a machine and its
-      placard appears on it, showing what you can do there. Pick up whatever is
-      at your feet with <ShortcutKeys shortcut="pick-up" />, and put it down —
-      or give it to a machine — with <ShortcutKeys shortcut="put-down" />.
-      Pause the game at any time with{" "}
+      <ShortcutKeys shortcut="move-right" />. Walk up to anything and small
+      hints appear on it, naming the keys that work there.{" "}
+      <ShortcutKeys shortcut="pick-up" /> does the natural thing — pick up,
+      take, switch a machine on — and <ShortcutKeys shortcut="put-down" /> puts
+      down what you're holding or gives it to a machine.{" "}
+      <ShortcutKeys shortcut="open-station-sheet" /> spreads out a station's
+      full sheet of plans and tools. Pause the game at any time with{" "}
       <ShortcutKeys shortcut="speed-toggle" />.
     </P>
 
