@@ -2,7 +2,11 @@ import { BOARD_DIMENSIONS, Board, BoardDimension, Panel } from "../Materials";
 import { isBoard } from "../board-helpers";
 import { isPanel } from "../panel-helpers";
 import { makeMaterial } from "../material-helpers";
-import { MachineType, ParameterizedOperation } from "../Machine";
+import {
+  InputMaterialWithQuantity,
+  MachineType,
+  Operation,
+} from "../Machine";
 import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
 
 /** The next detent up the thickness scale, or undefined at the top. */
@@ -100,7 +104,10 @@ export const lunchboxPlaner: MachineType = {
                   // chunks. Sanding is the only way to flatten an end-grain
                   // panel.
                   isPanel(material) && material.grain !== "end",
-          },
+            // InputMaterial distributes over the material union, so a
+            // requirement accepting several types can't typecheck as one
+            // member — the one place the spec needs a cast.
+          } as InputMaterialWithQuantity,
         ];
       },
       explainRejection: (material, params) => {
@@ -157,6 +164,6 @@ export const lunchboxPlaner: MachineType = {
           ],
         };
       },
-    } as ParameterizedOperation,
+    },
   ],
 };

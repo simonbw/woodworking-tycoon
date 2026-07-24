@@ -1,6 +1,10 @@
 import React, { useRef } from "react";
 import { CellMap } from "../../game/CellMap";
 import {
+  defaultParametersFor,
+  operationParameters,
+} from "../../game/Machine";
+import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
   operateMachineAction,
@@ -30,11 +34,7 @@ import {
   parameterValueSatisfiable,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
-import {
-  defaultParametersFor,
-  getOperationInputMaterials,
-  isParameterizedOperation,
-} from "../../game/operation-helpers";
+
 import { availableOperations } from "../../game/skill-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
@@ -218,9 +218,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (machine && !machine.type.directFeed) {
         const spacesLeft =
           machine.type.inputSpaces - machine.inputMaterials.length;
-        const inputMaterials = getOperationInputMaterials(
-          machine.selectedOperation,
-          machine.selectedParameters,
+        const inputMaterials = machine.selectedOperation.getInputMaterials(
+          machine.resolvedParameters(machine.selectedOperation),
         );
         const matchingMaterials = inventory.filter((material) =>
           inputMaterials.some((input) => materialMeetsInput(material, input)),
@@ -317,12 +316,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const directFeed = machine.type.directFeed === true;
       const operation = directFeed
         ? availableOperations(machine, gameState.current.progression).find(
-            (op) => isParameterizedOperation(op) && op.parameters.length > 0,
+            (op) => operationParameters(op).length > 0,
           )
         : machine.selectedOperationOrNull;
-      if (!operation || !isParameterizedOperation(operation)) return;
+      if (!operation) return;
 
-      const param = operation.parameters[0];
+      const param = operationParameters(operation)[0];
       if (!param || param.values.length < 2) return;
 
       // Unset (or unrecognised) lands at -1, so a forward cycle starts at the

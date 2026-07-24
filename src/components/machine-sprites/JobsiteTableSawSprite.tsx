@@ -1,7 +1,7 @@
 import { Graphics, Texture } from "pixi.js";
 import React, { useCallback } from "react";
 import { animated, useSpring } from "react-spring";
-import { Machine } from "../../game/Machine";
+import { Machine, operationParameters } from "../../game/Machine";
 import {
   BOARD_DIMENSIONS,
   MaterialInstance,
@@ -11,7 +11,6 @@ import {
 } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
 import { isPanel } from "../../game/panel-helpers";
-import { isParameterizedOperation } from "../../game/operation-helpers";
 import { TOOL_TYPES } from "../../game/Tool";
 import { lerp } from "../../utils/mathUtils";
 import { useTexture } from "../../utils/useTexture";
@@ -125,8 +124,9 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
   const runningOperation = machine.selectedOperationOrNull;
   const ripCut =
     runningOperation != null &&
-    isParameterizedOperation(runningOperation) &&
-    runningOperation.parameters.some((param) => param.id === "targetWidth");
+    operationParameters(runningOperation).some(
+      (param) => param.id === "targetWidth",
+    );
 
   // Mounted jigs sit on the table — the mode you can see from across the
   // shop. During a sled cut the active one travels with the stock.

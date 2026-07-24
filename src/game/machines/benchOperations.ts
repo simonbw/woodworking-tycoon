@@ -1,6 +1,6 @@
 import { array } from "../../utils/arrayUtils";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
-import { MachineOperation, OperationPhase } from "../Machine";
+import { Operation, OperationPhase } from "../Machine";
 import { isFinishedProduct, makeMaterial } from "../material-helpers";
 import {
   Pallet,
@@ -77,13 +77,13 @@ function dominantSpecies(strips: ReadonlyArray<{ species: Species }>): Species {
  * better bench doesn't know more recipes — it runs the attended work
  * faster (MachineType.workSpeed).
  */
-export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
+export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   {
     name: "Dismantle Pallet",
     id: "dismantlePallet",
     requiredSkill: "basicMilling",
     duration: 4,
-    inputMaterials: [{ type: ["pallet"], quantity: 1 }],
+    getInputMaterials: () => [{ type: ["pallet"], quantity: 1 }],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
       const inputPallet = materials[0];
       if (inputPallet.type !== "pallet") {
@@ -134,7 +134,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "panelWork",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["board"],
         width: [2],
@@ -177,7 +177,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "freeformLamination",
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["board"],
         length: [2],
@@ -214,7 +214,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "freeformLamination",
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
-    inputMaterials: [
+    getInputMaterials: () => [
       { type: ["panel"], length: [2], thickness: [4], quantity: 1 },
       {
         type: ["board"],
@@ -251,7 +251,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "freeformLamination",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
-    inputMaterials: [
+    getInputMaterials: () => [
       { type: ["panel"], length: [2], thickness: [4], quantity: 2 },
     ],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
@@ -279,7 +279,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildCrosscutSled",
     requiredSkill: "jigsAndFixtures",
     duration: 40,
-    inputMaterials: [
+    getInputMaterials: () => [
       // A flat sheet base plus scrap runners and a fence
       {
         type: ["plywood"],
@@ -311,7 +311,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildStraightLineSled",
     requiredSkill: "jigsAndFixtures",
     duration: 30,
-    inputMaterials: [
+    getInputMaterials: () => [
       // A long flat base with toggle clamps to carry wavy-edged stock;
       // same pallet-scrap ingredients as the crosscut sled
       {
@@ -343,7 +343,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "endGrainBoards",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
-    inputMaterials: [{ type: ["endGrainSlice"], quantity: 4 }],
+    getInputMaterials: () => [{ type: ["endGrainSlice"], quantity: 4 }],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
       const slices = materials.filter(
         (m): m is EndGrainSlice => m.type === "endGrainSlice",
@@ -373,7 +373,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "finishEndGrainBoard",
     requiredSkill: "endGrainBoards",
     duration: 45,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [1],
@@ -411,7 +411,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "finishCuttingBoard",
     requiredSkill: "panelWork",
     duration: 20,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [2],
@@ -451,7 +451,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "finishTwoToneBoard",
     requiredSkill: "twoToneBoards",
     duration: 25,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [2],
@@ -491,7 +491,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "finishStripedBoard",
     requiredSkill: "stripedBoards",
     duration: 30,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [2],
@@ -533,7 +533,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "finishSunriseBoard",
     requiredSkill: "sunriseBoards",
     duration: 40,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [2],
@@ -582,7 +582,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
       { name: "Soaking In", duration: 24, attended: false },
     ],
     requiredConsumables: [{ id: "mineralOil", amount: 4 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: [
           "simpleCuttingBoard",
@@ -618,7 +618,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildShelf",
     requiredSkill: "fineShelving",
     duration: 35,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
@@ -653,7 +653,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     // Frames are joined with brads across the miters — the nail
     // economy's second consumer
     requiredConsumables: [{ id: "nails", amount: 4 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
@@ -690,7 +690,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "finishCheckerboardBoard",
     requiredSkill: "checkerboards",
     duration: 55,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [1],
@@ -735,7 +735,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     duration: 35,
     // Twelve miters joined with brads, like the picture frame's four
     requiredConsumables: [{ id: "nails", amount: 6 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
@@ -771,7 +771,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "trayWork",
     duration: 35,
     requiredConsumables: [{ id: "nails", amount: 8 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [2],
@@ -819,7 +819,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     requiredSkill: "furnitureBasics",
     duration: 60,
     requiredConsumables: [{ id: "screws", amount: 8 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["panel"],
         length: [2],
@@ -863,7 +863,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildJewelryBox",
     requiredSkill: "boxJoinery",
     duration: 45,
-    inputMaterials: [
+    getInputMaterials: () => [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
@@ -926,7 +926,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildStorageRack",
     duration: 30,
     requiredConsumables: [{ id: "nails", amount: 10 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       // A cheap deck on stout legs — the one build where OSB belongs.
       // Rack-grade only: good sheets are refused so a rack never eats
       // jig stock by mistake.
@@ -959,7 +959,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildToolDrawers",
     duration: 30,
     requiredConsumables: [{ id: "nails", amount: 8 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       // A sheet carcass with thin drawer stock — deck boards qualify
       {
         type: ["plywood"],
@@ -983,7 +983,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<MachineOperation> = [
     id: "buildMaterialShelf",
     duration: 20,
     requiredConsumables: [{ id: "nails", amount: 6 }],
-    inputMaterials: [
+    getInputMaterials: () => [
       // Two planks spanning the stretchers — that's the whole build
       { type: ["board"], thickness: [1, 2], length: [3, 4], quantity: 2 },
     ],
@@ -1012,14 +1012,14 @@ function worktableBuildOperation(
   plywood: number,
   legBoards: number,
   nails: number,
-): [MachineOperation] {
+): [Operation] {
   return [
     {
       name,
       id: `build-${worktableId}`,
       duration,
       requiredConsumables: [{ id: "nails", amount: nails }],
-      inputMaterials: [
+      getInputMaterials: () => [
         {
           type: ["plywood"],
           kind: SHOP_FURNITURE_KINDS,

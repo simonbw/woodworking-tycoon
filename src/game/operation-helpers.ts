@@ -1,8 +1,7 @@
 import {
+  defaultParametersFor,
   InputMaterialWithQuantity,
-  MachineOperation,
-  OperationOutput,
-  ParameterizedOperation,
+  Operation,
   ParameterValues,
 } from "./Machine";
 import {
@@ -21,68 +20,6 @@ import {
   makeMaterial,
 } from "./material-helpers";
 import { TOOL_TYPES } from "./Tool";
-
-/**
- * Type guard to check if an operation is parameterized
- */
-export function isParameterizedOperation(
-  operation: MachineOperation | ParameterizedOperation,
-): operation is ParameterizedOperation {
-  return "parameters" in operation && "getInputMaterials" in operation;
-}
-
-/**
- * The parameter values a freshly-selected operation starts with: each
- * parameter's declared resting value, or its first listed one. Undefined
- * for plain operations.
- */
-export function defaultParametersFor(
-  operation: MachineOperation | ParameterizedOperation,
-): ParameterValues | undefined {
-  if (!isParameterizedOperation(operation)) {
-    return undefined;
-  }
-  const params: ParameterValues = {};
-  for (const param of operation.parameters) {
-    params[param.id] = param.defaultValue ?? param.values[0];
-  }
-  return params;
-}
-
-/**
- * Get input materials for an operation, handling both regular and parameterized operations
- */
-export function getOperationInputMaterials(
-  operation: MachineOperation | ParameterizedOperation,
-  params?: ParameterValues,
-): ReadonlyArray<InputMaterialWithQuantity> {
-  if (isParameterizedOperation(operation)) {
-    if (!params) {
-      return operation.getInputMaterials(defaultParametersFor(operation)!);
-    }
-    return operation.getInputMaterials(params);
-  } else {
-    return operation.inputMaterials;
-  }
-}
-
-/**
- * Execute an operation, handling both regular and parameterized operations
- */
-export function executeOperation(
-  operation: MachineOperation | ParameterizedOperation,
-  materials: ReadonlyArray<MaterialInstance>,
-  params?: ParameterValues,
-): OperationOutput {
-  if (isParameterizedOperation(operation)) {
-    if (!params) {
-      throw new Error("Parameters required for parameterized operation");
-    }
-    return operation.output(materials, params);
-  } else {
-    return operation.output(materials);
-  }
-}
 
 /**
  * Generates mock materials that satisfy the given input requirements.
@@ -222,7 +159,7 @@ function generateSingleMockMaterial(
  * Calls the actual operation function with mock materials.
  */
 export function generateOperationPreview(
-  operation: ParameterizedOperation,
+  operation: Operation,
   params: ParameterValues,
 ): {
   expectedInputs: ReadonlyArray<InputMaterialWithQuantity>;
@@ -252,11 +189,12 @@ export function generateOperationPreview(
  * Parameterized operations are summarized at their default parameters.
  * Recipes whose preview can't run from mock materials just list inputs.
  */
-export function describeOperationIO(
-  operation: MachineOperation | ParameterizedOperation,
-): { inputs: string[]; outputs: string[] } {
+export function describeOperationIO(operation: Operation): {
+  inputs: string[];
+  outputs: string[];
+} {
   const params = defaultParametersFor(operation);
-  const requirements = getOperationInputMaterials(operation, params);
+  const requirements = operation.getInputMaterials(params);
 
   const inputs = requirements.map((req) =>
     req.quantity > 1
@@ -266,11 +204,7 @@ export function describeOperationIO(
 
   let outputs: string[] = [];
   try {
-    const result = executeOperation(
-      operation,
-      generateMockMaterials(requirements),
-      params,
-    );
+    const result = operation.output(generateMockMaterials(requirements), params);
     const names = [
       ...result.outputs.map((material) => getMaterialFullName(material)),
       ...(result.toolOutputs ?? []).map((toolId) => TOOL_TYPES[toolId].name),

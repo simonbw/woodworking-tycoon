@@ -8,8 +8,7 @@ import { ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
   Machine,
-  MachineOperation,
-  ParameterizedOperation,
+  Operation,
   ParameterValues,
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
@@ -20,11 +19,6 @@ import {
   materialInputMismatches,
   materialMeetsInput,
 } from "./material-helpers";
-import {
-  defaultParametersFor,
-  getOperationInputMaterials,
-  isParameterizedOperation,
-} from "./operation-helpers";
 import { availableOperations } from "./skill-helpers";
 import { Vector, vectorEquals } from "./Vectors";
 
@@ -167,7 +161,7 @@ export function playerAttendsMachine(
  */
 export function parameterValueSatisfiable(
   machine: Machine,
-  operation: ParameterizedOperation,
+  operation: Operation,
   paramId: string,
   value: number | string,
   stock: ReadonlyArray<MaterialInstance> = machine.inputMaterials,
@@ -176,8 +170,7 @@ export function parameterValueSatisfiable(
     return true;
   }
   const params = {
-    ...defaultParametersFor(operation),
-    ...machine.selectedParameters,
+    ...machine.resolvedParameters(operation),
     [paramId]: value,
   };
   const slots = matchMaterialsToSlots(
@@ -189,12 +182,12 @@ export function parameterValueSatisfiable(
 
 /** What feeding a direct-feed machine right now would run. */
 export interface FeedMatch {
-  readonly operation: MachineOperation | ParameterizedOperation;
+  readonly operation: Operation;
   /**
    * The operation's parameters resolved against the machine's settings bag
    * (its defaults filled in under whatever the player has dialed).
    */
-  readonly parameters?: ParameterValues;
+  readonly parameters: ParameterValues;
   /** Carried materials the operation would consume, in match order. */
   readonly materials: ReadonlyArray<MaterialInstance>;
   /** What stays in the player's hands. */
@@ -211,16 +204,14 @@ export interface FeedMatch {
  */
 export function findFeedableOperation(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
 ): FeedMatch | null {
   for (const operation of operations) {
     // The settings bag is shared across operations; each reads its own ids
     // and falls back to its defaults for anything never dialed in.
-    const parameters = isParameterizedOperation(operation)
-      ? { ...defaultParametersFor(operation), ...machine.selectedParameters }
-      : machine.selectedParameters;
-    const requirements = getOperationInputMaterials(operation, parameters);
+    const parameters = machine.resolvedParameters(operation);
+    const requirements = operation.getInputMaterials(parameters);
     const remaining = [...carried];
     const materials: MaterialInstance[] = [];
     let satisfied = true;
@@ -257,7 +248,7 @@ export function findFeedableOperation(
  */
 export function explainFeedRefusal(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
   consumables: ConsumableStock = NO_CONSUMABLES,
 ): string | null {
@@ -279,17 +270,15 @@ export function explainFeedRefusal(
   }
 
   let best: {
-    operation: MachineOperation | ParameterizedOperation;
-    parameters?: ParameterValues;
+    operation: Operation;
+    parameters: ParameterValues;
     requirement: InputMaterialWithQuantity;
     material: MaterialInstance;
     misses: number;
   } | null = null;
   for (const operation of operations) {
-    const parameters = isParameterizedOperation(operation)
-      ? { ...defaultParametersFor(operation), ...machine.selectedParameters }
-      : machine.selectedParameters;
-    const requirements = getOperationInputMaterials(operation, parameters);
+    const parameters = machine.resolvedParameters(operation);
+    const requirements = operation.getInputMaterials(parameters);
     // Fill requirements the way feeding would, to find the one that blocks
     const remaining = [...carried];
     let blocking: InputMaterialWithQuantity | null = null;
@@ -344,7 +333,7 @@ export function explainFeedRefusal(
  */
 export function slideStock(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
 ): Board | undefined {
   const match = findFeedableOperation(machine, operations, carried);
@@ -383,9 +372,8 @@ export function machineCanOperate(
   if (!operation) {
     return false;
   }
-  const inputMaterials = getOperationInputMaterials(
-    operation,
-    machine.selectedParameters,
+  const inputMaterials = operation.getInputMaterials(
+    machine.resolvedParameters(operation),
   );
 
   const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);

@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
-import { MachineOperation, ParameterizedOperation } from "../Machine";
+import { Operation,  } from "../Machine";
 import {
   getMaterialFullName,
   materialMeetsInput,
@@ -15,13 +15,13 @@ import { workspace } from "./workspace";
 
 const cutBoardOp = miterSaw.operations.find(
   (op) => op.id === "cutBoard",
-) as ParameterizedOperation;
+) as Operation;
 const ripBoard = jobsiteTableSaw.operations.find(
   (op) => op.id === "ripBoard",
-) as ParameterizedOperation;
+) as Operation;
 const buildPictureFrame = workspace.operations.find(
   (op) => op.id === "buildPictureFrame",
-) as MachineOperation;
+) as Operation;
 
 const withEnds = (base: Board, ends: Board["ends"]): Board => ({
   ...base,
@@ -189,7 +189,7 @@ describe("picture frame", () => {
   const rail = () => withEnds(board("walnut", 2, 1, 1, "sanded"), MIRRORED_45);
 
   it("takes only true rails: 45° ends mirrored so the corners close", () => {
-    const requirement = buildPictureFrame.inputMaterials[0];
+    const requirement = buildPictureFrame.getInputMaterials({})[0];
     assert.ok(materialMeetsInput(rail(), requirement));
     // Either flip of the rail counts — flipping the board over negates
     // both ends at once
@@ -244,7 +244,7 @@ describe("picture frame", () => {
       rail(),
       rail(),
       rail(),
-    ]);
+    ], {});
     assert.strictEqual(outputs.length, 1);
     const frame = outputs[0];
     assert.strictEqual(frame.type, "pictureFrame");

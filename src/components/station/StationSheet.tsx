@@ -1,10 +1,11 @@
 import React from "react";
 import { machineDustMultiplier } from "../../game/Dust";
 import {
+  defaultParametersFor,
   Machine,
-  MachineOperation,
+  Operation,
   OperationParameter,
-  ParameterizedOperation,
+  operationParameters,
 } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import {
@@ -28,13 +29,7 @@ import {
   getMaterialFullName,
 } from "../../game/material-helpers";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
-import {
-  defaultParametersFor,
-  executeOperation,
-  generateOperationPreview,
-  getOperationInputMaterials,
-  isParameterizedOperation,
-} from "../../game/operation-helpers";
+import { generateOperationPreview } from "../../game/operation-helpers";
 import {
   availableOperations,
   getOperationPhases,
@@ -310,7 +305,7 @@ const StationSheetBody: React.FC<{
  */
 const DirectFeedSheetBody: React.FC<{
   machine: Machine;
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
+  operations: ReadonlyArray<Operation>;
 }> = ({ machine, operations }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
@@ -323,11 +318,10 @@ const DirectFeedSheetBody: React.FC<{
   // each shown once. The owning operation drives the reachability marks.
   const settings: Array<{
     param: OperationParameter;
-    operation: ParameterizedOperation;
+    operation: Operation;
   }> = [];
   for (const op of operations) {
-    if (!isParameterizedOperation(op)) continue;
-    for (const param of op.parameters) {
+    for (const param of operationParameters(op)) {
       if (!settings.some((s) => s.param.id === param.id)) {
         settings.push({ param, operation: op });
       }
@@ -474,7 +468,7 @@ const DirectFeedSheetBody: React.FC<{
  */
 const BenchSheetBody: React.FC<{
   machine: Machine;
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>;
+  operations: ReadonlyArray<Operation>;
 }> = ({ machine, operations }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
@@ -518,7 +512,9 @@ const BenchSheetBody: React.FC<{
       : 0;
 
   const expectedInputs = selectedOperation
-    ? getOperationInputMaterials(selectedOperation, machine.selectedParameters)
+    ? selectedOperation.getInputMaterials(
+        machine.resolvedParameters(selectedOperation),
+      )
     : [];
   const inputSlots = matchMaterialsToSlots(
     [...machine.inputMaterials],
@@ -534,10 +530,9 @@ const BenchSheetBody: React.FC<{
       const validMaterials = inputSlots
         .filter((slot) => !slot.isPlaceholder)
         .map((slot) => slot.material);
-      const result = executeOperation(
-        selectedOperation,
+      const result = selectedOperation.output(
         validMaterials,
-        machine.selectedParameters,
+        machine.resolvedParameters(selectedOperation),
       );
       expectedOutputs = result.outputs;
     } catch (error) {
@@ -549,7 +544,7 @@ const BenchSheetBody: React.FC<{
   if (
     selectedOperation &&
     expectedInputs.length > 0 &&
-    isParameterizedOperation(selectedOperation)
+    operationParameters(selectedOperation).length > 0
   ) {
     try {
       const preview = generateOperationPreview(
@@ -592,8 +587,7 @@ const BenchSheetBody: React.FC<{
         />
 
         {selectedOperation &&
-          isParameterizedOperation(selectedOperation) &&
-          selectedOperation.parameters.map((param, index) => (
+          operationParameters(selectedOperation).map((param, index) => (
             <div
               key={param.id}
               className="flex flex-row items-start gap-2 text-xs"

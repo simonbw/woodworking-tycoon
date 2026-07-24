@@ -26,7 +26,7 @@ export const garbageCan: MachineType = {
       name: "Dispose",
       id: "dispose",
       duration: 1, // Very quick operation
-      inputMaterials: [{ quantity: 1 }], // Accept any single material
+      getInputMaterials: () => [{ quantity: 1 }], // Accept any single material
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         // Material is destroyed - no outputs, no inputs returned
         return {

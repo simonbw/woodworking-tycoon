@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { GameState } from "../GameState";
-import { getMachines, MachineOperation, MachineState } from "../Machine";
+import { getMachines, Operation, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { mountToolAction } from "../game-actions/tool-actions";
 import { tickAction } from "../game-actions/tickAction";
@@ -18,16 +18,16 @@ import { crosscutSled, SLICES_PER_PANEL } from "../tools/crosscutSled";
 import { lunchboxPlaner } from "./lunchboxPlaner";
 import { workspace } from "./workspace";
 
-const crosscut = crosscutSled.operations[0] as MachineOperation;
+const crosscut = crosscutSled.operations[0] as Operation;
 const buildSled = workspace.operations.find(
   (op) => op.id === "buildCrosscutSled",
-) as MachineOperation;
+) as Operation;
 const glueEndGrain = workspace.operations.find(
   (op) => op.id === "glueUpEndGrain",
-) as MachineOperation;
+) as Operation;
 const finishEndGrain = workspace.operations.find(
   (op) => op.id === "finishEndGrainBoard",
-) as MachineOperation;
+) as Operation;
 
 function slice(species: "maple" | "walnut" = "maple"): EndGrainSlice {
   return makeMaterial<EndGrainSlice>({
@@ -49,7 +49,7 @@ function plywood(): SheetGood {
 
 describe("buildCrosscutSled", () => {
   it("takes a plywood base and two scrap boards", () => {
-    const [baseReq, runnerReq] = buildSled.inputMaterials;
+    const [baseReq, runnerReq] = buildSled.getInputMaterials({});
     assert.ok(materialMeetsInput(plywood(), baseReq));
     assert.ok(materialMeetsInput(board("pallet", 3, 4, 1), runnerReq));
     assert.strictEqual(runnerReq.quantity, 2);
@@ -60,14 +60,14 @@ describe("buildCrosscutSled", () => {
       plywood(),
       board("pallet", 3, 4, 1),
       board("pallet", 3, 4, 1),
-    ]);
+    ], {});
     assert.deepStrictEqual(result.outputs, []);
     assert.deepStrictEqual(result.toolOutputs, ["crosscutSled"]);
   });
 });
 
 describe("crosscutPanel", () => {
-  const requirement = crosscut.inputMaterials[0];
+  const requirement = crosscut.getInputMaterials({})[0];
 
   it("takes a clean long-grain panel, never an end-grain one", () => {
     assert.ok(
@@ -103,7 +103,7 @@ describe("crosscutPanel", () => {
       4,
       "sanded",
     );
-    const { outputs } = crosscut.output([striped]);
+    const { outputs } = crosscut.output([striped], {});
     assert.strictEqual(outputs.length, SLICES_PER_PANEL);
     for (const output of outputs) {
       assert.strictEqual(output.type, "endGrainSlice");
@@ -121,7 +121,7 @@ describe("glueUpEndGrain", () => {
       slice(),
       slice(),
       slice(),
-    ]);
+    ], {});
     const blank = outputs[0];
     assert.strictEqual(blank.type, "panel");
     if (blank.type !== "panel") return;
@@ -139,7 +139,7 @@ describe("glueUpEndGrain", () => {
 });
 
 describe("finishEndGrainBoard", () => {
-  const requirement = finishEndGrain.inputMaterials[0];
+  const requirement = finishEndGrain.getInputMaterials({})[0];
   const blank = (overrides: object = {}) => ({
     ...uniformPanel("maple", 5, 2, 1, 8, "sanded"),
     grain: "end" as const,
@@ -189,7 +189,7 @@ describe("finishEndGrainBoard", () => {
   });
 
   it("is the top of the cutting board ladder", () => {
-    const { outputs } = finishEndGrain.output([blank()]);
+    const { outputs } = finishEndGrain.output([blank()], {});
     const product = outputs[0];
     assert.ok(isFinishedProduct(product));
     assert.strictEqual(product.type, "endGrainCuttingBoard");

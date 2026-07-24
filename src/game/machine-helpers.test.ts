@@ -5,8 +5,9 @@ import {
   InputMaterialWithQuantity,
   Machine,
   MachineId,
-  ParameterizedOperation,
+  Operation,
   ParameterValues,
+  operationParameters,
 } from "./Machine";
 import {
   findFeedableOperation,
@@ -265,7 +266,7 @@ describe("parameterValueSatisfiable", () => {
     operationId: string,
     parameters: ParameterValues,
     inputs: MaterialInstance[],
-  ): { machine: Machine; operation: ParameterizedOperation } {
+  ): { machine: Machine; operation: Operation } {
     const machine = new Machine({
       machineTypeId,
       position: [0, 0],
@@ -284,7 +285,7 @@ describe("parameterValueSatisfiable", () => {
     });
     return {
       machine,
-      operation: machine.selectedOperation as ParameterizedOperation,
+      operation: machine.selectedOperation as Operation,
     };
   }
 
@@ -295,7 +296,7 @@ describe("parameterValueSatisfiable", () => {
       { cutPosition: 4 },
       [],
     );
-    for (const value of operation.parameters[0].values) {
+    for (const value of operationParameters(operation)[0].values) {
       assert.ok(
         parameterValueSatisfiable(machine, operation, "cutPosition", value),
       );

@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { GameState } from "./GameState";
-import { Machine, MachineOperation, MachineState } from "./Machine";
+import { Machine, Operation, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
 import {
   buyUpgradeAction,
@@ -65,7 +65,7 @@ describe("upgrade effects on the Machine view", () => {
   it("a vise-equipped table shortens attended phases further", () => {
     const glueUp = workspace.operations.find(
       (op) => op.id === "glueUpPanel",
-    ) as MachineOperation;
+    ) as Operation;
     const table = new Machine(tableAt([2, 2]));
     const vised = new Machine(tableAt([2, 2], { upgrades: ["vise"] }));
     const plain = getOperationPhases(

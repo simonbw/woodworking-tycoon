@@ -12,7 +12,6 @@ import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { shopVacTickPass } from "./shop-vac-actions";
 import { applyWorkItemAction } from "./work-item-actions";
-import { executeOperation } from "../operation-helpers";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
 import { Machine, MachineId } from "../Machine";
@@ -228,10 +227,9 @@ export const tickAction: GameAction = (gameState) => {
       consumableOutputs,
       machineOutputs,
       upgradeOutputs,
-    } = executeOperation(
-      selectedOperation,
+    } = selectedOperation.output(
       machineState.processingMaterials,
-      machineState.selectedParameters,
+      machine.resolvedParameters(selectedOperation),
     );
 
     for (const output of outputs) {

@@ -27,7 +27,7 @@ export const crosscutSled: ToolType = {
       requiredSkill: "jigsAndFixtures",
       duration: 20,
       dustOutput: 1,
-      inputMaterials: [
+      getInputMaterials: () => [
         {
           type: ["panel"],
           length: [2],

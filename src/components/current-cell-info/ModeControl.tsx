@@ -1,13 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { ConsumableAmount, CONSUMABLE_TYPES } from "../../game/Consumable";
-import { MachineOperation, ParameterizedOperation } from "../../game/Machine";
+import { Operation } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
 import { describeOperationIO } from "../../game/operation-helpers";
 import { getOperationDuration } from "../../game/skill-helpers";
 import { classNames } from "../../utils/classNames";
 import { ShortcutKeys } from "../shortcuts/Kbd";
-
-type Operation = MachineOperation | ParameterizedOperation;
 
 /**
  * How many operations a station can have before the mode switch stops

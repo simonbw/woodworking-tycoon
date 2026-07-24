@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
-import { MACHINE_TYPES, MachineOperation } from "../Machine";
+import { MACHINE_TYPES, Operation } from "../Machine";
 import { TOOL_TYPES } from "../Tool";
 import { isFinishedProduct, materialMeetsInput } from "../material-helpers";
 import { getSellValue } from "../material-values";
@@ -17,19 +17,19 @@ import { GLUE_CURE_TICKS, workspace } from "./workspace";
 
 const glueUpPair = workspace.operations.find(
   (op) => op.id === "glueUpPair",
-) as MachineOperation;
+) as Operation;
 const extendPanel = workspace.operations.find(
   (op) => op.id === "extendPanel",
-) as MachineOperation;
+) as Operation;
 const joinPanels = workspace.operations.find(
   (op) => op.id === "joinPanels",
-) as MachineOperation;
+) as Operation;
 const finishStriped = workspace.operations.find(
   (op) => op.id === "finishStripedBoard",
-) as MachineOperation;
+) as Operation;
 const finishSunrise = workspace.operations.find(
   (op) => op.id === "finishSunriseBoard",
-) as MachineOperation;
+) as Operation;
 
 /** Shorthand: strips from [species, width] pairs. */
 function strips(...pairs: [Species, PanelStrip["width"]][]): PanelStrip[] {
@@ -134,7 +134,7 @@ describe("glueUpPair", () => {
     const { outputs } = glueUpPair.output([
       board("walnut", 2, 3, 4, "smooth"),
       board("maple", 2, 1, 4, "sanded"),
-    ]);
+    ], {});
     const output = outputs[0];
     assert.strictEqual(output.type, "panel");
     if (output.type !== "panel") return;
@@ -152,7 +152,7 @@ describe("extendPanel", () => {
     const { outputs } = extendPanel.output([
       base,
       board("walnut", 2, 2, 4, "smooth"),
-    ]);
+    ], {});
     const output = outputs[0];
     assert.strictEqual(output.type, "panel");
     if (output.type !== "panel") return;
@@ -165,7 +165,7 @@ describe("extendPanel", () => {
   });
 
   it("requires clean strips but takes the panel in any condition", () => {
-    const [panelReq, stripReq] = extendPanel.inputMaterials;
+    const [panelReq, stripReq] = extendPanel.getInputMaterials({});
     assert.ok(
       materialMeetsInput(panel(strips(["walnut", 3]), 2, 4, "rough"), panelReq),
     );
@@ -178,7 +178,7 @@ describe("joinPanels", () => {
   it("marries two sub-panels in order and re-roughs the joint", () => {
     const left = panel(strips(["walnut", 3], ["maple", 1]), 2, 4, "sanded");
     const right = panel(strips(["walnut", 2], ["maple", 2]), 2, 4, "smooth");
-    const { outputs } = joinPanels.output([left, right]);
+    const { outputs } = joinPanels.output([left, right], {});
     const output = outputs[0];
     assert.strictEqual(output.type, "panel");
     if (output.type !== "panel") return;
@@ -223,7 +223,7 @@ describe("glue-up phases", () => {
 });
 
 describe("finishStripedBoard", () => {
-  const requirement = finishStriped.inputMaterials[0];
+  const requirement = finishStriped.getInputMaterials({})[0];
   const alternating = panel(
     strips(
       ["walnut", 2],
@@ -287,7 +287,7 @@ describe("finishStripedBoard", () => {
   });
 
   it("produces a striped board worth more than the two-tone", () => {
-    const { outputs } = finishStriped.output([alternating]);
+    const { outputs } = finishStriped.output([alternating], {});
     const output = outputs[0];
     assert.ok(isFinishedProduct(output));
     assert.strictEqual(output.type, "stripedCuttingBoard");
@@ -299,7 +299,7 @@ describe("finishStripedBoard", () => {
 });
 
 describe("finishSunriseBoard", () => {
-  const requirement = finishSunrise.inputMaterials[0];
+  const requirement = finishSunrise.getInputMaterials({})[0];
   const sunrise = panel(
     strips(
       ["walnut", 3],
@@ -350,7 +350,7 @@ describe("finishSunriseBoard", () => {
       3,
       "sanded",
     );
-    const { outputs } = finishSunrise.output([walnutHeavy]);
+    const { outputs } = finishSunrise.output([walnutHeavy], {});
     const output = outputs[0];
     assert.ok(isFinishedProduct(output));
     assert.strictEqual(output.type, "sunriseCuttingBoard");
@@ -359,7 +359,7 @@ describe("finishSunriseBoard", () => {
   });
 
   it("is the priciest strip board", () => {
-    const { outputs } = finishSunrise.output([sunrise]);
+    const { outputs } = finishSunrise.output([sunrise], {});
     // walnut 5, maple 3 -> avg 4 x 1.5 premium on a $100 base
     assert.strictEqual(getSellValue(outputs[0]), 100 * 6);
   });

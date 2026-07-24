@@ -1,4 +1,4 @@
-import { MachineType, ParameterizedOperation } from "../Machine";
+import { MachineType } from "../Machine";
 import {
   BOARD_DIMENSIONS,
   BoardDimension,
@@ -124,6 +124,6 @@ export const miterSaw: MachineType = {
           },
         );
       },
-    } as ParameterizedOperation,
+    },
   ],
 };

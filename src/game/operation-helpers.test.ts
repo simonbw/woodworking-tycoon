@@ -1,13 +1,14 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { ParameterizedOperation } from "./Machine";
+import { Operation, operationParameters } from "./Machine";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { workspace } from "./machines/workspace";
-import { defaultParametersFor, describeOperationIO } from "./operation-helpers";
+import { defaultParametersFor } from "./Machine";
+import { describeOperationIO } from "./operation-helpers";
 
 const plane = lunchboxPlaner.operations.find(
   (op) => op.id === "plane",
-) as ParameterizedOperation;
+) as Operation;
 const dismantlePallet = workspace.operations.find(
   (op) => op.id === "dismantlePallet",
 )!;
@@ -18,12 +19,12 @@ const buildCrosscutSled = workspace.operations.find(
 describe("defaultParametersFor", () => {
   it("starts each parameter at its first listed value", () => {
     assert.deepStrictEqual(defaultParametersFor(plane), {
-      targetThickness: plane.parameters[0].values[0],
+      targetThickness: operationParameters(plane)[0].values[0],
     });
   });
 
-  it("is undefined for plain operations", () => {
-    assert.strictEqual(defaultParametersFor(dismantlePallet), undefined);
+  it("is empty for fixed recipes", () => {
+    assert.deepStrictEqual(defaultParametersFor(dismantlePallet), {});
   });
 });
 

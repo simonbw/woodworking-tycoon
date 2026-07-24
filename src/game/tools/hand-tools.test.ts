@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard } from "../board-helpers";
-import { MachineOperation, ParameterizedOperation } from "../Machine";
+import { Operation, operationParameters } from "../Machine";
 import { miterSaw } from "../machines/miterSaw";
 import { boardEnds } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
@@ -10,13 +10,13 @@ import { handSaw } from "./handSaw";
 
 const handSawCut = handSaw.operations.find(
   (op) => op.id === "handSawCut",
-) as ParameterizedOperation;
+) as Operation;
 const miterSawCut = miterSaw.operations.find(
   (op) => op.id === "cutBoard",
-) as ParameterizedOperation;
+) as Operation;
 const buildPlanterBox = drill.operations.find(
   (op) => op.id === "buildPlanterBox",
-) as MachineOperation;
+) as Operation;
 
 describe("hand saw", () => {
   it("makes the same cut as the miter saw", () => {
@@ -51,8 +51,8 @@ describe("hand saw", () => {
   });
 
   it("offers the same angle stops as the miter saw, but cuts slower", () => {
-    const angles = (op: ParameterizedOperation) =>
-      op.parameters.find((p) => p.id === "angle")?.values;
+    const angles = (op: Operation) =>
+      operationParameters(op).find((p) => p.id === "angle")?.values;
     assert.deepStrictEqual(angles(handSawCut), angles(miterSawCut));
     assert.ok(handSawCut.duration > miterSawCut.duration);
   });
@@ -64,7 +64,7 @@ describe("drill", () => {
       { id: "screws", amount: 8 },
     ]);
     const slats = Array.from({ length: 5 }, () => board("pallet", 2, 4, 1));
-    const { outputs } = buildPlanterBox.output(slats);
+    const { outputs } = buildPlanterBox.output(slats, {});
     assert.strictEqual(outputs.length, 1);
     assert.strictEqual(outputs[0].type, "planterBox");
     assert.ok("species" in outputs[0] && outputs[0].species === "pallet");
@@ -73,13 +73,13 @@ describe("drill", () => {
   it("rejects uncut deck boards — the slats must be crosscut to 2' first", () => {
     const freshDeckBoard = board("pallet", 3, 4, 1);
     assert.strictEqual(
-      materialMeetsInput(freshDeckBoard, buildPlanterBox.inputMaterials[0]),
+      materialMeetsInput(freshDeckBoard, buildPlanterBox.getInputMaterials({})[0]),
       false,
     );
     assert.strictEqual(
       materialMeetsInput(
         board("pallet", 2, 4, 1),
-        buildPlanterBox.inputMaterials[0],
+        buildPlanterBox.getInputMaterials({})[0],
       ),
       true,
     );

@@ -3,8 +3,8 @@ import { resolveInteract, interactLabel } from "../../game/interact";
 import {
   isSameMachine,
   Machine,
-  MachineOperation,
-  ParameterizedOperation,
+  Operation,
+  operationParameters,
 } from "../../game/Machine";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import {
@@ -12,10 +12,6 @@ import {
   machineCanOperate,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
-import {
-  getOperationInputMaterials,
-  isParameterizedOperation,
-} from "../../game/operation-helpers";
 import { availableOperations } from "../../game/skill-helpers";
 import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -78,10 +74,9 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     machine.type.inputSpaces - machine.inputMaterials.length > 0 &&
     selectedOperation != null &&
     carried.some((material) =>
-      getOperationInputMaterials(
-        selectedOperation,
-        machine.selectedParameters,
-      ).some((input) => materialMeetsInput(material, input)),
+      selectedOperation
+        .getInputMaterials(machine.resolvedParameters(selectedOperation))
+        .some((input) => materialMeetsInput(material, input)),
     );
 
   const firstSetting = firstParameter(machine, operations);
@@ -182,19 +177,16 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 /** The first adjustable setting the Z key drives on this machine. */
 function firstParameter(
   machine: Machine,
-  operations: ReadonlyArray<MachineOperation | ParameterizedOperation>,
+  operations: ReadonlyArray<Operation>,
 ) {
   if (machine.type.directFeed) {
     const op = operations.find(
-      (candidate) =>
-        isParameterizedOperation(candidate) && candidate.parameters.length > 0,
+      (candidate) => operationParameters(candidate).length > 0,
     );
-    return op && isParameterizedOperation(op) ? op.parameters[0] : undefined;
+    return op ? operationParameters(op)[0] : undefined;
   }
   const selected = machine.selectedOperationOrNull;
-  return selected && isParameterizedOperation(selected)
-    ? selected.parameters[0]
-    : undefined;
+  return selected ? operationParameters(selected)[0] : undefined;
 }
 
 /**

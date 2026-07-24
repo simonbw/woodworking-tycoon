@@ -1,4 +1,4 @@
-import { MachineType, ParameterizedOperation } from "../Machine";
+import { MachineType } from "../Machine";
 import { BOARD_DIMENSIONS, BoardDimension } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
 import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
@@ -96,6 +96,6 @@ export const jobsiteTableSaw: MachineType = {
           outputs: [{ ...kept, jointedEdges: 2 as const }, ...offcuts],
         };
       },
-    } as ParameterizedOperation,
+    },
   ],
 };

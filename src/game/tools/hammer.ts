@@ -22,7 +22,7 @@ export const hammer: ToolType = {
       // The wood is free if you pried it off a pallet — and so are the
       // nails, which come back out with the boards (see dismantlePallet)
       requiredConsumables: [{ id: "nails", amount: 8 }],
-      inputMaterials: [
+      getInputMaterials: () => [
         {
           type: ["board"],
           species: ["pallet"],
@@ -64,7 +64,7 @@ export const hammer: ToolType = {
       requiredSkill: "rusticCarpentry",
       duration: 20,
       requiredConsumables: [{ id: "nails", amount: 6 }],
-      inputMaterials: [
+      getInputMaterials: () => [
         // Short deck-board crosscuts: walls, floor, and a pitched roof
         {
           type: ["board"],
@@ -98,7 +98,7 @@ export const hammer: ToolType = {
       requiredSkill: "rusticCarpentry",
       duration: 25,
       requiredConsumables: [{ id: "nails", amount: 12 }],
-      inputMaterials: [
+      getInputMaterials: () => [
         // Six whole deck boards: slatted sides and a bottom
         {
           type: ["board"],

@@ -28,7 +28,7 @@ export const drill: ToolType = {
       // where nails would work loose — and unlike nails, they never come
       // back as pallet salvage, so this is the screw economy's anchor.
       requiredConsumables: [{ id: "screws", amount: 8 }],
-      inputMaterials: [
+      getInputMaterials: () => [
         // Deck boards crosscut to 2' — four sides and a bottom slat. The
         // first rustic build that needs a saw before the assembly starts.
         {
@@ -63,7 +63,7 @@ export const drill: ToolType = {
       duration: 30,
       // It has to hold a person, so every joint gets a screw
       requiredConsumables: [{ id: "screws", amount: 10 }],
-      inputMaterials: [
+      getInputMaterials: () => [
         // Two stout sides — crosscut stringers or thick hardwood
         {
           type: ["board"],
@@ -103,7 +103,7 @@ export const drill: ToolType = {
       requiredSkill: "fineShelving",
       duration: 40,
       requiredConsumables: [{ id: "screws", amount: 12 }],
-      inputMaterials: [
+      getInputMaterials: () => [
         // Twice the stock of a single shelf: two shelves, two sides
         {
           type: ["board"],

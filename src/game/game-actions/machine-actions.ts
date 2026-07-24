@@ -1,5 +1,6 @@
 import { GameAction, GameState, ProgressionState } from "../GameState";
 import {
+  defaultParametersFor,
   isSameMachine,
   Machine,
   MACHINE_TYPES,
@@ -18,7 +19,6 @@ import {
   vectorKey,
 } from "../Vectors";
 import { CellMap } from "../CellMap";
-import { defaultParametersFor } from "../operation-helpers";
 import { carryingShopVac } from "../ShopVac";
 import { emitSound } from "./sound-actions";
 
