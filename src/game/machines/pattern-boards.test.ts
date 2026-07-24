@@ -373,7 +373,6 @@ describe("quickDryGlue covers the freeform ops", () => {
     marketplaceUnlocked: true,
     commissionsCompleted: 0,
     lumberyardUnlocked: false,
-    tickSpeedControlsUnlocked: false,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: [],

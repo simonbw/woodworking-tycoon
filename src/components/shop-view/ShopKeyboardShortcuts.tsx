@@ -23,10 +23,7 @@ import {
   rotateCarriedMachineAction,
 } from "../../game/game-actions/machine-actions";
 import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
-import {
-  addWorkItemAction,
-  clearWorkQueueAction,
-} from "../../game/game-actions/work-item-actions";
+import { cleanUpAction } from "../../game/game-actions/dust-actions";
 import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
@@ -76,7 +73,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "sweep",
     () => {
       if (gameState.current.progression.sweepingUnlocked) {
-        applyAction(addWorkItemAction({ type: "sweep" }));
+        applyAction(cleanUpAction());
       }
     },
     present && !carrying,
@@ -130,7 +127,6 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     },
     sheetMachine != null || doorOpen,
   );
-  useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));
 
   useShortcut("cycle-machine", cycleTarget, present);
 

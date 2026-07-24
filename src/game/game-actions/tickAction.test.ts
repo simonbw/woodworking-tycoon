@@ -68,26 +68,6 @@ describe("tickAction", () => {
     assert.strictEqual(result.tick, 8);
   });
 
-  it("processes one queued work item and leaves the rest for later ticks", () => {
-    // Two queued sweeps: the first runs and leaves the player busy, so
-    // the second has to wait for a later tick.
-    const state = stateWith({
-      dust: { "0,0": { pine: 50 } },
-      progression: { ...initialGameState.progression, sweepingUnlocked: true },
-      player: {
-        ...initialGameState.player,
-        position: [0, 0],
-        workQueue: [{ type: "sweep" }, { type: "sweep" }],
-      },
-    });
-    const result = tickAction(state);
-    assert.ok(
-      result.materialPiles.some((pile) => pile.material.type === "sawdustPile"),
-    );
-    assert.strictEqual(result.player.workQueue.length, 1);
-    assert.ok(result.player.busyTicks > 0);
-  });
-
   it("leaves idle machines untouched", () => {
     const machine = workspaceMachine({});
     const result = tickAction(stateWith({ machines: [machine] }));
@@ -167,11 +147,9 @@ describe("tickAction", () => {
         // Standing at the cell doesn't count while away
         position: WORKSPACE_OPERATION_CELL,
         away: { kind: "scavenging", returnTick: 20, loot: [] },
-        workQueue: [{ type: "sweep" }],
       },
     });
     const result = tickAction(state);
-    assert.strictEqual(result.player.workQueue.length, 1);
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });
 

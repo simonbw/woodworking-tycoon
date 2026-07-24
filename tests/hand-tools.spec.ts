@@ -6,7 +6,7 @@ import {
   selectMode,
   setParameter,
 } from "./machine-panel";
-import { goToStore, leaveStore } from "./navigation";
+import { goToStore, leaveStore, setTickRate } from "./navigation";
 
 declare global {
   interface Window {
@@ -86,8 +86,8 @@ test.describe("Hand tools", () => {
     });
 
     await test.step("the hand saw crosscuts with the miter saw's full setup", async () => {
-      // 20 ticks/second so the slow hand work flies by
-      await page.keyboard.press("3");
+      // Run fast so the slow hand work flies by
+      await setTickRate(page, 20);
       await selectMode(page, "Makeshift Workbench", "Cut Board by Hand");
       const card = workspaceCard(page);
       await expect(

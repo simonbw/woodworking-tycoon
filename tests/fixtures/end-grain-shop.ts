@@ -81,7 +81,6 @@ export const endGrainShop: GameState = {
       palletBoard("test-runner-1"),
       palletBoard("test-runner-2"),
     ],
-    workQueue: [],
     busyTicks: 0,
     away: null,
   },
@@ -109,7 +108,6 @@ export const endGrainShop: GameState = {
     marketplaceUnlocked: true,
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
-    tickSpeedControlsUnlocked: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,

@@ -6,6 +6,7 @@ import {
   leaveStore,
   openJournal,
   openPhone,
+  setTickRate,
 } from "./navigation";
 
 declare global {
@@ -120,7 +121,7 @@ test.describe("End-Grain Boards", () => {
 
     await test.step("build the crosscut sled at the workspace", async () => {
       await closeJournal(page);
-      await page.keyboard.press("3"); // the cures are long by design
+      await setTickRate(page, 20); // the cures are long by design
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await page
         .locator("li", { hasText: "Plywood" })

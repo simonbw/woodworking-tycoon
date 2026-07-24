@@ -41,7 +41,6 @@ export function goToStoreAction(store: StoreId): GameAction {
       ...gameState,
       player: {
         ...gameState.player,
-        workQueue: [],
         away: { kind: "shopping", store },
       },
     };

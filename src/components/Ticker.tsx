@@ -1,110 +1,51 @@
-import React, { ReactNode, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
-import { ShortcutId } from "../game/shortcuts";
 import { TICKS_PER_DAY } from "../game/time";
-import { classNames } from "../utils/classNames";
-import { useShortcut } from "./shortcuts/ShortcutProvider";
-import {
-  TICK_SPEED_FAST,
-  TICK_SPEED_FASTER,
-  TICK_SPEED_NORMAL,
-  TICK_SPEED_PAUSED,
-  useTickSpeed,
-} from "./TickSpeedContext";
-import { Tooltip } from "./Tooltip";
+import { TICKS_PER_SECOND, usePaused } from "./PauseContext";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
-const PAUSED = TICK_SPEED_PAUSED;
-const NORMAL = TICK_SPEED_NORMAL;
-const FAST = TICK_SPEED_FAST;
-const FASTER = TICK_SPEED_FASTER;
-
-const SpeedButton: React.FC<{
-  speed: number;
-  title: string;
-  shortcut: ShortcutId;
-  children: ReactNode;
-  ticksPerSecond: number;
-  setTicksPerSecond: (speed: number) => void;
-}> = ({
-  speed,
-  children,
-  title,
-  shortcut,
-  ticksPerSecond,
-  setTicksPerSecond,
-}) => {
-  return (
-    <Tooltip content={title} shortcut={shortcut}>
-      <button
-        className={classNames(
-          "px-1.5 py-0.5 text-xs text-center font-condensed",
-          "hover:bg-paper-manila/10",
-          ticksPerSecond === speed
-            ? "bg-paper-manila/20 text-paper-manila"
-            : "text-paper-manila/60",
-        )}
-        onClick={(e) => {
-          setTicksPerSecond(speed);
-          e.currentTarget.blur();
-        }}
-        tabIndex={-1}
-      >
-        {children}
-      </button>
-    </Tooltip>
-  );
-};
-
 /**
- * Drives the game loop and shows the day + speed controls as a compact
- * strip docked in the top bar. Time always advances (unless paused): the
- * phone, journal, and manual are objects you look at while standing in the
- * shop, and a store run takes however long you spend in the aisles.
+ * Drives the game loop and shows the day as a compact strip docked in the
+ * top bar. The shop runs at one pace and the player has no speed control:
+ * the phone, journal, and manual are objects you look at while standing in
+ * the shop, and a store run takes however long you spend in the aisles.
+ * The only thing that stops the clock is the pause menu.
  */
 export const Ticker: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const controlsUnlocked = gameState.progression.tickSpeedControlsUnlocked;
-  const { ticksPerSecond, setTicksPerSecond } = useTickSpeed();
+  const { paused, setPaused } = usePaused();
+  // Test-only override; null in every real session.
+  const [testRate, setTestRate] = useState<number | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (ticksPerSecond > 0) {
+    if (paused) return;
+    const interval = setInterval(
+      () => {
         applyAction(tickAction);
-      }
-    }, 1000 / ticksPerSecond);
+      },
+      1000 / (testRate ?? TICKS_PER_SECOND),
+    );
     return () => clearInterval(interval);
-  }, [ticksPerSecond]);
+  }, [paused, testRate]);
 
-  useShortcut("speed-pause", () => setTicksPerSecond(PAUSED), controlsUnlocked);
-  useShortcut(
-    "speed-normal",
-    () => setTicksPerSecond(NORMAL),
-    controlsUnlocked,
-  );
-  useShortcut("speed-fast", () => setTicksPerSecond(FAST), controlsUnlocked);
-  useShortcut(
-    "speed-faster",
-    () => setTicksPerSecond(FASTER),
-    controlsUnlocked,
-  );
-  useShortcut("speed-step", () => applyAction(tickAction), controlsUnlocked);
-  // Resume at whatever speed was running before the pause, rather than
-  // silently dropping the player back to NORMAL from FAST/FASTER.
-  const speedBeforePause = useRef<number>(NORMAL);
-  useShortcut(
-    "speed-toggle",
-    () =>
-      setTicksPerSecond((current) => {
-        if (current !== PAUSED) {
-          speedBeforePause.current = current;
-          return PAUSED;
-        }
-        return speedBeforePause.current;
-      }),
-    controlsUnlocked,
-  );
+  // Test-only clock control. The player has no speed keys, so E2E specs
+  // that need a long cure to finish — or a frozen world to set something up
+  // in — drive the clock from here instead of racing wall-time.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    (window as any).__SET_PAUSED__ = (value: boolean) => setPaused(value);
+    (window as any).__SET_TICK_RATE__ = (rate: number | null) =>
+      setTestRate(rate);
+    (window as any).__ADVANCE_TICKS__ = (count: number) => {
+      for (let i = 0; i < count; i++) applyAction(tickAction);
+    };
+    return () => {
+      delete (window as any).__SET_PAUSED__;
+      delete (window as any).__SET_TICK_RATE__;
+      delete (window as any).__ADVANCE_TICKS__;
+    };
+  }, []);
 
   const day = Math.floor(gameState.tick / TICKS_PER_DAY) + 1;
   const dayPercent = ((gameState.tick % TICKS_PER_DAY) / TICKS_PER_DAY) * 100;
@@ -127,58 +68,6 @@ export const Ticker: React.FC = () => {
           />
         </div>
       </div>
-      {controlsUnlocked && (
-        <menu className="flex rounded border border-paper-manila/25 overflow-hidden">
-          <SpeedButton
-            speed={PAUSED}
-            title="Pause game"
-            shortcut="speed-pause"
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ⏸
-          </SpeedButton>
-          <Tooltip content="Step forward one tick" shortcut="speed-step">
-            <button
-              className="px-1.5 py-0.5 text-xs text-center font-condensed text-paper-manila/60 hover:bg-paper-manila/10"
-              onClick={(e) => {
-                applyAction(tickAction);
-                e.currentTarget.blur();
-              }}
-              tabIndex={-1}
-            >
-              ❯
-            </button>
-          </Tooltip>
-          <SpeedButton
-            title="Play at normal speed"
-            shortcut="speed-normal"
-            speed={NORMAL}
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ▶
-          </SpeedButton>
-          <SpeedButton
-            title="Play at fast speed"
-            shortcut="speed-fast"
-            speed={FAST}
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ▶▶
-          </SpeedButton>
-          <SpeedButton
-            title="Play at faster speed"
-            shortcut="speed-faster"
-            speed={FASTER}
-            ticksPerSecond={ticksPerSecond}
-            setTicksPerSecond={setTicksPerSecond}
-          >
-            ▶▶▶
-          </SpeedButton>
-        </menu>
-      )}
     </section>
   );
 };

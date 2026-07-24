@@ -55,7 +55,6 @@ export const cuttingBoardShop: GameState = {
       jointedFaces: 2 as const,
       jointedEdges: 2 as const,
     })),
-    workQueue: [],
     busyTicks: 0,
     away: null,
   },
@@ -80,7 +79,6 @@ export const cuttingBoardShop: GameState = {
     marketplaceUnlocked: true,
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
-    tickSpeedControlsUnlocked: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,

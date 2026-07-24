@@ -15,11 +15,10 @@ export interface Person {
    * pre-carry saves load untouched. See docs/carrying-machines.md.
    */
   carriedMachine?: MachineState | null;
-  workQueue: ReadonlyArray<WorkItem>;
   /**
    * Ticks the person is still occupied by their last action — trudging
    * through deep sawdust, finishing a sweep. While positive, each tick
-   * decrements it instead of starting queued work.
+   * decrements it instead, and clean-up presses are ignored.
    */
   busyTicks: number;
   /** Set while the person is out of the shop (e.g. scavenging for pallets). */
@@ -51,14 +50,9 @@ export type ShoppingTrip = {
 /**
  * Whether the person is free to start work right now: in the shop and not
  * still occupied by their last action (trudging, sweeping). Derived, never
- * stored — tickAction and addWorkItemAction consult this instead of a
+ * stored — tickAction and cleanUpAction consult this instead of a
  * persisted flag that would go stale.
  */
 export function personCanWork(person: Person): boolean {
   return person.away === null && person.busyTicks === 0;
 }
-
-export type WorkItem = {
-  /** Sweep the cell underfoot, pushing its dust the way we're facing. */
-  type: "sweep";
-};

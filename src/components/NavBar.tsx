@@ -3,11 +3,11 @@ import { hasUnreadArticles } from "../game/manual";
 import { useManual } from "./manual/ManualProvider";
 import { JournalModal } from "./journal/JournalModal";
 import { PhoneModal } from "./phone/PhoneModal";
-import { SettingsMenu } from "./SettingsMenu";
+import { PauseMenu } from "./PauseMenu";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Ticker } from "./Ticker";
 import { Tooltip } from "./Tooltip";
-import { useGameState, useQuitToMenu } from "./useGameState";
+import { useGameState } from "./useGameState";
 
 /**
  * The top chrome strip: no tabs — every screen that used to be one is an
@@ -19,8 +19,7 @@ import { useGameState, useQuitToMenu } from "./useGameState";
 export const NavBar: React.FC = () => {
   const gameState = useGameState();
   const { marketplaceUnlocked, skillPoints } = gameState.progression;
-  const quitToMenu = useQuitToMenu();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const manual = useManual();
@@ -28,7 +27,7 @@ export const NavBar: React.FC = () => {
 
   useShortcut("open-phone", () => setPhoneOpen(true), marketplaceUnlocked);
   useShortcut("open-journal", () => setJournalOpen(true));
-  useShortcut("open-settings", () => setSettingsOpen(true));
+  useShortcut("pause-menu", () => setPauseOpen(true));
 
   return (
     <nav className="relative">
@@ -84,29 +83,11 @@ export const NavBar: React.FC = () => {
               )}
             </button>
           </Tooltip>
-          <Tooltip content="Settings" shortcut="open-settings">
-            <button
-              className="button-ghost text-lg leading-none"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Settings"
-            >
-              ⚙
-            </button>
-          </Tooltip>
-          <Tooltip content="Save and return to main menu">
-            <button
-              className="button-ghost"
-              onClick={quitToMenu}
-              data-sfx="ui-back"
-            >
-              Save &amp; Quit
-            </button>
-          </Tooltip>
         </div>
       </div>
       {/* The desk edge the old folder tabs used to merge into */}
       <div className="h-0.5 bg-paper-manila/40" />
-      {settingsOpen && <SettingsMenu onClose={() => setSettingsOpen(false)} />}
+      {pauseOpen && <PauseMenu onClose={() => setPauseOpen(false)} />}
       {phoneOpen && <PhoneModal onClose={() => setPhoneOpen(false)} />}
       {journalOpen && <JournalModal onClose={() => setJournalOpen(false)} />}
     </nav>

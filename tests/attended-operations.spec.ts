@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
+import { advanceTicks, setPaused } from "./navigation";
 
 declare global {
   interface Window {
@@ -66,13 +67,13 @@ test.describe("Attended Operations", () => {
       await page.waitForTimeout(200);
 
       // Freeze the clock so starting the op and stepping away is deterministic
-      await page.keyboard.press("`");
+      await setPaused(page, true);
       await workspaceCard(page)
         .getByRole("button", { name: "Operate" })
         .click();
       await page.waitForTimeout(200);
       await teleportPlayer(page, FAR_AWAY);
-      await page.keyboard.press("1");
+      await setPaused(page, false);
 
       // Ticks flow again, but nobody is at the bench: progress is frozen
       const before = await workspaceProgress(page);
@@ -114,13 +115,13 @@ test.describe("Attended Operations", () => {
         .click();
       await page.waitForTimeout(200);
 
-      await page.keyboard.press("`");
+      await setPaused(page, true);
       await workspaceCard(page)
         .getByRole("button", { name: "Operate" })
         .click();
       await page.waitForTimeout(200);
       await teleportPlayer(page, FAR_AWAY);
-      await page.keyboard.press("1");
+      await setPaused(page, false);
 
       // Clamping is attended: frozen at full duration while away
       await page.waitForTimeout(800);
@@ -154,7 +155,7 @@ test.describe("Attended Operations", () => {
 
       // Fast-forward the rest of the cure; the panel finishes with the
       // player still across the shop
-      await page.keyboard.press("3");
+      await advanceTicks(page, 200);
       await page.waitForFunction(
         () =>
           (window as any)

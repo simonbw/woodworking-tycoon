@@ -64,7 +64,6 @@ export const millingShop: GameState = {
     position: [2, 4], // the jointer's operation cell
     direction: 0,
     inventory: [roughWalnut("test-rough-1"), roughWalnut("test-rough-2")],
-    workQueue: [],
     busyTicks: 0,
     away: null,
   },
@@ -97,7 +96,6 @@ export const millingShop: GameState = {
     shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 7,
-    tickSpeedControlsUnlocked: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,

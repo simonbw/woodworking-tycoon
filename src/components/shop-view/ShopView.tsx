@@ -13,7 +13,7 @@ import {
   useSaveGame,
 } from "../useGameState";
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
-import { TICK_SPEED_PAUSED, useTickSpeed } from "../TickSpeedContext";
+import { usePaused } from "../PauseContext";
 import { BroomSprite } from "./BroomSprite";
 import { CarriedMachineLayer } from "./CarriedMachineLayer";
 import {
@@ -65,7 +65,7 @@ export const ShopView: React.FC = () => {
   const cellMap = useCellMap();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
   const modalOpen = useModalOpen();
-  const { ticksPerSecond } = useTickSpeed();
+  const { paused } = usePaused();
   const {
     machines: operableHere,
     isTargeted,
@@ -216,9 +216,7 @@ export const ShopView: React.FC = () => {
                   />
                 ))}
               {collisionDebugRequested() && <CollisionDebugLayer />}
-              <PlayerMotionLayer
-                paused={ticksPerSecond === TICK_SPEED_PAUSED}
-              />
+              <PlayerMotionLayer paused={paused} />
               <ShopVacSprite />
               {!gameState.player.away && (
                 <PersonSprite person={gameState.player} />

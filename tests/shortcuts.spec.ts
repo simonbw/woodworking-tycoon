@@ -28,14 +28,12 @@ test.describe("Keyboard shortcuts", () => {
           () => fixtures["layout-with-placed-machines"],
         );
       });
-      // No fixture ships with the tick controls unlocked (the speed keys are
-      // gated on them) or the marketplace (which gates the phone).
+      // No fixture ships with the marketplace unlocked, which gates the phone.
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((s: any) => ({
           ...s,
           progression: {
             ...s.progression,
-            tickSpeedControlsUnlocked: true,
             marketplaceUnlocked: true,
           },
         }));
@@ -118,7 +116,7 @@ test.describe("Keyboard shortcuts", () => {
 
     await test.step("E opens the door card, 1 heads out to the store", async () => {
       const store = page.getByRole("dialog", { name: "Orange Box" });
-      // Away from the door, 1 is the speed preset — no trip starts
+      // Away from the door the digit is a dead key — no trip starts
       await page.keyboard.press("1");
       await expect(store).toHaveCount(0);
 
@@ -163,8 +161,8 @@ test.describe("Keyboard shortcuts", () => {
     });
 
     await test.step("Space still activates a focused button", async () => {
-      // Space is bound to pause/resume globally, so the dispatcher has to let
-      // a focused control keep its own activation key.
+      // Space runs the machine you're standing at, so the dispatcher has to
+      // let a focused control keep its own activation key.
       const button = page.getByRole("button", { name: "Phone" });
       await button.focus();
       await page.keyboard.press("Space");
@@ -182,9 +180,15 @@ test.describe("Keyboard shortcuts", () => {
     await test.step("a modal swallows the game's movement keys", async () => {
       const before = await playerPosition(page);
 
-      await page.keyboard.press(",");
-      const settings = page.getByRole("dialog", { name: "Settings" });
-      await expect(settings).toBeVisible();
+      // Escape backs out one layer at a time. The store trip left the
+      // player standing at the door with its card still spread open, so
+      // the first press folds that away and only the second — with nothing
+      // left to back out of — reaches the pause menu.
+      const paused = page.getByRole("dialog", { name: "Paused" });
+      await page.keyboard.press("Escape");
+      await expect(paused).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(paused).toBeVisible();
 
       // Nothing focused, so there's no input to guard — this stays put purely
       // because an open modal disables the held-movement listener.
@@ -197,7 +201,7 @@ test.describe("Keyboard shortcuts", () => {
       expect(await playerPosition(page)).toEqual(before);
 
       await page.keyboard.press("Escape");
-      await expect(settings).toHaveCount(0);
+      await expect(paused).toHaveCount(0);
     });
 
     await test.step("keys work again once the modal is closed", async () => {
@@ -276,14 +280,14 @@ test.describe("Keyboard shortcuts", () => {
       });
     });
 
-    await test.step("the speed buttons advertise their keys", async () => {
-      await page.getByRole("button", { name: "⏸" }).hover();
+    await test.step("the top bar's buttons advertise their keys", async () => {
+      await page.getByRole("button", { name: /^Journal/ }).hover();
       // Scoped by text so a stale tooltip elsewhere can't shadow this one
       const tip = page
         .getByRole("tooltip")
-        .filter({ hasText: "Pause game" });
+        .filter({ hasText: "Your journal" });
       await expect(tip).toBeVisible();
-      await expect(tip.locator("kbd")).toHaveText("`");
+      await expect(tip.locator("kbd")).toHaveText("K");
     });
 
     await test.step("the shop manifest hangs on the right rail", async () => {

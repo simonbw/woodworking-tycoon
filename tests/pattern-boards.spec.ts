@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { modesOf, selectMode as selectMachineMode } from "./machine-panel";
-import { closeJournal, openJournal, openPhone } from "./navigation";
+import { closeJournal, openJournal, openPhone, setTickRate } from "./navigation";
 
 declare global {
   interface Window {
@@ -109,7 +109,7 @@ test.describe("Pattern Boards", () => {
 
     await test.step("finish the striped blank", async () => {
       // Run fast: the glue cures are long by design
-      await page.keyboard.press("3");
+      await setTickRate(page, 20);
       await selectMode(page, "Finish Striped Board");
       await moveToWorkspace(page, "Mixed Wood Panel");
       await operateAndTake(

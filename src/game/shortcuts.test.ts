@@ -101,20 +101,23 @@ describe("shortcutsForEvent", () => {
     assert.deepEqual(shortcutsForEvent(keyEvent("KeyU")), []);
   });
 
-  it("lets the door's digits outrank the speed presets", () => {
-    // Registry order is dispatch priority for a shared key: at the door the
-    // destination binding is enabled and wins; elsewhere it's disabled and
-    // the key falls through to the speed preset.
+  it("gives the door's destinations the digit row to themselves", () => {
+    // Nothing else answers to 1/2/3 any more — the speed presets that used
+    // to share them are gone, so the binding is contextual rather than
+    // shadowing.
     assert.deepEqual(
       shortcutsForEvent(keyEvent("Digit1")).map((d) => d.id),
-      ["door-option-1", "speed-normal"],
+      ["door-option-1"],
     );
   });
 
-  it("lets an open station sheet claim Escape before the work queue", () => {
+  it("lets an open station sheet claim Escape before the pause menu", () => {
+    // Registry order is dispatch priority for a shared key: with a sheet
+    // open that binding is enabled and wins; with nothing to back out of
+    // it's disabled and Escape falls through to the pause menu.
     assert.deepEqual(
       shortcutsForEvent(keyEvent("Escape")).map((d) => d.id),
-      ["close-sheet", "clear-work-queue", "close-modal"],
+      ["close-sheet", "pause-menu", "close-modal"],
     );
   });
 });

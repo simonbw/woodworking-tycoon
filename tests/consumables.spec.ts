@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { selectMode } from "./machine-panel";
-import { goToStore, leaveStore } from "./navigation";
+import { goToStore, leaveStore, setTickRate } from "./navigation";
 
 declare global {
   interface Window {
@@ -36,8 +36,8 @@ test.describe("Consumables", () => {
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["consumables-shop"]);
     });
     await page.waitForTimeout(300);
-    // 20 ticks/second so the timed operations fly by
-    await page.keyboard.press("3");
+    // Run fast so the timed operations fly by
+    await setTickRate(page, 20);
 
     await test.step("shelf recipe shows its nail shortfall", async () => {
       await selectMode(
@@ -151,8 +151,6 @@ test.describe("Consumables", () => {
     });
 
     await test.step("mineral oil turns the board into an oiled board", async () => {
-      // Speed keys are modal-blocked during the store trip, so speed up now
-      await page.keyboard.press("3");
       await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
       await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
 

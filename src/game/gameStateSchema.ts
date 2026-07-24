@@ -83,7 +83,6 @@ const personSchema = z.object({
   direction: directionSchema,
   inventory: z.array(materialSchema),
   carriedMachine: machineStateSchema.nullable().optional(),
-  workQueue: z.array(z.object({ type: z.literal("sweep") })),
   busyTicks: z.number(),
   away: awayTripSchema.nullable(),
 });
@@ -95,7 +94,6 @@ const progressionSchema = z.object({
   shopLayoutUnlocked: z.boolean(),
   marketplaceUnlocked: z.boolean(),
   commissionsCompleted: z.number(),
-  tickSpeedControlsUnlocked: z.boolean(),
   sweepingUnlocked: z.boolean(),
   dustTipDismissed: z.boolean(),
   unlockedArticles: z.array(z.string()),

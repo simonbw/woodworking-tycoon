@@ -24,8 +24,8 @@ export const WelcomeArticle: React.FC = () => (
       take, switch a machine on — and <ShortcutKeys shortcut="put-down" /> puts
       down what you're holding or gives it to a machine.{" "}
       <ShortcutKeys shortcut="open-station-sheet" /> spreads out a station's
-      full sheet of plans and tools. Pause the game at any time with{" "}
-      <ShortcutKeys shortcut="speed-toggle" />.
+      full sheet of plans and tools. <ShortcutKeys shortcut="pause-menu" /> stops
+      the clock and opens the pause menu.
     </P>
 
     <H>Your First Commission</H>

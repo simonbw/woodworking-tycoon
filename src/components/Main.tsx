@@ -12,7 +12,7 @@ import { ScavengeTripOverlay } from "./scavenge-page/ScavengeTripOverlay";
 import { StoreTripOverlay } from "./store-page/StoreTripOverlay";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
-import { TickSpeedProvider } from "./TickSpeedContext";
+import { PauseProvider } from "./PauseContext";
 import { ManualProvider } from "./manual/ManualProvider";
 import { GameStateProvider } from "./useGameState";
 
@@ -41,7 +41,7 @@ export const Main: React.FC = () => {
           onQuitToMenu={handleQuitToMenu}
         >
           <ShortcutProvider>
-            <TickSpeedProvider>
+            <PauseProvider>
               <ManualProvider>
                 <HomePage />
                 <StoreTripOverlay />
@@ -52,7 +52,7 @@ export const Main: React.FC = () => {
                 <DebugView />
                 <FixtureLoader />
               </ManualProvider>
-            </TickSpeedProvider>
+            </PauseProvider>
           </ShortcutProvider>
         </GameStateProvider>
       )}

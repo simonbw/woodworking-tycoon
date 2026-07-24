@@ -18,14 +18,12 @@
 export type ShortcutScope = "global" | "home" | "modal";
 
 /** Cheat-sheet section. Order here is the order rendered. */
-export type ShortcutGroup =
-  "Time" | "Movement" | "Materials" | "Machines" | "General";
+export type ShortcutGroup = "Movement" | "Materials" | "Machines" | "General";
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Movement",
   "Materials",
   "Machines",
-  "Time",
   "General",
 ];
 
@@ -91,9 +89,12 @@ const defs = [
     group: "Movement",
   },
   {
-    // Placed before clear-work-queue so an open station sheet claims the
-    // key; when no sheet is open the binding is disabled and Escape falls
-    // through to the queue. Same step-aside trick as carry-rotate on R.
+    // Escape backs out of one layer at a time: an open station sheet or
+    // door card claims it first, and only when there's nothing to back out
+    // of does it reach the pause menu. Both bindings live on the same key
+    // and take turns via their `enabled` conditions — a disabled binding
+    // steps aside in ShortcutProvider — so registry order is what puts the
+    // sheet ahead of the menu. Same trick as carry-rotate on R.
     id: "close-sheet",
     codes: ["Escape"],
     keys: [["Esc"]],
@@ -104,12 +105,12 @@ const defs = [
     sharesKey: true,
   },
   {
-    id: "clear-work-queue",
+    id: "pause-menu",
     codes: ["Escape"],
     keys: [["Esc"]],
-    description: "Cancel queued work",
+    description: "Pause — settings and save",
     scope: "home",
-    group: "Movement",
+    group: "General",
   },
 
   // --------------------------------------------------------------- Materials
@@ -242,11 +243,9 @@ const defs = [
   },
   {
     // The door's destinations answer to the row numbers shown on its
-    // prompt. They deliberately shadow the speed presets (also 1/2/3):
-    // these bindings only enable while the player stands at the garage
-    // door with free hands, and a disabled binding steps aside, so the
-    // digits mean "head out" at the door and "set speed" everywhere else.
-    // Registry order is what puts the door first — keep these above Time.
+    // prompt. Contextual: they only enable while the player stands at the
+    // garage door with free hands, so the digits are dead keys elsewhere
+    // and the cheat sheet doesn't advertise them.
     id: "door-option-1",
     codes: ["Digit1"],
     keys: [["1"]],
@@ -254,7 +253,6 @@ const defs = [
     scope: "home",
     group: "General",
     hidden: true,
-    sharesKey: true,
   },
   {
     id: "door-option-2",
@@ -264,7 +262,6 @@ const defs = [
     scope: "home",
     group: "General",
     hidden: true,
-    sharesKey: true,
   },
   {
     id: "door-option-3",
@@ -274,57 +271,6 @@ const defs = [
     scope: "home",
     group: "General",
     hidden: true,
-    sharesKey: true,
-  },
-
-  // ------------------------------------------------------------------- Time
-  {
-    id: "speed-pause",
-    codes: ["Backquote"],
-    keys: [["`"]],
-    description: "Pause",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-toggle",
-    codes: ["Space"],
-    keys: [["Space"]],
-    description: "Pause / resume",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-step",
-    codes: ["Period"],
-    keys: [["."]],
-    description: "Step forward one tick",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-normal",
-    codes: ["Digit1"],
-    keys: [["1"]],
-    description: "Normal speed",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-fast",
-    codes: ["Digit2"],
-    keys: [["2"]],
-    description: "Fast speed",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-faster",
-    codes: ["Digit3"],
-    keys: [["3"]],
-    description: "Faster speed",
-    scope: "global",
-    group: "Time",
   },
 
   // ---------------------------------------------------------------- General
@@ -341,14 +287,6 @@ const defs = [
     codes: ["KeyK"],
     keys: [["K"]],
     description: "Open your journal",
-    scope: "global",
-    group: "General",
-  },
-  {
-    id: "open-settings",
-    codes: ["Comma"],
-    keys: [[","]],
-    description: "Settings",
     scope: "global",
     group: "General",
   },

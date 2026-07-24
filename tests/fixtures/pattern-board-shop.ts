@@ -88,7 +88,6 @@ export const patternBoardShop: GameState = {
       strip("test-sunrise-w1", "walnut", 1),
       strip("test-sunrise-m3", "maple", 3),
     ],
-    workQueue: [],
     busyTicks: 0,
     away: null,
   },
@@ -115,7 +114,6 @@ export const patternBoardShop: GameState = {
     marketplaceUnlocked: true,
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
-    tickSpeedControlsUnlocked: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,
