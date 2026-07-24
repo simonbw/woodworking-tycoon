@@ -105,7 +105,11 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
 
 /** A wooden upright between bays, running down past the rail to the floor. */
 const RackPost: React.FC = () => (
-  <li aria-hidden className="w-1.5 shrink-0 self-stretch" style={{ background: POST_BG }} />
+  <li
+    aria-hidden
+    className="w-1.5 shrink-0 self-stretch"
+    style={{ background: POST_BG }}
+  />
 );
 
 /**
@@ -204,7 +208,11 @@ const BoardForSale: React.FC<{
           )
         }
       >
-        <BoardFaceSvg vertical board={material} className="block h-full w-auto" />
+        <BoardFaceSvg
+          vertical
+          board={material}
+          className="block h-full w-auto"
+        />
         {/* The paper tag stapled near the board's foot */}
         <span className="absolute left-1/2 bottom-2 z-20 -translate-x-1/2 flex flex-col items-center rounded-[1px] border border-paper-manila-edge bg-paper-ivory px-0.5 py-px font-condensed leading-tight text-ink-black shadow-sm">
           <span className="text-[10px] uppercase whitespace-nowrap">

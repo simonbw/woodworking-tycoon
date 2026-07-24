@@ -36,8 +36,11 @@ export const DoorPrompt: React.FC<{
 }> = ({ canvasWidth, canvasHeight }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const { machine: targetedMachine, doorOpen, closeDoor } =
-    useTargetedMachine();
+  const {
+    machine: targetedMachine,
+    doorOpen,
+    closeDoor,
+  } = useTargetedMachine();
   const scale = useContext(OverlayScaleContext);
 
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
