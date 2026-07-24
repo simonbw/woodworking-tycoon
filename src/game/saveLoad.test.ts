@@ -1,303 +1,117 @@
 import assert from "node:assert";
-import { describe, it } from "node:test";
-import { board } from "./board-helpers";
-import {
-  migrateV13toV14,
-  migrateV15toV16,
-  migrateV16toV17,
-  migrateV17toV18,
-  migrateV19toV20,
-  migrateV20toV21,
-  migrateV22toV23,
-} from "./saveLoad";
-import { STARTER_SKILLS } from "./Skill";
+import { beforeEach, describe, it } from "node:test";
+import { TEST_FIXTURES } from "../../tests/fixtures";
+import { parseGameState } from "./gameStateSchema";
+import { initialGameState } from "./initialGameState";
+import { deleteSave, hasSavedGame, loadGame, saveGame } from "./saveLoad";
 
-describe("migrateV13toV14", () => {
-  it("converts makeshift benches to small worktables, placed and stored", () => {
-    const old: any = {
-      machines: [
-        {
-          machineTypeId: "makeshiftBench",
-          position: [0, 4],
-          tools: ["hammer"],
-        },
-        { machineTypeId: "workspace", position: [1, 2], tools: [] },
-      ],
-      storage: { machines: ["makeshiftBench", "miterSaw"], tools: [] },
+// node:test has no DOM; back localStorage with a Map for the round-trip.
+const backing = new Map<string, string>();
+(globalThis as { localStorage?: unknown }).localStorage = {
+  getItem: (key: string) => backing.get(key) ?? null,
+  setItem: (key: string, value: string) => void backing.set(key, value),
+  removeItem: (key: string) => void backing.delete(key),
+};
+
+const SAVE_KEY = "woodworking-tycoon-save";
+
+beforeEach(() => backing.clear());
+
+describe("saveGame/loadGame round-trip", () => {
+  it("loads back what was saved, with a fresh sound queue", () => {
+    const state = {
+      ...initialGameState,
+      money: 123.45,
+      pendingSounds: [{ kind: "sale" as const }],
     };
-    const migrated = migrateV13toV14(old) as any;
-    assert.strictEqual(migrated.machines[0].machineTypeId, "worktable1x1");
-    // Everything else about the placed machine survives
-    assert.deepStrictEqual(migrated.machines[0].position, [0, 4]);
-    assert.deepStrictEqual(migrated.machines[0].tools, ["hammer"]);
-    assert.strictEqual(migrated.machines[1].machineTypeId, "workspace");
-    assert.deepStrictEqual(migrated.storage.machines, [
-      "worktable1x1",
-      "miterSaw",
-    ]);
+    saveGame(state);
+    const loaded = loadGame();
+    assert.ok(loaded);
+    // Transient audio queue is stripped on save, reconstructed empty
+    assert.deepStrictEqual(loaded.pendingSounds, []);
+    const { pendingSounds: _a, ...savedRest } = state;
+    const { pendingSounds: _b, ...loadedRest } = loaded;
+    // JSON round-trips drop keys whose value is undefined; normalize the
+    // expectation the same way before comparing.
+    assert.deepStrictEqual(loadedRest, JSON.parse(JSON.stringify(savedRest)));
+  });
+
+  it("round-trips every E2E fixture", () => {
+    for (const [name, fixture] of Object.entries(TEST_FIXTURES)) {
+      saveGame(fixture);
+      assert.ok(loadGame(), `fixture "${name}" failed to round-trip`);
+    }
+  });
+
+  it("hasSavedGame/deleteSave reflect the stored save", () => {
+    assert.strictEqual(hasSavedGame(), false);
+    saveGame(initialGameState);
+    assert.strictEqual(hasSavedGame(), true);
+    deleteSave();
+    assert.strictEqual(hasSavedGame(), false);
   });
 });
 
-describe("migrateV15toV16", () => {
-  it("converts stored machines to crates at the new entrance", () => {
-    const old: any = {
-      machines: [],
-      shopInfo: { size: [4, 6] },
-      progression: { unlockedSkills: STARTER_SKILLS },
-      storage: { machines: ["miterSaw", "jointer"], tools: ["hammer"] },
-    };
-    const migrated = migrateV15toV16(old);
-    assert.deepStrictEqual(migrated.shopInfo.entrancePosition, [2, 5]);
-    assert.deepStrictEqual(
-      migrated.machineCrates.map((crate) => crate.machine.machineTypeId),
-      ["miterSaw", "jointer"],
-    );
-    assert.deepStrictEqual(migrated.machineCrates[0].position, [2, 5]);
-    // Machine storage is gone; tool storage survives
-    assert.strictEqual("machines" in migrated.storage, false);
-    assert.deepStrictEqual(migrated.storage.tools, ["hammer"]);
+describe("loadGame rejection", () => {
+  it("returns null with no save present", () => {
+    assert.strictEqual(loadGame(), null);
+  });
+
+  it("discards a save from another version", () => {
+    saveGame(initialGameState);
+    const raw = JSON.parse(backing.get(SAVE_KEY)!);
+    raw.version = raw.version + 1;
+    backing.set(SAVE_KEY, JSON.stringify(raw));
+    assert.strictEqual(loadGame(), null);
+    assert.strictEqual(hasSavedGame(), false);
+  });
+
+  it("discards unparseable JSON", () => {
+    backing.set(SAVE_KEY, "{not json");
+    assert.strictEqual(loadGame(), null);
+    assert.strictEqual(hasSavedGame(), false);
+  });
+
+  it("discards a save that fails the schema", () => {
+    saveGame(initialGameState);
+    const raw = JSON.parse(backing.get(SAVE_KEY)!);
+    delete raw.gameState.machines;
+    backing.set(SAVE_KEY, JSON.stringify(raw));
+    assert.strictEqual(loadGame(), null);
+    assert.strictEqual(hasSavedGame(), false);
   });
 });
 
-describe("migrateV16toV17", () => {
-  it("merges the planer's recipes into `plane` and empties its input bay", () => {
-    const staged = board("walnut", 8, 6, 4);
-    const old: any = {
-      machines: [
-        {
-          machineTypeId: "lunchboxPlaner",
-          position: [1, 1],
-          rotation: 0,
-          selectedOperationId: "planePanel",
-          selectedParameters: { targetThickness: 3 },
-          inputMaterials: [staged],
-        },
-        {
-          machineTypeId: "jointer",
-          position: [3, 1],
-          rotation: 0,
-          selectedOperationId: "jointFace",
-          inputMaterials: [],
-        },
-      ],
-      machineCrates: [
-        {
-          machine: {
-            machineTypeId: "lunchboxPlaner",
-            position: [0, 0],
-            rotation: 0,
-            selectedOperationId: "planeBoard",
-            selectedParameters: undefined,
-            inputMaterials: [],
-          },
-          position: [2, 5],
-        },
-      ],
-      materialPiles: [],
-    };
-    const migrated = migrateV16toV17(old);
-    const planer = migrated.machines[0];
-    assert.strictEqual(planer.selectedOperationId, "plane");
-    // The crank position carries over
-    assert.deepStrictEqual(planer.selectedParameters, { targetThickness: 3 });
-    // Staged stock lands as a pile at the infeed cell (computed with the
-    // current planer footprint — v24 relocates every pile anyway)
-    assert.deepStrictEqual(planer.inputMaterials, []);
-    assert.deepStrictEqual(migrated.materialPiles, [
-      { material: staged, position: [1, 3] },
-    ]);
-    // Other machines untouched
-    assert.strictEqual(migrated.machines[1].selectedOperationId, "jointFace");
-    // Crated planers migrate too, and never-dialed cranks get a position
-    const crated = migrated.machineCrates[0].machine;
-    assert.strictEqual(crated.selectedOperationId, "plane");
-    assert.deepStrictEqual(crated.selectedParameters, { targetThickness: 1 });
+describe("parseGameState", () => {
+  it("accepts the initial game state", () => {
+    assert.ok(parseGameState(JSON.parse(JSON.stringify(initialGameState))));
   });
-});
 
-describe("migrateV17toV18", () => {
-  it("empties the saws' and jointer's input bays and fills in settings", () => {
-    const staged = board("oak", 8, 6, 4);
-    const old: any = {
-      machines: [
-        {
-          machineTypeId: "miterSaw",
-          position: [2, 4],
-          rotation: 0,
-          selectedOperationId: "cutBoard",
-          selectedParameters: { targetLength: 5 },
-          inputMaterials: [staged],
-          tools: [],
+  it("rejects a machine with an unknown type id", () => {
+    const state = JSON.parse(JSON.stringify(initialGameState));
+    state.machines = [
+      {
+        machineTypeId: "notARealMachine",
+        position: [0, 0],
+        rotation: 0,
+        selectedOperationId: "none",
+        operationProgress: {
+          status: "notStarted",
+          phaseIndex: 0,
+          ticksRemaining: 0,
         },
-        {
-          machineTypeId: "jointer",
-          position: [1, 1],
-          rotation: 0,
-          selectedOperationId: "jointFace",
-          selectedParameters: undefined,
-          inputMaterials: [],
-          tools: [],
-        },
-        {
-          machineTypeId: "workspace",
-          position: [3, 1],
-          rotation: 0,
-          selectedOperationId: "dismantlePallet",
-          inputMaterials: [staged],
-          tools: [],
-        },
-      ],
-      machineCrates: [],
-      materialPiles: [],
-    };
-    const migrated = migrateV17toV18(old);
-    const saw = migrated.machines[0];
-    // The staged board lands at the saw's operator cell (computed with
-    // the current footprint — v24 relocates every pile anyway)
-    assert.deepStrictEqual(saw.inputMaterials, []);
-    assert.deepStrictEqual(migrated.materialPiles, [
-      { material: staged, position: [2, 6] },
-    ]);
-    // Dialed settings survive, with the operation's other defaults beneath
-    // (the stray targetLength rides along until v20 → v21 converts it)
-    assert.deepStrictEqual(saw.selectedParameters, {
-      angle: 0,
-      cutPosition: 4,
-      targetLength: 5,
-    });
-    // Benches keep their input bays — only direct-feed machines flush
-    assert.deepStrictEqual(migrated.machines[2].inputMaterials, [staged]);
-  });
-});
-
-describe("migrateV19toV20", () => {
-  it("signs mitered ends: both-mitered boards become mirrored rails", () => {
-    const unsignedRail = {
-      ...board("walnut", 2, 1, 1, "sanded"),
-      ends: {
-        left: { kind: "mitered", angle: 45 },
-        right: { kind: "mitered", angle: 45 },
+        inputMaterials: [],
+        processingMaterials: [],
+        outputMaterials: [],
+        tools: [],
       },
-    };
-    const oneEnd = {
-      ...board("oak", 5, 1, 1, "sanded"),
-      ends: {
-        left: { kind: "mitered", angle: 45 },
-        right: { kind: "square" },
-      },
-    };
-    const old: any = {
-      player: {
-        inventory: [unsignedRail],
-        away: { kind: "scavenging", returnTick: 5, loot: [] },
-      },
-      materialPiles: [{ material: oneEnd, position: [1, 1] }],
-      machines: [
-        {
-          machineTypeId: "miterSaw",
-          inputMaterials: [],
-          processingMaterials: [],
-          outputMaterials: [unsignedRail],
-          storedMaterials: [],
-        },
-      ],
-      machineCrates: [],
-      listings: [{ id: "l1", material: unsignedRail, askingPrice: 5 }],
-    };
-    const migrated = migrateV19toV20(old);
-    const mirrored = {
-      left: { kind: "mitered", angle: -45 },
-      right: { kind: "mitered", angle: 45 },
-    };
-    const endsOf = (material: unknown) => (material as any).ends;
-    // Frame stock converts to the mirrored pair wherever it lives
-    assert.deepStrictEqual(endsOf(migrated.player.inventory[0]), mirrored);
-    assert.deepStrictEqual(
-      endsOf(migrated.machines[0].outputMaterials[0]),
-      mirrored,
-    );
-    assert.deepStrictEqual(endsOf(migrated.listings[0].material), mirrored);
-    // Lone miters keep their positive magnitude untouched
-    assert.deepStrictEqual(endsOf(migrated.materialPiles[0].material), {
-      left: { kind: "mitered", angle: 45 },
-      right: { kind: "square" },
-    });
-  });
-});
-
-describe("migrateV20toV21", () => {
-  it("folds the saw's cut end and stop length into one cut line", () => {
-    const old: any = {
-      machines: [
-        {
-          machineTypeId: "miterSaw",
-          selectedParameters: { angle: -45, cutEnd: "left", targetLength: 5 },
-        },
-        {
-          machineTypeId: "jointer",
-          selectedParameters: undefined,
-        },
-      ],
-      machineCrates: [
-        {
-          position: [1, 1],
-          machine: { machineTypeId: "miterSaw", selectedParameters: {} },
-        },
-      ],
-    };
-    const migrated = migrateV20toV21(old);
-    // The stop length becomes where the blade lands; the end choice goes
-    assert.deepStrictEqual(migrated.machines[0].selectedParameters, {
-      angle: -45,
-      cutPosition: 5,
-    });
-    // Other machines untouched
-    assert.strictEqual(migrated.machines[1].selectedParameters, undefined);
-    // Crated saws with nothing dialed land mid-table
-    assert.deepStrictEqual(
-      migrated.machineCrates[0].machine.selectedParameters,
-      { cutPosition: 4 },
-    );
-  });
-});
-
-describe("migrateV22toV23", () => {
-  it("opens the lumberyard for saves that had already earned its racks", () => {
-    const old: any = {
-      reputation: 12,
-      player: { away: null },
-      progression: { storeUnlocked: true },
-    };
-    const migrated = migrateV22toV23(old) as any;
-    assert.strictEqual(migrated.progression.lumberyardUnlocked, true);
-    // Below the S2S rack's reputation the yard stays unheard-of
-    const fresh = migrateV22toV23({
-      ...old,
-      reputation: 11,
-    }) as any;
-    assert.strictEqual(fresh.progression.lumberyardUnlocked, false);
+    ];
+    assert.strictEqual(parseGameState(state), null);
   });
 
-  it("sends a save captured mid-trip back to Orange Box", () => {
-    const old: any = {
-      reputation: 0,
-      player: { away: { kind: "shopping" } },
-      progression: {},
-    };
-    const migrated = migrateV22toV23(old) as any;
-    assert.deepStrictEqual(migrated.player.away, {
-      kind: "shopping",
-      store: "orangeBox",
-    });
-    // Scavenging trips pass through untouched
-    const scavenging: any = {
-      reputation: 0,
-      player: { away: { kind: "scavenging", returnTick: 5, loot: [] } },
-      progression: {},
-    };
-    assert.deepStrictEqual(
-      (migrateV22toV23(scavenging) as any).player.away,
-      scavenging.player.away,
-    );
+  it("rejects a progression slice missing its flags", () => {
+    const state = JSON.parse(JSON.stringify(initialGameState));
+    delete state.progression.xp;
+    assert.strictEqual(parseGameState(state), null);
   });
 });
