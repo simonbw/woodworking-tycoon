@@ -145,7 +145,7 @@ test.describe("Miter cuts and the picture frame", () => {
     });
 
     await test.step("four rails and four nails become a walnut picture frame", async () => {
-      await movePlayerTo(page, [3, 2]);
+      await movePlayerTo(page, [7, 4]);
       await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
       for (let i = 0; i < 4; i++) {
         await page

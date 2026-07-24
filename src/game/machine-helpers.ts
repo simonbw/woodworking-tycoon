@@ -134,21 +134,25 @@ function getRequirementForSlotIndex(
  * @returns true if the machine has all required materials and can start operating, false otherwise
  */
 /**
- * Whether the player counts as attending this machine: standing at its
- * operation cell and not off on an away trip. Machines with no operation
- * cell can't be worked at all, so their (never-reachable) attended phases
- * are treated as satisfied rather than deadlocking.
+ * Whether the player counts as attending this machine: standing in its
+ * operation zone (the apron of cells around the operation position — a
+ * body is bigger than one 1-ft cell) and not off on an away trip.
+ * Machines with no operation cell can't be worked at all, so their
+ * (never-reachable) attended phases are treated as satisfied rather than
+ * deadlocking.
  */
 export function playerAttendsMachine(
   machine: Machine,
   playerPosition: Vector,
   playerIsAway: boolean,
 ): boolean {
-  const operationCell = machine.absoluteOperationPosition;
-  if (operationCell === null) {
+  const zone = machine.operationZone;
+  if (zone.length === 0) {
     return true;
   }
-  return !playerIsAway && vectorEquals(playerPosition, operationCell);
+  return (
+    !playerIsAway && zone.some((cell) => vectorEquals(cell, playerPosition))
+  );
 }
 
 /**

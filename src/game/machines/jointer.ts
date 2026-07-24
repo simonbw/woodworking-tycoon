@@ -16,15 +16,27 @@ export const jointer: MachineType = {
   name: "Jointer",
   description:
     "Flattens a reference face and straightens an edge. Rough lumber starts here.",
-  cellsOccupied: [[0, 0]],
+  // A benchtop jointer: 16" wide with 40" of bed, so a 2×3-ft footprint
+  // with the tables running the long way (the beds overhang the footprint
+  // an inch or two each end — see the measured collision box).
+  cellsOccupied: [
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [1, -1],
+    [1, 0],
+    [1, 1],
+  ],
   collisionBox: GENERATED_COLLISION_BOXES.jointer,
   // Infeed and outfeed: boards travel the long way across the tables
   freeCellsNeeded: [
-    [0, 1],
-    [0, -1],
+    [0, 2],
+    [1, 2],
+    [0, -2],
+    [1, -2],
   ],
-  operationPosition: [0, 1],
-  outputPosition: [0, -1],
+  operationPosition: [0, 2],
+  outputPosition: [0, -2],
   cost: 600,
   materialStorage: 0,
   toolSlots: 1,

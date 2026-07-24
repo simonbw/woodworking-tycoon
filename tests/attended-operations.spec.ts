@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-const WORKSPACE_CELL: [number, number] = [1, 3];
+const WORKSPACE_CELL: [number, number] = [1, 4];
 const FAR_AWAY: [number, number] = [0, 0];
 
 function workspaceCard(page: any) {

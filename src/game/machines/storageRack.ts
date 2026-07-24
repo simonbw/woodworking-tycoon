@@ -10,14 +10,23 @@ export const storageRack: MachineType = {
   id: "storageRack",
   name: "Storage Rack",
   description: "Cheap sheet on stout legs. Holds a small lumberyard.",
-  cellsOccupied: [[0, 0]],
-  // Hand-set (drawn procedurally): the deck in StorageRackSprite spans
-  // 0.42 cells around the cell center.
-  collisionBox: { min: [-0.42, -0.42], max: [0.42, 0.42] },
+  // A 2×2-ft rack: deep enough for sheet stock stood on edge.
+  cellsOccupied: [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ],
+  // Hand-set (drawn procedurally): the deck in StorageRackSprite fills
+  // the footprint to a small inset.
+  collisionBox: { min: [-0.44, -0.44], max: [1.44, 1.44] },
   // Stand at the front to stow and take — the shelf UI (and everything
   // else) hangs off the operation cell, rack or not.
-  freeCellsNeeded: [[0, 1]],
-  operationPosition: [0, 1],
+  freeCellsNeeded: [
+    [0, 2],
+    [1, 2],
+  ],
+  operationPosition: [0, 2],
   cost: 0,
   materialStorage: 8,
   toolSlots: 0,

@@ -12,8 +12,14 @@ export type SpeciesAmounts = Readonly<Partial<Record<Species, number>>>;
 /** Per-cell sawdust, keyed "x,y". Sparse: a missing key is a clean cell. */
 export type DustMap = Readonly<Record<string, SpeciesAmounts>>;
 
-/** A cell holds this much dust, total across species, before it spills. */
-export const DUST_MAX_PER_CELL = 100;
+/** A cell holds this much dust, total across species, before it spills.
+ * Cells are one square foot, so this is about a seventh of what the old
+ * 32-inch tiles held — same depth of sawdust, less floor per cell. */
+export const DUST_MAX_PER_CELL = 15;
+
+/** How much sawdust one swept-up floor pile holds — several cells' worth,
+ * a real knee-high pile rather than one square foot's dusting. */
+export const SAWDUST_PILE_CAPACITY = 100;
 
 /**
  * Share of an emission that lands on the machine's own cells (and its

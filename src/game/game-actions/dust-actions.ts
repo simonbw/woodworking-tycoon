@@ -1,10 +1,10 @@
 import {
   cellDust,
-  DUST_MAX_PER_CELL,
   dustKey,
   DustMap,
   dustTotal,
   inBounds,
+  SAWDUST_PILE_CAPACITY,
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, MaterialPile } from "../GameState";
@@ -28,12 +28,14 @@ const SWEEP_XP = 1;
 const XP_MINIMUM_GATHERED = 5;
 
 /**
- * Sweep the cell underfoot: gather most of its dust — plus a slower pull
- * from under orthogonally-adjacent machines — into a sawdust pile on the
- * cell the player faces (or underfoot, when facing a machine or wall).
- * Piles hold one full cell's worth; whatever doesn't fit stays on the
- * floor. Sweeping is the only thing that runs during its SWEEP_TICKS —
- * the busyTicks plumbing in tickAction handles the wait.
+ * Sweep the floor at hand: one broom pass gathers most of the dust from
+ * the 3×3 patch around the player (cells are one square foot — a body
+ * and a broom cover several), with a slower pull from the machine cells
+ * in reach, into a sawdust pile on the cell the player faces (or
+ * underfoot, when facing a machine or wall). Piles hold
+ * SAWDUST_PILE_CAPACITY; whatever doesn't fit stays on the floor.
+ * Sweeping is the only thing that runs during its SWEEP_TICKS — the
+ * busyTicks plumbing in tickAction handles the wait.
  */
 export function sweepAction(): GameAction {
   return (gameState) => {
@@ -64,17 +66,18 @@ export function sweepAction(): GameAction {
       }
     };
 
-    gatherFrom(player.position, SWEEP_EFFICIENCY);
-    const orthogonals: ReadonlyArray<Vector> = [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ];
-    for (const delta of orthogonals) {
-      const neighbor = translateVec(player.position, delta);
-      if (cellMap.at(neighbor)?.machine) {
-        gatherFrom(neighbor, UNDER_MACHINE_EFFICIENCY);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const cell = translateVec(player.position, [dx, dy]);
+        if (!inBounds(cell, shopSize)) {
+          continue;
+        }
+        gatherFrom(
+          cell,
+          cellMap.at(cell)?.machine
+            ? UNDER_MACHINE_EFFICIENCY
+            : SWEEP_EFFICIENCY,
+        );
       }
     }
 
@@ -100,7 +103,7 @@ export function sweepAction(): GameAction {
         : {};
 
     // Only what fits in the pile leaves the floor
-    const room = DUST_MAX_PER_CELL - dustTotal(existingContents);
+    const room = SAWDUST_PILE_CAPACITY - dustTotal(existingContents);
     const gatheredTotal = gathered.reduce(
       (sum, { amounts }) => sum + dustTotal(amounts),
       0,
@@ -165,5 +168,13 @@ export function canSweepAt(gameState: {
   dust: DustMap;
   player: { position: Vector };
 }): boolean {
-  return cellDust(gameState.dust, gameState.player.position) > CLEAN_EPSILON;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const cell = translateVec(gameState.player.position, [dx, dy]);
+      if (cellDust(gameState.dust, cell) > CLEAN_EPSILON) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

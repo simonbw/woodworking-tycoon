@@ -28,10 +28,23 @@ export const miterSaw: MachineType = {
   id: "miterSaw",
   name: "Miter Saw",
   description: "A portable saw for cross cutting wood, square or at an angle.",
-  cellsOccupied: [[0, 0]],
+  // A miter saw is wide (28" across the fence wings) and shallow: a
+  // 3×2-ft footprint, with the handle overhanging the operator side (see
+  // the measured collision box).
+  cellsOccupied: [
+    [-1, -1],
+    [0, -1],
+    [1, -1],
+    [-1, 0],
+    [0, 0],
+    [1, 0],
+  ],
   collisionBox: GENERATED_COLLISION_BOXES.miterSaw,
-  freeCellsNeeded: [],
-  operationPosition: [0, 1],
+  freeCellsNeeded: [
+    [0, 1],
+    [0, 2],
+  ],
+  operationPosition: [0, 2],
   cost: 150,
   materialStorage: 0,
   toolSlots: 1,

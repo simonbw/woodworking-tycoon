@@ -1,8 +1,8 @@
+import { INCHES_PER_CELL, INCHES_PER_FOOT } from "../../game/shop-scale";
 import { Vector } from "../../game/Vectors";
 
 export const PIXELS_PER_INCH = 4; // the main defining scale
-export const INCHES_PER_FOOT = 12;
-export const INCHES_PER_CELL = 32;
+export { INCHES_PER_CELL, INCHES_PER_FOOT };
 export const PIXELS_PER_CELL = INCHES_PER_CELL * PIXELS_PER_INCH;
 export const SPACING = 0;
 

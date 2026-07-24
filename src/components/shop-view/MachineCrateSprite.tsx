@@ -15,7 +15,9 @@ export const MachineCrateSprite: React.FC<{ crate: MachineCrate }> = ({
 
   const draw = useCallback((g: Graphics) => {
     g.clear();
-    const half = PIXELS_PER_CELL * 0.34;
+    // A real crate is bigger than the 1-ft cell it anchors to — it
+    // overhangs its cell visually but never blocks walking.
+    const half = PIXELS_PER_CELL * 0.9;
 
     // The lid
     g.rect(-half, -half, half * 2, half * 2);

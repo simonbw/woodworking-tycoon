@@ -44,7 +44,10 @@ const RendererSize: React.FC<{ width: number; height: number }> = ({
 }) => {
   const { app } = useApplication();
   useEffect(() => {
-    if (app?.renderer && (app.renderer.width !== width || app.renderer.height !== height)) {
+    if (
+      app?.renderer &&
+      (app.renderer.width !== width || app.renderer.height !== height)
+    ) {
       app.renderer.resize(width, height);
     }
   }, [app, width, height]);
@@ -141,72 +144,75 @@ export const ShopView: React.FC = () => {
           >
             <RendererSize width={scaledWidth} height={scaledHeight} />
             <pixiContainer scale={scale}>
-          <pixiTilingSprite
-            eventMode="static"
-            texture={floorTexture}
-            tilePosition={{ x: 0, y: 0 }}
-            tileScale={{ x: 0.25, y: 0.25 }}
-            width={width}
-            height={height}
-          />
-          {cellMap.getCells().map((cell) => (
-            <FloorTileSprite
-              cell={cell}
-              key={`cell-${cell.position.join(",")}`}
-            />
-          ))}
-          <EntranceSprite />
-          {/* Settled sawdust sits on the floor, under everything that moves */}
-          <DustLayer width={width} height={height} />
-          {gameState.progression.sweepingUnlocked && <BroomSprite />}
-
-          {gameState.machineCrates.map((crate, index) => (
-            <MachineCrateSprite
-              crate={crate}
-              key={`crate-${index}-${crate.position.join(",")}`}
-            />
-          ))}
-
-          {materialPileGroups.map((materialPiles, i) => {
-            const [x, y] = cellToPixelVec(materialPiles[0].position);
-            return (
-              <pixiContainer
-                key={`pile${materialPiles[0].position.join(",")}`}
-                x={x}
-                y={y}
-              >
-                <MaterialPilesSprite materialPiles={materialPiles} />
-              </pixiContainer>
-            );
-          })}
-          {[...machines]
-            // Worktables draw first so mounted benchtop machines sit on top
-            .sort(
-              (a, b) =>
-                Number(b.type.worktable ?? false) -
-                Number(a.type.worktable ?? false),
-            )
-            .map((machinePlacement) => (
-              <MachineSprite
-                key={
-                  machinePlacement.type.id + machinePlacement.position.join(",")
-                }
-                machine={machinePlacement}
-                isSelected={
-                  !gameState.player.away &&
-                  gameState.player.carriedMachine == null &&
-                  isTargeted(machinePlacement)
-                }
-                onClick={machineClickHandler(machinePlacement)}
+              <pixiTilingSprite
+                eventMode="static"
+                texture={floorTexture}
+                tilePosition={{ x: 0, y: 0 }}
+                tileScale={{ x: 0.25, y: 0.25 }}
+                width={width}
+                height={height}
               />
-            ))}
-          {collisionDebugRequested() && <CollisionDebugLayer />}
-            <PlayerMotionLayer paused={ticksPerSecond === TICK_SPEED_PAUSED} />
-            <ShopVacSprite />
-            {!gameState.player.away && (
-              <PersonSprite person={gameState.player} />
-            )}
-            <CarriedMachineLayer />
+              {cellMap.getCells().map((cell) => (
+                <FloorTileSprite
+                  cell={cell}
+                  key={`cell-${cell.position.join(",")}`}
+                />
+              ))}
+              <EntranceSprite />
+              {/* Settled sawdust sits on the floor, under everything that moves */}
+              <DustLayer width={width} height={height} />
+              {gameState.progression.sweepingUnlocked && <BroomSprite />}
+
+              {gameState.machineCrates.map((crate, index) => (
+                <MachineCrateSprite
+                  crate={crate}
+                  key={`crate-${index}-${crate.position.join(",")}`}
+                />
+              ))}
+
+              {materialPileGroups.map((materialPiles, i) => {
+                const [x, y] = cellToPixelVec(materialPiles[0].position);
+                return (
+                  <pixiContainer
+                    key={`pile${materialPiles[0].position.join(",")}`}
+                    x={x}
+                    y={y}
+                  >
+                    <MaterialPilesSprite materialPiles={materialPiles} />
+                  </pixiContainer>
+                );
+              })}
+              {[...machines]
+                // Worktables draw first so mounted benchtop machines sit on top
+                .sort(
+                  (a, b) =>
+                    Number(b.type.worktable ?? false) -
+                    Number(a.type.worktable ?? false),
+                )
+                .map((machinePlacement) => (
+                  <MachineSprite
+                    key={
+                      machinePlacement.type.id +
+                      machinePlacement.position.join(",")
+                    }
+                    machine={machinePlacement}
+                    isSelected={
+                      !gameState.player.away &&
+                      gameState.player.carriedMachine == null &&
+                      isTargeted(machinePlacement)
+                    }
+                    onClick={machineClickHandler(machinePlacement)}
+                  />
+                ))}
+              {collisionDebugRequested() && <CollisionDebugLayer />}
+              <PlayerMotionLayer
+                paused={ticksPerSecond === TICK_SPEED_PAUSED}
+              />
+              <ShopVacSprite />
+              {!gameState.player.away && (
+                <PersonSprite person={gameState.player} />
+              )}
+              <CarriedMachineLayer />
             </pixiContainer>
           </gameStateContext.Provider>
         </Application>

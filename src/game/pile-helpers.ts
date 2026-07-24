@@ -1,11 +1,6 @@
 import { MaterialPile } from "./GameState";
+import { INCHES_PER_CELL } from "./shop-scale";
 import { Vector, vectorEquals } from "./Vectors";
-
-/**
- * A shop cell is 32" on a side (PIXELS_PER_CELL / PIXELS_PER_INCH in
- * shop-scale.tsx), so long stock drawn at scale overhangs its anchor cell.
- */
-const INCHES_PER_CELL = 32;
 
 /**
  * How much of a board must reach into a cell before you can grab it from
@@ -16,9 +11,9 @@ const MIN_OVERLAP_CELLS = 0.25;
 /**
  * The cells a pile can be grabbed from: every cell its material meaningfully
  * overlaps. Piles render centered on their anchor cell with long stock lying
- * along the vertical axis (see MaterialPilesSprite), so an 8' board reaches
- * a full cell past its anchor in both directions while anything 4' or under
- * stays a one-cell grab.
+ * along the vertical axis (see MaterialPilesSprite), so with 1-ft cells an
+ * 8' board reaches four cells past its anchor in both directions while
+ * anything a foot or under stays a one-cell grab.
  */
 export function pileFootprint(pile: MaterialPile): Vector[] {
   const material = pile.material;

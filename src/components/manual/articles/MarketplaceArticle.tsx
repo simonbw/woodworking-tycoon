@@ -43,11 +43,11 @@ export const MarketplaceArticle: React.FC = () => (
 
     <H>Scavenging</H>
     <P>
-      Walk to the garage door and it lists places to go, each with a number
-      key — including a scavenging run: leave the shop and come back with free
+      Walk to the garage door and it lists places to go, each with a number key
+      — including a scavenging run: leave the shop and come back with free
       pallets. The shop keeps running while you're out — glue keeps curing and
-      machines finish their passes — but you can't do anything else until
-      you're back.
+      machines finish their passes — but you can't do anything else until you're
+      back.
     </P>
 
     <Note>
