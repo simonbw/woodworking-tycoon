@@ -99,8 +99,13 @@ export const ShopView: React.FC = () => {
   // rails leave it. The renderer runs at the scaled resolution with the
   // world drawn through one scaled root container, so the (2×-resolution)
   // sprite art gains real detail instead of being CSS-stretched.
+  //
+  // `null` until the column is measured — the canvas doesn't mount until
+  // then, so its very first appearance is already at the fitted size
+  // (the renderer snapshots its size on init; mounting it at a
+  // placeholder size would flash small, then jump).
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState<number | null>(null);
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -115,6 +120,15 @@ export const ShopView: React.FC = () => {
     observer.observe(container);
     return () => observer.disconnect();
   }, [width, height]);
+
+  if (scale === null) {
+    return (
+      <div
+        ref={containerRef}
+        className="h-full w-full min-h-0 min-w-0 flex items-center justify-center"
+      />
+    );
+  }
 
   const scaledWidth = Math.round(width * scale);
   const scaledHeight = Math.round(height * scale);
