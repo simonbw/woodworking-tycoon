@@ -23,37 +23,40 @@ export interface UpgradeType {
   readonly extraMaterialStorage?: number;
 }
 
-const upgradeDefs = {
-  vise: {
-    id: "vise",
-    name: "Bench Vise",
-    description:
-      "Cast-iron jaws bolted to the bench. Held work is fast work: " +
-      "attended hand work at this table runs a quarter faster.",
-    cost: 80,
-    workSpeedFactor: 1.25,
-  },
-  toolDrawers: {
-    id: "toolDrawers",
-    name: "Tool Drawers",
-    description:
-      "A drawer bank under the top. Two more tool slots at this table.",
-    cost: 0,
-    craftedOnly: true,
-    extraToolSlots: 2,
-  },
-  materialShelf: {
-    id: "materialShelf",
-    name: "Material Shelf",
-    description:
-      "A second shelf below the first. Four more shelf spaces for stock.",
-    cost: 0,
-    craftedOnly: true,
-    extraMaterialStorage: 4,
-  },
+const vise: UpgradeType = {
+  id: "vise",
+  name: "Bench Vise",
+  description:
+    "Cast-iron jaws bolted to the bench. Held work is fast work: " +
+    "attended hand work at this table runs a quarter faster.",
+  cost: 80,
+  workSpeedFactor: 1.25,
+};
+
+const toolDrawers: UpgradeType = {
+  id: "toolDrawers",
+  name: "Tool Drawers",
+  description:
+    "A drawer bank under the top. Two more tool slots at this table.",
+  cost: 0,
+  craftedOnly: true,
+  extraToolSlots: 2,
+};
+
+const materialShelf: UpgradeType = {
+  id: "materialShelf",
+  name: "Material Shelf",
+  description:
+    "A second shelf below the first. Four more shelf spaces for stock.",
+  cost: 0,
+  craftedOnly: true,
+  extraMaterialStorage: 4,
+};
+
+export const UPGRADE_TYPES = {
+  vise,
+  toolDrawers,
+  materialShelf,
 } satisfies { [id: string]: UpgradeType };
 
-export type UpgradeId = keyof typeof upgradeDefs;
-
-/** Typed as the interface so optional effect fields read cleanly. */
-export const UPGRADE_TYPES: Record<UpgradeId, UpgradeType> = upgradeDefs;
+export type UpgradeId = keyof typeof UPGRADE_TYPES;

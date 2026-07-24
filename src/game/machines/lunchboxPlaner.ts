@@ -27,7 +27,7 @@ export function thicknessStepBelow(
  * sequential passes, cranking the head down between each.
  */
 export const lunchboxPlaner: MachineType = {
-  id: "planer",
+  id: "lunchboxPlaner",
   name: "Planer",
   description: "A lunchbox planer",
   // A lunchbox planer on its stand: about 19" × 26", so a 2×3-ft

@@ -3,6 +3,12 @@
  * belongs to a skill; skills the player can use from the start are
  * `startsUnlocked` — shown in the journal as already-earned
  * certificates so the system explains itself.
+ *
+ * Unlike the other registries (MACHINE_TYPES et al., which derive their id
+ * union via `keyof typeof`), the id list here is a separate `as const`
+ * array: `SkillType.requires` refers to `SkillId`, so deriving the union
+ * from the registry would be circular. `Record<SkillId, SkillType>` keeps
+ * the two in lockstep — a key missing from either side is a type error.
  */
 export const SKILL_IDS = [
   "basicMilling",
