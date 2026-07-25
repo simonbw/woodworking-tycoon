@@ -129,6 +129,7 @@ export const gameStateSchema = z.object({
     z.object({ material: materialSchema, position: vectorSchema }),
   ),
   consumables: z.record(consumableIdSchema, z.number()),
+  clamps: z.number(),
   machines: z.array(machineStateSchema),
   machineCrates: z.array(
     z.object({ machine: machineStateSchema, position: vectorSchema }),

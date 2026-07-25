@@ -30,6 +30,7 @@ export const handToolsShop: GameState = {
   reputation: 0,
   materialPiles: [],
   consumables: NO_CONSUMABLES,
+  clamps: 0,
   player: {
     name: "Player",
     position: [1, 4], // the workspace's operation cell

@@ -1,4 +1,5 @@
 import { materialMeetsInput } from "../material-helpers";
+import { clampsFor, clampsFree } from "../Clamp";
 import { hasConsumables, subtractConsumables } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
 import { findFeedableOperation } from "../machine-helpers";
@@ -7,7 +8,6 @@ import {
   isSameMachine,
   Machine,
   Operation,
-  
   ParameterValues,
   MACHINE_TYPES,
 } from "../Machine";
@@ -415,6 +415,13 @@ export function operateMachineAction(machine: Machine): GameAction {
         console.warn("Tried to perform operation without required supplies");
         return gameState;
       }
+      if (
+        clampsFor(match.operation) >
+        clampsFree(gameState.clamps, gameState.machines)
+      ) {
+        console.warn("Tried to perform operation without enough free clamps");
+        return gameState;
+      }
       const [firstPhase] = getOperationPhases(
         match.operation,
         gameState.progression,
@@ -476,6 +483,19 @@ export function operateMachineAction(machine: Machine): GameAction {
     const consumableCosts = machine.selectedOperation.requiredConsumables ?? [];
     if (!hasConsumables(gameState.consumables, consumableCosts)) {
       console.warn("Tried to perform operation without required supplies");
+      return gameState;
+    }
+
+    // Clamps are borrowed, not spent: a glue-up holds them until it's
+    // cured, so what matters is how many are off the rack right now.
+    // Nothing is deducted here — the count in use is derived from the
+    // machines running (see Clamp.ts), so this operation starting IS the
+    // checkout, and finishing is the return.
+    if (
+      clampsFor(machine.selectedOperation) >
+      clampsFree(gameState.clamps, gameState.machines)
+    ) {
+      console.warn("Tried to perform operation without enough free clamps");
       return gameState;
     }
 

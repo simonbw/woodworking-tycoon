@@ -11,6 +11,7 @@ import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import {
   explainFeedRefusal,
   machineCanOperate,
+  shopSupply,
   stageableMaterials,
 } from "../../game/machine-helpers";
 import { hasStationSheet } from "./station-helpers";
@@ -59,11 +60,12 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const settings = machineSettings(machine, operations);
 
-  // The Space chip: whether there's something on the machine to run.
+  // The Space chip: whether there's something on the machine to run — the
+  // shop's supplies and its clamp rack included.
   const canOperate =
     !isOperating &&
     !switchedOff &&
-    machineCanOperate(machine, gameState.consumables, gameState.progression);
+    machineCanOperate(machine, shopSupply(gameState), gameState.progression);
 
   // Why the cut won't run — the teaching moment that used to live under
   // the sheet's feed button. It advises on the board that's on the machine

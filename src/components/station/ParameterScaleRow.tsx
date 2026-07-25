@@ -7,19 +7,18 @@ import { ShortcutKeys } from "../shortcuts/Kbd";
 
 /**
  * One labeled settings scale on a station sheet: the parameter's name,
- * the Z-key chip when this is the scale the shortcut drives, and the
- * scale itself — the carried stock under a cut line for slide-presented
- * settings, a printed detent scale otherwise. Shared by the direct-feed
- * and bench sheets so the row can't drift between them.
+ * the key chips that drive it (Z/X for a linear setting, R for one you
+ * swing), and the scale itself — the staged stock under a cut line for
+ * slide-presented settings, a printed detent scale otherwise.
  */
 export const ParameterScaleRow: React.FC<{
   param: OperationParameter;
   value: number | string;
-  /** Show the cycle-parameter key chip (the targeted machine's first scale). */
+  /** Show the key chips that drive this scale (targeted machine only). */
   showShortcut: boolean;
   onSelect: (value: number | string) => void;
   satisfiable: (value: number | string) => boolean;
-  /** Slide presentation: the carried board the setting positions. */
+  /** Slide presentation: the board on the machine that the setting slides. */
   board?: Board;
   /** Slide presentation: the head's set lean, shown on the cut line. */
   angle?: number;

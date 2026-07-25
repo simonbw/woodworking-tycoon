@@ -74,6 +74,8 @@ export const patternBoardShop: GameState = {
   money: 100,
   reputation: 20,
   consumables: NO_CONSUMABLES,
+  // A full rack: the staged glue-ups here run up to a 6-clamp join.
+  clamps: 8,
   materialPiles: [],
   player: {
     name: "Player",

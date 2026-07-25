@@ -39,6 +39,8 @@ export const cuttingBoardShop: GameState = {
   money: 100,
   reputation: 17,
   consumables: NO_CONSUMABLES,
+  // Four bars on the rack: exactly what one panel glue-up ties up.
+  clamps: 4,
   materialPiles: [],
   player: {
     name: "Player",

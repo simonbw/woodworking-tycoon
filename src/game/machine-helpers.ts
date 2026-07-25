@@ -4,7 +4,8 @@ import {
   hasConsumables,
   NO_CONSUMABLES,
 } from "./Consumable";
-import { ProgressionState } from "./GameState";
+import { clampsFor, clampsFree } from "./Clamp";
+import { GameState, ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
   Machine,
@@ -403,13 +404,40 @@ export function stageableMaterials(
 }
 
 /**
- * Direct-feed machines run on what the player is carrying, so callers pass
- * the inventory as `carried` (plus `progression`, so skill-locked recipes
- * can't be fed); everything else runs on its staged input bay.
+ * What the shop can put toward a recipe beyond the wood itself: the supply
+ * cabinet, and how many clamps are off the rack right now. Bundled because
+ * every "could this run?" check needs both, and both come from the same
+ * game state (see `shopSupply`).
+ */
+export interface ShopSupply {
+  readonly consumables: ConsumableStock;
+  readonly freeClamps: number;
+}
+
+/** An empty cabinet and a bare rack — nothing a recipe can draw on. */
+export const NO_SUPPLY: ShopSupply = {
+  consumables: NO_CONSUMABLES,
+  freeClamps: 0,
+};
+
+export function shopSupply(gameState: GameState): ShopSupply {
+  return {
+    consumables: gameState.consumables,
+    freeClamps: clampsFree(gameState.clamps, gameState.machines),
+  };
+}
+
+/**
+ * Whether the machine could run right now. Every station runs on its staged
+ * input — a direct-feed machine's table is one slot deep, and the stock got
+ * there with F — so this never looks at the player's hands. Pass
+ * `progression` on a direct-feed machine so skill-locked recipes can't be
+ * inferred. See `stageableMaterials` for the other half: what the machine
+ * would *accept*.
  */
 export function machineCanOperate(
   machine: Machine,
-  consumables: ConsumableStock = NO_CONSUMABLES,
+  supply: ShopSupply = NO_SUPPLY,
   progression?: ProgressionState,
 ): boolean {
   if (machine.type.directFeed) {
@@ -425,7 +453,11 @@ export function machineCanOperate(
     );
     return (
       match !== null &&
-      hasConsumables(consumables, match.operation.requiredConsumables ?? [])
+      hasConsumables(
+        supply.consumables,
+        match.operation.requiredConsumables ?? [],
+      ) &&
+      clampsFor(match.operation) <= supply.freeClamps
     );
   }
 
@@ -440,9 +472,11 @@ export function machineCanOperate(
   const slots = matchMaterialsToSlots(machine.inputMaterials, inputMaterials);
 
   // Machine can operate if all slots have valid materials (no placeholders,
-  // all valid) and the shop stock covers the recipe's supplies
+  // all valid), the shop stock covers the recipe's supplies, and there are
+  // enough clamps off the rack for a glue-up
   return (
     slots.every((slot) => slot.isValid && !slot.isPlaceholder) &&
-    hasConsumables(consumables, operation.requiredConsumables ?? [])
+    hasConsumables(supply.consumables, operation.requiredConsumables ?? []) &&
+    clampsFor(operation) <= supply.freeClamps
   );
 }

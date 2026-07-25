@@ -4,6 +4,7 @@ import { Assets } from "pixi.js";
 const TEXTURE_ASSETS = [
   "/images/benchtop-jointer.png",
   "/images/concrete-floor-2-big.png",
+  "/images/door-warning-paint.png",
   "/images/jobsite-table-saw-table.png",
   "/images/jobsite-table-saw-fence.png",
   "/images/lunchbox-planer-bottom.png",

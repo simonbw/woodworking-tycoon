@@ -55,6 +55,19 @@ export const RACK_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
  */
 export const GLUE_CURE_TICKS = 60;
 
+/**
+ * Clamps each glue-up ties up until it's cured (see Clamp.ts). The wider
+ * the joint, the more bars it takes to pull it closed: a two-board pair
+ * needs a clamp at each end, a five-strip panel wants one every few
+ * inches, and marrying two finished panels is the widest joint the shop
+ * makes. They're returned when the glue is cured, so this number is what
+ * decides how many glue-ups can be curing at once — not what they cost.
+ */
+const PAIR_CLAMPS = 2;
+const STRIP_CLAMPS = 3;
+const PANEL_CLAMPS = 4;
+const WIDE_PANEL_CLAMPS = 6;
+
 function gluePhases(clampTicks: number): ReadonlyArray<OperationPhase> {
   return [
     { name: "Glue & Clamp", duration: clampTicks, attended: true },
@@ -134,6 +147,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "panelWork",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
+    requiredClamps: PANEL_CLAMPS,
     getInputMaterials: () => [
       {
         type: ["board"],
@@ -177,6 +191,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "freeformLamination",
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
+    requiredClamps: PAIR_CLAMPS,
     getInputMaterials: () => [
       {
         type: ["board"],
@@ -214,6 +229,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "freeformLamination",
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
+    requiredClamps: STRIP_CLAMPS,
     getInputMaterials: () => [
       { type: ["panel"], length: [2], thickness: [4], quantity: 1 },
       {
@@ -251,6 +267,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "freeformLamination",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
+    requiredClamps: WIDE_PANEL_CLAMPS,
     getInputMaterials: () => [
       { type: ["panel"], length: [2], thickness: [4], quantity: 2 },
     ],
@@ -343,6 +360,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "endGrainBoards",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
+    requiredClamps: PANEL_CLAMPS,
     getInputMaterials: () => [{ type: ["endGrainSlice"], quantity: 4 }],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
       const slices = materials.filter(
@@ -1003,10 +1021,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
  */
 function worktableBuildOperation(
   worktableId:
-    | "worktable1x1"
-    | "worktable1x2"
-    | "worktable1x3"
-    | "worktable2x2",
+    "worktable1x1" | "worktable1x2" | "worktable1x3" | "worktable2x2",
   name: string,
   duration: number,
   plywood: number,
