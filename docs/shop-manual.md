@@ -43,17 +43,18 @@ directly to it. The standalone overlay component retires.
 
 ## Articles
 
-| Article                       | Unlocks on                                     |
-| ----------------------------- | ---------------------------------------------- |
-| Welcome to the Shop           | always (auto-opens once on a brand-new game)   |
-| Controls                      | always                                         |
-| Milling & Surfaces            | the lumberyard opens, or a milling machine/tool |
-| Finishing                     | first time a finish is required or bought      |
-| Tools & Tool Slots            | first mountable tool owned                     |
-| Shop Layout: Moving Machines  | `shopLayoutUnlocked`                           |
-| Marketplace & Jobs            | `marketplaceUnlocked`                          |
-| Sawdust & Cleaning            | `sweepingUnlocked`                             |
-| Skills & XP                   | first skill point earned                       |
+| Article                      | Unlocks on                                      |
+| ---------------------------- | ----------------------------------------------- |
+| Welcome to the Shop          | always (auto-opens once on a brand-new game)    |
+| Controls                     | always                                          |
+| Milling & Surfaces           | the lumberyard opens, or a milling machine/tool |
+| Glue-Ups & Clamps            | the panel-work skill, or a clamp bought         |
+| Finishing                    | first time a finish is required or bought       |
+| Tools & Tool Slots           | first mountable tool owned                      |
+| Shop Layout: Moving Machines | `shopLayoutUnlocked`                            |
+| Marketplace & Jobs           | `marketplaceUnlocked`                           |
+| Sawdust & Cleaning           | `sweepingUnlocked`                              |
+| Skills & XP                  | first skill point earned                        |
 
 Notes:
 
@@ -61,6 +62,9 @@ Notes:
 - **Milling & Surfaces** covers rough → smooth → sanded, the machines
   that get you there, and the planer's direct-feed behavior — the planer
   does not get its own article; this is where the player meets it.
+- **Glue-Ups & Clamps** covers the two-stretch shape of a glue-up and the
+  clamp rack — the one supply that comes back, and the reason a second
+  bench is worth having.
 - **Supplies (consumables)** folds into Finishing for now (finish oil is
   the consumable players will actually wonder about; nails explain
   themselves). Break it out into its own article if the system grows.
@@ -106,7 +110,7 @@ way in the first copy pass:
 1. **Never explain what the game isn't, lacks, or used to be.** "The
    planer has no menus", "there is no blueprint mode", "there's no
    meter to watch" — a first-time player never expected those things,
-   so mentioning them only plants doubt. Describe what *is*.
+   so mentioning them only plants doubt. Describe what _is_.
 2. **No internal design vocabulary or invariants.** Words like "verb",
    or axioms like "dust is a substance that moves; only containers
    destroy it", belong in design docs. The articles teach the same

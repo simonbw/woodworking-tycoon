@@ -58,6 +58,7 @@ export const millingShop: GameState = {
   money: 1000,
   reputation: 22,
   consumables: NO_CONSUMABLES,
+  clamps: 4,
   materialPiles: [],
   player: {
     name: "Player",

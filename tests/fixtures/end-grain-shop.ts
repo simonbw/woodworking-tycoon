@@ -71,6 +71,8 @@ export const endGrainShop: GameState = {
   money: 100,
   reputation: 20,
   consumables: NO_CONSUMABLES,
+  // Enough clamps for the end-grain glue-up (4) plus a pair to spare.
+  clamps: 6,
   materialPiles: [],
   player: {
     name: "Player",

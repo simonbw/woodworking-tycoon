@@ -67,6 +67,13 @@ export interface GameState {
    * draw amounts straight from this stock. See Consumable.ts.
    */
   readonly consumables: ConsumableStock;
+  /**
+   * How many clamps the shop owns. Unlike consumables these come back: a
+   * glue-up ties some up until it's cured, and the count in use is derived
+   * from the machines running (see Clamp.ts). Owning more buys parallel
+   * glue-ups.
+   */
+  readonly clamps: number;
   readonly machines: ReadonlyArray<MachineState>;
   /** Machines still in their delivery crates (see MachineCrate). */
   readonly machineCrates: ReadonlyArray<MachineCrate>;

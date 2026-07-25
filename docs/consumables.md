@@ -22,11 +22,11 @@ system lives in `src/game/Consumable.ts`.
 
 ## Current consumables
 
-| id           | unit   | consumers                       | sources                   |
-| ------------ | ------ | ------------------------------- | ------------------------- |
-| `nails`      | nails  | Build Rustic Pallet Shelf (8)   | store pack (50), salvage  |
-| `screws`     | screws | Build Rustic Planter Box (8)    | store pack (50) — no salvage |
-| `mineralOil` | oz     | Oil Cutting Board (4)           | store bottle (16 oz)      |
+| id           | unit   | consumers                     | sources                      |
+| ------------ | ------ | ----------------------------- | ---------------------------- |
+| `nails`      | nails  | Build Rustic Pallet Shelf (8) | store pack (50), salvage     |
+| `screws`     | screws | Build Rustic Planter Box (8)  | store pack (50) — no salvage |
+| `mineralOil` | oz     | Oil Cutting Board (4)         | store bottle (16 oz)         |
 
 Screwed assembly is the drill's trade the way nailed joinery is the
 hammer's (`src/game/tools/drill.ts`); unlike nails, screws never come back
@@ -35,11 +35,40 @@ as pallet salvage, so they're a true money sink.
 Planned next: glue (all glue-ups), sandpaper (sanding passes), and the
 film finishes (hard wax oil, lacquer, poly).
 
+## Clamps: the returnable pool
+
+Clamps (`src/game/Clamp.ts`) are the counterpart to consumables: **borrowed,
+not spent**. `GameState.clamps` is how many the shop owns, bought one bar at
+a time from the supplies aisle (`CLAMP_COST`, `buyClampAction`) — no pack
+size, because you buy each clamp once.
+
+An operation declares `Operation.requiredClamps`; every glue-up does
+(2 for a pair, 3 to add a strip, 4 for a panel or an end-grain blank, 6 to
+join two panels). The count is checked against the **free** clamps before
+the operation can start, and released when it finishes.
+
+Nothing is deducted at checkout. The number in use is **derived** from the
+machines currently mid-operation (`clampsInUse`), so:
+
+- it can't drift out of sync with the machines that hold them,
+- it survives save/load with no extra persisted field, and
+- the clamps come back on their own when the cure ends, even if the player
+  was away when it happened.
+
+`clampsFree(owned, machines)` is what the Operate button, the bench sheet's
+clamp line, and the manifest's supply sheet all read.
+
+The economy: a glue-up holds its clamps through the whole run — the short
+attended Glue & Clamp _and_ the long hands-free cure — so the rack is what
+decides how many glue-ups can be curing at once. Owning more clamps is a
+money→throughput dial alongside owning more benches (see
+docs/tools-and-surfaces.md).
+
 ## The hammer
 
 Nailed joinery is gated by the **hammer**, the starter tool — every new
 game begins with one mounted on the workspace (which has 2 tool slots so a
-sander can join it). Recipes that need a hammer *are* hammer operations
+sander can join it). Recipes that need a hammer _are_ hammer operations
 (`src/game/tools/hammer.ts`), the same pattern as the sanders and the
 crosscut sled: no hammer at the station, no nailed recipes in its Mode
 list.

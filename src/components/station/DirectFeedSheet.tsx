@@ -10,6 +10,7 @@ import {
   explainFeedRefusal,
   machineCanOperate,
   parameterValueSatisfiable,
+  shopSupply,
   slideStock,
 } from "../../game/machine-helpers";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -57,7 +58,7 @@ export const DirectFeedSheet: React.FC<{
     !isOperating &&
     machineCanOperate(
       machine,
-      gameState.consumables,
+      shopSupply(gameState),
       carried,
       gameState.progression,
     );
@@ -82,10 +83,18 @@ export const DirectFeedSheet: React.FC<{
           }
           showShortcut={index === 0 && isTargeted(machine)}
           onSelect={(value) =>
-            applyAction(setMachineSettingsAction(machine, { [param.id]: value }))
+            applyAction(
+              setMachineSettingsAction(machine, { [param.id]: value }),
+            )
           }
           satisfiable={(value) =>
-            parameterValueSatisfiable(machine, operation, param.id, value, carried)
+            parameterValueSatisfiable(
+              machine,
+              operation,
+              param.id,
+              value,
+              carried,
+            )
           }
           board={slideStock(machine, operations, carried)}
           angle={Number(machine.selectedParameters?.angle ?? 0)}

@@ -9,6 +9,7 @@ export const miterSawCrateShop: GameState = {
   money: 50,
   reputation: 2,
   consumables: NO_CONSUMABLES,
+  clamps: 0,
   materialPiles: [],
   player: {
     name: "Player",

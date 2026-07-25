@@ -36,7 +36,7 @@ The rules (all in `tickAction`):
    cancels — and resumes on return.
 2. A **hands-free** phase (`attended: false`) always ticks, including during
    away trips.
-3. An operation cannot *enter* an attended phase without the player there:
+3. An operation cannot _enter_ an attended phase without the player there:
    it finishes the prior phase and sits "ready — needs you" until they show
    up. (No current op has an attended phase after a hands-free one; kilns or
    a finishing room will.)
@@ -50,7 +50,9 @@ The intended economy: attended work serializes through the player (your
 hands are the bottleneck), hands-free work parallelizes across stations —
 so staged glue-ups (Glue Up Pair / Join Panels) plus extra benches convert
 money into throughput, which is this doc's guiding principle applied to
-time. Shop-view feedback: amber progress bar = attended work underway,
+time. Clamps are the second dial on that conversion: a glue-up ties up
+some number of them for its whole run, so a bench with nothing to clamp
+can't start one (see docs/consumables.md). Shop-view feedback: amber progress bar = attended work underway,
 green = hands-free, amber pause marker = attended work waiting for you.
 
 Later candidates for hands-free phases: oil/varnish curing, kiln drying,
@@ -148,13 +150,13 @@ accepts a target equal to the current thickness).
 
 Operation prerequisites and providers:
 
-| Step | Effect | Providers |
-|---|---|---|
-| Joint face | faces 0→1 | jointer; hand plane (slow) |
-| Plane | faces →2, surface→smooth; needs faces ≥ 1 | planer; later router sled/CNC |
-| Joint edge | edges 0→1 | jointer (needs faces ≥ 1 — fence reference); straight-line sled on the table saw (**no prerequisites** — the board rides the sled, not the fence); hand plane |
-| Rip to width | edges →2; needs edges ≥ 1 (never rip a wavy edge against the fence) | table saw |
-| Crosscut | length only, rewrites board ends (see Board ends), no prerequisites | miter saw, crosscut sled, hand saw (slow) |
+| Step         | Effect                                                              | Providers                                                                                                                                                     |
+| ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Joint face   | faces 0→1                                                           | jointer; hand plane (slow)                                                                                                                                    |
+| Plane        | faces →2, surface→smooth; needs faces ≥ 1                           | planer; later router sled/CNC                                                                                                                                 |
+| Joint edge   | edges 0→1                                                           | jointer (needs faces ≥ 1 — fence reference); straight-line sled on the table saw (**no prerequisites** — the board rides the sled, not the fence); hand plane |
+| Rip to width | edges →2; needs edges ≥ 1 (never rip a wavy edge against the fence) | table saw                                                                                                                                                     |
+| Crosscut     | length only, rewrites board ends (see Board ends), no prerequisites | miter saw, crosscut sled, hand saw (slow)                                                                                                                     |
 
 Pallet boards scavenge as `{ jointedFaces: 1, jointedEdges: 2 }` — they were
 factory-milled once, weathered rough — which keeps the whole early game
@@ -198,13 +200,13 @@ completely hidden until unlocked** — no grayed-out teasers; sections
 appearing is the reward, and the lumberyard itself appearing at the door is
 the 12-reputation reward. See `lumberStock.ts` for the data.
 
-| Channel | Store | Species | State | Price factor | Unlock |
-|---|---|---|---|---|---|
-| The curb | — | pallet | faces 1 / edges 2, rough | free | start |
-| Construction Lumber | Orange Box | pine | S4S | ×1 | with store |
-| S4S Hardwood Rack | Orange Box | poplar, oak, maple | S4S | ×1.6 (the big-box markup) | with store |
-| S2S Rack | Sawyer & Sons | maple, oak, cherry, walnut | faces 2 / edges 0 | ×1 | 12 reputation |
-| Rough Rack | Sawyer & Sons | maple, oak, cherry, walnut | faces 0 / edges 0 | ×0.55 | 22 reputation |
+| Channel             | Store         | Species                    | State                    | Price factor              | Unlock        |
+| ------------------- | ------------- | -------------------------- | ------------------------ | ------------------------- | ------------- |
+| The curb            | —             | pallet                     | faces 1 / edges 2, rough | free                      | start         |
+| Construction Lumber | Orange Box    | pine                       | S4S                      | ×1                        | with store    |
+| S4S Hardwood Rack   | Orange Box    | poplar, oak, maple         | S4S                      | ×1.6 (the big-box markup) | with store    |
+| S2S Rack            | Sawyer & Sons | maple, oak, cherry, walnut | faces 2 / edges 0        | ×1                        | 12 reputation |
+| Rough Rack          | Sawyer & Sons | maple, oak, cherry, walnut | faces 0 / edges 0        | ×0.55                     | 22 reputation |
 
 Exotics (mahogany, purple heart) are not sold anywhere yet — a future
 "specialty dealer" brings them back as the channel past the rough rack.
