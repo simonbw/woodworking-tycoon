@@ -16,8 +16,12 @@ test.describe("Tooltip", () => {
       await manual.waitFor({ state: "detached" });
     });
 
-    const quitButton = page.getByRole("button", { name: /Save & Quit/i });
-    const tooltip = page.getByText("Save and return to main menu");
+    const quitButton = page.getByRole("button", { name: /^Journal/i });
+    // Anchor on the tooltip surface itself, not the text inside it: a
+    // tooltip that names a shortcut wraps its content in a chip row.
+    const tooltip = page.getByRole("tooltip", {
+      name: /Your journal — skills/,
+    });
 
     await test.step("tooltip is absent until the trigger is hovered", async () => {
       await expect(quitButton).toBeVisible();

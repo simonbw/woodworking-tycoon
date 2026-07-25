@@ -30,11 +30,14 @@ export function useMachineActivity(machine: Machine) {
         machine.workSpeed,
       )
     : [];
-  const attending = playerAttendsMachine(
-    machine,
-    gameState.player.position,
-    gameState.player.away !== null,
-  );
+  // Same rule the tick uses: standing there isn't enough, you have to be
+  // holding the operate key too.
+  const attending =
+    playerAttendsMachine(
+      machine,
+      gameState.player.position,
+      gameState.player.away !== null,
+    ) && gameState.player.operating === true;
 
   const isOperating = progress.status === "inProgress" && phases.length > 0;
   // At a boundary (ticksRemaining 0) the phase that matters is the next one

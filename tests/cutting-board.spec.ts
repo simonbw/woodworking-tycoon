@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, openStationSheet, selectMode } from "./machine-panel";
+import {
+  modesOf,
+  openStationSheet,
+  runWhileHolding,
+  selectMode,
+} from "./machine-panel";
 import {
   goToLumberyard,
   goToStore,
@@ -27,8 +32,9 @@ async function sandPanelOnce(page: any, expectSurface: string) {
     .getByRole("button", { name: "→ Makeshift Workbench" })
     .click();
   await page.waitForTimeout(200);
-  await workspaceCard(page).getByRole("button", { name: "Operate" }).click();
-  await page.waitForFunction(
+  await runWhileHolding(
+    page,
+    
     (surface: string) =>
       (window as any)
         .__GET_GAME_STATE__()
@@ -118,10 +124,9 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -169,10 +174,9 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()

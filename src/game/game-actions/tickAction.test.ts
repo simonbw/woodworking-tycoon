@@ -37,10 +37,17 @@ function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
 }
 
-/** Game state with the player standing at the workspace's operation cell. */
+/**
+ * Game state with the player standing at the workspace's operation cell
+ * and holding the operate key — attending a machine now takes both.
+ */
 function attendingStateWith(overrides: Partial<GameState>): GameState {
   return stateWith({
-    player: { ...initialGameState.player, position: WORKSPACE_OPERATION_CELL },
+    player: {
+      ...initialGameState.player,
+      position: WORKSPACE_OPERATION_CELL,
+      operating: true,
+    },
     ...overrides,
   });
 }
@@ -66,26 +73,6 @@ describe("tickAction", () => {
   it("increments the tick counter", () => {
     const result = tickAction(stateWith({ tick: 7 }));
     assert.strictEqual(result.tick, 8);
-  });
-
-  it("processes one queued work item and leaves the rest for later ticks", () => {
-    // Two queued sweeps: the first runs and leaves the player busy, so
-    // the second has to wait for a later tick.
-    const state = stateWith({
-      dust: { "0,0": { pine: 50 } },
-      progression: { ...initialGameState.progression, sweepingUnlocked: true },
-      player: {
-        ...initialGameState.player,
-        position: [0, 0],
-        workQueue: [{ type: "sweep" }, { type: "sweep" }],
-      },
-    });
-    const result = tickAction(state);
-    assert.ok(
-      result.materialPiles.some((pile) => pile.material.type === "sawdustPile"),
-    );
-    assert.strictEqual(result.player.workQueue.length, 1);
-    assert.ok(result.player.busyTicks > 0);
   });
 
   it("leaves idle machines untouched", () => {
@@ -167,11 +154,9 @@ describe("tickAction", () => {
         // Standing at the cell doesn't count while away
         position: WORKSPACE_OPERATION_CELL,
         away: { kind: "scavenging", returnTick: 20, loot: [] },
-        workQueue: [{ type: "sweep" }],
       },
     });
     const result = tickAction(state);
-    assert.strictEqual(result.player.workQueue.length, 1);
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });
 

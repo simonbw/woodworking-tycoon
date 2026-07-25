@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
+import {
+  holdOperate,
+  openStationSheet,
+  selectMode,
+  takeAllHere,
+} from "./machine-panel";
+import { advanceTicks, setPaused } from "./navigation";
 
 declare global {
   interface Window {
@@ -53,7 +59,7 @@ test.describe("Attended Operations", () => {
     });
     await page.waitForTimeout(300);
 
-    await test.step("sanding pauses when you walk away, resumes when you return", async () => {
+    await test.step("sanding pauses when you let go, resumes when you take hold", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
@@ -66,13 +72,15 @@ test.describe("Attended Operations", () => {
       await page.waitForTimeout(200);
 
       // Freeze the clock so starting the op and stepping away is deterministic
-      await page.keyboard.press("`");
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
+      await setPaused(page, true);
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      // A tap starts the work; without the key held it goes no further
+      await page.keyboard.press("Space");
       await page.waitForTimeout(200);
       await teleportPlayer(page, FAR_AWAY);
-      await page.keyboard.press("1");
+      await setPaused(page, false);
 
       // Ticks flow again, but nobody is at the bench: progress is frozen
       const before = await workspaceProgress(page);
@@ -81,10 +89,16 @@ test.describe("Attended Operations", () => {
       expect(before.status).toBe("inProgress");
       expect(after.ticksRemaining).toBe(before.ticksRemaining);
 
-      // Come back and it finishes
+      // Standing there isn't enough either — the key has to be down
       await teleportPlayer(page, WORKSPACE_CELL);
-      await page.waitForFunction(
-        () =>
+      await page.waitForTimeout(800);
+      expect((await workspaceProgress(page)).ticksRemaining).toBe(
+        before.ticksRemaining,
+      );
+
+      // Back at the bench with the key held, it finishes
+      await holdOperate(page, () =>
+        page.evaluate(() =>
           (window as any)
             .__GET_GAME_STATE__()
             .machines.some((m: any) =>
@@ -92,8 +106,7 @@ test.describe("Attended Operations", () => {
                 (mat: any) => mat.type === "board" && mat.surface === "sanded",
               ),
             ),
-        undefined,
-        { timeout: 15000 },
+        ),
       );
       await takeAllHere(page);
     });
@@ -114,13 +127,14 @@ test.describe("Attended Operations", () => {
         .click();
       await page.waitForTimeout(200);
 
-      await page.keyboard.press("`");
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
+      await setPaused(page, true);
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("Space");
       await page.waitForTimeout(200);
       await teleportPlayer(page, FAR_AWAY);
-      await page.keyboard.press("1");
+      await setPaused(page, false);
 
       // Clamping is attended: frozen at full duration while away
       await page.waitForTimeout(800);
@@ -128,16 +142,16 @@ test.describe("Attended Operations", () => {
       expect(paused.phaseIndex).toBe(0);
       expect(paused.ticksRemaining).toBe(8);
 
-      // Return: the clamp phase runs, then curing begins
+      // Return and take hold: the clamp phase runs, then curing begins
       await teleportPlayer(page, WORKSPACE_CELL);
-      await page.waitForFunction(
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines.find((m: any) => m.machineTypeId === "workspace")
-            .operationProgress.phaseIndex === 1,
-        undefined,
-        { timeout: 15000 },
+      await holdOperate(page, () =>
+        page.evaluate(
+          () =>
+            (window as any)
+              .__GET_GAME_STATE__()
+              .machines.find((m: any) => m.machineTypeId === "workspace")
+              .operationProgress.phaseIndex === 1,
+        ),
       );
       // The phase-by-phase status reads off the station sheet
       await openStationSheet(page);
@@ -154,7 +168,7 @@ test.describe("Attended Operations", () => {
 
       // Fast-forward the rest of the cure; the panel finishes with the
       // player still across the shop
-      await page.keyboard.press("3");
+      await advanceTicks(page, 200);
       await page.waitForFunction(
         () =>
           (window as any)

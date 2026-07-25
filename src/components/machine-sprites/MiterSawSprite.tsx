@@ -3,14 +3,11 @@ import React, { useCallback } from "react";
 import { animated, useSpring } from "react-spring";
 import { Machine } from "../../game/Machine";
 import { isBoard } from "../../game/board-helpers";
-import { playerAttendsMachine, slideStock } from "../../game/machine-helpers";
-import { availableOperations } from "../../game/skill-helpers";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
-import { useGameState } from "../useGameState";
 import { CutParticles, cutSprayIntensity } from "./CutParticles";
 import { Vibrating } from "./Vibrating";
 
@@ -30,30 +27,18 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   const inputBoards = inputMaterials.filter(isBoard);
   const processingBoards = machine.processingMaterials.filter(isBoard);
-  // Mid-cut the stock has moved to processing; it stays clamped in place.
+  // The board on the saw table: set down there with F, and still there
+  // mid-cut (it moves to processing but stays clamped in place). There is
+  // no preview of a board you're merely holding — you put it on the saw
+  // first, then slide it to the mark.
   const stock = inputBoards[0] ?? processingBoards[0];
-
-  // While the player stands at the saw holding cuttable stock, the board
-  // shows on the table, slid to the set cut line — the in-world preview of
-  // what pulling the trigger would do. (The head is already pre-swung: it
-  // tracks the angle setting below whether or not a cut is running.)
-  const { player, progression } = useGameState();
-  const heldBoard =
-    !stock &&
-    playerAttendsMachine(machine, player.position, player.away !== null)
-      ? slideStock(
-          machine,
-          availableOperations(machine, progression),
-          player.inventory,
-        )
-      : undefined;
 
   // The cut line sits cutPosition feet from the stock's left end, so the
   // rest of the board slides out past the blade to the right. Clamped so a
   // mark beyond the board's far end parks the whole board short of the
   // blade instead of detaching it from the saw.
   const cutPosition = Number(machine.selectedParameters?.cutPosition) || 0;
-  const slidBoard = stock ?? heldBoard;
+  const slidBoard = stock;
   const slideOffset = slidBoard
     ? feetToPixels(Math.max(0, slidBoard.length - cutPosition))
     : 0;
@@ -117,18 +102,6 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
             </pixiContainer>
           );
         })}
-        {/* The carried board, held against the fence at the cut line —
-            ghosted until the trigger commits it */}
-        {heldBoard && (
-          <pixiContainer
-            angle={90}
-            x={feetToPixels(-heldBoard.length / 2) - 3}
-            y={inchesToPixels(heldBoard.width / 2 - 3)}
-            alpha={0.65}
-          >
-            <MaterialSprite material={heldBoard} />
-          </pixiContainer>
-        )}
       </AnimatedPixiContainer>
       {outputMaterials.filter(isBoard).map((board, index) => {
         const x = feetToPixels(board.length / 2) + 3;

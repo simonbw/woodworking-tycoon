@@ -41,8 +41,9 @@ The home screen is composed of a small number of physical objects, not a
 stack of equal-weight cards:
 
 - **Top bar** (`NavBar`) — a thin chrome strip, no tabs: the shop's name,
-  the day + speed controls (`Ticker`, which also drives the game loop —
-  time always advances unless paused), the balance, and the pocket items
+  the day (`Ticker`, which also drives the game loop — time always
+  advances unless the pause menu is open), the balance, and the pocket
+  items
   (Phone, Journal, the `?` manual), all drawn directly on the dark bar,
   no paper. Everything that used to be a tab is an object in the world:
   the marketplace is the phone overlay, skills are the journal overlay,
@@ -62,9 +63,10 @@ stack of equal-weight cards:
   door's "[E] head out" (`DoorPrompt` — the keypress opens the full
   destination card), and floor verbs beside the player (`PlayerPrompt`).
   Chip chrome wraps in `HintSurfaceContext.Provider value="chrome"`.
-  Anything with buttons or scales lives on the centered **station
-  sheet** (`StationSheet`, Enter) — the full paperwork, spread out over
-  a dimmed shop that keeps ticking; walking away folds it up.
+  A bench's plans and racks live on the centered **station sheet**
+  (`StationSheet`, Tab) — paperwork, spread out over a dimmed shop that
+  keeps ticking; walking away folds it up. Direct-feed machines have no
+  sheet beyond a tool rack: running them is entirely floor keys.
 - **Shop manifest** (`ShopManifest`, right) — one manila folder holding
   the In Hand, Underfoot, and Supplies sheets; long lists scroll inside
   the folder. Supplies is the one ruled tally and hides entirely while

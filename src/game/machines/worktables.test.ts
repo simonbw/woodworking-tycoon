@@ -110,7 +110,11 @@ describe("worktable build recipes", () => {
     const state = stateWith({
       machines: [machine],
       // The workspace operation cell for position [1,2] rotation 0
-      player: { ...initialGameState.player, position: [1, 4] },
+      player: {
+        ...initialGameState.player,
+        position: [1, 4],
+        operating: true,
+      },
     });
 
     const result = tickAction(state);

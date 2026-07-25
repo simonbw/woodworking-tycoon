@@ -243,7 +243,11 @@ describe("shop-made tooling", () => {
     return {
       ...initialGameState,
       machines: [machine],
-      player: { ...initialGameState.player, position: [1, 3] },
+      player: {
+        ...initialGameState.player,
+        position: [1, 3],
+        operating: true,
+      },
     };
   }
 

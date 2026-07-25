@@ -65,7 +65,6 @@ export function startScavengingAction(
       ...gameState,
       player: {
         ...gameState.player,
-        workQueue: [],
         away: {
           kind: "scavenging",
           returnTick: gameState.tick + SCAVENGE_DURATION_TICKS,

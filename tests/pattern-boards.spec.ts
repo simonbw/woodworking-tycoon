@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, selectMode as selectMachineMode } from "./machine-panel";
-import { closeJournal, openJournal, openPhone } from "./navigation";
+import {
+  modesOf,
+  runWhileHolding,
+  selectMode as selectMachineMode,
+} from "./machine-panel";
+import { closeJournal, openJournal, openPhone, setTickRate } from "./navigation";
 
 declare global {
   interface Window {
@@ -37,8 +41,9 @@ async function operateAndTake(
   isDoneSource: string,
   timeout: number,
 ) {
-  await workspaceCard(page).getByRole("button", { name: "Operate" }).click();
-  await page.waitForFunction(
+  await runWhileHolding(
+    page,
+    
     (src: string) => {
       const matches = new Function("mat", `return (${src})(mat)`) as any;
       return (window as any)
@@ -109,7 +114,7 @@ test.describe("Pattern Boards", () => {
 
     await test.step("finish the striped blank", async () => {
       // Run fast: the glue cures are long by design
-      await page.keyboard.press("3");
+      await setTickRate(page, 20);
       await selectMode(page, "Finish Striped Board");
       await moveToWorkspace(page, "Mixed Wood Panel");
       await operateAndTake(

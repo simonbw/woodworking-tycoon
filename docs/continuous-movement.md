@@ -86,15 +86,16 @@ input is ignored.
   typing in a field, or while the player is away; key-ups always clear,
   so a modal opening mid-stride never leaves the player marching.
 - Window blur clears all held keys.
-- Pause (`TickSpeedContext`, tick speed 0) freezes the body: pausing
-  stops the world, woodworker included. Fast-forward does *not* speed up
-  walking — it's for waiting out cures, not sprinting.
+- Pause (`PauseContext`) freezes the body: pausing stops the world,
+  woodworker included. The pause menu is the only thing that pauses —
+  there are no speed controls.
 
 ## What got deleted
 
 - `WorkItem { type: "move" }`, `instaMovePlayerAction`, and the
-  work-queue path preview (`WorkQueueSprite`). The work queue itself
-  survives, sweep-only.
-- The `cancel-last-move` (Backspace) shortcut; Escape still clears
-  queued work.
+  work-queue path preview (`WorkQueueSprite`). The work queue is gone
+  entirely now — sweeping was the last thing in it, and it's a direct
+  press (`cleanUpAction`).
+- The `cancel-last-move` (Backspace) shortcut; Escape opens the pause
+  menu once there's nothing left to back out of.
 - `moveDustPenalty` (folded into `playerWalkSpeed`).

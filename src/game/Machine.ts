@@ -300,12 +300,19 @@ export interface OperationParameter<T = number | string> {
   /** Suffix appended to numeric values in the UI. Defaults to inches. */
   readonly unit?: string;
   /**
-   * How the setting is drawn and driven. "slide" positions the carried
-   * stock itself (the board under the miter saw's blade) instead of a
-   * printed detent scale; the shortcut key slides the stock between marks
-   * it can actually reach.
+   * How the setting is drawn and driven, and which key drives it.
+   *
+   * "slide" positions the stock itself (the board under the miter saw's
+   * blade) instead of a printed detent scale, and the key slides it
+   * between marks it can actually reach. "rotate" is a setting you swing
+   * rather than shift — the miter head off square.
+   *
+   * Everything else is a plain linear scale. Linear settings (slide
+   * included) answer to Z/X; a "rotate" setting answers to R, which is
+   * why a machine can usefully carry one of each. See
+   * docs/direct-feed-machines.md.
    */
-  readonly presentation?: "slide";
+  readonly presentation?: "slide" | "rotate";
 }
 
 export type ParameterValues = Record<string, number | string>;

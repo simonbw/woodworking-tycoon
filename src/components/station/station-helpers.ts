@@ -26,3 +26,14 @@ export function loadedStockDimension(
 ): number | undefined {
   return stockDimension(machine.inputMaterials[0], paramId);
 }
+
+/**
+ * Whether this station has a sheet worth opening. Benches and containers
+ * always do; a direct-feed machine only does if there's a tool slot to fit
+ * something into, since everything else about running it lives on the
+ * floor. Machines with no sheet leave the key unbound rather than opening
+ * an empty page.
+ */
+export function hasStationSheet(machine: Machine): boolean {
+  return machine.type.directFeed ? machine.toolSlots > 0 : true;
+}

@@ -35,7 +35,6 @@ export const initialGameState: GameState = {
     position: [6, 12],
     direction: 1,
     inventory: [],
-    workQueue: [],
     busyTicks: 0,
     away: null,
   },
@@ -66,7 +65,6 @@ export const initialGameState: GameState = {
     shopLayoutUnlocked: false,
     marketplaceUnlocked: false,
     commissionsCompleted: 0,
-    tickSpeedControlsUnlocked: false,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     // Welcome starts unread on purpose: the manual auto-opens to it once.

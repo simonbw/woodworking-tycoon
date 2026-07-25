@@ -18,14 +18,12 @@
 export type ShortcutScope = "global" | "home" | "modal";
 
 /** Cheat-sheet section. Order here is the order rendered. */
-export type ShortcutGroup =
-  "Time" | "Movement" | "Materials" | "Machines" | "General";
+export type ShortcutGroup = "Movement" | "Materials" | "Machines" | "General";
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Movement",
   "Materials",
   "Machines",
-  "Time",
   "General",
 ];
 
@@ -91,9 +89,12 @@ const defs = [
     group: "Movement",
   },
   {
-    // Placed before clear-work-queue so an open station sheet claims the
-    // key; when no sheet is open the binding is disabled and Escape falls
-    // through to the queue. Same step-aside trick as carry-rotate on R.
+    // Escape backs out of one layer at a time: an open station sheet or
+    // door card claims it first, and only when there's nothing to back out
+    // of does it reach the pause menu. Both bindings live on the same key
+    // and take turns via their `enabled` conditions — a disabled binding
+    // steps aside in ShortcutProvider — so registry order is what puts the
+    // sheet ahead of the menu. Same trick as carry-rotate on R.
     id: "close-sheet",
     codes: ["Escape"],
     keys: [["Esc"]],
@@ -104,12 +105,12 @@ const defs = [
     sharesKey: true,
   },
   {
-    id: "clear-work-queue",
+    id: "pause-menu",
     codes: ["Escape"],
     keys: [["Esc"]],
-    description: "Cancel queued work",
+    description: "Pause — settings and save",
     scope: "home",
-    group: "Movement",
+    group: "General",
   },
 
   // --------------------------------------------------------------- Materials
@@ -160,17 +161,18 @@ const defs = [
     // a crate once carrying is unlocked); hidden from the static cheat sheet
     // so the verb doesn't leak before its reveal.
     id: "carry-machine",
-    codes: ["KeyL"],
-    keys: [["L"]],
+    codes: ["KeyB"],
+    keys: [["B"]],
     description: "Pick up / put down machine",
     scope: "home",
     group: "Machines",
     hidden: true,
   },
   {
-    // Shares R with operate-machine; only bound while a machine is carried,
-    // and operate steps aside then (a disabled binding lets the key fall
-    // through — see ShortcutProvider).
+    // R is "rotate whatever is in front of you": the machine over your
+    // shoulders while carrying one, the saw head otherwise. The two can't
+    // both apply — you can't work a machine with one in your arms — so
+    // they share the key and take turns via `enabled`, carrying first.
     id: "carry-rotate",
     codes: ["KeyR"],
     keys: [["R"]],
@@ -179,28 +181,37 @@ const defs = [
     group: "Machines",
     hidden: true,
     sharesKey: true,
+    shiftHint: "the other way",
   },
   {
-    id: "operate-machine",
+    id: "rotate-setting",
     codes: ["KeyR"],
     keys: [["R"]],
-    description: "Operate / feed the machine you're at",
+    description: "Swing the machine's head (the miter saw's angle)",
+    scope: "home",
+    group: "Machines",
+    shiftHint: "the other way",
+  },
+  {
+    // Held, not tapped: the press starts the machine and the hold is you
+    // pushing the stock through it. Let go and the cut pauses where it is.
+    // Power-feed machines (the planer) are the exception — the rollers do
+    // the pushing, so they finish whether you're holding it or not.
+    id: "operate-machine",
+    codes: ["Space"],
+    keys: [["Space"]],
+    description: "Hold to run the machine you're at",
     scope: "home",
     group: "Machines",
   },
   {
+    // Only benches, containers, and machines with a tool slot have a sheet
+    // — see hasStationSheet. Everything about running a direct-feed machine
+    // is a key on the floor.
     id: "open-station-sheet",
-    codes: ["Enter"],
-    keys: [["Enter"]],
-    description: "Open the station's sheet — controls, plans, tools",
-    scope: "home",
-    group: "Machines",
-  },
-  {
-    id: "power-toggle",
-    codes: ["KeyP"],
-    keys: [["P"]],
-    description: "Switch machine on / off",
+    codes: ["Tab"],
+    keys: [["Tab"]],
+    description: "Open the station's sheet — plans, tools, contents",
     scope: "home",
     group: "Machines",
   },
@@ -214,18 +225,28 @@ const defs = [
     shiftHint: "go backwards",
   },
   {
-    id: "cycle-parameter",
+    // One setting, two keys, so it moves the way the thing moves: Z winds
+    // the planer's head down and pulls the fence in, X the other way. On
+    // the miter saw the pair slides the board itself along the cut line.
+    id: "setting-down",
     codes: ["KeyZ"],
     keys: [["Z"]],
-    description: "Next operation setting",
+    description: "Machine setting down / in / left",
     scope: "home",
     group: "Machines",
-    shiftHint: "go backwards",
+  },
+  {
+    id: "setting-up",
+    codes: ["KeyX"],
+    keys: [["X"]],
+    description: "Machine setting up / out / right",
+    scope: "home",
+    group: "Machines",
   },
   {
     id: "cycle-machine",
-    codes: ["KeyX"],
-    keys: [["X"]],
+    codes: ["KeyG"],
+    keys: [["G"]],
     description: "Target next machine on this square",
     scope: "home",
     group: "Machines",
@@ -242,11 +263,9 @@ const defs = [
   },
   {
     // The door's destinations answer to the row numbers shown on its
-    // prompt. They deliberately shadow the speed presets (also 1/2/3):
-    // these bindings only enable while the player stands at the garage
-    // door with free hands, and a disabled binding steps aside, so the
-    // digits mean "head out" at the door and "set speed" everywhere else.
-    // Registry order is what puts the door first — keep these above Time.
+    // prompt. Contextual: they only enable while the player stands at the
+    // garage door with free hands, so the digits are dead keys elsewhere
+    // and the cheat sheet doesn't advertise them.
     id: "door-option-1",
     codes: ["Digit1"],
     keys: [["1"]],
@@ -254,7 +273,6 @@ const defs = [
     scope: "home",
     group: "General",
     hidden: true,
-    sharesKey: true,
   },
   {
     id: "door-option-2",
@@ -264,7 +282,6 @@ const defs = [
     scope: "home",
     group: "General",
     hidden: true,
-    sharesKey: true,
   },
   {
     id: "door-option-3",
@@ -274,57 +291,6 @@ const defs = [
     scope: "home",
     group: "General",
     hidden: true,
-    sharesKey: true,
-  },
-
-  // ------------------------------------------------------------------- Time
-  {
-    id: "speed-pause",
-    codes: ["Backquote"],
-    keys: [["`"]],
-    description: "Pause",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-toggle",
-    codes: ["Space"],
-    keys: [["Space"]],
-    description: "Pause / resume",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-step",
-    codes: ["Period"],
-    keys: [["."]],
-    description: "Step forward one tick",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-normal",
-    codes: ["Digit1"],
-    keys: [["1"]],
-    description: "Normal speed",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-fast",
-    codes: ["Digit2"],
-    keys: [["2"]],
-    description: "Fast speed",
-    scope: "global",
-    group: "Time",
-  },
-  {
-    id: "speed-faster",
-    codes: ["Digit3"],
-    keys: [["3"]],
-    description: "Faster speed",
-    scope: "global",
-    group: "Time",
   },
 
   // ---------------------------------------------------------------- General
@@ -338,17 +304,9 @@ const defs = [
   },
   {
     id: "open-journal",
-    codes: ["KeyK"],
-    keys: [["K"]],
+    codes: ["KeyJ"],
+    keys: [["J"]],
     description: "Open your journal",
-    scope: "global",
-    group: "General",
-  },
-  {
-    id: "open-settings",
-    codes: ["Comma"],
-    keys: [[","]],
-    description: "Settings",
     scope: "global",
     group: "General",
   },
@@ -384,7 +342,7 @@ const defs = [
     hidden: true,
   },
   // Same trick for the phone and journal: their open keys re-bound inside
-  // the modal scope, so M and K toggle rather than only open.
+  // the modal scope, so M and J toggle rather than only open.
   {
     id: "close-phone",
     codes: ["KeyM"],
@@ -396,8 +354,8 @@ const defs = [
   },
   {
     id: "close-journal",
-    codes: ["KeyK"],
-    keys: [["K"]],
+    codes: ["KeyJ"],
+    keys: [["J"]],
     description: "Close the journal",
     scope: "modal",
     group: "General",

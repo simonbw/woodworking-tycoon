@@ -1,6 +1,12 @@
 import React, { useRef } from "react";
 import { CellMap } from "../../game/CellMap";
-import { defaultParametersFor, operationParameters } from "../../game/Machine";
+import {
+  defaultParametersFor,
+  getMachines,
+  isSameMachine,
+  OperationParameter,
+  operationParameters,
+} from "../../game/Machine";
 import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
@@ -20,20 +26,18 @@ import {
   rotateCarriedMachineAction,
 } from "../../game/game-actions/machine-actions";
 import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
-import {
-  addWorkItemAction,
-  clearWorkQueueAction,
-} from "../../game/game-actions/work-item-actions";
+import { cleanUpAction } from "../../game/game-actions/dust-actions";
 import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
-  machineCanOperate,
+  findFeedableOperation,
   parameterValueSatisfiable,
-  shopSupply,
+  slideStock,
+  stageableMaterials,
 } from "../../game/machine-helpers";
-import { materialMeetsInput } from "../../game/material-helpers";
 
 import { availableOperations } from "../../game/skill-helpers";
+import { hasStationSheet } from "../station/station-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -74,7 +78,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "sweep",
     () => {
       if (gameState.current.progression.sweepingUnlocked) {
-        applyAction(addWorkItemAction({ type: "sweep" }));
+        applyAction(cleanUpAction());
       }
     },
     present && !carrying,
@@ -128,7 +132,6 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     },
     sheetMachine != null || doorOpen,
   );
-  useShortcut("clear-work-queue", () => applyAction(clearWorkQueueAction()));
 
   useShortcut("cycle-machine", cycleTarget, present);
 
@@ -137,7 +140,10 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   useShortcut(
     "open-station-sheet",
     toggleSheet,
-    present && !carrying && (sheetMachine != null || targetedMachine != null),
+    present &&
+      !carrying &&
+      (sheetMachine != null ||
+        (targetedMachine != null && hasStationSheet(targetedMachine))),
   );
 
   // E is the interact key: take finished work, unload a bay, switch the
@@ -191,9 +197,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present && !carrying,
   );
 
-  // Put down: give to the targeted machine if it takes what we're
-  // holding — loading a bay, or feeding a direct-feed machine straight
-  // from the hands — otherwise onto the floor.
+  // Put down: hand it to the targeted machine if it takes what we're
+  // holding — onto a bench's bay, onto a saw's table — otherwise onto the
+  // floor. Setting stock down is all this does; the trigger is Space.
   useShortcut(
     "put-down",
     (event) => {
@@ -202,34 +208,32 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (inventory.length === 0) return;
 
       const machine = targeted.current;
-      // On a direct-feed machine "putting the stock in" is feeding it:
-      // same physical act, so F and R agree. If the machine refuses the
-      // stock (or is busy or off), the wood goes to the floor like
-      // anywhere else.
-      if (
-        machine?.type.directFeed &&
-        machine.operationProgress.status !== "inProgress" &&
-        machineCanOperate(machine, shopSupply(gs), inventory, gs.progression)
-      ) {
-        return applyAction(operateMachineAction(machine));
-      }
-      if (machine && !machine.type.directFeed) {
-        const spacesLeft =
-          machine.type.inputSpaces - machine.inputMaterials.length;
-        const inputMaterials = machine.selectedOperation.getInputMaterials(
-          machine.resolvedParameters(machine.selectedOperation),
-        );
-        const matchingMaterials = inventory.filter((material) =>
-          inputMaterials.some((input) => materialMeetsInput(material, input)),
-        );
-
-        if (spacesLeft > 0 && matchingMaterials.length > 0) {
-          return applyAction(
-            moveMaterialsToMachineAction(
-              matchingMaterials.slice(0, event.shiftKey ? spacesLeft : 1),
-              machine,
-            ),
-          );
+      if (machine && machine.operationProgress.status !== "inProgress") {
+        const stageable = stageableMaterials(machine, inventory, gs.progression);
+        if (stageable.length > 0) {
+          const staged = event.shiftKey ? stageable : [stageable[0]];
+          applyAction(moveMaterialsToMachineAction(staged, machine));
+          // A power-feed machine has no separate trigger: the rollers grab
+          // the board the moment it touches them, so setting it down *is*
+          // starting it. (Read from the post-stage state, since the
+          // operation is inferred from what's now on the machine.)
+          if (machine.type.directFeed) {
+            applyAction((state) => {
+              const restaged = getMachines(state.machines).find((m) =>
+                isSameMachine(m.state, machine.state),
+              );
+              if (!restaged) return state;
+              const match = findFeedableOperation(
+                restaged,
+                availableOperations(restaged, state.progression),
+                restaged.inputMaterials,
+              );
+              return match?.operation.powerFeed === true
+                ? operateMachineAction(restaged)(state)
+                : state;
+            });
+          }
+          return;
         }
       }
 
@@ -247,17 +251,6 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (machine) applyAction(operateMachineAction(machine));
     },
     present && !carrying,
-  );
-
-  useShortcut(
-    "power-toggle",
-    () => {
-      const machine = targeted.current;
-      if (machine?.type.powerSwitch) {
-        applyAction(toggleMachinePowerAction(machine));
-      }
-    },
-    present,
   );
 
   useShortcut(
@@ -301,71 +294,87 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present,
   );
 
-  // Cycle the machine's first setting — the keyboard equivalent of the
-  // scales on the machine card. On direct-feed machines the first setting
-  // of any available operation counts (the fence, the angle, the crank);
-  // elsewhere it's the selected operation's first parameter.
-  useShortcut(
-    "cycle-parameter",
-    (event) => {
-      const machine = targeted.current;
-      if (!machine) return;
+  // Step one of the machine's settings — the keyboard equivalent of the
+  // scales on its card. `kind` picks which: "linear" is the one Z and X
+  // drive (the fence, the cutter head, the cut line), "rotate" is the one
+  // R swings (the miter head). A machine carries at most one of each, so
+  // neither key ever has to disambiguate.
+  //
+  // On direct-feed machines the setting can belong to any available
+  // operation (what's in hand decides which one runs); on benches only the
+  // selected operation's settings are live.
+  const stepSetting = (kind: "linear" | "rotate", step: 1 | -1) => {
+    const machine = targeted.current;
+    if (!machine) return;
 
-      const directFeed = machine.type.directFeed === true;
-      const operation = directFeed
-        ? availableOperations(machine, gameState.current.progression).find(
-            (op) => operationParameters(op).length > 0,
-          )
-        : machine.selectedOperationOrNull;
-      if (!operation) return;
+    const isKind = (param: OperationParameter) =>
+      kind === "rotate"
+        ? param.presentation === "rotate"
+        : param.presentation !== "rotate";
 
-      const param = operationParameters(operation)[0];
-      if (!param || param.values.length < 2) return;
+    const directFeed = machine.type.directFeed === true;
+    const candidates = directFeed
+      ? availableOperations(machine, gameState.current.progression)
+      : [machine.selectedOperationOrNull].filter((op) => op != null);
+    const found = candidates
+      .flatMap((op) =>
+        operationParameters(op).map((param) => ({ op, param })),
+      )
+      .find(({ param }) => isKind(param) && param.values.length > 1);
+    if (!found) return;
+    const { op: operation, param } = found;
 
-      // Unset (or unrecognised) lands at -1, so a forward cycle starts at the
-      // first value.
-      const current = machine.selectedParameters?.[param.id];
-      const currentIndex =
-        current === undefined ? -1 : param.values.indexOf(current);
-      const step = event.shiftKey ? -1 : 1;
-      let next = param.values[mod(currentIndex + step, param.values.length)];
+    // Unset (or unrecognised) lands at -1, so a forward step starts at the
+    // first value.
+    const current = machine.selectedParameters?.[param.id];
+    const currentIndex =
+      current === undefined ? -1 : param.values.indexOf(current);
+    let next = param.values[mod(currentIndex + step, param.values.length)];
 
-      // A slide param moves the carried stock itself, so the key steps
-      // between the marks the stock can actually reach — a 4' board slides
-      // among its own foot marks, not the whole table's.
-      if (param.presentation === "slide") {
-        const carried = gameState.current.player.inventory;
-        let nextIndex = param.values.indexOf(next);
-        for (
-          let tries = 0;
-          tries < param.values.length &&
-          !parameterValueSatisfiable(
-            machine,
-            operation,
-            param.id,
-            param.values[nextIndex],
-            carried,
-          );
-          tries++
-        ) {
-          nextIndex = mod(nextIndex + step, param.values.length);
-        }
-        next = param.values[nextIndex];
-      }
-
-      if (directFeed) {
-        // Settings turn without touching what's selected or running
-        applyAction(setMachineSettingsAction(machine, { [param.id]: next }));
-      } else {
-        applyAction(
-          setMachineOperationAction(machine, operation, {
-            ...machine.selectedParameters,
-            [param.id]: next,
-          }),
+    // A slide param moves the stock itself, so the key steps between the
+    // marks the stock can actually reach — a 4' board slides among its own
+    // foot marks, not the whole table's.
+    if (param.presentation === "slide") {
+      const stock = slideStock(machine, [operation]);
+      let nextIndex = param.values.indexOf(next);
+      for (
+        let tries = 0;
+        tries < param.values.length &&
+        !parameterValueSatisfiable(
+          machine,
+          operation,
+          param.id,
+          param.values[nextIndex],
+          stock ? [stock] : [],
         );
+        tries++
+      ) {
+        nextIndex = mod(nextIndex + step, param.values.length);
       }
-    },
-    present,
+      next = param.values[nextIndex];
+    }
+
+    if (directFeed) {
+      // Settings turn without touching what's selected or running
+      applyAction(setMachineSettingsAction(machine, { [param.id]: next }));
+    } else {
+      applyAction(
+        setMachineOperationAction(machine, operation, {
+          ...machine.selectedParameters,
+          [param.id]: next,
+        }),
+      );
+    }
+  };
+
+  useShortcut("setting-down", () => stepSetting("linear", -1), present);
+  useShortcut("setting-up", () => stepSetting("linear", 1), present);
+  // R swings the head; while a machine is carried the carry binding claims
+  // the key instead and this one steps aside.
+  useShortcut(
+    "rotate-setting",
+    (event) => stepSetting("rotate", event.shiftKey ? -1 : 1),
+    present && !carrying,
   );
 
   return null;

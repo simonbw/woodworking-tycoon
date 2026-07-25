@@ -59,8 +59,9 @@ export const lunchboxPlaner: MachineType = {
   cost: 450,
   materialStorage: 0,
   toolSlots: 1,
-  // Stock feeds straight from the player's hands — no staged input bay
-  inputSpaces: 0,
+  // One board in the throat at a time. Unlike the others there's nothing
+  // to line up afterwards: the rollers grab it the moment it's set down.
+  inputSpaces: 1,
   directFeed: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,

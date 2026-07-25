@@ -15,7 +15,7 @@ async function startNewGame(page: import("@playwright/test").Page) {
   await expect(manual).toHaveCount(0);
 }
 
-test.describe("Settings menu & audio volume", () => {
+test.describe("Pause menu & audio volume", () => {
   test("opens, adjusts volumes, mutes, and persists across reload", async ({
     page,
   }) => {
@@ -27,14 +27,10 @@ test.describe("Settings menu & audio volume", () => {
       await startNewGame(page);
     });
 
-    await test.step("settings menu is closed until the gear is clicked", async () => {
-      await expect(
-        page.getByRole("dialog", { name: "Settings" }),
-      ).toHaveCount(0);
-      await page.getByRole("button", { name: "Settings" }).click();
-      await expect(
-        page.getByRole("dialog", { name: "Settings" }),
-      ).toBeVisible();
+    await test.step("Escape opens the pause menu, which holds the settings", async () => {
+      await expect(page.getByRole("dialog", { name: "Paused" })).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog", { name: "Paused" })).toBeVisible();
     });
 
     await test.step("all three volume sliders and the mute toggle render", async () => {
@@ -73,11 +69,9 @@ test.describe("Settings menu & audio volume", () => {
       expect(parsed.muted).toBe(true);
     });
 
-    await test.step("Escape closes the menu", async () => {
+    await test.step("Escape closes the menu and the world resumes", async () => {
       await page.keyboard.press("Escape");
-      await expect(
-        page.getByRole("dialog", { name: "Settings" }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("dialog", { name: "Paused" })).toHaveCount(0);
     });
 
     await test.step("preferences survive a full page reload", async () => {
@@ -100,7 +94,7 @@ test.describe("Settings menu & audio volume", () => {
       await manual.waitFor();
       await page.keyboard.press("Escape");
       await expect(manual).toHaveCount(0);
-      await page.getByRole("button", { name: "Settings" }).click();
+      await page.keyboard.press("Escape");
       await expect(page.getByRole("slider", { name: "Master" })).toHaveValue(
         "30",
       );

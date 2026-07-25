@@ -45,10 +45,12 @@ describe("explainFeedRefusal", () => {
     );
   });
 
-  it("names empty hands before anything else", () => {
+  it("names an empty machine before anything else", () => {
+    // Stock goes on the machine first (F) and the trigger comes after, so
+    // the advice for a bare machine is to put something on it.
     assert.match(
       refusalAt("lunchboxPlaner", "plane", { targetThickness: 4 }, [])!,
-      /hands are empty/i,
+      /set stock down/i,
     );
   });
 

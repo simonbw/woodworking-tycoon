@@ -48,10 +48,10 @@ export const miterSaw: MachineType = {
   cost: 150,
   materialStorage: 0,
   toolSlots: 1,
-  // Direct feed, trigger-style: set the head to an angle stop, hold the
-  // carried board against the fence, pull the trigger. Nothing is "loaded";
-  // the cut pieces stay on the saw table until collected.
-  inputSpaces: 0,
+  // One board on the table at a time: you set it against the fence (F),
+  // slide it to the mark, then pull the trigger (hold Space). The cut
+  // pieces stay on the saw table until collected.
+  inputSpaces: 1,
   directFeed: true,
   feedVerb: "Cut",
   // Small enough to mount on a worktable cell instead of the floor
@@ -83,6 +83,9 @@ export const miterSaw: MachineType = {
           // The head rests square, mid-swing
           defaultValue: 0,
           unit: "°",
+          // You swing the head, you don't slide it — so it's R's setting,
+          // leaving Z/X for the cut line.
+          presentation: "rotate",
         },
       ],
       getInputMaterials: (params) => [

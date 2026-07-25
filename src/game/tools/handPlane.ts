@@ -15,6 +15,14 @@ export const handPlane: ToolType = {
   description:
     "Flatten a face or straighten an edge the old way. Slow, quiet, and deeply satisfying.",
   cost: 35,
+  // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
+  compatibleMachines: [
+    "workspace",
+    "worktable1x1",
+    "worktable1x2",
+    "worktable1x3",
+    "worktable2x2",
+  ],
   operations: [
     {
       id: "handPlaneFace",

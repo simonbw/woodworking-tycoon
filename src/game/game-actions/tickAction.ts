@@ -3,7 +3,6 @@ import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
-import { personCanWork } from "../Person";
 import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
 import { Vector } from "../Vectors";
@@ -11,7 +10,6 @@ import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { shopVacTickPass } from "./shop-vac-actions";
-import { applyWorkItemAction } from "./work-item-actions";
 import { combineActions } from "./misc-actions";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
@@ -43,8 +41,8 @@ export const tickAction: GameAction = combineActions(
 );
 
 /**
- * The player's slice of the tick: come home from a finished trip, burn a
- * busy tick, and drain queued work while free.
+ * The player's slice of the tick: come home from a finished trip and burn
+ * a busy tick.
  */
 function playerTickPass(): GameAction {
   return (gameState) => {
@@ -65,10 +63,10 @@ function playerTickPass(): GameAction {
       };
     }
 
-    // Still trudging through dust (or mid-sweep): this tick goes to that,
-    // not to the work queue. Attendance is positional, so a machine the
-    // player is standing at keeps running. Busy time doesn't burn down
-    // while away — the sweep waits where it was left.
+    // Still trudging through dust (or mid-sweep): this tick goes to that.
+    // Attendance is positional, so a machine the player is standing at
+    // keeps running. Busy time doesn't burn down while away — the sweep
+    // waits where it was left.
     const busyThisTick = (gameState.player.busyTicks ?? 0) > 0;
     if (busyThisTick && gameState.player.away === null) {
       gameState = {
@@ -76,26 +74,6 @@ function playerTickPass(): GameAction {
         player: {
           ...gameState.player,
           busyTicks: gameState.player.busyTicks - 1,
-        },
-      };
-    }
-
-    // Drain queued work while the player is free. A work item can occupy
-    // the player (sweeping sets busyTicks), which stops the drain.
-    while (
-      !busyThisTick &&
-      personCanWork(gameState.player) &&
-      gameState.player.workQueue.length > 0
-    ) {
-      const workQueue = [...gameState.player.workQueue];
-      const workItem = workQueue.shift()!;
-
-      gameState = applyWorkItemAction(workItem)(gameState);
-      gameState = {
-        ...gameState,
-        player: {
-          ...gameState.player,
-          workQueue,
         },
       };
     }
@@ -158,17 +136,19 @@ export function machineTickPass(): GameAction {
       dustMultiplier,
       machine.workSpeed,
     );
-    // Attended phases need the player at the machine AND the machine
-    // powered — switching off mid-cut pauses the work like stepping away.
-    // Power-feed operations (the planer) pull the stock through on their
-    // own: the player's whereabouts stop mattering, but the switch still
+    // Attended phases need the player at the machine, holding the operate
+    // key, AND the machine powered — switching off mid-cut pauses the work
+    // like stepping away, and so does letting go. Power-feed operations
+    // (the planer) pull the stock through on their own: neither the
+    // player's whereabouts nor their grip matters, but the switch still
     // does.
     const attended =
-      (playerAttendsMachine(
+      ((playerAttendsMachine(
         machine,
         gameState.player.position,
         gameState.player.away !== null,
-      ) ||
+      ) &&
+        gameState.player.operating === true) ||
         selectedOperation.powerFeed === true) &&
       machine.isPowered;
     const { phaseIndex, ticksRemaining } = machineState.operationProgress;

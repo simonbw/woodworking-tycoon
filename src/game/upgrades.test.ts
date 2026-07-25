@@ -182,7 +182,11 @@ describe("shop-built upgrades", () => {
     });
     const state = stateWith({
       machines: [bench],
-      player: { ...initialGameState.player, position: [1, 3] },
+      player: {
+        ...initialGameState.player,
+        position: [1, 3],
+        operating: true,
+      },
     });
     const result = tickAction(state);
     assert.deepStrictEqual(result.storage.upgrades, ["materialShelf"]);

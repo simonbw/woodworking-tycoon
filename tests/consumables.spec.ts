@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { selectMode } from "./machine-panel";
-import { goToStore, leaveStore } from "./navigation";
+import {
+  runWhileHolding,
+  selectMode,
+} from "./machine-panel";
+import { goToStore, leaveStore, setTickRate } from "./navigation";
 
 declare global {
   interface Window {
@@ -36,8 +39,8 @@ test.describe("Consumables", () => {
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["consumables-shop"]);
     });
     await page.waitForTimeout(300);
-    // 20 ticks/second so the timed operations fly by
-    await page.keyboard.press("3");
+    // Run fast so the timed operations fly by
+    await setTickRate(page, 20);
 
     await test.step("shelf recipe shows its nail shortfall", async () => {
       await selectMode(
@@ -46,9 +49,11 @@ test.describe("Consumables", () => {
         "Build Rustic Pallet Shelf",
       );
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
+      // Nothing to run without the nails — the sheet says so where the
+      // run button used to be
       await expect(
-        workspaceCard(page).getByRole("button", { name: "Operate" }),
-      ).toBeDisabled();
+        workspaceCard(page).getByText("Load the bay to run it"),
+      ).toBeVisible();
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });
@@ -59,10 +64,9 @@ test.describe("Consumables", () => {
       // deck board): 8 boards and 8 nails all told
       const outputsAfterRun = [1, 2, 3, 4, 8];
       for (const expected of outputsAfterRun) {
-        await workspaceCard(page)
-          .getByRole("button", { name: "Operate" })
-          .click();
-        await page.waitForFunction(
+        await runWhileHolding(
+          page,
+          
           (count: number) => {
             const machine = (window as any).__GET_GAME_STATE__().machines[0];
             return (
@@ -111,10 +115,9 @@ test.describe("Consumables", () => {
         await page.waitForTimeout(150);
       }
 
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -151,8 +154,6 @@ test.describe("Consumables", () => {
     });
 
     await test.step("mineral oil turns the board into an oiled board", async () => {
-      // Speed keys are modal-blocked during the store trip, so speed up now
-      await page.keyboard.press("3");
       await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
       await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
 
@@ -161,17 +162,11 @@ test.describe("Consumables", () => {
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
       // The oil leaves the bottle the moment the wipe-down starts
-      await page.waitForFunction(
-        () =>
-          (window as any).__GET_GAME_STATE__().consumables.mineralOil === 12,
-        undefined,
-        { timeout: 10000 },
-      );
-      await page.waitForFunction(
+      // One hold covers the whole wipe-down: the oil leaves the bottle the
+      // moment it starts, and the board comes out oiled at the end of it.
+      await runWhileHolding(
+        page,
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -179,8 +174,13 @@ test.describe("Consumables", () => {
               (mat: any) => mat.finish === "mineralOil",
             ),
         undefined,
-        { timeout: 15000 },
+        { timeout: 20000 },
       );
+      expect(
+        await page.evaluate(
+          () => (window as any).__GET_GAME_STATE__().consumables.mineralOil,
+        ),
+      ).toBe(12);
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();

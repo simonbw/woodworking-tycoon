@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openStationSheet, setParameter, takeAllHere } from "./machine-panel";
+import { takeAllHere } from "./machine-panel";
 import { goToLumberyard, goToStore, leaveStore } from "./navigation";
 
 declare global {
@@ -23,6 +23,64 @@ async function movePlayerTo(page: any, position: [number, number]) {
 
 function machineCard(page: any, name: string) {
   return page.locator("section", { hasText: name });
+}
+
+async function pressKey(page: any, key: string) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press(key);
+  await page.waitForTimeout(200);
+}
+
+/** E — at a switched-off machine the interact key flips the switch. */
+const switchOn = (page: any) => pressKey(page, "e");
+
+/** F — set the carried stock down on the machine you're standing at. */
+const setStockDown = (page: any) => pressKey(page, "f");
+
+/** Z/X — step the machine's linear setting down or up. */
+async function stepSetting(page: any, direction: "z" | "x", times = 1) {
+  for (let i = 0; i < times; i++) await pressKey(page, direction);
+}
+
+/**
+ * Put every carried board on the floor. F stages the first thing in hand
+ * the machine will take, so a spec that means a particular board has to be
+ * holding only that board.
+ */
+async function dropEverything(page: any) {
+  for (let i = 0; i < 12; i++) {
+    const drop = page
+      .locator("li")
+      .filter({ hasText: /Walnut/ })
+      .getByRole("button", { name: "Drop" });
+    if ((await drop.count()) === 0) return;
+    await drop.first().click({ modifiers: ["Shift"] });
+    await page.waitForTimeout(200);
+  }
+}
+
+/** Hold the operate key until some board satisfies the predicate. */
+async function runUntilBoard(page: any, predicate: string, timeout = 20000) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.down("Space");
+  try {
+    await waitForBoard(page, predicate, timeout);
+  } finally {
+    await page.keyboard.up("Space");
+    await page.waitForTimeout(200);
+  }
+}
+
+/** The machine's current setting, read off game state. */
+async function settingOf(page: any, machineTypeId: string, param: string) {
+  return page.evaluate(
+    ([id, key]: [string, string]) =>
+      (window as any)
+        .__GET_GAME_STATE__()
+        .machines.find((m: any) => m.machineTypeId === id)
+        ?.selectedParameters?.[key],
+    [machineTypeId, param],
+  );
 }
 
 /** Wait until some board in the game state satisfies the predicate. */
@@ -123,27 +181,20 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .getByRole("button", { name: "Drop" })
         .click();
       await page.waitForTimeout(200);
-      // The machine's buttons live on its station sheet
-      await openStationSheet(page);
-      const jointerCard = machineCard(page, "Jointer");
-      // Stock in hand and ready, but the switch hasn't been flipped
-      await expect(jointerCard.getByText("Switched off")).toBeVisible();
-      await expect(
-        jointerCard.getByRole("button", { name: "Feed" }),
-      ).toBeDisabled();
-      await jointerCard.getByRole("button", { name: "Switch On" }).click();
-      await expect(jointerCard.getByText("Idling")).toBeVisible();
-      await expect(
-        jointerCard.getByRole("button", { name: "Feed" }),
-      ).toBeEnabled();
+      // The machine wears its state and its keys — there is no panel
+      await expect(page.getByText("Jointer · off")).toBeVisible();
+      // Switched off it takes nothing: no "set stock on it" chip offered
+      await expect(page.getByText("set stock on it")).toHaveCount(0);
+      await switchOn(page);
+      await expect(page.getByText("Jointer · on")).toBeVisible();
+      await expect(page.getByText("set stock on it")).toBeVisible();
     });
 
     await test.step("jointer: the stock decides — face pass, then edge pass", async () => {
-      // No mode was ever picked: a rough board can only take a face pass
-      await machineCard(page, "Jointer")
-        .getByRole("button", { name: "Feed" })
-        .click();
-      await waitForBoard(page, "b.jointedFaces === 1");
+      // No mode was ever picked: a rough board can only take a face pass.
+      // Set it on the beds, then hold the key to push it over the knives.
+      await setStockDown(page);
+      await runUntilBoard(page, "b.jointedFaces === 1");
       // Finished stock lands at the outfeed side — collect it there
       // (Shift+E takes everything within reach)
       await movePlayerTo(page, [2, 0]);
@@ -158,61 +209,51 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       // Back around to the infeed; feeding the same board again is now an
       // edge pass — the flat face rides the fence
       await movePlayerTo(page, [2, 4]);
-      await openStationSheet(page);
-      await machineCard(page, "Jointer")
-        .getByRole("button", { name: "Feed" })
-        .click();
-      await waitForBoard(page, "b.jointedFaces === 1 && b.jointedEdges === 1");
+      await setStockDown(page);
+      await runUntilBoard(page, "b.jointedFaces === 1 && b.jointedEdges === 1");
       await movePlayerTo(page, [2, 0]);
       await takeAllHere(page);
     });
 
     await test.step("table saw: an edge-jointed board rips against the fence", async () => {
       await movePlayerTo(page, [3, 11]);
-      // P flips the switch on the machine the player is standing at
-      await page.keyboard.press("p");
-      await openStationSheet(page);
-      await expect(
-        machineCard(page, "Jobsite Table Saw").getByText("Idling"),
-      ).toBeVisible();
-      await machineCard(page, "Jobsite Table Saw")
-        .getByRole("button", { name: "Feed" })
-        .click();
+      // E flips the switch on the machine the player is standing at
+      await switchOn(page);
+      await expect(page.getByText("Jobsite Table Saw · on")).toBeVisible();
+      await setStockDown(page);
       // The kept piece has both edges straight; the offcut keeps one
-      await waitForBoard(page, "b.width === 4 && b.jointedEdges === 2");
+      await runUntilBoard(page, "b.width === 4 && b.jointedEdges === 2");
       await movePlayerTo(page, [3, 7]);
       await takeAllHere(page);
     });
 
-    await test.step("planer: no load step — stock feeds straight from the hands", async () => {
+    await test.step("planer: set it down and the rollers take it", async () => {
       await movePlayerTo(page, [6, 4]);
-      // No input bay: the inventory offers no load button for the planer
+      // No load buttons anywhere: stock goes on a machine with F
       await expect(page.getByRole("button", { name: "→ Planer" })).toHaveCount(
         0,
       );
-      await openStationSheet(page);
-      const planerCard = machineCard(page, "Planer");
-      // Switched off, nothing feeds
+      // Switched off, nothing goes on it
+      await expect(page.getByText("Planer · off")).toBeVisible();
+      await switchOn(page);
+      await expect(page.getByText("Planer · on")).toBeVisible();
+
+      // Wind the head two detents under the carried 4/4 stock: it won't fit
+      // — and the machine says so, with the crank mark to hit
+      await stepSetting(page, "z", 2);
+      expect(await settingOf(page, "lunchboxPlaner", "targetThickness")).toBe(2);
       await expect(
-        planerCard.getByRole("button", { name: "Feed" }),
-      ).toBeDisabled();
-      await planerCard.getByRole("button", { name: "Switch On" }).click();
-      await expect(planerCard.getByText("Idling")).toBeVisible();
-      // Two detents under the carried 4/4 stock: it won't fit under the
-      // head — and the machine says so, with the crank mark to hit
-      await setParameter(page, "Planer", "Cut Height", "2/4");
-      await expect(
-        planerCard.getByRole("button", { name: "Feed" }),
-      ).toBeDisabled();
-      await expect(
-        planerCard.getByText(
+        page.getByText(
           "Won't fit under the cutter head — raise the cut height to 3/4 for the first pass.",
         ),
       ).toBeVisible();
-      // Back to a skim pass at the stock's own thickness; the note clears
-      await setParameter(page, "Planer", "Cut Height", "4/4");
-      await expect(planerCard.getByText(/cutter head/)).toHaveCount(0);
-      await planerCard.getByRole("button", { name: "Feed" }).click();
+      // Back up to a skim pass at the stock's own thickness; the note clears
+      await stepSetting(page, "x", 2);
+      expect(await settingOf(page, "lunchboxPlaner", "targetThickness")).toBe(4);
+      await expect(page.getByText(/cutter head/)).toHaveCount(0);
+
+      // powerFeed: setting the board down *is* starting it — no trigger
+      await setStockDown(page);
       await waitForBoard(
         page,
         "b.jointedFaces === 2 && b.jointedEdges === 2 && b.thickness === 4 && b.surface === 'smooth'",
@@ -232,10 +273,9 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       await movePlayerTo(page, [6, 4]);
       // One detent under the 4/4 stock: a full bite. The first carried
       // piece this setting can take is the 2"-wide rip offcut.
-      await setParameter(page, "Planer", "Cut Height", "3/4");
-      await machineCard(page, "Planer")
-        .getByRole("button", { name: "Feed" })
-        .click();
+      await stepSetting(page, "z", 1);
+      expect(await settingOf(page, "lunchboxPlaner", "targetThickness")).toBe(3);
+      await setStockDown(page);
       await waitForBoard(
         page,
         "b.width === 2 && b.thickness === 3 && b.surface === 'smooth'",
@@ -251,18 +291,17 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
     });
 
     await test.step("straight-line sled: a rough board rides the sled, not the fence", async () => {
+      // Empty the hands so the saw gets the board this step is about
+      await dropEverything(page);
       // Fetch the spare rough board parked by the jointer at the start
       await movePlayerTo(page, [2, 4]);
       await page.getByRole("button", { name: "Pick Up" }).click();
       await page.waitForTimeout(200);
       await movePlayerTo(page, [3, 11]);
-      // No mode: a rough edge can't ride the fence, so feeding this board
-      // runs the mounted straight-line sled
-      await openStationSheet(page);
-      await machineCard(page, "Jobsite Table Saw")
-        .getByRole("button", { name: "Feed" })
-        .click();
-      await waitForBoard(
+      // No mode: a rough edge can't ride the fence, so this board runs the
+      // mounted straight-line sled
+      await setStockDown(page);
+      await runUntilBoard(
         page,
         "b.jointedFaces === 0 && b.jointedEdges === 1 && b.width === 6",
       );

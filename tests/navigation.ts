@@ -115,3 +115,36 @@ export async function closeJournal(page: any) {
   await page.getByRole("button", { name: "Close journal" }).click();
   await page.waitForTimeout(300);
 }
+
+/**
+ * Freeze or resume the world from a spec. The player has no speed keys —
+ * pausing is the pause menu, which would cover the UI a test is driving —
+ * so specs reach the clock through this test-only hook instead.
+ */
+export async function setPaused(page: any, paused: boolean) {
+  await page.evaluate((value: boolean) => {
+    (window as any).__SET_PAUSED__(value);
+  }, paused);
+}
+
+/**
+ * Run the simulation forward by `count` ticks immediately. Replaces the old
+ * "press 3 to speed up and hope" pattern: long cures and multi-phase
+ * operations finish deterministically, and fast.
+ */
+export async function advanceTicks(page: any, count: number) {
+  await page.evaluate((n: number) => {
+    (window as any).__ADVANCE_TICKS__(n);
+  }, count);
+}
+
+/**
+ * Run the clock fast (ticks/second) for specs whose subject is a long
+ * multi-phase operation. `null` restores the game's own rate. Test-only —
+ * the player has no speed control.
+ */
+export async function setTickRate(page: any, rate: number | null) {
+  await page.evaluate((value: number | null) => {
+    (window as any).__SET_TICK_RATE__(value);
+  }, rate);
+}

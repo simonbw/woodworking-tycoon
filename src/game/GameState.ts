@@ -41,7 +41,6 @@ export interface ProgressionState {
   /** Reveals the phone (listings + job board) and scavenging at the door. */
   readonly marketplaceUnlocked: boolean;
   readonly commissionsCompleted: number;
-  readonly tickSpeedControlsUnlocked: boolean;
   /** Reveals the broom and the sweep verb once the floor gets dusty. */
   readonly sweepingUnlocked: boolean;
   /** The one-time "sweep it up" note has been read. */

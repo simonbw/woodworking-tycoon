@@ -21,11 +21,13 @@ export const WelcomeArticle: React.FC = () => (
       <ShortcutKeys shortcut="move-right" />. Walk up to anything and small
       hints appear on it, naming the keys that work there.{" "}
       <ShortcutKeys shortcut="pick-up" /> does the natural thing — pick up,
-      take, switch a machine on — and <ShortcutKeys shortcut="put-down" /> puts
-      down what you're holding or gives it to a machine.{" "}
-      <ShortcutKeys shortcut="open-station-sheet" /> spreads out a station's
-      full sheet of plans and tools. Pause the game at any time with{" "}
-      <ShortcutKeys shortcut="speed-toggle" />.
+      take, switch a machine on — and <ShortcutKeys shortcut="put-down" /> sets
+      down what you're holding, on a machine if you're standing at one.
+      Hold <ShortcutKeys shortcut="operate-machine" /> to run the machine
+      you're at, for as long as the work takes.{" "}
+      <ShortcutKeys shortcut="open-station-sheet" /> spreads out a bench's
+      sheet of plans and tools. <ShortcutKeys shortcut="pause-menu" /> stops
+      the clock and opens the pause menu.
     </P>
 
     <H>Your First Commission</H>
@@ -43,8 +45,9 @@ export const WelcomeArticle: React.FC = () => (
         <ShortcutKeys shortcut="put-down" />.
       </li>
       <li>
-        Run the bench with <ShortcutKeys shortcut="operate-machine" /> to{" "}
-        <Term>dismantle</Term> the pallet into deck boards and stringers. Prying
+        Hold <ShortcutKeys shortcut="operate-machine" /> to{" "}
+        <Term>dismantle</Term> the pallet into deck boards and stringers. Let go
+        and the work stops where it is; take hold again and it picks up. Prying
         a board free also recovers the nail that held it.
       </li>
       <li>

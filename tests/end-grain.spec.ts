@@ -1,11 +1,17 @@
 import { test, expect } from "@playwright/test";
-import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
+import {
+  openStationSheet,
+  runWhileHolding,
+  selectMode,
+  takeAllHere,
+} from "./machine-panel";
 import {
   closeJournal,
   goToStore,
   leaveStore,
   openJournal,
   openPhone,
+  setTickRate,
 } from "./navigation";
 
 declare global {
@@ -39,16 +45,27 @@ async function teleportPlayer(page: any, position: [number, number]) {
  * to walk there and take with Shift+E (single-point stations collect
  * right off the sheet).
  */
+/**
+ * Run the station the player is standing at and wait for the output.
+ * `stageFirst` is for direct-feed machines, where the stock has to go on
+ * the machine (F) before the trigger does anything.
+ */
 async function operateAndWait(
   page: any,
   machineName: string,
   isDoneSource: string,
   takeAt?: [number, number],
-  verb: string = "Operate",
+  stageFirst = false,
 ) {
-  await openStationSheet(page);
-  await card(page, machineName).getByRole("button", { name: verb }).click();
-  await page.waitForFunction(
+  if (stageFirst) {
+    await page.evaluate(() =>
+      (document.activeElement as HTMLElement)?.blur?.(),
+    );
+    await page.keyboard.press("f");
+    await page.waitForTimeout(200);
+  }
+  await runWhileHolding(
+    page,
     (src: string) => {
       const matches = new Function("mat", `return (${src})(mat)`) as any;
       return (window as any)
@@ -120,7 +137,7 @@ test.describe("End-Grain Boards", () => {
 
     await test.step("build the crosscut sled at the workspace", async () => {
       await closeJournal(page);
-      await page.keyboard.press("3"); // the cures are long by design
+      await setTickRate(page, 20); // the cures are long by design
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await page
         .locator("li", { hasText: "Plywood" })
@@ -132,10 +149,9 @@ test.describe("End-Grain Boards", () => {
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
-      await card(page, "Makeshift Workbench")
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -147,18 +163,16 @@ test.describe("End-Grain Boards", () => {
 
     await test.step("mount the sled on the table saw", async () => {
       await teleportPlayer(page, SAW_CELL);
-      // The saw's buttons and tool rack live on its station sheet
+      // A direct-feed machine's sheet is nothing but its tool rack now
       await openStationSheet(page);
       const sawCard = card(page, "Jobsite Table Saw");
-      // Bare saw: nothing in hand it can cut — the carried panel can't
-      // ride the fence, so Feed stays dead until the sled is on the table
-      await expect(
-        sawCard.getByRole("button", { name: "Feed" }),
-      ).toBeDisabled();
+      await expect(sawCard.getByText(/Tools ·/)).toBeVisible();
       await sawCard.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(200);
-      // Jig on the table: feeding the panel now means crosscutting it
-      await expect(sawCard.getByRole("button", { name: "Feed" })).toBeEnabled();
+      // Jig on the table: the panel this spec carries can be crosscut now
+      await expect(sawCard.getByText("Crosscut Sled")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(200);
     });
 
     await test.step("crosscut the sanded panel into slices", async () => {
@@ -167,7 +181,7 @@ test.describe("End-Grain Boards", () => {
         "Jobsite Table Saw",
         `(mat) => mat.type === "endGrainSlice"`,
         [6, 1], // the saw's outfeed cell
-        "Feed",
+        true, // set the panel on the saw first
       );
       const sliceCount = await page.evaluate(
         () =>

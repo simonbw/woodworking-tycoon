@@ -8,6 +8,9 @@ import {
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, MaterialPile } from "../GameState";
+import { personCanWork } from "../Person";
+import { carryingShopVac } from "../ShopVac";
+import { vacuumAction } from "./shop-vac-actions";
 import { makeMaterial } from "../material-helpers";
 import { SawdustPile, Species } from "../Materials";
 import { rotateVec, translateVec, vectorEquals, Vector } from "../Vectors";
@@ -176,4 +179,21 @@ export function canSweepAt(gameState: {
     }
   }
   return false;
+}
+
+/**
+ * The one clean-up key: the tool in hand decides what it does — the shop
+ * vac if it's over your shoulder, the broom otherwise. Does nothing while
+ * the player is away or still occupied by their last action; there's no
+ * queue, so a press that lands mid-sweep is simply dropped.
+ */
+export function cleanUpAction(): GameAction {
+  return (gameState) => {
+    if (!personCanWork(gameState.player)) {
+      return gameState;
+    }
+    return carryingShopVac(gameState)
+      ? vacuumAction()(gameState)
+      : sweepAction()(gameState);
+  };
 }

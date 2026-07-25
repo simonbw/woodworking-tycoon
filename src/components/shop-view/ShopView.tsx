@@ -13,7 +13,8 @@ import {
   useSaveGame,
 } from "../useGameState";
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
-import { TICK_SPEED_PAUSED, useTickSpeed } from "../TickSpeedContext";
+import { setOperatingAction } from "../../game/game-actions/player-actions";
+import { usePaused } from "../PauseContext";
 import { BroomSprite } from "./BroomSprite";
 import { CarriedMachineLayer } from "./CarriedMachineLayer";
 import {
@@ -24,6 +25,7 @@ import { DustLayer } from "./DustLayer";
 import { EntranceSprite } from "./EntranceSprite";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { HeldMovementListener } from "./heldMovementInput";
+import { HeldOperateListener } from "./heldOperateInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -65,7 +67,7 @@ export const ShopView: React.FC = () => {
   const cellMap = useCellMap();
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
   const modalOpen = useModalOpen();
-  const { ticksPerSecond } = useTickSpeed();
+  const { paused } = usePaused();
   const {
     machines: operableHere,
     isTargeted,
@@ -147,6 +149,10 @@ export const ShopView: React.FC = () => {
       >
         <ShopKeyboardShortcuts />
         <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
+        <HeldOperateListener
+          enabled={!gameState.player.away && !modalOpen}
+          onChange={(held) => updateGameState(setOperatingAction(held))}
+        />
         <Application
           width={scaledWidth}
           height={scaledHeight}
@@ -216,9 +222,7 @@ export const ShopView: React.FC = () => {
                   />
                 ))}
               {collisionDebugRequested() && <CollisionDebugLayer />}
-              <PlayerMotionLayer
-                paused={ticksPerSecond === TICK_SPEED_PAUSED}
-              />
+              <PlayerMotionLayer paused={paused} />
               <ShopVacSprite />
               {!gameState.player.away && (
                 <PersonSprite person={gameState.player} />
