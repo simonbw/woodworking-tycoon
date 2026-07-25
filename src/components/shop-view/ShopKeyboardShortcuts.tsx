@@ -1,9 +1,6 @@
 import React, { useRef } from "react";
 import { CellMap } from "../../game/CellMap";
-import {
-  defaultParametersFor,
-  operationParameters,
-} from "../../game/Machine";
+import { defaultParametersFor, operationParameters } from "../../game/Machine";
 import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
@@ -32,6 +29,7 @@ import { resolveInteract } from "../../game/interact";
 import {
   machineCanOperate,
   parameterValueSatisfiable,
+  shopSupply,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 
@@ -211,7 +209,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (
         machine?.type.directFeed &&
         machine.operationProgress.status !== "inProgress" &&
-        machineCanOperate(machine, gs.consumables, inventory, gs.progression)
+        machineCanOperate(machine, shopSupply(gs), inventory, gs.progression)
       ) {
         return applyAction(operateMachineAction(machine));
       }

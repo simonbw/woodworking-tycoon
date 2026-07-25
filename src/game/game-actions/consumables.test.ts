@@ -9,7 +9,7 @@ import {
 } from "../Consumable";
 import { GameState } from "../GameState";
 import { getMachines, MachineState } from "../Machine";
-import { machineCanOperate } from "../machine-helpers";
+import { machineCanOperate, shopSupply } from "../machine-helpers";
 import { getMaterialName, makeMaterial } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { FinishedProduct, Pallet } from "../Materials";
@@ -119,7 +119,7 @@ describe("operations that consume supplies", () => {
     });
     const state = stateWith({ machines: [machine] });
     assert.ok(
-      !machineCanOperate(getMachines(state.machines)[0], state.consumables),
+      !machineCanOperate(getMachines(state.machines)[0], shopSupply(state)),
     );
     const result = operateMachineAction(getMachines(state.machines)[0])(state);
     assert.strictEqual(result, state);
@@ -135,7 +135,7 @@ describe("operations that consume supplies", () => {
       consumables: { ...NO_CONSUMABLES, nails: 10 },
     });
     assert.ok(
-      machineCanOperate(getMachines(state.machines)[0], state.consumables),
+      machineCanOperate(getMachines(state.machines)[0], shopSupply(state)),
     );
     const result = operateMachineAction(getMachines(state.machines)[0])(state);
     assert.strictEqual(result.consumables.nails, 2);
@@ -195,7 +195,7 @@ describe("oiling cutting boards", () => {
       consumables: { ...NO_CONSUMABLES, mineralOil: 16 },
     });
     assert.ok(
-      !machineCanOperate(getMachines(state.machines)[0], state.consumables),
+      !machineCanOperate(getMachines(state.machines)[0], shopSupply(state)),
     );
   });
 });

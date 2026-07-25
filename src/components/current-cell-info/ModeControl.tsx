@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { clampsFor } from "../../game/Clamp";
 import { consumableLabel } from "../../game/Consumable";
 import { Operation } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
@@ -220,15 +221,22 @@ const RecipeIndex: React.FC<{
                       {io.outputs.length > 0 && ` → ${io.outputs.join(" + ")}`}
                     </span>
                   )}
-                  {operation.requiredConsumables &&
-                    operation.requiredConsumables.length > 0 && (
-                      <span className="block text-[0.65rem] leading-snug text-ink-fade">
-                        uses{" "}
-                        {operation.requiredConsumables
-                          .map(consumableLabel)
-                          .join(" · ")}
-                      </span>
-                    )}
+                  {(operation.requiredConsumables?.length ||
+                    clampsFor(operation) > 0) && (
+                    <span className="block text-[0.65rem] leading-snug text-ink-fade">
+                      uses{" "}
+                      {[
+                        ...(operation.requiredConsumables ?? []).map(
+                          consumableLabel,
+                        ),
+                        // Clamps come back off the glue-up, so they're
+                        // "ties up", not "uses"
+                        ...(clampsFor(operation) > 0
+                          ? [`${clampsFor(operation)} clamps (returned)`]
+                          : []),
+                      ].join(" · ")}
+                    </span>
+                  )}
                 </button>
               </li>
             );

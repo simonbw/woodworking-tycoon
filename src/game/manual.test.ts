@@ -19,6 +19,7 @@ describe("manual article unlock conditions", () => {
     assert.ok(unlocked("lumber", initialGameState));
     for (const id of [
       "milling",
+      "glue-ups",
       "finishing",
       "tools",
       "shop-layout",

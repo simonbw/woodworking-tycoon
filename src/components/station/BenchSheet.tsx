@@ -1,4 +1,5 @@
 import React from "react";
+import { clampsFor, clampsFree } from "../../game/Clamp";
 import { consumableLabel } from "../../game/Consumable";
 import {
   setMachineOperationAction,
@@ -15,6 +16,7 @@ import {
   machineCanOperate,
   matchMaterialsToSlots,
   parameterValueSatisfiable,
+  shopSupply,
 } from "../../game/machine-helpers";
 import { MaterialInstance } from "../../game/Materials";
 import { generateOperationPreview } from "../../game/operation-helpers";
@@ -46,7 +48,8 @@ export const BenchSheet: React.FC<{
   const { isTargeted } = useTargetedMachine();
 
   const selectedOperation = machine.selectedOperationOrNull;
-  const canOperate = machineCanOperate(machine, gameState.consumables);
+  const freeClamps = clampsFree(gameState.clamps, gameState.machines);
+  const canOperate = machineCanOperate(machine, shopSupply(gameState));
   const { isOperating, progress } = useOperationProgress(machine);
   const dustMultiplier = machineDustMultiplier(
     gameState.dust,
@@ -182,6 +185,27 @@ export const BenchSheet: React.FC<{
             })}
           </div>
         )}
+
+      {/* Clamps are borrowed for the run, not spent — the line reports the
+          rack, and goes red when the other benches are holding too many */}
+      {selectedOperation && clampsFor(selectedOperation) > 0 && (
+        <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
+          Clamps:{" "}
+          <span
+            className={
+              clampsFor(selectedOperation) <= freeClamps
+                ? ""
+                : "text-store-orange-dark"
+            }
+          >
+            {clampsFor(selectedOperation)} (
+            {freeClamps === gameState.clamps
+              ? `have ${gameState.clamps}`
+              : `${freeClamps} of ${gameState.clamps} free`}
+            )
+          </span>
+        </div>
+      )}
 
       <SlotDiagram
         machine={machine}

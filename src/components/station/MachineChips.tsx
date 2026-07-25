@@ -10,6 +10,7 @@ import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import {
   explainFeedRefusal,
   machineCanOperate,
+  shopSupply,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 import { availableOperations } from "../../game/skill-helpers";
@@ -57,7 +58,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     !switchedOff &&
     machineCanOperate(
       machine,
-      gameState.consumables,
+      shopSupply(gameState),
       carried,
       gameState.progression,
     );
@@ -88,7 +89,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     : undefined;
 
   const canOperate =
-    isBenchLike && machineCanOperate(machine, gameState.consumables);
+    isBenchLike && machineCanOperate(machine, shopSupply(gameState));
 
   const liftable =
     gameState.progression.shopLayoutUnlocked &&

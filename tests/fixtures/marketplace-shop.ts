@@ -12,6 +12,7 @@ export const marketplaceShop: GameState = {
   money: 100,
   reputation: 5,
   consumables: NO_CONSUMABLES,
+  clamps: 0,
   materialPiles: [],
   player: {
     name: "Player",

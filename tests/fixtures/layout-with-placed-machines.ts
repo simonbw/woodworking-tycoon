@@ -8,6 +8,7 @@ export const layoutWithPlacedMachines: GameState = {
   money: 50,
   reputation: 2,
   consumables: NO_CONSUMABLES,
+  clamps: 0,
   materialPiles: [
     {
       material: {

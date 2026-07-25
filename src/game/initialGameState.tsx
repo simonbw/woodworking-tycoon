@@ -27,6 +27,9 @@ export const initialGameState: GameState = {
   // No starter kit: supplies come from the store, or back out of salvage
   // (prying a pallet apart recovers its nails)
   consumables: NO_CONSUMABLES,
+  // Clamps are bought the same way. Nothing you can build on day one needs
+  // them — the first glue-up is what sends you to the store for a pair.
+  clamps: 0,
   player: {
     name: "Player",
     position: [6, 12],

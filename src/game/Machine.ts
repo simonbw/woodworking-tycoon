@@ -169,6 +169,13 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
    */
   readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
   /**
+   * Clamps this operation ties up while it runs — checked against the free
+   * ones before it can start, and released when it finishes. Unlike
+   * supplies these are borrowed, not spent, so a wide glue-up doesn't cost
+   * money, it costs the rack (see Clamp.ts).
+   */
+  readonly requiredClamps?: number;
+  /**
    * Sawdust thrown per attended tick while this runs, landed around the
    * machine (see Dust.ts). Omitted: no appreciable mess (assembly, glue).
    */

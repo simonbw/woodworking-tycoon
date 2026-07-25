@@ -88,6 +88,18 @@ const defs = [
       ownsTool(gameState, "handPlane"),
   },
   {
+    id: "glue-ups",
+    tab: "Glue-Ups",
+    title: "Glue-Ups & Clamps",
+    category: "The Craft",
+    // The first clamp bought, or the commission that first asks for a
+    // glued panel (the cutting boards, right after Double Shelf Order) —
+    // the same pair of triggers Finishing uses.
+    unlocked: (gameState: GameState) =>
+      gameState.clamps > 0 ||
+      hasCompletedCommission(gameState.progression, "double-shelf-order"),
+  },
+  {
     id: "finishing",
     tab: "Finishing",
     title: "Finishing",

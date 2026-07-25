@@ -66,6 +66,7 @@ export const miterFrameShop: GameState = {
   money: 1000,
   reputation: 10,
   consumables: { ...NO_CONSUMABLES, nails: 10 },
+  clamps: 0,
   materialPiles: [],
   player: {
     name: "Player",
