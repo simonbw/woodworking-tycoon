@@ -2,12 +2,11 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { GameState } from "../GameState";
-import { MACHINE_TYPES, MachineState } from "../Machine";
+import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import {
   canPutDownCarriedMachine,
   carriedMachinePlacement,
-  carryMoveBusyTicks,
   deliverMachineCrate,
   freshMachineState,
   pickUpCrateAction,
@@ -181,23 +180,16 @@ describe("putting the carried machine down", () => {
 });
 
 describe("carry weight", () => {
-  it("benchtop machines carry free; floor machines scale with footprint", () => {
-    assert.strictEqual(carryMoveBusyTicks(MACHINE_TYPES.miterSaw), 0);
-    assert.strictEqual(carryMoveBusyTicks(MACHINE_TYPES.garbageCan), 2);
-    assert.strictEqual(carryMoveBusyTicks(MACHINE_TYPES.worktable2x2), 5);
-  });
-
-  it("slows the walk while carrying", () => {
+  it("walks at full speed even under the biggest bench", () => {
     const state = stateWith({
       machines: [],
       player: {
         ...initialGameState.player,
         position: [2, 2],
-        carriedMachine: machineAt("worktable1x1", [0, 0]),
+        carriedMachine: machineAt("worktable2x2", [0, 0]),
       },
     });
-    // worktable1x1 weighs 2 tick-equivalents: a third of walking pace
-    assert.strictEqual(playerWalkSpeed(state), BASE_WALK_SPEED / 3);
+    assert.strictEqual(playerWalkSpeed(state), BASE_WALK_SPEED);
   });
 });
 

@@ -44,12 +44,10 @@ machine riding over the player's shoulders.
 
 ## Weight
 
-`carryMoveBusyTicks`: benchtop machines carry at full walking speed;
-floor machines and worktables weigh `1 + round(footprint sq ft / 4)`
-tick-equivalents, which divide walking speed in `playerWalkSpeed` (same
-penalty pool as deep sawdust and the vac drag — see
-docs/continuous-movement.md), so rearranging heavy benches costs real
-shop time.
+Nothing weighs you down. A carried machine costs no walking speed, no
+matter its footprint — `playerWalkSpeed` only counts deep sawdust and
+the vac drag (see docs/continuous-movement.md). Rearranging the shop is
+meant to be quick.
 
 ## Crates
 

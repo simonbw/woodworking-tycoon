@@ -72,8 +72,8 @@ boxes painted over the shop.
 ## Speed, not busy-ticks
 
 The old walk charged extra *ticks* per step: deep sawdust
-(`moveDustPenalty`, now deleted), dragging the shop vac, a machine over
-the shoulders. Those same penalties now divide walking speed
+(`moveDustPenalty`, now deleted), dragging the shop vac. Those same
+penalties now divide walking speed
 (`playerWalkSpeed`): each tick-equivalent of penalty divides
 `BASE_WALK_SPEED` by one more. `busyTicks` survives only for genuinely
 occupying work (sweeping, vacuuming) — while it's positive, movement

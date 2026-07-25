@@ -1,8 +1,6 @@
 import { cellDust, dustSlowdown } from "./Dust";
 import { GameState } from "./GameState";
-import { MACHINE_TYPES } from "./Machine";
 import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "./ShopVac";
-import { carryMoveBusyTicks } from "./game-actions/machine-actions";
 import { Direction, Vector } from "./Vectors";
 
 /**
@@ -29,16 +27,15 @@ const EDGE_EPSILON = 1e-4;
 /**
  * The player's walking speed right now, in cells per second. The old
  * grid walk charged extra ticks per step (deep sawdust, dragging the
- * vac, a machine over the shoulders); those same penalties now stretch
- * the time a stretch of floor takes to cross instead: each extra
- * tick-equivalent divides speed by one more.
+ * vac); those same penalties now stretch the time a stretch of floor
+ * takes to cross instead: each extra tick-equivalent divides speed by
+ * one more. Carrying a machine costs nothing — you walk at your normal
+ * pace with a bench over your shoulders.
  */
 export function playerWalkSpeed(gameState: GameState): number {
-  const carried = gameState.player.carriedMachine;
   const penalty =
     dustSlowdown(cellDust(gameState.dust, gameState.player.position)) +
-    (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0) +
-    (carried ? carryMoveBusyTicks(MACHINE_TYPES[carried.machineTypeId]) : 0);
+    (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0);
   return BASE_WALK_SPEED / (1 + penalty);
 }
 
