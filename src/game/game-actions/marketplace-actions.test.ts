@@ -46,7 +46,16 @@ function stateWith(
     },
     ...overrides,
   };
-  return { ...base, player: { ...base.player, inventory } };
+  // At the garage door by default: that's the only place work can be
+  // handed over (see delivery.ts).
+  return {
+    ...base,
+    player: {
+      ...base.player,
+      inventory,
+      position: base.shopInfo.entrancePosition,
+    },
+  };
 }
 
 function listedState(

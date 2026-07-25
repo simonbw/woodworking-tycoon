@@ -17,9 +17,10 @@ import {
   roundToHundredth,
 } from "../marketplace";
 import { getSellValue } from "../material-values";
-import { materialMeetsInput } from "../material-helpers";
+import { canHandOff, consumeRequiredMaterials } from "../delivery";
 import { TICKS_PER_DAY } from "../time";
 import { idMaker } from "../../utils/idMaker";
+import { emitPayout } from "./payout-actions";
 import { emitSound } from "./sound-actions";
 import { withXp } from "./skill-actions";
 
@@ -165,8 +166,9 @@ export function cancelJobAction(jobId: string): GameAction {
 }
 
 /**
- * Delivers an accepted job from the player's inventory: same matching as
- * commissions, paying base + whatever's left of the tip.
+ * Hands an accepted job over to its customer at the garage door: same
+ * matching and same body state as a commission, paying base plus whatever
+ * is left of the tip.
  */
 export function deliverJobAction(jobId: string): GameAction {
   return (gameState) => {
@@ -175,35 +177,26 @@ export function deliverJobAction(jobId: string): GameAction {
       console.warn("Tried to deliver an unknown job");
       return gameState;
     }
-
-    for (const requiredMaterial of job.requiredMaterials) {
-      const matching = gameState.player.inventory.filter((material) =>
-        materialMeetsInput(material, requiredMaterial),
-      );
-      if (matching.length < requiredMaterial.quantity) {
-        console.warn("Player doesn't have required materials for job");
-        return gameState;
-      }
+    if (!canHandOff(gameState)) {
+      console.warn("Can't hand work over right now");
+      return gameState;
     }
 
-    let updatedInventory = [...gameState.player.inventory];
-    for (const requiredMaterial of job.requiredMaterials) {
-      let remainingQuantity = requiredMaterial.quantity;
-      updatedInventory = updatedInventory.filter((material) => {
-        if (
-          remainingQuantity > 0 &&
-          materialMeetsInput(material, requiredMaterial)
-        ) {
-          remainingQuantity--;
-          return false;
-        }
-        return true;
-      });
+    const updatedInventory = consumeRequiredMaterials(
+      gameState.player.inventory,
+      job.requiredMaterials,
+    );
+    if (updatedInventory === null) {
+      console.warn("Player doesn't have required materials for job");
+      return gameState;
     }
 
     const payout = jobPayout(job, gameState.tick);
+    const xp = Math.round(payout.money / 5);
+    // No stinger here: a job is routine work, not a boss. Its whole audio
+    // is the cha-ching the reward flight plays when the money lands.
     return withXp(
-      emitSound(
+      emitPayout(
         {
           ...gameState,
           money: roundToCents(gameState.money + payout.money),
@@ -213,9 +206,15 @@ export function deliverJobAction(jobId: string): GameAction {
           acceptedJobs: gameState.acceptedJobs.filter((j) => j !== job),
           player: { ...gameState.player, inventory: updatedInventory },
         },
-        { kind: "commission-complete" },
+        {
+          kind: "job",
+          title: job.name,
+          money: payout.money,
+          reputation: payout.reputation,
+          xp,
+        },
       ),
-      Math.round(payout.money / 5),
+      xp,
     );
   };
 }

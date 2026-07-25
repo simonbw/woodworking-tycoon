@@ -56,15 +56,21 @@ export const WelcomeArticle: React.FC = () => (
         and eight of the salvaged nails.
       </li>
       <li>
-        Pick up the finished shelf and deliver it with{" "}
-        <ShortcutKeys shortcut="complete-commission" />.
+        Pick up the finished shelf, carry it to the garage door, and press{" "}
+        <ShortcutKeys shortcut="pick-up" />. The door lists the work you're
+        holding; the number beside a row hands it over.
       </li>
     </UL>
     <P>
-      Completing a commission pays money and builds reputation, and each new
+      Every finished job leaves the shop this way — commissions and job-board
+      work alike. You have to be standing at the door with the goods in your
+      hands, so build first, then make the trip.
+    </P>
+    <P>
+      Handing a commission over pays money and builds reputation, and each new
       commission asks for something more advanced. The first payment is enough
       to start shopping at the hardware store — once you hear about it, walk up
-      to the garage door to head out.
+      to the same door to head out.
     </P>
 
     <Note>

@@ -5,6 +5,7 @@ import { ShopVacState } from "./ShopVac";
 import { MachineState } from "./Machine";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
+import { PayoutEvent } from "./PayoutEvent";
 import { SkillId } from "./Skill";
 import { SoundEvent } from "./SoundEvent";
 import { ToolId } from "./Tool";
@@ -118,6 +119,13 @@ export interface GameState {
    * persisted (stripped in `saveLoad`); treat a missing value as empty.
    */
   readonly pendingSounds?: ReadonlyArray<SoundEvent>;
+  /**
+   * Transient queue of completed handoffs, drained by `RewardFlightLayer`
+   * to fly the rewards to their readouts and show the client's card.
+   * Optional and never persisted (stripped in `saveLoad`); treat a missing
+   * value as empty.
+   */
+  readonly pendingPayouts?: ReadonlyArray<PayoutEvent>;
 }
 
 /** An item the player has put up for sale on the marketplace. */
@@ -174,4 +182,8 @@ export interface Commission {
   readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly rewardMoney: number;
   readonly rewardReputation: number;
+  /** Who takes delivery at the garage door. */
+  readonly client: string;
+  /** What they say when you hand the work over. Shown on the payout card. */
+  readonly thanks: string;
 }

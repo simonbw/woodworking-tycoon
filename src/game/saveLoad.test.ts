@@ -18,19 +18,31 @@ const SAVE_KEY = "woodworking-tycoon-save";
 beforeEach(() => backing.clear());
 
 describe("saveGame/loadGame round-trip", () => {
-  it("loads back what was saved, with a fresh sound queue", () => {
+  it("loads back what was saved, with fresh presentation queues", () => {
     const state = {
       ...initialGameState,
       money: 123.45,
       pendingSounds: [{ kind: "sale" as const }],
+      pendingPayouts: [
+        {
+          id: "payout-test",
+          kind: "commission" as const,
+          title: "Your First Shelf",
+          money: 200,
+          reputation: 2,
+          xp: 40,
+        },
+      ],
     };
     saveGame(state);
     const loaded = loadGame();
     assert.ok(loaded);
-    // Transient audio queue is stripped on save, reconstructed empty
+    // Both transient queues are stripped on save and reconstructed empty —
+    // a reload must not replay the last cha-ching.
     assert.deepStrictEqual(loaded.pendingSounds, []);
-    const { pendingSounds: _a, ...savedRest } = state;
-    const { pendingSounds: _b, ...loadedRest } = loaded;
+    assert.deepStrictEqual(loaded.pendingPayouts, []);
+    const { pendingSounds: _a, pendingPayouts: _c, ...savedRest } = state;
+    const { pendingSounds: _b, pendingPayouts: _d, ...loadedRest } = loaded;
     // JSON round-trips drop keys whose value is undefined; normalize the
     // expectation the same way before comparing.
     assert.deepStrictEqual(loadedRest, JSON.parse(JSON.stringify(savedRest)));

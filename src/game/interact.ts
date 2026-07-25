@@ -1,4 +1,5 @@
 import { CellMap } from "./CellMap";
+import { readyHandoffs } from "./delivery";
 import { GameState } from "./GameState";
 import { Machine } from "./Machine";
 import { isAtShopDoor } from "./ShopInfo";
@@ -18,7 +19,8 @@ export type InteractAction =
   | { kind: "switch-on"; machine: Machine }
   | { kind: "switch-off"; machine: Machine }
   | { kind: "pick-up-floor" }
-  | { kind: "open-door" };
+  /** `handoffCount` is how much finished work the player is holding. */
+  | { kind: "open-door"; handoffCount: number };
 
 export function resolveInteract(
   gameState: GameState,
@@ -70,11 +72,18 @@ export function resolveInteract(
 
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
     gameState.progression;
-  if (
-    isAtShopDoor(gameState.shopInfo, gameState.player.position) &&
-    (storeUnlocked || lumberyardUnlocked || marketplaceUnlocked)
-  ) {
-    return { kind: "open-door" };
+  if (isAtShopDoor(gameState.shopInfo, gameState.player.position)) {
+    // Work in hand opens the door on its own: the very first commission is
+    // handed over before there is anywhere to go.
+    const handoffCount = readyHandoffs(gameState).length;
+    if (
+      handoffCount > 0 ||
+      storeUnlocked ||
+      lumberyardUnlocked ||
+      marketplaceUnlocked
+    ) {
+      return { kind: "open-door", handoffCount };
+    }
   }
 
   if (targetedMachine?.type.powerSwitch === true && targetedMachine.isPowered) {
@@ -98,6 +107,6 @@ export function interactLabel(action: InteractAction): string {
     case "pick-up-floor":
       return "pick up";
     case "open-door":
-      return "head out";
+      return action.handoffCount > 0 ? "hand off work" : "head out";
   }
 }

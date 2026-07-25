@@ -35,6 +35,36 @@ export async function openDoorPanel(page: any) {
 }
 
 /**
+ * Hand finished work over at the garage door — the only way work leaves
+ * the shop. Walks to the door, opens the card, and clicks the "Hand Over"
+ * button on the row matching `name` (a commission title or a job client).
+ *
+ * A commission handoff then shows the client's card, which has to be
+ * dismissed before the rewards fly; `dismissClientCard` does that.
+ */
+export async function handOffAtDoor(page: any, name: string | RegExp) {
+  await movePlayerToDoor(page);
+  await openDoorPanel(page);
+  // force: the world keeps ticking (job tips decay every tick), so the
+  // row's text re-renders and the stability check can starve.
+  await page
+    .getByTestId("door-panel")
+    .locator("li", { hasText: name })
+    .getByRole("button", { name: "Hand Over" })
+    .click({ force: true });
+  await page.waitForTimeout(300);
+}
+
+/** Dismiss the client's card shown after a commission handoff. */
+export async function dismissClientCard(page: any) {
+  await page.getByTestId("client-card").waitFor({ state: "visible" });
+  await page
+    .getByRole("button", { name: "Take the money" })
+    .click({ force: true });
+  await page.waitForTimeout(300);
+}
+
+/**
  * Walk out the door to Orange Box. Returns the player's previous cell so
  * `leaveStore` can put them back where the test needs them — the specs
  * predate the door and assume browsing the store doesn't move the player.

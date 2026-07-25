@@ -17,8 +17,13 @@ interface SaveData {
 
 export function saveGame(gameState: GameState): void {
   try {
-    // pendingSounds is a transient audio queue — never persist it.
-    const { pendingSounds: _pendingSounds, ...persisted } = gameState;
+    // pendingSounds and pendingPayouts are transient presentation queues —
+    // never persist them, or a reload would replay the last cha-ching.
+    const {
+      pendingSounds: _pendingSounds,
+      pendingPayouts: _pendingPayouts,
+      ...persisted
+    } = gameState;
     const saveData: SaveData = {
       version: SAVE_VERSION,
       gameState: persisted,
@@ -53,8 +58,8 @@ export function loadGame(): GameState | null {
     }
 
     console.log("Game loaded successfully");
-    // Reconstruct the transient, non-persisted audio queue.
-    return { ...gameState, pendingSounds: [] };
+    // Reconstruct the transient, non-persisted presentation queues.
+    return { ...gameState, pendingSounds: [], pendingPayouts: [] };
   } catch (error) {
     console.error("Failed to load game:", error);
     deleteSave();

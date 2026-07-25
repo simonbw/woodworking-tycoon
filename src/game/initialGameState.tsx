@@ -82,6 +82,7 @@ export const initialGameState: GameState = {
   dust: {},
   shopVac: null,
   pendingSounds: [],
+  pendingPayouts: [],
 };
 
 // Helper method to create a machine with less boilerplate

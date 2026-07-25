@@ -6,6 +6,7 @@ import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
+import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { LumberyardTripOverlay } from "./lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "./scavenge-page/ScavengeTripOverlay";
@@ -47,6 +48,7 @@ export const Main: React.FC = () => {
                 <StoreTripOverlay />
                 <LumberyardTripOverlay />
                 <ScavengeTripOverlay />
+                <RewardFlightLayer />
                 <GameSoundLayer />
                 <MachineSoundLayer />
                 <DebugView />

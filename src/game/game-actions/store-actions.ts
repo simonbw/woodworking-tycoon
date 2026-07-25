@@ -2,10 +2,11 @@ import { GameAction } from "../GameState";
 import { CLAMP_COST } from "../Clamp";
 import { addConsumables, CONSUMABLE_TYPES, ConsumableId } from "../Consumable";
 import { getActiveCommission } from "../commissionSequence";
+import { canHandOff, consumeRequiredMaterials } from "../delivery";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
-import { materialMeetsInput } from "../material-helpers";
 import { deliverMachineCrate, freshMachineState } from "./machine-actions";
+import { emitPayout } from "./payout-actions";
 import {
   incrementCommissionsCompletedAction,
   checkProgressionMilestonesAction,
@@ -117,7 +118,12 @@ export function buyMachineAction(
   };
 }
 
-/** Completes the active commission if the player has the required materials. */
+/**
+ * Hands the active commission over to its client. Called from the garage
+ * door (see `DoorPrompt`) — the goods have to be in the player's hands and
+ * the player has to be standing at the door, because a commission leaving
+ * the shop is a thing that happens somewhere.
+ */
 export function completeCommissionAction(): GameAction {
   return (gameState) => {
     const commission = getActiveCommission(gameState.progression);
@@ -125,49 +131,47 @@ export function completeCommissionAction(): GameAction {
       console.warn("No active commission to complete");
       return gameState;
     }
-
-    // Check if player has all required materials
-    for (const requiredMaterial of commission.requiredMaterials) {
-      const matchingMaterials = gameState.player.inventory.filter((material) =>
-        materialMeetsInput(material, requiredMaterial),
-      );
-      if (matchingMaterials.length < requiredMaterial.quantity) {
-        console.warn("Player doesn't have required materials for commission");
-        return gameState;
-      }
+    if (!canHandOff(gameState)) {
+      console.warn("Can't hand work over right now");
+      return gameState;
     }
 
-    // Remove required materials from inventory
-    let updatedInventory = [...gameState.player.inventory];
-    for (const requiredMaterial of commission.requiredMaterials) {
-      let remainingQuantity = requiredMaterial.quantity;
-      updatedInventory = updatedInventory.filter((material) => {
-        if (
-          remainingQuantity > 0 &&
-          materialMeetsInput(material, requiredMaterial)
-        ) {
-          remainingQuantity--;
-          return false; // Remove this material
-        }
-        return true; // Keep this material
-      });
+    const updatedInventory = consumeRequiredMaterials(
+      gameState.player.inventory,
+      commission.requiredMaterials,
+    );
+    if (updatedInventory === null) {
+      console.warn("Player doesn't have required materials for commission");
+      return gameState;
     }
 
     // Commissions teach: chunky XP alongside the payout
+    const xp = Math.round(commission.rewardMoney / 5);
     const completedState = withXp(
-      emitSound(
-        {
-          ...gameState,
-          money: gameState.money + commission.rewardMoney,
-          reputation: gameState.reputation + commission.rewardReputation,
-          player: {
-            ...gameState.player,
-            inventory: updatedInventory,
+      emitPayout(
+        emitSound(
+          {
+            ...gameState,
+            money: gameState.money + commission.rewardMoney,
+            reputation: gameState.reputation + commission.rewardReputation,
+            player: {
+              ...gameState.player,
+              inventory: updatedInventory,
+            },
           },
+          { kind: "commission-complete" },
+        ),
+        {
+          kind: "commission",
+          title: commission.name,
+          money: commission.rewardMoney,
+          reputation: commission.rewardReputation,
+          xp,
+          client: commission.client,
+          dialogue: commission.thanks,
         },
-        { kind: "commission-complete" },
       ),
-      Math.round(commission.rewardMoney / 5),
+      xp,
     );
 
     // Progression must only advance when the commission actually completes

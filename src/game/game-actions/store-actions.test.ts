@@ -31,12 +31,16 @@ function stateWith(
   return state;
 }
 
-/** State part-way through the sequence, with the given number of commissions done. */
+/**
+ * State part-way through the sequence, with the given number of commissions
+ * done and the player standing at the garage door — handing work over only
+ * happens there (see delivery.ts).
+ */
 function stateAtCommission(
   commissionsCompleted: number,
   inventory: ReadonlyArray<MaterialInstance>,
 ): GameState {
-  return stateWith(
+  const state = stateWith(
     {
       progression: {
         ...initialGameState.progression,
@@ -47,6 +51,13 @@ function stateAtCommission(
     },
     inventory,
   );
+  return {
+    ...state,
+    player: {
+      ...state.player,
+      position: state.shopInfo.entrancePosition,
+    },
+  };
 }
 
 describe("buyMaterialAction", () => {

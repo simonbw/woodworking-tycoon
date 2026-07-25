@@ -287,6 +287,9 @@ tunable.
 - Exact reputation thresholds for job slots 2–5.
 - Should job flavor (client names, request text) be a generation table now,
   or minimal placeholder text until the system proves out?
-- Does delivering a job happen entirely in the Marketplace tab (like
+- ~~Does delivering a job happen entirely in the Marketplace tab (like
   commissions in the store today), or should jobs eventually want a physical
-  handoff (customer pickup at the shop door)?
+  handoff (customer pickup at the shop door)?~~ **Resolved: the physical
+  handoff.** Jobs and commissions both leave through the garage door, in
+  the player's hands. The phone takes the order and cancels it; it can no
+  longer complete one. See `docs/handing-work-over.md`.

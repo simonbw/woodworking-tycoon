@@ -254,22 +254,16 @@ const defs = [
 
   // ------------------------------------------------------------------- Shop
   {
-    id: "complete-commission",
-    codes: ["KeyC"],
-    keys: [["C"]],
-    description: "Mark commission complete",
-    scope: "home",
-    group: "General",
-  },
-  {
-    // The door's destinations answer to the row numbers shown on its
-    // prompt. Contextual: they only enable while the player stands at the
-    // garage door with free hands, so the digits are dead keys elsewhere
-    // and the cheat sheet doesn't advertise them.
+    // The door's rows answer to the numbers shown on its card: places to
+    // go first (so Orange Box is always 1, whatever you're carrying), then
+    // any work you're holding that someone is waiting on. Contextual: they
+    // only enable while the player stands at the garage door with the card
+    // open, so the digits are dead keys elsewhere and the cheat sheet
+    // doesn't advertise them individually.
     id: "door-option-1",
     codes: ["Digit1"],
     keys: [["1"]],
-    description: "Head out — first destination (at the door)",
+    description: "Garage door — first row",
     scope: "home",
     group: "General",
     hidden: true,
@@ -278,7 +272,7 @@ const defs = [
     id: "door-option-2",
     codes: ["Digit2"],
     keys: [["2"]],
-    description: "Head out — second destination (at the door)",
+    description: "Garage door — second row",
     scope: "home",
     group: "General",
     hidden: true,
@@ -287,7 +281,61 @@ const defs = [
     id: "door-option-3",
     codes: ["Digit3"],
     keys: [["3"]],
-    description: "Head out — third destination (at the door)",
+    description: "Garage door — third row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "door-option-4",
+    codes: ["Digit4"],
+    keys: [["4"]],
+    description: "Garage door — fourth row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "door-option-5",
+    codes: ["Digit5"],
+    keys: [["5"]],
+    description: "Garage door — fifth row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "door-option-6",
+    codes: ["Digit6"],
+    keys: [["6"]],
+    description: "Garage door — sixth row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "door-option-7",
+    codes: ["Digit7"],
+    keys: [["7"]],
+    description: "Garage door — seventh row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "door-option-8",
+    codes: ["Digit8"],
+    keys: [["8"]],
+    description: "Garage door — eighth row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+  },
+  {
+    id: "door-option-9",
+    codes: ["Digit9"],
+    keys: [["9"]],
+    description: "Garage door — ninth row",
     scope: "home",
     group: "General",
     hidden: true,

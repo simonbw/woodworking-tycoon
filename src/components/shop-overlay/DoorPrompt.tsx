@@ -3,9 +3,13 @@ import {
   canLeaveShop,
   goToStoreAction,
 } from "../../game/game-actions/door-actions";
+import { completeCommissionAction } from "../../game/game-actions/store-actions";
+import { deliverJobAction } from "../../game/game-actions/marketplace-actions";
 import { startScavengingAction } from "../../game/game-actions/scavenge-actions";
+import { readyHandoffs } from "../../game/delivery";
 import { GameAction } from "../../game/GameState";
 import { MACHINE_TYPES } from "../../game/Machine";
+import { jobPayout } from "../../game/marketplace";
 import { isAtShopDoor } from "../../game/ShopInfo";
 import { resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
@@ -22,14 +26,36 @@ const DOOR_OPTION_SHORTCUTS: readonly ShortcutId[] = [
   "door-option-1",
   "door-option-2",
   "door-option-3",
+  "door-option-4",
+  "door-option-5",
+  "door-option-6",
+  "door-option-7",
+  "door-option-8",
+  "door-option-9",
 ];
 
+/** One numbered row on the door card. */
+interface DoorRow {
+  readonly key: string;
+  readonly group: "go" | "handoff";
+  readonly name: string;
+  readonly description: string;
+  /** The row's button label — "Go" for a trip, "Hand Over" for work. */
+  readonly verb: string;
+  readonly action: () => GameAction;
+}
+
 /**
- * The garage door: standing at (or beside) the entrance it offers a
- * small "[E] head out" chip, and the keypress spreads open the
- * destination card — each unlocked destination on a numbered row, the
- * row numbers being the keys. The digits only mean "head out" while the
- * card is open; everywhere else 1/2/3 set the game speed.
+ * The garage door: standing at (or beside) the entrance it offers a small
+ * hint chip, and the keypress spreads open the door card. Two kinds of row
+ * live on it, each answering to its own number:
+ *
+ * - **Places to go** — the shopping trips and scavenging errands. Listed
+ *   first so their numbers never move; Orange Box is always 1.
+ * - **Work to hand over** — the active commission and any accepted job
+ *   whose deliverables are in the player's hands right now. This is how
+ *   finished work leaves the shop; there is no "mark complete" button
+ *   anywhere, because a delivery is a thing that happens at a door.
  */
 export const DoorPrompt: React.FC<{
   canvasWidth: number;
@@ -52,56 +78,90 @@ export const DoorPrompt: React.FC<{
     isAtShopDoor(gameState.shopInfo, gameState.player.position);
   const handsFree = canLeaveShop(gameState);
 
-  const destinations: Array<{
-    name: string;
-    description: string;
-    action: () => GameAction;
-  }> = [];
+  const rows: DoorRow[] = [];
   if (storeUnlocked) {
-    destinations.push({
+    rows.push({
+      key: "orangeBox",
+      group: "go",
       name: "Orange Box",
       description:
         "The big-box store: lumber, tools, machines, and supplies. Takes as long as you spend in the aisles.",
+      verb: "Go",
       action: () => goToStoreAction("orangeBox"),
     });
   }
   if (lumberyardUnlocked) {
-    destinations.push({
+    rows.push({
+      key: "lumberyard",
+      group: "go",
       name: "Sawyer & Sons",
       description:
         "The hardwood lumberyard: rough and S2S stock, priced for people who mill their own. Takes as long as you spend in the racks.",
+      verb: "Go",
       action: () => goToStoreAction("lumberyard"),
     });
   }
   if (marketplaceUnlocked) {
-    destinations.push({
+    rows.push({
+      key: "scavenge",
+      group: "go",
       name: "Scavenge for pallets",
       description:
         "About a quarter-day poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
+      verb: "Go",
       action: () => startScavengingAction(),
     });
   }
 
-  // The digits answer to the rows the open card shows: 1 is always the
-  // first listed destination. Registered unconditionally (hooks),
-  // enabled per row while the card is open.
+  for (const handoff of readyHandoffs(gameState)) {
+    if (handoff.kind === "commission") {
+      const { commission } = handoff;
+      rows.push({
+        key: `commission-${commission.id}`,
+        group: "handoff",
+        name: commission.name,
+        // "For <client>." rather than "<client> is waiting": the client
+        // strings are appositives ("Marguerite, two doors down") and read
+        // badly with a verb hung straight off them.
+        description: `For ${commission.client}. Pays $${commission.rewardMoney.toFixed(2)}.`,
+        verb: "Hand Over",
+        action: () => completeCommissionAction(),
+      });
+    } else {
+      const { job } = handoff;
+      const payout = jobPayout(job, gameState.tick);
+      rows.push({
+        key: `job-${job.id}`,
+        group: "handoff",
+        name: job.name,
+        description: `Pays $${payout.money.toFixed(2)}, tip included.`,
+        verb: "Hand Over",
+        action: () => deliverJobAction(job.id),
+      });
+    }
+  }
+
+  // The digits answer to the rows the open card shows. Registered
+  // unconditionally (hooks), enabled per row while the card is open.
   for (const [index, shortcutId] of DOOR_OPTION_SHORTCUTS.entries()) {
-    const destination = destinations[index];
+    const row = rows[index];
     // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed-length list
     useShortcut(
       shortcutId,
-      () => destination && applyAction(destination.action()),
-      doorOpen && handsFree && destination != null,
+      () => row && applyAction(row.action()),
+      doorOpen && handsFree && row != null,
     );
   }
 
-  if (!atDoor || destinations.length === 0) {
+  if (!atDoor || rows.length === 0) {
     return null;
   }
 
   const [doorX, doorY] = gameState.shopInfo.entrancePosition;
   const cellPx = PIXELS_PER_CELL * scale;
   const centerX = (doorX + 0.5) * cellPx;
+  const handoffCount = rows.filter((row) => row.group === "handoff").length;
+  const mixed = handoffCount > 0 && handoffCount < rows.length;
 
   // Closed: just the chip, the same weight as every other hint — and
   // only when E would actually open the door (something else in reach
@@ -123,7 +183,8 @@ export const DoorPrompt: React.FC<{
         <HintList>
           <li className="text-paper-manila/60">Garage door</li>
           <li>
-            <ShortcutKeys shortcut="pick-up" /> head out
+            <ShortcutKeys shortcut="pick-up" />{" "}
+            {handoffCount > 0 ? "hand off work" : "head out"}
           </li>
         </HintList>
       </div>
@@ -154,7 +215,7 @@ export const DoorPrompt: React.FC<{
           </h3>
           <span className="flex items-center gap-3">
             <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
-              Places to go
+              {handoffCount > 0 ? "Someone's waiting" : "Places to go"}
             </span>
             <Tooltip content="Stay in the shop" shortcut="close-sheet">
               <button
@@ -168,30 +229,38 @@ export const DoorPrompt: React.FC<{
           </span>
         </header>
         <ul className="divide-y divide-ink-black/15">
-          {destinations.map((destination, index) => (
-            <li key={destination.name} className="flex items-center gap-3 py-2">
-              <Kbd>{index + 1}</Kbd>
-              <div className="grow">
-                <div className="font-condensed font-semibold text-sm uppercase tracking-wide">
-                  {destination.name}
+          {rows.map((row, index) => (
+            <React.Fragment key={row.key}>
+              {/* Subheadings only earn their space when the card is
+                  actually mixed — with one kind of row the card header
+                  has already said what these are. */}
+              {mixed && (index === 0 || rows[index - 1].group !== row.group) && (
+                <li className="pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
+                  {row.group === "go" ? "Places to go" : "Work to hand over"}
+                </li>
+              )}
+              <li className="flex items-center gap-3 py-2">
+                <Kbd>{index + 1}</Kbd>
+                <div className="grow">
+                  <div className="font-condensed font-semibold text-sm uppercase tracking-wide">
+                    {row.name}
+                  </div>
+                  <div className="text-xs text-ink-fade">{row.description}</div>
                 </div>
-                <div className="text-xs text-ink-fade">
-                  {destination.description}
-                </div>
-              </div>
-              <Tooltip
-                content={`Head out: ${destination.name}`}
-                shortcut={DOOR_OPTION_SHORTCUTS[index]}
-              >
-                <button
-                  className="button-paper text-xs whitespace-nowrap"
-                  disabled={!handsFree}
-                  onClick={() => applyAction(destination.action())}
+                <Tooltip
+                  content={`${row.verb}: ${row.name}`}
+                  shortcut={DOOR_OPTION_SHORTCUTS[index]}
                 >
-                  Go
-                </button>
-              </Tooltip>
-            </li>
+                  <button
+                    className="button-paper text-xs whitespace-nowrap"
+                    disabled={!handsFree}
+                    onClick={() => applyAction(row.action())}
+                  >
+                    {row.verb}
+                  </button>
+                </Tooltip>
+              </li>
+            </React.Fragment>
           ))}
         </ul>
         {carried && (

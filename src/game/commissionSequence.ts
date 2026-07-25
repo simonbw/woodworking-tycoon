@@ -35,6 +35,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 200,
     rewardReputation: 2,
+    client: "Marguerite, two doors down",
+    thanks:
+      "Oh, that's solid. I was expecting something I'd have to re-hang by Tuesday. Do you take other work?",
   },
   {
     id: "cut-to-order",
@@ -53,6 +56,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 350,
     rewardReputation: 3,
+    client: "Ellis, of Ellis Frame & Glass",
+    thanks:
+      "Every one the same length. You would not believe how rarely that happens. I'll send people your way.",
   },
   {
     id: "ripped-slats",
@@ -71,6 +77,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 500,
     rewardReputation: 3,
+    client: "Nadia Okonjo",
+    thanks:
+      "Same width all the way down the stack. Any wider on one and the whole rack racks out of square.",
   },
   {
     id: "sanded-set",
@@ -90,6 +99,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 650,
     rewardReputation: 4,
+    client: "Tom Vasquez",
+    thanks:
+      "No snags anywhere. My kid's going to be crawling on these, so that matters more than it sounds.",
   },
   {
     id: "double-shelf-order",
@@ -101,6 +113,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 800,
     rewardReputation: 5,
+    client: "Priya, of The Second Cup",
+    thanks:
+      "A matched pair. These are going up behind the espresso machine where everybody sees them.",
   },
   {
     id: "proper-cutting-board",
@@ -116,6 +131,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 1000,
     rewardReputation: 6,
+    client: "Chef Anton Reyes",
+    thanks:
+      "Flat, and I can't find the glue lines. I've thrown out boards that cost more than these.",
   },
   {
     id: "dimensioned-stock",
@@ -135,6 +153,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 1200,
     rewardReputation: 7,
+    client: "Dolores Whitfield",
+    thanks:
+      "Dead on thickness, both of them. These go straight into a case without me touching them again.",
   },
   {
     id: "balcony-garden",
@@ -146,6 +167,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 1400,
     rewardReputation: 8,
+    client: "Sam Okafor",
+    thanks:
+      "Screws. Thank you. The last set someone built me came apart over one rainy spring.",
   },
   {
     id: "oiled-and-ready",
@@ -162,6 +186,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 1600,
     rewardReputation: 8,
+    client: "Renata, of Hearth & Hardware",
+    thanks:
+      "Finished and ready for the shelf — no work left on my end. I'll take two a week if you can keep up.",
   },
   {
     id: "gallery-wall",
@@ -173,6 +200,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 1900,
     rewardReputation: 9,
+    client: "Jonah Adeyemi",
+    thanks:
+      "Corners tight enough you can't find the joint from a foot away. That's the whole job, really.",
   },
   {
     id: "shelving-but-nice",
@@ -184,6 +214,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 2200,
     rewardReputation: 10,
+    client: "Priya, of The Second Cup",
+    thanks:
+      "Told you we'd be back. The rustic pair moves to the storeroom — these go out front.",
   },
   {
     id: "stripes",
@@ -200,6 +233,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 2500,
     rewardReputation: 10,
+    client: "Camille Boucher",
+    thanks:
+      "Walnut, maple, walnut, maple, straight down the line. This is going to photograph beautifully.",
   },
   {
     id: "small-treasures",
@@ -211,6 +247,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 2800,
     rewardReputation: 11,
+    client: "Idris Farouk",
+    thanks:
+      "The corners interlock. People are going to open these before they look at what's inside them.",
   },
   {
     id: "the-sunrise-board",
@@ -226,6 +265,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 3200,
     rewardReputation: 12,
+    client: "Hana Lindqvist",
+    thanks:
+      "It really does fade. I keep turning it over trying to find where the one wood stops and the other starts.",
   },
   {
     id: "the-butchers-block",
@@ -242,6 +284,9 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     ],
     rewardMoney: 4000,
     rewardReputation: 15,
+    client: "Chef Anton Reyes",
+    thanks:
+      "End grain, oiled, flat as glass. That first board you sold me is still on my line, you know. This one outlives the restaurant.",
   },
 ];
 

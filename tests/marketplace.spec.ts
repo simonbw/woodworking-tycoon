@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
   closePhone,
+  handOffAtDoor,
   movePlayerToDoor,
   openDoorPanel,
   openPhone,
@@ -163,16 +164,23 @@ test.describe("Marketplace", () => {
       );
       expect(accepted).toBe(1);
 
+      // The phone takes the order but can't complete it — delivery is a
+      // trip to the door with the goods in hand
+      await expect(
+        page.locator("li", { hasText: "E2E Tester" }),
+      ).toContainText("garage door");
+      await expect(
+        page.locator("li", { hasText: "E2E Tester" }).getByRole("button", {
+          name: "Deliver",
+        }),
+      ).toHaveCount(0);
+
       const moneyBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      // force: the tip decays every tick, so the row's payout text keeps
-      // re-rendering and the stability check can starve on slow machines
-      await page
-        .locator("li", { hasText: "E2E Tester" })
-        .getByRole("button", { name: "Deliver" })
-        .click({ force: true });
-      await page.waitForTimeout(300);
+      await closePhone(page);
+      await handOffAtDoor(page, "E2E Tester");
+
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
       );
@@ -182,10 +190,12 @@ test.describe("Marketplace", () => {
       expect(
         state.player.inventory.some((m: any) => m.id === "e2e-shelf"),
       ).toBe(false);
+      // A job is routine work: money flies, but no client card to dismiss
+      await expect(page.getByTestId("client-card")).not.toBeVisible();
     });
 
     await test.step("scavenging trip starts at the garage door", async () => {
-      await closePhone(page);
+      // The phone went away for the handoff; the player is still at the door
       await movePlayerToDoor(page);
       await openDoorPanel(page);
       await page

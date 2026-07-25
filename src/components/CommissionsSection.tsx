@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { Commission } from "../game/GameState";
 import { getActiveCommission } from "../game/commissionSequence";
-import { completeCommissionAction } from "../game/game-actions/store-actions";
 import {
   describeMaterialRequirement,
   materialMeetsInput,
 } from "../game/material-helpers";
-import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { Thumbtack } from "./Thumbtack";
-import { Tooltip } from "./Tooltip";
-import { useApplyGameAction, useGameState } from "./useGameState";
+import { useGameState } from "./useGameState";
 
 /** The active commission's work order, pinned to the job board. */
 export const CommissionsSection: React.FC = () => {
@@ -37,7 +34,6 @@ const WorkOrder: React.FC<{
   commission: Commission;
   index: number;
 }> = ({ commission, index }) => {
-  const applyAction = useApplyGameAction();
   const gameState = useGameState();
   const [folded, setFolded] = useState(false);
 
@@ -54,12 +50,6 @@ const WorkOrder: React.FC<{
   });
 
   const canComplete = lineItems.every((item) => item.have >= item.need);
-
-  useShortcut(
-    "complete-commission",
-    () => applyAction(completeCommissionAction()),
-    canComplete,
-  );
 
   // Slight alternating rotation for that pinned-paper feel
   const rotation = index % 2 === 0 ? "-rotate-[0.5deg]" : "rotate-[0.6deg]";
@@ -111,7 +101,7 @@ const WorkOrder: React.FC<{
             </ul>
           </div>
 
-          <div className="flex items-baseline justify-between border-t border-ink-black/20 pt-2">
+          <div className="border-t border-ink-black/20 pt-2 space-y-1.5">
             <div className="flex gap-4">
               <div>
                 <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
@@ -130,18 +120,16 @@ const WorkOrder: React.FC<{
                 </span>
               </div>
             </div>
-            <Tooltip
-              content="Mark complete"
-              shortcut={canComplete ? "complete-commission" : undefined}
+            {/* Delivery happens at the door, in the player's hands — the
+                order slip only says who it's for and where it goes. */}
+            <p
+              className="font-ink text-base leading-snug text-ink-blue"
+              data-testid="commission-delivery-note"
             >
-              <button
-                disabled={!canComplete}
-                className="button-paper text-xs"
-                onClick={() => applyAction(completeCommissionAction())}
-              >
-                Mark Complete
-              </button>
-            </Tooltip>
+              {canComplete
+                ? `Ready for ${commission.client}. Carry it to the garage door.`
+                : `For ${commission.client}. Hand it over at the garage door.`}
+            </p>
           </div>
         </div>
       )}

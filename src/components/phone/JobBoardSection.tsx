@@ -3,7 +3,6 @@ import { AcceptedJob, JobOffer } from "../../game/GameState";
 import {
   acceptJobAction,
   cancelJobAction,
-  deliverJobAction,
 } from "../../game/game-actions/marketplace-actions";
 import {
   JOB_TIP_DECAY_TICKS,
@@ -20,8 +19,9 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
  * The Job Board pane of the phone: open offers to accept (limited by
- * reputation-gated slots) and accepted jobs with their decaying tips,
- * ready to deliver from the player's inventory. The phone's tab bar
+ * reputation-gated slots) and accepted jobs with their decaying tips. The
+ * phone takes the order and cancels it; handing the work over happens in
+ * person at the garage door (see `DoorPrompt`). The phone's tab bar
  * provides the pane's title.
  */
 export const JobBoardSection: React.FC = () => {
@@ -156,22 +156,19 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
             ? `tip fades over ${tipDaysLeft.toFixed(1)} days`
             : "tip expired — base pay only"}
         </span>
-        <span className="flex items-center gap-1">
-          <button
-            className="button-paper text-xs"
-            onClick={() => applyAction(cancelJobAction(job.id))}
-          >
-            Cancel
-          </button>
-          <button
-            className="button-paper text-xs"
-            disabled={!canDeliver}
-            onClick={() => applyAction(deliverJobAction(job.id))}
-          >
-            Deliver
-          </button>
-        </span>
+        <button
+          className="button-paper text-xs"
+          onClick={() => applyAction(cancelJobAction(job.id))}
+        >
+          Cancel
+        </button>
       </div>
+      {/* The customer collects; the phone only takes the order. */}
+      <p className="text-xs text-ink-blue" data-testid="job-delivery-note">
+        {canDeliver
+          ? "Ready — carry it to the garage door to hand it over."
+          : "Hand it over at the garage door once it's built."}
+      </p>
     </li>
   );
 };

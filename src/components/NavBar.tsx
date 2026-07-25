@@ -55,6 +55,7 @@ export const NavBar: React.FC = () => {
               className="button-ghost relative"
               onClick={() => setJournalOpen(true)}
               data-sfx="ui-tab"
+              data-reward-target="xp"
             >
               Journal
               {skillPoints > 0 && (
@@ -94,14 +95,32 @@ export const NavBar: React.FC = () => {
   );
 };
 
-/** The shop's cash balance, drawn on the bar in the money accent. */
+/**
+ * The shop's standing: cash and reputation, drawn on the bar in the money
+ * accent. Both are targets for the reward flight after a handoff (see
+ * `RewardFlightLayer`), which is also why reputation lives out here now
+ * rather than only inside the phone — you should see the star land.
+ */
 const Balance: React.FC = () => {
   const gameState = useGameState();
   return (
-    <section className="flex items-baseline gap-2">
-      <div className="font-mono text-lg text-gold tabular-nums leading-none">
+    <section className="flex items-baseline gap-4">
+      <div
+        className="font-mono text-lg text-gold tabular-nums leading-none"
+        data-reward-target="money"
+        data-testid="balance"
+      >
         ${gameState.money.toFixed(2)}
       </div>
+      <Tooltip content="Shop reputation — better lumber, more job slots, higher prices">
+        <div
+          className="font-mono text-lg text-gold-light tabular-nums leading-none"
+          data-reward-target="reputation"
+          data-testid="reputation"
+        >
+          ★ {gameState.reputation.toFixed(1)}
+        </div>
+      </Tooltip>
     </section>
   );
 };
