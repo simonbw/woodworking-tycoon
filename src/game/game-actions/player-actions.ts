@@ -397,16 +397,17 @@ export function operateMachineAction(machine: Machine): GameAction {
       return gameState;
     }
 
-    // Direct-feed machines take stock straight from the player's hands,
-    // and the stock decides which operation runs (see findFeedableOperation)
+    // Direct-feed machines run whatever is sitting on them — set down
+    // first (F), triggered after (Space) — and that stock decides which
+    // operation runs (see findFeedableOperation)
     if (machine.type.directFeed) {
       const match = findFeedableOperation(
         machine,
         availableOperations(machine, gameState.progression),
-        gameState.player.inventory,
+        machineState.inputMaterials,
       );
       if (!match) {
-        console.warn("Nothing in hand that this machine is set up to take");
+        console.warn("Nothing on the machine that it is set up to take");
         return gameState;
       }
       const consumableCosts = match.operation.requiredConsumables ?? [];
@@ -426,7 +427,6 @@ export function operateMachineAction(machine: Machine): GameAction {
           gameState.consumables,
           consumableCosts,
         ),
-        player: { ...gameState.player, inventory: [...match.remaining] },
         machines: gameState.machines.map((m) =>
           isSameMachine(m, machineState)
             ? {
@@ -435,6 +435,8 @@ export function operateMachineAction(machine: Machine): GameAction {
                 // parameters) so completion knows what it's finishing
                 selectedOperationId: match.operation.id,
                 selectedParameters: match.parameters,
+                // Anything on the table the cut didn't claim stays there
+                inputMaterials: [...match.remaining],
                 processingMaterials: [...match.materials],
                 operationProgress: {
                   status: "inProgress" as const,

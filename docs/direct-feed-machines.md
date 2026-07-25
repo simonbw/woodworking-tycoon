@@ -21,28 +21,50 @@ actually has:
    `setMachineSettingsAction` (which never touches which operation is
    selected or running) and rendered as `DetentScale`s — the scales
    printed on the machine.
-2. **The workpiece in your hands** — there is no input bay
-   (`inputSpaces: 0`) and no load step. Feeding runs
-   `findFeedableOperation`: the first operation whose inputs are covered
-   by carried stock under the current settings. Operations on a real
+2. **The workpiece on the machine** — one piece at a time
+   (`inputSpaces: 1`). `F` sets the stock down on the table; it stays
+   there, visible on the sprite, until the trigger claims it. Running the
+   machine calls `findFeedableOperation` against **what's on the machine**,
+   not what's in your hands: the first operation whose inputs are covered
+   by that stock under the current settings. Operations on a real
    direct-feed machine have naturally disjoint input specs, so the stock
    itself decides — a rough board at the jointer can only take a face
-   pass; once face-jointed, feeding it again is the edge pass. At the
+   pass; once face-jointed, running it again is the edge pass. At the
    table saw an edge-jointed board rips against the fence, a rough one
    rides the straight-line sled, and a panel goes on the crosscut sled —
    mounting a jig is the only "mode switch", and it's a physical act.
-3. **One verb** — Feed (the miter saw says **Cut**, via
-   `MachineType.feedVerb`). In the shop view the machine wears hint
-   chips (`src/components/station/MachineChips.tsx`): name + status,
-   "[E] switch on", "[F] feed", the first setting's value on `Z`, and
-   the refusal note when carried stock won't go. The full controls —
-   settings scales, the power switch, the verb button, the tool rack —
-   live on the machine's station sheet (Enter,
-   `src/components/station/StationSheet.tsx`). The inventory list
-   offers no "→ Machine" load buttons, and both `R` and `F` present the
-   carried stock; `E` flips the switch. Single-point stations (the
-   miter saw) offer their cut pieces where they lie (`E` takes them);
-   feed-through machines deliver to the outfeed cell.
+3. **One verb, held** — you hold `Space` for as long as the cut takes,
+   because you are the one pushing the stock through. Letting go pauses
+   the work exactly where walking away already paused it (`attended` in
+   `tickAction`). The exception is a `powerFeed` operation — the planer —
+   where the rollers do the pushing: setting the board down *is* starting
+   it, and it finishes whether you stand there or not.
+
+   **These machines have no control panel.** Everything is a key on the
+   floor, and the machine wears hint chips naming each one
+   (`src/components/station/MachineChips.tsx`): name + status, `[E]`
+   switch on / take, `[F]` set stock on it, `[Space]` hold to run, every
+   setting with the keys that drive it, and the refusal note when the
+   stock won't go. The only page left is a tool rack on `Tab`
+   (`ToolSheet`), for fitting a jig or a dust bag — and machines with no
+   tool slots have no sheet at all (`hasStationSheet`). Single-point
+   stations (the miter saw) offer their cut pieces where they lie (`E`
+   takes them); feed-through machines deliver to the outfeed cell.
+
+## The keys
+
+| Key | At a direct-feed machine |
+| --- | --- |
+| `E` | switch on/off, take finished pieces, take staged stock back |
+| `F` | set the carried stock down on it |
+| `Space` (hold) | run it — you pushing the stock through |
+| `Z` / `X` | the linear setting: cutter head, fence, cut line |
+| `R` / `Shift+R` | the rotating setting: the miter head's angle |
+| `Tab` | the tool rack, if the machine has slots |
+
+A parameter's `presentation` decides which keys drive it: `"rotate"`
+answers to `R`, everything else (including `"slide"`) to `Z`/`X`. A
+machine carries at most one of each, so neither key ever disambiguates.
 
 The *operation* stops being selected and becomes implied: given what
 you're feeding and how the machine is set, only one thing can happen.

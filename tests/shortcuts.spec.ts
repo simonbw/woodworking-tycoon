@@ -99,12 +99,12 @@ test.describe("Keyboard shortcuts", () => {
     });
 
     await test.step("letter keys open the pocket overlays and toggle shut", async () => {
-      await page.keyboard.press("k");
+      await page.keyboard.press("j");
       const journal = page.getByRole("dialog", { name: "Journal" });
       await expect(journal).toBeVisible();
       await expect(page.getByText(/Craft Level/)).toBeVisible();
-      // K re-binds inside the modal scope, so it toggles rather than only opens
-      await page.keyboard.press("k");
+      // J re-binds inside the modal scope, so it toggles rather than only opens
+      await page.keyboard.press("j");
       await expect(journal).toHaveCount(0);
 
       await page.keyboard.press("m");
@@ -287,7 +287,7 @@ test.describe("Keyboard shortcuts", () => {
         .getByRole("tooltip")
         .filter({ hasText: "Your journal" });
       await expect(tip).toBeVisible();
-      await expect(tip.locator("kbd")).toHaveText("K");
+      await expect(tip.locator("kbd")).toHaveText("J");
     });
 
     await test.step("the shop manifest hangs on the right rail", async () => {

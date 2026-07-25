@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, selectMode as selectMachineMode } from "./machine-panel";
+import {
+  modesOf,
+  runWhileHolding,
+  selectMode as selectMachineMode,
+} from "./machine-panel";
 import { closeJournal, openJournal, openPhone, setTickRate } from "./navigation";
 
 declare global {
@@ -37,8 +41,9 @@ async function operateAndTake(
   isDoneSource: string,
   timeout: number,
 ) {
-  await workspaceCard(page).getByRole("button", { name: "Operate" }).click();
-  await page.waitForFunction(
+  await runWhileHolding(
+    page,
+    
     (src: string) => {
       const matches = new Function("mat", `return (${src})(mat)`) as any;
       return (window as any)

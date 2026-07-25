@@ -3,6 +3,7 @@ import {
   machineCard,
   modesOf,
   openStationSheet,
+  runWhileHolding,
   selectMode,
   setParameter,
 } from "./machine-panel";
@@ -103,9 +104,9 @@ test.describe("Hand tools", () => {
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
-      await card.getByRole("button", { name: "Operate" }).click();
       // The cut leaves the kept 2' slat and a 1' offcut
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -131,10 +132,9 @@ test.describe("Hand tools", () => {
         .click({ modifiers: ["Shift"] });
       await page.waitForTimeout(200);
 
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()

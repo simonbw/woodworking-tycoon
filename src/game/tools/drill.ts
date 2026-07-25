@@ -18,6 +18,14 @@ export const drill: ToolType = {
   description:
     "A cordless driver. Screwed assembly happens at whatever bench it's mounted on.",
   cost: 70,
+  // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
+  compatibleMachines: [
+    "workspace",
+    "worktable1x1",
+    "worktable1x2",
+    "worktable1x3",
+    "worktable2x2",
+  ],
   operations: [
     {
       name: "Build Rustic Planter Box",

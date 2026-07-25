@@ -22,19 +22,66 @@ export function machineCard(page: any, machineName: string) {
 }
 
 /**
- * Spread out the targeted station's sheet (Enter), where plan selection
- * and the tool/upgrade/shelf racks live. No-op if a sheet is already
- * open. Blurs first: Enter activates a focused button before the game
- * ever sees it, and specs click buttons constantly.
+ * Spread out the targeted station's sheet (Tab), where plan selection and
+ * the tool/upgrade/shelf racks live. No-op if a sheet is already open.
+ * Blurs first: with focus on a control Tab moves the focus ring instead,
+ * and specs click buttons constantly.
  */
 export async function openStationSheet(page: any) {
   if (await page.getByTestId("station-sheet").isVisible()) {
     return;
   }
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Tab");
   await page.getByTestId("station-sheet").waitFor({ state: "visible" });
   await page.waitForTimeout(200);
+}
+
+/**
+ * Run the machine the player is standing at: hold the operate key until
+ * `isDone` reports the work finished, then let go.
+ *
+ * There is no Operate button any more — working a machine is a floor verb,
+ * and attended phases only advance while the key is down. Blurs first so
+ * Space activates the game rather than a focused control.
+ */
+export async function holdOperate(
+  page: any,
+  isDone: () => Promise<boolean>,
+  timeoutMs = 20000,
+) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.down("Space");
+  try {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (await isDone()) return;
+      await page.waitForTimeout(100);
+    }
+    throw new Error("holdOperate timed out waiting for the work to finish");
+  } finally {
+    await page.keyboard.up("Space");
+    await page.waitForTimeout(200);
+  }
+}
+
+/** Hold the operate key until the machine puts out a material that matches. */
+export async function runUntilOutput(
+  page: any,
+  matcherSource: string,
+  timeoutMs = 20000,
+) {
+  await holdOperate(
+    page,
+    () =>
+      page.evaluate((src: string) => {
+        const matches = new Function("mat", `return (${src})(mat)`) as any;
+        return (window as any)
+          .__GET_GAME_STATE__()
+          .machines.some((m: any) => m.outputMaterials.some(matches));
+      }, matcherSource),
+    timeoutMs,
+  );
 }
 
 /**
@@ -112,4 +159,31 @@ export async function setParameter(
     })
     .click();
   await page.waitForTimeout(200);
+}
+
+/**
+ * Hold the operate key while waiting for a condition — the replacement for
+ * "click Operate, then wait". Takes the same arguments `waitForFunction`
+ * does, so a spec's existing completion predicate carries over unchanged.
+ *
+ * Attended work only advances while the key is down, so the wait has to
+ * happen inside the hold rather than after it.
+ */
+export async function runWhileHolding(
+  page: any,
+  pageFunction: any,
+  arg?: any,
+  options?: { timeout?: number },
+) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.down("Space");
+  try {
+    await page.waitForFunction(pageFunction, arg, {
+      timeout: 20000,
+      ...options,
+    });
+  } finally {
+    await page.keyboard.up("Space");
+    await page.waitForTimeout(200);
+  }
 }

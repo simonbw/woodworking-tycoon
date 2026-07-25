@@ -161,8 +161,8 @@ const defs = [
     // a crate once carrying is unlocked); hidden from the static cheat sheet
     // so the verb doesn't leak before its reveal.
     id: "carry-machine",
-    codes: ["KeyL"],
-    keys: [["L"]],
+    codes: ["KeyB"],
+    keys: [["B"]],
     description: "Pick up / put down machine",
     scope: "home",
     group: "Machines",
@@ -205,18 +205,13 @@ const defs = [
     group: "Machines",
   },
   {
+    // Only benches, containers, and machines with a tool slot have a sheet
+    // — see hasStationSheet. Everything about running a direct-feed machine
+    // is a key on the floor.
     id: "open-station-sheet",
-    codes: ["Enter"],
-    keys: [["Enter"]],
-    description: "Open the station's sheet — controls, plans, tools",
-    scope: "home",
-    group: "Machines",
-  },
-  {
-    id: "power-toggle",
-    codes: ["KeyP"],
-    keys: [["P"]],
-    description: "Switch machine on / off",
+    codes: ["Tab"],
+    keys: [["Tab"]],
+    description: "Open the station's sheet — plans, tools, contents",
     scope: "home",
     group: "Machines",
   },
@@ -309,8 +304,8 @@ const defs = [
   },
   {
     id: "open-journal",
-    codes: ["KeyK"],
-    keys: [["K"]],
+    codes: ["KeyJ"],
+    keys: [["J"]],
     description: "Open your journal",
     scope: "global",
     group: "General",
@@ -347,7 +342,7 @@ const defs = [
     hidden: true,
   },
   // Same trick for the phone and journal: their open keys re-bound inside
-  // the modal scope, so M and K toggle rather than only open.
+  // the modal scope, so M and J toggle rather than only open.
   {
     id: "close-phone",
     codes: ["KeyM"],
@@ -359,8 +354,8 @@ const defs = [
   },
   {
     id: "close-journal",
-    codes: ["KeyK"],
-    keys: [["K"]],
+    codes: ["KeyJ"],
+    keys: [["J"]],
     description: "Close the journal",
     scope: "modal",
     group: "General",

@@ -45,14 +45,21 @@ function isEditable(target: EventTarget | null): boolean {
 }
 
 /**
- * Space and Enter belong to whatever control has focus — stealing them would
- * break keyboard activation for every button in the game (Space is bound to
- * pause/resume, so this is a live conflict, not a hypothetical one).
+ * Keys the browser's own focus handling has first claim on whenever
+ * something is focused. Stealing them would break keyboard navigation
+ * outright: Space and Enter activate the focused control (Space runs the
+ * machine you're at, so that's a live conflict, not a hypothetical one),
+ * and Tab is how you reach a control in the first place — with focus
+ * anywhere but the page body it must keep moving the focus ring rather
+ * than opening a station sheet.
  */
 function activatesFocusedControl(event: KeyboardEvent): boolean {
-  if (event.code !== "Space" && event.code !== "Enter") return false;
   const target = event.target;
   if (!(target instanceof HTMLElement)) return false;
+  if (event.code === "Tab") {
+    return target !== document.body;
+  }
+  if (event.code !== "Space" && event.code !== "Enter") return false;
   return ["BUTTON", "A", "SUMMARY"].includes(target.tagName);
 }
 

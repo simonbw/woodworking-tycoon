@@ -30,11 +30,11 @@ export const jobsiteTableSaw: MachineType = {
   materialStorage: 0,
   // One jig at a time — the crosscut sled is the first
   toolSlots: 2,
-  // Direct feed: stock rides from the hands into the blade. What's carried
-  // decides the cut — an edge-jointed board rips against the fence, a
-  // rough one rides the straight-line sled, a panel goes on the crosscut
-  // sled. The fence position (targetWidth) is the machine's one setting.
-  inputSpaces: 0,
+  // One board on the table at a time. What's on it decides the cut — an
+  // edge-jointed board rips against the fence, a rough one rides the
+  // straight-line sled, a panel goes on the crosscut sled. The fence
+  // position (targetWidth) is the machine's one setting.
+  inputSpaces: 1,
   directFeed: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,

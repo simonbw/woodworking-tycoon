@@ -11,8 +11,9 @@ import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import {
   explainFeedRefusal,
   machineCanOperate,
+  stageableMaterials,
 } from "../../game/machine-helpers";
-import { materialMeetsInput } from "../../game/material-helpers";
+import { hasStationSheet } from "./station-helpers";
 import { availableOperations } from "../../game/skill-helpers";
 import { HintList } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
@@ -37,7 +38,6 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const carried = gameState.player.inventory;
   const hasSwitch = machine.type.powerSwitch === true;
   const switchedOff = hasSwitch && !machine.isPowered;
-  const isBenchLike = !machine.type.directFeed && operations.length > 0;
 
   // The E chip shows exactly what the interact key resolved to — but
   // only when its subject is this machine (floor and door hints render
@@ -50,41 +50,36 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       ? interact
       : null;
 
-  // The F chip: what presenting the carried stock would do. A
-  // switched-off machine takes nothing — E offers the switch first.
-  const canFeed =
-    machine.type.directFeed &&
+  // The F chip: whether the machine would take what's in hand if we set it
+  // down. A switched-off machine takes nothing — E offers the switch first.
+  const canStage =
     !isOperating &&
     !switchedOff &&
-    machineCanOperate(
-      machine,
-      gameState.consumables,
-      carried,
-      gameState.progression,
-    );
-  const refusal =
-    machine.type.directFeed &&
-    !isOperating &&
-    !canFeed &&
-    !switchedOff &&
-    carried.length > 0
-      ? explainFeedRefusal(machine, operations, carried, gameState.consumables)
-      : null;
-  const selectedOperation = machine.selectedOperationOrNull;
-  const canLoad =
-    isBenchLike &&
-    machine.type.inputSpaces - machine.inputMaterials.length > 0 &&
-    selectedOperation != null &&
-    carried.some((material) =>
-      selectedOperation
-        .getInputMaterials(machine.resolvedParameters(selectedOperation))
-        .some((input) => materialMeetsInput(material, input)),
-    );
+    stageableMaterials(machine, carried, gameState.progression).length > 0;
 
   const settings = machineSettings(machine, operations);
 
+  // The Space chip: whether there's something on the machine to run.
   const canOperate =
-    isBenchLike && machineCanOperate(machine, gameState.consumables);
+    !isOperating &&
+    !switchedOff &&
+    machineCanOperate(machine, gameState.consumables, gameState.progression);
+
+  // Why the cut won't run — the teaching moment that used to live under
+  // the sheet's feed button. It advises on the board that's on the machine
+  // if there is one ("slide the cut line inside it", "raise the cut
+  // height"), and otherwise on what's in hand, so the advice arrives
+  // before you've even set the stock down.
+  const adviseOn =
+    machine.inputMaterials.length > 0 ? machine.inputMaterials : carried;
+  const refusal =
+    machine.type.directFeed &&
+    !isOperating &&
+    !canOperate &&
+    !switchedOff &&
+    adviseOn.length > 0
+      ? explainFeedRefusal(machine, operations, adviseOn, gameState.consumables)
+      : null;
 
   const liftable =
     gameState.progression.shopLayoutUnlocked &&
@@ -114,21 +109,16 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           <ShortcutKeys shortcut="pick-up" /> {interactLabel(interactHere)}
         </li>
       )}
-      {canFeed && (
+      {canStage && (
         <li>
           <ShortcutKeys shortcut="put-down" />{" "}
-          {(machine.type.feedVerb ?? "Feed").toLowerCase()}
+          {machine.type.directFeed ? "set stock on it" : "load"}
         </li>
       )}
-      {canLoad && (
+      {canOperate && (
         <li>
-          <ShortcutKeys shortcut="put-down" /> load
-        </li>
-      )}
-      {canOperate && !isOperating && (
-        <li>
-          <ShortcutKeys shortcut="operate-machine" />{" "}
-          {selectedOperation ? selectedOperation.name.toLowerCase() : "work"}
+          <ShortcutKeys shortcut="operate-machine" /> hold to{" "}
+          {(machine.type.feedVerb ?? "run").toLowerCase()}
         </li>
       )}
       {refusal && (
@@ -161,10 +151,10 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
             </li>
           );
         })}
-      {isTargeted(machine) && (
+      {isTargeted(machine) && hasStationSheet(machine) && (
         <li className="text-paper-manila/70">
           <ShortcutKeys shortcut="open-station-sheet" />{" "}
-          {isBenchLike ? "plans & tools" : "controls"}
+          {machine.type.directFeed ? "tool rack" : "plans & tools"}
         </li>
       )}
       {machines.length > 1 && (

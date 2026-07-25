@@ -63,7 +63,7 @@ test.describe("Carrying machines", () => {
         }));
       });
       await expect(page.getByText(/Unpack/)).toHaveCount(0);
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       expect(await carried(page)).toBeNull();
       // Back to the real fixture for the rest of the walkthrough
@@ -73,7 +73,7 @@ test.describe("Carrying machines", () => {
 
     await test.step("unpack the delivered crate underfoot", async () => {
       await expect(page.getByText("Unpack Miter Saw")).toBeVisible();
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.machineCrates).toHaveLength(0);
@@ -96,7 +96,7 @@ test.describe("Carrying machines", () => {
 
     await test.step("set it down standing at its operator cell", async () => {
       await teleportPlayer(page, [6, 8]);
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.player.carriedMachine).toBeNull();
@@ -109,11 +109,11 @@ test.describe("Carrying machines", () => {
 
     await test.step("lift the placed machine back up from the same spot", async () => {
       await expect(page.getByText("Pick up Miter Saw")).toBeVisible();
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       expect((await carried(page)).machineTypeId).toBe("miterSaw");
       // And set it back down for the next steps
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       expect(await carried(page)).toBeNull();
     });
@@ -124,7 +124,7 @@ test.describe("Carrying machines", () => {
       // operator cell and try
       await teleportPlayer(page, [6, 5]);
       await expect(page.getByText("Pick up Miter Saw")).toHaveCount(0);
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       expect(await carried(page)).toBeNull();
     });
@@ -134,14 +134,14 @@ test.describe("Carrying machines", () => {
       await teleportPlayer(page, [9, 4]);
       const machineHint = page.getByText(/plans & tools/i);
       await expect(machineHint.first()).toBeVisible();
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       expect((await carried(page)).machineTypeId).toBe("worktable1x1");
       // Hands full: the machine's hint chips are suppressed
       await expect(machineHint).toHaveCount(0);
 
       await teleportPlayer(page, [5, 10]);
-      await page.keyboard.press("l");
+      await page.keyboard.press("b");
       await page.waitForTimeout(200);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.player.carriedMachine).toBeNull();

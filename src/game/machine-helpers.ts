@@ -285,7 +285,7 @@ export function explainFeedRefusal(
   }
 
   if (carried.length === 0) {
-    return "Your hands are empty — stock feeds straight from them.";
+    return "Nothing on the machine — set stock down on it first.";
   }
 
   let best: {
@@ -340,16 +340,66 @@ export function explainFeedRefusal(
 export function slideStock(
   machine: Machine,
   operations: ReadonlyArray<Operation>,
-  carried: ReadonlyArray<MaterialInstance>,
 ): Board | undefined {
-  const match = findFeedableOperation(machine, operations, carried);
+  const staged = machine.inputMaterials;
+  const match = findFeedableOperation(machine, operations, staged);
   const fed = match?.materials.find(isBoard);
   if (fed) {
     return fed;
   }
-  return carried.find(
-    (material): material is Board => isBoard(material) && material.length >= 2,
+  // On the table but not currently cuttable (the mark sits off its end):
+  // still the board the scale positions, shown with the line past it.
+  return staged.find((material): material is Board => isBoard(material));
+}
+
+/**
+ * Which of the carried materials this machine would take if they were set
+ * down on it right now — the F key's subject. Distinct from
+ * machineCanOperate, which asks whether what's *already* on the machine
+ * can run: setting stock down and pulling the trigger are two acts.
+ */
+export function stageableMaterials(
+  machine: Machine,
+  carried: ReadonlyArray<MaterialInstance>,
+  progression?: ProgressionState,
+): ReadonlyArray<MaterialInstance> {
+  const freeSpaces = machine.type.inputSpaces - machine.inputMaterials.length;
+  if (freeSpaces <= 0 || carried.length === 0) {
+    return [];
+  }
+  if (machine.type.directFeed) {
+    // A saw table takes any board. Setting stock down is not the same act
+    // as cutting it: the settings decide whether the *cut* works, and you
+    // have to be able to put the board on the machine before you can slide
+    // it to the mark. So this matches on material kind only — whether the
+    // stock is millable at the current settings is the trigger's business,
+    // and the refusal chip explains it in the meantime.
+    const operations = progression
+      ? availableOperations(machine, progression)
+      : machine.operations;
+    const kinds = new Set(
+      operations.flatMap((operation) =>
+        operation
+          .getInputMaterials(machine.resolvedParameters(operation))
+          .flatMap((input) => (input.type ? [...input.type] : [])),
+      ),
+    );
+    return carried
+      .filter((material) => kinds.has(material.type))
+      .slice(0, freeSpaces);
+  }
+  const operation = machine.selectedOperationOrNull;
+  if (!operation) {
+    return [];
+  }
+  const inputs = operation.getInputMaterials(
+    machine.resolvedParameters(operation),
   );
+  return carried
+    .filter((material) =>
+      inputs.some((input) => materialMeetsInput(material, input)),
+    )
+    .slice(0, freeSpaces);
 }
 
 /**
@@ -360,14 +410,19 @@ export function slideStock(
 export function machineCanOperate(
   machine: Machine,
   consumables: ConsumableStock = NO_CONSUMABLES,
-  carried: ReadonlyArray<MaterialInstance> = [],
   progression?: ProgressionState,
 ): boolean {
   if (machine.type.directFeed) {
+    // What's *on the machine* decides which operation runs — the stock was
+    // set down first (F) and the trigger comes after (Space).
     const operations = progression
       ? availableOperations(machine, progression)
       : machine.operations;
-    const match = findFeedableOperation(machine, operations, carried);
+    const match = findFeedableOperation(
+      machine,
+      operations,
+      machine.inputMaterials,
+    );
     return (
       match !== null &&
       hasConsumables(consumables, match.operation.requiredConsumables ?? [])

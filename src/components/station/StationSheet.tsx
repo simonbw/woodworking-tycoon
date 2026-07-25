@@ -6,19 +6,21 @@ import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
 import { BenchSheet } from "./BenchSheet";
 import { ContentsSheet } from "./ContentsSheet";
-import { DirectFeedSheet } from "./DirectFeedSheet";
+import { ToolSheet } from "./ToolSheet";
 import { StatusText } from "./StatusText";
 
 /**
- * The station sheet: a machine's full paperwork, spread out in the
- * middle of the shop when the player steps up to it (Enter, or clicking
- * the station). The on-machine hint chips cover the quick verbs;
- * everything with buttons and scales lives here. Deliberately *not* a
- * modal — the world keeps ticking, the home-screen keys keep working on
- * the station, and walking away folds the sheet back up.
+ * The station sheet: the paperwork behind a bench or a container, spread
+ * out in the middle of the shop when the player steps up to it (Enter, or
+ * clicking the station). Deliberately *not* a modal — the world keeps
+ * ticking, the home-screen keys keep working on the station, and walking
+ * away folds the sheet back up.
  *
- * This file is just the shell and the body router; the three sheet
- * kinds live beside it (DirectFeedSheet, BenchSheet, ContentsSheet).
+ * A direct-feed machine keeps only its tool rack (ToolSheet): a jointer,
+ * planer, table saw or miter saw is a switch, a scale or two, and stock
+ * you set down, and every one of those is a key on the floor. Fitting a
+ * jig is the one thing left that needs a page. Benches keep the full
+ * paperwork (BenchSheet); containers list their contents (ContentsSheet).
  */
 export const StationSheet: React.FC = () => {
   const { sheetMachine, closeSheet } = useTargetedMachine();
@@ -86,10 +88,10 @@ const StationSheetBody: React.FC<{
 
   return (
     <SheetFrame machine={machine} onClose={onClose}>
-      {operations.length === 0 ? (
+      {machine.type.directFeed ? (
+        <ToolSheet machine={machine} />
+      ) : operations.length === 0 ? (
         <ContentsSheet machine={machine} />
-      ) : machine.type.directFeed ? (
-        <DirectFeedSheet machine={machine} operations={operations} />
       ) : (
         <BenchSheet machine={machine} operations={operations} />
       )}

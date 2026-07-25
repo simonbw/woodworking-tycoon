@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { modesOf, openStationSheet, selectMode } from "./machine-panel";
+import {
+  modesOf,
+  openStationSheet,
+  runWhileHolding,
+  selectMode,
+} from "./machine-panel";
 import { closeJournal, openJournal, openPhone } from "./navigation";
 
 declare global {
@@ -123,10 +128,9 @@ test.describe("Skill Tree", () => {
           .click({ modifiers: ["Shift"] });
         await page.waitForTimeout(200);
       }
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -152,10 +156,9 @@ test.describe("Skill Tree", () => {
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
         await page.waitForTimeout(200);
-        await workspaceCard(page)
-          .getByRole("button", { name: "Operate" })
-          .click();
-        await page.waitForFunction(
+        await runWhileHolding(
+          page,
+          
           (expected: string) =>
             (window as any)
               .__GET_GAME_STATE__()
@@ -181,10 +184,9 @@ test.describe("Skill Tree", () => {
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
       await page.waitForTimeout(200);
-      await workspaceCard(page)
-        .getByRole("button", { name: "Operate" })
-        .click();
-      await page.waitForFunction(
+      await runWhileHolding(
+        page,
+        
         () =>
           (window as any)
             .__GET_GAME_STATE__()

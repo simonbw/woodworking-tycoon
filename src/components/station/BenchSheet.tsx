@@ -30,8 +30,7 @@ import {
 } from "./racks";
 import { SlotDiagram } from "./SlotDiagram";
 import { loadedStockDimension } from "./station-helpers";
-import { useOperationProgress } from "./useOperationProgress";
-import { VerbRow } from "./VerbRow";
+import { RunHint } from "./RunHint";
 
 /**
  * Recipe-driven stations (benches, the garbage can): the plan picker,
@@ -47,7 +46,6 @@ export const BenchSheet: React.FC<{
 
   const selectedOperation = machine.selectedOperationOrNull;
   const canOperate = machineCanOperate(machine, gameState.consumables);
-  const { isOperating, progress } = useOperationProgress(machine);
   const dustMultiplier = machineDustMultiplier(
     gameState.dust,
     machine,
@@ -216,14 +214,10 @@ export const BenchSheet: React.FC<{
         </div>
       )}
 
-      <VerbRow
-        machine={machine}
-        verb="Operate"
-        verbTooltip="Operate this machine"
-        canAct={canOperate}
-        progress={progress}
-        isOperating={isOperating}
-      />
+      {/* No run button: working a machine is a floor verb now — you stand
+          at it and hold the operate key. The sheet is the paperwork
+          (plans, settings, racks), not the controls. */}
+      <RunHint machine={machine} canOperate={canOperate} />
 
       <ToolRack machine={machine} />
       <UpgradeRack machine={machine} />
