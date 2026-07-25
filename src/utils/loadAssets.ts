@@ -1,5 +1,16 @@
 import { Assets } from "pixi.js";
 
+/**
+ * Pixel art, as opposed to the smooth machine art: these have to sample
+ * nearest-neighbor or the shop's fit-to-column upscale blurs them.
+ */
+const PIXEL_ART_ASSETS = [
+  "/images/shelf.png",
+  "/images/rustic-shelf.png",
+  "/images/bookshelf.png",
+  "/images/side-table.png",
+];
+
 // List of all texture assets used in the game
 const TEXTURE_ASSETS = [
   "/images/benchtop-jointer.png",
@@ -17,6 +28,7 @@ const TEXTURE_ASSETS = [
   "/images/workspace.png",
   "/images/makeshift-bench.png",
   "/images/person.png",
+  ...PIXEL_ART_ASSETS,
 ];
 
 /**
@@ -30,4 +42,8 @@ export async function loadAssets(): Promise<void> {
 
   // Load all assets
   await Assets.load(TEXTURE_ASSETS);
+
+  for (const path of PIXEL_ART_ASSETS) {
+    Assets.get(path).source.scaleMode = "nearest";
+  }
 }

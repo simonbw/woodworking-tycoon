@@ -7,6 +7,11 @@ right answer forever. For the rest it caps how good the shop can look: a
 hand-drawn asset carries wear, grain, and shadow that a stack of rounded
 rects never will.
 
+A second category wants replacing for a different reason: the AI-generated
+pixel art standing in for furniture products and for the tool and consumable
+icons. That art is real enough to ship and far better than the black square
+it replaced, but it is placeholder — nobody drew it on purpose.
+
 This file is the standing list of what still wants real art, so the work is
 tracked without minting a GitHub issue per sprite. Tick a box in the same
 commit that lands the asset.
@@ -31,7 +36,52 @@ Objects whose contents vary (a rack of stock, a can of scrap) generally want
 the *fixture* as art with the contents still drawn on top — the asset
 replaces the furniture, not what's sitting in it.
 
+## The pixel-art exception
+
+The furniture products (shelf, rustic shelf, bookshelf, side table) break
+the rules above: they are pixel art rather than the smooth flat-shaded style
+the machines use, generated through the PixelLab MCP. They are placeholders
+— see "Generated placeholders" below — but until they're replaced they
+follow a different pipeline:
+
+- Exported at **`PIXELS_PER_INCH`** (4 px/inch), not 8, and drawn at scale 1
+  so texture pixels land on world pixels. A 400×400 export downscaled by
+  `IMAGE_SCALE` would blur the pixels away.
+- **Trimmed to the content bounding box** before landing in `static/images/`,
+  because the sprites anchor at 0.5 and PixelLab centers loosely inside a
+  padded canvas.
+- Listed in `PIXEL_ART_ASSETS` in `loadAssets.ts`, which sets their
+  `scaleMode` to `nearest` — the shop's fit-to-column upscale would
+  otherwise smooth them.
+- Drawn in a neutral wood and **tinted by species** at render time, so one
+  asset serves all nine species. See `material-sprites/FurnitureSprite.tsx`.
+
+Mixing the two styles was a deliberate call, not an accident. Anything new
+that isn't furniture should still use the smooth 400×400 pipeline above.
+
 ## Needs art
+
+### Generated placeholders
+
+Everything here already has art on screen — AI-generated through the
+PixelLab MCP, committed as a stopgap. It renders, it reads, and it is not
+what the game should ship with. Replacing one of these is a swap, not new
+wiring: same path, same size, same component.
+
+- [ ] Furniture products: shelf, rustic shelf, bookshelf, side table —
+      `static/images/{shelf,rustic-shelf,bookshelf,side-table}.png`, drawn by
+      `material-sprites/FurnitureSprite.tsx`. Pixel art against the smooth
+      machines, so the shop floor is currently mixed-style. A replacement
+      wants the neutral-wood treatment kept so the species tint still works,
+      and should be trimmed to its content box. Sizes today: 88×21, 79×15,
+      41×43, 49×51 at 4 px/inch. Update `FURNITURE_ICON_FIT` in
+      `FurnitureSprite.tsx` if the dimensions change.
+- [ ] Tool icons — `static/images/icons/tool-<id>.png`, 64×64, rendered by
+      `ToolIcon` in `components/ItemIcon.tsx`. Nine of them: hammer, hand
+      saw, drill, sanding block, random orbit sander, hand plane, crosscut
+      sled, straight-line sled, dust bag.
+- [ ] Consumable icons — `static/images/icons/consumable-<id>.png`, 64×64,
+      rendered by `ConsumableIcon`. Three: nails, screws, mineral oil.
 
 ### Machines
 
@@ -113,11 +163,16 @@ Decided — don't re-open these without a reason.
 - **Kerf lines** — the cut lines in `JobsiteTableSawSprite` and
   `MiterSawSprite`, which track the animated blade.
 - **Collision debug overlay** — `CollisionDebugLayer`. Dev-only, `?collision`.
-- **Default material pile** — `DefaultMaterialPileSprite`. A deliberate
-  placeholder for material types with no sprite.
+- **Default material pile** — `DefaultMaterialPileSprite`. A black square,
+  and now only ever reached by `UnknownMaterial` — the type-system escape
+  hatch, which has nothing real to draw. Every product type has a sprite. If
+  this square shows up in the shop, that's a bug, not missing art.
 
 ## Already done
 
 For reference, so this doesn't get re-surveyed: benchtop jointer, lunchbox
 planer, jobsite table saw (table and fence), miter saw (all three parts),
 makeshift bench, the player, the concrete floor, and the door warning paint.
+
+Hand-drawn art only. The generated pixel art is *not* done — it's listed
+under "Generated placeholders" above.

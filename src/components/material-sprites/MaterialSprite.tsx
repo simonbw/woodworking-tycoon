@@ -5,6 +5,7 @@ import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
 import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
 import { FinishedBoxSprite } from "./FinishedBoxSprite";
+import { FurnitureSprite, FurnitureType } from "./FurnitureSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
 import { PictureFrameSprite } from "./PictureFrameSprite";
@@ -71,6 +72,18 @@ export const MaterialSprite: React.FC<{
       return (
         <PlanterBoxSprite
           material={material as FinishedProduct}
+          alpha={alpha}
+          tint={tint}
+        />
+      );
+
+    case "shelf":
+    case "rusticShelf":
+    case "bookshelf":
+    case "sideTable":
+      return (
+        <FurnitureSprite
+          material={material as FinishedProduct & { type: FurnitureType }}
           alpha={alpha}
           tint={tint}
         />
