@@ -55,7 +55,9 @@ local frame, rotated with the placement — or, when it has none, one full
 box per occupied tile. Boxes for image-based machines are measured from
 their sprite art by `npm run generate:collision-boxes` (committed as
 `machine-collision-boxes.generated.ts`; re-run after art changes);
-procedurally drawn machines set theirs by hand.
+procedurally drawn machines set theirs by hand. A machine crosses from
+the second group to the first the moment it gets real art — see
+`docs/asset-backlog.md` for which ones are still waiting.
 
 Cells are one square foot and the body radius is 0.8 cells (~10"), so
 the body spans several cells: a 2-cell gap is a walkable aisle, a 1-cell

@@ -21,3 +21,4 @@ npm run test       # unit tests + Playwright E2E
 - `CLAUDE.md` — architecture overview and development guidelines
 - `GAMEPLAY_ROADMAP.md` — design vision and progression plan
 - `docs/woodworking-features-brainstorm.md` — feature idea pool
+- `docs/asset-backlog.md` — which shop-view objects still want real art

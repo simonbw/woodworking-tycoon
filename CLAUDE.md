@@ -71,6 +71,8 @@ The game follows a state-driven architecture with clear separation between game 
 
 The game uses PIXI.js via `@pixi/react` for performant 2D rendering of the shop view, combined with traditional React/Tailwind for UI overlays. This hybrid approach allows smooth interaction with many game objects while maintaining rich UI components.
 
+In-world things are drawn either from a PNG texture (registered in `src/utils/loadAssets.ts`) or procedurally with PIXI `Graphics`. Which objects still want real art, which are procedural on purpose, and how to swap one for the other is tracked in `docs/asset-backlog.md` — read it before drawing a new `Graphics` sprite or replacing an existing one.
+
 ## File Organization
 
 ```
@@ -109,7 +111,7 @@ tests/
 ## Development Guidelines
 
 - All game state mutations should go through the action system in `src/game/game-actions/`
-- New machines should be added to `src/game/machines/` with corresponding sprites in `src/components/machine-sprites/`
+- New machines should be added to `src/game/machines/` with corresponding sprites in `src/components/machine-sprites/`; if the sprite ships as procedural `Graphics` rather than art, add a row to `docs/asset-backlog.md`
 - UI components should use the existing "paperwork" design system (paper/manila/ink tokens and workshop chrome from `tailwind.config.ts`), following the font/surface roles in `docs/design-system.md` — not the legacy brown palette, which is kept only for sprites
 - Performance considerations: The game renders many objects, so prefer PIXI components for game entities and React for UI overlays
 

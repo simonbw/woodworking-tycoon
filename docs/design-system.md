@@ -10,6 +10,10 @@ using them.
 The core rule: **when everything is stylized, nothing reads as important.**
 Character fonts and loud surfaces are a budget to be spent, not a default.
 
+This doc covers the DOM UI. The art *inside* the shop view — machines,
+materials, props on the floor — follows its own rules; what still needs
+drawing is tracked in `docs/asset-backlog.md`.
+
 ## Font roles
 
 | Font | Class | Role | Budget |
