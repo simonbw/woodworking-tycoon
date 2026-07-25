@@ -7,6 +7,8 @@
  * names with `data-mode-option`, so these helpers work against all three.
  */
 
+import { pumpTicks } from "./navigation";
+
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -44,6 +46,11 @@ export async function openStationSheet(page: any) {
  * There is no Operate button any more — working a machine is a floor verb,
  * and attended phases only advance while the key is down. Blurs first so
  * Space activates the game rather than a focused control.
+ *
+ * The wait drives the clock itself (see pumpTicks) rather than watching it
+ * run. Holding the key is still what makes attended work legal: the flag
+ * lives in GameState, so a batched advance reads it the same way a
+ * real-time tick would.
  */
 export async function holdOperate(
   page: any,
@@ -56,7 +63,7 @@ export async function holdOperate(
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       if (await isDone()) return;
-      await page.waitForTimeout(100);
+      await pumpTicks(page);
     }
     throw new Error("holdOperate timed out waiting for the work to finish");
   } finally {
@@ -167,7 +174,9 @@ export async function setParameter(
  * does, so a spec's existing completion predicate carries over unchanged.
  *
  * Attended work only advances while the key is down, so the wait has to
- * happen inside the hold rather than after it.
+ * happen inside the hold rather than after it. The predicate is polled
+ * between tick chunks rather than by `waitForFunction`, because the chunks
+ * are what move the clock — see pumpTicks.
  */
 export async function runWhileHolding(
   page: any,
@@ -178,10 +187,12 @@ export async function runWhileHolding(
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
   await page.keyboard.down("Space");
   try {
-    await page.waitForFunction(pageFunction, arg, {
-      timeout: 20000,
-      ...options,
-    });
+    const deadline = Date.now() + (options?.timeout ?? 20000);
+    while (Date.now() < deadline) {
+      if (await page.evaluate(pageFunction, arg)) return;
+      await pumpTicks(page);
+    }
+    throw new Error("runWhileHolding timed out waiting for the work to finish");
   } finally {
     await page.keyboard.up("Space");
     await page.waitForTimeout(200);

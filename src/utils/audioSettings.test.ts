@@ -18,8 +18,8 @@ class MemStorage {
     this.map.clear();
   }
 }
-(globalThis as unknown as { localStorage: MemStorage }).localStorage =
-  new MemStorage();
+const storage = new MemStorage();
+(globalThis as unknown as { localStorage: MemStorage }).localStorage = storage;
 
 const STORAGE_KEY = "woodworking-tycoon-audio";
 
@@ -31,6 +31,12 @@ import {
 
 describe("audioSettings store", () => {
   beforeEach(() => {
+    // Re-claim the global: the whole unit suite shares one process, and
+    // saveLoad.test.ts installs a stub of its own at import time. Whichever
+    // module happened to load last would otherwise own `localStorage` for
+    // everybody, and these tests would read and write someone else's map.
+    (globalThis as unknown as { localStorage: MemStorage }).localStorage =
+      storage;
     // Reset to a known baseline between tests.
     setAudioSettings({ master: 0.8, sfx: 1, music: 0.7, muted: false });
   });

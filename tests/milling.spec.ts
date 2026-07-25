@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { takeAllHere } from "./machine-panel";
-import { goToLumberyard, goToStore, leaveStore } from "./navigation";
+import {
+  goToLumberyard,
+  goToStore,
+  leaveStore,
+  pumpTicks,
+} from "./navigation";
 
 declare global {
   interface Window {
@@ -83,29 +88,34 @@ async function settingOf(page: any, machineTypeId: string, param: string) {
   );
 }
 
-/** Wait until some board in the game state satisfies the predicate. */
+/**
+ * Wait until some board in the game state satisfies the predicate, driving
+ * the clock forward between checks rather than watching it run (pumpTicks).
+ */
 async function waitForBoard(
   page: any,
   predicate: string,
   timeout: number = 20000,
 ) {
-  await page.waitForFunction(
-    (pred: string) => {
-      const state = (window as any).__GET_GAME_STATE__();
-      const boards = [
-        ...state.player.inventory,
-        ...state.machines.flatMap((m: any) => [
-          ...m.inputMaterials,
-          ...m.processingMaterials,
-          ...m.outputMaterials,
-        ]),
-      ].filter((m: any) => m.type === "board");
-      // eslint-disable-next-line no-new-func
-      return boards.some(new Function("b", `return ${pred}`) as any);
-    },
-    predicate,
-    { timeout },
-  );
+  const boardMatches = (pred: string) => {
+    const state = (window as any).__GET_GAME_STATE__();
+    const boards = [
+      ...state.player.inventory,
+      ...state.machines.flatMap((m: any) => [
+        ...m.inputMaterials,
+        ...m.processingMaterials,
+        ...m.outputMaterials,
+      ]),
+    ].filter((m: any) => m.type === "board");
+    // eslint-disable-next-line no-new-func
+    return boards.some(new Function("b", `return ${pred}`) as any);
+  };
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (await page.evaluate(boardMatches, predicate)) return;
+    await pumpTicks(page);
+  }
+  throw new Error(`waitForBoard timed out waiting for a board: ${predicate}`);
 }
 
 test.describe("Milling chain (rough lumber to S4S)", () => {

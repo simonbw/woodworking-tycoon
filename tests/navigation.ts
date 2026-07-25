@@ -172,9 +172,39 @@ export async function advanceTicks(page: any, count: number) {
  * Run the clock fast (ticks/second) for specs whose subject is a long
  * multi-phase operation. `null` restores the game's own rate. Test-only —
  * the player has no speed control.
+ *
+ * Prefer `pumpTicks` for waiting out an operation: the Ticker's interval
+ * can't be pushed past about 47 ticks/second, so this only ever buys a
+ * single-digit multiple.
  */
 export async function setTickRate(page: any, rate: number | null) {
   await page.evaluate((value: number | null) => {
     (window as any).__SET_TICK_RATE__(value);
   }, rate);
+}
+
+/** How many ticks one `pumpTicks` chunk runs. */
+export const TICKS_PER_PUMP = 20;
+
+/**
+ * Run the simulation forward a chunk, then let React paint the result.
+ *
+ * Waiting on the wall clock is what used to make the operation specs slow.
+ * Every tick costs a React re-render and a PIXI redraw — about 21ms — so
+ * the Ticker saturates near 47 ticks/second no matter what `setTickRate`
+ * asks for, and a long glue cure burned real seconds. `__ADVANCE_TICKS__`
+ * queues the whole chunk as one React batch instead, so the renders
+ * collapse into a single one: a thousand ticks of simulation land in about
+ * 16ms. The rAF wait is what makes the result readable — `__GET_GAME_STATE__`
+ * is refreshed from an effect, so a predicate checked before the next frame
+ * would still see the pre-advance state.
+ *
+ * The chunk is small on purpose. Callers check their predicate between
+ * chunks, so this bounds how far past a finished operation the world runs.
+ */
+export async function pumpTicks(page: any, count: number = TICKS_PER_PUMP) {
+  await page.evaluate(async (n: number) => {
+    (window as any).__ADVANCE_TICKS__(n);
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+  }, count);
 }

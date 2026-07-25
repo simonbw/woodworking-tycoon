@@ -7,15 +7,23 @@ import { deleteSave, hasSavedGame, loadGame, saveGame } from "./saveLoad";
 
 // node:test has no DOM; back localStorage with a Map for the round-trip.
 const backing = new Map<string, string>();
-(globalThis as { localStorage?: unknown }).localStorage = {
+const storage = {
   getItem: (key: string) => backing.get(key) ?? null,
   setItem: (key: string, value: string) => void backing.set(key, value),
   removeItem: (key: string) => void backing.delete(key),
 };
+(globalThis as { localStorage?: unknown }).localStorage = storage;
 
 const SAVE_KEY = "woodworking-tycoon-save";
 
-beforeEach(() => backing.clear());
+beforeEach(() => {
+  // Re-claim the global before clearing it. The whole unit suite shares one
+  // process and audioSettings.test.ts installs a stub of its own at import
+  // time, so without this the clear would empty a map that nothing is
+  // reading from and saves would leak between tests.
+  (globalThis as { localStorage?: unknown }).localStorage = storage;
+  backing.clear();
+});
 
 describe("saveGame/loadGame round-trip", () => {
   it("loads back what was saved, with fresh presentation queues", () => {
