@@ -47,7 +47,7 @@ The game follows a state-driven architecture with clear separation between game 
 ### Key Systems
 
 1. **State Management**: Uses React Context via `GameStateProvider` (`src/components/useGameState.tsx`)
-2. **Game Loop**: Managed by `Ticker` component for regular game updates; the player's body moves continuously between ticks with WASD (see `docs/continuous-movement.md`) while `GameState` tracks only the cell underfoot. Time always advances unless paused — overlays don't stop the world.
+2. **Game Loop**: Managed by `Ticker` component for regular game updates; the player's body moves continuously between ticks with WASD (see `docs/continuous-movement.md`) while `GameState` tracks only the cell underfoot. The shop runs at one pace with no speed controls; time always advances unless the pause menu is open — the other overlays don't stop the world.
 3. **Diegetic UI**: The shop floor (`HomePage`) is the game's only screen — there are no tabs. Everything else is an object reached from it:
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar

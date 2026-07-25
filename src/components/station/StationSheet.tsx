@@ -11,7 +11,7 @@ import { StatusText } from "./StatusText";
 
 /**
  * The station sheet: the paperwork behind a bench or a container, spread
- * out in the middle of the shop when the player steps up to it (Enter, or
+ * out in the middle of the shop when the player steps up to it (Tab, or
  * clicking the station). Deliberately *not* a modal — the world keeps
  * ticking, the home-screen keys keep working on the station, and walking
  * away folds the sheet back up.
