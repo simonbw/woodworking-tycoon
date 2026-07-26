@@ -26,14 +26,52 @@ import { MaterialInstance } from "../Materials";
 import { availableOperations } from "../skill-helpers";
 import { tickAction } from "../game-actions/tickAction";
 import {
+  dropMaterialAction,
   moveMaterialsToMachineAction,
   operateMachineAction,
+  pickUpMaterialAction,
   setMachineOperationAction,
+  setMachineSettingsAction,
   setOperatingAction,
   setPlayerPositionAction,
   takeOutputsFromMachineAction,
+  toggleMachinePowerAction,
 } from "../game-actions/player-actions";
-import { mountToolAction } from "../game-actions/tool-actions";
+import {
+  buyToolAction,
+  mountToolAction,
+  unmountToolAction,
+} from "../game-actions/tool-actions";
+import {
+  buyClampAction,
+  buyConsumablePackAction,
+  buyMachineAction,
+  buyMaterialAction,
+  completeCommissionAction,
+} from "../game-actions/store-actions";
+import {
+  canPutDownCarriedMachine,
+  pickUpCrateAction,
+  putDownCarriedMachineAction,
+} from "../game-actions/machine-actions";
+import {
+  goToStoreAction,
+  returnFromStoreAction,
+  storeUnlocked,
+} from "../game-actions/door-actions";
+import { clearPendingPayoutsAction } from "../game-actions/payout-actions";
+import { spendSkillPointAction } from "../game-actions/skill-actions";
+import { getActiveCommission } from "../commissionSequence";
+import { board } from "../board-helpers";
+import { LUMBER_CHANNELS } from "../lumberStock";
+import { getBoardBuyPrice, getSheetBuyPrice } from "../material-values";
+import { SHEET_SKUS } from "../sheetStock";
+import { makeMaterial } from "../material-helpers";
+import { Board, SheetGood } from "../Materials";
+import { ConsumableId } from "../Consumable";
+import { MachineId } from "../Machine";
+import { SkillId } from "../Skill";
+import { StoreId } from "../lumberStock";
 import { ToolId } from "../Tool";
 import { Vector } from "../Vectors";
 
@@ -152,12 +190,71 @@ export class ShopDriver {
     return this.standAt(cell);
   }
 
-  /** Bolt a tool from storage onto the station. */
-  mount(
+  /**
+   * Bolt a tool from storage onto the station. A bench has a fixed number of
+   * slots, so this fails rather than silently doing nothing when they're all
+   * taken — unmount something, or build a worktable.
+   */
+  mount(machineTypeId: MachineState["machineTypeId"], toolId: ToolId): this {
+    if (this.machine(machineTypeId).state.tools.includes(toolId)) {
+      return this;
+    }
+    this.apply(mountToolAction(this.machine(machineTypeId), toolId));
+    if (!this.machine(machineTypeId).state.tools.includes(toolId)) {
+      const station = this.machine(machineTypeId);
+      throw new Error(
+        `The ${machineTypeId} would not take the ${toolId}. It has ` +
+          `${station.type.toolSlots} slots holding ` +
+          `[${station.state.tools.join(", ")}]` +
+          `${this.state.storage.tools.includes(toolId) ? "" : ", and the tool isn't in storage"}.`,
+      );
+    }
+    return this;
+  }
+
+  /** Take a tool back off a station, freeing its slot. */
+  unmount(machineTypeId: MachineState["machineTypeId"], toolId: ToolId): this {
+    this.apply(unmountToolAction(this.machine(machineTypeId), toolId));
+    if (this.machine(machineTypeId).state.tools.includes(toolId)) {
+      throw new Error(`The ${toolId} would not come off the ${machineTypeId}`);
+    }
+    return this;
+  }
+
+  /**
+   * Make sure exactly these tools are on the station, swapping as needed. Two
+   * slots on the starter bench is not many, and by the middle of the game a
+   * playthrough is juggling a hammer, a sanding block and a drill.
+   */
+  fitOut(
     machineTypeId: MachineState["machineTypeId"],
-    toolId: ToolId,
+    toolIds: ReadonlyArray<ToolId>,
   ): this {
-    return this.apply(mountToolAction(this.machine(machineTypeId), toolId));
+    for (const mounted of [...this.machine(machineTypeId).state.tools]) {
+      if (!toolIds.includes(mounted)) {
+        this.unmount(machineTypeId, mounted);
+      }
+    }
+    for (const toolId of toolIds) {
+      this.mount(machineTypeId, toolId);
+    }
+    return this;
+  }
+
+  /**
+   * Flip a machine's power switch on. Powered machines arrive from the crate
+   * switched off and cut nothing until someone throws the switch — so this is
+   * a step, not a detail, for every machine a playthrough buys.
+   */
+  switchOn(machineTypeId: MachineState["machineTypeId"]): this {
+    if (this.machine(machineTypeId).isPowered) {
+      return this;
+    }
+    this.apply(toggleMachinePowerAction(this.machine(machineTypeId)));
+    if (!this.machine(machineTypeId).isPowered) {
+      throw new Error(`The ${machineTypeId} would not switch on`);
+    }
+    return this;
   }
 
   /** The operation by id, including any the mounted tools contribute. */
@@ -291,6 +388,40 @@ export class ShopDriver {
   }
 
   /**
+   * Dial a direct-feed machine's settings — the miter saw's cut line and
+   * angle, the band saw's fence. These live on the machine rather than on an
+   * operation: there's no plan to pick, so `select` is the wrong verb. The
+   * stock you set down decides which operation runs.
+   */
+  setSettings(
+    machineTypeId: MachineState["machineTypeId"],
+    settings: ParameterValues,
+  ): this {
+    return this.apply(
+      setMachineSettingsAction(this.machine(machineTypeId), settings),
+    );
+  }
+
+  /**
+   * One whole job on a direct-feed machine: dial the settings, set the stock
+   * down, hold the trigger, collect at the outfeed. No plan is chosen — which
+   * operation runs is inferred from what's on the table.
+   */
+  feed(
+    machineTypeId: MachineState["machineTypeId"],
+    stock: MaterialPredicate,
+    settings?: ParameterValues,
+  ): this {
+    this.standAtOperatorCell(machineTypeId);
+    if (settings) {
+      this.setSettings(machineTypeId, settings);
+    }
+    return this.load(machineTypeId, stock, 1)
+      .run(machineTypeId)
+      .collect(machineTypeId);
+  }
+
+  /**
    * One whole job: set the plan, load the stock, run it out, pick it up.
    * The shape almost every step of a chain takes.
    */
@@ -305,6 +436,261 @@ export class ShopDriver {
       .load(machineTypeId, stock, options?.count)
       .run(machineTypeId)
       .collect(machineTypeId);
+  }
+
+  // ---------------------------------------------------------------------
+  // Leaving the shop, spending money, and handing work over. A chain test
+  // starts from a fixture that already owns its machines; a playthrough has
+  // to buy them, which means these.
+  // ---------------------------------------------------------------------
+
+  /** Take a trip out to a store, if the door offers it yet. */
+  goShopping(store: StoreId): this {
+    if (!storeUnlocked(this.state, store)) {
+      throw new Error(
+        `The door doesn't offer ${store} yet — check the progression flags`,
+      );
+    }
+    this.standAtDoor();
+    return this.apply(goToStoreAction(store));
+  }
+
+  /** Come home from a trip. */
+  comeHome(): this {
+    return this.apply(returnFromStoreAction());
+  }
+
+  /** Buy stock off a rack. The caller names the price the rack charges. */
+  buy(material: MaterialInstance, price: number): this {
+    const before = this.money;
+    this.apply(buyMaterialAction(material, price));
+    if (this.money !== before - price) {
+      throw new Error(
+        `Couldn't afford ${material.type} at $${price} — the shop had $${before}`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Buy `count` boards off a named lumber channel, at whatever that channel
+   * charges — so a repriced rack changes what a playthrough can afford
+   * instead of quietly staying free.
+   */
+  buyBoards(
+    channelId: string,
+    species: Board["species"],
+    dimensions: {
+      length: Board["length"];
+      width: Board["width"];
+      thickness: Board["thickness"];
+    },
+    count = 1,
+  ): this {
+    const channel = LUMBER_CHANNELS.find(
+      (candidate) => candidate.id === channelId,
+    );
+    if (!channel) {
+      throw new Error(`No lumber channel called ${channelId}`);
+    }
+    if (this.state.reputation < channel.minReputation) {
+      throw new Error(
+        `The ${channelId} rack needs ${channel.minReputation} reputation and ` +
+          `the shop has ${this.state.reputation} — a channel this rung needs ` +
+          `is out of reach`,
+      );
+    }
+    for (let i = 0; i < count; i++) {
+      const stock = board(
+        species,
+        dimensions.length,
+        dimensions.width,
+        dimensions.thickness,
+        channel.surface,
+      );
+      this.buy(stock, getBoardBuyPrice(stock, channel.priceMultiplier));
+    }
+    return this;
+  }
+
+  /** Buy a sheet off the Sheet Goods aisle, at what the aisle charges. */
+  buySheet(kind: SheetGood["kind"]): this {
+    const sku = SHEET_SKUS.find((candidate) => candidate.kind === kind);
+    if (!sku) {
+      throw new Error(`The aisle doesn't stock ${kind}`);
+    }
+    if (this.state.reputation < sku.minReputation) {
+      throw new Error(
+        `${kind} needs ${sku.minReputation} reputation and the shop has ` +
+          `${this.state.reputation}`,
+      );
+    }
+    const sheet = makeMaterial<SheetGood>({
+      type: "plywood",
+      kind,
+      length: sku.length,
+      width: sku.width,
+      thickness: sku.thickness,
+    });
+    return this.buy(sheet, getSheetBuyPrice(sheet));
+  }
+
+  /** Buy a pack of supplies (nails, screws, oil). */
+  buySupplies(consumableId: ConsumableId): this {
+    const before = this.money;
+    this.apply(buyConsumablePackAction(consumableId));
+    if (this.money === before) {
+      throw new Error(`Couldn't afford a pack of ${consumableId}`);
+    }
+    return this;
+  }
+
+  /** Buy a clamp bar. Glue-ups tie clamps up until they've cured. */
+  buyClamps(count: number): this {
+    for (let i = 0; i < count; i++) {
+      const before = this.state.clamps;
+      this.apply(buyClampAction());
+      if (this.state.clamps === before) {
+        throw new Error(`Couldn't afford clamp ${i + 1} of ${count}`);
+      }
+    }
+    return this;
+  }
+
+  /** Buy a tool off the tool wall, into storage. Mount it separately. */
+  buyTool(toolId: ToolId): this {
+    const before = this.state.storage.tools.length;
+    this.apply(buyToolAction(toolId));
+    if (this.state.storage.tools.length === before) {
+      throw new Error(
+        `Couldn't afford the ${toolId} — the shop had $${this.money}`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Buy a machine and carry it to where it's going to live. It arrives
+   * crated at the entrance, gets picked up, and is set down standing at the
+   * cell it will be worked from — the same three steps the floor demands,
+   * so a machine that can't physically fit fails here rather than silently
+   * never arriving.
+   */
+  buyAndPlaceMachine(
+    machineTypeId: MachineId,
+    price: number,
+    operatorCell: Vector,
+  ): this {
+    const before = this.money;
+    this.apply(buyMachineAction(machineTypeId, price));
+    if (this.money !== before - price) {
+      throw new Error(
+        `Couldn't afford the ${machineTypeId} at $${price} — the shop had $${before}`,
+      );
+    }
+    const crate = this.state.machineCrates.find(
+      (candidate) => candidate.machine.machineTypeId === machineTypeId,
+    );
+    if (!crate) {
+      throw new Error(`No ${machineTypeId} crate arrived at the entrance`);
+    }
+    this.standAt(crate.position).apply(pickUpCrateAction());
+    if (!this.state.player.carriedMachine) {
+      throw new Error(
+        `Couldn't lift the ${machineTypeId} crate. A crate takes both hands, ` +
+          `and the player is holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}] — ` +
+          `putEverythingDown() first.`,
+      );
+    }
+    this.standAt(operatorCell);
+    if (!canPutDownCarriedMachine(this.state)) {
+      throw new Error(
+        `No room to set the ${machineTypeId} down from ${operatorCell} — ` +
+          `something already occupies the cells it needs`,
+      );
+    }
+    this.apply(putDownCarriedMachineAction());
+    // Out of the crate a powered machine is switched off. Throw the switch
+    // here so a rung reads as "buy the saw" rather than "buy the saw, and
+    // remember the thing every machine needs".
+    if (this.machine(machineTypeId).type.powerSwitch) {
+      this.switchOn(machineTypeId);
+    }
+    return this;
+  }
+
+  /** Spend a point in the journal. */
+  learn(skillId: SkillId): this {
+    const before = this.state.progression.unlockedSkills.length;
+    this.apply(spendSkillPointAction(skillId));
+    if (this.state.progression.unlockedSkills.length === before) {
+      throw new Error(
+        `Couldn't learn ${skillId} — ${this.state.progression.skillPoints} ` +
+          `points unspent, and its prerequisites may not be met`,
+      );
+    }
+    return this;
+  }
+
+  /** Stand at the garage door, the only place finished work leaves from. */
+  standAtDoor(): this {
+    return this.standAt(this.state.shopInfo.entrancePosition);
+  }
+
+  /**
+   * Set everything down on the floor here. A crate takes both hands, so the
+   * offcuts and leftovers a chain accumulates have to go somewhere before a
+   * machine can be carried — and they stay on the floor to be picked up
+   * again, the way they would in a real shop.
+   */
+  putEverythingDown(): this {
+    if (this.inventory.length === 0) {
+      return this;
+    }
+    return this.apply(dropMaterialAction(this.inventory));
+  }
+
+  /** Pick a matching pile back up off the floor. */
+  takeFromFloor(predicate: MaterialPredicate, count?: number): this {
+    const matches = this.state.materialPiles.filter((pile) =>
+      predicate(pile.material),
+    );
+    const wanted = count === undefined ? matches : matches.slice(0, count);
+    if (wanted.length === 0) {
+      throw new Error(
+        `Nothing matching on the floor — the piles hold ` +
+          `[${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
+      );
+    }
+    // Piles can sit on different cells; take them one cell at a time.
+    for (const pile of wanted) {
+      this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+    }
+    return this;
+  }
+
+  /**
+   * Carry the active commission out to the door and hand it over. Fails
+   * loudly rather than quietly doing nothing, because "the commission
+   * silently didn't complete" is the exact bug a playthrough exists to
+   * catch.
+   */
+  handOverCommission(): this {
+    const commission = getActiveCommission(this.state.progression);
+    if (!commission) {
+      throw new Error("No active commission to hand over");
+    }
+    const before = this.state.progression.commissionsCompleted;
+    this.standAtDoor().apply(completeCommissionAction());
+    if (this.state.progression.commissionsCompleted !== before + 1) {
+      throw new Error(
+        `"${commission.name}" would not hand over. Holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}], which does not ` +
+          `satisfy ${JSON.stringify(commission.requiredMaterials)}`,
+      );
+    }
+    return this.apply(clearPendingPayoutsAction);
   }
 }
 
