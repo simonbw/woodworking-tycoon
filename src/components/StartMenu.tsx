@@ -9,6 +9,7 @@ interface StartMenuProps {
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
   const [hasSave, setHasSave] = useState(() => hasSavedGame());
+  const [confirmingNewGame, setConfirmingNewGame] = useState(false);
 
   const handleContinue = () => {
     const saved = loadGame();
@@ -19,14 +20,20 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
     }
   };
 
+  // The shop saves itself as you work, so by the second session there is
+  // almost always something here to lose. That makes this a routine prompt
+  // rather than a rare one, which is why it's a card on the workbench and
+  // not a browser confirm().
   const handleNewGame = () => {
     if (hasSave) {
-      const ok = confirm(
-        "Start a new game? This will delete your current save.",
-      );
-      if (!ok) return;
-      deleteSave();
+      setConfirmingNewGame(true);
+      return;
     }
+    onStart(initialGameState);
+  };
+
+  const handleConfirmNewGame = () => {
+    deleteSave();
     onStart(initialGameState);
   };
 
@@ -68,6 +75,48 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
           </button>
         </div>
       </div>
+
+      {confirmingNewGame && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-black/60 p-4"
+          onClick={() => setConfirmingNewGame(false)}
+          role="presentation"
+        >
+          <div
+            className="paper-card w-full max-w-sm flex flex-col gap-5"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Start a new game"
+            data-testid="new-game-confirm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="font-condensed font-bold text-2xl uppercase tracking-wide text-ink-black">
+              Clear the shop?
+            </h2>
+            <p className="font-typewriter text-sm text-ink-black">
+              Starting a new game throws out the shop you have now. There is
+              only one bench, and this cannot be undone.
+            </p>
+            <div className="flex items-center justify-between gap-3 border-t-2 border-ink-black/20 pt-4">
+              <button
+                className="button-paper"
+                onClick={() => setConfirmingNewGame(false)}
+                data-sfx="ui-back"
+                autoFocus
+              >
+                Keep It
+              </button>
+              <button
+                className="button-paper"
+                onClick={handleConfirmNewGame}
+                data-testid="confirm-new-game"
+              >
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

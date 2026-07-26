@@ -58,6 +58,7 @@ The game follows a state-driven architecture with clear separation between game 
 - **GameState** (`src/game/GameState.ts`): Core game state interface containing all simulation data (money, materials, machines, commissions, etc.). Includes a `ProgressionState` slice for the persistent unlock state.
 - **Game Actions** (`src/game/game-actions/`): Pure functions that transform game state
 - **Save/Load** (`src/game/saveLoad.ts`): Serializes the persistent slice of `GameState` to/from JSON for browser storage
+- **Autosave** (`src/game/autosave.ts`, `src/components/useAutosave.ts`): The shop saves itself as it runs, so a refresh costs nothing. Writes are coalesced through `requestIdleCallback` (one write per idle moment, newest state wins) and flushed synchronously on `pagehide` — a closing tab has no async turn left. Because a save is always waiting, "New Game" confirms with a card on the workbench rather than a browser `confirm()`; E2E specs start games through `startNewGame` in `tests/navigation.ts`, which clicks through it
 - **Components** (`src/components/`): React components for UI, organized by feature areas
 
 ### Key Systems

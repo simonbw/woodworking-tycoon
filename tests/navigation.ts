@@ -4,6 +4,24 @@
  * panel that appears when the player stands at the entrance cell).
  */
 
+/**
+ * Start a fresh shop from the title screen.
+ *
+ * The shop autosaves as it runs, so any spec that starts a second game in
+ * the same context — the fat specs swap fixtures by rebooting halfway —
+ * finds a save already sitting there and gets the "Clear the shop?" card.
+ * Always going through here means a spec never has to care which half it's
+ * in.
+ */
+export async function startNewGame(page: any) {
+  await page.getByRole("button", { name: "New Game" }).click();
+  const confirmPanel = page.getByTestId("new-game-confirm");
+  if (await confirmPanel.isVisible().catch(() => false)) {
+    await page.getByTestId("confirm-new-game").click();
+  }
+  await confirmPanel.waitFor({ state: "hidden" }).catch(() => {});
+}
+
 /** Teleport the player to the garage door so its prompt appears. */
 export async function movePlayerToDoor(page: any) {
   await page.evaluate(() => {

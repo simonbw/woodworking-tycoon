@@ -10,6 +10,7 @@ import {
   movePlayerToDoor,
   openDoorPanel,
   setPaused,
+  startNewGame,
 } from "./navigation";
 
 /**
@@ -72,7 +73,7 @@ test.describe("Keyboard", () => {
       await page.goto("/");
       await page.waitForLoadState("domcontentloaded");
       await page.waitForSelector("main");
-      await page.getByRole("button", { name: "New Game" }).click();
+      await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
 
       await page.evaluate(() => {

@@ -8,6 +8,7 @@ import {
   movePlayerToDoor,
   openDoorPanel,
   openPhone,
+  startNewGame,
 } from "./navigation";
 
 /**
@@ -36,7 +37,7 @@ function workspaceCard(page: any) {
   return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
-async function startNewGame(page: Page) {
+async function bootShopCountingAudio(page: Page) {
   // Count every clip the page actually starts playing. Footsteps are
   // preloaded, so their fetch proves nothing about playback — but a fresh
   // shop with no machines running plays nothing at all until the player
@@ -56,7 +57,7 @@ async function startNewGame(page: Page) {
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("main");
   // A real click also unlocks the AudioContext, which playback depends on.
-  await page.getByRole("button", { name: "New Game" }).click();
+  await startNewGame(page);
   await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
   // Dismiss the shop manual's one-time welcome so it can't cover the UI.
   const manual = page.getByRole("dialog", { name: "Shop manual" });
@@ -94,7 +95,7 @@ test.describe("Market, supplies, and sound", () => {
     });
 
     await page.goto("http://localhost:3002");
-    await page.getByRole("button", { name: "New Game" }).click();
+    await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     const manual = page.getByRole("dialog", { name: "Shop manual" });
     if (await manual.count()) {
@@ -415,7 +416,7 @@ test.describe("Market, supplies, and sound", () => {
     });
 
     await test.step("start a clean game for the sound half", async () => {
-      await startNewGame(page);
+      await bootShopCountingAudio(page);
     });
 
     await test.step("every footstep take is served", async () => {

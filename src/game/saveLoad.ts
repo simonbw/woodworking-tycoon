@@ -30,7 +30,8 @@ export function saveGame(gameState: GameState): void {
     };
     const serialized = JSON.stringify(saveData);
     localStorage.setItem(SAVE_KEY, serialized);
-    console.log("Game saved successfully");
+    // Deliberately silent: autosave calls this several times a second, and
+    // console I/O costs far more than the save itself.
   } catch (error) {
     console.error("Failed to save game:", error);
   }

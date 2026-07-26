@@ -1,6 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import { modesOf, openStationSheet } from "./machine-panel";
-import { closeJournal, openJournal } from "./navigation";
+import { closeJournal, openJournal, startNewGame } from "./navigation";
 
 /**
  * Every screen the shop floor can reach, and what each one shows.
@@ -41,7 +41,7 @@ test.describe("Screens", () => {
       await page.goto("/");
       await page.waitForLoadState("domcontentloaded");
       await page.waitForSelector("main");
-      await page.getByRole("button", { name: "New Game" }).click();
+      await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
 
       await expect(manual).toBeVisible();
@@ -413,7 +413,7 @@ test.describe("Screens", () => {
     });
 
     await test.step("the reloaded store rehydrates into the UI", async () => {
-      await page.getByRole("button", { name: "New Game" }).click();
+      await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
       // A second fresh game greets us with the manual again; dismiss it.
       const manual = page.getByRole("dialog", { name: "Shop manual" });
