@@ -33,12 +33,18 @@ export default defineConfig({
   ],
 
   webServer: {
-    // Three deliberate differences from a plain `npm run dev`:
+    // Four deliberate differences from a plain `npm run dev`:
     //
-    // E2E_RENDER_FPS caps the shop's render loop. Headless Chromium runs
-    // rAF flat out, and a loop that never yields keeps the main thread busy
+    // E2E_RENDER_FPS caps the shop's render loop (and, in ShopView, shrinks
+    // what it rasterizes). Headless Chromium runs rAF flat out with no GPU
+    // behind it, and a loop that never yields keeps the main thread busy
     // enough that every Playwright round-trip queues behind a frame — 13ms
     // against 0.8ms, paid on every click and assertion. See ShopView.
+    //
+    // ES_BUILD_MINIFY/ES_BUILD_SOURCEMAP: every spec opens a fresh page, so
+    // the suite fetches and compiles the whole bundle 19 times over. Nobody
+    // reads a stack trace out of it, so it ships minified and mapless here —
+    // 5.0 MB down to 1.8 MB.
     //
     // ES_BUILD_OUTDIR keeps that capped bundle out of dist/, so a test run
     // can't leave a dev server you have open serving a throttled build.
@@ -48,7 +54,7 @@ export default defineConfig({
     // dispose esbuild's service child, which outlived it still holding this
     // port and serving a stale bundle.
     command:
-      'E2E_RENDER_FPS=5 ES_BUILD_OUTDIR=dist-e2e ES_BUILD_DEV_PORT=3002 node esbuild-client.config.mjs --dev',
+      'E2E_RENDER_FPS=5 ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=dist-e2e ES_BUILD_DEV_PORT=3002 node esbuild-client.config.mjs --dev',
     url: 'http://localhost:3002',
     // Always start our own. Reuse would attach to whatever happens to hold
     // 3002 — including the previous run's server on its way down, which

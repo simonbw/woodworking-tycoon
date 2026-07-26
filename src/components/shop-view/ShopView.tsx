@@ -39,8 +39,21 @@ import { ShopVacSprite } from "./ShopVacSprite";
 import { cellToPixel, cellToPixelVec } from "./shop-scale";
 
 /**
- * Cap the render loop when the E2E server asks for it (E2E_RENDER_FPS;
- * every other build leaves this empty and the ticker runs free).
+ * How much of the shop's pixels the E2E build actually rasterizes. The
+ * suite never looks at them — one spec checks the canvas is on screen and
+ * nothing reads back a colour — but headless Chromium has no GPU, so every
+ * frame is a software raster of the full canvas, and that is the largest
+ * single cost in the suite. A tenth in each axis leaves a hundredth of the
+ * fill work. Only the backing store shrinks: CSS size, hit testing, and
+ * the ticker's deltas are all in logical pixels, so nothing a spec drives
+ * can tell the difference.
+ */
+const E2E_RENDER_SCALE = 0.1;
+
+/**
+ * Trim the renderer down when the E2E server asks for it (E2E_RENDER_FPS;
+ * every other build leaves this empty and the ticker runs free at full
+ * resolution).
  *
  * Headless Chromium runs rAF as fast as it can, and a render loop that
  * never yields keeps the main thread busy enough that every Playwright
@@ -54,6 +67,7 @@ function capRenderRate(app: PixiApplication): void {
   const fps = Number(process.env.E2E_RENDER_FPS);
   if (Number.isFinite(fps) && fps > 0) {
     app.ticker.maxFPS = fps;
+    app.renderer.resolution = E2E_RENDER_SCALE;
   }
 }
 

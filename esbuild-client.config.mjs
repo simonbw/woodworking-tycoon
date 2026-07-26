@@ -18,6 +18,19 @@ const isDev = process.argv.some((arg) => arg == "--dev");
 // different flags (see E2E_RENDER_FPS below).
 const outdir = process.env.ES_BUILD_OUTDIR || "dist";
 
+// A dev build is unminified with a full source map, which is what you want
+// when you're the one reading the stack trace. The E2E server isn't: nobody
+// steps through that bundle, and every spec pays for it, because each test
+// opens a fresh page that fetches and compiles the whole thing. Turning
+// both off there trades debuggability nobody uses for a much smaller
+// download on every page load.
+const minify = process.env.ES_BUILD_MINIFY
+  ? process.env.ES_BUILD_MINIFY != "false"
+  : !isDev;
+const sourcemap = process.env.ES_BUILD_SOURCEMAP
+  ? process.env.ES_BUILD_SOURCEMAP != "false"
+  : true;
+
 // The dev server has no keepalive of its own -- the only things holding the
 // event loop open are the pipes to esbuild's service process. If that child
 // dies, the loop empties and this process exits 0 with nothing printed, which
@@ -83,8 +96,8 @@ const context = await esbuild
   .context({
     entryPoints: ["src/index.tsx", "src/styles/index.css"],
     bundle: true,
-    minify: !isDev,
-    sourcemap: true,
+    minify,
+    sourcemap,
     outdir,
     external: ["/fonts/*", "/images/*"],
     define: {
