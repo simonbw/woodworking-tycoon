@@ -1,11 +1,27 @@
-import { test, expect } from "@playwright/test";
+import { expect, Page, test } from "@playwright/test";
+import { selectMode } from "./machine-panel";
 import {
   closePhone,
+  goToStore,
   handOffAtDoor,
+  leaveStore,
   movePlayerToDoor,
   openDoorPanel,
   openPhone,
 } from "./navigation";
+
+/**
+ * Selling, supplying, and sounding.
+ *
+ * Three things the shop does that aren't making something: putting work on the
+ * phone and watching it sell, keeping the supply cabinet stocked off the
+ * store's aisle, and the audio bridge that turns a game event into a fetched
+ * clip. They share a browser because none of them needs a shop full of
+ * machines — a listing, a tin of nails, and a queued cue are enough.
+ *
+ * The sound half goes last: it drives cues straight into `pendingSounds`, and
+ * it wants a game with no work in flight emitting cues of its own.
+ */
 
 declare global {
   interface Window {
@@ -15,13 +31,61 @@ declare global {
   }
 }
 
-test.describe("Marketplace", () => {
-  test("should handle listings, sales, and scavenging workflow", async ({
+/** The workspace's spec-sheet card. */
+function workspaceCard(page: any) {
+  return page.locator("section", { hasText: "Makeshift Workbench" });
+}
+
+async function startNewGame(page: Page) {
+  await page.goto("/");
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForSelector("main");
+  // A real click also unlocks the AudioContext, which playback depends on.
+  await page.getByRole("button", { name: "New Game" }).click();
+  await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
+  // Dismiss the shop manual's one-time welcome so it can't cover the UI.
+  const manual = page.getByRole("dialog", { name: "Shop manual" });
+  await manual.waitFor();
+  await page.keyboard.press("Escape");
+  await manual.waitFor({ state: "detached" });
+}
+
+async function queueCue(page: Page, cue: Record<string, string>) {
+  await page.evaluate((c) => {
+    (window as any).__UPDATE_GAME_STATE__((s: any) => ({
+      ...s,
+      pendingSounds: [c],
+    }));
+  }, cue);
+}
+
+test.describe("Market, supplies, and sound", () => {
+  test("lists and sells, stocks the cabinet, and plays its cues", async ({
     page,
   }) => {
+    test.setTimeout(300000);
+
+    // Anything the page logs as an error — the sound half asserts silence.
+    const consoleErrors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") consoleErrors.push(msg.text());
+    });
+
+    // Every clip the page fetches, for the sound half at the end.
+    const requested: string[] = [];
+    page.on("request", (req) => {
+      const m = req.url().match(/\/sounds\/([^/?]+\.ogg)/);
+      if (m) requested.push(m[1]);
+    });
+
     await page.goto("http://localhost:3002");
     await page.getByRole("button", { name: "New Game" }).click();
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
+    const manual = page.getByRole("dialog", { name: "Shop manual" });
+    if (await manual.count()) {
+      await page.keyboard.press("Escape");
+      await manual.waitFor({ state: "detached" });
+    }
     await page.waitForTimeout(500);
 
     await test.step("locked before the marketplace unlocks", async () => {
@@ -166,9 +230,9 @@ test.describe("Marketplace", () => {
 
       // The phone takes the order but can't complete it — delivery is a
       // trip to the door with the goods in hand
-      await expect(
-        page.locator("li", { hasText: "E2E Tester" }),
-      ).toContainText("garage door");
+      await expect(page.locator("li", { hasText: "E2E Tester" })).toContainText(
+        "garage door",
+      );
       await expect(
         page.locator("li", { hasText: "E2E Tester" }).getByRole("button", {
           name: "Deliver",
@@ -264,6 +328,149 @@ test.describe("Marketplace", () => {
       await expect(
         page.getByTestId("door-panel").getByText("Scavenge for pallets"),
       ).toBeVisible();
+    });
+
+    await test.step("load the consumables shop", async () => {
+      await page.evaluate(() => {
+        const fixtures = (window as any).__TEST_FIXTURES__;
+        (window as any).__UPDATE_GAME_STATE__(
+          () => fixtures["consumables-shop"],
+        );
+      });
+      await page.waitForTimeout(30);
+    });
+
+    await test.step("shelf recipe shows its nail shortfall", async () => {
+      await selectMode(
+        page,
+        "Makeshift Workbench",
+        "Build Rustic Pallet Shelf",
+      );
+      await expect(page.getByText("8 nails (have 0)")).toBeVisible();
+      // Nothing to run without the nails — the sheet says so where the
+      // run button used to be
+      await expect(
+        workspaceCard(page).getByText("Load the bay to run it"),
+      ).toBeVisible();
+      // The sidebar supply cabinet stays hidden while everything is at zero
+      await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
+    });
+
+    await test.step("the cabinet appears once there's stock, and the count reads", async () => {
+      // Salvaging the nails is the sequence test's job; what's on trial here
+      // is the cabinet appearing and the readout following the count.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          consumables: { ...state.consumables, nails: 8 },
+        }));
+      });
+      await page.waitForTimeout(30);
+      const suppliesCard = page
+        .locator("section", { hasText: /^Supplies/ })
+        .first();
+      await expect(suppliesCard.getByText("Nails")).toBeVisible();
+      await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
+      // And the recipe's shortfall line clears
+      await expect(page.getByText("8 nails (have 8)")).toBeVisible();
+    });
+
+    await test.step("the store's supplies aisle sells packs", async () => {
+      const returnTo = await goToStore(page);
+      await expect(page.getByText("Shop Supplies")).toBeVisible();
+      await expect(page.getByText("Box of Nails")).toBeVisible();
+      await expect(page.getByText("Mineral Oil Bottle")).toBeVisible();
+
+      await page
+        .locator("li", { hasText: "Mineral Oil Bottle" })
+        .getByRole("button", { name: "Buy" })
+        .click();
+      await page.waitForTimeout(30);
+      await expect(page.getByText("In your shop: 16 oz")).toBeVisible();
+      const money = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().money,
+      );
+      expect(money).toBe(10);
+      await leaveStore(page, returnTo);
+    });
+
+    await test.step("the oil recipe reads its cost against the bottle", async () => {
+      await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
+      await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
+    });
+
+    await test.step("start a clean game for the sound half", async () => {
+      await startNewGame(page);
+    });
+
+    await test.step("an operation cue fetches that operation's clip", async () => {
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "dismantlePallet",
+      });
+      await expect.poll(() => requested).toContain("pallet-dismantle.ogg");
+    });
+
+    await test.step("the queue is drained after playing", async () => {
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () => (window as any).__GET_GAME_STATE__().pendingSounds.length,
+          ),
+        )
+        .toBe(0);
+    });
+
+    await test.step("machines with a continuous voice complete silently", async () => {
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "ripBoard",
+      });
+      // Drained means it was mapped (to silence) — then prove a later cue
+      // still plays, so the silent one had its chance to fetch and didn't.
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () => (window as any).__GET_GAME_STATE__().pendingSounds.length,
+          ),
+        )
+        .toBe(0);
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "glueUpPanel",
+      });
+      await expect.poll(() => requested).toContain("glue-clamp.ogg");
+      expect(requested).not.toContain("table-saw-rip.ogg");
+    });
+
+    await test.step("a tool operation sounds like the tool, not the bench", async () => {
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "orbitSandPanel",
+      });
+      await expect.poll(() => requested).toContain("orbital-sander.ogg");
+    });
+
+    await test.step("an unmapped operation falls back to the generic clip", async () => {
+      await queueCue(page, {
+        kind: "operation-complete",
+        operationId: "someFutureOperation",
+      });
+      await expect.poll(() => requested).toContain("assembly-mallet.ogg");
+    });
+
+    await test.step("the commission reward stinger plays", async () => {
+      await queueCue(page, { kind: "commission-complete" });
+      await expect.poll(() => requested).toContain("commission-complete.ogg");
+    });
+
+    await test.step("material handling cues play", async () => {
+      await queueCue(page, { kind: "material-pickup" });
+      await expect.poll(() => requested).toContain("material-pickup.ogg");
+    });
+
+    await test.step("no console errors from audio", async () => {
+      expect(consoleErrors).toEqual([]);
     });
   });
 });

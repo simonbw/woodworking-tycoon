@@ -1,5 +1,34 @@
 import { expect, Page, test } from "@playwright/test";
-import { movePlayerToDoor, openDoorPanel } from "./navigation";
+import {
+  holdOperate,
+  openStationSheet,
+  selectMode,
+  takeAllHere,
+} from "./machine-panel";
+import {
+  advanceTicks,
+  movePlayerToDoor,
+  openDoorPanel,
+  setPaused,
+} from "./navigation";
+
+/**
+ * Everything the keyboard does.
+ *
+ * Two halves, and they're the same subject from two angles. The first is
+ * routing: which key reaches which scope, what a modal swallows, what the
+ * browser's own focus handling keeps. The second is the operate key, which is
+ * the only binding whose *state* matters rather than its presses — attended
+ * work advances while it's held and stops when it isn't, so letting go is an
+ * assertion about the keyboard as much as about the glue.
+ *
+ * None of this is reachable outside a browser: it lives in listener ordering
+ * and document.activeElement. Both of the input bugs this suite has caught
+ * were here.
+ */
+
+const WORKSPACE_CELL: [number, number] = [1, 4];
+const FAR_AWAY: [number, number] = [0, 0];
 
 const getState = (page: Page) =>
   page.evaluate(() => (window as any).__GET_GAME_STATE__());
@@ -7,8 +36,32 @@ const getState = (page: Page) =>
 const playerPosition = async (page: Page): Promise<[number, number]> =>
   (await getState(page)).player.position;
 
-test.describe("Keyboard shortcuts", () => {
-  test("moves, navigates, scopes to modals, and labels its keys", async ({
+function workspaceCard(page: any) {
+  return page.locator("section", { hasText: "Makeshift Workbench" });
+}
+
+async function teleportPlayer(page: any, position: [number, number]) {
+  await page.evaluate((pos: [number, number]) => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: { ...state.player, position: pos },
+    }));
+  }, position);
+  await page.waitForTimeout(30);
+}
+
+async function workspaceProgress(page: any) {
+  return page.evaluate(
+    () =>
+      (window as any)
+        .__GET_GAME_STATE__()
+        .machines.find((m: any) => m.machineTypeId === "workspace")
+        .operationProgress,
+  );
+}
+
+test.describe("Keyboard", () => {
+  test("routes every key, scopes to modals, and holds to work", async ({
     page,
   }) => {
     // Many small steps; the default 30s budget is tight on slow machines
@@ -181,7 +234,9 @@ test.describe("Keyboard shortcuts", () => {
       await page.keyboard.press("m");
       await expect(phone).toHaveCount(0);
       // Drop focus so the button's tooltip can't linger into later steps
-      await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur(),
+      );
     });
 
     await test.step("a modal swallows the game's movement keys", async () => {
@@ -290,9 +345,7 @@ test.describe("Keyboard shortcuts", () => {
     await test.step("the top bar's buttons advertise their keys", async () => {
       await page.getByRole("button", { name: /^Journal/ }).hover();
       // Scoped by text so a stale tooltip elsewhere can't shadow this one
-      const tip = page
-        .getByRole("tooltip")
-        .filter({ hasText: "Your journal" });
+      const tip = page.getByRole("tooltip").filter({ hasText: "Your journal" });
       await expect(tip).toBeVisible();
       await expect(tip.locator("kbd")).toHaveText("J");
     });
@@ -302,6 +355,145 @@ test.describe("Keyboard shortcuts", () => {
       await expect(manifest).toBeVisible();
       await expect(manifest.getByText("In Hand")).toBeVisible();
       await expect(manifest.getByText("Underfoot")).toBeVisible();
+    });
+
+    // ---- the operate key -------------------------------------------------
+    // A shop with strips to sand and glue, so the hold-to-work half has
+    // something to work on.
+    await test.step("switch to a shop with work in it", async () => {
+      await page.evaluate(() => {
+        const fixtures = (window as any).__TEST_FIXTURES__;
+        (window as any).__UPDATE_GAME_STATE__(
+          () => fixtures["cutting-board-shop"],
+        );
+      });
+      await page.waitForTimeout(30);
+    });
+
+    await test.step("sanding pauses when you let go, resumes when you take hold", async () => {
+      // The tool rack lives on the station sheet
+      await openStationSheet(page);
+      await page.getByRole("button", { name: "Attach" }).click();
+      await page.waitForTimeout(30);
+      await selectMode(page, "Makeshift Workbench", "Sand Board");
+      await page
+        .locator("li", { hasText: "Maple 4/4" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
+        .click();
+      await page.waitForTimeout(30);
+
+      // Freeze the clock so starting the op and stepping away is deterministic
+      await setPaused(page, true);
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      // A tap starts the work; without the key held it goes no further
+      await page.keyboard.press("Space");
+      await page.waitForTimeout(30);
+      await teleportPlayer(page, FAR_AWAY);
+      await setPaused(page, false);
+
+      // Ticks flow again, but nobody is at the bench: progress is frozen
+      const before = await workspaceProgress(page);
+      await page.waitForTimeout(800);
+      const after = await workspaceProgress(page);
+      expect(before.status).toBe("inProgress");
+      expect(after.ticksRemaining).toBe(before.ticksRemaining);
+
+      // Standing there isn't enough either — the key has to be down
+      await teleportPlayer(page, WORKSPACE_CELL);
+      await page.waitForTimeout(800);
+      expect((await workspaceProgress(page)).ticksRemaining).toBe(
+        before.ticksRemaining,
+      );
+
+      // Back at the bench with the key held, it finishes
+      await holdOperate(page, () =>
+        page.evaluate(() =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .machines.some((m: any) =>
+              m.outputMaterials.some(
+                (mat: any) => mat.type === "board" && mat.surface === "sanded",
+              ),
+            ),
+        ),
+      );
+      await takeAllHere(page);
+    });
+
+    await test.step("glue-up: clamping needs you, curing runs without you", async () => {
+      await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
+      // 4 smooth strips (shift = move all of the row) + the sanded one
+      await page
+        .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
+        .filter({ hasText: "smooth, S4S" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
+        .click({ modifiers: ["Shift"] });
+      await page.waitForTimeout(30);
+      await page
+        .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
+        .filter({ hasText: "sanded, S4S" })
+        .getByRole("button", { name: "→ Makeshift Workbench" })
+        .click();
+      await page.waitForTimeout(30);
+
+      await setPaused(page, true);
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("Space");
+      await page.waitForTimeout(30);
+      await teleportPlayer(page, FAR_AWAY);
+      await setPaused(page, false);
+
+      // Clamping is attended: frozen at full duration while away
+      await page.waitForTimeout(800);
+      const paused = await workspaceProgress(page);
+      expect(paused.phaseIndex).toBe(0);
+      expect(paused.ticksRemaining).toBe(8);
+
+      // Return and take hold: the clamp phase runs, then curing begins
+      await teleportPlayer(page, WORKSPACE_CELL);
+      await holdOperate(page, () =>
+        page.evaluate(
+          () =>
+            (window as any)
+              .__GET_GAME_STATE__()
+              .machines.find((m: any) => m.machineTypeId === "workspace")
+              .operationProgress.phaseIndex === 1,
+        ),
+      );
+      // The phase-by-phase status reads off the station sheet
+      await openStationSheet(page);
+      await expect(
+        workspaceCard(page).getByText(/Curing \(hands-free\)/),
+      ).toBeVisible();
+
+      // Walk away mid-cure: it keeps going without you
+      await teleportPlayer(page, FAR_AWAY);
+      const cureBefore = await workspaceProgress(page);
+      await page.waitForTimeout(800);
+      const cureAfter = await workspaceProgress(page);
+      expect(cureAfter.ticksRemaining).toBeLessThan(cureBefore.ticksRemaining);
+
+      // Fast-forward the rest of the cure; the panel finishes with the
+      // player still across the shop
+      await advanceTicks(page, 200);
+      await page.waitForFunction(
+        () =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .machines.some((m: any) =>
+              m.outputMaterials.some((mat: any) => mat.type === "panel"),
+            ),
+        undefined,
+        { timeout: 15000 },
+      );
+      const playerPosition = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().player.position,
+      );
+      expect(playerPosition).toEqual(FAR_AWAY);
     });
   });
 });
