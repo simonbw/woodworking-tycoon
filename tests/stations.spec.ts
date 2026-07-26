@@ -13,6 +13,7 @@ import {
   goToStore,
   leaveStore,
   openJournal,
+  startNewGame,
 } from "./navigation";
 
 /**
@@ -101,7 +102,7 @@ test.describe("Stations", () => {
   }) => {
     test.setTimeout(300000);
     await page.goto("http://localhost:3002");
-    await page.getByRole("button", { name: "New Game" }).click();
+    await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     // The manual greets a new game and holds the keyboard until dismissed
     const manual = page.getByRole("dialog", { name: "Shop manual" });

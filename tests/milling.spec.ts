@@ -6,7 +6,7 @@ import {
   selectMode,
   takeAllHere,
 } from "./machine-panel";
-import { pumpTicks } from "./navigation";
+import { pumpTicks, startNewGame } from "./navigation";
 import { goToLumberyard, goToStore, leaveStore } from "./navigation";
 
 /**
@@ -218,7 +218,7 @@ test.describe("Milling", () => {
   }) => {
     test.setTimeout(300000);
     await page.goto("http://localhost:3002");
-    await page.getByRole("button", { name: "New Game" }).click();
+    await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     // The manual greets a new game and holds the keyboard until dismissed
     const manual = page.getByRole("dialog", { name: "Shop manual" });

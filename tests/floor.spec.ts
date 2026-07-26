@@ -7,6 +7,7 @@ import {
   leaveStore,
   movePlayerToDoor,
   openDoorPanel,
+  startNewGame,
 } from "./navigation";
 
 /**
@@ -77,7 +78,7 @@ test.describe("Shop floor", () => {
       await expect(
         page.getByRole("heading", { name: "Woodworking Tycoon" }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "New Game" }).click();
+      await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
     });
 
@@ -275,7 +276,7 @@ test.describe("Shop floor", () => {
       // The door lists the *active* commission, so this half wants a shop that
       // hasn't completed any — a fixture would have to undo that.
       await page.goto("http://localhost:3002");
-      await page.getByRole("button", { name: "New Game" }).click();
+      await startNewGame(page);
       await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
       // A fresh game re-opens the manual, and a modal swallows the door key.
       const manual = page.getByRole("dialog", { name: "Shop manual" });
@@ -393,6 +394,46 @@ test.describe("Shop floor", () => {
       ).toHaveCount(0);
       // The store trip it unlocked is there instead
       await expect(panel).toContainText("Orange Box");
+    });
+
+    await test.step("a refresh keeps the shop, without anyone saving it", async () => {
+      // Nothing above ever quit to the menu or pressed save — the shop has
+      // been autosaving as it ran. A reload is the real test of that.
+      await page.reload();
+      await page.waitForSelector("main");
+
+      const continueButton = page.getByRole("button", { name: "Continue" });
+      await expect(continueButton).toBeVisible();
+      await continueButton.click();
+      await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
+
+      // The handoff's earnings are still there, so is the commission it
+      // unlocked — this is the same shop, not a fresh one.
+      await expect(page.getByTestId("balance")).toHaveText("$200.00");
+      await expect(page.getByTestId("reputation")).toHaveText("★ 2.0");
+      await expect(page.getByText("Cut to Order")).toBeVisible();
+    });
+
+    await test.step("starting over asks first, then clears the shop", async () => {
+      await page.reload();
+      await page.waitForSelector("main");
+      await page.getByRole("button", { name: "New Game" }).click();
+
+      // A browser confirm() would be invisible to the design system and
+      // auto-dismissed by Playwright; this is a card on the workbench.
+      const confirmPanel = page.getByTestId("new-game-confirm");
+      await expect(confirmPanel).toBeVisible();
+
+      await confirmPanel.getByRole("button", { name: "Keep It" }).click();
+      await expect(confirmPanel).toBeHidden();
+      await expect(
+        page.getByRole("button", { name: "Continue" }),
+      ).toBeVisible();
+
+      await page.getByRole("button", { name: "New Game" }).click();
+      await page.getByTestId("confirm-new-game").click();
+      await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
+      await expect(page.getByTestId("balance")).toHaveText("$0.00");
     });
   });
 });

@@ -9,6 +9,7 @@ import { GameState } from "../game/GameState";
 import { UpdateFunction } from "../utils/typeUtils";
 import { saveGame } from "../game/saveLoad";
 import { getMachines, Machine } from "../game/Machine";
+import { useAutosave } from "./useAutosave";
 
 export const gameStateContext = createContext<
   | {
@@ -26,6 +27,8 @@ export const GameStateProvider: React.FC<{
   children?: ReactNode;
 }> = ({ initialState, onQuitToMenu, children }) => {
   const [gameState, setGameState] = useState<GameState>(initialState);
+
+  useAutosave(gameState);
 
   const handleSaveGame = () => {
     saveGame(gameState);
