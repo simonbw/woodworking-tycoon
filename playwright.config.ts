@@ -39,7 +39,8 @@ export default defineConfig({
     // what it rasterizes). Headless Chromium runs rAF flat out with no GPU
     // behind it, and a loop that never yields keeps the main thread busy
     // enough that every Playwright round-trip queues behind a frame — 13ms
-    // against 0.8ms, paid on every click and assertion. See ShopView.
+    // against 0.8ms, paid on every click and assertion. Ten is the floor:
+    // below it the motion layer's delta clamp slows walking down. See ShopView.
     //
     // ES_BUILD_MINIFY/ES_BUILD_SOURCEMAP: every spec opens a fresh page, so
     // the suite fetches and compiles the whole bundle 19 times over. Nobody
@@ -54,7 +55,7 @@ export default defineConfig({
     // dispose esbuild's service child, which outlived it still holding this
     // port and serving a stale bundle.
     command:
-      'E2E_RENDER_FPS=5 ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=dist-e2e ES_BUILD_DEV_PORT=3002 node esbuild-client.config.mjs --dev',
+      'E2E_RENDER_FPS=10 ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=dist-e2e ES_BUILD_DEV_PORT=3002 node esbuild-client.config.mjs --dev',
     url: 'http://localhost:3002',
     // Always start our own. Reuse would attach to whatever happens to hold
     // 3002 — including the previous run's server on its way down, which

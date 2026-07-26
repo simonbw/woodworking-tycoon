@@ -1,11 +1,18 @@
 import { test, expect } from "@playwright/test";
-import {
-  modesOf,
-  openStationSheet,
-  runWhileHolding,
-  selectMode,
-} from "./machine-panel";
-import { closeJournal, openJournal, openPhone } from "./navigation";
+import { modesOf, openStationSheet } from "./machine-panel";
+import { closeJournal, openJournal } from "./navigation";
+
+/**
+ * The journal: certificates for what you already know, a badge counting the
+ * points you haven't spent, requirements shown instead of a Learn button when
+ * a node is out of reach, and — the part that matters most — a recipe that
+ * simply is not at the bench until the skill is learned.
+ *
+ * What the skill buys is checked in
+ * `src/game/sequences/two-tone-chain.test.ts`: the glue-up, the two sanding
+ * passes, the board naming both woods, and the 240 XP that hands the point
+ * back.
+ */
 
 declare global {
   interface Window {
@@ -15,16 +22,12 @@ declare global {
   }
 }
 
-function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Makeshift Workbench" });
-}
-
 async function workspaceModes(page: any): Promise<string[]> {
   return modesOf(page, "Makeshift Workbench");
 }
 
 test.describe("Skill Tree", () => {
-  test("should show certificates, gate recipes, and unlock two-tone boards", async ({
+  test("shows certificates, counts points, and reveals a learned recipe", async ({
     page,
   }) => {
     test.setTimeout(90000);
@@ -110,7 +113,7 @@ test.describe("Skill Tree", () => {
       await expect(page.getByTestId("journal-badge")).toHaveText("1");
     });
 
-    await test.step("build a two-tone board: mount sander, glue, sand, finish", async () => {
+    await test.step("learning it puts the recipe on the bench", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
@@ -118,144 +121,7 @@ test.describe("Skill Tree", () => {
 
       const modes = await workspaceModes(page);
       expect(modes).toContain("Finish Two-Tone Board");
-
-      // Glue the five mixed strips
-      await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
-      for (const rowName of ["Walnut 4/4", "Maple 4/4"]) {
-        await page
-          .locator("li", { hasText: rowName })
-          .getByRole("button", { name: "→ Makeshift Workbench" })
-          .click({ modifiers: ["Shift"] });
-        await page.waitForTimeout(30);
-      }
-      await runWhileHolding(
-        page,
-        
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines.some((m: any) =>
-              m.outputMaterials.some((mat: any) => mat.type === "panel"),
-            ),
-        undefined,
-        { timeout: 30000 },
-      );
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
-      await expect(
-        page.getByText("Mixed Wood Panel 4/4 — 10\" × 2'").first(),
-      ).toBeVisible();
-
-      // Two sanding passes
-      await selectMode(page, "Makeshift Workbench", "Sand Panel");
-      for (const surface of ["smooth", "sanded"]) {
-        await page
-          .locator("li", { hasText: "Mixed Wood Panel" })
-          .getByRole("button", { name: "→ Makeshift Workbench" })
-          .click();
-        await page.waitForTimeout(30);
-        await runWhileHolding(
-          page,
-          
-          (expected: string) =>
-            (window as any)
-              .__GET_GAME_STATE__()
-              .machines.some((m: any) =>
-                m.outputMaterials.some(
-                  (mat: any) =>
-                    mat.type === "panel" && mat.surface === expected,
-                ),
-              ),
-          surface,
-          { timeout: 15000 },
-        );
-        await workspaceCard(page)
-          .getByRole("button", { name: /Take All/ })
-          .click();
-        await page.waitForTimeout(30);
-      }
-
-      // Finish it
-      await selectMode(page, "Makeshift Workbench", "Finish Two-Tone Board");
-      await page
-        .locator("li", { hasText: "Mixed Wood Panel" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
-      await page.waitForTimeout(30);
-      await runWhileHolding(
-        page,
-        
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines.some((m: any) =>
-              m.outputMaterials.some(
-                (mat: any) => mat.type === "simpleCuttingBoard",
-              ),
-            ),
-        undefined,
-        { timeout: 15000 },
-      );
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
-
-      const cuttingBoard = await page.evaluate(() =>
-        (window as any)
-          .__GET_GAME_STATE__()
-          .player.inventory.find(
-            (mat: any) => mat.type === "simpleCuttingBoard",
-          ),
-      );
-      expect(cuttingBoard.species).toBe("walnut");
-      expect(cuttingBoard.accentSpecies).toBe("maple");
-      await expect(
-        page.getByText("Walnut & Maple Simple Cutting Board").first(),
-      ).toBeVisible();
     });
 
-    await test.step("finishing it earned XP and a level", async () => {
-      // Two-tone board: $240 sell value -> 240 XP -> level 2 -> +1 point
-      const progression = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().progression,
-      );
-      expect(progression.xp).toBe(240);
-      expect(progression.skillPoints).toBe(2);
-    });
-
-    await test.step("sell it at the two-tone premium", async () => {
-      const moneyBefore = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().money,
-      );
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          player: { ...state.player, position: [3, 3] },
-        }));
-      });
-      await page.waitForTimeout(30);
-      await openPhone(page);
-      await page
-        .locator("li", { hasText: "Walnut & Maple" })
-        .getByRole("button", { name: "List" })
-        .click();
-      // Fair-value listings are guaranteed by the pity timer — jump past it
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) =>
-          state.listings.length === 0
-            ? state
-            : { ...state, tick: state.listings[0].listedAtTick + 2 * 600 },
-        );
-      });
-      await page.waitForFunction(
-        (before: number) =>
-          (window as any).__GET_GAME_STATE__().money === before + 240,
-        moneyBefore,
-        { timeout: 10000 },
-      );
-    });
   });
 });

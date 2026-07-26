@@ -59,9 +59,15 @@ const E2E_RENDER_SCALE = 0.1;
  * never yields keeps the main thread busy enough that every Playwright
  * round-trip has to queue behind a frame — measured at 13ms against 0.8ms
  * with the canvas gone. That tax lands on every click and every assertion
- * in the suite. Capping the rate hands the thread back between frames
- * without changing what gets drawn: walking still integrates in useTick
- * off the ticker's own delta, so it covers the same ground per second.
+ * in the suite. Capping the rate hands the thread back between frames.
+ *
+ * Don't cap below 10. Walking integrates off the ticker's delta, and
+ * PlayerMotionLayer clamps that delta to 100ms so a tab-switch hitch can't
+ * fling the body — which means at any rate slower than 10fps the clamp bites
+ * every frame and the player covers less ground per second than they should.
+ * At 5fps the body walked at half speed, and the movement specs' waits went
+ * from comfortable to marginal. Ten is where the clamp stops mattering; going
+ * higher buys nothing measurable now that the resolution is scaled down.
  */
 function capRenderRate(app: PixiApplication): void {
   const fps = Number(process.env.E2E_RENDER_FPS);

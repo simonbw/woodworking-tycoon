@@ -18,6 +18,7 @@ import {
   Machine,
   MachineState,
   Operation,
+  ParameterValues,
   getMachines,
 } from "../Machine";
 import { GameAction, GameState } from "../GameState";
@@ -179,15 +180,21 @@ export class ShopDriver {
     return found;
   }
 
-  /** Set the station's plan. */
+  /**
+   * Set the station's plan, and its settings if the plan has any — the angle
+   * and target length on a saw cut, say. Anything left out keeps the
+   * operation's own default, exactly as the sheet's scales do.
+   */
   select(
     machineTypeId: MachineState["machineTypeId"],
     operationId: string,
+    parameters?: ParameterValues,
   ): this {
     return this.apply(
       setMachineOperationAction(
         this.machine(machineTypeId),
         this.operation(machineTypeId, operationId),
+        parameters,
       ),
     );
   }
@@ -291,10 +298,11 @@ export class ShopDriver {
     machineTypeId: MachineState["machineTypeId"],
     operationId: string,
     stock: MaterialPredicate,
+    options?: { parameters?: ParameterValues; count?: number },
   ): this {
     return this.standAtOperatorCell(machineTypeId)
-      .select(machineTypeId, operationId)
-      .load(machineTypeId, stock)
+      .select(machineTypeId, operationId, options?.parameters)
+      .load(machineTypeId, stock, options?.count)
       .run(machineTypeId)
       .collect(machineTypeId);
   }

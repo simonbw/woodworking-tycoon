@@ -3,11 +3,19 @@ import {
   machineCard,
   modesOf,
   openStationSheet,
-  runWhileHolding,
   selectMode,
-  setParameter,
 } from "./machine-panel";
-import { goToStore, leaveStore, setTickRate } from "./navigation";
+import { goToStore, leaveStore } from "./navigation";
+
+/**
+ * The UI end of the hand tools: buying them off the tool wall, filling both
+ * of the bench's two slots, and the setup scales a hand cut is dialled in on
+ * — an angle, which end faces the blade, and the length you're keeping.
+ *
+ * What the tools do — the cut that keeps 2' and leaves a 1' offcut, the box
+ * that spends eight screws, the refusal when the tin is short — is in
+ * `src/game/sequences/hand-tools-chain.test.ts`.
+ */
 
 declare global {
   interface Window {
@@ -23,7 +31,7 @@ function workspaceCard(page: any) {
 }
 
 test.describe("Hand tools", () => {
-  test("buys the hand saw and drill, cuts by hand, and screws a planter box together", async ({
+  test("buys both tools, fills the rack, and shows the cut's scales", async ({
     page,
   }) => {
     test.setTimeout(120000);
@@ -86,9 +94,7 @@ test.describe("Hand tools", () => {
       expect(modes).toContain("Build Rustic Planter Box");
     });
 
-    await test.step("the hand saw crosscuts with the miter saw's full setup", async () => {
-      // Run fast so the slow hand work flies by
-      await setTickRate(page, 20);
+    await test.step("the hand cut is dialled in on three scales", async () => {
       await selectMode(page, "Makeshift Workbench", "Cut Board by Hand");
       const card = workspaceCard(page);
       await expect(
@@ -97,63 +103,15 @@ test.describe("Hand tools", () => {
       await expect(
         card.getByRole("radiogroup", { name: "Cut End" }),
       ).toBeVisible();
-      await setParameter(page, "Makeshift Workbench", "Target Length", "2");
-
-      await page
-        .locator("li", { hasText: "Pallet Wood 1/4 — 4\" × 3'" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
-      await page.waitForTimeout(30);
-      // The cut leaves the kept 2' slat and a 1' offcut
-      await runWhileHolding(
-        page,
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines[0].outputMaterials.filter(
-              (mat: any) => mat.type === "board",
-            ).length === 2,
-        undefined,
-        { timeout: 20000 },
-      );
-      await card.getByRole("button", { name: /Take All/ }).click();
-      await page.waitForTimeout(30);
+      await expect(
+        card.getByRole("radiogroup", { name: "Target Length" }),
+      ).toBeVisible();
     });
 
-    await test.step("five slats and eight screws become a planter box", async () => {
+    await test.step("the planter box reads its screw cost against the tin", async () => {
       await selectMode(page, "Makeshift Workbench", "Build Rustic Planter Box");
       await expect(page.getByText("8 screws (have 50)")).toBeVisible();
-
-      // Shift-click loads every matching 2' slat — all five at once
-      await page
-        .locator("li", { hasText: "Pallet Wood 1/4 — 4\" × 2'" })
-        .first()
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(30);
-
-      await runWhileHolding(
-        page,
-        
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines[0].outputMaterials.some(
-              (mat: any) => mat.type === "planterBox",
-            ),
-        undefined,
-        { timeout: 20000 },
-      );
-      const screws = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().consumables.screws,
-      );
-      expect(screws).toBe(42);
-
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
-      await expect(page.getByText("Planter box").first()).toBeVisible();
     });
+
   });
 });

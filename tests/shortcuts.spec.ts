@@ -82,6 +82,13 @@ test.describe("Keyboard shortcuts", () => {
       } finally {
         await page.keyboard.up(key);
       }
+      if (same(reached, start)) {
+        throw new Error(
+          `${key} never moved the body off ${start} in 10s. If this is not a ` +
+            `broken binding, check the render cap in ShopView — walking is ` +
+            `frame-driven, and a cap below 10fps slows it down.`,
+        );
+      }
       const [ax, cross] = dx !== 0 ? [0, 1] : [1, 0];
       const dir = dx !== 0 ? dx : dy;
       expect(reached[cross], `${key} drifted sideways`).toBe(start[cross]);
