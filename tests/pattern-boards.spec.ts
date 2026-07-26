@@ -1,10 +1,19 @@
 import { test, expect } from "@playwright/test";
-import {
-  modesOf,
-  runWhileHolding,
-  selectMode as selectMachineMode,
-} from "./machine-panel";
-import { closeJournal, openJournal, openPhone, setTickRate } from "./navigation";
+import { modesOf } from "./machine-panel";
+import { closeJournal, openJournal } from "./navigation";
+
+/**
+ * The UI end of the pattern-board tiers: the journal row that names both
+ * prerequisites, spending the three points, and the bench's recipe list
+ * growing as they're spent. Progressive disclosure is the whole subject —
+ * a locked recipe is *absent*, not greyed out, so the before/after list is
+ * the assertion.
+ *
+ * The boards themselves — the fade glued strip by strip, the 12" blank, the
+ * two sanding passes, the dominant-species naming, the 960 XP — are checked
+ * in `src/game/sequences/pattern-boards-chain.test.ts`. That run used to
+ * happen here and made this the slowest test in the suite.
+ */
 
 declare global {
   interface Window {
@@ -14,53 +23,12 @@ declare global {
   }
 }
 
-function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Makeshift Workbench" });
-}
-
 async function workspaceModes(page: any): Promise<string[]> {
   return modesOf(page, "Makeshift Workbench");
 }
 
-async function selectMode(page: any, label: string) {
-  await selectMachineMode(page, "Makeshift Workbench", label);
-}
-
-async function moveToWorkspace(page: any, rowText: string) {
-  await page
-    .locator("li", { hasText: rowText })
-    .first()
-    .getByRole("button", { name: "→ Makeshift Workbench" })
-    .click();
-  await page.waitForTimeout(30);
-}
-
-/** Operate the workspace, wait for an output matching the predicate source, take it. */
-async function operateAndTake(
-  page: any,
-  isDoneSource: string,
-  timeout: number,
-) {
-  await runWhileHolding(
-    page,
-    
-    (src: string) => {
-      const matches = new Function("mat", `return (${src})(mat)`) as any;
-      return (window as any)
-        .__GET_GAME_STATE__()
-        .machines.some((m: any) => m.outputMaterials.some(matches));
-    },
-    isDoneSource,
-    { timeout },
-  );
-  await workspaceCard(page)
-    .getByRole("button", { name: /Take All/ })
-    .click();
-  await page.waitForTimeout(30);
-}
-
 test.describe("Pattern Boards", () => {
-  test("should unlock striped and sunrise tiers and build both boards", async ({
+  test("gates sunrise behind both branches and grows the recipe list", async ({
     page,
   }) => {
     test.setTimeout(240000);
@@ -110,124 +78,6 @@ test.describe("Pattern Boards", () => {
       expect(modes).toContain("Glue On Strip");
       expect(modes).toContain("Finish Striped Board");
       expect(modes).toContain("Finish Sunrise Board");
-    });
-
-    await test.step("finish the striped blank", async () => {
-      // Run fast: the glue cures are long by design
-      await setTickRate(page, 20);
-      await selectMode(page, "Finish Striped Board");
-      await moveToWorkspace(page, "Mixed Wood Panel");
-      await operateAndTake(
-        page,
-        `(mat) => mat.type === "stripedCuttingBoard"`,
-        30000,
-      );
-      await expect(
-        page.getByText("Walnut & Maple Striped Cutting Board").first(),
-      ).toBeVisible();
-    });
-
-    await test.step("glue the sunrise fade strip by strip", async () => {
-      // Seed pair: 3" walnut then 1" maple
-      await selectMode(page, "Glue Up Pair");
-      await moveToWorkspace(page, `Walnut 4/4 — 3" × 2'`);
-      await moveToWorkspace(page, `Maple 4/4 — 1" × 2'`);
-      await operateAndTake(page, `(mat) => mat.type === "panel"`, 30000);
-
-      // Extend with the remaining fade: 2" walnut, 2" maple, 1" walnut, 3" maple
-      const fade = [
-        `Walnut 4/4 — 2" × 2'`,
-        `Maple 4/4 — 2" × 2'`,
-        `Walnut 4/4 — 1" × 2'`,
-        `Maple 4/4 — 3" × 2'`,
-      ];
-      await selectMode(page, "Glue On Strip");
-      for (const [i, row] of fade.entries()) {
-        await moveToWorkspace(page, "Mixed Wood Panel");
-        await moveToWorkspace(page, row);
-        const expectedStrips = 3 + i;
-        await operateAndTake(
-          page,
-          `(mat) => mat.type === "panel" && mat.strips.length === ${expectedStrips}`,
-          30000,
-        );
-      }
-      // 3+1+2+2+1+3 = a 12" wide blank
-      await expect(
-        page.getByText(`Mixed Wood Panel 4/4 — 12" × 2'`).first(),
-      ).toBeVisible();
-    });
-
-    await test.step("sand twice and finish the sunrise board", async () => {
-      await selectMode(page, "Sand Panel");
-      for (const surface of ["smooth", "sanded"]) {
-        await moveToWorkspace(page, "Mixed Wood Panel");
-        await operateAndTake(
-          page,
-          `(mat) => mat.type === "panel" && mat.surface === "${surface}"`,
-          30000,
-        );
-      }
-      await selectMode(page, "Finish Sunrise Board");
-      await moveToWorkspace(page, "Mixed Wood Panel");
-      await operateAndTake(
-        page,
-        `(mat) => mat.type === "sunriseCuttingBoard"`,
-        30000,
-      );
-      const board = await page.evaluate(() =>
-        (window as any)
-          .__GET_GAME_STATE__()
-          .player.inventory.find(
-            (mat: any) => mat.type === "sunriseCuttingBoard",
-          ),
-      );
-      expect(board.species).toBe("walnut");
-      expect(board.accentSpecies).toBe("maple");
-      await expect(
-        page.getByText("Walnut & Maple Sunrise Cutting Board").first(),
-      ).toBeVisible();
-    });
-
-    await test.step("both boards earned XP and levels", async () => {
-      // Striped $360 + sunrise $600 = 960 XP -> level 4 -> 3 points earned
-      const progression = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().progression,
-      );
-      expect(progression.xp).toBe(960);
-      expect(progression.skillPoints).toBe(3);
-    });
-
-    await test.step("sell the sunrise board at its premium", async () => {
-      const moneyBefore = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().money,
-      );
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          player: { ...state.player, position: [3, 3] },
-        }));
-      });
-      await page.waitForTimeout(30);
-      await openPhone(page);
-      await page
-        .locator("li", { hasText: "Sunrise Cutting Board" })
-        .getByRole("button", { name: "List" })
-        .click();
-      // Fair-value listings are guaranteed by the pity timer — jump past it
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) =>
-          state.listings.length === 0
-            ? state
-            : { ...state, tick: state.listings[0].listedAtTick + 2 * 600 },
-        );
-      });
-      await page.waitForFunction(
-        (before: number) =>
-          (window as any).__GET_GAME_STATE__().money === before + 600,
-        moneyBefore,
-        { timeout: 10000 },
-      );
     });
   });
 });

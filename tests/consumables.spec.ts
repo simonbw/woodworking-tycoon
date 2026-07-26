@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
-import {
-  runWhileHolding,
-  selectMode,
-} from "./machine-panel";
-import { goToStore, leaveStore, setTickRate } from "./navigation";
+import { selectMode } from "./machine-panel";
+import { goToStore, leaveStore } from "./navigation";
+
+/**
+ * The UI end of the consumables loop: how a recipe reads when the shop is
+ * short of supplies, the supply cabinet that only exists once there's stock
+ * to put in it, and the store aisle the packs come off.
+ *
+ * The loop's arithmetic — five pry-aparts yielding exactly the eight nails
+ * one rustic shelf costs, the shelf refusing to start at seven, the 4 oz a
+ * wipe-down spends — is in `src/game/sequences/consumables-chain.test.ts`.
+ */
 
 declare global {
   interface Window {
@@ -18,14 +25,8 @@ function workspaceCard(page: any) {
   return page.locator("section", { hasText: "Makeshift Workbench" });
 }
 
-async function nailCount(page: any): Promise<number> {
-  return page.evaluate(
-    () => (window as any).__GET_GAME_STATE__().consumables.nails,
-  );
-}
-
 test.describe("Consumables", () => {
-  test("salvaged nails build the shelf, store oil finishes the board", async ({
+  test("reads the shortfall, reveals the cabinet, and sells the packs", async ({
     page,
   }) => {
     test.setTimeout(120000);
@@ -39,8 +40,6 @@ test.describe("Consumables", () => {
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["consumables-shop"]);
     });
     await page.waitForTimeout(30);
-    // Run fast so the timed operations fly by
-    await setTickRate(page, 20);
 
     await test.step("shelf recipe shows its nail shortfall", async () => {
       await selectMode(
@@ -58,80 +57,23 @@ test.describe("Consumables", () => {
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });
 
-    await test.step("dismantling the pallet returns its nails", async () => {
-      await selectMode(page, "Makeshift Workbench", "Dismantle Pallet");
-      // Four single deck boards, then the final pry-apart (3 stringers + 1
-      // deck board): 8 boards and 8 nails all told
-      const outputsAfterRun = [1, 2, 3, 4, 8];
-      for (const expected of outputsAfterRun) {
-        await runWhileHolding(
-          page,
-          
-          (count: number) => {
-            const machine = (window as any).__GET_GAME_STATE__().machines[0];
-            return (
-              machine.operationProgress.status === "notStarted" &&
-              machine.outputMaterials.length === count
-            );
-          },
-          expected,
-          { timeout: 15000 },
-        );
-      }
-      expect(await nailCount(page)).toBe(8);
-      // The supply cabinet card appears once there's stock to show
+    await test.step("the cabinet appears once there's stock, and the count reads", async () => {
+      // Salvaging the nails is the sequence test's job; what's on trial here
+      // is the cabinet appearing and the readout following the count.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          consumables: { ...state.consumables, nails: 8 },
+        }));
+      });
+      await page.waitForTimeout(30);
       const suppliesCard = page
         .locator("section", { hasText: /^Supplies/ })
         .first();
       await expect(suppliesCard.getByText("Nails")).toBeVisible();
       await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
-    });
-
-    await test.step("the salvaged nails cover one rustic shelf", async () => {
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
-      await selectMode(
-        page,
-        "Makeshift Workbench",
-        "Build Rustic Pallet Shelf",
-      );
+      // And the recipe's shortfall line clears
       await expect(page.getByText("8 nails (have 8)")).toBeVisible();
-
-      // Load exactly 2 stringers and 3 deck boards
-      for (let i = 0; i < 2; i++) {
-        await page
-          .locator("li", { hasText: '3/4 — 6"' })
-          .getByRole("button", { name: "→ Makeshift Workbench" })
-          .click();
-        await page.waitForTimeout(30);
-      }
-      for (let i = 0; i < 3; i++) {
-        await page
-          .locator("li", { hasText: '1/4 — 4"' })
-          .getByRole("button", { name: "→ Makeshift Workbench" })
-          .click();
-        await page.waitForTimeout(30);
-      }
-
-      await runWhileHolding(
-        page,
-        
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines[0].outputMaterials.some(
-              (mat: any) => mat.type === "rusticShelf",
-            ),
-        undefined,
-        { timeout: 15000 },
-      );
-      expect(await nailCount(page)).toBe(0);
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {
@@ -153,39 +95,9 @@ test.describe("Consumables", () => {
       await leaveStore(page, returnTo);
     });
 
-    await test.step("mineral oil turns the board into an oiled board", async () => {
+    await test.step("the oil recipe reads its cost against the bottle", async () => {
       await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
       await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
-
-      await page
-        .locator("li", { hasText: "Simple cutting board" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
-      await page.waitForTimeout(30);
-      // The oil leaves the bottle the moment the wipe-down starts
-      // One hold covers the whole wipe-down: the oil leaves the bottle the
-      // moment it starts, and the board comes out oiled at the end of it.
-      await runWhileHolding(
-        page,
-        () =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines[0].outputMaterials.some(
-              (mat: any) => mat.finish === "mineralOil",
-            ),
-        undefined,
-        { timeout: 20000 },
-      );
-      expect(
-        await page.evaluate(
-          () => (window as any).__GET_GAME_STATE__().consumables.mineralOil,
-        ),
-      ).toBe(12);
-      await workspaceCard(page)
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
-      await expect(page.getByText("Oiled Simple cutting board")).toBeVisible();
     });
   });
 });

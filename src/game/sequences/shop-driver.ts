@@ -192,21 +192,47 @@ export class ShopDriver {
     );
   }
 
-  /** Carry the matching stock from hand onto the station. */
+  /**
+   * Carry the matching stock from hand onto the station. `count` takes only
+   * the first so many matches, for recipes that want two of one board and
+   * three of another out of a pile of both.
+   *
+   * The move is checked rather than assumed: a bay with fewer free spaces
+   * than the load needs refuses the whole thing and warns, which downstream
+   * looks like a station that won't start for no reason.
+   */
   load(
     machineTypeId: MachineState["machineTypeId"],
     predicate: MaterialPredicate,
+    count?: number,
   ): this {
-    const materials = this.holding(predicate);
+    const matches = this.holding(predicate);
+    const materials = count === undefined ? matches : matches.slice(0, count);
     if (materials.length === 0) {
       throw new Error(
         `Nothing in hand to load onto the ${machineTypeId} — holding ` +
           `[${this.inventory.map((m) => m.type).join(", ")}]`,
       );
     }
-    return this.apply(
+    if (count !== undefined && materials.length < count) {
+      throw new Error(
+        `Wanted ${count} matching pieces for the ${machineTypeId}, ` +
+          `only ${materials.length} in hand`,
+      );
+    }
+    const before = this.machine(machineTypeId).state.inputMaterials.length;
+    this.apply(
       moveMaterialsToMachineAction(materials, this.machine(machineTypeId)),
     );
+    const after = this.machine(machineTypeId).state.inputMaterials.length;
+    if (after !== before + materials.length) {
+      throw new Error(
+        `The ${machineTypeId} would not take ${materials.length} more ` +
+          `pieces — its bay holds ${this.machine(machineTypeId).type.inputSpaces} ` +
+          `and already had ${before}. Load only what the recipe wants.`,
+      );
+    }
+    return this;
   }
 
   /**
