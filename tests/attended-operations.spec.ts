@@ -29,7 +29,7 @@ async function teleportPlayer(page: any, position: [number, number]) {
       player: { ...state.player, position: pos },
     }));
   }, position);
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 async function workspaceProgress(page: any) {
@@ -57,19 +57,19 @@ test.describe("Attended Operations", () => {
         () => fixtures["cutting-board-shop"],
       );
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("sanding pauses when you let go, resumes when you take hold", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await selectMode(page, "Makeshift Workbench", "Sand Board");
       await page
         .locator("li", { hasText: "Maple 4/4" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
 
       // Freeze the clock so starting the op and stepping away is deterministic
       await setPaused(page, true);
@@ -78,7 +78,7 @@ test.describe("Attended Operations", () => {
       );
       // A tap starts the work; without the key held it goes no further
       await page.keyboard.press("Space");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await teleportPlayer(page, FAR_AWAY);
       await setPaused(page, false);
 
@@ -119,20 +119,20 @@ test.describe("Attended Operations", () => {
         .filter({ hasText: "smooth, S4S" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await page
         .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
         .filter({ hasText: "sanded, S4S" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
 
       await setPaused(page, true);
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );
       await page.keyboard.press("Space");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await teleportPlayer(page, FAR_AWAY);
       await setPaused(page, false);
 

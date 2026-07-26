@@ -32,7 +32,7 @@ async function moveToWorkspace(page: any, rowText: string) {
     .first()
     .getByRole("button", { name: "→ Makeshift Workbench" })
     .click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /** Operate the workspace, wait for an output matching the predicate source, take it. */
@@ -56,7 +56,7 @@ async function operateAndTake(
   await workspaceCard(page)
     .getByRole("button", { name: /Take All/ })
     .click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 test.describe("Pattern Boards", () => {
@@ -74,7 +74,7 @@ test.describe("Pattern Boards", () => {
         () => fixtures["pattern-board-shop"],
       );
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("sunrise is gated behind both branches", async () => {
       await openJournal(page);
@@ -101,7 +101,7 @@ test.describe("Pattern Boards", () => {
           .locator("li", { hasText: skill })
           .getByRole("button", { name: /Learn/ })
           .click();
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
       }
       await expect(page.getByText("Certified")).toHaveCount(8);
       await closeJournal(page);
@@ -208,7 +208,7 @@ test.describe("Pattern Boards", () => {
           player: { ...state.player, position: [3, 3] },
         }));
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       await openPhone(page);
       await page
         .locator("li", { hasText: "Sunrise Cutting Board" })

@@ -38,7 +38,7 @@ test.describe("Consumables", () => {
       const fixtures = (window as any).__TEST_FIXTURES__;
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["consumables-shop"]);
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
     // Run fast so the timed operations fly by
     await setTickRate(page, 20);
 
@@ -91,7 +91,7 @@ test.describe("Consumables", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await selectMode(
         page,
         "Makeshift Workbench",
@@ -105,14 +105,14 @@ test.describe("Consumables", () => {
           .locator("li", { hasText: '3/4 — 6"' })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(30);
       }
       for (let i = 0; i < 3; i++) {
         await page
           .locator("li", { hasText: '1/4 — 4"' })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(30);
       }
 
       await runWhileHolding(
@@ -131,7 +131,7 @@ test.describe("Consumables", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {
@@ -144,7 +144,7 @@ test.describe("Consumables", () => {
         .locator("li", { hasText: "Mineral Oil Bottle" })
         .getByRole("button", { name: "Buy" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("In your shop: 16 oz")).toBeVisible();
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
@@ -161,7 +161,7 @@ test.describe("Consumables", () => {
         .locator("li", { hasText: "Simple cutting board" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       // The oil leaves the bottle the moment the wipe-down starts
       // One hold covers the whole wipe-down: the oil leaves the bottle the
       // moment it starts, and the board comes out oiled at the end of it.
@@ -184,7 +184,7 @@ test.describe("Consumables", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("Oiled Simple cutting board")).toBeVisible();
     });
   });

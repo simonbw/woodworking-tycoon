@@ -23,7 +23,7 @@ async function movePlayerTo(page: any, position: [number, number]) {
       player: { ...state.player, position: pos },
     }));
   }, position);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 function machineCard(page: any, name: string) {
@@ -33,7 +33,7 @@ function machineCard(page: any, name: string) {
 async function pressKey(page: any, key: string) {
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
   await page.keyboard.press(key);
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /** E — at a switched-off machine the interact key flips the switch. */
@@ -60,7 +60,7 @@ async function dropEverything(page: any) {
       .getByRole("button", { name: "Drop" });
     if ((await drop.count()) === 0) return;
     await drop.first().click({ modifiers: ["Shift"] });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(30);
   }
 }
 
@@ -72,7 +72,7 @@ async function runUntilBoard(page: any, predicate: string, timeout = 20000) {
     await waitForBoard(page, predicate, timeout);
   } finally {
     await page.keyboard.up("Space");
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(30);
   }
 }
 
@@ -132,7 +132,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       const fixtures = (window as any).__TEST_FIXTURES__;
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["milling-shop"]);
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("rough stock announces itself in the inventory", async () => {
       await expect(
@@ -190,7 +190,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
         .locator("li", { hasText: "Walnut 4/4" })
         .getByRole("button", { name: "Drop" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       // The machine wears its state and its keys — there is no panel
       await expect(page.getByText("Jointer · off")).toBeVisible();
       // Switched off it takes nothing: no "set stock on it" chip offered
@@ -306,7 +306,7 @@ test.describe("Milling chain (rough lumber to S4S)", () => {
       // Fetch the spare rough board parked by the jointer at the start
       await movePlayerTo(page, [2, 4]);
       await page.getByRole("button", { name: "Pick Up" }).click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await movePlayerTo(page, [3, 11]);
       // No mode: a rough edge can't ride the fence, so this board runs the
       // mounted straight-line sled

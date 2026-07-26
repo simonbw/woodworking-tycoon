@@ -40,7 +40,7 @@ test.describe("Marketplace", () => {
           () => fixtures["marketplace-shop"],
         );
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
     });
 
@@ -152,13 +152,13 @@ test.describe("Marketplace", () => {
           },
         }));
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
 
       await page
         .locator("li", { hasText: "E2E Tester" })
         .getByRole("button", { name: "Accept" })
         .click();
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       const accepted = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().acceptedJobs.length,
       );
@@ -203,7 +203,7 @@ test.describe("Marketplace", () => {
         .locator("li", { hasText: "Scavenge for pallets" })
         .getByRole("button", { name: "Go" })
         .click({ force: true });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
 
       // The trip covers the screen with a travel log: a route map and
       // field notes that fill in as the trip progresses

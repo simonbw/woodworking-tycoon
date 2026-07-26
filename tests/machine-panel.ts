@@ -36,7 +36,7 @@ export async function openStationSheet(page: any) {
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
   await page.keyboard.press("Tab");
   await page.getByTestId("station-sheet").waitFor({ state: "visible" });
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /**
@@ -68,7 +68,7 @@ export async function holdOperate(
     throw new Error("holdOperate timed out waiting for the work to finish");
   } finally {
     await page.keyboard.up("Space");
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(30);
   }
 }
 
@@ -98,7 +98,7 @@ export async function runUntilOutput(
 export async function takeAllHere(page: any) {
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
   await page.keyboard.press("Shift+E");
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /** Open a collapsed recipe index; no-op for the other control shapes. */
@@ -125,7 +125,7 @@ export async function selectMode(
     .locator("[data-mode-option]")
     .filter({ hasText: new RegExp(`^${escapeRegExp(label)}$`) })
     .click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /** The operation names the station currently offers, in display order. */
@@ -165,7 +165,7 @@ export async function setParameter(
       name: new RegExp(`^${escapeRegExp(String(value))}\\D*$`),
     })
     .click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /**
@@ -195,6 +195,6 @@ export async function runWhileHolding(
     throw new Error("runWhileHolding timed out waiting for the work to finish");
   } finally {
     await page.keyboard.up("Space");
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(30);
   }
 }

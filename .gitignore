@@ -132,6 +132,9 @@ dist
 # Playwright test output
 playwright-report/
 test-results/
+# The E2E dev server's own bundle, kept apart from dist/ so a test run and
+# an open `npm run dev` can't overwrite each other (see playwright.config).
+dist-e2e/
 
 # Claude Code worktrees
 .claude/worktrees/

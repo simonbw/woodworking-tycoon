@@ -36,7 +36,7 @@ async function teleportPlayer(page: any, position: [number, number]) {
       player: { ...state.player, position: pos },
     }));
   }, position);
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /**
@@ -62,7 +62,7 @@ async function operateAndWait(
       (document.activeElement as HTMLElement)?.blur?.(),
     );
     await page.keyboard.press("f");
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(30);
   }
   await runWhileHolding(
     page,
@@ -83,7 +83,7 @@ async function operateAndWait(
       .getByRole("button", { name: /Take All/ })
       .click();
   }
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 test.describe("End-Grain Boards", () => {
@@ -99,7 +99,7 @@ test.describe("End-Grain Boards", () => {
       const fixtures = (window as any).__TEST_FIXTURES__;
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["end-grain-shop"]);
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     let afterStore: [number, number] | undefined;
     await test.step("buy jig plywood from the Sheet Goods aisle", async () => {
@@ -115,7 +115,7 @@ test.describe("End-Grain Boards", () => {
         .locator("li", { hasText: "Shop Plywood" })
         .getByRole("button", { name: "Buy" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
@@ -130,7 +130,7 @@ test.describe("End-Grain Boards", () => {
           .locator("li", { hasText: skill })
           .getByRole("button", { name: /Learn/ })
           .click();
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
       }
       await expect(page.getByText("Certified")).toHaveCount(6);
     });
@@ -143,12 +143,12 @@ test.describe("End-Grain Boards", () => {
         .locator("li", { hasText: "Plywood" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await page
         .locator("li", { hasText: "Pallet Wood" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await runWhileHolding(
         page,
         
@@ -168,11 +168,11 @@ test.describe("End-Grain Boards", () => {
       const sawCard = card(page, "Jobsite Table Saw");
       await expect(sawCard.getByText(/Tools ·/)).toBeVisible();
       await sawCard.getByRole("button", { name: "Attach" }).click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       // Jig on the table: the panel this spec carries can be crosscut now
       await expect(sawCard.getByText("Crosscut Sled")).toBeVisible();
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
     });
 
     await test.step("crosscut the sanded panel into slices", async () => {
@@ -200,7 +200,7 @@ test.describe("End-Grain Boards", () => {
         .locator("li", { hasText: "Maple End-Grain Slice" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await operateAndWait(
         page,
         "Makeshift Workbench",
@@ -216,7 +216,7 @@ test.describe("End-Grain Boards", () => {
           .locator("li", { hasText: "Maple End-Grain Panel" })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
         await operateAndWait(
           page,
           "Makeshift Workbench",
@@ -231,7 +231,7 @@ test.describe("End-Grain Boards", () => {
         .locator("li", { hasText: "Maple End-Grain Panel" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await operateAndWait(
         page,
         "Makeshift Workbench",

@@ -31,7 +31,7 @@ async function sandPanelOnce(page: any, expectSurface: string) {
     .locator("li", { hasText: "Maple Panel" })
     .getByRole("button", { name: "→ Makeshift Workbench" })
     .click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
   await runWhileHolding(
     page,
     
@@ -49,7 +49,7 @@ async function sandPanelOnce(page: any, expectSurface: string) {
   await workspaceCard(page)
     .getByRole("button", { name: /Take All/ })
     .click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 test.describe("Cutting Board Chain (no planer required)", () => {
@@ -68,7 +68,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         () => fixtures["cutting-board-shop"],
       );
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("commission 6 is active", async () => {
       await expect(page.getByText("A Proper Cutting Board")).toBeVisible();
@@ -110,7 +110,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("1/2 slots")).toBeVisible();
       // The sander's operations joined the workspace's Mode list
       const modeOptions = await modesOf(page, "Makeshift Workbench");
@@ -123,7 +123,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         .locator("li", { hasText: "Maple 4/4" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await runWhileHolding(
         page,
         
@@ -139,7 +139,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       // Fresh glue-up is rough
       await expect(
         page
@@ -173,7 +173,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
         .locator("li", { hasText: "Maple Panel" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await runWhileHolding(
         page,
         
@@ -191,7 +191,7 @@ test.describe("Cutting Board Chain (no planer required)", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       const cuttingBoard = await page.evaluate(() =>
         (window as any)
           .__GET_GAME_STATE__()

@@ -36,7 +36,7 @@ test.describe("Hand tools", () => {
       const fixtures = (window as any).__TEST_FIXTURES__;
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["hand-tools-shop"]);
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("the tool wall sells the hand saw and drill, supplies sell screws", async () => {
       const returnTo = await goToStore(page);
@@ -48,19 +48,19 @@ test.describe("Hand tools", () => {
         .locator("li", { hasText: "Hand Saw" })
         .getByRole("button", { name: "Buy" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await page
         .locator("li", { hasText: "Drill" })
         .getByRole("button", { name: "Buy" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
 
       await expect(page.getByText("Box of Screws")).toBeVisible();
       await page
         .locator("li", { hasText: "Box of Screws" })
         .getByRole("button", { name: "Buy" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("In your shop: 50 screws")).toBeVisible();
 
       await leaveStore(page, returnTo);
@@ -73,12 +73,12 @@ test.describe("Hand tools", () => {
         .locator("li", { hasText: "Hand Saw (stored)" })
         .getByRole("button", { name: "Attach" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await page
         .locator("li", { hasText: "Drill (stored)" })
         .getByRole("button", { name: "Attach" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("2/2 slots")).toBeVisible();
 
       const modes = await modesOf(page, "Makeshift Workbench");
@@ -103,7 +103,7 @@ test.describe("Hand tools", () => {
         .locator("li", { hasText: "Pallet Wood 1/4 — 4\" × 3'" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       // The cut leaves the kept 2' slat and a 1' offcut
       await runWhileHolding(
         page,
@@ -117,7 +117,7 @@ test.describe("Hand tools", () => {
         { timeout: 20000 },
       );
       await card.getByRole("button", { name: /Take All/ }).click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
     });
 
     await test.step("five slats and eight screws become a planter box", async () => {
@@ -130,7 +130,7 @@ test.describe("Hand tools", () => {
         .first()
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
 
       await runWhileHolding(
         page,
@@ -152,7 +152,7 @@ test.describe("Hand tools", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("Planter box").first()).toBeVisible();
     });
   });

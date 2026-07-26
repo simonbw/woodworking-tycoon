@@ -14,7 +14,7 @@ async function loadFixture(page: any, name: string) {
     const fixtures = (window as any).__TEST_FIXTURES__;
     (window as any).__UPDATE_GAME_STATE__(() => fixtures[fixtureName]);
   }, name);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 async function teleportPlayer(page: any, position: [number, number]) {
@@ -24,7 +24,7 @@ async function teleportPlayer(page: any, position: [number, number]) {
       player: { ...state.player, position: pos },
     }));
   }, position);
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 const carried = async (page: any) =>
@@ -64,7 +64,7 @@ test.describe("Carrying machines", () => {
       });
       await expect(page.getByText(/Unpack/)).toHaveCount(0);
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect(await carried(page)).toBeNull();
       // Back to the real fixture for the rest of the walkthrough
       await loadFixture(page, "miter-saw-crate-shop");
@@ -74,7 +74,7 @@ test.describe("Carrying machines", () => {
     await test.step("unpack the delivered crate underfoot", async () => {
       await expect(page.getByText("Unpack Miter Saw")).toBeVisible();
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.machineCrates).toHaveLength(0);
       expect(state.player.carriedMachine.machineTypeId).toBe("miterSaw");
@@ -84,20 +84,20 @@ test.describe("Carrying machines", () => {
 
     await test.step("rotate the carried machine", async () => {
       await page.keyboard.press("r");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect((await carried(page)).rotation).toBe(1);
       // Three more quarter turns come back around
       for (let i = 0; i < 3; i++) {
         await page.keyboard.press("r");
       }
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect((await carried(page)).rotation).toBe(0);
     });
 
     await test.step("set it down standing at its operator cell", async () => {
       await teleportPlayer(page, [6, 8]);
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.player.carriedMachine).toBeNull();
       const saw = state.machines.find(
@@ -110,11 +110,11 @@ test.describe("Carrying machines", () => {
     await test.step("lift the placed machine back up from the same spot", async () => {
       await expect(page.getByText("Pick up Miter Saw")).toBeVisible();
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect((await carried(page)).machineTypeId).toBe("miterSaw");
       // And set it back down for the next steps
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect(await carried(page)).toBeNull();
     });
 
@@ -125,7 +125,7 @@ test.describe("Carrying machines", () => {
       await teleportPlayer(page, [6, 5]);
       await expect(page.getByText("Pick up Miter Saw")).toHaveCount(0);
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect(await carried(page)).toBeNull();
     });
 
@@ -135,14 +135,14 @@ test.describe("Carrying machines", () => {
       const machineHint = page.getByText(/plans & tools/i);
       await expect(machineHint.first()).toBeVisible();
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       expect((await carried(page)).machineTypeId).toBe("worktable1x1");
       // Hands full: the machine's hint chips are suppressed
       await expect(machineHint).toHaveCount(0);
 
       await teleportPlayer(page, [5, 10]);
       await page.keyboard.press("b");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.player.carriedMachine).toBeNull();
       const table = state.machines.find(
@@ -168,7 +168,7 @@ test.describe("Carrying machines", () => {
         .locator("li", { hasText: "Jobsite Table Saw" })
         .getByRole("button", { name: "Buy" })
         .click({ force: true });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.machineCrates).toHaveLength(1);
       expect(state.machineCrates[0].machine.machineTypeId).toBe(

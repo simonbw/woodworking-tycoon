@@ -12,6 +12,12 @@ import tailwind from "tailwindcss";
 
 const isDev = process.argv.some((arg) => arg == "--dev");
 
+// Where the bundle lands and what the dev server serves. The E2E server
+// overrides this so a test run and a `npm run dev` you have open can't
+// overwrite each other's output — they build the same sources with
+// different flags (see E2E_RENDER_FPS below).
+const outdir = process.env.ES_BUILD_OUTDIR || "dist";
+
 // The dev server has no keepalive of its own -- the only things holding the
 // event loop open are the pipes to esbuild's service process. If that child
 // dies, the loop empties and this process exits 0 with nothing printed, which
@@ -19,25 +25,42 @@ const isDev = process.argv.some((arg) => arg == "--dev");
 // every way out of here announce itself on the way down.
 let intentionalShutdown = false;
 let serving = false;
+/** Set once the build context exists; see shutdown(). */
+let devContext = null;
+
+/**
+ * Leave, taking esbuild's service process with us. That child owns the HTTP
+ * listener, so a parent that exits without disposing can leave an orphan
+ * still holding the port and serving a stale bundle — which reads as a
+ * dev server that half-works, and fails an entire Playwright run with
+ * ERR_CONNECTION_RESET when the orphan is finally reaped.
+ */
+function shutdown(code) {
+  // Don't wait forever on a dispose that can't complete.
+  setTimeout(() => process.exit(code), 2000).unref();
+  Promise.resolve(devContext?.dispose())
+    .catch(() => {})
+    .finally(() => process.exit(code));
+}
 
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(signal, () => {
     intentionalShutdown = true;
     console.log(`\n[dev] ${signal} received, shutting down.`);
-    process.exit(0);
+    shutdown(0);
   });
 }
 
 process.on("uncaughtException", (error) => {
   console.error(`\n[dev] uncaught exception -- the dev server is going down:`);
   console.error(error);
-  process.exit(1);
+  shutdown(1);
 });
 
 process.on("unhandledRejection", (reason) => {
   console.error(`\n[dev] unhandled rejection -- the dev server is going down:`);
   console.error(reason);
-  process.exit(1);
+  shutdown(1);
 });
 
 process.on("exit", (code) => {
@@ -62,8 +85,21 @@ const context = await esbuild
     bundle: true,
     minify: !isDev,
     sourcemap: true,
-    outdir: "dist",
+    outdir,
     external: ["/fonts/*", "/images/*"],
+    define: {
+      // esbuild substitutes NODE_ENV on its own, but naming it here keeps
+      // that from being an implicit dependency of the two flags below it.
+      "process.env.NODE_ENV": JSON.stringify(
+        isDev ? "development" : "production",
+      ),
+      // Caps the shop's render loop, in frames per second. Only the E2E
+      // server sets it (see playwright.config.ts); every other build gets
+      // "" and leaves the ticker alone. See ShopView for why.
+      "process.env.E2E_RENDER_FPS": JSON.stringify(
+        process.env.E2E_RENDER_FPS ?? "",
+      ),
+    },
     plugins: [
       postcssPlugin({
         extract: true,
@@ -78,13 +114,15 @@ const context = await esbuild
     process.exit(1);
   });
 
+devContext = context;
+
 await copyStatics();
 
 if (isDev) {
   fs.watch("static/", { recursive: true }, async (eventType, filename) => {
     if (eventType == "change") {
       const from = path.join("static", filename);
-      const to = path.join("dist", filename);
+      const to = path.join(outdir, filename);
       console.log(`copying ${from} to ${to}`);
 
       try {
@@ -102,7 +140,7 @@ if (isDev) {
   await context.watch();
   const { host, port } = await context
     .serve({
-      servedir: "dist",
+      servedir: outdir,
       port: Number(process.env.ES_BUILD_DEV_PORT || 3001),
     })
     .catch((error) => {
@@ -118,8 +156,8 @@ if (isDev) {
 
 async function copyStatics() {
   const startTime = performance.now();
-  await fsp.mkdir("dist", { recursive: true });
-  console.log(`copying statics to dist`);
-  fsp.cp("static", "dist", { recursive: true });
+  await fsp.mkdir(outdir, { recursive: true });
+  console.log(`copying statics to ${outdir}`);
+  await fsp.cp("static", outdir, { recursive: true });
   console.log(`done [${Math.round(performance.now() - startTime)}ms]`);
 }

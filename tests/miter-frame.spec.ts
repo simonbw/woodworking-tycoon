@@ -22,14 +22,14 @@ async function movePlayerTo(page: any, position: [number, number]) {
       player: { ...state.player, position: pos },
     }));
   }, position);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /** Wait until some material anywhere in the shop satisfies the predicate. */
 async function pressKey(page: any, key: string) {
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
   await page.keyboard.press(key);
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(30);
 }
 
 /** F — set the carried board on the saw table. */
@@ -51,7 +51,7 @@ async function dropAllExcept(page: any, keep: RegExp) {
       const drop = row.getByRole("button", { name: "Drop" });
       if ((await drop.count()) === 0) continue;
       await drop.first().click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       dropped = true;
       break;
     }
@@ -127,7 +127,7 @@ test.describe("Miter cuts and the picture frame", () => {
       const fixtures = (window as any).__TEST_FIXTURES__;
       (window as any).__UPDATE_GAME_STATE__(() => fixtures["miter-frame-shop"]);
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("mitered stock announces its ends in the inventory", async () => {
       await expect(
@@ -235,7 +235,7 @@ test.describe("Miter cuts and the picture frame", () => {
           .first()
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
       }
       await runWhileHolding(page, () => {
         const state = (window as any).__GET_GAME_STATE__();
@@ -252,7 +252,7 @@ test.describe("Miter cuts and the picture frame", () => {
       await machineCard(page, "Makeshift Workbench")
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(page.getByText("Picture Frame").first()).toBeVisible();
       // The brads came out of the shop stock
       const nails = await page.evaluate(

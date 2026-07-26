@@ -65,7 +65,7 @@ test.describe("Skill Tree", () => {
           () => fixtures["cutting-board-shop"],
         );
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -88,7 +88,7 @@ test.describe("Skill Tree", () => {
           },
         }));
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       // The journal button's badge shows the unspent points
       await expect(page.getByTestId("journal-badge")).toHaveText("2");
     });
@@ -104,7 +104,7 @@ test.describe("Skill Tree", () => {
         .locator("li", { hasText: "Two-Tone Boards" })
         .getByRole("button", { name: /Learn/ })
         .click();
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       await expect(page.getByText("Certified")).toHaveCount(5);
       await closeJournal(page);
       await expect(page.getByTestId("journal-badge")).toHaveText("1");
@@ -114,7 +114,7 @@ test.describe("Skill Tree", () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
 
       const modes = await workspaceModes(page);
       expect(modes).toContain("Finish Two-Tone Board");
@@ -126,7 +126,7 @@ test.describe("Skill Tree", () => {
           .locator("li", { hasText: rowName })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click({ modifiers: ["Shift"] });
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
       }
       await runWhileHolding(
         page,
@@ -143,7 +143,7 @@ test.describe("Skill Tree", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await expect(
         page.getByText("Mixed Wood Panel 4/4 — 10\" × 2'").first(),
       ).toBeVisible();
@@ -155,7 +155,7 @@ test.describe("Skill Tree", () => {
           .locator("li", { hasText: "Mixed Wood Panel" })
           .getByRole("button", { name: "→ Makeshift Workbench" })
           .click();
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
         await runWhileHolding(
           page,
           
@@ -174,7 +174,7 @@ test.describe("Skill Tree", () => {
         await workspaceCard(page)
           .getByRole("button", { name: /Take All/ })
           .click();
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(30);
       }
 
       // Finish it
@@ -183,7 +183,7 @@ test.describe("Skill Tree", () => {
         .locator("li", { hasText: "Mixed Wood Panel" })
         .getByRole("button", { name: "→ Makeshift Workbench" })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
       await runWhileHolding(
         page,
         
@@ -201,7 +201,7 @@ test.describe("Skill Tree", () => {
       await workspaceCard(page)
         .getByRole("button", { name: /Take All/ })
         .click();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(30);
 
       const cuttingBoard = await page.evaluate(() =>
         (window as any)
@@ -236,7 +236,7 @@ test.describe("Skill Tree", () => {
           player: { ...state.player, position: [3, 3] },
         }));
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       await openPhone(page);
       await page
         .locator("li", { hasText: "Walnut & Maple" })

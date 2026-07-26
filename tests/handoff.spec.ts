@@ -24,7 +24,7 @@ test.describe("Handing work over", () => {
     await expect(
       page.getByRole("dialog", { name: "Shop manual" }),
     ).toHaveCount(0);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
 
     await test.step("the work order points at the door, not a button", async () => {
       await expect(
@@ -55,7 +55,7 @@ test.describe("Handing work over", () => {
           },
         }));
       });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(30);
       await movePlayerToDoor(page);
       await openDoorPanel(page);
 

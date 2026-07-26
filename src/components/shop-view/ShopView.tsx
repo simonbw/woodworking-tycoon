@@ -1,4 +1,5 @@
 import { Application, useApplication } from "@pixi/react";
+import type { Application as PixiApplication } from "pixi.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../useCellMap";
 import { isSameMachine, machineKey } from "../../game/Machine";
@@ -36,6 +37,25 @@ import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
 import { cellToPixel, cellToPixelVec } from "./shop-scale";
+
+/**
+ * Cap the render loop when the E2E server asks for it (E2E_RENDER_FPS;
+ * every other build leaves this empty and the ticker runs free).
+ *
+ * Headless Chromium runs rAF as fast as it can, and a render loop that
+ * never yields keeps the main thread busy enough that every Playwright
+ * round-trip has to queue behind a frame — measured at 13ms against 0.8ms
+ * with the canvas gone. That tax lands on every click and every assertion
+ * in the suite. Capping the rate hands the thread back between frames
+ * without changing what gets drawn: walking still integrates in useTick
+ * off the ticker's own delta, so it covers the same ground per second.
+ */
+function capRenderRate(app: PixiApplication): void {
+  const fps = Number(process.env.E2E_RENDER_FPS);
+  if (Number.isFinite(fps) && fps > 0) {
+    app.ticker.maxFPS = fps;
+  }
+}
 
 /**
  * Application's width/height props only apply at renderer init — this
@@ -158,6 +178,7 @@ export const ShopView: React.FC = () => {
           height={scaledHeight}
           backgroundAlpha={0}
           antialias={true}
+          onInit={capRenderRate}
         >
           <gameStateContext.Provider
             value={{ gameState, updateGameState, saveGame, quitToMenu }}

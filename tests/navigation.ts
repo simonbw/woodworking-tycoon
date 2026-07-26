@@ -12,7 +12,7 @@ export async function movePlayerToDoor(page: any) {
       player: { ...state.player, position: state.shopInfo.entrancePosition },
     }));
   });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /**
@@ -31,7 +31,7 @@ export async function openDoorPanel(page: any) {
     await page.waitForTimeout(250);
   }
   await panel.waitFor({ state: "visible" });
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(30);
 }
 
 /**
@@ -52,7 +52,7 @@ export async function handOffAtDoor(page: any, name: string | RegExp) {
     .locator("li", { hasText: name })
     .getByRole("button", { name: "Hand Over" })
     .click({ force: true });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /** Dismiss the client's card shown after a commission handoff. */
@@ -61,7 +61,7 @@ export async function dismissClientCard(page: any) {
   await page
     .getByRole("button", { name: "Take the money" })
     .click({ force: true });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /**
@@ -82,7 +82,7 @@ export async function goToStore(page: any): Promise<[number, number]> {
     .locator("li", { hasText: "Orange Box" })
     .getByRole("button", { name: "Go" })
     .click({ force: true });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
   return previousPosition;
 }
 
@@ -101,7 +101,7 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
     .locator("li", { hasText: "Sawyer & Sons" })
     .getByRole("button", { name: "Go" })
     .click({ force: true });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
   return previousPosition;
 }
 
@@ -110,7 +110,7 @@ export async function leaveStore(page: any, returnTo?: [number, number]) {
   await page
     .getByRole("button", { name: "Head Home" })
     .click({ force: true });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
   if (returnTo) {
     await page.evaluate((position: [number, number]) => {
       (window as any).__UPDATE_GAME_STATE__((state: any) => ({
@@ -118,32 +118,32 @@ export async function leaveStore(page: any, returnTo?: [number, number]) {
         player: { ...state.player, position },
       }));
     }, returnTo);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(30);
   }
 }
 
 /** Take out the phone (SawdustList). */
 export async function openPhone(page: any) {
   await page.getByRole("button", { name: "Phone" }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /** Put the phone away. */
 export async function closePhone(page: any) {
   await page.getByRole("button", { name: "Put phone away" }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /** Open the journal (skills). */
 export async function openJournal(page: any) {
   await page.getByRole("button", { name: /^Journal/ }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /** Close the journal. */
 export async function closeJournal(page: any) {
   await page.getByRole("button", { name: "Close journal" }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(30);
 }
 
 /**
