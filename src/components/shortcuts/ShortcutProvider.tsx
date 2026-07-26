@@ -78,11 +78,17 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
   // cheat sheet plus Settings), and both bind `close-modal`. The innermost
   // registration wins, and unmounting one must not evict the other's.
   const handlers = useRef(new Map<ShortcutId, Registration[]>());
-  const [modalDepth, setModalDepth] = useState(0);
 
-  // Read through refs so the listener never needs re-subscribing.
-  const modalDepthRef = useRef(modalDepth);
-  modalDepthRef.current = modalDepth;
+  // The ref is the authority and the state is only a mirror for
+  // `modalOpenContext`. Deriving the ref from the state instead (assigning it
+  // during render) leaves the same gap `useShortcut` documents, but on the
+  // scope rather than the handler: a modal's cleanup runs at unmount while
+  // the ref only catches up on the *next* render, so a key pressed in that
+  // window is still routed to the modal scope — and, finding nothing bound
+  // there, swallowed. Pressing J to close the journal and immediately M for
+  // the phone would lose the M.
+  const modalDepthRef = useRef(0);
+  const [modalDepth, setModalDepth] = useState(0);
 
   const register = useCallback((id: ShortcutId, registration: Registration) => {
     const stack = handlers.current.get(id) ?? [];
@@ -98,8 +104,17 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const pushModal = useCallback(() => {
-    setModalDepth((d) => d + 1);
-    return () => setModalDepth((d) => Math.max(0, d - 1));
+    modalDepthRef.current += 1;
+    setModalDepth(modalDepthRef.current);
+    // Idempotent: a release that ran once must not decrement again if React
+    // re-invokes the cleanup.
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      modalDepthRef.current = Math.max(0, modalDepthRef.current - 1);
+      setModalDepth(modalDepthRef.current);
+    };
   }, []);
 
   useEffect(() => {

@@ -24,10 +24,28 @@ const KEY_VECTORS: Record<string, Vector> = {
   ArrowRight: [1, 0],
 };
 
+/**
+ * Which movement keys are physically down. Tracked whether or not movement
+ * is currently allowed: a key is held across the moment a modal closes, and
+ * a held key only ever sends one keydown. Dropping that keydown because the
+ * listener wasn't enabled yet would leave the key stuck doing nothing until
+ * it was released and pressed again.
+ */
 const heldCodes = new Set<string>();
+
+/**
+ * Whether held keys should actually drive the body. Mirrored from the
+ * listener's prop during render, like `enabledRef` — the gate belongs here
+ * rather than on recording, so that closing a modal resumes a key that was
+ * already down.
+ */
+let movementEnabled = false;
 
 /** The current input direction; diagonal when two keys are held. */
 export function readHeldMovement(): Vector {
+  if (!movementEnabled) {
+    return [0, 0];
+  }
   let x = 0;
   let y = 0;
   for (const code of heldCodes) {
@@ -46,9 +64,11 @@ function isEditable(target: EventTarget | null): boolean {
 }
 
 /**
- * Listens for WASD/arrows while mounted. `enabled` gates key-downs only —
- * a key released must always clear, or a modal opening mid-stride would
- * leave the player marching forever.
+ * Listens for WASD/arrows while mounted. `enabled` gates whether the keys
+ * *drive* the body, not whether they're recorded — a key released must
+ * always clear, or a modal opening mid-stride would leave the player
+ * marching forever, and a key still down when a modal closes must take
+ * effect without being re-pressed.
  */
 export const HeldMovementListener: React.FC<{ enabled: boolean }> = ({
   enabled,
@@ -57,23 +77,20 @@ export const HeldMovementListener: React.FC<{ enabled: boolean }> = ({
   // so a key pressed the same frame a modal opens can't slip through.
   const enabledRef = React.useRef(enabled);
   enabledRef.current = enabled;
-
-  useEffect(() => {
-    if (!enabled) {
-      heldCodes.clear();
-    }
-  }, [enabled]);
+  movementEnabled = enabled;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.code in KEY_VECTORS)) return;
-      // When disabled (modal open, player away) the keys fall through to
-      // whatever else wants them — e.g. arrows scrolling a modal.
-      if (!enabledRef.current) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isEditable(event.target)) return;
-      // Claim the key: arrows must not scroll the page under the shop.
-      event.preventDefault();
+      // Record the key either way; only claim it when movement is live.
+      // Disabled (modal open, player away), it falls through to whatever
+      // else wants it — e.g. arrows scrolling a modal.
+      if (enabledRef.current) {
+        // Claim the key: arrows must not scroll the page under the shop.
+        event.preventDefault();
+      }
       heldCodes.add(event.code);
     };
     const onKeyUp = (event: KeyboardEvent) => {
@@ -89,6 +106,7 @@ export const HeldMovementListener: React.FC<{ enabled: boolean }> = ({
       document.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
       heldCodes.clear();
+      movementEnabled = false;
     };
   }, []);
 
