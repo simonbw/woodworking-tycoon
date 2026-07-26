@@ -9,6 +9,8 @@ import {
   MiterAngle,
   SignedMiterAngle,
   SQUARE_END,
+  SurfaceCondition,
+  worseSurface,
 } from "./Materials";
 import { makeMaterial } from "./material-helpers";
 
@@ -129,4 +131,56 @@ export function cutBoard(
   }
 
   return { inputs: [], outputs };
+}
+
+/** How a resaw lands on the two pieces it makes. */
+export interface ResawSetup {
+  /**
+   * Kerf, in thickness detents. A band saw's blade is thin enough to
+   * vanish at quarter-inch granularity (0); a table saw's takes a quarter
+   * off the total.
+   */
+  readonly waste?: number;
+  /** What the blade leaves on the fresh faces — the cut's finish quality. */
+  readonly sawnSurface: SurfaceCondition;
+}
+
+/**
+ * Splits a board along its thickness: one piece at the fence setting, one
+ * offcut, instead of planing the difference into shavings.
+ *
+ * The stock rides on a flat reference face, and the fence-side piece is
+ * the one that keeps it — the offcut only comes away flat-faced if the
+ * input had both faces true. Neither piece can be better than
+ * one-face-jointed afterwards, because the blade leaves a fresh sawn face
+ * on each. Edges and ends are untouched, so both inherit them.
+ */
+export function resawBoard(
+  inputBoard: Board,
+  targetThickness: BoardDimension,
+  { waste = 0, sawnSurface }: ResawSetup,
+): OperationOutput {
+  const { outputs } = cutBoard(inputBoard, targetThickness, "thickness", waste);
+  // One surface field for the whole board: the fresh sawn face is the
+  // worst of it now (see worseSurface).
+  const surface = worseSurface(inputBoard.surface, sawnSurface);
+  const [fenceSide, offcut] = outputs as ReadonlyArray<Board>;
+
+  return {
+    inputs: [],
+    outputs: [
+      makeMaterial<Board>({ ...fenceSide, jointedFaces: 1, surface }),
+      ...(offcut
+        ? [
+            makeMaterial<Board>({
+              ...offcut,
+              // The offcut's outer face is the input's far face — flat
+              // only if the board was already planed to two.
+              jointedFaces: inputBoard.jointedFaces === 2 ? 1 : 0,
+              surface,
+            }),
+          ]
+        : []),
+    ],
+  };
 }

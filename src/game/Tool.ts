@@ -6,6 +6,7 @@ import { hammer } from "./tools/hammer";
 import { handPlane } from "./tools/handPlane";
 import { handSaw } from "./tools/handSaw";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
+import { resawFence } from "./tools/resawFence";
 import { sandingBlock } from "./tools/sandingBlock";
 import { straightLineSled } from "./tools/straightLineSled";
 
@@ -32,6 +33,15 @@ export interface ToolType {
    * tool slot — right for sanders, wrong for a crosscut sled.
    */
   readonly compatibleMachines?: ReadonlyArray<MachineId>;
+  /**
+   * Operation ids this tool takes *off* its host station while mounted —
+   * for jigs that physically occupy the machine. A tall resaw fence stands
+   * where a board would have to lie flat to be ripped, so mounting one
+   * replaces ripping rather than adding to it. Without this, two
+   * operations could accept the same board and the machine would have to
+   * guess (see findFeedableOperation).
+   */
+  readonly supersedes?: ReadonlyArray<string>;
   readonly operations: ReadonlyArray<Operation>;
 }
 
@@ -44,6 +54,7 @@ export const TOOL_TYPES = {
   handPlane,
   crosscutSled,
   straightLineSled,
+  resawFence,
   dustBag,
 } satisfies { [id: string]: ToolType };
 

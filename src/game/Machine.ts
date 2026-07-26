@@ -12,6 +12,7 @@ import {
   vectorEquals,
   vectorKey,
 } from "./Vectors";
+import { bandSaw } from "./machines/bandSaw";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
@@ -124,6 +125,7 @@ export const MACHINE_TYPES = {
   miterSaw,
   lunchboxPlaner,
   jointer,
+  bandSaw,
   garbageCan,
   storageRack,
 } satisfies { [id: string]: MachineType };
@@ -427,12 +429,15 @@ export class Machine {
 
   /**
    * All operations available at this station: the machine's own plus those
-   * of every mounted tool.
+   * of every mounted tool, minus the ones a mounted jig physically
+   * displaces (ToolType.supersedes).
    */
   get operations(): ReadonlyArray<Operation> {
+    const tools = this.state.tools.map((toolId) => TOOL_TYPES[toolId]);
+    const superseded = new Set(tools.flatMap((tool) => tool.supersedes ?? []));
     return [
-      ...this.type.operations,
-      ...this.state.tools.flatMap((toolId) => TOOL_TYPES[toolId].operations),
+      ...this.type.operations.filter((op) => !superseded.has(op.id)),
+      ...tools.flatMap((tool) => tool.operations),
     ];
   }
 

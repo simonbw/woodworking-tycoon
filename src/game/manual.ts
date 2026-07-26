@@ -175,6 +175,7 @@ export const MACHINE_ARTICLES: Partial<Record<MachineId, ManualArticleId>> = {
   lunchboxPlaner: "milling",
   jobsiteTableSaw: "milling",
   miterSaw: "milling",
+  bandSaw: "milling",
 };
 
 export function getArticle(id: ManualArticleId): ManualArticleDef {

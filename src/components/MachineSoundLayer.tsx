@@ -4,6 +4,7 @@ import { deriveMachineCutLoad } from "../game/cut-load";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
 import { PhaseReportingVoice } from "../utils/machineSoundState";
 import {
+  BAND_SAW_SYNTH_PARAMS,
   JOINTER_SYNTH_PARAMS,
   MachineSynthParams,
   MachineSynthVoice,
@@ -65,6 +66,11 @@ const MACHINE_VOICES: Partial<
   miterSaw: synthVoice(MITER_SAW_SYNTH_PARAMS, {
     leadInMs: 250,
     leadOutMs: 200,
+  }),
+  // Big wheels take their time coming up to speed, and coast for ages
+  bandSaw: synthVoice(BAND_SAW_SYNTH_PARAMS, {
+    leadInMs: 1800,
+    leadOutMs: 1400,
   }),
 };
 

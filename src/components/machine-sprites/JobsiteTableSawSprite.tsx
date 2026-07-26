@@ -15,6 +15,7 @@ import { TOOL_TYPES } from "../../game/Tool";
 import { lerp } from "../../utils/mathUtils";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
+import { OnEdgeBoardSprite } from "../material-sprites/OnEdgeBoardSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import {
   PIXELS_PER_INCH,
@@ -49,6 +50,35 @@ const SLED_PLY = 0xd7b98a;
 const SLED_EDGE = 0x8a6f4d;
 const SLED_FENCE = 0x6e5638;
 const SLED_CLAMP = 0x2a2520;
+
+/**
+ * The tall resaw fence, bolted to the rip fence and drawn riding with it:
+ * from above it's a plywood face standing proud of the fence, with its
+ * triangular braces flaring back toward the operator.
+ */
+const TallFenceSprite: React.FC = () => {
+  const draw = useCallback((g: Graphics) => {
+    g.clear();
+    const length = feetToPixels(2);
+    const thickness = inchesToPixels(0.75);
+    // The face itself, on the blade side of the fence
+    g.rect(-thickness, -length / 2, thickness, length)
+      .fill(SLED_PLY)
+      .stroke({ width: 1, color: SLED_EDGE });
+    // Braces reaching back over the fence body to hold it square
+    for (const at of [-0.3, 0.3]) {
+      g.poly([
+        0,
+        at * length - inchesToPixels(1),
+        inchesToPixels(4),
+        at * length,
+        0,
+        at * length + inchesToPixels(1),
+      ]).fill(SLED_FENCE);
+    }
+  }, []);
+  return <pixiGraphics draw={draw} />;
+};
 
 /**
  * A shop-built sled, drawn procedurally with its blade slit at local x = 0
@@ -119,14 +149,19 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
     "/images/jobsite-table-saw-fence.png",
   );
 
-  // Fence-riding cuts are the ones with a width setting; everything else
-  // rides a jig, and the fence parks out of the way at the end of the rail.
+  // Fence-riding cuts are the ones with a fence setting — the rip's width
+  // or the resaw's thickness. Everything else rides a jig, and the fence
+  // parks out of the way at the end of the rail.
   const runningOperation = machine.selectedOperationOrNull;
-  const ripCut =
+  const fenceCut =
     runningOperation != null &&
     operationParameters(runningOperation).some(
-      (param) => param.id === "targetWidth",
+      (param) => param.id === "targetWidth" || param.id === "targetThickness",
     );
+
+  // The tall fence stands the stock on edge, and moves the fence in to a
+  // reading in quarters instead of inches.
+  const resawing = machine.state.tools.includes("resawFence");
 
   // Mounted jigs sit on the table — the mode you can see from across the
   // shop. During a sled cut the active one travels with the stock.
@@ -134,7 +169,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
     (SLED_TOOLS as readonly string[]).includes(tool),
   );
   const activeSled =
-    cutting && !ripCut
+    cutting && !fenceCut
       ? mountedSleds.find((sled) =>
           TOOL_TYPES[sled].operations.some(
             (operation) => operation.id === runningOperation?.id,
@@ -142,10 +177,26 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
         )
       : undefined;
 
-  const ripWidth =
-    Number(machine.selectedParameters?.targetWidth) ||
-    Math.max(...BOARD_DIMENSIONS);
-  const fencePosition = ripWidth * PIXELS_PER_INCH;
+  // Standing on edge, a board's footprint on the table is its thickness;
+  // lying flat it's its width, with the fence face at the near edge.
+  const stockOffset = (material: MaterialInstance) => {
+    const thickness = "thickness" in material ? material.thickness : 2;
+    return resawing
+      ? -inchesToPixels(thickness / 8)
+      : -inchesToPixels(stockWidth(material) / 2 + thickness / 4);
+  };
+  const stockSprite = (material: MaterialInstance) =>
+    resawing && isBoard(material) ? (
+      <OnEdgeBoardSprite board={material} seed={material.id} />
+    ) : (
+      <MaterialSprite material={material} />
+    );
+
+  const fenceInches = resawing
+    ? Number(machine.selectedParameters?.targetThickness ?? 4) / 4
+    : Number(machine.selectedParameters?.targetWidth) ||
+      Math.max(...BOARD_DIMENSIONS);
+  const fencePosition = fenceInches * PIXELS_PER_INCH;
 
   const springProps = useSpring({
     x: fencePosition,
@@ -189,38 +240,39 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
         {inputMaterials.filter(isBoard).map((board, index) => {
           return (
             <pixiContainer
-              angle={index * 10}
+              angle={resawing ? 0 : index * 10}
               y={feetToPixels(board.length / 2) + inchesToPixels(2)}
-              x={-inchesToPixels(board.width / 2 + board.thickness / 4)}
+              x={stockOffset(board)}
               key={`in-${index}`}
             >
-              <MaterialSprite material={board} key={index} />
+              {stockSprite(board)}
             </pixiContainer>
           );
         })}
-        {cutting && ripCut && (
-          <AnimatedPixiContainer
-            y={feed.y}
-            x={-inchesToPixels(stockWidth(cutting) / 2 + cutting.thickness / 4)}
-          >
-            <MaterialSprite material={cutting} />
+        {cutting && fenceCut && (
+          <AnimatedPixiContainer y={feed.y} x={stockOffset(cutting)}>
+            {stockSprite(cutting)}
           </AnimatedPixiContainer>
         )}
         {outputMaterials.map((material, index) => {
           const length =
             isBoard(material) || isPanel(material) ? material.length : 0.7;
-          const thickness = "thickness" in material ? material.thickness : 2;
           return (
             <pixiContainer
-              angle={-index - 1}
+              angle={resawing ? 0 : -index - 1}
               y={-feetToPixels(length / 2) - inchesToPixels(3)}
-              x={-inchesToPixels(stockWidth(material) / 2 + thickness / 4)}
+              x={
+                stockOffset(material) -
+                (resawing ? inchesToPixels(index * 1.2) : 0)
+              }
               key={`out-${index}`}
             >
-              <MaterialSprite material={material} key={index} />
+              {stockSprite(material)}
             </pixiContainer>
           );
         })}
+        {/* The tall fence bolts on ahead of the rip fence and rides with it */}
+        {resawing && <TallFenceSprite />}
         <pixiSprite
           texture={tableSawFenceTexture}
           scale={IMAGE_SCALE * 0.8}
@@ -229,7 +281,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
       </AnimatedPixiContainer>
       {/* A sled cut: the jig travels with the stock clamped to it, the
           work overhanging the blade line by an inch */}
-      {cutting && !ripCut && (
+      {cutting && !fenceCut && (
         <AnimatedPixiContainer y={feed.y}>
           {activeSled && <SledSprite kind={activeSled} />}
           <pixiContainer

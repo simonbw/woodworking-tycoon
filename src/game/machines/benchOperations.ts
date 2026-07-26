@@ -355,6 +355,37 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     },
   },
   {
+    name: "Build Tall Resaw Fence",
+    id: "buildResawFence",
+    requiredSkill: "resawing",
+    duration: 25,
+    getInputMaterials: () => [
+      // A tall sheet face and two triangular braces to keep it square to
+      // the table — nothing rides, so it's the cheapest jig of the three
+      {
+        type: ["plywood"],
+        kind: JIG_GRADE_KINDS,
+        length: [3],
+        width: [2],
+        quantity: 1,
+      },
+      {
+        type: ["board"],
+        width: [4],
+        length: [1],
+        thickness: [1],
+        quantity: 2,
+      },
+    ],
+    output: () => {
+      return {
+        inputs: [],
+        outputs: [],
+        toolOutputs: ["resawFence" as const],
+      };
+    },
+  },
+  {
     name: "Glue Up End-Grain Panel",
     id: "glueUpEndGrain",
     requiredSkill: "endGrainBoards",

@@ -91,6 +91,19 @@ export function improvedSurface(
   return SURFACE_CONDITIONS[index + 1] ?? null;
 }
 
+/**
+ * The rougher of two conditions. A board carries one surface for the whole
+ * piece, so an operation that leaves one face worse than the rest (a resaw
+ * opens a fresh sawn face) reports the worst face — the one that still
+ * needs work. Per-face surface tracking would let both be remembered.
+ */
+export function worseSurface(
+  a: SurfaceCondition,
+  b: SurfaceCondition,
+): SurfaceCondition {
+  return SURFACE_CONDITIONS.indexOf(a) <= SURFACE_CONDITIONS.indexOf(b) ? a : b;
+}
+
 export interface Board {
   readonly id: string;
   readonly type: "board";

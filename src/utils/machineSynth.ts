@@ -271,6 +271,48 @@ export const MITER_SAW_SYNTH_PARAMS: MachineSynthParams = {
   downwardDebounceMs: 250,
 };
 
+/**
+ * Band saw: the quiet one. An induction motor turning big wheels — no
+ * universal-motor scream, just a low hum, the whoosh of the blade, and a
+ * fine tick where ~110 teeth per wheel turn pass the table (~3.2 kHz).
+ * Heavy wheels mean a slow wind-up and a very long coast; a resaw buries
+ * the whole blade in wood, so it bogs deep once it's in the cut.
+ */
+export const BAND_SAW_SYNTH_PARAMS: MachineSynthParams = {
+  master: 0.3,
+  rotationHz: 29,
+  cutRpmSag: 0.87,
+  motor: {
+    gain: 0.12,
+    cutGainBoost: 2.2,
+    lowpassHz: 900,
+    whineRatio: 60,
+    whineDetune: 1.003,
+    whineGain: 0.05,
+    whineOctave: 0.2,
+    whineCutBoost: 1.3,
+  },
+  air: { gain: 0.1, cutBoost: 1.7, bandpassHz: 1200, q: 0.4 },
+  cut: {
+    gain: 0.9,
+    knives: 110,
+    chopDepth: 0.22,
+    formants: [
+      { hz: 800, q: 3, gain: 1.0 },
+      { hz: 1700, q: 4, gain: 0.55 },
+      { hz: 3000, q: 5, gain: 0.3 },
+    ],
+    bedLowpassHz: 4000,
+    bedGain: 0.55,
+    wanderHz: 4,
+    wanderScale: 20,
+  },
+  spinUp: { freqTau: 0.5, gainTau: 0.3 },
+  windDown: { freqTau: 2.2, motorGainTau: 0.9, airGainTau: 0.5 },
+  cutTau: { engage: 0.08, release: 0.2, rpm: 0.35 },
+  downwardDebounceMs: 250,
+};
+
 let noiseBuffer: AudioBuffer | null = null;
 
 /** 2s of white noise, shared by every consumer (they loop from random offsets). */

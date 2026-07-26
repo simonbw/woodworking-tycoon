@@ -59,6 +59,30 @@ export const MillingArticle: React.FC = () => (
       so you're free to do other work while a pass finishes.
     </P>
 
+    <H>Resawing</H>
+    <P>
+      <Term>Resawing</Term> splits a board through its thickness, so an 8/4
+      blank becomes two 4/4 boards instead of one 4/4 board and a bin of
+      shavings. Either saw that does it needs a flat reference face to run
+      against the fence, and its fence is set in <Term>quarters</Term> — the
+      distance from the blade is the thickness of the piece it takes off.
+    </P>
+    <UL>
+      <li>
+        <Term>Band saw</Term> — any width the shop stocks, and the blade is thin
+        enough to cost nothing: the two halves add up to the board you started
+        with. Both fresh faces come off rough, so plan on planing or sanding
+        them.
+      </li>
+      <li>
+        <Term>Table saw</Term>, with the tall resaw fence bolted on — up to 6"
+        wide, since the cut is two passes that have to meet in the middle. The
+        blade eats a quarter inch, but leaves cleaner faces. The board needs a
+        straight edge as well as a flat face to stand up square, and the fence
+        has to come back off before the saw will rip again.
+      </li>
+    </UL>
+
     <H>Surface Quality</H>
     <P>
       Besides its shape, every board and panel has a surface quality: rough →

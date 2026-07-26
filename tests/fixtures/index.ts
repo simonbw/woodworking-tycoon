@@ -5,6 +5,7 @@ import { marketplaceShop } from "./marketplace-shop";
 import { miterSawCrateShop } from "./miter-saw-crate-shop";
 import { layoutWithPlacedMachines } from "./layout-with-placed-machines";
 import { millingShop } from "./milling-shop";
+import { resawShop } from "./resaw-shop";
 import { miterFrameShop } from "./miter-frame-shop";
 import { patternBoardShop } from "./pattern-board-shop";
 import { endGrainShop } from "./end-grain-shop";
@@ -20,6 +21,7 @@ export const TEST_FIXTURES: Record<string, GameState> = {
   "consumables-shop": consumablesShop,
   "hand-tools-shop": handToolsShop,
   "milling-shop": millingShop,
+  "resaw-shop": resawShop,
   "miter-frame-shop": miterFrameShop,
 };
 

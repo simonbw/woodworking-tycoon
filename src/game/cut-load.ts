@@ -11,8 +11,9 @@ import { MaterialInstance, panelWidth } from "./Materials";
  * Which dimension loads the machine is physical: a planer (or a jointer
  * flattening a FACE) spans the stock's width with its knives, a jointer
  * straightening an EDGE only meets the thickness, a table saw rips through
- * the thickness, and a miter saw chops the whole cross-section (geometric
- * mean, so both dimensions matter equally).
+ * the thickness, a band saw resawing climbs the full width, and a miter saw
+ * chops the whole cross-section (geometric mean, so both dimensions matter
+ * equally).
  */
 export function deriveMachineCutLoad(machine: Machine): number {
   // Mid-operation the stock lives in processing; before the first tick it
@@ -59,7 +60,13 @@ function loadRatio(
       // thickness. Face jointing spans the width like the planer.
       return operationId === "jointEdge" ? thicknessRatio : widthRatio;
     case "jobsiteTableSaw":
-      return thicknessRatio;
+      // Ripping cuts through the thickness; a resaw stands the board up
+      // and the blade climbs the whole width instead — the hardest thing
+      // this saw is ever asked to do.
+      return operationId === "resawOnTableSaw" ? widthRatio : thicknessRatio;
+    case "bandSaw":
+      // Resawing: the blade is buried in the full width of the board.
+      return widthRatio;
     case "miterSaw":
       return Math.sqrt(widthRatio * thicknessRatio);
     default:

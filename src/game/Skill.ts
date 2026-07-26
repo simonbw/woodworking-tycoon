@@ -25,6 +25,7 @@ export const SKILL_IDS = [
   "freeformLamination",
   "sunriseBoards",
   "jigsAndFixtures",
+  "resawing",
   "endGrainBoards",
   "polygonJoinery",
   "trayWork",
@@ -158,6 +159,14 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
       "Shop-made tooling. Build a crosscut sled and your saw can do things no store-bought rig can.",
     branch: "milling",
     requires: ["basicMilling"],
+  },
+  resawing: {
+    id: "resawing",
+    name: "Resawing",
+    description:
+      "Standing a board on edge and splitting it in two on the table saw. A tall fence, two passes, and nerve.",
+    branch: "milling",
+    requires: ["jigsAndFixtures"],
   },
   endGrainBoards: {
     id: "endGrainBoards",

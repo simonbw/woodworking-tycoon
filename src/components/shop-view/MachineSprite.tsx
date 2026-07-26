@@ -6,6 +6,7 @@ import { MaterialInstance } from "../../game/Materials";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
 import { useMachineActivity } from "./useMachineActivity";
+import { BandSawSprite } from "../machine-sprites/BandSawSprite";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
 import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
@@ -239,6 +240,9 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
     case MACHINE_TYPES.jointer.id:
       return <JointerSprite machine={machine} />;
+
+    case MACHINE_TYPES.bandSaw.id:
+      return <BandSawSprite machine={machine} />;
 
     case MACHINE_TYPES.garbageCan.id:
       return <GarbageCanSprite machine={machine} />;

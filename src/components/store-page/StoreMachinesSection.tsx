@@ -18,6 +18,7 @@ export const StoreMachinesSection: React.FC = () => {
     { machine: MACHINE_TYPES.miterSaw, price: 200 },
     { machine: MACHINE_TYPES.lunchboxPlaner, price: 450 },
     { machine: MACHINE_TYPES.jointer, price: 600 },
+    { machine: MACHINE_TYPES.bandSaw, price: 700 },
   ];
   return (
     <section>

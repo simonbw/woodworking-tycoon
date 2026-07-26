@@ -129,7 +129,11 @@ only missing supplies reports that ("out of nails — this needs 4").
   milled stock is refused; the jointer has nothing to add.
 - **Table saw** (hand-fed, power switch): the fence (`targetWidth`) is its
   one setting; the mounted jig decides everything else — and you can see
-  it. The fence sprite rides its rail to the set width (and parks at the
+  it. A jig can also take an operation *away*: the tall resaw fence
+  (`ToolType.supersedes`) stands where a board would have to lie flat, so
+  while it's bolted on the saw resaws instead of ripping, and its fence
+  reads in quarters. That's what keeps the operations disjoint — two ops
+  that both accept an edge-jointed board would leave the machine guessing. The fence sprite rides its rail to the set width (and parks at the
   far end for jig cuts), mounted sleds sit on the table aligned with the
   blade (a second one stacks askew on top), and a sled cut shows the jig
   traveling through the blade with the stock clamped to it — panels
@@ -150,6 +154,13 @@ only missing supplies reports that ("out of nails — this needs 4").
   turntable-and-head sprite swings to the signed stop, and standing at
   the saw with cuttable stock ghosts the board on the table, slid to the
   set line.
+- **Band saw** (hand-fed, power switch): one operation, resawing, and one
+  setting — the fence, read in **quarters** because the distance from the
+  blade is the thickness of the piece it takes off. Stock stands on edge
+  against the fence (`OnEdgeBoardSprite`), and both halves stay on the
+  table when the cut ends, like the miter saw's. The blade is thin enough
+  that no kerf comes off the quarter-inch scale, and rough enough that
+  both fresh faces come away `rough`.
 - **Garbage can and benches** keep the classic sheet: per-item choice
   matters when the action is destructive, and a bench is honestly
   recipe-driven (its picker is labeled "Plan").

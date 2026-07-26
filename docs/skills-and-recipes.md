@@ -34,12 +34,15 @@ visible in the journal (that's where aspiration lives).
 - Levels follow an increasing-cost curve; each level grants 1 skill point.
   Points are spent in the journal. No respec (nothing is a trap yet).
 
-## The tree (Now: 15 nodes, 3 branches)
+## The tree (Now: 20 nodes, 3 branches)
 
-**Milling** — `basic-milling`★ (dismantle, crosscut, rip, plane) →
-`quick-dry-glue` (all glue-up cures 40% faster) and → `jigs-and-fixtures`
-(shop-made tooling: Build Crosscut Sled → Crosscut Panel on the table saw —
-the first recipe whose output is a tool, not a product)
+**Milling** — `basic-milling`★ (dismantle, crosscut, rip, plane; resawing on
+a band saw, which is bought rather than learned) → `quick-dry-glue` (all
+glue-up cures 40% faster) and → `jigs-and-fixtures` (shop-made tooling: Build
+Crosscut Sled → Crosscut Panel on the table saw — the first recipe whose
+output is a tool, not a product) → `resawing` (Build Tall Resaw Fence →
+Resaw on the table saw: the band saw's trick performed on a machine that
+wasn't built for it, and the jig displaces ripping while it's bolted on)
 
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
 cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →

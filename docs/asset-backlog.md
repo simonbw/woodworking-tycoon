@@ -93,9 +93,14 @@ wiring: same path, same size, same component.
       empty rack; parked stock keeps its data-driven slat colors.
 - [ ] Garbage can — `machine-sprites/GarbageCanSprite.tsx`. Contents already
       render through `MaterialSprite`.
-- [ ] Table saw sleds — `SledSprite` in
-      `machine-sprites/JobsiteTableSawSprite.tsx`. Crosscut and straight-line
-      sleds are separate shop-built jigs sitting on the saw table.
+- [ ] Band saw — `machine-sprites/BandSawSprite.tsx`. Cast-iron table,
+      painted C-frame, and the upper wheel housing, drawn from above. The
+      fence slides with the setting and stock stands on edge against it, so
+      the art wants the table and frame only.
+- [ ] Table saw jigs — `SledSprite` and `TallFenceSprite` in
+      `machine-sprites/JobsiteTableSawSprite.tsx`. Crosscut sled,
+      straight-line sled, and the tall resaw fence are shop-built jigs
+      sitting on (or bolted to) the saw.
 - [ ] Dust bag — `DustBagSprite` in `shop-view/MachineSprite.tsx`.
 
 ### Props and fixtures
