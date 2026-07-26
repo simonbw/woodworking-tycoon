@@ -157,7 +157,11 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       {isTargeted(machine) && hasStationSheet(machine) && (
         <li className="text-paper-manila/70">
           <ShortcutKeys shortcut="open-station-sheet" />{" "}
-          {machine.type.directFeed ? "tool rack" : "plans & tools"}
+          {machine.type.directFeed
+            ? "tool rack"
+            : machine.type.container
+              ? "contents"
+              : "plans & tools"}
         </li>
       )}
       {machines.length > 1 && (

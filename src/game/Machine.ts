@@ -122,7 +122,9 @@ export interface MachineType {
   /**
    * A station that only holds stock — its sheet is its contents, not a
    * plan picker, even when it has an operation of its own (the garbage
-   * can's Empty). See ContentsSheet.
+   * can's Empty). See ContentsSheet. A container is opened rather than
+   * reached into: it takes stock from F on the floor but never answers
+   * the interact key, so what's inside comes back out through the sheet.
    */
   readonly container?: boolean;
   /** A small machine that can sit on a worktable instead of the floor. */

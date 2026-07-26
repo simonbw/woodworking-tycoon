@@ -1,7 +1,7 @@
 import { CellMap } from "./CellMap";
 import { readyHandoffs } from "./delivery";
 import { GameState } from "./GameState";
-import { isSameMachine, Machine } from "./Machine";
+import { Machine } from "./Machine";
 import { isAtShopDoor } from "./ShopInfo";
 
 /**
@@ -35,15 +35,11 @@ export function resolveInteract(
 
   const candidates = [targetedMachine, ...(cell?.operableMachines ?? [])]
     .filter((machine) => machine != null)
-    // A container is only reached into while you're facing it. Its reach
-    // is a whole ring of cells (the garbage can has no front), and a can
-    // of offcuts must not swallow the key from a board at your feet.
-    .filter(
-      (machine) =>
-        !machine.type.container ||
-        (targetedMachine != null &&
-          isSameMachine(machine.state, targetedMachine.state)),
-    );
+    // A container is opened, not reached into: what you toss in comes back
+    // out through its sheet (Tab). Leaving it off the interact key also
+    // keeps a garbage can — reachable from a whole ring of cells, since it
+    // has no front — from swallowing E from a board at your feet.
+    .filter((machine) => !machine.type.container);
 
   // Outputs are collected where they land: at this cell for machines
   // whose outfeed points here, at the machine itself for single-point
@@ -106,11 +102,7 @@ export function interactLabel(action: InteractAction): string {
     case "take-outputs":
       return `take (${action.machine.outputMaterials.length})`;
     case "take-inputs":
-      // You unload a bench's bay; you reach back into a container for
-      // something you put there.
-      return action.machine.type.container
-        ? `take from ${action.machine.type.name}`
-        : `unload ${action.machine.type.name}`;
+      return `unload ${action.machine.type.name}`;
     case "switch-on":
       return "switch on";
     case "switch-off":

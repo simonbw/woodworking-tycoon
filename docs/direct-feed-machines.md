@@ -166,13 +166,15 @@ only missing supplies reports that ("out of nails — this needs 4").
 - **The garbage can** is neither. It has one operation (Empty) and no
   plan to pick, so its sheet is its contents (`ContentsSheet`) — the
   inventory of what you've tossed in, each row with a Take button. F
-  tosses in, E reaches back, and holding the operate key hauls pieces out
-  to the curb one at a time. Emptying is the only thing in the shop that
-  destroys stock, which is why it costs a held key rather than a button.
-  The can has no front either (`operableFromAnySide`): every cell
-  touching its footprint works, so it's reached from wherever you walked
-  up. To keep that wide reach from swallowing the interact key, a
-  container only answers E while it's the machine you're facing.
+  tosses in, Tab opens the inventory to take back out, and holding the
+  operate key hauls pieces out to the curb one at a time. Emptying is the
+  only thing in the shop that destroys stock, which is why it costs a
+  held key rather than a button. The can has no front either
+  (`operableFromAnySide`): every cell touching its footprint works, so
+  it's reached from wherever you walked up. A container never answers E —
+  it's opened, not reached into — which also keeps a can standing in
+  twelve cells' reach from taking the interact key away from a board at
+  your feet.
 
 ## Where this is headed (not yet built)
 

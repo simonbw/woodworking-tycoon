@@ -129,6 +129,11 @@ test.describe("Stations", () => {
       expect(await handsCount(page)).toBe(0);
       expect(await canContents(page)).toBe(1);
 
+      // The can is opened, not reached into: E leaves it alone
+      await pressKey(page, "e");
+      expect(await handsCount(page)).toBe(0);
+      expect(await canContents(page)).toBe(1);
+
       // Its sheet is an inventory, not a plan picker
       await openStationSheet(page);
       const sheet = stationCard(page, "Garbage Can");
@@ -136,7 +141,7 @@ test.describe("Stations", () => {
       await expect(sheet.getByText("Mode")).not.toBeVisible();
     });
 
-    await test.step("...and gives it back until you empty it", async () => {
+    await test.step("...and gives it back through the sheet until you empty it", async () => {
       await stationCard(page, "Garbage Can")
         .getByRole("button", { name: "Take" })
         .click();

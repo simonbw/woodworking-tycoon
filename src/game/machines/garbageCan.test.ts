@@ -152,29 +152,21 @@ describe("garbage can", () => {
     assert.deepStrictEqual(gameState.player.inventory, []);
   });
 
-  it("only answers the interact key while you are facing it", () => {
-    const junk = board("pine", 1, 2, 1);
-    const gameState = shopWithCan([junk]);
-    const can = theCan(gameState);
-
-    assert.deepStrictEqual(resolveInteract(gameState, can), {
-      kind: "take-inputs",
-      machine: can,
-    });
-    // Facing something else, a can standing in twelve cells' reach must
-    // not claim the key
+  it("never answers the interact key — it is opened, not reached into", () => {
+    const gameState = shopWithCan([board("pine", 1, 2, 1)]);
+    assert.strictEqual(resolveInteract(gameState, theCan(gameState)), null);
     assert.strictEqual(resolveInteract(gameState, undefined), null);
   });
 
-  it("leaves the floor to the interact key when you are not facing it", () => {
-    const junk = board("pine", 1, 2, 1);
-    const underfoot = board("oak", 2, 4, 1);
+  it("leaves the floor to the interact key even while you face it", () => {
+    // A can standing in twelve cells' reach must not take the key from a
+    // board underfoot
     const gameState: GameState = {
-      ...shopWithCan([junk]),
-      materialPiles: [{ material: underfoot, position: [3, 4] }],
+      ...shopWithCan([board("pine", 1, 2, 1)]),
+      materialPiles: [{ material: board("oak", 2, 4, 1), position: [3, 4] }],
     };
 
-    assert.deepStrictEqual(resolveInteract(gameState, undefined), {
+    assert.deepStrictEqual(resolveInteract(gameState, theCan(gameState)), {
       kind: "pick-up-floor",
     });
   });

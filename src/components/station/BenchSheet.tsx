@@ -35,8 +35,8 @@ import { loadedStockDimension } from "./station-helpers";
 import { RunHint } from "./RunHint";
 
 /**
- * Recipe-driven stations (benches, the garbage can): the plan picker,
- * loaded bay, and the tool/upgrade/shelf racks.
+ * Recipe-driven stations (the benches): the plan picker, loaded bay, and
+ * the tool/upgrade/shelf racks.
  */
 export const BenchSheet: React.FC<{
   machine: Machine;

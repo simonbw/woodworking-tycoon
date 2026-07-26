@@ -16,10 +16,12 @@ import { RunHint } from "./RunHint";
 
 /**
  * Stations that hold rather than make (the sales table, the garbage can):
- * what's in them, with a way to take any of it back out. Nothing a
- * container swallows is gone until you act on it — the garbage can's
- * Empty is the only thing in the shop that destroys stock, and it's a
- * held key on the floor, not a button here.
+ * what's in them, and the only way to take any of it back out. A
+ * container is opened, not reached into — stock goes in with F on the
+ * floor and comes out through this list. Nothing a container swallows is
+ * gone until you act on it, and the garbage can's Empty is the only thing
+ * in the shop that destroys stock, which is why it's a held key on the
+ * floor rather than a button here.
  */
 export const ContentsSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
