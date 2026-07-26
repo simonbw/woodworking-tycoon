@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { SCAVENGE_DURATION_TICKS } from "../../game/game-actions/scavenge-actions";
 import { ScavengingTrip } from "../../game/Person";
+import { formatDuration } from "../../game/time";
 import { classNames } from "../../utils/classNames";
 import { TripOverlay } from "../trip/TripOverlay";
 import { useGameState } from "../useGameState";
@@ -63,7 +64,7 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip; tick: number }> = ({
         <div className="flex items-baseline gap-3">
           <span className="subsection-heading">Back in</span>
           <span className="font-mono tabular-nums text-paper-manila">
-            {ticksLeft} ticks
+            {formatDuration(ticksLeft)}
           </span>
         </div>
       </header>

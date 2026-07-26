@@ -107,7 +107,7 @@ export const DoorPrompt: React.FC<{
       group: "go",
       name: "Scavenge for pallets",
       description:
-        "About a quarter-day poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
+        "A couple of hours poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
       verb: "Go",
       action: () => startScavengingAction(),
     });

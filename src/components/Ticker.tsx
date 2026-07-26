@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
-import { TICKS_PER_DAY } from "../game/time";
+import { dayNumber, formatClock, TICKS_PER_DAY } from "../game/time";
 import { TICKS_PER_SECOND, usePaused } from "./PauseContext";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
@@ -47,11 +47,19 @@ export const Ticker: React.FC = () => {
     };
   }, []);
 
-  const day = Math.floor(gameState.tick / TICKS_PER_DAY) + 1;
+  const day = dayNumber(gameState.tick);
   const dayPercent = ((gameState.tick % TICKS_PER_DAY) / TICKS_PER_DAY) * 100;
 
   return (
     <section className="flex items-center gap-3">
+      {/* The wall clock: the anchor for every duration the shop quotes in
+          minutes and hours — a 45 min glue-up means nothing without it. */}
+      <span
+        data-testid="shop-clock"
+        className="font-condensed font-bold text-base text-paper-manila tabular-nums"
+      >
+        {formatClock(gameState.tick)}
+      </span>
       <div className="w-24">
         <div className="flex items-baseline justify-between leading-none">
           <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/60">

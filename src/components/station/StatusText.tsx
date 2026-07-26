@@ -1,5 +1,6 @@
 import React from "react";
 import { Machine } from "../../game/Machine";
+import { formatDuration } from "../../game/time";
 import { useOperationProgress } from "./useOperationProgress";
 
 /** The status wording in the sheet header. */
@@ -9,6 +10,13 @@ export const StatusText: React.FC<{ machine: Machine }> = ({ machine }) => {
   const hasSwitch = machine.type.powerSwitch === true;
   const switchedOff = hasSwitch && !machine.isPowered;
   const operation = machine.selectedOperationOrNull;
+
+  // A phase with nothing left on it wraps up this tick — there's no span of
+  // time left to name, so say what it's doing instead of counting zero.
+  const timeLeft =
+    ticksRemaining === 0
+      ? "finishing"
+      : `${formatDuration(ticksRemaining)} left`;
 
   if (isOperating) {
     if (switchedOff) {
@@ -27,12 +35,12 @@ export const StatusText: React.FC<{ machine: Machine }> = ({ machine }) => {
       return (
         <span className="text-ink-blue">
           {currentPhase.name}
-          {!currentPhase.attended && " (hands-free)"} · {ticksRemaining} ticks
+          {!currentPhase.attended && " (hands-free)"} · {timeLeft}
         </span>
       );
     }
     return (
-      <span className="text-ink-blue">Running · {ticksRemaining} ticks</span>
+      <span className="text-ink-blue">Running · {timeLeft}</span>
     );
   }
   if (switchedOff) return <>Switched off</>;

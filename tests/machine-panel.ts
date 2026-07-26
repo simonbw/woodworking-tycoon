@@ -102,7 +102,7 @@ export async function takeAllHere(page: any) {
 }
 
 /** Open a collapsed recipe index; no-op for the other control shapes. */
-async function openRecipeIndex(card: any) {
+export async function openRecipeIndex(card: any) {
   const toggle = card.locator("button[aria-expanded]");
   if (
     (await toggle.count()) > 0 &&

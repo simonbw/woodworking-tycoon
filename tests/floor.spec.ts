@@ -124,6 +124,14 @@ test.describe("Shop floor", () => {
       await expect(money).toBeVisible();
     });
 
+    await test.step("the top bar keeps a wall clock beside the day", async () => {
+      // The anchor for every duration the shop quotes: plans and station
+      // status speak in minutes and hours, so the player needs the time.
+      await expect(page.getByTestId("shop-clock")).toHaveText(
+        /^\d{1,2}:\d{2} (AM|PM)$/,
+      );
+    });
+
     await test.step("day job button is not present", async () => {
       const dayJobButton = page.getByRole("button", { name: /day job/i });
       await expect(dayJobButton).not.toBeVisible();

@@ -5,6 +5,7 @@ import { Operation } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
 import { describeOperationIO } from "../../game/operation-helpers";
 import { getOperationDuration } from "../../game/skill-helpers";
+import { formatDuration } from "../../game/time";
 import { classNames } from "../../utils/classNames";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 
@@ -206,13 +207,14 @@ const RecipeIndex: React.FC<{
                       {operation.name}
                     </span>
                     <span className="shrink-0 font-mono text-[0.65rem] tabular-nums text-ink-fade">
-                      {getOperationDuration(
-                        operation,
-                        progression,
-                        dustMultiplier,
-                        workSpeed,
-                      )}{" "}
-                      ticks
+                      {formatDuration(
+                        getOperationDuration(
+                          operation,
+                          progression,
+                          dustMultiplier,
+                          workSpeed,
+                        ),
+                      )}
                     </span>
                   </span>
                   {io && (

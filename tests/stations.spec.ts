@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   machineCard as stationCard,
   modesOf,
+  openRecipeIndex,
   openStationSheet,
   runWhileHolding,
   selectMode,
@@ -410,6 +411,19 @@ test.describe("Stations", () => {
     await test.step("the planter box reads its screw cost against the tin", async () => {
       await selectMode(page, "Makeshift Workbench", "Build Rustic Planter Box");
       await expect(page.getByText("8 screws (have 50)")).toBeVisible();
+    });
+
+    await test.step("plans quote shop time, never ticks", async () => {
+      await openStationSheet(page);
+      const card = stationCard(page, "Makeshift Workbench");
+      await openRecipeIndex(card);
+      // Every plan carries a duration, and each one reads as minutes or
+      // hours — the simulation's tick never reaches the player.
+      const row = card.locator("li", { hasText: "Build Rustic Planter Box" });
+      await expect(
+        row.getByText(/^(\d+ min|\d+h( \d{2}m)?)$/),
+      ).toBeVisible();
+      await expect(card.getByText(/\bticks?\b/)).toHaveCount(0);
     });
   });
 });
