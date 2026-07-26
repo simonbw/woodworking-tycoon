@@ -33,6 +33,7 @@ import { useTargetedMachine } from "../TargetedMachineContext";
 import { ShopOverlayLayer } from "../shop-overlay/ShopOverlayLayer";
 import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
+import { FootstepSoundLayer } from "./FootstepSoundLayer";
 import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
@@ -264,6 +265,7 @@ export const ShopView: React.FC = () => {
                 ))}
               {collisionDebugRequested() && <CollisionDebugLayer />}
               <PlayerMotionLayer paused={paused} />
+              <FootstepSoundLayer />
               <ShopVacSprite />
               {!gameState.player.away && (
                 <PersonSprite person={gameState.player} />

@@ -48,6 +48,12 @@ below) — repeated identical clips are the fastest route to audio fatigue:
 - Board tossed into garbage can (hollow metal *bong*)
 - Boards knocking together (stacking)
 - Hardware: nail/screw handful jingle, dropping into a bin
+- **Footsteps**: single work-boot falls on the concrete floor, 5–6 takes.
+  The most-heard clip in the game, so it wants the most takes and the most
+  care about level — placeholders are in (`footstep-1.ogg` … `-5.ogg`) and
+  real boots would beat them by a mile. Keep the strike within ~10 ms of the
+  file's start; the game plays these on the foot landing, and a slow front
+  end reads as lag.
 
 ### UI one-shots (paperwork-themed re-records)
 
@@ -228,13 +234,38 @@ the cut is audible instead of during spin-up or wind-out. Machines without
 a voice fall back to the game-state approximation. The floating progress
 badge intentionally stays on game-state progress.
 
-### One-shot variation (small upgrade to `sfx.ts`)
+### One-shot variation (`sfx.ts`)
 
-To use the multi-take recordings: name files `material-drop-1.ogg`,
-`material-drop-2.ogg`, …, let the clip maps declare a variant count, and have
-`playSound` pick randomly plus apply a small pitch jitter
-(`source.playbackRate.value = 1 ± 0.03`). Cheap, and it kills the
+Multi-take clips ship as `<name>-1.ogg`, `<name>-2.ogg`, … and declare their
+take count in `SOUND_VARIANTS`; `playSound` picks one at random and applies
+the clip's pitch jitter from `SOUND_PITCH_JITTER`
+(`source.playbackRate.value = 1 ± jitter`). Both maps are keyed by the bare
+clip name, so a sound gains variation by shipping more files and adding a
+row — no call site changes, and `playSound("footstep")` keeps working
+whether there is one take or six. Cheap, and it kills the
 machine-gun-same-sample effect.
+
+Only footsteps use it so far (5 takes, ±6%), since they're the one clip
+heard hundreds of times a session. `preloadSound(name)` warms every take, so
+the first step of a new game isn't waiting on a fetch.
+
+### Footsteps (`FootstepSoundLayer`)
+
+Steps are driven by **distance, not a timer**: `footsteps.ts` accumulates how
+far the continuous body has moved and pays out a footfall every
+`STRIDE_LENGTH` (2.8 cells ≈ one real stride). The cadence therefore tracks
+walking speed for free — deep sawdust and dragging the shop vac already
+divide `playerWalkSpeed`, and the steps slow with it without knowing why.
+Setting off from a standstill fires immediately so the first step lands with
+the keypress, stopping resets the accumulator, and a per-sample distance
+clamp keeps a teleport (loaded save, E2E fixture) from paying out a burst.
+
+The layer reads `playerMotion` directly inside `useTick` rather than watching
+game state, for the same reason `PersonSprite` does — walking deliberately
+causes no React renders, and a cell-crossing cue would fire at the wrong
+rhythm anyway, cells being a foot across against a nearly three-foot stride.
+`playerMotion.moving` is already false when paused, away on a trip, or busy
+sweeping, so all of those go quiet without the layer knowing about them.
 
 ---
 

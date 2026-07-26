@@ -18,6 +18,11 @@ import { getAudioContext } from "./getAudioContext";
  * and is what the game-event → sound bridge (`GameSoundLayer`) uses.
  * `loadSoundBuffer` exposes the decode cache to the continuous machine-sound
  * player (`loopingSound.ts`), which manages its own sources.
+ *
+ * Clips that would otherwise machine-gun — footsteps above all — ship as
+ * numbered takes and get a little pitch jitter; see `SOUND_VARIANTS`. That
+ * lives here rather than at the call sites so a clip gains variation by
+ * shipping more files and adding a row, not by changing who plays it.
  */
 
 export type UiSoundName =
@@ -46,6 +51,25 @@ const SOUND_GAIN: Record<UiSoundName, number> = {
   "ui-page-turn": 0.3,
 };
 
+/**
+ * Clips recorded as several takes, stored as `<name>-1.ogg` … `<name>-N.ogg`.
+ * A play picks one at random. Anything not listed here is a single file
+ * named plainly, which is most of them.
+ */
+const SOUND_VARIANTS: Record<string, number> = {
+  footstep: 5,
+};
+
+/**
+ * Random playback-rate spread per clip, as a fraction either side of 1.
+ * Even with several takes, a repeated sound needs the pitch to wander a
+ * little before it stops reading as a sample. Keep it small — past a few
+ * percent a footstep starts sounding like a different pair of boots.
+ */
+const SOUND_PITCH_JITTER: Record<string, number> = {
+  footstep: 0.06,
+};
+
 const bufferCache = new Map<string, Promise<AudioBuffer>>();
 
 // Clips authored as FLAC rather than the default Ogg.
@@ -61,6 +85,36 @@ async function fetchClip(name: string): Promise<ArrayBuffer> {
   const res = await fetch(`/sounds/${name}.${ext}`);
   if (!res.ok) throw new Error(`sfx: failed to fetch ${name} (${res.status})`);
   return res.arrayBuffer();
+}
+
+/**
+ * The file a play of `name` should actually fetch: one of its numbered takes
+ * when it has any, otherwise the name unchanged. `roll` is the 0..1 draw,
+ * injectable so the choice can be tested.
+ */
+export function variantClipName(name: string, roll = Math.random()): string {
+  const count = SOUND_VARIANTS[name];
+  if (!count || count < 2) return name;
+  // Math.random() never returns 1, but a caller-supplied roll might.
+  const index = Math.min(count - 1, Math.floor(roll * count));
+  return `${name}-${index + 1}`;
+}
+
+/** The rate to play `name` at: 1, plus this clip's random pitch jitter. */
+export function variantPlaybackRate(
+  name: string,
+  roll = Math.random(),
+): number {
+  const jitter = SOUND_PITCH_JITTER[name];
+  if (!jitter) return 1;
+  return 1 + (roll * 2 - 1) * jitter;
+}
+
+/** Every file a clip can resolve to — one name, or all of its takes. */
+export function clipFileNames(name: string): string[] {
+  const count = SOUND_VARIANTS[name];
+  if (!count || count < 2) return [name];
+  return Array.from({ length: count }, (_, i) => `${name}-${i + 1}`);
 }
 
 /** Fetch and decode a clip by bare name, cached across all users. */
@@ -85,6 +139,10 @@ export function loadSoundBuffer(name: string): Promise<AudioBuffer> {
  *
  * `bus: "room"` places the sound in the shop's acoustics (see `audioBus.ts`);
  * use it for diegetic sounds and leave UI feedback on the default sfx bus.
+ *
+ * Clips with numbered takes play a random one, and clips with a jitter entry
+ * play slightly off-speed, so a sound heard hundreds of times isn't heard as
+ * the same file hundreds of times.
  */
 export function playSound(
   name: string,
@@ -99,9 +157,10 @@ export function playSound(
       if (ctx.state === "suspended") {
         await ctx.resume();
       }
-      const buffer = await loadSoundBuffer(name);
+      const buffer = await loadSoundBuffer(variantClipName(name));
       const source = ctx.createBufferSource();
       source.buffer = buffer;
+      source.playbackRate.value = variantPlaybackRate(name);
       const gainNode = ctx.createGain();
       gainNode.gain.value = gain;
       source
@@ -117,6 +176,18 @@ export function playSound(
 /** Fire one of the named UI sounds at its configured level. */
 export function playUiSound(name: UiSoundName): void {
   playSound(name, SOUND_GAIN[name]);
+}
+
+/**
+ * Warm the decode cache for a clip and every take it can pick, so the first
+ * play has no fetch/decode latency. Worth doing for anything that fires the
+ * moment the player acts — a footstep that arrives after the fetch lands
+ * behind the foot.
+ */
+export function preloadSound(name: string): void {
+  clipFileNames(name).forEach((file) => {
+    void loadSoundBuffer(file).catch(() => {});
+  });
 }
 
 /** Warm the decode cache so the first play has no fetch/decode latency. */

@@ -37,6 +37,21 @@ function workspaceCard(page: any) {
 }
 
 async function startNewGame(page: Page) {
+  // Count every clip the page actually starts playing. Footsteps are
+  // preloaded, so their fetch proves nothing about playback — but a fresh
+  // shop with no machines running plays nothing at all until the player
+  // does something, which makes the count a clean signal.
+  await page.addInitScript(() => {
+    (window as any).__SOURCES_STARTED__ = 0;
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (
+      this: AudioBufferSourceNode,
+      ...args: unknown[]
+    ) {
+      (window as any).__SOURCES_STARTED__++;
+      return (start as any).apply(this, args);
+    };
+  });
   await page.goto("/");
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("main");
@@ -401,6 +416,48 @@ test.describe("Market, supplies, and sound", () => {
 
     await test.step("start a clean game for the sound half", async () => {
       await startNewGame(page);
+    });
+
+    await test.step("every footstep take is served", async () => {
+      // The layer warms all of them on mount, so a take that was renamed or
+      // never committed shows up here rather than as one silent step in five.
+      await expect
+        .poll(() => [
+          ...new Set(requested.filter((f) => /^footstep-\d+\.ogg$/.test(f))),
+        ])
+        .toEqual([
+          "footstep-1.ogg",
+          "footstep-2.ogg",
+          "footstep-3.ogg",
+          "footstep-4.ogg",
+          "footstep-5.ogg",
+        ]);
+    });
+
+    await test.step("walking the floor plays footsteps", async () => {
+      // Whatever the clicks that started the game already played.
+      const before = await page.evaluate(
+        () => (window as any).__SOURCES_STARTED__,
+      );
+      await page.keyboard.down("w");
+      // Several strides' worth of walking, so this can't pass on one step.
+      await expect
+        .poll(
+          async () =>
+            await page.evaluate(() => (window as any).__SOURCES_STARTED__),
+        )
+        .toBeGreaterThan(before + 2);
+      await page.keyboard.up("w");
+    });
+
+    await test.step("standing still is silent", async () => {
+      const settled = await page.evaluate(
+        () => (window as any).__SOURCES_STARTED__,
+      );
+      await page.waitForTimeout(500);
+      expect(
+        await page.evaluate(() => (window as any).__SOURCES_STARTED__),
+      ).toBe(settled);
     });
 
     await test.step("an operation cue fetches that operation's clip", async () => {

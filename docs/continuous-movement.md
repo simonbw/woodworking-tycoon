@@ -36,6 +36,7 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 | Body store | `src/components/shop-view/playerMotionStore.ts` | the mutable singleton sprites read |
 | Input | `src/components/shop-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
 | Integrator | `src/components/shop-view/PlayerMotionLayer.tsx` | per-frame `useTick` loop, cell sync, teleport snap |
+| Footsteps | `src/game/footsteps.ts` + `src/components/shop-view/FootstepSoundLayer.tsx` | a step every stride of floor covered (see `docs/sound-design.md`) |
 
 ## Collision
 
