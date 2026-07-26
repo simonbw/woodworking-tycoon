@@ -1,7 +1,11 @@
+/* swap throughout: loadFonts() normally has these in hand before anything
+   renders, so this only matters if that wait times out — and fallback text
+   beats invisible text. */
 @font-face {
   font-family: "Lumberjack";
   font-style: normal;
   font-weight: normal;
+  font-display: swap;
   src: url("/fonts/Lumberjack-Rough.otf");
 }
 
@@ -9,6 +13,7 @@
   font-family: "Bree Serif";
   font-style: normal;
   font-weight: normal;
+  font-display: swap;
   src: url("/fonts/BreeSerif-Regular.ttf");
 }
 
@@ -16,6 +21,7 @@
   font-family: "Cabin";
   font-weight: 400 700;
   font-stretch: 100%;
+  font-display: swap;
   src: url("/fonts/Cabin-Variable.ttf");
 }
 
@@ -24,6 +30,7 @@
   font-style: italic;
   font-weight: 400 700;
   font-stretch: 100%;
+  font-display: swap;
   src: url("/fonts/Cabin-Italic-Variable.ttf");
 }
 
@@ -31,6 +38,7 @@
   font-family: "Nunito";
   font-style: normal;
   font-weight: 200 1000;
+  font-display: swap;
   src: url("/fonts/Nunito.ttf");
 }
 
@@ -38,5 +46,6 @@
   font-family: "Nunito";
   font-style: italic;
   font-weight: 200 1000;
+  font-display: swap;
   src: url("/fonts/Nunito-Italic.ttf");
 }

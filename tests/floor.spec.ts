@@ -74,6 +74,15 @@ test.describe("Shop floor", () => {
       await page.waitForSelector("main");
     });
 
+    await test.step("type is in hand before the first frame", async () => {
+      // Boot waits on loadFonts(), so nothing renders in a fallback face and
+      // then reflows. Checked on the local logo face — the Google-hosted
+      // families go through the same gate but would drag the host into CI.
+      expect(
+        await page.evaluate(() => document.fonts.check('1rem "Lumberjack"')),
+      ).toBe(true);
+    });
+
     await test.step("start menu shows and we can start a new game", async () => {
       await expect(
         page.getByRole("heading", { name: "Woodworking Tycoon" }),

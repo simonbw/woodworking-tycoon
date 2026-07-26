@@ -8,6 +8,10 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Caveat:wght@400;700&family=JetBrains+Mono:wght@400;500;700&family=Andada+Pro:wght@400;500;600;700&family=Stardos+Stencil:wght@400;700&display=swap"
     rel="stylesheet">
+  <!-- The logo face is the heaviest file we ship; start it alongside the
+       bundle rather than waiting for the menu to ask for it. The rest are
+       fetched by loadFonts() before the app renders. -->
+  <link rel="preload" href="/fonts/Lumberjack-Rough.otf" as="font" type="font/otf" crossorigin>
   <link rel="stylesheet" href="/styles/index.css" />
   <link rel="icon" href="/images/favicon-3.png" />
 </head>
