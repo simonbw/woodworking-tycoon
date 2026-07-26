@@ -5,14 +5,19 @@ import {
   selectMode,
   takeAllHere,
 } from "./machine-panel";
-import {
-  closeJournal,
-  goToStore,
-  leaveStore,
-  openJournal,
-  openPhone,
-  setTickRate,
-} from "./navigation";
+import { closeJournal, goToStore, leaveStore, openJournal } from "./navigation";
+
+/**
+ * The UI end of the end-grain chain: the aisle the plywood comes off, the
+ * journal rows that unlock it, the tool rack the sled bolts into, and the two
+ * shapes of station the chain is worked through.
+ *
+ * What the chain *produces* — four slices per panel, the glue-up, the two
+ * sanding passes, the board's species and price, the XP that pays the skill
+ * points back — is checked in `src/game/sequences/end-grain-chain.test.ts`,
+ * where the whole run costs milliseconds instead of seconds. Re-deriving it
+ * here bought nothing but wall time.
+ */
 
 declare global {
   interface Window {
@@ -22,7 +27,6 @@ declare global {
   }
 }
 
-const WORKSPACE_CELL: [number, number] = [1, 4];
 const SAW_CELL: [number, number] = [6, 5];
 
 function card(page: any, name: string) {
@@ -39,55 +43,8 @@ async function teleportPlayer(page: any, position: [number, number]) {
   await page.waitForTimeout(30);
 }
 
-/**
- * Operate the machine (via its station sheet) and collect the results.
- * Feed-through machines deliver to their outfeed cell — pass `takeAt`
- * to walk there and take with Shift+E (single-point stations collect
- * right off the sheet).
- */
-/**
- * Run the station the player is standing at and wait for the output.
- * `stageFirst` is for direct-feed machines, where the stock has to go on
- * the machine (F) before the trigger does anything.
- */
-async function operateAndWait(
-  page: any,
-  machineName: string,
-  isDoneSource: string,
-  takeAt?: [number, number],
-  stageFirst = false,
-) {
-  if (stageFirst) {
-    await page.evaluate(() =>
-      (document.activeElement as HTMLElement)?.blur?.(),
-    );
-    await page.keyboard.press("f");
-    await page.waitForTimeout(30);
-  }
-  await runWhileHolding(
-    page,
-    (src: string) => {
-      const matches = new Function("mat", `return (${src})(mat)`) as any;
-      return (window as any)
-        .__GET_GAME_STATE__()
-        .machines.some((m: any) => m.outputMaterials.some(matches));
-    },
-    isDoneSource,
-    { timeout: 30000 },
-  );
-  if (takeAt) {
-    await teleportPlayer(page, takeAt);
-    await takeAllHere(page);
-  } else {
-    await card(page, machineName)
-      .getByRole("button", { name: /Take All/ })
-      .click();
-  }
-  await page.waitForTimeout(30);
-}
-
 test.describe("End-Grain Boards", () => {
-  test("should buy plywood, build a sled, and make an end-grain board", async ({
+  test("shops the aisle, learns the skills, mounts the sled, and cuts", async ({
     page,
   }) => {
     test.setTimeout(180000);
@@ -135,9 +92,10 @@ test.describe("End-Grain Boards", () => {
       await expect(page.getByText("Certified")).toHaveCount(6);
     });
 
+    // A bench: pick a plan off the sheet, send stock over with the manifest's
+    // transfer buttons, hold the key until it's done.
     await test.step("build the crosscut sled at the workspace", async () => {
       await closeJournal(page);
-      await setTickRate(page, 20); // the cures are long by design
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await page
         .locator("li", { hasText: "Plywood" })
@@ -151,7 +109,6 @@ test.describe("End-Grain Boards", () => {
       await page.waitForTimeout(30);
       await runWhileHolding(
         page,
-        
         () =>
           (window as any)
             .__GET_GAME_STATE__()
@@ -175,108 +132,32 @@ test.describe("End-Grain Boards", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("crosscut the sanded panel into slices", async () => {
-      await operateAndWait(
-        page,
-        "Jobsite Table Saw",
-        `(mat) => mat.type === "endGrainSlice"`,
-        [6, 1], // the saw's outfeed cell
-        true, // set the panel on the saw first
+    // A direct-feed machine: no plan to pick, no transfer buttons. Set the
+    // stock down (F), hold the trigger, collect at the outfeed cell.
+    await test.step("crosscut the sanded panel on the sled", async () => {
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
       );
-      const sliceCount = await page.evaluate(
+      await page.keyboard.press("f");
+      await page.waitForTimeout(30);
+      await runWhileHolding(
+        page,
         () =>
           (window as any)
             .__GET_GAME_STATE__()
-            .player.inventory.filter((mat: any) => mat.type === "endGrainSlice")
-            .length,
+            .machines.some((m: any) =>
+              m.outputMaterials.some(
+                (mat: any) => mat.type === "endGrainSlice",
+              ),
+            ),
+        undefined,
+        { timeout: 30000 },
       );
-      expect(sliceCount).toBe(4);
-    });
-
-    await test.step("glue the slices grain-up and sand the blank", async () => {
-      await teleportPlayer(page, WORKSPACE_CELL);
-      await selectMode(page, "Makeshift Workbench", "Glue Up End-Grain Panel");
-      await page
-        .locator("li", { hasText: "Maple End-Grain Slice" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(30);
-      await operateAndWait(
-        page,
-        "Makeshift Workbench",
-        `(mat) => mat.type === "panel" && mat.grain === "end"`,
-      );
+      await teleportPlayer(page, [6, 1]); // the saw's outfeed cell
+      await takeAllHere(page);
       await expect(
-        page.getByText(`Maple End-Grain Panel 8/4 — 10" × 1'`).first(),
+        page.getByText("Maple End-Grain Slice").first(),
       ).toBeVisible();
-
-      await selectMode(page, "Makeshift Workbench", "Sand Panel");
-      for (const surface of ["smooth", "sanded"]) {
-        await page
-          .locator("li", { hasText: "Maple End-Grain Panel" })
-          .getByRole("button", { name: "→ Makeshift Workbench" })
-          .click();
-        await page.waitForTimeout(30);
-        await operateAndWait(
-          page,
-          "Makeshift Workbench",
-          `(mat) => mat.type === "panel" && mat.surface === "${surface}"`,
-        );
-      }
-    });
-
-    await test.step("finish the end-grain board", async () => {
-      await selectMode(page, "Makeshift Workbench", "Finish End-Grain Board");
-      await page
-        .locator("li", { hasText: "Maple End-Grain Panel" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
-      await page.waitForTimeout(30);
-      await operateAndWait(
-        page,
-        "Makeshift Workbench",
-        `(mat) => mat.type === "endGrainCuttingBoard"`,
-      );
-      const board = await page.evaluate(() =>
-        (window as any)
-          .__GET_GAME_STATE__()
-          .player.inventory.find(
-            (mat: any) => mat.type === "endGrainCuttingBoard",
-          ),
-      );
-      expect(board.species).toBe("maple");
-    });
-
-    await test.step("XP and the sale", async () => {
-      // $450 board -> 450 XP -> level 3 -> the 2 spent points earned back
-      const progression = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().progression,
-      );
-      expect(progression.xp).toBe(450);
-      expect(progression.skillPoints).toBe(2);
-
-      const moneyBefore = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().money,
-      );
-      await openPhone(page);
-      await page
-        .locator("li", { hasText: "End Grain Cutting Board" })
-        .getByRole("button", { name: "List" })
-        .click();
-      // Fair-value listings are guaranteed by the pity timer — jump past it
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) =>
-          state.listings.length === 0
-            ? state
-            : { ...state, tick: state.listings[0].listedAtTick + 2 * 600 },
-        );
-      });
-      await page.waitForFunction(
-        (before: number) =>
-          (window as any).__GET_GAME_STATE__().money === before + 450,
-        moneyBefore,
-        { timeout: 10000 },
-      );
     });
   });
 });
