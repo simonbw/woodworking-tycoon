@@ -10,35 +10,38 @@ import { StoreSuppliesSection } from "./StoreSuppliesSection";
 import { StoreToolsSection } from "./StoreToolsSection";
 
 /**
+ * The store's sign: the name stencilled across an orange square, set on
+ * the 45° diagonal the way every big-box chain paints itself. "The" runs
+ * small above the two big lines, and the wordmark is deliberately scaled
+ * past the square's edges so the corners of the type get clipped — a sign
+ * too big for its board is the whole look. This is the one place stencil
+ * type is allowed outside the title screen: it's a logo, not UI (see
+ * docs/design-system.md).
+ */
+const OrangeBoxLogo: React.FC = () => (
+  <span
+    className="relative block w-20 aspect-square overflow-hidden bg-store-orange shadow-[0.15rem_0.15rem_0_rgba(0,0,0,0.2)]"
+    role="img"
+    aria-label="Orange Box"
+  >
+    <span
+      className="absolute inset-0 flex flex-col items-start justify-center -rotate-45 font-stencil font-bold uppercase text-white leading-[0.95] tracking-tighter"
+      aria-hidden
+    >
+      <span className="text-[0.65rem] pl-px">The</span>
+      <span className="text-[1.45rem]">Orange</span>
+      <span className="text-[1.45rem]">Box</span>
+    </span>
+  </span>
+);
+
+/**
  * A trip to Orange Box, the big-box hardware store. Reached by walking out
  * the garage door (see DoorPrompt); shown while the player's away trip is
  * a shopping one to the big box (the lumberyard has its own overlay). The
  * shop keeps ticking back home — browsing the aisles is what the trip
  * costs — and Head Home is the only way back.
  */
-/**
- * The store's sign: the name stencilled across an orange square, the way
- * every big-box chain paints itself. Three short lines stacked tight so
- * the block fills its box, and a ™ tucked under the corner. This is the
- * one place stencil type is allowed outside the title screen — it's a
- * logo, not UI (see docs/design-system.md).
- */
-const OrangeBoxLogo: React.FC = () => (
-  <span className="flex items-end gap-0.5" role="img" aria-label="Orange Box">
-    <span
-      className="aspect-square flex flex-col justify-center bg-store-orange text-white font-stencil font-bold uppercase text-[1.05rem] leading-[1.05] tracking-tight px-2 shadow-[0.15rem_0.15rem_0_rgba(0,0,0,0.2)]"
-      aria-hidden
-    >
-      <span>The</span>
-      <span>Orange</span>
-      <span>Box</span>
-    </span>
-    <span className="font-condensed text-[0.55rem] leading-none pb-1 text-store-orange-dark">
-      ™
-    </span>
-  </span>
-);
-
 export const StoreTripOverlay: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
