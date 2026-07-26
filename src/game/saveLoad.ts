@@ -8,7 +8,7 @@ const SAVE_KEY = "woodworking-tycoon-save";
  * (pre-launch, no players): a version mismatch or a save that fails the
  * schema is simply discarded and the game starts fresh.
  */
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 
 interface SaveData {
   version: number;

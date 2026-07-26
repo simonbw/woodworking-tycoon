@@ -114,7 +114,8 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       {canStage && (
         <li>
           <ShortcutKeys shortcut="put-down" />{" "}
-          {machine.type.directFeed ? "set stock on it" : "load"}
+          {machine.type.stageVerb ??
+            (machine.type.directFeed ? "set stock on it" : "load")}
         </li>
       )}
       {canOperate && (

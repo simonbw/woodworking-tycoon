@@ -53,6 +53,31 @@ async function movePlayerTo(page: any, position: [number, number]) {
   await page.waitForTimeout(30);
 }
 
+/** Blur first: with focus on a control the game's keys activate it instead. */
+async function pressKey(page: any, key: string) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press(key);
+  await page.waitForTimeout(30);
+}
+
+/** How many pieces the player is carrying. */
+function handsCount(page: any): Promise<number> {
+  return page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().player.inventory.length,
+  );
+}
+
+/** How many pieces are sitting in the garbage can. */
+function canContents(page: any): Promise<number> {
+  return page.evaluate(
+    () =>
+      (window as any)
+        .__GET_GAME_STATE__()
+        .machines.find((m: any) => m.machineTypeId === "garbageCan")
+        .inputMaterials.length,
+  );
+}
+
 /**
  * A panel that merely mentions a machine's name. Looser than machine-panel's
  * `machineCard`, which anchors on the placard heading — the table saw has no
@@ -88,6 +113,60 @@ test.describe("Stations", () => {
 
     // Where the store trip returns the player to.
     let afterStore: [number, number] | undefined;
+
+    // The starter shop is the only one with a garbage can, so this rides
+    // the new game before the fixtures take over.
+    await test.step("the garbage can holds what you toss in", async () => {
+      await movePlayerTo(page, [2, 5]);
+      await pressKey(page, "e");
+      expect(await handsCount(page)).toBe(1);
+
+      // Walk up on the can's side — it has no front, so any of the cells
+      // touching it works
+      await movePlayerTo(page, [2, 13]);
+      await pressKey(page, "f");
+      expect(await handsCount(page)).toBe(0);
+      expect(await canContents(page)).toBe(1);
+
+      // Its sheet is an inventory, not a plan picker
+      await openStationSheet(page);
+      const sheet = stationCard(page, "Garbage Can");
+      await expect(sheet.getByText("Contents · 1/8")).toBeVisible();
+      await expect(sheet.getByText("Mode")).not.toBeVisible();
+    });
+
+    await test.step("...and gives it back until you empty it", async () => {
+      await stationCard(page, "Garbage Can")
+        .getByRole("button", { name: "Take" })
+        .click();
+      await page.waitForTimeout(30);
+      expect(await handsCount(page)).toBe(1);
+      expect(await canContents(page)).toBe(0);
+
+      // Back in, and this time haul it out — the only thing in the shop
+      // that destroys stock, and it's a held key, not a button
+      await pressKey(page, "f");
+      expect(await canContents(page)).toBe(1);
+      await runWhileHolding(
+        page,
+        () =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "garbageCan")
+            .inputMaterials.length === 0,
+      );
+      expect(await canContents(page)).toBe(0);
+      expect(await handsCount(page)).toBe(0);
+      // Destroyed, not dropped at the player's feet
+      expect(
+        await page.evaluate(
+          () => (window as any).__GET_GAME_STATE__().materialPiles.length,
+        ),
+      ).toBe(0);
+
+      await page.keyboard.press("Escape");
+      await page.getByTestId("station-sheet").waitFor({ state: "detached" });
+    });
 
     await test.step("load the cutting-board-shop", async () => {
       await page.evaluate(() => {

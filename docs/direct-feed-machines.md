@@ -161,9 +161,18 @@ only missing supplies reports that ("out of nails — this needs 4").
   table when the cut ends, like the miter saw's. The blade is thin enough
   that no kerf comes off the quarter-inch scale, and rough enough that
   both fresh faces come away `rough`.
-- **Garbage can and benches** keep the classic sheet: per-item choice
-  matters when the action is destructive, and a bench is honestly
-  recipe-driven (its picker is labeled "Plan").
+- **Benches** keep the classic sheet: a bench is honestly recipe-driven,
+  and its picker is labeled "Plan".
+- **The garbage can** is neither. It has one operation (Empty) and no
+  plan to pick, so its sheet is its contents (`ContentsSheet`) — the
+  inventory of what you've tossed in, each row with a Take button. F
+  tosses in, E reaches back, and holding the operate key hauls pieces out
+  to the curb one at a time. Emptying is the only thing in the shop that
+  destroys stock, which is why it costs a held key rather than a button.
+  The can has no front either (`operableFromAnySide`): every cell
+  touching its footprint works, so it's reached from wherever you walked
+  up. To keep that wide reach from swallowing the interact key, a
+  container only answers E while it's the machine you're facing.
 
 ## Where this is headed (not yet built)
 

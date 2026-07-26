@@ -385,11 +385,13 @@ export function materialMeetsInput(
 export function createMockMaterial(
   requirement: InputMaterialWithQuantity,
 ): MaterialInstance {
-  if (requirement.type === undefined || requirement.type.length === 0) {
-    throw new Error("Requirement must specify at least one material type");
-  }
+  // No type listed means the recipe takes anything at all (the garbage
+  // can's Empty). A bare board stands in for "some piece of stock" —
+  // placeholders are only ever drawn in an empty slot, and a requirement
+  // this loose has nothing more specific to say.
+  const requiredType = requirement.type?.[0] ?? "board";
 
-  switch (requirement.type[0]) {
+  switch (requiredType) {
     case "board": {
       const r = requirement as InputMaterialWithQuantity<Board>;
       return makeMaterial<Board>({
@@ -465,7 +467,7 @@ export function createMockMaterial(
       // pay, commission previews) values an oiled or two-tone ask correctly
       const r = requirement as InputMaterialWithQuantity<FinishedProduct>;
       return makeMaterial<FinishedProduct>({
-        type: requirement.type[0],
+        type: requiredType,
         species: r.species?.[0] ?? "pine",
         ...(r.accentSpecies?.[0] !== undefined
           ? { accentSpecies: r.accentSpecies[0] }
@@ -507,7 +509,7 @@ export function createMockMaterial(
       });
 
     default:
-      return assertUnreachable(requirement.type[0]);
+      return assertUnreachable(requiredType);
   }
 }
 

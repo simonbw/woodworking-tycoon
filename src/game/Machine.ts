@@ -58,6 +58,15 @@ export interface MachineType {
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
   readonly operationPosition?: Vector;
   /**
+   * The station has no front: it's worked from any cell touching its
+   * footprint, so `operationZone` is the whole ring around it rather than
+   * an apron in front of one operation cell. A garbage can is the case —
+   * you toss things in from wherever you're standing. Such a machine still
+   * has no `operationPosition`, so it drops anywhere it fits (see
+   * docs/carrying-machines.md).
+   */
+  readonly operableFromAnySide?: boolean;
+  /**
    * Where finished stock lands on feed-through machines (planer, jointer,
    * table saw): the cell opposite the operation cell. Outputs are collected
    * standing there, not at the infeed. Omitted for single-point stations
@@ -99,11 +108,23 @@ export interface MachineType {
    */
   readonly directFeed?: boolean;
   /**
-   * The verb the UI uses for operating a direct-feed machine. Defaults to
-   * "Feed" (feed-through machines); the miter saw says "Cut" — nothing is
-   * fed through a chop saw.
+   * The verb the UI uses for operating this machine. Defaults to "run";
+   * feed-through machines say "Feed", the miter saw says "Cut" — nothing
+   * is fed through a chop saw — and the garbage can says "Empty".
    */
   readonly feedVerb?: string;
+  /**
+   * The verb the UI uses for setting stock down here. Defaults to "load"
+   * ("set stock on it" on a direct-feed machine's table); the garbage can
+   * says "toss in".
+   */
+  readonly stageVerb?: string;
+  /**
+   * A station that only holds stock — its sheet is its contents, not a
+   * plan picker, even when it has an operation of its own (the garbage
+   * can's Empty). See ContentsSheet.
+   */
+  readonly container?: boolean;
   /** A small machine that can sit on a worktable instead of the floor. */
   readonly benchtop?: boolean;
   /** A work surface benchtop machines can be mounted onto. */
@@ -385,6 +406,28 @@ function zoneAround(anchor: Vector | null, excluded: Vector[]): Vector[] {
 }
 
 /**
+ * Every cell touching the footprint, the footprint itself excluded — the
+ * band you can stand in to reach a machine with no front (see
+ * MachineType.operableFromAnySide).
+ */
+function ringAround(footprint: Vector[]): Vector[] {
+  const occupied = new Set(footprint.map(vectorKey));
+  const ring = new Map<string, Vector>();
+  for (const [x, y] of footprint) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const cell: Vector = [x + dx, y + dy];
+        const key = vectorKey(cell);
+        if (!occupied.has(key)) {
+          ring.set(key, cell);
+        }
+      }
+    }
+  }
+  return [...ring.values()];
+}
+
+/**
  * Whether two machine states refer to the same placed machine. Position
  * alone isn't enough: a benchtop machine mounted on a worktable shares the
  * table's anchor cell, so identity is position plus type. (Two machines of
@@ -487,6 +530,9 @@ export class Machine {
    * machine's own footprint) — a small apron in front of the machine.
    */
   get operationZone(): Vector[] {
+    if (this.type.operableFromAnySide) {
+      return ringAround(this.occupiedCells);
+    }
     return zoneAround(this.absoluteOperationPosition, this.occupiedCells);
   }
 

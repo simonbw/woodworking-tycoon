@@ -17,14 +17,17 @@ export const RunHint: React.FC<{
   if (!isTargeted(machine)) {
     return null;
   }
+  const verb = (machine.type.feedVerb ?? "run").toLowerCase();
   return (
     <p className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
       {canOperate ? (
         <>
-          <ShortcutKeys shortcut="operate-machine" /> to run it
+          <ShortcutKeys shortcut="operate-machine" /> to {verb} it
         </>
+      ) : machine.type.container ? (
+        `Nothing to ${verb}`
       ) : (
-        "Load the bay to run it"
+        `Load the bay to ${verb} it`
       )}
     </p>
   );

@@ -36,7 +36,7 @@ const OPERATION_CLIP: Record<string, string | null> = {
   orbitSandPanel: "orbital-sander",
   dismantlePallet: "pallet-dismantle",
   glueUpPanel: "glue-clamp",
-  dispose: "dispose-toss",
+  empty: "dispose-toss",
   buildRusticPalletShelf: "assembly-mallet",
   buildShelf: "assembly-mallet",
   buildJewelryBox: "assembly-mallet",

@@ -20,7 +20,9 @@ import { StatusText } from "./StatusText";
  * planer, table saw or miter saw is a switch, a scale or two, and stock
  * you set down, and every one of those is a key on the floor. Fitting a
  * jig is the one thing left that needs a page. Benches keep the full
- * paperwork (BenchSheet); containers list their contents (ContentsSheet).
+ * paperwork (BenchSheet); containers list their contents (ContentsSheet)
+ * — a garbage can has an operation but no plan to pick, so what its sheet
+ * owes you is what's in it.
  */
 export const StationSheet: React.FC = () => {
   const { sheetMachine, closeSheet } = useTargetedMachine();
@@ -90,7 +92,7 @@ const StationSheetBody: React.FC<{
     <SheetFrame machine={machine} onClose={onClose}>
       {machine.type.directFeed ? (
         <ToolSheet machine={machine} />
-      ) : operations.length === 0 ? (
+      ) : machine.type.container || operations.length === 0 ? (
         <ContentsSheet machine={machine} />
       ) : (
         <BenchSheet machine={machine} operations={operations} />
