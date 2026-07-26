@@ -29,9 +29,15 @@ For testing changes:
 
 ### Testing Style
 
-- **Unit tests** (`src/**/*.test.ts`, `node:test` via `tsx`) should be small and focused — one behavior per `it()`.
+Three tiers, in order of what you should reach for first:
+
+- **Unit tests** (`src/**/*.test.ts`, `node:test` via `tsx`) should be small and focused — one behavior per `it()`. One recipe, one action, one helper.
+- **Sequence tests** (`src/game/sequences/*.test.ts`, same runner) drive a whole run of work: many actions over many ticks against one `GameState`, through `ShopDriver` (`src/game/sequences/shop-driver.ts`). This is where a material chain belongs — build the jig, mount it, cut, glue, sand, finish, check the price and the XP. A chain costs milliseconds here against seconds in a browser, and the assertions are sharper (the actual panel, not the text of a list row). `ShopDriver` only ever goes through the real actions in `game-actions/`, so anything it can do a player can do; if it can't reach something, grow the actions rather than working around them.
 - **E2E tests** (`tests/*.spec.ts`, Playwright) should be **fat** — one `test()` walks through many related assertions to amortize browser startup. Use `test.step('label', async () => {...})` inside the test so failure reports identify which step broke. Do not split fat E2E tests just to get better failure attribution; `test.step` solves that.
-- **Test fixtures** (`tests/fixtures/`) provide preset `GameState` objects loaded into the running app via `FixtureLoader` — use these to set up complex initial states (e.g. `layout-with-placed-machines`) instead of clicking through the UI to build them.
+  Their job is that **the UI exposes and wires up** a mechanic — the aisle it's bought from, the row that unlocks it, one pass through each shape of station — not what the mechanic produces. Don't re-derive in a browser what a sequence test already proves; `end-grain.spec.ts` and `src/game/sequences/end-grain-chain.test.ts` are the worked example of the split.
+- **Test fixtures** (`tests/fixtures/`) provide preset `GameState` objects. E2E specs load them into the running app via `FixtureLoader`; sequence tests import them directly. Use these to set up complex initial states (e.g. `layout-with-placed-machines`) instead of clicking through the UI to build them.
+
+There is deliberately **no jsdom/React-component tier**. What the browser specs still check — focus routing, real key dispatch, portals, canvas — is exactly what jsdom fakes badly.
 
 ## Architecture Overview
 
