@@ -113,7 +113,7 @@ Chips fly to whatever carries `data-reward-target`:
 | ------------ | ---------------------------- |
 | `money`      | the NavBar balance           |
 | `reputation` | the NavBar reputation readout |
-| `xp`         | the NavBar Journal button    |
+| `xp`         | the NavBar Skills button     |
 
 Reputation moved out to the NavBar as part of this: it gates lumber
 channels, job slots, and pricing power, and it was only ever visible

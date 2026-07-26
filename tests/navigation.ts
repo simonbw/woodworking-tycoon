@@ -134,9 +134,9 @@ export async function closePhone(page: any) {
   await page.waitForTimeout(30);
 }
 
-/** Open the journal (skills). */
+/** Open the journal (the top bar's Skills button). */
 export async function openJournal(page: any) {
-  await page.getByRole("button", { name: /^Journal/ }).click();
+  await page.getByRole("button", { name: /^Skills/ }).click();
   await page.waitForTimeout(30);
 }
 

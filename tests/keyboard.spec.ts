@@ -343,7 +343,7 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("the top bar's buttons advertise their keys", async () => {
-      await page.getByRole("button", { name: /^Journal/ }).hover();
+      await page.getByRole("button", { name: /^Skills/ }).hover();
       // Scoped by text so a stale tooltip elsewhere can't shadow this one
       const tip = page.getByRole("tooltip").filter({ hasText: "Your journal" });
       await expect(tip).toBeVisible();

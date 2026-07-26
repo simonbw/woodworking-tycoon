@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { hasUnreadArticles } from "../game/manual";
+import { xpProgress } from "../game/skill-helpers";
 import { useManual } from "./manual/ManualProvider";
 import { JournalModal } from "./journal/JournalModal";
 import { PhoneModal } from "./phone/PhoneModal";
@@ -19,6 +20,7 @@ import { useGameState } from "./useGameState";
 export const NavBar: React.FC = () => {
   const gameState = useGameState();
   const { marketplaceUnlocked, skillPoints } = gameState.progression;
+  const xp = xpProgress(gameState.progression.xp);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
@@ -50,14 +52,18 @@ export const NavBar: React.FC = () => {
               </button>
             </Tooltip>
           )}
-          <Tooltip content="Your journal — skills" shortcut="open-journal">
+          <Tooltip
+            content={`Your journal — skills. ${xp.needed - xp.current} XP to the next skill point`}
+            shortcut="open-journal"
+          >
             <button
               className="button-ghost relative"
               onClick={() => setJournalOpen(true)}
               data-sfx="ui-tab"
               data-reward-target="xp"
             >
-              Journal
+              Skills
+              <XpMeter current={xp.current} needed={xp.needed} />
               {skillPoints > 0 && (
                 <span
                   className="absolute -right-3 -top-1.5 rounded-full bg-gold px-1 font-mono text-[0.6rem] leading-relaxed text-ink-black"
@@ -94,6 +100,28 @@ export const NavBar: React.FC = () => {
     </nav>
   );
 };
+
+/**
+ * How close the next skill point is, drawn as a hairline along the bottom of
+ * the Skills button — the journal's XP row without opening the journal. The
+ * numbers live in the button's tooltip, so this is decoration for readers.
+ */
+const XpMeter: React.FC<{ current: number; needed: number }> = ({
+  current,
+  needed,
+}) => (
+  <span
+    className="absolute inset-x-1 bottom-0.5 block h-0.5 overflow-hidden rounded-full bg-paper-manila/25"
+    data-testid="xp-meter"
+    aria-hidden
+  >
+    <span
+      className="block h-full rounded-full bg-gold transition-[width] duration-300"
+      style={{ width: `${(current / needed) * 100}%` }}
+      data-testid="xp-meter-fill"
+    />
+  </span>
+);
 
 /**
  * The shop's standing: cash and reputation, drawn on the bar in the money

@@ -48,7 +48,7 @@ stack of equal-weight cards:
   the day (`Ticker`, which also drives the game loop — time always
   advances unless the pause menu is open), the balance, and the pocket
   items
-  (Phone, Journal, the `?` manual), all drawn directly on the dark bar,
+  (Phone, Skills, the `?` manual), all drawn directly on the dark bar,
   no paper. Everything that used to be a tab is an object in the world:
   the marketplace is the phone overlay, skills are the journal overlay,
   and errands are trips out the garage door, each a full-screen overlay

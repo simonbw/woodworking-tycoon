@@ -146,8 +146,8 @@ test.describe("Screens", () => {
       await expect(manual).toHaveCount(0);
     });
 
-    // The journal button doubles as the tooltip trigger below.
-    const quitButton = page.getByRole("button", { name: /^Journal/i });
+    // The journal's Skills button doubles as the tooltip trigger below.
+    const quitButton = page.getByRole("button", { name: /^Skills/i });
     // Anchor on the tooltip surface itself, not the text inside it: a
     // tooltip that names a shortcut wraps its content in a chip row.
     const tooltip = page.getByRole("tooltip", {
@@ -250,6 +250,24 @@ test.describe("Screens", () => {
       });
       await page.waitForTimeout(30);
       await expect(page.getByTestId("journal-badge")).toHaveText("2");
+    });
+
+    await test.step("the Skills button meters XP toward the next point", async () => {
+      // Level 1 costs 150 XP, so 75 lifetime XP is exactly half a point away
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          progression: { ...state.progression, xp: 75 },
+        }));
+      });
+      await page.waitForTimeout(30);
+      await expect(page.getByTestId("xp-meter-fill")).toHaveAttribute(
+        "style",
+        /width:\s*50%/,
+      );
+      await expect(
+        page.getByRole("button", { name: /^Skills/ }),
+      ).toBeVisible();
     });
 
     await test.step("locked recipe is hidden at the workspace", async () => {

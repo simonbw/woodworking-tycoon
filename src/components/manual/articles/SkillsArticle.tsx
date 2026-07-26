@@ -15,8 +15,9 @@ export const SkillsArticle: React.FC = () => (
       Craft XP comes from completed work: finishing a product earns XP equal to
       its value, and completing a commission adds a share of its payout. Each
       level grants one <Term>skill point</Term> to spend in the tree in your
-      journal (<ShortcutKeys shortcut="open-journal" /> or the Journal button up
-      top).
+      journal (<ShortcutKeys shortcut="open-journal" /> or the Skills button up
+      top). The bar under that button fills as you earn XP toward the next
+      point.
     </P>
 
     <H>The Skill Tree</H>
