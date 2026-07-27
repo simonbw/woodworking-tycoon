@@ -12,7 +12,7 @@ const PIXEL_ART_ASSETS = [
 ];
 
 // List of all texture assets used in the game
-const TEXTURE_ASSETS = [
+export const TEXTURE_ASSETS = [
   "/images/benchtop-jointer.png",
   "/images/concrete-floor-2-big.png",
   "/images/door-warning-paint.png",

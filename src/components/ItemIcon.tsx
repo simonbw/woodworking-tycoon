@@ -4,12 +4,23 @@ import { MachineId } from "../game/Machine";
 import { ToolId } from "../game/Tool";
 import { UpgradeId } from "../game/Upgrade";
 import { classNames } from "../utils/classNames";
+import {
+  BAR_CLAMP_ICON,
+  consumableIconSrc,
+  MACHINE_ICON_SRC,
+  SHOP_VAC_ICON,
+  toolIconSrc,
+  upgradeIconSrc,
+} from "../utils/uiImages";
 
 /**
  * Pixel-art icons for tools and consumables, keyed by id. Files live in
  * static/images/icons/ as tool-<id>.png / consumable-<id>.png (64×64).
  * Plain <img> tags — these are HTML UI, not PIXI sprites, so they don't
- * go through loadAssets.
+ * go through loadAssets. They are fetched ahead of first use by
+ * `preloadUiImages`, which builds its list from the same path helpers
+ * these components use; keep every `src` coming from `uiImages.ts` and an
+ * icon can't be added without also being preloaded.
  *
  * Machines are the exception: where a machine already has shop-floor art
  * (the smooth 400×400 PNGs the sprites draw from) the icon reuses that
@@ -42,44 +53,29 @@ const Icon: React.FC<{ src: string; className?: string }> = ({
 export const ToolIcon: React.FC<{ toolId: ToolId; className?: string }> = ({
   toolId,
   className,
-}) => <Icon src={`/images/icons/tool-${toolId}.png`} className={className} />;
+}) => <Icon src={toolIconSrc(toolId)} className={className} />;
 
 export const ConsumableIcon: React.FC<{
   consumableId: ConsumableId;
   className?: string;
 }> = ({ consumableId, className }) => (
-  <Icon
-    src={`/images/icons/consumable-${consumableId}.png`}
-    className={className}
-  />
+  <Icon src={consumableIconSrc(consumableId)} className={className} />
 );
 
 export const UpgradeIcon: React.FC<{
   upgradeId: UpgradeId;
   className?: string;
 }> = ({ upgradeId, className }) => (
-  <Icon src={`/images/icons/upgrade-${upgradeId}.png`} className={className} />
+  <Icon src={upgradeIconSrc(upgradeId)} className={className} />
 );
 
 export const ClampIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <Icon src="/images/icons/misc-barClamp.png" className={className} />
+  <Icon src={BAR_CLAMP_ICON} className={className} />
 );
 
 export const ShopVacIcon: React.FC<{ className?: string }> = ({
   className,
-}) => <Icon src="/images/icons/misc-shopVac.png" className={className} />;
-
-/**
- * Shop-floor art first, pixel stand-in second — see the note above. A
- * machine with neither renders nothing rather than a broken image.
- */
-const MACHINE_ICON_SRC: Partial<Record<MachineId, string>> = {
-  jobsiteTableSaw: "/images/jobsite-table-saw.png",
-  miterSaw: "/images/miter-saw.png",
-  lunchboxPlaner: "/images/lunchbox-planer.png",
-  jointer: "/images/benchtop-jointer.png",
-  bandSaw: "/images/icons/machine-bandSaw.png",
-};
+}) => <Icon src={SHOP_VAC_ICON} className={className} />;
 
 export const MachineIcon: React.FC<{
   machineId: MachineId;
