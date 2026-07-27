@@ -15,9 +15,10 @@ export const StoreMachinesSection: React.FC<{ className?: string }> = ({
   className,
 }) => {
   // Worktables aren't sold — you build them at a bench (see the
-  // build-worktable recipes in benchOperations.ts)
+  // build-worktable recipes in benchOperations.ts). Neither is the
+  // garbage can: every shop opens with one already on the floor (see
+  // initialGameState), so a shelf tag for it sold nothing.
   const machinesToSell: MachineSaleInfo[] = [
-    { machine: MACHINE_TYPES.garbageCan, price: 0 },
     { machine: MACHINE_TYPES.jobsiteTableSaw, price: 200 },
     { machine: MACHINE_TYPES.miterSaw, price: 200 },
     { machine: MACHINE_TYPES.lunchboxPlaner, price: 450 },
@@ -50,7 +51,14 @@ const MachineProductTile: React.FC<MachineSaleInfo> = ({ machine, price }) => {
   return (
     <ProductTile
       name={machine.name}
-      icon={<MachineIcon machineId={machine.id as MachineId} />}
+      // A machine is the biggest thing on any shelf here, and its photo
+      // is the only way to tell a planer from a jointer at a glance
+      icon={
+        <MachineIcon
+          machineId={machine.id as MachineId}
+          className="size-16 shrink-0"
+        />
+      }
       price={price}
       info={`${machine.description} Delivered as a crate at the garage door.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}

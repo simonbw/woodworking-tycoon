@@ -79,7 +79,6 @@ const MACHINE_ICON_SRC: Partial<Record<MachineId, string>> = {
   lunchboxPlaner: "/images/lunchbox-planer.png",
   jointer: "/images/benchtop-jointer.png",
   bandSaw: "/images/icons/machine-bandSaw.png",
-  garbageCan: "/images/icons/machine-garbageCan.png",
 };
 
 export const MachineIcon: React.FC<{

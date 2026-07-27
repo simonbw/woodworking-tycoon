@@ -104,7 +104,7 @@
      aisles shelve these as a grid of tiles, so the padding is tight and
      the height comes from the row, not the copy. */
   .product-card {
-    @apply bg-white text-ink-black p-2 rounded-sm shadow-md border border-store-concrete-dark/60 font-condensed;
+    @apply bg-white text-ink-black p-1.5 rounded-sm shadow-md border border-store-concrete-dark/60 font-condensed;
   }
 
   /* Aisle-tag heading — used inside the store for section headers */

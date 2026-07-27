@@ -26,7 +26,10 @@ export const ProductTile: React.FC<{
 }> = ({ name, icon, price, info, owned, canAfford, onBuy, sfx }) => (
   <Tooltip content={info}>
     <li className="product-card flex flex-col items-center gap-0.5 text-center">
-      <span className="flex h-8 items-center justify-center">{icon}</span>
+      {/* min-h rather than h: the picture sets the row, so an aisle of
+          big machine photos can breathe without dragging the tool wall's
+          icons up to the same size */}
+      <span className="flex min-h-8 items-center justify-center">{icon}</span>
       <span className="text-[0.7rem] font-bold uppercase leading-tight tracking-wide text-ink-black">
         {name}
       </span>

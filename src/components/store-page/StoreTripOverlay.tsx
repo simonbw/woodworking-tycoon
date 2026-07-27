@@ -95,11 +95,20 @@ export const StoreTripOverlay: React.FC = () => {
               <h2 className="aisle-heading">Lumber</h2>
               <BoardSelector store="orangeBox" />
             </section>
-            <div className="grow min-w-0 grid grid-cols-2 content-start gap-x-6 gap-y-4">
-              <StoreSheetGoodsSection />
-              <StoreToolsSection />
-              <StoreMachinesSection />
-              <StoreSuppliesSection />
+            {/* Two independent runs of shelving rather than a grid: a
+                grid would hold every aisle in a row to the tallest one's
+                height, and the tool wall is half again as tall as
+                anything else. Stacked this way each aisle takes only the
+                room its own tiles need. */}
+            <div className="grow min-w-0 flex gap-6">
+              <div className="flex-1 min-w-0 flex flex-col gap-4">
+                <StoreSheetGoodsSection />
+                <StoreToolsSection />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col gap-4">
+                <StoreMachinesSection />
+                <StoreSuppliesSection />
+              </div>
             </div>
           </div>
         </div>
