@@ -12,11 +12,15 @@ import { StoreToolsSection } from "./StoreToolsSection";
 /**
  * The store's sign: the name stencilled across an orange square, set on
  * the 45° diagonal the way every big-box chain paints itself. "The" runs
- * small above the two big lines, and the wordmark is deliberately scaled
- * past the square's edges so the corners of the type get clipped — a sign
- * too big for its board is the whole look. This is the one place stencil
- * type is allowed outside the title screen: it's a logo, not UI (see
- * docs/design-system.md).
+ * small above the two big lines, and the long line is scaled to run the
+ * full diagonal, corner to corner, so its ends just catch the square's
+ * edges — a sign cut a size too big for its board is the whole look.
+ * This is the one place stencil type is allowed outside the title screen:
+ * it's a logo, not UI (see docs/design-system.md).
+ *
+ * The rotated layer is deliberately bigger than the square it sits in
+ * (`-inset-16`): centering only works while the type fits its container,
+ * and at this size the wordmark is wider than the square itself.
  */
 const OrangeBoxLogo: React.FC = () => (
   <span
@@ -25,12 +29,20 @@ const OrangeBoxLogo: React.FC = () => (
     aria-label="Orange Box"
   >
     <span
-      className="absolute inset-0 flex flex-col items-center justify-center -rotate-45 font-stencil font-bold uppercase text-white leading-[0.95] tracking-tighter"
+      className="absolute -inset-16 grid place-items-center -rotate-45 font-stencil font-bold uppercase text-white leading-[0.95] tracking-tighter"
       aria-hidden
     >
-      <span className="text-[0.8rem]">The</span>
-      <span className="text-[1.62rem]">Orange</span>
-      <span className="text-[1.62rem]">Box</span>
+      {/* The long line is the sign's midline — it's what sits on the
+          square's diagonal, with the other two hung off it. Centering all
+          three as one block instead balances them around the gap under
+          "Orange", which leaves its baseline on the diagonal. */}
+      <span className="relative text-[1.7rem]">
+        Orange
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 text-[0.8rem]">
+          The
+        </span>
+        <span className="absolute top-full left-1/2 -translate-x-1/2">Box</span>
+      </span>
     </span>
   </span>
 );
