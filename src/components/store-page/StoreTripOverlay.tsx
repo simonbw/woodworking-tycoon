@@ -36,12 +36,18 @@ const OrangeBoxLogo: React.FC = () => (
           square's diagonal, with the other two hung off it. Centering all
           three as one block instead balances them around the gap under
           "Orange", which leaves its baseline on the diagonal. */}
-      <span className="relative text-[1.7rem]">
+      {/* top: nudged a few pixels down the perpendicular — dead center
+          reads a touch high once the eye weighs the small "The" against
+          the big "Box". It's inside the rotated frame, so down here is
+          down-and-right on screen. */}
+      <span className="relative top-[0.15rem] text-[1.7rem]">
         Orange
         <span className="absolute bottom-full left-1/2 -translate-x-1/2 text-[0.8rem]">
           The
         </span>
-        <span className="absolute top-full left-1/2 -translate-x-1/2">Box</span>
+        <span className="absolute top-full left-1/2 -translate-x-1/2 text-[1.55rem]">
+          Box
+        </span>
       </span>
     </span>
   </span>
