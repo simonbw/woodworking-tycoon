@@ -31,7 +31,10 @@ export const ProductTile: React.FC<{
           big machine photos can breathe without dragging the tool wall's
           icons up to the same size */}
       <span className="flex min-h-8 items-center justify-center">{icon}</span>
-      <span className="text-[0.8rem] font-bold uppercase leading-tight tracking-wide text-ink-black">
+      {/* Set in the condensed face at reading weight rather than bold:
+          at this size every tag on the wall shouting at once is just
+          noise, and the price is the thing that should be loud. */}
+      <span className="text-[0.95rem] uppercase leading-tight tracking-wide text-ink-black">
         {name}
       </span>
       {owned && (
