@@ -15,7 +15,7 @@ export const StoreToolsSection: React.FC<{ className?: string }> = ({
 }) => {
   const gameState = useGameState();
   return (
-    <AisleSection title="Tool Wall" className={className}>
+    <AisleSection title="Tools" className={className}>
       {Object.values(TOOL_TYPES)
         // Shop-made jigs aren't for sale — you build those. The dust
         // bag stays off the wall until sawdust is a revealed problem.

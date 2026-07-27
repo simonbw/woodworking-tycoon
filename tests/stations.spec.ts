@@ -191,11 +191,11 @@ test.describe("Stations", () => {
 
     await test.step("store: tool wall and reputation-gated lumber channels", async () => {
       const returnTo = await goToStore(page);
-      await expect(page.getByText("Tool Wall")).toBeVisible();
+      await expect(page.getByText("Tools", { exact: true })).toBeVisible();
       await expect(page.getByText("Sanding Block")).toBeVisible();
       // Scoped: the supplies aisle sells a $10.00 oil bottle too
       await expect(
-        page.locator("section", { hasText: "Tool Wall" }).getByText("$10.00"),
+        page.locator("section", { hasText: "Tools" }).getByText("$10.00"),
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
       // A shelf tile carries the picture, the name and the price; what the
@@ -361,7 +361,7 @@ test.describe("Stations", () => {
 
     await test.step("the tool wall sells the hand saw and drill, supplies sell screws", async () => {
       const returnTo = await goToStore(page);
-      const toolWall = page.locator("section", { hasText: "Tool Wall" });
+      const toolWall = page.locator("section", { hasText: "Tools" });
       await expect(toolWall.getByText("Hand Saw")).toBeVisible();
       await expect(toolWall.getByText("Drill")).toBeVisible();
 

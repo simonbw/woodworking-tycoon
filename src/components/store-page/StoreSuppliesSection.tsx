@@ -18,7 +18,7 @@ import { ProductTile } from "./ProductTile";
 export const StoreSuppliesSection: React.FC<{ className?: string }> = ({
   className,
 }) => (
-  <AisleSection title="Shop Supplies" className={className}>
+  <AisleSection title="Supplies" className={className}>
     {(Object.keys(CONSUMABLE_TYPES) as ConsumableId[]).map((id) => (
       <ConsumablePackTile key={id} consumableId={id} />
     ))}

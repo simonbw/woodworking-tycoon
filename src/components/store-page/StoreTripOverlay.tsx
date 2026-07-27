@@ -85,11 +85,11 @@ export const StoreTripOverlay: React.FC = () => {
           onHeadHome={headHome}
         />
         <div className="bg-store-concrete text-ink-black px-6 py-4 grow min-h-0 overflow-auto">
-          {/* The floor plan: the lumber racks stand along one wall, and
-              everything else is shelved as square tiles in the aisles
-              beside them. Sized to fit one screen on a tall window; a
-              short one scrolls, and what runs past the fold is the
-              machine aisle, whose photos are worth the trip. */}
+          {/* The floor plan: wood along the left wall, machines straight
+              ahead with the tools under them, supplies on the end cap.
+              The machine aisle is 5 photos two to a row and taller than
+              most windows on its own, so the page scrolls and what runs
+              past the fold is the tool shelf. */}
           <div className="flex h-full min-h-0 gap-6">
             {/* The wood wall: racks of solid stock with the sheet rack
                 shelved underneath, the way a yard keeps its sheets flat
@@ -102,25 +102,24 @@ export const StoreTripOverlay: React.FC = () => {
               </section>
               <StoreSheetGoodsSection />
             </div>
-            {/* Independent runs of shelving rather than a grid: a grid
-                would hold every aisle in a row to the tallest one's
-                height, and the tool wall is half again as tall as
-                anything else. Stacked this way each aisle takes only the
-                room its own tiles need. */}
-            <div className="grow min-w-0 flex gap-6">
-              {/* The wide run: small goods pack several to a row, so
-                  every extra inch buys whole rows off the tool wall and
-                  keeps the supplies on one shelf */}
-              <div className="grow min-w-0 flex flex-col gap-4">
-                <StoreToolsSection />
-                <StoreSuppliesSection />
+            {/* The main run, straight ahead as you come in the door:
+                machines at eye level with the tool shelf under them,
+                running the full width. Independent runs rather than a
+                grid — a grid would hold every aisle in a row to the
+                tallest one's height, and these are nothing like each
+                other's height. */}
+            <div className="grow min-w-0 flex flex-col gap-4">
+              <div className="flex min-w-0 gap-6">
+                {/* The machines want a particular width — two tiles wide
+                    enough to read a machine off, no wider — so they take
+                    a basis and give the slack to the supplies rather
+                    than stretching two tiles across a whole wall. */}
+                <StoreMachinesSection className="basis-[40rem] grow-0 shrink" />
+                {/* The end cap: supplies off to the side, where you grab
+                    a box of screws on the way out. */}
+                <StoreSuppliesSection className="basis-64 grow shrink-0" />
               </div>
-              {/* The machine run takes a fixed width instead of a share:
-                  two tiles across, each wide enough for a photo you can
-                  actually read a machine off. */}
-              <div className="basis-96 shrink min-w-0 flex flex-col gap-4">
-                <StoreMachinesSection />
-              </div>
+              <StoreToolsSection />
             </div>
           </div>
         </div>

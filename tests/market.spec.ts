@@ -393,7 +393,7 @@ test.describe("Market, supplies, and sound", () => {
 
     await test.step("the store's supplies aisle sells packs", async () => {
       const returnTo = await goToStore(page);
-      await expect(page.getByText("Shop Supplies")).toBeVisible();
+      await expect(page.getByText("Supplies", { exact: true })).toBeVisible();
       await expect(page.getByText("Box of Nails")).toBeVisible();
       await expect(page.getByText("Mineral Oil Bottle")).toBeVisible();
 
