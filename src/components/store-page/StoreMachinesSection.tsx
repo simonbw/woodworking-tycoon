@@ -26,12 +26,13 @@ export const StoreMachinesSection: React.FC<{ className?: string }> = ({
     { machine: MACHINE_TYPES.bandSaw, price: 700 },
   ];
   return (
-    // Two to a row whatever the window: a machine is the most expensive
-    // thing in the store and the hardest to recognize small, so its tile
-    // gets half a shelf and its photo fills that
+    // Three to a row whatever the window. The photo is capped by its
+    // height, not the tile's width, so a third of the shelf is still
+    // wide enough to run it full size — and five machines land in two
+    // rows instead of three, which is a whole row of height back.
     <AisleSection
       title="Machines"
-      template="repeat(2, minmax(0, 1fr))"
+      template="repeat(3, minmax(0, 1fr))"
       className={className}
     >
       {machinesToSell.map((info) => (

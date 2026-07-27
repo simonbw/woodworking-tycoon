@@ -199,9 +199,12 @@ test.describe("Stations", () => {
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
       // A shelf tile carries the picture, the name and the price; what the
-      // thing actually does is hover copy, which is what keeps the whole
-      // store on one screen
-      await page.locator("li", { hasText: "Sanding Block" }).hover();
+      // thing actually does is hover copy, which is what keeps the store
+      // as short as it is. Scrolled to first: the tool shelf sits under
+      // the machines, and this viewport is shorter than the aisle.
+      const sandingBlock = page.locator("li", { hasText: "Sanding Block" });
+      await sandingBlock.scrollIntoViewIfNeeded();
+      await sandingBlock.hover();
       await expect(page.getByRole("tooltip")).toContainText(
         "Sands a surface smooth by hand",
       );
