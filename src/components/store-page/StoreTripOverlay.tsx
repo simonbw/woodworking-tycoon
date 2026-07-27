@@ -25,12 +25,12 @@ const OrangeBoxLogo: React.FC = () => (
     aria-label="Orange Box"
   >
     <span
-      className="absolute inset-0 flex flex-col items-start justify-center -rotate-45 font-stencil font-bold uppercase text-white leading-[0.95] tracking-tighter"
+      className="absolute inset-0 flex flex-col items-center justify-center -rotate-45 font-stencil font-bold uppercase text-white leading-[0.95] tracking-tighter"
       aria-hidden
     >
-      <span className="text-[0.65rem] pl-px">The</span>
-      <span className="text-[1.45rem]">Orange</span>
-      <span className="text-[1.45rem]">Box</span>
+      <span className="text-[0.8rem]">The</span>
+      <span className="text-[1.62rem]">Orange</span>
+      <span className="text-[1.62rem]">Box</span>
     </span>
   </span>
 );
