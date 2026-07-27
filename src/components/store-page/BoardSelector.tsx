@@ -87,9 +87,13 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
   );
 
   return (
-    <div className="shrink-0">
+    // The sign hangs over the rack rather than sitting in the layout:
+    // a channel name is wider than the bays it labels, and letting it
+    // set the width pushed the next rack away by the overhang. pt
+    // reserves the line it needs above the boards.
+    <div className="relative shrink-0 pt-6">
       <Tooltip content={`${stateLabel} — ${channel.tagline}`}>
-        <h3 className="inline-block font-condensed font-bold uppercase tracking-wider text-base text-ink-black cursor-help mb-1">
+        <h3 className="absolute top-0 left-0 whitespace-nowrap font-condensed font-bold uppercase tracking-wider text-base text-ink-black cursor-help">
           {channel.name}
         </h3>
       </Tooltip>
