@@ -198,6 +198,13 @@ test.describe("Stations", () => {
         page.locator("section", { hasText: "Tool Wall" }).getByText("$10.00"),
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
+      // A shelf tile carries the picture, the name and the price; what the
+      // thing actually does is hover copy, which is what keeps the whole
+      // store on one screen
+      await page.locator("li", { hasText: "Sanding Block" }).hover();
+      await expect(page.getByRole("tooltip")).toContainText(
+        "Sands a surface smooth by hand",
+      );
       // Cheap channels: framing pine and marked-up big-box S4S hardwood.
       // Boards carry dimensions only — species lives on the bundle's tag.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
@@ -375,7 +382,7 @@ test.describe("Stations", () => {
         .getByRole("button", { name: "Buy" })
         .click();
       await page.waitForTimeout(30);
-      await expect(page.getByText("In your shop: 50 screws")).toBeVisible();
+      await expect(page.getByText("50 screws in shop")).toBeVisible();
 
       await leaveStore(page, returnTo);
     });

@@ -402,7 +402,7 @@ test.describe("Market, supplies, and sound", () => {
         .getByRole("button", { name: "Buy" })
         .click();
       await page.waitForTimeout(30);
-      await expect(page.getByText("In your shop: 16 oz")).toBeVisible();
+      await expect(page.getByText("16 oz in shop")).toBeVisible();
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );

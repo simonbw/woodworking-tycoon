@@ -1,49 +1,45 @@
 import React from "react";
 import { buyShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import { buyToolAction } from "../../game/game-actions/tool-actions";
+import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
 import { SHOP_VAC_COST } from "../../game/ShopVac";
 import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
-import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
 import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
-import { ToolIcon } from "../ItemIcon";
+import { ShopVacIcon, ToolIcon, UpgradeIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { BuyButton } from "./BuyButton";
+import { AisleSection } from "./AisleSection";
+import { ProductTile } from "./ProductTile";
 
-export const StoreToolsSection: React.FC = () => {
+export const StoreToolsSection: React.FC<{ className?: string }> = ({
+  className,
+}) => {
   const gameState = useGameState();
   return (
-    <section>
-      <h2 className="aisle-heading">Tool Wall</h2>
-      <ul className="space-y-2">
-        {Object.values(TOOL_TYPES)
-          // Shop-made jigs aren't for sale — you build those. The dust
-          // bag stays off the wall until sawdust is a revealed problem.
-          .filter((tool) => !tool.craftedOnly)
-          .filter(
-            (tool) =>
-              tool.id !== "dustBag" || gameState.progression.sweepingUnlocked,
-          )
-          .map((tool) => (
-            <ToolProductCard key={tool.id} tool={tool} />
-          ))}
-        {/* Bought worktable upgrades hang on the tool wall too — only the
-            vise today; drawers and shelves are shop-built */}
-        {Object.values(UPGRADE_TYPES)
-          .filter((upgrade) => !upgrade.craftedOnly)
-          .map((upgrade) => (
-            <UpgradeProductCard key={upgrade.id} upgrade={upgrade} />
-          ))}
-        <ShopVacProductCard />
-      </ul>
-      <p className="text-xs text-ink-fade font-typewriter mt-2">
-        Handheld tools mount into a workstation's tool slots. Better tools do
-        the same work faster.
-      </p>
-    </section>
+    <AisleSection title="Tool Wall" className={className}>
+      {Object.values(TOOL_TYPES)
+        // Shop-made jigs aren't for sale — you build those. The dust
+        // bag stays off the wall until sawdust is a revealed problem.
+        .filter((tool) => !tool.craftedOnly)
+        .filter(
+          (tool) =>
+            tool.id !== "dustBag" || gameState.progression.sweepingUnlocked,
+        )
+        .map((tool) => (
+          <ToolProductTile key={tool.id} tool={tool} />
+        ))}
+      {/* Bought worktable upgrades hang on the tool wall too — only the
+          vise today; drawers and shelves are shop-built */}
+      {Object.values(UPGRADE_TYPES)
+        .filter((upgrade) => !upgrade.craftedOnly)
+        .map((upgrade) => (
+          <UpgradeProductTile key={upgrade.id} upgrade={upgrade} />
+        ))}
+      <ShopVacProductTile />
+    </AisleSection>
   );
 };
 
-const UpgradeProductCard: React.FC<{ upgrade: UpgradeType }> = ({
+const UpgradeProductTile: React.FC<{ upgrade: UpgradeType }> = ({
   upgrade,
 }) => {
   const applyAction = useApplyGameAction();
@@ -57,36 +53,16 @@ const UpgradeProductCard: React.FC<{ upgrade: UpgradeType }> = ({
       0,
     );
 
-  const canAfford = gameState.money >= upgrade.cost;
-
   return (
-    <li className="product-card flex items-center gap-3">
-      <div className="grow">
-        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
-          {upgrade.name}
-        </div>
-        <div className="text-xs text-ink-fade">
-          {numberOwned > 0 && (
-            <span className="text-store-orange-dark font-semibold">
-              {numberOwned} owned ·{" "}
-            </span>
-          )}
-          {upgrade.description} Installs into a worktable's upgrade slot.
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <span className="price-tag tabular-nums">
-          ${upgrade.cost.toFixed(2)}
-        </span>
-        <BuyButton
-          disabled={!canAfford}
-          data-sfx="ui-purchase"
-          onClick={() => applyAction(buyUpgradeAction(upgrade.id as UpgradeId))}
-        >
-          Buy
-        </BuyButton>
-      </div>
-    </li>
+    <ProductTile
+      name={upgrade.name}
+      icon={<UpgradeIcon upgradeId={upgrade.id as UpgradeId} />}
+      price={upgrade.cost}
+      info={`${upgrade.description} Installs into a worktable's upgrade slot.`}
+      owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      canAfford={gameState.money >= upgrade.cost}
+      onBuy={() => applyAction(buyUpgradeAction(upgrade.id as UpgradeId))}
+    />
   );
 };
 
@@ -95,81 +71,46 @@ const UpgradeProductCard: React.FC<{ upgrade: UpgradeType }> = ({
  * the shop floor. Hidden until the sawdust tutorial has fired (nothing
  * cleaning-related exists before then), and it's a one-time purchase.
  */
-const ShopVacProductCard: React.FC = () => {
+const ShopVacProductTile: React.FC = () => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
   if (!gameState.progression.sweepingUnlocked || gameState.shopVac !== null) {
     return null;
   }
-  const canAfford = gameState.money >= SHOP_VAC_COST;
 
   return (
-    <li className="product-card flex items-center gap-3">
-      <div className="grow">
-        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
-          Shop Vac
-        </div>
-        <div className="text-xs text-ink-fade">
-          A canister vac on casters. Cleans right down to the concrete — even
-          under machines — but you'll be dragging it around and emptying it at
-          the garbage can.
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <span className="price-tag tabular-nums">
-          ${SHOP_VAC_COST.toFixed(2)}
-        </span>
-        <BuyButton
-          disabled={!canAfford}
-          onClick={() => applyAction(buyShopVacAction())}
-        >
-          Buy
-        </BuyButton>
-      </div>
-    </li>
+    <ProductTile
+      name="Shop Vac"
+      icon={<ShopVacIcon />}
+      price={SHOP_VAC_COST}
+      info="A canister vacuum on casters. Clears sawdust from the floor, including under machines. Drag it with you and empty it at the garbage can."
+      canAfford={gameState.money >= SHOP_VAC_COST}
+      onBuy={() => applyAction(buyShopVacAction())}
+    />
   );
 };
 
-const ToolProductCard: React.FC<{ tool: ToolType }> = ({ tool }) => {
+const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
   const numberOwned =
     gameState.storage.tools.filter((id) => id === tool.id).length +
     gameState.machines.reduce(
-      (sum, machine) =>
-        sum + machine.tools.filter((id) => id === tool.id).length,
+      (sum, machine) => sum + machine.tools.filter((id) => id === tool.id).length,
       0,
     );
 
-  const canAfford = gameState.money >= tool.cost;
-
   return (
-    <li className="product-card flex items-center gap-3">
-      <ToolIcon toolId={tool.id as ToolId} />
-      <div className="grow">
-        <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
-          {tool.name}
-        </div>
-        <div className="text-xs text-ink-fade">
-          {numberOwned > 0 && (
-            <span className="text-store-orange-dark font-semibold">
-              {numberOwned} owned ·{" "}
-            </span>
-          )}
-          {tool.description}
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <span className="price-tag tabular-nums">${tool.cost.toFixed(2)}</span>
-        <BuyButton
-          disabled={!canAfford}
-          onClick={() => applyAction(buyToolAction(tool.id as ToolId))}
-        >
-          Buy
-        </BuyButton>
-      </div>
-    </li>
+    <ProductTile
+      name={tool.name}
+      icon={<ToolIcon toolId={tool.id as ToolId} />}
+      price={tool.cost}
+      info={`${tool.description} Mounts into a workstation's tool slot.`}
+      owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      canAfford={gameState.money >= tool.cost}
+      onBuy={() => applyAction(buyToolAction(tool.id as ToolId))}
+    />
   );
 };

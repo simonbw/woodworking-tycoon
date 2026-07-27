@@ -2,38 +2,38 @@ import React, { useMemo } from "react";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import {
   describeStockDimensionsPlain,
-  getMaterialName,
   makeMaterial,
   materialMeetsInput,
+  sheetKindLabel,
 } from "../../game/material-helpers";
 import { getSheetBuyPrice } from "../../game/material-values";
 import { SheetGood } from "../../game/Materials";
 import { SheetSku, unlockedSheetSkus } from "../../game/sheetStock";
-import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { BuyButton } from "./BuyButton";
+import { AisleSection } from "./AisleSection";
+import { ProductTile } from "./ProductTile";
+import { SheetFaceSvg } from "./SheetFaceSvg";
 
 /**
- * The sheet-good rack (see sheetStock.ts). One card per SKU, cheapest
+ * The sheet-good rack (see sheetStock.ts). One tile per SKU, cheapest
  * first; locked SKUs are completely absent until reputation reveals them.
  */
-export const StoreSheetGoodsSection: React.FC = () => {
+export const StoreSheetGoodsSection: React.FC<{ className?: string }> = ({
+  className,
+}) => {
   const gameState = useGameState();
   const skus = unlockedSheetSkus(gameState.reputation);
 
   return (
-    <section>
-      <h2 className="aisle-heading">Sheet Goods</h2>
-      <ul className="space-y-2">
-        {skus.map((sku) => (
-          <SheetSkuCard key={sku.kind} sku={sku} />
-        ))}
-      </ul>
-    </section>
+    <AisleSection title="Sheet Goods" className={className}>
+      {skus.map((sku) => (
+        <SheetSkuTile key={sku.kind} sku={sku} />
+      ))}
+    </AisleSection>
   );
 };
 
-const SheetSkuCard: React.FC<{ sku: SheetSku }> = ({ sku }) => {
+const SheetSkuTile: React.FC<{ sku: SheetSku }> = ({ sku }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
@@ -60,30 +60,17 @@ const SheetSkuCard: React.FC<{ sku: SheetSku }> = ({ sku }) => {
   ).length;
 
   return (
-    <li className="product-card flex items-center gap-3">
-      <div className="grow">
-        <Tooltip content={describeStockDimensionsPlain(material)}>
-          <div className="font-condensed font-bold text-base uppercase tracking-wide text-ink-black">
-            {getMaterialName(material)}
-          </div>
-        </Tooltip>
-        <div className="text-xs text-ink-fade">{sku.tagline}</div>
-        {numberOwned > 0 && (
-          <div className="text-xs text-store-orange-dark font-semibold tabular-nums">
-            {numberOwned} owned
-          </div>
-        )}
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <span className="price-tag tabular-nums">${price.toFixed(2)}</span>
-        <BuyButton
-          disabled={gameState.money < price}
-          data-sfx="ui-purchase"
-          onClick={() => applyAction(buyMaterialAction(makeSheet(), price))}
-        >
-          Buy
-        </BuyButton>
-      </div>
-    </li>
+    <ProductTile
+      // The kind alone on the shelf tag — every SKU of a kind is one
+      // size, so the dimensions only have to be in the hover copy
+      name={sheetKindLabel(sku.kind)}
+      icon={<SheetFaceSvg kind={sku.kind} className="size-9" />}
+      price={price}
+      info={`${sku.tagline} ${describeStockDimensionsPlain(material)}.`}
+      owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      canAfford={gameState.money >= price}
+      sfx="ui-purchase"
+      onBuy={() => applyAction(buyMaterialAction(makeSheet(), price))}
+    />
   );
 };

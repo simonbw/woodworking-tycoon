@@ -100,19 +100,21 @@
     opacity: 0.85;
   }
 
-  /* Big-box store product card — white, sharp, retail */
+  /* Big-box store product card — white, sharp, retail. Square-ish: the
+     aisles shelve these as a grid of tiles, so the padding is tight and
+     the height comes from the row, not the copy. */
   .product-card {
-    @apply bg-white text-ink-black p-3 rounded-sm shadow-md border border-store-concrete-dark/60 font-condensed;
+    @apply bg-white text-ink-black p-2 rounded-sm shadow-md border border-store-concrete-dark/60 font-condensed;
   }
 
   /* Aisle-tag heading — used inside the store for section headers */
   .aisle-heading {
-    @apply font-condensed font-bold text-2xl uppercase tracking-wide text-store-orange-dark border-b-4 border-store-orange pb-1 mb-3;
+    @apply font-condensed font-bold text-base uppercase tracking-wide text-store-orange-dark border-b-4 border-store-orange pb-0.5 mb-1.5;
   }
 
-  /* Big block price — for product cards in the store */
+  /* Shelf-edge price — for product tiles in the store */
   .price-tag {
-    @apply font-condensed font-bold text-2xl text-ink-black tabular-nums leading-none;
+    @apply font-condensed font-bold text-base text-ink-black tabular-nums leading-none;
   }
 
   /* Subtle cork texture — small flecks of color over the corkboard tone */

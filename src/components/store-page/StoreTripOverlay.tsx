@@ -84,23 +84,23 @@ export const StoreTripOverlay: React.FC = () => {
           homeButtonClassName="border-store-orange-dark text-store-orange-dark hover:bg-store-orange/15"
           onHeadHome={headHome}
         />
-        <div className="bg-store-concrete text-ink-black p-6 grow min-h-0">
-          {/* Each aisle scrolls on its own; the page never does */}
-          <div className="grid grid-cols-3 gap-4 h-full">
-            <section className="space-y-4 min-h-0 overflow-y-auto">
-              <section>
-                <h2 className="aisle-heading">Lumber</h2>
-                <BoardSelector store="orangeBox" />
-              </section>
-              <StoreSheetGoodsSection />
+        <div className="bg-store-concrete text-ink-black px-6 py-4 grow min-h-0 overflow-auto">
+          {/* The floor plan: the lumber racks stand along one wall, and
+              everything else is shelved as square tiles in the aisles
+              beside them. Sized so the whole store fits one screen —
+              the scrollbar here is a fallback for short windows, not
+              part of the shopping trip. */}
+          <div className="flex h-full min-h-0 gap-6">
+            <section className="shrink-0">
+              <h2 className="aisle-heading">Lumber</h2>
+              <BoardSelector store="orangeBox" />
             </section>
-            <div className="space-y-6 min-h-0 overflow-y-auto">
+            <div className="grow min-w-0 grid grid-cols-2 content-start gap-x-6 gap-y-4">
+              <StoreSheetGoodsSection />
               <StoreToolsSection />
               <StoreMachinesSection />
-            </div>
-            <section className="space-y-4 min-h-0 overflow-y-auto">
               <StoreSuppliesSection />
-            </section>
+            </div>
           </div>
         </div>
       </div>
