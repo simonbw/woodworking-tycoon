@@ -25,7 +25,14 @@ export const StoreSheetGoodsSection: React.FC<{ className?: string }> = ({
   const skus = unlockedSheetSkus(gameState.reputation);
 
   return (
-    <AisleSection title="Sheet Goods" className={className}>
+    // A single shelf under the lumber racks, one slot per SKU the rack
+    // can ever carry — so the locked ones leave their gap and the shelf
+    // doesn't reflow the day reputation opens them
+    <AisleSection
+      title="Sheet Goods"
+      template="repeat(6, 5rem)"
+      className={className}
+    >
       {skus.map((sku) => (
         <SheetSkuTile key={sku.kind} sku={sku} />
       ))}

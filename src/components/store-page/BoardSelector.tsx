@@ -24,9 +24,11 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 /**
  * Every rack in town shares one pixels-per-foot, so lengths compare at a
  * glance across bays, channels, and stores. Boards draw at true aspect —
- * this is the whole scale knob.
+ * this is the whole scale knob, and it's set by the tightest room in
+ * town: an 8' board plus the sheet-good shelf under it has to clear the
+ * Orange Box wall without scrolling.
  */
-const PX_PER_FOOT = 57;
+const PX_PER_FOOT = 52;
 
 /** How high the safety chain hangs across each bay's boards. */
 const CHAIN_HEIGHT_FEET = 3;

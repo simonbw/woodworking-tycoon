@@ -91,23 +91,34 @@ export const StoreTripOverlay: React.FC = () => {
               the scrollbar here is a fallback for short windows, not
               part of the shopping trip. */}
           <div className="flex h-full min-h-0 gap-6">
-            <section className="shrink-0">
-              <h2 className="aisle-heading">Lumber</h2>
-              <BoardSelector store="orangeBox" />
-            </section>
-            {/* Two independent runs of shelving rather than a grid: a
-                grid would hold every aisle in a row to the tallest one's
+            {/* The wood wall: racks of solid stock with the sheet rack
+                shelved underneath, the way a yard keeps its sheets flat
+                below the lumber. The shelf below is what sets this
+                column's width; the racks center in it. */}
+            <div className="shrink-0 flex flex-col gap-4">
+              <section>
+                <h2 className="aisle-heading">Lumber</h2>
+                <BoardSelector store="orangeBox" />
+              </section>
+              <StoreSheetGoodsSection />
+            </div>
+            {/* Independent runs of shelving rather than a grid: a grid
+                would hold every aisle in a row to the tallest one's
                 height, and the tool wall is half again as tall as
                 anything else. Stacked this way each aisle takes only the
                 room its own tiles need. */}
             <div className="grow min-w-0 flex gap-6">
-              <div className="flex-1 min-w-0 flex flex-col gap-4">
-                <StoreSheetGoodsSection />
+              {/* The wide run: small goods pack several to a row, so the
+                  width buys whole rows off the tool wall and keeps the
+                  supplies on one shelf */}
+              <div className="flex-[7] min-w-0 flex flex-col gap-4">
                 <StoreToolsSection />
-              </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-4">
-                <StoreMachinesSection />
                 <StoreSuppliesSection />
+              </div>
+              {/* The narrow run: machines are two to a row however wide
+                  this gets, so extra width would only pad the tiles */}
+              <div className="flex-[4] min-w-0 flex flex-col gap-4">
+                <StoreMachinesSection />
               </div>
             </div>
           </div>

@@ -26,7 +26,14 @@ export const StoreMachinesSection: React.FC<{ className?: string }> = ({
     { machine: MACHINE_TYPES.bandSaw, price: 700 },
   ];
   return (
-    <AisleSection title="Machines" className={className}>
+    // Two to a row whatever the window: a machine is the most expensive
+    // thing in the store and the hardest to recognize small, so its tile
+    // gets half a shelf and its photo fills that
+    <AisleSection
+      title="Machines"
+      template="repeat(2, minmax(0, 1fr))"
+      className={className}
+    >
       {machinesToSell.map((info) => (
         <MachineProductTile key={info.machine.id} {...info} />
       ))}
@@ -56,7 +63,7 @@ const MachineProductTile: React.FC<MachineSaleInfo> = ({ machine, price }) => {
       icon={
         <MachineIcon
           machineId={machine.id as MachineId}
-          className="size-16 shrink-0"
+          className="size-20 shrink-0"
         />
       }
       price={price}
