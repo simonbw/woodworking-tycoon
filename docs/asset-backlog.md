@@ -82,6 +82,14 @@ wiring: same path, same size, same component.
       sled, straight-line sled, dust bag.
 - [ ] Consumable icons — `static/images/icons/consumable-<id>.png`, 64×64,
       rendered by `ConsumableIcon`. Three: nails, screws, mineral oil.
+- [ ] Store-shelf icons for the things that aren't tools or consumables —
+      `upgrade-vise`, `misc-barClamp`, `misc-shopVac`, and the two machines
+      with no shop-floor art yet, `machine-bandSaw` and `machine-garbageCan`.
+      Same 64×64 icons directory, rendered by `UpgradeIcon` / `ClampIcon` /
+      `ShopVacIcon` / `MachineIcon` in `components/ItemIcon.tsx`. The other
+      four machines skip this entirely and put their real sprite art on the
+      shelf; when the band saw and the garbage can get theirs, add them to
+      `MACHINE_ICON_SRC` and delete these two files.
 
 ### Machines
 
