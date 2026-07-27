@@ -71,7 +71,13 @@ const InfoButton: React.FC<{ name: string; info: React.ReactNode }> = ({
     <button
       type="button"
       aria-label={`About ${name}`}
-      className="absolute right-1 top-1 z-10 grid size-4 place-items-center rounded-full border border-store-concrete-dark bg-white/80 font-serif text-[0.65rem] italic leading-none text-ink-fade hover:border-store-orange hover:text-store-orange"
+      // Silent: this is a button you brush past on the way to the one
+      // that costs money, and it shouldn't sound like that one.
+      data-sfx="none"
+      // pt-0.5: a lowercase i has no descender, so its ink sits about a
+      // pixel above the circle's true center. The padding buys that
+      // pixel back and the glyph reads centered.
+      className="absolute right-1 top-1 z-10 grid size-4 place-items-center rounded-full border border-ink-blue pt-0.5 font-typewriter text-[0.65rem] font-bold leading-none text-ink-blue opacity-40 transition-opacity hover:opacity-100"
     >
       i
     </button>
