@@ -31,11 +31,11 @@ export const ProductTile: React.FC<{
           big machine photos can breathe without dragging the tool wall's
           icons up to the same size */}
       <span className="flex min-h-8 items-center justify-center">{icon}</span>
-      <span className="text-[0.7rem] font-bold uppercase leading-tight tracking-wide text-ink-black">
+      <span className="text-[0.8rem] font-bold uppercase leading-tight tracking-wide text-ink-black">
         {name}
       </span>
       {owned && (
-        <span className="text-[0.65rem] font-semibold leading-tight text-store-orange-dark tabular-nums">
+        <span className="text-[0.7rem] font-semibold leading-tight text-store-orange-dark tabular-nums">
           {owned}
         </span>
       )}

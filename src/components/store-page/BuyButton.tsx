@@ -21,7 +21,7 @@ export const BuyButton: React.FC<
   <button
     className={classNames(
       "bg-store-orange hover:bg-store-orange-dark disabled:bg-store-concrete-dark disabled:text-ink-fade text-white font-condensed font-bold uppercase tracking-widest rounded-sm shadow",
-      size === "aisle" ? "text-xs px-3 py-1" : "text-[0.65rem] px-2 py-0.5",
+      size === "aisle" ? "text-xs px-3 py-1" : "text-[0.75rem] px-2 py-0.5",
       className,
     )}
     {...buttonProps}
