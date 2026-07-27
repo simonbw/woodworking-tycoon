@@ -1,4 +1,7 @@
 {
+  "permissions": {
+    "ask": ["Bash(pkill:*)", "Bash(killall:*)"]
+  },
   "hooks": {
     "PostToolUse": [
       {

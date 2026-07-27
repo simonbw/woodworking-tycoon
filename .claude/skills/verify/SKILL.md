@@ -6,11 +6,29 @@ description: How to launch and drive this app to verify changes at the browser s
 # Verifying changes in Woodworking Tycoon
 
 The surface is a browser GUI (React + PIXI). Do NOT use the user's dev
-server (port 3001). Start a throwaway one:
+server (port 3001) or the E2E one (3002). Start a throwaway one, on a free
+port, with the `--verify-server` marker:
 
 ```sh
-ES_BUILD_DEV_PORT=3003 node esbuild-client.config.mjs --dev &   # kill when done
+PORT=3003   # any free port that isn't 3001 or 3002
+ES_BUILD_DEV_PORT=$PORT node esbuild-client.config.mjs --dev --verify-server &
+echo $! > "/tmp/wwt-verify-$PORT.pid"
 ```
+
+The marker does nothing to the build — the config only looks for `--dev` —
+but it puts a word in this process's command line that the user's server
+does not have. Stop it by PID when you're done:
+
+```sh
+kill "$(cat /tmp/wwt-verify-3003.pid)"
+```
+
+**Never `pkill -f esbuild`, `pkill -f "esbuild-client.config.mjs --dev"`, or
+anything else matching the bare config name.** The user keeps a dev server
+running all day whose command line is exactly `node esbuild-client.config.mjs
+--dev`, and those patterns SIGTERM it out from under them. If the pidfile is
+gone, `pkill -f -- "--verify-server"` is the widest pattern that is still
+safe (it can only hit verify servers, including other agents').
 
 Drive it with Playwright from a Node script (`@playwright/test` is a
 dependency; use `createRequire` pointed at this repo's package.json if the
