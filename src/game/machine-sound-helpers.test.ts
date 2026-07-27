@@ -7,6 +7,8 @@ import { Vector } from "./Vectors";
 
 /** Planer at [2,2], rotation 0 — operation cell (infeed) is [2,3]. */
 const PLANER_OPERATION_CELL: Vector = [2, 3];
+/** Jointer at [2,2], rotation 0 — operation cell is [2,4]. */
+const JOINTER_OPERATION_CELL: Vector = [2, 4];
 const ELSEWHERE: Vector = [0, 0];
 
 function machineWith(
@@ -69,6 +71,7 @@ describe("deriveMachineSoundPhase", () => {
         machine,
         PLANER_OPERATION_CELL,
         false,
+        false,
         progression,
       ),
       "off",
@@ -78,7 +81,7 @@ describe("deriveMachineSoundPhase", () => {
   it("idles when switched on with no operation in progress", () => {
     const machine = planerMachine(NOT_STARTED, true);
     assert.equal(
-      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, false, progression),
       "running",
     );
   });
@@ -86,7 +89,7 @@ describe("deriveMachineSoundPhase", () => {
   it("a trigger machine (miter saw) is silent between operations", () => {
     const machine = machineWith("miterSaw", "cutBoard", NOT_STARTED);
     assert.equal(
-      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, false, progression),
       "off",
     );
   });
@@ -98,6 +101,7 @@ describe("deriveMachineSoundPhase", () => {
         machine,
         PLANER_OPERATION_CELL,
         false,
+        true,
         progression,
       ),
       "cutting",
@@ -111,6 +115,7 @@ describe("deriveMachineSoundPhase", () => {
         machine,
         PLANER_OPERATION_CELL,
         false,
+        true,
         progression,
       ),
       "off",
@@ -120,7 +125,7 @@ describe("deriveMachineSoundPhase", () => {
   it("power feed keeps cutting when the player steps away", () => {
     const machine = planerMachine(MID_CUT);
     assert.equal(
-      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, false, progression),
       "cutting",
     );
   });
@@ -132,16 +137,45 @@ describe("deriveMachineSoundPhase", () => {
         machine,
         PLANER_OPERATION_CELL,
         true,
+        false,
         progression,
       ),
       "cutting",
     );
   });
 
+  it("cuts while the player feeds a hand-fed machine (jointer)", () => {
+    const machine = machineWith("jointer", "jointFace", MID_CUT, true);
+    assert.equal(
+      deriveMachineSoundPhase(
+        machine,
+        JOINTER_OPERATION_CELL,
+        false,
+        true,
+        progression,
+      ),
+      "cutting",
+    );
+  });
+
+  it("an attended cut idles when the player stops feeding (jointer)", () => {
+    const machine = machineWith("jointer", "jointFace", MID_CUT, true);
+    assert.equal(
+      deriveMachineSoundPhase(
+        machine,
+        JOINTER_OPERATION_CELL,
+        false,
+        false,
+        progression,
+      ),
+      "running",
+    );
+  });
+
   it("an attended cut idles when the player steps away (jointer)", () => {
     const machine = machineWith("jointer", "jointFace", MID_CUT, true);
     assert.equal(
-      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, true, progression),
       "running",
     );
   });
@@ -153,7 +187,7 @@ describe("deriveMachineSoundPhase", () => {
       ticksRemaining: 0,
     });
     assert.equal(
-      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, false, progression),
       "running",
     );
   });
@@ -165,7 +199,7 @@ describe("deriveMachineSoundPhase", () => {
       ticksRemaining: 30,
     });
     assert.equal(
-      deriveMachineSoundPhase(machine, ELSEWHERE, false, progression),
+      deriveMachineSoundPhase(machine, ELSEWHERE, false, false, progression),
       "off",
     );
   });
@@ -181,6 +215,7 @@ describe("deriveMachineSoundPhase", () => {
         planerMachine(finished, true),
         PLANER_OPERATION_CELL,
         false,
+        false,
         progression,
       ),
       "running",
@@ -189,6 +224,7 @@ describe("deriveMachineSoundPhase", () => {
       deriveMachineSoundPhase(
         planerMachine(finished, false),
         PLANER_OPERATION_CELL,
+        false,
         false,
         progression,
       ),

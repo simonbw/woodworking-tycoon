@@ -100,10 +100,17 @@ on every render** and converges the audio graph toward it:
 
 ```
 machine.operationProgress.status !== "inProgress"        → "off"
-inProgress, but paused (unattended phase boundary,
-  or attended phase with player elsewhere)               → "running"  (idle loop)
+inProgress, but paused (unattended phase boundary, or
+  attended phase with the player elsewhere or not
+  holding the operate key)                               → "running"  (idle loop)
 inProgress and actively ticking an attended phase        → "cutting"
 ```
+
+"Actively ticking" is the same test `tickAction` runs, feed included: on a
+hand-fed machine the cut only advances while the player stands there
+**holding the operate key**, so letting go of `Space` drops the saw to idle
+just like walking off does. Power-feed operations (the planer) keep cutting
+regardless — the rollers do the feeding.
 
 Machines with a **power switch** (`MachineType.powerSwitch`: planer,
 jointer, table saw — the miter saw is a trigger tool and exempt) derive
@@ -112,9 +119,9 @@ cut is paused), and switched on is at least `"running"` even with nothing
 queued — the idling motor is what reminds the player they left the
 machine on.
 
-This gives a nice touch for free: walk away mid-rip and the saw drops to idle;
-walk back and it bites into the wood again. Reload a save mid-operation and
-the sound is simply correct.
+This gives a nice touch for free: ease off the board mid-rip — let go of the
+key or walk away — and the saw drops to idle; feed it again and it bites into
+the wood. Reload a save mid-operation and the sound is simply correct.
 
 ### `LoopingSoundPlayer` (`src/utils/loopingSound.ts`)
 

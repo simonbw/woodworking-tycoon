@@ -14,8 +14,8 @@ import { Vector } from "./Vectors";
  *  - "off":     no power — nothing in progress (or a hands-free phase like
  *               glue curing), or the machine's power switch is off
  *  - "running": the motor idles — a switched machine is on but not biting
- *               wood, the player stepped away mid-operation, or the machine
- *               is waiting at a phase boundary
+ *               wood, the player stepped away or let go of the operate key
+ *               mid-operation, or the machine is waiting at a phase boundary
  *  - "cutting": an attended phase is actively ticking
  */
 export type MachineSoundPhase = "off" | "running" | "cutting";
@@ -24,6 +24,7 @@ export function deriveMachineSoundPhase(
   machine: Machine,
   playerPosition: Vector,
   playerIsAway: boolean,
+  playerIsOperating: boolean,
   progression: ProgressionState,
 ): MachineSoundPhase {
   // A machine with a power switch is audible from the switch, not the work:
@@ -59,9 +60,16 @@ export function deriveMachineSoundPhase(
     return idle;
   }
 
+  // Same rule the tick uses (see `tickAction`): an attended phase only bites
+  // wood while the player stands there *holding the operate key*. Let go of
+  // Space at the jointer and the blade is still spinning, but nothing is
+  // being fed through it — so the cut sound (and the sawdust the sprites
+  // spray from it) stops with the feed.
+  //
   // Power feed keeps cutting (and screaming) with nobody standing there.
   return operation.powerFeed ||
-    playerAttendsMachine(machine, playerPosition, playerIsAway)
+    (playerAttendsMachine(machine, playerPosition, playerIsAway) &&
+      playerIsOperating)
     ? "cutting"
     : "running";
 }

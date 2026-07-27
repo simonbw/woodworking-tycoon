@@ -101,6 +101,7 @@ export const MachineSoundLayer: React.FC = () => {
           machine,
           gameState.player.position,
           gameState.player.away !== null,
+          gameState.player.operating === true,
           gameState.progression,
         ),
         deriveMachineCutLoad(machine),

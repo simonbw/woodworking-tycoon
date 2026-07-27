@@ -424,6 +424,39 @@ describe("tickAction dust emission", () => {
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });
 
+  it("hand-fed work makes dust only while the player is feeding it", () => {
+    // The jointer at [1,1] shares the planer's operation cell, [1,3]
+    function jointingWith(operating: boolean): GameState {
+      const state = planingStateWith({
+        player: {
+          ...initialGameState.player,
+          position: [1, 3],
+          operating,
+        },
+      });
+      return {
+        ...state,
+        machines: [
+          {
+            ...state.machines[0],
+            machineTypeId: "jointer" as const,
+            selectedOperationId: "jointFace",
+            selectedParameters: undefined,
+          },
+        ],
+      };
+    }
+
+    const feeding = tickAction(jointingWith(true));
+    assert.ok(cellDust(feeding.dust, [1, 1]) > 0);
+    assert.strictEqual(feeding.machines[0].operationProgress.ticksRemaining, 4);
+
+    // Let go of the operate key and the cut — and its sawdust — stops
+    const released = tickAction(jointingWith(false));
+    assert.deepStrictEqual(released.dust, {});
+    assert.strictEqual(released.machines[0].operationProgress.ticksRemaining, 5);
+  });
+
   it("pauses the cut (and its dust) while the machine is switched off", () => {
     const state = planingStateWith();
     const off = {
