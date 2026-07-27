@@ -12,6 +12,12 @@ import tailwind from "tailwindcss";
 
 const isDev = process.argv.some((arg) => arg == "--dev");
 
+// Other argv is ignored on purpose. An agent's throwaway verify server passes
+// `--verify-server` (see .claude/skills/verify) purely so its command line
+// differs from yours: `pkill -f "esbuild-client.config.mjs --dev"` matches
+// every dev server on the machine, and the one it kills is usually the one
+// you've had open all day. Don't "clean up" the unrecognized flag.
+
 // Where the bundle lands and what the dev server serves. The E2E server
 // overrides this so a test run and a `npm run dev` you have open can't
 // overwrite each other's output — they build the same sources with
