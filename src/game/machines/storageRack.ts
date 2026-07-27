@@ -9,7 +9,7 @@ import { MachineType } from "../Machine";
 export const storageRack: MachineType = {
   id: "storageRack",
   name: "Storage Rack",
-  description: "Cheap sheet on stout legs. Holds a small lumberyard.",
+  description: "A shelf on stout legs. Parks a large amount of stock off the floor.",
   // A 2×2-ft rack: deep enough for sheet stock stood on edge.
   cellsOccupied: [
     [0, 0],

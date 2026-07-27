@@ -16,7 +16,7 @@ export const handSaw: ToolType = {
   id: "handSaw",
   name: "Hand Saw",
   description:
-    "A backsaw and a miter box. Every cut the miter saw makes, one stroke at a time.",
+    "A backsaw and a miter box. Crosscuts boards to length at the same angle stops as the miter saw, and takes about three times as long.",
   cost: 18,
   // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
   compatibleMachines: [

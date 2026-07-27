@@ -33,7 +33,8 @@ export function thicknessStepBelow(
 export const lunchboxPlaner: MachineType = {
   id: "lunchboxPlaner",
   name: "Planer",
-  description: "A lunchbox planer",
+  description:
+    "A portable thickness planer. Planes a board down to a set thickness, one pass at a time.",
   // A lunchbox planer on its stand: about 19" × 26", so a 2×3-ft
   // footprint with stock feeding the long way (see the measured
   // collision box for the exact solid area).

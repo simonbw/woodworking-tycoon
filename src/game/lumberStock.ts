@@ -59,7 +59,7 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
     name: "Construction Lumber",
     store: "orangeBox",
     tagline:
-      "Framing stock. Straight enough for a wall, cheap enough for jigs.",
+      "Softwood framing lumber, surfaced four sides. Cheapest board foot in town.",
     species: ["pine"],
     // Framing sizes: 2x4s, 2x6s, and 1x4 strapping
     skus: [
@@ -77,7 +77,8 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
     id: "bigBoxRack",
     name: "S4S Hardwood Rack",
     store: "orangeBox",
-    tagline: "Ready to use. You're paying us to have done the milling.",
+    tagline:
+      "Hardwood surfaced four sides, ready to use. The milling is priced in.",
     species: ["poplar", "oak", "maple"],
     // Short, small boards — hobbyist portions
     skus: [

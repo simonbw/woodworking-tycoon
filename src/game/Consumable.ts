@@ -21,7 +21,8 @@ export const CONSUMABLE_TYPES = {
   nails: {
     id: "nails",
     name: "Nails",
-    description: "Common nails. Rustic joinery runs on them.",
+    description:
+      "Common nails. Consumed by nailed assembly; dismantling a pallet returns some.",
     unit: "nails",
     packName: "Box of Nails",
     packSize: 50,
@@ -31,7 +32,7 @@ export const CONSUMABLE_TYPES = {
     id: "screws",
     name: "Screws",
     description:
-      "Wood screws. Sturdier than nails, and they don't come back as salvage.",
+      "Wood screws. Consumed by screwed assembly; not recovered from salvage.",
     unit: "screws",
     packName: "Box of Screws",
     packSize: 50,
@@ -40,7 +41,8 @@ export const CONSUMABLE_TYPES = {
   mineralOil: {
     id: "mineralOil",
     name: "Mineral Oil",
-    description: "Food-safe board oil. The only finish a cutting board wants.",
+    description:
+      "Food-safe finishing oil. Consumed when oiling a cutting board.",
     unit: "oz",
     packName: "Mineral Oil Bottle",
     packSize: 16,

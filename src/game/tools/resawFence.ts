@@ -27,8 +27,8 @@ export const resawFence: ToolType = {
   name: "Tall Resaw Fence",
   description:
     "A tall plywood face for the rip fence, so stock can stand on edge. " +
-    "Turns the table saw into a resaw — and blocks ordinary ripping until " +
-    "it comes back off.",
+    "Adds resawing to the table saw and removes ordinary ripping while " +
+    "it is mounted.",
   cost: 0,
   craftedOnly: true,
   compatibleMachines: ["jobsiteTableSaw"],

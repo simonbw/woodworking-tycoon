@@ -16,7 +16,7 @@ export const drill: ToolType = {
   id: "drill",
   name: "Drill",
   description:
-    "A cordless driver. Screwed assembly happens at whatever bench it's mounted on.",
+    "A cordless drill/driver. Screwed assembly is only available at a station with one mounted.",
   cost: 70,
   // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
   compatibleMachines: [

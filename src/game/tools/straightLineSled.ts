@@ -14,7 +14,7 @@ export const straightLineSled: ToolType = {
   id: "straightLineSled",
   name: "Straight-Line Sled",
   description:
-    "A sled that rides the rails so the board doesn't have to trust the fence. Turns a wavy edge into a straight one.",
+    "A sled that rides the fence rail with the board fixed to it. Cuts a straight reference edge on stock with no straight edge to run against the fence.",
   cost: 0,
   craftedOnly: true,
   compatibleMachines: ["jobsiteTableSaw"],

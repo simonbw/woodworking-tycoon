@@ -27,8 +27,8 @@ const vise: UpgradeType = {
   id: "vise",
   name: "Bench Vise",
   description:
-    "Cast-iron jaws bolted to the bench. Held work is fast work: " +
-    "attended hand work at this table runs a quarter faster.",
+    "Cast-iron jaws bolted to the bench edge. Attended hand work at " +
+    "this table runs 25% faster.",
   cost: 80,
   workSpeedFactor: 1.25,
 };
@@ -37,7 +37,7 @@ const toolDrawers: UpgradeType = {
   id: "toolDrawers",
   name: "Tool Drawers",
   description:
-    "A drawer bank under the top. Two more tool slots at this table.",
+    "A drawer bank under the top. Adds two tool slots to this table.",
   cost: 0,
   craftedOnly: true,
   extraToolSlots: 2,
@@ -47,7 +47,7 @@ const materialShelf: UpgradeType = {
   id: "materialShelf",
   name: "Material Shelf",
   description:
-    "A second shelf below the first. Four more shelf spaces for stock.",
+    "A second shelf below the first. Adds four stock spaces to this table.",
   cost: 0,
   craftedOnly: true,
   extraMaterialStorage: 4,

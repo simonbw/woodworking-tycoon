@@ -5,7 +5,7 @@ export const randomOrbitSander: ToolType = {
   id: "randomOrbitSander",
   name: "Random Orbit Sander",
   description:
-    "The upgrade every arm deserves. Same sanding, a fraction of the time.",
+    "A powered orbital sander. Sands the same surfaces as the block, in roughly a third of the time.",
   cost: 80,
   // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
   compatibleMachines: [

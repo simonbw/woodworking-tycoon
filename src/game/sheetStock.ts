@@ -24,7 +24,7 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
     length: 4,
     width: 4,
     thickness: 2,
-    tagline: "Sawdust and glue holding hands. Sags if you stare at it.",
+    tagline: "Pressed wood chips. The cheapest sheet stock, and the weakest.",
     minReputation: 0,
   },
   {
@@ -32,7 +32,7 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
     length: 4,
     width: 4,
     thickness: 2,
-    tagline: "Strand board. Nobody's furniture, everybody's sheathing.",
+    tagline: "Pressed wood strands. Structural sheathing, rough on both faces.",
     minReputation: 0,
   },
   {
@@ -40,7 +40,7 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
     length: 4,
     width: 4,
     thickness: 2,
-    tagline: "Construction grade. Knots and voids included at no charge.",
+    tagline: "Construction-grade plywood. Knots and voids in both faces.",
     minReputation: 0,
   },
   {
@@ -48,7 +48,8 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
     length: 4,
     width: 4,
     thickness: 2,
-    tagline: "Not pretty — perfect for jigs.",
+    tagline:
+      "Utility-grade plywood. Sound faces, patched knots. Standard jig stock.",
     minReputation: 0,
   },
   {
@@ -56,7 +57,8 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
     length: 4,
     width: 4,
     thickness: 3,
-    tagline: "Dead flat, no grain, heavy as sin. Templates love it.",
+    tagline:
+      "Medium-density fiberboard. Flat and grainless, with no wood grain to follow.",
     minReputation: 12,
   },
   {
@@ -64,7 +66,7 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
     length: 8,
     width: 4,
     thickness: 3,
-    tagline: "Clean veneer both faces. Furniture wood by the sheet.",
+    tagline: "Cabinet-grade plywood. Clean veneer on both faces.",
     minReputation: 12,
   },
 ];

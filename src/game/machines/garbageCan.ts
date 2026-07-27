@@ -13,7 +13,7 @@ export const garbageCan: MachineType = {
   id: "garbageCan",
   name: "Garbage Can",
   description:
-    "Toss offcuts in and take them back out. Emptying it is permanent.",
+    "Holds offcuts until you need them again. Emptying it discards the contents permanently.",
   // A full-size shop can (22" across) sits on a 2×2-ft patch of floor.
   cellsOccupied: [
     [0, 0],

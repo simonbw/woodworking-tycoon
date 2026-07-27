@@ -27,7 +27,8 @@ export const CUT_POSITIONS = BOARD_DIMENSIONS.filter(
 export const miterSaw: MachineType = {
   id: "miterSaw",
   name: "Miter Saw",
-  description: "A portable saw for cross cutting wood, square or at an angle.",
+  description:
+    "A portable crosscut saw. Cuts boards to length, square or at an angle.",
   // A miter saw is wide (28" across the fence wings) and shallow: a
   // 3×2-ft footprint, with the handle overhanging the operator side (see
   // the measured collision box).

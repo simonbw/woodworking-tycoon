@@ -24,7 +24,7 @@ export const bandSaw: MachineType = {
   id: "bandSaw",
   name: "Band Saw",
   description:
-    "Splits a board along its thickness. Two boards where there was one.",
+    "Resaws a board along its thickness, producing two thinner boards.",
   // A 14" saw on its stand: a tall column over a roughly 2×2-ft footprint.
   cellsOccupied: [
     [0, 0],

@@ -11,7 +11,7 @@ export const hammer: ToolType = {
   id: "hammer",
   name: "Hammer",
   description:
-    "Sixteen ounces of persuasion. Nailed joinery needs one at the bench.",
+    "A 16 oz claw hammer. Nailed assembly is only available at a station with one mounted.",
   cost: 12,
   // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
   compatibleMachines: [

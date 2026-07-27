@@ -19,7 +19,7 @@ import { Machine, MachineState } from "./Machine";
 export const CLAMP_NAME = "Bar Clamp";
 
 export const CLAMP_DESCRIPTION =
-  "A steel bar clamp. Glue-ups tie up a few until the glue cures, then you get them back.";
+  "A steel bar clamp. A glue-up holds several until the glue cures, then releases them.";
 
 /** Bought one at a time from the store's supplies aisle. */
 export const CLAMP_COST = 22;

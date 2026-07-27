@@ -15,7 +15,7 @@ export const jointer: MachineType = {
   id: "jointer",
   name: "Jointer",
   description:
-    "Flattens a reference face and straightens an edge. Rough lumber starts here.",
+    "Flattens one reference face and straightens one edge. The first machine in the milling chain.",
   // A benchtop jointer: 16" wide with 40" of bed, so a 2×3-ft footprint
   // with the tables running the long way (the beds overhang the footprint
   // an inch or two each end — see the measured collision box).

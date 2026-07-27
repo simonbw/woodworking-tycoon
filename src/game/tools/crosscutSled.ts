@@ -16,7 +16,7 @@ export const crosscutSled: ToolType = {
   id: "crosscutSled",
   name: "Crosscut Sled",
   description:
-    "Plywood base, hardwood runners. You can't buy one this good — you build it.",
+    "A plywood base on hardwood runners. Carries stock past the blade for square crosscuts on the table saw.",
   cost: 0,
   craftedOnly: true,
   compatibleMachines: ["jobsiteTableSaw"],

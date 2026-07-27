@@ -6,7 +6,8 @@ import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated"
 export const jobsiteTableSaw: MachineType = {
   id: "jobsiteTableSaw",
   name: "Jobsite Table Saw",
-  description: "A portable table saw for cutting wood.",
+  description:
+    "A portable table saw. Rips boards to width, and hosts shop-built sleds and the resaw fence.",
   // A jobsite saw on its stand: about 24" × 19", table biased toward the
   // infeed side — a 3×2-ft footprint with the tabletop overhanging the
   // operator side a few inches (see the measured collision box).

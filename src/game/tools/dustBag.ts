@@ -17,8 +17,8 @@ export const dustBag: ToolType = {
   id: "dustBag",
   name: "Dust Bag",
   description:
-    "A canvas bag for a machine's dust port. Catches most of the mess " +
-    "at the source — the floor stays cleaner far longer.",
+    "A canvas bag for a machine's dust port. Captures most of the dust "+
+    "that machine produces before it reaches the floor.",
   cost: 45,
   compatibleMachines: [
     "jobsiteTableSaw",
