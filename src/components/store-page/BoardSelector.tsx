@@ -29,7 +29,7 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 const PX_PER_FOOT = 57;
 
 /** How high the safety chain hangs across each bay's boards. */
-const CHAIN_HEIGHT_FEET = 3.5;
+const CHAIN_HEIGHT_FEET = 3;
 
 // Rack chrome is diegetic shop furniture, so it uses raw wood and steel
 // tones rather than the paperwork palette.
@@ -56,7 +56,10 @@ export const BoardSelector: React.FC<{ store: StoreId }> = ({ store }) => {
   const channels = unlockedLumberChannels(gameState.reputation, store);
 
   return (
-    <div className="flex flex-wrap items-end justify-center gap-x-2 gap-y-3">
+    // One unbroken run of racks, the way an aisle actually stands. A
+    // wrapped rack reads as two aisles, so the row never breaks — a
+    // window too narrow for every channel scrolls sideways instead.
+    <div className="flex items-end justify-center gap-x-2 overflow-x-auto">
       {channels.map((channel) => (
         <LumberChannelSection key={channel.id} channel={channel} />
       ))}
@@ -84,7 +87,7 @@ const LumberChannelSection: React.FC<{ channel: LumberChannel }> = ({
   );
 
   return (
-    <div>
+    <div className="shrink-0">
       <Tooltip content={`${stateLabel} — ${channel.tagline}`}>
         <h3 className="inline-block font-condensed font-bold uppercase tracking-wider text-base text-ink-black cursor-help mb-1">
           {channel.name}
