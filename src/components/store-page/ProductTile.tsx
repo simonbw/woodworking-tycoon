@@ -7,8 +7,7 @@ import { BuyButton } from "./BuyButton";
  * grids below. Everything a shopper compares at a glance — the picture,
  * the name, what's already in the shop, the price — is on the face; the
  * paragraph explaining what the thing does waits in the hover tooltip.
- * That's what keeps a whole store's inventory on one screen without a
- * scrollbar.
+ * That's what fits a whole store's inventory in a window at all.
  */
 export const ProductTile: React.FC<{
   name: string;
@@ -25,7 +24,9 @@ export const ProductTile: React.FC<{
   sfx?: string;
 }> = ({ name, icon, price, info, owned, canAfford, onBuy, sfx }) => (
   <Tooltip content={info}>
-    <li className="product-card flex flex-col items-center gap-0.5 text-center">
+    {/* The picture centers over the tile, the words hang off its left
+        edge — the way a shelf tag is printed. */}
+    <li className="product-card flex flex-col items-stretch gap-0.5 text-left">
       {/* min-h rather than h: the picture sets the row, so an aisle of
           big machine photos can breathe without dragging the tool wall's
           icons up to the same size */}
@@ -53,10 +54,31 @@ export const ProductTile: React.FC<{
   </Tooltip>
 );
 
-/** The shelf-edge price. Free stock is called out rather than priced $0.00. */
-export const PriceTag: React.FC<{ price: number }> = ({ price }) =>
-  price === 0 ? (
-    <span className="price-tag text-store-orange-dark">FREE</span>
-  ) : (
-    <span className="price-tag">${price.toFixed(2)}</span>
+/**
+ * The shelf-edge price, set the way a big-box store sets one: the dollars
+ * big, the sign and the cents small and raised off the top. Free stock is
+ * called out rather than priced $0.00.
+ *
+ * Split across three spans it reads "one zero zero zero" aloud, so the
+ * whole price is also written out for a screen reader and the display
+ * type is hidden from one.
+ */
+export const PriceTag: React.FC<{ price: number }> = ({ price }) => {
+  if (price === 0) {
+    return <span className="price-tag text-store-orange-dark">FREE</span>;
+  }
+  const dollars = Math.floor(price);
+  const cents = Math.round((price - dollars) * 100)
+    .toString()
+    .padStart(2, "0");
+  return (
+    <span className="price-tag">
+      <span className="sr-only">${price.toFixed(2)}</span>
+      <span aria-hidden className="text-[1.4em] leading-none">
+        <sup className="text-[0.5em]">$</sup>
+        {dollars}
+        <sup className="text-[0.5em]">{cents}</sup>
+      </span>
+    </span>
   );
+};

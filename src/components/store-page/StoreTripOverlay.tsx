@@ -87,9 +87,9 @@ export const StoreTripOverlay: React.FC = () => {
         <div className="bg-store-concrete text-ink-black px-6 py-4 grow min-h-0 overflow-auto">
           {/* The floor plan: the lumber racks stand along one wall, and
               everything else is shelved as square tiles in the aisles
-              beside them. Sized so the whole store fits one screen —
-              the scrollbar here is a fallback for short windows, not
-              part of the shopping trip. */}
+              beside them. Sized to fit one screen on a tall window; a
+              short one scrolls, and what runs past the fold is the
+              machine aisle, whose photos are worth the trip. */}
           <div className="flex h-full min-h-0 gap-6">
             {/* The wood wall: racks of solid stock with the sheet rack
                 shelved underneath, the way a yard keeps its sheets flat
@@ -108,16 +108,17 @@ export const StoreTripOverlay: React.FC = () => {
                 anything else. Stacked this way each aisle takes only the
                 room its own tiles need. */}
             <div className="grow min-w-0 flex gap-6">
-              {/* The wide run: small goods pack several to a row, so the
-                  width buys whole rows off the tool wall and keeps the
-                  supplies on one shelf */}
-              <div className="flex-[7] min-w-0 flex flex-col gap-4">
+              {/* The wide run: small goods pack several to a row, so
+                  every extra inch buys whole rows off the tool wall and
+                  keeps the supplies on one shelf */}
+              <div className="grow min-w-0 flex flex-col gap-4">
                 <StoreToolsSection />
                 <StoreSuppliesSection />
               </div>
-              {/* The narrow run: machines are two to a row however wide
-                  this gets, so extra width would only pad the tiles */}
-              <div className="flex-[4] min-w-0 flex flex-col gap-4">
+              {/* The machine run takes a fixed width instead of a share:
+                  two tiles across, each wide enough for a photo you can
+                  actually read a machine off. */}
+              <div className="basis-96 shrink min-w-0 flex flex-col gap-4">
                 <StoreMachinesSection />
               </div>
             </div>

@@ -63,7 +63,7 @@ const MachineProductTile: React.FC<MachineSaleInfo> = ({ machine, price }) => {
       icon={
         <MachineIcon
           machineId={machine.id as MachineId}
-          className="size-20 shrink-0"
+          className="w-full max-h-40"
         />
       }
       price={price}
