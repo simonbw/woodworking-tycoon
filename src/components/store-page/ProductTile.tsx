@@ -6,15 +6,15 @@ import { BuyButton } from "./BuyButton";
  * The store's shelf unit: one square tile per SKU, laid out in the aisle
  * grids below. Everything a shopper compares at a glance — the picture,
  * the name, what's already in the shop, the price — is on the face; the
- * paragraph explaining what the thing does waits in the hover tooltip.
- * That's what fits a whole store's inventory in a window at all.
+ * paragraph explaining what the thing does waits behind the ⓘ in the
+ * corner. That's what fits a whole store's inventory in a window at all.
  */
 export const ProductTile: React.FC<{
   name: string;
   /** The product picture. Sized by the caller; the tile reserves the row. */
   icon?: React.ReactNode;
   price: number;
-  /** Hover copy: what it is and what it does, in a sentence or two. */
+  /** Behind the ⓘ: what it is and what it does, in a sentence or two. */
   info: React.ReactNode;
   /** One short line under the name — what the shop already has of this. */
   owned?: React.ReactNode;
@@ -23,37 +23,58 @@ export const ProductTile: React.FC<{
   /** Routed to the delegated click-sound listener (e.g. "ui-purchase"). */
   sfx?: string;
 }> = ({ name, icon, price, info, owned, canAfford, onBuy, sfx }) => (
-  <Tooltip content={info}>
-    {/* The picture centers over the tile, the words hang off its left
-        edge — the way a shelf tag is printed. */}
-    <li className="product-card flex flex-col items-stretch gap-0.5 text-left">
-      {/* min-h rather than h: the picture sets the row, so an aisle of
-          big machine photos can breathe without dragging the tool wall's
-          icons up to the same size */}
-      <span className="flex min-h-8 items-center justify-center">{icon}</span>
-      {/* Set in the condensed face at reading weight rather than bold:
-          at this size every tag on the wall shouting at once is just
-          noise, and the price is the thing that should be loud. */}
-      <span className="text-[0.95rem] uppercase leading-tight tracking-wide text-ink-black">
-        {name}
+  // The picture centers over the tile, the words hang off its left edge
+  // — the way a shelf tag is printed.
+  <li className="product-card relative flex flex-col items-stretch gap-0.5 text-left">
+    <InfoButton name={name} info={info} />
+    {/* min-h rather than h: the picture sets the row, so an aisle of
+        big machine photos can breathe without dragging the tool wall's
+        icons up to the same size */}
+    <span className="flex min-h-8 items-center justify-center">{icon}</span>
+    {/* Set in the condensed face at reading weight rather than bold:
+        at this size every tag on the wall shouting at once is just
+        noise, and the price is the thing that should be loud. */}
+    <span className="text-[0.95rem] uppercase leading-tight tracking-wide text-ink-black">
+      {name}
+    </span>
+    {owned && (
+      <span className="text-[0.7rem] font-semibold leading-tight text-store-orange-dark tabular-nums">
+        {owned}
       </span>
-      {owned && (
-        <span className="text-[0.7rem] font-semibold leading-tight text-store-orange-dark tabular-nums">
-          {owned}
-        </span>
-      )}
-      <span className="mt-auto flex w-full items-center justify-between gap-1 pt-0.5">
-        <PriceTag price={price} />
-        <BuyButton
-          size="compact"
-          disabled={!canAfford}
-          data-sfx={sfx}
-          onClick={onBuy}
-        >
-          Buy
-        </BuyButton>
-      </span>
-    </li>
+    )}
+    <span className="mt-auto flex w-full items-center justify-between gap-1 pt-0.5">
+      <PriceTag price={price} />
+      <BuyButton
+        size="compact"
+        disabled={!canAfford}
+        data-sfx={sfx}
+        onClick={onBuy}
+      >
+        Buy
+      </BuyButton>
+    </span>
+  </li>
+);
+
+/**
+ * The ⓘ in the tile's top corner: the one thing on the tile that opens
+ * the hover copy. The whole tile used to be the trigger, which meant the
+ * description ambushed you every time the pointer crossed an aisle on
+ * its way to the Buy button. Reading it is now something you ask for —
+ * point at the badge, or click it and it stays up until you click away.
+ */
+const InfoButton: React.FC<{ name: string; info: React.ReactNode }> = ({
+  name,
+  info,
+}) => (
+  <Tooltip content={info} clickable delay={80}>
+    <button
+      type="button"
+      aria-label={`About ${name}`}
+      className="absolute right-1 top-1 z-10 grid size-4 place-items-center rounded-full border border-store-concrete-dark bg-white/80 font-serif text-[0.65rem] italic leading-none text-ink-fade hover:border-store-orange hover:text-store-orange"
+    >
+      i
+    </button>
   </Tooltip>
 );
 

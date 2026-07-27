@@ -15,6 +15,7 @@ import {
   offset,
   Placement,
   shift,
+  useClick,
   useDismiss,
   useFloating,
   useFocus,
@@ -48,6 +49,12 @@ export interface TooltipProps {
   placement?: Placement;
   /** Hover open delay in ms. Default 250. */
   delay?: number;
+  /**
+   * Also open on click, and stay open until the next click or Escape.
+   * For a trigger you point at deliberately — an info button — where a
+   * hover that vanishes the moment you look away is no use.
+   */
+  clickable?: boolean;
   /** Extra classes for the tooltip surface. */
   className?: string;
 }
@@ -64,6 +71,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   children,
   placement = "top",
   delay = 250,
+  clickable = false,
   className,
 }) => {
   const [open, setOpen] = useState(false);
@@ -87,11 +95,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
     delay: { open: delay, close: 0 },
   });
   const focus = useFocus(context);
+  // toggle: false — a click that lands on an already-hovered trigger
+  // would otherwise close the very thing the pointer just opened. Click
+  // only ever opens; Escape and a press outside are what close it.
+  const click = useClick(context, { enabled: clickable, toggle: false });
   const dismiss = useDismiss(context);
   const role = useRole(context, { role: "tooltip" });
   const { getReferenceProps, getFloatingProps } = useInteractions([
     hover,
     focus,
+    click,
     dismiss,
     role,
   ]);

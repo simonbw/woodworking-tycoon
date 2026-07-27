@@ -198,24 +198,41 @@ test.describe("Stations", () => {
         page.locator("section", { hasText: "Tools" }).getByText("$10.00"),
       ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
-      // A shelf tile carries the picture, the name and the price; what the
-      // thing actually does is hover copy, which is what keeps the store
-      // as short as it is.
+      // A shelf tile carries the picture, the name and the price; what
+      // the thing actually does is behind the ⓘ in its corner, which is
+      // what keeps the store as short as it is. Crossing the tile does
+      // nothing — you have to point at the badge.
       //
       // Retried rather than hovered once: the tool shelf sits below this
-      // viewport's fold, so the pointer has to be placed on a tile the
+      // viewport's fold, so the pointer has to be placed on a badge the
       // page just scrolled to, and a late web font or a tick that reflows
-      // the aisle slides the tile out from under it. Re-hovering costs
-      // nothing and the tooltip only opens on a pointer that landed.
+      // the aisle slides it out from under it. Re-hovering costs nothing
+      // and the tooltip only opens on a pointer that landed.
       const sandingBlock = page.locator("li", { hasText: "Sanding Block" });
+      const aboutSandingBlock = sandingBlock.getByRole("button", {
+        name: "About Sanding Block",
+      });
       await expect(async () => {
-        await sandingBlock.scrollIntoViewIfNeeded();
-        await sandingBlock.hover();
+        await aboutSandingBlock.scrollIntoViewIfNeeded();
+        await aboutSandingBlock.hover();
         await expect(page.getByRole("tooltip")).toContainText(
           "Sands a surface smooth by hand",
           { timeout: 2000 },
         );
       }).toPass({ timeout: 15000 });
+      // Pointing away puts it back; clicking pins it, so copy you asked
+      // for stays up while you read it and takes a press elsewhere to
+      // dismiss (Escape can't do it — in here Escape is Head Home)
+      await page.mouse.move(0, 0);
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
+      await aboutSandingBlock.click();
+      await expect(page.getByRole("tooltip")).toContainText(
+        "Sands a surface smooth by hand",
+      );
+      await page.mouse.move(0, 0);
+      await expect(page.getByRole("tooltip")).toBeVisible();
+      await page.locator("h2", { hasText: "Machines" }).click();
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
       // Cheap channels: framing pine and marked-up big-box S4S hardwood.
       // Boards carry dimensions only — species lives on the bundle's tag.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
