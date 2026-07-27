@@ -200,14 +200,22 @@ test.describe("Stations", () => {
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
       // A shelf tile carries the picture, the name and the price; what the
       // thing actually does is hover copy, which is what keeps the store
-      // as short as it is. Scrolled to first: the tool shelf sits under
-      // the machines, and this viewport is shorter than the aisle.
+      // as short as it is.
+      //
+      // Retried rather than hovered once: the tool shelf sits below this
+      // viewport's fold, so the pointer has to be placed on a tile the
+      // page just scrolled to, and a late web font or a tick that reflows
+      // the aisle slides the tile out from under it. Re-hovering costs
+      // nothing and the tooltip only opens on a pointer that landed.
       const sandingBlock = page.locator("li", { hasText: "Sanding Block" });
-      await sandingBlock.scrollIntoViewIfNeeded();
-      await sandingBlock.hover();
-      await expect(page.getByRole("tooltip")).toContainText(
-        "Sands a surface smooth by hand",
-      );
+      await expect(async () => {
+        await sandingBlock.scrollIntoViewIfNeeded();
+        await sandingBlock.hover();
+        await expect(page.getByRole("tooltip")).toContainText(
+          "Sands a surface smooth by hand",
+          { timeout: 2000 },
+        );
+      }).toPass({ timeout: 15000 });
       // Cheap channels: framing pine and marked-up big-box S4S hardwood.
       // Boards carry dimensions only — species lives on the bundle's tag.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
