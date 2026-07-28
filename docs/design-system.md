@@ -90,7 +90,7 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 | Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-mono`. |
 | Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people: commission work orders. |
 | Lined sheet | `.lined-sheet` (cream) | Ruled paper — but only for **pure text tallies** (the scavenge travel log). **Content must sit on the rules**: the ruling is 2rem, every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules are the row dividers. Anything with icons or buttons cannot hold the ruling honestly — those lists use a plain cream sheet instead. |
-| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers are `font-mono tabular-nums`. |
+| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers carry `tabular-nums` — the top bar's readouts in bold condensed like the clock, machine-printed counts elsewhere in `font-mono`. |
 | Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 
@@ -106,8 +106,11 @@ stack of equal-weight cards:
   day (`Ticker`, which also drives the game loop — time always advances
   unless the pause menu is open, and which draws the day's progress as a
   hairline meter under the group, the same idiom as the XP meter under
-  the Skills button), the balances, and the pocket items (Phone, Skills,
-  the `?` manual, and Menu, which opens the pause screen). The row
+  the Skills button), the balances (cash and reputation, set exactly
+  like the clock — bold condensed, tabular figures — in the one gold
+  accent, the star flowing inline with the digits), and the pocket
+  items (Phone, Skills, the `?` manual, and Menu, which opens the pause
+  screen). The row
   itself passes pointer events through to the world; only the chip
   catches them. Everything that used to be a tab is an object in the
   world: the marketplace is the phone overlay, skills are the journal

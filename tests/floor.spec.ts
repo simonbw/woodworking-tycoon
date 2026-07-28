@@ -134,13 +134,11 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("money section displays with correct format", async () => {
-      // The balance is the gold machine-printed number in the top bar (its
-      // "BALANCE" label was removed as redundant).
-      const money = page
-        .locator("div.font-mono")
-        .filter({ hasText: /^\$\d+\.\d{2}$/ })
-        .first();
+      // The balance is the gold number in the top bar (its "BALANCE" label
+      // was removed as redundant).
+      const money = page.getByTestId("balance");
       await expect(money).toBeVisible();
+      await expect(money).toHaveText(/^\$\d+\.\d{2}$/);
     });
 
     await test.step("the top bar keeps a wall clock beside the day", async () => {

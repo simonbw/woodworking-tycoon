@@ -140,8 +140,12 @@ const XpMeter: React.FC<{ current: number; needed: number }> = ({
 );
 
 /**
- * The shop's standing: cash and reputation, drawn on the bar in the money
- * accent. Both are targets for the reward flight after a handoff (see
+ * The shop's standing: cash and reputation, both set exactly like the
+ * clock — bold condensed, tabular figures — in the one gold accent. The
+ * star flows inline with the digits (StarIcon carries its own baseline
+ * nudge), so both readouts share a text baseline; wrapping it in a flex
+ * row would hand the group's baseline to the SVG instead. Both are
+ * targets for the reward flight after a handoff (see
  * `RewardFlightLayer`), which is also why reputation lives out here now
  * rather than only inside the phone — you should see the star land.
  */
@@ -150,7 +154,7 @@ const Balance: React.FC = () => {
   return (
     <section className="flex items-baseline gap-3">
       <div
-        className="font-mono text-base text-gold tabular-nums leading-none"
+        className="font-condensed font-bold text-base text-gold tabular-nums leading-none"
         data-reward-target="money"
         data-testid="balance"
       >
@@ -158,11 +162,11 @@ const Balance: React.FC = () => {
       </div>
       <Tooltip content="Shop reputation — better lumber, more job slots, higher prices">
         <div
-          className="font-mono text-base text-gold-light tabular-nums leading-none flex items-center gap-1.5"
+          className="font-condensed font-bold text-base text-gold tabular-nums leading-none"
           data-reward-target="reputation"
           data-testid="reputation"
         >
-          <StarIcon />
+          <StarIcon className="mr-1" />
           {formatDecimal(gameState.reputation)}
         </div>
       </Tooltip>
