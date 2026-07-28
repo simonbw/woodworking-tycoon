@@ -37,7 +37,15 @@ import { FootstepSoundLayer } from "./FootstepSoundLayer";
 import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
-import { cellToPixel, cellToPixelVec } from "./shop-scale";
+import { EnvironmentLayer } from "./EnvironmentLayer";
+import { PIXELS_PER_CELL, cellToPixel, cellToPixelVec } from "./shop-scale";
+
+/**
+ * Grass and driveway kept visible around the building when fitting the
+ * camera, in world pixels — the apron is what makes the shop read as a
+ * building on a lot instead of a floor grid pinned to the viewport.
+ */
+const LOT_APRON = PIXELS_PER_CELL * 3;
 
 /**
  * How much of the shop's pixels the E2E build actually rasterizes. The
@@ -80,8 +88,8 @@ function capRenderRate(app: PixiApplication): void {
 
 /**
  * Application's width/height props only apply at renderer init — this
- * follows them afterwards, so the canvas tracks the fit-to-column scale
- * (the wrapper and the world container already do).
+ * follows them afterwards, so the canvas tracks the container as the
+ * viewport resizes (the world container's offset and scale already do).
  */
 const RendererSize: React.FC<{ width: number; height: number }> = ({
   width,
@@ -141,25 +149,38 @@ export const ShopView: React.FC = () => {
   const width = cellToPixel(cellMap.getWidth());
   const height = cellToPixel(cellMap.getHeight());
 
-  // The shop is the screen: the canvas scales to fill whatever space the
-  // rails leave it. The renderer runs at the scaled resolution with the
-  // world drawn through one scaled root container, so the (2×-resolution)
-  // sprite art gains real detail instead of being CSS-stretched.
+  // The world is the screen: the canvas fills the viewport edge to edge
+  // and the building is centered inside it with a fitted apron of lot
+  // around it (see LOT_APRON). The renderer runs at the scaled resolution
+  // with the world drawn through one scaled root container, so the
+  // (2×-resolution) sprite art gains real detail instead of being
+  // CSS-stretched.
   //
-  // `null` until the column is measured — the canvas doesn't mount until
-  // then, so its very first appearance is already at the fitted size
-  // (the renderer snapshots its size on init; mounting it at a
+  // `null` until the container is measured — the canvas doesn't mount
+  // until then, so its very first appearance is already at the fitted
+  // size (the renderer snapshots its size on init; mounting it at a
   // placeholder size would flash small, then jump).
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState<number | null>(null);
+  const [view, setView] = useState<{
+    scale: number;
+    width: number;
+    height: number;
+  } | null>(null);
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const measure = () => {
       const rect = container.getBoundingClientRect();
-      const fit = Math.min(rect.width / width, rect.height / height);
+      const fit = Math.min(
+        rect.width / (width + LOT_APRON * 2),
+        rect.height / (height + LOT_APRON * 2),
+      );
       // Quantized so ordinary layout jitter doesn't rebuild the renderer
-      setScale(Math.min(2, Math.max(0.5, Math.floor(fit * 20) / 20)));
+      setView({
+        scale: Math.min(2, Math.max(0.5, Math.floor(fit * 20) / 20)),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -167,45 +188,52 @@ export const ShopView: React.FC = () => {
     return () => observer.disconnect();
   }, [width, height]);
 
-  if (scale === null) {
-    return (
-      <div
-        ref={containerRef}
-        className="h-full w-full min-h-0 min-w-0 flex items-center justify-center"
-      />
-    );
+  if (view === null) {
+    return <div ref={containerRef} className="h-full w-full min-h-0 min-w-0" />;
   }
 
+  const { scale } = view;
   const scaledWidth = Math.round(width * scale);
   const scaledHeight = Math.round(height * scale);
+  // Where the shop floor's origin lands on the canvas
+  const offsetX = Math.round((view.width - scaledWidth) / 2);
+  const offsetY = Math.round((view.height - scaledHeight) / 2);
+  // What the canvas can see, in world pixels — the lot fills all of it
+  const worldViewport = {
+    left: -offsetX / scale,
+    top: -offsetY / scale,
+    right: (view.width - offsetX) / scale,
+    bottom: (view.height - offsetY) / scale,
+  };
 
   return (
     <div
       ref={containerRef}
-      className="h-full w-full min-h-0 min-w-0 flex items-center justify-center"
+      className="relative h-full w-full min-h-0 min-w-0 overflow-hidden"
     >
-      <div
-        className="relative"
-        style={{ width: scaledWidth, height: scaledHeight }}
+      <ShopKeyboardShortcuts />
+      <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
+      <HeldOperateListener
+        enabled={!gameState.player.away && !modalOpen}
+        onChange={(held) => updateGameState(setOperatingAction(held))}
+      />
+      <Application
+        width={view.width}
+        height={view.height}
+        backgroundAlpha={0}
+        antialias={true}
+        onInit={capRenderRate}
       >
-        <ShopKeyboardShortcuts />
-        <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
-        <HeldOperateListener
-          enabled={!gameState.player.away && !modalOpen}
-          onChange={(held) => updateGameState(setOperatingAction(held))}
-        />
-        <Application
-          width={scaledWidth}
-          height={scaledHeight}
-          backgroundAlpha={0}
-          antialias={true}
-          onInit={capRenderRate}
+        <gameStateContext.Provider
+          value={{ gameState, updateGameState, saveGame, quitToMenu }}
         >
-          <gameStateContext.Provider
-            value={{ gameState, updateGameState, saveGame, quitToMenu }}
-          >
-            <RendererSize width={scaledWidth} height={scaledHeight} />
-            <pixiContainer scale={scale}>
+          <RendererSize width={view.width} height={view.height} />
+          <pixiContainer x={offsetX} y={offsetY} scale={scale}>
+            <EnvironmentLayer
+              width={width}
+              height={height}
+              viewport={worldViewport}
+            />
               <pixiTilingSprite
                 eventMode="static"
                 texture={floorTexture}
@@ -274,13 +302,24 @@ export const ShopView: React.FC = () => {
             </pixiContainer>
           </gameStateContext.Provider>
         </Application>
-        {/* Everything you can do, shown at the thing you'd do it to */}
-        <ShopOverlayLayer
-          width={scaledWidth}
-          height={scaledHeight}
-          scale={scale}
-        />
+        {/* The DOM overlay sits exactly on the shop floor's box, so every
+            anchor inside keeps world-times-scale coordinates */}
+        <div
+          className="absolute z-30 pointer-events-none"
+          style={{
+            left: offsetX,
+            top: offsetY,
+            width: scaledWidth,
+            height: scaledHeight,
+          }}
+        >
+          {/* Everything you can do, shown at the thing you'd do it to */}
+          <ShopOverlayLayer
+            width={scaledWidth}
+            height={scaledHeight}
+            scale={scale}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
 };
