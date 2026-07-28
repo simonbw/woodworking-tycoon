@@ -80,13 +80,9 @@ export const PlayerPrompt: React.FC = () => {
         </li>,
       );
     }
-    if (holding && !targetedMachine) {
-      rows.push(
-        <li key="drop">
-          <ShortcutKeys shortcut="put-down" /> put down
-        </li>,
-      );
-    }
+    // No chip for putting things down: it followed the player to every
+    // cell, which read as a strobe. The hands strip carries the F hint
+    // in its slot tooltips, and machines offer their own staging chip.
     if (
       gameState.progression.sweepingUnlocked &&
       !draggingVac &&

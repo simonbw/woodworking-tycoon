@@ -15,6 +15,7 @@ import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
 import { PauseProvider } from "./PauseContext";
 import { ManualProvider } from "./manual/ManualProvider";
+import { BrowserDefaultsGuard } from "./BrowserDefaultsGuard";
 import { ClipboardProvider } from "./clipboard/ClipboardProvider";
 import { GameStateProvider } from "./useGameState";
 
@@ -46,6 +47,7 @@ export const Main: React.FC = () => {
             <PauseProvider>
               <ManualProvider>
                 <ClipboardProvider>
+                  <BrowserDefaultsGuard />
                   <HomePage />
                   <StoreTripOverlay />
                   <LumberyardTripOverlay />

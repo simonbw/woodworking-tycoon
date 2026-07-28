@@ -16,10 +16,9 @@ import { useGameState } from "./useGameState";
  * The top of the HUD: no tabs — every screen that used to be one is an
  * object in the world now (the store is out the garage door, the
  * marketplace lives on your phone, skills in your journal). What's left
- * is the shop's name on the left and one chrome chip on the right
- * holding the clock, the cash, and the pocket items, floating over the
- * lot. The row itself passes clicks through to the world; only the
- * chips catch them.
+ * is one chrome chip on the right holding the clock, the cash, and the
+ * pocket items, floating over the lot. The row itself passes clicks
+ * through to the world; only the chip catches them.
  */
 export const NavBar: React.FC = () => {
   const gameState = useGameState();
@@ -36,10 +35,7 @@ export const NavBar: React.FC = () => {
   useShortcut("pause-menu", () => setPauseOpen(true));
 
   return (
-    <nav className="pointer-events-none flex items-start justify-between gap-4">
-      <h1 className="hud-chip pointer-events-auto px-3 py-2.5 font-condensed uppercase tracking-[0.3em] text-sm text-paper-manila/70 leading-none">
-        {gameState.shopInfo.name}
-      </h1>
+    <nav className="pointer-events-none flex items-start justify-end gap-4">
       <div className="hud-chip pointer-events-auto flex items-center gap-6 px-3 py-1.5">
         <Ticker />
         <Balance />

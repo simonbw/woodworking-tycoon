@@ -308,6 +308,28 @@ test.describe("Keyboard", () => {
       }
     });
 
+    await test.step("the browser's own UI stays out of the game", async () => {
+      // Tab on the open floor doesn't walk focus through the page's buttons
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("Tab");
+      const focused = await page.evaluate(
+        () => document.activeElement?.tagName ?? "BODY",
+      );
+      expect(focused).toBe("BODY");
+      // Right-click never opens the native context menu
+      const prevented = await page.evaluate(() => {
+        const event = new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+        });
+        document.body.dispatchEvent(event);
+        return event.defaultPrevented;
+      });
+      expect(prevented).toBe(true);
+    });
+
     await test.step("a focused form control keeps its own keys", async () => {
       // The machine panel no longer uses native selects, so plant a text
       // input to exercise the focus guard (typing must not drive the player).

@@ -161,10 +161,8 @@ test.describe("Shop floor", () => {
       await loadFixture(page, "miter-saw-crate-shop");
     });
 
-    await test.step("no layout tab — no tabs at all, just the chrome strip", async () => {
-      await expect(
-        page.getByRole("heading", { name: "One Car Garage" }),
-      ).toBeVisible();
+    await test.step("no layout tab — no tabs at all, just the readout chip", async () => {
+      await expect(page.getByTestId("shop-clock")).toBeVisible();
       await expect(page.getByText("Shop Layout")).toHaveCount(0);
     });
 
