@@ -76,11 +76,20 @@ test.describe("Shop floor", () => {
 
     await test.step("type is in hand before the first frame", async () => {
       // Boot waits on loadFonts(), so nothing renders in a fallback face and
-      // then reflows. Checked on the local logo face — the Google-hosted
-      // families go through the same gate but would drag the host into CI.
-      expect(
-        await page.evaluate(() => document.fonts.check('1rem "Lumberjack"')),
-      ).toBe(true);
+      // then reflows. Every family is served from our own origin, so all of
+      // them can be checked here without dragging a font CDN into CI — and
+      // a face that quietly stopped being served would fail right here.
+      const loaded = await page.evaluate(() =>
+        [
+          "Lumberjack",
+          "Barlow Condensed",
+          "Andada Pro",
+          "JetBrains Mono",
+          "Caveat",
+          "Stardos Stencil",
+        ].filter((family) => !document.fonts.check(`1rem "${family}"`)),
+      );
+      expect(loaded).toEqual([]);
     });
 
     await test.step("start menu shows and we can start a new game", async () => {
@@ -396,7 +405,7 @@ test.describe("Shop floor", () => {
 
     await test.step("the readouts show the new totals", async () => {
       await expect(page.getByTestId("balance")).toHaveText("$200.00");
-      await expect(page.getByTestId("reputation")).toHaveText("★ 2.0");
+      await expect(page.getByTestId("reputation")).toHaveText("2.0");
     });
 
     await test.step("the next work order takes the corkboard", async () => {
@@ -427,7 +436,7 @@ test.describe("Shop floor", () => {
       // The handoff's earnings are still there, so is the commission it
       // unlocked — this is the same shop, not a fresh one.
       await expect(page.getByTestId("balance")).toHaveText("$200.00");
-      await expect(page.getByTestId("reputation")).toHaveText("★ 2.0");
+      await expect(page.getByTestId("reputation")).toHaveText("2.0");
       await expect(page.getByText("Cut to Order")).toBeVisible();
     });
 

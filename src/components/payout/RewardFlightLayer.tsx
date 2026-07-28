@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clearPendingPayoutsAction } from "../../game/game-actions/payout-actions";
 import { PayoutEvent } from "../../game/PayoutEvent";
 import { playSound } from "../../utils/sfx";
+import { SparkIcon, StarIcon } from "../StarIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ClientCard } from "./ClientCard";
 import { REWARD_TARGET_ATTRIBUTE, RewardTarget } from "./rewardTargets";
@@ -34,7 +35,13 @@ function coinCount(money: number): number {
 interface Chip {
   readonly id: string;
   readonly target: RewardTarget;
-  readonly glyph: string;
+  /**
+   * What the chip carries. The star and spark are drawn (see StarIcon) —
+   * as literal glyphs they came from whatever system font the browser fell
+   * back to, which put a differently-shaped mark in flight than the one
+   * waiting on the readout it lands on.
+   */
+  readonly glyph: React.ReactNode;
   readonly className: string;
   readonly delayMs: number;
   /** Spread around the burst origin so the chips don't fly as one blob. */
@@ -66,7 +73,7 @@ function chipsFor(payout: PayoutEvent): Chip[] {
     chips.push({
       id: `${payout.id}-rep`,
       target: "reputation",
-      glyph: "★",
+      glyph: <StarIcon />,
       className:
         "bg-paper-ivory text-gold-dark border-gold-dark shadow-[0_0_12px_rgba(156,126,63,0.6)]",
       delayMs: coins * COIN_STAGGER_MS + 90,
@@ -78,7 +85,7 @@ function chipsFor(payout: PayoutEvent): Chip[] {
     chips.push({
       id: `${payout.id}-xp`,
       target: "xp",
-      glyph: "✦",
+      glyph: <SparkIcon />,
       className:
         "bg-ink-blue text-paper-ivory border-ink-blue shadow-[0_0_12px_rgba(31,58,110,0.7)]",
       delayMs: coins * COIN_STAGGER_MS + 200,

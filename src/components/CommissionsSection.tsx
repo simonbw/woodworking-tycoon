@@ -5,6 +5,8 @@ import {
   describeMaterialRequirement,
   materialMeetsInput,
 } from "../game/material-helpers";
+import { formatMoney } from "../utils/formatNumber";
+import { StarIcon } from "./StarIcon";
 import { Thumbtack } from "./Thumbtack";
 import { useGameState } from "./useGameState";
 
@@ -70,7 +72,7 @@ const WorkOrder: React.FC<{
         <h3 className="font-typewriter font-bold text-base uppercase tracking-widest">
           {commission.name}
         </h3>
-        <span className="font-mono text-xs text-ink-fade">
+        <span className="font-mono text-xs tabular-nums text-ink-fade">
           #{orderNumber} {folded ? "▸" : "▾"}
         </span>
       </header>
@@ -107,16 +109,25 @@ const WorkOrder: React.FC<{
                 <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
                   Pays
                 </span>{" "}
-                <span className="font-mono">
-                  ${commission.rewardMoney.toFixed(2)}
+                <span className="font-mono tabular-nums">
+                  {formatMoney(commission.rewardMoney)}
                 </span>
               </div>
               <div>
                 <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
                   Rep
                 </span>{" "}
-                <span className="text-gold-dark">
-                  {"★".repeat(commission.rewardReputation)}
+                <span
+                  className="inline-flex gap-0.5 text-gold-dark"
+                  role="img"
+                  aria-label={`${commission.rewardReputation} reputation`}
+                >
+                  {Array.from(
+                    { length: commission.rewardReputation },
+                    (_, i) => (
+                      <StarIcon key={i} />
+                    ),
+                  )}
                 </span>
               </div>
             </div>
@@ -149,7 +160,9 @@ const FoldedSummary: React.FC<{
       <span className="tabular-nums">
         {have}/{need} materials
       </span>
-      <span className="font-mono">${commission.rewardMoney.toFixed(2)}</span>
+      <span className="font-mono tabular-nums">
+        {formatMoney(commission.rewardMoney)}
+      </span>
     </div>
   );
 };

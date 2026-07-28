@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { hasUnreadArticles } from "../game/manual";
 import { xpProgress } from "../game/skill-helpers";
+import { formatCount, formatDecimal, formatMoney } from "../utils/formatNumber";
 import { useManual } from "./manual/ManualProvider";
 import { JournalModal } from "./journal/JournalModal";
 import { PhoneModal } from "./phone/PhoneModal";
 import { PauseMenu } from "./PauseMenu";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
+import { StarIcon } from "./StarIcon";
 import { Ticker } from "./Ticker";
 import { Tooltip } from "./Tooltip";
 import { useGameState } from "./useGameState";
@@ -53,7 +55,7 @@ export const NavBar: React.FC = () => {
             </Tooltip>
           )}
           <Tooltip
-            content={`Your journal — skills. ${xp.needed - xp.current} XP to the next skill point`}
+            content={`Your journal — skills. ${formatCount(xp.needed - xp.current)} XP to the next skill point`}
             shortcut="open-journal"
           >
             <button
@@ -66,10 +68,10 @@ export const NavBar: React.FC = () => {
               <XpMeter current={xp.current} needed={xp.needed} />
               {skillPoints > 0 && (
                 <span
-                  className="absolute -right-3 -top-1.5 rounded-full bg-gold px-1 font-mono text-[0.6rem] leading-relaxed text-ink-black"
+                  className="absolute -right-3 -top-1.5 rounded-full bg-gold px-1 font-mono text-[0.6rem] leading-relaxed tabular-nums text-ink-black"
                   data-testid="journal-badge"
                 >
-                  {skillPoints}
+                  {formatCount(skillPoints)}
                 </span>
               )}
             </button>
@@ -138,15 +140,16 @@ const Balance: React.FC = () => {
         data-reward-target="money"
         data-testid="balance"
       >
-        ${gameState.money.toFixed(2)}
+        {formatMoney(gameState.money)}
       </div>
       <Tooltip content="Shop reputation — better lumber, more job slots, higher prices">
         <div
-          className="font-mono text-lg text-gold-light tabular-nums leading-none"
+          className="font-mono text-lg text-gold-light tabular-nums leading-none flex items-center gap-1.5"
           data-reward-target="reputation"
           data-testid="reputation"
         >
-          ★ {gameState.reputation.toFixed(1)}
+          <StarIcon />
+          {formatDecimal(gameState.reputation)}
         </div>
       </Tooltip>
     </section>

@@ -3,6 +3,12 @@ import { TICKS_PER_DAY } from "../../game/time";
 import { classNames } from "../../utils/classNames";
 import { Modal } from "../Modal";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
+import { StarIcon } from "../StarIcon";
+import {
+  formatCount,
+  formatDecimal,
+  formatMoney,
+} from "../../utils/formatNumber";
 import { useGameState } from "../useGameState";
 import { JobBoardSection } from "./JobBoardSection";
 import { ListingsSection } from "./ListingsSection";
@@ -60,7 +66,7 @@ const StatusBar: React.FC = () => {
       className="flex items-center justify-between bg-ink-blue px-5 py-1 font-mono text-[0.65rem] text-white/90"
       aria-hidden
     >
-      <span>Day {day}</span>
+      <span className="tabular-nums">Day {formatCount(day)}</span>
       <span className="tracking-tighter">▂▄▆█ · LTE · ▮▮▮▯</span>
     </div>
   );
@@ -82,14 +88,14 @@ const SiteHeader: React.FC = () => {
             Seller Rating
           </span>{" "}
           <span className="text-gold-dark">
-            ★ {gameState.reputation.toFixed(1)}
+            <StarIcon /> {formatDecimal(gameState.reputation)}
           </span>
         </span>
         <span>
           <span className="font-condensed text-[0.6rem] uppercase tracking-[0.2em] text-ink-fade">
             Balance
           </span>{" "}
-          ${gameState.money.toFixed(2)}
+          {formatMoney(gameState.money)}
         </span>
       </div>
     </header>

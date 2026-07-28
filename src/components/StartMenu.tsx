@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { GameState } from "../game/GameState";
 import { initialGameState } from "../game/initialGameState";
 import { deleteSave, hasSavedGame, loadGame } from "../game/saveLoad";
+import { StarIcon } from "./StarIcon";
 
 interface StartMenuProps {
   onStart: (state: GameState) => void;
@@ -50,8 +51,10 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
             <br />
             Tycoon
           </h1>
-          <span className="font-stencil tracking-[0.3em] text-gold text-sm mt-3">
-            ★ ★ ★
+          <span className="flex gap-[0.6em] text-gold text-sm mt-3" aria-hidden>
+            <StarIcon />
+            <StarIcon />
+            <StarIcon />
           </span>
         </div>
 
