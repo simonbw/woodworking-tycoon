@@ -1,5 +1,6 @@
 import React from "react";
 import { PayoutEvent } from "../../game/PayoutEvent";
+import { formatCount, formatDecimal, formatMoney } from "../../utils/formatNumber";
 import { Modal } from "../Modal";
 
 /**
@@ -43,7 +44,7 @@ export const ClientCard: React.FC<{
             Paid
           </dt>
           <dd className="font-mono text-lg tabular-nums">
-            ${payout.money.toFixed(2)}
+            {formatMoney(payout.money)}
           </dd>
         </div>
         <div>
@@ -51,7 +52,7 @@ export const ClientCard: React.FC<{
             Reputation
           </dt>
           <dd className="font-mono text-lg tabular-nums text-gold-dark">
-            +{payout.reputation.toFixed(1)}
+            +{formatDecimal(payout.reputation)}
           </dd>
         </div>
         <div>
@@ -59,7 +60,7 @@ export const ClientCard: React.FC<{
             Craft XP
           </dt>
           <dd className="font-mono text-lg tabular-nums text-ink-blue">
-            +{payout.xp}
+            +{formatCount(payout.xp)}
           </dd>
         </div>
       </dl>

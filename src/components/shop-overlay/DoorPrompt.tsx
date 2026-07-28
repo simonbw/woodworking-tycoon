@@ -10,6 +10,7 @@ import { readyHandoffs } from "../../game/delivery";
 import { GameAction } from "../../game/GameState";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { jobPayout } from "../../game/marketplace";
+import { formatMoney } from "../../utils/formatNumber";
 import { isAtShopDoor } from "../../game/ShopInfo";
 import { resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
@@ -123,7 +124,7 @@ export const DoorPrompt: React.FC<{
         // "For <client>." rather than "<client> is waiting": the client
         // strings are appositives ("Marguerite, two doors down") and read
         // badly with a verb hung straight off them.
-        description: `For ${commission.client}. Pays $${commission.rewardMoney.toFixed(2)}.`,
+        description: `For ${commission.client}. Pays ${formatMoney(commission.rewardMoney)}.`,
         verb: "Hand Over",
         action: () => completeCommissionAction(),
       });
@@ -134,7 +135,7 @@ export const DoorPrompt: React.FC<{
         key: `job-${job.id}`,
         group: "handoff",
         name: job.name,
-        description: `Pays $${payout.money.toFixed(2)}, tip included.`,
+        description: `Pays ${formatMoney(payout.money)}, tip included.`,
         verb: "Hand Over",
         action: () => deliverJobAction(job.id),
       });

@@ -6,6 +6,7 @@ import {
   repriceListingAction,
 } from "../../game/game-actions/marketplace-actions";
 import { ListingInterest, listingInterest } from "../../game/marketplace";
+import { formatMoney } from "../../utils/formatNumber";
 import { MaterialLabel } from "../MaterialLabel";
 import { getSellValue } from "../../game/material-values";
 import { MaterialInstance } from "../../game/Materials";
@@ -91,7 +92,7 @@ const PriceInput: React.FC<{
   onChange: (value: string) => void;
 }> = ({ value, onChange }) => {
   return (
-    <span className="font-mono text-sm whitespace-nowrap">
+    <span className="font-mono text-sm tabular-nums whitespace-nowrap">
       ${" "}
       <input
         type="number"
@@ -108,6 +109,9 @@ const PriceInput: React.FC<{
 const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
+  // Seeds a number input that is parsed back with parseFloat, so this one
+  // stays bare — a thousands separator from formatMoney would not survive
+  // the round trip.
   const [price, setPrice] = useState(listing.askingPrice.toFixed(2));
   const parsedPrice = parseFloat(price);
   const priceChanged =
@@ -127,7 +131,7 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-ink-fade">
         <span>
-          fair value ${getSellValue(listing.material).toFixed(2)} ·{" "}
+          fair value {formatMoney(getSellValue(listing.material))} ·{" "}
           {daysListed === 0
             ? "listed today"
             : `up ${daysListed} day${daysListed === 1 ? "" : "s"}`}
@@ -161,6 +165,8 @@ const ListItemRow: React.FC<{ material: MaterialInstance }> = ({
 }) => {
   const applyAction = useApplyGameAction();
   const fairValue = getSellValue(material);
+  // Bare for the same reason as the listing row's field above: this is
+  // input text, not a readout.
   const [price, setPrice] = useState(fairValue.toFixed(2));
   const parsedPrice = parseFloat(price);
   const priceValid = Number.isFinite(parsedPrice) && parsedPrice > 0;
@@ -174,7 +180,7 @@ const ListItemRow: React.FC<{ material: MaterialInstance }> = ({
         )}
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-ink-fade">
-        <span>fair value ${fairValue.toFixed(2)}</span>
+        <span>fair value {formatMoney(fairValue)}</span>
         <span className="flex items-center gap-1">
           <PriceInput value={price} onChange={setPrice} />
           <button

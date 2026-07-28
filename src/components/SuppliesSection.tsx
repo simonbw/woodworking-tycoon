@@ -1,6 +1,7 @@
 import React from "react";
 import { CLAMP_NAME, clampsInUse } from "../game/Clamp";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
+import { formatCount } from "../utils/formatNumber";
 import { ConsumableIcon } from "./ItemIcon";
 import { SheetLabel } from "./ShopManifest";
 import { useGameState } from "./useGameState";
@@ -46,8 +47,8 @@ export const SuppliesSection: React.FC = () => {
                   {/* "8" for nails (the name already says what they are),
                       "16 oz" for measured goods */}
                   {type.unit === type.name.toLowerCase()
-                    ? amount
-                    : `${amount} ${type.unit}`}
+                    ? formatCount(amount)
+                    : `${formatCount(amount)} ${type.unit}`}
                 </span>
               </li>
             );
@@ -61,8 +62,8 @@ export const SuppliesSection: React.FC = () => {
               </span>
               <span className="font-ink text-lg leading-[2rem] text-ink-fade">
                 {clampsHeld > 0
-                  ? `${clampsOwned - clampsHeld} of ${clampsOwned} free`
-                  : clampsOwned}
+                  ? `${formatCount(clampsOwned - clampsHeld)} of ${formatCount(clampsOwned)} free`
+                  : formatCount(clampsOwned)}
               </span>
             </li>
           )}

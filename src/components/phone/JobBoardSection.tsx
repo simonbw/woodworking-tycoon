@@ -1,5 +1,6 @@
 import React from "react";
 import { AcceptedJob, JobOffer } from "../../game/GameState";
+import { formatMoney } from "../../utils/formatNumber";
 import {
   acceptJobAction,
   cancelJobAction,
@@ -103,7 +104,7 @@ const JobOfferRow: React.FC<{ offer: JobOffer; slotsFree: number }> = ({
           {offer.name}
         </span>
         <span className="font-mono text-sm tabular-nums">
-          ${offer.basePay.toFixed(2)}
+          {formatMoney(offer.basePay)}
           <span className="text-gold-dark"> +tip</span>
         </span>
       </div>
@@ -143,7 +144,7 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-condensed font-semibold text-sm">{job.name}</span>
         <span className="font-mono text-sm tabular-nums">
-          ${payout.money.toFixed(2)}
+          {formatMoney(payout.money)}
         </span>
       </div>
       <p className="font-ink text-base leading-snug text-ink-blue">

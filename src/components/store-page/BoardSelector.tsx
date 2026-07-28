@@ -3,6 +3,7 @@ import { Species } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
+import { formatMoney } from "../../utils/formatNumber";
 import {
   describeStockDimensionsPlain,
   getMaterialFullName,
@@ -229,7 +230,7 @@ const BoardForSale: React.FC<{
           </span>
           <span className="text-[10px] whitespace-nowrap">{`${sku.length}'`}</span>
           <span className="text-[11px] font-bold tabular-nums whitespace-nowrap">
-            ${price.toFixed(2)}
+            {formatMoney(price)}
           </span>
           {numberOwned > 0 && (
             <span

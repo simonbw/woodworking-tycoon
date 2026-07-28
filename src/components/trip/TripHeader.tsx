@@ -1,5 +1,6 @@
 import React from "react";
 import { classNames } from "../../utils/classNames";
+import { formatMoney } from "../../utils/formatNumber";
 import { useGameState } from "../useGameState";
 
 /**
@@ -64,7 +65,7 @@ export const TripHeader: React.FC<{
             Your Wallet
           </span>
           <span className="text-xl tabular-nums">
-            ${gameState.money.toFixed(2)}
+            {formatMoney(gameState.money)}
           </span>
         </div>
         <button

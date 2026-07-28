@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { tickAction } from "../game/game-actions/tickAction";
 import { dayNumber, formatClock, TICKS_PER_DAY } from "../game/time";
+import { formatCount } from "../utils/formatNumber";
 import { TICKS_PER_SECOND, usePaused } from "./PauseContext";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
@@ -66,7 +67,7 @@ export const Ticker: React.FC = () => {
             Day
           </span>
           <span className="font-condensed font-bold text-base text-paper-manila tabular-nums">
-            {day}
+            {formatCount(day)}
           </span>
         </div>
         <div className="relative h-1 bg-paper-manila/20 rounded-full overflow-hidden mt-1">

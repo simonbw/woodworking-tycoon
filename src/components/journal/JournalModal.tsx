@@ -11,6 +11,7 @@ import {
 import { TOOL_TYPES } from "../../game/Tool";
 import { spendSkillPointAction } from "../../game/game-actions/skill-actions";
 import { hasSkill, levelForXp, xpProgress } from "../../game/skill-helpers";
+import { formatCount } from "../../utils/formatNumber";
 import { humanizeString } from "../../utils/humanizeString";
 import { Modal } from "../Modal";
 import { BuyButton } from "../store-page/BuyButton";
@@ -80,14 +81,17 @@ export const JournalModal: React.FC<{ onClose: () => void }> = ({
                 Craft Level {level}
               </span>
               <span className="text-sm tabular-nums whitespace-nowrap">
-                {progress.current} / {progress.needed} XP
+                {formatCount(progress.current)} / {formatCount(progress.needed)}{" "}
+                XP
               </span>
             </div>
             <div className="flex flex-col items-end">
               <span className="font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-ink-fade whitespace-nowrap">
                 Skill Points
               </span>
-              <span className="text-lg tabular-nums">{skillPoints}</span>
+              <span className="text-lg tabular-nums">
+                {formatCount(skillPoints)}
+              </span>
             </div>
           </div>
           <button

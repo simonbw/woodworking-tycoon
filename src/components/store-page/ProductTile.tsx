@@ -1,4 +1,5 @@
 import React from "react";
+import { formatCount, formatMoney } from "../../utils/formatNumber";
 import { Tooltip } from "../Tooltip";
 import { BuyButton } from "./BuyButton";
 
@@ -103,10 +104,10 @@ export const PriceTag: React.FC<{ price: number }> = ({ price }) => {
     .padStart(2, "0");
   return (
     <span className="price-tag">
-      <span className="sr-only">${price.toFixed(2)}</span>
+      <span className="sr-only">{formatMoney(price)}</span>
       <span aria-hidden className="text-[1.4em] leading-none">
         <sup className="text-[0.5em]">$</sup>
-        {dollars}
+        {formatCount(dollars)}
         <sup className="text-[0.5em]">{cents}</sup>
       </span>
     </span>
