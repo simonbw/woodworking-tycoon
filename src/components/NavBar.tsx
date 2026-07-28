@@ -13,11 +13,13 @@ import { Tooltip } from "./Tooltip";
 import { useGameState } from "./useGameState";
 
 /**
- * The top chrome strip: no tabs — every screen that used to be one is an
+ * The top of the HUD: no tabs — every screen that used to be one is an
  * object in the world now (the store is out the garage door, the
- * marketplace lives on your phone, skills in your journal). What's left is
- * the clock, the cash, and the pocket items, drawn on the dark workshop
- * chrome above the desk edge.
+ * marketplace lives on your phone, skills in your journal). What's left
+ * is the shop's name on the left and one chrome chip on the right
+ * holding the clock, the cash, and the pocket items, floating over the
+ * lot. The row itself passes clicks through to the world; only the
+ * chips catch them.
  */
 export const NavBar: React.FC = () => {
   const gameState = useGameState();
@@ -34,12 +36,11 @@ export const NavBar: React.FC = () => {
   useShortcut("pause-menu", () => setPauseOpen(true));
 
   return (
-    <nav className="relative">
-      <div className="flex items-center gap-6 pb-1.5 pr-2">
-        <h1 className="font-condensed uppercase tracking-[0.3em] text-sm text-paper-manila/70 leading-none pl-1">
-          {gameState.shopInfo.name}
-        </h1>
-        <div className="grow" />
+    <nav className="pointer-events-none flex items-start justify-between gap-4">
+      <h1 className="hud-chip pointer-events-auto px-3 py-2.5 font-condensed uppercase tracking-[0.3em] text-sm text-paper-manila/70 leading-none">
+        {gameState.shopInfo.name}
+      </h1>
+      <div className="hud-chip pointer-events-auto flex items-center gap-6 px-3 py-1.5">
         <Ticker />
         <Balance />
         <div className="flex items-center gap-3">
@@ -94,11 +95,14 @@ export const NavBar: React.FC = () => {
           </Tooltip>
         </div>
       </div>
-      {/* The desk edge the old folder tabs used to merge into */}
-      <div className="h-0.5 bg-paper-manila/40" />
-      {pauseOpen && <PauseMenu onClose={() => setPauseOpen(false)} />}
-      {phoneOpen && <PhoneModal onClose={() => setPhoneOpen(false)} />}
-      {journalOpen && <JournalModal onClose={() => setJournalOpen(false)} />}
+      {/* Modals sit outside the pass-through row so they keep their own
+          pointer events (Modal renders in place, not through a portal);
+          absolute so the empty wrapper doesn't count as a flex child */}
+      <div className="pointer-events-auto absolute">
+        {pauseOpen && <PauseMenu onClose={() => setPauseOpen(false)} />}
+        {phoneOpen && <PhoneModal onClose={() => setPhoneOpen(false)} />}
+        {journalOpen && <JournalModal onClose={() => setJournalOpen(false)} />}
+      </div>
     </nav>
   );
 };

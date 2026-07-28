@@ -323,11 +323,12 @@ test.describe("Keyboard", () => {
           },
         }));
       });
-      // The shop manifest hides itself while away. Waiting for that proves
-      // React has re-rendered with the new state, which is what the guard
-      // reads. (A real player gets here by clicking "Go", which re-renders
-      // before they can touch the keyboard; injecting state skips that.)
-      await expect(page.getByTestId("shop-manifest")).toHaveCount(0);
+      // The scavenge trip overlay mounts on the away state. Waiting for it
+      // proves React has re-rendered with the new state, which is what the
+      // guard reads. (A real player gets here by clicking "Go", which
+      // re-renders before they can touch the keyboard; injecting state
+      // skips that.)
+      await expect(page.getByText("Out scavenging for pallets")).toBeVisible();
 
       await page.keyboard.down("d");
       await page.waitForTimeout(400);
@@ -351,11 +352,33 @@ test.describe("Keyboard", () => {
       await expect(tip.locator("kbd")).toHaveText("J");
     });
 
-    await test.step("the shop manifest hangs on the right rail", async () => {
-      const manifest = page.getByTestId("shop-manifest");
-      await expect(manifest).toBeVisible();
-      await expect(manifest.getByText("In Hand")).toBeVisible();
-      await expect(manifest.getByText("Underfoot")).toBeVisible();
+    await test.step("the hands strip floats up when something's carried", async () => {
+      // Empty hands, no strip — an empty strip is just chrome
+      await expect(page.getByTestId("hands-strip")).toHaveCount(0);
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((s: any) => ({
+          ...s,
+          player: {
+            ...s.player,
+            inventory: [
+              {
+                id: "hud-board",
+                type: "board",
+                species: "pallet",
+                length: 2,
+                width: 4,
+                thickness: 1,
+              },
+            ],
+          },
+        }));
+      });
+      const strip = page.getByTestId("hands-strip");
+      await expect(strip).toBeVisible();
+      await expect(strip.getByText("In hand")).toBeVisible();
+      // Clicking a slot sets the piece down where the player stands
+      await strip.getByRole("button").first().click();
+      await expect(strip).toHaveCount(0);
     });
 
     // ---- the operate key -------------------------------------------------
@@ -377,10 +400,11 @@ test.describe("Keyboard", () => {
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
       await selectMode(page, "Makeshift Workbench", "Sand Board");
-      await page
-        .locator("li", { hasText: "Maple 4/4" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
+      // F stages the first strip the plan will take
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("f");
       await page.waitForTimeout(30);
 
       // Freeze the clock so starting the op and stepping away is deterministic
@@ -425,18 +449,12 @@ test.describe("Keyboard", () => {
 
     await test.step("glue-up: clamping needs you, curing runs without you", async () => {
       await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
-      // 4 smooth strips (shift = move all of the row) + the sanded one
-      await page
-        .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
-        .filter({ hasText: "smooth, S4S" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(30);
-      await page
-        .locator("li", { hasText: "Maple 4/4 — 2\" × 2'" })
-        .filter({ hasText: "sanded, S4S" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
+      // Shift+F stages everything the plan will take in one press:
+      // the 4 smooth strips and the sanded one
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("Shift+f");
       await page.waitForTimeout(30);
 
       await setPaused(page, true);

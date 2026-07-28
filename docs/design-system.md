@@ -89,58 +89,63 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 | Manila | `.paper-card`, `paper-manila` | Folders and general shop paperwork. The default card. |
 | Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-mono`. |
 | Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people: commission work orders. |
-| Lined sheet | `.lined-sheet` (cream) | Ruled paper — but only for **pure text tallies** (the supplies list). **Content must sit on the rules**: the ruling is 2rem, every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules are the row dividers. Anything with icons or buttons cannot hold the ruling honestly — those lists (inventory, floor) use a plain cream sheet instead. |
+| Lined sheet | `.lined-sheet` (cream) | Ruled paper — but only for **pure text tallies** (the scavenge travel log). **Content must sit on the rules**: the ruling is 2rem, every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules are the row dividers. Anything with icons or buttons cannot hold the ruling honestly — those lists use a plain cream sheet instead. |
+| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers are `font-mono tabular-nums`. |
 | Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 
-## Panel hierarchy (Home screen)
+## HUD hierarchy (Home screen)
 
-The home screen is composed of a small number of physical objects, not a
+The home screen **is the world**: the canvas runs edge to edge with the
+garage drawn as a building on its lot (`EnvironmentLayer`), and the
+remaining UI floats over it as a small number of HUD objects, not a
 stack of equal-weight cards:
 
-- **Top bar** (`NavBar`) — a thin chrome strip, no tabs: the shop's name,
-  the day (`Ticker`, which also drives the game loop — time always
-  advances unless the pause menu is open), the balance, and the pocket
-  items
-  (Phone, Skills, the `?` manual), all drawn directly on the dark bar,
-  no paper. Everything that used to be a tab is an object in the world:
-  the marketplace is the phone overlay, skills are the journal overlay,
-  and errands are trips out the garage door, each a full-screen overlay
-  (`StoreTripOverlay`, `LumberyardTripOverlay`, `ScavengeTripOverlay` —
-  the last a hand-drawn route map plus a handwritten travel log).
-- **Job board** (`JobBoard`, left) — one corkboard holding the active
-  commission (pinned legal sheet, foldable to a stub via its header).
-  No label — a corkboard of work orders explains itself.
-- **The shop view is the screen** (`ShopView`, center) — the canvas
-  scales to fill everything between the rails (renderer runs at the
-  scaled resolution, so the 2×-resolution sprite art gains real detail).
-  Contextual UI lives on it as **hint chips** (`ShopOverlayLayer`): dark
-  chrome clusters in the "[F] put down" idiom, pinned to the thing they
-  belong to — the targeted machine's verbs, settings, and refusal notes
-  (`MachineChips`), outfeed stock at the machine it came off of, the
-  door's "[E] head out" (`DoorPrompt` — the keypress opens the full
-  destination card), and floor verbs beside the player (`PlayerPrompt`).
-  Chip chrome wraps in `HintSurfaceContext.Provider value="chrome"`.
-  A bench's plans and racks live on the centered **station sheet**
-  (`StationSheet`, Tab) — paperwork, spread out over a dimmed shop that
-  keeps ticking; walking away folds it up. Direct-feed machines have no
-  sheet beyond a tool rack: running them is entirely floor keys.
-- **Shop manifest** (`ShopManifest`, right) — one manila folder holding
-  the In Hand, Underfoot, and Supplies sheets; long lists scroll inside
-  the folder. Supplies is the one ruled tally and hides entirely while
-  the cabinet is empty.
+- **Top row** (`NavBar`) — two floating `hud-chip`s, no tabs: the shop's
+  name on the left; the day (`Ticker`, which also drives the game loop —
+  time always advances unless the pause menu is open), the balance, and
+  the pocket items (Phone, Skills, the `?` manual) on the right. The row
+  itself passes pointer events through to the world; only the chips
+  catch them. Everything that used to be a tab is an object in the
+  world: the marketplace is the phone overlay, skills are the journal
+  overlay, and errands are trips out the garage door, each a full-screen
+  overlay (`StoreTripOverlay`, `LumberyardTripOverlay`,
+  `ScavengeTripOverlay` — the last a hand-drawn route map plus a
+  handwritten travel log).
+- **Job board** (`JobBoard`, hanging over the lot's left edge) — one
+  corkboard holding the active commission (pinned legal sheet, foldable
+  to a stub via its header). No label — a corkboard of work orders
+  explains itself. Destined to hang on the shop's wall in the world.
+- **Hands strip** (`HandsStrip`, bottom-center) — a `hud-chip` of slots,
+  one per kind of thing carried; clicking a slot sets one down,
+  shift-click the group, and F speaks the same verb from the keyboard.
+  Hidden while empty or away: an empty strip is just chrome.
+- **Supplies tally** (`SuppliesSection`, bottom-right) — a small
+  `hud-chip` tally of consumable stock and the clamp rack; hides
+  entirely while the cabinet is empty.
+- **Contextual UI lives in the world** as **hint chips**
+  (`ShopOverlayLayer`): dark chrome clusters in the "[F] put down"
+  idiom, pinned to the thing they belong to — the targeted machine's
+  verbs, settings, and refusal notes (`MachineChips`), outfeed stock at
+  the machine it came off of, the door's "[E] head out" (`DoorPrompt` —
+  the keypress opens the full destination card), and floor verbs beside
+  the player (`PlayerPrompt`). Chip chrome wraps in
+  `HintSurfaceContext.Provider value="chrome"`. A bench's plans and
+  racks live on the centered **station sheet** (`StationSheet`, Tab) —
+  paperwork, spread out over a dimmed shop that keeps ticking; walking
+  away folds it up. Direct-feed machines have no sheet beyond a tool
+  rack: running them is entirely floor keys.
 
 **Every surface is viewport-sized** (`h-screen`/`inset-0` +
 `overflow-hidden`, `p-6` margin) — the home screen and the store trip
 overlay alike — so nothing ever adds or removes a page scrollbar. Long
-content scrolls *inside* its own panel, aisle, or column. On Home, chips
-float over the canvas without ever moving it, and panels appearing or
-growing must never shove their neighbors around.
+content scrolls *inside* its own panel, aisle, or column. On Home, HUD
+objects float over the canvas without ever moving it, and panels
+appearing or growing must never shove their neighbors around.
 
 Spacing discipline for the anchored layout: **one gutter unit (`gap-6` /
-`p-6`) everywhere** — page margin, column gutters, and panel gaps — and
-the two side rails share one width (`max-w-80`), so the edge-anchored
-composition stays symmetric around the shop view.
+`p-6`) everywhere** — page margin and the gaps between HUD objects — so
+the edge-anchored composition stays consistent around the world.
 
 When adding a new panel, first ask which existing object it belongs *inside*.
 Only mint a new top-level object if it's genuinely a new piece of furniture,

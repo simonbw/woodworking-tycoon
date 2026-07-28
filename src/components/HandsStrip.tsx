@@ -1,0 +1,80 @@
+import React from "react";
+import { MaterialInstance } from "../game/Materials";
+import { dropMaterialAction } from "../game/game-actions/player-actions";
+import { getMaterialFullName } from "../game/material-helpers";
+import { groupBy } from "../utils/arrayUtils";
+import { MaterialIcon } from "./current-cell-info/MaterialIcon";
+import { ShiftHint } from "./shortcuts/Kbd";
+import { Tooltip } from "./Tooltip";
+import { useApplyGameAction, useGameState } from "./useGameState";
+
+/**
+ * The player's hands, worn as a HUD strip along the bottom of the screen.
+ * One slot per kind of thing carried. Clicking a slot sets one of them
+ * down where you stand; shift-click sets the whole group down — the same
+ * verb F speaks from the keyboard, minus the machine staging. Hidden
+ * while the hands are empty or the player is away: an empty strip is
+ * just chrome.
+ */
+export const HandsStrip: React.FC = () => {
+  const gameState = useGameState();
+
+  if (gameState.player.away || gameState.player.inventory.length === 0) {
+    return null;
+  }
+
+  const grouped = [
+    ...groupBy(gameState.player.inventory, (material) =>
+      getMaterialFullName(material),
+    ).entries(),
+  ].sort(([a], [b]) => a.localeCompare(b));
+
+  return (
+    <div
+      data-testid="hands-strip"
+      className="hud-chip flex max-w-3xl flex-wrap items-center justify-center gap-1.5 px-2 py-1.5"
+    >
+      <span className="px-1 font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-paper-manila/60">
+        In hand
+      </span>
+      {grouped.map(([name, materials]) => (
+        <HandSlot key={name} name={name} materials={materials} />
+      ))}
+    </div>
+  );
+};
+
+const HandSlot: React.FC<{
+  name: string;
+  materials: MaterialInstance[];
+}> = ({ name, materials }) => {
+  const applyAction = useApplyGameAction();
+
+  return (
+    <Tooltip
+      content={<ShiftHint verb="Set down" plural={materials.length > 1} />}
+      shortcut="put-down"
+    >
+      <button
+        className="flex items-center gap-1.5 rounded border border-workshop-edge bg-workshop-panel px-1.5 py-1 text-left hover:border-gold-dark"
+        onClick={(event) => {
+          if (event.shiftKey) {
+            applyAction(dropMaterialAction(materials));
+          } else {
+            applyAction(dropMaterialAction([materials[0]]));
+          }
+        }}
+      >
+        <MaterialIcon material={materials[0]} size="small" />
+        <span className="font-condensed text-sm leading-tight text-paper-manila">
+          {name}
+        </span>
+        {materials.length > 1 && (
+          <span className="font-ink text-lg leading-none text-gold-light">
+            ×{materials.length}
+          </span>
+        )}
+      </button>
+    </Tooltip>
+  );
+};

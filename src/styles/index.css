@@ -48,6 +48,14 @@
     @apply disabled:text-ink-fade disabled:border-ink-black/20 disabled:pointer-events-none;
   }
 
+  /* HUD chip — a floating piece of workshop chrome over the world canvas
+     (readouts, the hands strip, the supplies tally). Dark and translucent
+     so the lot reads through it; paperwork stays the language of
+     documents, chrome the language of overlay. */
+  .hud-chip {
+    @apply rounded border border-workshop-edge bg-workshop-bg/85 shadow-lg backdrop-blur-sm;
+  }
+
   /* Section heading — quiet uppercase label for a top-level object.
      Stencil is reserved for the store's retail signage. */
   .section-heading {

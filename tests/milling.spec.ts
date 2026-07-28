@@ -121,13 +121,17 @@ async function boardsInHand(page: any) {
   );
 }
 
+/** A carried group's slot on the hands strip, by its label text. */
+function handSlot(page: any, text: string | RegExp) {
+  return page.getByTestId("hands-strip").getByRole("button").filter({
+    hasText: text,
+  });
+}
+
 /** Clear the hands of every walnut board, so F stages the intended one. */
 async function dropEverything(page: any) {
   for (let i = 0; i < 12; i++) {
-    const drop = page
-      .locator("li")
-      .filter({ hasText: /Walnut/ })
-      .getByRole("button", { name: "Drop" });
+    const drop = handSlot(page, /Walnut/);
     if ((await drop.count()) === 0) return;
     await drop.first().click({ modifiers: ["Shift"] });
     await page.waitForTimeout(30);
@@ -135,21 +139,19 @@ async function dropEverything(page: any) {
 }
 
 /**
- * Drop every carried board except the rows matching `keep`. F stages the
- * first thing in hand the machine will take, so a step that means a
+ * Set down every carried board except the slots matching `keep`. F stages
+ * the first thing in hand the machine will take, so a step that means a
  * particular board has to be holding only that board.
  */
 async function dropAllExcept(page: any, keep: RegExp) {
   for (let i = 0; i < 12; i++) {
-    const rows = page.locator("li").filter({ hasText: /Walnut/ });
-    const count = await rows.count();
+    const slots = handSlot(page, /Walnut/);
+    const count = await slots.count();
     let dropped = false;
     for (let r = 0; r < count; r++) {
-      const row = rows.nth(r);
-      if (keep.test((await row.textContent()) ?? "")) continue;
-      const drop = row.getByRole("button", { name: "Drop" });
-      if ((await drop.count()) === 0) continue;
-      await drop.first().click({ modifiers: ["Shift"] });
+      const slot = slots.nth(r);
+      if (keep.test((await slot.textContent()) ?? "")) continue;
+      await slot.click({ modifiers: ["Shift"] });
       await page.waitForTimeout(30);
       dropped = true;
       break;
@@ -236,10 +238,9 @@ test.describe("Milling", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("rough stock announces itself in the inventory", async () => {
+    await test.step("rough stock announces itself on the hands strip", async () => {
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 4/4 — 6\" × 8'" })
+        handSlot(page, "Walnut 4/4 — 6\" × 8'")
           .filter({ hasText: "rough sawn" })
           .first(),
       ).toBeVisible();
@@ -288,10 +289,7 @@ test.describe("Milling", () => {
       // Player starts on the jointer's operation cell, boards in hand.
       // With two rough boards carried the machine would grab the first —
       // park the spare on the floor so the jointer reads one board.
-      await page
-        .locator("li", { hasText: "Walnut 4/4" })
-        .getByRole("button", { name: "Drop" })
-        .click();
+      await handSlot(page, "Walnut 4/4").first().click();
       await page.waitForTimeout(30);
       // The machine wears its state and its keys — there is no panel
       await expect(page.getByText("Jointer · off")).toBeVisible();
@@ -313,8 +311,7 @@ test.describe("Milling", () => {
       await takeAllHere(page);
       // One flat face and the label says so
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 4/4 — 6\" × 8'" })
+        handSlot(page, "Walnut 4/4 — 6\" × 8'")
           .filter({ hasText: "rough, face jointed" })
           .first(),
       ).toBeVisible();
@@ -376,10 +373,9 @@ test.describe("Milling", () => {
       );
       await movePlayerTo(page, [6, 0]);
       await takeAllHere(page);
-      // The inventory names the finished state
+      // The hands strip names the finished state
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 4/4 — 4\" × 8'" })
+        handSlot(page, "Walnut 4/4 — 4\" × 8'")
           .filter({ hasText: "smooth, S4S" })
           .first(),
       ).toBeVisible();
@@ -401,8 +397,7 @@ test.describe("Milling", () => {
       await movePlayerTo(page, [6, 0]);
       await takeAllHere(page);
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 3/4 — 2\" × 8'" })
+        handSlot(page, "Walnut 3/4 — 2\" × 8'")
           .filter({ hasText: "smooth, S3S" })
           .first(),
       ).toBeVisible();
@@ -413,8 +408,7 @@ test.describe("Milling", () => {
       await dropEverything(page);
       // Fetch the spare rough board parked by the jointer at the start
       await movePlayerTo(page, [2, 4]);
-      await page.getByRole("button", { name: "Pick Up" }).click();
-      await page.waitForTimeout(30);
+      await pressKey(page, "e");
       await movePlayerTo(page, [3, 11]);
       // No mode: a rough edge can't ride the fence, so this board runs the
       // mounted straight-line sled
@@ -435,10 +429,9 @@ test.describe("Milling", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("mitered stock announces its ends in the inventory", async () => {
+    await test.step("mitered stock announces its ends on the hands strip", async () => {
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 1/4 — 1\" × 2'" })
+        handSlot(page, "Walnut 1/4 — 1\" × 2'")
           .filter({ hasText: "45° both ends" })
           .first(),
       ).toBeVisible();
@@ -483,8 +476,7 @@ test.describe("Milling", () => {
       // Cut pieces stay on the saw table until collected
       await takeAllHere(page);
       await expect(
-        page
-          .locator("li", { hasText: "Walnut 1/4 — 1\" × 5'" })
+        handSlot(page, "Walnut 1/4 — 1\" × 5'")
           .filter({ hasText: "45° one end" })
           .first(),
       ).toBeVisible();
@@ -515,13 +507,11 @@ test.describe("Milling", () => {
       for (let i = 0; i < 6; i++) await takeAllHere(page);
       await movePlayerTo(page, [7, 4]);
       await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
+      // F is plan-aware: with Build Picture Frame selected the bench only
+      // takes the mitered rails, so four presses stage exactly those out
+      // of the mixed handful.
       for (let i = 0; i < 4; i++) {
-        await page
-          .locator("li", { hasText: "45° both ends" })
-          .first()
-          .getByRole("button", { name: "→ Makeshift Workbench" })
-          .click();
-        await page.waitForTimeout(30);
+        await setStockDown(page);
       }
       await runWhileHolding(page, () => {
         const state = (window as any).__GET_GAME_STATE__();

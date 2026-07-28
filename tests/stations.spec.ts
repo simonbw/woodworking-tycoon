@@ -308,21 +308,13 @@ test.describe("Stations", () => {
       await expect(page.getByText("Certified")).toHaveCount(6);
     });
 
-    // A bench: pick a plan off the sheet, send stock over with the manifest's
-    // transfer buttons, hold the key until it's done.
+    // A bench: pick a plan off the sheet, stage the stock with Shift+F
+    // (plan-aware: it takes the plywood and the pallet boards together),
+    // hold the key until it's done.
     await test.step("build the crosscut sled at the workspace", async () => {
       await closeJournal(page);
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
-      await page
-        .locator("li", { hasText: "Plywood" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click();
-      await page.waitForTimeout(30);
-      await page
-        .locator("li", { hasText: "Pallet Wood" })
-        .getByRole("button", { name: "→ Makeshift Workbench" })
-        .click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(30);
+      await pressKey(page, "Shift+f");
       await runWhileHolding(
         page,
         () =>
