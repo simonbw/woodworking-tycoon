@@ -301,7 +301,7 @@ test.describe("Shop floor", () => {
     await test.step("start a fresh game for the handoff half", async () => {
       // The door lists the *active* commission, so this half wants a shop that
       // hasn't completed any — a fixture would have to undo that.
-      await page.goto("http://localhost:3002");
+      await page.goto("/");
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
       // A fresh game re-opens the manual, and a modal swallows the door key.

@@ -94,7 +94,7 @@ test.describe("Market, supplies, and sound", () => {
       if (m) requested.push(m[1]);
     });
 
-    await page.goto("http://localhost:3002");
+    await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     const manual = page.getByRole("dialog", { name: "Shop manual" });

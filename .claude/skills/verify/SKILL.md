@@ -6,11 +6,11 @@ description: How to launch and drive this app to verify changes at the browser s
 # Verifying changes in Woodworking Tycoon
 
 The surface is a browser GUI (React + PIXI). Do NOT use the user's dev
-server (port 3001) or the E2E one (3002). Start a throwaway one, on a free
-port, with the `--verify-server` marker:
+server (port 3001). Start a throwaway one, on a free port, with the
+`--verify-server` marker:
 
 ```sh
-PORT=3003   # any free port that isn't 3001 or 3002
+PORT=3003   # any free port that isn't 3001
 ES_BUILD_DEV_PORT=$PORT node esbuild-client.config.mjs --dev --verify-server &
 echo $! > "/tmp/wwt-verify-$PORT.pid"
 ```

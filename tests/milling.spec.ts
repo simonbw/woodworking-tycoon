@@ -219,7 +219,7 @@ test.describe("Milling", () => {
     page,
   }) => {
     test.setTimeout(300000);
-    await page.goto("http://localhost:3002");
+    await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     // The manual greets a new game and holds the keyboard until dismissed
