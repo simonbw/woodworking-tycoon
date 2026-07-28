@@ -23,6 +23,10 @@ const config = {
     },
 
     extend: {
+      // Every family here is served from our own origin: the web faces are
+      // vendored by `npm run fetch:fonts` into src/styles/fonts.generated.css,
+      // Lumberjack is hand-declared in src/styles/fonts.css. Adding a family
+      // means adding it there too — see docs/design-system.md.
       fontFamily: {
         // Workshop UI typography (paperwork direction)
         condensed: ["Barlow Condensed", ...defaultTheme.fontFamily.sans],
@@ -31,11 +35,7 @@ const config = {
         ink: ["Caveat", "cursive"],
         mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
 
-        // Legacy / logo-only
-        sans: ["Nunito", ...defaultTheme.fontFamily.sans],
-        serif: ["Bree Serif", ...defaultTheme.fontFamily.serif],
-        body: ["Nunito", ...defaultTheme.fontFamily.sans],
-        heading: ["Bree Serif", ...defaultTheme.fontFamily.serif],
+        // Logo-only
         lumberjack: ["Lumberjack", ...defaultTheme.fontFamily.serif],
       },
 

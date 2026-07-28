@@ -3,15 +3,19 @@
 <head>
   <meta name="viewport" content="width=device-width">
   <title>Woodworking Tycoon</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Caveat:wght@400;700&family=JetBrains+Mono:wght@400;500;700&family=Andada+Pro:wght@400;500;600;700&family=Stardos+Stencil:wght@400;700&display=swap"
-    rel="stylesheet">
-  <!-- The logo face is the heaviest file we ship; start it alongside the
-       bundle rather than waiting for the menu to ask for it. The rest are
-       fetched by loadFonts() before the app renders. -->
+  <!-- Every font is served from this origin; there is no font CDN to
+       preconnect to. They're vendored by `npm run fetch:fonts` (see
+       scripts/fetch-fonts.ts) and declared in styles/fonts.generated.css.
+
+       Two faces start alongside the bundle rather than waiting for the
+       stylesheet to be parsed and a glyph to ask for them: the logo,
+       which is by far the heaviest file we ship, and the workhorse the
+       <html> element itself is set in. The rest are fetched by
+       loadFonts() before the app renders. Fonts are fetched in CORS mode
+       even from our own origin, so `crossorigin` is required here —
+       without it the preload is wasted and the file loads twice. -->
   <link rel="preload" href="/fonts/Lumberjack-Rough.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/barlow-condensed-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles/index.css" />
   <link rel="icon" href="/images/favicon-3.png" />
 </head>

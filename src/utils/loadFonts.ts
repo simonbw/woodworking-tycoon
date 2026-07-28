@@ -8,10 +8,15 @@
  * same boot gate as the textures, means the first frame is already
  * wearing its final type.
  *
- * Keep this in step with the `fontFamily` block in `tailwind.config.ts`:
- * the Google families come from the stylesheet link in `static/index.html`
- * (weights must match the ones its URL requests) and the rest from the
- * `@font-face` rules in `src/styles/fonts.css`.
+ * Every face is served from our own origin, so this waits on us and not on
+ * a third party — see scripts/fetch-fonts.ts for why we vendor them.
+ *
+ * Keep this in step with the `fontFamily` block in `tailwind.config.ts`.
+ * The web families are declared in `src/styles/fonts.generated.css` (the
+ * weights here must be ones FAMILIES in scripts/fetch-fonts.ts actually
+ * fetched) and Lumberjack in `src/styles/fonts.css`. Asking for a weight
+ * nobody shipped isn't an error — it resolves to the nearest one that
+ * exists and quietly renders in the wrong thickness.
  */
 const FONT_FACES = [
   // Barlow Condensed — the workhorse, on <html> itself
