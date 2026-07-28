@@ -52,31 +52,33 @@ export const Ticker: React.FC = () => {
   const dayPercent = ((gameState.tick % TICKS_PER_DAY) / TICKS_PER_DAY) * 100;
 
   return (
-    <section className="flex items-center gap-3">
+    <section className="relative flex items-baseline gap-3 pb-1.5">
       {/* The wall clock: the anchor for every duration the shop quotes in
           minutes and hours — a 45 min glue-up means nothing without it. */}
       <span
         data-testid="shop-clock"
-        className="font-condensed font-bold text-base text-paper-manila tabular-nums"
+        className="font-condensed font-bold text-base leading-none text-paper-manila tabular-nums"
       >
         {formatClock(gameState.tick)}
       </span>
-      <div className="w-24">
-        <div className="flex items-baseline justify-between leading-none">
-          <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/60">
-            Day
-          </span>
-          <span className="font-condensed font-bold text-base text-paper-manila tabular-nums">
-            {formatCount(day)}
-          </span>
-        </div>
-        <div className="relative h-1 bg-paper-manila/20 rounded-full overflow-hidden mt-1">
-          <span
-            style={{ width: dayPercent + "%" }}
-            className="absolute inset-y-0 left-0 bg-gold/80 transition-[width] ease-linear"
-          />
-        </div>
-      </div>
+      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] leading-none text-paper-manila/60">
+        Day{" "}
+        <span className="font-bold text-base tracking-normal text-paper-manila tabular-nums">
+          {formatCount(day)}
+        </span>
+      </span>
+      {/* How far through the day the shop is, drawn as a hairline along the
+          bottom of the group — the same idiom as the XP meter under the
+          Skills button. */}
+      <span
+        className="absolute inset-x-0 bottom-0 block h-0.5 overflow-hidden rounded-full bg-paper-manila/25"
+        aria-hidden
+      >
+        <span
+          style={{ width: dayPercent + "%" }}
+          className="block h-full rounded-full bg-gold transition-[width] ease-linear"
+        />
+      </span>
     </section>
   );
 };

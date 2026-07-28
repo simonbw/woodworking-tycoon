@@ -101,12 +101,15 @@ garage drawn as a building on its lot (`EnvironmentLayer`), and the
 remaining UI floats over it as a small number of HUD objects, not a
 stack of equal-weight cards:
 
-- **Top row** (`NavBar`) — two floating `hud-chip`s, no tabs: the shop's
-  name on the left; the day (`Ticker`, which also drives the game loop —
-  time always advances unless the pause menu is open), the balance, and
-  the pocket items (Phone, Skills, the `?` manual) on the right. The row
-  itself passes pointer events through to the world; only the chips
-  catch them. Everything that used to be a tab is an object in the
+- **Top row** (`NavBar`) — one floating `hud-chip` in the top-right, no
+  tabs, split by hairline dividers into three segments: the clock and
+  day (`Ticker`, which also drives the game loop — time always advances
+  unless the pause menu is open, and which draws the day's progress as a
+  hairline meter under the group, the same idiom as the XP meter under
+  the Skills button), the balances, and the pocket items (Phone, Skills,
+  the `?` manual, and Menu, which opens the pause screen). The row
+  itself passes pointer events through to the world; only the chip
+  catches them. Everything that used to be a tab is an object in the
   world: the marketplace is the phone overlay, skills are the journal
   overlay, and errands are trips out the garage door, each a full-screen
   overlay (`StoreTripOverlay`, `LumberyardTripOverlay`,

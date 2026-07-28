@@ -16,9 +16,10 @@ import { useGameState } from "./useGameState";
  * The top of the HUD: no tabs — every screen that used to be one is an
  * object in the world now (the store is out the garage door, the
  * marketplace lives on your phone, skills in your journal). What's left
- * is one chrome chip on the right holding the clock, the cash, and the
- * pocket items, floating over the lot. The row itself passes clicks
- * through to the world; only the chip catches them.
+ * is one chrome chip on the right, split by hairlines into three
+ * segments: the clock, the balances, and the pocket items (plus Menu
+ * for the pause screen), floating over the lot. The row itself passes
+ * clicks through to the world; only the chip catches them.
  */
 export const NavBar: React.FC = () => {
   const gameState = useGameState();
@@ -36,10 +37,14 @@ export const NavBar: React.FC = () => {
 
   return (
     <nav className="pointer-events-none flex items-start justify-end gap-4">
-      <div className="hud-chip pointer-events-auto flex items-center gap-6 px-3 py-1.5">
-        <Ticker />
-        <Balance />
-        <div className="flex items-center gap-3">
+      <div className="hud-chip pointer-events-auto flex items-stretch divide-x divide-workshop-edge">
+        <div className="flex items-center px-4 py-1.5">
+          <Ticker />
+        </div>
+        <div className="flex items-center px-4 py-1.5">
+          <Balance />
+        </div>
+        <div className="flex items-center gap-1 px-2 py-1.5">
           {marketplaceUnlocked && (
             <Tooltip content="Your phone — SawdustList" shortcut="open-phone">
               <button
@@ -89,6 +94,15 @@ export const NavBar: React.FC = () => {
               )}
             </button>
           </Tooltip>
+          <Tooltip content="Pause & settings" shortcut="pause-menu">
+            <button
+              className="button-ghost"
+              onClick={() => setPauseOpen(true)}
+              data-sfx="ui-tab"
+            >
+              Menu
+            </button>
+          </Tooltip>
         </div>
       </div>
       {/* Modals sit outside the pass-through row so they keep their own
@@ -134,9 +148,9 @@ const XpMeter: React.FC<{ current: number; needed: number }> = ({
 const Balance: React.FC = () => {
   const gameState = useGameState();
   return (
-    <section className="flex items-baseline gap-4">
+    <section className="flex items-baseline gap-3">
       <div
-        className="font-mono text-lg text-gold tabular-nums leading-none"
+        className="font-mono text-base text-gold tabular-nums leading-none"
         data-reward-target="money"
         data-testid="balance"
       >
@@ -144,7 +158,7 @@ const Balance: React.FC = () => {
       </div>
       <Tooltip content="Shop reputation — better lumber, more job slots, higher prices">
         <div
-          className="font-mono text-lg text-gold-light tabular-nums leading-none flex items-center gap-1.5"
+          className="font-mono text-base text-gold-light tabular-nums leading-none flex items-center gap-1.5"
           data-reward-target="reputation"
           data-testid="reputation"
         >

@@ -39,7 +39,7 @@ const HomePageContent: React.FC = () => {
         <NavBar />
       </div>
 
-      <div className="absolute left-6 top-24 z-20 w-80 space-y-3">
+      <div className="absolute left-6 top-6 z-20 w-80 space-y-3">
         <CommissionTracker />
         <DustTutorialCard />
       </div>
