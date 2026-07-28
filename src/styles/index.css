@@ -81,9 +81,9 @@
     @apply bg-paper-legal text-ink-black p-4 rounded-sm shadow-md;
   }
 
-  /* Receipt strip — narrow ivory paper with monospace digits */
+  /* Receipt strip — narrow ivory paper with typed digits */
   .receipt-strip {
-    @apply bg-paper-ivory text-ink-black px-4 py-2 rounded-sm shadow font-mono;
+    @apply bg-paper-ivory text-ink-black px-4 py-2 rounded-sm shadow font-typewriter;
   }
 
   /* Lined sheet — ruled paper for hand-kept lists. The ruling is 2rem;

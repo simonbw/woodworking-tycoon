@@ -66,13 +66,13 @@ export const CutLineScale: React.FC<{
       {length !== undefined && position < length && (
         <>
           <span
-            className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-mono text-[0.65rem] font-bold tabular-nums text-ink-black/80"
+            className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-condensed text-[0.65rem] font-bold tabular-nums text-ink-black/80"
             style={{ left: pct(position / 2) }}
           >
             {position}&#8242;
           </span>
           <span
-            className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-mono text-[0.65rem] font-bold tabular-nums text-ink-black/80"
+            className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-condensed text-[0.65rem] font-bold tabular-nums text-ink-black/80"
             style={{ left: pct(position + (length - position) / 2) }}
           >
             {length - position}&#8242;
@@ -82,7 +82,7 @@ export const CutLineScale: React.FC<{
       {/* Off the end of the board the blade just drops past it — say so */}
       {length !== undefined && position >= length && (
         <span
-          className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-mono text-[0.65rem] tabular-nums text-ink-fade"
+          className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-condensed text-[0.65rem] tabular-nums text-ink-fade"
           style={{ left: pct(length / 2) }}
         >
           {length}&#8242;
@@ -131,7 +131,7 @@ export const CutLineScale: React.FC<{
               />
               <span
                 className={classNames(
-                  "font-mono text-[0.65rem] leading-tight tabular-nums",
+                  "font-condensed text-[0.65rem] leading-tight tabular-nums",
                   selected ? "font-bold text-ink-blue" : "text-ink-black/70",
                   !selected && !locked && "group-hover:text-ink-black",
                 )}

@@ -69,7 +69,7 @@ const WorkOrder: React.FC<{
         <h3 className="font-typewriter font-bold text-base uppercase tracking-widest">
           {commission.name}
         </h3>
-        <span className="font-mono text-xs tabular-nums text-ink-fade">
+        <span className="font-typewriter text-xs tabular-nums text-ink-fade">
           #{orderNumber}
         </span>
       </header>
@@ -85,7 +85,7 @@ const WorkOrder: React.FC<{
           <ul className="mt-1 space-y-0.5">
             {lineItems.map((item, i) => (
               <li key={i} className="flex items-center gap-2">
-                <span className="font-mono text-base leading-none">
+                <span className="text-base leading-none">
                   {item.have >= item.need ? "☑" : "☐"}
                 </span>
                 <span className="tabular-nums">
@@ -103,7 +103,7 @@ const WorkOrder: React.FC<{
               <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
                 Pays
               </span>{" "}
-              <span className="font-mono tabular-nums">
+              <span className="tabular-nums">
                 {formatMoney(commission.rewardMoney)}
               </span>
             </div>

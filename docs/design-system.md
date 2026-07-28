@@ -19,8 +19,7 @@ drawing is tracked in `docs/asset-backlog.md`.
 | Font | Class | Role | Budget |
 | --- | --- | --- | --- |
 | Barlow Condensed | `font-condensed` | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free. | Unlimited — it's the quiet default. |
-| JetBrains Mono | `font-mono` | **Machine-printed numbers.** Money, counts, timers, order numbers. Pair with `tabular-nums`. | Numbers only. Never prose. |
-| Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork: commission sheets, the calendar page, receipt fine print. Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
+| Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — commission sheets, the calendar page, receipt fine print — and the figures typed onto them (order numbers, payouts, receipt digits). Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
 | Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | One logo. Adding a second needs a new venue. |
 | Caveat | `font-ink` | **Handwriting.** Human margin notes: a client's note on a work order, a scribbled errand, a tally next to a quantity, a "nothing here" note pinned to the board. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else. |
 | Lumberjack | `font-lumberjack` | **The shop's own sign.** The game's name on the title screen and the Sawyer & Sons sign. Nothing else. | Two signs. It is not a heading face. |
@@ -69,6 +68,12 @@ cost once craft level hits 10.
 
 `formatMoney` writes its own `$`; call sites must not prefix one.
 
+There is no monospace face — a number wears the face of the surface it
+sits on: condensed (usually just inherited) in chrome and on screens,
+`font-typewriter` on paper documents where the figure reads as typed.
+`font-mono` resolves to the system stack and belongs only in dev-only
+chrome (the fixture loader, debug panels).
+
 Pair a number with `tabular-nums` wherever it sits in UI chrome, so a figure
 that changes every tick doesn't reflow the row around it. Two exceptions:
 
@@ -87,10 +92,10 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 | --- | --- | --- |
 | Workshop chrome | `workshop-bg` / `workshop-panel` / `workshop-edge` | The dark room the paper sits in. Never put body text directly on it except `.section-heading` object titles and `.button` chrome. |
 | Manila | `.paper-card`, `paper-manila` | Folders and general shop paperwork. The default card. |
-| Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-mono`. |
+| Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-typewriter`. |
 | Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people: commission work orders. |
 | Lined sheet | `.lined-sheet` (cream) | Ruled paper — but only for **pure text tallies** (the scavenge travel log). **Content must sit on the rules**: the ruling is 2rem, every text line gets `leading-[2rem]`, rows have no vertical padding, and the rules are the row dividers. Anything with icons or buttons cannot hold the ruling honestly — those lists use a plain cream sheet instead. |
-| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers carry `tabular-nums` — the top bar's readouts in bold condensed like the clock, machine-printed counts elsewhere in `font-mono`. |
+| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
 | Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 

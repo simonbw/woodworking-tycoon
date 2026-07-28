@@ -70,7 +70,7 @@ export const NavBar: React.FC = () => {
               <XpMeter current={xp.current} needed={xp.needed} />
               {skillPoints > 0 && (
                 <span
-                  className="absolute -right-3 -top-1.5 rounded-full bg-gold px-1 font-mono text-[0.6rem] leading-relaxed tabular-nums text-ink-black"
+                  className="absolute -right-3 -top-1.5 rounded-full bg-gold px-1 font-semibold text-[0.6rem] leading-relaxed tabular-nums text-ink-black"
                   data-testid="journal-badge"
                 >
                   {formatCount(skillPoints)}
@@ -80,7 +80,7 @@ export const NavBar: React.FC = () => {
           </Tooltip>
           <Tooltip content="Shop manual" shortcut="toggle-help">
             <button
-              className="button-ghost relative text-lg leading-none font-mono"
+              className="button-ghost relative text-lg leading-none"
               onClick={() => manual.open()}
               aria-label="Shop manual"
             >

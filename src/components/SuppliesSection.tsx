@@ -40,7 +40,7 @@ export const SuppliesSection: React.FC = () => {
                 />
                 {type.name}
               </span>
-              <span className="font-mono text-sm tabular-nums text-paper-manila/80">
+              <span className="text-sm tabular-nums text-paper-manila/80">
                 {/* "8" for nails (the name already says what they are),
                     "16 oz" for measured goods */}
                 {type.unit === type.name.toLowerCase()
@@ -57,7 +57,7 @@ export const SuppliesSection: React.FC = () => {
             <span className="font-condensed text-sm text-paper-manila">
               {CLAMP_NAME}s
             </span>
-            <span className="font-mono text-sm tabular-nums text-paper-manila/80">
+            <span className="text-sm tabular-nums text-paper-manila/80">
               {clampsHeld > 0
                 ? `${formatCount(clampsOwned - clampsHeld)} of ${formatCount(clampsOwned)} free`
                 : formatCount(clampsOwned)}

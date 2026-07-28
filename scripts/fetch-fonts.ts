@@ -26,7 +26,6 @@ import path from "path";
 const FAMILIES = [
   { name: "Barlow Condensed", weights: [400, 500, 600, 700] },
   { name: "Andada Pro", weights: [400, 500, 600, 700] },
-  { name: "JetBrains Mono", weights: [400, 500, 700] },
   { name: "Caveat", weights: [400, 700] },
   { name: "Stardos Stencil", weights: [400, 700] },
 ] as const;

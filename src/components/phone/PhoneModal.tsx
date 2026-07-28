@@ -46,7 +46,7 @@ export const PhoneModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       {/* Home indicator */}
       <div className="mx-auto mt-2 h-1 w-24 shrink-0 rounded-full bg-zinc-600" />
       <button
-        className="absolute -right-2 -top-2 z-10 h-7 w-7 rounded-full border border-black bg-zinc-800 font-mono text-sm leading-none text-zinc-300 shadow hover:bg-zinc-700"
+        className="absolute -right-2 -top-2 z-10 h-7 w-7 rounded-full border border-black bg-zinc-800 text-sm leading-none text-zinc-300 shadow hover:bg-zinc-700"
         onClick={onClose}
         aria-label="Put phone away"
         data-sfx="ui-back"
@@ -63,7 +63,7 @@ const StatusBar: React.FC = () => {
   const day = Math.floor(gameState.tick / TICKS_PER_DAY) + 1;
   return (
     <div
-      className="flex items-center justify-between bg-ink-blue px-5 py-1 font-mono text-[0.65rem] text-white/90"
+      className="flex items-center justify-between bg-ink-blue px-5 py-1 text-[0.65rem] text-white/90"
       aria-hidden
     >
       <span className="tabular-nums">Day {formatCount(day)}</span>
@@ -82,7 +82,7 @@ const SiteHeader: React.FC = () => {
       <span className="mt-0.5 block font-condensed text-[0.6rem] uppercase tracking-[0.25em] text-ink-fade">
         Local Makers Marketplace
       </span>
-      <div className="mt-1.5 flex items-baseline gap-4 font-mono text-xs tabular-nums">
+      <div className="mt-1.5 flex items-baseline gap-4 text-xs tabular-nums">
         <span>
           <span className="font-condensed text-[0.6rem] uppercase tracking-[0.2em] text-ink-fade">
             Seller Rating

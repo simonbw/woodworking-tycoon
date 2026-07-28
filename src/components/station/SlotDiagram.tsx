@@ -71,7 +71,7 @@ export const SlotDiagram: React.FC<{
         )}
       </div>
 
-      <span className="font-mono text-ink-fade text-lg">→</span>
+      <span className="text-ink-fade text-lg">→</span>
 
       <div className="flex gap-1">
         {outputMaterials.map(([name, materials]) => (

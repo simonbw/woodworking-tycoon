@@ -55,7 +55,7 @@ export const TripHeader: React.FC<{
         </span>
       </div>
       <div className="flex items-center gap-6">
-        <div className="flex flex-col items-end font-mono leading-tight">
+        <div className="flex flex-col items-end leading-tight">
           <span
             className={classNames(
               "font-condensed uppercase tracking-[0.2em] text-[0.65rem]",
@@ -64,7 +64,7 @@ export const TripHeader: React.FC<{
           >
             Your Wallet
           </span>
-          <span className="text-xl tabular-nums">
+          <span className="text-xl font-bold tabular-nums">
             {formatMoney(gameState.money)}
           </span>
         </div>

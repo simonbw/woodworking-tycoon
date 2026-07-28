@@ -47,7 +47,7 @@ export const ContentsSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           <li key={materialName} className="flex items-center gap-2 py-1.5">
             <MaterialLabel material={materials[0]} />
             {materials.length > 1 && (
-              <span className="font-mono text-ink-fade tabular-nums">
+              <span className="text-ink-fade tabular-nums">
                 ×{materials.length}
               </span>
             )}

@@ -33,7 +33,6 @@ const config = {
         stencil: ["Stardos Stencil", ...defaultTheme.fontFamily.serif],
         typewriter: ["Andada Pro", "Courier New", "monospace"],
         ink: ["Caveat", "cursive"],
-        mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
 
         // Logo-only
         lumberjack: ["Lumberjack", ...defaultTheme.fontFamily.serif],

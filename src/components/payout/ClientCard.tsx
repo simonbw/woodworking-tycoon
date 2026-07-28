@@ -43,7 +43,7 @@ export const ClientCard: React.FC<{
           <dt className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
             Paid
           </dt>
-          <dd className="font-mono text-lg tabular-nums">
+          <dd className="font-typewriter text-lg tabular-nums">
             {formatMoney(payout.money)}
           </dd>
         </div>
@@ -51,7 +51,7 @@ export const ClientCard: React.FC<{
           <dt className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
             Reputation
           </dt>
-          <dd className="font-mono text-lg tabular-nums text-gold-dark">
+          <dd className="font-typewriter text-lg tabular-nums text-gold-dark">
             +{formatDecimal(payout.reputation)}
           </dd>
         </div>
@@ -59,7 +59,7 @@ export const ClientCard: React.FC<{
           <dt className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
             Craft XP
           </dt>
-          <dd className="font-mono text-lg tabular-nums text-ink-blue">
+          <dd className="font-typewriter text-lg tabular-nums text-ink-blue">
             +{formatCount(payout.xp)}
           </dd>
         </div>

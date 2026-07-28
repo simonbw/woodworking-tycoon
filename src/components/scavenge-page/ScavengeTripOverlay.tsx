@@ -63,7 +63,7 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip; tick: number }> = ({
         <h1 className="section-heading">Out scavenging for pallets</h1>
         <div className="flex items-baseline gap-3">
           <span className="subsection-heading">Back in</span>
-          <span className="font-mono tabular-nums text-paper-manila">
+          <span className="font-bold tabular-nums text-paper-manila">
             {formatDuration(ticksLeft)}
           </span>
         </div>

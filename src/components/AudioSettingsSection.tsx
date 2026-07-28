@@ -98,9 +98,7 @@ const VolumeSlider: React.FC<VolumeSliderProps> = ({
         >
           {label}
         </label>
-        <span className="font-mono text-xs text-ink-fade tabular-nums">
-          {percent}%
-        </span>
+        <span className="text-xs text-ink-fade tabular-nums">{percent}%</span>
       </div>
       <input
         id={id}

@@ -87,7 +87,7 @@ export const DetentScale: React.FC<{
               </span>
               <span
                 className={classNames(
-                  "font-mono text-[0.65rem] leading-tight tabular-nums",
+                  "font-condensed text-[0.65rem] leading-tight tabular-nums",
                   selected ? "font-bold text-ink-blue" : "text-ink-black/70",
                   !selected && !locked && "group-hover:text-ink-black",
                 )}
@@ -108,7 +108,7 @@ export const DetentScale: React.FC<{
         );
       })}
       {/* Unit legend, aligned with the value labels */}
-      <span className="mt-[1.05rem] pl-1.5 font-mono text-[0.65rem] leading-tight text-ink-fade">
+      <span className="mt-[1.05rem] pl-1.5 font-condensed text-[0.65rem] leading-tight text-ink-fade">
         {unit}
       </span>
     </div>

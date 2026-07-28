@@ -37,7 +37,7 @@ export const CommissionTracker: React.FC = () => {
           <span className="font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-paper-manila/60">
             Work order
           </span>
-          <span className="font-mono text-xs tabular-nums text-paper-manila/50">
+          <span className="text-xs tabular-nums text-paper-manila/50">
             #
             {String(1000 + gameState.progression.commissionsCompleted).padStart(
               4,
@@ -54,10 +54,10 @@ export const CommissionTracker: React.FC = () => {
               key={i}
               className="flex items-center gap-2 font-condensed text-sm text-paper-manila/80"
             >
-              <span className="font-mono text-base leading-none">
+              <span className="text-base leading-none">
                 {item.have >= item.need ? "☑" : "☐"}
               </span>
-              <span className="font-mono text-xs tabular-nums">
+              <span className="text-xs tabular-nums">
                 {item.have}/{item.need}
               </span>
               <span className="leading-tight">
@@ -74,7 +74,7 @@ export const CommissionTracker: React.FC = () => {
           ) : (
             <span className="text-paper-manila/60">
               Pays{" "}
-              <span className="font-mono text-sm tabular-nums text-gold">
+              <span className="text-sm tabular-nums text-gold">
                 {formatMoney(commission.rewardMoney)}
               </span>
             </span>

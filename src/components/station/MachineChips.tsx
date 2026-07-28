@@ -152,7 +152,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
                   </>
                 ))}{" "}
               {param.name.toLowerCase()}:{" "}
-              <span className="font-mono normal-case tabular-nums">
+              <span className="normal-case tabular-nums">
                 {typeof value === "number"
                   ? `${value}${param.unit ?? '"'}`
                   : String(value)}

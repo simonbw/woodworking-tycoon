@@ -25,7 +25,9 @@ export const Kbd: React.FC<{
   return (
     <kbd
       className={classNames(
-        "font-mono text-[0.65rem] px-1.5 py-0 rounded border whitespace-nowrap",
+        // Explicit face: the browser (and Tailwind's preflight) default
+        // <kbd> to a monospace stack, and key caps are chrome.
+        "font-condensed text-[0.65rem] px-1.5 py-0 rounded border whitespace-nowrap",
         surface === "paper"
           ? "border-ink-black/40 bg-paper-cream text-ink-black"
           : "border-paper-manila/40 bg-paper-manila/10 text-paper-manila",

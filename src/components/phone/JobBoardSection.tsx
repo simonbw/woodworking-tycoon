@@ -77,7 +77,7 @@ const JobRequirements: React.FC<{ job: JobOffer }> = ({ job }) => {
         );
         return (
           <li key={i} className="flex items-center gap-2 text-xs">
-            <span className="font-mono leading-none">
+            <span className="leading-none">
               {have >= req.quantity ? "☑" : "☐"}
             </span>
             <span className="tabular-nums">
@@ -103,7 +103,7 @@ const JobOfferRow: React.FC<{ offer: JobOffer; slotsFree: number }> = ({
         <span className="font-condensed font-semibold text-sm">
           {offer.name}
         </span>
-        <span className="font-mono text-sm tabular-nums">
+        <span className="text-sm tabular-nums">
           {formatMoney(offer.basePay)}
           <span className="text-gold-dark"> +tip</span>
         </span>
@@ -143,7 +143,7 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
     <li className="bg-white border border-ink-black/15 rounded-sm p-2 space-y-1.5 shadow-sm">
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-condensed font-semibold text-sm">{job.name}</span>
-        <span className="font-mono text-sm tabular-nums">
+        <span className="text-sm tabular-nums">
           {formatMoney(payout.money)}
         </span>
       </div>

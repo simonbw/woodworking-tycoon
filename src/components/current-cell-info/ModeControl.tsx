@@ -223,7 +223,7 @@ const RecipeIndex: React.FC<{
                     >
                       {operation.name}
                     </span>
-                    <span className="shrink-0 font-mono text-[0.65rem] tabular-nums text-ink-fade">
+                    <span className="shrink-0 font-condensed text-[0.65rem] tabular-nums text-ink-fade">
                       {formatDuration(
                         getOperationDuration(
                           operation,

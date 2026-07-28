@@ -3,7 +3,7 @@
  *
  * Browsers only fetch a face the first time a glyph needs it, so without
  * this the shop's fonts trickle in: the menu pulls Lumberjack, then
- * starting a game pulls the typewriter/ink/mono faces, and each arrival
+ * starting a game pulls the typewriter and ink faces, and each arrival
  * re-lays out the text under it. Loading them all up front, behind the
  * same boot gate as the textures, means the first frame is already
  * wearing its final type.
@@ -30,11 +30,6 @@ const FONT_FACES = [
   '500 1rem "Andada Pro"',
   '600 1rem "Andada Pro"',
   '700 1rem "Andada Pro"',
-
-  // JetBrains Mono — figures and receipts
-  '400 1rem "JetBrains Mono"',
-  '500 1rem "JetBrains Mono"',
-  '700 1rem "JetBrains Mono"',
 
   // Caveat — handwriting
   '400 1rem "Caveat"',

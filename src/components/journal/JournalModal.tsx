@@ -75,7 +75,7 @@ export const JournalModal: React.FC<{ onClose: () => void }> = ({
           <h2 className="font-ink text-3xl leading-none text-ink-blue whitespace-nowrap">
             Woodworker&rsquo;s Journal
           </h2>
-          <div className="flex items-center gap-6 font-mono leading-tight">
+          <div className="flex items-center gap-6 leading-tight">
             <div className="flex flex-col items-end">
               <span className="font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-ink-fade whitespace-nowrap">
                 Craft Level {level}

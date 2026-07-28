@@ -84,7 +84,6 @@ test.describe("Shop floor", () => {
           "Lumberjack",
           "Barlow Condensed",
           "Andada Pro",
-          "JetBrains Mono",
           "Caveat",
           "Stardos Stencil",
         ].filter((family) => !document.fonts.check(`1rem "${family}"`)),

@@ -261,7 +261,7 @@ const FlightChips: React.FC<{
         return (
           <span
             key={chip.id}
-            className={`reward-chip absolute flex h-7 w-7 items-center justify-center rounded-full border font-mono text-sm font-bold leading-none ${chip.className}`}
+            className={`reward-chip absolute flex h-7 w-7 items-center justify-center rounded-full border text-sm font-bold leading-none ${chip.className}`}
             style={
               {
                 left: flight.originX + chip.offsetX,

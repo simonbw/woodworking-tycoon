@@ -6,7 +6,7 @@ import React from "react";
  * These were both literal glyphs once (★ U+2605, ✦ U+2726), which meant
  * they rendered in whatever face the browser fell back to: no web font we
  * ship carries either character — the latin subset stops well short of
- * them — so a mark that appears next to `font-mono` figures in the top bar
+ * them — so a mark that appears next to the figures in the top bar
  * and inside `font-stencil` type on the title screen was drawn by three
  * different system fonts depending on the machine, at three different
  * weights and baselines. Drawing them ourselves makes the mark the same

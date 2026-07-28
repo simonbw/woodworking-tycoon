@@ -92,7 +92,7 @@ const PriceInput: React.FC<{
   onChange: (value: string) => void;
 }> = ({ value, onChange }) => {
   return (
-    <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+    <span className="text-sm tabular-nums whitespace-nowrap">
       ${" "}
       <input
         type="number"
@@ -100,7 +100,7 @@ const PriceInput: React.FC<{
         step="0.01"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-20 px-1 py-0.5 border border-ink-black/30 rounded-sm bg-white font-mono text-sm text-ink-black tabular-nums"
+        className="w-20 px-1 py-0.5 border border-ink-black/30 rounded-sm bg-white text-sm text-ink-black tabular-nums"
       />
     </span>
   );
