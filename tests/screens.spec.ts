@@ -162,6 +162,25 @@ test.describe("Screens", () => {
       await page.waitForTimeout(30);
     });
 
+    await test.step("the tracker chip expands into the clipboard", async () => {
+      const clipboard = page.getByRole("dialog", { name: "Clipboard" });
+      const tracker = page.getByTestId("commission-tracker");
+      // The always-on corner: the current order's name and checklist
+      await expect(tracker).toBeVisible();
+      await expect(tracker).toContainText("First Shelf");
+      // C holds the full clipboard up, and C puts it back down
+      await page.keyboard.press("c");
+      await expect(clipboard).toBeVisible();
+      await expect(clipboard.getByTestId("commission-delivery-note")).toContainText("garage door");
+      await page.keyboard.press("c");
+      await expect(clipboard).toHaveCount(0);
+      // Clicking the tracker does the same; Escape closes
+      await tracker.click();
+      await expect(clipboard).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(clipboard).toHaveCount(0);
+    });
+
     await test.step("tooltip is absent until the trigger is hovered", async () => {
       await expect(quitButton).toBeVisible();
       await expect(tooltip).toHaveCount(0);

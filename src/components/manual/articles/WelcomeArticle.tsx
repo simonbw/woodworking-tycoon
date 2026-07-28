@@ -32,8 +32,11 @@ export const WelcomeArticle: React.FC = () => (
 
     <H>Your First Commission</H>
     <P>
-      The corkboard on the left shows your current <Term>work order</Term>. The
-      first one asks for a rustic shelf, and the pallet has enough wood for it:
+      The card in the top-left corner tracks your current{" "}
+      <Term>work order</Term>. Click it, or press{" "}
+      <ShortcutKeys shortcut="open-clipboard" />, to look over the full
+      clipboard. The first order asks for a rustic shelf, and the pallet has
+      enough wood for it:
     </P>
     <UL>
       <li>

@@ -15,6 +15,7 @@ import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
 import { PauseProvider } from "./PauseContext";
 import { ManualProvider } from "./manual/ManualProvider";
+import { ClipboardProvider } from "./clipboard/ClipboardProvider";
 import { GameStateProvider } from "./useGameState";
 
 /**
@@ -44,15 +45,17 @@ export const Main: React.FC = () => {
           <ShortcutProvider>
             <PauseProvider>
               <ManualProvider>
-                <HomePage />
-                <StoreTripOverlay />
-                <LumberyardTripOverlay />
-                <ScavengeTripOverlay />
-                <RewardFlightLayer />
-                <GameSoundLayer />
-                <MachineSoundLayer />
-                <DebugView />
-                <FixtureLoader />
+                <ClipboardProvider>
+                  <HomePage />
+                  <StoreTripOverlay />
+                  <LumberyardTripOverlay />
+                  <ScavengeTripOverlay />
+                  <RewardFlightLayer />
+                  <GameSoundLayer />
+                  <MachineSoundLayer />
+                  <DebugView />
+                  <FixtureLoader />
+                </ClipboardProvider>
               </ManualProvider>
             </PauseProvider>
           </ShortcutProvider>

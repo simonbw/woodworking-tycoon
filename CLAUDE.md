@@ -69,6 +69,7 @@ The game follows a state-driven architecture with clear separation between game 
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
+   - **Clipboard** (`ClipboardModal`): the active commission's full work order, held up with C or by clicking the top-left tracker chip (`CommissionTracker`); it holds itself up when a new commission arrives after a payout
    - **Garage door** (`DoorPrompt`): stand at the entrance cell and the door lists numbered rows — *places to go* (shopping trips (`AwayTrip`s of kind `shopping`) to Orange Box (`StoreTripOverlay`) or the Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated), and pallet scavenging (`ScavengeTripOverlay`: a route-map travel log that plays out while the timed trip runs)) and *work to hand over*. Finished work — commissions and job-board jobs alike — only leaves the shop here, carried in the player's hands; there is no "mark complete" button (see `docs/handing-work-over.md`)
    - **In-world interaction UI** (`src/components/shop-overlay/`, `src/components/station/`): the machine the player stands at is highlighted in the shop view and wears hint chips naming its live keys (E interacts, F sets stock down, hold Space to run it, Z/X and R for its settings); benches and containers open a centered station sheet (Tab) holding plans, racks, and contents, while direct-feed machines have no sheet beyond a tool rack; a hint cluster follows the player for floor verbs. What's carried rides a HUD strip at bottom-center (`HandsStrip`, click a slot to set one down); the supply tally floats bottom-right (`SuppliesSection`)
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `docs/carrying-machines.md`)
@@ -100,6 +101,7 @@ src/
 │   ├── lumberyard-page/   # The Sawyer & Sons lumberyard trip overlay
 │   ├── phone/             # Phone overlay (SawdustList: listings + job board)
 │   ├── journal/           # Journal overlay (skill tree)
+│   ├── clipboard/         # Clipboard overlay (the full work order)
 │   ├── payout/            # Handoff celebration (client card + reward flight)
 │   ├── current-cell-info/ # Shared cell/material widgets (scales, icons, lists)
 │   ├── machine-sprites/   # PIXI machine renderers

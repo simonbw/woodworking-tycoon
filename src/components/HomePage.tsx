@@ -1,7 +1,7 @@
 import React from "react";
+import { CommissionTracker } from "./CommissionTracker";
 import { DustTutorialCard } from "./DustTutorialCard";
 import { HandsStrip } from "./HandsStrip";
-import { JobBoard } from "./JobBoard";
 import { NavBar } from "./NavBar";
 import { SuppliesSection } from "./SuppliesSection";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
@@ -22,8 +22,9 @@ export const HomePage: React.FC = () => {
  * (`hud-chip`). Interaction hints live in the world, pinned to the thing
  * they belong to (see ShopOverlayLayer). The name and readouts sit along
  * the top, what's in hand rides bottom-center (HandsStrip), the supply
- * tally keeps the bottom-right corner, and the job board hangs over the
- * lot's left edge until it moves onto a wall. Panels appearing or
+ * tally keeps the bottom-right corner, and the current work order's
+ * tracker chip holds the top-left — the always-on corner of the
+ * clipboard that C (or a click) holds up in full. Panels appearing or
  * growing never shove the canvas around; long content scrolls inside
  * its panel and the page itself never grows a scrollbar.
  */
@@ -38,9 +39,9 @@ const HomePageContent: React.FC = () => {
         <NavBar />
       </div>
 
-      <div className="absolute bottom-6 left-6 top-24 z-20 w-80 overflow-y-auto">
+      <div className="absolute left-6 top-24 z-20 w-80 space-y-3">
+        <CommissionTracker />
         <DustTutorialCard />
-        <JobBoard />
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6">

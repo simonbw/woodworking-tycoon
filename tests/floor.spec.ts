@@ -314,12 +314,18 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("the work order points at the door, not a button", async () => {
+      // The full order lives on the clipboard; C holds it up
+      await page.keyboard.press("c");
       await expect(page.getByTestId("commission-delivery-note")).toContainText(
         "garage door",
       );
       // The old "Mark Complete" button is gone for good
       await expect(
         page.getByRole("button", { name: "Mark Complete" }),
+      ).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("dialog", { name: "Clipboard" }),
       ).toHaveCount(0);
     });
 
@@ -408,8 +414,17 @@ test.describe("Shop floor", () => {
       await expect(page.getByTestId("reputation")).toHaveText("2.0");
     });
 
-    await test.step("the next work order takes the corkboard", async () => {
-      await expect(page.getByText("Cut to Order")).toBeVisible();
+    await test.step("the next work order holds the clipboard up by itself", async () => {
+      // Once the payout landed, the clipboard opened to the new order
+      const clipboard = page.getByRole("dialog", { name: "Clipboard" });
+      await expect(clipboard).toBeVisible();
+      await expect(clipboard).toContainText("Cut to Order");
+      await page.keyboard.press("Escape");
+      await expect(clipboard).toHaveCount(0);
+      // The tracker chip carries it from here
+      await expect(page.getByTestId("commission-tracker")).toContainText(
+        "Cut to Order",
+      );
       // ...and the door is no longer offering the one just delivered
       await movePlayerToDoor(page);
       await openDoorPanel(page);

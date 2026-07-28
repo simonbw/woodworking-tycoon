@@ -112,10 +112,14 @@ stack of equal-weight cards:
   overlay (`StoreTripOverlay`, `LumberyardTripOverlay`,
   `ScavengeTripOverlay` — the last a hand-drawn route map plus a
   handwritten travel log).
-- **Job board** (`JobBoard`, hanging over the lot's left edge) — one
-  corkboard holding the active commission (pinned legal sheet, foldable
-  to a stub via its header). No label — a corkboard of work orders
-  explains itself. Destined to hang on the shop's wall in the world.
+- **Commission tracker** (`CommissionTracker`, top-left) — the
+  objectives readout: a `hud-chip` with the order's name, its checklist,
+  and what it pays (or "carry it to the garage door" once complete).
+  Clicking it, or C, holds up the **clipboard** (`ClipboardModal`): the
+  full work order as paperwork — legal sheet under a clip, client note,
+  pay and reputation. A new commission opens the clipboard by itself
+  once the previous one's reward flight has landed. Glance = chrome,
+  read = document.
 - **Hands strip** (`HandsStrip`, bottom-center) — a `hud-chip` of slots,
   one per kind of thing carried; clicking a slot sets one down,
   shift-click the group, and F speaks the same verb from the keyboard.
