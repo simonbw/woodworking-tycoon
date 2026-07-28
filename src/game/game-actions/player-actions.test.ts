@@ -7,6 +7,8 @@ import { Machine, MachineState } from "../Machine";
 import {
   operateMachineAction,
   pickUpMaterialAction,
+  setMachineOperationAction,
+  setMachineSettingsAction,
   toggleMachinePowerAction,
 } from "./player-actions";
 
@@ -236,5 +238,46 @@ describe("direct feed (planer)", () => {
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(result, state);
     assert.strictEqual(result.machines[0].inputMaterials.length, 1);
+  });
+});
+
+/** A jointer part-way through a pass, stock on the beds. */
+const working = (): MachineState =>
+  jointer({
+    operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 5 },
+    processingMaterials: [roughStock()],
+    selectedParameters: { targetThickness: 4 },
+  });
+
+describe("settings lock while a station is working", () => {
+  it("setMachineSettingsAction refuses mid-operation", () => {
+    const state = stateWithMachine(working());
+    const result = setMachineSettingsAction(new Machine(state.machines[0]), {
+      targetThickness: 8,
+    })(state);
+    assert.strictEqual(result, state);
+  });
+
+  it("setMachineSettingsAction turns the knob once the machine is idle", () => {
+    const state = stateWithMachine(
+      jointer({ selectedParameters: { targetThickness: 4 } }),
+    );
+    const result = setMachineSettingsAction(new Machine(state.machines[0]), {
+      targetThickness: 8,
+    })(state);
+    assert.strictEqual(
+      result.machines[0].selectedParameters?.targetThickness,
+      8,
+    );
+  });
+
+  it("setMachineOperationAction refuses mid-operation", () => {
+    const state = stateWithMachine(working());
+    const machine = new Machine(state.machines[0]);
+    const other = machine.type.operations.find(
+      (operation) => operation.id !== machine.state.selectedOperationId,
+    )!;
+    const result = setMachineOperationAction(machine, other)(state);
+    assert.strictEqual(result, state);
   });
 });

@@ -20,7 +20,14 @@ actually has:
    to its defaults for anything never dialed in. Settings are adjusted via
    `setMachineSettingsAction` (which never touches which operation is
    selected or running) and rendered as `DetentScale`s — the scales
-   printed on the machine.
+   printed on the machine. **They lock while the machine is running**: an
+   operation resolves its output against the settings it reads when it
+   *finishes*, not a snapshot from when it started, so a fence moved
+   mid-cut would resolve a cut nobody made — and could hand the operation
+   stock it refuses (an already-split 4/4 board asked to split at 8/4,
+   which throws out of the tick). The same lock covers the plan picker,
+   the tool rack, and the upgrade rack; see
+   `sequences/settings-mid-cut.test.ts`.
 2. **The workpiece on the machine** — one piece at a time
    (`inputSpaces: 1`). `F` sets the stock down on the table; it stays
    there, visible on the sprite, until the trigger claims it. Running the

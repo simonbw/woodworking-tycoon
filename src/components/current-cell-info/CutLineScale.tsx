@@ -25,7 +25,9 @@ export const CutLineScale: React.FC<{
   board?: Board;
   /** The head's set angle, so the line leans like the blade will. */
   angle: number;
-}> = ({ param, value, onSelect, satisfiable, board, angle }) => {
+  /** The station is working: the cut line reads out but won't slide. */
+  locked?: boolean;
+}> = ({ param, value, onSelect, satisfiable, board, angle, locked }) => {
   const pct = (feet: number) => `${(feet / FULL_LENGTH) * 100}%`;
   const position = typeof value === "number" ? value : Number(value) || 0;
   const length = board?.length;
@@ -96,21 +98,25 @@ export const CutLineScale: React.FC<{
           <Tooltip
             key={v}
             content={
-              reachable
-                ? length !== undefined && feet < length
-                  ? `Cut at ${feet}': a ${feet}' and a ${length - feet}' piece`
-                  : `Cut line at ${feet}'`
-                : `${feet}' — the carried board doesn't reach`
+              locked
+                ? `Cut line at ${feet}' — the station is working`
+                : reachable
+                  ? length !== undefined && feet < length
+                    ? `Cut at ${feet}': a ${feet}' and a ${length - feet}' piece`
+                    : `Cut line at ${feet}'`
+                  : `${feet}' — the carried board doesn't reach`
             }
           >
             <button
               role="radio"
               aria-checked={selected}
               aria-label={`${feet}'`}
+              disabled={locked}
               onClick={() => onSelect(v)}
               className={classNames(
                 "group absolute top-0 bottom-0 flex w-4 -translate-x-1/2 flex-col items-center justify-end outline-none",
                 !reachable && "opacity-35",
+                locked && "cursor-not-allowed",
               )}
               style={{ left: pct(feet) }}
             >
@@ -119,15 +125,15 @@ export const CutLineScale: React.FC<{
                   "w-px",
                   selected
                     ? "h-[0.5rem] w-0.5 bg-ink-blue"
-                    : "h-[0.35rem] bg-ink-black/50 group-hover:bg-ink-black",
+                    : "h-[0.35rem] bg-ink-black/50",
+                  !selected && !locked && "group-hover:bg-ink-black",
                 )}
               />
               <span
                 className={classNames(
                   "font-mono text-[0.65rem] leading-tight tabular-nums",
-                  selected
-                    ? "font-bold text-ink-blue"
-                    : "text-ink-black/70 group-hover:text-ink-black",
+                  selected ? "font-bold text-ink-blue" : "text-ink-black/70",
+                  !selected && !locked && "group-hover:text-ink-black",
                 )}
               >
                 {feet}

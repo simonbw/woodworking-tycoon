@@ -47,6 +47,9 @@ export const BenchSheet: React.FC<{
   const { isTargeted } = useTargetedMachine();
 
   const selectedOperation = machine.selectedOperationOrNull;
+  // A running job resolves against the plan and settings it finds when it
+  // finishes, so both are held where they were until the work comes off.
+  const working = machine.operationProgress.status === "inProgress";
   const freeClamps = clampsFree(gameState.clamps, gameState.machines);
   const canOperate = machineCanOperate(machine, shopSupply(gameState));
   const dustMultiplier = machineDustMultiplier(
@@ -121,6 +124,7 @@ export const BenchSheet: React.FC<{
           dustMultiplier={dustMultiplier}
           workSpeed={machine.workSpeed}
           showShortcut={isTargeted(machine)}
+          locked={working}
           // A bench is honestly recipe-driven: you're picking which plan
           // is clipped above it, not flipping a machine mode
           labelText={
@@ -142,6 +146,7 @@ export const BenchSheet: React.FC<{
                 param.values[0]
               }
               showShortcut={index === 0 && isTargeted(machine)}
+              locked={working}
               onSelect={(value) =>
                 applyAction(
                   setMachineOperationAction(machine, selectedOperation, {

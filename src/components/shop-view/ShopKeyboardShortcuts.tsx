@@ -70,6 +70,11 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // A machine over the shoulders means the hands are full: material and
   // machine verbs step aside until it's set down.
   const carrying = _gameState.player.carriedMachine != null;
+  // A running station resolves its output against the plan and settings it
+  // finds when it finishes, so the keys that would move either stand down
+  // until the work is off the machine.
+  const stationWorking =
+    targetedMachine?.operationProgress.status === "inProgress";
 
   // Movement is deliberately absent here: walking is continuous (held
   // keys, not presses) and lives in HeldMovementListener + PlayerMotionLayer.
@@ -291,7 +296,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         ),
       );
     },
-    present,
+    present && !stationWorking,
   );
 
   // Step one of the machine's settings — the keyboard equivalent of the
@@ -367,14 +372,22 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     }
   };
 
-  useShortcut("setting-down", () => stepSetting("linear", -1), present);
-  useShortcut("setting-up", () => stepSetting("linear", 1), present);
+  useShortcut(
+    "setting-down",
+    () => stepSetting("linear", -1),
+    present && !stationWorking,
+  );
+  useShortcut(
+    "setting-up",
+    () => stepSetting("linear", 1),
+    present && !stationWorking,
+  );
   // R swings the head; while a machine is carried the carry binding claims
   // the key instead and this one steps aside.
   useShortcut(
     "rotate-setting",
     (event) => stepSetting("rotate", event.shiftKey ? -1 : 1),
-    present && !carrying,
+    present && !carrying && !stationWorking,
   );
 
   return null;

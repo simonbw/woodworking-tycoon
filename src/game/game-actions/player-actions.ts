@@ -310,6 +310,11 @@ export function setMachineOperationAction(
     ) {
       throw new Error("Tried to set machine operation to invalid operation");
     }
+    // Don't swap the plan out from under a running operation
+    if (machineState.operationProgress.status === "inProgress") {
+      console.warn("Can't change the plan while the station is working");
+      return gameState;
+    }
 
     return {
       ...gameState,
@@ -364,22 +369,34 @@ export function toggleMachinePowerAction(machine: Machine): GameAction {
  * height) without touching which operation is selected or running. On
  * direct-feed machines `selectedParameters` is exactly this: the physical
  * state of the machine's cranks and stops, shared by all its operations.
+ *
+ * The cranks lock while the machine is running. The operation reads its
+ * settings again when it finishes — moving the fence mid-cut would have the
+ * saw resolve a cut nobody made, and one that the stock may no longer
+ * accept (a 4/4 board asked to split at a 8/4 fence).
  */
 export function setMachineSettingsAction(
   machine: Machine,
   settings: ParameterValues,
 ): GameAction {
-  return (gameState) => ({
-    ...gameState,
-    machines: gameState.machines.map((m) =>
-      isSameMachine(m, machine.state)
-        ? {
-            ...m,
-            selectedParameters: { ...m.selectedParameters, ...settings },
-          }
-        : m,
-    ),
-  });
+  return (gameState) => {
+    if (machine.operationProgress.status === "inProgress") {
+      console.warn("Can't move the settings while the station is working");
+      return gameState;
+    }
+
+    return {
+      ...gameState,
+      machines: gameState.machines.map((m) =>
+        isSameMachine(m, machine.state)
+          ? {
+              ...m,
+              selectedParameters: { ...m.selectedParameters, ...settings },
+            }
+          : m,
+      ),
+    };
+  };
 }
 
 export function operateMachineAction(machine: Machine): GameAction {

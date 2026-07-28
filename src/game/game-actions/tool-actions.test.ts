@@ -118,6 +118,29 @@ describe("mountToolAction", () => {
   });
 });
 
+describe("mountToolAction refuses while the station is mid-operation", () => {
+  it("leaves the tool in storage", () => {
+    const base = toolState(initialGameState, ["sandingBlock"]);
+    const state: GameState = {
+      ...base,
+      machines: base.machines.map((machine, index) =>
+        index === 0
+          ? ({
+              ...machine,
+              operationProgress: {
+                status: "inProgress",
+                phaseIndex: 0,
+                ticksRemaining: 5,
+              },
+            } as MachineState)
+          : machine,
+      ),
+    };
+    const result = mountToolAction(workspaceOf(state), "sandingBlock")(state);
+    assert.strictEqual(result, state);
+  });
+});
+
 describe("unmountToolAction", () => {
   it("returns the tool to storage", () => {
     const state = toolState(initialGameState, [], ["sandingBlock"]);

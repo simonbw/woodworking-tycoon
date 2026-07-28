@@ -41,6 +41,12 @@ export const ModeControl: React.FC<{
    * don't render this control at all.)
    */
   labelText?: string;
+  /**
+   * The station is working. The running operation resolves against what's
+   * selected when it finishes, so the picker shows the plan but won't
+   * change it until the job is off the bench.
+   */
+  locked?: boolean;
 }> = ({
   operations,
   selected,
@@ -50,11 +56,12 @@ export const ModeControl: React.FC<{
   workSpeed,
   showShortcut,
   labelText = "Mode",
+  locked,
 }) => {
   const label = (
     <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5">
       {labelText}
-      {showShortcut && operations.length > 1 && (
+      {showShortcut && !locked && operations.length > 1 && (
         <ShortcutKeys shortcut="cycle-operation" />
       )}
     </span>
@@ -88,6 +95,7 @@ export const ModeControl: React.FC<{
                 data-mode-option
                 role="radio"
                 aria-checked={isSelected}
+                disabled={locked}
                 onClick={() => onSelect(operation)}
                 className={classNames(
                   "border border-ink-black/40 px-2 py-0.5 font-condensed text-sm",
@@ -96,7 +104,11 @@ export const ModeControl: React.FC<{
                   i === operations.length - 1 && "rounded-r",
                   isSelected
                     ? "bg-ink-blue/15 font-semibold text-ink-blue shadow-inner"
-                    : "text-ink-black/70 hover:bg-ink-black/5 hover:text-ink-black",
+                    : "text-ink-black/70",
+                  !isSelected &&
+                    !locked &&
+                    "hover:bg-ink-black/5 hover:text-ink-black",
+                  locked && "cursor-not-allowed",
                 )}
               >
                 {operation.name}
@@ -117,6 +129,7 @@ export const ModeControl: React.FC<{
       dustMultiplier={dustMultiplier}
       workSpeed={workSpeed}
       label={label}
+      locked={locked}
     />
   );
 };
@@ -129,6 +142,7 @@ const RecipeIndex: React.FC<{
   dustMultiplier?: number;
   workSpeed?: number;
   label: React.ReactNode;
+  locked?: boolean;
 }> = ({
   operations,
   selected,
@@ -137,6 +151,7 @@ const RecipeIndex: React.FC<{
   dustMultiplier,
   workSpeed,
   label,
+  locked,
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -161,10 +176,12 @@ const RecipeIndex: React.FC<{
         {label}
         <button
           aria-expanded={open}
+          disabled={locked}
           onClick={() => setOpen(!open)}
           className={classNames(
             "flex grow items-center justify-between gap-2 rounded border border-ink-black/40 px-2 py-0.5 text-left font-condensed",
-            "hover:bg-ink-black/5",
+            !locked && "hover:bg-ink-black/5",
+            locked && "cursor-not-allowed",
             !selected && "italic text-ink-fade",
           )}
         >
@@ -172,12 +189,12 @@ const RecipeIndex: React.FC<{
             {selected?.name ?? "Select recipe…"}
           </span>
           <span className="text-[0.6rem] text-ink-fade">
-            {open ? "▲" : "▼"}
+            {locked ? "" : open ? "▲" : "▼"}
           </span>
         </button>
       </div>
 
-      {open && (
+      {open && !locked && (
         <ul className="max-h-64 divide-y divide-ink-black/10 overflow-y-auto rounded border border-ink-black/30 bg-paper-ivory">
           {operations.map((operation) => {
             const isSelected = operation === selected;

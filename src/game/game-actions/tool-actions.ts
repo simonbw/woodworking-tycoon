@@ -23,7 +23,8 @@ export function buyToolAction(toolId: ToolId): GameAction {
 
 /**
  * Mounts a tool from storage into a station's free tool slot, making the
- * tool's operations available there.
+ * tool's operations available there. Refused while the station is working,
+ * like unmounting.
  */
 export function mountToolAction(machine: Machine, toolId: ToolId): GameAction {
   return (gameState) => {
@@ -38,6 +39,12 @@ export function mountToolAction(machine: Machine, toolId: ToolId): GameAction {
     const compatible = TOOL_TYPES[toolId].compatibleMachines;
     if (compatible && !compatible.includes(machine.state.machineTypeId)) {
       console.warn(`${toolId} doesn't mount on a ${machine.type.name}`);
+      return gameState;
+    }
+    // Nor bolt one on mid-cut: a new tool re-picks the selected operation,
+    // which would cancel the running one out from under the stock
+    if (machine.operationProgress.status === "inProgress") {
+      console.warn("Can't mount tools while the station is working");
       return gameState;
     }
 

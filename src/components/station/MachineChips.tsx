@@ -136,15 +136,21 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
             param.defaultValue ??
             param.values[0];
           return (
-            <li key={param.id}>
-              {param.presentation === "rotate" ? (
-                <ShortcutKeys shortcut="rotate-setting" />
-              ) : (
-                <>
-                  <ShortcutKeys shortcut="setting-down" />
-                  <ShortcutKeys shortcut="setting-up" />
-                </>
-              )}{" "}
+            <li
+              key={param.id}
+              className={isOperating ? "text-paper-manila/70" : undefined}
+            >
+              {/* The cranks lock while the machine runs — the setting still
+                  reads out, but the keys that turn it stop being offered */}
+              {!isOperating &&
+                (param.presentation === "rotate" ? (
+                  <ShortcutKeys shortcut="rotate-setting" />
+                ) : (
+                  <>
+                    <ShortcutKeys shortcut="setting-down" />
+                    <ShortcutKeys shortcut="setting-up" />
+                  </>
+                ))}{" "}
               {param.name.toLowerCase()}:{" "}
               <span className="font-mono normal-case tabular-nums">
                 {typeof value === "number"

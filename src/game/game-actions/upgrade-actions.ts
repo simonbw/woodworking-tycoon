@@ -24,7 +24,7 @@ export function buyUpgradeAction(upgradeId: UpgradeId): GameAction {
 /**
  * Installs an upgrade from storage into a worktable's free upgrade slot.
  * Duplicates are allowed and stack — a front vise and a tail vise is a
- * real bench.
+ * real bench. Refused while the station is working, like uninstalling.
  */
 export function installUpgradeAction(
   machine: Machine,
@@ -37,6 +37,12 @@ export function installUpgradeAction(
     }
     if (machine.upgrades.length >= (machine.type.upgradeSlots ?? 0)) {
       console.warn(`No free upgrade slots on ${machine.type.name}`);
+      return gameState;
+    }
+    // An upgrade changes the station's work speed and capacities, so it
+    // waits for the current job to come off the bench
+    if (machine.operationProgress.status === "inProgress") {
+      console.warn("Can't install upgrades while the station is working");
       return gameState;
     }
 

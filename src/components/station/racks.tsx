@@ -43,6 +43,9 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
   }
 
   const freeSlots = machine.toolSlots - machine.state.tools.length;
+  // Tools change what the station can do, so the rack holds still until
+  // the running job is off it
+  const working = machine.operationProgress.status === "inProgress";
 
   return (
     <div className="space-y-1">
@@ -65,6 +68,7 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
             <span className="grow">{TOOL_TYPES[toolId].name}</span>
             <button
               className="button-paper text-xs"
+              disabled={working}
               onClick={() => applyAction(unmountToolAction(machine, toolId))}
             >
               Remove
@@ -91,6 +95,7 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
                 <span className="grow">{TOOL_TYPES[toolId].name} (stored)</span>
                 <button
                   className="button-paper text-xs"
+                  disabled={working}
                   onClick={() => applyAction(mountToolAction(machine, toolId))}
                 >
                   Attach
@@ -124,6 +129,9 @@ export const UpgradeRack: React.FC<{ machine: Machine }> = ({ machine }) => {
   }
 
   const freeSlots = slots - machine.upgrades.length;
+  // Upgrades change the station's speed and capacities, so they wait for
+  // the running job the same way tools do
+  const working = machine.operationProgress.status === "inProgress";
 
   return (
     <div className="space-y-1">
@@ -139,6 +147,7 @@ export const UpgradeRack: React.FC<{ machine: Machine }> = ({ machine }) => {
             <span className="grow">{UPGRADE_TYPES[upgradeId].name}</span>
             <button
               className="button-paper text-xs"
+              disabled={working}
               onClick={() =>
                 applyAction(uninstallUpgradeAction(machine, upgradeId))
               }
@@ -158,6 +167,7 @@ export const UpgradeRack: React.FC<{ machine: Machine }> = ({ machine }) => {
               </span>
               <button
                 className="button-paper text-xs"
+                disabled={working}
                 onClick={() =>
                   applyAction(installUpgradeAction(machine, upgradeId))
                 }

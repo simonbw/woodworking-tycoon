@@ -22,7 +22,9 @@ export const DetentScale: React.FC<{
   satisfiable?: (value: number | string) => boolean;
   /** The loaded stock's current dimension, marked on the scale. */
   stockValue?: number | string;
-}> = ({ param, value, onSelect, satisfiable, stockValue }) => {
+  /** The station is working: the scale reads out but won't move. */
+  locked?: boolean;
+}> = ({ param, value, onSelect, satisfiable, stockValue, locked }) => {
   const unit = param.unit ?? '"';
 
   const describe = (v: number | string) =>
@@ -42,19 +44,23 @@ export const DetentScale: React.FC<{
           <Tooltip
             key={v}
             content={
-              reachable
-                ? `${param.name}: ${describe(v)}${isStock ? " (loaded stock)" : ""}`
-                : `${describe(v)} — loaded stock can't make this`
+              locked
+                ? `${param.name}: ${describe(v)} — the station is working`
+                : reachable
+                  ? `${param.name}: ${describe(v)}${isStock ? " (loaded stock)" : ""}`
+                  : `${describe(v)} — loaded stock can't make this`
             }
           >
             <button
               role="radio"
               aria-checked={selected}
               aria-label={describe(v)}
+              disabled={locked}
               onClick={() => onSelect(v)}
               className={classNames(
                 "group flex grow basis-0 flex-col items-center outline-none",
                 !reachable && "opacity-35",
+                locked && "cursor-not-allowed",
               )}
             >
               {/* Fence-cursor pointer above the rail marks the set value */}
@@ -74,16 +80,16 @@ export const DetentScale: React.FC<{
                     "w-px",
                     selected
                       ? "h-[0.55rem] w-0.5 bg-ink-blue"
-                      : "h-[0.4rem] bg-ink-black/50 group-hover:bg-ink-black",
+                      : "h-[0.4rem] bg-ink-black/50",
+                    !selected && !locked && "group-hover:bg-ink-black",
                   )}
                 />
               </span>
               <span
                 className={classNames(
                   "font-mono text-[0.65rem] leading-tight tabular-nums",
-                  selected
-                    ? "font-bold text-ink-blue"
-                    : "text-ink-black/70 group-hover:text-ink-black",
+                  selected ? "font-bold text-ink-blue" : "text-ink-black/70",
+                  !selected && !locked && "group-hover:text-ink-black",
                 )}
               >
                 {v}

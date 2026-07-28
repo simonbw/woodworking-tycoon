@@ -24,6 +24,12 @@ export const ParameterScaleRow: React.FC<{
   angle?: number;
   /** Detent presentation: the relevant dimension of the stock at hand. */
   stockValue?: number;
+  /**
+   * The station is working. Its settings are what the running operation
+   * resolves against when it finishes, so the scale reads out but doesn't
+   * take input — and the keys that drive it stop being advertised.
+   */
+  locked?: boolean;
 }> = ({
   param,
   value,
@@ -33,6 +39,7 @@ export const ParameterScaleRow: React.FC<{
   board,
   angle,
   stockValue,
+  locked,
 }) => (
   <div className="flex flex-row items-start gap-2 text-xs">
     <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade min-w-16 shrink-0 inline-flex items-center gap-1.5 pt-2.5">
@@ -40,6 +47,7 @@ export const ParameterScaleRow: React.FC<{
       {/* The keys that drive this scale on the targeted machine: R swings
           a rotating setting, Z/X step a linear one. */}
       {showShortcut &&
+        !locked &&
         (param.presentation === "rotate" ? (
           <ShortcutKeys shortcut="rotate-setting" />
         ) : (
@@ -59,6 +67,7 @@ export const ParameterScaleRow: React.FC<{
         satisfiable={satisfiable}
         board={board}
         angle={angle ?? 0}
+        locked={locked}
       />
     ) : (
       <DetentScale
@@ -67,6 +76,7 @@ export const ParameterScaleRow: React.FC<{
         onSelect={onSelect}
         satisfiable={satisfiable}
         stockValue={stockValue}
+        locked={locked}
       />
     )}
   </div>
