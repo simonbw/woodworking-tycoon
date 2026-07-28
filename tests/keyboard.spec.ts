@@ -1,4 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
+import { BASE_WALK_SPEED } from "../src/game/player-motion";
 import {
   holdOperate,
   openStationSheet,
@@ -107,16 +108,39 @@ test.describe("Keyboard", () => {
     // cell first changes, release, and assert the move went one net step in
     // the key's own direction with no cross-axis drift. That verifies the
     // binding → direction mapping without pinning a burst-sensitive cell.
+    //
+    // `settle` serves the steps that assert a key did *nothing* as well.
+    // Those compare a cell read before the hold against one read after, so a
+    // body still coasting from an earlier step fails them without any key
+    // having been delivered — the baseline has to come from rest, taken as
+    // late as the step allows.
     const same = (a: [number, number], b: [number, number]) =>
       a[0] === b[0] && a[1] === b[1];
+    // Rest has to be measured in wall time rather than in polls. A poll is a
+    // round-trip of a millisecond or two, so a handful of agreeing reads can
+    // span less time than one cell takes to cross and still call a walking
+    // body stopped — which is how a baseline read here ends up naming a cell
+    // the body is already leaving. Hold the same cell for a couple of
+    // crossings instead.
+    const CELL_CROSSING_MS = 1000 / BASE_WALK_SPEED;
+    const REST_MS = CELL_CROSSING_MS * 2.5;
     const settle = async (): Promise<[number, number]> => {
       let prev = await playerPosition(page);
-      let stable = 0;
+      let held = Date.now();
       const deadline = Date.now() + 5000;
-      while (Date.now() < deadline && stable < 5) {
+      while (Date.now() - held < REST_MS) {
+        if (Date.now() > deadline) {
+          throw new Error(
+            `the body never came to rest (last at ${prev}). A keyup handler ` +
+              `was probably dropped, leaving that key held.`,
+          );
+        }
+        await page.waitForTimeout(25);
         const p = await playerPosition(page);
-        if (same(p, prev)) stable++;
-        else ((stable = 0), (prev = p));
+        if (!same(p, prev)) {
+          prev = p;
+          held = Date.now();
+        }
       }
       return prev;
     };
@@ -241,8 +265,6 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("a modal swallows the game's movement keys", async () => {
-      const before = await playerPosition(page);
-
       // Escape backs out one layer at a time. The store trip left the
       // player standing at the door with its card still spread open, so
       // the first press folds that away and only the second — with nothing
@@ -258,6 +280,11 @@ test.describe("Keyboard", () => {
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur(),
       );
+      // Baseline from rest, with the menu already up. Read it any earlier
+      // and it names a cell the body is still walking out of — the reading
+      // after the hold then differs on its own, and the step fails claiming
+      // a key got through when none did.
+      const before = await settle();
       await page.keyboard.down("d");
       await page.waitForTimeout(500);
       await page.keyboard.up("d");
@@ -268,7 +295,9 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("keys work again once the modal is closed", async () => {
-      const before = await playerPosition(page);
+      // From rest, so that a body still drifting out of the last step can't
+      // stand in for the key having been delivered.
+      const before = await settle();
       await page.keyboard.down("d");
       try {
         await expect
@@ -290,7 +319,8 @@ test.describe("Keyboard", () => {
         input.focus();
       });
 
-      const before = await playerPosition(page);
+      // The step before this one walked the body; wait for it to stop.
+      const before = await settle();
 
       await page.keyboard.down("d");
       await page.keyboard.down("ArrowDown");
@@ -306,8 +336,6 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("the keys go quiet while the player is out of the shop", async () => {
-      const before = await playerPosition(page);
-
       // Regression: the machine panels hide themselves while away, but the
       // keys used to keep reaching into the shop regardless.
       await page.evaluate(() => {
@@ -330,6 +358,7 @@ test.describe("Keyboard", () => {
       // skips that.)
       await expect(page.getByText("Out scavenging for pallets")).toBeVisible();
 
+      const before = await settle();
       await page.keyboard.down("d");
       await page.waitForTimeout(400);
       await page.keyboard.up("d");
