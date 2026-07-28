@@ -70,6 +70,9 @@ const SOUND_PITCH_JITTER: Record<string, number> = {
   footstep: 0.06,
 };
 
+/** Every named UI clip, for anything that wants to warm the whole set. */
+export const UI_SOUND_NAMES = Object.keys(SOUND_GAIN) as UiSoundName[];
+
 const bufferCache = new Map<string, Promise<AudioBuffer>>();
 
 // Clips authored as FLAC rather than the default Ogg.
@@ -80,9 +83,13 @@ const SOUND_EXTENSION: Record<string, string> = {
   "ui-hover": "flac",
 };
 
+/** The URL a bare clip name resolves to, extension and all. */
+export function clipUrl(name: string): string {
+  return `/sounds/${name}.${SOUND_EXTENSION[name] ?? "ogg"}`;
+}
+
 async function fetchClip(name: string): Promise<ArrayBuffer> {
-  const ext = SOUND_EXTENSION[name] ?? "ogg";
-  const res = await fetch(`/sounds/${name}.${ext}`);
+  const res = await fetch(clipUrl(name));
   if (!res.ok) throw new Error(`sfx: failed to fetch ${name} (${res.status})`);
   return res.arrayBuffer();
 }
@@ -192,7 +199,7 @@ export function preloadSound(name: string): void {
 
 /** Warm the decode cache so the first play has no fetch/decode latency. */
 export function preloadUiSounds(): void {
-  (Object.keys(SOUND_GAIN) as UiSoundName[]).forEach((name) => {
+  UI_SOUND_NAMES.forEach((name) => {
     void loadSoundBuffer(name).catch(() => {});
   });
 }

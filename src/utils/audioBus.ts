@@ -31,7 +31,8 @@ import { getAudioContext } from "./getAudioContext";
 /** Wet level of the garage convolution under the dry signal. */
 const ROOM_WET_LEVEL = 0.35;
 
-const IMPULSE_RESPONSE_URL = "/sounds/garage-impulse-response.flac";
+/** Exported so the preload manifest (`soundAssets.ts`) can account for it. */
+export const IMPULSE_RESPONSE_URL = "/sounds/garage-impulse-response.flac";
 
 interface AudioBus {
   master: GainNode;
