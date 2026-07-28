@@ -21,11 +21,65 @@ drawing is tracked in `docs/asset-backlog.md`.
 | Barlow Condensed | `font-condensed` | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free. | Unlimited — it's the quiet default. |
 | JetBrains Mono | `font-mono` | **Machine-printed numbers.** Money, counts, timers, order numbers. Pair with `tabular-nums`. | Numbers only. Never prose. |
 | Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork: commission sheets, the calendar page, receipt fine print. Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
-| Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the title screen (`StartMenu`) and the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | Two logos. Adding a third needs a new venue. |
+| Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | One logo. Adding a second needs a new venue. |
 | Caveat | `font-ink` | **Handwriting.** Human margin notes: a client's note on a work order, a scribbled errand, a tally next to a quantity, a "nothing here" note pinned to the board. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else. |
+| Lumberjack | `font-lumberjack` | **The shop's own sign.** The game's name on the title screen and the Sawyer & Sons sign. Nothing else. | Two signs. It is not a heading face. |
 
-Legacy fonts (`sans`/Nunito, `serif`/Bree Serif, `lumberjack`) are for the
-logo and old sprites only. Don't use them in new UI.
+## Where the fonts come from
+
+**We serve every font ourselves. Nothing may reference a font CDN.** A
+third-party stylesheet is a render-blocking request to a host we don't
+control, it hands every player's IP to that host, and when it's slow or
+blocked the boot gate burns its full timeout and the shop opens in fallback
+type.
+
+The web families are vendored by `npm run fetch:fonts`
+(`scripts/fetch-fonts.ts`), which downloads the latin subset into
+`static/fonts/` and writes `src/styles/fonts.generated.css`. Both the
+`.woff2` files and the generated CSS are committed. Lumberjack isn't from a
+foundry CDN, so it's hand-declared in `src/styles/fonts.css`.
+
+Adding a family or a weight means four things in step, and skipping any one
+of them fails quietly rather than loudly:
+
+1. `FAMILIES` in `scripts/fetch-fonts.ts`, then re-run it
+2. the `fontFamily` block in `tailwind.config.ts`
+3. `FONT_FACES` in `src/utils/loadFonts.ts`, so boot waits for it
+4. this table
+
+A weight nobody fetched still renders — the browser picks the nearest one
+it has — so the mistake shows up as type that's subtly the wrong thickness,
+not as an error.
+
+Glyphs are the other half of this. Our subset stops at the end of latin, so
+a decorative character (★, ✦, arrows, box-drawing) is drawn by whatever
+system font the player happens to have, at a different weight and baseline
+on every machine. **Anything load-bearing gets drawn instead** — the
+reputation star and the XP spark are `StarIcon` / `SparkIcon`
+(`src/components/StarIcon.tsx`), sized in `em` and colored by
+`currentColor` so they behave like the glyphs they replaced.
+
+## Numbers
+
+Player-facing numbers go through `src/utils/formatNumber.ts` — `formatMoney`,
+`formatCount`, `formatDecimal` — never `toFixed`. All three are `en-US`
+`Intl` formatters, so a four-figure balance reads `$1,024.00`. Both
+thresholds are reachable in a normal run: late-game money, and a level's XP
+cost once craft level hits 10.
+
+`formatMoney` writes its own `$`; call sites must not prefix one.
+
+Pair a number with `tabular-nums` wherever it sits in UI chrome, so a figure
+that changes every tick doesn't reflow the row around it. Two exceptions:
+
+- **Prose.** A number inside a sentence should carry the same widths as the
+  words around it. Format it, but leave the figures proportional.
+- **The handwriting face.** The hand-kept tallies (supplies, floor, in-hand)
+  are `font-ink` on purpose; tabular figures fight that face. They still get
+  separators — someone writing by hand would also write "1,200 nails".
+
+Text that seeds an `<input>` is not a readout: leave it as `toFixed` and say
+so in a comment, or the value stops surviving its own `parseFloat`.
 
 ## Surface roles
 

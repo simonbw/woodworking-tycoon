@@ -122,7 +122,8 @@ tests/
 
 - **Build System**: esbuild with custom configuration (`esbuild-client.config.mjs`)
 - **Styling**: Tailwind CSS with a "paperwork" design system (paper/manila surfaces, ink text colors, typewriter/stencil/condensed fonts) defined in `tailwind.config.ts`. Font and surface roles are documented in `docs/design-system.md` — read it before styling new UI. The legacy brown palette is retained only for sprites/older components.
-- **Asset Pipeline**: Static assets in `static/` are copied to `dist/` during build
+- **Asset Pipeline**: Static assets in `static/` are copied to `dist/` during build — everything in there ships, so an unreferenced file is dead weight in the bundle
+- **Fonts**: All self-hosted from `static/fonts/`; **never link a font CDN**. Web families are vendored by `npm run fetch:fonts` (`scripts/fetch-fonts.ts`) into `src/styles/fonts.generated.css`, and both the `.woff2` files and that CSS are committed. Adding a family or weight means updating the script, `tailwind.config.ts`, and `src/utils/loadFonts.ts` together — see the font section of `docs/design-system.md`
 - **Development**: Live reload enabled via esbuild's serve mode
 - **Type Safety**: Strict TypeScript with comprehensive type definitions
 
@@ -131,6 +132,7 @@ tests/
 - All game state mutations should go through the action system in `src/game/game-actions/`
 - New machines should be added to `src/game/machines/` with corresponding sprites in `src/components/machine-sprites/`; if the sprite ships as procedural `Graphics` rather than art, add a row to `docs/asset-backlog.md`
 - UI components should use the existing "paperwork" design system (paper/manila/ink tokens and workshop chrome from `tailwind.config.ts`), following the font/surface roles in `docs/design-system.md` — not the legacy brown palette, which is kept only for sprites
+- Player-facing numbers go through `src/utils/formatNumber.ts` (`formatMoney` / `formatCount` / `formatDecimal`), not `toFixed`, and carry `tabular-nums` unless they sit in prose or in the handwriting face — see the numbers section of `docs/design-system.md`
 - Performance considerations: The game renders many objects, so prefer PIXI components for game entities and React for UI overlays
 
 ## Game Design Notes
