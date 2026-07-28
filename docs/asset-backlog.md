@@ -83,12 +83,10 @@ wiring: same path, same size, same component.
 - [ ] Consumable icons — `static/images/icons/consumable-<id>.png`, 64×64,
       rendered by `ConsumableIcon`. Three: nails, screws, mineral oil.
 - [ ] Store-shelf icons for the things that aren't tools or consumables —
-      `upgrade-vise`, `misc-barClamp`, `misc-shopVac`, and `machine-bandSaw`,
-      the one machine on sale with no shop-floor art yet. Same 64×64 icons
-      directory, rendered by `UpgradeIcon` / `ClampIcon` / `ShopVacIcon` /
-      `MachineIcon` in `components/ItemIcon.tsx`. Every other machine on the
-      shelf skips this and shows its real sprite art; when the band saw gets
-      its own, point `MACHINE_ICON_SRC` at it and delete the stand-in.
+      `upgrade-vise`, `misc-barClamp`, and `misc-shopVac`. Same 64×64 icons
+      directory, rendered by `UpgradeIcon` / `ClampIcon` / `ShopVacIcon` in
+      `components/ItemIcon.tsx`. Machines want no icon of their own: every
+      one on the shelf shows its shop-floor art through `MACHINE_ICON_SRC`.
 
 ### Machines
 
@@ -100,10 +98,11 @@ wiring: same path, same size, same component.
       empty rack; parked stock keeps its data-driven slat colors.
 - [ ] Garbage can — `machine-sprites/GarbageCanSprite.tsx`. Contents already
       render through `MaterialSprite`.
-- [ ] Band saw — `machine-sprites/BandSawSprite.tsx`. Cast-iron table,
-      painted C-frame, and the upper wheel housing, drawn from above. The
-      fence slides with the setting and stock stands on edge against it, so
-      the art wants the table and frame only.
+- [x] Band saw — `bandsaw-14-lower/-fence/-upper.png`. Three layers so the
+      fence can slide with the setting and the stock can pass between the
+      table and the arm reaching over it; the blade sits at (245, 200) in
+      the art, which is what `BandSawSprite` measures everything from.
+      `bandsaw-14.png` is the three flattened together for the store shelf.
 - [ ] Table saw jigs — `SledSprite` and `TallFenceSprite` in
       `machine-sprites/JobsiteTableSawSprite.tsx`. Crosscut sled,
       straight-line sled, and the tall resaw fence are shop-built jigs

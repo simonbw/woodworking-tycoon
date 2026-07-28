@@ -45,26 +45,50 @@ interface LayerSpec {
   readonly scale?: number;
 }
 
+interface MachineSpec {
+  readonly layers: ReadonlyArray<LayerSpec>;
+  /**
+   * Where the sprite mounts its art, in cells out from the origin cell's
+   * center. Machines with an odd footprint draw on the origin cell and
+   * leave this alone; an even one (the band saw's 2×2) has its art
+   * centered half a cell along each axis instead.
+   */
+  readonly artOffset?: readonly [number, number];
+}
+
 /**
  * The static layers of each image-based machine, matching what its sprite
  * component actually mounts. Moving parts that ride the machine (the table
- * saw's sliding fence) are left out — the collision box is the part that
- * never moves.
+ * saw's sliding fence, the band saw's) are left out — the collision box is
+ * the part that never moves.
  */
-const MACHINE_LAYERS: Record<string, ReadonlyArray<LayerSpec>> = {
-  lunchboxPlaner: [
-    { file: "lunchbox-planer-bottom.png" },
-    { file: "lunchbox-planer-top.png" },
-    { file: "lunchbox-planer-screws.png" },
-  ],
-  jointer: [{ file: "benchtop-jointer.png" }],
-  miterSaw: [
-    { file: "miter-saw-stationary-base.png" },
-    { file: "miter-saw-rotating-base.png" },
-    { file: "miter-saw-top.png" },
-  ],
-  jobsiteTableSaw: [{ file: "jobsite-table-saw-table.png", scale: 0.8 }],
-  workspace: [{ file: "makeshift-bench.png" }],
+const MACHINES: Record<string, MachineSpec> = {
+  lunchboxPlaner: {
+    layers: [
+      { file: "lunchbox-planer-bottom.png" },
+      { file: "lunchbox-planer-top.png" },
+      { file: "lunchbox-planer-screws.png" },
+    ],
+  },
+  jointer: { layers: [{ file: "benchtop-jointer.png" }] },
+  miterSaw: {
+    layers: [
+      { file: "miter-saw-stationary-base.png" },
+      { file: "miter-saw-rotating-base.png" },
+      { file: "miter-saw-top.png" },
+    ],
+  },
+  jobsiteTableSaw: {
+    layers: [{ file: "jobsite-table-saw-table.png", scale: 0.8 }],
+  },
+  bandSaw: {
+    layers: [
+      { file: "bandsaw-14-lower.png" },
+      { file: "bandsaw-14-upper.png" },
+    ],
+    artOffset: [0.5, 0.5],
+  },
+  workspace: { layers: [{ file: "makeshift-bench.png" }] },
 };
 
 interface Box {
@@ -121,14 +145,21 @@ function unionBoxes(boxes: Box[]): Box {
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
-const entries = Object.entries(MACHINE_LAYERS).map(([machine, layers]) => {
-  const measured = layers
+const entries = Object.entries(MACHINES).map(([machine, spec]) => {
+  const measured = spec.layers
     .map((layer) => measureLayer(layer))
     .filter((box): box is Box => box !== null);
   if (measured.length === 0) {
     throw new Error(`No solid pixels found in any layer of ${machine}`);
   }
-  const box = unionBoxes(measured);
+  const [offsetX, offsetY] = spec.artOffset ?? [0, 0];
+  const measuredBox = unionBoxes(measured);
+  const box = {
+    minX: measuredBox.minX + offsetX,
+    maxX: measuredBox.maxX + offsetX,
+    minY: measuredBox.minY + offsetY,
+    maxY: measuredBox.maxY + offsetY,
+  };
   const line =
     `  ${machine}: { min: [${round(box.minX)}, ${round(box.minY)}], ` +
     `max: [${round(box.maxX)}, ${round(box.maxY)}] },`;
