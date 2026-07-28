@@ -15,8 +15,11 @@ function allocateFreePort(): string {
     process.execPath,
     [
       '-e',
+      // String(), not the number: under FORCE_COLOR (set in some shells)
+      // console.log colorizes numbers even into a pipe, and the ANSI codes
+      // would ride along into Number() below and come out NaN.
       "const s = require('net').createServer();" +
-        "s.listen(0, () => { console.log(s.address().port); s.close() })",
+        "s.listen(0, () => { console.log(String(s.address().port)); s.close() })",
     ],
     { encoding: 'utf8' },
   ).trim();
