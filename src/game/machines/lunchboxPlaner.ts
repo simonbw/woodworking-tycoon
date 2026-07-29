@@ -7,7 +7,7 @@ import {
   MachineType,
   Operation,
 } from "../Machine";
-import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
+import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
 
 /** The next detent up the thickness scale, or undefined at the top. */
 export function thicknessStepAbove(
@@ -46,7 +46,7 @@ export const lunchboxPlaner: MachineType = {
     [1, 0],
     [1, 1],
   ],
-  collisionBox: GENERATED_COLLISION_BOXES.lunchboxPlaner,
+  collisionShapes: GENERATED_COLLISION_SHAPES.lunchboxPlaner,
   // Feed-through: room to stand at the infeed and to catch stock at the
   // outfeed — a planer can't back onto a wall
   freeCellsNeeded: [

@@ -5,7 +5,7 @@ import {
   SignedMiterAngle,
 } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
-import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
+import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
 
 /**
  * The saw's detents — the head swings both ways off square, like the real
@@ -40,7 +40,7 @@ export const miterSaw: MachineType = {
     [0, 0],
     [1, 0],
   ],
-  collisionBox: GENERATED_COLLISION_BOXES.miterSaw,
+  collisionShapes: GENERATED_COLLISION_SHAPES.miterSaw,
   freeCellsNeeded: [
     [0, 1],
     [0, 2],

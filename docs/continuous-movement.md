@@ -40,35 +40,46 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 
 ## Collision
 
-Axis-separated body-vs-box (`stepPlayerMotion`): each axis integrates
-independently and clamps the body's leading edge against the shop walls
-and a flat list of world-space solid boxes (crates and piles don't
-block, same as before). Diagonal input into a machine slides along its
-face. The clamp compares the start and end of the whole step, so a
-dropped frame can't tunnel through a machine, and a box the body already
-overlaps (a fixture teleport, a machine set down over the body's margin)
-never clamps — the body can always walk out, just never press deeper in.
-All pure and unit-tested (`player-motion.test.ts`).
+The body is a circle, moved then pushed back out of anything solid
+(`stepPlayerMotion`): each substep (capped at half the body radius, so
+a dropped frame can't tunnel) integrates the input, then resolves
+overlap against the shop walls and a flat list of world-space solids —
+boxes and circles; crates and piles don't block — by the closest-point
+normal. Because the push removes only the *into-the-face* component,
+diagonal input into a machine slides along its face at full tangential
+speed, and a shoulder grazing an outside corner deflects around it
+instead of catching (corner contact pushes radially). A body that
+starts a frame overlapped (a fixture teleport, a machine set down over
+its margin) is pushed out to the nearest face rather than left
+embedded. All pure and unit-tested (`player-motion.test.ts`).
 
-The solids come from `machine-collision.ts` (`shopSolids`): each machine
-contributes its `MachineType.collisionBox` — an AABB in the machine's
-local frame, rotated with the placement — or, when it has none, one full
-box per occupied tile. Boxes for image-based machines are measured from
-their sprite art by `npm run generate:collision-boxes` (committed as
-`machine-collision-boxes.generated.ts`; re-run after art changes);
-procedurally drawn machines set theirs by hand. A machine crosses from
-the second group to the first the moment it gets real art — see
+The solids come from `machine-collision.ts` (`shopSolids`): each
+machine contributes its `MachineType.collisionShapes` — a list of
+boxes/circles in the machine's local frame, rotated with the placement
+(rotations are quarter-turns, so boxes stay exact) — or, when it has
+none, its occupied tiles merged into as few boxes as the footprint
+allows. Shapes for image-based machines are measured from their sprite
+art by `npm run generate:collision-boxes` (committed as
+`machine-collision-boxes.generated.ts`; re-run after art changes),
+which greedily covers the silhouette with a handful of rectangles so a
+concave machine — the jointer's narrow beds on a wide body — no longer
+casts one fat invisible wall. Layers that slide with machine settings
+(the saws' fences) are left out of the measurement; a fixed solid can't
+be honest about a part that moves. Procedurally drawn machines set
+their shapes by hand (the garbage can really is a circle). A machine
+crosses from hand-set to measured the moment it gets real art — see
 `docs/asset-backlog.md` for which ones are still waiting.
 
 Cells are one square foot and the body radius is 0.8 cells (~10"), so
 the body spans several cells: a 2-cell gap is a walkable aisle, a 1-cell
 gap is not, and "standing at" a machine is a small zone of cells around
 its operation position (`Machine.operationZone`) rather than one exact
-cell. Machine collision boxes must reach within the body radius of their
-footprint's edges (enforced in `machine-collision.test.ts`) so the
-cell-underfoot bookkeeping below never sees the player standing "in" a
-machine. Load the game with `?collision` in the URL to see the solid
-boxes painted over the shop.
+cell. The union of a machine's collision shapes must reach within the
+body radius of its footprint's edges (enforced in
+`machine-collision.test.ts`) so the cell-underfoot bookkeeping below
+never sees the player standing "in" a machine. Load the game with
+`?collision` in the URL to see the solids painted over the shop, plus
+the body circle that collides with them.
 
 ## Speed, not busy-ticks
 

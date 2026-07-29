@@ -1,7 +1,7 @@
 import { MachineType } from "../Machine";
 import { BOARD_DIMENSIONS, BoardDimension } from "../Materials";
 import { isBoard, resawBoard } from "../board-helpers";
-import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
+import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
 
 /**
  * How wide a board this saw can stand on edge under its guides. A 14"
@@ -33,7 +33,7 @@ export const bandSaw: MachineType = {
     [0, 1],
     [1, 1],
   ],
-  collisionBox: GENERATED_COLLISION_BOXES.bandSaw,
+  collisionShapes: GENERATED_COLLISION_SHAPES.bandSaw,
   // Stand at the front and push; a long board still needs somewhere to go
   // behind the blade, so this one can't back onto a wall either.
   freeCellsNeeded: [

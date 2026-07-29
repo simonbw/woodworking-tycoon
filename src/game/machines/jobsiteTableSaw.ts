@@ -1,7 +1,7 @@
 import { MachineType } from "../Machine";
 import { BOARD_DIMENSIONS, BoardDimension } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
-import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
+import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
 
 export const jobsiteTableSaw: MachineType = {
   id: "jobsiteTableSaw",
@@ -19,7 +19,7 @@ export const jobsiteTableSaw: MachineType = {
     [0, 0],
     [1, 0],
   ],
-  collisionBox: GENERATED_COLLISION_BOXES.jobsiteTableSaw,
+  collisionShapes: GENERATED_COLLISION_SHAPES.jobsiteTableSaw,
   freeCellsNeeded: [
     [0, 1],
     [0, 2],

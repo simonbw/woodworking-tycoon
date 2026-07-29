@@ -22,8 +22,9 @@ export const garbageCan: MachineType = {
     [1, 1],
   ],
   // Hand-set (the can is drawn procedurally, not from an image): the lid
-  // circle in GarbageCanSprite is 0.93 cells around the footprint center.
-  collisionBox: { min: [-0.43, -0.43], max: [1.43, 1.43] },
+  // circle in GarbageCanSprite is 0.93 cells around the footprint center,
+  // and the body really is round — walking past it should feel like it.
+  collisionShapes: [{ kind: "circle", center: [0.5, 0.5], radius: 0.93 }],
   freeCellsNeeded: [],
   // No front: you reach in from whichever side you walked up on.
   operableFromAnySide: true,
