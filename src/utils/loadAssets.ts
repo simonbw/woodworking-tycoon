@@ -28,6 +28,7 @@ export const TEXTURE_ASSETS = [
   "/images/miter-saw-rotating-base.png",
   "/images/miter-saw-top.png",
   "/images/operator-position.png",
+  "/images/pickup-truck.png",
   "/images/workspace.png",
   "/images/makeshift-bench.png",
   "/images/person.png",

@@ -30,6 +30,32 @@ const THRESHOLD = 0x1a1712;
 const SHADOW = 0x000000;
 const DRIVEWAY_TINT = 0x9d9a90;
 
+/**
+ * The truck parked in the driveway — a '96 Ranger, which is a small pickup:
+ * about 69" across the body and 200" bumper to bumper in SuperCab trim.
+ *
+ * The art is a 400×600 top-down view with the nose up. Inside that canvas
+ * the red body is 184 px wide, the mirrors reach 264, and the truck spans
+ * 562 px bumper to bumper — proportionally a little longer than a real
+ * Ranger, so no single scale can match both figures. Scaling the canvas to
+ * 144" splits the difference: a 66" body and a 202" length, each within a
+ * few percent. The mirrors land at 95", so the truck fills the 8-ft
+ * driveway almost exactly.
+ */
+const TRUCK_CANVAS_WIDTH = inchesToPixels(144);
+const TRUCK_CANVAS_HEIGHT = TRUCK_CANVAS_WIDTH * (600 / 400);
+
+/** Transparent canvas above the front bumper, as a fraction of the art. */
+const TRUCK_NOSE_INSET = 27 / 600;
+
+/**
+ * Gap between the door threshold and the front bumper. Parked tight on
+ * purpose: the camera only keeps a few feet of driveway in frame (see
+ * LOT_APRON in ShopView), so every inch of gap is an inch of truck that
+ * falls off the bottom of the screen.
+ */
+const TRUCK_PARK_GAP = inchesToPixels(6);
+
 /** Deterministic per-tuft jitter so the lawn doesn't reseed on resize. */
 function hash2(x: number, y: number): number {
   let h = Math.imul(x, 374761393) + Math.imul(y, 668265263);
@@ -52,6 +78,7 @@ export const EnvironmentLayer: React.FC<{
 }> = ({ width, height, viewport }) => {
   const gameState = useGameState();
   const concreteTexture = useTexture("/images/concrete-floor-2-big.png");
+  const truckTexture = useTexture("/images/pickup-truck.png");
 
   const doorCenter = cellToPixel(gameState.shopInfo.entrancePosition[0] + 0.5);
   const doorLeft = doorCenter - cellToPixel(DOOR_HALF_WIDTH + 0.5);
@@ -156,6 +183,16 @@ export const EnvironmentLayer: React.FC<{
           tint={DRIVEWAY_TINT}
         />
       )}
+      {/* Nose to the garage, centered on the concrete. Drawn before the
+          building so the wall band and its shadow fall across the bumper. */}
+      <pixiSprite
+        texture={truckTexture}
+        x={doorCenter}
+        y={drivewayTop + TRUCK_PARK_GAP - TRUCK_CANVAS_HEIGHT * TRUCK_NOSE_INSET}
+        width={TRUCK_CANVAS_WIDTH}
+        height={TRUCK_CANVAS_HEIGHT}
+        anchor={{ x: 0.5, y: 0 }}
+      />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>
   );
