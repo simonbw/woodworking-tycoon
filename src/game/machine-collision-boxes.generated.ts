@@ -1,18 +1,45 @@
 // GENERATED FILE — do not edit by hand.
 // Measured from the machine sprite images by scripts/generate-collision-boxes.ts;
 // re-run `npm run generate:collision-boxes` after changing machine art.
-import type { CollisionBox } from "./Machine";
+import type { CollisionShape } from "./Machine";
 
 /**
- * Collision boxes measured from sprite art: the opaque bounding box of each
- * image-based machine's static layers, in cell units relative to its origin
- * cell's center.
+ * Collision shapes measured from sprite art: a greedy rectangle cover of
+ * each image-based machine's static-layer silhouette, in cell units
+ * relative to its origin cell's center.
  */
-export const GENERATED_COLLISION_BOXES = {
-  lunchboxPlaner: { min: [-0.167, -1.094], max: [1.375, 1.042] },
-  jointer: { min: [0.052, -1.687], max: [1.375, 1.688] },
-  miterSaw: { min: [-1.167, -1.385], max: [1.167, 0.323] },
-  jobsiteTableSaw: { min: [-0.883, -1.308], max: [1.142, 0.308] },
-  bandSaw: { min: [-1.115, -0.521], max: [1.76, 1.656] },
-  workspace: { min: [-1.302, -1.479], max: [1.292, 0.302] },
-} satisfies Record<string, CollisionBox>;
+export const GENERATED_COLLISION_SHAPES = {
+  lunchboxPlaner: [
+    { kind: "box", min: [0.083, -1.083], max: [1, 1.083] },
+    { kind: "box", min: [-0.167, -0.5], max: [0.083, 0.417] },
+    { kind: "box", min: [1, -0.5], max: [1.25, 0.417] },
+    { kind: "box", min: [1.25, 0.083], max: [1.417, 0.417] },
+  ],
+  jointer: [
+    { kind: "box", min: [0.25, -1.75], max: [1, 1.75] },
+    { kind: "box", min: [1, -0.917], max: [1.167, 0.917] },
+    { kind: "box", min: [0.167, -0.833], max: [0.25, 0.833] },
+    { kind: "box", min: [1.167, -0.25], max: [1.417, 0.25] },
+  ],
+  miterSaw: [
+    { kind: "box", min: [-1.167, -0.917], max: [1.167, -0.25] },
+    { kind: "box", min: [-0.5, -0.25], max: [0.5, 0.167] },
+    { kind: "box", min: [-1.167, -1.417], max: [-0.917, -0.917] },
+    { kind: "box", min: [0.917, -1.417], max: [1.167, -0.917] },
+    { kind: "box", min: [-0.167, -1.25], max: [0.167, -0.917] },
+  ],
+  jobsiteTableSaw: [
+    { kind: "box", min: [-0.917, -1.333], max: [0.917, 0.333] },
+  ],
+  bandSaw: [
+    { kind: "box", min: [-1.083, -0.25], max: [1.75, 1.25] },
+    { kind: "box", min: [-0.75, -0.417], max: [1.75, -0.25] },
+    { kind: "box", min: [-0.583, 1.5], max: [1.75, 1.667] },
+    { kind: "box", min: [-0.417, 1.25], max: [1.75, 1.417] },
+  ],
+  workspace: [
+    { kind: "box", min: [-1.083, -1.333], max: [1.083, 0.25] },
+    { kind: "box", min: [-1.083, 0.25], max: [0, 0.333] },
+    { kind: "box", min: [-1.25, -0.583], max: [-1.083, -0.083] },
+  ],
+} satisfies Record<string, ReadonlyArray<CollisionShape>>;

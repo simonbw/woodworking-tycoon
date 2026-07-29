@@ -9,6 +9,7 @@ import {
   motionCell,
   PLAYER_RADIUS,
   playerWalkSpeed,
+  Solid,
   SolidBox,
   stepPlayerMotion,
 } from "./player-motion";
@@ -17,15 +18,19 @@ import { DUST_MAX_PER_CELL } from "./Dust";
 
 /** A roomy floor so wall clamping never interferes unless a test wants it. */
 const world = (
-  solids: SolidBox[] = [],
+  solids: Solid[] = [],
   size: Vector = [100, 100],
 ): CollisionWorld => ({ size, solids });
 
-/** A whole-tile solid at a cell (a wall, or a machine with no box). */
-const tile = ([x, y]: Vector): SolidBox => ({
-  min: [x, y],
-  max: [x + 1, y + 1],
+/** An axis-aligned solid box. */
+const box = (min: Vector, max: Vector): SolidBox => ({
+  kind: "box",
+  min,
+  max,
 });
+
+/** A whole-tile solid at a cell (a wall, or a machine with no box). */
+const tile = ([x, y]: Vector): SolidBox => box([x, y], [x + 1, y + 1]);
 
 describe("stepPlayerMotion", () => {
   it("moves in the input direction at speed * dt", () => {
@@ -76,7 +81,7 @@ describe("stepPlayerMotion", () => {
 
   it("slides along a wall of solids on diagonal input", () => {
     // Solids along the row above; pushing up-right should still travel right
-    const wall = { min: [0, 4] as Vector, max: [100, 5] as Vector };
+    const wall = box([0, 4], [100, 5]);
     const next = stepPlayerMotion(
       [5.5, 5 + PLAYER_RADIUS],
       [1, -1],
@@ -88,32 +93,50 @@ describe("stepPlayerMotion", () => {
     assert.ok(next[1] >= 5 + PLAYER_RADIUS - 1e-3, "should stay off the wall");
   });
 
-  it("clips a shoulder poking into a solid in a neighboring row", () => {
-    // The body is wider than a cell: standing with its center in one row,
-    // its shoulder overlaps the next row, so a solid there still blocks.
-    const next = stepPlayerMotion(
-      [5.5, 5.5 + PLAYER_RADIUS / 2],
+  it("keeps full tangential speed pressed diagonally into a face", () => {
+    // Diagonal input into a long wall: the push-out removes only the
+    // into-the-wall component, so the along-the-wall component survives
+    // whole — no invisible friction.
+    const wall = box([0, 6], [100, 7]);
+    const start: Vector = [5.5, 6 - PLAYER_RADIUS - 1e-4];
+    const next = stepPlayerMotion(start, [1, 1], 2, 1, world([wall]));
+    const expected = 2 * Math.SQRT1_2; // tangential share of speed * dt
+    assert.ok(Math.abs(next[0] - start[0] - expected) < 1e-6);
+    assert.ok(next[1] <= 6 - PLAYER_RADIUS + 1e-3, "stays off the wall");
+  });
+
+  it("stops square against a face, but rounds an outside corner", () => {
+    // Center-on: face contact stops the body dead. A quarter-radius
+    // shoulder graze deflects around the corner and keeps going — the
+    // difference between a doorway feeling snug and feeling sticky.
+    const solid = tile([7, 6]);
+    const headOn = stepPlayerMotion([5.5, 6.5], [1, 0], 10, 1, world([solid]));
+    assert.ok(headOn[0] <= 7 - PLAYER_RADIUS + 1e-3, "face contact stops");
+
+    const grazing = stepPlayerMotion(
+      [5.5, 6 - (PLAYER_RADIUS * 3) / 4],
       [1, 0],
       10,
       1,
-      world([tile([7, 6])]),
+      world([solid]),
     );
-    assert.ok(next[0] <= 7 - PLAYER_RADIUS, "corner clips the shoulder");
+    assert.ok(grazing[0] > 8, "a grazing shoulder rounds the corner");
+    assert.ok(grazing[1] < 6 - (PLAYER_RADIUS * 3) / 4, "deflected outward");
   });
 
   it("walks up to a machine's box, past its tile edge", () => {
     // A box inset 0.2 into its tile: the body's leading edge rests at the
     // box face, not the tile boundary.
-    const box: SolidBox = { min: [7.2, 5.2], max: [7.8, 5.8] };
-    const next = stepPlayerMotion([5.5, 5.5], [1, 0], 10, 1, world([box]));
+    const inset = box([7.2, 5.2], [7.8, 5.8]);
+    const next = stepPlayerMotion([5.5, 5.5], [1, 0], 10, 1, world([inset]));
     assert.ok(next[0] <= 7.2 - PLAYER_RADIUS);
     assert.ok(next[0] > 7.2 - PLAYER_RADIUS - 0.01);
   });
 
   it("slides along a box's face while pressed against it", () => {
-    const box: SolidBox = { min: [7.2, 0], max: [7.8, 100] };
+    const wall = box([7.2, 0], [7.8, 100]);
     const pressed: Vector = [7.2 - PLAYER_RADIUS - 1e-4, 5.5];
-    const next = stepPlayerMotion(pressed, [0, 1], 2, 1, world([box]));
+    const next = stepPlayerMotion(pressed, [0, 1], 2, 1, world([wall]));
     assert.strictEqual(next[0], pressed[0]);
     assert.ok(next[1] > 7, "should walk down freely along the face");
   });
@@ -121,12 +144,28 @@ describe("stepPlayerMotion", () => {
   it("lets a shoulder pass a box held out of reach", () => {
     // The solid sits more than a body radius from the body's path, so
     // walking past must not catch on it.
-    const box: SolidBox = {
-      min: [7, 5.5 + PLAYER_RADIUS + 0.05],
-      max: [8, 7],
-    };
-    const next = stepPlayerMotion([5.5, 5.5], [1, 0], 10, 1, world([box]));
+    const clear = box([7, 5.5 + PLAYER_RADIUS + 0.05], [8, 7]);
+    const next = stepPlayerMotion([5.5, 5.5], [1, 0], 10, 1, world([clear]));
     assert.ok(next[0] > 8, "shoulder passes the distant box");
+  });
+
+  it("stops at a solid disc and flows around an off-center one", () => {
+    const can: Solid = { kind: "circle", center: [8, 5.5], radius: 0.9 };
+    const headOn = stepPlayerMotion([5.5, 5.5], [1, 0], 10, 1, world([can]));
+    assert.ok(
+      headOn[0] <= 8 - 0.9 - PLAYER_RADIUS + 1e-3,
+      "stops at the disc's edge",
+    );
+
+    // Aimed past the center: the radial push steers the body around.
+    const offset = stepPlayerMotion([5.5, 6.2], [1, 0], 10, 1, world([can]));
+    assert.ok(offset[0] > 9.5, "flows around the disc");
+    for (const pos of [headOn, offset]) {
+      assert.ok(
+        Math.hypot(pos[0] - 8, pos[1] - 5.5) >= 0.9 + PLAYER_RADIUS - 1e-3,
+        "never inside the disc",
+      );
+    }
   });
 
   it("does not tunnel through a solid on a long step", () => {
@@ -140,15 +179,26 @@ describe("stepPlayerMotion", () => {
     assert.ok(next[0] <= 7 - PLAYER_RADIUS, "a dropped frame still stops");
   });
 
-  it("can walk out of a box it starts inside, but not deeper in", () => {
-    // A fixture teleport can drop the body's margin over a solid; the
-    // sweep must allow escape and refuse to dig further.
-    const box: SolidBox = { min: [5, 5], max: [6, 6] };
+  it("is pushed out of a solid it starts overlapping", () => {
+    // A fixture teleport (or a machine set down over the body's margin)
+    // can leave the body overlapping a solid; the first step pops it back
+    // to the face — even pressing inward.
+    const solid = tile([5, 5]);
     const start: Vector = [5.5 + PLAYER_RADIUS, 5.5];
-    const out = stepPlayerMotion(start, [1, 0], 2, 1, world([box]));
-    assert.ok(out[0] > start[0], "walking away from the overlap works");
-    const deeper = stepPlayerMotion(start, [-1, 0], 2, 1, world([box]));
-    assert.ok(deeper[0] <= start[0], "cannot press further into the solid");
+    const out = stepPlayerMotion(start, [1, 0], 2, 1, world([solid]));
+    assert.ok(out[0] >= 6 + PLAYER_RADIUS, "walking away pops free");
+    const pressing = stepPlayerMotion(start, [-1, 0], 2, 0.01, world([solid]));
+    assert.ok(
+      pressing[0] >= 6 + PLAYER_RADIUS,
+      "pressing inward still resolves to the face",
+    );
+  });
+
+  it("exits a deep overlap through the nearest face", () => {
+    // Center fully inside the solid: push out the short way.
+    const solid = box([5, 5], [7, 6]);
+    const next = stepPlayerMotion([5.2, 5.5], [0, 1], 2, 0.01, world([solid]));
+    assert.ok(next[0] <= 5 - PLAYER_RADIUS, "left face is the short way out");
   });
 });
 

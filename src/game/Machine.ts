@@ -28,20 +28,25 @@ import {
 } from "./machines/worktables";
 
 /**
- * The solid part of a machine, as an axis-aligned box in cell units in the
- * machine's local (unrotated) frame, with the origin cell's center at
- * [0, 0] — so a box exactly filling a 1×1 machine's tile is
- * min [-0.5, -0.5], max [0.5, 0.5]. The player's body collides with this
- * instead of the full cellsOccupied tiles, so a slim machine doesn't cast
- * an invisible wall (see docs/continuous-movement.md). Everything else —
- * placement, targeting, attendance — still works on whole cells, and
- * collision insets are capped below the player's radius so the cell
- * underfoot can never be a machine's (see machine-collision.ts).
+ * One solid piece of a machine, in cell units in the machine's local
+ * (unrotated) frame, with the origin cell's center at [0, 0] — so a box
+ * exactly filling a 1×1 machine's tile is min [-0.5, -0.5],
+ * max [0.5, 0.5]. A machine's silhouette is a *list* of these, so a
+ * concave machine (a jointer's narrow beds on a wide body) doesn't cast
+ * one fat invisible wall. The player's body collides with the shapes
+ * instead of the full cellsOccupied tiles (see
+ * docs/continuous-movement.md). Everything else — placement, targeting,
+ * attendance — still works on whole cells, and the shape union is capped
+ * below the player's radius inside the footprint so the cell underfoot
+ * can never be a machine's (see machine-collision.ts).
  */
-export interface CollisionBox {
-  readonly min: Vector;
-  readonly max: Vector;
-}
+export type CollisionShape =
+  | { readonly kind: "box"; readonly min: Vector; readonly max: Vector }
+  | {
+      readonly kind: "circle";
+      readonly center: Vector;
+      readonly radius: number;
+    };
 
 /**
  * The center of a footprint's bounding box, in cell units relative to the
@@ -66,11 +71,11 @@ export interface MachineType {
   readonly operations: ReadonlyArray<Operation>;
   readonly cellsOccupied: ReadonlyArray<Vector>;
   /**
-   * See CollisionBox. Measured from the sprite art for image-based
+   * See CollisionShape. Measured from the sprite art for image-based
    * machines (machine-collision-boxes.generated.ts), hand-set for
    * procedurally drawn ones. Omitted: the full cellsOccupied tiles block.
    */
-  readonly collisionBox?: CollisionBox;
+  readonly collisionShapes?: ReadonlyArray<CollisionShape>;
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
   readonly operationPosition?: Vector;
   /**

@@ -1,6 +1,6 @@
 import { MachineType } from "../Machine";
 import { BENCH_OPERATIONS } from "./benchOperations";
-import { GENERATED_COLLISION_BOXES } from "../machine-collision-boxes.generated";
+import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
 
 export { GLUE_CURE_TICKS } from "./benchOperations";
 
@@ -26,7 +26,7 @@ export const workspace: MachineType = {
     [0, 0],
     [1, 0],
   ],
-  collisionBox: GENERATED_COLLISION_BOXES.workspace,
+  collisionShapes: GENERATED_COLLISION_SHAPES.workspace,
   freeCellsNeeded: [
     [0, 1],
     [0, 2],

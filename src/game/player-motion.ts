@@ -66,37 +66,59 @@ export function directionFromInput(
 }
 
 /**
- * An axis-aligned solid the body cannot enter, in continuous cell
- * coordinates (cell [x, y] spans x..x+1). Machines contribute their
- * collision boxes (or their whole occupied tiles when they have none);
- * the shop walls are handled separately as the world bounds. See
- * machine-collision.ts.
+ * An axis-aligned solid box the body cannot enter, in continuous cell
+ * coordinates (cell [x, y] spans x..x+1). The shop walls are handled
+ * separately as the world bounds. See machine-collision.ts.
  */
 export interface SolidBox {
+  readonly kind: "box";
   readonly min: Vector;
   readonly max: Vector;
 }
+
+/** A solid disc — a garbage can, anything round. Same coordinates. */
+export interface SolidCircle {
+  readonly kind: "circle";
+  readonly center: Vector;
+  readonly radius: number;
+}
+
+/**
+ * Something the body cannot enter. Machines contribute their collision
+ * shapes (or their whole occupied tiles when they have none); see
+ * machine-collision.ts.
+ */
+export type Solid = SolidBox | SolidCircle;
 
 /** What the body collides with: the shop's floor rectangle and solids. */
 export interface CollisionWorld {
   /** Shop size in cells; the walls are the rectangle's edges. */
   readonly size: Vector;
-  readonly solids: ReadonlyArray<SolidBox>;
+  readonly solids: ReadonlyArray<Solid>;
 }
 
 /**
+ * Depenetration passes per substep. Two boxes meeting at a corner (or a
+ * solid flush against a wall) can each undo the other's push; a few
+ * rounds settle every realistic arrangement, and the loop exits early
+ * the first pass nothing moves.
+ */
+const RESOLVE_PASSES = 4;
+
+/**
  * Advance the player's continuous position by one frame: normalize the
- * input, integrate, and slide along anything solid.
+ * input, integrate, and push the body back out of anything solid.
  *
- * Collision is axis-separated body-vs-box: each axis moves on its own and
- * clamps the body's leading edge against any solid whose cross-axis span
- * it overlaps. Running diagonally into a machine therefore glides along
- * its face instead of sticking — most of what makes walking feel physical.
- * The clamp compares the start and end of the whole step, so a long step
- * (a dropped frame) stops at the face instead of tunneling through. A box
- * the body already overlaps (a fixture teleport, a machine set down over
- * the body's margin) never clamps — the body can always walk out, it just
- * can't press further in.
+ * The body is a circle. Each substep moves it along the input, then
+ * resolves overlap against every solid by the closest-point normal —
+ * so only the component of motion *into* a face is removed. Three feel
+ * properties fall out: diagonal input into a face slides along it at
+ * full tangential speed, outside corners round instead of catching,
+ * and a body that starts the frame overlapped (a fixture teleport, a
+ * machine set down over its margin) is pushed out to the nearest face
+ * rather than left embedded. Substeps are capped at half the body
+ * radius, so a long step (a dropped frame) cannot tunnel through a
+ * solid — it lands inside and is pushed back to the face it entered.
  */
 export function stepPlayerMotion(
   pos: Vector,
@@ -116,60 +138,109 @@ export function stepPlayerMotion(
     dy /= length;
   }
 
+  const stepX = dx * speed * dt;
+  const stepY = dy * speed * dt;
+  const substeps = Math.max(
+    1,
+    Math.ceil(Math.hypot(stepX, stepY) / (radius / 2)),
+  );
+  let next = pos;
+  for (let i = 0; i < substeps; i++) {
+    next = resolveCollisions(
+      [next[0] + stepX / substeps, next[1] + stepY / substeps],
+      radius,
+      world,
+    );
+  }
+  return next;
+}
+
+/** Push a circle body at `pos` out of the walls and every solid. */
+function resolveCollisions(
+  pos: Vector,
+  radius: number,
+  world: CollisionWorld,
+): Vector {
   let [x, y] = pos;
-  x = sweepAxis(x, y, dx * speed * dt, radius, world, 0);
-  y = sweepAxis(y, x, dy * speed * dt, radius, world, 1);
+  for (let pass = 0; pass < RESOLVE_PASSES; pass++) {
+    // The walls: clamp to the floor rectangle. This also gently pulls in
+    // a body teleported onto the margin (fixtures, loaded saves).
+    x = Math.min(Math.max(x, radius), world.size[0] - radius);
+    y = Math.min(Math.max(y, radius), world.size[1] - radius);
+    let moved = false;
+    for (const solid of world.solids) {
+      const pushed =
+        solid.kind === "box"
+          ? pushOutOfBox([x, y], radius, solid)
+          : pushOutOfCircle([x, y], radius, solid);
+      if (pushed !== null) {
+        [x, y] = pushed;
+        moved = true;
+      }
+    }
+    if (!moved) {
+      break;
+    }
+  }
   return [x, y];
 }
 
 /**
- * Move one coordinate by `step`, clamping the body's leading edge against
- * the walls and every solid it would press into. `axis` is the moving
- * axis (0 = x, 1 = y); `cross` is the body's current position on the
- * other axis.
+ * Where a circle body overlapping `box` must move to rest against it, or
+ * null when they don't touch. Push is along the normal from the closest
+ * point on the box — perpendicular to a face in face contact, radial in
+ * corner contact (which is what rounds corners).
  */
-function sweepAxis(
-  center: number,
-  cross: number,
-  step: number,
+function pushOutOfBox(
+  pos: Vector,
   radius: number,
-  world: CollisionWorld,
-  axis: 0 | 1,
-): number {
-  let next = center + step;
-
-  // The walls: clamp to the floor rectangle. This also gently pulls in a
-  // body teleported onto the margin (fixtures, loaded saves).
-  const wallMax = world.size[axis] - radius;
-  next = Math.min(Math.max(next, radius), wallMax);
-  if (step === 0) {
-    return next;
+  box: SolidBox,
+): Vector | null {
+  const cx = Math.min(Math.max(pos[0], box.min[0]), box.max[0]);
+  const cy = Math.min(Math.max(pos[1], box.min[1]), box.max[1]);
+  const nx = pos[0] - cx;
+  const ny = pos[1] - cy;
+  const dist = Math.hypot(nx, ny);
+  if (dist >= radius) {
+    return null;
   }
-
-  const crossAxis = (1 - axis) as 0 | 1;
-  for (const solid of world.solids) {
-    // Only solids whose cross-axis span the body actually overlaps can
-    // block this axis — pressed flush alongside a box, the body must
-    // still slide freely along its face.
-    if (
-      cross + radius - EDGE_EPSILON <= solid.min[crossAxis] ||
-      cross - radius + EDGE_EPSILON >= solid.max[crossAxis]
-    ) {
-      continue;
-    }
-    if (step > 0) {
-      // Clamp only when the step starts outside the box, so a body that
-      // already overlaps one (teleport) can escape but never digs deeper.
-      if (center + radius - EDGE_EPSILON <= solid.min[axis]) {
-        next = Math.min(next, solid.min[axis] - radius - EDGE_EPSILON);
-      }
-    } else {
-      if (center - radius + EDGE_EPSILON >= solid.max[axis]) {
-        next = Math.max(next, solid.max[axis] + radius + EDGE_EPSILON);
-      }
-    }
+  if (dist > 1e-9) {
+    const scale = (radius - dist + EDGE_EPSILON) / dist;
+    return [pos[0] + nx * scale, pos[1] + ny * scale];
   }
-  return next;
+  // The center itself is inside the box (a deep teleport): exit through
+  // the nearest face.
+  const exits: Vector[] = [
+    [box.min[0] - radius - EDGE_EPSILON - pos[0], 0],
+    [box.max[0] + radius + EDGE_EPSILON - pos[0], 0],
+    [0, box.min[1] - radius - EDGE_EPSILON - pos[1]],
+    [0, box.max[1] + radius + EDGE_EPSILON - pos[1]],
+  ];
+  const best = exits.reduce((a, b) =>
+    Math.hypot(a[0], a[1]) <= Math.hypot(b[0], b[1]) ? a : b,
+  );
+  return [pos[0] + best[0], pos[1] + best[1]];
+}
+
+/** Circle-vs-circle: push out along the line between centers. */
+function pushOutOfCircle(
+  pos: Vector,
+  radius: number,
+  solid: SolidCircle,
+): Vector | null {
+  const nx = pos[0] - solid.center[0];
+  const ny = pos[1] - solid.center[1];
+  const dist = Math.hypot(nx, ny);
+  const clearance = radius + solid.radius;
+  if (dist >= clearance) {
+    return null;
+  }
+  if (dist > 1e-9) {
+    const scale = (clearance + EDGE_EPSILON) / dist;
+    return [solid.center[0] + nx * scale, solid.center[1] + ny * scale];
+  }
+  // Dead-centered on the disc: any direction is as good as another.
+  return [solid.center[0] + clearance + EDGE_EPSILON, solid.center[1]];
 }
 
 /** The cell a continuous position stands in. */

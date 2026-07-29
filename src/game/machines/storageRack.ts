@@ -19,7 +19,7 @@ export const storageRack: MachineType = {
   ],
   // Hand-set (drawn procedurally): the deck in StorageRackSprite fills
   // the footprint to a small inset.
-  collisionBox: { min: [-0.44, -0.44], max: [1.44, 1.44] },
+  collisionShapes: [{ kind: "box", min: [-0.44, -0.44], max: [1.44, 1.44] }],
   // Stand at the front to stow and take — the shelf UI (and everything
   // else) hangs off the operation cell, rack or not.
   freeCellsNeeded: [
