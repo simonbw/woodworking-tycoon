@@ -1,5 +1,5 @@
 import { getRoomBus, IMPULSE_RESPONSE_URL } from "./audioBus";
-import { clipFileNames, clipUrl, preloadSound, UI_SOUND_NAMES } from "./sfx";
+import { clipUrl, preloadSound, UI_SOUND_NAMES } from "./sfx";
 
 /**
  * Every sound the game can play, and how to have them decoded before
@@ -42,10 +42,7 @@ const GAME_SOUND_CLIPS = [
   "pallet-dismantle",
 ];
 
-/**
- * Every clip name the game can ask `playSound` for. Clips with numbered
- * takes ("footstep") expand to all of their files via `clipFileNames`.
- */
+/** Every clip name the game can ask `playSound` for. */
 export const SOUND_CLIPS: readonly string[] = Array.from(
   new Set([...UI_SOUND_NAMES, ...GAME_SOUND_CLIPS, "footstep"]),
 );
@@ -56,7 +53,7 @@ export const SOUND_CLIPS: readonly string[] = Array.from(
  * a clip (nothing plays it — the convolver wears it).
  */
 export const SOUND_ASSET_FILES: readonly string[] = [
-  ...SOUND_CLIPS.flatMap(clipFileNames).map(clipUrl),
+  ...SOUND_CLIPS.map(clipUrl),
   IMPULSE_RESPONSE_URL,
 ];
 
