@@ -419,20 +419,12 @@ test.describe("Market, supplies, and sound", () => {
       await bootShopCountingAudio(page);
     });
 
-    await test.step("every footstep take is served", async () => {
-      // The layer warms all of them on mount, so a take that was renamed or
-      // never committed shows up here rather than as one silent step in five.
+    await test.step("the footstep clip is served", async () => {
+      // The layer warms it on mount, so a clip that was renamed or never
+      // committed shows up here rather than as a silent walk.
       await expect
-        .poll(() => [
-          ...new Set(requested.filter((f) => /^footstep-\d+\.ogg$/.test(f))),
-        ])
-        .toEqual([
-          "footstep-1.ogg",
-          "footstep-2.ogg",
-          "footstep-3.ogg",
-          "footstep-4.ogg",
-          "footstep-5.ogg",
-        ]);
+        .poll(() => [...new Set(requested.filter((f) => /^footstep/.test(f)))])
+        .toEqual(["footstep.ogg"]);
     });
 
     await test.step("walking the floor plays footsteps", async () => {

@@ -48,10 +48,10 @@ below) — repeated identical clips are the fastest route to audio fatigue:
 - Board tossed into garbage can (hollow metal *bong*)
 - Boards knocking together (stacking)
 - Hardware: nail/screw handful jingle, dropping into a bin
-- **Footsteps**: single work-boot falls on the concrete floor, 5–6 takes.
-  The most-heard clip in the game, so it wants the most takes and the most
-  care about level — placeholders are in (`footstep-1.ogg` … `-5.ogg`) and
-  real boots would beat them by a mile. Keep the strike within ~10 ms of the
+- **Footsteps**: single work-boot falls on the concrete floor. The
+  most-heard clip in the game, so it wants the most care about level — one
+  placeholder is in (`footstep.ogg`, played with pitch jitter) and real
+  boots would beat it by a mile. Keep the strike within ~10 ms of the
   file's start; the game plays these on the foot landing, and a slow front
   end reads as lag.
 
@@ -243,18 +243,18 @@ badge intentionally stays on game-state progress.
 
 ### One-shot variation (`sfx.ts`)
 
-Multi-take clips ship as `<name>-1.ogg`, `<name>-2.ogg`, … and declare their
-take count in `SOUND_VARIANTS`; `playSound` picks one at random and applies
-the clip's pitch jitter from `SOUND_PITCH_JITTER`
-(`source.playbackRate.value = 1 ± jitter`). Both maps are keyed by the bare
-clip name, so a sound gains variation by shipping more files and adding a
-row — no call site changes, and `playSound("footstep")` keeps working
-whether there is one take or six. Cheap, and it kills the
+A clip listed in `SOUND_PITCH_JITTER` plays at a slightly random speed
+(`source.playbackRate.value = 1 ± jitter`). The map is keyed by the bare
+clip name, so a sound gains variation by adding a row — no call site
+changes. Cheap, and it takes most of the edge off the
 machine-gun-same-sample effect.
 
-Only footsteps use it so far (5 takes, ±6%), since they're the one clip
-heard hundreds of times a session. `preloadSound(name)` warms every take, so
-the first step of a new game isn't waiting on a fetch.
+Only footsteps use it so far (±10%), since they're the one clip heard
+hundreds of times a session. There was also a multi-take picker here —
+`footstep-1.ogg` … `-5.ogg`, one chosen at random per play — but four of
+the five placeholders were poor and the survivor plus a wider jitter reads
+better than the set did. If a future clip genuinely wants several takes,
+that code is in the history rather than sitting unused here.
 
 ### Footsteps (`FootstepSoundLayer`)
 
