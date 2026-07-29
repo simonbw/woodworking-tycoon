@@ -29,6 +29,7 @@ import {
   collisionDebugRequested,
 } from "./CollisionDebugLayer";
 import { DustLayer } from "./DustLayer";
+import { DustMotionLayer } from "./DustMotionLayer";
 import { EntranceSprite } from "./EntranceSprite";
 import { FeedLaneLayer } from "./FeedLaneLayer";
 import { FloorTileSprite } from "./FloorTileSprite";
@@ -337,6 +338,8 @@ export const ShopView: React.FC = () => {
               {!gameState.player.away && (
                 <PersonSprite person={gameState.player} />
               )}
+              {/* Dust in flight rides above the tools taking it */}
+              <DustMotionLayer />
               <CarriedMachineLayer />
             </pixiContainer>
           </gameStateContext.Provider>

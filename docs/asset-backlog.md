@@ -114,10 +114,11 @@ wiring: same path, same size, same component.
 - [ ] Machine delivery crate — `shop-view/MachineCrateSprite.tsx`.
 - [ ] Broom (resting) — `shop-view/BroomSprite.tsx`. Leans wherever it was
       set down; the tutorial points at it.
-- [ ] Broom (in hand) — `shop-view/HeldBroomSprite.tsx`. Top-down handle +
-      bristle bar drawn in the player's rotated frame, with the stroke
-      sway and chip spray animated procedurally; art would replace the
-      handle/bar shapes, the animation stays code.
+- [ ] Broom + dustpan (in hand) — `shop-view/HeldBroomSprite.tsx`.
+      Top-down handle + bristle bar + hip-riding dustpan (with a fill
+      readout) drawn in the player's rotated frame, with the stroke sway
+      animated procedurally; art would replace the handle/bar/pan
+      shapes, the animation stays code.
 - [ ] Shop vac — `shop-view/ShopVacSprite.tsx`. Drum and casters as art; the
       hose stretches to the player's hand every frame and stays drawn.
 - [ ] Pallet — `material-sprites/PalletSprite.tsx`. Currently composed out of
@@ -174,11 +175,9 @@ Decided — don't re-open these without a reason.
   Length, width, species, and surface condition all vary continuously, and
   the sprite is drawn at true scale against `PIXELS_PER_INCH`. No fixed-size
   asset can cover that space.
-- **Sawdust piles** — `SawdustPileSprite`. Size and color come from the
-  swept species mix.
-- **Cut particles and the dust layer** — `CutParticles`, `DustLayer`.
-  Per-frame effects; the dust layer already bakes its stamps into a single
-  `RenderTexture`.
+- **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
+  `DustMotionLayer`. Per-frame effects; the dust layer already bakes its
+  stamps into a single `RenderTexture`.
 - **Feeding masks** — `FeedingBoard`. The two `Graphics` there are masks for
   the infeed/outfeed reveal and never render.
 - **Selection highlight** — `MachineSelectionHighlight` in `MachineSprite`.

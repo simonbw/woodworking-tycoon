@@ -131,4 +131,5 @@ export const layoutWithPlacedMachines: GameState = {
   dust: {},
   shopVac: null,
   broomPosition: [0, 0],
+  dustpan: {},
 };

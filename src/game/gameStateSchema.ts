@@ -167,6 +167,7 @@ export const gameStateSchema = z.object({
     })
     .nullable(),
   broomPosition: vectorSchema.nullable(),
+  dustpan: speciesAmountsSchema,
 });
 
 /**

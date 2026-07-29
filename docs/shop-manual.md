@@ -114,8 +114,8 @@ way in the first copy pass:
 2. **No internal design vocabulary or invariants.** Words like "verb",
    or axioms like "dust is a substance that moves; only containers
    destroy it", belong in design docs. The articles teach the same
-   facts through concrete actions ("sweep with T to push the dust into
-   a pile").
+   facts through concrete actions ("hold Space to sweep the dust into
+   the dustpan").
 3. **Don't spell out what players will assume anyway** ("everything in
    the shop takes time"). Drawing attention to the intuitive reads as
    if there's a catch.

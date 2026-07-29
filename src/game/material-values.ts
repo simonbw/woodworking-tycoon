@@ -205,9 +205,6 @@ export function getSellValue(material: MaterialInstance): number {
       );
     case "pallet":
       return WHOLE_PALLET_VALUE;
-    case "sawdustPile":
-      // Waste, for now — someday bedding or briquettes
-      return 0;
     case "unknown":
       return 0;
   }

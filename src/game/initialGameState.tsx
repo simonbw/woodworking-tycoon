@@ -83,6 +83,7 @@ export const initialGameState: GameState = {
   dust: {},
   shopVac: null,
   broomPosition: BROOM_HOME,
+  dustpan: {},
   pendingSounds: [],
   pendingPayouts: [],
 };

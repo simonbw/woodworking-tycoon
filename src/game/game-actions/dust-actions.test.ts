@@ -1,12 +1,12 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { dustTotal } from "../Dust";
-import { GameState, MaterialPile } from "../GameState";
+import { GameState } from "../GameState";
 import { heldTool, holdingBroom } from "../HeldTool";
 import { initialGameState } from "../initialGameState";
-import { SawdustPile } from "../Materials";
-import { makeMaterial } from "../material-helpers";
 import {
+  DUSTPAN_CAPACITY,
+  DUSTPAN_EMPTY_RATE,
   pickUpBroomAction,
   putDownBroomAction,
   sweepTickPass,
@@ -31,14 +31,6 @@ function sweepingState(overrides: Partial<GameState> = {}): GameState {
     },
     ...overrides,
   };
-}
-
-function theSawdustPile(state: GameState): MaterialPile {
-  const piles = state.materialPiles.filter(
-    (pile) => pile.material.type === "sawdustPile",
-  );
-  assert.strictEqual(piles.length, 1);
-  return piles[0];
 }
 
 describe("pickUpBroomAction", () => {
@@ -81,10 +73,13 @@ describe("pickUpBroomAction", () => {
 });
 
 describe("putDownBroomAction", () => {
-  it("leans the broom where the player stands", () => {
-    const result = putDownBroomAction()(sweepingState());
+  it("leans the broom where the player stands, pan contents and all", () => {
+    const result = putDownBroomAction()(
+      sweepingState({ dustpan: { walnut: 30 } }),
+    );
     assert.deepStrictEqual(result.broomPosition, [6, 8]);
     assert.strictEqual(heldTool(result), null);
+    assert.deepStrictEqual(result.dustpan, { walnut: 30 });
   });
 
   it("does nothing when the broom isn't in hand", () => {
@@ -110,17 +105,16 @@ describe("sweepTickPass", () => {
     assert.strictEqual(sweepTickPass()(state), state);
   });
 
-  it("plows swath dust into a pile on the facing cell, leaving a film", () => {
+  it("gathers swath dust into the dustpan, paced by the stroke cap", () => {
     const result = sweepTickPass()(
       sweepingState({ dust: { "7,8": { walnut: 10 }, "8,8": { oak: 10 } } }),
     );
-    // 90% of each swath cell moves; the film stays behind
-    assert.ok(Math.abs((result.dust["7,8"]?.walnut ?? 0) - 1) < 1e-9);
-    assert.ok(Math.abs((result.dust["8,8"]?.oak ?? 0) - 1) < 1e-9);
-    const pile = theSawdustPile(result);
-    assert.deepStrictEqual(pile.position, [7, 8]);
-    assert.ok(pile.material.type === "sawdustPile");
-    assert.ok(Math.abs(dustTotal(pile.material.contents) - 18) < 1e-9);
+    // The stroke wants 90% of each cell (18 units) but the tick cap is
+    // 8, taken proportionally: each cell gives up 4
+    assert.ok(Math.abs((result.dust["7,8"]?.walnut ?? 0) - 6) < 1e-9);
+    assert.ok(Math.abs((result.dust["8,8"]?.oak ?? 0) - 6) < 1e-9);
+    assert.ok(Math.abs(dustTotal(result.dustpan) - 8) < 1e-9);
+    assert.ok(Math.abs((result.dustpan.walnut ?? 0) - 4) < 1e-9);
     // Sweeping never freezes the feet
     assert.strictEqual(result.player.busyTicks, 0);
     // A heavy tick earns token XP
@@ -134,30 +128,14 @@ describe("sweepTickPass", () => {
     const result = sweepTickPass()(
       sweepingState({ dust: { "6,8": { walnut: 10 } } }),
     );
-    assert.ok(Math.abs((result.dust["6,8"]?.walnut ?? 0) - 1) < 1e-9);
+    // One 10-unit cell: the stroke wants 9, the cap allows 8
+    assert.ok(Math.abs((result.dust["6,8"]?.walnut ?? 0) - 2) < 1e-9);
+    assert.ok(Math.abs(dustTotal(result.dustpan) - 8) < 1e-9);
   });
 
   it("leaves dust behind the player alone", () => {
     const state = sweepingState({ dust: { "4,8": { walnut: 10 } } });
     assert.strictEqual(sweepTickPass()(state), state);
-  });
-
-  it("pushes a pile in the swath along to the facing cell", () => {
-    const ahead = makeMaterial<SawdustPile>({
-      type: "sawdustPile",
-      contents: { oak: 30 },
-    });
-    const result = sweepTickPass()(
-      sweepingState({
-        dust: { "7,8": { walnut: 10 } },
-        materialPiles: [{ material: ahead, position: [8, 8] }],
-      }),
-    );
-    const pile = theSawdustPile(result);
-    assert.deepStrictEqual(pile.position, [7, 8]);
-    assert.ok(pile.material.type === "sawdustPile");
-    assert.ok(Math.abs((pile.material.contents.oak ?? 0) - 30) < 1e-9);
-    assert.ok(Math.abs((pile.material.contents.walnut ?? 0) - 9) < 1e-9);
   });
 
   it("pulls dust out from under machines in reach at a reduced rate", () => {
@@ -176,42 +154,53 @@ describe("sweepTickPass", () => {
     assert.ok(Math.abs((result.dust["2,2"]?.pine ?? 0) - 14) < 1e-9);
   });
 
-  it("piles up underfoot when facing a machine", () => {
-    // Standing at [2,3] facing -y: the facing cell [2,2] is the workspace
-    const result = sweepTickPass()(
-      sweepingState({
-        dust: { "2,3": { walnut: 50 } },
-        player: {
-          ...sweepingState().player,
-          position: [2, 3],
-          direction: 1,
-        },
-      }),
-    );
-    const pile = theSawdustPile(result);
-    assert.deepStrictEqual(pile.position, [2, 3]);
-  });
-
-  it("merges into an existing pile and stops at the pile cap", () => {
-    const existing = makeMaterial<SawdustPile>({
-      type: "sawdustPile",
-      contents: { oak: 95 },
-    });
+  it("stops gathering at a full pan, leaving the rest on the floor", () => {
     const result = sweepTickPass()(
       sweepingState({
         dust: { "6,8": { walnut: 10 } },
-        materialPiles: [{ material: existing, position: [7, 8] }],
+        dustpan: { oak: DUSTPAN_CAPACITY - 5 },
       }),
     );
-    // Only 5 units of the 9 gathered fit; the overflow stays on the floor
-    const pile = theSawdustPile(result);
-    assert.ok(pile.material.type === "sawdustPile");
-    assert.ok(Math.abs(dustTotal(pile.material.contents) - 100) < 1e-9);
-    const floorLeft = dustTotal(result.dust["6,8"]);
-    assert.ok(Math.abs(floorLeft - 5) < 1e-9);
+    // Only 5 of the 9 the stroke would take fit in the pan
+    assert.ok(Math.abs(dustTotal(result.dustpan) - DUSTPAN_CAPACITY) < 1e-9);
+    assert.ok(Math.abs(dustTotal(result.dust["6,8"]) - 5) < 1e-9);
   });
 
-  it("a mouse aim steers the swath and the pile to the aimed cell", () => {
+  it("is a no-op with a completely full pan", () => {
+    const state = sweepingState({
+      dust: { "7,8": { walnut: 10 } },
+      dustpan: { oak: DUSTPAN_CAPACITY },
+    });
+    assert.strictEqual(sweepTickPass()(state), state);
+  });
+
+  it("empties the pan a chunk per tick next to the garbage can", () => {
+    // The garbage can occupies [0..1, 13..14]; [2,13] touches it
+    const state = sweepingState({
+      dustpan: { walnut: 60, oak: 40 },
+      player: { ...sweepingState().player, position: [2, 13] },
+    });
+    const result = sweepTickPass()(state);
+    assert.ok(
+      Math.abs(dustTotal(result.dustpan) - (100 - DUSTPAN_EMPTY_RATE)) < 1e-9,
+    );
+    // Species drain proportionally
+    assert.ok(Math.abs((result.dustpan.walnut ?? 0) - 48) < 1e-9);
+  });
+
+  it("emptying wins over sweeping when both apply", () => {
+    const state = sweepingState({
+      dust: { "2,13": { pine: 10 } },
+      dustpan: { walnut: 50 },
+      player: { ...sweepingState().player, position: [2, 13] },
+    });
+    const result = sweepTickPass()(state);
+    assert.ok(dustTotal(result.dustpan) < 50);
+    // The floor is untouched while the pour happens
+    assert.strictEqual(result.dust, state.dust);
+  });
+
+  it("a mouse aim steers the swath to the aimed patch", () => {
     // [6,6] is out of the facing swath (facing +x) but within reach
     const result = sweepTickPass()(
       sweepingState({
@@ -219,24 +208,22 @@ describe("sweepTickPass", () => {
         player: { ...sweepingState().player, sweepAim: [6, 6] },
       }),
     );
-    // The aimed cell and its neighbors get swept…
-    assert.ok(Math.abs((result.dust["6,6"]?.walnut ?? 0) - 1) < 1e-9);
-    assert.ok(Math.abs((result.dust["5,5"]?.oak ?? 0) - 1) < 1e-9);
-    // …into a pile on the aimed cell, not the faced one
-    const pile = theSawdustPile(result);
-    assert.deepStrictEqual(pile.position, [6, 6]);
+    // The aimed cell and its neighbors get swept into the pan
+    assert.ok(Math.abs((result.dust["6,6"]?.walnut ?? 0) - 6) < 1e-9);
+    assert.ok(Math.abs((result.dust["5,5"]?.oak ?? 0) - 6) < 1e-9);
+    assert.ok(Math.abs(dustTotal(result.dustpan) - 8) < 1e-9);
   });
 
   it("ignores an aim beyond arm's reach", () => {
     const result = sweepTickPass()(
       sweepingState({
-        dust: { "7,8": { walnut: 10 } },
+        dust: { "7,8": { walnut: 10 }, "0,0": { oak: 10 } },
         player: { ...sweepingState().player, sweepAim: [0, 0] },
       }),
     );
-    // Falls back to the facing swath
-    const pile = theSawdustPile(result);
-    assert.deepStrictEqual(pile.position, [7, 8]);
+    // Falls back to the facing swath; the far cell is untouched
+    assert.ok(Math.abs((result.dust["7,8"]?.walnut ?? 0) - 2) < 1e-9);
+    assert.ok(Math.abs((result.dust["0,0"]?.oak ?? 0) - 10) < 1e-9);
   });
 
   it("is a free no-op on a clean floor", () => {

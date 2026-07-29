@@ -74,38 +74,42 @@ down. "In hand" is derived, never stored: each tool records where it's
 resting (`GameState.broomPosition`, `shopVac.position`) and null means
 it's being carried — the convention the vac established.
 
-### Broom (starter — built, issue #81 phase 1)
+### Broom + dustpan combo (starter — built, issue #81, reworked)
 
 - A physical object leaning in the shop (home corner `BROOM_HOME`);
   revealed alongside the tutorial message (below). Picked up with E
   standing beside it, leaned again with F, shown in the hands strip
-  while held.
-- **Sweeping is a plow, not a button.** Holding Space runs a per-tick
+  (with the pan's fill %) while held.
+- **Sweeping gathers into the pan.** Holding Space runs a per-tick
   sweep (`sweepTickPass` in `dust-actions.ts`, from `tickAction`) with
   no busyTicks freeze — walking and sweeping happen together, at a
   reduced stride (`SWEEPING_PENALTY` in `player-motion.ts`). Each tick
-  the broom gathers most of the dust in its **swath** (the cell
-  underfoot plus a 3-wide, 2-deep patch in the facing direction) into a
-  **sawdust pile** on the faced cell, so walking shoves a growing drift
-  ahead of the broom.
-- Piles are real material piles carrying their species mix, capped at
-  `SAWDUST_PILE_CAPACITY`. The swath also picks whole piles back up —
-  releasing Space just leaves the pile on the floor, and sweeping into
-  it again brings it along. That's also how a settled pile gets moved.
-- **Mouse aim** (phase 4): with the broom in hand, the cursor's floor
-  cell — clamped to `SWEEP_AIM_REACH` — steers the head: the swath and
-  the pile move to the aimed 3×3 patch instead of the facing block, for
-  herding a drift around a machine's legs. Transient pointer state
-  (`Person.sweepAim`, stripped on load like `operating`), listened for
-  on the ShopView container. WASD alone stays fully sufficient.
+  the broom takes dust from its **swath** (the cell underfoot plus a
+  3-wide, 2-deep patch in the facing direction) straight into the
+  **dustpan** (`GameState.dustpan`, species mix preserved).
+- The stroke is paced by `SWEEP_TICK_CAP` (units per tick, scaled
+  proportionally across the swath so the whole patch thins together) —
+  without it a stroke through deep drifts inhaled several cells at once
+  and the pan filled in a blink.
+- The pan holds `DUSTPAN_CAPACITY` (a fifth of the vac canister); full,
+  the strokes do nothing. **Emptying is the vac's idiom at broom
+  scale**: stand next to the garbage can and hold Space —
+  `DUSTPAN_EMPTY_RATE` units pour per tick. The pan's contents ride
+  with the broom whether it's in hand or leaning.
+- **Mouse aim**: with the broom in hand, the cursor's floor cell —
+  clamped to `SWEEP_AIM_REACH` — steers the head: the swath moves to
+  the aimed 3×3 patch instead of the facing block, for working around a
+  machine's legs. Transient pointer state (`Person.sweepAim`, stripped
+  on load like `operating`), listened for on the ShopView container.
+  WASD alone stays fully sufficient.
 - The swath pulls dust out from under machines at a reduced rate —
   everything is broom-cleanable, under-machine just takes longer — and
   leaves a small film per pass: a broom-only shop is workably clean,
-  never instantly _spotless_.
-- **Dustpan phase**: lean the broom (it commits the hands), pick the
-  pile up like any carried material, and dump it in the garbage can
-  (infinite, v1). Heavy sweeping ticks grant token XP so shopkeeping
-  feeds progression instead of feeling like pure tax.
+  never instantly _spotless_. Heavy sweeping ticks grant token XP so
+  shopkeeping feeds progression instead of feeling like pure tax.
+- There are no sawdust-pile materials anymore — the pile/scoop loop
+  ("plow into a pile, lean the broom, carry the pile to the can")
+  played badly and was replaced by the pan.
 
 ### Shop vac (mid-game store purchase — built, issue #81 phase 3)
 
@@ -124,12 +128,14 @@ it's being carried — the convention the vac established.
   to the garbage can and hold Space — `SHOP_VAC_EMPTY_RATE` units drain
   per tick, so a full canister is a real pour, never a silent side
   effect of walking past.
-- The **hose** (`ShopVacSprite`) is a verlet chain with strong bend
-  stiffness — it holds the wide arcs a corrugated hose does, bows out
-  when you circle the drum, and tows the drum along only once it comes
-  taut, so the canister swings wide around corners. While the hold is
-  on, a nozzle wand appears and species-colored motes fly into it — the
-  cut spray in reverse. All render-layer; state never sees the hose.
+- The **hose** (`ShopVacSprite`) has no physics at all: every frame it
+  is _the_ circular arc of fixed length `HOSE_LENGTH` (6 cells) from
+  the drum's port to the player's hand — solve sin θ/θ = chord/length
+  and draw the arc. Near the drum it lies in a wide loop; walking off
+  pays it out into a straightening curve; only taut does it tow the
+  drum. Deterministic geometry, so it holds perfectly still while you
+  do — a stiff corrugated hose, not a rope. While the hold is on, a
+  nozzle wand appears. All render-layer; state never sees the hose.
 - Dragging halves walking speed, stacking with any dust penalty.
 
 ## Rendering
@@ -177,16 +183,21 @@ first so the first mitigation purchase lands as relief.
 **Built so far**: the state model, per-tick emission, the full particle
 → floor-bake render pipeline, both penalties (machine slowdown via
 `getOperationPhases`; movement via `playerWalkSpeed`), the held-tool
-broom loop (issue #81 phase 1: pick up with E, plow by holding Space,
-piles, dustpan to garbage, under-machine pull at a reduced rate, the
-film), the shop vac (phase 3: drag on V, held-Space suction, trickle,
-deliberate emptying, the verlet hose), and the tutorial
-latch (`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
+broom+dustpan loop (pick up with E, sweep by holding Space, paced pan
+fill, pour out at the can, under-machine pull at a reduced rate, the
+film), the shop vac (drag on V, held-Space suction, trickle, deliberate
+emptying, the fixed-length arc hose), and the tutorial latch
+(`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
 one-time note appear, the sweep hint joins the player prompt with the
 broom in hand on dusty ground). Emission is scaled by 1/multiplier so a
 slowed operation sheds the same total dust rather than compounding.
 
-All four phases of the issue #81 overhaul are built.
+The floor bake redraws every _changed_ cell (`DustLayer`), so the
+texture is an exact picture of `GameState.dust` — a buried cell wears
+an opaque clumped wash under its stamps, and cleaning visibly thins it.
+`DustMotionLayer` is the motion between the ledger entries: cells that
+lose dust throw pale flecks that fly into the broom head or the nozzle,
+and emptying pours a stream into the can.
 
 Then, in order:
 
@@ -201,8 +212,8 @@ Then, in order:
    emission from machines it serves; its bag fills (species mix and all)
    and gets emptied at the garbage — the classic tycoon trade of a
    frequent small chore for an infrequent big one. A **floor-sweep
-   inlet** upgrades the broom: sweep piles onto it and they vanish into
-   the bag, no dustpan phase.
+   inlet** upgrades the broom: sweep at it and the dust goes straight
+   into the collector's bag, no dustpan trips.
 3. **Maybe**: dedicated per-machine shop vacs as a middle tier (multiple
    vacs, each parked at one machine — hose-dragging between machines
    didn't survive design review).

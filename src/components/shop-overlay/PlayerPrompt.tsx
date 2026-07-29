@@ -1,11 +1,12 @@
 import React from "react";
 import { useCellMap } from "../useCellMap";
-import { canSweepAt } from "../../game/game-actions/dust-actions";
-import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
 import {
-  canVacuumAt,
+  canSweepAt,
+  dustpanFillFraction,
   nextToGarbageCan,
-} from "../../game/game-actions/shop-vac-actions";
+} from "../../game/game-actions/dust-actions";
+import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
+import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../../game/HeldTool";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
@@ -96,15 +97,34 @@ export const PlayerPrompt: React.FC = () => {
     // No chip for putting things down: it followed the player to every
     // cell, which read as a strobe. The hands strip carries the F hint
     // in its slot tooltips, and machines offer their own staging chip.
-    if (holdingBroom(gameState) && canSweepAt(gameState)) {
-      rows.push(
-        <HintRow
-          key="sweep"
-          keys={<ShortcutKeys shortcut="operate-machine" />}
-        >
-          hold to sweep
-        </HintRow>,
-      );
+    if (holdingBroom(gameState)) {
+      const panFill = dustpanFillFraction(gameState);
+      const atTheCan = nextToGarbageCan(gameState, gameState.player.position);
+      if (atTheCan && panFill > 0) {
+        rows.push(
+          <HintRow
+            key="empty-pan"
+            keys={<ShortcutKeys shortcut="operate-machine" />}
+          >
+            hold to empty
+          </HintRow>,
+        );
+      } else if (panFill >= 1) {
+        rows.push(
+          <HintRow key="pan-full" className="text-store-orange/90">
+            dustpan full — empty it at the garbage can
+          </HintRow>,
+        );
+      } else if (canSweepAt(gameState)) {
+        rows.push(
+          <HintRow
+            key="sweep"
+            keys={<ShortcutKeys shortcut="operate-machine" />}
+          >
+            hold to sweep
+          </HintRow>,
+        );
+      }
     }
     if (draggingVac) {
       const fill = canisterFillFraction(gameState.shopVac!);

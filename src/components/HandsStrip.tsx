@@ -1,7 +1,10 @@
 import React from "react";
 import { MaterialInstance } from "../game/Materials";
 import { dropMaterialAction } from "../game/game-actions/player-actions";
-import { putDownBroomAction } from "../game/game-actions/dust-actions";
+import {
+  dustpanFillFraction,
+  putDownBroomAction,
+} from "../game/game-actions/dust-actions";
 import { toggleCarryShopVacAction } from "../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../game/HeldTool";
 import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
@@ -46,7 +49,7 @@ export const HandsStrip: React.FC = () => {
       <span className="px-1 font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-paper-manila/60">
         In hand
       </span>
-      {broomInHand && <BroomSlot />}
+      {broomInHand && <BroomSlot fill={dustpanFillFraction(gameState)} />}
       {hoseInHand && (
         <VacHoseSlot fill={canisterFillFraction(gameState.shopVac!)} />
       )}
@@ -83,9 +86,10 @@ const VacHoseSlot: React.FC<{ fill: number }> = ({ fill }) => {
 
 /**
  * The broom's slot: a tool, not a material, so it gets its own chip.
- * Clicking it leans the broom right here, same as F.
+ * Shows the dustpan fill; clicking it leans the broom right here, same
+ * as F.
  */
-const BroomSlot: React.FC = () => {
+const BroomSlot: React.FC<{ fill: number }> = ({ fill }) => {
   const applyAction = useApplyGameAction();
 
   return (
@@ -96,6 +100,9 @@ const BroomSlot: React.FC = () => {
       >
         <span className="font-condensed text-sm leading-tight text-paper-manila">
           Broom
+        </span>
+        <span className="font-ink text-sm leading-none text-gold-light tabular-nums">
+          {Math.round(fill * 100)}%
         </span>
       </button>
     </Tooltip>

@@ -100,11 +100,7 @@ describe("vacuumTickPass", () => {
     assert.ok(Math.abs((result.dust["2,4"]?.walnut ?? 0) - 1) < 1e-9);
     assert.ok(Math.abs((result.dust["2,2"]?.pine ?? 0) - 5.5) < 1e-9);
     assert.ok(Math.abs(dustTotal(result.shopVac?.canister) - 13.5) < 1e-9);
-    // No pile ever appears, and nobody's feet freeze
-    assert.strictEqual(
-      result.materialPiles.some((p) => p.material.type === "sawdustPile"),
-      false,
-    );
+    // Nobody's feet freeze
     assert.strictEqual(result.player.busyTicks, 0);
   });
 

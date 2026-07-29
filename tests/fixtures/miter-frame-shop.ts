@@ -123,4 +123,5 @@ export const miterFrameShop: GameState = {
   dust: {},
   shopVac: null,
   broomPosition: [0, 0],
+  dustpan: {},
 };

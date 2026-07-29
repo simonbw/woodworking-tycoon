@@ -1,13 +1,13 @@
 /**
  * The whole broom loop, from the mess to the curb: mill until the floor
- * is dusty enough to summon the broom, pick the broom up, plow the dust
- * into a pile with held-Space sweeping, lean the broom, dustpan the pile
- * into the garbage can, and haul it out.
+ * is dusty enough to summon the broom, pick the broom up, sweep the
+ * dust into the dustpan with held-Space strokes, and pour the pan out
+ * at the garbage can.
  *
- * `dust-actions.test.ts` covers each rule (rates, the film, the pile
- * cap); the point of running them in order is that the chain has no gaps
- * — the unlock really fires from milling, the broom really commits the
- * hands, and a swept pile really leaves the world through the can.
+ * `dust-actions.test.ts` covers each rule (rates, the film, the pan
+ * cap); the point of running them in order is that the chain has no
+ * gaps — the unlock really fires from milling, the broom really commits
+ * the hands, and the pan really empties through the can.
  */
 
 import { describe, it } from "node:test";
@@ -15,12 +15,9 @@ import assert from "node:assert";
 import { millingShop } from "../../../tests/fixtures/milling-shop";
 import { dustTotal } from "../Dust";
 import { GameState } from "../GameState";
-import { heldTool, holdingBroom } from "../HeldTool";
+import { heldTool } from "../HeldTool";
 import { MaterialInstance } from "../Materials";
-import {
-  pickUpBroomAction,
-  putDownBroomAction,
-} from "../game-actions/dust-actions";
+import { pickUpBroomAction } from "../game-actions/dust-actions";
 import { toggleCarryShopVacAction } from "../game-actions/shop-vac-actions";
 import {
   setOperatingAction,
@@ -33,7 +30,6 @@ const isRough = (m: MaterialInstance) =>
   m.type === "board" && m.surface === "rough" && m.jointedFaces === 0;
 const isJointed = (m: MaterialInstance) =>
   m.type === "board" && m.jointedFaces >= 1 && m.surface === "rough";
-const isSawdustPile = (m: MaterialInstance) => m.type === "sawdustPile";
 
 function floorDust(state: GameState): number {
   return Object.values(state.dust).reduce(
@@ -44,9 +40,9 @@ function floorDust(state: GameState): number {
 
 /**
  * Hold the operate key and walk the given cells, one tick per step —
- * exactly what plowing is: the cleaning pass runs off the held flag in
- * tickAction while the feet keep moving. `facing` aims the swath (the
- * broom's push, the vac's cone); omitted, the walker keeps its heading.
+ * the cleaning pass runs off the held flag in tickAction while the
+ * feet keep moving. `facing` aims the swath (the broom's stroke, the
+ * vac's cone); omitted, the walker keeps its heading.
  */
 function plow(
   shop: ShopDriver,
@@ -64,8 +60,23 @@ function plow(
   shop.apply(setOperatingAction(false));
 }
 
+/** Stand next to the garbage can and hold until the pan/canister is dry. */
+function holdAtTheCan(
+  shop: ShopDriver,
+  isDone: () => boolean,
+  what: string,
+): void {
+  shop.standAt([2, 13]).apply(setOperatingAction(true));
+  let guard = 0;
+  while (!isDone()) {
+    shop.tick();
+    assert.ok(guard++ < 100, `${what} should finish in a few ticks`);
+  }
+  shop.apply(setOperatingAction(false));
+}
+
 describe("cleaning chain", () => {
-  it("mess to curb: mill, unlock, plow, dustpan, garbage", () => {
+  it("mess to curb: mill, unlock, sweep the pan full, empty it", () => {
     const shop = openShop(millingShop);
     shop.switchOn("jointer").switchOn("lunchboxPlaner");
 
@@ -89,7 +100,7 @@ describe("cleaning chain", () => {
     shop.standAt([1, 1]).apply(pickUpBroomAction());
     assert.strictEqual(heldTool(shop.shop), "broom");
 
-    // Plow the rows below the jointer ([2,8]) and planer ([4,8]) — the
+    // Sweep the rows below the jointer ([2,8]) and planer ([4,8]) — the
     // swath reaches two cells ahead, so walking the y=11..9 rows facing +x
     // covers both machines' fallout, undersides included. Two passes per
     // row: the under-machine pull is slow by design.
@@ -106,22 +117,12 @@ describe("cleaning chain", () => {
     const after = floorDust(shop.shop);
     assert.ok(
       after < mess * 0.5,
-      `plowing should clear most of the floor: ${mess} -> ${after}`,
+      `sweeping should clear most of the floor: ${mess} -> ${after}`,
     );
-    const piles = shop.shop.materialPiles.filter((pile) =>
-      isSawdustPile(pile.material),
-    );
-    assert.ok(piles.length > 0, "plowing should have built a sawdust pile");
-    const gathered = piles.reduce(
-      (sum, pile) =>
-        pile.material.type === "sawdustPile"
-          ? sum + dustTotal(pile.material.contents)
-          : sum,
-      0,
-    );
+    const inThePan = dustTotal(shop.shop.dustpan);
     assert.ok(
-      gathered > mess * 0.4,
-      `the piles should hold most of the mess: ${gathered} of ${mess}`,
+      inThePan > mess * 0.4,
+      `the pan should hold most of the mess: ${inThePan} of ${mess}`,
     );
 
     // Sweeping commits the hands: the pickup action refuses while the
@@ -133,28 +134,16 @@ describe("cleaning chain", () => {
       "picking up stock with the broom in hand should refuse",
     );
 
-    // Dustpan phase: lean the broom, scoop the pile, toss it in the can,
-    // and haul the bag out. Emptying is the can's own held operation.
-    shop.apply(putDownBroomAction());
-    assert.strictEqual(holdingBroom(shop.shop), false);
-    shop.takeFromFloor(isSawdustPile);
-    shop.standAt([2, 13]).load("garbageCan", isSawdustPile);
-    // Emptying goes a piece at a time — the held key runs it again and
-    // again, which here is one run() per bag
-    while (shop.machine("garbageCan").state.inputMaterials.length > 0) {
-      shop.run("garbageCan");
-    }
-    assert.strictEqual(
-      shop.shop.materialPiles.filter((pile) => isSawdustPile(pile.material))
-        .length,
-      0,
-      "the swept pile should be gone from the floor",
+    // The trip: stand at the can and hold until the pan pours dry —
+    // the same held verb, aimed at the can instead of the floor
+    holdAtTheCan(
+      shop,
+      () => dustTotal(shop.shop.dustpan) === 0,
+      "emptying the pan",
     );
-    assert.strictEqual(
-      shop.machine("garbageCan").state.inputMaterials.length,
-      0,
-      "the can should have been emptied",
-    );
+    assert.deepStrictEqual(shop.shop.dustpan, {});
+    // Still holding the broom — the trip never took it out of the hands
+    assert.strictEqual(heldTool(shop.shop), "broom");
   });
 
   it("the vac finishes the job: suction to zero, deliberate empty", () => {
@@ -207,24 +196,14 @@ describe("cleaning chain", () => {
       held > mess * 0.8,
       `the canister should hold the mess: ${held} of ${mess}`,
     );
-    assert.strictEqual(
-      shop.shop.materialPiles.some(
-        (pile) => pile.material.type === "sawdustPile",
-      ),
-      false,
-      "the vac makes no piles",
-    );
 
     // The trip: stand at the can and hold until the canister runs dry
-    shop.standAt([2, 13]).apply(setOperatingAction(true));
-    let guard = 0;
-    while (
-      Object.values(shop.shop.shopVac!.canister).some((v) => (v ?? 0) > 0)
-    ) {
-      shop.tick();
-      assert.ok(guard++ < 100, "emptying should finish in a few ticks");
-    }
-    shop.apply(setOperatingAction(false));
+    holdAtTheCan(
+      shop,
+      () =>
+        !Object.values(shop.shop.shopVac!.canister).some((v) => (v ?? 0) > 0),
+      "emptying the canister",
+    );
     assert.deepStrictEqual(shop.shop.shopVac!.canister, {});
   });
 });

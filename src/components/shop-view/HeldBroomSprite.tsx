@@ -1,10 +1,8 @@
 import { useTick } from "@pixi/react";
 import { Graphics, Ticker } from "pixi.js";
 import React, { useRef } from "react";
+import { dustpanFillFraction } from "../../game/game-actions/dust-actions";
 import { holdingBroom } from "../../game/HeldTool";
-import { mixColors } from "../../utils/colorUtils";
-import { rUniform } from "../../utils/randUtils";
-import { dominantDustColor } from "./dust-color";
 import { playerMotion } from "./playerMotionStore";
 import { useGameState } from "../useGameState";
 import { PIXELS_PER_CELL } from "./shop-scale";
@@ -20,26 +18,13 @@ const STROKE_RATE = 2.1;
 /** How quickly the head swings around to a new aim, per second. */
 const AIM_TURN_RATE = 10;
 
-interface Chip {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  size: number;
-  color: number;
-}
-
-const MAX_CHIPS = 60;
-
 /**
- * The broom in the player's hands, drawn in the body's rotated frame so
- * it always points where the player faces (up in local space). Idle it
- * rides at a slight angle; while the operate key is held it strokes side
- * to side and kicks a spray of species-colored flecks off the bristles.
- * The chips are pure garnish — the real dust movement is state, baked
- * into the DustLayer as cells change.
+ * The broom-and-dustpan combo in the player's hands, drawn in the
+ * body's rotated frame so it always points where the player faces (up
+ * in local space). Idle it rides at a slight angle; while the operate
+ * key is held it strokes side to side. The pan rides at the hip and
+ * shows its fill. The dust flying off the floor into the pan is
+ * DustMotionLayer's job — this sprite is just the tool.
  */
 export const HeldBroomSprite: React.FC = () => {
   const gameState = useGameState();
@@ -47,7 +32,6 @@ export const HeldBroomSprite: React.FC = () => {
   stateRef.current = gameState;
   const graphicsRef = useRef<Graphics>(null);
   const phase = useRef(0);
-  const chips = useRef<Chip[]>([]);
 
   useTick((ticker: Ticker) => {
     const g = graphicsRef.current;
@@ -85,37 +69,19 @@ export const HeldBroomSprite: React.FC = () => {
 
     g.clear();
 
-    // Chips first, under the broom head
-    if (sweeping && chips.current.length < MAX_CHIPS) {
-      const color = dominantDustColor(gs);
-      if (color !== null) {
-        // Kicked off wherever the bristles are right now, thrown forward
-        for (let i = 0; i < 2; i++) {
-          chips.current.push({
-            x: sway + rUniform(-HEAD_HALF_WIDTH, HEAD_HALF_WIDTH),
-            y: -HEAD_REACH + rUniform(-4, 4),
-            vx: Math.cos(phase.current) * rUniform(20, 60),
-            vy: rUniform(-70, -20),
-            life: 0,
-            maxLife: rUniform(0.25, 0.5),
-            size: rUniform(1.2, 2.6),
-            color: mixColors(color, 0xffffff, rUniform(0.1, 0.4)),
-          });
-        }
-      }
+    // The dustpan, riding at the hip: a shallow tray whose tint fills
+    // with the pan's actual load
+    const panFill = dustpanFillFraction(gs);
+    const panX = -10;
+    const panY = 6;
+    g.roundRect(panX - 7, panY - 5, 14, 10, 2);
+    g.fill(0x4a5866);
+    if (panFill > 0) {
+      g.roundRect(panX - 5.5, panY - 3.5, 11 * Math.min(1, panFill), 7, 1.5);
+      g.fill({ color: 0xa8895c, alpha: 0.95 });
     }
-    chips.current = chips.current.filter((chip) => {
-      chip.life += dt;
-      if (chip.life >= chip.maxLife) return false;
-      chip.x += chip.vx * dt;
-      chip.y += chip.vy * dt;
-      chip.vx *= 1 - 4 * dt;
-      chip.vy *= 1 - 4 * dt;
-      const alpha = 0.8 * (1 - chip.life / chip.maxLife);
-      g.rect(chip.x - chip.size / 2, chip.y - chip.size / 2, chip.size, chip.size);
-      g.fill({ color: chip.color, alpha });
-      return true;
-    });
+    g.roundRect(panX - 7, panY - 5, 14, 10, 2);
+    g.stroke({ width: 1.5, color: 0x262e38 });
 
     // Handle, from the hands out to the head
     const gripX = 6;

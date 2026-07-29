@@ -326,7 +326,7 @@ test.describe("Shop floor", () => {
       ).toBeVisible();
     });
 
-    await test.step("holding Space plows the dust into a pile", async () => {
+    await test.step("holding Space sweeps the dust into the dustpan", async () => {
       // Stand on the dust facing +y (direction 3) so the swath covers it
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
@@ -349,10 +349,15 @@ test.describe("Shop floor", () => {
       await expect.poll(dustTotal).toBeLessThan(before * 0.5);
       await page.keyboard.up("Space");
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
-      const piles = state.materialPiles.filter(
-        (pile: any) => pile.material.type === "sawdustPile",
+      const inThePan = (Object.values(state.dustpan) as number[]).reduce(
+        (a, b) => a + b,
+        0,
       );
-      expect(piles.length).toBeGreaterThan(0);
+      expect(inThePan).toBeGreaterThan(0);
+      // The pan fill shows in the hands strip alongside the broom
+      await expect(
+        page.getByTestId("hands-strip").getByText(/\d+%/),
+      ).toBeVisible();
     });
 
     await test.step("F leans the broom right here", async () => {

@@ -97,4 +97,5 @@ export const handToolsShop: GameState = {
   dust: {},
   shopVac: null,
   broomPosition: [0, 0],
+  dustpan: {},
 };

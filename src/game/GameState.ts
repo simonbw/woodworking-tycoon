@@ -1,5 +1,5 @@
 import { ConsumableStock } from "./Consumable";
-import { DustMap } from "./Dust";
+import { DustMap, SpeciesAmounts } from "./Dust";
 import type { ManualArticleId } from "./manual";
 import { ShopVacState } from "./ShopVac";
 import { MachineState } from "./Machine";
@@ -120,6 +120,13 @@ export interface GameState {
    * until `progression.sweepingUnlocked` reveals it.
    */
   readonly broomPosition: Vector | null;
+  /**
+   * Sawdust in the broom's dustpan, by species. Sweeping gathers into
+   * it; it holds DUSTPAN_CAPACITY and has to be emptied at the garbage
+   * can (a hold, like the vac's canister). Rides with the broom whether
+   * it's in hand or leaning.
+   */
+  readonly dustpan: SpeciesAmounts;
   /**
    * Transient queue of sound cues emitted by the action(s) that produced this
    * state, drained by `GameSoundLayer` each render. Optional and never

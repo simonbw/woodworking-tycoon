@@ -1,5 +1,12 @@
-import { getMachines } from "../Machine";
-import { cellDust, dustKey, DustMap, dustTotal, inBounds, SpeciesAmounts } from "../Dust";
+import {
+  cellDust,
+  drainAmounts,
+  dustKey,
+  DustMap,
+  dustTotal,
+  inBounds,
+  SpeciesAmounts,
+} from "../Dust";
 import { GameAction, GameState } from "../GameState";
 import {
   canisterRoom,
@@ -10,13 +17,8 @@ import {
 } from "../ShopVac";
 import { personCanWork } from "../Person";
 import { Species } from "../Materials";
-import { sweepSwath } from "./dust-actions";
-import {
-  chebyshevDistance,
-  translateVec,
-  Vector,
-  vectorEquals,
-} from "../Vectors";
+import { nextToGarbageCan, sweepSwath } from "./dust-actions";
+import { chebyshevDistance, Vector, vectorEquals } from "../Vectors";
 import { withXp } from "./skill-actions";
 
 /** Share of the underfoot cell's dust one suction tick takes. */
@@ -27,13 +29,6 @@ const VACUUM_CONE_RATE = 0.45;
 /** Suction ticks gathering less than this grant no XP (mirrors sweeping). */
 const XP_MINIMUM_GATHERED = 15;
 const VACUUM_XP = 1;
-
-const ORTHOGONALS: ReadonlyArray<Vector> = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
 
 /** Bought at the store; it's delivered to the material dropoff spot. */
 export function buyShopVacAction(): GameAction {
@@ -113,19 +108,13 @@ export function vacuumTickPass(): GameAction {
       dustTotal(vac.canister) > 0 &&
       nextToGarbageCan(gameState, gameState.player.position)
     ) {
-      const total = dustTotal(vac.canister);
-      const drained = Math.min(SHOP_VAC_EMPTY_RATE, total);
-      const keep = 1 - drained / total;
-      const canister: Partial<Record<Species, number>> = {};
-      if (keep > 1e-9) {
-        for (const [species, amount] of Object.entries(vac.canister)) {
-          const left = (amount ?? 0) * keep;
-          if (left > 0.05) {
-            canister[species as Species] = left;
-          }
-        }
-      }
-      return { ...gameState, shopVac: { ...vac, canister } };
+      return {
+        ...gameState,
+        shopVac: {
+          ...vac,
+          canister: drainAmounts(vac.canister, SHOP_VAC_EMPTY_RATE),
+        },
+      };
     }
 
     const room = canisterRoom(vac);
@@ -217,23 +206,6 @@ export function shopVacTickPass(): GameAction {
     );
     return { ...gameState, dust, shopVac: { ...vac, canister: moved } };
   };
-}
-
-/** Whether this position touches the garbage can — where the vac empties. */
-export function nextToGarbageCan(
-  gameState: GameState,
-  position: Vector,
-): boolean {
-  const garbageCells = getMachines(gameState.machines)
-    .filter((machine) => machine.type.id === "garbageCan")
-    .flatMap((machine) =>
-      machine.type.cellsOccupied.map((cell) => machine.localToShop(cell)),
-    );
-  return garbageCells.some((cell) =>
-    ORTHOGONALS.some((delta) =>
-      vectorEquals(translateVec(position, delta), cell),
-    ),
-  );
 }
 
 /**

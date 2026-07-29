@@ -17,10 +17,6 @@ export type DustMap = Readonly<Record<string, SpeciesAmounts>>;
  * 32-inch tiles held — same depth of sawdust, less floor per cell. */
 export const DUST_MAX_PER_CELL = 15;
 
-/** How much sawdust one swept-up floor pile holds — several cells' worth,
- * a real knee-high pile rather than one square foot's dusting. */
-export const SAWDUST_PILE_CAPACITY = 100;
-
 /**
  * Share of an emission that lands on the machine's own cells (and its
  * operation position); the rest falls on the orthogonal neighbors.
@@ -55,6 +51,31 @@ export function dustTotal(amounts: SpeciesAmounts | undefined): number {
 
 export function cellDust(dust: DustMap, position: Vector): number {
   return dustTotal(dust[dustKey(position)]);
+}
+
+/**
+ * Pour `amount` units out of a species tally, taken proportionally
+ * across species. Species drained below a residue are dropped so a
+ * container actually comes up empty. Shared by the dustpan and the vac
+ * canister — both empty the same way, a chunk per held tick.
+ */
+export function drainAmounts(
+  amounts: SpeciesAmounts,
+  amount: number,
+): SpeciesAmounts {
+  const total = dustTotal(amounts);
+  if (total <= 0 || amount >= total) {
+    return {};
+  }
+  const keep = 1 - amount / total;
+  const drained: Partial<Record<Species, number>> = {};
+  for (const [species, value] of Object.entries(amounts)) {
+    const left = (value ?? 0) * keep;
+    if (left > 0.05) {
+      drained[species as Species] = left;
+    }
+  }
+  return drained;
 }
 
 export interface DustDeposit {
