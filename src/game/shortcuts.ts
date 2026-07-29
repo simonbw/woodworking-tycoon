@@ -133,19 +133,6 @@ const defs = [
     shiftHint: "put down everything",
   },
   {
-    // The shop vac's burst while dragging it (the broom is worked by
-    // holding Space instead — see docs/dust-and-cleaning.md). Contextual;
-    // hidden from the static cheat sheet so the vac doesn't leak before
-    // its reveal.
-    id: "sweep",
-    codes: ["KeyT"],
-    keys: [["T"]],
-    description: "Vacuum burst",
-    scope: "home",
-    group: "Materials",
-    hidden: true,
-  },
-  {
     // Contextual like sweep: grab the parked shop vac, or set it down.
     id: "vac-toggle",
     codes: ["KeyV"],

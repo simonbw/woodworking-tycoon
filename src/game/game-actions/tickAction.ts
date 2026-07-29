@@ -10,7 +10,7 @@ import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { sweepTickPass } from "./dust-actions";
-import { shopVacTickPass } from "./shop-vac-actions";
+import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { combineActions } from "./misc-actions";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
@@ -35,6 +35,7 @@ import { withXp } from "./skill-actions";
 export const tickAction: GameAction = combineActions(
   playerTickPass(),
   sweepTickPass(),
+  vacuumTickPass(),
   shopVacTickPass(),
   machineTickPass(),
   advanceTickPass(),

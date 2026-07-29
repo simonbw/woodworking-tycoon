@@ -2,7 +2,10 @@ import React from "react";
 import { useCellMap } from "../useCellMap";
 import { canSweepAt } from "../../game/game-actions/dust-actions";
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
-import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
+import {
+  canVacuumAt,
+  nextToGarbageCan,
+} from "../../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../../game/HeldTool";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
@@ -99,10 +102,32 @@ export const PlayerPrompt: React.FC = () => {
         </li>,
       );
     }
-    if (draggingVac && canVacuumAt(gameState)) {
+    if (draggingVac) {
+      const fill = canisterFillFraction(gameState.shopVac!);
+      const atTheCan = nextToGarbageCan(gameState, gameState.player.position);
+      if (atTheCan && fill > 0) {
+        rows.push(
+          <li key="empty-vac">
+            <ShortcutKeys shortcut="operate-machine" /> hold to empty
+          </li>,
+        );
+      } else if (fill >= 1) {
+        rows.push(
+          <li key="vac-full" className="text-store-orange/90">
+            canister full — empty it at the garbage can
+          </li>,
+        );
+      } else if (canVacuumAt(gameState)) {
+        rows.push(
+          <li key="vacuum">
+            <ShortcutKeys shortcut="operate-machine" /> hold to vacuum
+          </li>,
+        );
+      }
       rows.push(
-        <li key="vacuum">
-          <ShortcutKeys shortcut="sweep" /> vacuum
+        <li key="set-vac">
+          <ShortcutKeys shortcut="vac-toggle" /> set down vac ·{" "}
+          {Math.round(fill * 100)}%
         </li>,
       );
     }
@@ -110,16 +135,6 @@ export const PlayerPrompt: React.FC = () => {
       rows.push(
         <li key="grab-vac">
           <ShortcutKeys shortcut="vac-toggle" /> grab shop vac
-        </li>,
-      );
-    }
-    if (draggingVac) {
-      const fill = canisterFillFraction(gameState.shopVac!);
-      rows.push(
-        <li key="set-vac">
-          <ShortcutKeys shortcut="vac-toggle" /> set down vac ·{" "}
-          {Math.round(fill * 100)}%
-          {fill >= 1 && " — empty it at the garbage can"}
         </li>,
       );
     }

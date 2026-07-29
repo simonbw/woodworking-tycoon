@@ -30,13 +30,17 @@ export const DustArticle: React.FC = () => (
 
     <H>The Shop Vac</H>
     <P>
-      Grab or park the vac with <ShortcutKeys shortcut="vac-toggle" />. While
-      you're dragging it, it steadily cleans whatever you walk over, and{" "}
-      <ShortcutKeys shortcut="sweep" /> fires a burst that clears the tile
-      you're on and takes a good bite out of the neighboring ones, machines'
-      undersides included. Dust collects in the canister, which holds about five
-      tiles' worth and empties automatically whenever you stop next to the
-      garbage can.
+      Grab or park the vac with <ShortcutKeys shortcut="vac-toggle" /> —
+      grabbing it means holding its hose, which takes your hands like the
+      broom does. Dragging it steadily cleans whatever you walk over, and
+      holding <ShortcutKeys shortcut="operate-machine" /> runs the nozzle
+      over the floor ahead of you, machines' undersides included. The vac
+      cleans to nothing — no film, no pile.
+    </P>
+    <P>
+      Dust collects in the canister, which holds about five tiles' worth.
+      When it fills, the suction stops. Wheel it to the garbage can and
+      hold <ShortcutKeys shortcut="operate-machine" /> to empty it.
     </P>
 
     <Note>

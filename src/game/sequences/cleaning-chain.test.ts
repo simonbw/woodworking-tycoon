@@ -21,7 +21,12 @@ import {
   pickUpBroomAction,
   putDownBroomAction,
 } from "../game-actions/dust-actions";
-import { setOperatingAction } from "../game-actions/player-actions";
+import { toggleCarryShopVacAction } from "../game-actions/shop-vac-actions";
+import {
+  setOperatingAction,
+  setPlayerPositionAction,
+} from "../game-actions/player-actions";
+import { Direction } from "../Vectors";
 import { openShop, ShopDriver } from "./shop-driver";
 
 const isRough = (m: MaterialInstance) =>
@@ -39,13 +44,22 @@ function floorDust(state: GameState): number {
 
 /**
  * Hold the operate key and walk the given cells, one tick per step —
- * exactly what plowing is: the sweep runs off the held flag in
- * tickAction while the feet keep moving.
+ * exactly what plowing is: the cleaning pass runs off the held flag in
+ * tickAction while the feet keep moving. `facing` aims the swath (the
+ * broom's push, the vac's cone); omitted, the walker keeps its heading.
  */
-function plow(shop: ShopDriver, route: ReadonlyArray<[number, number]>): void {
+function plow(
+  shop: ShopDriver,
+  route: ReadonlyArray<[number, number]>,
+  facing?: Direction,
+): void {
   shop.apply(setOperatingAction(true));
   for (const cell of route) {
-    shop.standAt(cell).tick();
+    shop
+      .apply(
+        setPlayerPositionAction(cell, facing ?? shop.shop.player.direction),
+      )
+      .tick();
   }
   shop.apply(setOperatingAction(false));
 }
@@ -141,5 +155,76 @@ describe("cleaning chain", () => {
       0,
       "the can should have been emptied",
     );
+  });
+
+  it("the vac finishes the job: suction to zero, deliberate empty", () => {
+    const shop = openShop(millingShop);
+    shop.switchOn("jointer").switchOn("lunchboxPlaner");
+    // Make a mess, then grant the vac — buying it is unit-tested; the
+    // chain under test starts at the hose.
+    shop
+      .feed("jointer", isRough)
+      .feed("lunchboxPlaner", isJointed)
+      .putEverythingDown();
+    const mess = floorDust(shop.shop);
+    assert.ok(mess > 0, "milling should have shed dust");
+    shop.arrange((state) => ({
+      ...state,
+      shopVac: { position: state.player.position, canister: {} },
+    }));
+
+    // Grab the hose and hoover the fallout rows, holding the key
+    shop.apply(toggleCarryShopVacAction());
+    assert.strictEqual(heldTool(shop.shop), "vacHose");
+    const route: Array<[number, number]> = [];
+    for (const y of [5, 4, 3]) {
+      for (let pass = 0; pass < 2; pass++) {
+        for (let x = 0; x <= 9; x++) {
+          route.push([x, y]);
+        }
+      }
+    }
+    plow(shop, route);
+    // The fallout behind the machines needs the nozzle aimed at them:
+    // walk the y=3 aisle facing the back wall and the cone reaches the
+    // y=0..2 cells the eastward passes never covered.
+    const backWallPass: Array<[number, number]> = [];
+    for (let pass = 0; pass < 3; pass++) {
+      for (let x = 0; x <= 9; x++) {
+        backWallPass.push([x, 3]);
+      }
+    }
+    plow(shop, backWallPass, 1);
+
+    const after = floorDust(shop.shop);
+    assert.ok(
+      after < mess * 0.15,
+      `the vac should clean nearly everything: ${mess} -> ${after}`,
+    );
+    const canister = shop.shop.shopVac!.canister;
+    const held = Object.values(canister).reduce((a, b) => a + (b ?? 0), 0);
+    assert.ok(
+      held > mess * 0.8,
+      `the canister should hold the mess: ${held} of ${mess}`,
+    );
+    assert.strictEqual(
+      shop.shop.materialPiles.some(
+        (pile) => pile.material.type === "sawdustPile",
+      ),
+      false,
+      "the vac makes no piles",
+    );
+
+    // The trip: stand at the can and hold until the canister runs dry
+    shop.standAt([2, 13]).apply(setOperatingAction(true));
+    let guard = 0;
+    while (
+      Object.values(shop.shop.shopVac!.canister).some((v) => (v ?? 0) > 0)
+    ) {
+      shop.tick();
+      assert.ok(guard++ < 100, "emptying should finish in a few ticks");
+    }
+    shop.apply(setOperatingAction(false));
+    assert.deepStrictEqual(shop.shop.shopVac!.canister, {});
   });
 });

@@ -3,11 +3,13 @@ import type { GameState } from "./GameState";
 import { Vector } from "./Vectors";
 
 /**
- * The shop vac: a canister on wheels the player drags around (see
- * docs/dust-and-cleaning.md). It's the tool that cleans to zero — the
+ * The shop vac: a canister on wheels the player drags around by its
+ * hose (see docs/dust-and-cleaning.md). Grabbing it is holding the hose
+ * — a held tool, so it commits the hands and the Space hold runs the
+ * suction (vacuumTickPass). It's the tool that cleans to zero — the
  * broom always leaves a film, and only the vac reaches under machines
  * properly. The cost is hauling it: dragging slows every step, and the
- * canister needs emptying at the garbage can.
+ * canister has to be deliberately emptied at the garbage can.
  */
 export interface ShopVacState {
   /** Where it's parked; null while the player is dragging it. */
@@ -23,8 +25,9 @@ export const SHOP_VAC_CANISTER_CAPACITY = 500;
 export const SHOP_VAC_PASSIVE_RATE = 6;
 /** Dragging the canister costs an extra tick per step. */
 export const SHOP_VAC_DRAG_PENALTY = 1;
-/** An active vacuum burst occupies this many ticks (1 now + rest busy). */
-export const VACUUM_TICKS = 2;
+/** Units drained per tick while holding the empty at the garbage can —
+ * a full canister is a real pour, not a blink. */
+export const SHOP_VAC_EMPTY_RATE = 30;
 
 export function carryingShopVac(gameState: GameState): boolean {
   return gameState.shopVac !== null && gameState.shopVac.position === null;

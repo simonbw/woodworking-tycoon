@@ -1,26 +1,38 @@
-import { personCanWork } from "../Person";
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { dustTotal } from "../Dust";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { BASE_WALK_SPEED, playerWalkSpeed } from "../player-motion";
-import { SHOP_VAC_CANISTER_CAPACITY, SHOP_VAC_COST } from "../ShopVac";
+import {
+  SHOP_VAC_CANISTER_CAPACITY,
+  SHOP_VAC_COST,
+  SHOP_VAC_EMPTY_RATE,
+} from "../ShopVac";
 import {
   buyShopVacAction,
   shopVacTickPass,
   toggleCarryShopVacAction,
-  vacuumAction,
+  vacuumTickPass,
 } from "./shop-vac-actions";
 import { tickAction } from "./tickAction";
 
-/** Dragging the vac at [1,1] (the workspace is the neighbor at [1,2]). */
+/**
+ * Dragging the vac at [2,4], hose in hand and the operate key held —
+ * one tick of suction away. Facing -y (direction 1), so the workspace at
+ * [1..3, 1..2] sits inside the suction swath.
+ */
 function draggingState(overrides: Partial<GameState> = {}): GameState {
   return {
     ...initialGameState,
     progression: { ...initialGameState.progression, sweepingUnlocked: true },
     shopVac: { position: null, canister: {} },
-    player: { ...initialGameState.player, position: [1, 1], direction: 0 },
+    player: {
+      ...initialGameState.player,
+      position: [2, 4],
+      direction: 1,
+      operating: true,
+    },
     ...overrides,
   };
 }
@@ -50,7 +62,7 @@ describe("buyShopVacAction", () => {
 describe("toggleCarryShopVacAction", () => {
   it("grabs the vac when standing on it", () => {
     const state = draggingState({
-      shopVac: { position: [1, 1], canister: {} },
+      shopVac: { position: [2, 4], canister: {} },
     });
     const result = toggleCarryShopVacAction()(state);
     assert.strictEqual(result.shopVac?.position, null);
@@ -58,38 +70,76 @@ describe("toggleCarryShopVacAction", () => {
 
   it("parks it underfoot while dragging", () => {
     const result = toggleCarryShopVacAction()(draggingState());
-    assert.deepStrictEqual(result.shopVac?.position, [1, 1]);
+    assert.deepStrictEqual(result.shopVac?.position, [2, 4]);
   });
 
   it("cannot grab from a distance", () => {
     const state = draggingState({
-      shopVac: { position: [3, 5], canister: {} },
+      shopVac: { position: [6, 8], canister: {} },
+    });
+    assert.strictEqual(toggleCarryShopVacAction()(state), state);
+  });
+
+  it("cannot grab the hose with the broom in hand", () => {
+    const state = draggingState({
+      shopVac: { position: [2, 4], canister: {} },
+      broomPosition: null,
     });
     assert.strictEqual(toggleCarryShopVacAction()(state), state);
   });
 });
 
-describe("vacuumAction", () => {
-  it("cleans underfoot to zero and neighbors — machines included — hard", () => {
-    const result = vacuumAction()(
+describe("vacuumTickPass", () => {
+  it("pulls the swath into the canister — machine undersides included", () => {
+    const result = vacuumTickPass()(
       draggingState({
-        dust: { "1,1": { walnut: 50 }, "1,2": { pine: 20 } },
+        dust: { "2,4": { walnut: 10 }, "2,2": { pine: 10 } },
       }),
     );
-    // Underfoot: gone entirely. Under the workspace: 60% gone.
-    assert.strictEqual(result.dust["1,1"], undefined);
-    assert.ok(Math.abs((result.dust["1,2"]?.pine ?? 0) - 8) < 1e-9);
-    assert.ok(Math.abs(dustTotal(result.shopVac?.canister) - 62) < 1e-9);
-    assert.strictEqual(result.player.busyTicks, 1);
-    assert.strictEqual(personCanWork(result.player), false);
-    assert.strictEqual(result.progression.xp, 1);
+    // Underfoot at the strong rate; under the workspace at the cone rate
+    assert.ok(Math.abs((result.dust["2,4"]?.walnut ?? 0) - 1) < 1e-9);
+    assert.ok(Math.abs((result.dust["2,2"]?.pine ?? 0) - 5.5) < 1e-9);
+    assert.ok(Math.abs(dustTotal(result.shopVac?.canister) - 13.5) < 1e-9);
+    // No pile ever appears, and nobody's feet freeze
+    assert.strictEqual(
+      result.materialPiles.some((p) => p.material.type === "sawdustPile"),
+      false,
+    );
+    assert.strictEqual(result.player.busyTicks, 0);
   });
 
-  it("stops at the canister's capacity", () => {
-    const nearlyFull = SHOP_VAC_CANISTER_CAPACITY - 10;
-    const result = vacuumAction()(
+  it("does nothing unless the operate key is held", () => {
+    const state = draggingState({
+      dust: { "2,4": { walnut: 10 } },
+      player: { ...draggingState().player, operating: false },
+    });
+    assert.strictEqual(vacuumTickPass()(state), state);
+  });
+
+  it("does nothing while the vac is parked", () => {
+    const state = draggingState({
+      dust: { "2,4": { walnut: 10 } },
+      shopVac: { position: [5, 5], canister: {} },
+    });
+    assert.strictEqual(vacuumTickPass()(state), state);
+  });
+
+  it("a full canister kills the suction", () => {
+    const state = draggingState({
+      dust: { "2,4": { walnut: 10 } },
+      shopVac: {
+        position: null,
+        canister: { oak: SHOP_VAC_CANISTER_CAPACITY },
+      },
+    });
+    assert.strictEqual(vacuumTickPass()(state), state);
+  });
+
+  it("stops taking at the canister's capacity", () => {
+    const nearlyFull = SHOP_VAC_CANISTER_CAPACITY - 3;
+    const result = vacuumTickPass()(
       draggingState({
-        dust: { "1,1": { walnut: 50 } },
+        dust: { "2,4": { walnut: 10 } },
         shopVac: { position: null, canister: { oak: nearlyFull } },
       }),
     );
@@ -98,43 +148,56 @@ describe("vacuumAction", () => {
         dustTotal(result.shopVac?.canister) - SHOP_VAC_CANISTER_CAPACITY,
       ) < 1e-9,
     );
-    assert.ok(Math.abs((result.dust["1,1"]?.walnut ?? 0) - 40) < 1e-9);
+    assert.ok(Math.abs((result.dust["2,4"]?.walnut ?? 0) - 7) < 1e-9);
   });
 
-  it("does nothing while the vac is parked", () => {
+  it("the same hold empties the canister beside the garbage can", () => {
+    // The garbage can occupies [0..1, 13..14]; [0,12] touches its top edge
     const state = draggingState({
-      dust: { "1,1": { walnut: 50 } },
-      shopVac: { position: [0, 0], canister: {} },
+      shopVac: { position: null, canister: { walnut: SHOP_VAC_EMPTY_RATE * 2 } },
+      player: {
+        ...draggingState().player,
+        position: [0, 12],
+      },
     });
-    assert.strictEqual(vacuumAction()(state), state);
+    const once = vacuumTickPass()(state);
+    assert.ok(
+      Math.abs(dustTotal(once.shopVac?.canister) - SHOP_VAC_EMPTY_RATE) < 1e-9,
+    );
+    const twice = vacuumTickPass()(once);
+    assert.deepStrictEqual(twice.shopVac?.canister, {});
   });
 });
 
 describe("shopVacTickPass", () => {
   it("trickle-cleans the cell underfoot while dragging", () => {
     const result = shopVacTickPass()(
-      draggingState({ dust: { "1,1": { walnut: 50 } } }),
+      draggingState({ dust: { "2,4": { walnut: 50 } } }),
     );
-    assert.ok(Math.abs((result.dust["1,1"]?.walnut ?? 0) - 44) < 1e-9);
+    assert.ok(Math.abs((result.dust["2,4"]?.walnut ?? 0) - 44) < 1e-9);
     assert.ok(Math.abs((result.shopVac?.canister.walnut ?? 0) - 6) < 1e-9);
   });
 
-  it("dumps the canister next to the garbage can", () => {
-    // The garbage can occupies [0..1, 13..14]; standing at [0,12] is
-    // adjacent to its top edge
-    const result = shopVacTickPass()(
-      draggingState({
-        shopVac: { position: null, canister: { walnut: 123 } },
-        player: { ...initialGameState.player, position: [0, 12], direction: 0 },
-      }),
+  it("never dumps the canister on its own — emptying is deliberate", () => {
+    const state = draggingState({
+      shopVac: { position: null, canister: { walnut: 123 } },
+      player: {
+        ...draggingState().player,
+        position: [0, 12],
+        operating: false,
+      },
+    });
+    const result = tickAction(state);
+    assert.ok(
+      Math.abs(dustTotal(result.shopVac?.canister) - 123) < 1e-9,
+      "standing at the can without holding the key should keep the load",
     );
-    assert.deepStrictEqual(result.shopVac?.canister, {});
   });
 
   it("leaves a parked vac alone", () => {
     const state = draggingState({
-      dust: { "1,1": { walnut: 50 } },
-      shopVac: { position: [1, 1], canister: {} },
+      dust: { "2,4": { walnut: 50 } },
+      shopVac: { position: [2, 4], canister: {} },
     });
     assert.strictEqual(shopVacTickPass()(state), state);
   });
@@ -143,22 +206,5 @@ describe("shopVacTickPass", () => {
 describe("dragging the vac through the shop", () => {
   it("halves walking speed", () => {
     assert.strictEqual(playerWalkSpeed(draggingState()), BASE_WALK_SPEED / 2);
-  });
-
-  it("bursts dust into the canister, never into a pile", () => {
-    let state = draggingState({
-      dust: { "1,1": { walnut: 50 } },
-      player: {
-        ...initialGameState.player,
-        position: [1, 1],
-        direction: 0,
-      },
-    });
-    state = vacuumAction()(state);
-    // Vacuumed into the canister — no sawdust pile appears
-    assert.ok((state.shopVac?.canister.walnut ?? 0) > 40);
-    assert.ok(
-      !state.materialPiles.some((pile) => pile.material.type === "sawdustPile"),
-    );
   });
 });

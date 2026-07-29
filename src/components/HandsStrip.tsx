@@ -2,7 +2,9 @@ import React from "react";
 import { MaterialInstance } from "../game/Materials";
 import { dropMaterialAction } from "../game/game-actions/player-actions";
 import { putDownBroomAction } from "../game/game-actions/dust-actions";
+import { toggleCarryShopVacAction } from "../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../game/HeldTool";
+import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
 import { getMaterialFullName } from "../game/material-helpers";
 import { groupBy } from "../utils/arrayUtils";
 import { MaterialIcon } from "./current-cell-info/MaterialIcon";
@@ -22,9 +24,10 @@ export const HandsStrip: React.FC = () => {
   const gameState = useGameState();
 
   const broomInHand = holdingBroom(gameState);
+  const hoseInHand = carryingShopVac(gameState);
   if (
     gameState.player.away ||
-    (gameState.player.inventory.length === 0 && !broomInHand)
+    (gameState.player.inventory.length === 0 && !broomInHand && !hoseInHand)
   ) {
     return null;
   }
@@ -44,10 +47,37 @@ export const HandsStrip: React.FC = () => {
         In hand
       </span>
       {broomInHand && <BroomSlot />}
+      {hoseInHand && (
+        <VacHoseSlot fill={canisterFillFraction(gameState.shopVac!)} />
+      )}
       {grouped.map(([name, materials]) => (
         <HandSlot key={name} name={name} materials={materials} />
       ))}
     </div>
+  );
+};
+
+/**
+ * The vac hose's slot: shows the canister fill; clicking parks the vac
+ * right here, same as V.
+ */
+const VacHoseSlot: React.FC<{ fill: number }> = ({ fill }) => {
+  const applyAction = useApplyGameAction();
+
+  return (
+    <Tooltip content="Park the vac" shortcut="vac-toggle">
+      <button
+        className="flex items-center gap-1.5 rounded border border-workshop-edge bg-workshop-panel px-1.5 py-1 text-left hover:border-gold-dark"
+        onClick={() => applyAction(toggleCarryShopVacAction())}
+      >
+        <span className="font-condensed text-sm leading-tight text-paper-manila">
+          Vac hose
+        </span>
+        <span className="font-ink text-sm leading-none text-gold-light tabular-nums">
+          {Math.round(fill * 100)}%
+        </span>
+      </button>
+    </Tooltip>
   );
 };
 

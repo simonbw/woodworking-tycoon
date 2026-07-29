@@ -59,8 +59,8 @@ export type ShoppingTrip = {
 /**
  * Whether the person is free to start work right now: in the shop and not
  * still occupied by their last action (trudging, sweeping). Derived, never
- * stored — tickAction and cleanUpAction consult this instead of a
- * persisted flag that would go stale.
+ * stored — tickAction and the cleaning tick passes consult this instead
+ * of a persisted flag that would go stale.
  */
 export function personCanWork(person: Person): boolean {
   return person.away === null && person.busyTicks === 0;

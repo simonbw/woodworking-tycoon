@@ -101,23 +101,29 @@ it's being carried — the convention the vac established.
   (infinite, v1). Heavy sweeping ticks grant token XP so shopkeeping
   feeds progression instead of feeling like pure tax.
 
-### Shop vac (mid-game store purchase — built; overhaul is issue #81 phase 3)
+### Shop vac (mid-game store purchase — built, issue #81 phase 3)
 
 - A canister on casters (`GameState.shopVac`): buy it at the store
   ($350, hidden until the sawdust tutorial fires), grab or park it with
   `V` while standing on it. Grabbing it means holding its hose — a held
   tool, so it commits the hands like the broom.
-- **Today**: dragging it passively trickle-cleans the tile underfoot
-  every tick, and `T` fires a vacuum burst (current tile to zero,
-  neighbors — under machines included — at 60%). Cleans to zero — the
-  vac erases the broom's film and reaches the tight spots. The canister
-  (5 tiles' worth, species mix preserved) dumps itself next to the
-  garbage can.
-- **Phase 3 replaces the burst and the silent dump**: hold Space for a
-  continuous suction cone at the nozzle (particles running in reverse),
-  a stiff verlet-simulated hose drawn between canister and hand
-  (render-layer only), a visible canister fill whose suction dies when
-  full, and a deliberate hold-Space empty at the garbage can.
+- **Suction is the same held-Space idiom as the broom**
+  (`vacuumTickPass`): per tick, the same swath of cells — machine
+  undersides very much included — cleaned to zero and into the canister,
+  no film, no pile. Dragging also passively trickle-cleans the cell
+  underfoot. The vac erases the broom's film and reaches the tight
+  spots.
+- The **canister** (5 tiles' worth, species mix preserved) fills
+  visibly; full, the suction dies. Emptying is deliberate: stand next
+  to the garbage can and hold Space — `SHOP_VAC_EMPTY_RATE` units drain
+  per tick, so a full canister is a real pour, never a silent side
+  effect of walking past.
+- The **hose** (`ShopVacSprite`) is a verlet chain with strong bend
+  stiffness — it holds the wide arcs a corrugated hose does, bows out
+  when you circle the drum, and tows the drum along only once it comes
+  taut, so the canister swings wide around corners. While the hold is
+  on, a nozzle wand appears and species-colored motes fly into it — the
+  cut spray in reverse. All render-layer; state never sees the hose.
 - Dragging halves walking speed, stacking with any dust penalty.
 
 ## Rendering
@@ -167,18 +173,16 @@ first so the first mitigation purchase lands as relief.
 `getOperationPhases`; movement via `playerWalkSpeed`), the held-tool
 broom loop (issue #81 phase 1: pick up with E, plow by holding Space,
 piles, dustpan to garbage, under-machine pull at a reduced rate, the
-film), the shop vac (drag on V, trickle + `T` burst, self-dumping
-canister — its phase-3 overhaul is described above), and the tutorial
+film), the shop vac (phase 3: drag on V, held-Space suction, trickle,
+deliberate emptying, the verlet hose), and the tutorial
 latch (`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
 one-time note appear, the sweep hint joins the player prompt with the
 broom in hand on dusty ground). Emission is scaled by 1/multiplier so a
 slowed operation sheds the same total dust rather than compounding.
 
-**Issue #81 remaining phases**: (2) broom rendering — stroke animation,
-partial re-bake of swept cells on the baked floor texture, kicked-chip
-particles, a drift sprite for the growing pile; (3) the shop vac
-overhaul above; (4) mouse aim for the broom head, as an aim refinement
-over the facing direction (WASD stays complete without it).
+**Issue #81 remaining phases**: (4) mouse aim for the broom head, as an
+aim refinement over the facing direction (WASD stays complete without
+it).
 
 Then, in order:
 

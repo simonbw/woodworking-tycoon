@@ -25,16 +25,12 @@ import {
   putDownCarriedMachineAction,
   rotateCarriedMachineAction,
 } from "../../game/game-actions/machine-actions";
-import {
-  toggleCarryShopVacAction,
-  vacuumAction,
-} from "../../game/game-actions/shop-vac-actions";
+import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import {
   pickUpBroomAction,
   putDownBroomAction,
 } from "../../game/game-actions/dust-actions";
 import { heldTool, holdingBroom } from "../../game/HeldTool";
-import { carryingShopVac } from "../../game/ShopVac";
 import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
@@ -86,19 +82,6 @@ export const ShopKeyboardShortcuts: React.FC = () => {
 
   // Movement is deliberately absent here: walking is continuous (held
   // keys, not presses) and lives in HeldMovementListener + PlayerMotionLayer.
-
-  // The vac's burst rides its old key until the vac joins the held-tool
-  // Space idiom (issue #81 phase 3). The broom left this key for good:
-  // sweeping is holding Space with the broom in hand.
-  useShortcut(
-    "sweep",
-    () => {
-      if (carryingShopVac(gameState.current)) {
-        applyAction(vacuumAction());
-      }
-    },
-    present && !carrying,
-  );
 
   useShortcut(
     "vac-toggle",
