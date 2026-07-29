@@ -147,7 +147,9 @@ export const MaterialIcon: React.FC<{
           tooltip={tooltip}
           placeholder={placeholder}
         >
-          <img src="/images/pallet.png" />
+          {/* Sync decode: this icon appears mid-play as the player walks
+              up to a pallet, and an async decode costs it a frame. */}
+          <img src="/images/pallet.png" decoding="sync" />
         </Wrapper>
       );
 

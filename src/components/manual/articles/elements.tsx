@@ -85,7 +85,15 @@ export const Photo: React.FC<{ src: string; caption: string }> = ({
   caption,
 }) => (
   <figure className="border border-ink-black/10 bg-white px-1.5 pt-1.5 shadow-md">
-    <img src={src} alt={caption} className="h-24 w-24 object-contain" />
+    {/* Sync decode: an async one paints the print's white border a frame
+        before the photo in it, so the article's figures arrive a beat
+        after the paragraphs laid out around them. */}
+    <img
+      src={src}
+      alt={caption}
+      decoding="sync"
+      className="h-24 w-24 object-contain"
+    />
     <figcaption className="pb-0.5 text-center font-ink text-sm leading-tight text-ink-black/70">
       {caption}
     </figcaption>
