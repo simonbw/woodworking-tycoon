@@ -20,6 +20,7 @@ import {
 } from "../../game/game-actions/player-actions";
 import { SWEEP_AIM_REACH } from "../../game/game-actions/dust-actions";
 import { holdingBroom } from "../../game/HeldTool";
+import { resolveInteract } from "../../game/interact";
 import { clamp } from "../../utils/mathUtils";
 import { usePaused } from "../PauseContext";
 import { BroomSprite } from "./BroomSprite";
@@ -126,11 +127,19 @@ export const ShopView: React.FC = () => {
   const modalOpen = useModalOpen();
   const { paused } = usePaused();
   const {
+    machine: targetedMachine,
     machines: operableHere,
     isTargeted,
     setTarget,
     toggleSheet,
   } = useTargetedMachine();
+
+  // The pile E is about to grab wears the shared targeting outline —
+  // resolved by the same resolver the keyboard uses, so the highlight and
+  // the keypress can never disagree about which piece leaves the floor.
+  const interact = resolveInteract(gameState, targetedMachine);
+  const pickupTarget =
+    interact?.kind === "pick-up-floor" ? interact.piles[0] : undefined;
 
   // Clicking a machine you're standing at aims the keyboard at it; a
   // second click on a recipe-driven station spreads its sheet open. The
@@ -305,7 +314,10 @@ export const ShopView: React.FC = () => {
                     x={x}
                     y={y}
                   >
-                    <MaterialPilesSprite materialPiles={materialPiles} />
+                    <MaterialPilesSprite
+                      materialPiles={materialPiles}
+                      highlightedPile={pickupTarget}
+                    />
                   </pixiContainer>
                 );
               })}

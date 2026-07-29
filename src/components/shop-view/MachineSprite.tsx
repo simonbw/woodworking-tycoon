@@ -6,6 +6,7 @@ import { MaterialInstance } from "../../game/Materials";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
 import { useMachineActivity } from "./useMachineActivity";
+import { TARGET_HIGHLIGHT_FILTERS } from "./targetHighlight";
 import { BandSawSprite } from "../machine-sprites/BandSawSprite";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
 import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
@@ -23,56 +24,6 @@ import {
 
 const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
-
-/**
- * The in-world targeting outline: the machine the keyboard acts on wears
- * it while the player stands at its operator position. A soft dark
- * underlay keeps the amber line readable over any floor or machine art.
- */
-const MachineSelectionHighlight: React.FC<{
-  machine: Machine;
-}> = ({ machine }) => {
-  const draw = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      const cellSize = PIXELS_PER_CELL;
-      const occupiedCells = machine.type.cellsOccupied;
-
-      const xs = occupiedCells.map(([x]) => x);
-      const ys = occupiedCells.map(([, y]) => y);
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-
-      const width = (maxX - minX + 1) * cellSize;
-      const height = (maxY - minY + 1) * cellSize;
-      const offsetX = ((minX + maxX) / 2) * cellSize;
-      const offsetY = ((minY + maxY) / 2) * cellSize;
-
-      const pad = 3;
-      g.roundRect(
-        offsetX - width / 2 - pad,
-        offsetY - height / 2 - pad,
-        width + pad * 2,
-        height + pad * 2,
-        6,
-      );
-      g.stroke({ width: 6, color: 0x1c1917, alpha: 0.35 });
-      g.roundRect(
-        offsetX - width / 2 - pad,
-        offsetY - height / 2 - pad,
-        width + pad * 2,
-        height + pad * 2,
-        6,
-      );
-      g.stroke({ width: 2.5, color: 0xf59e0b, alpha: 0.9 });
-    },
-    [machine.type.cellsOccupied],
-  );
-
-  return <pixiGraphics draw={draw} />;
-};
 
 /**
  * Mounts canvas-centered art on the machine's footprint center, so the
@@ -112,17 +63,22 @@ export const MachineSprite: React.FC<{
       onClick={onClick}
       cursor={onClick ? "pointer" : "default"}
     >
-      {/* Selection highlight */}
-      {isSelected && <MachineSelectionHighlight machine={machine} />}
+      {/* The targeting outline: the machine the keyboard acts on wears an
+          amber rim hugging its silhouette — art, stock riding on it, and
+          the dust bag alike — while the player stands at its operator
+          position. Same treatment as the pile E would pick up. */}
+      <pixiContainer
+        filters={isSelected ? TARGET_HIGHLIGHT_FILTERS : undefined}
+      >
+        <LocalMachineSprite machine={machine} />
 
-      <LocalMachineSprite machine={machine} />
-
-      {/* A mounted dust bag hangs off the machine's corner */}
-      {machine.state.tools.includes("dustBag") && (
-        <FootprintArt machine={machine}>
-          <DustBagSprite />
-        </FootprintArt>
-      )}
+        {/* A mounted dust bag hangs off the machine's corner */}
+        {machine.state.tools.includes("dustBag") && (
+          <FootprintArt machine={machine}>
+            <DustBagSprite />
+          </FootprintArt>
+        )}
+      </pixiContainer>
 
       {machine.type.operationPosition && (
         <pixiSprite

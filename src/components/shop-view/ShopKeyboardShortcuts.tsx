@@ -1,5 +1,4 @@
 import React, { useRef } from "react";
-import { CellMap } from "../../game/CellMap";
 import {
   defaultParametersFor,
   getMachines,
@@ -180,15 +179,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         case "switch-on":
         case "switch-off":
           return applyAction(toggleMachinePowerAction(action.machine));
-        case "pick-up-floor": {
-          const cell = CellMap.fromGameState(gs).at(gs.player.position);
-          if (!cell?.grabbablePiles.length) return;
+        case "pick-up-floor":
           return applyAction(
             pickUpMaterialAction(
-              event.shiftKey ? cell.grabbablePiles : [cell.grabbablePiles[0]],
+              event.shiftKey ? action.piles : [action.piles[0]],
             ),
           );
-        }
         case "pick-up-broom":
           return applyAction(pickUpBroomAction());
         case "open-door":

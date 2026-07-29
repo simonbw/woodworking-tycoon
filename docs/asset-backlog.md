@@ -180,8 +180,10 @@ Decided — don't re-open these without a reason.
   stamps into a single `RenderTexture`.
 - **Feeding masks** — `FeedingBoard`. The two `Graphics` there are masks for
   the infeed/outfeed reveal and never render.
-- **Selection highlight** — `MachineSelectionHighlight` in `MachineSprite`.
-  UI drawn on the canvas, not art. Follows an arbitrary footprint.
+- **Selection highlight** — `TARGET_HIGHLIGHT_FILTERS` in
+  `shop-view/targetHighlight.ts`, an outline shader (`pixi-filters`) hugging
+  the target's silhouette. Worn by the targeted machine and by the pile E
+  would pick up. UI drawn on the canvas, not art.
 - **Kerf lines** — the cut lines in `JobsiteTableSawSprite` and
   `MiterSawSprite`, which track the animated blade.
 - **Collision debug overlay** — `CollisionDebugLayer`. Dev-only, `?collision`.

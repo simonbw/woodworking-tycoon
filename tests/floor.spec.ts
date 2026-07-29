@@ -312,6 +312,57 @@ test.describe("Shop floor", () => {
         .toBe(true);
     });
 
+    await test.step("the pickup chip sits on the pile it would grab", async () => {
+      // An 8' board anchored at [10,9] lies across y 5..13 — the player
+      // can stand at either end and E grabs the same piece. The [E] pick
+      // up chip anchors to the pile's cell, not the player's, so it must
+      // not move between the two stances. Column 10 keeps clear of the
+      // fixture's machines (miter saw at [6,3] with stock waiting, the
+      // worktable carried to [5,8]) whose take/unload verbs outrank a
+      // floor pickup.
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          materialPiles: [
+            ...state.materialPiles,
+            {
+              material: {
+                id: "e2e-long-board",
+                type: "board",
+                species: "pine",
+                length: 8,
+                width: 4,
+                thickness: 1,
+                surface: "rough",
+                jointedFaces: 1,
+                jointedEdges: 2,
+              },
+              position: [10, 9],
+            },
+          ],
+        }));
+      });
+      await teleportPlayer(page, [10, 6]);
+      const chip = page.getByText(/^pick up$/i).first();
+      await expect(chip).toBeVisible();
+      const northStance = await chip.boundingBox();
+      await teleportPlayer(page, [10, 12]);
+      await expect(chip).toBeVisible();
+      const southStance = await chip.boundingBox();
+      expect(southStance!.x).toBeCloseTo(northStance!.x, 0);
+      expect(southStance!.y).toBeCloseTo(northStance!.y, 0);
+      // Clear the floor so the board doesn't shadow the broom steps below
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          materialPiles: state.materialPiles.filter(
+            (pile: any) => pile.material.id !== "e2e-long-board",
+          ),
+        }));
+      });
+      await page.waitForTimeout(30);
+    });
+
     await test.step("E takes the broom into the hands strip", async () => {
       await teleportPlayer(page, [1, 1]);
       await expect(

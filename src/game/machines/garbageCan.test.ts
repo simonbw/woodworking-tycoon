@@ -168,6 +168,7 @@ describe("garbage can", () => {
 
     assert.deepStrictEqual(resolveInteract(gameState, theCan(gameState)), {
       kind: "pick-up-floor",
+      piles: gameState.materialPiles,
     });
   });
 

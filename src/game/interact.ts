@@ -1,6 +1,6 @@
 import { CellMap } from "./CellMap";
 import { readyHandoffs } from "./delivery";
-import { GameState } from "./GameState";
+import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
 import { Machine } from "./Machine";
 import { isAtShopDoor } from "./ShopInfo";
@@ -20,7 +20,8 @@ export type InteractAction =
   | { kind: "take-inputs"; machine: Machine }
   | { kind: "switch-on"; machine: Machine }
   | { kind: "switch-off"; machine: Machine }
-  | { kind: "pick-up-floor" }
+  /** `piles[0]` is what a plain press grabs; Shift takes them all. */
+  | { kind: "pick-up-floor"; piles: ReadonlyArray<MaterialPile> }
   | { kind: "pick-up-broom" }
   /** `handoffCount` is how much finished work the player is holding. */
   | { kind: "open-door"; handoffCount: number };
@@ -80,7 +81,7 @@ export function resolveInteract(
   }
 
   if (handsFree && cell?.grabbablePiles.length) {
-    return { kind: "pick-up-floor" };
+    return { kind: "pick-up-floor", piles: cell.grabbablePiles };
   }
 
   // The broom leans where it was left; picking it up needs empty hands

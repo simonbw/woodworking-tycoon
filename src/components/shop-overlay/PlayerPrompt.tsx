@@ -47,6 +47,12 @@ export const PlayerPrompt: React.FC = () => {
         )
       : undefined;
 
+  // The E chip belongs to whatever the interact key resolved to — the
+  // resting broom renders here at the player; floor pickups render at the
+  // pile itself (below); machine and door interactions render at the
+  // machine and the door.
+  const interact = carried ? null : resolveInteract(gameState, targetedMachine);
+
   const rows: React.ReactNode[] = [];
 
   if (carried) {
@@ -73,17 +79,6 @@ export const PlayerPrompt: React.FC = () => {
       rows.push(
         <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
           unpack {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
-        </HintRow>,
-      );
-    }
-    // The E chip belongs to whatever the interact key resolved to —
-    // floor pickups and the resting broom render here; machine and door
-    // interactions render at the machine and the door.
-    const interact = resolveInteract(gameState, targetedMachine);
-    if (interact?.kind === "pick-up-floor") {
-      rows.push(
-        <HintRow key="pick-up" keys={<ShortcutKeys shortcut="pick-up" />}>
-          pick up
         </HintRow>,
       );
     }
@@ -169,11 +164,26 @@ export const PlayerPrompt: React.FC = () => {
     }
   }
 
-  if (rows.length === 0) return null;
-
   return (
-    <CellAnchored cell={gameState.player.position}>
-      <HintList>{rows}</HintList>
-    </CellAnchored>
+    <>
+      {/* The pickup chip sits on the pile it would grab — the same piece
+          wearing the targeting outline on the canvas, wherever its anchor
+          cell is (long stock overhangs; the piece underfoot may live on a
+          neighbor cell). */}
+      {interact?.kind === "pick-up-floor" && (
+        <CellAnchored cell={interact.piles[0].position} placement="above">
+          <HintList>
+            <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+              pick up
+            </HintRow>
+          </HintList>
+        </CellAnchored>
+      )}
+      {rows.length > 0 && (
+        <CellAnchored cell={gameState.player.position}>
+          <HintList>{rows}</HintList>
+        </CellAnchored>
+      )}
+    </>
   );
 };

@@ -151,21 +151,28 @@ export const MachineAnchored: React.FC<{
   );
 };
 
-/** Positions a small hint cluster against a cell of the shop floor. */
+/**
+ * Positions a small hint cluster against a cell of the shop floor: hanging
+ * below it by default, or floating over its top edge with
+ * `placement="above"` (flipped back below when the cell hugs the canvas
+ * top, mirroring MachineAnchored).
+ */
 export const CellAnchored: React.FC<{
   cell: Vector;
   children: React.ReactNode;
   className?: string;
-}> = ({ cell, children, className }) => {
+  placement?: "above" | "below";
+}> = ({ cell, children, className, placement = "below" }) => {
   const scale = useContext(OverlayScaleContext);
   const cellPx = PIXELS_PER_CELL * scale;
+  const above = placement === "above" && cell[1] * cellPx >= 64;
   return (
     <div
       className={"absolute z-10 " + (className ?? "")}
       style={{
         left: (cell[0] + 0.5) * cellPx,
-        top: (cell[1] + 1) * cellPx + 4,
-        transform: "translate(-50%, 0)",
+        top: above ? cell[1] * cellPx - 4 : (cell[1] + 1) * cellPx + 4,
+        transform: above ? "translate(-50%, -100%)" : "translate(-50%, 0)",
       }}
     >
       {children}
