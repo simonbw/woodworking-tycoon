@@ -7,7 +7,7 @@ import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { resolveInteract } from "../../game/interact";
 import { chebyshevDistance } from "../../game/Vectors";
-import { HintList } from "../shortcuts/HintList";
+import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -46,28 +46,29 @@ export const PlayerPrompt: React.FC = () => {
 
   if (carried) {
     rows.push(
-      <li key="put-down-machine">
-        <ShortcutKeys shortcut="carry-machine" /> put down{" "}
-        {MACHINE_TYPES[carried.machineTypeId].name}
-      </li>,
-      <li key="rotate">
-        <ShortcutKeys shortcut="carry-rotate" /> rotate
-      </li>,
+      <HintRow
+        key="put-down-machine"
+        keys={<ShortcutKeys shortcut="carry-machine" />}
+      >
+        put down {MACHINE_TYPES[carried.machineTypeId].name}
+      </HintRow>,
+      <HintRow key="rotate" keys={<ShortcutKeys shortcut="carry-rotate" />}>
+        rotate
+      </HintRow>,
     );
     if (!canPutDownCarriedMachine(gameState)) {
       rows.push(
-        <li key="no-room" className="text-store-orange/90">
+        <HintRow key="no-room" className="text-store-orange/90">
           no room to set it down here
-        </li>,
+        </HintRow>,
       );
     }
   } else {
     if (crateUnderfoot) {
       rows.push(
-        <li key="unpack">
-          <ShortcutKeys shortcut="carry-machine" /> unpack{" "}
-          {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
-        </li>,
+        <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
+          unpack {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
+        </HintRow>,
       );
     }
     // The E chip belongs to whatever the interact key resolved to —
@@ -75,9 +76,9 @@ export const PlayerPrompt: React.FC = () => {
     // at the machine and the door.
     if (resolveInteract(gameState, targetedMachine)?.kind === "pick-up-floor") {
       rows.push(
-        <li key="pick-up">
-          <ShortcutKeys shortcut="pick-up" /> pick up
-        </li>,
+        <HintRow key="pick-up" keys={<ShortcutKeys shortcut="pick-up" />}>
+          pick up
+        </HintRow>,
       );
     }
     // No chip for putting things down: it followed the player to every
@@ -89,33 +90,32 @@ export const PlayerPrompt: React.FC = () => {
       canSweepAt(gameState)
     ) {
       rows.push(
-        <li key="sweep">
-          <ShortcutKeys shortcut="sweep" /> sweep sawdust
-        </li>,
+        <HintRow key="sweep" keys={<ShortcutKeys shortcut="sweep" />}>
+          sweep sawdust
+        </HintRow>,
       );
     }
     if (draggingVac && canVacuumAt(gameState)) {
       rows.push(
-        <li key="vacuum">
-          <ShortcutKeys shortcut="sweep" /> vacuum
-        </li>,
+        <HintRow key="vacuum" keys={<ShortcutKeys shortcut="sweep" />}>
+          vacuum
+        </HintRow>,
       );
     }
     if (standingOnVac && !draggingVac) {
       rows.push(
-        <li key="grab-vac">
-          <ShortcutKeys shortcut="vac-toggle" /> grab shop vac
-        </li>,
+        <HintRow key="grab-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
+          grab shop vac
+        </HintRow>,
       );
     }
     if (draggingVac) {
       const fill = canisterFillFraction(gameState.shopVac!);
       rows.push(
-        <li key="set-vac">
-          <ShortcutKeys shortcut="vac-toggle" /> set down vac ·{" "}
-          {Math.round(fill * 100)}%
+        <HintRow key="set-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
+          set down vac · {Math.round(fill * 100)}%
           {fill >= 1 && " — empty it at the garbage can"}
-        </li>,
+        </HintRow>,
       );
     }
   }

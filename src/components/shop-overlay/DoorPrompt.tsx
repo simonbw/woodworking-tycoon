@@ -15,7 +15,7 @@ import { isAtShopDoor } from "../../game/ShopInfo";
 import { resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
-import { HintList } from "../shortcuts/HintList";
+import { HintList, HintRow } from "../shortcuts/HintList";
 import { Kbd, ShortcutKeys } from "../shortcuts/Kbd";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -182,11 +182,10 @@ export const DoorPrompt: React.FC<{
         }}
       >
         <HintList>
-          <li className="text-paper-manila/60">Garage door</li>
-          <li>
-            <ShortcutKeys shortcut="pick-up" />{" "}
+          <HintRow className="text-paper-manila/60">Garage door</HintRow>
+          <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
             {handoffCount > 0 ? "hand off work" : "head out"}
-          </li>
+          </HintRow>
         </HintList>
       </div>
     );

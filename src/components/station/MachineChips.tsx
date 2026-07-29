@@ -16,7 +16,7 @@ import {
 } from "../../game/machine-helpers";
 import { hasStationSheet } from "./station-helpers";
 import { availableOperations } from "../../game/skill-helpers";
-import { HintList } from "../shortcuts/HintList";
+import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -102,32 +102,30 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   return (
     <HintList>
-      <li className="text-paper-manila/60">
+      <HintRow className="text-paper-manila/60">
         {machine.type.name}
         {status && <> · {status}</>}
-      </li>
+      </HintRow>
       {interactHere && (
-        <li>
-          <ShortcutKeys shortcut="pick-up" /> {interactLabel(interactHere)}
-        </li>
+        <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+          {interactLabel(interactHere)}
+        </HintRow>
       )}
       {canStage && (
-        <li>
-          <ShortcutKeys shortcut="put-down" />{" "}
+        <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
           {machine.type.stageVerb ??
             (machine.type.directFeed ? "set stock on it" : "load")}
-        </li>
+        </HintRow>
       )}
       {canOperate && (
-        <li>
-          <ShortcutKeys shortcut="operate-machine" /> hold to{" "}
-          {(machine.type.feedVerb ?? "run").toLowerCase()}
-        </li>
+        <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
+          hold to {(machine.type.feedVerb ?? "run").toLowerCase()}
+        </HintRow>
       )}
       {refusal && (
-        <li className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
+        <HintRow className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
           {refusal}
-        </li>
+        </HintRow>
       )}
       {isTargeted(machine) &&
         settings.map((param) => {
@@ -136,50 +134,60 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
             param.defaultValue ??
             param.values[0];
           return (
-            <li
+            <HintRow
               key={param.id}
               className={isOperating ? "text-paper-manila/70" : undefined}
-            >
-              {/* The cranks lock while the machine runs — the setting still
-                  reads out, but the keys that turn it stop being offered */}
-              {!isOperating &&
-                (param.presentation === "rotate" ? (
+              // The cranks lock while the machine runs — the setting still
+              // reads out, but the keys that turn it stop being offered
+              keys={
+                isOperating ? (
+                  <></>
+                ) : param.presentation === "rotate" ? (
                   <ShortcutKeys shortcut="rotate-setting" />
                 ) : (
-                  <>
+                  <span className="inline-flex items-baseline gap-1">
                     <ShortcutKeys shortcut="setting-down" />
                     <ShortcutKeys shortcut="setting-up" />
-                  </>
-                ))}{" "}
+                  </span>
+                )
+              }
+            >
               {param.name.toLowerCase()}:{" "}
               <span className="normal-case tabular-nums">
                 {typeof value === "number"
                   ? `${value}${param.unit ?? '"'}`
                   : String(value)}
               </span>
-            </li>
+            </HintRow>
           );
         })}
       {isTargeted(machine) && hasStationSheet(machine) && (
-        <li className="text-paper-manila/70">
-          <ShortcutKeys shortcut="open-station-sheet" />{" "}
+        <HintRow
+          className="text-paper-manila/70"
+          keys={<ShortcutKeys shortcut="open-station-sheet" />}
+        >
           {machine.type.directFeed
             ? "tool rack"
             : machine.type.container
               ? "contents"
               : "plans & tools"}
-        </li>
+        </HintRow>
       )}
       {machines.length > 1 && (
-        <li className="text-paper-manila/70">
-          <ShortcutKeys shortcut="cycle-machine" /> next machine (
-          {machines.length} here)
-        </li>
+        <HintRow
+          className="text-paper-manila/70"
+          keys={<ShortcutKeys shortcut="cycle-machine" />}
+        >
+          next machine ({machines.length} here)
+        </HintRow>
       )}
       {liftable && (
-        <li className="text-paper-manila/70">
-          <ShortcutKeys shortcut="carry-machine" /> pick up {machine.type.name}
-        </li>
+        <HintRow
+          className="text-paper-manila/70"
+          keys={<ShortcutKeys shortcut="carry-machine" />}
+        >
+          pick up {machine.type.name}
+        </HintRow>
       )}
     </HintList>
   );
@@ -215,10 +223,11 @@ function machineSettings(
  */
 export const OutfeedChips: React.FC<{ machine: Machine }> = ({ machine }) => (
   <HintList>
-    <li className="text-paper-manila/60">{machine.type.name} · outfeed</li>
-    <li>
-      <ShortcutKeys shortcut="pick-up" /> take ({machine.outputMaterials.length}
-      )
-    </li>
+    <HintRow className="text-paper-manila/60">
+      {machine.type.name} · outfeed
+    </HintRow>
+    <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+      take ({machine.outputMaterials.length})
+    </HintRow>
   </HintList>
 );
