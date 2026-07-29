@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { PNG } from "pngjs";
+import { MACHINE_TYPES, MachineId, footprintCenter } from "../src/game/Machine";
 
 /**
  * Measures each machine's visible footprint from its sprite art and writes
@@ -10,12 +11,13 @@ import { PNG } from "pngjs";
  *   npm run generate:collision-boxes
  *
  * The geometry mirrors how MachineSprite renders: every layer is anchored
- * at 0.5 on the origin cell's center, drawn at 8 image pixels per inch
- * (times an optional per-layer scale), and a cell is 12 inches — so one
- * cell is 96 image pixels and the mapping from opaque-pixel bounds to
- * cell units is pure arithmetic. Machines drawn procedurally (garbage can,
- * worktables) have nothing to measure; their boxes are hand-set in their
- * defs, which always win over this file.
+ * at 0.5 on the machine's footprint center (FootprintArt), drawn at 8
+ * image pixels per inch (times an optional per-layer scale), and a cell is
+ * 12 inches — so one cell is 96 image pixels and the mapping from
+ * opaque-pixel bounds to cell units is pure arithmetic plus the footprint
+ * offset. Machines drawn procedurally (garbage can, worktables) have
+ * nothing to measure; their boxes are hand-set in their defs, which always
+ * win over this file.
  */
 
 const IMAGES_DIR = path.join(__dirname, "..", "static", "images");
@@ -47,13 +49,6 @@ interface LayerSpec {
 
 interface MachineSpec {
   readonly layers: ReadonlyArray<LayerSpec>;
-  /**
-   * Where the sprite mounts its art, in cells out from the origin cell's
-   * center. Machines with an odd footprint draw on the origin cell and
-   * leave this alone; an even one (the band saw's 2×2) has its art
-   * centered half a cell along each axis instead.
-   */
-  readonly artOffset?: readonly [number, number];
 }
 
 /**
@@ -86,7 +81,6 @@ const MACHINES: Record<string, MachineSpec> = {
       { file: "bandsaw-14-lower.png" },
       { file: "bandsaw-14-upper.png" },
     ],
-    artOffset: [0.5, 0.5],
   },
   workspace: { layers: [{ file: "makeshift-bench.png" }] },
 };
@@ -152,7 +146,10 @@ const entries = Object.entries(MACHINES).map(([machine, spec]) => {
   if (measured.length === 0) {
     throw new Error(`No solid pixels found in any layer of ${machine}`);
   }
-  const [offsetX, offsetY] = spec.artOffset ?? [0, 0];
+  // Art mounts on the footprint center (FootprintArt in MachineSprite)
+  const [offsetX, offsetY] = footprintCenter(
+    MACHINE_TYPES[machine as MachineId].cellsOccupied,
+  );
   const measuredBox = unionBoxes(measured);
   const box = {
     minX: measuredBox.minX + offsetX,

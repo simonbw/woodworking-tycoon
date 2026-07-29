@@ -1,7 +1,7 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { animated, useSpring } from "react-spring";
-import { MACHINE_TYPES, Machine } from "../../game/Machine";
+import { MACHINE_TYPES, Machine, footprintCenter } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
@@ -74,6 +74,25 @@ const MachineSelectionHighlight: React.FC<{
   return <pixiGraphics draw={draw} />;
 };
 
+/**
+ * Mounts canvas-centered art on the machine's footprint center, so the
+ * image sits centered in the cells the machine claims no matter which of
+ * them is the origin cell. The collision-box generator applies the same
+ * offset to its measurements. Procedural sprites that draw in footprint
+ * coordinates themselves (worktables, garbage can, storage rack) skip it.
+ */
+const FootprintArt: React.FC<{
+  machine: Machine;
+  children: React.ReactNode;
+}> = ({ machine, children }) => {
+  const [cx, cy] = footprintCenter(machine.type.cellsOccupied);
+  return (
+    <pixiContainer x={cx * PIXELS_PER_CELL} y={cy * PIXELS_PER_CELL}>
+      {children}
+    </pixiContainer>
+  );
+};
+
 export const MachineSprite: React.FC<{
   machine: Machine;
   isSelected?: boolean;
@@ -99,7 +118,11 @@ export const MachineSprite: React.FC<{
       <LocalMachineSprite machine={machine} />
 
       {/* A mounted dust bag hangs off the machine's corner */}
-      {machine.state.tools.includes("dustBag") && <DustBagSprite />}
+      {machine.state.tools.includes("dustBag") && (
+        <FootprintArt machine={machine}>
+          <DustBagSprite />
+        </FootprintArt>
+      )}
 
       {machine.type.operationPosition && (
         <pixiSprite
@@ -113,9 +136,11 @@ export const MachineSprite: React.FC<{
       )}
 
       {/* Counter-rotated so the badge reads upright at any machine rotation */}
-      <pixiContainer angle={-angle}>
-        <OperationStatusBadge machine={machine} />
-      </pixiContainer>
+      <FootprintArt machine={machine}>
+        <pixiContainer angle={-angle}>
+          <OperationStatusBadge machine={machine} />
+        </pixiContainer>
+      </FootprintArt>
     </pixiContainer>
   );
 };
@@ -219,6 +244,7 @@ const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
 const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const makeshiftBenchTexture = useTexture("/images/makeshift-bench.png");
 
+  // Sprites that draw in footprint coordinates themselves
   if (machine.type.worktable) {
     return (
       <pixiContainer>
@@ -227,53 +253,57 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       </pixiContainer>
     );
   }
-
-  switch (machine.type.id) {
-    case MACHINE_TYPES.jobsiteTableSaw.id:
-      return <JobsiteTableSawSprite machine={machine} />;
-
-    case MACHINE_TYPES.miterSaw.id:
-      return <MiterSawSprite machine={machine} />;
-
-    case MACHINE_TYPES.lunchboxPlaner.id:
-      return <LunchboxPlanerSprite machine={machine} />;
-
-    case MACHINE_TYPES.jointer.id:
-      return <JointerSprite machine={machine} />;
-
-    case MACHINE_TYPES.bandSaw.id:
-      return <BandSawSprite machine={machine} />;
-
-    case MACHINE_TYPES.garbageCan.id:
-      return <GarbageCanSprite machine={machine} />;
-
-    case MACHINE_TYPES.storageRack.id:
-      return <StorageRackSprite machine={machine} />;
-
-    // The makeshift workbench: the plywood-on-buckets art (this was the
-    // makeshift bench's sprite; the bench identity moved to the starting
-    // station — see machines/workspace.ts)
-    case MACHINE_TYPES.workspace.id:
-      return (
-        <pixiContainer>
-          <pixiSprite
-            texture={makeshiftBenchTexture}
-            scale={IMAGE_SCALE}
-            anchor={{ x: 0.5, y: 0.5 }}
-          />
-          <MachineMaterials machine={machine} />
-        </pixiContainer>
-      );
-
-    default: {
-      return (
-        <pixiContainer>
-          <DefaultMachineSprite />
-          <MachineMaterials machine={machine} />
-        </pixiContainer>
-      );
-    }
+  if (machine.type.id === MACHINE_TYPES.garbageCan.id) {
+    return <GarbageCanSprite machine={machine} />;
   }
+  if (machine.type.id === MACHINE_TYPES.storageRack.id) {
+    return <StorageRackSprite machine={machine} />;
+  }
+
+  const art = (() => {
+    switch (machine.type.id) {
+      case MACHINE_TYPES.jobsiteTableSaw.id:
+        return <JobsiteTableSawSprite machine={machine} />;
+
+      case MACHINE_TYPES.miterSaw.id:
+        return <MiterSawSprite machine={machine} />;
+
+      case MACHINE_TYPES.lunchboxPlaner.id:
+        return <LunchboxPlanerSprite machine={machine} />;
+
+      case MACHINE_TYPES.jointer.id:
+        return <JointerSprite machine={machine} />;
+
+      case MACHINE_TYPES.bandSaw.id:
+        return <BandSawSprite machine={machine} />;
+
+      // The makeshift workbench: the plywood-on-buckets art (this was the
+      // makeshift bench's sprite; the bench identity moved to the starting
+      // station — see machines/workspace.ts)
+      case MACHINE_TYPES.workspace.id:
+        return (
+          <pixiContainer>
+            <pixiSprite
+              texture={makeshiftBenchTexture}
+              scale={IMAGE_SCALE}
+              anchor={{ x: 0.5, y: 0.5 }}
+            />
+            <MachineMaterials machine={machine} />
+          </pixiContainer>
+        );
+
+      default: {
+        return (
+          <pixiContainer>
+            <DefaultMachineSprite />
+            <MachineMaterials machine={machine} />
+          </pixiContainer>
+        );
+      }
+    }
+  })();
+
+  return <FootprintArt machine={machine}>{art}</FootprintArt>;
 };
 
 /**
@@ -311,8 +341,12 @@ const DefaultMachineSprite: React.FC = () => {
     <pixiGraphics
       draw={useCallback((g: Graphics) => {
         g.clear();
-        const [x, y] = cellToPixelCenter([0, 0]);
-        g.rect(x, y, PIXELS_PER_CELL, PIXELS_PER_CELL);
+        g.rect(
+          -PIXELS_PER_CELL / 2,
+          -PIXELS_PER_CELL / 2,
+          PIXELS_PER_CELL,
+          PIXELS_PER_CELL,
+        );
         g.fill(colors.brown["900"]);
       }, [])}
     />

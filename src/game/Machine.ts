@@ -43,6 +43,22 @@ export interface CollisionBox {
   readonly max: Vector;
 }
 
+/**
+ * The center of a footprint's bounding box, in cell units relative to the
+ * origin cell's center — [0, -0.5] for a 3×2 machine occupying rows -1..0.
+ * Image-based machine art mounts here (canvas center = this point), and
+ * the collision-box generator applies the same offset to its measurements,
+ * so art always sits centered in the cells it claims.
+ */
+export function footprintCenter(cells: ReadonlyArray<Vector>): Vector {
+  const xs = cells.map(([x]) => x);
+  const ys = cells.map(([, y]) => y);
+  return [
+    (Math.min(...xs) + Math.max(...xs)) / 2,
+    (Math.min(...ys) + Math.max(...ys)) / 2,
+  ];
+}
+
 export interface MachineType {
   readonly id: string;
   readonly name: string;

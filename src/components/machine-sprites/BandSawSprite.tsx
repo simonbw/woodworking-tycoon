@@ -5,11 +5,7 @@ import { isBoard } from "../../game/board-helpers";
 import { useTexture } from "../../utils/useTexture";
 import { OnEdgeBoardSprite } from "../material-sprites/OnEdgeBoardSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
-import {
-  PIXELS_PER_CELL,
-  feetToPixels,
-  inchesToPixels,
-} from "../shop-view/shop-scale";
+import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
 import { CutParticles, cutSprayIntensity } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
@@ -73,9 +69,9 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const boardX = (board: Board) =>
     fenceFace + inchesToPixels(board.thickness / 8);
 
-  // Centered on the 2×2-ft footprint, half a cell past the origin cell.
+  // Canvas-centered art; MachineSprite mounts it on the footprint center.
   return (
-    <pixiContainer x={PIXELS_PER_CELL * 0.5} y={PIXELS_PER_CELL * 0.5}>
+    <pixiContainer>
       <pixiSprite texture={lowerTexture} scale={IMAGE_SCALE} anchor={0.5} />
       {/* The work sits on the table, under the arm that reaches over it */}
       <pixiContainer x={BLADE_OFFSET}>
