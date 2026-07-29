@@ -104,12 +104,33 @@ export const UI_IMAGE_ASSETS: readonly string[] = Array.from(
   ]),
 );
 
+/**
+ * The warmed images, kept for the life of the page.
+ *
+ * This array is the whole point of it, not bookkeeping. An `Image` nobody
+ * holds is a *dead* resource the moment `warm` resolves: it survives only
+ * in the renderer's memory cache, which drops dead entries whenever it
+ * wants the room back. The files here carry no cache headers either — the
+ * dev server sends none, so nothing lands in the disk cache to fall back
+ * on — and the result is that the preload wears off. Open the store within
+ * a few seconds of boot and every icon is there; open it after a few
+ * minutes of play and they refetch one at a time, a tenth of a second
+ * each, which is the row-by-row pop-in this file was written to stop.
+ *
+ * Holding the reference keeps each one a live resource with its decoded
+ * copy intact, so the `<img>` the store mounts is filled from memory
+ * rather than from the network. It costs a few hundred KB of pixels for
+ * the session — the price of the flicker staying gone.
+ */
+const warmed: HTMLImageElement[] = [];
+
 /** Fetch and decode one image, resolving either way — a missing file is
  * not worth failing over at boot. */
 function warm(src: string): Promise<void> {
   return new Promise((resolve) => {
     const image = new Image();
     image.onload = () => {
+      warmed.push(image);
       // Decoding here, off-screen, is the half that actually stops the
       // pop-in: a cached-but-undecoded image still misses the frame it
       // first appears in.
