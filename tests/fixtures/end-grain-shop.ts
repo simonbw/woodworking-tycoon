@@ -125,4 +125,5 @@ export const endGrainShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: [0, 0],
 };

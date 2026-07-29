@@ -293,6 +293,78 @@ test.describe("Shop floor", () => {
       expect(state.machineCrates[0].position).toEqual([6, 15]);
     });
 
+    await test.step("a dusty floor summons the broom", async () => {
+      // Home from the store first — an away player has no floor verbs
+      await leaveStore(page);
+      // Dust past the tutorial threshold flips sweepingUnlocked on the
+      // next milestone tick, and the broom appears at its home corner.
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          dust: { "5,5": { walnut: 14 }, "5,6": { walnut: 14 }, "6,5": { walnut: 14 }, "6,6": { walnut: 14 }, "5,7": { walnut: 14 } },
+        }));
+      });
+      await expect
+        .poll(async () =>
+          (await page.evaluate(() => window.__GET_GAME_STATE__())).progression
+            .sweepingUnlocked,
+        )
+        .toBe(true);
+    });
+
+    await test.step("E takes the broom into the hands strip", async () => {
+      await teleportPlayer(page, [1, 1]);
+      await expect(
+        page.getByText(/pick up broom/i).first(),
+      ).toBeVisible();
+      await page.keyboard.press("e");
+      await page.waitForTimeout(30);
+      const state = await page.evaluate(() => window.__GET_GAME_STATE__());
+      expect(state.broomPosition).toBeNull();
+      await expect(
+        page.getByTestId("hands-strip").getByText("Broom"),
+      ).toBeVisible();
+    });
+
+    await test.step("holding Space plows the dust into a pile", async () => {
+      // Stand on the dust facing +y (direction 3) so the swath covers it
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, position: [5, 5], direction: 3 },
+        }));
+      });
+      await page.waitForTimeout(30);
+      const dustTotal = async () => {
+        const state = await page.evaluate(() => window.__GET_GAME_STATE__());
+        return Object.values(state.dust as Record<string, any>).reduce(
+          (sum: number, amounts: any) =>
+            sum +
+            (Object.values(amounts) as number[]).reduce((a, b) => a + b, 0),
+          0,
+        );
+      };
+      const before = await dustTotal();
+      await page.keyboard.down("Space");
+      await expect.poll(dustTotal).toBeLessThan(before * 0.5);
+      await page.keyboard.up("Space");
+      const state = await page.evaluate(() => window.__GET_GAME_STATE__());
+      const piles = state.materialPiles.filter(
+        (pile: any) => pile.material.type === "sawdustPile",
+      );
+      expect(piles.length).toBeGreaterThan(0);
+    });
+
+    await test.step("F leans the broom right here", async () => {
+      await page.keyboard.press("f");
+      await page.waitForTimeout(30);
+      const state = await page.evaluate(() => window.__GET_GAME_STATE__());
+      expect(state.broomPosition).toEqual([5, 5]);
+      await expect(
+        page.getByTestId("hands-strip").getByText("Broom"),
+      ).toHaveCount(0);
+    });
+
     await test.step("start a fresh game for the handoff half", async () => {
       // The door lists the *active* commission, so this half wants a shop that
       // hasn't completed any — a fixture would have to undo that.

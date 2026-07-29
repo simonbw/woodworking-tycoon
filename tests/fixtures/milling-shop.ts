@@ -77,6 +77,9 @@ export const millingShop: GameState = {
       "straightLineSled",
     ]),
     idleMachine("workspace", [8, 9], "glueUpPanel"),
+    // In the same corner the starter shop keeps it — the cleaning chain
+    // ends at the curb
+    idleMachine("garbageCan", [0, 13], "empty"),
   ],
   machineCrates: [],
   storage: {
@@ -112,4 +115,5 @@ export const millingShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: [0, 0],
 };

@@ -133,18 +133,6 @@ const defs = [
     shiftHint: "put down everything",
   },
   {
-    // Contextual (ActionBar shows it on dusty ground once sweeping is
-    // unlocked); hidden from the static cheat sheet so the broom doesn't
-    // leak before its reveal.
-    id: "sweep",
-    codes: ["KeyT"],
-    keys: [["T"]],
-    description: "Sweep sawdust",
-    scope: "home",
-    group: "Materials",
-    hidden: true,
-  },
-  {
     // Contextual like sweep: grab the parked shop vac, or set it down.
     id: "vac-toggle",
     codes: ["KeyV"],

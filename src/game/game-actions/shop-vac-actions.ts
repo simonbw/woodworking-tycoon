@@ -1,14 +1,16 @@
 import { getMachines } from "../Machine";
-import { cellDust, dustKey, DustMap, dustTotal, SpeciesAmounts } from "../Dust";
+import { cellDust, dustKey, DustMap, dustTotal, inBounds, SpeciesAmounts } from "../Dust";
 import { GameAction, GameState } from "../GameState";
 import {
   canisterRoom,
   carryingShopVac,
   SHOP_VAC_COST,
+  SHOP_VAC_EMPTY_RATE,
   SHOP_VAC_PASSIVE_RATE,
-  VACUUM_TICKS,
 } from "../ShopVac";
+import { personCanWork } from "../Person";
 import { Species } from "../Materials";
+import { sweepSwath } from "./dust-actions";
 import {
   chebyshevDistance,
   translateVec,
@@ -17,22 +19,13 @@ import {
 } from "../Vectors";
 import { withXp } from "./skill-actions";
 
-/** Adjacent tiles get most of a burst — the hose reaches, the nozzle wins. */
-const VACUUM_ADJACENT_EFFICIENCY = 0.6;
-
-/** The eight cells around one — a burst covers the 3×3 patch at hand. */
-const NEIGHBORS: ReadonlyArray<Vector> = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-  [1, 1],
-  [1, -1],
-  [-1, 1],
-  [-1, -1],
-];
-/** Vacuuming this much or more earns the token XP (mirrors sweeping). */
-const XP_MINIMUM_GATHERED = 5;
+/** Share of the underfoot cell's dust one suction tick takes. */
+const VACUUM_UNDERFOOT_RATE = 0.9;
+/** The facing cone pulls slower — but machine undersides included: the
+ * hose reaches where the broom fumbles. */
+const VACUUM_CONE_RATE = 0.45;
+/** Suction ticks gathering less than this grant no XP (mirrors sweeping). */
+const XP_MINIMUM_GATHERED = 15;
 const VACUUM_XP = 1;
 
 const ORTHOGONALS: ReadonlyArray<Vector> = [
@@ -80,6 +73,10 @@ export function toggleCarryShopVacAction(): GameAction {
         shopVac: { ...vac, position: gameState.player.position },
       };
     }
+    // The hose takes a hand — put the broom down before grabbing the vac
+    if (gameState.broomPosition === null) {
+      return gameState;
+    }
     if (chebyshevDistance(vac.position, gameState.player.position) <= 1) {
       return { ...gameState, shopVac: { ...vac, position: null } };
     }
@@ -88,49 +85,85 @@ export function toggleCarryShopVacAction(): GameAction {
 }
 
 /**
- * An active burst while dragging the vac: the cell underfoot goes to
- * zero and the orthogonal neighbors — machine cells very much included,
- * that's the vac's edge over the broom — lose most of theirs, limited by
- * canister room. Costs VACUUM_TICKS via the busyTicks plumbing.
+ * One tick of suction, run from tickAction while the player holds the
+ * operate key with the hose in hand — the same held-Space idiom as the
+ * broom, with the vac's own shape: the same swath of cells, machine
+ * undersides very much included, cleaned to zero instead of pushed into
+ * a pile. Dust goes into the canister until it's full; a full canister
+ * kills the suction until it's emptied.
+ *
+ * Standing next to the garbage can, the same hold empties the canister
+ * instead, a chunk per tick — the trip is the chore, and the emptying
+ * is deliberately a moment rather than a silent side effect.
  */
-export function vacuumAction(): GameAction {
+export function vacuumTickPass(): GameAction {
   return (gameState) => {
     const vac = gameState.shopVac;
-    if (!vac || !carryingShopVac(gameState)) {
+    if (
+      !vac ||
+      !carryingShopVac(gameState) ||
+      gameState.player.operating !== true ||
+      !personCanWork(gameState.player)
+    ) {
       return gameState;
     }
 
-    const gathered: Array<{ key: string; amounts: SpeciesAmounts }> = [];
-    const gatherFrom = (position: Vector, efficiency: number) => {
-      const amounts = gameState.dust[dustKey(position)];
-      if (!amounts) {
-        return;
-      }
-      const taken: Partial<Record<Species, number>> = {};
-      for (const [species, amount] of Object.entries(amounts)) {
-        if ((amount ?? 0) > 0) {
-          taken[species as Species] = (amount ?? 0) * efficiency;
+    // At the can, the hold drains the canister
+    if (
+      dustTotal(vac.canister) > 0 &&
+      nextToGarbageCan(gameState, gameState.player.position)
+    ) {
+      const total = dustTotal(vac.canister);
+      const drained = Math.min(SHOP_VAC_EMPTY_RATE, total);
+      const keep = 1 - drained / total;
+      const canister: Partial<Record<Species, number>> = {};
+      if (keep > 1e-9) {
+        for (const [species, amount] of Object.entries(vac.canister)) {
+          const left = (amount ?? 0) * keep;
+          if (left > 0.05) {
+            canister[species as Species] = left;
+          }
         }
       }
-      if (dustTotal(taken) > 0) {
-        gathered.push({ key: dustKey(position), amounts: taken });
-      }
-    };
-
-    gatherFrom(gameState.player.position, 1);
-    for (const delta of NEIGHBORS) {
-      gatherFrom(
-        translateVec(gameState.player.position, delta),
-        VACUUM_ADJACENT_EFFICIENCY,
-      );
+      return { ...gameState, shopVac: { ...vac, canister } };
     }
 
     const room = canisterRoom(vac);
+    if (room <= 0) {
+      return gameState;
+    }
+
+    const shopSize = gameState.shopInfo.size;
+    const swath = sweepSwath(
+      gameState.player.position,
+      gameState.player.direction,
+    ).filter((cell) => inBounds(cell, shopSize));
+
+    const gathered: Array<{ key: string; amounts: SpeciesAmounts }> = [];
+    for (const cell of swath) {
+      const amounts = gameState.dust[dustKey(cell)];
+      if (!amounts) {
+        continue;
+      }
+      const rate = vectorEquals(cell, gameState.player.position)
+        ? VACUUM_UNDERFOOT_RATE
+        : VACUUM_CONE_RATE;
+      const taken: Partial<Record<Species, number>> = {};
+      for (const [species, amount] of Object.entries(amounts)) {
+        if ((amount ?? 0) > 0) {
+          taken[species as Species] = (amount ?? 0) * rate;
+        }
+      }
+      if (dustTotal(taken) > 0) {
+        gathered.push({ key: dustKey(cell), amounts: taken });
+      }
+    }
+
     const gatheredTotal = gathered.reduce(
       (sum, { amounts }) => sum + dustTotal(amounts),
       0,
     );
-    if (gatheredTotal <= 0 || room <= 0) {
+    if (gatheredTotal <= 0) {
       return gameState;
     }
     const keepFraction = Math.min(1, room / gatheredTotal);
@@ -146,10 +179,6 @@ export function vacuumAction(): GameAction {
       ...gameState,
       dust,
       shopVac: { ...vac, canister: moved },
-      player: {
-        ...gameState.player,
-        busyTicks: VACUUM_TICKS - 1,
-      },
     };
     const gainedXp = gatheredTotal * keepFraction >= XP_MINIMUM_GATHERED;
     return gainedXp ? withXp(vacuumed, VACUUM_XP) : vacuumed;
@@ -157,9 +186,11 @@ export function vacuumAction(): GameAction {
 }
 
 /**
- * The vac's per-tick behaviors while it's being dragged: a passive
- * trickle-clean of the cell underfoot, and the canister dumping itself
- * the moment the player stops next to the garbage can. Run every tick.
+ * The vac's per-tick behavior while it's being dragged: a passive
+ * trickle-clean of the cell underfoot — the nozzle drags over whatever
+ * you walk across. Run every tick. Emptying is not here: that's a
+ * deliberate hold at the garbage can (vacuumTickPass), not a side
+ * effect of walking past it.
  */
 export function shopVacTickPass(): GameAction {
   return (gameState) => {
@@ -167,38 +198,32 @@ export function shopVacTickPass(): GameAction {
     if (!vac || !carryingShopVac(gameState) || gameState.player.away) {
       return gameState;
     }
-    let next = gameState;
 
-    // Trickle: the nozzle drags over whatever you walk across
-    const underfoot = next.dust[dustKey(next.player.position)];
+    const underfoot = gameState.dust[dustKey(gameState.player.position)];
     const room = canisterRoom(vac);
-    if (underfoot && room > 0) {
-      const total = dustTotal(underfoot);
-      const take = Math.min(SHOP_VAC_PASSIVE_RATE, total, room);
-      if (take > 0) {
-        const { dust, moved } = moveDustToCanister(
-          next.dust,
-          vac.canister,
-          [{ key: dustKey(next.player.position), amounts: underfoot }],
-          take / total,
-        );
-        next = { ...next, dust, shopVac: { ...vac, canister: moved } };
-      }
+    if (!underfoot || room <= 0) {
+      return gameState;
     }
-
-    // At the garbage can, the canister empties itself — the trip is the
-    // chore, not a button
-    if (
-      dustTotal(next.shopVac!.canister) > 0 &&
-      nextToGarbageCan(next, next.player.position)
-    ) {
-      next = { ...next, shopVac: { ...next.shopVac!, canister: {} } };
+    const total = dustTotal(underfoot);
+    const take = Math.min(SHOP_VAC_PASSIVE_RATE, total, room);
+    if (take <= 0) {
+      return gameState;
     }
-    return next;
+    const { dust, moved } = moveDustToCanister(
+      gameState.dust,
+      vac.canister,
+      [{ key: dustKey(gameState.player.position), amounts: underfoot }],
+      take / total,
+    );
+    return { ...gameState, dust, shopVac: { ...vac, canister: moved } };
   };
 }
 
-function nextToGarbageCan(gameState: GameState, position: Vector): boolean {
+/** Whether this position touches the garbage can — where the vac empties. */
+export function nextToGarbageCan(
+  gameState: GameState,
+  position: Vector,
+): boolean {
   const garbageCells = getMachines(gameState.machines)
     .filter((machine) => machine.type.id === "garbageCan")
     .flatMap((machine) =>
@@ -214,7 +239,7 @@ function nextToGarbageCan(gameState: GameState, position: Vector): boolean {
 /**
  * Move `keepFraction` of the gathered amounts from the floor into the
  * canister, dropping floor cells that come up clean. Shared by the
- * burst and the passive trickle.
+ * suction tick and the passive trickle.
  */
 function moveDustToCanister(
   dustMap: DustMap,
@@ -249,14 +274,10 @@ function moveDustToCanister(
   return { dust, moved: contents };
 }
 
-/** Anything a vacuum burst from here could pick up? Drives the hint. */
+/** Anything a suction tick from here could pick up? Drives the hint. */
 export function canVacuumAt(gameState: GameState): boolean {
-  if (cellDust(gameState.dust, gameState.player.position) > 0.05) {
-    return true;
-  }
-  return NEIGHBORS.some(
-    (delta) =>
-      cellDust(gameState.dust, translateVec(gameState.player.position, delta)) >
-      0.05,
-  );
+  return sweepSwath(
+    gameState.player.position,
+    gameState.player.direction,
+  ).some((cell) => cellDust(gameState.dust, cell) > 0.05);
 }

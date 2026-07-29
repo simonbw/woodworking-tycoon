@@ -112,8 +112,12 @@ wiring: same path, same size, same component.
 ### Props and fixtures
 
 - [ ] Machine delivery crate — `shop-view/MachineCrateSprite.tsx`.
-- [ ] Broom — `shop-view/BroomSprite.tsx`. Pure set dressing, but the
-      tutorial points at it.
+- [ ] Broom (resting) — `shop-view/BroomSprite.tsx`. Leans wherever it was
+      set down; the tutorial points at it.
+- [ ] Broom (in hand) — `shop-view/HeldBroomSprite.tsx`. Top-down handle +
+      bristle bar drawn in the player's rotated frame, with the stroke
+      sway and chip spray animated procedurally; art would replace the
+      handle/bar shapes, the animation stays code.
 - [ ] Shop vac — `shop-view/ShopVacSprite.tsx`. Drum and casters as art; the
       hose stretches to the player's hand every frame and stays drawn.
 - [ ] Pallet — `material-sprites/PalletSprite.tsx`. Currently composed out of

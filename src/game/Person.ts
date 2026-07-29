@@ -32,6 +32,13 @@ export interface Person {
    * save schema, and a load starts with hands empty of the key.
    */
   operating?: boolean;
+  /**
+   * The cell the mouse is steering the broom head toward, already
+   * clamped to arm's reach — null (or absent) when the cursor isn't
+   * aiming and the swath falls back to the facing direction. Physical
+   * pointer state, transient exactly like `operating`.
+   */
+  sweepAim?: Vector | null;
 }
 
 /**
@@ -59,8 +66,8 @@ export type ShoppingTrip = {
 /**
  * Whether the person is free to start work right now: in the shop and not
  * still occupied by their last action (trudging, sweeping). Derived, never
- * stored — tickAction and cleanUpAction consult this instead of a
- * persisted flag that would go stale.
+ * stored — tickAction and the cleaning tick passes consult this instead
+ * of a persisted flag that would go stale.
  */
 export function personCanWork(person: Person): boolean {
   return person.away === null && person.busyTicks === 0;

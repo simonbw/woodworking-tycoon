@@ -2,7 +2,11 @@ import React from "react";
 import { useCellMap } from "../useCellMap";
 import { canSweepAt } from "../../game/game-actions/dust-actions";
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
-import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
+import {
+  canVacuumAt,
+  nextToGarbageCan,
+} from "../../game/game-actions/shop-vac-actions";
+import { holdingBroom } from "../../game/HeldTool";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { resolveInteract } from "../../game/interact";
@@ -72,33 +76,67 @@ export const PlayerPrompt: React.FC = () => {
       );
     }
     // The E chip belongs to whatever the interact key resolved to —
-    // floor pickups render here; machine and door interactions render
-    // at the machine and the door.
-    if (resolveInteract(gameState, targetedMachine)?.kind === "pick-up-floor") {
+    // floor pickups and the resting broom render here; machine and door
+    // interactions render at the machine and the door.
+    const interact = resolveInteract(gameState, targetedMachine);
+    if (interact?.kind === "pick-up-floor") {
       rows.push(
         <HintRow key="pick-up" keys={<ShortcutKeys shortcut="pick-up" />}>
           pick up
         </HintRow>,
       );
     }
-    // No chip for putting things down: it followed the player to every
-    // cell, which read as a strobe. The hands strip carries the F hint
-    // in its slot tooltips, and machines offer their own staging chip.
-    if (
-      gameState.progression.sweepingUnlocked &&
-      !draggingVac &&
-      canSweepAt(gameState)
-    ) {
+    if (interact?.kind === "pick-up-broom") {
       rows.push(
-        <HintRow key="sweep" keys={<ShortcutKeys shortcut="sweep" />}>
-          sweep sawdust
+        <HintRow key="pick-up-broom" keys={<ShortcutKeys shortcut="pick-up" />}>
+          pick up broom
         </HintRow>,
       );
     }
-    if (draggingVac && canVacuumAt(gameState)) {
+    // No chip for putting things down: it followed the player to every
+    // cell, which read as a strobe. The hands strip carries the F hint
+    // in its slot tooltips, and machines offer their own staging chip.
+    if (holdingBroom(gameState) && canSweepAt(gameState)) {
       rows.push(
-        <HintRow key="vacuum" keys={<ShortcutKeys shortcut="sweep" />}>
-          vacuum
+        <HintRow
+          key="sweep"
+          keys={<ShortcutKeys shortcut="operate-machine" />}
+        >
+          hold to sweep
+        </HintRow>,
+      );
+    }
+    if (draggingVac) {
+      const fill = canisterFillFraction(gameState.shopVac!);
+      const atTheCan = nextToGarbageCan(gameState, gameState.player.position);
+      if (atTheCan && fill > 0) {
+        rows.push(
+          <HintRow
+            key="empty-vac"
+            keys={<ShortcutKeys shortcut="operate-machine" />}
+          >
+            hold to empty
+          </HintRow>,
+        );
+      } else if (fill >= 1) {
+        rows.push(
+          <HintRow key="vac-full" className="text-store-orange/90">
+            canister full — empty it at the garbage can
+          </HintRow>,
+        );
+      } else if (canVacuumAt(gameState)) {
+        rows.push(
+          <HintRow
+            key="vacuum"
+            keys={<ShortcutKeys shortcut="operate-machine" />}
+          >
+            hold to vacuum
+          </HintRow>,
+        );
+      }
+      rows.push(
+        <HintRow key="set-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
+          set down vac · {Math.round(fill * 100)}%
         </HintRow>,
       );
     }
@@ -106,15 +144,6 @@ export const PlayerPrompt: React.FC = () => {
       rows.push(
         <HintRow key="grab-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
           grab shop vac
-        </HintRow>,
-      );
-    }
-    if (draggingVac) {
-      const fill = canisterFillFraction(gameState.shopVac!);
-      rows.push(
-        <HintRow key="set-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
-          set down vac · {Math.round(fill * 100)}%
-          {fill >= 1 && " — empty it at the garbage can"}
         </HintRow>,
       );
     }

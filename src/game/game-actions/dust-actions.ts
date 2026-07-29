@@ -7,42 +7,140 @@ import {
   SAWDUST_PILE_CAPACITY,
   SpeciesAmounts,
 } from "../Dust";
-import { GameAction, MaterialPile } from "../GameState";
+import { GameAction, GameState, MaterialPile } from "../GameState";
+import { holdingBroom } from "../HeldTool";
 import { personCanWork } from "../Person";
 import { carryingShopVac } from "../ShopVac";
-import { vacuumAction } from "./shop-vac-actions";
 import { makeMaterial } from "../material-helpers";
 import { SawdustPile, Species } from "../Materials";
-import { rotateVec, translateVec, vectorEquals, Vector } from "../Vectors";
+import {
+  chebyshevDistance,
+  Direction,
+  rotateVec,
+  translateVec,
+  vectorEquals,
+  Vector,
+} from "../Vectors";
 import { CellMap } from "../CellMap";
+import { emitSound } from "./sound-actions";
 import { withXp } from "./skill-actions";
 
-/** A sweep occupies the player this many ticks (1 now + rest busy). */
-export const SWEEP_TICKS = 3;
-/** Share of a cell's dust one sweep gathers — a broom leaves a film. */
-const SWEEP_EFFICIENCY = 0.9;
+/** Share of a swath cell's dust one tick of sweeping gathers. */
+const SWEEP_RATE = 0.9;
 /** Reaching under a neighboring machine is slower than open floor. */
-const UNDER_MACHINE_EFFICIENCY = 0.5;
+const UNDER_MACHINE_RATE = 0.3;
 /** Below this a cell counts as clean and its key is dropped. */
 const CLEAN_EPSILON = 0.05;
-/** Craft XP per meaningful sweep — shopkeeping feeds progression. */
+/** Craft XP per heavy sweeping tick — shopkeeping feeds progression. */
 const SWEEP_XP = 1;
-/** Sweeps gathering less than this grant no XP (no dust-farming). */
-const XP_MINIMUM_GATHERED = 5;
+/** Ticks gathering less than this grant no XP (no dust-farming). */
+const XP_MINIMUM_GATHERED = 15;
+
+/** The eight cells around one — the aimed broom works a 3×3 patch. */
+const ORTHOGONALS_AND_DIAGONALS: ReadonlyArray<Vector> = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
 
 /**
- * Sweep the floor at hand: one broom pass gathers most of the dust from
- * the 3×3 patch around the player (cells are one square foot — a body
- * and a broom cover several), with a slower pull from the machine cells
- * in reach, into a sawdust pile on the cell the player faces (or
- * underfoot, when facing a machine or wall). Piles hold
- * SAWDUST_PILE_CAPACITY; whatever doesn't fit stays on the floor.
- * Sweeping is the only thing that runs during its SWEEP_TICKS — the
- * busyTicks plumbing in tickAction handles the wait.
+ * How far (chebyshev cells) the mouse can steer the broom head from the
+ * body — arm plus handle. The pointer layer clamps to this; the sweep
+ * re-checks it so a stale aim can't reach across the shop.
  */
-export function sweepAction(): GameAction {
+export const SWEEP_AIM_REACH = 2;
+
+/**
+ * The cells one tick of sweeping works: the cell underfoot plus a
+ * broom-wide swath two cells deep in the facing direction — deep enough
+ * that a full-pace walk can't outrun its own broom between ticks.
+ */
+export function sweepSwath(position: Vector, direction: Direction): Vector[] {
+  const forward = rotateVec([1, 0], direction);
+  const side = rotateVec([0, 1], direction);
+  const cells: Vector[] = [position];
+  for (let depth = 1; depth <= 2; depth++) {
+    for (let breadth = -1; breadth <= 1; breadth++) {
+      cells.push(
+        translateVec(position, [
+          forward[0] * depth + side[0] * breadth,
+          forward[1] * depth + side[1] * breadth,
+        ]),
+      );
+    }
+  }
+  return cells;
+}
+
+/**
+ * Take the broom off the floor and into the hands. Committing: with the
+ * broom in hand the player can't pick up stock, run a machine, or grab
+ * the vac — Space belongs to sweeping until the broom is set down (F).
+ */
+export function pickUpBroomAction(): GameAction {
   return (gameState) => {
     if (!gameState.progression.sweepingUnlocked) {
+      return gameState;
+    }
+    if (
+      gameState.broomPosition === null ||
+      chebyshevDistance(gameState.broomPosition, gameState.player.position) > 1
+    ) {
+      return gameState;
+    }
+    if (
+      !personCanWork(gameState.player) ||
+      gameState.player.carriedMachine != null ||
+      gameState.player.inventory.length > 0 ||
+      carryingShopVac(gameState)
+    ) {
+      return gameState;
+    }
+    return emitSound(
+      { ...gameState, broomPosition: null },
+      { kind: "material-pickup" },
+    );
+  };
+}
+
+/** Lean the broom on the floor right here. */
+export function putDownBroomAction(): GameAction {
+  return (gameState) => {
+    if (!holdingBroom(gameState) || gameState.player.away !== null) {
+      return gameState;
+    }
+    return emitSound(
+      { ...gameState, broomPosition: gameState.player.position },
+      { kind: "material-drop" },
+    );
+  };
+}
+
+/**
+ * One tick of push-broom work, run from tickAction while the player
+ * holds the operate key with the broom in hand — the same held-Space
+ * idiom as pushing stock through a machine, with no busyTicks freeze:
+ * walking and sweeping happen together, and that's the point.
+ *
+ * The broom is a plow. Each tick it gathers most of the dust in its
+ * swath — and whole sawdust piles the swath overlaps — into one pile on
+ * the cell the player faces, so walking shoves a growing drift ahead of
+ * the broom. Letting go of the key just leaves the pile on the floor;
+ * sweeping into it again picks it back up. Piles hold
+ * SAWDUST_PILE_CAPACITY and whatever doesn't fit stays where it was.
+ */
+export function sweepTickPass(): GameAction {
+  return (gameState) => {
+    if (
+      !holdingBroom(gameState) ||
+      gameState.player.operating !== true ||
+      !personCanWork(gameState.player)
+    ) {
       return gameState;
     }
 
@@ -50,150 +148,170 @@ export function sweepAction(): GameAction {
     const shopSize = gameState.shopInfo.size;
     const cellMap = CellMap.fromGameState(gameState);
 
-    // What one pass of the broom can gather, per source cell
-    const gathered: Array<{ key: string; amounts: SpeciesAmounts }> = [];
-    const gatherFrom = (position: Vector, efficiency: number) => {
-      const key = dustKey(position);
-      const amounts = gameState.dust[key];
-      if (!amounts) {
-        return;
-      }
-      const taken: Partial<Record<Species, number>> = {};
-      for (const [species, amount] of Object.entries(amounts)) {
-        if ((amount ?? 0) > 0) {
-          taken[species as Species] = (amount ?? 0) * efficiency;
-        }
-      }
-      if (dustTotal(taken) > 0) {
-        gathered.push({ key, amounts: taken });
-      }
-    };
+    // The mouse can steer the head: with a live aim in reach, the broom
+    // works the patch around the aimed cell — herding a drift around a
+    // machine's legs — instead of the facing swath.
+    const aim =
+      player.sweepAim != null &&
+      chebyshevDistance(player.sweepAim, player.position) <= SWEEP_AIM_REACH
+        ? player.sweepAim
+        : null;
+    const swath = (
+      aim
+        ? [aim, ...ORTHOGONALS_AND_DIAGONALS.map((d) => translateVec(aim, d))]
+        : sweepSwath(player.position, player.direction)
+    ).filter((cell) => inBounds(cell, shopSize));
 
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const cell = translateVec(player.position, [dx, dy]);
-        if (!inBounds(cell, shopSize)) {
-          continue;
-        }
-        gatherFrom(
-          cell,
-          cellMap.at(cell)?.machine
-            ? UNDER_MACHINE_EFFICIENCY
-            : SWEEP_EFFICIENCY,
-        );
-      }
-    }
-
-    // The pile grows on the cell we're sweeping toward; against a wall or
-    // a machine the pile just forms underfoot
-    const facing = translateVec(
-      player.position,
-      rotateVec([1, 0], player.direction),
-    );
+    // The pile grows on the aimed cell, or the cell the player faces;
+    // over a wall or a machine it forms underfoot instead
+    const target =
+      aim ??
+      translateVec(player.position, rotateVec([1, 0], player.direction));
     const pilePosition =
-      inBounds(facing, shopSize) && !cellMap.at(facing)?.machine
-        ? facing
+      inBounds(target, shopSize) && !cellMap.at(target)?.machine
+        ? target
         : player.position;
 
-    const existingPile = gameState.materialPiles.find(
+    const targetPile = gameState.materialPiles.find(
       (pile) =>
         pile.material.type === "sawdustPile" &&
         vectorEquals(pile.position, pilePosition),
     );
-    const existingContents: SpeciesAmounts =
-      existingPile?.material.type === "sawdustPile"
-        ? existingPile.material.contents
-        : {};
-
-    // Only what fits in the pile leaves the floor
-    const room = SAWDUST_PILE_CAPACITY - dustTotal(existingContents);
-    const gatheredTotal = gathered.reduce(
-      (sum, { amounts }) => sum + dustTotal(amounts),
-      0,
-    );
-    if (gatheredTotal <= 0 || room <= 0) {
+    const contents: Partial<Record<Species, number>> = {
+      ...(targetPile?.material.type === "sawdustPile"
+        ? targetPile.material.contents
+        : {}),
+    };
+    let room = SAWDUST_PILE_CAPACITY - dustTotal(contents);
+    if (room <= 0) {
       return gameState;
     }
-    const keepFraction = Math.min(1, room / gatheredTotal);
 
-    // Move the kept fraction off the floor…
+    // Move `fraction` of `amounts` into the target pile, scaled down
+    // further if the pile hasn't room for all of it. Returns the share of
+    // the *fraction* that actually moved (1 = all of it fit).
+    const gatherInto = (amounts: SpeciesAmounts, fraction: number): number => {
+      const total = dustTotal(amounts) * fraction;
+      if (total <= 0 || room <= 0) {
+        return 0;
+      }
+      const kept = Math.min(1, room / total);
+      for (const [species, amount] of Object.entries(amounts)) {
+        const moved = (amount ?? 0) * fraction * kept;
+        if (moved > 0) {
+          contents[species as Species] =
+            (contents[species as Species] ?? 0) + moved;
+        }
+      }
+      room -= total * kept;
+      return kept;
+    };
+
+    // The plow front: piles the swath overlaps ride along with the broom
+    const removedPiles: MaterialPile[] = [];
+    const pileRemainders: MaterialPile[] = [];
+    for (const pile of gameState.materialPiles) {
+      if (
+        pile === targetPile ||
+        pile.material.type !== "sawdustPile" ||
+        !swath.some((cell) => vectorEquals(cell, pile.position))
+      ) {
+        continue;
+      }
+      const kept = gatherInto(pile.material.contents, 1);
+      if (kept <= 0) {
+        continue;
+      }
+      removedPiles.push(pile);
+      if (kept < 1) {
+        const remainder: Partial<Record<Species, number>> = {};
+        for (const [species, amount] of Object.entries(
+          pile.material.contents,
+        )) {
+          const left = (amount ?? 0) * (1 - kept);
+          if (left > CLEAN_EPSILON) {
+            remainder[species as Species] = left;
+          }
+        }
+        if (dustTotal(remainder) > 0) {
+          pileRemainders.push({
+            material: makeMaterial<SawdustPile>({
+              type: "sawdustPile",
+              contents: remainder,
+            }),
+            position: pile.position,
+          });
+        }
+      }
+    }
+
+    // Loose dust in the swath, with a slower pull from under machines
     const dust: Record<string, Partial<Record<Species, number>>> = {
       ...gameState.dust,
     };
-    const contents: Partial<Record<Species, number>> = { ...existingContents };
-    for (const { key, amounts } of gathered) {
-      const cell: Partial<Record<Species, number>> = { ...dust[key] };
+    let gatheredTotal = 0;
+    for (const cell of swath) {
+      const key = dustKey(cell);
+      const amounts = dust[key];
+      if (!amounts) {
+        continue;
+      }
+      const rate = cellMap.at(cell)?.machine ? UNDER_MACHINE_RATE : SWEEP_RATE;
+      const before = dustTotal(amounts);
+      const kept = gatherInto(amounts, rate);
+      const takenFraction = rate * kept;
+      if (takenFraction <= 0) {
+        continue;
+      }
+      gatheredTotal += before * takenFraction;
+      const remaining: Partial<Record<Species, number>> = {};
       for (const [species, amount] of Object.entries(amounts)) {
-        const moved = (amount ?? 0) * keepFraction;
-        contents[species as Species] =
-          (contents[species as Species] ?? 0) + moved;
-        const left = (cell[species as Species] ?? 0) - moved;
+        const left = (amount ?? 0) * (1 - takenFraction);
         if (left > CLEAN_EPSILON) {
-          cell[species as Species] = left;
-        } else {
-          delete cell[species as Species];
+          remaining[species as Species] = left;
         }
       }
-      if (dustTotal(cell)) {
-        dust[key] = cell;
+      if (dustTotal(remaining)) {
+        dust[key] = remaining;
       } else {
         delete dust[key];
       }
     }
 
-    // …and into the pile
-    const pileMaterial = makeMaterial<SawdustPile>({
-      type: "sawdustPile",
-      contents,
-    });
-    const materialPiles: ReadonlyArray<MaterialPile> = [
-      ...gameState.materialPiles.filter((pile) => pile !== existingPile),
-      { material: pileMaterial, position: pilePosition },
-    ];
-
-    const swept = {
-      ...gameState,
-      dust: dust as DustMap,
-      materialPiles,
-      player: {
-        ...player,
-        busyTicks: SWEEP_TICKS - 1,
-      },
-    };
-    const gainedXp = gatheredTotal * keepFraction >= XP_MINIMUM_GATHERED;
-    return gainedXp ? withXp(swept, SWEEP_XP) : swept;
-  };
-}
-
-/** True when there's anything a sweep from this cell could gather. */
-export function canSweepAt(gameState: {
-  dust: DustMap;
-  player: { position: Vector };
-}): boolean {
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const cell = translateVec(gameState.player.position, [dx, dy]);
-      if (cellDust(gameState.dust, cell) > CLEAN_EPSILON) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * The one clean-up key: the tool in hand decides what it does — the shop
- * vac if it's over your shoulder, the broom otherwise. Does nothing while
- * the player is away or still occupied by their last action; there's no
- * queue, so a press that lands mid-sweep is simply dropped.
- */
-export function cleanUpAction(): GameAction {
-  return (gameState) => {
-    if (!personCanWork(gameState.player)) {
+    if (gatheredTotal <= 0 && removedPiles.length === 0) {
       return gameState;
     }
-    return carryingShopVac(gameState)
-      ? vacuumAction()(gameState)
-      : sweepAction()(gameState);
+
+    const materialPiles: ReadonlyArray<MaterialPile> = [
+      ...gameState.materialPiles.filter(
+        (pile) => pile !== targetPile && !removedPiles.includes(pile),
+      ),
+      ...pileRemainders,
+      {
+        material: makeMaterial<SawdustPile>({ type: "sawdustPile", contents }),
+        position: pilePosition,
+      },
+    ];
+
+    const swept = { ...gameState, dust: dust as DustMap, materialPiles };
+    return gatheredTotal >= XP_MINIMUM_GATHERED
+      ? withXp(swept, SWEEP_XP)
+      : swept;
   };
+}
+
+/** True when there's anything the broom in hand could sweep from here. */
+export function canSweepAt(gameState: GameState): boolean {
+  const swath = sweepSwath(
+    gameState.player.position,
+    gameState.player.direction,
+  );
+  return (
+    swath.some((cell) => cellDust(gameState.dust, cell) > CLEAN_EPSILON) ||
+    gameState.materialPiles.some(
+      (pile) =>
+        pile.material.type === "sawdustPile" &&
+        swath.some((cell) => vectorEquals(cell, pile.position)),
+    )
+  );
 }

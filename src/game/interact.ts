@@ -1,8 +1,10 @@
 import { CellMap } from "./CellMap";
 import { readyHandoffs } from "./delivery";
 import { GameState } from "./GameState";
+import { heldTool } from "./HeldTool";
 import { Machine } from "./Machine";
 import { isAtShopDoor } from "./ShopInfo";
+import { chebyshevDistance } from "./Vectors";
 
 /**
  * What pressing E (the interact key) would do right now. One resolver
@@ -19,6 +21,7 @@ export type InteractAction =
   | { kind: "switch-on"; machine: Machine }
   | { kind: "switch-off"; machine: Machine }
   | { kind: "pick-up-floor" }
+  | { kind: "pick-up-broom" }
   /** `handoffCount` is how much finished work the player is holding. */
   | { kind: "open-door"; handoffCount: number };
 
@@ -32,6 +35,11 @@ export function resolveInteract(
 
   const cellMap = CellMap.fromGameState(gameState);
   const cell = cellMap.at(gameState.player.position);
+
+  // A tool in hand commits the hands: material verbs (take, unload, pick
+  // up the floor) step aside until it's set down. Switches and the door
+  // still answer — flipping a switch doesn't need a free hand.
+  const handsFree = heldTool(gameState) === null;
 
   const candidates = [targetedMachine, ...(cell?.operableMachines ?? [])]
     .filter((machine) => machine != null)
@@ -50,15 +58,17 @@ export function resolveInteract(
       (machine) => machine.type.outputPosition === undefined,
     ),
   ];
-  for (const machine of outputSources) {
-    if (machine.outputMaterials.length > 0) {
-      return { kind: "take-outputs", machine };
+  if (handsFree) {
+    for (const machine of outputSources) {
+      if (machine.outputMaterials.length > 0) {
+        return { kind: "take-outputs", machine };
+      }
     }
-  }
 
-  for (const machine of candidates) {
-    if (machine.inputMaterials.length > 0) {
-      return { kind: "take-inputs", machine };
+    for (const machine of candidates) {
+      if (machine.inputMaterials.length > 0) {
+        return { kind: "take-inputs", machine };
+      }
     }
   }
 
@@ -69,8 +79,21 @@ export function resolveInteract(
     return { kind: "switch-on", machine: targetedMachine };
   }
 
-  if (cell?.grabbablePiles.length) {
+  if (handsFree && cell?.grabbablePiles.length) {
     return { kind: "pick-up-floor" };
+  }
+
+  // The broom leans where it was left; picking it up needs empty hands
+  // (and a free shoulder). Floor pickups outrank it so a pile lying at
+  // the broom's feet — the dustpan moment — still gets E first.
+  if (
+    gameState.progression.sweepingUnlocked &&
+    handsFree &&
+    gameState.player.inventory.length === 0 &&
+    gameState.broomPosition !== null &&
+    chebyshevDistance(gameState.broomPosition, gameState.player.position) <= 1
+  ) {
+    return { kind: "pick-up-broom" };
   }
 
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
@@ -109,6 +132,8 @@ export function interactLabel(action: InteractAction): string {
       return "switch off";
     case "pick-up-floor":
       return "pick up";
+    case "pick-up-broom":
+      return "pick up broom";
     case "open-door":
       return action.handoffCount > 0 ? "hand off work" : "head out";
   }

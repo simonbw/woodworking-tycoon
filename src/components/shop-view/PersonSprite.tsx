@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import { Person } from "../../game/Person";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
+import { HeldBroomSprite } from "./HeldBroomSprite";
 import { playerMotion } from "./playerMotionStore";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
 
@@ -48,6 +49,9 @@ export const PersonSprite: React.FC<{ person: Person }> = ({ person }) => {
           <MaterialSprite material={material} key={index} />
         </pixiContainer>
       ))}
+      {/* The broom rides the same rotated frame, so it points where the
+          body faces; drawn under the sprite so the hands overlap its grip */}
+      <HeldBroomSprite />
       <pixiSprite
         texture={personTexture}
         width={personSize}

@@ -9,7 +9,8 @@ import { Vector } from "../Vectors";
 import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
-import { shopVacTickPass } from "./shop-vac-actions";
+import { sweepTickPass } from "./dust-actions";
+import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { combineActions } from "./misc-actions";
 import { isFinishedProduct, materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
@@ -23,8 +24,8 @@ import { withXp } from "./skill-actions";
 /**
  * One simulation tick, as an explicit ordered pipeline. Ordering is
  * load-bearing:
- * - the shop vac runs before machines emit this tick's dust, so it always
- *   cleans the floor as of last tick;
+ * - cleaning (the broom's sweep, then the shop vac) runs before machines
+ *   emit this tick's dust, so it always cleans the floor as of last tick;
  * - the tick counter advances after machine work (returnTick comparisons
  *   read the pre-advance tick) and before the marketplace (day boundaries
  *   read the post-advance tick);
@@ -33,6 +34,8 @@ import { withXp } from "./skill-actions";
  */
 export const tickAction: GameAction = combineActions(
   playerTickPass(),
+  sweepTickPass(),
+  vacuumTickPass(),
   shopVacTickPass(),
   machineTickPass(),
   advanceTickPass(),

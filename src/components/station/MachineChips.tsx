@@ -8,6 +8,7 @@ import {
   operationParameters,
 } from "../../game/Machine";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
+import { heldTool } from "../../game/HeldTool";
 import {
   explainFeedRefusal,
   machineCanOperate,
@@ -61,10 +62,12 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const settings = machineSettings(machine, operations);
 
   // The Space chip: whether there's something on the machine to run — the
-  // shop's supplies and its clamp rack included.
+  // shop's supplies and its clamp rack included. A tool in hand owns the
+  // Space hold, so the chip stands down rather than lie.
   const canOperate =
     !isOperating &&
     !switchedOff &&
+    heldTool(gameState) === null &&
     machineCanOperate(machine, shopSupply(gameState), gameState.progression);
 
   // Why the cut won't run — the teaching moment that used to live under
