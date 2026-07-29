@@ -368,6 +368,24 @@ export function setOperatingAction(operating: boolean): GameAction {
       : { ...gameState, player: { ...gameState.player, operating } };
 }
 
+/**
+ * Record where the mouse is steering the broom head (already clamped to
+ * reach by the pointer layer), or null when the cursor stops aiming.
+ * Transient pointer state, like the operate key — never persisted.
+ */
+export function setSweepAimAction(aim: Vector | null): GameAction {
+  return (gameState) => {
+    const current = gameState.player.sweepAim ?? null;
+    if (
+      current === aim ||
+      (current !== null && aim !== null && vectorEquals(current, aim))
+    ) {
+      return gameState;
+    }
+    return { ...gameState, player: { ...gameState.player, sweepAim: aim } };
+  };
+}
+
 export function toggleMachinePowerAction(machine: Machine): GameAction {
   return (gameState) => {
     if (!machine.type.powerSwitch) {

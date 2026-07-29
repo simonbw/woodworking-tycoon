@@ -32,6 +32,13 @@ export interface Person {
    * save schema, and a load starts with hands empty of the key.
    */
   operating?: boolean;
+  /**
+   * The cell the mouse is steering the broom head toward, already
+   * clamped to arm's reach — null (or absent) when the cursor isn't
+   * aiming and the swath falls back to the facing direction. Physical
+   * pointer state, transient exactly like `operating`.
+   */
+  sweepAim?: Vector | null;
 }
 
 /**

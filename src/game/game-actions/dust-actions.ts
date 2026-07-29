@@ -36,6 +36,25 @@ const SWEEP_XP = 1;
 /** Ticks gathering less than this grant no XP (no dust-farming). */
 const XP_MINIMUM_GATHERED = 15;
 
+/** The eight cells around one — the aimed broom works a 3×3 patch. */
+const ORTHOGONALS_AND_DIAGONALS: ReadonlyArray<Vector> = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
+
+/**
+ * How far (chebyshev cells) the mouse can steer the broom head from the
+ * body — arm plus handle. The pointer layer clamps to this; the sweep
+ * re-checks it so a stale aim can't reach across the shop.
+ */
+export const SWEEP_AIM_REACH = 2;
+
 /**
  * The cells one tick of sweeping works: the cell underfoot plus a
  * broom-wide swath two cells deep in the facing direction — deep enough
@@ -128,19 +147,29 @@ export function sweepTickPass(): GameAction {
     const { player } = gameState;
     const shopSize = gameState.shopInfo.size;
     const cellMap = CellMap.fromGameState(gameState);
-    const swath = sweepSwath(player.position, player.direction).filter((cell) =>
-      inBounds(cell, shopSize),
-    );
 
-    // The pile grows on the cell the player faces; against a wall or a
-    // machine it forms underfoot instead
-    const facing = translateVec(
-      player.position,
-      rotateVec([1, 0], player.direction),
-    );
+    // The mouse can steer the head: with a live aim in reach, the broom
+    // works the patch around the aimed cell — herding a drift around a
+    // machine's legs — instead of the facing swath.
+    const aim =
+      player.sweepAim != null &&
+      chebyshevDistance(player.sweepAim, player.position) <= SWEEP_AIM_REACH
+        ? player.sweepAim
+        : null;
+    const swath = (
+      aim
+        ? [aim, ...ORTHOGONALS_AND_DIAGONALS.map((d) => translateVec(aim, d))]
+        : sweepSwath(player.position, player.direction)
+    ).filter((cell) => inBounds(cell, shopSize));
+
+    // The pile grows on the aimed cell, or the cell the player faces;
+    // over a wall or a machine it forms underfoot instead
+    const target =
+      aim ??
+      translateVec(player.position, rotateVec([1, 0], player.direction));
     const pilePosition =
-      inBounds(facing, shopSize) && !cellMap.at(facing)?.machine
-        ? facing
+      inBounds(target, shopSize) && !cellMap.at(target)?.machine
+        ? target
         : player.position;
 
     const targetPile = gameState.materialPiles.find(

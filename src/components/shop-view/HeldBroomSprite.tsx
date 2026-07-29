@@ -5,6 +5,7 @@ import { holdingBroom } from "../../game/HeldTool";
 import { mixColors } from "../../utils/colorUtils";
 import { rUniform } from "../../utils/randUtils";
 import { dominantDustColor } from "./dust-color";
+import { playerMotion } from "./playerMotionStore";
 import { useGameState } from "../useGameState";
 import { PIXELS_PER_CELL } from "./shop-scale";
 
@@ -16,6 +17,8 @@ const HEAD_HALF_WIDTH = PIXELS_PER_CELL * 0.7;
 const STROKE_SWAY = PIXELS_PER_CELL * 0.55;
 /** Strokes per second while sweeping. */
 const STROKE_RATE = 2.1;
+/** How quickly the head swings around to a new aim, per second. */
+const AIM_TURN_RATE = 10;
 
 interface Chip {
   x: number;
@@ -52,6 +55,23 @@ export const HeldBroomSprite: React.FC = () => {
     const gs = stateRef.current;
     const dt = Math.min(ticker.deltaMS, 100) / 1000;
     const sweeping = gs.player.operating === true && gs.player.away === null;
+
+    // The mouse steers the head: swing the whole broom toward the aimed
+    // cell, counter-rotating out of the body's eased heading so the
+    // bristles land where the swath actually works. No aim eases home.
+    const aim = gs.player.sweepAim;
+    let targetRotation = 0;
+    if (aim) {
+      const worldAngle = Math.atan2(
+        aim[1] + 0.5 - playerMotion.pos[1],
+        aim[0] + 0.5 - playerMotion.pos[0],
+      );
+      const parentRotation = g.parent?.rotation ?? 0;
+      targetRotation = worldAngle + Math.PI / 2 - parentRotation;
+    }
+    const delta =
+      ((targetRotation - g.rotation + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    g.rotation += delta * Math.min(1, dt * AIM_TURN_RATE);
 
     // The stroke: a pendulum while sweeping, easing home when not
     let sway: number;

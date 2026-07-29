@@ -211,6 +211,34 @@ describe("sweepTickPass", () => {
     assert.ok(Math.abs(floorLeft - 5) < 1e-9);
   });
 
+  it("a mouse aim steers the swath and the pile to the aimed cell", () => {
+    // [6,6] is out of the facing swath (facing +x) but within reach
+    const result = sweepTickPass()(
+      sweepingState({
+        dust: { "6,6": { walnut: 10 }, "5,5": { oak: 10 } },
+        player: { ...sweepingState().player, sweepAim: [6, 6] },
+      }),
+    );
+    // The aimed cell and its neighbors get swept…
+    assert.ok(Math.abs((result.dust["6,6"]?.walnut ?? 0) - 1) < 1e-9);
+    assert.ok(Math.abs((result.dust["5,5"]?.oak ?? 0) - 1) < 1e-9);
+    // …into a pile on the aimed cell, not the faced one
+    const pile = theSawdustPile(result);
+    assert.deepStrictEqual(pile.position, [6, 6]);
+  });
+
+  it("ignores an aim beyond arm's reach", () => {
+    const result = sweepTickPass()(
+      sweepingState({
+        dust: { "7,8": { walnut: 10 } },
+        player: { ...sweepingState().player, sweepAim: [0, 0] },
+      }),
+    );
+    // Falls back to the facing swath
+    const pile = theSawdustPile(result);
+    assert.deepStrictEqual(pile.position, [7, 8]);
+  });
+
   it("is a free no-op on a clean floor", () => {
     const state = sweepingState();
     assert.strictEqual(sweepTickPass()(state), state);

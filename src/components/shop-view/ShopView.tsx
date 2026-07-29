@@ -14,7 +14,13 @@ import {
   useSaveGame,
 } from "../useGameState";
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
-import { setOperatingAction } from "../../game/game-actions/player-actions";
+import {
+  setOperatingAction,
+  setSweepAimAction,
+} from "../../game/game-actions/player-actions";
+import { SWEEP_AIM_REACH } from "../../game/game-actions/dust-actions";
+import { holdingBroom } from "../../game/HeldTool";
+import { clamp } from "../../utils/mathUtils";
 import { usePaused } from "../PauseContext";
 import { BroomSprite } from "./BroomSprite";
 import { CarriedMachineLayer } from "./CarriedMachineLayer";
@@ -198,6 +204,33 @@ export const ShopView: React.FC = () => {
   // Where the shop floor's origin lands on the canvas
   const offsetX = Math.round((view.width - scaledWidth) / 2);
   const offsetY = Math.round((view.height - scaledHeight) / 2);
+
+  // The mouse steers the broom head: while the broom is in hand, the
+  // cursor's floor cell (clamped to arm's reach) becomes the sweep aim,
+  // and the swath works there instead of the facing direction. Purely an
+  // aim refinement — WASD alone still sweeps ahead of you. Listened for
+  // on the DOM container, where the floor mapping is these two offsets.
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!holdingBroom(gameState)) {
+      updateGameState(setSweepAimAction(null));
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const cellX = Math.floor(
+      (event.clientX - rect.left - offsetX) / (scale * PIXELS_PER_CELL),
+    );
+    const cellY = Math.floor(
+      (event.clientY - rect.top - offsetY) / (scale * PIXELS_PER_CELL),
+    );
+    const [px, py] = gameState.player.position;
+    updateGameState(
+      setSweepAimAction([
+        px + clamp(cellX - px, -SWEEP_AIM_REACH, SWEEP_AIM_REACH),
+        py + clamp(cellY - py, -SWEEP_AIM_REACH, SWEEP_AIM_REACH),
+      ]),
+    );
+  };
+  const clearAim = () => updateGameState(setSweepAimAction(null));
   // What the canvas can see, in world pixels — the lot fills all of it
   const worldViewport = {
     left: -offsetX / scale,
@@ -210,6 +243,8 @@ export const ShopView: React.FC = () => {
     <div
       ref={containerRef}
       className="relative h-full w-full min-h-0 min-w-0 overflow-hidden"
+      onPointerMove={handlePointerMove}
+      onPointerLeave={clearAim}
     >
       <ShopKeyboardShortcuts />
       <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />

@@ -92,6 +92,12 @@ it's being carried — the convention the vac established.
   `SAWDUST_PILE_CAPACITY`. The swath also picks whole piles back up —
   releasing Space just leaves the pile on the floor, and sweeping into
   it again brings it along. That's also how a settled pile gets moved.
+- **Mouse aim** (phase 4): with the broom in hand, the cursor's floor
+  cell — clamped to `SWEEP_AIM_REACH` — steers the head: the swath and
+  the pile move to the aimed 3×3 patch instead of the facing block, for
+  herding a drift around a machine's legs. Transient pointer state
+  (`Person.sweepAim`, stripped on load like `operating`), listened for
+  on the ShopView container. WASD alone stays fully sufficient.
 - The swath pulls dust out from under machines at a reduced rate —
   everything is broom-cleanable, under-machine just takes longer — and
   leaves a small film per pass: a broom-only shop is workably clean,
@@ -180,9 +186,7 @@ one-time note appear, the sweep hint joins the player prompt with the
 broom in hand on dusty ground). Emission is scaled by 1/multiplier so a
 slowed operation sheds the same total dust rather than compounding.
 
-**Issue #81 remaining phases**: (4) mouse aim for the broom head, as an
-aim refinement over the facing direction (WASD stays complete without
-it).
+All four phases of the issue #81 overhaul are built.
 
 Then, in order:
 
