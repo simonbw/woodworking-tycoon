@@ -46,14 +46,19 @@ function roughWalnut(id: string): Board {
 }
 
 /**
- * The full milling chain, ready to run: jointer (op cell [2,10], where the
- * player starts), planer (op cell [4,10]), table saw with the straight-line
- * sled mounted (op cell [8,10]), and a workspace (op cell [10,4]). The
- * feed-through machines sit mid-shop in their own columns, each with the
- * 6–7' of lane an 8' board needs both sides (see feed-clearance.ts). Two
- * rough walnut boards in the player's pockets, 22 reputation so every
- * lumber channel is open in the store, and jigsAndFixtures unlocked so
- * the sled operates.
+ * The full milling chain, ready to run: jointer (op cell [2,10]), planer
+ * (op cell [4,10]), table saw with the straight-line sled mounted (op cell
+ * [8,10]), and a workspace (op cell [10,4]). The feed-through machines sit
+ * mid-shop in their own columns, each with the 6–7' of lane an 8' board
+ * needs both sides (see feed-clearance.ts). Two rough walnut boards in the
+ * player's pockets, 22 reputation so every lumber channel is open in the
+ * store, and jigsAndFixtures unlocked so the sled operates.
+ *
+ * The player starts a step back from the jointer's infeed, facing it,
+ * rather than on the operation cell itself: the jointer's beds overhang
+ * its footprint by a couple of inches (see the measured collision box),
+ * so a body dropped at that cell's *center* lands inside the outfeed
+ * table — deeper than it could ever walk. One cell back is clear floor.
  */
 export const millingShop: GameState = {
   tick: 0,
@@ -64,8 +69,8 @@ export const millingShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [2, 10], // the jointer's operation cell
-    direction: 0,
+    position: [2, 11], // one step down the jointer's infeed lane
+    direction: 1, // facing the jointer
     inventory: [roughWalnut("test-rough-1"), roughWalnut("test-rough-2")],
     busyTicks: 0,
     away: null,

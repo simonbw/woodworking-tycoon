@@ -286,9 +286,10 @@ test.describe("Milling", () => {
     });
 
     await test.step("power switch: no cut until the jointer is switched on", async () => {
-      // Player starts on the jointer's operation cell, boards in hand.
-      // With two rough boards carried the machine would grab the first —
-      // park the spare on the floor so the jointer reads one board.
+      // Step up to the jointer's operation cell, boards in hand. With two
+      // rough boards carried the machine would grab the first — park the
+      // spare on the floor so the jointer reads one board.
+      await movePlayerTo(page, [2, 10]);
       await handSlot(page, "Walnut 4/4").first().click();
       await page.waitForTimeout(30);
       // The machine wears its state and its keys — there is no panel
