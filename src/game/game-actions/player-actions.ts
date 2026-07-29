@@ -1,7 +1,9 @@
 import { materialMeetsInput } from "../material-helpers";
+import { CellMap } from "../CellMap";
 import { clampsFor, clampsFree } from "../Clamp";
 import { hasConsumables, subtractConsumables } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
+import { feedClearanceShortfall } from "../feed-clearance";
 import { heldTool } from "../HeldTool";
 import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
@@ -463,6 +465,19 @@ export function operateMachineAction(machine: Machine): GameAction {
       );
       if (!match) {
         console.warn("Nothing on the machine that it is set up to take");
+        return gameState;
+      }
+      // Long stock needs clear lane to travel through the machine — see
+      // feed-clearance.ts. The chips explain the shortfall; this is the
+      // backstop that keeps the cut from running anyway.
+      if (
+        feedClearanceShortfall(
+          machine,
+          match.materials,
+          CellMap.fromGameState(gameState),
+        )
+      ) {
+        console.warn("No room to run the stock through the machine");
         return gameState;
       }
       const consumableCosts = match.operation.requiredConsumables ?? [];

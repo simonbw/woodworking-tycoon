@@ -37,6 +37,7 @@ export const jobsiteTableSaw: MachineType = {
   // position (targetWidth) is the machine's one setting.
   inputSpaces: 1,
   directFeed: true,
+  feedsThrough: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
   powerSwitch: true,

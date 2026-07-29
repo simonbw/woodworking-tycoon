@@ -5,6 +5,11 @@ import {
   NO_CONSUMABLES,
 } from "./Consumable";
 import { clampsFor, clampsFree } from "./Clamp";
+import { CellMap } from "./CellMap";
+import {
+  describeFeedShortfall,
+  feedClearanceShortfall,
+} from "./feed-clearance";
 import { GameState, ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
@@ -270,11 +275,23 @@ export function explainFeedRefusal(
   machine: Machine,
   operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
-  consumables: ConsumableStock = NO_CONSUMABLES,
+  supply: ShopSupply = NO_SUPPLY,
 ): string | null {
   const match = findFeedableOperation(machine, operations, carried);
   if (match) {
-    // The stock qualifies — the only thing that can still block is supply
+    // The stock qualifies — what can still block is the room to run it
+    // through, and then the supply cabinet
+    if (supply.cellMap !== undefined) {
+      const shortfall = feedClearanceShortfall(
+        machine,
+        match.materials,
+        supply.cellMap,
+      );
+      if (shortfall) {
+        return describeFeedShortfall(shortfall);
+      }
+    }
+    const { consumables } = supply;
     const short = (match.operation.requiredConsumables ?? []).find(
       (cost) => (consumables[cost.id] ?? 0) < cost.amount,
     );
@@ -412,6 +429,13 @@ export function stageableMaterials(
 export interface ShopSupply {
   readonly consumables: ConsumableStock;
   readonly freeClamps: number;
+  /**
+   * The shop floor itself, for checks that depend on where things stand —
+   * feed-through machines need clear lane scaled to the stock's length
+   * (see feed-clearance.ts). Absent (bare-supply tests, previews with no
+   * floor), clearance is treated as unlimited.
+   */
+  readonly cellMap?: CellMap;
 }
 
 /** An empty cabinet and a bare rack — nothing a recipe can draw on. */
@@ -424,6 +448,7 @@ export function shopSupply(gameState: GameState): ShopSupply {
   return {
     consumables: gameState.consumables,
     freeClamps: clampsFree(gameState.clamps, gameState.machines),
+    cellMap: CellMap.fromGameState(gameState),
   };
 }
 
@@ -453,6 +478,9 @@ export function machineCanOperate(
     );
     return (
       match !== null &&
+      (supply.cellMap === undefined ||
+        feedClearanceShortfall(machine, match.materials, supply.cellMap) ===
+          null) &&
       hasConsumables(
         supply.consumables,
         match.operation.requiredConsumables ?? [],

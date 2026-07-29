@@ -83,7 +83,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     !canOperate &&
     !switchedOff &&
     adviseOn.length > 0
-      ? explainFeedRefusal(machine, operations, adviseOn, gameState.consumables)
+      ? explainFeedRefusal(machine, operations, adviseOn, shopSupply(gameState))
       : null;
 
   const liftable =

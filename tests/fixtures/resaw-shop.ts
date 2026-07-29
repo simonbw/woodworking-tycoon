@@ -46,8 +46,8 @@ function walnutBlank(id: string): Board {
 }
 
 /**
- * A shop set up to resaw both ways: a band saw (op cell [2,4]) and a table
- * saw wearing the tall resaw fence (op cell [8,4]), with two 8/4 walnut
+ * A shop set up to resaw both ways: a band saw (op cell [2,9]) and a table
+ * saw wearing the tall resaw fence (op cell [8,9]), with two 8/4 walnut
  * blanks in the player's pockets and the Resawing skill earned.
  */
 export const resawShop: GameState = {
@@ -59,7 +59,7 @@ export const resawShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [2, 4], // the band saw's operation cell
+    position: [2, 9], // the band saw's operation cell
     direction: 0,
     // One blank per saw. A machine takes the first board in hand, so the
     // second stays in the player's pocket while the first is being cut.
@@ -68,9 +68,11 @@ export const resawShop: GameState = {
     away: null,
   },
   machines: [
-    idleMachine("bandSaw", [2, 2], "resaw", { targetThickness: 4 }),
+    // Mid-shop, so a 6' blank has lane to travel both sides of the blade
+    // (see feed-clearance.ts)
+    idleMachine("bandSaw", [2, 7], "resaw", { targetThickness: 4 }),
     // The tall fence is still in storage, so the saw is set up to rip
-    idleMachine("jobsiteTableSaw", [8, 2], "ripBoard", {
+    idleMachine("jobsiteTableSaw", [8, 7], "ripBoard", {
       targetWidth: 4,
       targetThickness: 4,
     }),

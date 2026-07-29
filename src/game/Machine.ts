@@ -124,6 +124,17 @@ export interface MachineType {
    */
   readonly directFeed?: boolean;
   /**
+   * Stock travels in a straight line through the machine — in at the
+   * operation side, out the other — so running long stock needs clear
+   * lane beyond the static freeCellsNeeded, scaled to the stock's
+   * length (see feed-clearance.ts). The planer, jointer, table saw, and
+   * band saw feed through; the miter saw doesn't (the stock stays put
+   * and the blade drops), which is deliberate — chopping long stock
+   * down must always be possible, or an 8' board could never get
+   * shorter.
+   */
+  readonly feedsThrough?: boolean;
+  /**
    * The verb the UI uses for operating this machine. Defaults to "run";
    * feed-through machines say "Feed", the miter saw says "Cut" — nothing
    * is fed through a chop saw — and the garbage can says "Empty".

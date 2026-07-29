@@ -30,6 +30,7 @@ import {
 } from "./CollisionDebugLayer";
 import { DustLayer } from "./DustLayer";
 import { EntranceSprite } from "./EntranceSprite";
+import { FeedLaneLayer } from "./FeedLaneLayer";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { HeldMovementListener } from "./heldMovementInput";
 import { HeldOperateListener } from "./heldOperateInput";
@@ -326,6 +327,9 @@ export const ShopView: React.FC = () => {
                     onClick={machineClickHandler(machinePlacement)}
                   />
                 ))}
+              {/* Painted over the machines: a blocked lane cell is usually
+                  *under* the machine that's blocking it */}
+              <FeedLaneLayer />
               {collisionDebugRequested() && <CollisionDebugLayer />}
               <PlayerMotionLayer paused={paused} />
               <FootstepSoundLayer />

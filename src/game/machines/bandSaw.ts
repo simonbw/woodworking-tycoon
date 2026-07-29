@@ -51,6 +51,7 @@ export const bandSaw: MachineType = {
   // when the cut finishes — you were holding them.
   inputSpaces: 1,
   directFeed: true,
+  feedsThrough: true,
   powerSwitch: true,
   operations: [
     {

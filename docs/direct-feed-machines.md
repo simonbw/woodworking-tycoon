@@ -128,6 +128,32 @@ stock is in hand and refused, and in the button's tooltip; a switched-off
 machine still leads with "switch it on first", and a feedable match that's
 only missing supplies reports that ("out of nails — this needs 4").
 
+## Feed clearance: long stock needs a lane
+
+Feed-through machines (`MachineType.feedsThrough`: planer, jointer, table
+saw, band saw) check the floor at feed time, not just at placement. A
+board travels its whole length through the cutter — fully on the infeed
+side before the cut, fully past it after — so each side needs
+`length − ceil(bed/2)` cells of clear lane beyond the footprint, counted
+along the operation column (`src/game/feed-clearance.ts`). Machines and
+walls block the lane; a **bare worktable doesn't** — stock slides over a
+table top, which is exactly what an outfeed table is (a worktable with a
+benchtop machine mounted blocks like the machine it carries).
+
+The numbers are deliberate: with a 2-cell bed, an 8' rip needs 7 + 2 + 7
+= 16 cells — exactly the starter garage's long wall, so full-length
+ripping means dedicating a cleared spine to it. The miter saw is
+deliberately *not* feed-through: the stock holds still and the blade
+drops, so chopping long stock shorter is always possible and is the
+intended answer to "no room" (the refusal line says so). The static
+`freeCellsNeeded` still gate placement as the working-apron minimum.
+
+The check runs in `machineCanOperate` (via `ShopSupply.cellMap` — absent
+means unlimited, for bare-supply tests) and is enforced in
+`operateMachineAction`; `explainFeedRefusal` names the short side in feet,
+and `FeedLaneLayer` paints the lane on the floor (clear green, blockers
+red) while a targeted machine is refusing for room.
+
 ## The other machines, briefly
 
 - **Jointer** (hand-fed, power switch, no settings): face-vs-edge is

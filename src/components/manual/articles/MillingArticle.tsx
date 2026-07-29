@@ -48,6 +48,24 @@ export const MillingArticle: React.FC = () => (
       happen in any order. Crosscuts to length can happen at any point.
     </P>
 
+    <H>Room to Run Stock</H>
+    <P>
+      A board travels its whole length through a machine: it starts entirely on
+      the infeed side and ends entirely past the cutter. The jointer, planer,
+      table saw, and band saw all need clear floor at both ends of the cut,
+      scaled to the stock — an 8' rip wants about 7' clear on each side of the
+      table saw, which in a one-car garage means the middle of the long wall
+      with nothing parked in the lane. When the floor says no, the machine will
+      tell you which side is short. Stock too long for the room it's in gets
+      crosscut to length at the miter saw first; a chop saw holds the board
+      still and never needs a runway.
+    </P>
+    <Note>
+      A bare worktable doesn't block the lane — stock slides right over its
+      top. Parked at a saw's outfeed, that's not in the way; that's an outfeed
+      table.
+    </Note>
+
     <H>Running the Planer</H>
     <P>
       Set the cut height with the crank, then feed stock in from your hands.

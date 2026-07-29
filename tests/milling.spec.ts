@@ -307,7 +307,7 @@ test.describe("Milling", () => {
       await runUntilBoard(page, "b.jointedFaces === 1");
       // Finished stock lands at the outfeed side — collect it there
       // (Shift+E takes everything within reach)
-      await movePlayerTo(page, [2, 0]);
+      await movePlayerTo(page, [2, 6]);
       await takeAllHere(page);
       // One flat face and the label says so
       await expect(
@@ -317,27 +317,27 @@ test.describe("Milling", () => {
       ).toBeVisible();
       // Back around to the infeed; feeding the same board again is now an
       // edge pass — the flat face rides the fence
-      await movePlayerTo(page, [2, 4]);
+      await movePlayerTo(page, [2, 10]);
       await setStockDown(page);
       await runUntilBoard(page, "b.jointedFaces === 1 && b.jointedEdges === 1");
-      await movePlayerTo(page, [2, 0]);
+      await movePlayerTo(page, [2, 6]);
       await takeAllHere(page);
     });
 
     await test.step("table saw: an edge-jointed board rips against the fence", async () => {
-      await movePlayerTo(page, [3, 11]);
+      await movePlayerTo(page, [8, 10]);
       // E flips the switch on the machine the player is standing at
       await switchOn(page);
       await expect(page.getByText("Jobsite Table Saw · on")).toBeVisible();
       await setStockDown(page);
       // The kept piece has both edges straight; the offcut keeps one
       await runUntilBoard(page, "b.width === 4 && b.jointedEdges === 2");
-      await movePlayerTo(page, [3, 7]);
+      await movePlayerTo(page, [8, 6]);
       await takeAllHere(page);
     });
 
     await test.step("planer: set it down and the rollers take it", async () => {
-      await movePlayerTo(page, [6, 4]);
+      await movePlayerTo(page, [4, 10]);
       // No load buttons anywhere: stock goes on a machine with F
       await expect(page.getByRole("button", { name: "→ Planer" })).toHaveCount(
         0,
@@ -371,7 +371,7 @@ test.describe("Milling", () => {
         page,
         "b.jointedFaces === 2 && b.jointedEdges === 2 && b.thickness === 4 && b.surface === 'smooth'",
       );
-      await movePlayerTo(page, [6, 0]);
+      await movePlayerTo(page, [4, 6]);
       await takeAllHere(page);
       // The hands strip names the finished state
       await expect(
@@ -382,7 +382,7 @@ test.describe("Milling", () => {
     });
 
     await test.step("planer: a full-depth pass takes exactly one detent off", async () => {
-      await movePlayerTo(page, [6, 4]);
+      await movePlayerTo(page, [4, 10]);
       // One detent under the 4/4 stock: a full bite. The first carried
       // piece this setting can take is the 2"-wide rip offcut.
       await stepSetting(page, "z", 1);
@@ -394,7 +394,7 @@ test.describe("Milling", () => {
         page,
         "b.width === 2 && b.thickness === 3 && b.surface === 'smooth'",
       );
-      await movePlayerTo(page, [6, 0]);
+      await movePlayerTo(page, [4, 6]);
       await takeAllHere(page);
       await expect(
         handSlot(page, "Walnut 3/4 — 2\" × 8'")
@@ -407,9 +407,9 @@ test.describe("Milling", () => {
       // Empty the hands so the saw gets the board this step is about
       await dropEverything(page);
       // Fetch the spare rough board parked by the jointer at the start
-      await movePlayerTo(page, [2, 4]);
+      await movePlayerTo(page, [2, 10]);
       await pressKey(page, "e");
-      await movePlayerTo(page, [3, 11]);
+      await movePlayerTo(page, [8, 10]);
       // No mode: a rough edge can't ride the fence, so this board runs the
       // mounted straight-line sled
       await setStockDown(page);
@@ -580,7 +580,7 @@ test.describe("Milling", () => {
     });
 
     await test.step("mounting the tall fence takes ripping off the table saw", async () => {
-      await movePlayerTo(page, [8, 4]);
+      await movePlayerTo(page, [8, 9]);
       await switchOn(page);
       await expect(page.getByText("Jobsite Table Saw · on")).toBeVisible();
       // Bare, the saw's one setting is the rip fence, in inches
@@ -609,7 +609,7 @@ test.describe("Milling", () => {
         "(m) => m.type === 'board' && m.thickness === 3",
       );
       // Feed-through machine: the pieces are waiting at the outfeed
-      await movePlayerTo(page, [8, 0]);
+      await movePlayerTo(page, [8, 5]);
       await takeAllHere(page);
       const thicknesses = (await boardsInHand(page))
         .map((b: any) => b.thickness)

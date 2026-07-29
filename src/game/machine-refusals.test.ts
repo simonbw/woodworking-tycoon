@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { ConsumableStock, NO_CONSUMABLES } from "./Consumable";
 import { Machine, MachineId, ParameterValues } from "./Machine";
-import { explainFeedRefusal } from "./machine-helpers";
+import { explainFeedRefusal, NO_SUPPLY } from "./machine-helpers";
 import { makeMaterial } from "./material-helpers";
 import { MaterialInstance, Pallet, Panel } from "./Materials";
 
@@ -31,7 +31,10 @@ function refusalAt(
     outputMaterials: [],
     tools: [],
   });
-  return explainFeedRefusal(machine, machine.operations, carried, consumables);
+  return explainFeedRefusal(machine, machine.operations, carried, {
+    ...NO_SUPPLY,
+    consumables,
+  });
 }
 
 describe("explainFeedRefusal", () => {

@@ -89,12 +89,12 @@ describe("cleaning chain", () => {
     shop.standAt([1, 1]).apply(pickUpBroomAction());
     assert.strictEqual(heldTool(shop.shop), "broom");
 
-    // Plow the rows below the jointer ([2,2]) and planer ([6,2]) — the
-    // swath reaches two cells ahead, so walking the y=5..3 rows facing +x
+    // Plow the rows below the jointer ([2,8]) and planer ([4,8]) — the
+    // swath reaches two cells ahead, so walking the y=11..9 rows facing +x
     // covers both machines' fallout, undersides included. Two passes per
     // row: the under-machine pull is slow by design.
     const route: Array<[number, number]> = [];
-    for (const y of [5, 4, 3]) {
+    for (const y of [11, 10, 9]) {
       for (let pass = 0; pass < 2; pass++) {
         for (let x = 0; x <= 9; x++) {
           route.push([x, y]);
@@ -177,7 +177,7 @@ describe("cleaning chain", () => {
     shop.apply(toggleCarryShopVacAction());
     assert.strictEqual(heldTool(shop.shop), "vacHose");
     const route: Array<[number, number]> = [];
-    for (const y of [5, 4, 3]) {
+    for (const y of [11, 10, 9]) {
       for (let pass = 0; pass < 2; pass++) {
         for (let x = 0; x <= 9; x++) {
           route.push([x, y]);
@@ -186,12 +186,12 @@ describe("cleaning chain", () => {
     }
     plow(shop, route);
     // The fallout behind the machines needs the nozzle aimed at them:
-    // walk the y=3 aisle facing the back wall and the cone reaches the
-    // y=0..2 cells the eastward passes never covered.
+    // walk the y=9 aisle facing the back wall and the cone reaches the
+    // y=6..8 cells the eastward passes never covered.
     const backWallPass: Array<[number, number]> = [];
     for (let pass = 0; pass < 3; pass++) {
       for (let x = 0; x <= 9; x++) {
-        backWallPass.push([x, 3]);
+        backWallPass.push([x, 9]);
       }
     }
     plow(shop, backWallPass, 1);

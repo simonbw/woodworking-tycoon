@@ -331,7 +331,9 @@ function commission2(shop: ShopDriver): ShopDriver {
   // A crate takes both hands: the offcuts from the first shelf go on the floor.
   shop.putEverythingDown();
   shop.goShopping("orangeBox");
-  shop.buyAndPlaceMachine("miterSaw", machinePrice("miterSaw"), [8, 5]);
+  // Against the left wall, clear of the milling lanes down columns 4 and
+  // 8 — the feed-through machines need their runway (see feed-clearance)
+  shop.buyAndPlaceMachine("miterSaw", machinePrice("miterSaw"), [1, 7]);
   shop.comeHome();
 
   // A pallet yields five deck boards; four of them become the order.
@@ -353,10 +355,11 @@ function commission2(shop: ShopDriver): ShopDriver {
 function commission3(shop: ShopDriver): ShopDriver {
   shop.putEverythingDown();
   shop.goShopping("orangeBox");
+  // Centered on the long axis: an 8' rip needs 7' of lane each side
   shop.buyAndPlaceMachine(
     "jobsiteTableSaw",
     machinePrice("jobsiteTableSaw"),
-    [8, 9],
+    [8, 10],
   );
   shop.comeHome();
 
@@ -447,6 +450,8 @@ function commission6(shop: ShopDriver): ShopDriver {
 function commission7(shop: ShopDriver): ShopDriver {
   shop.putEverythingDown();
   shop.goShopping("orangeBox");
+  // Its own lane down column 4, clear now that the miter saw parks by
+  // the left wall
   shop.buyAndPlaceMachine(
     "lunchboxPlaner",
     machinePrice("lunchboxPlaner"),

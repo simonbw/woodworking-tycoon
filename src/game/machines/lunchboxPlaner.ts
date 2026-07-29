@@ -64,6 +64,7 @@ export const lunchboxPlaner: MachineType = {
   // to line up afterwards: the rollers grab it the moment it's set down.
   inputSpaces: 1,
   directFeed: true,
+  feedsThrough: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
   powerSwitch: true,

@@ -70,7 +70,8 @@ describe("pickUpMaterialAction", () => {
 function jointer(overrides: Partial<MachineState> = {}): MachineState {
   return {
     machineTypeId: "jointer",
-    position: [1, 1],
+    // Mid-shop, so the feed lane has room both ways (see feed-clearance)
+    position: [1, 8],
     rotation: 0,
     selectedOperationId: "jointFace",
     selectedParameters: undefined,
@@ -181,7 +182,8 @@ describe("direct feed infers the operation from the stock (jointer)", () => {
 function planer(overrides: Partial<MachineState> = {}): MachineState {
   return {
     machineTypeId: "lunchboxPlaner",
-    position: [1, 1],
+    // Mid-shop: an 8' pass needs 6' of lane each side of the beds
+    position: [1, 8],
     rotation: 0,
     selectedOperationId: "plane",
     selectedParameters: { targetThickness: 4 },

@@ -46,9 +46,11 @@ function roughWalnut(id: string): Board {
 }
 
 /**
- * The full milling chain, ready to run: jointer (op cell [2,4], where the
- * player starts), planer (op cell [6,4]), table saw with the straight-line
- * sled mounted (op cell [3,11]), and a workspace (op cell [8,11]). Two
+ * The full milling chain, ready to run: jointer (op cell [2,10], where the
+ * player starts), planer (op cell [4,10]), table saw with the straight-line
+ * sled mounted (op cell [8,10]), and a workspace (op cell [10,4]). The
+ * feed-through machines sit mid-shop in their own columns, each with the
+ * 6–7' of lane an 8' board needs both sides (see feed-clearance.ts). Two
  * rough walnut boards in the player's pockets, 22 reputation so every
  * lumber channel is open in the store, and jigsAndFixtures unlocked so
  * the sled operates.
@@ -62,23 +64,23 @@ export const millingShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [2, 4], // the jointer's operation cell
+    position: [2, 10], // the jointer's operation cell
     direction: 0,
     inventory: [roughWalnut("test-rough-1"), roughWalnut("test-rough-2")],
     busyTicks: 0,
     away: null,
   },
   machines: [
-    idleMachine("jointer", [2, 2], "jointFace"),
-    idleMachine("lunchboxPlaner", [6, 2], "plane", {
+    idleMachine("jointer", [2, 8], "jointFace"),
+    idleMachine("lunchboxPlaner", [4, 8], "plane", {
       targetThickness: 4,
     }),
-    idleMachine("jobsiteTableSaw", [3, 9], "ripBoard", { targetWidth: 4 }, [
+    idleMachine("jobsiteTableSaw", [8, 8], "ripBoard", { targetWidth: 4 }, [
       "straightLineSled",
     ]),
-    idleMachine("workspace", [8, 9], "glueUpPanel"),
+    idleMachine("workspace", [10, 2], "glueUpPanel"),
     // In the same corner the starter shop keeps it — the cleaning chain
-    // ends at the curb
+    // ends at the curb (the jointer's lane runs down column 2, clear of it)
     idleMachine("garbageCan", [0, 13], "empty"),
   ],
   machineCrates: [],

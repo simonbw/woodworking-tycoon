@@ -45,6 +45,7 @@ export const jointer: MachineType = {
   // face-jointed one gets its edge).
   inputSpaces: 1,
   directFeed: true,
+  feedsThrough: true,
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,
   powerSwitch: true,
