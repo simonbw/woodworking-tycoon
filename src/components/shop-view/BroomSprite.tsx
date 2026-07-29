@@ -1,13 +1,16 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import { PIXELS_PER_CELL } from "./shop-scale";
+import { useGameState } from "../useGameState";
+import { cellToPixelVec, PIXELS_PER_CELL } from "./shop-scale";
 
 /**
- * The shop broom, leaning in the top-left corner. Pure set dressing —
- * the sweep verb works anywhere — but it gives the tutorial's "that
- * broom in the corner" something to point at.
+ * The shop broom, leaning wherever it was last set down (F). Hidden
+ * while it's in the player's hands — the hands strip carries it there.
+ * Picked up with E standing beside it; worked by holding Space.
  */
 export const BroomSprite: React.FC = () => {
+  const gameState = useGameState();
+
   const draw = useCallback((g: Graphics) => {
     g.clear();
     const x = PIXELS_PER_CELL * 0.22;
@@ -49,5 +52,13 @@ export const BroomSprite: React.FC = () => {
     }
   }, []);
 
-  return <pixiGraphics draw={draw} />;
+  if (gameState.broomPosition === null) {
+    return null;
+  }
+  const [x, y] = cellToPixelVec(gameState.broomPosition);
+  return (
+    <pixiContainer x={x} y={y}>
+      <pixiGraphics draw={draw} />
+    </pixiContainer>
+  );
 };

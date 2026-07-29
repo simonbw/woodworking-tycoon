@@ -3,6 +3,7 @@ import { useCellMap } from "../useCellMap";
 import { canSweepAt } from "../../game/game-actions/dust-actions";
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
 import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
+import { holdingBroom } from "../../game/HeldTool";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { resolveInteract } from "../../game/interact";
@@ -71,26 +72,30 @@ export const PlayerPrompt: React.FC = () => {
       );
     }
     // The E chip belongs to whatever the interact key resolved to —
-    // floor pickups render here; machine and door interactions render
-    // at the machine and the door.
-    if (resolveInteract(gameState, targetedMachine)?.kind === "pick-up-floor") {
+    // floor pickups and the resting broom render here; machine and door
+    // interactions render at the machine and the door.
+    const interact = resolveInteract(gameState, targetedMachine);
+    if (interact?.kind === "pick-up-floor") {
       rows.push(
         <li key="pick-up">
           <ShortcutKeys shortcut="pick-up" /> pick up
         </li>,
       );
     }
+    if (interact?.kind === "pick-up-broom") {
+      rows.push(
+        <li key="pick-up-broom">
+          <ShortcutKeys shortcut="pick-up" /> pick up broom
+        </li>,
+      );
+    }
     // No chip for putting things down: it followed the player to every
     // cell, which read as a strobe. The hands strip carries the F hint
     // in its slot tooltips, and machines offer their own staging chip.
-    if (
-      gameState.progression.sweepingUnlocked &&
-      !draggingVac &&
-      canSweepAt(gameState)
-    ) {
+    if (holdingBroom(gameState) && canSweepAt(gameState)) {
       rows.push(
         <li key="sweep">
-          <ShortcutKeys shortcut="sweep" /> sweep sawdust
+          <ShortcutKeys shortcut="operate-machine" /> hold to sweep
         </li>,
       );
     }

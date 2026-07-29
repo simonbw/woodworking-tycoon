@@ -92,4 +92,5 @@ export const miterSawCrateShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: [0, 0],
 };

@@ -166,6 +166,7 @@ export const gameStateSchema = z.object({
       canister: speciesAmountsSchema,
     })
     .nullable(),
+  broomPosition: vectorSchema.nullable(),
 });
 
 /**

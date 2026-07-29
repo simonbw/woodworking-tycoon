@@ -101,4 +101,5 @@ export const consumablesShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: [0, 0],
 };

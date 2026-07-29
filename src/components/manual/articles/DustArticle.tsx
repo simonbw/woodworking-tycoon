@@ -13,12 +13,19 @@ export const DustArticle: React.FC = () => (
 
     <H>The Broom</H>
     <P>
-      Sweep with <ShortcutKeys shortcut="sweep" /> to push the dust underfoot
-      into a <Term>sawdust pile</Term> in front of you. Sweeping next to a
-      machine also pulls dust out from under it, slowly. The pile is an object
-      like any other: pick it up with <ShortcutKeys shortcut="pick-up" /> and
-      dump it in the garbage can. A broom always leaves a thin film behind —
-      thin enough not to matter.
+      Pick the broom up with <ShortcutKeys shortcut="pick-up" /> standing
+      beside it. With it in hand, hold{" "}
+      <ShortcutKeys shortcut="operate-machine" /> and walk: the broom pushes
+      the dust ahead of you into a growing <Term>sawdust pile</Term>. Let go
+      and the pile stays put; sweep into it again and it comes along.
+      Sweeping beside a machine also pulls dust out from under it, slowly.
+    </P>
+    <P>
+      The broom takes both hands — set it down with{" "}
+      <ShortcutKeys shortcut="put-down" /> before picking anything else up.
+      The pile is an object like any other: pick it up with{" "}
+      <ShortcutKeys shortcut="pick-up" /> and dump it in the garbage can. A
+      broom always leaves a thin film behind — thin enough not to matter.
     </P>
 
     <H>The Shop Vac</H>

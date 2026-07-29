@@ -122,4 +122,5 @@ export const miterFrameShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: [0, 0],
 };

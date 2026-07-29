@@ -25,8 +25,16 @@ import {
   putDownCarriedMachineAction,
   rotateCarriedMachineAction,
 } from "../../game/game-actions/machine-actions";
-import { toggleCarryShopVacAction } from "../../game/game-actions/shop-vac-actions";
-import { cleanUpAction } from "../../game/game-actions/dust-actions";
+import {
+  toggleCarryShopVacAction,
+  vacuumAction,
+} from "../../game/game-actions/shop-vac-actions";
+import {
+  pickUpBroomAction,
+  putDownBroomAction,
+} from "../../game/game-actions/dust-actions";
+import { heldTool, holdingBroom } from "../../game/HeldTool";
+import { carryingShopVac } from "../../game/ShopVac";
 import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
@@ -79,11 +87,14 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // Movement is deliberately absent here: walking is continuous (held
   // keys, not presses) and lives in HeldMovementListener + PlayerMotionLayer.
 
+  // The vac's burst rides its old key until the vac joins the held-tool
+  // Space idiom (issue #81 phase 3). The broom left this key for good:
+  // sweeping is holding Space with the broom in hand.
   useShortcut(
     "sweep",
     () => {
-      if (gameState.current.progression.sweepingUnlocked) {
-        applyAction(cleanUpAction());
+      if (carryingShopVac(gameState.current)) {
+        applyAction(vacuumAction());
       }
     },
     present && !carrying,
@@ -195,6 +206,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
             ),
           );
         }
+        case "pick-up-broom":
+          return applyAction(pickUpBroomAction());
         case "open-door":
           return openDoor();
       }
@@ -210,7 +223,11 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     (event) => {
       const gs = gameState.current;
       const inventory = gs.player.inventory;
-      if (inventory.length === 0) return;
+      if (inventory.length === 0) {
+        // Empty-handed except for the broom: F leans it right here
+        if (holdingBroom(gs)) applyAction(putDownBroomAction());
+        return;
+      }
 
       const machine = targeted.current;
       if (machine && machine.operationProgress.status !== "inProgress") {
@@ -252,6 +269,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   useShortcut(
     "operate-machine",
     () => {
+      // A tool in hand owns the hold: sweeping runs off the held flag in
+      // tickAction, so the press mustn't also start the machine underfoot.
+      if (heldTool(gameState.current) !== null) return;
       const machine = targeted.current;
       if (machine) applyAction(operateMachineAction(machine));
     },

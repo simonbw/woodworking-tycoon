@@ -1,5 +1,6 @@
 import { cellDust, dustSlowdown } from "./Dust";
 import { GameState } from "./GameState";
+import { holdingBroom } from "./HeldTool";
 import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "./ShopVac";
 import { Direction, Vector } from "./Vectors";
 
@@ -32,10 +33,16 @@ const EDGE_EPSILON = 1e-4;
  * one more. Carrying a machine costs nothing — you walk at your normal
  * pace with a bench over your shoulders.
  */
+/** Actively plowing dust has heft — you walk, but not at full stride. */
+const SWEEPING_PENALTY = 0.6;
+
 export function playerWalkSpeed(gameState: GameState): number {
+  const sweeping =
+    holdingBroom(gameState) && gameState.player.operating === true;
   const penalty =
     dustSlowdown(cellDust(gameState.dust, gameState.player.position)) +
-    (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0);
+    (carryingShopVac(gameState) ? SHOP_VAC_DRAG_PENALTY : 0) +
+    (sweeping ? SWEEPING_PENALTY : 0);
   return BASE_WALK_SPEED / (1 + penalty);
 }
 

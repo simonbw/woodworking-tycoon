@@ -96,4 +96,5 @@ export const cuttingBoardShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: [0, 0],
 };

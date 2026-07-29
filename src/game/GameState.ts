@@ -114,6 +114,13 @@ export interface GameState {
   /** The shop vac, once bought (see ShopVac.ts). Null until then. */
   readonly shopVac: ShopVacState | null;
   /**
+   * Where the shop broom is resting; null while it's in the player's
+   * hands (the same convention as the vac's parked position — see
+   * HeldTool.ts). The broom exists from the start but stays invisible
+   * until `progression.sweepingUnlocked` reveals it.
+   */
+  readonly broomPosition: Vector | null;
+  /**
    * Transient queue of sound cues emitted by the action(s) that produced this
    * state, drained by `GameSoundLayer` each render. Optional and never
    * persisted (stripped in `saveLoad`); treat a missing value as empty.

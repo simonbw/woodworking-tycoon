@@ -12,7 +12,6 @@ import {
   toggleCarryShopVacAction,
   vacuumAction,
 } from "./shop-vac-actions";
-import { cleanUpAction } from "./dust-actions";
 import { tickAction } from "./tickAction";
 
 /** Dragging the vac at [1,1] (the workspace is the neighbor at [1,2]). */
@@ -146,7 +145,7 @@ describe("dragging the vac through the shop", () => {
     assert.strictEqual(playerWalkSpeed(draggingState()), BASE_WALK_SPEED / 2);
   });
 
-  it("vacuums instead of sweeping on the clean-up key", () => {
+  it("bursts dust into the canister, never into a pile", () => {
     let state = draggingState({
       dust: { "1,1": { walnut: 50 } },
       player: {
@@ -155,7 +154,7 @@ describe("dragging the vac through the shop", () => {
         direction: 0,
       },
     });
-    state = cleanUpAction()(state);
+    state = vacuumAction()(state);
     // Vacuumed into the canister — no sawdust pile appears
     assert.ok((state.shopVac?.canister.walnut ?? 0) > 40);
     assert.ok(

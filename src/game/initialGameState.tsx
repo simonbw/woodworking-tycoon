@@ -1,5 +1,6 @@
 import { NO_CONSUMABLES } from "./Consumable";
 import { GameState } from "./GameState";
+import { BROOM_HOME } from "./HeldTool";
 import { STARTING_ARTICLES } from "./manual";
 import { STARTER_SKILLS } from "./Skill";
 import { ToolId } from "./Tool";
@@ -81,6 +82,7 @@ export const initialGameState: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomPosition: BROOM_HOME,
   pendingSounds: [],
   pendingPayouts: [],
 };

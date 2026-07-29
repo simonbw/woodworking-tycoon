@@ -1,6 +1,8 @@
 import React from "react";
 import { MaterialInstance } from "../game/Materials";
 import { dropMaterialAction } from "../game/game-actions/player-actions";
+import { putDownBroomAction } from "../game/game-actions/dust-actions";
+import { holdingBroom } from "../game/HeldTool";
 import { getMaterialFullName } from "../game/material-helpers";
 import { groupBy } from "../utils/arrayUtils";
 import { MaterialIcon } from "./current-cell-info/MaterialIcon";
@@ -19,7 +21,11 @@ import { useApplyGameAction, useGameState } from "./useGameState";
 export const HandsStrip: React.FC = () => {
   const gameState = useGameState();
 
-  if (gameState.player.away || gameState.player.inventory.length === 0) {
+  const broomInHand = holdingBroom(gameState);
+  if (
+    gameState.player.away ||
+    (gameState.player.inventory.length === 0 && !broomInHand)
+  ) {
     return null;
   }
 
@@ -37,10 +43,32 @@ export const HandsStrip: React.FC = () => {
       <span className="px-1 font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-paper-manila/60">
         In hand
       </span>
+      {broomInHand && <BroomSlot />}
       {grouped.map(([name, materials]) => (
         <HandSlot key={name} name={name} materials={materials} />
       ))}
     </div>
+  );
+};
+
+/**
+ * The broom's slot: a tool, not a material, so it gets its own chip.
+ * Clicking it leans the broom right here, same as F.
+ */
+const BroomSlot: React.FC = () => {
+  const applyAction = useApplyGameAction();
+
+  return (
+    <Tooltip content="Set down" shortcut="put-down">
+      <button
+        className="flex items-center gap-1.5 rounded border border-workshop-edge bg-workshop-panel px-1.5 py-1 text-left hover:border-gold-dark"
+        onClick={() => applyAction(putDownBroomAction())}
+      >
+        <span className="font-condensed text-sm leading-tight text-paper-manila">
+          Broom
+        </span>
+      </button>
+    </Tooltip>
   );
 };
 

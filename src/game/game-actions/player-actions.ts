@@ -2,6 +2,7 @@ import { materialMeetsInput } from "../material-helpers";
 import { clampsFor, clampsFree } from "../Clamp";
 import { hasConsumables, subtractConsumables } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
+import { heldTool } from "../HeldTool";
 import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
@@ -46,6 +47,13 @@ export function pickUpMaterialAction(
   materialPiles: ReadonlyArray<MaterialPile>,
 ): GameAction {
   return (gameState) => {
+    // A tool in hand commits the hands — lean the broom (or park the
+    // vac) before picking stock up. Enforced here, not just in the
+    // keyboard layer, so sequence tests obey the same physics.
+    if (heldTool(gameState) !== null) {
+      console.warn("Tried to pick up material while holding a tool");
+      return gameState;
+    }
     for (const materialPile of materialPiles) {
       // Long stock overhangs its anchor cell — any overlapped cell is
       // close enough to grab from (see pileFootprint).
@@ -150,6 +158,10 @@ export function takeInputsFromMachineAction(
   machine: Machine,
 ): GameAction {
   return (gameState) => {
+    if (heldTool(gameState) !== null) {
+      console.warn("Tried to take materials while holding a tool");
+      return gameState;
+    }
     const machineState = machine.state;
     for (const material of materials) {
       if (!machineState.inputMaterials.includes(material)) {
@@ -233,6 +245,10 @@ export function takeStoredMaterialsFromMachineAction(
   machine: Machine,
 ): GameAction {
   return (gameState) => {
+    if (heldTool(gameState) !== null) {
+      console.warn("Tried to take materials while holding a tool");
+      return gameState;
+    }
     const machineState = machine.state;
     for (const material of materials) {
       if (!machine.storedMaterials.includes(material)) {
@@ -268,6 +284,10 @@ export function takeOutputsFromMachineAction(
   machine: Machine,
 ): GameAction {
   return (gameState) => {
+    if (heldTool(gameState) !== null) {
+      console.warn("Tried to take materials while holding a tool");
+      return gameState;
+    }
     const machineState = machine.state;
     for (const material of materials) {
       if (!machineState.outputMaterials.includes(material)) {

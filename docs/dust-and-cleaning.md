@@ -65,40 +65,59 @@ machines cost proportionally less.
 
 ## Cleaning
 
-### Broom (starter)
+Cleaning tools are **held tools** (`src/game/HeldTool.ts`): objects the
+player picks up into a hand slot and works by **holding Space** — the
+same held-operate idiom as pushing stock through a machine, aimed at the
+tool in hand instead. A held tool commits the hands (no picking up
+stock, no running machines, no grabbing the other tool) until it's set
+down. "In hand" is derived, never stored: each tool records where it's
+resting (`GameState.broomPosition`, `shopVac.position`) and null means
+it's being carried — the convention the vac established.
 
-- A physical object leaning in a corner of the shop; appears alongside
-  the tutorial message (below).
-- **Sweep** is a new work-queue action (a few ticks per tile). Sweeping
-  doesn't destroy dust — it pushes the tile's contents into a growing
-  **sawdust pile** on the adjacent tile in the sweep direction. Piles are
-  real material piles: they render, they carry their species mix, and a
-  pile holds at most one full tile's worth (`DUST_MAX`).
-- Sweeping a tile adjacent to a machine also pulls dust out from under
-  it, at a reduced rate — everything is broom-cleanable, under-machine
-  just takes longer.
-- The broom leaves a ~10% film (tunable): a broom-only shop is workably
-  clean, never _spotless_.
-- **Dustpan phase**: a pile is picked up like any carried material and
-  dumped in the garbage can (infinite, v1). Sweeping and dumping grant a
-  token amount of XP so shopkeeping feeds progression instead of feeling
-  like pure tax.
-- Drag-select a region of tiles to queue a sweeping route.
+### Broom (starter — built, issue #81 phase 1)
 
-### Shop vac (mid-game store purchase — built)
+- A physical object leaning in the shop (home corner `BROOM_HOME`);
+  revealed alongside the tutorial message (below). Picked up with E
+  standing beside it, leaned again with F, shown in the hands strip
+  while held.
+- **Sweeping is a plow, not a button.** Holding Space runs a per-tick
+  sweep (`sweepTickPass` in `dust-actions.ts`, from `tickAction`) with
+  no busyTicks freeze — walking and sweeping happen together, at a
+  reduced stride (`SWEEPING_PENALTY` in `player-motion.ts`). Each tick
+  the broom gathers most of the dust in its **swath** (the cell
+  underfoot plus a 3-wide, 2-deep patch in the facing direction) into a
+  **sawdust pile** on the faced cell, so walking shoves a growing drift
+  ahead of the broom.
+- Piles are real material piles carrying their species mix, capped at
+  `SAWDUST_PILE_CAPACITY`. The swath also picks whole piles back up —
+  releasing Space just leaves the pile on the floor, and sweeping into
+  it again brings it along. That's also how a settled pile gets moved.
+- The swath pulls dust out from under machines at a reduced rate —
+  everything is broom-cleanable, under-machine just takes longer — and
+  leaves a small film per pass: a broom-only shop is workably clean,
+  never instantly _spotless_.
+- **Dustpan phase**: lean the broom (it commits the hands), pick the
+  pile up like any carried material, and dump it in the garbage can
+  (infinite, v1). Heavy sweeping ticks grant token XP so shopkeeping
+  feeds progression instead of feeling like pure tax.
 
-- A canister on casters (`GameState.shopVac`, save v13): buy it at the
-  store ($350, hidden until the sawdust tutorial fires), grab or park it
-  with `V` while standing on it. While dragging it, it **passively
-  trickle-cleans the tile underfoot** every tick, and the clean-up key
-  (`T`, same key as the broom — the tool in hand decides) fires a
-  vacuum burst: the current tile to zero, orthogonal neighbors — under
-  machines included — at 60%. Cleans to zero — the vac erases the
-  broom's film and reaches the tight spots.
-- No pile step: dust goes into the **canister** (5 tiles' worth, species
-  mix preserved), which **dumps itself when you stop next to the garbage
-  can** — the trip is the chore, not a button. The player prompt shows the
-  fill while dragging.
+### Shop vac (mid-game store purchase — built; overhaul is issue #81 phase 3)
+
+- A canister on casters (`GameState.shopVac`): buy it at the store
+  ($350, hidden until the sawdust tutorial fires), grab or park it with
+  `V` while standing on it. Grabbing it means holding its hose — a held
+  tool, so it commits the hands like the broom.
+- **Today**: dragging it passively trickle-cleans the tile underfoot
+  every tick, and `T` fires a vacuum burst (current tile to zero,
+  neighbors — under machines included — at 60%). Cleans to zero — the
+  vac erases the broom's film and reaches the tight spots. The canister
+  (5 tiles' worth, species mix preserved) dumps itself next to the
+  garbage can.
+- **Phase 3 replaces the burst and the silent dump**: hold Space for a
+  continuous suction cone at the nozzle (particles running in reverse),
+  a stiff verlet-simulated hose drawn between canister and hand
+  (render-layer only), a visible canister fill whose suction dies when
+  full, and a deliberate hold-Space empty at the garbage can.
 - Dragging halves walking speed, stacking with any dust penalty.
 
 ## Rendering
@@ -143,17 +162,23 @@ is hidden from the store until the message has fired.
 broom + shop vac. No capture/mitigation — players live the full chore
 first so the first mitigation purchase lands as relief.
 
-**Built so far** (save v12): the state model, per-tick emission, the
-full particle → floor-bake render pipeline, both penalties (machine
-slowdown via `getOperationPhases`; movement via `Person.busyTicks`, +1
-tick per full +100%), the broom loop (sweep on `T`, piles, dustpan to
-garbage, under-machine pull at half rate, ~10% film), and the tutorial
+**Built so far**: the state model, per-tick emission, the full particle
+→ floor-bake render pipeline, both penalties (machine slowdown via
+`getOperationPhases`; movement via `playerWalkSpeed`), the held-tool
+broom loop (issue #81 phase 1: pick up with E, plow by holding Space,
+piles, dustpan to garbage, under-machine pull at a reduced rate, the
+film), the shop vac (drag on V, trickle + `T` burst, self-dumping
+canister — its phase-3 overhaul is described above), and the tutorial
 latch (`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
-one-time note appear, sweep hint joins the player prompt on dusty
-ground). Emission is scaled by 1/multiplier so a slowed operation sheds
-the same total dust rather than compounding. The shop vac (above)
-completes the v1 scope — next up is the mitigation ladder, starting
-with dust bags.
+one-time note appear, the sweep hint joins the player prompt with the
+broom in hand on dusty ground). Emission is scaled by 1/multiplier so a
+slowed operation sheds the same total dust rather than compounding.
+
+**Issue #81 remaining phases**: (2) broom rendering — stroke animation,
+partial re-bake of swept cells on the baked floor texture, kicked-chip
+particles, a drift sprite for the growing pile; (3) the shop vac
+overhaul above; (4) mouse aim for the broom head, as an aim refinement
+over the facing direction (WASD stays complete without it).
 
 Then, in order:
 
@@ -187,7 +212,8 @@ before finishing day"), sellable pure-species sawdust.
 | Emission          | `src/game/game-actions/tickAction.ts`                           |
 | Slowdown hook     | `getOperationPhases` in `src/game/skill-helpers.ts`             |
 | Movement penalty  | `playerWalkSpeed` in `src/game/player-motion.ts`                |
-| Sweep/vac actions | `src/game/game-actions/` (busyTicks work-queue items)           |
+| Held tools        | `src/game/HeldTool.ts` (derived from resting positions)         |
+| Sweep/vac actions | `src/game/game-actions/` (sweep is a tick pass off held Space)  |
 | Tile surfacing    | `src/game/CellMap.ts` (`CellInfo`)                              |
 | Particles (done)  | `src/components/machine-sprites/CutParticles.tsx`               |
 | Floor stamps      | `src/components/shop-view/` (new layer in `ShopView.tsx`)       |

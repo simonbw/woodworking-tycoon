@@ -29,9 +29,12 @@ export const DustTutorialCard: React.FC = () => {
       </header>
       <p className="text-sm leading-snug">
         Left on the floor, sawdust slows your machines and your feet. There's a
-        broom in the corner now: sweep <ShortcutKeys shortcut="sweep" /> pushes
-        the dust underfoot into a pile in front of you. Scoop the pile up and
-        dump it in the garbage can.
+        broom in the corner now: pick it up with{" "}
+        <ShortcutKeys shortcut="pick-up" />, then hold{" "}
+        <ShortcutKeys shortcut="operate-machine" /> and walk to push the dust
+        into a pile ahead of you. Set the broom down with{" "}
+        <ShortcutKeys shortcut="put-down" />, scoop the pile up, and dump it in
+        the garbage can.
       </p>
       <div className="flex items-center justify-between">
         <ManualLink article="dust" />

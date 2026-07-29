@@ -133,13 +133,14 @@ const defs = [
     shiftHint: "put down everything",
   },
   {
-    // Contextual (ActionBar shows it on dusty ground once sweeping is
-    // unlocked); hidden from the static cheat sheet so the broom doesn't
-    // leak before its reveal.
+    // The shop vac's burst while dragging it (the broom is worked by
+    // holding Space instead — see docs/dust-and-cleaning.md). Contextual;
+    // hidden from the static cheat sheet so the vac doesn't leak before
+    // its reveal.
     id: "sweep",
     codes: ["KeyT"],
     keys: [["T"]],
-    description: "Sweep sawdust",
+    description: "Vacuum burst",
     scope: "home",
     group: "Materials",
     hidden: true,

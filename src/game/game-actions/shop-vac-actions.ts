@@ -80,6 +80,10 @@ export function toggleCarryShopVacAction(): GameAction {
         shopVac: { ...vac, position: gameState.player.position },
       };
     }
+    // The hose takes a hand — put the broom down before grabbing the vac
+    if (gameState.broomPosition === null) {
+      return gameState;
+    }
     if (chebyshevDistance(vac.position, gameState.player.position) <= 1) {
       return { ...gameState, shopVac: { ...vac, position: null } };
     }
