@@ -42,6 +42,12 @@ const Icon: React.FC<{ src: string; className?: string }> = ({
   <img
     src={src}
     alt=""
+    // The default is an async decode, which paints the element's box a
+    // frame before its pixels — so a whole aisle of icons appears a beat
+    // after the shelf they sit on, even when every file is already in
+    // hand. These are 64×64; decoding one on the spot costs less than the
+    // frame it saves.
+    decoding="sync"
     className={classNames(
       className ?? ICON_SIZE_CLASSES,
       "object-contain",
