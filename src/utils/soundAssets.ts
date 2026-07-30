@@ -26,8 +26,9 @@ import { clipUrl, preloadSound, UI_SOUND_NAMES } from "./sfx";
  */
 
 /**
- * One-shots played through `GameSoundLayer`'s event bridge and
- * `RewardFlightLayer`. Bare clip names, as `playSound` takes them.
+ * One-shots played through `GameSoundLayer`'s event bridge,
+ * `RewardFlightLayer`, and the trip performance
+ * (`TripTransitionLayer`). Bare clip names, as `playSound` takes them.
  */
 const GAME_SOUND_CLIPS = [
   "assembly-mallet",
@@ -40,6 +41,8 @@ const GAME_SOUND_CLIPS = [
   "material-pickup",
   "orbital-sander",
   "pallet-dismantle",
+  "truck-arrive",
+  "truck-depart",
 ];
 
 /** Every clip name the game can ask `playSound` for. */

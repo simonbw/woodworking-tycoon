@@ -306,8 +306,9 @@ export const ShopView: React.FC = () => {
             worldRef={cameraContainerRef}
             overlayRef={overlayScrollRef}
             scrollStartY={cellMap.getHeight()}
-            scrollEndY={lotHeightCells - 2}
             scrollMax={scrollMax}
+            offsetY={offsetY}
+            viewHeight={view.height}
             scale={scale}
           />
           <pixiContainer x={offsetX} y={offsetY} scale={scale}>
@@ -383,7 +384,7 @@ export const ShopView: React.FC = () => {
               <PlayerMotionLayer paused={paused} />
               <FootstepSoundLayer />
               <ShopVacSprite />
-              {!gameState.player.away && truckStage !== "arriving" && (
+              {!gameState.player.away && truckStage === "parked" && (
                 <PersonSprite person={gameState.player} />
               )}
               {/* Dust in flight rides above the tools taking it */}
