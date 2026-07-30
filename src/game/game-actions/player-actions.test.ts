@@ -65,6 +65,64 @@ describe("pickUpMaterialAction", () => {
     assert.strictEqual(result.materialPiles.length, 1);
     assert.strictEqual(result.player.inventory.length, 0);
   });
+
+  it("refuses a load bigger than the arm room left", () => {
+    // HAND_CAPACITY is 2: one board in hand leaves room for one, not two
+    const piles: MaterialPile[] = [
+      { material: board("pine", 2, 4, 1), position: [1, 3] },
+      { material: board("pine", 2, 4, 1), position: [1, 3] },
+    ];
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [1, 3],
+        inventory: [board("pine", 2, 4, 1)],
+      },
+      materialPiles: piles,
+    };
+    const result = pickUpMaterialAction(piles)(state);
+    assert.strictEqual(result.materialPiles.length, 2);
+    assert.strictEqual(result.player.inventory.length, 1);
+  });
+
+  it("still takes a single piece into the last free hand", () => {
+    const pile: MaterialPile = {
+      material: board("pine", 2, 4, 1),
+      position: [1, 3],
+    };
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [1, 3],
+        inventory: [board("pine", 2, 4, 1)],
+      },
+      materialPiles: [pile],
+    };
+    const result = pickUpMaterialAction([pile])(state);
+    assert.strictEqual(result.materialPiles.length, 0);
+    assert.strictEqual(result.player.inventory.length, 2);
+  });
+
+  it("refuses any pickup once the hands are full", () => {
+    const pile: MaterialPile = {
+      material: board("pine", 2, 4, 1),
+      position: [1, 3],
+    };
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [1, 3],
+        inventory: [board("pine", 2, 4, 1), board("pine", 2, 4, 1)],
+      },
+      materialPiles: [pile],
+    };
+    const result = pickUpMaterialAction([pile])(state);
+    assert.strictEqual(result.materialPiles.length, 1);
+    assert.strictEqual(result.player.inventory.length, 2);
+  });
 });
 
 /** An idle jointer; the stock rides in the player's hands (direct feed). */

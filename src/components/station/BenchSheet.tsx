@@ -19,6 +19,7 @@ import {
   shopSupply,
 } from "../../game/machine-helpers";
 import { MaterialInstance } from "../../game/Materials";
+import { handSpaceLeft } from "../../game/Person";
 import { generateOperationPreview } from "../../game/operation-helpers";
 import { ModeControl } from "../current-cell-info/ModeControl";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -52,6 +53,7 @@ export const BenchSheet: React.FC<{
   const working = machine.operationProgress.status === "inProgress";
   const freeClamps = clampsFree(gameState.clamps, gameState.machines);
   const canOperate = machineCanOperate(machine, shopSupply(gameState));
+  const handSpace = handSpaceLeft(gameState.player);
   const dustMultiplier = machineDustMultiplier(
     gameState.dust,
     machine,
@@ -222,18 +224,25 @@ export const BenchSheet: React.FC<{
       {machine.outputMaterials.length > 0 && (
         <div className="flex items-center justify-end gap-2 text-xs font-condensed uppercase tracking-[0.15em] text-ink-fade">
           {outputsCollectedHere ? (
+            // An armful at a time: the button takes what fits in the
+            // hands, and a bigger batch means coming back for the rest.
             <button
               className="button-paper text-xs"
+              disabled={handSpace === 0}
+              title={handSpace === 0 ? "Hands full" : undefined}
               onClick={() =>
+                handSpace > 0 &&
                 applyAction(
                   takeOutputsFromMachineAction(
-                    machine.outputMaterials,
+                    machine.outputMaterials.slice(0, handSpace),
                     machine,
                   ),
                 )
               }
             >
-              Take All ({machine.outputMaterials.length})
+              {handSpace > 0 && machine.outputMaterials.length > handSpace
+                ? `Take (${handSpace} of ${machine.outputMaterials.length})`
+                : `Take All (${machine.outputMaterials.length})`}
             </button>
           ) : (
             <span className="text-ink-fade">

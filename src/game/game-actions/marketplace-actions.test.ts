@@ -111,6 +111,22 @@ describe("delistItemAction", () => {
     assert.deepStrictEqual(result.listings, []);
     assert.deepStrictEqual(result.player.inventory, [listing.material]);
   });
+
+  it("refuses when the hands are already full", () => {
+    // HAND_CAPACITY is 2 — the delisted item has nowhere to go
+    const { state, listing } = listedState(75);
+    const fullHanded = {
+      ...state,
+      player: {
+        ...state.player,
+        inventory: [makeShelf(), makeShelf()],
+      },
+    };
+    const result = delistItemAction(listing.id)(fullHanded);
+    assert.strictEqual(result.listings.length, 1);
+    assert.strictEqual(result.player.inventory.length, 2);
+    assert.strictEqual(listing.id, result.listings[0].id);
+  });
 });
 
 describe("repriceListingAction", () => {

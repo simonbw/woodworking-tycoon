@@ -16,6 +16,7 @@ import {
 import { UPGRADE_TYPES } from "../../game/Upgrade";
 import { TOOL_TYPES } from "../../game/Tool";
 import { getMaterialFullName } from "../../game/material-helpers";
+import { handSpaceLeft } from "../../game/Person";
 import { ToolIcon } from "../ItemIcon";
 import { ManualLink } from "../manual/ManualLink";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
@@ -228,6 +229,7 @@ export const MaterialShelf: React.FC<{ machine: Machine }> = ({ machine }) => {
           <span
             key={index}
             onClick={() =>
+              handSpaceLeft(gameState.player) > 0 &&
               applyAction(
                 takeStoredMaterialsFromMachineAction([material], machine),
               )
@@ -235,7 +237,11 @@ export const MaterialShelf: React.FC<{ machine: Machine }> = ({ machine }) => {
           >
             <MaterialIcon
               material={material}
-              tooltip={`Take: ${getMaterialFullName(material)}`}
+              tooltip={
+                handSpaceLeft(gameState.player) > 0
+                  ? `Take: ${getMaterialFullName(material)}`
+                  : "Hands full"
+              }
             />
           </span>
         ))}

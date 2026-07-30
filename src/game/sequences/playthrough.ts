@@ -115,10 +115,10 @@ const isUnfinishedBoard = (m: MaterialInstance) =>
  * each board in half, then rip each half down the middle.
  */
 function makeMapleStrips(shop: ShopDriver): ShopDriver {
-  while (shop.holding(mapleBoard(4, 4)).length > 0) {
+  while (shop.stock(mapleBoard(4, 4)).length > 0) {
     shop.feed("miterSaw", mapleBoard(4, 4), { angle: 0, cutPosition: 2 });
   }
-  while (shop.holding(mapleBoard(2, 4)).length > 0) {
+  while (shop.stock(mapleBoard(2, 4)).length > 0) {
     shop.feed("jobsiteTableSaw", mapleBoard(2, 4), { targetWidth: 2 });
   }
   return shop;
@@ -312,10 +312,8 @@ export function newGame(): ShopDriver {
  */
 function commission1(shop: ShopDriver): ShopDriver {
   shop.scavenge();
-  // Two pallets came home in the bed; leave the spare on the dropoff
-  // spot and work the other.
-  shop.standAt(shop.shop.shopInfo.materialDropoffPosition);
-  shop.putEverythingDown();
+  // Two pallets came home in the bed and were staged on the dropoff
+  // spot; leave the spare there and work the other.
   shop.takeFromFloor(isPallet, 1);
   dismantleAPallet(shop);
   buildRusticShelf(shop);

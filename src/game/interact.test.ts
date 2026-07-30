@@ -47,6 +47,21 @@ describe("resolveInteract", () => {
     assert.strictEqual(action.piles[0], overhanging);
   });
 
+  it("steps pickup aside when the hands are full", () => {
+    // HAND_CAPACITY is 2: with both hands loaded the chip never offers a
+    // pickup the action would refuse
+    const underfoot = pileAt([5, 5]);
+    const state = shopWithPiles(underfoot);
+    const fullHanded = {
+      ...state,
+      player: {
+        ...state.player,
+        inventory: [board("pine", 1), board("pine", 1)],
+      },
+    };
+    assert.strictEqual(resolveInteract(fullHanded, undefined), null);
+  });
+
   it("offers nothing on a bare cell", () => {
     const action = resolveInteract(shopWithPiles(pileAt([8, 8])), undefined);
     assert.strictEqual(action, null);

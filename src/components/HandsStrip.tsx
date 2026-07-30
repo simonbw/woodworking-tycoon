@@ -7,6 +7,7 @@ import {
 } from "../game/game-actions/dust-actions";
 import { toggleCarryShopVacAction } from "../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../game/HeldTool";
+import { HAND_CAPACITY } from "../game/Person";
 import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
 import { getMaterialFullName } from "../game/material-helpers";
 import { groupBy } from "../utils/arrayUtils";
@@ -48,6 +49,11 @@ export const HandsStrip: React.FC = () => {
     >
       <span className="px-1 font-condensed text-[0.65rem] uppercase tracking-[0.2em] text-paper-manila/60">
         In hand
+        {gameState.player.inventory.length > 0 && (
+          <span className="ml-1.5 tabular-nums">
+            {gameState.player.inventory.length}/{HAND_CAPACITY}
+          </span>
+        )}
       </span>
       {broomInHand && <BroomSlot fill={dustpanFillFraction(gameState)} />}
       {hoseInHand && (

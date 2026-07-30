@@ -49,7 +49,7 @@ describe("consumables loop", () => {
 
     dismantleThePallet(shop);
 
-    assert.equal(shop.holding(isPalletBoard).length, 8);
+    assert.equal(shop.stock(isPalletBoard).length, 8);
     assert.equal(shop.shop.consumables.nails, 8);
   });
 

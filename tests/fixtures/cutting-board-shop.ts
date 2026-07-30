@@ -31,9 +31,23 @@ function idleMachine(
 /**
  * Everything needed to run the cutting board chain WITHOUT a planer:
  * workspace and sales table (operation cells at [1,3], [3,3]), the player at
- * the workspace with five smooth maple strips, a random orbit sander in tool
- * storage, and commission 6 active. Proves machines buy time, not access.
+ * the workspace with five smooth maple strips — two in the arms (all they
+ * hold), three already staged in the bench's bay — a random orbit sander in
+ * tool storage, and commission 6 active. Proves machines buy time, not
+ * access.
  */
+const strips = Array.from({ length: 5 }, (_, i) => ({
+  id: `test-strip-${i}`,
+  type: "board" as const,
+  species: "maple" as const,
+  length: 2 as const,
+  width: 2 as const,
+  thickness: 4 as const,
+  surface: "smooth" as const,
+  jointedFaces: 2 as const,
+  jointedEdges: 2 as const,
+}));
+
 export const cuttingBoardShop: GameState = {
   tick: 0,
   money: 100,
@@ -46,21 +60,16 @@ export const cuttingBoardShop: GameState = {
     name: "Player",
     position: [1, 4], // the workspace's operation cell
     direction: 0,
-    inventory: Array.from({ length: 5 }, (_, i) => ({
-      id: `test-strip-${i}`,
-      type: "board" as const,
-      species: "maple" as const,
-      length: 2 as const,
-      width: 2 as const,
-      thickness: 4 as const,
-      surface: "smooth" as const,
-      jointedFaces: 2 as const,
-      jointedEdges: 2 as const,
-    })),
+    inventory: strips.slice(0, 2),
     busyTicks: 0,
     away: null,
   },
-  machines: [idleMachine("workspace", [1, 2], "dismantlePallet")],
+  machines: [
+    {
+      ...idleMachine("workspace", [1, 2], "dismantlePallet"),
+      inputMaterials: strips.slice(2),
+    },
+  ],
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {

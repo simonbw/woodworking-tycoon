@@ -11,9 +11,10 @@ import {
   describeMaterialRequirement,
   getMaterialFullName,
 } from "../../game/material-helpers";
+import { handSpaceLeft } from "../../game/Person";
 import { groupBy } from "../../utils/arrayUtils";
 import { MaterialIcon } from "../current-cell-info/MaterialIcon";
-import { useApplyGameAction } from "../useGameState";
+import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
  * The bench sheet's input→output bay: the loaded slots on the left
@@ -28,6 +29,9 @@ export const SlotDiagram: React.FC<{
   previewOutputs: ReadonlyArray<MaterialInstance>;
 }> = ({ machine, inputSlots, expectedOutputs, previewOutputs }) => {
   const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+  // Takes go into the arms, so a batch is at most the room left there.
+  const handSpace = handSpaceLeft(gameState.player);
   const outputsCollectedHere = machine.type.outputPosition === undefined;
 
   const outputMaterials = [
@@ -43,7 +47,7 @@ export const SlotDiagram: React.FC<{
           <span
             key={i}
             onClick={() => {
-              if (!slot.isPlaceholder) {
+              if (!slot.isPlaceholder && handSpace > 0) {
                 applyAction(
                   takeInputsFromMachineAction([slot.material], machine),
                 );
@@ -78,12 +82,12 @@ export const SlotDiagram: React.FC<{
           <span
             key={name}
             onClick={(event) => {
-              if (!outputsCollectedHere) {
+              if (!outputsCollectedHere || handSpace === 0) {
                 return;
               }
               applyAction(
                 takeOutputsFromMachineAction(
-                  event.shiftKey ? materials : [materials[0]],
+                  event.shiftKey ? materials.slice(0, handSpace) : [materials[0]],
                   machine,
                 ),
               );

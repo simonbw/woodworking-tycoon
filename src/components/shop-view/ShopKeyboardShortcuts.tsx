@@ -31,6 +31,7 @@ import {
 } from "../../game/game-actions/dust-actions";
 import { heldTool, holdingBroom } from "../../game/HeldTool";
 import { atTruckBed } from "../../game/lot";
+import { handSpaceLeft } from "../../game/Person";
 import {
   loadTruckBedAction,
   takeCrateFromTruckAction,
@@ -171,12 +172,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       }
       const action = resolveInteract(gs, targeted.current);
       if (!action) return;
+      // Shift takes armfuls, and an armful is HAND_CAPACITY: the batch is
+      // clamped to the room left so a big pile takes trips instead of the
+      // action refusing the whole grab.
+      const space = handSpaceLeft(gs.player);
       switch (action.kind) {
         case "take-outputs":
           return applyAction(
             takeOutputsFromMachineAction(
               event.shiftKey
-                ? action.machine.outputMaterials
+                ? action.machine.outputMaterials.slice(0, space)
                 : [action.machine.outputMaterials[0]],
               action.machine,
             ),
@@ -185,7 +190,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           return applyAction(
             takeInputsFromMachineAction(
               event.shiftKey
-                ? action.machine.inputMaterials
+                ? action.machine.inputMaterials.slice(0, space)
                 : [action.machine.inputMaterials[0]],
               action.machine,
             ),
@@ -196,7 +201,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         case "pick-up-floor":
           return applyAction(
             pickUpMaterialAction(
-              event.shiftKey ? action.piles : [action.piles[0]],
+              event.shiftKey ? action.piles.slice(0, space) : [action.piles[0]],
             ),
           );
         case "pick-up-broom":
@@ -205,7 +210,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           const bed = gs.truck.bed;
           return applyAction(
             takeFromTruckBedAction(
-              event.shiftKey ? bed : [bed[bed.length - 1]],
+              event.shiftKey ? bed.slice(-space) : [bed[bed.length - 1]],
             ),
           );
         }

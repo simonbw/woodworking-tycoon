@@ -10,6 +10,7 @@ import { formatMoney } from "../../utils/formatNumber";
 import { MaterialLabel } from "../MaterialLabel";
 import { getSellValue } from "../../game/material-values";
 import { MaterialInstance } from "../../game/Materials";
+import { handSpaceLeft } from "../../game/Person";
 import { TICKS_PER_DAY } from "../../game/time";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
@@ -150,6 +151,12 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
           )}
           <button
             className="button-paper text-xs"
+            disabled={handSpaceLeft(gameState.player) === 0}
+            title={
+              handSpaceLeft(gameState.player) === 0
+                ? "Hands full — the item comes back into your arms"
+                : undefined
+            }
             onClick={() => applyAction(delistItemAction(listing.id))}
           >
             Take Down

@@ -6,6 +6,7 @@ import { machineDustMultiplier } from "../Dust";
 import { feedClearanceShortfall } from "../feed-clearance";
 import { heldTool } from "../HeldTool";
 import { isOutdoors } from "../lot";
+import { handSpaceLeft } from "../Person";
 import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
@@ -55,6 +56,12 @@ export function pickUpMaterialAction(
     // keyboard layer, so sequence tests obey the same physics.
     if (heldTool(gameState) !== null) {
       console.warn("Tried to pick up material while holding a tool");
+      return gameState;
+    }
+    // The arms hold HAND_CAPACITY pieces; a load that doesn't fit is
+    // refused whole, the same way a machine's bay refuses an overfill.
+    if (materialPiles.length > handSpaceLeft(gameState.player)) {
+      console.warn("Tried to pick up more than the hands can carry");
       return gameState;
     }
     for (const materialPile of materialPiles) {
@@ -171,6 +178,10 @@ export function takeInputsFromMachineAction(
       console.warn("Tried to take materials while holding a tool");
       return gameState;
     }
+    if (materials.length > handSpaceLeft(gameState.player)) {
+      console.warn("Tried to take more than the hands can carry");
+      return gameState;
+    }
     const machineState = machine.state;
     for (const material of materials) {
       if (!machineState.inputMaterials.includes(material)) {
@@ -258,6 +269,10 @@ export function takeStoredMaterialsFromMachineAction(
       console.warn("Tried to take materials while holding a tool");
       return gameState;
     }
+    if (materials.length > handSpaceLeft(gameState.player)) {
+      console.warn("Tried to take more than the hands can carry");
+      return gameState;
+    }
     const machineState = machine.state;
     for (const material of materials) {
       if (!machine.storedMaterials.includes(material)) {
@@ -295,6 +310,10 @@ export function takeOutputsFromMachineAction(
   return (gameState) => {
     if (heldTool(gameState) !== null) {
       console.warn("Tried to take materials while holding a tool");
+      return gameState;
+    }
+    if (materials.length > handSpaceLeft(gameState.player)) {
+      console.warn("Tried to take more than the hands can carry");
       return gameState;
     }
     const machineState = machine.state;

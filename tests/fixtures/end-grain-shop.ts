@@ -78,16 +78,22 @@ export const endGrainShop: GameState = {
     name: "Player",
     position: [1, 4], // the workspace's operation cell
     direction: 0,
-    inventory: [
-      sandedBlank,
-      palletBoard("test-runner-1"),
-      palletBoard("test-runner-2"),
-    ],
+    // The sled's runners wait in the bench's bay — the arms hold two
+    // pieces, and the spec's hands are for the panel and the plywood.
+    inventory: [sandedBlank],
     busyTicks: 0,
     away: null,
   },
   machines: [
-    idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
+    {
+      ...idleMachine("workspace", [1, 2], "dismantlePallet", [
+        "randomOrbitSander",
+      ]),
+      inputMaterials: [
+        palletBoard("test-runner-1"),
+        palletBoard("test-runner-2"),
+      ],
+    },
     idleMachine("jobsiteTableSaw", [6, 3], "ripBoard"),
   ],
   machineCrates: [],

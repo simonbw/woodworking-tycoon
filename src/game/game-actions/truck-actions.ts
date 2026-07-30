@@ -2,6 +2,7 @@ import { GameAction } from "../GameState";
 import { heldTool } from "../HeldTool";
 import { atTruckBed } from "../lot";
 import { MaterialInstance } from "../Materials";
+import { handSpaceLeft } from "../Person";
 import { carryingShopVac } from "../ShopVac";
 import { emitSound } from "./sound-actions";
 
@@ -9,8 +10,10 @@ import { emitSound } from "./sound-actions";
  * Loading and unloading the truck's bed. Everything here happens
  * standing at the bed (atTruckBed) — the tailgate aisle by the garage
  * door or beside the rails — with the same hand rules as the shop floor:
- * a tool in hand commits the hands, and a crate takes genuinely empty
- * ones. The bed itself is unbounded, like the hands (see TruckState).
+ * a tool in hand commits the hands, a crate takes genuinely empty ones,
+ * and the arms hold HAND_CAPACITY pieces. The bed itself is unbounded
+ * (see TruckState): hauling is the truck's whole job, and the trips
+ * between it and the floor are the player's.
  */
 
 /** Heave carried stock over the rail into the bed. */
@@ -58,6 +61,10 @@ export function takeFromTruckBedAction(
     }
     if (heldTool(gameState) !== null) {
       console.warn("Tried to unload the truck while holding a tool");
+      return gameState;
+    }
+    if (materials.length > handSpaceLeft(gameState.player)) {
+      console.warn("Tried to take more than the hands can carry");
       return gameState;
     }
     for (const material of materials) {

@@ -47,8 +47,14 @@ function mixedStrips(): Board[] {
   );
 }
 
-/** The cutting-board shop restocked with mixed strips instead of maple. */
+/**
+ * The cutting-board shop restocked with mixed strips instead of maple: the
+ * fixture's maple leaves the bench bay, and the mixed set arrives the way
+ * the hands allow — two carried, three piled underfoot, in pattern order
+ * (the driver's ferry keeps hand-then-floor order when it loads).
+ */
 function twoToneShop(learned: boolean): ShopDriver {
+  const strips = mixedStrips();
   return openShop(cuttingBoardShop)
     .arrange((state: GameState) => ({
       ...state,
@@ -59,7 +65,19 @@ function twoToneShop(learned: boolean): ShopDriver {
           ? [...state.progression.unlockedSkills, "twoToneBoards"]
           : state.progression.unlockedSkills,
       },
-      player: { ...state.player, inventory: mixedStrips() },
+      player: { ...state.player, inventory: strips.slice(0, 2) },
+      materialPiles: [
+        ...state.materialPiles,
+        ...strips.slice(2).map((material) => ({
+          material,
+          position: state.player.position,
+        })),
+      ],
+      machines: state.machines.map((machine) =>
+        machine.machineTypeId === WORKBENCH
+          ? { ...machine, inputMaterials: [] }
+          : machine,
+      ),
     }))
     .mount(WORKBENCH, "randomOrbitSander");
 }

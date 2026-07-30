@@ -474,7 +474,9 @@ test.describe("Milling", () => {
         anyMaterialMatches,
         "m.type === 'board' && m.length === 5 && m.ends && m.ends.right.kind === 'mitered' && m.ends.left.kind === 'square'",
       );
-      // Cut pieces stay on the saw table until collected
+      // Cut pieces stay on the saw table until collected. Two hands, two
+      // pieces: park the carried rail first so both halves fit.
+      await dropEverything(page);
       await takeAllHere(page);
       await expect(
         handSlot(page, "Walnut 1/4 — 1\" × 5'")
@@ -503,17 +505,25 @@ test.describe("Milling", () => {
 
     await test.step("four rails and four nails become a walnut picture frame", async () => {
       // The bench is the other half of a milling job: the saw makes the
-      // rails, a plan on the workbench assembles them.
-      // Gather the rails set aside before the second cut, off the floor
-      for (let i = 0; i < 6; i++) await takeAllHere(page);
+      // rails, a plan on the workbench assembles them. Four rails and two
+      // hands means ferrying: stage what's carried, then fetch the rest
+      // an armful at a time — the rail parked at the saw, then the pair
+      // piled mid-floor.
+      await dropAllExcept(page, /1" × 2'/);
       await movePlayerTo(page, [7, 4]);
       await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
       // F is plan-aware: with Build Picture Frame selected the bench only
-      // takes the mitered rails, so four presses stage exactly those out
-      // of the mixed handful.
-      for (let i = 0; i < 4; i++) {
-        await setStockDown(page);
-      }
+      // takes the mitered rails out of what's carried.
+      await setStockDown(page);
+      await movePlayerTo(page, [2, 4]);
+      await pressKey(page, "e"); // the rail parked before the first cut
+      await movePlayerTo(page, [7, 4]);
+      await setStockDown(page);
+      await movePlayerTo(page, [5, 4]);
+      await takeAllHere(page); // the fixture's floor pair, one armful
+      await movePlayerTo(page, [7, 4]);
+      await setStockDown(page);
+      await setStockDown(page);
       await runWhileHolding(page, () => {
         const state = (window as any).__GET_GAME_STATE__();
         const all = [
@@ -563,7 +573,9 @@ test.describe("Milling", () => {
         page,
         "(m) => m.type === 'board' && m.thickness === 4",
       );
-      // Both halves stay on the saw table — you were holding them
+      // Both halves stay on the saw table — park the spare blank so two
+      // hands can take the pair together
+      await dropEverything(page);
       await takeAllHere(page);
       const halves = (await boardsInHand(page)).filter(
         (b: any) => b.thickness === 4,
@@ -602,8 +614,12 @@ test.describe("Milling", () => {
     });
 
     await test.step("the table saw pays a kerf the band saw didn't", async () => {
-      // The untouched blank has been in the player's pocket all along —
-      // it's the first board in hand, so it's the one that goes on the table
+      // Park the band saw's halves and fetch the untouched blank left by
+      // the band saw — two hands means the swap takes a walk
+      await dropEverything(page);
+      await movePlayerTo(page, [2, 9]);
+      await pressKey(page, "e");
+      await movePlayerTo(page, [8, 9]);
       await setStockDown(page);
       await runUntilOutput(
         page,
@@ -615,9 +631,10 @@ test.describe("Milling", () => {
       const thicknesses = (await boardsInHand(page))
         .map((b: any) => b.thickness)
         .sort();
-      // The two 4/4 halves the band saw made, plus this saw's 4/4 and a
-      // 3/4 offcut — the missing quarter inch left as dust
-      expect(thicknesses).toEqual([3, 4, 4, 4]);
+      // Where the band saw split its blank clean in two, this saw kept a
+      // 4/4 and left only a 3/4 offcut — the missing quarter inch is the
+      // kerf, gone as dust
+      expect(thicknesses).toEqual([3, 4]);
     });
   });
 });
