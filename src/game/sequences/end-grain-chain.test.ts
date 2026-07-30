@@ -71,18 +71,19 @@ function shopWithSkillsAndPlywood(): ShopDriver {
     }));
 }
 
-/** Build the sled and bolt it to the saw. */
+/** Build the sled, collect it off the bench, and bolt it to the saw. */
 function withSledMounted(shop: ShopDriver): ShopDriver {
   shop
     .standAtOperatorCell(WORKBENCH)
     .select(WORKBENCH, "buildCrosscutSled")
     .load(WORKBENCH, (m) => isPlywood(m) || isPalletWood(m))
-    .run(WORKBENCH);
+    .run(WORKBENCH)
+    .collect(WORKBENCH);
   return shop.mount(TABLE_SAW, "crosscutSled");
 }
 
 describe("end-grain chain", () => {
-  it("delivers the sled to storage rather than to your hands", () => {
+  it("delivers the sled to the bench's output bay, a physical thing", () => {
     const shop = shopWithSkillsAndPlywood();
     shop
       .standAtOperatorCell(WORKBENCH)
@@ -90,7 +91,10 @@ describe("end-grain chain", () => {
       .load(WORKBENCH, (m) => isPlywood(m) || isPalletWood(m))
       .run(WORKBENCH);
 
-    assert.deepStrictEqual(shop.shop.storage.tools, ["crosscutSled"]);
+    const bench = shop.machine(WORKBENCH).state;
+    assert.equal(bench.outputMaterials.length, 1);
+    const sled = bench.outputMaterials[0];
+    assert.ok(sled.type === "tool" && sled.toolId === "crosscutSled");
     assert.equal(shop.holding(isPlywood).length, 0);
   });
 

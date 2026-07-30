@@ -6,6 +6,7 @@ import {
 } from "./game-actions/progression-actions";
 import { GameState } from "./GameState";
 import { initialGameState } from "./initialGameState";
+import { makeToolItem } from "./material-helpers";
 import { getArticle, ManualArticleId } from "./manual";
 
 function unlocked(id: ManualArticleId, gameState: GameState): boolean {
@@ -41,7 +42,13 @@ describe("manual article unlock conditions", () => {
     assert.ok(!unlocked("tools", initialGameState));
     const withSander: GameState = {
       ...initialGameState,
-      storage: { ...initialGameState.storage, tools: ["sandingBlock"] },
+      player: {
+        ...initialGameState.player,
+        inventory: [
+          ...initialGameState.player.inventory,
+          makeToolItem("sandingBlock"),
+        ],
+      },
     };
     assert.ok(unlocked("tools", withSander));
   });

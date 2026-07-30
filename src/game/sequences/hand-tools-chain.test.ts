@@ -14,7 +14,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import { handToolsShop } from "../../../tests/fixtures/hand-tools-shop";
 import { GameState } from "../GameState";
-import { getMaterialName } from "../material-helpers";
+import { getMaterialName, makeToolItem } from "../material-helpers";
 import { MaterialInstance } from "../Materials";
 import { openShop, ShopDriver } from "./shop-driver";
 
@@ -34,9 +34,11 @@ function shopWithBothTools(): ShopDriver {
   return openShop(handToolsShop)
     .arrange((state: GameState) => ({
       ...state,
-      storage: {
-        ...state.storage,
-        tools: [...state.storage.tools, "handSaw", "drill"],
+      // The two tools wait in the truck's bed, as if just bought —
+      // mount() makes the tailgate trips a player would
+      truck: {
+        ...state.truck,
+        bed: [...state.truck.bed, makeToolItem("handSaw"), makeToolItem("drill")],
       },
       consumables: { ...state.consumables, screws: 50 },
     }))
@@ -70,7 +72,9 @@ describe("hand tool chain", () => {
 
   it("a hand cut keeps the target length and leaves the offcut", () => {
     const shop = shopWithBothTools();
-    assert.equal(shop.holding(byLength(2)).length, 4);
+    // Fetching the tools from the tailgate staged the slats on the floor
+    // (full arms can't lift a tool), so count stock, not what's in hand
+    assert.equal(shop.stock(byLength(2)).length, 4);
 
     cutTheLongBoardDown(shop);
 

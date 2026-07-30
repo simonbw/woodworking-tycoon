@@ -1,4 +1,14 @@
 import { Assets } from "pixi.js";
+import { TOOL_TYPES, ToolId } from "../game/Tool";
+import { IDS_WITHOUT_ICON_ART, toolIconSrc } from "./uiImages";
+
+/**
+ * The tool icons double as the shop-floor sprite for a tool lying loose
+ * (see ToolItemSprite), so PIXI needs them alongside the machine art.
+ */
+const TOOL_ITEM_ASSETS = (Object.keys(TOOL_TYPES) as ToolId[])
+  .filter((toolId) => !IDS_WITHOUT_ICON_ART.tools.includes(toolId))
+  .map(toolIconSrc);
 
 /**
  * Pixel art, as opposed to the smooth machine art: these have to sample
@@ -9,6 +19,7 @@ const PIXEL_ART_ASSETS = [
   "/images/rustic-shelf.png",
   "/images/bookshelf.png",
   "/images/side-table.png",
+  ...TOOL_ITEM_ASSETS,
 ];
 
 // List of all texture assets used in the game

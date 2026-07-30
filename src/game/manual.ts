@@ -2,9 +2,8 @@ import { hasCompletedCommission } from "./commissionSequence";
 import { GameState, ProgressionState } from "./GameState";
 import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import type { MachineId } from "./Machine";
-import { ownsMachine, ownsTool } from "./progression-helpers";
+import { ownedToolIds, ownsMachine, ownsTool } from "./progression-helpers";
 import { levelForXp } from "./skill-helpers";
-import { ToolId } from "./Tool";
 
 /**
  * The shop manual: the reference binder behind the `?` button. Each article
@@ -40,13 +39,7 @@ export interface ManualArticleDef {
 
 /** The starter hammer is mounted from minute one; it teaches nothing. */
 function ownsBoughtTool(gameState: GameState): boolean {
-  const counts = (toolId: ToolId) => toolId !== "hammer";
-  return (
-    gameState.storage.tools.some(counts) ||
-    gameState.machines.some((machine) => machine.tools.some(counts)) ||
-    gameState.machineCrates.some((crate) => crate.machine.tools.some(counts)) ||
-    (gameState.player.carriedMachine?.tools.some(counts) ?? false)
-  );
+  return ownedToolIds(gameState).some((toolId) => toolId !== "hammer");
 }
 
 const defs = [

@@ -47,7 +47,7 @@ function walnutBlank(id: string): Board {
 
 /**
  * A shop set up to resaw both ways: a band saw (op cell [2,9]) and a table
- * saw wearing the tall resaw fence (op cell [8,9]), with two 8/4 walnut
+ * saw the tall resaw fence can go on (op cell [8,9]), with two 8/4 walnut
  * blanks in the player's pockets and the Resawing skill earned.
  */
 export const resawShop: GameState = {
@@ -56,7 +56,13 @@ export const resawShop: GameState = {
   reputation: 22,
   consumables: NO_CONSUMABLES,
   clamps: 4,
-  materialPiles: [],
+  // The shop-built fence waits on the dropoff spot, to be carried to the saw
+  materialPiles: [
+    {
+      material: { id: "test-resaw-fence", type: "tool", toolId: "resawFence" },
+      position: [10, 13],
+    },
+  ],
   player: {
     name: "Player",
     position: [2, 9], // the band saw's operation cell
@@ -71,7 +77,7 @@ export const resawShop: GameState = {
     // Mid-shop, so a 6' blank has lane to travel both sides of the blade
     // (see feed-clearance.ts)
     idleMachine("bandSaw", [2, 7], "resaw", { targetThickness: 4 }),
-    // The tall fence is still in storage, so the saw is set up to rip
+    // The tall fence isn't mounted yet, so the saw is set up to rip
     idleMachine("jobsiteTableSaw", [8, 7], "ripBoard", {
       targetWidth: 4,
       targetThickness: 4,
@@ -80,7 +86,6 @@ export const resawShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: ["resawFence"],
     upgrades: [],
   },
   shopInfo: {

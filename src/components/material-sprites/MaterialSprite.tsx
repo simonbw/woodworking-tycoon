@@ -11,6 +11,7 @@ import { PanelSprite } from "./PanelSprite";
 import { PictureFrameSprite } from "./PictureFrameSprite";
 import { PlanterBoxSprite } from "./PlanterBoxSprite";
 import { SheetGoodSprite } from "./SheetGoodSprite";
+import { ToolItemSprite } from "./ToolItemSprite";
 
 // Just choose the correct sprite for a material
 export const MaterialSprite: React.FC<{
@@ -90,6 +91,9 @@ export const MaterialSprite: React.FC<{
 
     case "endGrainSlice":
       return <EndGrainSliceSprite slice={material} alpha={alpha} tint={tint} />;
+
+    case "tool":
+      return <ToolItemSprite tool={material} alpha={alpha} tint={tint} />;
 
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":

@@ -78,7 +78,7 @@ import { LUMBER_CHANNELS } from "../lumberStock";
 import { getBoardBuyPrice, getSheetBuyPrice } from "../material-values";
 import { SHEET_SKUS } from "../sheetStock";
 import { makeMaterial } from "../material-helpers";
-import { Board, SheetGood } from "../Materials";
+import { Board, SheetGood, ToolItem } from "../Materials";
 import { ConsumableId } from "../Consumable";
 import { MachineId } from "../Machine";
 import { SkillId } from "../Skill";
@@ -221,29 +221,75 @@ export class ShopDriver {
   }
 
   /**
-   * Bolt a tool from storage onto the station. A bench has a fixed number of
-   * slots, so this fails rather than silently doing nothing when they're all
-   * taken — unmount something, or build a worktable.
+   * Bolt a tool onto the station. Tools are physical things, so the tool
+   * is fetched from wherever it's resting first — the arms, a floor pile,
+   * or the truck's bed — the same trips a player makes. A bench has a
+   * fixed number of slots, so this fails rather than silently doing
+   * nothing when they're all taken — unmount something, or build a
+   * worktable.
    */
   mount(machineTypeId: MachineState["machineTypeId"], toolId: ToolId): this {
     if (this.machine(machineTypeId).state.tools.includes(toolId)) {
       return this;
     }
-    this.apply(mountToolAction(this.machine(machineTypeId), toolId));
+    const tool = this.fetchTool(toolId);
+    this.apply(mountToolAction(this.machine(machineTypeId), tool));
     if (!this.machine(machineTypeId).state.tools.includes(toolId)) {
       const station = this.machine(machineTypeId);
       throw new Error(
         `The ${machineTypeId} would not take the ${toolId}. It has ` +
           `${station.type.toolSlots} slots holding ` +
-          `[${station.state.tools.join(", ")}]` +
-          `${this.state.storage.tools.includes(toolId) ? "" : ", and the tool isn't in storage"}.`,
+          `[${station.state.tools.join(", ")}].`,
       );
     }
     return this;
   }
 
-  /** Take a tool back off a station, freeing its slot. */
+  /**
+   * Get the named tool into the arms: already carried, picked up off a
+   * floor pile, or lifted out of the truck's bed. Fails if the shop
+   * doesn't own a loose one — buy or build it first.
+   */
+  private fetchTool(toolId: ToolId): ToolItem {
+    const isTheTool = (material: MaterialInstance): material is ToolItem =>
+      material.type === "tool" && material.toolId === toolId;
+    const carried = this.inventory.find(isTheTool);
+    if (carried) {
+      return carried;
+    }
+    // Full arms can't pick anything up — stage the load on the floor first
+    if (handSpaceLeft(this.state.player) === 0) {
+      this.standAt(this.state.shopInfo.materialDropoffPosition);
+      this.apply(dropMaterialAction(this.inventory));
+    }
+    const pile = this.state.materialPiles.find((candidate) =>
+      isTheTool(candidate.material),
+    );
+    if (pile) {
+      this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+    } else {
+      const inBed = this.state.truck.bed.find(isTheTool);
+      if (inBed) {
+        this.standAtBed().apply(takeFromTruckBedAction([inBed]));
+      }
+    }
+    const fetched = this.inventory.find(isTheTool);
+    if (!fetched) {
+      throw new Error(
+        `No loose ${toolId} anywhere — not in hand, in a pile, or in the ` +
+          `truck's bed. Buy or build one first.`,
+      );
+    }
+    return fetched;
+  }
+
+  /** Take a tool back off a station, into the arms — it's a physical thing. */
   unmount(machineTypeId: MachineState["machineTypeId"], toolId: ToolId): this {
+    // The tool comes off into the arms, so make sure they have room
+    if (handSpaceLeft(this.state.player) === 0) {
+      this.standAt(this.state.shopInfo.materialDropoffPosition);
+      this.apply(dropMaterialAction(this.inventory));
+    }
     this.apply(unmountToolAction(this.machine(machineTypeId), toolId));
     if (this.machine(machineTypeId).state.tools.includes(toolId)) {
       throw new Error(`The ${toolId} would not come off the ${machineTypeId}`);
@@ -743,11 +789,14 @@ export class ShopDriver {
     return this;
   }
 
-  /** Buy a tool off the tool wall, into storage. Mount it separately. */
+  /**
+   * Buy a tool off the tool wall. It lands in the truck's bed like any
+   * other purchase; mount it separately.
+   */
   buyTool(toolId: ToolId): this {
-    const before = this.state.storage.tools.length;
+    const before = this.state.truck.bed.length;
     this.apply(buyToolAction(toolId));
-    if (this.state.storage.tools.length === before) {
+    if (this.state.truck.bed.length === before) {
       throw new Error(
         `Couldn't afford the ${toolId} — the shop had $${this.money}`,
       );

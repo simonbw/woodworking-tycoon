@@ -43,7 +43,6 @@ export const marketplaceShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: [],
     upgrades: [],
   },
   shopInfo: {

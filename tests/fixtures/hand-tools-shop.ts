@@ -21,27 +21,29 @@ function deckBoard(id: string, length: Board["length"]): Board {
 /**
  * A shop staged for the hand-tool chain: a bare workspace (both tool slots
  * free), enough money for the hand saw, the drill, and a box of screws, and
- * five pallet deck boards in the player's pocket — four already crosscut to
- * 2', one still at 3' so the hand saw has a cut to make.
+ * five pallet deck boards piled at the player's feet — four already crosscut
+ * to 2', one still at 3' so the hand saw has a cut to make. Piled, not
+ * carried: the arms have to be free to lift the bought tools out of the
+ * truck's bed.
  */
 export const handToolsShop: GameState = {
   tick: 0,
   money: 150,
   reputation: 0,
-  materialPiles: [],
+  materialPiles: [
+    deckBoard("fx-long-board", 3),
+    deckBoard("fx-slat-1", 2),
+    deckBoard("fx-slat-2", 2),
+    deckBoard("fx-slat-3", 2),
+    deckBoard("fx-slat-4", 2),
+  ].map((material) => ({ material, position: [1, 4] })),
   consumables: NO_CONSUMABLES,
   clamps: 0,
   player: {
     name: "Player",
     position: [1, 4], // the workspace's operation cell
     direction: 0,
-    inventory: [
-      deckBoard("fx-long-board", 3),
-      deckBoard("fx-slat-1", 2),
-      deckBoard("fx-slat-2", 2),
-      deckBoard("fx-slat-3", 2),
-      deckBoard("fx-slat-4", 2),
-    ],
+    inventory: [],
     busyTicks: 0,
     away: null,
   },
@@ -65,7 +67,6 @@ export const handToolsShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: [],
     upgrades: [],
   },
   shopInfo: {

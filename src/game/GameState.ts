@@ -8,7 +8,6 @@ import { MaterialInstance } from "./Materials";
 import { PayoutEvent } from "./PayoutEvent";
 import { SkillId } from "./Skill";
 import { SoundEvent } from "./SoundEvent";
-import { ToolId } from "./Tool";
 import { UpgradeId } from "./Upgrade";
 import { Person } from "./Person";
 import { ShopInfo } from "./ShopInfo";
@@ -97,7 +96,6 @@ export interface GameState {
   readonly shopInfo: ShopInfo;
   readonly player: Person;
   readonly storage: {
-    tools: ReadonlyArray<ToolId>;
     /** Worktable upgrades owned but not installed (see Upgrade.ts). */
     upgrades: ReadonlyArray<UpgradeId>;
   };

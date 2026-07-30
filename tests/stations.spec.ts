@@ -303,10 +303,14 @@ test.describe("Stations", () => {
       await leaveStore(page, returnTo);
     });
 
-    await test.step("mount the sander at the workspace", async () => {
+    await test.step("mount the carried sander at the workspace", async () => {
       await expect(page.getByText("1/2 slots")).not.toBeVisible();
-      // The tool rack lives on the station sheet
+      // The tool rack lives on the station sheet; the fixture's sander is
+      // in the player's hands, which is where the rack mounts from
       await openStationSheet(page);
+      await expect(
+        page.getByText("Random Orbit Sander (in hand)"),
+      ).toBeVisible();
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
       await expect(page.getByText("1/2 slots")).toBeVisible();
@@ -363,18 +367,28 @@ test.describe("Stations", () => {
       await closeJournal(page);
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await pressKey(page, "Shift+f");
+      // The built sled is a physical thing: it lands in the bench's
+      // output bay like any other product
       await runWhileHolding(
         page,
         () =>
           (window as any)
             .__GET_GAME_STATE__()
-            .storage.tools.includes("crosscutSled"),
+            .machines.some((m: any) =>
+              m.outputMaterials.some(
+                (mat: any) =>
+                  mat.type === "tool" && mat.toolId === "crosscutSled",
+              ),
+            ),
         undefined,
         { timeout: 15000 },
       );
     });
 
-    await test.step("mount the sled on the table saw", async () => {
+    await test.step("carry the sled to the table saw and mount it", async () => {
+      // Pick the sled up off the bench's output bay...
+      await takeAllHere(page);
+      // ...and carry it across the floor to the saw
       await movePlayerTo(page, SAW_CELL);
       // A direct-feed machine's sheet is nothing but its tool rack now
       await openStationSheet(page);
@@ -459,12 +473,12 @@ test.describe("Stations", () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page
-        .locator("li", { hasText: "Hand Saw (stored)" })
+        .locator("li", { hasText: "Hand Saw (in hand)" })
         .getByRole("button", { name: "Attach" })
         .click();
       await page.waitForTimeout(30);
       await page
-        .locator("li", { hasText: "Drill (stored)" })
+        .locator("li", { hasText: "Drill (in hand)" })
         .getByRole("button", { name: "Attach" })
         .click();
       await page.waitForTimeout(30);

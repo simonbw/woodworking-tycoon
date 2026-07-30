@@ -79,7 +79,10 @@ wiring: same path, same size, same component.
 - [ ] Tool icons — `static/images/icons/tool-<id>.png`, 64×64, rendered by
       `ToolIcon` in `components/ItemIcon.tsx`. Nine of them: hammer, hand
       saw, drill, sanding block, random orbit sander, hand plane, crosscut
-      sled, straight-line sled, dust bag.
+      sled, straight-line sled, dust bag. The same files double as the
+      shop-floor sprite for a loose tool (`ToolItemSprite` in
+      `material-sprites/`), so a tool without icon art (the resaw fence)
+      falls back to the default pile square on the floor too.
 - [ ] Consumable icons — `static/images/icons/consumable-<id>.png`, 64×64,
       rendered by `ConsumableIcon`. Three: nails, screws, mineral oil.
 - [ ] Store-shelf icons for the things that aren't tools or consumables —

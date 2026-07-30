@@ -33,8 +33,8 @@ function idleMachine(
  * workspace and sales table (operation cells at [1,3], [3,3]), the player at
  * the workspace with five smooth maple strips — two in the arms, three
  * already staged in the bench's bay (more than one armful travels as the
- * hands allow) — a random orbit sander in tool storage, and commission 6
- * active. Proves machines buy time, not access.
+ * hands allow) — a random orbit sander carried in hand, ready to mount,
+ * and commission 6 active. Proves machines buy time, not access.
  */
 const strips = Array.from({ length: 5 }, (_, i) => ({
   id: `test-strip-${i}`,
@@ -60,7 +60,10 @@ export const cuttingBoardShop: GameState = {
     name: "Player",
     position: [1, 4], // the workspace's operation cell
     direction: 0,
-    inventory: strips.slice(0, 2),
+    inventory: [
+      ...strips.slice(0, 2),
+      { id: "test-sander", type: "tool", toolId: "randomOrbitSander" },
+    ],
     busyTicks: 0,
     away: null,
   },
@@ -73,7 +76,6 @@ export const cuttingBoardShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: ["randomOrbitSander"],
     upgrades: [],
   },
   shopInfo: {

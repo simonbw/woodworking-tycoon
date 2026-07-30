@@ -16,7 +16,7 @@ import assert from "node:assert";
 import { cuttingBoardShop } from "../../../tests/fixtures/cutting-board-shop";
 import { GameState } from "../GameState";
 import { isPanel } from "../panel-helpers";
-import { getMaterialName } from "../material-helpers";
+import { getMaterialName, makeToolItem } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { MaterialInstance, Board } from "../Materials";
 import { availableOperations } from "../skill-helpers";
@@ -65,7 +65,12 @@ function twoToneShop(learned: boolean): ShopDriver {
           ? [...state.progression.unlockedSkills, "twoToneBoards"]
           : state.progression.unlockedSkills,
       },
-      player: { ...state.player, inventory: strips.slice(0, 2) },
+      // The fixture's carried sander rides along with the fresh strips —
+      // mount() below takes it out of the hands
+      player: {
+        ...state.player,
+        inventory: [...strips.slice(0, 2), makeToolItem("randomOrbitSander")],
+      },
       materialPiles: [
         ...state.materialPiles,
         ...strips.slice(2).map((material) => ({

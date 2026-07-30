@@ -11,10 +11,11 @@ import { sandingBlock } from "./tools/sandingBlock";
 import { straightLineSled } from "./tools/straightLineSled";
 
 /**
- * A handheld tool. Tools aren't placed in the shop like machines — they
- * mount into a workstation's tool slots (MachineType.toolSlots), and while
- * mounted they add their operations to that station's operation list.
- * Unmounted tools live in GameState.storage.tools.
+ * A handheld tool. Tools mount into a workstation's tool slots
+ * (MachineType.toolSlots), and while mounted they add their operations to
+ * that station's operation list. An unmounted tool is a physical object —
+ * a MaterialInstance of kind "tool" (see Materials.ts) — carried in the
+ * arms, set down in piles, and hauled home in the truck's bed.
  *
  * See docs/tools-and-surfaces.md for where this system is headed.
  */

@@ -9,6 +9,7 @@ import {
   SurfaceCondition,
 } from "./Materials";
 import { isFinishedProduct } from "./material-helpers";
+import { TOOL_TYPES } from "./Tool";
 
 /**
  * Free-sell prices. Value comes from processing depth: raw stock is priced
@@ -205,6 +206,9 @@ export function getSellValue(material: MaterialInstance): number {
       );
     case "pallet":
       return WHOLE_PALLET_VALUE;
+    case "tool":
+      // A used tool moves at half retail — nobody pays full price secondhand
+      return roundToCents(TOOL_TYPES[material.toolId].cost * 0.5);
     case "unknown":
       return 0;
   }
