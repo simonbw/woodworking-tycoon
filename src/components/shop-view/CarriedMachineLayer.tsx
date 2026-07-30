@@ -5,6 +5,7 @@ import { useCellMap } from "../useCellMap";
 import { carriedMachinePlacement } from "../../game/game-actions/machine-actions";
 import { Machine } from "../../game/Machine";
 import { useGameState } from "../useGameState";
+import { FeedRunRulerLayer } from "./FeedRunRulerLayer";
 import { MachineGhostPreview } from "./MachineGhostPreview";
 import { MachineSprite } from "./MachineSprite";
 import { PIXELS_PER_CELL, cellToPixel } from "./shop-scale";
@@ -39,6 +40,13 @@ export const CarriedMachineLayer: React.FC = () => {
   // Re-anchored to the origin so the overhead container controls position
   const overhead = new Machine({ ...carried, position: [0, 0] });
 
+  // The machine as it would land, for measuring its feed lane
+  const landed = new Machine({
+    ...carried,
+    position: placement.position,
+    rotation: placement.rotation,
+  });
+
   return (
     <>
       <MachineGhostPreview
@@ -47,6 +55,10 @@ export const CarriedMachineLayer: React.FC = () => {
         rotation={placement.rotation}
         cellMap={cellMap}
       />
+      {/* Same guard as the ghost: no rulers on a spot outside the shop */}
+      {cellMap.has(placement.position) && (
+        <FeedRunRulerLayer machine={landed} cellMap={cellMap} />
+      )}
       <pixiContainer
         ref={containerRef}
         x={cellToPixel(playerMotion.pos[0])}
