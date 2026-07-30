@@ -50,6 +50,7 @@ import { hasStationSheet } from "../station/station-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
+import { useTruckStage } from "./truckStageStore";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const ShopKeyboardShortcuts: React.FC = () => {
@@ -73,9 +74,11 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   const truckMenuOpenRef = useRef(truckMenuOpen);
   truckMenuOpenRef.current = truckMenuOpen;
 
-  // While the player is off scavenging they aren't in the shop, and the machine
-  // panels are hidden — the keys shouldn't still reach into them.
-  const present = !_gameState.player.away;
+  // While the player is off scavenging they aren't in the shop, and the
+  // machine panels are hidden — the keys shouldn't still reach into them.
+  // Same while the truck is still rolling in: they're in the cab.
+  const truckStage = useTruckStage();
+  const present = !_gameState.player.away && truckStage === "parked";
   // A machine over the shoulders means the hands are full: material and
   // machine verbs step aside until it's set down.
   const carrying = _gameState.player.carriedMachine != null;

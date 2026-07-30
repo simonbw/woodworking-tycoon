@@ -122,6 +122,14 @@ export const TargetedMachineProvider: React.FC<{
 
   useEffect(() => setOffset(0), [positionKey, direction]);
 
+  // Climbing in folds the trip card for good — otherwise the stale open
+  // flag would spread it again the moment the player steps back out
+  // beside the cab after the trip.
+  const away = gameState.player.away != null;
+  useEffect(() => {
+    if (away) setTruckMenuOpen(false);
+  }, [away]);
+
   const defaultIndex = facingIndex(
     machines,
     gameState.player.position,

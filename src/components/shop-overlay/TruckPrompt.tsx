@@ -21,6 +21,7 @@ import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { useTruckStage } from "../shop-view/truckStageStore";
 import { OverlayScaleContext } from "./ShopOverlayLayer";
 
 const TRUCK_OPTION_SHORTCUTS: readonly ShortcutId[] = [
@@ -74,8 +75,12 @@ export const TruckPrompt: React.FC<{
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
     gameState.progression;
   const carried = gameState.player.carriedMachine ?? null;
+  // No chip, no card until the truck is actually sitting there — during
+  // the arrival roll the player is still inside it.
+  const truckStage = useTruckStage();
   const atCab =
     !gameState.player.away &&
+    truckStage === "parked" &&
     atTruckCab(gameState.shopInfo, gameState.player.position);
   const handsFree = canLeaveShop(gameState);
 

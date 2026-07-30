@@ -8,9 +8,7 @@ import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
-import { LumberyardTripOverlay } from "./lumberyard-page/LumberyardTripOverlay";
-import { ScavengeTripOverlay } from "./scavenge-page/ScavengeTripOverlay";
-import { StoreTripOverlay } from "./store-page/StoreTripOverlay";
+import { TripOverlays, TripTransitionLayer } from "./trip/TripTransitionLayer";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
 import { PauseProvider } from "./PauseContext";
@@ -49,9 +47,8 @@ export const Main: React.FC = () => {
                 <ClipboardProvider>
                   <BrowserDefaultsGuard />
                   <HomePage />
-                  <StoreTripOverlay />
-                  <LumberyardTripOverlay />
-                  <ScavengeTripOverlay />
+                  <TripOverlays />
+                  <TripTransitionLayer />
                   <RewardFlightLayer />
                   <GameSoundLayer />
                   <MachineSoundLayer />

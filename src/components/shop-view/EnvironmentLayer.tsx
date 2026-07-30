@@ -158,9 +158,10 @@ export const EnvironmentLayer: React.FC<{
         />
       )}
       {/* Backed in, tailgate to the garage. Drawn before the building so
-          the wall band and its shadow fall across the tailgate. Parked off
-          its spot while the player is away — they drove it. */}
-      {!gameState.player.away && <TruckSprite />}
+          the wall band and its shadow fall across the tailgate. The
+          sprite handles its own trip animation and absence — the player
+          drove it (see truckStageStore). */}
+      <TruckSprite />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>
   );

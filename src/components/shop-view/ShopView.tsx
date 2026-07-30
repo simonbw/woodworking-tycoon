@@ -48,6 +48,7 @@ import { ShopVacSprite } from "./ShopVacSprite";
 import { EnvironmentLayer } from "./EnvironmentLayer";
 import { CameraLayer } from "./CameraLayer";
 import { camera } from "./cameraStore";
+import { useTruckStage } from "./truckStageStore";
 import { lotSize } from "../../game/lot";
 import { PIXELS_PER_CELL, cellToPixel, cellToPixelVec } from "./shop-scale";
 
@@ -128,6 +129,9 @@ export const ShopView: React.FC = () => {
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
   const modalOpen = useModalOpen();
   const { paused } = usePaused();
+  // While the truck is rolling in, the player is still in it: input
+  // holds and the sprite waits until the stage is parked again.
+  const truckStage = useTruckStage();
   const {
     machine: targetedMachine,
     machines: operableHere,
@@ -276,9 +280,15 @@ export const ShopView: React.FC = () => {
       onPointerLeave={clearAim}
     >
       <ShopKeyboardShortcuts />
-      <HeldMovementListener enabled={!gameState.player.away && !modalOpen} />
+      <HeldMovementListener
+        enabled={
+          !gameState.player.away && !modalOpen && truckStage === "parked"
+        }
+      />
       <HeldOperateListener
-        enabled={!gameState.player.away && !modalOpen}
+        enabled={
+          !gameState.player.away && !modalOpen && truckStage === "parked"
+        }
         onChange={(held) => updateGameState(setOperatingAction(held))}
       />
       <Application
@@ -373,7 +383,7 @@ export const ShopView: React.FC = () => {
               <PlayerMotionLayer paused={paused} />
               <FootstepSoundLayer />
               <ShopVacSprite />
-              {!gameState.player.away && (
+              {!gameState.player.away && truckStage !== "arriving" && (
                 <PersonSprite person={gameState.player} />
               )}
               {/* Dust in flight rides above the tools taking it */}

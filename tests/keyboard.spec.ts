@@ -265,13 +265,10 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("a modal swallows the game's movement keys", async () => {
-      // Escape backs out one layer at a time. The store trip left the
-      // player standing at the door with its card still spread open, so
-      // the first press folds that away and only the second — with nothing
-      // left to back out of — reaches the pause menu.
+      // The trip card folds itself the moment the truck pulls out, so
+      // coming home leaves nothing to back out of — Escape reaches the
+      // pause menu directly.
       const paused = page.getByRole("dialog", { name: "Paused" });
-      await page.keyboard.press("Escape");
-      await expect(paused).toHaveCount(0);
       await page.keyboard.press("Escape");
       await expect(paused).toBeVisible();
 

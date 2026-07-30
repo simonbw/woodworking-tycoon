@@ -1,10 +1,24 @@
-import React from "react";
+import { useTick } from "@pixi/react";
+import { Container } from "pixi.js";
+import React, { useRef } from "react";
 import { truckBedRect, truckParkedRect } from "../../game/lot";
 import { useTexture } from "../../utils/useTexture";
+import { clamp } from "../../utils/mathUtils";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
+import {
+  TRUCK_ARRIVE_MS,
+  TRUCK_DEPART_MS,
+  TRUCK_ROLL_IN_MS,
+  TRUCK_ROLL_OUT_MS,
+} from "../trip/TripTransitionLayer";
 import { useGameState } from "../useGameState";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
+import {
+  getTruckStage,
+  getTruckStageStartedAt,
+  useTruckStage,
+} from "./truckStageStore";
 
 /**
  * The truck parked in the driveway, backed in with the tailgate to the
@@ -28,9 +42,45 @@ const TRUCK_CANVAS_HEIGHT = TRUCK_CANVAS_WIDTH * (600 / 400);
  * (600 minus the 27 px nose margin minus the 562 px truck). */
 const TRUCK_TAIL_INSET = 11 / 600;
 
+/** How far down the driveway the truck rolls before it's gone, in world
+ * pixels — past the walkable lot's bottom edge at full camera scroll. */
+const TRUCK_TRAVEL_PX = 1200;
+
 export const TruckSprite: React.FC = () => {
   const gameState = useGameState();
   const truckTexture = useTexture("/images/pickup-truck.png");
+  const stage = useTruckStage();
+  const rollRef = useRef<Container>(null);
+
+  // The trip roll: the whole truck (cargo riding along) slides down the
+  // driveway on departure and backs up it on arrival, mapped off the
+  // stage clock each frame (see TripTransitionLayer for the timeline).
+  useTick(() => {
+    const container = rollRef.current;
+    if (!container) return;
+    const now = getTruckStage();
+    const elapsed = performance.now() - getTruckStageStartedAt();
+    let offset = 0;
+    if (now === "departing") {
+      // The first stretch is the crank; then the wheels roll, easing in.
+      const p = clamp(
+        (elapsed - TRUCK_ROLL_OUT_MS) / (TRUCK_DEPART_MS - TRUCK_ROLL_OUT_MS),
+        0,
+        1,
+      );
+      offset = p * p * TRUCK_TRAVEL_PX;
+    } else if (now === "arriving") {
+      // Backing in: fast off the street, settling gently into the spot.
+      const p = clamp(elapsed / Math.min(TRUCK_ROLL_IN_MS, TRUCK_ARRIVE_MS), 0, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      offset = (1 - eased) * TRUCK_TRAVEL_PX;
+    }
+    container.y = offset;
+  });
+
+  if (stage === "away") {
+    return null;
+  }
 
   const rect = truckParkedRect(gameState.shopInfo);
   const centerX = cellToPixel((rect.min[0] + rect.max[0]) / 2);
@@ -44,7 +94,7 @@ export const TruckSprite: React.FC = () => {
   const bedCenterY = cellToPixel((bed.min[1] + bed.max[1]) / 2);
 
   return (
-    <>
+    <pixiContainer ref={rollRef}>
       <pixiSprite
         texture={truckTexture}
         x={centerX}
@@ -81,6 +131,6 @@ export const TruckSprite: React.FC = () => {
           <MaterialSprite material={material} />
         </pixiContainer>
       ))}
-    </>
+    </pixiContainer>
   );
 };
