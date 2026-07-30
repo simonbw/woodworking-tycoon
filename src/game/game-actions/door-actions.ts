@@ -1,17 +1,17 @@
 import { GameAction, GameState } from "../GameState";
+import { atTruckCab, truckCabSideCell } from "../lot";
 import { StoreId } from "../lumberStock";
-import { isAtShopDoor } from "../ShopInfo";
 
 /**
- * Leaving the shop happens at the garage door: walk up to it and pick a
- * destination (the store, a scavenging run). One trip at a time, and not
- * with a machine over your shoulders.
+ * Leaving the shop happens at the truck's cab: walk out to the driveway,
+ * climb in, and pick a destination (the store, a scavenging run). One
+ * trip at a time, and not with a machine over your shoulders.
  */
 export function canLeaveShop(gameState: GameState): boolean {
   return (
     !gameState.player.away &&
     !gameState.player.carriedMachine &&
-    isAtShopDoor(gameState.shopInfo, gameState.player.position)
+    atTruckCab(gameState.shopInfo, gameState.player.position)
   );
 }
 
@@ -23,9 +23,9 @@ export function storeUnlocked(gameState: GameState, store: StoreId): boolean {
 }
 
 /**
- * Walk out the door to a store. The player is away for as long as they
- * browse — the shop keeps ticking without them (see Person.ShoppingTrip) —
- * and comes home via returnFromStoreAction.
+ * Drive out to a store. The player is away for as long as they browse —
+ * the shop keeps ticking without them (see Person.ShoppingTrip) — and
+ * comes home via returnFromStoreAction.
  */
 export function goToStoreAction(store: StoreId): GameAction {
   return (gameState) => {
@@ -47,7 +47,10 @@ export function goToStoreAction(store: StoreId): GameAction {
   };
 }
 
-/** Head home from a store. The player walks back in through the door. */
+/**
+ * Head home from a store. The truck pulls back in and the player steps
+ * out beside the cab, purchases riding in the bed.
+ */
 export function returnFromStoreAction(): GameAction {
   return (gameState) => {
     if (gameState.player.away?.kind !== "shopping") {
@@ -56,7 +59,11 @@ export function returnFromStoreAction(): GameAction {
     }
     return {
       ...gameState,
-      player: { ...gameState.player, away: null },
+      player: {
+        ...gameState.player,
+        away: null,
+        position: truckCabSideCell(gameState.shopInfo),
+      },
     };
   };
 }

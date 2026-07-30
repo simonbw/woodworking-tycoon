@@ -3,10 +3,10 @@ import { selectMode } from "./machine-panel";
 import {
   closePhone,
   goToStore,
-  handOffAtDoor,
+  deliverFromTruck,
   leaveStore,
-  movePlayerToDoor,
-  openDoorPanel,
+  movePlayerToCab,
+  openTruckMenu,
   openPhone,
   startNewGame,
 } from "./navigation";
@@ -109,8 +109,8 @@ test.describe("Market, supplies, and sound", () => {
         page.getByRole("button", { name: "Phone" }),
       ).not.toBeVisible();
       // Nothing to walk out for yet either: no door panel in a fresh game
-      await movePlayerToDoor(page);
-      await expect(page.getByTestId("door-panel")).not.toBeVisible();
+      await movePlayerToCab(page);
+      await expect(page.getByTestId("truck-panel")).not.toBeVisible();
     });
 
     await test.step("load marketplace fixture", async () => {
@@ -245,9 +245,9 @@ test.describe("Market, supplies, and sound", () => {
       expect(accepted).toBe(1);
 
       // The phone takes the order but can't complete it — delivery is a
-      // trip to the door with the goods in hand
+      // drive, with the goods loaded in the truck's bed
       await expect(page.locator("li", { hasText: "E2E Tester" })).toContainText(
-        "garage door",
+        "truck",
       );
       await expect(
         page.locator("li", { hasText: "E2E Tester" }).getByRole("button", {
@@ -259,7 +259,7 @@ test.describe("Market, supplies, and sound", () => {
         () => (window as any).__GET_GAME_STATE__().money,
       );
       await closePhone(page);
-      await handOffAtDoor(page, "E2E Tester");
+      await deliverFromTruck(page, "E2E Tester");
 
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
@@ -274,12 +274,11 @@ test.describe("Market, supplies, and sound", () => {
       await expect(page.getByTestId("client-card")).not.toBeVisible();
     });
 
-    await test.step("scavenging trip starts at the garage door", async () => {
-      // The phone went away for the handoff; the player is still at the door
-      await movePlayerToDoor(page);
-      await openDoorPanel(page);
+    await test.step("scavenging trip starts at the truck's cab", async () => {
+      await movePlayerToCab(page);
+      await openTruckMenu(page);
       await page
-        .getByTestId("door-panel")
+        .getByTestId("truck-panel")
         .locator("li", { hasText: "Scavenge for pallets" })
         .getByRole("button", { name: "Go" })
         .click({ force: true });
@@ -340,10 +339,10 @@ test.describe("Market, supplies, and sound", () => {
         expect(deckCount).toBeGreaterThanOrEqual(6);
         expect(deckCount).toBeLessThanOrEqual(11);
       }
-      // Back at the door, the errand is on offer again
-      await openDoorPanel(page);
+      // Back home beside the cab, the errand is on offer again
+      await openTruckMenu(page);
       await expect(
-        page.getByTestId("door-panel").getByText("Scavenge for pallets"),
+        page.getByTestId("truck-panel").getByText("Scavenge for pallets"),
       ).toBeVisible();
     });
 

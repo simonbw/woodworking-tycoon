@@ -6,6 +6,7 @@ import { GameState } from "../GameState";
 import { MaterialInstance, FinishedProduct } from "../Materials";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
+import { truckCabSideCell } from "../lot";
 import {
   buyMachineAction,
   buyMaterialAction,
@@ -33,29 +34,27 @@ function stateWith(
 
 /**
  * State part-way through the sequence, with the given number of commissions
- * done and the player standing at the garage door — handing work over only
- * happens there (see delivery.ts).
+ * done, the deliverables loaded in the truck's bed, and the player standing
+ * at the cab — delivering only happens there (see delivery.ts).
  */
 function stateAtCommission(
   commissionsCompleted: number,
-  inventory: ReadonlyArray<MaterialInstance>,
+  bed: ReadonlyArray<MaterialInstance>,
 ): GameState {
-  const state = stateWith(
-    {
-      progression: {
-        ...initialGameState.progression,
-        commissionsCompleted,
-        storeUnlocked: commissionsCompleted >= 1,
-        tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
-      },
+  const state = stateWith({
+    progression: {
+      ...initialGameState.progression,
+      commissionsCompleted,
+      storeUnlocked: commissionsCompleted >= 1,
+      tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
     },
-    inventory,
-  );
+  });
   return {
     ...state,
+    truck: { ...state.truck, bed },
     player: {
       ...state.player,
-      position: state.shopInfo.entrancePosition,
+      position: truckCabSideCell(state.shopInfo),
     },
   };
 }
@@ -151,11 +150,11 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.progression.commissionsCompleted, 1);
   });
 
-  it("consumes only the required materials", () => {
+  it("consumes only the required materials from the bed", () => {
     const extraShelf = makeShelf();
     const state = stateAtCommission(0, [makeShelf(), extraShelf]);
     const result = completeCommissionAction()(state);
-    assert.deepStrictEqual(result.player.inventory, [extraShelf]);
+    assert.deepStrictEqual(result.truck.bed, [extraShelf]);
   });
 
   it("unlocks the store after the first commission", () => {

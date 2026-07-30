@@ -7,7 +7,7 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
  * A trip to Sawyer & Sons, the hardwood lumberyard across town. Reached by
- * walking out the garage door (see DoorPrompt) once reputation opens the
+ * walking out the garage door (see TruckPrompt) once reputation opens the
  * gate; shown while the player's away trip is a shopping one to the yard.
  * Same trip rules as Orange Box: the shop keeps ticking back home, and
  * Head Home is the only way back.

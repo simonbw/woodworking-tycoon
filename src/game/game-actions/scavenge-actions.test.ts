@@ -3,6 +3,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { truckCabSideCell } from "../lot";
 import {
   generateScavengeLoot,
   SCAVENGE_DURATION_TICKS,
@@ -15,13 +16,13 @@ function fakeRng(values: number[]): () => number {
   return () => values[i++ % values.length];
 }
 
-/** Marketplace unlocked and the player standing at the garage door. */
+/** Marketplace unlocked and the player standing at the truck's cab. */
 function stateWithFreeSelling(): GameState {
   return {
     ...initialGameState,
     player: {
       ...initialGameState.player,
-      position: initialGameState.shopInfo.entrancePosition,
+      position: truckCabSideCell(initialGameState.shopInfo),
     },
     progression: { ...initialGameState.progression, marketplaceUnlocked: true },
   };
@@ -71,7 +72,7 @@ describe("startScavengingAction", () => {
     assert.strictEqual(startScavengingAction(fakeRng([0.1]))(state), state);
   });
 
-  it("does nothing away from the garage door", () => {
+  it("does nothing away from the cab", () => {
     const state: GameState = {
       ...stateWithFreeSelling(),
       player: { ...stateWithFreeSelling().player, position: [0, 0] },

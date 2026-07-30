@@ -18,17 +18,3 @@ export const DOOR_HALF_WIDTH = 3;
 export function defaultEntrancePosition(size: Vector): Vector {
   return [Math.floor(size[0] / 2), size[1] - 1];
 }
-
-/**
- * Whether a cell counts as "at the garage door" — anywhere along the
- * door strip, up to a cell in from the wall. Standing here surfaces the
- * places you can walk out to (the door panel, and the door verbs on the
- * action bar).
- */
-export function isAtShopDoor(shopInfo: ShopInfo, position: Vector): boolean {
-  const [ex, ey] = shopInfo.entrancePosition;
-  return (
-    Math.abs(position[0] - ex) <= DOOR_HALF_WIDTH &&
-    Math.abs(position[1] - ey) <= 1
-  );
-}

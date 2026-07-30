@@ -54,9 +54,11 @@ import {
   putDownCarriedMachineAction,
 } from "../game-actions/machine-actions";
 import {
+  loadTruckBedAction,
   takeCrateFromTruckAction,
   takeFromTruckBedAction,
 } from "../game-actions/truck-actions";
+import { truckCabSideCell } from "../lot";
 import {
   goToStoreAction,
   returnFromStoreAction,
@@ -447,14 +449,14 @@ export class ShopDriver {
   // to buy them, which means these.
   // ---------------------------------------------------------------------
 
-  /** Take a trip out to a store, if the door offers it yet. */
+  /** Take a trip out to a store, if the truck offers it yet. */
   goShopping(store: StoreId): this {
     if (!storeUnlocked(this.state, store)) {
       throw new Error(
-        `The door doesn't offer ${store} yet — check the progression flags`,
+        `The truck doesn't offer ${store} yet — check the progression flags`,
       );
     }
-    this.standAtDoor();
+    this.standAtCab();
     return this.apply(goToStoreAction(store));
   }
 
@@ -667,9 +669,9 @@ export class ShopDriver {
     return this;
   }
 
-  /** Stand at the garage door, the only place finished work leaves from. */
-  standAtDoor(): this {
-    return this.standAt(this.state.shopInfo.entrancePosition);
+  /** Stand at the truck's cab, where trips start and work is driven off. */
+  standAtCab(): this {
+    return this.standAt(truckCabSideCell(this.state.shopInfo));
   }
 
   /**
@@ -705,10 +707,27 @@ export class ShopDriver {
   }
 
   /**
-   * Carry the active commission out to the door and hand it over. Fails
-   * loudly rather than quietly doing nothing, because "the commission
-   * silently didn't complete" is the exact bug a playthrough exists to
-   * catch.
+   * Load everything in hand into the truck's bed at the tailgate. The
+   * first half of every delivery.
+   */
+  loadBed(): this {
+    if (this.inventory.length === 0) {
+      return this;
+    }
+    this.standAtBed();
+    const inventory = this.inventory;
+    this.apply(loadTruckBedAction(inventory));
+    if (this.inventory.length !== 0) {
+      throw new Error(`The bed would not take what's in hand`);
+    }
+    return this;
+  }
+
+  /**
+   * Deliver the active commission: load what's in hand into the bed,
+   * walk to the cab, and drive it off. Fails loudly rather than quietly
+   * doing nothing, because "the commission silently didn't complete" is
+   * the exact bug a playthrough exists to catch.
    */
   handOverCommission(): this {
     const commission = getActiveCommission(this.state.progression);
@@ -716,12 +735,12 @@ export class ShopDriver {
       throw new Error("No active commission to hand over");
     }
     const before = this.state.progression.commissionsCompleted;
-    this.standAtDoor().apply(completeCommissionAction());
+    this.loadBed().standAtCab().apply(completeCommissionAction());
     if (this.state.progression.commissionsCompleted !== before + 1) {
       throw new Error(
-        `"${commission.name}" would not hand over. Holding ` +
-          `[${this.inventory.map((m) => m.type).join(", ")}], which does not ` +
-          `satisfy ${JSON.stringify(commission.requiredMaterials)}`,
+        `"${commission.name}" would not deliver. The bed holds ` +
+          `[${this.state.truck.bed.map((m) => m.type).join(", ")}], which ` +
+          `does not satisfy ${JSON.stringify(commission.requiredMaterials)}`,
       );
     }
     return this.apply(clearPendingPayoutsAction);

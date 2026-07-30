@@ -2,9 +2,8 @@ import { CellMap } from "./CellMap";
 import { readyHandoffs } from "./delivery";
 import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
-import { atTruckBed } from "./lot";
+import { atTruckBed, atTruckCab } from "./lot";
 import { Machine } from "./Machine";
-import { isAtShopDoor } from "./ShopInfo";
 import { chebyshevDistance } from "./Vectors";
 
 /**
@@ -27,8 +26,8 @@ export type InteractAction =
   /** Standing at the truck's bed with cargo in it: E lifts the last
    * piece loaded back out (Shift empties the bed). */
   | { kind: "truck-bed"; count: number }
-  /** `handoffCount` is how much finished work the player is holding. */
-  | { kind: "open-door"; handoffCount: number };
+  /** `handoffCount` is how much finished work is loaded in the bed. */
+  | { kind: "truck-cab"; handoffCount: number };
 
 export function resolveInteract(
   gameState: GameState,
@@ -111,9 +110,9 @@ export function resolveInteract(
 
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
     gameState.progression;
-  if (isAtShopDoor(gameState.shopInfo, gameState.player.position)) {
-    // Work in hand opens the door on its own: the very first commission is
-    // handed over before there is anywhere to go.
+  if (atTruckCab(gameState.shopInfo, gameState.player.position)) {
+    // Work loaded in the bed opens the cab on its own: the very first
+    // commission is delivered before there is anywhere to go.
     const handoffCount = readyHandoffs(gameState).length;
     if (
       handoffCount > 0 ||
@@ -121,7 +120,7 @@ export function resolveInteract(
       lumberyardUnlocked ||
       marketplaceUnlocked
     ) {
-      return { kind: "open-door", handoffCount };
+      return { kind: "truck-cab", handoffCount };
     }
   }
 
@@ -149,7 +148,7 @@ export function interactLabel(action: InteractAction): string {
       return "pick up broom";
     case "truck-bed":
       return `unload bed (${action.count})`;
-    case "open-door":
-      return action.handoffCount > 0 ? "hand off work" : "head out";
+    case "truck-cab":
+      return action.handoffCount > 0 ? "deliver work" : "head out";
   }
 }

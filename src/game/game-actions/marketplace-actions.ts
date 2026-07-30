@@ -178,16 +178,16 @@ export function deliverJobAction(jobId: string): GameAction {
       return gameState;
     }
     if (!canHandOff(gameState)) {
-      console.warn("Can't hand work over right now");
+      console.warn("Can't deliver work right now");
       return gameState;
     }
 
-    const updatedInventory = consumeRequiredMaterials(
-      gameState.player.inventory,
+    const updatedBed = consumeRequiredMaterials(
+      gameState.truck.bed,
       job.requiredMaterials,
     );
-    if (updatedInventory === null) {
-      console.warn("Player doesn't have required materials for job");
+    if (updatedBed === null) {
+      console.warn("The bed doesn't hold what the job requires");
       return gameState;
     }
 
@@ -204,7 +204,7 @@ export function deliverJobAction(jobId: string): GameAction {
             gameState.reputation + payout.reputation,
           ),
           acceptedJobs: gameState.acceptedJobs.filter((j) => j !== job),
-          player: { ...gameState.player, inventory: updatedInventory },
+          truck: { ...gameState.truck, bed: updatedBed },
         },
         {
           kind: "job",

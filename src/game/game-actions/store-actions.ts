@@ -128,10 +128,10 @@ export function buyMachineAction(
 }
 
 /**
- * Hands the active commission over to its client. Called from the garage
- * door (see `DoorPrompt`) — the goods have to be in the player's hands and
- * the player has to be standing at the door, because a commission leaving
- * the shop is a thing that happens somewhere.
+ * Delivers the active commission to its client. Called from the truck's
+ * cab (see `TruckPrompt`) — the goods have to be loaded in the bed and
+ * the player standing at the cab, because a commission leaving the shop
+ * is a thing that happens somewhere.
  */
 export function completeCommissionAction(): GameAction {
   return (gameState) => {
@@ -141,16 +141,16 @@ export function completeCommissionAction(): GameAction {
       return gameState;
     }
     if (!canHandOff(gameState)) {
-      console.warn("Can't hand work over right now");
+      console.warn("Can't deliver work right now");
       return gameState;
     }
 
-    const updatedInventory = consumeRequiredMaterials(
-      gameState.player.inventory,
+    const updatedBed = consumeRequiredMaterials(
+      gameState.truck.bed,
       commission.requiredMaterials,
     );
-    if (updatedInventory === null) {
-      console.warn("Player doesn't have required materials for commission");
+    if (updatedBed === null) {
+      console.warn("The bed doesn't hold what the commission requires");
       return gameState;
     }
 
@@ -163,10 +163,7 @@ export function completeCommissionAction(): GameAction {
             ...gameState,
             money: gameState.money + commission.rewardMoney,
             reputation: gameState.reputation + commission.rewardReputation,
-            player: {
-              ...gameState.player,
-              inventory: updatedInventory,
-            },
+            truck: { ...gameState.truck, bed: updatedBed },
           },
           { kind: "commission-complete" },
         ),

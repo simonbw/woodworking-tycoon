@@ -3,6 +3,7 @@ import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
+import { truckCabSideCell } from "../lot";
 import { Species } from "../Materials";
 import { SoundEvent } from "../SoundEvent";
 import { Vector } from "../Vectors";
@@ -52,15 +53,19 @@ function playerTickPass(): GameAction {
     const away = gameState.player.away;
     if (away?.kind === "scavenging" && gameState.tick >= away.returnTick) {
       // Welcome home: the haul rides in the truck's bed, to be unloaded
-      // at the tailgate. (Shopping trips end via returnFromStoreAction,
-      // not a timer.)
+      // at the tailgate, and the player steps out beside the cab.
+      // (Shopping trips end via returnFromStoreAction, not a timer.)
       gameState = {
         ...gameState,
         truck: {
           ...gameState.truck,
           bed: [...gameState.truck.bed, ...away.loot],
         },
-        player: { ...gameState.player, away: null },
+        player: {
+          ...gameState.player,
+          away: null,
+          position: truckCabSideCell(gameState.shopInfo),
+        },
       };
     }
 

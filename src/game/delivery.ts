@@ -1,19 +1,19 @@
 import { getActiveCommission } from "./commissionSequence";
 import { AcceptedJob, Commission, GameState } from "./GameState";
+import { atTruckCab } from "./lot";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { materialMeetsInput } from "./material-helpers";
-import { isAtShopDoor } from "./ShopInfo";
 
 /**
  * The matching rules shared by both outbound tracks. Commissions and jobs
- * are paid the same way — you hand over what you're carrying — so the
- * check and the consume live here rather than being copied into
- * `store-actions` and `marketplace-actions`, where they drifted apart once
- * already.
+ * are paid the same way — you load the goods into the truck's bed and
+ * drive them off from the cab — so the check and the consume live here
+ * rather than being copied into `store-actions` and
+ * `marketplace-actions`, where they drifted apart once already.
  */
 
-/** Whether the player is carrying everything a work order asks for. */
+/** Whether a pool of materials covers everything a work order asks for. */
 export function hasRequiredMaterials(
   inventory: ReadonlyArray<MaterialInstance>,
   requirements: ReadonlyArray<InputMaterialWithQuantity>,
@@ -51,26 +51,27 @@ export function consumeRequiredMaterials(
 }
 
 /**
- * Handing goods over is a physical act, so it wants the same body state as
- * walking out the door: home, standing at the garage door, and not with a
- * machine over your shoulders. Enforced in the actions themselves and not
- * only in `DoorPrompt` — where the delivery can happen is a game rule.
+ * Delivering is a physical act, so it wants the real body state: home,
+ * standing at the truck's cab, not with a machine over the shoulders —
+ * and the goods already loaded in the bed. Enforced in the actions
+ * themselves and not only in `TruckPrompt` — where the delivery can
+ * happen is a game rule.
  */
 export function canHandOff(gameState: GameState): boolean {
   const { player } = gameState;
   return (
     !player.away &&
     !player.carriedMachine &&
-    isAtShopDoor(gameState.shopInfo, player.position)
+    atTruckCab(gameState.shopInfo, player.position)
   );
 }
 
 /**
- * Everything the player is currently carrying that somebody is waiting on:
- * the active commission and any accepted job whose deliverables are all in
- * hand. The garage door lists these, and `resolveInteract` consults the
- * count so the door still opens for the very first commission — which is
- * handed over before any destination is unlocked.
+ * Everything in the truck's bed that somebody is waiting on: the active
+ * commission and any accepted job whose deliverables are all loaded. The
+ * cab's card lists these, and `resolveInteract` consults the count so
+ * the cab still answers for the very first commission — which is
+ * delivered before any destination is unlocked.
  */
 export type ReadyHandoff =
   | { readonly kind: "commission"; readonly commission: Commission }
@@ -82,18 +83,15 @@ export function readyHandoffs(
   if (!canHandOff(gameState)) {
     return [];
   }
-  const { inventory } = gameState.player;
+  const { bed } = gameState.truck;
   const handoffs: ReadyHandoff[] = [];
 
   const commission = getActiveCommission(gameState.progression);
-  if (
-    commission &&
-    hasRequiredMaterials(inventory, commission.requiredMaterials)
-  ) {
+  if (commission && hasRequiredMaterials(bed, commission.requiredMaterials)) {
     handoffs.push({ kind: "commission", commission });
   }
   for (const job of gameState.acceptedJobs) {
-    if (hasRequiredMaterials(inventory, job.requiredMaterials)) {
+    if (hasRequiredMaterials(bed, job.requiredMaterials)) {
       handoffs.push({ kind: "job", job });
     }
   }

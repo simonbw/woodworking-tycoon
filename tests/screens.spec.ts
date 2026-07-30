@@ -171,7 +171,7 @@ test.describe("Screens", () => {
       // C holds the full clipboard up, and C puts it back down
       await page.keyboard.press("c");
       await expect(clipboard).toBeVisible();
-      await expect(clipboard.getByTestId("commission-delivery-note")).toContainText("garage door");
+      await expect(clipboard.getByTestId("commission-delivery-note")).toContainText("truck");
       await page.keyboard.press("c");
       await expect(clipboard).toHaveCount(0);
       // Clicking the tracker does the same; Escape closes

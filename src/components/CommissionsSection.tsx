@@ -1,6 +1,7 @@
 import React from "react";
 import { Commission, GameState } from "../game/GameState";
 import { getActiveCommission } from "../game/commissionSequence";
+import { hasRequiredMaterials } from "../game/delivery";
 import {
   describeMaterialRequirement,
   materialMeetsInput,
@@ -19,10 +20,11 @@ export function commissionLineItems(
   gameState: GameState,
   commission: Commission,
 ) {
+  // A piece counts whether it's still in hand or already loaded in the
+  // truck's bed — loading for delivery mustn't make the order look short.
+  const pool = [...gameState.player.inventory, ...gameState.truck.bed];
   return commission.requiredMaterials.map((req) => {
-    const matching = gameState.player.inventory.filter((m) =>
-      materialMeetsInput(m, req),
-    );
+    const matching = pool.filter((m) => materialMeetsInput(m, req));
     return {
       req,
       have: Math.min(matching.length, req.quantity),
@@ -61,6 +63,10 @@ const WorkOrder: React.FC<{
 
   const lineItems = commissionLineItems(gameState, commission);
   const canComplete = lineItems.every((item) => item.have >= item.need);
+  const bedReady = hasRequiredMaterials(
+    gameState.truck.bed,
+    commission.requiredMaterials,
+  );
   const orderNumber = String(1000 + index).padStart(4, "0");
 
   return (
@@ -122,15 +128,17 @@ const WorkOrder: React.FC<{
               </span>
             </div>
           </div>
-          {/* Delivery happens at the door, in the player's hands — the
-              order slip only says who it's for and where it goes. */}
+          {/* Delivery is a drive — the order slip only says who it's for
+              and where it goes. */}
           <p
             className="font-ink text-base leading-snug text-ink-blue"
             data-testid="commission-delivery-note"
           >
-            {canComplete
-              ? `Ready for ${commission.client}. Carry it to the garage door.`
-              : `For ${commission.client}. Hand it over at the garage door.`}
+            {bedReady
+              ? `Ready for ${commission.client}. Deliver it from the truck's cab.`
+              : canComplete
+                ? `Ready for ${commission.client}. Load it into the truck's bed.`
+                : `For ${commission.client}. Deliver it with the truck.`}
           </p>
         </div>
       </div>

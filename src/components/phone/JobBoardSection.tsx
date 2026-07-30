@@ -1,4 +1,5 @@
 import React from "react";
+import { hasRequiredMaterials } from "../../game/delivery";
 import { AcceptedJob, JobOffer } from "../../game/GameState";
 import { formatMoney } from "../../utils/formatNumber";
 import {
@@ -22,7 +23,7 @@ import { useApplyGameAction, useGameState } from "../useGameState";
  * The Job Board pane of the phone: open offers to accept (limited by
  * reputation-gated slots) and accepted jobs with their decaying tips. The
  * phone takes the order and cancels it; handing the work over happens in
- * person at the garage door (see `DoorPrompt`). The phone's tab bar
+ * person at the garage door (see `TruckPrompt`). The phone's tab bar
  * provides the pane's title.
  */
 export const JobBoardSection: React.FC = () => {
@@ -67,12 +68,13 @@ export const JobBoardSection: React.FC = () => {
 
 const JobRequirements: React.FC<{ job: JobOffer }> = ({ job }) => {
   const gameState = useGameState();
+  // In hand or already loaded in the truck's bed — both count
+  const pool = [...gameState.player.inventory, ...gameState.truck.bed];
   return (
     <ul className="space-y-0.5">
       {job.requiredMaterials.map((req, i) => {
         const have = Math.min(
-          gameState.player.inventory.filter((m) => materialMeetsInput(m, req))
-            .length,
+          pool.filter((m) => materialMeetsInput(m, req)).length,
           req.quantity,
         );
         return (
@@ -133,10 +135,14 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
   const payout = jobPayout(job, gameState.tick);
   const tipRemaining = jobTipRemaining(job, gameState.tick);
   const tipDaysLeft = (tipRemaining * JOB_TIP_DECAY_TICKS) / TICKS_PER_DAY;
+  const pool = [...gameState.player.inventory, ...gameState.truck.bed];
   const canDeliver = job.requiredMaterials.every(
     (req) =>
-      gameState.player.inventory.filter((m) => materialMeetsInput(m, req))
-        .length >= req.quantity,
+      pool.filter((m) => materialMeetsInput(m, req)).length >= req.quantity,
+  );
+  const bedReady = hasRequiredMaterials(
+    gameState.truck.bed,
+    job.requiredMaterials,
   );
 
   return (
@@ -166,9 +172,11 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
       </div>
       {/* The customer collects; the phone only takes the order. */}
       <p className="text-xs text-ink-blue" data-testid="job-delivery-note">
-        {canDeliver
-          ? "Ready — carry it to the garage door to hand it over."
-          : "Hand it over at the garage door once it's built."}
+        {bedReady
+          ? "Ready — deliver it from the truck's cab."
+          : canDeliver
+            ? "Ready — load it into the truck's bed."
+            : "Deliver it with the truck once it's built."}
       </p>
     </li>
   );

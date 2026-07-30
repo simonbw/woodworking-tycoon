@@ -72,10 +72,21 @@ export function truckBedRect(shopInfo: ShopInfo): { min: Vector; max: Vector } {
   return { min, max: [max[0], min[1] + TRUCK_BED_LENGTH] };
 }
 
-/** How far from the bed's sides a cell still counts as standing at it —
- * an arm's reach over the rail, same spirit as a machine's operation
- * zone. */
-const BED_REACH = 1.5;
+/** How far from the truck's panels a cell still counts as standing at
+ * them — an arm's reach, same spirit as a machine's operation zone. */
+const TRUCK_REACH = 1.5;
+
+/** Whether a cell is within arm's reach of a rectangle's edges. */
+function withinReach(
+  position: Vector,
+  rect: { min: Vector; max: Vector },
+): boolean {
+  const cx = position[0] + 0.5;
+  const cy = position[1] + 0.5;
+  const dx = Math.max(rect.min[0] - cx, 0, cx - rect.max[0]);
+  const dy = Math.max(rect.min[1] - cy, 0, cy - rect.max[1]);
+  return Math.hypot(dx, dy) <= TRUCK_REACH;
+}
 
 /**
  * Whether the player's cell is close enough to load or unload the bed:
@@ -83,15 +94,38 @@ const BED_REACH = 1.5;
  * never counts, even though the door strip is only a step away.
  */
 export function atTruckBed(shopInfo: ShopInfo, position: Vector): boolean {
-  if (!isOutdoors(shopInfo, position)) {
-    return false;
-  }
-  const cx = position[0] + 0.5;
-  const cy = position[1] + 0.5;
-  const { min, max } = truckBedRect(shopInfo);
-  const dx = Math.max(min[0] - cx, 0, cx - max[0]);
-  const dy = Math.max(min[1] - cy, 0, cy - max[1]);
-  return Math.hypot(dx, dy) <= BED_REACH;
+  return (
+    isOutdoors(shopInfo, position) &&
+    withinReach(position, truckBedRect(shopInfo))
+  );
+}
+
+/** The cab is the far (street) end of the parked truck. */
+export const TRUCK_CAB_LENGTH = 4.5;
+
+/** The cab's footprint: the nose end, a walk down the driveway. */
+export function truckCabRect(shopInfo: ShopInfo): { min: Vector; max: Vector } {
+  const { min, max } = truckParkedRect(shopInfo);
+  return { min: [min[0], max[1] - TRUCK_CAB_LENGTH], max };
+}
+
+/** Whether the player's cell is at the cab — close enough to climb in.
+ * This is where trips start and finished work is driven off from. */
+export function atTruckCab(shopInfo: ShopInfo, position: Vector): boolean {
+  return (
+    isOutdoors(shopInfo, position) &&
+    withinReach(position, truckCabRect(shopInfo))
+  );
+}
+
+/** The cell beside the driver's door — where the player lands stepping
+ * out of the truck after a trip. */
+export function truckCabSideCell(shopInfo: ShopInfo): Vector {
+  const cab = truckCabRect(shopInfo);
+  return [
+    Math.floor(cab.min[0] - 1.2),
+    Math.floor((cab.min[1] + cab.max[1]) / 2),
+  ];
 }
 
 /**

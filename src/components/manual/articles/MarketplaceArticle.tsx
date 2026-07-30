@@ -43,9 +43,9 @@ export const MarketplaceArticle: React.FC = () => (
 
     <H>Scavenging</H>
     <P>
-      Walk to the garage door and it lists places to go, each with a number key
-      — including a scavenging run: leave the shop and come back with free
-      pallets riding in the truck's bed, ready to unload at the tailgate. The
+      Walk out to the truck's cab and it lists places to go, each with a
+      number key — including a scavenging run: drive off and come back with
+      free pallets riding in the bed, ready to unload at the tailgate. The
       shop keeps running while you're out — glue keeps curing and machines
       finish their passes — but you can't do anything else until you're back.
     </P>

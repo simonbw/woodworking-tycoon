@@ -8,8 +8,8 @@ import {
 } from "./machine-panel";
 import {
   advanceTicks,
-  movePlayerToDoor,
-  openDoorPanel,
+  movePlayerToCab,
+  openTruckMenu,
   setPaused,
   startNewGame,
 } from "./navigation";
@@ -208,8 +208,8 @@ test.describe("Keyboard", () => {
       // At the door, E spreads open the destination card; its rows claim
       // the number keys, and the store (first unlocked destination)
       // answers to 1
-      await movePlayerToDoor(page);
-      await openDoorPanel(page);
+      await movePlayerToCab(page);
+      await openTruckMenu(page);
       await page.keyboard.press("1");
       await expect(store).toBeVisible();
       // Escape heads home
@@ -296,15 +296,18 @@ test.describe("Keyboard", () => {
 
     await test.step("keys work again once the modal is closed", async () => {
       // From rest, so that a body still drifting out of the last step can't
-      // stand in for the key having been delivered.
+      // stand in for the key having been delivered. Held key is "s": the
+      // player stands beside the truck's cab after the store trip, where
+      // rightward walking is blocked by the body of the truck but the
+      // grass below is open.
       const before = await settle();
-      await page.keyboard.down("d");
+      await page.keyboard.down("s");
       try {
         await expect
           .poll(() => playerPosition(page), { intervals: [50] })
           .not.toEqual(before);
       } finally {
-        await page.keyboard.up("d");
+        await page.keyboard.up("s");
       }
     });
 
@@ -406,6 +409,15 @@ test.describe("Keyboard", () => {
     await test.step("the hands strip floats up when something's carried", async () => {
       // Empty hands, no strip — an empty strip is just chrome
       await expect(page.getByTestId("hands-strip")).toHaveCount(0);
+      // Back indoors: the earlier trip steps left the player on the lot,
+      // and setting a piece down is a shop-floor verb.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((s: any) => ({
+          ...s,
+          player: { ...s.player, position: [6, 10] },
+        }));
+      });
+      await page.waitForTimeout(30);
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((s: any) => ({
           ...s,

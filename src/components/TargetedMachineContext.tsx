@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useCellMap } from "./useCellMap";
 import { Machine, machineKey as machineStateKey } from "../game/Machine";
-import { isAtShopDoor } from "../game/ShopInfo";
+import { atTruckCab } from "../game/lot";
 import {
   Direction,
   Vector,
@@ -41,9 +41,9 @@ interface TargetedMachineValue {
    * Whether the garage door's destination card is spread open (E at the
    * door). Cleared automatically when the player walks off the door.
    */
-  doorOpen: boolean;
-  openDoor: () => void;
-  closeDoor: () => void;
+  truckMenuOpen: boolean;
+  openTruckMenu: () => void;
+  closeTruckMenu: () => void;
 }
 
 const targetedMachineContext = createContext<TargetedMachineValue | undefined>(
@@ -113,7 +113,7 @@ export const TargetedMachineProvider: React.FC<{
   const cellMap = useCellMap();
   const [offset, setOffset] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | undefined>(undefined);
-  const [doorOpenRaw, setDoorOpen] = useState(false);
+  const [truckMenuOpenRaw, setTruckMenuOpen] = useState(false);
 
   const machines =
     cellMap.at(gameState.player.position)?.operableMachines ?? [];
@@ -146,14 +146,14 @@ export const TargetedMachineProvider: React.FC<{
   );
   const closeSheet = useCallback(() => setSheetKey(undefined), []);
 
-  // The door card belongs to the door: walking off the door (or leaving
-  // the shop) folds it up.
-  const atDoor =
+  // The trip card belongs to the cab: walking away from the truck (or
+  // leaving the shop) folds it up.
+  const atCab =
     !gameState.player.away &&
-    isAtShopDoor(gameState.shopInfo, gameState.player.position);
-  const doorOpen = doorOpenRaw && atDoor;
-  const openDoor = useCallback(() => setDoorOpen(true), []);
-  const closeDoor = useCallback(() => setDoorOpen(false), []);
+    atTruckCab(gameState.shopInfo, gameState.player.position);
+  const truckMenuOpen = truckMenuOpenRaw && atCab;
+  const openTruckMenu = useCallback(() => setTruckMenuOpen(true), []);
+  const closeTruckMenu = useCallback(() => setTruckMenuOpen(false), []);
 
   const value = useMemo(
     () => ({
@@ -180,9 +180,9 @@ export const TargetedMachineProvider: React.FC<{
           setSheetKey(machineKey(machine));
         }
       },
-      doorOpen,
-      openDoor,
-      closeDoor,
+      truckMenuOpen,
+      openTruckMenu,
+      closeTruckMenu,
     }),
     [
       machine,
@@ -192,9 +192,9 @@ export const TargetedMachineProvider: React.FC<{
       sheetMachine,
       openSheet,
       closeSheet,
-      doorOpen,
-      openDoor,
-      closeDoor,
+      truckMenuOpen,
+      openTruckMenu,
+      closeTruckMenu,
     ],
   );
 

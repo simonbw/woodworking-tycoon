@@ -3,21 +3,22 @@ import { machineCard, takeAllHere } from "./machine-panel";
 import {
   dismissClientCard,
   goToStore,
-  handOffAtDoor,
+  deliverFromTruck,
   leaveStore,
-  movePlayerToDoor,
-  openDoorPanel,
+  loadTruckBed,
+  movePlayerToCab,
+  openTruckMenu,
   startNewGame,
 } from "./navigation";
 
 /**
  * The shop floor itself.
  *
- * Everything here is a thing you do *in* the garage rather than in an overlay:
- * the app comes up and the canvas mounts, a delivered crate is unpacked and
- * carried and rotated and set down and picked up again, and finished work
- * leaves through the garage door with a client card and the rewards flying to
- * their readouts.
+ * Everything here is a thing you do *in* the garage (or on its lot) rather
+ * than in an overlay: the app comes up and the canvas mounts, a bought crate
+ * is lifted out of the truck's bed, carried, rotated, set down and picked up
+ * again, and finished work leaves loaded in the truck with a client card and
+ * the rewards flying to their readouts.
  *
  * Carrying and handing over are floor verbs with no button anywhere — the
  * handoff half asserts that outright — so this is the one place they can be
@@ -55,7 +56,7 @@ async function teleportPlayer(page: any, position: [number, number]) {
 }
 
 test.describe("Shop floor", () => {
-  test("boots, carries machines, and hands work over at the door", async ({
+  test("boots, carries machines, and delivers work with the truck", async ({
     page,
   }) => {
     test.setTimeout(300000);
@@ -360,6 +361,15 @@ test.describe("Shop floor", () => {
       await teleportPlayer(page, [10, 6]);
       const chip = page.getByText(/^pick up$/i).first();
       await expect(chip).toBeVisible();
+      // The camera may still be easing back indoors from the tailgate a
+      // few steps ago — the overlay rides it, so wait for the chip to
+      // hold still before treating its position as meaningful.
+      await expect(async () => {
+        const first = await chip.boundingBox();
+        await page.waitForTimeout(150);
+        const second = await chip.boundingBox();
+        expect(second!.y).toBeCloseTo(first!.y, 1);
+      }).toPass({ timeout: 5000 });
       const northStance = await chip.boundingBox();
       await teleportPlayer(page, [10, 12]);
       await expect(chip).toBeVisible();
@@ -451,11 +461,11 @@ test.describe("Shop floor", () => {
       await page.waitForTimeout(500);
     });
 
-    await test.step("the work order points at the door, not a button", async () => {
+    await test.step("the work order points at the truck, not a button", async () => {
       // The full order lives on the clipboard; C holds it up
       await page.keyboard.press("c");
       await expect(page.getByTestId("commission-delivery-note")).toContainText(
-        "garage door",
+        "truck",
       );
       // The old "Mark Complete" button is gone for good
       await expect(
@@ -467,13 +477,13 @@ test.describe("Shop floor", () => {
       ).toHaveCount(0);
     });
 
-    await test.step("an empty-handed trip to the door offers nothing", async () => {
-      await movePlayerToDoor(page);
-      // Fresh game: no destinations unlocked and nothing in hand
-      await expect(page.getByTestId("door-panel")).not.toBeVisible();
+    await test.step("an empty-bed walk to the cab offers nothing", async () => {
+      await movePlayerToCab(page);
+      // Fresh game: no destinations unlocked and nothing in the bed
+      await expect(page.getByTestId("truck-panel")).not.toBeVisible();
     });
 
-    await test.step("the door lists the commission once it's in hand", async () => {
+    await test.step("the cab lists the commission once it's in the bed", async () => {
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -487,17 +497,23 @@ test.describe("Shop floor", () => {
         }));
       });
       await page.waitForTimeout(30);
-      await movePlayerToDoor(page);
-      await openDoorPanel(page);
+      // Load it over the rail with the real key, then walk to the cab
+      await loadTruckBed(page);
+      const loaded = await page.evaluate(() => window.__GET_GAME_STATE__());
+      expect(
+        loaded.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
+      ).toBe(true);
+      await movePlayerToCab(page);
+      await openTruckMenu(page);
 
-      const panel = page.getByTestId("door-panel");
-      // Nowhere to go yet, so the card is nothing but the handoff
+      const panel = page.getByTestId("truck-panel");
+      // Nowhere to go yet, so the card is nothing but the delivery
       await expect(panel).toContainText("Someone's waiting");
       await expect(panel).toContainText("Your First Shelf");
       // The client is named on the row — you know who you're meeting
       await expect(panel).toContainText("Marguerite");
       await expect(
-        panel.getByRole("button", { name: "Hand Over" }),
+        panel.getByRole("button", { name: "Deliver" }),
       ).toBeVisible();
     });
 
@@ -505,8 +521,8 @@ test.describe("Shop floor", () => {
       (window as any).__GET_GAME_STATE__(),
     );
 
-    await test.step("handing it over shows the client's card", async () => {
-      await handOffAtDoor(page, "Your First Shelf");
+    await test.step("delivering it shows the client's card", async () => {
+      await deliverFromTruck(page, "Your First Shelf");
 
       const card = page.getByTestId("client-card");
       await expect(card).toBeVisible();
@@ -524,7 +540,7 @@ test.describe("Shop floor", () => {
       expect(state.reputation).toBe(before.reputation + 2);
       expect(state.progression.commissionsCompleted).toBe(1);
       expect(
-        state.player.inventory.some((m: any) => m.id === "e2e-first-shelf"),
+        state.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
       ).toBe(false);
       // Completing the first commission is what unlocks the store
       expect(state.progression.storeUnlocked).toBe(true);
@@ -563,13 +579,13 @@ test.describe("Shop floor", () => {
       await expect(page.getByTestId("commission-tracker")).toContainText(
         "Cut to Order",
       );
-      // ...and the door is no longer offering the one just delivered
-      await movePlayerToDoor(page);
-      await openDoorPanel(page);
-      const panel = page.getByTestId("door-panel");
+      // ...and the cab is no longer offering the one just delivered
+      await movePlayerToCab(page);
+      await openTruckMenu(page);
+      const panel = page.getByTestId("truck-panel");
       await expect(panel).toContainText("Places to go");
       await expect(
-        panel.getByRole("button", { name: "Hand Over" }),
+        panel.getByRole("button", { name: "Deliver" }),
       ).toHaveCount(0);
       // The store trip it unlocked is there instead
       await expect(panel).toContainText("Orange Box");

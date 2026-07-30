@@ -64,14 +64,14 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     sheetMachine,
     toggleSheet,
     closeSheet,
-    doorOpen,
-    openDoor,
-    closeDoor,
+    truckMenuOpen,
+    openTruckMenu,
+    closeTruckMenu,
   } = useTargetedMachine();
   const targeted = useRef(targetedMachine);
   targeted.current = targetedMachine;
-  const doorOpenRef = useRef(doorOpen);
-  doorOpenRef.current = doorOpen;
+  const truckMenuOpenRef = useRef(truckMenuOpen);
+  truckMenuOpenRef.current = truckMenuOpen;
 
   // While the player is off scavenging they aren't in the shop, and the machine
   // panels are hidden — the keys shouldn't still reach into them.
@@ -138,9 +138,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "close-sheet",
     () => {
       closeSheet();
-      closeDoor();
+      closeTruckMenu();
     },
-    sheetMachine != null || doorOpen,
+    sheetMachine != null || truckMenuOpen,
   );
 
   useShortcut("cycle-machine", cycleTarget, present);
@@ -164,8 +164,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "pick-up",
     (event) => {
       const gs = gameState.current;
-      if (doorOpenRef.current) {
-        return closeDoor();
+      if (truckMenuOpenRef.current) {
+        return closeTruckMenu();
       }
       const action = resolveInteract(gs, targeted.current);
       if (!action) return;
@@ -207,8 +207,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
             ),
           );
         }
-        case "open-door":
-          return openDoor();
+        case "truck-cab":
+          return openTruckMenu();
       }
     },
     present && !carrying,

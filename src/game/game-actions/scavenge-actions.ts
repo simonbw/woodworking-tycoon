@@ -44,10 +44,10 @@ function makeDamagedPallet(rng: () => number): Pallet {
 }
 
 /**
- * Walk out the door to hunt for free pallets. Starts at the garage door
- * like any trip out of the shop. The player is gone for
- * SCAVENGE_DURATION_TICKS; the haul is rolled up front and delivered to the
- * material dropoff spot by tickAction when they get back.
+ * Drive out to hunt for free pallets. Starts at the truck's cab like any
+ * trip out of the shop. The player is gone for SCAVENGE_DURATION_TICKS;
+ * the haul is rolled up front and rides home in the truck's bed
+ * (tickAction) when they get back.
  */
 export function startScavengingAction(
   rng: () => number = Math.random,

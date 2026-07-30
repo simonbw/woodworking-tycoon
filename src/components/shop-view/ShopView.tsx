@@ -31,7 +31,6 @@ import {
 } from "./CollisionDebugLayer";
 import { DustLayer } from "./DustLayer";
 import { DustMotionLayer } from "./DustMotionLayer";
-import { EntranceSprite } from "./EntranceSprite";
 import { FeedLaneLayer } from "./FeedLaneLayer";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { HeldMovementListener } from "./heldMovementInput";
@@ -322,7 +321,6 @@ export const ShopView: React.FC = () => {
                   key={`cell-${vectorKey(cell.position)}`}
                 />
               ))}
-              <EntranceSprite />
               {/* Settled sawdust sits on the floor, under everything that moves */}
               <DustLayer width={width} height={height} />
               {gameState.progression.sweepingUnlocked && <BroomSprite />}
