@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { GameState, MaterialPile } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { HAND_CAPACITY } from "../Person";
 import { Machine, MachineState } from "../Machine";
 import {
   dropMaterialAction,
@@ -67,23 +68,26 @@ describe("pickUpMaterialAction", () => {
   });
 
   it("refuses a load bigger than the arm room left", () => {
-    // HAND_CAPACITY is 2: one board in hand leaves room for one, not two
+    // One free hand left; a two-pile grab doesn't fit and refuses whole
     const piles: MaterialPile[] = [
       { material: board("pine", 2, 4, 1), position: [1, 3] },
       { material: board("pine", 2, 4, 1), position: [1, 3] },
     ];
+    const carried = Array.from({ length: HAND_CAPACITY - 1 }, () =>
+      board("pine", 2, 4, 1),
+    );
     const state: GameState = {
       ...initialGameState,
       player: {
         ...initialGameState.player,
         position: [1, 3],
-        inventory: [board("pine", 2, 4, 1)],
+        inventory: carried,
       },
       materialPiles: piles,
     };
     const result = pickUpMaterialAction(piles)(state);
     assert.strictEqual(result.materialPiles.length, 2);
-    assert.strictEqual(result.player.inventory.length, 1);
+    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY - 1);
   });
 
   it("still takes a single piece into the last free hand", () => {
@@ -96,13 +100,15 @@ describe("pickUpMaterialAction", () => {
       player: {
         ...initialGameState.player,
         position: [1, 3],
-        inventory: [board("pine", 2, 4, 1)],
+        inventory: Array.from({ length: HAND_CAPACITY - 1 }, () =>
+          board("pine", 2, 4, 1),
+        ),
       },
       materialPiles: [pile],
     };
     const result = pickUpMaterialAction([pile])(state);
     assert.strictEqual(result.materialPiles.length, 0);
-    assert.strictEqual(result.player.inventory.length, 2);
+    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY);
   });
 
   it("refuses any pickup once the hands are full", () => {
@@ -115,13 +121,15 @@ describe("pickUpMaterialAction", () => {
       player: {
         ...initialGameState.player,
         position: [1, 3],
-        inventory: [board("pine", 2, 4, 1), board("pine", 2, 4, 1)],
+        inventory: Array.from({ length: HAND_CAPACITY }, () =>
+          board("pine", 2, 4, 1),
+        ),
       },
       materialPiles: [pile],
     };
     const result = pickUpMaterialAction([pile])(state);
     assert.strictEqual(result.materialPiles.length, 1);
-    assert.strictEqual(result.player.inventory.length, 2);
+    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY);
   });
 });
 

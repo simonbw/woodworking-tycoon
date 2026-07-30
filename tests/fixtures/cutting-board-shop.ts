@@ -31,10 +31,10 @@ function idleMachine(
 /**
  * Everything needed to run the cutting board chain WITHOUT a planer:
  * workspace and sales table (operation cells at [1,3], [3,3]), the player at
- * the workspace with five smooth maple strips — two in the arms (all they
- * hold), three already staged in the bench's bay — a random orbit sander in
- * tool storage, and commission 6 active. Proves machines buy time, not
- * access.
+ * the workspace with five smooth maple strips — two in the arms, three
+ * already staged in the bench's bay (more than one armful travels as the
+ * hands allow) — a random orbit sander in tool storage, and commission 6
+ * active. Proves machines buy time, not access.
  */
 const strips = Array.from({ length: 5 }, (_, i) => ({
   id: `test-strip-${i}`,

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { HAND_CAPACITY } from "../Person";
 import { freshMachineState } from "./machine-actions";
 import {
   loadTruckBedAction,
@@ -57,9 +58,12 @@ describe("takeFromTruckBedAction", () => {
   });
 
   it("refuses an armful bigger than the room left in the hands", () => {
-    // HAND_CAPACITY is 2: one board carried leaves room for one more
+    // One free hand left; a two-board armful doesn't fit and refuses whole
     const inBed = [board("pine", 4, 4, 1), board("pine", 4, 4, 1)];
-    const state = stateAt(AT_BED, { bed: inBed }, [board("pine", 2, 4, 1)]);
+    const carried = Array.from({ length: HAND_CAPACITY - 1 }, () =>
+      board("pine", 2, 4, 1),
+    );
+    const state = stateAt(AT_BED, { bed: inBed }, carried);
     assert.strictEqual(takeFromTruckBedAction(inBed)(state), state);
   });
 });

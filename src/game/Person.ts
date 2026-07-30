@@ -6,10 +6,10 @@ import { Direction, Vector } from "./Vectors";
 /**
  * How many pieces of stock fit in the arms at once. Tools commit the
  * hands entirely and a machine takes the shoulders; this is the cap on
- * loose materials. Two is deliberate: moving a job's worth of wood is
- * meant to take trips (see docs/handing-work-over.md).
+ * loose materials. Kept low on purpose: moving a big job's worth of wood
+ * is meant to take trips (see docs/handing-work-over.md).
  */
-export const HAND_CAPACITY = 2;
+export const HAND_CAPACITY = 4;
 
 /**
  * Arm room left over what's already carried. Never negative: a save (or
