@@ -28,6 +28,13 @@ interface TargetedMachineValue {
   /** Aim the keyboard at a specific machine on this square (mouse path). */
   setTarget: (machine: Machine) => void;
   /**
+   * How far R has rummaged from the top of the pile underfoot. Applied to
+   * an interact's `piles` via `targetedPile`; resets when the player moves
+   * or the pile changes (a piece picked up or dropped).
+   */
+  pileOffset: number;
+  cyclePile: (step: 1 | -1) => void;
+  /**
    * The station whose full sheet is spread open (benches and other
    * recipe-driven stations). Cleared automatically when the player walks
    * away — the sheet belongs to the cell, not the screen.
@@ -112,6 +119,7 @@ export const TargetedMachineProvider: React.FC<{
   const gameState = useGameState();
   const cellMap = useCellMap();
   const [offset, setOffset] = useState(0);
+  const [pileOffset, setPileOffset] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | undefined>(undefined);
   const [truckMenuOpenRaw, setTruckMenuOpen] = useState(false);
 
@@ -121,6 +129,19 @@ export const TargetedMachineProvider: React.FC<{
   const direction = gameState.player.direction;
 
   useEffect(() => setOffset(0), [positionKey, direction]);
+
+  // Rummaging starts over from the top of the pile when the player moves
+  // or the pile itself changes (a piece grabbed or dropped re-stacks it).
+  // Unlike the machine target, turning in place keeps the choice — the
+  // pile doesn't care which way the player faces.
+  const grabbableCount =
+    cellMap.at(gameState.player.position)?.grabbablePiles.length ?? 0;
+  useEffect(() => setPileOffset(0), [positionKey, grabbableCount]);
+
+  const cyclePile = useCallback(
+    (step: 1 | -1) => setPileOffset((i) => i + step),
+    [],
+  );
 
   // Climbing in folds the trip card for good — otherwise the stale open
   // flag would spread it again the moment the player steps back out
@@ -178,6 +199,8 @@ export const TargetedMachineProvider: React.FC<{
       },
       isTargeted: (candidate: Machine) =>
         machine != null && machineKey(candidate) === machineKey(machine),
+      pileOffset,
+      cyclePile,
       sheetMachine,
       openSheet,
       closeSheet,
@@ -197,6 +220,8 @@ export const TargetedMachineProvider: React.FC<{
       machines,
       defaultIndex,
       cycleTarget,
+      pileOffset,
+      cyclePile,
       sheetMachine,
       openSheet,
       closeSheet,

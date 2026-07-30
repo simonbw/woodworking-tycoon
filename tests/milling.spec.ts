@@ -516,7 +516,10 @@ test.describe("Milling", () => {
       // takes the mitered rails out of what's carried.
       await setStockDown(page);
       await movePlayerTo(page, [2, 4]);
-      await pressKey(page, "e"); // the rail parked before the first cut
+      // The rail parked before the first cut lies under the two offcuts
+      // dropped since (E takes the top of the pile), so take the whole
+      // armful — the plan-aware bench keeps only the rail.
+      await takeAllHere(page);
       await movePlayerTo(page, [7, 4]);
       await setStockDown(page);
       await movePlayerTo(page, [5, 4]);

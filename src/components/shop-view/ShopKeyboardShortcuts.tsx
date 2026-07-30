@@ -3,8 +3,6 @@ import {
   defaultParametersFor,
   getMachines,
   isSameMachine,
-  OperationParameter,
-  operationParameters,
 } from "../../game/Machine";
 import {
   dropMaterialAction,
@@ -38,9 +36,10 @@ import {
   takeFromTruckBedAction,
 } from "../../game/game-actions/truck-actions";
 import { chebyshevDistance } from "../../game/Vectors";
-import { resolveInteract } from "../../game/interact";
+import { resolveInteract, targetedPile } from "../../game/interact";
 import {
   findFeedableOperation,
+  liveSettingParameter,
   parameterValueSatisfiable,
   slideStock,
   stageableMaterials,
@@ -63,6 +62,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   const {
     machine: targetedMachine,
     cycleTarget,
+    pileOffset,
+    cyclePile,
     sheetMachine,
     toggleSheet,
     closeSheet,
@@ -74,6 +75,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   targeted.current = targetedMachine;
   const truckMenuOpenRef = useRef(truckMenuOpen);
   truckMenuOpenRef.current = truckMenuOpen;
+  const pileOffsetRef = useRef(pileOffset);
+  pileOffsetRef.current = pileOffset;
 
   // While the player is off scavenging they aren't in the shop, and the
   // machine panels are hidden — the keys shouldn't still reach into them.
@@ -198,12 +201,24 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         case "switch-on":
         case "switch-off":
           return applyAction(toggleMachinePowerAction(action.machine));
-        case "pick-up-floor":
+        case "pick-up-floor": {
+          // Grab the piece R rummaged to (the top of the pile by default).
+          // Shift's armful starts there too and wraps around the pile, so
+          // a cycled-to piece is always in the batch.
+          const piles = action.piles;
+          const target = targetedPile(piles, pileOffsetRef.current);
+          const from = piles.indexOf(target);
           return applyAction(
             pickUpMaterialAction(
-              event.shiftKey ? action.piles.slice(0, space) : [action.piles[0]],
+              event.shiftKey
+                ? [...piles.slice(from), ...piles.slice(0, from)].slice(
+                    0,
+                    space,
+                  )
+                : [target],
             ),
           );
+        }
         case "pick-up-broom":
           return applyAction(pickUpBroomAction());
         case "truck-bed": {
@@ -345,22 +360,14 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     const machine = targeted.current;
     if (!machine) return;
 
-    const isKind = (param: OperationParameter) =>
-      kind === "rotate"
-        ? param.presentation === "rotate"
-        : param.presentation !== "rotate";
-
     const directFeed = machine.type.directFeed === true;
-    const candidates = directFeed
-      ? availableOperations(machine, gameState.current.progression)
-      : [machine.selectedOperationOrNull].filter((op) => op != null);
-    const found = candidates
-      .flatMap((op) =>
-        operationParameters(op).map((param) => ({ op, param })),
-      )
-      .find(({ param }) => isKind(param) && param.values.length > 1);
+    const found = liveSettingParameter(
+      machine,
+      gameState.current.progression,
+      kind,
+    );
     if (!found) return;
-    const { op: operation, param } = found;
+    const { operation, parameter: param } = found;
 
     // Unset (or unrecognised) lands at -1, so a forward step starts at the
     // first value.
@@ -415,12 +422,29 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     () => stepSetting("linear", 1),
     present && !stationWorking,
   );
-  // R swings the head; while a machine is carried the carry binding claims
-  // the key instead and this one steps aside.
+  // R is claimed by whichever of its three bindings applies: the carried
+  // machine while one rides the shoulders, the head of a machine with a
+  // rotate setting to swing, and otherwise rummaging the pile underfoot.
+  // The enabled conditions keep the three mutually exclusive.
+  const rotateSettingLive =
+    targetedMachine != null &&
+    liveSettingParameter(targetedMachine, _gameState.progression, "rotate") !=
+      null;
+  const interactNow =
+    present && !carrying ? resolveInteract(_gameState, targetedMachine) : null;
+  const pilesWithinReach =
+    interactNow?.kind === "pick-up-floor" ? interactNow.piles.length : 0;
+
   useShortcut(
     "rotate-setting",
     (event) => stepSetting("rotate", event.shiftKey ? -1 : 1),
-    present && !carrying && !stationWorking,
+    present && !carrying && !stationWorking && rotateSettingLive,
+  );
+
+  useShortcut(
+    "cycle-pile",
+    (event) => cyclePile(event.shiftKey ? -1 : 1),
+    present && !carrying && pilesWithinReach > 1 && !rotateSettingLive,
   );
 
   return null;

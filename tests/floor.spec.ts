@@ -337,7 +337,8 @@ test.describe("Shop floor", () => {
         }));
       });
       await teleportPlayer(page, [10, 6]);
-      const chip = page.getByText(/^pick up$/i).first();
+      // The chip names the piece it would grab
+      const chip = page.getByText(/^pick up · Pine/i).first();
       await expect(chip).toBeVisible();
       // The camera may still be easing back indoors from the tailgate a
       // few steps ago — the overlay rides it, so wait for the chip to
