@@ -21,7 +21,9 @@ export type InteractAction =
   | { kind: "take-inputs"; machine: Machine }
   | { kind: "switch-on"; machine: Machine }
   | { kind: "switch-off"; machine: Machine }
-  /** `piles[0]` is what a plain press grabs; Shift takes them all. */
+  /** Newest-dropped first, so `piles[0]` is the top of the pile — what a
+   * plain press grabs (`targetedPile` applies the rummage offset); Shift
+   * takes them all. */
   | { kind: "pick-up-floor"; piles: ReadonlyArray<MaterialPile> }
   | { kind: "pick-up-broom" }
   /** Standing at the truck's bed with cargo in it: E lifts the last
@@ -88,7 +90,14 @@ export function resolveInteract(
   }
 
   if (handsFree && cell?.grabbablePiles.length) {
-    return { kind: "pick-up-floor", piles: cell.grabbablePiles };
+    // grabbablePiles keeps drop order (oldest first), and the fanned stack
+    // renders in that order too — so the last piece dropped is drawn on
+    // top. Reversed here so a plain press takes the top of the pile, and
+    // dropping a piece then picking it back up is a round trip.
+    return {
+      kind: "pick-up-floor",
+      piles: [...cell.grabbablePiles].reverse(),
+    };
   }
 
   // The broom leans where it was left; picking it up needs empty hands
@@ -126,6 +135,19 @@ export function resolveInteract(
   }
 
   return null;
+}
+
+/**
+ * The piece a press of E takes from a `pick-up-floor` action: the top of
+ * the pile by default, stepped through the rest by the rummage offset (R).
+ * One helper shared by the keyboard, the outline, and the chip, so all
+ * three always name the same piece.
+ */
+export function targetedPile(
+  piles: ReadonlyArray<MaterialPile>,
+  offset: number,
+): MaterialPile {
+  return piles[((offset % piles.length) + piles.length) % piles.length];
 }
 
 /** The short verb the hint chip shows for an interact action. */

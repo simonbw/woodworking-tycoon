@@ -7,6 +7,7 @@ import {
   feedClearanceShortfall,
   feedRunAvailable,
   feedRunNeeded,
+  feedRunRulers,
   stockTravelLength,
 } from "./feed-clearance";
 import { freshMachineState } from "./game-actions/machine-actions";
@@ -163,6 +164,50 @@ describe("feedClearanceShortfall", () => {
     const saw = new Machine(state.machines[0]);
     assert.strictEqual(
       feedClearanceShortfall(saw, [longBoard()], CellMap.fromGameState(state)),
+      null,
+    );
+  });
+});
+
+describe("feedRunRulers", () => {
+  it("gives each side's run with the geometry to draw it", () => {
+    // Saw at [6,8]: footprint rows 7–8 on column 6, operator below —
+    // infeed runs down the shop from row 8, outfeed up from row 7
+    const state = shopWith(machineAt("jobsiteTableSaw", [6, 8]));
+    const saw = new Machine(state.machines[0]);
+    const rulers = feedRunRulers(saw, CellMap.fromGameState(state), 30);
+    assert.ok(rulers);
+    assert.deepStrictEqual(rulers.infeed, {
+      run: 7,
+      edgeCell: [6, 8],
+      direction: [0, 1],
+    });
+    assert.deepStrictEqual(rulers.outfeed, {
+      run: 7,
+      edgeCell: [6, 7],
+      direction: [0, -1],
+    });
+  });
+
+  it("stops at whatever blocks the lane, and honors the cap", () => {
+    const state = shopWith(
+      machineAt("jobsiteTableSaw", [6, 8]),
+      machineAt("garbageCan", [6, 2]),
+    );
+    const saw = new Machine(state.machines[0]);
+    const cellMap = CellMap.fromGameState(state);
+    assert.strictEqual(feedRunRulers(saw, cellMap, 30)?.outfeed.run, 3);
+    assert.strictEqual(feedRunRulers(saw, cellMap, 5)?.infeed.run, 5);
+  });
+
+  it("is null for machines stock doesn't travel through", () => {
+    const state = shopWith(machineAt("miterSaw", [6, 8]));
+    assert.strictEqual(
+      feedRunRulers(
+        new Machine(state.machines[0]),
+        CellMap.fromGameState(state),
+        30,
+      ),
       null,
     );
   });

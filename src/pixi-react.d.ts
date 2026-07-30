@@ -3,6 +3,9 @@ import type {
   Container,
   Graphics,
   Sprite,
+  Text,
+  TextStyle,
+  TextStyleOptions,
   TilingSprite,
   Texture,
 } from "pixi.js";
@@ -43,6 +46,11 @@ declare global {
       pixiSprite: PixiProps<Sprite> & {
         texture?: string | Texture;
         image?: string;
+      };
+      pixiText: PixiProps<Text> & {
+        text?: string;
+        style?: TextStyle | Partial<TextStyleOptions>;
+        resolution?: number;
       };
       pixiTilingSprite: PixiProps<TilingSprite> & {
         texture?: string | Texture;

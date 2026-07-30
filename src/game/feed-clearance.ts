@@ -207,6 +207,51 @@ export function describeFeedShortfall(shortfall: FeedShortfall): string {
   return `${stock} past the outfeed — there's only ${available.outfeed}'. ${fix}`;
 }
 
+/** One side's clear run, with the geometry to draw a ruler along it. */
+export interface FeedRunRuler {
+  /** Clear cells past the footprint on this side, capped at `cap`. */
+  run: number;
+  /** The footprint's last cell on this side, in shop coords. */
+  edgeCell: Vector;
+  /** Unit step from the edge cell outward along the lane. */
+  direction: Vector;
+}
+
+/**
+ * The clear run past each end of the feed lane, measured against the
+ * shop as it stands — the shop view draws these as dimension lines while
+ * the player lines up where to set the machine down. Null for machines
+ * stock doesn't travel through.
+ */
+export function feedRunRulers(
+  machine: Machine,
+  cellMap: CellMap,
+  cap: number,
+): { infeed: FeedRunRuler; outfeed: FeedRunRuler } | null {
+  if (!machine.type.feedsThrough) {
+    return null;
+  }
+  const lane = feedLane(machine);
+  const available = feedRunAvailable(machine, cellMap, cap);
+  const side = (edge: number, sign: 1 | -1, run: number): FeedRunRuler => {
+    const edgeCell = laneCell(machine, lane, edge, sign, 0);
+    const next = laneCell(machine, lane, edge, sign, 1);
+    return {
+      run,
+      edgeCell,
+      direction: [next[0] - edgeCell[0], next[1] - edgeCell[1]],
+    };
+  };
+  return {
+    infeed: side(lane.infeedEdge, lane.infeedSign, available.infeed),
+    outfeed: side(
+      lane.outfeedEdge,
+      (lane.infeedSign * -1) as 1 | -1,
+      available.outfeed,
+    ),
+  };
+}
+
 /**
  * The lane cells a run of this stock would need, split into the ones
  * that are clear and the ones in the way — the shop view draws these

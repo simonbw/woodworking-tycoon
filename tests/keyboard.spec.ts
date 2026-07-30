@@ -441,6 +441,56 @@ test.describe("Keyboard", () => {
       await expect(strip).toHaveCount(0);
     });
 
+    await test.step("R rummages the pile and E takes the outlined piece", async () => {
+      // Two different boards on one cell. The chip names the piece a plain
+      // press grabs — the one dropped last, on top of the pile — and R
+      // steps the target through the rest.
+      await page.evaluate(() => {
+        const board = (id: string, species: string) => ({
+          id,
+          type: "board",
+          species,
+          width: 4,
+          length: 2,
+          thickness: 1,
+          surface: "rough",
+        });
+        (window as any).__UPDATE_GAME_STATE__((s: any) => ({
+          ...s,
+          player: { ...s.player, position: [6, 10], inventory: [] },
+          materialPiles: [
+            { material: board("pile-oak", "oak"), position: [6, 10] },
+            { material: board("pile-pine", "pine"), position: [6, 10] },
+          ],
+        }));
+      });
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+
+      // Pine went down last, so it's on top and the chip offers it first
+      const chip = page.getByText(/pick up · /);
+      await expect(chip).toContainText(/Pine/);
+      await expect(chip).toContainText("1 of 2");
+
+      // R re-aims the chip (and the outline it mirrors) at the next piece
+      await page.keyboard.press("r");
+      await expect(chip).toContainText(/Oak/);
+      await expect(chip).toContainText("2 of 2");
+
+      // E takes exactly the piece the chip named
+      await page.keyboard.press("e");
+      const carried = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().player.inventory,
+      );
+      expect(carried).toHaveLength(1);
+      expect(carried[0].species).toBe("oak");
+      // The pile re-stacks under the chip: the remaining piece is on top
+      await expect(chip).toContainText(/Pine/);
+      // Clear the hands so later steps start from the fixture they load
+      await page.keyboard.press("f");
+    });
+
     // ---- the operate key -------------------------------------------------
     // A shop with strips to sand and glue, so the hold-to-work half has
     // something to work on.

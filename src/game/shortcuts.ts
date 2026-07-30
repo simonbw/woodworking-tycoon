@@ -133,6 +133,22 @@ const defs = [
     shiftHint: "put down everything",
   },
   {
+    // Rummage: with more than one piece within reach, R steps the
+    // targeting outline through the pile to pick out a specific one.
+    // Shares R with the rotate pair — a targeted machine with a head to
+    // swing keeps the key (dialing the saw outranks the offcuts at its
+    // feet), so this binding only enables when no live rotate setting
+    // claims it.
+    id: "cycle-pile",
+    codes: ["KeyR"],
+    keys: [["R"]],
+    description: "Target the next piece in the pile underfoot",
+    scope: "home",
+    group: "Materials",
+    sharesKey: true,
+    shiftHint: "go backwards",
+  },
+  {
     // Contextual like sweep: grab the parked shop vac, or set it down.
     id: "vac-toggle",
     codes: ["KeyV"],

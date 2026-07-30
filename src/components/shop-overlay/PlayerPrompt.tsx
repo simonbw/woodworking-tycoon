@@ -11,7 +11,10 @@ import { holdingBroom } from "../../game/HeldTool";
 import { atTruckBed } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
-import { resolveInteract } from "../../game/interact";
+import { MaterialPile } from "../../game/GameState";
+import { getMaterialFullName } from "../../game/material-helpers";
+import { liveSettingParameter } from "../../game/machine-helpers";
+import { resolveInteract, targetedPile } from "../../game/interact";
 import { chebyshevDistance } from "../../game/Vectors";
 import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
@@ -28,7 +31,7 @@ import { CellAnchored } from "./ShopOverlayLayer";
 export const PlayerPrompt: React.FC = () => {
   const gameState = useGameState();
   const cellMap = useCellMap();
-  const { machine: targetedMachine } = useTargetedMachine();
+  const { machine: targetedMachine, pileOffset } = useTargetedMachine();
 
   if (gameState.player.away) return null;
 
@@ -52,6 +55,14 @@ export const PlayerPrompt: React.FC = () => {
   // pile itself (below); machine and door interactions render at the
   // machine and the door.
   const interact = carried ? null : resolveInteract(gameState, targetedMachine);
+
+  // Whether R belongs to the targeted machine's rotate setting — the same
+  // test the keyboard bindings split the key on, so the rummage hint only
+  // shows when R would actually rummage.
+  const rotateSettingLive =
+    targetedMachine != null &&
+    liveSettingParameter(targetedMachine, gameState.progression, "rotate") !=
+      null;
 
   const rows: React.ReactNode[] = [];
 
@@ -194,18 +205,12 @@ export const PlayerPrompt: React.FC = () => {
 
   return (
     <>
-      {/* The pickup chip sits on the pile it would grab — the same piece
-          wearing the targeting outline on the canvas, wherever its anchor
-          cell is (long stock overhangs; the piece underfoot may live on a
-          neighbor cell). */}
       {interact?.kind === "pick-up-floor" && (
-        <CellAnchored cell={interact.piles[0].position} placement="above">
-          <HintList>
-            <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-              pick up
-            </HintRow>
-          </HintList>
-        </CellAnchored>
+        <PickupChip
+          piles={interact.piles}
+          pileOffset={pileOffset}
+          rotateSettingLive={rotateSettingLive}
+        />
       )}
       {rows.length > 0 && (
         <CellAnchored cell={gameState.player.position}>
@@ -213,5 +218,38 @@ export const PlayerPrompt: React.FC = () => {
         </CellAnchored>
       )}
     </>
+  );
+};
+
+/**
+ * The pickup chip sits on the pile it would grab — the same piece wearing
+ * the targeting outline on the canvas, wherever its anchor cell is (long
+ * stock overhangs; the piece underfoot may live on a neighbor cell). It
+ * names the piece, and with more of them within reach offers R to rummage
+ * — unless a machine's rotate setting claims the key (the binding steps
+ * aside the same way).
+ */
+const PickupChip: React.FC<{
+  piles: ReadonlyArray<MaterialPile>;
+  pileOffset: number;
+  rotateSettingLive: boolean;
+}> = ({ piles, pileOffset, rotateSettingLive }) => {
+  const pile = targetedPile(piles, pileOffset);
+  const place =
+    piles.length > 1 ? ` · ${piles.indexOf(pile) + 1} of ${piles.length}` : "";
+  return (
+    <CellAnchored cell={pile.position} placement="above">
+      <HintList>
+        <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+          pick up · {getMaterialFullName(pile.material)}
+          {place}
+        </HintRow>
+        {piles.length > 1 && !rotateSettingLive && (
+          <HintRow keys={<ShortcutKeys shortcut="cycle-pile" />}>
+            next piece
+          </HintRow>
+        )}
+      </HintList>
+    </CellAnchored>
   );
 };
