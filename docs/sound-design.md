@@ -274,6 +274,18 @@ rhythm anyway, cells being a foot across against a nearly three-foot stride.
 `playerMotion.moving` is already false when paused, away on a trip, or busy
 sweeping, so all of those go quiet without the layer knowing about them.
 
+### The truck's engine (`src/utils/truckEngine.ts`)
+
+The trip performance (see `TripTransitionLayer`) is scored the same way the
+machines are voiced: **no samples**, one `firingHz` scalar the spectrum
+hangs off. The block is a detuned sawtooth pair through a dark lowpass, the
+exhaust a sub sine an octave down plus noise AM-chopped at firing rate, and
+the starter a chugged whine. `playTruckDeparture()` cranks, catches, revs,
+and fades out; `playTruckArrival()` rolls in, settles to idle, shuts off,
+and caps it with the parking brake and the door — each a one-shot scheduled
+entirely with Web Audio automation. Routed **dry through the SFX bus**: the
+driveway is outdoors, and the room bus wears the garage's impulse response.
+
 ---
 
 ## Part 3: Editing & export spec
