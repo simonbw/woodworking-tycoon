@@ -536,6 +536,9 @@ test.describe("Milling", () => {
         ];
         return all.some((m: any) => m.type === "pictureFrame");
       });
+      // The ferrying above walked off the bench, which puts its sheet away
+      // for good — ask for it again to reach the transfer buttons.
+      await openStationSheet(page);
       await machineCard(page, "Makeshift Workbench")
         .getByRole("button", { name: /Take All/ })
         .click();

@@ -148,6 +148,16 @@ export const TargetedMachineProvider: React.FC<{
     ? machines.find((candidate) => machineKey(candidate) === sheetKey)
     : undefined;
 
+  // Folding it up is for good. Once the station is out of reach the key
+  // goes with it, so stepping back up to the bench leaves the paperwork
+  // where the player left it — closed — until they ask for it again.
+  const sheetOutOfReach =
+    sheetKey != null &&
+    (sheetMachine == null || away || gameState.player.carriedMachine != null);
+  useEffect(() => {
+    if (sheetOutOfReach) setSheetKey(undefined);
+  }, [sheetOutOfReach]);
+
   const openSheet = useCallback(
     (target: Machine) => setSheetKey(machineKey(target)),
     [],
