@@ -251,19 +251,27 @@ test.describe("Screens", () => {
           progression: { ...state.progression, skillPoints: 2 },
           player: {
             ...state.player,
-            inventory: ["walnut", "maple", "walnut", "maple", "walnut"].map(
-              (species, i) => ({
-                id: `mixed-strip-${i}`,
-                type: "board",
-                species,
-                length: 2,
-                width: 2,
-                thickness: 4,
-                surface: "smooth",
-                jointedFaces: 2,
-                jointedEdges: 2,
-              }),
-            ),
+            // Fresh strips, plus the fixture's sander kept in hand — the
+            // tool rack mounts from the arms, so dropping it would leave
+            // the Attach step nothing to attach
+            inventory: [
+              ...["walnut", "maple", "walnut", "maple", "walnut"].map(
+                (species, i) => ({
+                  id: `mixed-strip-${i}`,
+                  type: "board",
+                  species,
+                  length: 2,
+                  width: 2,
+                  thickness: 4,
+                  surface: "smooth",
+                  jointedFaces: 2,
+                  jointedEdges: 2,
+                }),
+              ),
+              ...state.player.inventory.filter(
+                (item: any) => item.type === "tool",
+              ),
+            ],
           },
         }));
       });
