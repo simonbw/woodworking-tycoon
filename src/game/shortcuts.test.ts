@@ -73,11 +73,12 @@ describe("shortcutsForEvent", () => {
   });
 
   it("returns every binding for a shared key", () => {
-    // R rotates whatever is in front of you: the machine over your
-    // shoulders while carrying one, the saw head otherwise. The provider
-    // picks between them by which handler is enabled.
+    // R acts on whatever is in front of you: the machine over your
+    // shoulders while carrying one, the saw head at a machine with one to
+    // swing, the pile underfoot otherwise. The provider picks between
+    // them by which handler is enabled.
     const ids = shortcutsForEvent(keyEvent("KeyR")).map((d) => d.id);
-    assert.deepEqual(ids, ["carry-rotate", "rotate-setting"]);
+    assert.deepEqual(ids, ["cycle-pile", "carry-rotate", "rotate-setting"]);
   });
 
   it("only matches shift-gated shortcuts when shift is held", () => {

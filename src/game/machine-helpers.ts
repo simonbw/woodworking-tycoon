@@ -15,6 +15,8 @@ import {
   InputMaterialWithQuantity,
   Machine,
   Operation,
+  OperationParameter,
+  operationParameters,
   ParameterValues,
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
@@ -507,4 +509,35 @@ export function machineCanOperate(
     hasConsumables(supply.consumables, operation.requiredConsumables ?? []) &&
     clampsFor(operation) <= supply.freeClamps
   );
+}
+
+/**
+ * The machine's live setting of the given kind — the one Z/X ("linear")
+ * or R ("rotate") steps. On direct-feed machines the setting can belong
+ * to any available operation (what's in hand decides which one runs); on
+ * benches only the selected operation's settings are live. `undefined`
+ * when the key would have nothing to step, which is also how R decides
+ * whether it swings a head or rummages the pile underfoot.
+ */
+export function liveSettingParameter(
+  machine: Machine,
+  progression: ProgressionState,
+  kind: "linear" | "rotate",
+): { operation: Operation; parameter: OperationParameter } | undefined {
+  const isKind = (parameter: OperationParameter) =>
+    kind === "rotate"
+      ? parameter.presentation === "rotate"
+      : parameter.presentation !== "rotate";
+
+  const candidates = machine.type.directFeed
+    ? availableOperations(machine, progression)
+    : [machine.selectedOperationOrNull].filter((op) => op != null);
+  return candidates
+    .flatMap((operation) =>
+      operationParameters(operation).map((parameter) => ({
+        operation,
+        parameter,
+      })),
+    )
+    .find(({ parameter }) => isKind(parameter) && parameter.values.length > 1);
 }
