@@ -40,13 +40,12 @@ export const PlayerPrompt: React.FC = () => {
     gameState.shopVac?.position != null &&
     chebyshevDistance(gameState.shopVac.position, gameState.player.position) <=
       1;
-  const crateUnderfoot =
-    gameState.progression.shopLayoutUnlocked && !carried
-      ? gameState.machineCrates.find(
-          (crate) =>
-            chebyshevDistance(crate.position, gameState.player.position) <= 1,
-        )
-      : undefined;
+  const crateUnderfoot = !carried
+    ? gameState.machineCrates.find(
+        (crate) =>
+          chebyshevDistance(crate.position, gameState.player.position) <= 1,
+      )
+    : undefined;
 
   // The E chip belongs to whatever the interact key resolved to — the
   // resting broom renders here at the player; floor pickups render at the
@@ -101,12 +100,7 @@ export const PlayerPrompt: React.FC = () => {
         </HintRow>,
       );
     }
-    if (
-      atBed &&
-      gameState.progression.shopLayoutUnlocked &&
-      gameState.truck.crates.length > 0 &&
-      !holding
-    ) {
+    if (atBed && gameState.truck.crates.length > 0 && !holding) {
       rows.push(
         <HintRow
           key="unpack-bed-crate"

@@ -83,6 +83,7 @@ describe("toggleCarryShopVacAction", () => {
   it("cannot grab the hose with the broom in hand", () => {
     const state = draggingState({
       shopVac: { position: [2, 4], canister: {} },
+      broomOwned: true,
       broomPosition: null,
     });
     assert.strictEqual(toggleCarryShopVacAction()(state), state);

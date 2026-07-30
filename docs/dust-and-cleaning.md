@@ -167,12 +167,13 @@ it's being carried — the convention the vac established.
 ## Disclosure & tutorial
 
 No unlock latch for the system itself — dust simply starts appearing when
-power tools run. Once _cumulative dust generated_ crosses a threshold, a
-one-time tutorial message fires (one-way latch in `ProgressionState`, per
-`UNLOCK_CONDITIONS` pattern): _"You're making a lot of sawdust. Left on
-the floor it'll slow your work down. You can sweep it up with that broom
-in the corner."_ The broom object appears with the message; the shop vac
-is hidden from the store until the message has fired.
+power tools run, and the broom, dust bag, and shop vac sit on the store's
+shelves from the start (the broom is a cheap one-time purchase that
+arrives at the material dropoff spot, `GameState.broomOwned`). Once floor
+dust crosses a threshold, a one-time tutorial note fires (one-way latch
+in `ProgressionState`, per `UNLOCK_CONDITIONS` pattern) explaining the
+penalty and the sweep loop — and pointing at the store's broom if the
+shop doesn't own one yet.
 
 ## v1 scope and roadmap
 
@@ -187,9 +188,10 @@ broom+dustpan loop (pick up with E, sweep by holding Space, paced pan
 fill, pour out at the can, under-machine pull at a reduced rate, the
 film), the shop vac (drag on V, held-Space suction, trickle, deliberate
 emptying, the fixed-length arc hose), and the tutorial latch
-(`sweepingUnlocked` fires at 60 units on the floor; broom sprite +
-one-time note appear, the sweep hint joins the player prompt with the
-broom in hand on dusty ground). Emission is scaled by 1/multiplier so a
+(`sweepingUnlocked` fires at 60 units on the floor and puts up the
+one-time note; the broom itself is bought from the store, and the sweep
+hint joins the player prompt with the broom in hand on dusty ground).
+Emission is scaled by 1/multiplier so a
 slowed operation sheds the same total dust rather than compounding.
 
 The floor bake redraws every _changed_ cell (`DustLayer`), so the

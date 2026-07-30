@@ -107,7 +107,6 @@ export const endGrainShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     lumberyardUnlocked: true,
-    shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 5,
     // Lets specs use the speed keys to fast-forward through glue cures
@@ -126,6 +125,7 @@ export const endGrainShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomOwned: true,
   broomPosition: [0, 0],
   dustpan: {},
 };

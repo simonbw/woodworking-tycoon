@@ -91,7 +91,7 @@ export function resolveInteract(
   // (and a free shoulder). Floor pickups outrank it so a pile lying at
   // the broom's feet — the dustpan moment — still gets E first.
   if (
-    gameState.progression.sweepingUnlocked &&
+    gameState.broomOwned &&
     handsFree &&
     gameState.player.inventory.length === 0 &&
     gameState.broomPosition !== null &&
@@ -108,20 +108,13 @@ export function resolveInteract(
     return { kind: "truck-bed", count: gameState.truck.bed.length };
   }
 
-  const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
-    gameState.progression;
+  // The cab always answers: scavenging is on offer from day one, and
+  // finished work in the bed adds its deliveries to the card.
   if (atTruckCab(gameState.shopInfo, gameState.player.position)) {
-    // Work loaded in the bed opens the cab on its own: the very first
-    // commission is delivered before there is anywhere to go.
-    const handoffCount = readyHandoffs(gameState).length;
-    if (
-      handoffCount > 0 ||
-      storeUnlocked ||
-      lumberyardUnlocked ||
-      marketplaceUnlocked
-    ) {
-      return { kind: "truck-cab", handoffCount };
-    }
+    return {
+      kind: "truck-cab",
+      handoffCount: readyHandoffs(gameState).length,
+    };
   }
 
   if (targetedMachine?.type.powerSwitch === true && targetedMachine.isPowered) {

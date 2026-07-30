@@ -29,7 +29,7 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "first-shelf",
     name: "Your First Shelf",
     description:
-      "A neighbor wants a rustic shelf. Break down that pallet at the workspace and build one.",
+      "A neighbor wants a rustic shelf. Take the truck out to scavenge a pallet, break it down at the workspace, and build one.",
     requiredMaterials: [
       { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
     ],

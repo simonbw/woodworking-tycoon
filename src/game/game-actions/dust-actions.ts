@@ -8,7 +8,7 @@ import {
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
-import { holdingBroom } from "../HeldTool";
+import { BROOM_COST, holdingBroom } from "../HeldTool";
 import { isOutdoors } from "../lot";
 import { getMachines } from "../Machine";
 import { personCanWork } from "../Person";
@@ -129,6 +129,26 @@ export function dustpanFillFraction(gameState: GameState): number {
   return Math.min(1, dustTotal(gameState.dustpan) / DUSTPAN_CAPACITY);
 }
 
+/** Bought at the store; it arrives leaning at the material dropoff spot. */
+export function buyBroomAction(): GameAction {
+  return (gameState) => {
+    if (gameState.broomOwned) {
+      console.warn("Already own a broom");
+      return gameState;
+    }
+    if (gameState.money < BROOM_COST) {
+      console.warn("Tried to buy the broom without enough money");
+      return gameState;
+    }
+    return {
+      ...gameState,
+      money: gameState.money - BROOM_COST,
+      broomOwned: true,
+      broomPosition: gameState.shopInfo.materialDropoffPosition,
+    };
+  };
+}
+
 /**
  * Take the broom off the floor and into the hands. Committing: with the
  * broom in hand the player can't pick up stock, run a machine, or grab
@@ -136,7 +156,7 @@ export function dustpanFillFraction(gameState: GameState): number {
  */
 export function pickUpBroomAction(): GameAction {
   return (gameState) => {
-    if (!gameState.progression.sweepingUnlocked) {
+    if (!gameState.broomOwned) {
       return gameState;
     }
     if (

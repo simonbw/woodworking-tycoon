@@ -4,6 +4,7 @@ import { dustTotal } from "../Dust";
 import { GameState } from "../GameState";
 import { heldTool, holdingBroom } from "../HeldTool";
 import { initialGameState } from "../initialGameState";
+import { makePallet } from "../material-helpers";
 import {
   DUSTPAN_CAPACITY,
   DUSTPAN_EMPTY_RATE,
@@ -21,7 +22,7 @@ import {
 function sweepingState(overrides: Partial<GameState> = {}): GameState {
   return {
     ...initialGameState,
-    progression: { ...initialGameState.progression, sweepingUnlocked: true },
+    broomOwned: true,
     broomPosition: null,
     player: {
       ...initialGameState.player,
@@ -56,17 +57,17 @@ describe("pickUpBroomAction", () => {
       broomPosition: [6, 9],
       player: {
         ...sweepingState().player,
-        inventory: initialGameState.materialPiles.map((pile) => pile.material),
+        inventory: [makePallet()],
       },
     };
     assert.strictEqual(pickUpBroomAction()(state), state);
   });
 
-  it("stays on the floor before sweeping is unlocked", () => {
+  it("can't pick up a broom the shop doesn't own yet", () => {
     const state: GameState = {
       ...sweepingState(),
+      broomOwned: false,
       broomPosition: [6, 9],
-      progression: initialGameState.progression,
     };
     assert.strictEqual(pickUpBroomAction()(state), state);
   });

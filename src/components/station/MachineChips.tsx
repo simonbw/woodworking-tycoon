@@ -87,7 +87,6 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       : null;
 
   const liftable =
-    gameState.progression.shopLayoutUnlocked &&
     gameState.player.carriedMachine == null &&
     canPickUpMachine(gameState, machine.state);
 

@@ -18,9 +18,8 @@ when it applies) is a three-way toggle:
 the key with `operate-machine` — exactly one is enabled at a time, see
 `sharesKey` in `shortcuts.ts`).
 
-The verb is gated by `progression.shopLayoutUnlocked` (the flag keeps its
-old name for save compatibility; it unlocks on owning a miter saw) and is
-hidden entirely until then, per the progressive-disclosure rule.
+The verb is available from the start of a new game — carrying is how
+every machine gets into place, including the first one bought.
 
 ## Pick up
 

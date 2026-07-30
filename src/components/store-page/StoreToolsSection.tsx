@@ -1,11 +1,13 @@
 import React from "react";
+import { buyBroomAction } from "../../game/game-actions/dust-actions";
 import { buyShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import { buyToolAction } from "../../game/game-actions/tool-actions";
 import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
+import { BROOM_COST } from "../../game/HeldTool";
 import { SHOP_VAC_COST } from "../../game/ShopVac";
 import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
 import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
-import { ShopVacIcon, ToolIcon, UpgradeIcon } from "../ItemIcon";
+import { BroomIcon, ShopVacIcon, ToolIcon, UpgradeIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
@@ -17,13 +19,8 @@ export const StoreToolsSection: React.FC<{ className?: string }> = ({
   return (
     <AisleSection title="Tools" className={className}>
       {Object.values(TOOL_TYPES)
-        // Shop-made jigs aren't for sale — you build those. The dust
-        // bag stays off the wall until sawdust is a revealed problem.
+        // Shop-made jigs aren't for sale — you build those.
         .filter((tool) => !tool.craftedOnly)
-        .filter(
-          (tool) =>
-            tool.id !== "dustBag" || gameState.progression.sweepingUnlocked,
-        )
         .map((tool) => (
           <ToolProductTile key={tool.id} tool={tool} />
         ))}
@@ -34,8 +31,34 @@ export const StoreToolsSection: React.FC<{ className?: string }> = ({
         .map((upgrade) => (
           <UpgradeProductTile key={upgrade.id} upgrade={upgrade} />
         ))}
+      <BroomProductTile />
       <ShopVacProductTile />
     </AisleSection>
+  );
+};
+
+/**
+ * The shop broom isn't a tool-slot tool — it leans on the floor wherever
+ * it was last set down. One to a shop, so the tile leaves the wall once
+ * it's bought.
+ */
+const BroomProductTile: React.FC = () => {
+  const applyAction = useApplyGameAction();
+  const gameState = useGameState();
+
+  if (gameState.broomOwned) {
+    return null;
+  }
+
+  return (
+    <ProductTile
+      name="Shop Broom"
+      icon={<BroomIcon />}
+      price={BROOM_COST}
+      info="A push broom with a dustpan. Sweeps sawdust off the floor; empty the pan at the garbage can."
+      canAfford={gameState.money >= BROOM_COST}
+      onBuy={() => applyAction(buyBroomAction())}
+    />
   );
 };
 
@@ -68,14 +91,14 @@ const UpgradeProductTile: React.FC<{ upgrade: UpgradeType }> = ({
 
 /**
  * The shop vac isn't a tool-slot tool — it's a canister you drag around
- * the shop floor. Hidden until the sawdust tutorial has fired (nothing
- * cleaning-related exists before then), and it's a one-time purchase.
+ * the shop floor. A one-time purchase, so the tile leaves the wall once
+ * it's bought.
  */
 const ShopVacProductTile: React.FC = () => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  if (!gameState.progression.sweepingUnlocked || gameState.shopVac !== null) {
+  if (gameState.shopVac !== null) {
     return null;
   }
 

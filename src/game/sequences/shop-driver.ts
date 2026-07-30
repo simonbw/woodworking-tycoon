@@ -64,6 +64,10 @@ import {
   returnFromStoreAction,
   storeUnlocked,
 } from "../game-actions/door-actions";
+import {
+  SCAVENGE_DURATION_TICKS,
+  startScavengingAction,
+} from "../game-actions/scavenge-actions";
 import { clearPendingPayoutsAction } from "../game-actions/payout-actions";
 import { spendSkillPointAction } from "../game-actions/skill-actions";
 import { getActiveCommission } from "../commissionSequence";
@@ -448,6 +452,27 @@ export class ShopDriver {
   // starts from a fixture that already owns its machines; a playthrough has
   // to buy them, which means these.
   // ---------------------------------------------------------------------
+
+  /**
+   * Take the truck out scavenging and sit through the trip, coming home
+   * with the haul lifted out of the bed into the hands. The loot is
+   * rolled up front from the rng; the default always finds two pallets
+   * with all eleven deck boards, so sequences can count on the wood.
+   */
+  scavenge(rng: () => number = () => 0.9): this {
+    this.standAtCab();
+    this.apply(startScavengingAction(rng));
+    if (!this.state.player.away) {
+      throw new Error(
+        "The scavenging trip would not start — hands full, or mid-trip already",
+      );
+    }
+    this.tick(SCAVENGE_DURATION_TICKS + 1);
+    if (this.state.player.away) {
+      throw new Error("Still out scavenging after the trip should have ended");
+    }
+    return this.unloadBed();
+  }
 
   /** Take a trip out to a store, if the truck offers it yet. */
   goShopping(store: StoreId): this {

@@ -61,8 +61,8 @@ After this change the game has three income tracks with distinct roles:
 - **Fulfillment from player inventory** via `materialMeetsInput`, exactly as
   `completeCommissionAction` does today. Jobs deliver, and listings list,
   what the player is carrying.
-- **Scavenging errands**, currently gated on the `freeSelling` flag — they
-  re-gate on the marketplace unlock (same unlock moment, see below).
+- **Scavenging errands** — ungated: they're how the first pallet gets into
+  the shop, so they're on offer at the truck from a brand-new save.
 - **The injectable-RNG pattern** from `scavenge-actions.ts`
   (`rng: () => number = Math.random` as a defaulted parameter) for all sale
   rolls and job generation, so everything stays unit-testable.
@@ -97,7 +97,7 @@ styled as the player's phone or laptop. It has two panes:
 
 Hidden entirely until `marketplaceUnlocked` (completing *Cut to Order*),
 preserving the current tutorial cadence: first commission unlocks the store,
-miter saw unlocks layout, second commission unlocks earning money freely.
+second commission unlocks earning money freely.
 
 ## Selling: listings
 

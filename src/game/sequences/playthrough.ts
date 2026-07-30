@@ -25,6 +25,7 @@ import { initialGameState } from "../initialGameState";
 import { MACHINE_TYPES } from "../Machine";
 import { Board, MaterialInstance } from "../Materials";
 import { isMiteredFrameRail } from "../board-helpers";
+import { makePallet } from "../material-helpers";
 import { isPanel } from "../panel-helpers";
 import { clampsFor } from "../Clamp";
 import { checkProgressionMilestonesAction } from "../game-actions/progression-actions";
@@ -270,30 +271,22 @@ function buildRusticShelf(shop: ShopDriver): ShopDriver {
     .collect(WORKBENCH);
 }
 
-/** Fetch a fresh pallet from the scrap outside. Free, and the early economy. */
+/**
+ * Fetch a fresh pallet from the scrap outside. Free, and the early economy.
+ * Commission 1 proves the real scavenging trip works; the later rungs skip
+ * the 150-tick drive and just find one on the dropoff spot.
+ */
 function fetchAPallet(shop: ShopDriver): ShopDriver {
   return shop.arrange((state: GameState) => ({
     ...state,
     materialPiles: [
       ...state.materialPiles,
       {
-        material: makeAPallet(state),
+        material: makePallet(),
         position: state.shopInfo.materialDropoffPosition,
       },
     ],
   }));
-}
-
-function makeAPallet(state: GameState): MaterialInstance {
-  // Reuse the same maker the initial save uses, so a change to what a pallet
-  // is can't drift away from what a playthrough salvages.
-  const pile = initialGameState.materialPiles.find((p) =>
-    isPallet(p.material),
-  );
-  if (!pile) {
-    throw new Error("The initial save no longer ships a pallet to salvage");
-  }
-  return { ...pile.material, id: `pallet-${state.tick}-${Math.round(1)}` };
 }
 
 /** What the store charges for a machine. */
@@ -313,10 +306,16 @@ export function newGame(): ShopDriver {
 }
 
 /**
- * 1. Your First Shelf. No money, no store, one pallet on the floor and a
- *    hammer on the bench — the nails to build with come out of the pallet.
+ * 1. Your First Shelf. No money, no store, an empty floor and a hammer on
+ *    the bench — the first pallet is scavenged with the truck, and the
+ *    nails to build with come out of it.
  */
 function commission1(shop: ShopDriver): ShopDriver {
+  shop.scavenge();
+  // Two pallets came home in the bed; leave the spare on the dropoff
+  // spot and work the other.
+  shop.standAt(shop.shop.shopInfo.materialDropoffPosition);
+  shop.putEverythingDown();
   shop.takeFromFloor(isPallet, 1);
   dismantleAPallet(shop);
   buildRusticShelf(shop);
@@ -325,7 +324,7 @@ function commission1(shop: ShopDriver): ShopDriver {
 
 /**
  * 2. Cut to Order — four deck boards cut to 2'. The first purchase: a miter
- *    saw, which is also what unlocks carrying machines around the floor.
+ *    saw.
  */
 function commission2(shop: ShopDriver): ShopDriver {
   // A crate takes both hands: the offcuts from the first shelf go on the floor.

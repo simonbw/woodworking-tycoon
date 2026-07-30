@@ -104,7 +104,6 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "carry-machine",
     () => {
       const gs = gameState.current;
-      if (!gs.progression.shopLayoutUnlocked) return;
       if (gs.player.carriedMachine) {
         return applyAction(putDownCarriedMachineAction());
       }

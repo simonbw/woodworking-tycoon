@@ -105,7 +105,6 @@ export const millingShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     lumberyardUnlocked: true,
-    shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 7,
     sweepingUnlocked: false,
@@ -123,6 +122,7 @@ export const millingShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomOwned: true,
   broomPosition: [0, 0],
   dustpan: {},
 };

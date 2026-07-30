@@ -79,7 +79,6 @@ export const handToolsShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     lumberyardUnlocked: false,
-    shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 2,
     sweepingUnlocked: false,
@@ -97,6 +96,7 @@ export const handToolsShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomOwned: true,
   broomPosition: [0, 0],
   dustpan: {},
 };

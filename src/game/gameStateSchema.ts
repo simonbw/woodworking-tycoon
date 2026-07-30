@@ -91,7 +91,6 @@ const progressionSchema = z.object({
   tutorialStage: z.number(),
   storeUnlocked: z.boolean(),
   lumberyardUnlocked: z.boolean(),
-  shopLayoutUnlocked: z.boolean(),
   marketplaceUnlocked: z.boolean(),
   commissionsCompleted: z.number(),
   sweepingUnlocked: z.boolean(),
@@ -173,6 +172,7 @@ export const gameStateSchema = z.object({
       canister: speciesAmountsSchema,
     })
     .nullable(),
+  broomOwned: z.boolean(),
   broomPosition: vectorSchema.nullable(),
   dustpan: speciesAmountsSchema,
 });

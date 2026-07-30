@@ -6,8 +6,8 @@ import { MachineId } from "./Machine";
 import { ToolId } from "./Tool";
 
 /**
- * Floor dust (total units) that triggers the sweeping reveal — low enough
- * that the first real milling session brings the broom out.
+ * Floor dust (total units) that puts up the one-time sweeping note — low
+ * enough that the first real milling session prompts it.
  */
 export const DUST_TUTORIAL_THRESHOLD = 60;
 
@@ -42,7 +42,6 @@ export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
 export const UNLOCK_CONDITIONS: Record<
   | "storeUnlocked"
   | "lumberyardUnlocked"
-  | "shopLayoutUnlocked"
   | "marketplaceUnlocked"
   | "sweepingUnlocked",
   (gameState: GameState) => boolean
@@ -52,12 +51,9 @@ export const UNLOCK_CONDITIONS: Record<
   // Word of the yard gets around once your work has a reputation
   lumberyardUnlocked: (gameState) =>
     gameState.reputation >= LUMBERYARD_MIN_REPUTATION,
-  // The flag now gates the carry verb (pick up and move machines on the
-  // home screen); the name is kept for save compatibility.
-  shopLayoutUnlocked: (gameState) => ownsMachine(gameState, "miterSaw"),
   marketplaceUnlocked: (gameState) =>
     hasCompletedCommission(gameState.progression, "cut-to-order"),
-  // The broom comes out once there's visibly something to sweep
+  // The sweeping note goes up once there's visibly something to sweep
   sweepingUnlocked: (gameState) =>
     Object.values(gameState.dust).reduce(
       (sum, amounts) => sum + dustTotal(amounts),
@@ -67,10 +63,9 @@ export const UNLOCK_CONDITIONS: Record<
 
 /**
  * The tutorial stage is derived from which features have been unlocked:
- * 0 = nothing yet, 1 = store unlocked, 2 = shop layout unlocked.
+ * 0 = nothing yet, 1 = store unlocked.
  */
 export function tutorialStageFor(gameState: GameState): number {
-  if (gameState.progression.shopLayoutUnlocked) return 2;
   if (gameState.progression.storeUnlocked) return 1;
   return 0;
 }

@@ -1,6 +1,5 @@
 import type { GameState } from "./GameState";
 import { carryingShopVac } from "./ShopVac";
-import { Vector } from "./Vectors";
 
 /**
  * Handheld tools the player works by holding the operate key — the same
@@ -16,11 +15,11 @@ import { Vector } from "./Vectors";
  */
 export type HeldToolId = "broom" | "vacHose";
 
-/** Where the broom starts: leaning in the shop's top-left corner. */
-export const BROOM_HOME: Vector = [0, 0];
+/** What the store charges for the shop broom (dustpan included). */
+export const BROOM_COST = 15;
 
 export function holdingBroom(gameState: GameState): boolean {
-  return gameState.broomPosition === null;
+  return gameState.broomOwned && gameState.broomPosition === null;
 }
 
 export function heldTool(gameState: GameState): HeldToolId | null {

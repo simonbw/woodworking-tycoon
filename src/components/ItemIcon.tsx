@@ -6,6 +6,7 @@ import { UpgradeId } from "../game/Upgrade";
 import { classNames } from "../utils/classNames";
 import {
   BAR_CLAMP_ICON,
+  BROOM_ICON,
   consumableIconSrc,
   MACHINE_ICON_SRC,
   SHOP_VAC_ICON,
@@ -82,6 +83,10 @@ export const ClampIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const ShopVacIcon: React.FC<{ className?: string }> = ({
   className,
 }) => <Icon src={SHOP_VAC_ICON} className={className} />;
+
+export const BroomIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon src={BROOM_ICON} className={className} />
+);
 
 export const MachineIcon: React.FC<{
   machineId: MachineId;

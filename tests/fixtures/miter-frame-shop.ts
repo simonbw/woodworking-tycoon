@@ -105,7 +105,6 @@ export const miterFrameShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     lumberyardUnlocked: false,
-    shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 7,
     sweepingUnlocked: false,
@@ -123,6 +122,7 @@ export const miterFrameShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomOwned: true,
   broomPosition: [0, 0],
   dustpan: {},
 };

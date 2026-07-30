@@ -72,8 +72,7 @@ export const TruckPrompt: React.FC<{
   } = useTargetedMachine();
   const scale = useContext(OverlayScaleContext);
 
-  const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
-    gameState.progression;
+  const { storeUnlocked, lumberyardUnlocked } = gameState.progression;
   const carried = gameState.player.carriedMachine ?? null;
   // No chip, no card until the truck is actually sitting there — during
   // the arrival roll the player is still inside it.
@@ -107,17 +106,17 @@ export const TruckPrompt: React.FC<{
       action: () => goToStoreAction("lumberyard"),
     });
   }
-  if (marketplaceUnlocked) {
-    rows.push({
-      key: "scavenge",
-      group: "go",
-      name: "Scavenge for pallets",
-      description:
-        "A couple of hours poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
-      verb: "Go",
-      action: () => startScavengingAction(),
-    });
-  }
+  // Scavenging is on offer from day one — it's how the first pallet
+  // gets into the shop.
+  rows.push({
+    key: "scavenge",
+    group: "go",
+    name: "Scavenge for pallets",
+    description:
+      "A couple of hours poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
+    verb: "Go",
+    action: () => startScavengingAction(),
+  });
 
   for (const handoff of readyHandoffs(gameState)) {
     if (handoff.kind === "commission") {

@@ -53,11 +53,10 @@ export interface ProgressionState {
   readonly storeUnlocked: boolean;
   /** Reveals the lumberyard (S2S and rough stock) at the garage door. */
   readonly lumberyardUnlocked: boolean;
-  readonly shopLayoutUnlocked: boolean;
-  /** Reveals the phone (listings + job board) and scavenging at the door. */
+  /** Reveals the phone (listings + job board) in the top bar. */
   readonly marketplaceUnlocked: boolean;
   readonly commissionsCompleted: number;
-  /** Reveals the broom and the sweep verb once the floor gets dusty. */
+  /** The floor has gotten properly dusty — puts up the one-time sweeping note. */
   readonly sweepingUnlocked: boolean;
   /** The one-time "sweep it up" note has been read. */
   readonly dustTipDismissed: boolean;
@@ -130,11 +129,12 @@ export interface GameState {
   readonly dust: DustMap;
   /** The shop vac, once bought (see ShopVac.ts). Null until then. */
   readonly shopVac: ShopVacState | null;
+  /** Whether the shop owns a broom yet — bought off the store's tool wall. */
+  readonly broomOwned: boolean;
   /**
    * Where the shop broom is resting; null while it's in the player's
    * hands (the same convention as the vac's parked position — see
-   * HeldTool.ts). The broom exists from the start but stays invisible
-   * until `progression.sweepingUnlocked` reveals it.
+   * HeldTool.ts). Meaningless until `broomOwned`.
    */
   readonly broomPosition: Vector | null;
   /**

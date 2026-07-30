@@ -164,30 +164,8 @@ test.describe("Shop floor", () => {
       await expect(page.getByText("Shop Layout")).toHaveCount(0);
     });
 
-    await test.step("the carry verb hides until unlocked", async () => {
-      await teleportPlayer(page, [6, 8]);
-      // A miter saw anywhere re-unlocks the flag on the next tick, so gate
-      // the check on a jointer crate — jointers don't trip the unlock
-      await page.evaluate(() => {
-        window.__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          machineCrates: state.machineCrates.map((crate: any) => ({
-            ...crate,
-            machine: { ...crate.machine, machineTypeId: "jointer" },
-          })),
-          progression: { ...state.progression, shopLayoutUnlocked: false },
-        }));
-      });
-      await expect(page.getByText(/Unpack/)).toHaveCount(0);
-      await page.keyboard.press("b");
-      await page.waitForTimeout(30);
-      expect(await carried(page)).toBeNull();
-      // Back to the real fixture for the rest of the walkthrough
-      await loadFixture(page, "miter-saw-crate-shop");
-      await teleportPlayer(page, [6, 8]);
-    });
-
     await test.step("unpack the delivered crate underfoot", async () => {
+      await teleportPlayer(page, [6, 8]);
       await expect(page.getByText("Unpack Miter Saw")).toBeVisible();
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
@@ -311,9 +289,9 @@ test.describe("Shop floor", () => {
       expect(await carried(page)).toBeNull();
     });
 
-    await test.step("a dusty floor summons the broom", async () => {
-      // Dust past the tutorial threshold flips sweepingUnlocked on the
-      // next milestone tick, and the broom appears at its home corner.
+    await test.step("a dusty floor triggers the sweeping note", async () => {
+      // Dust past the tutorial threshold flips sweepingUnlocked — the
+      // one-time "sweep it up" note — on the next milestone tick.
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,

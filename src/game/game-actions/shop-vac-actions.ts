@@ -8,6 +8,7 @@ import {
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
+import { holdingBroom } from "../HeldTool";
 import { isOutdoors } from "../lot";
 import {
   canisterRoom,
@@ -74,7 +75,7 @@ export function toggleCarryShopVacAction(): GameAction {
       };
     }
     // The hose takes a hand — put the broom down before grabbing the vac
-    if (gameState.broomPosition === null) {
+    if (holdingBroom(gameState)) {
       return gameState;
     }
     if (chebyshevDistance(vac.position, gameState.player.position) <= 1) {

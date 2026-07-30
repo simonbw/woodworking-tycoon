@@ -52,7 +52,7 @@ export const BroomSprite: React.FC = () => {
     }
   }, []);
 
-  if (gameState.broomPosition === null) {
+  if (!gameState.broomOwned || gameState.broomPosition === null) {
     return null;
   }
   const [x, y] = cellToPixelVec(gameState.broomPosition);

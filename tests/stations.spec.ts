@@ -119,6 +119,38 @@ test.describe("Stations", () => {
     // The starter shop is the only one with a garbage can, so this rides
     // the new game before the fixtures take over.
     await test.step("the garbage can holds what you toss in", async () => {
+      // A brand-new floor is empty (the first pallet is scavenged), so
+      // set something down to have a thing to toss in the can.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          materialPiles: [
+            ...state.materialPiles,
+            {
+              material: {
+                id: "e2e-garbage-pallet",
+                type: "pallet",
+                deckBoards: [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                ],
+                stringerBoardsLeft: 3,
+              },
+              position: [2, 5],
+            },
+          ],
+        }));
+      });
+      await page.waitForTimeout(30);
       await movePlayerTo(page, [2, 5]);
       await pressKey(page, "e");
       expect(await handsCount(page)).toBe(1);

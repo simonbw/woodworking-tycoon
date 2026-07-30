@@ -122,15 +122,30 @@ const defs = [
     tab: "Layout",
     title: "Moving Machines",
     category: "The Shop",
+    // Carrying is never locked; the article arrives with the first machine
+    // worth arranging — a crate in the bed or on the floor, or anything
+    // bought beyond the starter bench and garbage can.
     unlocked: (gameState: GameState) =>
-      gameState.progression.shopLayoutUnlocked,
+      gameState.machineCrates.length > 0 ||
+      gameState.truck.crates.length > 0 ||
+      gameState.player.carriedMachine != null ||
+      gameState.machines.some(
+        (machine) =>
+          machine.machineTypeId !== "workspace" &&
+          machine.machineTypeId !== "garbageCan",
+      ),
   },
   {
     id: "dust",
     tab: "Dust",
     title: "Sawdust & Cleaning",
     category: "The Shop",
-    unlocked: (gameState: GameState) => gameState.progression.sweepingUnlocked,
+    // The first cleaning tool bought, or the floor getting dusty enough
+    // that the one-time sweeping note goes up — whichever comes first.
+    unlocked: (gameState: GameState) =>
+      gameState.broomOwned ||
+      gameState.shopVac !== null ||
+      gameState.progression.sweepingUnlocked,
   },
   {
     id: "marketplace",

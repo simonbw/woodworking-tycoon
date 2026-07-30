@@ -28,8 +28,10 @@ export const DustTutorialCard: React.FC = () => {
         </h3>
       </header>
       <p className="text-sm leading-snug">
-        Left on the floor, sawdust slows your machines and your feet. There's a
-        broom in the corner now: pick it up with{" "}
+        Left on the floor, sawdust slows your machines and your feet.{" "}
+        {gameState.broomOwned
+          ? "Pick up the broom with "
+          : "The Orange Box sells a broom. Pick it up with "}
         <ShortcutKeys shortcut="pick-up" />, then hold{" "}
         <ShortcutKeys shortcut="operate-machine" /> and walk to sweep the dust
         into the dustpan. When the pan fills, stand at the garbage can and hold{" "}

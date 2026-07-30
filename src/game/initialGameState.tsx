@@ -1,6 +1,5 @@
 import { NO_CONSUMABLES } from "./Consumable";
 import { GameState } from "./GameState";
-import { BROOM_HOME } from "./HeldTool";
 import { STARTING_ARTICLES } from "./manual";
 import { STARTER_SKILLS } from "./Skill";
 import { ToolId } from "./Tool";
@@ -13,18 +12,13 @@ import {
 } from "./Machine";
 import { Direction } from "./Vectors";
 import { defaultEntrancePosition } from "./ShopInfo";
-import { makePallet } from "./material-helpers";
 
 export const initialGameState: GameState = {
   tick: 0,
   money: 0,
   reputation: 0,
-  materialPiles: [
-    {
-      material: makePallet(),
-      position: [2, 5], // Positioned for easy access to workspace
-    },
-  ],
+  // An empty floor: the first pallet is scavenged with the truck
+  materialPiles: [],
   // No starter kit: supplies come from the store, or back out of salvage
   // (prying a pallet apart recovers its nails)
   consumables: NO_CONSUMABLES,
@@ -64,7 +58,6 @@ export const initialGameState: GameState = {
     tutorialStage: 0,
     storeUnlocked: false,
     lumberyardUnlocked: false,
-    shopLayoutUnlocked: false,
     marketplaceUnlocked: false,
     commissionsCompleted: 0,
     sweepingUnlocked: false,
@@ -83,7 +76,8 @@ export const initialGameState: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
-  broomPosition: BROOM_HOME,
+  broomOwned: false,
+  broomPosition: null,
   dustpan: {},
   pendingSounds: [],
   pendingPayouts: [],

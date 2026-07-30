@@ -5,12 +5,13 @@ import { FigureRow, H, Note, P, Photo, Term, UL } from "./elements";
 export const WelcomeArticle: React.FC = () => (
   <>
     <P>
-      You start with a one-car garage, a makeshift workbench, and a pallet of
-      free lumber. The first commission can be built from exactly that.
+      You start with a one-car garage, a makeshift workbench, and a truck in
+      the driveway. Free lumber is out there on pallets, and the first
+      commission can be built from a single one.
     </P>
     <FigureRow>
       <Photo src="/images/makeshift-bench.png" caption="the makeshift bench" />
-      <Photo src="/images/pallet.png" caption="the starting pallet" />
+      <Photo src="/images/pallet.png" caption="a scavenged pallet" />
     </FigureRow>
 
     <H>Getting Around</H>
@@ -35,13 +36,18 @@ export const WelcomeArticle: React.FC = () => (
       The card in the top-left corner tracks your current{" "}
       <Term>work order</Term>. Click it, or press{" "}
       <ShortcutKeys shortcut="open-clipboard" />, to look over the full
-      clipboard. The first order asks for a rustic shelf, and the pallet has
+      clipboard. The first order asks for a rustic shelf, and one pallet has
       enough wood for it:
     </P>
     <UL>
       <li>
-        Stand at the pallet and pick it up with{" "}
-        <ShortcutKeys shortcut="pick-up" />.
+        Walk out to the truck's cab and press <ShortcutKeys shortcut="pick-up" />
+        , then pick <Term>Scavenge for pallets</Term>. A couple of hours poking
+        around loading docks brings home 1-2 pallets in the bed.
+      </li>
+      <li>
+        Lift a pallet out of the bed with <ShortcutKeys shortcut="pick-up" /> at
+        the tailgate.
       </li>
       <li>
         Carry it to the workbench and load it with{" "}

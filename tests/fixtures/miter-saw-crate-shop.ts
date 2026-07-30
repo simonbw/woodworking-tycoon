@@ -75,7 +75,6 @@ export const miterSawCrateShop: GameState = {
     tutorialStage: 2,
     storeUnlocked: true,
     lumberyardUnlocked: false,
-    shopLayoutUnlocked: true,
     marketplaceUnlocked: false,
     commissionsCompleted: 1,
     sweepingUnlocked: false,
@@ -93,6 +92,7 @@ export const miterSawCrateShop: GameState = {
   categoryDemand: {},
   dust: {},
   shopVac: null,
+  broomOwned: true,
   broomPosition: [0, 0],
   dustpan: {},
 };
