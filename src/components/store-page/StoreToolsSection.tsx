@@ -4,6 +4,7 @@ import { buyShopVacAction } from "../../game/game-actions/shop-vac-actions";
 import { buyToolAction } from "../../game/game-actions/tool-actions";
 import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
 import { BROOM_COST } from "../../game/HeldTool";
+import { ownedToolIds } from "../../game/progression-helpers";
 import { SHOP_VAC_COST } from "../../game/ShopVac";
 import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
 import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
@@ -118,19 +119,16 @@ const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
-  const numberOwned =
-    gameState.storage.tools.filter((id) => id === tool.id).length +
-    gameState.machines.reduce(
-      (sum, machine) => sum + machine.tools.filter((id) => id === tool.id).length,
-      0,
-    );
+  const numberOwned = ownedToolIds(gameState).filter(
+    (id) => id === tool.id,
+  ).length;
 
   return (
     <ProductTile
       name={tool.name}
       icon={<ToolIcon toolId={tool.id as ToolId} />}
       price={tool.cost}
-      info={`${tool.description} Mounts into a workstation's tool slot.`}
+      info={`${tool.description} Rides home in the truck's bed; carry it to a workstation and mount it in a tool slot.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       canAfford={gameState.money >= tool.cost}
       onBuy={() => applyAction(buyToolAction(tool.id as ToolId))}

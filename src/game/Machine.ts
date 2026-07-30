@@ -326,12 +326,6 @@ export interface OperationOutput {
   inputs: ReadonlyArray<MaterialInstance>;
   outputs: ReadonlyArray<MaterialInstance>;
   /**
-   * Tools granted on completion (delivered to tool storage). This is how
-   * shop-made jigs like the crosscut sled come into the world — some
-   * recipes produce tooling, not product.
-   */
-  toolOutputs?: ReadonlyArray<ToolId>;
-  /**
    * Supplies recovered on completion (added to GameState.consumables) —
    * e.g. the nails that come out of a dismantled pallet.
    */
@@ -339,7 +333,8 @@ export interface OperationOutput {
   /**
    * Machines granted on completion (landed as delivery crates beside the
    * bench, to be carried into place). Shop-built furniture — worktables —
-   * enters the world this way, the machine sibling of toolOutputs.
+   * enters the world this way. (Shop-made tooling like the crosscut sled
+   * is just a regular output: tools are materials.)
    */
   machineOutputs?: ReadonlyArray<MachineId>;
   /**

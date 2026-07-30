@@ -2,7 +2,8 @@ import { hasCompletedCommission } from "./commissionSequence";
 import { dustTotal } from "./Dust";
 import { GameState } from "./GameState";
 import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
-import { MachineId } from "./Machine";
+import { MachineId, MachineState } from "./Machine";
+import { MaterialInstance } from "./Materials";
 import { ToolId } from "./Tool";
 
 /**
@@ -25,11 +26,47 @@ export function ownsMachine(
   );
 }
 
-export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
-  return (
-    gameState.storage.tools.includes(toolId) ||
-    gameState.machines.some((m) => m.tools.includes(toolId))
+/** The tool ids among a batch of loose materials. */
+function toolIdsIn(
+  materials: ReadonlyArray<MaterialInstance> | undefined,
+): ReadonlyArray<ToolId> {
+  return (materials ?? []).flatMap((material) =>
+    material.type === "tool" ? [material.toolId] : [],
   );
+}
+
+/** Everything a machine holds tools-wise: its rack, shelf, and output bay. */
+function machineToolIds(machine: MachineState): ReadonlyArray<ToolId> {
+  return [
+    ...machine.tools,
+    ...toolIdsIn(machine.storedMaterials),
+    ...toolIdsIn(machine.outputMaterials),
+  ];
+}
+
+/**
+ * Every tool in the shop, mounted or loose. Tools are physical objects, so
+ * "owned" means enumerating everywhere one can sit: station racks, shelves
+ * and output bays, the arms, floor piles, the truck's bed, and machines
+ * mid-carry or still crated.
+ */
+export function ownedToolIds(gameState: GameState): ReadonlyArray<ToolId> {
+  return [
+    ...gameState.machines.flatMap(machineToolIds),
+    ...gameState.machineCrates.flatMap((crate) =>
+      machineToolIds(crate.machine),
+    ),
+    ...(gameState.player.carriedMachine
+      ? machineToolIds(gameState.player.carriedMachine)
+      : []),
+    ...toolIdsIn(gameState.player.inventory),
+    ...toolIdsIn(gameState.materialPiles.map((pile) => pile.material)),
+    ...toolIdsIn(gameState.truck.bed),
+  ];
+}
+
+export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
+  return ownedToolIds(gameState).includes(toolId);
 }
 
 /**

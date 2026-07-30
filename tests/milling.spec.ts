@@ -599,9 +599,14 @@ test.describe("Milling", () => {
       // Bare, the saw's one setting is the rip fence, in inches
       await expect(page.getByText("target width:")).toBeVisible();
 
+      // The fence is a physical thing: fetch it off the dropoff pile and
+      // carry it back to the saw before it can go on
+      await movePlayerTo(page, [10, 13]);
+      await pressKey(page, "e");
+      await movePlayerTo(page, [8, 9]);
       await openStationSheet(page);
       await page
-        .locator("li", { hasText: "Tall Resaw Fence (stored)" })
+        .locator("li", { hasText: "Tall Resaw Fence (in hand)" })
         .getByRole("button", { name: "Attach" })
         .click();
       await page.waitForTimeout(30);

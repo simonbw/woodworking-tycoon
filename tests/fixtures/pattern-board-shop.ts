@@ -99,7 +99,6 @@ export const patternBoardShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: [],
     upgrades: [],
   },
   shopInfo: {

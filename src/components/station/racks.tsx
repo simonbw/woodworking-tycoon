@@ -16,6 +16,7 @@ import {
 import { UPGRADE_TYPES } from "../../game/Upgrade";
 import { TOOL_TYPES } from "../../game/Tool";
 import { getMaterialFullName } from "../../game/material-helpers";
+import { ToolItem } from "../../game/Materials";
 import { handSpaceLeft } from "../../game/Person";
 import { ToolIcon } from "../ItemIcon";
 import { ManualLink } from "../manual/ManualLink";
@@ -31,9 +32,10 @@ export const MachineManualLink: React.FC<{ machine: Machine }> = ({
 };
 
 /**
- * Tool slots on a workstation: mounted tools can be removed to storage,
- * and stored tools can be mounted while slots are free. Mounting a tool
- * adds its operations to the station's Plan list.
+ * Tool slots on a workstation: mounted tools come off into the player's
+ * arms, and a carried tool can be mounted while slots are free — tools
+ * are physical things, so the rack trades with the hands, not a storage
+ * list. Mounting a tool adds its operations to the station's Plan list.
  */
 export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
@@ -47,6 +49,15 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
   // Tools change what the station can do, so the rack holds still until
   // the running job is off it
   const working = machine.operationProgress.status === "inProgress";
+  // A removed tool lands in the arms, so they need a slot free for it
+  const handsFull = handSpaceLeft(gameState.player) < 1;
+  // What's carried is what can go on the rack
+  const mountableTools = gameState.player.inventory
+    .filter((item): item is ToolItem => item.type === "tool")
+    .filter((tool) => {
+      const compatible = TOOL_TYPES[tool.toolId].compatibleMachines;
+      return !compatible || compatible.includes(machine.state.machineTypeId);
+    });
 
   return (
     <div className="space-y-1">
@@ -69,7 +80,8 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
             <span className="grow">{TOOL_TYPES[toolId].name}</span>
             <button
               className="button-paper text-xs"
-              disabled={working}
+              disabled={working || handsFull}
+              title={handsFull ? "Hands full" : undefined}
               onClick={() => applyAction(unmountToolAction(machine, toolId))}
             >
               Remove
@@ -77,38 +89,33 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
           </li>
         ))}
         {freeSlots > 0 &&
-          gameState.storage.tools
-            .filter((toolId) => {
-              const compatible = TOOL_TYPES[toolId].compatibleMachines;
-              return (
-                !compatible || compatible.includes(machine.state.machineTypeId)
-              );
-            })
-            .map((toolId, index) => (
-              <li
-                key={`stored-${toolId}-${index}`}
-                className="flex items-center gap-2 py-1 text-ink-fade"
+          mountableTools.map((tool) => (
+            <li
+              key={tool.id}
+              className="flex items-center gap-2 py-1 text-ink-fade"
+            >
+              <ToolIcon
+                toolId={tool.toolId}
+                className="size-6 shrink-0 opacity-60 [image-rendering:pixelated]"
+              />
+              <span className="grow">
+                {TOOL_TYPES[tool.toolId].name} (in hand)
+              </span>
+              <button
+                className="button-paper text-xs"
+                disabled={working}
+                onClick={() => applyAction(mountToolAction(machine, tool))}
               >
-                <ToolIcon
-                  toolId={toolId}
-                  className="size-6 shrink-0 opacity-60 [image-rendering:pixelated]"
-                />
-                <span className="grow">{TOOL_TYPES[toolId].name} (stored)</span>
-                <button
-                  className="button-paper text-xs"
-                  disabled={working}
-                  onClick={() => applyAction(mountToolAction(machine, toolId))}
-                >
-                  Attach
-                </button>
-              </li>
-            ))}
-        {machine.state.tools.length === 0 &&
-          gameState.storage.tools.length === 0 && (
-            <li className="py-1 italic text-ink-fade text-xs">
-              No tools yet — check the store's tool wall.
+                Attach
+              </button>
             </li>
-          )}
+          ))}
+        {machine.state.tools.length === 0 && mountableTools.length === 0 && (
+          <li className="py-1 italic text-ink-fade text-xs">
+            Empty — carry a tool here to mount it. Tools are sold on the
+            store's tool wall.
+          </li>
+        )}
       </ul>
     </div>
   );

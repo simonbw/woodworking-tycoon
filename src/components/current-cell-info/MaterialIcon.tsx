@@ -12,6 +12,7 @@ import {
   colorBySpecies,
 } from "../shop-view/colorBySpecies";
 import { classNames } from "../../utils/classNames";
+import { toolIconSrc } from "../../utils/uiImages";
 import { Tooltip } from "../Tooltip";
 
 export const SimpleSpriteStage: React.FC<{
@@ -150,6 +151,25 @@ export const MaterialIcon: React.FC<{
           {/* Sync decode: this icon appears mid-play as the player walks
               up to a pallet, and an async decode costs it a frame. */}
           <img src="/images/pallet.png" decoding="sync" />
+        </Wrapper>
+      );
+
+    case "tool":
+      // The same pixel-art icon the tool wall uses — a carried tool in
+      // the hands strip looks like the thing that was bought.
+      return (
+        <Wrapper
+          size={size}
+          quantity={quantity}
+          isValid={isValid}
+          tooltip={tooltip}
+          placeholder={placeholder}
+        >
+          <img
+            src={toolIconSrc(material.toolId)}
+            decoding="sync"
+            className="[image-rendering:pixelated]"
+          />
         </Wrapper>
       );
 

@@ -731,7 +731,10 @@ function commission15(shop: ShopDriver): ShopDriver {
     .select(WORKBENCH, "buildCrosscutSled")
     .load(WORKBENCH, (m) => m.type === "plywood", 1)
     .load(WORKBENCH, deckBoardOfLength(3), 2)
-    .run(WORKBENCH);
+    .run(WORKBENCH)
+    // The finished sled is a physical thing in the bench's output bay:
+    // pick it up and carry it over to the saw
+    .collect(WORKBENCH);
   shop.mount("jobsiteTableSaw", "crosscutSled");
 
   // A sanded single-species panel is what the sled slices.

@@ -65,7 +65,6 @@ export const handToolsShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: [],
     upgrades: [],
   },
   shopInfo: {

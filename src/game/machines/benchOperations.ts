@@ -1,7 +1,11 @@
 import { array } from "../../utils/arrayUtils";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
 import { Operation, OperationPhase } from "../Machine";
-import { isFinishedProduct, makeMaterial } from "../material-helpers";
+import {
+  isFinishedProduct,
+  makeMaterial,
+  makeToolItem,
+} from "../material-helpers";
 import {
   Pallet,
   EndGrainSlice,
@@ -314,12 +318,11 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       },
     ],
     output: () => {
-      // The output is tooling, not product: the sled lands in tool
-      // storage, ready to mount on the table saw
+      // The output is tooling, not product: the sled comes off the bench
+      // a physical thing, to be carried to the table saw and mounted
       return {
         inputs: [],
-        outputs: [],
-        toolOutputs: ["crosscutSled" as const],
+        outputs: [makeToolItem("crosscutSled")],
       };
     },
   },
@@ -349,8 +352,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     output: () => {
       return {
         inputs: [],
-        outputs: [],
-        toolOutputs: ["straightLineSled" as const],
+        outputs: [makeToolItem("straightLineSled")],
       };
     },
   },
@@ -380,8 +382,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     output: () => {
       return {
         inputs: [],
-        outputs: [],
-        toolOutputs: ["resawFence" as const],
+        outputs: [makeToolItem("resawFence")],
       };
     },
   },

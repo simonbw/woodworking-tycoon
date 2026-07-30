@@ -84,8 +84,13 @@ drum sander.
   - Makeshift workbench (id `workspace`): 2 slots. Worktables: 3–6 slots by
     size (see `docs/worktables.md` — the old store-bought makeshift bench
     retired in favor of shop-built worktables).
-- Unmounted tools live in `GameState.storage.tools`. Buy at the store's Tool
-  Wall; mount/unmount from the station's card.
+- An unmounted tool is a **physical object** — a `MaterialInstance` of kind
+  `tool` — so it rides every system loose stock does: bought at the store's
+  Tool Wall it comes home in the truck's bed, is lifted out at the tailgate,
+  carried in the arms (one hand slot), set down as a floor pile, or parked
+  on a station shelf. Mounting happens from the station's card and takes the
+  tool out of the hands; unmounting puts it back in them. There is no
+  abstract tool storage.
 - First tools: **sanding block** ($10, slow) and **random orbit sander**
   ($120, fast). Same operations, different durations.
 - The **hand plane** ($35) is the budget mill: flattens a face or
@@ -105,10 +110,9 @@ drum sander.
   (edge profiles).
 - More screw-assembly recipes on the drill (the furniture arc).
 - **Tool scarcity → logistics**: once you own more tools than slots, you're
-  choosing loadouts per station. Then: dedicated stations (a "finishing
-  bench" with sanders + finishes), tool storage furniture (wall racks,
-  chests) that hold unmounted tools in the shop instead of an abstract list,
-  and maybe carry-one-tool-in-hand.
+  choosing loadouts per station and physically ferrying them. Dedicated
+  tool storage furniture (wall racks, chests) would give loose tools a
+  tidier home than floor piles and station shelves.
 - Tool quality tiers / consumables (sandpaper grits from issue #7) — only if
   the game needs another sink.
 

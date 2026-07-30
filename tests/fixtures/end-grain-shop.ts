@@ -99,7 +99,6 @@ export const endGrainShop: GameState = {
   machineCrates: [],
   truck: { bed: [], crates: [] },
   storage: {
-    tools: [],
     upgrades: [],
   },
   shopInfo: {

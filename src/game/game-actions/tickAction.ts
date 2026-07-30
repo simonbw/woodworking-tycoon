@@ -18,7 +18,6 @@ import { playerAttendsMachine } from "../machine-helpers";
 import { Machine, MachineId } from "../Machine";
 import { getSellValue } from "../material-values";
 import { getOperationPhases } from "../skill-helpers";
-import { ToolId } from "../Tool";
 import { UpgradeId } from "../Upgrade";
 import { withXp } from "./skill-actions";
 
@@ -96,7 +95,7 @@ function advanceTickPass(): GameAction {
 /**
  * Machines' slice of the tick: every in-progress operation advances (or
  * waits for the player), sheds dust, and on completion delivers outputs,
- * grants (tools, upgrades, crated machines, salvaged supplies), sounds,
+ * grants (upgrades, crated machines, salvaged supplies), sounds,
  * and craft XP. Attended phases only tick while the player stands at the
  * operation cell; hands-free phases (glue curing) run regardless, even
  * during away trips.
@@ -105,7 +104,6 @@ export function machineTickPass(): GameAction {
   return (gameState) => {
   let xpEarned = 0;
   const soundEvents: SoundEvent[] = [];
-  const toolsGranted: ToolId[] = [];
   const machinesGranted: Array<{ machineTypeId: MachineId; near: Vector }> = [];
   const upgradesGranted: UpgradeId[] = [];
   const consumablesGranted: ConsumableAmount[] = [];
@@ -242,14 +240,8 @@ export function machineTickPass(): GameAction {
     }
 
     // Operation completed - apply the transformation
-    const {
-      inputs,
-      outputs,
-      toolOutputs,
-      consumableOutputs,
-      machineOutputs,
-      upgradeOutputs,
-    } = selectedOperation.output(
+    const { inputs, outputs, consumableOutputs, machineOutputs, upgradeOutputs } =
+      selectedOperation.output(
       machineState.processingMaterials,
       machine.resolvedParameters(selectedOperation),
     );
@@ -258,11 +250,6 @@ export function machineTickPass(): GameAction {
       if (isFinishedProduct(output)) {
         xpEarned += Math.round(getSellValue(output));
       }
-    }
-
-    // Shop-made tooling (e.g. the crosscut sled) lands in tool storage
-    if (toolOutputs) {
-      toolsGranted.push(...toolOutputs);
     }
 
     // Shop-built furniture (worktables) comes off the bench crated, ready
@@ -336,13 +323,12 @@ export function machineTickPass(): GameAction {
           dust,
         };
 
-  let withTools: GameState =
-    toolsGranted.length > 0 || upgradesGranted.length > 0
+  let withUpgrades: GameState =
+    upgradesGranted.length > 0
       ? {
           ...nextState,
           storage: {
             ...nextState.storage,
-            tools: [...nextState.storage.tools, ...toolsGranted],
             upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
           },
         }
@@ -350,9 +336,9 @@ export function machineTickPass(): GameAction {
 
   // Shop-built machines land crated beside the bench that made them
   for (const granted of machinesGranted) {
-    withTools = deliverMachineCrate(
-      withTools,
-      freshMachineState(granted.machineTypeId, withTools.progression),
+    withUpgrades = deliverMachineCrate(
+      withUpgrades,
+      freshMachineState(granted.machineTypeId, withUpgrades.progression),
       granted.near,
     );
   }
@@ -360,13 +346,13 @@ export function machineTickPass(): GameAction {
   const withConsumables =
     consumablesGranted.length > 0
       ? {
-          ...withTools,
+          ...withUpgrades,
           consumables: addConsumables(
-            withTools.consumables,
+            withUpgrades.consumables,
             consumablesGranted,
           ),
         }
-      : withTools;
+      : withUpgrades;
 
   return withXp(withConsumables, xpEarned);
   };

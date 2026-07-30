@@ -10,7 +10,6 @@ import {
   describeMaterialRequirement,
   getMaterialFullName,
 } from "./material-helpers";
-import { TOOL_TYPES } from "./Tool";
 
 /**
  * Generates mock materials that satisfy the given input requirements.
@@ -84,10 +83,9 @@ export function describeOperationIO(operation: Operation): {
       generateMockMaterials(requirements),
       params,
     );
-    const names = [
-      ...result.outputs.map((material) => getMaterialFullName(material)),
-      ...(result.toolOutputs ?? []).map((toolId) => TOOL_TYPES[toolId].name),
-    ];
+    const names = result.outputs.map((material) =>
+      getMaterialFullName(material),
+    );
     // Collapse repeats: ["Board", "Board"] → ["2× Board"]
     const counts = new Map<string, number>();
     for (const name of names) {

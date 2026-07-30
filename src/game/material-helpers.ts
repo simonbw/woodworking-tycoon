@@ -17,10 +17,12 @@ import {
   SheetGood,
   SheetGoodKind,
   Species,
+  ToolItem,
   UnknownMaterial,
   FINISHED_PRODUCT_TYPES,
   FinishedProductType,
 } from "./Materials";
+import { TOOL_TYPES, ToolId } from "./Tool";
 
 const makeId = idMaker();
 
@@ -31,6 +33,11 @@ export function makeMaterial<T extends MaterialInstance>(
     ...materialInitializer,
     id: `m-${makeId()}`,
   } as T;
+}
+
+/** A tool as a physical object — what the store hands over and a rack gives back. */
+export function makeToolItem(toolId: ToolId): ToolItem {
+  return makeMaterial<ToolItem>({ type: "tool", toolId });
 }
 
 export function makePallet() {
@@ -164,6 +171,8 @@ export function getMaterialName(material: MaterialInstance): string {
         species.length === 1 ? humanizeString(species[0]) : "Mixed Wood";
       return `${speciesName} End-Grain Slice`;
     }
+    case "tool":
+      return TOOL_TYPES[material.toolId].name;
     default:
       if (isFinishedProduct(material)) {
         // "mineralOil" reads as "Oiled"; future finishes name themselves here
@@ -483,6 +492,11 @@ export function createMockMaterial(
           width: 2,
         })),
       });
+    }
+
+    case "tool": {
+      const r = requirement as InputMaterialWithQuantity<ToolItem>;
+      return makeToolItem(r.toolId?.[0] ?? "hammer");
     }
 
     case "unknown":

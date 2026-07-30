@@ -9,6 +9,7 @@ import { tickAction } from "../game-actions/tickAction";
 import {
   isFinishedProduct,
   makeMaterial,
+  makeToolItem,
   materialMeetsInput,
 } from "../material-helpers";
 import { getSellValue } from "../material-values";
@@ -61,8 +62,9 @@ describe("buildCrosscutSled", () => {
       board("pallet", 3, 4, 1),
       board("pallet", 3, 4, 1),
     ], {});
-    assert.deepStrictEqual(result.outputs, []);
-    assert.deepStrictEqual(result.toolOutputs, ["crosscutSled"]);
+    assert.strictEqual(result.outputs.length, 1);
+    const sled = result.outputs[0];
+    assert.ok(sled.type === "tool" && sled.toolId === "crosscutSled");
   });
 });
 
@@ -251,22 +253,28 @@ describe("shop-made tooling", () => {
     };
   }
 
-  it("finishing the sled recipe delivers the sled to tool storage", () => {
+  it("finishing the sled recipe lands the sled in the output bay", () => {
     const result = tickAction(sledBuildState());
-    assert.deepStrictEqual(result.storage.tools, ["crosscutSled"]);
-    assert.deepStrictEqual(result.machines[0].outputMaterials, []);
+    const outputs = result.machines[0].outputMaterials;
+    assert.strictEqual(outputs.length, 1);
+    const sled = outputs[0];
+    assert.ok(sled.type === "tool" && sled.toolId === "crosscutSled");
     // Tooling is not a product: no craft XP
     assert.strictEqual(result.progression.xp, 0);
   });
 
   it("the sled only mounts on the table saw", () => {
+    const sledInHand = makeToolItem("crosscutSled");
     const withSled: GameState = {
       ...initialGameState,
-      storage: { ...initialGameState.storage, tools: ["crosscutSled"] },
+      player: {
+        ...initialGameState.player,
+        inventory: [...initialGameState.player.inventory, sledInHand],
+      },
     };
     // Workspace (machine 0) refuses it
     const workspaceMachine = getMachines(withSled.machines)[0];
-    const refused = mountToolAction(workspaceMachine, "crosscutSled")(withSled);
+    const refused = mountToolAction(workspaceMachine, sledInHand)(withSled);
     assert.strictEqual(refused, withSled);
 
     // A table saw accepts it
@@ -283,7 +291,7 @@ describe("shop-made tooling", () => {
       ],
     };
     const saw = getMachines(sawState.machines)[0];
-    const mounted = mountToolAction(saw, "crosscutSled")(sawState);
+    const mounted = mountToolAction(saw, sledInHand)(sawState);
     assert.deepStrictEqual(mounted.machines[0].tools, ["crosscutSled"]);
   });
 });

@@ -61,7 +61,6 @@ export const miterSawCrateShop: GameState = {
     },
   ],
   storage: {
-    tools: [],
     upgrades: [],
   },
   shopInfo: {

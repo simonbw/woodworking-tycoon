@@ -149,7 +149,6 @@ export const gameStateSchema = z.object({
   }),
   player: personSchema,
   storage: z.object({
-    tools: z.array(toolIdSchema),
     upgrades: z.array(upgradeIdSchema),
   }),
   progression: progressionSchema,

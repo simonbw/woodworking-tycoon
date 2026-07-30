@@ -1,6 +1,7 @@
 // Represents length, width, or thickness.
 
 import { Tuple } from "../utils/typeUtils";
+import type { ToolId } from "./Tool";
 
 export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const; // either feet, inches, or quarters of an inch
 export const SHEET_THICKNESSES = [1, 2, 3, 4] as const; // in quarters of an inch
@@ -294,6 +295,18 @@ export type Pallet = {
   readonly stringerBoardsLeft: number;
 };
 
+/**
+ * A handheld tool as a physical object: in the truck's bed on the ride
+ * home, in the arms, in a pile on the floor, or on a station's shelf.
+ * It stops being a material when mounted — a station's rack holds plain
+ * ToolIds (MachineState.tools), and unmounting mints a fresh instance.
+ */
+export type ToolItem = {
+  readonly id: string;
+  readonly type: "tool";
+  readonly toolId: ToolId;
+};
+
 export type UnknownMaterial = {
   readonly id: string;
   readonly type: "unknown";
@@ -306,6 +319,7 @@ export type MaterialInstance =
   | Panel
   | EndGrainSlice
   | FinishedProduct
+  | ToolItem
   | UnknownMaterial;
 
 export type MaterialType = MaterialInstance["type"];
