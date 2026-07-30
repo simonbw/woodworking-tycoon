@@ -186,6 +186,10 @@ Decided — don't re-open these without a reason.
   would pick up. UI drawn on the canvas, not art.
 - **Kerf lines** — the cut lines in `JobsiteTableSawSprite` and
   `MiterSawSprite`, which track the animated blade.
+- **Power cords and wall outlets** — `PowerCordLayer`
+  (`shop-view/power-cords.ts`). Every cord is a hash-seeded curve that
+  re-routes to the nearest outlet whenever a machine moves; no fixed asset
+  can follow that. The outlet plates are a few rectangles at outlet size.
 - **Collision debug overlay** — `CollisionDebugLayer`. Dev-only, `?collision`.
 - **Default material pile** — `DefaultMaterialPileSprite`. A black square,
   and now only ever reached by `UnknownMaterial` — the type-system escape

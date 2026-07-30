@@ -53,6 +53,7 @@ export const bandSaw: MachineType = {
   directFeed: true,
   feedsThrough: true,
   powerSwitch: true,
+  corded: true,
   operations: [
     {
       id: "resaw",

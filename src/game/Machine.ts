@@ -118,6 +118,13 @@ export interface MachineType {
    */
   readonly powerSwitch?: boolean;
   /**
+   * The machine runs on a motor, so the shop view trails a power cord from
+   * it to the nearest wall outlet (see shop-view/power-cords.ts). Purely
+   * cosmetic. Independent of `powerSwitch`: the trigger-operated miter saw
+   * has no switch but still plugs in.
+   */
+  readonly corded?: boolean;
+  /**
    * Stock feeds straight from the player's hands into the machine — there
    * is no staged input bay (`inputSpaces` should be 0) and no mode to
    * pick. Operating a direct-feed machine runs the first operation that
