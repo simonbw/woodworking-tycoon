@@ -55,6 +55,13 @@ describe("takeFromTruckBedAction", () => {
     const state = stateAt([6, 15], { bed: [stock] });
     assert.strictEqual(takeFromTruckBedAction([stock])(state), state);
   });
+
+  it("refuses an armful bigger than the room left in the hands", () => {
+    // HAND_CAPACITY is 2: one board carried leaves room for one more
+    const inBed = [board("pine", 4, 4, 1), board("pine", 4, 4, 1)];
+    const state = stateAt(AT_BED, { bed: inBed }, [board("pine", 2, 4, 1)]);
+    assert.strictEqual(takeFromTruckBedAction(inBed)(state), state);
+  });
 });
 
 describe("takeCrateFromTruckAction", () => {

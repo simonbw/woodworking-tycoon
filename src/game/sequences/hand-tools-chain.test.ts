@@ -75,8 +75,8 @@ describe("hand tool chain", () => {
     cutTheLongBoardDown(shop);
 
     // The kept 2' piece joins the four the fixture stocked; the remnant is 1'
-    assert.equal(shop.holding(byLength(2)).length, 5);
-    assert.equal(shop.holding(byLength(3)).length, 0);
+    assert.equal(shop.stock(byLength(2)).length, 5);
+    assert.equal(shop.stock(byLength(3)).length, 0);
     assert.equal(
       getMaterialName(shop.theOne(byLength(1))),
       "Pallet Wood 1/4 — 4\" × 1'",

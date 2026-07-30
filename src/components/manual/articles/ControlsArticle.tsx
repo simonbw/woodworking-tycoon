@@ -31,8 +31,10 @@ export const ControlsArticle: React.FC = () => {
       </div>
 
       <p className="mt-5 border-t border-ink-black/20 pt-3 text-[0.7rem] text-ink-fade">
-        Hold <Kbd>Shift</Kbd> while clicking Pick Up, Drop, Take or a machine
-        slot to move the whole stack at once.
+        Your hands hold two pieces of stock at a time. Hold <Kbd>Shift</Kbd>{" "}
+        while clicking Pick Up, Drop, Take or a machine slot to move a full
+        armful at once; bigger piles take trips, or a ride in the truck's
+        bed.
       </p>
     </>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { takeInputsFromMachineAction } from "../../game/game-actions/player-actions";
 import { Machine } from "../../game/Machine";
+import { handSpaceLeft } from "../../game/Person";
 import { machineCanOperate, shopSupply } from "../../game/machine-helpers";
 import { getMaterialFullName } from "../../game/material-helpers";
 import { groupBy } from "../../utils/arrayUtils";
@@ -26,6 +27,7 @@ import { RunHint } from "./RunHint";
 export const ContentsSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
+  const handSpace = handSpaceLeft(gameState.player);
 
   const groupedContents = [
     ...groupBy(machine.inputMaterials, (material) =>
@@ -53,10 +55,15 @@ export const ContentsSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
             )}
             <button
               className="button-paper text-xs"
+              disabled={handSpace === 0}
+              title={handSpace === 0 ? "Hands full" : undefined}
               onClick={(event) => {
+                if (handSpace === 0) {
+                  return;
+                }
                 applyAction(
                   takeInputsFromMachineAction(
-                    event.shiftKey ? materials : [materials[0]],
+                    event.shiftKey ? materials.slice(0, handSpace) : [materials[0]],
                     machine,
                   ),
                 );

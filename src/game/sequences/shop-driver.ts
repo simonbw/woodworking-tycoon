@@ -23,6 +23,8 @@ import {
 } from "../Machine";
 import { GameAction, GameState } from "../GameState";
 import { MaterialInstance } from "../Materials";
+import { handSpaceLeft } from "../Person";
+import { consumeRequiredMaterials } from "../delivery";
 import { availableOperations } from "../skill-helpers";
 import { tickAction } from "../game-actions/tickAction";
 import {
@@ -58,7 +60,7 @@ import {
   takeCrateFromTruckAction,
   takeFromTruckBedAction,
 } from "../game-actions/truck-actions";
-import { truckCabSideCell } from "../lot";
+import { isOutdoors, truckCabSideCell } from "../lot";
 import {
   goToStoreAction,
   returnFromStoreAction,
@@ -119,13 +121,32 @@ export class ShopDriver {
     return this.inventory.filter(predicate);
   }
 
-  /** The one thing in hand that matches, or a failure naming what's there. */
+  /**
+   * Everything within reach that the predicate matches — in the arms or
+   * piled on the floor. The hands hold two pieces (HAND_CAPACITY), so a
+   * chain's stock lives mostly on the floor between steps; what a test
+   * usually wants to know is "does the shop have it", and this is that.
+   */
+  stock(predicate: MaterialPredicate): ReadonlyArray<MaterialInstance> {
+    return [
+      ...this.inventory.filter(predicate),
+      ...this.state.materialPiles
+        .map((pile) => pile.material)
+        .filter(predicate),
+    ];
+  }
+
+  /**
+   * The one thing within reach (hand or floor) that matches, or a failure
+   * naming what's there.
+   */
   theOne(predicate: MaterialPredicate): MaterialInstance {
-    const matches = this.holding(predicate);
+    const matches = this.stock(predicate);
     if (matches.length !== 1) {
       throw new Error(
-        `Expected exactly one matching material in hand, found ${matches.length}` +
-          ` among [${this.inventory.map((m) => m.type).join(", ")}]`,
+        `Expected exactly one matching material in reach, found ${matches.length}` +
+          ` among hand [${this.inventory.map((m) => m.type).join(", ")}] and ` +
+          `floor [${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
       );
     }
     return matches[0];
@@ -306,43 +327,102 @@ export class ShopDriver {
   }
 
   /**
-   * Carry the matching stock from hand onto the station. `count` takes only
-   * the first so many matches, for recipes that want two of one board and
-   * three of another out of a pile of both.
+   * Carry the matching stock onto the station, out of the arms and off the
+   * floor, an armful (HAND_CAPACITY) at a time — walking out to each pile
+   * and back, the way the player has to. `count` takes only the first so
+   * many matches, for recipes that want two of one board and three of
+   * another out of a pile of both.
    *
    * The move is checked rather than assumed: a bay with fewer free spaces
-   * than the load needs refuses the whole thing and warns, which downstream
-   * looks like a station that won't start for no reason.
+   * than the load needs refuses the whole thing, which downstream looks
+   * like a station that won't start for no reason.
    */
   load(
     machineTypeId: MachineState["machineTypeId"],
     predicate: MaterialPredicate,
     count?: number,
   ): this {
-    const matches = this.holding(predicate);
+    const matches = this.stock(predicate);
     const materials = count === undefined ? matches : matches.slice(0, count);
     if (materials.length === 0) {
       throw new Error(
-        `Nothing in hand to load onto the ${machineTypeId} — holding ` +
-          `[${this.inventory.map((m) => m.type).join(", ")}]`,
+        `Nothing in reach to load onto the ${machineTypeId} — holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}], floor has ` +
+          `[${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
       );
     }
     if (count !== undefined && materials.length < count) {
       throw new Error(
         `Wanted ${count} matching pieces for the ${machineTypeId}, ` +
-          `only ${materials.length} in hand`,
+          `only ${materials.length} in reach`,
       );
     }
     const before = this.machine(machineTypeId).state.inputMaterials.length;
-    this.apply(
-      moveMaterialsToMachineAction(materials, this.machine(machineTypeId)),
-    );
-    const after = this.machine(machineTypeId).state.inputMaterials.length;
-    if (after !== before + materials.length) {
+    const spaces =
+      this.machine(machineTypeId).type.inputSpaces - before;
+    if (materials.length > spaces) {
       throw new Error(
         `The ${machineTypeId} would not take ${materials.length} more ` +
           `pieces — its bay holds ${this.machine(machineTypeId).type.inputSpaces} ` +
           `and already had ${before}. Load only what the recipe wants.`,
+      );
+    }
+    // Deposits happen from where the caller stood — the operator's side.
+    const at = this.state.player.position;
+    const wanted = new Set(materials);
+    while (wanted.size > 0) {
+      const inHand = this.inventory.filter((m) => wanted.has(m));
+      if (inHand.length > 0) {
+        this.standAt(at);
+        this.apply(
+          moveMaterialsToMachineAction(inHand, this.machine(machineTypeId)),
+        );
+        for (const m of inHand) {
+          wanted.delete(m);
+        }
+        continue;
+      }
+      // The rest is on the floor. Full arms set their (unwanted) load down
+      // right here first, where a later fetch can still find it.
+      if (handSpaceLeft(this.state.player) === 0) {
+        const held = this.inventory.length;
+        this.standAt(at);
+        this.apply(dropMaterialAction(this.inventory));
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down at ${JSON.stringify(at)} to free the hands`,
+          );
+        }
+      }
+      const piles = this.state.materialPiles.filter((pile) =>
+        wanted.has(pile.material),
+      );
+      if (piles.length === 0) {
+        throw new Error(
+          `Stock for the ${machineTypeId} vanished mid-ferry — this is a ` +
+            `driver bug`,
+        );
+      }
+      for (const pile of piles.slice(
+        0,
+        handSpaceLeft(this.state.player),
+      )) {
+        const held = this.inventory.length;
+        this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't pick ${pile.material.type} up off the floor — ` +
+              `holding a tool, or the hands are full`,
+          );
+        }
+      }
+    }
+    this.standAt(at);
+    const after = this.machine(machineTypeId).state.inputMaterials.length;
+    if (after !== before + materials.length) {
+      throw new Error(
+        `The ${machineTypeId} took ${after - before} of ${materials.length} ` +
+          `pieces — this is a driver bug`,
       );
     }
     return this;
@@ -383,17 +463,45 @@ export class ShopDriver {
   /**
    * Pick the finished work up. Feed-through machines (planer, jointer, table
    * saw) deliver to an outfeed cell, so this walks there first, the way the
-   * player has to.
+   * player has to. An armful at a time: what doesn't fit in the hands is
+   * set down right where it's collected, where the next `load` will find it.
    */
   collect(machineTypeId: MachineState["machineTypeId"]): this {
     const outfeed = this.machine(machineTypeId).absoluteOutputPosition;
     if (outfeed) {
       this.standAt(outfeed);
     }
-    const machine = this.machine(machineTypeId);
-    return this.apply(
-      takeOutputsFromMachineAction(machine.state.outputMaterials, machine),
-    );
+    while (this.machine(machineTypeId).state.outputMaterials.length > 0) {
+      if (handSpaceLeft(this.state.player) === 0) {
+        const held = this.inventory.length;
+        this.apply(dropMaterialAction(this.inventory));
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down while collecting from the ${machineTypeId}`,
+          );
+        }
+        continue;
+      }
+      const machine = this.machine(machineTypeId);
+      const before = machine.state.outputMaterials.length;
+      this.apply(
+        takeOutputsFromMachineAction(
+          machine.state.outputMaterials.slice(
+            0,
+            handSpaceLeft(this.state.player),
+          ),
+          machine,
+        ),
+      );
+      if (
+        this.machine(machineTypeId).state.outputMaterials.length === before
+      ) {
+        throw new Error(
+          `The ${machineTypeId}'s outputs would not come off — holding a tool?`,
+        );
+      }
+    }
+    return this;
   }
 
   /**
@@ -455,8 +563,8 @@ export class ShopDriver {
 
   /**
    * Take the truck out scavenging and sit through the trip, coming home
-   * with the haul lifted out of the bed into the hands. The loot is
-   * rolled up front from the rng; the default always finds two pallets
+   * with the haul ferried out of the bed onto the dropoff spot. The loot
+   * is rolled up front from the rng; the default always finds two pallets
    * with all eleven deck boards, so sequences can count on the wood.
    */
   scavenge(rng: () => number = () => 0.9): this {
@@ -487,9 +595,9 @@ export class ShopDriver {
 
   /**
    * Come home from a trip and unload the truck: purchases ride in the
-   * bed, so pulling in ends with a walk to the tailgate that lifts the
-   * stock out into the hands — the same two steps the player takes.
-   * Crated machines stay in the bed until buyAndPlaceMachine lifts them.
+   * bed, so pulling in ends with tailgate-to-dropoff trips that stage
+   * the stock on the floor — the same walk the player makes. Crated
+   * machines stay in the bed until buyAndPlaceMachine lifts them.
    */
   comeHome(): this {
     this.apply(returnFromStoreAction());
@@ -502,19 +610,38 @@ export class ShopDriver {
     return this.standAt([doorX, this.state.shopInfo.size[1] + 1]);
   }
 
-  /** Lift everything loose out of the truck's bed into the hands. */
+  /**
+   * Empty the truck's bed onto the material dropoff spot, an armful at a
+   * time — the tailgate-to-floor trips the hand cap makes real. Ends
+   * empty-handed, with the haul staged on the floor where `load` and
+   * `takeFromFloor` will find it.
+   */
   unloadBed(): this {
     if (this.state.truck.bed.length === 0) {
       return this;
     }
-    this.standAtBed();
-    const before = this.inventory.length;
-    const bed = this.state.truck.bed;
-    this.apply(takeFromTruckBedAction(bed));
-    if (this.inventory.length !== before + bed.length) {
-      throw new Error(
-        `The bed would not unload — holding a tool, or too far from it`,
+    const dropoff = this.state.shopInfo.materialDropoffPosition;
+    while (this.state.truck.bed.length > 0) {
+      if (handSpaceLeft(this.state.player) === 0) {
+        this.standAt(dropoff);
+        this.apply(dropMaterialAction(this.inventory));
+      }
+      this.standAtBed();
+      const before = this.state.truck.bed.length;
+      this.apply(
+        takeFromTruckBedAction(
+          this.state.truck.bed.slice(0, handSpaceLeft(this.state.player)),
+        ),
       );
+      if (this.state.truck.bed.length === before) {
+        throw new Error(
+          `The bed would not unload — holding a tool, or too far from it`,
+        );
+      }
+    }
+    if (this.inventory.length > 0) {
+      this.standAt(dropoff);
+      this.apply(dropMaterialAction(this.inventory));
     }
     return this;
   }
@@ -709,10 +836,24 @@ export class ShopDriver {
     if (this.inventory.length === 0) {
       return this;
     }
-    return this.apply(dropMaterialAction(this.inventory));
+    // Piles live on floor cells; from out on the lot (the cab, the bed)
+    // this walks in to the dropoff spot first.
+    if (isOutdoors(this.state.shopInfo, this.state.player.position)) {
+      this.standAt(this.state.shopInfo.materialDropoffPosition);
+    }
+    const held = this.inventory.length;
+    this.apply(dropMaterialAction(this.inventory));
+    if (this.inventory.length === held) {
+      throw new Error(`Couldn't set the carried stock down`);
+    }
+    return this;
   }
 
-  /** Pick a matching pile back up off the floor. */
+  /**
+   * Pick a matching pile back up off the floor, into the arms. The arms
+   * hold HAND_CAPACITY pieces, so this refuses a bigger ask outright —
+   * ferry with `load`, or take an armful and set it down yourself.
+   */
   takeFromFloor(predicate: MaterialPredicate, count?: number): this {
     const matches = this.state.materialPiles.filter((pile) =>
       predicate(pile.material),
@@ -724,6 +865,12 @@ export class ShopDriver {
           `[${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
       );
     }
+    if (wanted.length > handSpaceLeft(this.state.player)) {
+      throw new Error(
+        `Wanted ${wanted.length} pieces off the floor with arm room for ` +
+          `${handSpaceLeft(this.state.player)} — the hands hold two`,
+      );
+    }
     // Piles can sit on different cells; take them one cell at a time.
     for (const pile of wanted) {
       this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
@@ -732,27 +879,62 @@ export class ShopDriver {
   }
 
   /**
-   * Load everything in hand into the truck's bed at the tailgate. The
-   * first half of every delivery.
+   * Ferry these materials — in hand or on the floor — into the truck's
+   * bed at the tailgate, an armful at a time. With no argument it loads
+   * what's in hand. The first half of every delivery.
    */
-  loadBed(): this {
-    if (this.inventory.length === 0) {
+  loadBed(materials: ReadonlyArray<MaterialInstance> = this.inventory): this {
+    const targets = new Set(materials);
+    if (targets.size === 0) {
       return this;
     }
-    this.standAtBed();
-    const inventory = this.inventory;
-    this.apply(loadTruckBedAction(inventory));
-    if (this.inventory.length !== 0) {
-      throw new Error(`The bed would not take what's in hand`);
+    while (true) {
+      const inHand = this.inventory.filter((m) => targets.has(m));
+      if (inHand.length > 0) {
+        this.standAtBed();
+        const before = this.state.truck.bed.length;
+        this.apply(loadTruckBedAction(inHand));
+        if (this.state.truck.bed.length !== before + inHand.length) {
+          throw new Error(`The bed would not take what's in hand`);
+        }
+        for (const m of inHand) {
+          targets.delete(m);
+        }
+      }
+      const piles = this.state.materialPiles.filter((pile) =>
+        targets.has(pile.material),
+      );
+      if (piles.length === 0) {
+        break;
+      }
+      // Full of stock that isn't going: stage it on the dropoff spot so
+      // the arms are free to ferry what is.
+      if (handSpaceLeft(this.state.player) === 0) {
+        this.standAt(this.state.shopInfo.materialDropoffPosition);
+        this.apply(dropMaterialAction(this.inventory));
+      }
+      for (const pile of piles.slice(
+        0,
+        handSpaceLeft(this.state.player),
+      )) {
+        const held = this.inventory.length;
+        this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't pick ${pile.material.type} up to load the bed`,
+          );
+        }
+      }
     }
     return this;
   }
 
   /**
-   * Deliver the active commission: load what's in hand into the bed,
-   * walk to the cab, and drive it off. Fails loudly rather than quietly
-   * doing nothing, because "the commission silently didn't complete" is
-   * the exact bug a playthrough exists to catch.
+   * Deliver the active commission: gather what the order requires out of
+   * the hands and off the floor, ferry it into the bed, walk to the cab,
+   * and drive it off. Fails loudly rather than quietly doing nothing,
+   * because "the commission silently didn't complete" is the exact bug a
+   * playthrough exists to catch.
    */
   handOverCommission(): this {
     const commission = getActiveCommission(this.state.progression);
@@ -760,7 +942,25 @@ export class ShopDriver {
       throw new Error("No active commission to hand over");
     }
     const before = this.state.progression.commissionsCompleted;
-    this.loadBed().standAtCab().apply(completeCommissionAction());
+    // Pick exactly the pieces the order's matcher would claim; anything
+    // it doesn't want stays in the shop. If what's in reach can't satisfy
+    // the order, load the hands anyway and let the delivery fail with its
+    // own message naming the bed.
+    const candidates = [
+      ...this.inventory,
+      ...this.state.materialPiles.map((pile) => pile.material),
+    ];
+    const leftover = consumeRequiredMaterials(
+      candidates,
+      commission.requiredMaterials,
+    );
+    if (leftover !== null) {
+      const leftoverSet = new Set(leftover);
+      this.loadBed(candidates.filter((m) => !leftoverSet.has(m)));
+    } else {
+      this.loadBed();
+    }
+    this.standAtCab().apply(completeCommissionAction());
     if (this.state.progression.commissionsCompleted !== before + 1) {
       throw new Error(
         `"${commission.name}" would not deliver. The bed holds ` +

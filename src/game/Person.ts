@@ -3,6 +3,23 @@ import { MachineState } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { Direction, Vector } from "./Vectors";
 
+/**
+ * How many pieces of stock fit in the arms at once. Tools commit the
+ * hands entirely and a machine takes the shoulders; this is the cap on
+ * loose materials. Two is deliberate: moving a job's worth of wood is
+ * meant to take trips (see docs/handing-work-over.md).
+ */
+export const HAND_CAPACITY = 2;
+
+/**
+ * Arm room left over what's already carried. Never negative: a save (or
+ * an arranged test state) holding more than the cap isn't corrected, it
+ * just can't pick anything else up.
+ */
+export function handSpaceLeft(person: Person): number {
+  return Math.max(0, HAND_CAPACITY - person.inventory.length);
+}
+
 export interface Person {
   name: string;
   position: Vector;

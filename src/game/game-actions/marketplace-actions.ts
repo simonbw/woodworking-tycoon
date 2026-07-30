@@ -1,5 +1,6 @@
 import { GameAction, MarketListing } from "../GameState";
 import { MaterialInstance } from "../Materials";
+import { handSpaceLeft } from "../Person";
 import { availableJobTemplateIds, generateJobBoard } from "../job-generation";
 import {
   DEMAND_DIP_PER_SALE,
@@ -71,6 +72,12 @@ export function delistItemAction(listingId: string): GameAction {
     const listing = gameState.listings.find((l) => l.id === listingId);
     if (!listing) {
       console.warn("Tried to delist an unknown listing");
+      return gameState;
+    }
+    // The item comes back into the arms, so it needs the same room any
+    // pickup does.
+    if (handSpaceLeft(gameState.player) === 0) {
+      console.warn("Tried to delist with full hands");
       return gameState;
     }
     return {

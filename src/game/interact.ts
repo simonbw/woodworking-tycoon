@@ -4,6 +4,7 @@ import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
 import { Machine } from "./Machine";
+import { handSpaceLeft } from "./Person";
 import { chebyshevDistance } from "./Vectors";
 
 /**
@@ -42,8 +43,11 @@ export function resolveInteract(
 
   // A tool in hand commits the hands: material verbs (take, unload, pick
   // up the floor) step aside until it's set down. Switches and the door
-  // still answer — flipping a switch doesn't need a free hand.
-  const handsFree = heldTool(gameState) === null;
+  // still answer — flipping a switch doesn't need a free hand. Full arms
+  // step the same verbs aside: the chip never offers a pickup the action
+  // would refuse.
+  const handsFree =
+    heldTool(gameState) === null && handSpaceLeft(gameState.player) > 0;
 
   const candidates = [targetedMachine, ...(cell?.operableMachines ?? [])]
     .filter((machine) => machine != null)

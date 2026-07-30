@@ -38,7 +38,8 @@ export type GameAction = (gameState: GameState) => GameState;
  * home here instead of materializing on the shop floor, and finished
  * work will leave from here (see docs/handing-work-over.md). Loaded and
  * unloaded standing at the bed — the tailgate end, backed up near the
- * garage door. Unbounded, like the player's hands.
+ * garage door. The bed is unbounded — hauling is what a truck is for;
+ * the player's hands (HAND_CAPACITY) are what meter the trips to it.
  */
 export type TruckState = {
   /** Loose stock in the bed. */

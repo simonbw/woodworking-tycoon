@@ -109,7 +109,7 @@ describe("end-grain chain", () => {
     const shop = withSledMounted(shopWithSkillsAndPlywood());
     shop.make(TABLE_SAW, "crosscutPanel", isPanel);
 
-    assert.equal(shop.holding(isSlice).length, SLICES_PER_PANEL);
+    assert.equal(shop.stock(isSlice).length, SLICES_PER_PANEL);
   });
 
   it("glues the slices grain-up into one rough end-grain panel", () => {
@@ -118,7 +118,7 @@ describe("end-grain chain", () => {
       .make(TABLE_SAW, "crosscutPanel", isPanel)
       .make(WORKBENCH, "glueUpEndGrain", isSlice);
 
-    assert.equal(shop.holding(isSlice).length, 0);
+    assert.equal(shop.stock(isSlice).length, 0);
     const panel = shop.theOne(isEndGrainPanel);
     assert.ok(isPanel(panel));
     assert.equal(panel.surface, "rough");

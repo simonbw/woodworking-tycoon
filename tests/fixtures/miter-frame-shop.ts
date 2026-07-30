@@ -58,8 +58,9 @@ function rail(id: string): Board {
 /**
  * The picture frame chain, ready to run: a miter saw (op cell [2,4], where
  * the player starts) and a workspace (op cell [7,4]). One long stick of walnut
- * frame stock to cut the last rail from, three rails already mitered,
- * nails in the drawer, and the miteredFrames skill unlocked.
+ * frame stock to cut the last rail from, three rails already mitered — one
+ * carried, two piled mid-floor (the hands hold two pieces, so the spec
+ * ferries them) — nails in the drawer, and the miteredFrames skill unlocked.
  */
 export const miterFrameShop: GameState = {
   tick: 0,
@@ -67,17 +68,15 @@ export const miterFrameShop: GameState = {
   reputation: 10,
   consumables: { ...NO_CONSUMABLES, nails: 10 },
   clamps: 0,
-  materialPiles: [],
+  materialPiles: [
+    { material: rail("test-rail-2"), position: [5, 4] },
+    { material: rail("test-rail-3"), position: [5, 4] },
+  ],
   player: {
     name: "Player",
     position: [2, 4], // the miter saw's operation cell
     direction: 0,
-    inventory: [
-      frameStock("test-stock-1", 8),
-      rail("test-rail-1"),
-      rail("test-rail-2"),
-      rail("test-rail-3"),
-    ],
+    inventory: [frameStock("test-stock-1", 8), rail("test-rail-1")],
     busyTicks: 0,
     away: null,
   },
