@@ -37,6 +37,7 @@ export const miterSawCrateShop: GameState = {
       },
     },
   ],
+  truck: { bed: [], crates: [] },
   machineCrates: [
     {
       machine: {

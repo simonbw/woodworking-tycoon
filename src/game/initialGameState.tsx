@@ -47,6 +47,7 @@ export const initialGameState: GameState = {
     machine("garbageCan", [0, 13], 0),
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: [],
     upgrades: [],

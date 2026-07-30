@@ -20,6 +20,7 @@ export function ownsMachine(
     gameState.machineCrates.some(
       (crate) => crate.machine.machineTypeId === machineId,
     ) ||
+    gameState.truck.crates.some((crate) => crate.machineTypeId === machineId) ||
     gameState.player.carriedMachine?.machineTypeId === machineId
   );
 }

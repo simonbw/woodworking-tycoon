@@ -73,7 +73,9 @@ export const WelcomeArticle: React.FC = () => (
       Handing a commission over pays money and builds reputation, and each new
       commission asks for something more advanced. The first payment is enough
       to start shopping at the hardware store — once you hear about it, walk up
-      to the same door to head out.
+      to the same door to head out. What you buy rides home in the truck's bed;
+      walk out to the tailgate and unload it with{" "}
+      <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

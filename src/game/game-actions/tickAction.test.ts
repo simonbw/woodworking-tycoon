@@ -160,7 +160,7 @@ describe("tickAction", () => {
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });
 
-  it("delivers scavenged loot to the dropoff spot on return", () => {
+  it("brings scavenged loot home in the truck's bed", () => {
     const loot = [makeMaterial<Pallet>({ ...nearlyDismantledPallet() })];
     const state = stateWith({
       tick: 20,
@@ -172,12 +172,9 @@ describe("tickAction", () => {
     });
     const result = tickAction(state);
     assert.strictEqual(result.player.away, null);
-    assert.strictEqual(result.materialPiles.length, 1);
-    assert.strictEqual(result.materialPiles[0].material, loot[0]);
-    assert.deepStrictEqual(
-      result.materialPiles[0].position,
-      initialGameState.shopInfo.materialDropoffPosition,
-    );
+    assert.deepStrictEqual(result.truck.bed, loot);
+    // Nothing appears on the shop floor — the haul waits at the tailgate
+    assert.strictEqual(result.materialPiles.length, 0);
   });
 
   it("applies the operation output when the countdown finishes", () => {

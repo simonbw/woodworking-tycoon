@@ -62,6 +62,38 @@ export function truckSolid(shopInfo: ShopInfo): SolidBox {
   return { kind: "box", min, max };
 }
 
+/** The bed is the tailgate end — a Ranger's is about six feet. */
+export const TRUCK_BED_LENGTH = 6;
+
+/** The cargo bed's footprint: the rear stretch of the parked truck,
+ * nearest the garage door. */
+export function truckBedRect(shopInfo: ShopInfo): { min: Vector; max: Vector } {
+  const { min, max } = truckParkedRect(shopInfo);
+  return { min, max: [max[0], min[1] + TRUCK_BED_LENGTH] };
+}
+
+/** How far from the bed's sides a cell still counts as standing at it —
+ * an arm's reach over the rail, same spirit as a machine's operation
+ * zone. */
+const BED_REACH = 1.5;
+
+/**
+ * Whether the player's cell is close enough to load or unload the bed:
+ * anywhere along the tailgate aisle or beside the bed's rails. Indoors
+ * never counts, even though the door strip is only a step away.
+ */
+export function atTruckBed(shopInfo: ShopInfo, position: Vector): boolean {
+  if (!isOutdoors(shopInfo, position)) {
+    return false;
+  }
+  const cx = position[0] + 0.5;
+  const cy = position[1] + 0.5;
+  const { min, max } = truckBedRect(shopInfo);
+  const dx = Math.max(min[0] - cx, 0, cx - max[0]);
+  const dy = Math.max(min[1] - cy, 0, cy - max[1]);
+  return Math.hypot(dx, dy) <= BED_REACH;
+}
+
 /**
  * The walkable world's size in cells: the shop's width (the grass strips
  * beside the driveway are part of it — the driveway alone is too narrow

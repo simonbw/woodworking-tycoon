@@ -51,9 +51,12 @@ import {
 } from "../game-actions/store-actions";
 import {
   canPutDownCarriedMachine,
-  pickUpCrateAction,
   putDownCarriedMachineAction,
 } from "../game-actions/machine-actions";
+import {
+  takeCrateFromTruckAction,
+  takeFromTruckBedAction,
+} from "../game-actions/truck-actions";
 import {
   goToStoreAction,
   returnFromStoreAction,
@@ -455,9 +458,38 @@ export class ShopDriver {
     return this.apply(goToStoreAction(store));
   }
 
-  /** Come home from a trip. */
+  /**
+   * Come home from a trip and unload the truck: purchases ride in the
+   * bed, so pulling in ends with a walk to the tailgate that lifts the
+   * stock out into the hands — the same two steps the player takes.
+   * Crated machines stay in the bed until buyAndPlaceMachine lifts them.
+   */
   comeHome(): this {
-    return this.apply(returnFromStoreAction());
+    this.apply(returnFromStoreAction());
+    return this.unloadBed();
+  }
+
+  /** Stand at the tailgate — the loading side of the parked truck. */
+  standAtBed(): this {
+    const [doorX] = this.state.shopInfo.entrancePosition;
+    return this.standAt([doorX, this.state.shopInfo.size[1] + 1]);
+  }
+
+  /** Lift everything loose out of the truck's bed into the hands. */
+  unloadBed(): this {
+    if (this.state.truck.bed.length === 0) {
+      return this;
+    }
+    this.standAtBed();
+    const before = this.inventory.length;
+    const bed = this.state.truck.bed;
+    this.apply(takeFromTruckBedAction(bed));
+    if (this.inventory.length !== before + bed.length) {
+      throw new Error(
+        `The bed would not unload — holding a tool, or too far from it`,
+      );
+    }
+    return this;
   }
 
   /** Buy stock off a rack. The caller names the price the rack charges. */
@@ -570,11 +602,13 @@ export class ShopDriver {
   }
 
   /**
-   * Buy a machine and carry it to where it's going to live. It arrives
-   * crated at the entrance, gets picked up, and is set down standing at the
-   * cell it will be worked from — the same three steps the floor demands,
-   * so a machine that can't physically fit fails here rather than silently
-   * never arriving.
+   * Buy a machine and carry it to where it's going to live. It rides
+   * home crated in the truck's bed, gets lifted out at the tailgate, and
+   * is set down standing at the cell it will be worked from — the same
+   * steps the floor demands, so a machine that can't physically fit
+   * fails here rather than silently never arriving. (The sequence tier
+   * doesn't model the drive home; the crate is lifted from the bed
+   * whenever this runs, mid-trip or after.)
    */
   buyAndPlaceMachine(
     machineTypeId: MachineId,
@@ -588,13 +622,13 @@ export class ShopDriver {
         `Couldn't afford the ${machineTypeId} at $${price} — the shop had $${before}`,
       );
     }
-    const crate = this.state.machineCrates.find(
-      (candidate) => candidate.machine.machineTypeId === machineTypeId,
+    const crate = this.state.truck.crates.find(
+      (candidate) => candidate.machineTypeId === machineTypeId,
     );
     if (!crate) {
-      throw new Error(`No ${machineTypeId} crate arrived at the entrance`);
+      throw new Error(`No ${machineTypeId} crate arrived in the truck's bed`);
     }
-    this.standAt(crate.position).apply(pickUpCrateAction());
+    this.standAtBed().apply(takeCrateFromTruckAction(machineTypeId));
     if (!this.state.player.carriedMachine) {
       throw new Error(
         `Couldn't lift the ${machineTypeId} crate. A crate takes both hands, ` +

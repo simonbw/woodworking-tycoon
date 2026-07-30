@@ -97,6 +97,7 @@ export const layoutWithPlacedMachines: GameState = {
     },
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: [],
     upgrades: [],

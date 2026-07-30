@@ -268,7 +268,7 @@ test.describe("Shop floor", () => {
       await expect(page.getByText(/plans & tools/i).first()).toBeVisible();
     });
 
-    await test.step("buying a machine delivers a crate at the entrance", async () => {
+    await test.step("buying a machine crates it into the truck's bed", async () => {
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -285,17 +285,32 @@ test.describe("Shop floor", () => {
         .click({ force: true });
       await page.waitForTimeout(30);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
-      expect(state.machineCrates).toHaveLength(1);
-      expect(state.machineCrates[0].machine.machineTypeId).toBe(
-        "jobsiteTableSaw",
-      );
-      // Nearest open floor to the entrance [6,15]
-      expect(state.machineCrates[0].position).toEqual([6, 15]);
+      expect(state.truck.crates).toHaveLength(1);
+      expect(state.truck.crates[0].machineTypeId).toBe("jobsiteTableSaw");
+      // Nothing lands on the shop floor until it's carried in
+      expect(state.machineCrates).toHaveLength(0);
+    });
+
+    await test.step("the crate lifts out of the bed at the tailgate", async () => {
+      await leaveStore(page);
+      // Stand in the tailgate aisle, one step out the garage door
+      await teleportPlayer(page, [6, 17]);
+      await expect(page.getByText("Unpack Jobsite Table Saw")).toBeVisible();
+      await page.keyboard.press("b");
+      await page.waitForTimeout(30);
+      expect((await carried(page)).machineTypeId).toBe("jobsiteTableSaw");
+      const state = await page.evaluate(() => window.__GET_GAME_STATE__());
+      expect(state.truck.crates).toHaveLength(0);
+      // The lot is walkable, not usable: no setting a machine down out here
+      await expect(page.getByText("no room to set it down here")).toBeVisible();
+      // Carry it in and stand it on open floor
+      await teleportPlayer(page, [2, 10]);
+      await page.keyboard.press("b");
+      await page.waitForTimeout(30);
+      expect(await carried(page)).toBeNull();
     });
 
     await test.step("a dusty floor summons the broom", async () => {
-      // Home from the store first — an away player has no floor verbs
-      await leaveStore(page);
       // Dust past the tutorial threshold flips sweepingUnlocked on the
       // next milestone tick, and the broom appears at its home corner.
       await page.evaluate(() => {

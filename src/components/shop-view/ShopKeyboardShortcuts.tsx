@@ -30,6 +30,12 @@ import {
   putDownBroomAction,
 } from "../../game/game-actions/dust-actions";
 import { heldTool, holdingBroom } from "../../game/HeldTool";
+import { atTruckBed } from "../../game/lot";
+import {
+  loadTruckBedAction,
+  takeCrateFromTruckAction,
+  takeFromTruckBedAction,
+} from "../../game/game-actions/truck-actions";
 import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
@@ -104,6 +110,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       );
       if (crateUnderfoot) {
         return applyAction(pickUpCrateAction());
+      }
+      if (
+        gs.truck.crates.length > 0 &&
+        atTruckBed(gs.shopInfo, gs.player.position)
+      ) {
+        return applyAction(takeCrateFromTruckAction());
       }
       const machine = targeted.current;
       if (machine && canPickUpMachine(gs, machine.state)) {
@@ -187,6 +199,14 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           );
         case "pick-up-broom":
           return applyAction(pickUpBroomAction());
+        case "truck-bed": {
+          const bed = gs.truck.bed;
+          return applyAction(
+            takeFromTruckBedAction(
+              event.shiftKey ? bed : [bed[bed.length - 1]],
+            ),
+          );
+        }
         case "open-door":
           return openDoor();
       }
@@ -206,6 +226,13 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         // Empty-handed except for the broom: F leans it right here
         if (holdingBroom(gs)) applyAction(putDownBroomAction());
         return;
+      }
+
+      // At the truck's bed, F loads over the rail instead of dropping
+      if (atTruckBed(gs.shopInfo, gs.player.position)) {
+        return applyAction(
+          loadTruckBedAction(event.shiftKey ? inventory : [inventory[0]]),
+        );
       }
 
       const machine = targeted.current;

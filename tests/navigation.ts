@@ -123,12 +123,45 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
   return previousPosition;
 }
 
-/** Head home from either store, optionally walking back to a remembered cell. */
+/**
+ * Unload everything loose from the truck's bed into the hands, standing
+ * at the tailgate and pressing the real interact key (Shift+E takes the
+ * whole bed). No-op when the bed is empty. Crated machines stay in the
+ * bed — they're lifted with the carry key, not E.
+ */
+export async function unloadTruckBed(page: any) {
+  const bedCount = await page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().truck.bed.length,
+  );
+  if (bedCount === 0) return;
+  await page.evaluate(() => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: {
+        ...state.player,
+        // The tailgate aisle, one step out the garage door
+        position: [state.shopInfo.entrancePosition[0], state.shopInfo.size[1] + 1],
+      },
+    }));
+  });
+  await page.waitForTimeout(30);
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press("Shift+E");
+  await page.waitForTimeout(30);
+}
+
+/**
+ * Head home from either store, optionally walking back to a remembered
+ * cell. Purchases ride home in the truck's bed, so heading home swings
+ * past the tailgate and unloads it — every spec that buys stock relies
+ * on coming home with it in hand.
+ */
 export async function leaveStore(page: any, returnTo?: [number, number]) {
   await page
     .getByRole("button", { name: "Head Home" })
     .click({ force: true });
   await page.waitForTimeout(30);
+  await unloadTruckBed(page);
   if (returnTo) {
     await page.evaluate((position: [number, number]) => {
       (window as any).__UPDATE_GAME_STATE__((state: any) => ({

@@ -78,6 +78,7 @@ export const resawShop: GameState = {
     }),
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: ["resawFence"],
     upgrades: [],

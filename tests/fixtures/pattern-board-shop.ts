@@ -97,6 +97,7 @@ export const patternBoardShop: GameState = {
     idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: [],
     upgrades: [],

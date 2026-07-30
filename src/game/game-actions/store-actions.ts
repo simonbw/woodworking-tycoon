@@ -5,7 +5,7 @@ import { getActiveCommission } from "../commissionSequence";
 import { canHandOff, consumeRequiredMaterials } from "../delivery";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
-import { deliverMachineCrate, freshMachineState } from "./machine-actions";
+import { freshMachineState } from "./machine-actions";
 import { emitPayout } from "./payout-actions";
 import {
   incrementCommissionsCompletedAction,
@@ -24,12 +24,14 @@ export function buyMaterialAction(
       console.warn("Tried to buy material without enough money");
       return gameState;
     }
+    // Purchases ride home in the truck's bed — they're waiting there
+    // when the player pulls back in, not conjured into their hands.
     return {
       ...gameState,
       money: gameState.money - price,
-      player: {
-        ...gameState.player,
-        inventory: [...gameState.player.inventory, material],
+      truck: {
+        ...gameState.truck,
+        bed: [...gameState.truck.bed, material],
       },
     };
   };
@@ -106,12 +108,19 @@ export function buyMachineAction(
       return gameState;
     }
 
-    // The purchase arrives crated at the shop entrance, to be carried into
-    // place (see docs/carrying-machines.md)
-    const updatedState = deliverMachineCrate(
-      { ...gameState, money: gameState.money - price },
-      freshMachineState(machineTypeId, gameState.progression),
-    );
+    // The purchase rides home crated in the truck's bed, to be carried
+    // into place from there (see docs/carrying-machines.md)
+    const updatedState = {
+      ...gameState,
+      money: gameState.money - price,
+      truck: {
+        ...gameState.truck,
+        crates: [
+          ...gameState.truck.crates,
+          freshMachineState(machineTypeId, gameState.progression),
+        ],
+      },
+    };
 
     // Owning a miter saw unlocks machine carrying (see UNLOCK_CONDITIONS)
     return checkProgressionMilestonesAction()(updatedState);

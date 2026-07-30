@@ -1,7 +1,9 @@
 import React from "react";
-import { truckParkedRect } from "../../game/lot";
+import { truckBedRect, truckParkedRect } from "../../game/lot";
 import { useTexture } from "../../utils/useTexture";
+import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { useGameState } from "../useGameState";
+import { MachineCrateSprite } from "./MachineCrateSprite";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
 
 /**
@@ -37,15 +39,48 @@ export const TruckSprite: React.FC = () => {
   const centerY =
     tailgateY - TRUCK_CANVAS_HEIGHT * TRUCK_TAIL_INSET + TRUCK_CANVAS_HEIGHT / 2;
 
+  const bed = truckBedRect(gameState.shopInfo);
+  const bedCenterX = cellToPixel((bed.min[0] + bed.max[0]) / 2);
+  const bedCenterY = cellToPixel((bed.min[1] + bed.max[1]) / 2);
+
   return (
-    <pixiSprite
-      texture={truckTexture}
-      x={centerX}
-      y={centerY}
-      width={TRUCK_CANVAS_WIDTH}
-      height={TRUCK_CANVAS_HEIGHT}
-      anchor={{ x: 0.5, y: 0.5 }}
-      angle={180}
-    />
+    <>
+      <pixiSprite
+        texture={truckTexture}
+        x={centerX}
+        y={centerY}
+        width={TRUCK_CANVAS_WIDTH}
+        height={TRUCK_CANVAS_HEIGHT}
+        anchor={{ x: 0.5, y: 0.5 }}
+        angle={180}
+      />
+      {/* Cargo lies lengthwise in the bed, fanned like a floor pile.
+          Long stock overhangs the tailgate — that's what the truck's
+          for. Crates ride behind the cab, stock toward the gate. */}
+      {gameState.truck.crates.map((machine, i) => (
+        <MachineCrateSprite
+          key={`bed-crate-${i}`}
+          crate={{
+            machine,
+            // MachineCrateSprite centers on a cell; offset so the crate
+            // lands staggered up the bed from its far end
+            position: [
+              (bed.min[0] + bed.max[0]) / 2 - 0.5,
+              bed.max[1] - 1.6 - i * 1.2,
+            ],
+          }}
+        />
+      ))}
+      {gameState.truck.bed.map((material, i) => (
+        <pixiContainer
+          key={`bed-${material.id ?? i}`}
+          x={bedCenterX}
+          y={bedCenterY + ((i % 3) - 1) * 6}
+          angle={90 + ((i * 7) % 21) - 10}
+        >
+          <MaterialSprite material={material} />
+        </pixiContainer>
+      ))}
+    </>
   );
 };

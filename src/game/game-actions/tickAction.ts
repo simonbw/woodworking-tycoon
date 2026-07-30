@@ -51,17 +51,15 @@ function playerTickPass(): GameAction {
   return (gameState) => {
     const away = gameState.player.away;
     if (away?.kind === "scavenging" && gameState.tick >= away.returnTick) {
-      // Welcome home: drop the haul at the material dropoff spot.
-      // (Shopping trips end via returnFromStoreAction, not a timer.)
+      // Welcome home: the haul rides in the truck's bed, to be unloaded
+      // at the tailgate. (Shopping trips end via returnFromStoreAction,
+      // not a timer.)
       gameState = {
         ...gameState,
-        materialPiles: [
-          ...gameState.materialPiles,
-          ...away.loot.map((material) => ({
-            material,
-            position: gameState.shopInfo.materialDropoffPosition,
-          })),
-        ],
+        truck: {
+          ...gameState.truck,
+          bed: [...gameState.truck.bed, ...away.loot],
+        },
         player: { ...gameState.player, away: null },
       };
     }

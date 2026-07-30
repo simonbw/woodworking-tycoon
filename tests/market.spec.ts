@@ -293,8 +293,8 @@ test.describe("Market, supplies, and sound", () => {
         /Headed out/,
       );
 
-      const pilesBefore = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().materialPiles.length,
+      const bedBefore = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().truck.bed.length,
       );
 
       // Fast-forward most of the trip: every stop has been visited, so the
@@ -327,15 +327,16 @@ test.describe("Market, supplies, and sound", () => {
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
       );
-      expect(state.materialPiles.length).toBeGreaterThan(pilesBefore);
-      const pallets = state.materialPiles.filter(
-        (pile: any) => pile.material.type === "pallet",
+      // The haul comes home in the truck's bed, not onto the shop floor
+      expect(state.truck.bed.length).toBeGreaterThan(bedBefore);
+      const pallets = state.truck.bed.filter(
+        (material: any) => material.type === "pallet",
       );
       expect(pallets.length).toBeGreaterThanOrEqual(1);
       expect(pallets.length).toBeLessThanOrEqual(2);
       // Damaged: 6-11 deck boards
-      for (const pile of pallets) {
-        const deckCount = pile.material.deckBoards.filter(Boolean).length;
+      for (const pallet of pallets) {
+        const deckCount = pallet.deckBoards.filter(Boolean).length;
         expect(deckCount).toBeGreaterThanOrEqual(6);
         expect(deckCount).toBeLessThanOrEqual(11);
       }

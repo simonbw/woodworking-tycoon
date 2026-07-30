@@ -21,9 +21,10 @@ export type MaterialPile = {
 
 /**
  * A machine boxed up on the shop floor, waiting to be carried into place.
- * Purchases arrive as crates near the shop entrance and shop-built stations
- * (worktables) land crated at the bench that produced them. Crates don't
- * block walking — stand on one and pick it up. See docs/carrying-machines.md.
+ * Shop-built stations (worktables) land crated at the bench that produced
+ * them; purchased machines ride home in the truck's bed instead (see
+ * TruckState). Crates don't block walking — stand on one and pick it up.
+ * See docs/carrying-machines.md.
  */
 export type MachineCrate = {
   readonly machine: MachineState;
@@ -31,6 +32,20 @@ export type MachineCrate = {
 };
 
 export type GameAction = (gameState: GameState) => GameState;
+
+/**
+ * What's riding in the truck's bed. Purchases and scavenged loot come
+ * home here instead of materializing on the shop floor, and finished
+ * work will leave from here (see docs/handing-work-over.md). Loaded and
+ * unloaded standing at the bed — the tailgate end, backed up near the
+ * garage door. Unbounded, like the player's hands.
+ */
+export type TruckState = {
+  /** Loose stock in the bed. */
+  readonly bed: ReadonlyArray<MaterialInstance>;
+  /** Machines still crated, lying in the bed after a store run. */
+  readonly crates: ReadonlyArray<MachineState>;
+};
 
 /** Represents all of the state for the game simulation. This is what gets loaded/saved. Does not include UI state. */
 export interface ProgressionState {
@@ -77,6 +92,8 @@ export interface GameState {
   readonly machines: ReadonlyArray<MachineState>;
   /** Machines still in their delivery crates (see MachineCrate). */
   readonly machineCrates: ReadonlyArray<MachineCrate>;
+  /** The pickup in the driveway and everything in its bed. */
+  readonly truck: TruckState;
   readonly shopInfo: ShopInfo;
   readonly player: Person;
   readonly storage: {

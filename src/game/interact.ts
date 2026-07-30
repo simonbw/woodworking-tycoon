@@ -2,6 +2,7 @@ import { CellMap } from "./CellMap";
 import { readyHandoffs } from "./delivery";
 import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
+import { atTruckBed } from "./lot";
 import { Machine } from "./Machine";
 import { isAtShopDoor } from "./ShopInfo";
 import { chebyshevDistance } from "./Vectors";
@@ -23,6 +24,9 @@ export type InteractAction =
   /** `piles[0]` is what a plain press grabs; Shift takes them all. */
   | { kind: "pick-up-floor"; piles: ReadonlyArray<MaterialPile> }
   | { kind: "pick-up-broom" }
+  /** Standing at the truck's bed with cargo in it: E lifts the last
+   * piece loaded back out (Shift empties the bed). */
+  | { kind: "truck-bed"; count: number }
   /** `handoffCount` is how much finished work the player is holding. */
   | { kind: "open-door"; handoffCount: number };
 
@@ -97,6 +101,14 @@ export function resolveInteract(
     return { kind: "pick-up-broom" };
   }
 
+  if (
+    handsFree &&
+    gameState.truck.bed.length > 0 &&
+    atTruckBed(gameState.shopInfo, gameState.player.position)
+  ) {
+    return { kind: "truck-bed", count: gameState.truck.bed.length };
+  }
+
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
     gameState.progression;
   if (isAtShopDoor(gameState.shopInfo, gameState.player.position)) {
@@ -135,6 +147,8 @@ export function interactLabel(action: InteractAction): string {
       return "pick up";
     case "pick-up-broom":
       return "pick up broom";
+    case "truck-bed":
+      return `unload bed (${action.count})`;
     case "open-door":
       return action.handoffCount > 0 ? "hand off work" : "head out";
   }

@@ -134,6 +134,13 @@ export const gameStateSchema = z.object({
   machineCrates: z.array(
     z.object({ machine: machineStateSchema, position: vectorSchema }),
   ),
+  // Defaulted so saves from before the truck carried cargo still load
+  truck: z
+    .object({
+      bed: z.array(materialSchema),
+      crates: z.array(machineStateSchema),
+    })
+    .default({ bed: [], crates: [] }),
   shopInfo: z.object({
     name: z.string(),
     electricity: z.union([z.literal(120), z.literal(240)]),
