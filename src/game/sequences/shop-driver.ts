@@ -23,7 +23,7 @@ import {
 } from "../Machine";
 import { GameAction, GameState } from "../GameState";
 import { MaterialInstance } from "../Materials";
-import { handSpaceLeft } from "../Person";
+import { HAND_CAPACITY, handSpaceLeft } from "../Person";
 import { consumeRequiredMaterials } from "../delivery";
 import { availableOperations } from "../skill-helpers";
 import { tickAction } from "../game-actions/tickAction";
@@ -123,7 +123,7 @@ export class ShopDriver {
 
   /**
    * Everything within reach that the predicate matches — in the arms or
-   * piled on the floor. The hands hold two pieces (HAND_CAPACITY), so a
+   * piled on the floor. The hands hold HAND_CAPACITY pieces, so a
    * chain's stock lives mostly on the floor between steps; what a test
    * usually wants to know is "does the shop have it", and this is that.
    */
@@ -850,9 +850,9 @@ export class ShopDriver {
   }
 
   /**
-   * Pick a matching pile back up off the floor, into the arms. The arms
-   * hold HAND_CAPACITY pieces, so this refuses a bigger ask outright —
-   * ferry with `load`, or take an armful and set it down yourself.
+   * Pick a matching pile back up off the floor, into the arms. This
+   * refuses an ask bigger than the arm room outright — ferry with
+   * `load`, or take an armful and set it down yourself.
    */
   takeFromFloor(predicate: MaterialPredicate, count?: number): this {
     const matches = this.state.materialPiles.filter((pile) =>
@@ -868,7 +868,7 @@ export class ShopDriver {
     if (wanted.length > handSpaceLeft(this.state.player)) {
       throw new Error(
         `Wanted ${wanted.length} pieces off the floor with arm room for ` +
-          `${handSpaceLeft(this.state.player)} — the hands hold two`,
+          `${handSpaceLeft(this.state.player)} — the hands hold ${HAND_CAPACITY}`,
       );
     }
     // Piles can sit on different cells; take them one cell at a time.

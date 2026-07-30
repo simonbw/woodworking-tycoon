@@ -59,8 +59,9 @@ function rail(id: string): Board {
  * The picture frame chain, ready to run: a miter saw (op cell [2,4], where
  * the player starts) and a workspace (op cell [7,4]). One long stick of walnut
  * frame stock to cut the last rail from, three rails already mitered — one
- * carried, two piled mid-floor (the hands hold two pieces, so the spec
- * ferries them) — nails in the drawer, and the miteredFrames skill unlocked.
+ * carried, two piled mid-floor (the hands hold HAND_CAPACITY pieces, so the
+ * spec ferries them) — nails in the drawer, and the miteredFrames skill
+ * unlocked.
  */
 export const miterFrameShop: GameState = {
   tick: 0,

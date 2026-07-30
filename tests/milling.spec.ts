@@ -474,8 +474,8 @@ test.describe("Milling", () => {
         anyMaterialMatches,
         "m.type === 'board' && m.length === 5 && m.ends && m.ends.right.kind === 'mitered' && m.ends.left.kind === 'square'",
       );
-      // Cut pieces stay on the saw table until collected. Two hands, two
-      // pieces: park the carried rail first so both halves fit.
+      // Cut pieces stay on the saw table until collected. Park the
+      // carried rail first so the armful is exactly the two cut pieces.
       await dropEverything(page);
       await takeAllHere(page);
       await expect(
@@ -573,8 +573,8 @@ test.describe("Milling", () => {
         page,
         "(m) => m.type === 'board' && m.thickness === 4",
       );
-      // Both halves stay on the saw table — park the spare blank so two
-      // hands can take the pair together
+      // Both halves stay on the saw table — park the spare blank so the
+      // armful is exactly the pair
       await dropEverything(page);
       await takeAllHere(page);
       const halves = (await boardsInHand(page)).filter(
@@ -615,7 +615,7 @@ test.describe("Milling", () => {
 
     await test.step("the table saw pays a kerf the band saw didn't", async () => {
       // Park the band saw's halves and fetch the untouched blank left by
-      // the band saw — two hands means the swap takes a walk
+      // the band saw — capped hands mean the swap takes a walk
       await dropEverything(page);
       await movePlayerTo(page, [2, 9]);
       await pressKey(page, "e");

@@ -5,6 +5,7 @@ import { GameState, MaterialPile } from "./GameState";
 import { initialGameState } from "./initialGameState";
 import { resolveInteract } from "./interact";
 import { Board } from "./Materials";
+import { HAND_CAPACITY } from "./Person";
 
 function pileAt(
   position: [number, number],
@@ -48,15 +49,17 @@ describe("resolveInteract", () => {
   });
 
   it("steps pickup aside when the hands are full", () => {
-    // HAND_CAPACITY is 2: with both hands loaded the chip never offers a
-    // pickup the action would refuse
+    // With the arms at capacity the chip never offers a pickup the
+    // action would refuse
     const underfoot = pileAt([5, 5]);
     const state = shopWithPiles(underfoot);
     const fullHanded = {
       ...state,
       player: {
         ...state.player,
-        inventory: [board("pine", 1), board("pine", 1)],
+        inventory: Array.from({ length: HAND_CAPACITY }, () =>
+          board("pine", 1),
+        ),
       },
     };
     assert.strictEqual(resolveInteract(fullHanded, undefined), null);

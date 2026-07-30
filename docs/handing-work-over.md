@@ -154,14 +154,14 @@ at a corner.
 
 ## Future work
 
-- **A carry cost — landed.** The hands now hold `HAND_CAPACITY` (2)
-  pieces (`src/game/Person.ts`), enforced in every pickup action, so a
-  four-board job takes two trips to the tailgate and the bed is where big
-  hauls ride. The bed itself stays unbounded on purpose: hauling is the
-  truck's job, the trips to it are the player's. `getMaterialInventorySize`
-  is still called from nowhere — it's the finer, footprint-based model
-  (a pallet fills the arms, thin rails don't) if a flat count of two ever
-  needs replacing.
+- **A carry cost — landed.** The hands now hold `HAND_CAPACITY` pieces
+  (`src/game/Person.ts`), enforced in every pickup action, so a job
+  bigger than an armful takes trips to the tailgate and the bed is where
+  big hauls ride. The bed itself stays unbounded on purpose: hauling is
+  the truck's job, the trips to it are the player's.
+  `getMaterialInventorySize` is still called from nowhere — it's the
+  finer, footprint-based model (a pallet fills the arms, thin rails
+  don't) if a flat count ever needs replacing.
 - **A timed delivery run.** The truck could actually drive off with the
   goods and come back — diegetically stronger, but it reshapes pacing and
   every rung of the progression ledger.
