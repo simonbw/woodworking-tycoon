@@ -174,6 +174,22 @@ test.describe("Stations", () => {
       await expect(sheet.getByText("Mode")).not.toBeVisible();
     });
 
+    await test.step("walking away puts the sheet away for good", async () => {
+      // Regression: the open sheet was remembered by station, so walking
+      // off only hid it — stepping back up to the can spread it open
+      // again with nobody touching Tab.
+      await movePlayerTo(page, [2, 5]);
+      await page.getByTestId("station-sheet").waitFor({ state: "detached" });
+      await movePlayerTo(page, [2, 13]);
+      await page.waitForTimeout(100);
+      await expect(page.getByTestId("station-sheet")).toHaveCount(0);
+      // Tab still spreads it back out
+      await openStationSheet(page);
+      await expect(
+        stationCard(page, "Garbage Can").getByText("Contents · 1/8"),
+      ).toBeVisible();
+    });
+
     await test.step("...and gives it back through the sheet until you empty it", async () => {
       await stationCard(page, "Garbage Can")
         .getByRole("button", { name: "Take" })
