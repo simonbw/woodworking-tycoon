@@ -89,6 +89,7 @@ export const miterFrameShop: GameState = {
     idleMachine("workspace", [7, 2], "buildPictureFrame"),
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: [],
     upgrades: [],

@@ -5,6 +5,7 @@ import { hasConsumables, subtractConsumables } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
 import { feedClearanceShortfall } from "../feed-clearance";
 import { heldTool } from "../HeldTool";
+import { isOutdoors } from "../lot";
 import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
@@ -87,6 +88,12 @@ export function dropMaterialAction(
   materials: ReadonlyArray<MaterialInstance>,
 ): GameAction {
   return (gameState) => {
+    // Piles live on floor cells; the lot has none. What's carried stays
+    // in hand until the player is back inside (or, later, at the truck).
+    if (isOutdoors(gameState.shopInfo, gameState.player.position)) {
+      console.warn("Tried to drop material outside the shop");
+      return gameState;
+    }
     for (const material of materials) {
       if (!gameState.player.inventory.some((item) => item === material)) {
         console.warn("Tried to drop material not in inventory");

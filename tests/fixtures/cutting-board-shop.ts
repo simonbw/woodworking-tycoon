@@ -62,6 +62,7 @@ export const cuttingBoardShop: GameState = {
   },
   machines: [idleMachine("workspace", [1, 2], "dismantlePallet")],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: ["randomOrbitSander"],
     upgrades: [],

@@ -1,5 +1,6 @@
 import React from "react";
 import { getActiveCommission } from "../game/commissionSequence";
+import { hasRequiredMaterials } from "../game/delivery";
 import { describeMaterialRequirement } from "../game/material-helpers";
 import { formatMoney } from "../utils/formatNumber";
 import { useClipboard } from "./clipboard/ClipboardProvider";
@@ -22,6 +23,10 @@ export const CommissionTracker: React.FC = () => {
 
   const lineItems = commissionLineItems(gameState, commission);
   const canComplete = lineItems.every((item) => item.have >= item.need);
+  const bedReady = hasRequiredMaterials(
+    gameState.truck.bed,
+    commission.requiredMaterials,
+  );
 
   return (
     <Tooltip
@@ -69,7 +74,9 @@ export const CommissionTracker: React.FC = () => {
         <div className="mt-1.5 border-t border-workshop-edge pt-1.5 font-condensed text-xs">
           {canComplete ? (
             <span className="uppercase tracking-[0.15em] text-gold-light">
-              Ready — carry it to the garage door
+              {bedReady
+                ? "Ready — deliver from the truck's cab"
+                : "Ready — load it into the truck's bed"}
             </span>
           ) : (
             <span className="text-paper-manila/60">

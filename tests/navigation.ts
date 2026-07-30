@@ -1,7 +1,7 @@
 /**
  * Helpers for the diegetic navigation surfaces: the phone and journal
- * overlays (top-bar buttons) and trips out the garage door (the door
- * panel that appears when the player stands at the entrance cell).
+ * overlays (top-bar buttons) and trips out via the truck (the trip
+ * card that appears when the player stands at the cab).
  */
 
 /**
@@ -22,24 +22,30 @@ export async function startNewGame(page: any) {
   await confirmPanel.waitFor({ state: "hidden" }).catch(() => {});
 }
 
-/** Teleport the player to the garage door so its prompt appears. */
-export async function movePlayerToDoor(page: any) {
+/** Teleport the player beside the truck's cab so its prompt appears. */
+export async function movePlayerToCab(page: any) {
   await page.evaluate(() => {
     (window as any).__UPDATE_GAME_STATE__((state: any) => ({
       ...state,
-      player: { ...state.player, position: state.shopInfo.entrancePosition },
+      player: {
+        ...state.player,
+        // The driver's-door cell on the default 12x16 shop (see
+        // truckCabSideCell): grass beside the cab, a walk down the
+        // driveway from the garage door.
+        position: [state.shopInfo.entrancePosition[0] - 4, state.shopInfo.size[1] + 17],
+      },
     }));
   });
   await page.waitForTimeout(30);
 }
 
 /**
- * Spread open the door's destination card (E at the door). The interact
- * key serves nearer things first — a machine to switch on, stock to
- * take — so this presses through those until the door answers.
+ * Spread open the truck's trip card (E at the cab). The interact key
+ * serves nearer things first, so this presses through until the cab
+ * answers.
  */
-export async function openDoorPanel(page: any) {
-  const panel = page.getByTestId("door-panel");
+export async function openTruckMenu(page: any) {
+  const panel = page.getByTestId("truck-panel");
   for (let tries = 0; tries < 4; tries++) {
     if (await panel.isVisible()) break;
     await page.evaluate(() =>
@@ -53,22 +59,44 @@ export async function openDoorPanel(page: any) {
 }
 
 /**
- * Hand finished work over at the garage door — the only way work leaves
- * the shop. Walks to the door, opens the card, and clicks the "Hand Over"
- * button on the row matching `name` (a commission title or a job client).
+ * Load everything in hand into the truck's bed through the real keys:
+ * stand in the tailgate aisle and press Shift+F.
+ */
+export async function loadTruckBed(page: any) {
+  await page.evaluate(() => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: {
+        ...state.player,
+        position: [state.shopInfo.entrancePosition[0], state.shopInfo.size[1] + 1],
+      },
+    }));
+  });
+  await page.waitForTimeout(30);
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press("Shift+F");
+  await page.waitForTimeout(30);
+}
+
+/**
+ * Deliver finished work from the truck — the only way work leaves the
+ * shop. Loads what's in hand into the bed, walks to the cab, opens the
+ * card, and clicks the "Deliver" button on the row matching `name` (a
+ * commission title or a job client).
  *
- * A commission handoff then shows the client's card, which has to be
+ * A commission delivery then shows the client's card, which has to be
  * dismissed before the rewards fly; `dismissClientCard` does that.
  */
-export async function handOffAtDoor(page: any, name: string | RegExp) {
-  await movePlayerToDoor(page);
-  await openDoorPanel(page);
+export async function deliverFromTruck(page: any, name: string | RegExp) {
+  await loadTruckBed(page);
+  await movePlayerToCab(page);
+  await openTruckMenu(page);
   // force: the world keeps ticking (job tips decay every tick), so the
   // row's text re-renders and the stability check can starve.
   await page
-    .getByTestId("door-panel")
+    .getByTestId("truck-panel")
     .locator("li", { hasText: name })
-    .getByRole("button", { name: "Hand Over" })
+    .getByRole("button", { name: "Deliver" })
     .click({ force: true });
   await page.waitForTimeout(30);
 }
@@ -83,20 +111,20 @@ export async function dismissClientCard(page: any) {
 }
 
 /**
- * Walk out the door to Orange Box. Returns the player's previous cell so
+ * Drive out to Orange Box. Returns the player's previous cell so
  * `leaveStore` can put them back where the test needs them — the specs
- * predate the door and assume browsing the store doesn't move the player.
+ * predate the truck and assume browsing the store doesn't move the player.
  */
 export async function goToStore(page: any): Promise<[number, number]> {
   const previousPosition = await page.evaluate(
     () => (window as any).__GET_GAME_STATE__().player.position,
   );
-  await movePlayerToDoor(page);
-  await openDoorPanel(page);
+  await movePlayerToCab(page);
+  await openTruckMenu(page);
   // force: the world keeps ticking, so nearby text re-renders can make
   // Playwright's stability check starve on slow machines
   await page
-    .getByTestId("door-panel")
+    .getByTestId("truck-panel")
     .locator("li", { hasText: "Orange Box" })
     .getByRole("button", { name: "Go" })
     .click({ force: true });
@@ -105,17 +133,17 @@ export async function goToStore(page: any): Promise<[number, number]> {
 }
 
 /**
- * Walk out the door to Sawyer & Sons, the lumberyard. Same contract as
+ * Drive out to Sawyer & Sons, the lumberyard. Same contract as
  * `goToStore`: returns the player's previous cell for `leaveStore`.
  */
 export async function goToLumberyard(page: any): Promise<[number, number]> {
   const previousPosition = await page.evaluate(
     () => (window as any).__GET_GAME_STATE__().player.position,
   );
-  await movePlayerToDoor(page);
-  await openDoorPanel(page);
+  await movePlayerToCab(page);
+  await openTruckMenu(page);
   await page
-    .getByTestId("door-panel")
+    .getByTestId("truck-panel")
     .locator("li", { hasText: "Sawyer & Sons" })
     .getByRole("button", { name: "Go" })
     .click({ force: true });
@@ -123,12 +151,45 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
   return previousPosition;
 }
 
-/** Head home from either store, optionally walking back to a remembered cell. */
+/**
+ * Unload everything loose from the truck's bed into the hands, standing
+ * at the tailgate and pressing the real interact key (Shift+E takes the
+ * whole bed). No-op when the bed is empty. Crated machines stay in the
+ * bed — they're lifted with the carry key, not E.
+ */
+export async function unloadTruckBed(page: any) {
+  const bedCount = await page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().truck.bed.length,
+  );
+  if (bedCount === 0) return;
+  await page.evaluate(() => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: {
+        ...state.player,
+        // The tailgate aisle, one step out the garage door
+        position: [state.shopInfo.entrancePosition[0], state.shopInfo.size[1] + 1],
+      },
+    }));
+  });
+  await page.waitForTimeout(30);
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press("Shift+E");
+  await page.waitForTimeout(30);
+}
+
+/**
+ * Head home from either store, optionally walking back to a remembered
+ * cell. Purchases ride home in the truck's bed, so heading home swings
+ * past the tailgate and unloads it — every spec that buys stock relies
+ * on coming home with it in hand.
+ */
 export async function leaveStore(page: any, returnTo?: [number, number]) {
   await page
     .getByRole("button", { name: "Head Home" })
     .click({ force: true });
   await page.waitForTimeout(30);
+  await unloadTruckBed(page);
   if (returnTo) {
     await page.evaluate((position: [number, number]) => {
       (window as any).__UPDATE_GAME_STATE__((state: any) => ({

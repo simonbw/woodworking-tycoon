@@ -10,6 +10,7 @@ import {
 import { freshMachineState } from "./game-actions/machine-actions";
 import { AcceptedJob, GameState } from "./GameState";
 import { initialGameState } from "./initialGameState";
+import { truckCabSideCell } from "./lot";
 import { MaterialInstance, FinishedProduct } from "./Materials";
 import { makeMaterial } from "./material-helpers";
 
@@ -20,18 +21,18 @@ function shelf(): FinishedProduct {
   });
 }
 
-/** At the door, hands free, holding `inventory`. */
-function atDoor(
-  inventory: ReadonlyArray<MaterialInstance> = [],
+/** At the truck's cab, hands free, with `bed` loaded in the truck. */
+function atCab(
+  bed: ReadonlyArray<MaterialInstance> = [],
   overrides: Partial<GameState> = {},
 ): GameState {
   const base = { ...initialGameState, ...overrides };
   return {
     ...base,
+    truck: { ...base.truck, bed },
     player: {
       ...base.player,
-      inventory,
-      position: base.shopInfo.entrancePosition,
+      position: truckCabSideCell(base.shopInfo),
     },
   };
 }
@@ -103,12 +104,12 @@ describe("hasRequiredMaterials", () => {
 });
 
 describe("canHandOff", () => {
-  it("is true at the garage door with free hands", () => {
-    assert.strictEqual(canHandOff(atDoor()), true);
+  it("is true at the truck's cab with free hands", () => {
+    assert.strictEqual(canHandOff(atCab()), true);
   });
 
-  it("is false away from the door", () => {
-    const state = atDoor();
+  it("is false away from the cab", () => {
+    const state = atCab();
     const inTheMiddle = {
       ...state,
       player: { ...state.player, position: [1, 1] as [number, number] },
@@ -117,7 +118,7 @@ describe("canHandOff", () => {
   });
 
   it("is false with a machine over your shoulders", () => {
-    const state = atDoor();
+    const state = atCab();
     const carrying: GameState = {
       ...state,
       player: {
@@ -129,7 +130,7 @@ describe("canHandOff", () => {
   });
 
   it("is false while out of the shop", () => {
-    const state = atDoor();
+    const state = atCab();
     const away = {
       ...state,
       player: {
@@ -142,8 +143,8 @@ describe("canHandOff", () => {
 });
 
 describe("readyHandoffs", () => {
-  it("lists the active commission once its deliverables are in hand", () => {
-    const handoffs = readyHandoffs(atDoor([shelf()]));
+  it("lists the active commission once its deliverables are loaded", () => {
+    const handoffs = readyHandoffs(atCab([shelf()]));
     assert.strictEqual(handoffs.length, 1);
     assert.strictEqual(handoffs[0].kind, "commission");
     assert.strictEqual(
@@ -152,12 +153,12 @@ describe("readyHandoffs", () => {
     );
   });
 
-  it("lists nothing while the player is empty-handed", () => {
-    assert.deepStrictEqual(readyHandoffs(atDoor([])), []);
+  it("lists nothing while the bed is empty", () => {
+    assert.deepStrictEqual(readyHandoffs(atCab([])), []);
   });
 
-  it("lists nothing away from the door, however full your hands are", () => {
-    const state = atDoor([shelf()]);
+  it("lists nothing away from the cab, however full the bed is", () => {
+    const state = atCab([shelf()]);
     const inTheMiddle = {
       ...state,
       player: { ...state.player, position: [1, 1] as [number, number] },
@@ -171,7 +172,7 @@ describe("readyHandoffs", () => {
     ]);
     // Two shelves: one for the commission, one for the job.
     const handoffs = readyHandoffs(
-      atDoor([shelf(), shelf()], { acceptedJobs: [job] }),
+      atCab([shelf(), shelf()], { acceptedJobs: [job] }),
     );
     assert.deepStrictEqual(
       handoffs.map((handoff) => handoff.kind),
@@ -179,11 +180,11 @@ describe("readyHandoffs", () => {
     );
   });
 
-  it("omits an accepted job the player can't fulfil yet", () => {
+  it("omits an accepted job the bed can't fulfil yet", () => {
     const job = jobFor([
       { type: ["pictureFrame"], species: ["oak"], quantity: 1 },
     ]);
-    const handoffs = readyHandoffs(atDoor([shelf()], { acceptedJobs: [job] }));
+    const handoffs = readyHandoffs(atCab([shelf()], { acceptedJobs: [job] }));
     assert.deepStrictEqual(
       handoffs.map((handoff) => handoff.kind),
       ["commission"],

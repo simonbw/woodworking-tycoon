@@ -3,6 +3,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { truckCabSideCell } from "../lot";
 import { tickAction } from "./tickAction";
 import {
   canLeaveShop,
@@ -10,13 +11,13 @@ import {
   returnFromStoreAction,
 } from "./door-actions";
 
-/** Both stores unlocked and the player standing at the garage door. */
-function stateAtDoor(): GameState {
+/** Both stores unlocked and the player standing at the truck's cab. */
+function stateAtCab(): GameState {
   return {
     ...initialGameState,
     player: {
       ...initialGameState.player,
-      position: initialGameState.shopInfo.entrancePosition,
+      position: truckCabSideCell(initialGameState.shopInfo),
     },
     progression: {
       ...initialGameState.progression,
@@ -27,30 +28,33 @@ function stateAtDoor(): GameState {
 }
 
 describe("canLeaveShop", () => {
-  it("allows leaving at or next to the entrance cell", () => {
-    const state = stateAtDoor();
+  it("allows leaving beside the cab", () => {
+    const state = stateAtCab();
     assert.ok(canLeaveShop(state));
-    const [ex, ey] = state.shopInfo.entrancePosition;
+    const [cx, cy] = truckCabSideCell(state.shopInfo);
     assert.ok(
       canLeaveShop({
         ...state,
-        player: { ...state.player, position: [ex - 1, ey] },
+        player: { ...state.player, position: [cx, cy - 1] },
       }),
     );
   });
 
-  it("refuses away from the door", () => {
-    const state = stateAtDoor();
+  it("refuses away from the truck — the door included", () => {
+    const doorside = stateAtCab();
     assert.ok(
       !canLeaveShop({
-        ...state,
-        player: { ...state.player, position: [0, 0] },
+        ...doorside,
+        player: {
+          ...doorside.player,
+          position: doorside.shopInfo.entrancePosition,
+        },
       }),
     );
   });
 
   it("refuses with a machine over the shoulders", () => {
-    const state = stateAtDoor();
+    const state = stateAtCab();
     assert.ok(
       !canLeaveShop({
         ...state,
@@ -64,8 +68,8 @@ describe("canLeaveShop", () => {
 });
 
 describe("goToStoreAction / returnFromStoreAction", () => {
-  it("starts a shopping trip at the door and comes home on request", () => {
-    const out = goToStoreAction("orangeBox")(stateAtDoor());
+  it("starts a shopping trip at the cab and comes home on request", () => {
+    const out = goToStoreAction("orangeBox")(stateAtCab());
     assert.deepStrictEqual(out.player.away, {
       kind: "shopping",
       store: "orangeBox",
@@ -78,7 +82,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
   });
 
   it("remembers which store the trip is to", () => {
-    const out = goToStoreAction("lumberyard")(stateAtDoor());
+    const out = goToStoreAction("lumberyard")(stateAtCab());
     assert.deepStrictEqual(out.player.away, {
       kind: "shopping",
       store: "lumberyard",
@@ -87,7 +91,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
 
   it("does nothing before the store is unlocked", () => {
     const locked: GameState = {
-      ...stateAtDoor(),
+      ...stateAtCab(),
       progression: { ...initialGameState.progression, storeUnlocked: false },
     };
     assert.strictEqual(goToStoreAction("orangeBox")(locked), locked);
@@ -95,7 +99,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
 
   it("gates each store on its own unlock", () => {
     const bigBoxOnly: GameState = {
-      ...stateAtDoor(),
+      ...stateAtCab(),
       progression: {
         ...initialGameState.progression,
         storeUnlocked: true,
@@ -106,21 +110,21 @@ describe("goToStoreAction / returnFromStoreAction", () => {
     assert.notStrictEqual(goToStoreAction("orangeBox")(bigBoxOnly), bigBoxOnly);
   });
 
-  it("does nothing away from the door", () => {
+  it("does nothing away from the cab", () => {
     const elsewhere: GameState = {
-      ...stateAtDoor(),
-      player: { ...stateAtDoor().player, position: [0, 0] },
+      ...stateAtCab(),
+      player: { ...stateAtCab().player, position: [0, 0] },
     };
     assert.strictEqual(goToStoreAction("orangeBox")(elsewhere), elsewhere);
   });
 
   it("ignores a return when nobody is out shopping", () => {
-    const state = stateAtDoor();
+    const state = stateAtCab();
     assert.strictEqual(returnFromStoreAction()(state), state);
   });
 
   it("stays out through ticks — shopping has no return timer", () => {
-    let state = goToStoreAction("orangeBox")(stateAtDoor());
+    let state = goToStoreAction("orangeBox")(stateAtCab());
     for (let i = 0; i < 5; i++) {
       state = tickAction(state);
     }

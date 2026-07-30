@@ -6,6 +6,7 @@ import { GameState } from "../GameState";
 import { MaterialInstance, FinishedProduct } from "../Materials";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
+import { truckCabSideCell } from "../lot";
 import {
   buyMachineAction,
   buyMaterialAction,
@@ -33,39 +34,38 @@ function stateWith(
 
 /**
  * State part-way through the sequence, with the given number of commissions
- * done and the player standing at the garage door — handing work over only
- * happens there (see delivery.ts).
+ * done, the deliverables loaded in the truck's bed, and the player standing
+ * at the cab — delivering only happens there (see delivery.ts).
  */
 function stateAtCommission(
   commissionsCompleted: number,
-  inventory: ReadonlyArray<MaterialInstance>,
+  bed: ReadonlyArray<MaterialInstance>,
 ): GameState {
-  const state = stateWith(
-    {
-      progression: {
-        ...initialGameState.progression,
-        commissionsCompleted,
-        storeUnlocked: commissionsCompleted >= 1,
-        tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
-      },
+  const state = stateWith({
+    progression: {
+      ...initialGameState.progression,
+      commissionsCompleted,
+      storeUnlocked: commissionsCompleted >= 1,
+      tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
     },
-    inventory,
-  );
+  });
   return {
     ...state,
+    truck: { ...state.truck, bed },
     player: {
       ...state.player,
-      position: state.shopInfo.entrancePosition,
+      position: truckCabSideCell(state.shopInfo),
     },
   };
 }
 
 describe("buyMaterialAction", () => {
-  it("deducts the price and adds the material to the inventory", () => {
+  it("deducts the price and loads the material into the truck's bed", () => {
     const shelf = makeShelf();
     const result = buyMaterialAction(shelf, 30)(stateWith({ money: 100 }));
     assert.strictEqual(result.money, 70);
-    assert.deepStrictEqual(result.player.inventory, [shelf]);
+    assert.deepStrictEqual(result.truck.bed, [shelf]);
+    assert.deepStrictEqual(result.player.inventory, []);
   });
 
   it("does nothing when the player cannot afford it", () => {
@@ -92,22 +92,16 @@ describe("sellMaterialAction", () => {
 });
 
 describe("buyMachineAction", () => {
-  it("deducts the price and delivers a crate at the entrance", () => {
+  it("deducts the price and crates the machine into the truck's bed", () => {
     const result = buyMachineAction(
       "jobsiteTableSaw",
       150,
     )(stateWith({ money: 200 }));
     assert.strictEqual(result.money, 50);
-    assert.strictEqual(result.machineCrates.length, 1);
-    assert.strictEqual(
-      result.machineCrates[0].machine.machineTypeId,
-      "jobsiteTableSaw",
-    );
-    // The entrance cell itself is open in the starting shop
-    assert.deepStrictEqual(
-      result.machineCrates[0].position,
-      initialGameState.shopInfo.entrancePosition,
-    );
+    assert.strictEqual(result.truck.crates.length, 1);
+    assert.strictEqual(result.truck.crates[0].machineTypeId, "jobsiteTableSaw");
+    // Nothing lands on the shop floor until it's carried in
+    assert.strictEqual(result.machineCrates.length, 0);
   });
 
   it("does nothing when the player cannot afford it", () => {
@@ -156,11 +150,11 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.progression.commissionsCompleted, 1);
   });
 
-  it("consumes only the required materials", () => {
+  it("consumes only the required materials from the bed", () => {
     const extraShelf = makeShelf();
     const state = stateAtCommission(0, [makeShelf(), extraShelf]);
     const result = completeCommissionAction()(state);
-    assert.deepStrictEqual(result.player.inventory, [extraShelf]);
+    assert.deepStrictEqual(result.truck.bed, [extraShelf]);
   });
 
   it("unlocks the store after the first commission", () => {

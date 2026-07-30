@@ -67,8 +67,9 @@ export function directionFromInput(
 
 /**
  * An axis-aligned solid box the body cannot enter, in continuous cell
- * coordinates (cell [x, y] spans x..x+1). The shop walls are handled
- * separately as the world bounds. See machine-collision.ts.
+ * coordinates (cell [x, y] spans x..x+1). The building's walls are
+ * boxes too (see lot.ts); only the lot's outer edges are the world
+ * bounds. See machine-collision.ts.
  */
 export interface SolidBox {
   readonly kind: "box";
@@ -90,9 +91,12 @@ export interface SolidCircle {
  */
 export type Solid = SolidBox | SolidCircle;
 
-/** What the body collides with: the shop's floor rectangle and solids. */
+/** What the body collides with: the walkable world's rectangle and
+ * solids. Build one from a GameState with collisionWorld() in
+ * machine-collision.ts — it spans the whole lot, with the building's
+ * walls and the parked truck as solids. */
 export interface CollisionWorld {
-  /** Shop size in cells; the walls are the rectangle's edges. */
+  /** Walkable world size in cells; the edges are hard bounds. */
   readonly size: Vector;
   readonly solids: ReadonlyArray<Solid>;
 }
@@ -163,8 +167,9 @@ function resolveCollisions(
 ): Vector {
   let [x, y] = pos;
   for (let pass = 0; pass < RESOLVE_PASSES; pass++) {
-    // The walls: clamp to the floor rectangle. This also gently pulls in
-    // a body teleported onto the margin (fixtures, loaded saves).
+    // The world's edges: clamp to the walkable rectangle. This also
+    // gently pulls in a body teleported onto the margin (fixtures,
+    // loaded saves).
     x = Math.min(Math.max(x, radius), world.size[0] - radius);
     y = Math.min(Math.max(y, radius), world.size[1] - radius);
     let moved = false;

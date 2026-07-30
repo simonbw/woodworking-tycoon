@@ -51,9 +51,14 @@ import {
 } from "../game-actions/store-actions";
 import {
   canPutDownCarriedMachine,
-  pickUpCrateAction,
   putDownCarriedMachineAction,
 } from "../game-actions/machine-actions";
+import {
+  loadTruckBedAction,
+  takeCrateFromTruckAction,
+  takeFromTruckBedAction,
+} from "../game-actions/truck-actions";
+import { truckCabSideCell } from "../lot";
 import {
   goToStoreAction,
   returnFromStoreAction,
@@ -444,20 +449,49 @@ export class ShopDriver {
   // to buy them, which means these.
   // ---------------------------------------------------------------------
 
-  /** Take a trip out to a store, if the door offers it yet. */
+  /** Take a trip out to a store, if the truck offers it yet. */
   goShopping(store: StoreId): this {
     if (!storeUnlocked(this.state, store)) {
       throw new Error(
-        `The door doesn't offer ${store} yet — check the progression flags`,
+        `The truck doesn't offer ${store} yet — check the progression flags`,
       );
     }
-    this.standAtDoor();
+    this.standAtCab();
     return this.apply(goToStoreAction(store));
   }
 
-  /** Come home from a trip. */
+  /**
+   * Come home from a trip and unload the truck: purchases ride in the
+   * bed, so pulling in ends with a walk to the tailgate that lifts the
+   * stock out into the hands — the same two steps the player takes.
+   * Crated machines stay in the bed until buyAndPlaceMachine lifts them.
+   */
   comeHome(): this {
-    return this.apply(returnFromStoreAction());
+    this.apply(returnFromStoreAction());
+    return this.unloadBed();
+  }
+
+  /** Stand at the tailgate — the loading side of the parked truck. */
+  standAtBed(): this {
+    const [doorX] = this.state.shopInfo.entrancePosition;
+    return this.standAt([doorX, this.state.shopInfo.size[1] + 1]);
+  }
+
+  /** Lift everything loose out of the truck's bed into the hands. */
+  unloadBed(): this {
+    if (this.state.truck.bed.length === 0) {
+      return this;
+    }
+    this.standAtBed();
+    const before = this.inventory.length;
+    const bed = this.state.truck.bed;
+    this.apply(takeFromTruckBedAction(bed));
+    if (this.inventory.length !== before + bed.length) {
+      throw new Error(
+        `The bed would not unload — holding a tool, or too far from it`,
+      );
+    }
+    return this;
   }
 
   /** Buy stock off a rack. The caller names the price the rack charges. */
@@ -570,11 +604,13 @@ export class ShopDriver {
   }
 
   /**
-   * Buy a machine and carry it to where it's going to live. It arrives
-   * crated at the entrance, gets picked up, and is set down standing at the
-   * cell it will be worked from — the same three steps the floor demands,
-   * so a machine that can't physically fit fails here rather than silently
-   * never arriving.
+   * Buy a machine and carry it to where it's going to live. It rides
+   * home crated in the truck's bed, gets lifted out at the tailgate, and
+   * is set down standing at the cell it will be worked from — the same
+   * steps the floor demands, so a machine that can't physically fit
+   * fails here rather than silently never arriving. (The sequence tier
+   * doesn't model the drive home; the crate is lifted from the bed
+   * whenever this runs, mid-trip or after.)
    */
   buyAndPlaceMachine(
     machineTypeId: MachineId,
@@ -588,13 +624,13 @@ export class ShopDriver {
         `Couldn't afford the ${machineTypeId} at $${price} — the shop had $${before}`,
       );
     }
-    const crate = this.state.machineCrates.find(
-      (candidate) => candidate.machine.machineTypeId === machineTypeId,
+    const crate = this.state.truck.crates.find(
+      (candidate) => candidate.machineTypeId === machineTypeId,
     );
     if (!crate) {
-      throw new Error(`No ${machineTypeId} crate arrived at the entrance`);
+      throw new Error(`No ${machineTypeId} crate arrived in the truck's bed`);
     }
-    this.standAt(crate.position).apply(pickUpCrateAction());
+    this.standAtBed().apply(takeCrateFromTruckAction(machineTypeId));
     if (!this.state.player.carriedMachine) {
       throw new Error(
         `Couldn't lift the ${machineTypeId} crate. A crate takes both hands, ` +
@@ -633,9 +669,9 @@ export class ShopDriver {
     return this;
   }
 
-  /** Stand at the garage door, the only place finished work leaves from. */
-  standAtDoor(): this {
-    return this.standAt(this.state.shopInfo.entrancePosition);
+  /** Stand at the truck's cab, where trips start and work is driven off. */
+  standAtCab(): this {
+    return this.standAt(truckCabSideCell(this.state.shopInfo));
   }
 
   /**
@@ -671,10 +707,27 @@ export class ShopDriver {
   }
 
   /**
-   * Carry the active commission out to the door and hand it over. Fails
-   * loudly rather than quietly doing nothing, because "the commission
-   * silently didn't complete" is the exact bug a playthrough exists to
-   * catch.
+   * Load everything in hand into the truck's bed at the tailgate. The
+   * first half of every delivery.
+   */
+  loadBed(): this {
+    if (this.inventory.length === 0) {
+      return this;
+    }
+    this.standAtBed();
+    const inventory = this.inventory;
+    this.apply(loadTruckBedAction(inventory));
+    if (this.inventory.length !== 0) {
+      throw new Error(`The bed would not take what's in hand`);
+    }
+    return this;
+  }
+
+  /**
+   * Deliver the active commission: load what's in hand into the bed,
+   * walk to the cab, and drive it off. Fails loudly rather than quietly
+   * doing nothing, because "the commission silently didn't complete" is
+   * the exact bug a playthrough exists to catch.
    */
   handOverCommission(): this {
     const commission = getActiveCommission(this.state.progression);
@@ -682,12 +735,12 @@ export class ShopDriver {
       throw new Error("No active commission to hand over");
     }
     const before = this.state.progression.commissionsCompleted;
-    this.standAtDoor().apply(completeCommissionAction());
+    this.loadBed().standAtCab().apply(completeCommissionAction());
     if (this.state.progression.commissionsCompleted !== before + 1) {
       throw new Error(
-        `"${commission.name}" would not hand over. Holding ` +
-          `[${this.inventory.map((m) => m.type).join(", ")}], which does not ` +
-          `satisfy ${JSON.stringify(commission.requiredMaterials)}`,
+        `"${commission.name}" would not deliver. The bed holds ` +
+          `[${this.state.truck.bed.map((m) => m.type).join(", ")}], which ` +
+          `does not satisfy ${JSON.stringify(commission.requiredMaterials)}`,
       );
     }
     return this.apply(clearPendingPayoutsAction);

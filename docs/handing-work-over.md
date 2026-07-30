@@ -3,9 +3,9 @@
 How finished work leaves the shop, and what the player gets for it.
 
 **Status: implemented.** The matching and gating rules live in
-`src/game/delivery.ts`, the door card in
-`src/components/shop-overlay/DoorPrompt.tsx`, and the celebration in
-`src/components/payout/`.
+`src/game/delivery.ts`, the trip card in
+`src/components/shop-overlay/TruckPrompt.tsx`, the geometry in
+`src/game/lot.ts`, and the celebration in `src/components/payout/`.
 
 ## Why
 
@@ -19,10 +19,10 @@ was the whole event.
 Two things were wrong with that, and they're separable:
 
 - **It had no place.** Every other system in the game had been pulled onto
-  the floor — machines lost their control panels, buying became a trip out
-  the garage door, selling became a phone you hold — and commission turn-in
-  was the last surviving menu button that converted inventory into money.
-  On the one thing `GAMEPLAY_ROADMAP.md` calls a boss.
+  the floor — machines lost their control panels, buying became a trip,
+  selling became a phone you hold — and commission turn-in was the last
+  surviving menu button that converted inventory into money. On the one
+  thing `GAMEPLAY_ROADMAP.md` calls a boss.
 - **It had no ceremony.** The roadmap's "milestone moment" was a dry
   stinger and two numbers ticking over somewhere the player wasn't looking.
 
@@ -31,56 +31,72 @@ linear track; all the decision content is upstream in figuring out how to
 build the thing. Turn-in should stay fast. What it needed was a **place**
 and a **moment**.
 
-## Delivery: the garage door
+## Delivery: the truck
 
-Finished work leaves through the door it came in by. Machines already
-arrive there as delivery crates (`deliverMachineCrate`); now work goes out
-the same way.
+Finished work leaves the way everything arrives: in the pickup backed up
+to the garage door. A delivery is two short walks —
 
-Standing at the entrance and pressing <kbd>E</kbd> spreads open the door
-card, which carries two kinds of numbered row:
+1. **Load the bed.** Carry the piece out the door and press <kbd>F</kbd>
+   at the tailgate (`loadTruckBedAction`); the cargo visibly rides in the
+   bed. `E` lifts it back out if you change your mind.
+2. **Drive it off.** Walk down to the cab and press <kbd>E</kbd>. The
+   trip card lists two kinds of numbered row:
+   - **Places to go** — the shopping trips and scavenging errands. Listed
+     first so their numbers never move: Orange Box is always `1`.
+   - **Work to deliver** — the active commission and every accepted job
+     whose deliverables are loaded in the bed *right now*.
 
-1. **Places to go** — the shopping trips and scavenging errands. Listed
-   first so their numbers never move: Orange Box is always `1`, whatever
-   you happen to be carrying.
-2. **Work to hand over** — the active commission and every accepted job
-   whose deliverables are in the player's hands *right now*.
-
-The row number hands it over. There is no completion button anywhere else
+The row number delivers it. There is no completion button anywhere else
 in the game.
 
 ### The rule
 
-`canHandOff` (`delivery.ts`) is the same body state as walking out:
+`canHandOff` (`delivery.ts`) is the real body state:
 
 - home (not away on a trip),
-- standing at the garage door (`isAtShopDoor`),
-- no machine over your shoulders.
+- standing at the truck's cab (`atTruckCab`, lot.ts),
+- no machine over your shoulders,
 
-It's enforced inside `completeCommissionAction` and `deliverJobAction`,
-not just in `DoorPrompt` — *where* a delivery can happen is a game rule,
-not a UI detail.
+and `readyHandoffs` matches against `truck.bed`, not the hands. It's
+enforced inside `completeCommissionAction` and `deliverJobAction`, not
+just in `TruckPrompt` — *where* a delivery can happen is a game rule, not
+a UI detail.
 
 `resolveInteract` consults `readyHandoffs().length` as well as the unlock
-flags, because the very first commission is handed over **before any
-destination is unlocked**. Without that, the door would refuse to open for
-the tutorial's first payday.
+flags, because the very first commission is delivered **before any
+destination is unlocked**. Without that, the cab would refuse to answer
+for the tutorial's first payday.
+
+The clipboard, tracker chip, and job rows pool hands + bed for their
+have/need counts (`commissionLineItems`), so loading the piece never
+makes an order look short — and their ready lines are staged: "load it
+into the truck's bed" once it's built, "deliver from the cab" once it's
+loaded.
 
 ### One matcher, not two
 
 `completeCommissionAction` and `deliverJobAction` had drifted apart with
 ~30 duplicated lines of match-and-consume. Both now call
-`consumeRequiredMaterials`, which returns the inventory minus exactly what
-the order asked for, or `null` when the player is short. It never counts
-one item toward two requirements — two lines each wanting one shelf need
-two shelves.
+`consumeRequiredMaterials`, which returns the pool minus exactly what
+the order asked for, or `null` when it's short. It never counts one item
+toward two requirements — two lines each wanting one shelf need two
+shelves.
 
 ### Commissions vs. jobs
 
-Same verb, same door. The tier difference lives in the *response*, not the
-mechanism: a job is a customer taking a box, a commission gets the card
-below. Two different physical rituals would have been more system than the
-distinction is worth.
+Same verb, same truck. The tier difference lives in the *response*, not
+the mechanism: a job is a customer taking a box, a commission gets the
+card below. Two different physical rituals would have been more system
+than the distinction is worth.
+
+### The performance
+
+`player.away` still flips the instant a row is picked; the departure and
+arrival rolls are pure theater layered on top (`truckStageStore` +
+`TripTransitionLayer`, engine in `src/utils/truckEngine.ts` — see
+`docs/sound-design.md`). Delivery itself is instant: pick the row, the
+payout lands, no timed trip. A timed delivery run would change pacing
+across the whole progression ledger and stays future work.
 
 ## The payoff moment
 
@@ -126,23 +142,28 @@ at a corner.
 
 ## Consequences elsewhere
 
-- The `complete-commission` shortcut (<kbd>C</kbd>) is gone. The door rows
+- The `complete-commission` shortcut (<kbd>C</kbd>) is gone. The cab rows
   answer to <kbd>1</kbd>–<kbd>9</kbd> instead.
-- The corkboard work order names the client and points at the door; the
+- The corkboard work order names the client and points at the truck; the
   phone's accepted-job rows keep **Cancel** but lost **Deliver**.
 - Jobs no longer fire the big `commission-complete` stinger — that was
   always wrong for routine work. Their whole audio is the cha-ching.
+- The garage door itself is now just the opening you walk through —
+  `isAtShopDoor` and the door card are gone, along with the hazard-paint
+  landing zone (crates ride in the bed instead of blocking the door).
 
 ## Future work
 
 - **A carry cost.** `getMaterialInventorySize` is written and called from
-  nowhere: the player's hands are unbounded, so the walk to the door is
-  currently a formality rather than a trip. Wiring the cap up is what would
-  make a four-board job weigh something and give the job tip timer
-  something to bite on. Deliberately out of scope here — it's a balance
-  change with blast radius well beyond delivery.
-- **A pickup visual.** Someone actually appearing at the door to take the
-  goods, rather than the card standing in for them.
+  nowhere: the player's hands are unbounded (and so is the bed), so the
+  walk to the tailgate is currently a formality rather than a trip.
+  Wiring the cap up is what would make a four-board job weigh something
+  and give the job tip timer something to bite on. Deliberately out of
+  scope here — it's a balance change with blast radius well beyond
+  delivery.
+- **A timed delivery run.** The truck could actually drive off with the
+  goods and come back — diegetically stronger, but it reshapes pacing and
+  every rung of the progression ledger.
 - **Listings** still vanish from inventory into an abstraction when listed
   (see `docs/marketplace-and-jobs.md`). The "packed boxes by the door" idea
-  now has a door worth stacking them by.
+  now has a truck bed worth stacking them in.

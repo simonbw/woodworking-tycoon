@@ -51,19 +51,20 @@ meant to be quick.
 
 ## Crates
 
-Machines enter the world as `GameState.machineCrates` — anchored to one
-cell (drawn bigger than the 1-ft tile, and grabbable from any
-neighboring cell), walkable, drawn as stenciled boxes
-(`MachineCrateSprite`):
+Machines enter the world crated, in one of two places:
 
-- **Store purchases** (`buyMachineAction`) land on the open floor nearest
-  the shop entrance (`ShopInfo.entrancePosition`, marked by the
-  `EntranceSprite` threshold).
+- **Store purchases** (`buyMachineAction`) ride home in the truck's bed
+  (`GameState.truck.crates`) and are hoisted out at the tailgate with
+  the carry key (`takeCrateFromTruckAction`) — then walked in the garage
+  door like any carried machine.
 - **Shop-built machines** (`OperationOutput.machineOutputs`, i.e.
-  worktables) land crated beside the bench that made them (`tickAction`).
+  worktables) land crated beside the bench that made them (`tickAction`),
+  as `GameState.machineCrates` — anchored to one cell (drawn bigger than
+  the 1-ft tile, and grabbable from any neighboring cell), walkable,
+  drawn as stenciled boxes (`MachineCrateSprite`).
 
-`deliverMachineCrate` does the nearest-open-cell search. There is no
-abstract machine storage anymore — `storage` holds only tools and
-upgrades; machines always exist physically (placed, crated, or carried).
-Old saves' stored machines migrate to crates at the entrance
-(`migrateV15toV16`).
+`deliverMachineCrate` does the nearest-open-cell search for the
+shop-built case. There is no abstract machine storage anymore —
+`storage` holds only tools and upgrades; machines always exist
+physically (placed, crated, in the bed, or carried). Old saves' stored
+machines migrate to crates at the entrance (`migrateV15toV16`).

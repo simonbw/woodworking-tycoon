@@ -89,6 +89,7 @@ export const millingShop: GameState = {
     idleMachine("garbageCan", [0, 13], "empty"),
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: [],
     upgrades: [],

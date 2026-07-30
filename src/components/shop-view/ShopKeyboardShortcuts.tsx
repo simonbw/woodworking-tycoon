@@ -30,6 +30,12 @@ import {
   putDownBroomAction,
 } from "../../game/game-actions/dust-actions";
 import { heldTool, holdingBroom } from "../../game/HeldTool";
+import { atTruckBed } from "../../game/lot";
+import {
+  loadTruckBedAction,
+  takeCrateFromTruckAction,
+  takeFromTruckBedAction,
+} from "../../game/game-actions/truck-actions";
 import { chebyshevDistance } from "../../game/Vectors";
 import { resolveInteract } from "../../game/interact";
 import {
@@ -44,6 +50,7 @@ import { hasStationSheet } from "../station/station-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
+import { useTruckStage } from "./truckStageStore";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 export const ShopKeyboardShortcuts: React.FC = () => {
@@ -58,18 +65,20 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     sheetMachine,
     toggleSheet,
     closeSheet,
-    doorOpen,
-    openDoor,
-    closeDoor,
+    truckMenuOpen,
+    openTruckMenu,
+    closeTruckMenu,
   } = useTargetedMachine();
   const targeted = useRef(targetedMachine);
   targeted.current = targetedMachine;
-  const doorOpenRef = useRef(doorOpen);
-  doorOpenRef.current = doorOpen;
+  const truckMenuOpenRef = useRef(truckMenuOpen);
+  truckMenuOpenRef.current = truckMenuOpen;
 
-  // While the player is off scavenging they aren't in the shop, and the machine
-  // panels are hidden — the keys shouldn't still reach into them.
-  const present = !_gameState.player.away;
+  // While the player is off scavenging they aren't in the shop, and the
+  // machine panels are hidden — the keys shouldn't still reach into them.
+  // Same while the truck is still rolling in: they're in the cab.
+  const truckStage = useTruckStage();
+  const present = !_gameState.player.away && truckStage === "parked";
   // A machine over the shoulders means the hands are full: material and
   // machine verbs step aside until it's set down.
   const carrying = _gameState.player.carriedMachine != null;
@@ -105,6 +114,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (crateUnderfoot) {
         return applyAction(pickUpCrateAction());
       }
+      if (
+        gs.truck.crates.length > 0 &&
+        atTruckBed(gs.shopInfo, gs.player.position)
+      ) {
+        return applyAction(takeCrateFromTruckAction());
+      }
       const machine = targeted.current;
       if (machine && canPickUpMachine(gs, machine.state)) {
         applyAction(pickUpMachineAction(machine.state));
@@ -126,9 +141,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "close-sheet",
     () => {
       closeSheet();
-      closeDoor();
+      closeTruckMenu();
     },
-    sheetMachine != null || doorOpen,
+    sheetMachine != null || truckMenuOpen,
   );
 
   useShortcut("cycle-machine", cycleTarget, present);
@@ -152,8 +167,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     "pick-up",
     (event) => {
       const gs = gameState.current;
-      if (doorOpenRef.current) {
-        return closeDoor();
+      if (truckMenuOpenRef.current) {
+        return closeTruckMenu();
       }
       const action = resolveInteract(gs, targeted.current);
       if (!action) return;
@@ -187,8 +202,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           );
         case "pick-up-broom":
           return applyAction(pickUpBroomAction());
-        case "open-door":
-          return openDoor();
+        case "truck-bed": {
+          const bed = gs.truck.bed;
+          return applyAction(
+            takeFromTruckBedAction(
+              event.shiftKey ? bed : [bed[bed.length - 1]],
+            ),
+          );
+        }
+        case "truck-cab":
+          return openTruckMenu();
       }
     },
     present && !carrying,
@@ -206,6 +229,13 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         // Empty-handed except for the broom: F leans it right here
         if (holdingBroom(gs)) applyAction(putDownBroomAction());
         return;
+      }
+
+      // At the truck's bed, F loads over the rail instead of dropping
+      if (atTruckBed(gs.shopInfo, gs.player.position)) {
+        return applyAction(
+          loadTruckBedAction(event.shiftKey ? inventory : [inventory[0]]),
+        );
       }
 
       const machine = targeted.current;

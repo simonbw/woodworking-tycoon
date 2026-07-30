@@ -8,6 +8,7 @@ import {
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
+import { isOutdoors } from "../lot";
 import {
   canisterRoom,
   carryingShopVac,
@@ -63,6 +64,10 @@ export function toggleCarryShopVacAction(): GameAction {
       return gameState;
     }
     if (vac.position === null) {
+      // Keep dragging it on the lot — the vac parks on shop floor only
+      if (isOutdoors(gameState.shopInfo, gameState.player.position)) {
+        return gameState;
+      }
       return {
         ...gameState,
         shopVac: { ...vac, position: gameState.player.position },

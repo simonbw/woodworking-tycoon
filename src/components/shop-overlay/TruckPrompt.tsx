@@ -8,10 +8,10 @@ import { deliverJobAction } from "../../game/game-actions/marketplace-actions";
 import { startScavengingAction } from "../../game/game-actions/scavenge-actions";
 import { readyHandoffs } from "../../game/delivery";
 import { GameAction } from "../../game/GameState";
+import { atTruckCab, truckCabRect } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { jobPayout } from "../../game/marketplace";
 import { formatMoney } from "../../utils/formatNumber";
-import { isAtShopDoor } from "../../game/ShopInfo";
 import { resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
@@ -21,9 +21,10 @@ import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { useTruckStage } from "../shop-view/truckStageStore";
 import { OverlayScaleContext } from "./ShopOverlayLayer";
 
-const DOOR_OPTION_SHORTCUTS: readonly ShortcutId[] = [
+const TRUCK_OPTION_SHORTCUTS: readonly ShortcutId[] = [
   "door-option-1",
   "door-option-2",
   "door-option-3",
@@ -35,51 +36,55 @@ const DOOR_OPTION_SHORTCUTS: readonly ShortcutId[] = [
   "door-option-9",
 ];
 
-/** One numbered row on the door card. */
-interface DoorRow {
+/** One numbered row on the cab's card. */
+interface TruckRow {
   readonly key: string;
   readonly group: "go" | "handoff";
   readonly name: string;
   readonly description: string;
-  /** The row's button label — "Go" for a trip, "Hand Over" for work. */
+  /** The row's button label — "Go" for a trip, "Deliver" for work. */
   readonly verb: string;
   readonly action: () => GameAction;
 }
 
 /**
- * The garage door: standing at (or beside) the entrance it offers a small
- * hint chip, and the keypress spreads open the door card. Two kinds of row
- * live on it, each answering to its own number:
+ * The truck's cab: standing at it offers a small hint chip, and the
+ * keypress spreads open the trip card. Two kinds of row live on it, each
+ * answering to its own number:
  *
  * - **Places to go** — the shopping trips and scavenging errands. Listed
  *   first so their numbers never move; Orange Box is always 1.
- * - **Work to hand over** — the active commission and any accepted job
- *   whose deliverables are in the player's hands right now. This is how
+ * - **Work to deliver** — the active commission and any accepted job
+ *   whose deliverables are loaded in the bed right now. This is how
  *   finished work leaves the shop; there is no "mark complete" button
- *   anywhere, because a delivery is a thing that happens at a door.
+ *   anywhere, because a delivery is a drive somebody takes.
  */
-export const DoorPrompt: React.FC<{
+export const TruckPrompt: React.FC<{
   canvasWidth: number;
   canvasHeight: number;
-}> = ({ canvasWidth, canvasHeight }) => {
+}> = ({ canvasWidth }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const {
     machine: targetedMachine,
-    doorOpen,
-    closeDoor,
+    truckMenuOpen,
+    closeTruckMenu,
   } = useTargetedMachine();
   const scale = useContext(OverlayScaleContext);
 
   const { storeUnlocked, lumberyardUnlocked, marketplaceUnlocked } =
     gameState.progression;
   const carried = gameState.player.carriedMachine ?? null;
-  const atDoor =
+  // No chip, no card until the truck is actually sitting there — during
+  // the arrival roll the player is still inside it.
+  const truckStage = useTruckStage();
+  const atCab =
     !gameState.player.away &&
-    isAtShopDoor(gameState.shopInfo, gameState.player.position);
+    truckStage === "parked" &&
+    atTruckCab(gameState.shopInfo, gameState.player.position);
   const handsFree = canLeaveShop(gameState);
 
-  const rows: DoorRow[] = [];
+  const rows: TruckRow[] = [];
   if (storeUnlocked) {
     rows.push({
       key: "orangeBox",
@@ -125,7 +130,7 @@ export const DoorPrompt: React.FC<{
         // strings are appositives ("Marguerite, two doors down") and read
         // badly with a verb hung straight off them.
         description: `For ${commission.client}. Pays ${formatMoney(commission.rewardMoney)}.`,
-        verb: "Hand Over",
+        verb: "Deliver",
         action: () => completeCommissionAction(),
       });
     } else {
@@ -136,7 +141,7 @@ export const DoorPrompt: React.FC<{
         group: "handoff",
         name: job.name,
         description: `Pays ${formatMoney(payout.money)}, tip included.`,
-        verb: "Hand Over",
+        verb: "Deliver",
         action: () => deliverJobAction(job.id),
       });
     }
@@ -144,32 +149,33 @@ export const DoorPrompt: React.FC<{
 
   // The digits answer to the rows the open card shows. Registered
   // unconditionally (hooks), enabled per row while the card is open.
-  for (const [index, shortcutId] of DOOR_OPTION_SHORTCUTS.entries()) {
+  for (const [index, shortcutId] of TRUCK_OPTION_SHORTCUTS.entries()) {
     const row = rows[index];
     // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed-length list
     useShortcut(
       shortcutId,
       () => row && applyAction(row.action()),
-      doorOpen && handsFree && row != null,
+      truckMenuOpen && handsFree && row != null,
     );
   }
 
-  if (!atDoor || rows.length === 0) {
+  if (!atCab || rows.length === 0) {
     return null;
   }
 
-  const [doorX, doorY] = gameState.shopInfo.entrancePosition;
+  const cab = truckCabRect(gameState.shopInfo);
   const cellPx = PIXELS_PER_CELL * scale;
-  const centerX = (doorX + 0.5) * cellPx;
+  const centerX = ((cab.min[0] + cab.max[0]) / 2) * cellPx;
+  const cabTop = cab.min[1] * cellPx;
   const handoffCount = rows.filter((row) => row.group === "handoff").length;
   const mixed = handoffCount > 0 && handoffCount < rows.length;
 
   // Closed: just the chip, the same weight as every other hint — and
-  // only when E would actually open the door (something else in reach
+  // only when E would actually open the cab (something else in reach
   // may claim the key first).
-  if (!doorOpen) {
+  if (!truckMenuOpen) {
     const interact = resolveInteract(gameState, targetedMachine);
-    if (interact?.kind !== "open-door") {
+    if (interact?.kind !== "truck-cab") {
       return null;
     }
     return (
@@ -177,14 +183,14 @@ export const DoorPrompt: React.FC<{
         className="absolute z-10"
         style={{
           left: Math.min(Math.max(centerX, 70), canvasWidth - 70),
-          top: doorY * cellPx - 4,
+          top: cabTop - 4,
           transform: "translate(-50%, -100%)",
         }}
       >
         <HintList>
-          <HintRow className="text-paper-manila/60">Garage door</HintRow>
+          <HintRow className="text-paper-manila/60">The truck</HintRow>
           <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-            {handoffCount > 0 ? "hand off work" : "head out"}
+            {handoffCount > 0 ? "deliver work" : "head out"}
           </HintRow>
         </HintList>
       </div>
@@ -196,22 +202,22 @@ export const DoorPrompt: React.FC<{
     Math.max(centerX, Math.min(halfCard, canvasWidth / 2)),
     Math.max(canvasWidth - halfCard, canvasWidth / 2),
   );
-  const roomAbove = doorY * cellPx;
-  const above = roomAbove >= canvasHeight - (doorY + 1) * cellPx;
 
   return (
     <div
       className="absolute z-20 w-[336px] pointer-events-auto"
       style={{
         left,
-        top: above ? doorY * cellPx - 8 : (doorY + 1) * cellPx + 8,
-        transform: above ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+        // The cab sits at the bottom of the scrolled view, so the card
+        // always hangs above it
+        top: cabTop - 8,
+        transform: "translate(-50%, -100%)",
       }}
     >
-      <section className="paper-card space-y-2" data-testid="door-panel">
+      <section className="paper-card space-y-2" data-testid="truck-panel">
         <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
           <h3 className="font-condensed font-bold text-lg uppercase tracking-wide">
-            Garage Door
+            The Truck
           </h3>
           <span className="flex items-center gap-3">
             <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
@@ -220,8 +226,8 @@ export const DoorPrompt: React.FC<{
             <Tooltip content="Stay in the shop" shortcut="close-sheet">
               <button
                 className="button-paper text-xs leading-none"
-                onClick={closeDoor}
-                aria-label="Close door card"
+                onClick={closeTruckMenu}
+                aria-label="Close truck card"
               >
                 ✕
               </button>
@@ -236,7 +242,7 @@ export const DoorPrompt: React.FC<{
                   has already said what these are. */}
               {mixed && (index === 0 || rows[index - 1].group !== row.group) && (
                 <li className="pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
-                  {row.group === "go" ? "Places to go" : "Work to hand over"}
+                  {row.group === "go" ? "Places to go" : "Work to deliver"}
                 </li>
               )}
               <li className="flex items-center gap-3 py-2">
@@ -249,7 +255,7 @@ export const DoorPrompt: React.FC<{
                 </div>
                 <Tooltip
                   content={`${row.verb}: ${row.name}`}
-                  shortcut={DOOR_OPTION_SHORTCUTS[index]}
+                  shortcut={TRUCK_OPTION_SHORTCUTS[index]}
                 >
                   <button
                     className="button-paper text-xs whitespace-nowrap"

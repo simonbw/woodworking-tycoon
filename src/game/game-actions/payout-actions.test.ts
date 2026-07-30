@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { COMMISSION_SEQUENCE } from "../commissionSequence";
 import { AcceptedJob, GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { truckCabSideCell } from "../lot";
 import { FinishedProduct, MaterialInstance } from "../Materials";
 import { makeMaterial } from "../material-helpers";
 import { deliverJobAction } from "./marketplace-actions";
@@ -16,17 +17,17 @@ function shelf(): FinishedProduct {
   });
 }
 
-function atDoor(
-  inventory: ReadonlyArray<MaterialInstance>,
+function atCab(
+  bed: ReadonlyArray<MaterialInstance>,
   overrides: Partial<GameState> = {},
 ): GameState {
   const base = { ...initialGameState, ...overrides };
   return {
     ...base,
+    truck: { ...base.truck, bed },
     player: {
       ...base.player,
-      inventory,
-      position: base.shopInfo.entrancePosition,
+      position: truckCabSideCell(base.shopInfo),
     },
   };
 }
@@ -48,7 +49,7 @@ const shelfJob: AcceptedJob = {
 describe("payout announcements", () => {
   it("a commission handoff announces its rewards and the client's line", () => {
     const commission = COMMISSION_SEQUENCE[0];
-    const result = completeCommissionAction()(atDoor([shelf()]));
+    const result = completeCommissionAction()(atCab([shelf()]));
     const payouts = result.pendingPayouts ?? [];
 
     assert.strictEqual(payouts.length, 1);
@@ -63,7 +64,7 @@ describe("payout announcements", () => {
 
   it("announces what the player was actually paid, not the base rate", () => {
     // Delivered fresh, so the whole tip is still on the table.
-    const state = atDoor([shelf()], { tick: 0, acceptedJobs: [shelfJob] });
+    const state = atCab([shelf()], { tick: 0, acceptedJobs: [shelfJob] });
     const result = deliverJobAction(shelfJob.id)(state);
     const payout = (result.pendingPayouts ?? [])[0];
 
@@ -77,12 +78,12 @@ describe("payout announcements", () => {
 
   it("announces nothing when the handoff is refused", () => {
     // Empty-handed: the commission can't be delivered, so nothing to show.
-    const result = completeCommissionAction()(atDoor([]));
+    const result = completeCommissionAction()(atCab([]));
     assert.deepStrictEqual(result.pendingPayouts ?? [], []);
   });
 
-  it("announces nothing away from the door", () => {
-    const state = atDoor([shelf()]);
+  it("announces nothing away from the cab", () => {
+    const state = atCab([shelf()]);
     const inTheMiddle: GameState = {
       ...state,
       player: { ...state.player, position: [1, 1] },
@@ -93,13 +94,13 @@ describe("payout announcements", () => {
   });
 
   it("clears the queue once the flight layer has picked it up", () => {
-    const delivered = completeCommissionAction()(atDoor([shelf()]));
+    const delivered = completeCommissionAction()(atCab([shelf()]));
     const drained = clearPendingPayoutsAction(delivered);
     assert.deepStrictEqual(drained.pendingPayouts, []);
   });
 
   it("leaves an already-empty queue's identity alone", () => {
-    const state = atDoor([]);
+    const state = atCab([]);
     assert.strictEqual(clearPendingPayoutsAction(state), state);
   });
 });

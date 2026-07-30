@@ -68,7 +68,7 @@ const MachineProductTile: React.FC<MachineSaleInfo> = ({ machine, price }) => {
         />
       }
       price={price}
-      info={`${machine.description} Delivered as a crate at the garage door.`}
+      info={`${machine.description} Rides home crated in the truck's bed.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       canAfford={gameState.money >= price}
       sfx="ui-purchase"

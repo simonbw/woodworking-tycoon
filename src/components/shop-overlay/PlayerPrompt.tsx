@@ -8,6 +8,7 @@ import {
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
 import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../../game/HeldTool";
+import { atTruckBed } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { resolveInteract } from "../../game/interact";
@@ -79,6 +80,39 @@ export const PlayerPrompt: React.FC = () => {
       rows.push(
         <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
           unpack {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
+        </HintRow>,
+      );
+    }
+    // The truck's bed offers its verbs to whoever stands at the rail:
+    // stock lifts out with E, what's in hand loads with F, and a crated
+    // machine hoists onto the shoulders like any shop-floor crate.
+    const atBed = atTruckBed(gameState.shopInfo, gameState.player.position);
+    if (atBed && interact?.kind === "truck-bed") {
+      rows.push(
+        <HintRow key="unload-bed" keys={<ShortcutKeys shortcut="pick-up" />}>
+          unload bed ({interact.count})
+        </HintRow>,
+      );
+    }
+    if (atBed && holding) {
+      rows.push(
+        <HintRow key="load-bed" keys={<ShortcutKeys shortcut="put-down" />}>
+          load into bed
+        </HintRow>,
+      );
+    }
+    if (
+      atBed &&
+      gameState.progression.shopLayoutUnlocked &&
+      gameState.truck.crates.length > 0 &&
+      !holding
+    ) {
+      rows.push(
+        <HintRow
+          key="unpack-bed-crate"
+          keys={<ShortcutKeys shortcut="carry-machine" />}
+        >
+          unpack {MACHINE_TYPES[gameState.truck.crates[0].machineTypeId].name}
         </HintRow>,
       );
     }

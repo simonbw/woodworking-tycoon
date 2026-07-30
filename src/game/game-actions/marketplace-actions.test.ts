@@ -4,6 +4,7 @@ import { board } from "../board-helpers";
 import { freshMachineState } from "./machine-actions";
 import { GameState, JobOffer, MarketListing } from "../GameState";
 import { initialGameState } from "../initialGameState";
+import { truckCabSideCell } from "../lot";
 import { generateJobBoard } from "../job-generation";
 import { JOB_OFFER_LIFETIME_TICKS, LISTING_PITY_TICKS } from "../marketplace";
 import { makeMaterial } from "../material-helpers";
@@ -46,14 +47,15 @@ function stateWith(
     },
     ...overrides,
   };
-  // At the garage door by default: that's the only place work can be
-  // handed over (see delivery.ts).
+  // At the truck's cab by default — that's the only place work can be
+  // delivered (see delivery.ts). Deliverables go through the bed; the
+  // listing tests keep using the hands.
   return {
     ...base,
     player: {
       ...base.player,
       inventory,
-      position: base.shopInfo.entrancePosition,
+      position: truckCabSideCell(base.shopInfo),
     },
   };
 }
@@ -301,20 +303,21 @@ describe("accept / cancel / deliver job", () => {
     assert.strictEqual(cancelJobAction("job-test")(broke).reputation, 0);
   });
 
-  it("delivering consumes materials and pays base + tip", () => {
+  it("delivering consumes the bed's materials and pays base + tip", () => {
     const shelf = makeShelf();
     const accepted = { ...shelfOffer, acceptedAtTick: 0 };
-    const state = stateWith({ tick: 0, acceptedJobs: [accepted] }, [shelf]);
+    const base = stateWith({ tick: 0, acceptedJobs: [accepted] });
+    const state = { ...base, truck: { ...base.truck, bed: [shelf] } };
     const result = deliverJobAction("job-test")(state);
     assert.deepStrictEqual(result.acceptedJobs, []);
-    assert.deepStrictEqual(result.player.inventory, []);
+    assert.deepStrictEqual(result.truck.bed, []);
     // Full tip at instant delivery: 100 * 1.4
     assert.strictEqual(result.money, state.money + 140);
     assert.strictEqual(result.reputation, state.reputation + 4);
     assert.ok(result.progression.xp > 0);
   });
 
-  it("does nothing when the materials are missing", () => {
+  it("does nothing when the bed is empty", () => {
     const accepted = { ...shelfOffer, acceptedAtTick: 0 };
     const state = stateWith({ acceptedJobs: [accepted] }, []);
     const result = deliverJobAction("job-test")(state);

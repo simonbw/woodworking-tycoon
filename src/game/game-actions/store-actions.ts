@@ -5,7 +5,7 @@ import { getActiveCommission } from "../commissionSequence";
 import { canHandOff, consumeRequiredMaterials } from "../delivery";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
-import { deliverMachineCrate, freshMachineState } from "./machine-actions";
+import { freshMachineState } from "./machine-actions";
 import { emitPayout } from "./payout-actions";
 import {
   incrementCommissionsCompletedAction,
@@ -24,12 +24,14 @@ export function buyMaterialAction(
       console.warn("Tried to buy material without enough money");
       return gameState;
     }
+    // Purchases ride home in the truck's bed — they're waiting there
+    // when the player pulls back in, not conjured into their hands.
     return {
       ...gameState,
       money: gameState.money - price,
-      player: {
-        ...gameState.player,
-        inventory: [...gameState.player.inventory, material],
+      truck: {
+        ...gameState.truck,
+        bed: [...gameState.truck.bed, material],
       },
     };
   };
@@ -106,12 +108,19 @@ export function buyMachineAction(
       return gameState;
     }
 
-    // The purchase arrives crated at the shop entrance, to be carried into
-    // place (see docs/carrying-machines.md)
-    const updatedState = deliverMachineCrate(
-      { ...gameState, money: gameState.money - price },
-      freshMachineState(machineTypeId, gameState.progression),
-    );
+    // The purchase rides home crated in the truck's bed, to be carried
+    // into place from there (see docs/carrying-machines.md)
+    const updatedState = {
+      ...gameState,
+      money: gameState.money - price,
+      truck: {
+        ...gameState.truck,
+        crates: [
+          ...gameState.truck.crates,
+          freshMachineState(machineTypeId, gameState.progression),
+        ],
+      },
+    };
 
     // Owning a miter saw unlocks machine carrying (see UNLOCK_CONDITIONS)
     return checkProgressionMilestonesAction()(updatedState);
@@ -119,10 +128,10 @@ export function buyMachineAction(
 }
 
 /**
- * Hands the active commission over to its client. Called from the garage
- * door (see `DoorPrompt`) — the goods have to be in the player's hands and
- * the player has to be standing at the door, because a commission leaving
- * the shop is a thing that happens somewhere.
+ * Delivers the active commission to its client. Called from the truck's
+ * cab (see `TruckPrompt`) — the goods have to be loaded in the bed and
+ * the player standing at the cab, because a commission leaving the shop
+ * is a thing that happens somewhere.
  */
 export function completeCommissionAction(): GameAction {
   return (gameState) => {
@@ -132,16 +141,16 @@ export function completeCommissionAction(): GameAction {
       return gameState;
     }
     if (!canHandOff(gameState)) {
-      console.warn("Can't hand work over right now");
+      console.warn("Can't deliver work right now");
       return gameState;
     }
 
-    const updatedInventory = consumeRequiredMaterials(
-      gameState.player.inventory,
+    const updatedBed = consumeRequiredMaterials(
+      gameState.truck.bed,
       commission.requiredMaterials,
     );
-    if (updatedInventory === null) {
-      console.warn("Player doesn't have required materials for commission");
+    if (updatedBed === null) {
+      console.warn("The bed doesn't hold what the commission requires");
       return gameState;
     }
 
@@ -154,10 +163,7 @@ export function completeCommissionAction(): GameAction {
             ...gameState,
             money: gameState.money + commission.rewardMoney,
             reputation: gameState.reputation + commission.rewardReputation,
-            player: {
-              ...gameState.player,
-              inventory: updatedInventory,
-            },
+            truck: { ...gameState.truck, bed: updatedBed },
           },
           { kind: "commission-complete" },
         ),

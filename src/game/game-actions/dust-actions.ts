@@ -9,6 +9,7 @@ import {
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
 import { holdingBroom } from "../HeldTool";
+import { isOutdoors } from "../lot";
 import { getMachines } from "../Machine";
 import { personCanWork } from "../Person";
 import { carryingShopVac } from "../ShopVac";
@@ -163,6 +164,10 @@ export function pickUpBroomAction(): GameAction {
 export function putDownBroomAction(): GameAction {
   return (gameState) => {
     if (!holdingBroom(gameState) || gameState.player.away !== null) {
+      return gameState;
+    }
+    // The broom stays in hand on the lot — it leans on shop floor, not lawn
+    if (isOutdoors(gameState.shopInfo, gameState.player.position)) {
       return gameState;
     }
     return emitSound(

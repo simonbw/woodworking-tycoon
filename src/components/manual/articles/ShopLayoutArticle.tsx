@@ -25,8 +25,10 @@ export const ShopLayoutArticle: React.FC = () => (
 
     <H>Deliveries</H>
     <P>
-      Store purchases arrive as crates by the garage door, and worktables you
-      build come off the bench crated the same way. Crates don't block walking —
+      A machine you buy rides home crated in the truck's bed. Walk out to the
+      tailgate and lift it out with <ShortcutKeys shortcut="carry-machine" />,
+      then carry it in through the garage door. Worktables you build come off
+      the bench crated onto the floor beside it. Crates don't block walking —
       stand on one and lift it whenever you're ready to place the machine.
     </P>
 

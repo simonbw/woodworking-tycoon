@@ -17,7 +17,7 @@ import {
 
 /**
  * The scavenging trip, shown while the player's away trip is a
- * scavenging one (see DoorPrompt / startScavengingAction). Unlike the
+ * scavenging one (see TruckPrompt / startScavengingAction). Unlike the
  * store trips there is nothing to buy and no way home but the clock: the
  * overlay is a travel log — a hand-drawn map of the pallet circuit with
  * the route filling in, and field notes revealing the pre-rolled haul

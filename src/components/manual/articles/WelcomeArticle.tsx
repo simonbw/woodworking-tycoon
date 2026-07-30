@@ -59,21 +59,27 @@ export const WelcomeArticle: React.FC = () => (
         and eight of the salvaged nails.
       </li>
       <li>
-        Pick up the finished shelf, carry it to the garage door, and press{" "}
-        <ShortcutKeys shortcut="pick-up" />. The door lists the work you're
-        holding; the number beside a row hands it over.
+        Pick up the finished shelf, carry it out the garage door, and load it
+        into the truck's bed with <ShortcutKeys shortcut="put-down" /> at the
+        tailgate.
+      </li>
+      <li>
+        Walk down to the cab and press <ShortcutKeys shortcut="pick-up" />.
+        The truck lists the work riding in the bed; the number beside a row
+        delivers it.
       </li>
     </UL>
     <P>
       Every finished job leaves the shop this way — commissions and job-board
-      work alike. You have to be standing at the door with the goods in your
-      hands, so build first, then make the trip.
+      work alike. The goods have to be loaded in the bed and you have to be at
+      the cab, so build first, then load up.
     </P>
     <P>
-      Handing a commission over pays money and builds reputation, and each new
+      Delivering a commission pays money and builds reputation, and each new
       commission asks for something more advanced. The first payment is enough
-      to start shopping at the hardware store — once you hear about it, walk up
-      to the same door to head out.
+      to start shopping at the hardware store — once you hear about it, the
+      trip starts at the same cab. What you buy rides home in the bed; unload
+      it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

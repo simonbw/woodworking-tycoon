@@ -91,6 +91,7 @@ export const endGrainShop: GameState = {
     idleMachine("jobsiteTableSaw", [6, 3], "ripBoard"),
   ],
   machineCrates: [],
+  truck: { bed: [], crates: [] },
   storage: {
     tools: [],
     upgrades: [],

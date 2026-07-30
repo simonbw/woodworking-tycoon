@@ -5,6 +5,7 @@ import { GameState, MaterialPile } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { Machine, MachineState } from "../Machine";
 import {
+  dropMaterialAction,
   operateMachineAction,
   pickUpMaterialAction,
   setMachineOperationAction,
@@ -280,6 +281,40 @@ describe("settings lock while a station is working", () => {
       (operation) => operation.id !== machine.state.selectedOperationId,
     )!;
     const result = setMachineOperationAction(machine, other)(state);
+    assert.strictEqual(result, state);
+  });
+});
+
+describe("dropMaterialAction", () => {
+  it("drops carried stock as a pile underfoot", () => {
+    const material = board("pine", 4, 4, 1);
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [5, 5],
+        inventory: [material],
+      },
+    };
+    const result = dropMaterialAction([material])(state);
+    assert.strictEqual(result.player.inventory.length, 0);
+    assert.deepStrictEqual(
+      result.materialPiles.at(-1)?.position,
+      [5, 5],
+    );
+  });
+
+  it("keeps stock in hand on the lot — no piles outdoors", () => {
+    const material = board("pine", 4, 4, 1);
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [6, 17],
+        inventory: [material],
+      },
+    };
+    const result = dropMaterialAction([material])(state);
     assert.strictEqual(result, state);
   });
 });
