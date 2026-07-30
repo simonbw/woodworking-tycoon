@@ -3,6 +3,7 @@ import { returnFromStoreAction } from "../../game/game-actions/door-actions";
 import { BoardSelector } from "../store-page/BoardSelector";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";
+import { useHeadHome } from "../trip/TripTransitionLayer";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -18,7 +19,9 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 export const LumberyardTripOverlay: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const headHome = () => applyAction(returnFromStoreAction());
+  const beginReturn = useHeadHome();
+  const headHome = () =>
+    beginReturn(() => applyAction(returnFromStoreAction()));
 
   if (
     gameState.player.away?.kind !== "shopping" ||

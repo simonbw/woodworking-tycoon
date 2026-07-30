@@ -2,6 +2,7 @@ import React from "react";
 import { returnFromStoreAction } from "../../game/game-actions/door-actions";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";
+import { useHeadHome } from "../trip/TripTransitionLayer";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
 import { StoreMachinesSection } from "./StoreMachinesSection";
@@ -63,7 +64,9 @@ const OrangeBoxLogo: React.FC = () => (
 export const StoreTripOverlay: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const headHome = () => applyAction(returnFromStoreAction());
+  const beginReturn = useHeadHome();
+  const headHome = () =>
+    beginReturn(() => applyAction(returnFromStoreAction()));
 
   if (
     gameState.player.away?.kind !== "shopping" ||

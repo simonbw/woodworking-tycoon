@@ -1,5 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import { playTruckArrival, playTruckDeparture } from "../../utils/truckEngine";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { SCAVENGE_DURATION_TICKS } from "../../game/game-actions/scavenge-actions";
+import { playSound, preloadSound } from "../../utils/sfx";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
 import { StoreTripOverlay } from "../store-page/StoreTripOverlay";
@@ -11,16 +18,18 @@ import { useGameState } from "../useGameState";
  * tick; this layer stretches that instant into a scene: the trip card
  * folds, the engine cranks, the truck rolls down the driveway and off
  * the lot, the screen dips to black, and the destination is there when
- * it comes back. Heading home runs the reverse — a cut to black off the
- * overlay, then the truck backing up the driveway into its spot, the
- * parking brake, the door, and the player stepping out.
+ * it comes back. Heading home fades to black *over the destination*
+ * (`useHeadHome` delays the actual return action until the screen is
+ * dark, and the scavenging timer pre-fades as its return tick closes
+ * in), then reveals the shop with the truck backing up the driveway —
+ * the player stays inside it, hidden, until it parks.
  *
- * GameState semantics are untouched — `away` still flips at click time,
- * saves and ticks behave identically — so a save loaded mid-trip just
- * opens on the overlay with no performance. The stage machine lives in
- * truckStageStore; TruckSprite reads it for the motion, ShopView for
- * hiding the player and holding input, and TripOverlays below for when
- * the destination takes the screen.
+ * GameState semantics are untouched — `away` still flips before any
+ * frame of the arrival plays, saves and ticks behave identically — so a
+ * save loaded mid-trip just opens on the overlay with no performance.
+ * The stage machine lives in truckStageStore; TruckSprite reads it for
+ * the motion, ShopView for hiding the player and holding input, and
+ * TripOverlays below for when the destination takes the screen.
  *
  * The E2E build skips the whole show (the same flag that caps its
  * renderer): specs click "Go" and expect the store that frame.
@@ -35,13 +44,71 @@ export const TRUCK_ARRIVE_MS = 2900;
 export const TRUCK_ROLL_IN_MS = 1700;
 const FADE_MS = 400;
 
+/** How close the scavenging return tick gets (at 5 ticks/s) before the
+ * screen starts dipping — the swap home then happens under black. */
+const SCAVENGE_PREFADE_TICKS = 3;
+
 const TRANSITIONS_DISABLED = Number(process.env.E2E_RENDER_FPS) > 0;
 
-export const TripTransitionLayer: React.FC = () => {
+/** Runs `apply` once the screen has faded to black (immediately in the
+ * E2E build). Handed to the overlays' Head Home buttons. */
+const HeadHomeContext = createContext<(apply: () => void) => void>((apply) =>
+  apply(),
+);
+
+export function useHeadHome(): (apply: () => void) => void {
+  return useContext(HeadHomeContext);
+}
+
+export const TripTransitionLayer: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const gameState = useGameState();
   const away = gameState.player.away != null;
   const [faded, setFaded] = useState(false);
   const mounted = useRef(false);
+  const pendingReturn = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // A quit-to-menu mid-fade must not fire the queued return into a
+  // provider that no longer exists. Warm the trip clips on the way in —
+  // the crank should land with the click, not a fetch later.
+  useEffect(() => {
+    preloadSound("truck-depart");
+    preloadSound("truck-arrive");
+    return () => {
+      if (pendingReturn.current) clearTimeout(pendingReturn.current);
+    };
+  }, []);
+
+  // Head Home: dip to black first, then apply the return action — the
+  // destination page is what fades out, not the shop.
+  const headHome = (apply: () => void) => {
+    if (TRANSITIONS_DISABLED) {
+      apply();
+      return;
+    }
+    if (pendingReturn.current) return; // already on the way out
+    setFaded(true);
+    pendingReturn.current = setTimeout(() => {
+      pendingReturn.current = null;
+      apply();
+    }, FADE_MS);
+  };
+
+  // The scavenging trip comes home on a timer, not a button — start the
+  // dip as the return tick closes in so the swap happens under black.
+  const scavengeReturnSoon =
+    !TRANSITIONS_DISABLED &&
+    gameState.player.away?.kind === "scavenging" &&
+    gameState.player.away.returnTick - gameState.tick <=
+      SCAVENGE_PREFADE_TICKS &&
+    // A trip just started is not a trip about to end (fixture edits can
+    // put the tick anywhere).
+    gameState.player.away.returnTick - gameState.tick >
+      -SCAVENGE_DURATION_TICKS;
+  useEffect(() => {
+    if (scavengeReturnSoon) setFaded(true);
+  }, [scavengeReturnSoon]);
 
   useEffect(() => {
     // First mount (a fresh boot, a save loaded mid-trip): take the state
@@ -58,7 +125,8 @@ export const TripTransitionLayer: React.FC = () => {
         return;
       }
       setTruckStage("departing");
-      playTruckDeparture();
+      // Dry, not through the garage reverb — the driveway is outdoors.
+      playSound("truck-depart", 0.7, "sfx");
       const fadeTimer = setTimeout(
         () => setFaded(true),
         TRUCK_DEPART_MS - FADE_MS,
@@ -78,17 +146,18 @@ export const TripTransitionLayer: React.FC = () => {
       setTruckStage("parked");
       return;
     }
-    // Home: a cut to black carries the overlay-to-shop swap, then the
-    // truck rolls in.
+    // Home. The screen is already black (Head Home and the scavenge
+    // timer both fade before `away` clears); the shop swaps in
+    // underneath, then the reveal rides the truck rolling in.
     setFaded(true);
-    playTruckArrival();
+    playSound("truck-arrive", 0.7, "sfx");
     const revealTimer = setTimeout(() => {
       setTruckStage("arriving");
       setFaded(false);
-    }, FADE_MS);
+    }, 120);
     const doneTimer = setTimeout(
       () => setTruckStage("parked"),
-      FADE_MS + TRUCK_ARRIVE_MS,
+      120 + TRUCK_ARRIVE_MS,
     );
     return () => {
       clearTimeout(revealTimer);
@@ -98,11 +167,14 @@ export const TripTransitionLayer: React.FC = () => {
   }, [away]);
 
   return (
-    <div
-      aria-hidden
-      className="fixed inset-0 z-[70] bg-black pointer-events-none transition-opacity ease-in-out"
-      style={{ opacity: faded ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
-    />
+    <HeadHomeContext.Provider value={headHome}>
+      {children}
+      <div
+        aria-hidden
+        className="fixed inset-0 z-[70] bg-black pointer-events-none transition-opacity ease-in-out"
+        style={{ opacity: faded ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
+      />
+    </HeadHomeContext.Provider>
   );
 };
 

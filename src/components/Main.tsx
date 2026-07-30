@@ -47,8 +47,9 @@ export const Main: React.FC = () => {
                 <ClipboardProvider>
                   <BrowserDefaultsGuard />
                   <HomePage />
-                  <TripOverlays />
-                  <TripTransitionLayer />
+                  <TripTransitionLayer>
+                    <TripOverlays />
+                  </TripTransitionLayer>
                   <RewardFlightLayer />
                   <GameSoundLayer />
                   <MachineSoundLayer />

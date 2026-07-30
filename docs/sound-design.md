@@ -274,17 +274,16 @@ rhythm anyway, cells being a foot across against a nearly three-foot stride.
 `playerMotion.moving` is already false when paused, away on a trip, or busy
 sweeping, so all of those go quiet without the layer knowing about them.
 
-### The truck's engine (`src/utils/truckEngine.ts`)
+### The truck (`truck-depart.ogg` / `truck-arrive.ogg`)
 
-The trip performance (see `TripTransitionLayer`) is scored the same way the
-machines are voiced: **no samples**, one `firingHz` scalar the spectrum
-hangs off. The block is a detuned sawtooth pair through a dark lowpass, the
-exhaust a sub sine an octave down plus noise AM-chopped at firing rate, and
-the starter a chugged whine. `playTruckDeparture()` cranks, catches, revs,
-and fades out; `playTruckArrival()` rolls in, settles to idle, shuts off,
-and caps it with the parking brake and the door — each a one-shot scheduled
-entirely with Web Audio automation. Routed **dry through the SFX bus**: the
-driveway is outdoors, and the room bus wears the garage's impulse response.
+The trip performance (see `TripTransitionLayer`) plays two generated
+one-shot clips: the departure is a cold start — crank, catch, idle, pull
+away — and the arrival is the approach, the stop, the shut-off, the
+parking brake, and the door. (A pure-synth engine in the machineSynth
+style was tried first and cut; a whole vehicle performance wants real
+texture in a way a single-scalar motor model doesn't.) Both are routed
+**dry through the SFX bus**: the driveway is outdoors, and the room bus
+wears the garage's impulse response.
 
 ---
 
