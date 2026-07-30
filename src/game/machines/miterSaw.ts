@@ -54,6 +54,7 @@ export const miterSaw: MachineType = {
   // pieces stay on the saw table until collected.
   inputSpaces: 1,
   directFeed: true,
+  corded: true,
   feedVerb: "Cut",
   // Small enough to mount on a worktable cell instead of the floor
   benchtop: true,

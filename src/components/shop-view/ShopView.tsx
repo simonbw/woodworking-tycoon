@@ -43,6 +43,7 @@ import { MaterialPilesSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
 import { FootstepSoundLayer } from "./FootstepSoundLayer";
 import { PlayerMotionLayer } from "./PlayerMotionLayer";
+import { PowerCordLayer } from "./PowerCordLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
 import { EnvironmentLayer } from "./EnvironmentLayer";
@@ -333,6 +334,9 @@ export const ShopView: React.FC = () => {
               ))}
               {/* Settled sawdust sits on the floor, under everything that moves */}
               <DustLayer width={width} height={height} />
+              {/* Cords run along the slab from the electric machines to
+                  the wall outlets, under everything that sits on it */}
+              <PowerCordLayer />
               {gameState.progression.sweepingUnlocked && <BroomSprite />}
 
               {gameState.machineCrates.map((crate, index) => (
