@@ -1,5 +1,7 @@
-import { CollisionShape, Machine } from "./Machine";
-import { Solid, SolidBox } from "./player-motion";
+import { GameState } from "./GameState";
+import { CollisionShape, getMachines, Machine } from "./Machine";
+import { lotSize, truckSolid, wallSolids } from "./lot";
+import { CollisionWorld, Solid, SolidBox } from "./player-motion";
 import { rotateVec, Vector, vectorKey } from "./Vectors";
 
 /**
@@ -79,4 +81,21 @@ export function machineSolids(machine: Machine): Solid[] {
  * tiles — overlapping solids just block twice, which is fine. */
 export function shopSolids(machines: ReadonlyArray<Machine>): Solid[] {
   return machines.flatMap(machineSolids);
+}
+
+/**
+ * The whole world the walking body collides with: the lot's outer edges
+ * as the bounds, the building's walls (with the garage-door gap), the
+ * parked truck, and every machine. The truck is off its spot while the
+ * player is away — they drove it.
+ */
+export function collisionWorld(gameState: GameState): CollisionWorld {
+  return {
+    size: lotSize(gameState.shopInfo),
+    solids: [
+      ...wallSolids(gameState.shopInfo),
+      ...(gameState.player.away ? [] : [truckSolid(gameState.shopInfo)]),
+      ...shopSolids(getMachines(gameState.machines)),
+    ],
+  };
 }

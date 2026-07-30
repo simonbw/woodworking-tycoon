@@ -1,8 +1,7 @@
 import { useTick } from "@pixi/react";
 import { Ticker } from "pixi.js";
 import React, { useEffect, useRef } from "react";
-import { getMachines } from "../../game/Machine";
-import { shopSolids } from "../../game/machine-collision";
+import { collisionWorld } from "../../game/machine-collision";
 import { setPlayerPositionAction } from "../../game/game-actions/player-actions";
 import {
   directionFromInput,
@@ -87,7 +86,7 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
       input,
       playerWalkSpeed(gs),
       dt,
-      { size: gs.shopInfo.size, solids: shopSolids(getMachines(gs.machines)) },
+      collisionWorld(gs),
     );
     playerMotion.moving =
       next[0] !== playerMotion.pos[0] || next[1] !== playerMotion.pos[1];

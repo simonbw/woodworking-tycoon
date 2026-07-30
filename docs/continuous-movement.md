@@ -43,9 +43,9 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 The body is a circle, moved then pushed back out of anything solid
 (`stepPlayerMotion`): each substep (capped at half the body radius, so
 a dropped frame can't tunnel) integrates the input, then resolves
-overlap against the shop walls and a flat list of world-space solids —
-boxes and circles; crates and piles don't block — by the closest-point
-normal. Because the push removes only the *into-the-face* component,
+overlap against the walkable world's edges and a flat list of
+world-space solids — boxes and circles; crates and piles don't block —
+by the closest-point normal. Because the push removes only the *into-the-face* component,
 diagonal input into a machine slides along its face at full tangential
 speed, and a shoulder grazing an outside corner deflects around it
 instead of catching (corner contact pushes radially). A body that
@@ -53,7 +53,18 @@ starts a frame overlapped (a fixture teleport, a machine set down over
 its margin) is pushed out to the nearest face rather than left
 embedded. All pure and unit-tested (`player-motion.test.ts`).
 
-The solids come from `machine-collision.ts` (`shopSolids`): each
+The walkable world is the whole lot, not just the shop floor: the
+building's walls are ordinary box solids with a gap at the garage door
+(`wallSolids` in `src/game/lot.ts`), the parked truck is one more box
+(`truckSolid`, gone while the player is away — they drove it), and the
+world's hard edges are the lot's (`lotSize`: the shop's width, extended
+down past the truck's nose). `collisionWorld(gameState)` in
+`machine-collision.ts` assembles all of it. Outdoor cells have no
+CellMap entry, which is what keeps placement, piles, and every other
+cell verb indoors for free — the lot is walkable ground and nothing
+else.
+
+The machine solids come from `shopSolids`: each
 machine contributes its `MachineType.collisionShapes` — a list of
 boxes/circles in the machine's local frame, rotated with the placement
 (rotations are quarter-turns, so boxes stay exact) — or, when it has

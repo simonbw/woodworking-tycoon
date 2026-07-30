@@ -1,5 +1,5 @@
 import { Application, useApplication } from "@pixi/react";
-import type { Application as PixiApplication } from "pixi.js";
+import type { Application as PixiApplication, Container } from "pixi.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../useCellMap";
 import { isSameMachine, machineKey } from "../../game/Machine";
@@ -47,6 +47,9 @@ import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
 import { EnvironmentLayer } from "./EnvironmentLayer";
+import { CameraLayer } from "./CameraLayer";
+import { camera } from "./cameraStore";
+import { lotSize } from "../../game/lot";
 import { PIXELS_PER_CELL, cellToPixel, cellToPixelVec } from "./shop-scale";
 
 /**
@@ -178,6 +181,10 @@ export const ShopView: React.FC = () => {
   // size (the renderer snapshots its size on init; mounting it at a
   // placeholder size would flash small, then jump).
   const containerRef = useRef<HTMLDivElement>(null);
+  // The camera's two hands: the world container it scrolls and the DOM
+  // overlay that rides along. Imperative on purpose — see CameraLayer.
+  const cameraContainerRef = useRef<Container>(null);
+  const overlayScrollRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<{
     scale: number;
     width: number;
@@ -231,7 +238,8 @@ export const ShopView: React.FC = () => {
       (event.clientX - rect.left - offsetX) / (scale * PIXELS_PER_CELL),
     );
     const cellY = Math.floor(
-      (event.clientY - rect.top - offsetY) / (scale * PIXELS_PER_CELL),
+      (event.clientY - rect.top - offsetY + camera.scroll * scale) /
+        (scale * PIXELS_PER_CELL),
     );
     const [px, py] = gameState.player.position;
     updateGameState(
@@ -242,12 +250,23 @@ export const ShopView: React.FC = () => {
     );
   };
   const clearAim = () => updateGameState(setSweepAimAction(null));
-  // What the canvas can see, in world pixels — the lot fills all of it
+  // How far the camera can follow the player down the lot, in world
+  // pixels: at full scroll the viewport's bottom edge reaches the
+  // walkable world's bottom. Zero on a viewport tall enough to see the
+  // whole lot already — the camera then never moves at all.
+  const lotHeightCells = lotSize(gameState.shopInfo)[1];
+  const scrollMax = Math.max(
+    0,
+    cellToPixel(lotHeightCells) - (view.height - offsetY) / scale,
+  );
+  // What the canvas can ever see, in world pixels — the lot fills all of
+  // it, extended down by the camera's scroll range so the ground is
+  // already drawn everywhere the camera can go.
   const worldViewport = {
     left: -offsetX / scale,
     top: -offsetY / scale,
     right: (view.width - offsetX) / scale,
-    bottom: (view.height - offsetY) / scale,
+    bottom: (view.height - offsetY) / scale + scrollMax,
   };
 
   return (
@@ -274,7 +293,16 @@ export const ShopView: React.FC = () => {
           value={{ gameState, updateGameState, saveGame, quitToMenu }}
         >
           <RendererSize width={view.width} height={view.height} />
+          <CameraLayer
+            worldRef={cameraContainerRef}
+            overlayRef={overlayScrollRef}
+            scrollStartY={cellMap.getHeight()}
+            scrollEndY={lotHeightCells - 2}
+            scrollMax={scrollMax}
+            scale={scale}
+          />
           <pixiContainer x={offsetX} y={offsetY} scale={scale}>
+            <pixiContainer ref={cameraContainerRef}>
             <EnvironmentLayer
               width={width}
               height={height}
@@ -354,10 +382,14 @@ export const ShopView: React.FC = () => {
               <DustMotionLayer />
               <CarriedMachineLayer />
             </pixiContainer>
+          </pixiContainer>
           </gameStateContext.Provider>
         </Application>
         {/* The DOM overlay sits exactly on the shop floor's box, so every
-            anchor inside keeps world-times-scale coordinates */}
+            anchor inside keeps world-times-scale coordinates. The inner
+            wrapper rides the camera (CameraLayer sets its transform
+            imperatively; React never writes that style, so they can't
+            fight). */}
         <div
           className="absolute z-30 pointer-events-none"
           style={{
@@ -367,12 +399,14 @@ export const ShopView: React.FC = () => {
             height: scaledHeight,
           }}
         >
-          {/* Everything you can do, shown at the thing you'd do it to */}
-          <ShopOverlayLayer
-            width={scaledWidth}
-            height={scaledHeight}
-            scale={scale}
-          />
+          <div ref={overlayScrollRef} className="absolute inset-0">
+            {/* Everything you can do, shown at the thing you'd do it to */}
+            <ShopOverlayLayer
+              width={scaledWidth}
+              height={scaledHeight}
+              scale={scale}
+            />
+          </div>
         </div>
       </div>
     );

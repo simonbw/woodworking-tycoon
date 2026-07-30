@@ -1,8 +1,7 @@
 import { useTick } from "@pixi/react";
 import { Graphics } from "pixi.js";
 import React, { useCallback, useRef } from "react";
-import { getMachines } from "../../game/Machine";
-import { shopSolids } from "../../game/machine-collision";
+import { collisionWorld } from "../../game/machine-collision";
 import { PLAYER_RADIUS } from "../../game/player-motion";
 import { useGameState } from "../useGameState";
 import { playerMotion } from "./playerMotionStore";
@@ -20,7 +19,7 @@ export const CollisionDebugLayer: React.FC = () => {
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
-      for (const solid of shopSolids(getMachines(gameState.machines))) {
+      for (const solid of collisionWorld(gameState).solids) {
         if (solid.kind === "circle") {
           const x = solid.center[0] * PIXELS_PER_CELL;
           const y = solid.center[1] * PIXELS_PER_CELL;
@@ -41,7 +40,7 @@ export const CollisionDebugLayer: React.FC = () => {
         g.stroke({ width: 1.5, color: 0xef4444, alpha: 0.9 });
       }
     },
-    [gameState.machines],
+    [gameState],
   );
 
   return (
