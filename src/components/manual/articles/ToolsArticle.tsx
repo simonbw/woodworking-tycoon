@@ -26,6 +26,13 @@ export const ToolsArticle: React.FC = () => (
       times the time.
     </P>
 
+    <H>Tool Pairs</H>
+    <P>
+      Some tools help each other. Mount the <Term>impact driver</Term> at the
+      same station as the drill and screwed assembly runs half again as fast —
+      one tool drills the pilot holes while the other drives the screws.
+    </P>
+
     <H>Jigs</H>
     <P>
       Some tools are built rather than bought. Jigs like the{" "}

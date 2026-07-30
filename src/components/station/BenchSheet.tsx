@@ -122,7 +122,7 @@ export const BenchSheet: React.FC<{
           }
           progression={gameState.progression}
           dustMultiplier={dustMultiplier}
-          workSpeed={machine.workSpeed}
+          workSpeedFor={(operation) => machine.workSpeedFor(operation)}
           showShortcut={isTargeted(machine)}
           locked={working}
           // A bench is honestly recipe-driven: you're picking which plan

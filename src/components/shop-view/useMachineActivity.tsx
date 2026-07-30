@@ -27,7 +27,7 @@ export function useMachineActivity(machine: Machine) {
         operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        machine.workSpeedFor(operation),
       )
     : [];
   // Same rule the tick uses: standing there isn't enough, you have to be

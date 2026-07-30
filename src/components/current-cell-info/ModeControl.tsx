@@ -30,8 +30,12 @@ export const ModeControl: React.FC<{
   progression: ProgressionState;
   /** Dust slowdown at this station, folded into the shown durations. */
   dustMultiplier?: number;
-  /** Station work speed (worktables), folded into the shown durations. */
-  workSpeed?: number;
+  /**
+   * Station work speed for a given recipe (worktables, tool pairings),
+   * folded into the shown durations. Per-operation because a tool
+   * pairing can speed up some recipes on the list and not others.
+   */
+  workSpeedFor?: (operation: Operation) => number;
   /** Advertise the cycle-operation key next to the control. */
   showShortcut?: boolean;
   /**
@@ -53,7 +57,7 @@ export const ModeControl: React.FC<{
   onSelect,
   progression,
   dustMultiplier,
-  workSpeed,
+  workSpeedFor,
   showShortcut,
   labelText = "Mode",
   locked,
@@ -127,7 +131,7 @@ export const ModeControl: React.FC<{
       onSelect={onSelect}
       progression={progression}
       dustMultiplier={dustMultiplier}
-      workSpeed={workSpeed}
+      workSpeedFor={workSpeedFor}
       label={label}
       locked={locked}
     />
@@ -140,7 +144,7 @@ const RecipeIndex: React.FC<{
   onSelect: (operation: Operation) => void;
   progression: ProgressionState;
   dustMultiplier?: number;
-  workSpeed?: number;
+  workSpeedFor?: (operation: Operation) => number;
   label: React.ReactNode;
   locked?: boolean;
 }> = ({
@@ -149,7 +153,7 @@ const RecipeIndex: React.FC<{
   onSelect,
   progression,
   dustMultiplier,
-  workSpeed,
+  workSpeedFor,
   label,
   locked,
 }) => {
@@ -229,7 +233,7 @@ const RecipeIndex: React.FC<{
                           operation,
                           progression,
                           dustMultiplier,
-                          workSpeed,
+                          workSpeedFor?.(operation),
                         ),
                       )}
                     </span>

@@ -5,6 +5,7 @@ import { dustBag } from "./tools/dustBag";
 import { hammer } from "./tools/hammer";
 import { handPlane } from "./tools/handPlane";
 import { handSaw } from "./tools/handSaw";
+import { impactDriver } from "./tools/impactDriver";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
 import { resawFence } from "./tools/resawFence";
 import { sandingBlock } from "./tools/sandingBlock";
@@ -49,6 +50,7 @@ export const TOOL_TYPES = {
   hammer,
   handSaw,
   drill,
+  impactDriver,
   sandingBlock,
   randomOrbitSander,
   handPlane,

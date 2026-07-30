@@ -98,6 +98,12 @@ drum sander.
   assembly recipes are drill operations. Its first recipe is the Rustic
   Planter Box (5 pallet slats crosscut to 2', 8 screws) — screws come only
   from the store, never salvage (see `docs/consumables.md`).
+- The **impact driver** ($90) is the drill's companion, not a tier above
+  it: no operations of its own, but mounted at the same station as the
+  drill it runs screw recipes (any op consuming screws) ×1.5 faster — one
+  tool drills pilots, the other drives, no bit swapping. The first tool
+  pairing; the mechanic lives in `Machine.workSpeedFor`, which folds
+  per-operation tool bonuses into the station's work speed.
 
 ### Later
 

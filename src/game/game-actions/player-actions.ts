@@ -503,7 +503,7 @@ export function operateMachineAction(machine: Machine): GameAction {
         match.operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        machine.workSpeedFor(match.operation),
       );
       return {
         ...gameState,
@@ -581,7 +581,7 @@ export function operateMachineAction(machine: Machine): GameAction {
       machine.selectedOperation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-      machine.workSpeed,
+      machine.workSpeedFor(machine.selectedOperation),
     );
     return {
       ...gameState,

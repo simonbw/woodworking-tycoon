@@ -140,7 +140,7 @@ export function machineTickPass(): GameAction {
       selectedOperation,
       gameState.progression,
       dustMultiplier,
-      machine.workSpeed,
+      machine.workSpeedFor(selectedOperation),
     );
     // Attended phases need the player at the machine, holding the operate
     // key, AND the machine powered — switching off mid-cut pauses the work

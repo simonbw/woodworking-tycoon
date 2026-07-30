@@ -14,6 +14,7 @@ import {
 } from "./Vectors";
 import { bandSaw } from "./machines/bandSaw";
 import { garbageCan } from "./machines/garbageCan";
+import { IMPACT_DRIVER_SPEED_FACTOR } from "./tools/impactDriver";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
@@ -675,6 +676,29 @@ export class Machine {
       (speed, id) => speed * (UPGRADE_TYPES[id].workSpeedFactor ?? 1),
       this.type.workSpeed ?? 1,
     );
+  }
+
+  /**
+   * The station's work speed for one specific operation: workSpeed with
+   * tool pairings folded in. Today's only pairing: a drill and an impact
+   * driver mounted together speed up screw-driving recipes — any
+   * operation that consumes screws — because one tool drills pilots
+   * while the other drives, with no bit swapping. Anything timing an
+   * operation at a placed machine should come through here, not
+   * workSpeed.
+   */
+  workSpeedFor(operation: Operation): number {
+    const drivesScrews = operation.requiredConsumables?.some(
+      (consumable) => consumable.id === "screws",
+    );
+    if (
+      drivesScrews &&
+      this.state.tools.includes("drill") &&
+      this.state.tools.includes("impactDriver")
+    ) {
+      return this.workSpeed * IMPACT_DRIVER_SPEED_FACTOR;
+    }
+    return this.workSpeed;
   }
 }
 

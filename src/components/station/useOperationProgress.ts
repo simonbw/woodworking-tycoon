@@ -33,7 +33,7 @@ export function useOperationProgress(machine: Machine): OperationProgressView {
         operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        machine.workSpeedFor(operation),
       )
     : [];
 
