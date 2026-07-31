@@ -29,6 +29,7 @@ export const TEXTURE_ASSETS = [
   "/images/bandsaw-14-upper.png",
   "/images/benchtop-jointer.png",
   "/images/concrete-floor-2-big.png",
+  "/images/garbage-can.png",
   "/images/jobsite-table-saw-table.png",
   "/images/jobsite-table-saw-fence.png",
   "/images/lunchbox-planer-bottom.png",
