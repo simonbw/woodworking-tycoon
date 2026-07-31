@@ -68,8 +68,31 @@ describe("shortcut registry", () => {
 
 describe("shortcutsForEvent", () => {
   it("resolves a plain key", () => {
-    const ids = shortcutsForEvent(keyEvent("KeyE")).map((d) => d.id);
-    assert.deepEqual(ids, ["pick-up"]);
+    const ids = shortcutsForEvent(keyEvent("KeyF")).map((d) => d.id);
+    assert.deepEqual(ids, ["put-down"]);
+  });
+
+  it("lets an open card's cursor claim E before the interact key", () => {
+    // Registry order is dispatch priority for a shared key: with a list
+    // card open panel-accept is enabled and takes the highlighted row;
+    // otherwise it steps aside and E interacts as usual.
+    assert.deepEqual(
+      shortcutsForEvent(keyEvent("KeyE")).map((d) => d.id),
+      ["panel-accept", "pick-up"],
+    );
+  });
+
+  it("puts the panel cursor on the movement keys", () => {
+    // The move-* defs never register a handler (walking is the held-key
+    // listener), so the cursor bindings are what dispatch actually finds.
+    assert.deepEqual(
+      shortcutsForEvent(keyEvent("KeyW")).map((d) => d.id),
+      ["move-up", "panel-up"],
+    );
+    assert.deepEqual(
+      shortcutsForEvent(keyEvent("ArrowDown")).map((d) => d.id),
+      ["move-down", "panel-down"],
+    );
   });
 
   it("returns every binding for a shared key", () => {
@@ -95,7 +118,7 @@ describe("shortcutsForEvent", () => {
     // shortcut must still resolve.
     assert.deepEqual(
       shortcutsForEvent(keyEvent("KeyE", true)).map((d) => d.id),
-      ["pick-up"],
+      ["panel-accept", "pick-up"],
     );
   });
 
