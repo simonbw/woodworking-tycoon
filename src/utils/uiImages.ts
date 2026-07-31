@@ -47,6 +47,7 @@ export const MACHINE_ICON_SRC: Partial<Record<MachineId, string>> = {
   lunchboxPlaner: "/images/lunchbox-planer.png",
   jointer: "/images/benchtop-jointer.png",
   bandSaw: "/images/bandsaw-14.png",
+  garbageCan: "/images/garbage-can.png",
 };
 
 /**

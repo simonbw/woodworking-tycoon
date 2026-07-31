@@ -99,8 +99,10 @@ wiring: same path, same size, same component.
       front edge and could stay procedural overlays.
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
-- [ ] Garbage can — `machine-sprites/GarbageCanSprite.tsx`. Contents already
-      render through `MaterialSprite`.
+- [x] Garbage can — `garbage-can.png`. A top-down lid view centered on the
+      2×2-ft footprint; the collision circle in `garbageCan.ts` is hand-set
+      to the can's measured 26.5" diameter. Contents still render through
+      `MaterialSprite`.
 - [x] Band saw — `bandsaw-14-lower/-fence/-upper.png`. Three layers so the
       fence can slide with the setting and the stock can pass between the
       table and the arm reaching over it; the blade sits at (245, 200) in
