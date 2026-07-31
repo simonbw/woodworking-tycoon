@@ -98,29 +98,37 @@ the body circle that collides with them.
 
 Material piles don't live on the grid either: `MaterialPile.position` is
 the piece's **center point** in continuous cell units, the same
-coordinate space as the body. Dropping (F, or a hands-strip slot) passes
-the body's actual position into `dropMaterialAction`, so a piece lands
-exactly where the woodworker is standing; sequence tests omit the point
-and it defaults to the standing cell's center (`cellCenter`).
+coordinate space as the body, and `MaterialPile.rotation` is the
+orientation it lies in (radians, world frame — 0 is square to the shop
+with long stock running down the y axis, the way the sprites draw).
+Dropping (F, or a hands-strip slot) passes the body's actual position
+*and* the carried orientation (`heading + π/2`, the person sprite's own
+frame) into `dropMaterialAction`, so a piece lands exactly where the
+woodworker is standing, lying the way it looked in their arms — and
+stays that way. Sequence tests omit both and the piece lands square at
+the standing cell's center (`cellCenter`).
 
 Reach is geometry, not cell membership: a pile is grabbable when its
 material's resting rectangle (`materialExtentInches`, the piece's real
-dimensions) comes within `PILE_REACH_CELLS` of the player's cell center
-(`pileWithinReach` in `pile-helpers.ts`). Long stock is grabbable
-anywhere along its length with no special-cased overhang cells, and the
-CellMap knows nothing about piles at all — `resolveInteract` scans
-`gameState.materialPiles` directly (a list of dozens at most).
+dimensions, turned to the pile's rotation) comes within
+`PILE_REACH_CELLS` of the player's cell center (`pileWithinReach` in
+`pile-helpers.ts`). Long stock is grabbable anywhere along its length —
+as it actually lies, not along an axis-aligned ghost — with no
+special-cased overhang cells, and the CellMap knows nothing about piles
+at all — `resolveInteract` scans `gameState.materialPiles` directly (a
+list of dozens at most).
 
 The simulation still validates reach against `player.position` (the cell
 underfoot), not the continuous body — actions stay pure and the hint
-chips can never disagree with the keypress. Only the *drop point* comes
-from the body, threaded in as an action argument by the DOM layer.
+chips can never disagree with the keypress. Only the *drop point* and
+*orientation* come from the body, threaded in as action arguments by the
+DOM layer.
 
-Piles render individually at their positions (`MaterialPileSprite`),
-keyed by the material's `id`, in drop order so the newest piece draws on
-top — matching the order E picks from. Pieces set down on the very same
-spot stay legible by wearing a small deterministic resting angle hashed
-from that id.
+Piles render individually at their positions and rotations
+(`MaterialPileSprite`), keyed by the material's `id`, in drop order so
+the newest piece draws on top — matching the order E picks from. Pieces
+set down on the very same spot facing the same way stack squarely, like
+someone set them down that way on purpose — because someone did.
 
 ## Speed, not busy-ticks
 

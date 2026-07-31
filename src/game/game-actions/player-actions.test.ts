@@ -30,6 +30,7 @@ describe("pickUpMaterialAction", () => {
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
       position: [1.5, 3.5],
+      rotation: 0,
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 3]));
     assert.strictEqual(result.materialPiles.length, 0);
@@ -40,6 +41,7 @@ describe("pickUpMaterialAction", () => {
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
       position: [1.5, 3.5],
+      rotation: 0,
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
     assert.strictEqual(result.materialPiles.length, 0);
@@ -51,6 +53,7 @@ describe("pickUpMaterialAction", () => {
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
       position: [1.5, 3.5],
+      rotation: 0,
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 8]));
     assert.strictEqual(result.materialPiles.length, 1);
@@ -64,6 +67,7 @@ describe("pickUpMaterialAction", () => {
     const pile: MaterialPile = {
       material: board("pine", 1, 4, 1),
       position: [1.5, 3.5],
+      rotation: 0,
     };
     const ahead = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
     assert.strictEqual(ahead.player.inventory.length, 1);
@@ -78,8 +82,8 @@ describe("pickUpMaterialAction", () => {
   it("refuses a load bigger than the arm room left", () => {
     // One free hand left; a two-pile grab doesn't fit and refuses whole
     const piles: MaterialPile[] = [
-      { material: board("pine", 2, 4, 1), position: [1, 3] },
-      { material: board("pine", 2, 4, 1), position: [1, 3] },
+      { material: board("pine", 2, 4, 1), position: [1, 3], rotation: 0 },
+      { material: board("pine", 2, 4, 1), position: [1, 3], rotation: 0 },
     ];
     const carried = Array.from({ length: HAND_CAPACITY - 1 }, () =>
       board("pine", 2, 4, 1),
@@ -102,6 +106,7 @@ describe("pickUpMaterialAction", () => {
     const pile: MaterialPile = {
       material: board("pine", 2, 4, 1),
       position: [1, 3],
+      rotation: 0,
     };
     const state: GameState = {
       ...initialGameState,
@@ -123,6 +128,7 @@ describe("pickUpMaterialAction", () => {
     const pile: MaterialPile = {
       material: board("pine", 2, 4, 1),
       position: [1, 3],
+      rotation: 0,
     };
     const state: GameState = {
       ...initialGameState,
@@ -376,6 +382,7 @@ describe("dropMaterialAction", () => {
     const result = dropMaterialAction([material])(state);
     assert.strictEqual(result.player.inventory.length, 0);
     assert.deepStrictEqual(result.materialPiles.at(-1)?.position, [5.5, 5.5]);
+    assert.strictEqual(result.materialPiles.at(-1)?.rotation, 0);
   });
 
   it("drops at the landing point it is given", () => {
@@ -390,6 +397,22 @@ describe("dropMaterialAction", () => {
     };
     const result = dropMaterialAction([material], [5.2, 5.8])(state);
     assert.deepStrictEqual(result.materialPiles.at(-1)?.position, [5.2, 5.8]);
+  });
+
+  it("keeps the orientation the piece was dropped in", () => {
+    const material = board("pine", 4, 4, 1);
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [5, 5],
+        inventory: [material],
+      },
+    };
+    const result = dropMaterialAction([material], [5.5, 5.5], Math.PI / 3)(
+      state,
+    );
+    assert.strictEqual(result.materialPiles.at(-1)?.rotation, Math.PI / 3);
   });
 
   it("keeps stock in hand on the lot — no piles outdoors", () => {

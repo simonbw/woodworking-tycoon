@@ -348,6 +348,7 @@ test.describe("Shop floor", () => {
                 jointedEdges: 2,
               },
               position: [10.5, 9.5],
+              rotation: 0,
             },
           ],
         }));

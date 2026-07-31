@@ -11,7 +11,7 @@ function pileAt(
   position: [number, number],
   length: Board["length"] = 1,
 ): MaterialPile {
-  return { material: board("pine", length), position };
+  return { material: board("pine", length), position, rotation: 0 };
 }
 
 /** The starter garage, empty floor, player standing at [5, 5]. */
