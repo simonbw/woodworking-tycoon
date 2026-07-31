@@ -260,7 +260,11 @@ export const ShopKeyboardShortcuts: React.FC = () => {
 
       const machine = targeted.current;
       if (machine && machine.operationProgress.status !== "inProgress") {
-        const stageable = stageableMaterials(machine, inventory, gs.progression);
+        const stageable = stageableMaterials(
+          machine,
+          inventory,
+          gs.progression,
+        );
         if (stageable.length > 0) {
           const staged = event.shiftKey ? stageable : [stageable[0]];
           applyAction(moveMaterialsToMachineAction(staged, machine));
@@ -374,9 +378,11 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     if (!found) return;
     const { operation, parameter: param } = found;
 
-    // Unset (or unrecognised) lands at -1, so a forward step starts at the
-    // first value.
-    const current = machine.selectedParameters?.[param.id];
+    // Unset reads as the declared default — what the chip already shows —
+    // so the first press steps off it instead of jumping to the scale's
+    // first mark (unrecognised still lands at -1, stepping to the first).
+    const current =
+      machine.selectedParameters?.[param.id] ?? param.defaultValue;
     const currentIndex =
       current === undefined ? -1 : param.values.indexOf(current);
     let next = param.values[mod(currentIndex + step, param.values.length)];

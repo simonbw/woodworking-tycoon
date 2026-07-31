@@ -40,7 +40,9 @@ export const MillingArticle: React.FC = () => (
       </li>
       <li>
         <Term>Rip to width</Term> — the table saw, once one edge is straight
-        enough to run against the fence.
+        enough to run against the fence. The band saw rips too, and takes a
+        rough edge against its fence without complaint — but its blade leaves
+        the fresh edge rough, so plan on jointing it.
       </li>
     </UL>
     <P>
@@ -61,9 +63,8 @@ export const MillingArticle: React.FC = () => (
       still and never needs a runway.
     </P>
     <Note>
-      A bare worktable doesn't block the lane — stock slides right over its
-      top. Parked at a saw's outfeed, that's not in the way; that's an outfeed
-      table.
+      A bare worktable doesn't block the lane — stock slides right over its top.
+      Parked at a saw's outfeed, that's not in the way; that's an outfeed table.
     </Note>
 
     <H>Running the Planer</H>
@@ -81,23 +82,25 @@ export const MillingArticle: React.FC = () => (
     <P>
       <Term>Resawing</Term> splits a board through its thickness, so an 8/4
       blank becomes two 4/4 boards instead of one 4/4 board and a bin of
-      shavings. Either saw that does it needs a flat reference face to run
-      against the fence, and its fence is set in <Term>quarters</Term> — the
-      distance from the blade is the thickness of the piece it takes off.
+      shavings. The saw's fence is set in <Term>quarters</Term> — the distance
+      from the blade is the thickness of the piece it takes off. Where a saw
+      both rips and resaws, press <Term>R</Term> at it to turn the stock between
+      lying flat and standing on edge.
     </P>
     <UL>
       <li>
         <Term>Band saw</Term> — any width the shop stocks, and the blade is thin
         enough to cost nothing: the two halves add up to the board you started
-        with. Both fresh faces come off rough, so plan on planing or sanding
-        them.
+        with. No flat face required — the fence rides whatever the board has,
+        and the pieces come away no better referenced than the board went in.
+        Both fresh faces come off rough, so plan on planing or sanding them.
       </li>
       <li>
         <Term>Table saw</Term>, with the tall resaw fence bolted on — up to 6"
         wide, since the cut is two passes that have to meet in the middle. The
         blade eats a quarter inch, but leaves cleaner faces. The board needs a
-        straight edge as well as a flat face to stand up square, and the fence
-        has to come back off before the saw will rip again.
+        straight edge as well as a flat face to stand up square. Press R to lay
+        the stock back down and rip with the fence still mounted.
       </li>
     </UL>
 

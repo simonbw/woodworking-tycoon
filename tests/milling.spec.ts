@@ -566,11 +566,26 @@ test.describe("Milling", () => {
       await expect(page.getByText("Band Saw · off")).toBeVisible();
       await switchOn(page);
       await expect(page.getByText("Band Saw · on")).toBeVisible();
-      // The fence reads in quarters, not inches — it's a thickness
+      // Resting on edge, the fence reads in quarters — it's a thickness
+      await expect(page.getByText("stock:")).toBeVisible();
+      await expect(page.getByText("on edge", { exact: false })).toBeVisible();
       await expect(page.getByText("fence:")).toBeVisible();
       await expect(
         page.getByText("4/4", { exact: false }).first(),
       ).toBeVisible();
+    });
+
+    await test.step("R lays the stock flat and the fence reads in inches", async () => {
+      await pressKey(page, "r");
+      await expect(page.getByText("flat", { exact: false })).toBeVisible();
+      // The rip's fence, in inches — the resaw's quarters chip is gone
+      await expect(page.getByText("4/4", { exact: false })).toHaveCount(0);
+      await expect(
+        page.getByText('4"', { exact: false }).first(),
+      ).toBeVisible();
+      // Turn it back up for the resaw that follows
+      await pressKey(page, "r");
+      await expect(page.getByText("on edge", { exact: false })).toBeVisible();
     });
 
     await test.step("one 8/4 blank comes off as two 4/4 boards", async () => {
@@ -598,7 +613,7 @@ test.describe("Milling", () => {
       }
     });
 
-    await test.step("mounting the tall fence takes ripping off the table saw", async () => {
+    await test.step("mounting the tall fence stands the table saw's work on edge", async () => {
       await movePlayerTo(page, [8, 9]);
       await switchOn(page);
       await expect(page.getByText("Jobsite Table Saw · on")).toBeVisible();
@@ -618,10 +633,12 @@ test.describe("Milling", () => {
       await page.waitForTimeout(30);
       await pressKey(page, "Escape");
 
-      // A board can't lie flat against a 14"-tall fence: the rip is gone,
-      // and the setting that's left reads in quarters
+      // Freshly mounted, the work stands on edge: the rip's setting steps
+      // aside and the fence that's live reads in quarters (R would lay
+      // the stock back flat — proven at the band saw above)
       await expect(page.getByText("target width:")).toHaveCount(0);
       await expect(page.getByText("fence:")).toBeVisible();
+      await expect(page.getByText("on edge", { exact: false })).toBeVisible();
     });
 
     await test.step("the table saw pays a kerf the band saw didn't", async () => {

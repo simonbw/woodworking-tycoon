@@ -18,6 +18,7 @@ import {
   OperationParameter,
   operationParameters,
   ParameterValues,
+  StockOrientation,
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
 import { isBoard } from "./board-helpers";
@@ -219,6 +220,50 @@ export function matchRequirements(
   return { matched, remaining, firstUnmet: null };
 }
 
+/**
+ * Which way stock currently sits on this machine's table: the bag value if
+ * the player has turned it, else the resting default of whichever
+ * operation declares the `stockOrientation` parameter. A machine none of
+ * whose operations declare it has nothing to stand stock against, so it
+ * reads "flat" — which also means unmounting the jig that declared it
+ * (the table saw's tall fence) lays the machine back down cleanly, stale
+ * bag value and all.
+ */
+export function stockOrientation(
+  machine: Machine,
+  operations: ReadonlyArray<Operation> = machine.operations,
+): StockOrientation {
+  const declared = operations
+    .flatMap((operation) => operationParameters(operation))
+    .find((parameter) => parameter.id === "stockOrientation");
+  if (!declared) {
+    return "flat";
+  }
+  const set = machine.selectedParameters?.stockOrientation;
+  if (set === "flat" || set === "on edge") {
+    return set;
+  }
+  return (declared.defaultValue as StockOrientation) ?? "flat";
+}
+
+/**
+ * The operations the machine's current stock orientation presents the work
+ * to: everything that doesn't care how the stock sits, plus the ones that
+ * want it exactly this way. This is what keeps a saw's rip and resaw
+ * disjoint — both would take the same board, but only one is ever live.
+ */
+export function orientedOperations(
+  machine: Machine,
+  operations: ReadonlyArray<Operation>,
+): ReadonlyArray<Operation> {
+  const orientation = stockOrientation(machine, operations);
+  return operations.filter(
+    (operation) =>
+      operation.stockOrientation === undefined ||
+      operation.stockOrientation === orientation,
+  );
+}
+
 /** What feeding a direct-feed machine right now would run. */
 export interface FeedMatch {
   readonly operation: Operation;
@@ -239,9 +284,25 @@ export interface FeedMatch {
  * covered by carried stock under the machine's current settings. On real
  * direct-feed machines the operations' input specs are disjoint (a rough
  * board can only be face-jointed, a panel can only be crosscut), so the
- * stock itself picks — there is no mode.
+ * stock itself picks — there is no mode. Where two cuts would take the
+ * same board, the way the stock sits breaks the tie: operations declaring
+ * a stockOrientation are only candidates while the machine's stock sits
+ * that way (see orientedOperations).
  */
 export function findFeedableOperation(
+  machine: Machine,
+  operations: ReadonlyArray<Operation>,
+  carried: ReadonlyArray<MaterialInstance>,
+): FeedMatch | null {
+  return findMatchAmong(
+    machine,
+    orientedOperations(machine, operations),
+    carried,
+  );
+}
+
+/** The matching core of findFeedableOperation, with no orientation gate. */
+function findMatchAmong(
   machine: Machine,
   operations: ReadonlyArray<Operation>,
   carried: ReadonlyArray<MaterialInstance>,
@@ -308,6 +369,22 @@ export function explainFeedRefusal(
     return "Nothing on the machine — set stock down on it first.";
   }
 
+  // The stock may be right for a cut the machine isn't presenting it to —
+  // lying flat when the cut wants it on edge, or the reverse. R turns it
+  // over, so say that before diagnosing the wood itself.
+  const oriented = orientedOperations(machine, operations);
+  const turned = findMatchAmong(
+    machine,
+    operations.filter((operation) => !oriented.includes(operation)),
+    carried,
+  );
+  if (turned) {
+    const verb = turned.operation.name.toLowerCase();
+    return turned.operation.stockOrientation === "flat"
+      ? `To ${verb} it, lay the stock flat — press R to turn it over.`
+      : `To ${verb} it, stand the stock on edge — press R to turn it up.`;
+  }
+
   let best: {
     operation: Operation;
     parameters: ParameterValues;
@@ -315,7 +392,7 @@ export function explainFeedRefusal(
     material: MaterialInstance;
     misses: number;
   } | null = null;
-  for (const operation of operations) {
+  for (const operation of oriented) {
     const parameters = machine.resolvedParameters(operation);
     const requirements = operation.getInputMaterials(parameters);
     // Fill requirements the way feeding would, to find the one that blocks
@@ -529,8 +606,12 @@ export function liveSettingParameter(
       ? parameter.presentation === "rotate"
       : parameter.presentation !== "rotate";
 
+  // Only the operations the stock's orientation presents count: a band
+  // saw set up to resaw offers its resaw fence to Z/X, not the rip's —
+  // while the orientation itself (a rotate setting on both) stays live
+  // either way.
   const candidates = machine.type.directFeed
-    ? availableOperations(machine, progression)
+    ? orientedOperations(machine, availableOperations(machine, progression))
     : [machine.selectedOperationOrNull].filter((op) => op != null);
   return candidates
     .flatMap((operation) =>

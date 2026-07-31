@@ -22,7 +22,7 @@ actually has:
    selected or running) and rendered as `DetentScale`s — the scales
    printed on the machine. **They lock while the machine is running**: an
    operation resolves its output against the settings it reads when it
-   *finishes*, not a snapshot from when it started, so a fence moved
+   _finishes_, not a snapshot from when it started, so a fence moved
    mid-cut would resolve a cut nobody made — and could hand the operation
    stock it refuses (an already-split 4/4 board asked to split at 8/4,
    which throws out of the tick). The same lock covers the plan picker,
@@ -39,12 +39,14 @@ actually has:
    pass; once face-jointed, running it again is the edge pass. At the
    table saw an edge-jointed board rips against the fence, a rough one
    rides the straight-line sled, and a panel goes on the crosscut sled —
-   mounting a jig is the only "mode switch", and it's a physical act.
+   the "mode switches" that exist are physical acts: mounting a jig, or
+   turning the stock between flat and on edge with `R` (see "Stock
+   orientation" below).
 3. **One verb, held** — you hold `Space` for as long as the cut takes,
    because you are the one pushing the stock through. Letting go pauses
    the work exactly where walking away already paused it (`attended` in
    `tickAction`). The exception is a `powerFeed` operation — the planer —
-   where the rollers do the pushing: setting the board down *is* starting
+   where the rollers do the pushing: setting the board down _is_ starting
    it, and it finishes whether you stand there or not.
 
    **These machines have no control panel.** Everything is a key on the
@@ -61,24 +63,46 @@ actually has:
 
 ## The keys
 
-| Key | At a direct-feed machine |
-| --- | --- |
-| `E` | switch on/off, take finished pieces, take staged stock back |
-| `F` | set the carried stock down on it |
-| `Space` (hold) | run it — you pushing the stock through |
-| `Z` / `X` | the linear setting: cutter head, fence, cut line |
-| `R` / `Shift+R` | the rotating setting: the miter head's angle |
-| `Tab` | the tool rack, if the machine has slots |
+| Key             | At a direct-feed machine                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `E`             | switch on/off, take finished pieces, take staged stock back                                |
+| `F`             | set the carried stock down on it                                                           |
+| `Space` (hold)  | run it — you pushing the stock through                                                     |
+| `Z` / `X`       | the linear setting: cutter head, fence, cut line                                           |
+| `R` / `Shift+R` | the rotating setting: the miter head's angle, or the stock turned between flat and on edge |
+| `Tab`           | the tool rack, if the machine has slots                                                    |
 
 A parameter's `presentation` decides which keys drive it: `"rotate"`
 answers to `R`, everything else (including `"slide"`) to `Z`/`X`. A
-machine carries at most one of each, so neither key ever disambiguates.
+machine carries at most one of each _live at a time_, so neither key ever
+disambiguates.
 
-The *operation* stops being selected and becomes implied: given what
+The _operation_ stops being selected and becomes implied: given what
 you're feeding and how the machine is set, only one thing can happen.
 Direct-feed machines: the planer, jointer, jobsite table saw, and miter
 saw. Benches keep explicit recipe selection, relabeled **Plan** — a bench
 really is recipe-driven; you're choosing which drawing is pinned above it.
+
+### Stock orientation: when the same board could take two cuts
+
+The stock deciding the cut needs the operations' input specs to be
+disjoint — and a saw that both rips and resaws breaks that: the same
+board qualifies for either. The tie-breaker is physical: **how the stock
+sits on the table**. Such an operation declares
+`Operation.stockOrientation` (`"flat"` or `"on edge"`), and the machine's
+current orientation lives in the shared settings bag under
+`stockOrientation` — a `"rotate"`-presented parameter (see
+`stockOrientationParameter`), so `R` turns the workpiece over: the shop's
+most literal rotating setting. `orientedOperations` (machine-helpers)
+filters every inference site — feeding, operability, the chips' settings
+list, and which fence `Z`/`X` drives — while operations that never declare
+an orientation are never gated by it. A machine none of whose operations
+declare the parameter always reads `"flat"`, which is also what makes
+unmounting the table saw's tall fence safe: the bag may still say "on
+edge", but with the declaring operation gone the value is ignored and the
+saw rips again. When staged stock would run in the _other_ orientation,
+`explainFeedRefusal` says so ("press R to turn it over") instead of
+blaming the wood.
 
 ## The planer (the pilot)
 
@@ -120,7 +144,7 @@ fields, computed by `materialInputMismatches`, the same walk
 optional `explainRejection` turns the miss into a mentor line in the
 machine's own vocabulary — "no flat reference face — joint a face first",
 "a rough edge can't ride the fence", "won't fit under the cutter head —
-raise the cut height to 7/4" — and can blame a *setting* instead of the
+raise the cut height to 7/4" — and can blame a _setting_ instead of the
 wood (the miter saw says "slide the cut line", the planer names the crank
 mark to hit). Unauthored cases fall back to the generic requirement
 description ("Needs: …"), so new machines get serviceable messages for
@@ -144,7 +168,7 @@ benchtop machine mounted blocks like the machine it carries).
 The numbers are deliberate: with a 2-cell bed, an 8' rip needs 7 + 2 + 7
 = 16 cells — exactly the starter garage's long wall, so full-length
 ripping means dedicating a cleared spine to it. The miter saw is
-deliberately *not* feed-through: the stock holds still and the blade
+deliberately _not_ feed-through: the stock holds still and the blade
 drops, so chopping long stock shorter is always possible and is the
 intended answer to "no room" (the refusal line says so). The static
 `freeCellsNeeded` still gate placement as the working-apron minimum.
@@ -163,15 +187,15 @@ red) while a targeted machine is refusing for room.
   milled stock is refused; the jointer has nothing to add.
 - **Table saw** (hand-fed, power switch): the fence (`targetWidth`) is its
   one setting; the mounted jig decides everything else — and you can see
-  it. A jig can also take an operation *away*: the tall resaw fence
-  (`ToolType.supersedes`) stands where a board would have to lie flat, so
-  while it's bolted on the saw resaws instead of ripping, and its fence
-  reads in quarters. That's what keeps the operations disjoint — two ops
-  that both accept an edge-jointed board would leave the machine guessing. The fence sprite rides its rail to the set width (and parks at the
-  far end for jig cuts), mounted sleds sit on the table aligned with the
-  blade (a second one stacks askew on top), and a sled cut shows the jig
-  traveling through the blade with the stock clamped to it — panels
-  included, with the same kerf and dust as a rip.
+  it. Mounting the tall resaw fence gives the saw an on-edge orientation
+  (see "Stock orientation" above): freshly bolted on it stands the work up
+  to resaw, with the fence reading in quarters, and `R` lays the stock
+  back flat to rip — the fence stays mounted either way. The fence sprite
+  rides its rail to the set width (and parks at the far end for jig
+  cuts), mounted sleds sit on the table aligned with the blade (a second
+  one stacks askew on top), and a sled cut shows the jig traveling
+  through the blade with the stock clamped to it — panels included, with
+  the same kerf and dust as a rip.
 - **Miter saw** (trigger tool — no switch, verb "Cut"): two settings —
   the head angle and the **cut line** (`cutPosition`, feet from the
   stock's left end); cut pieces stay on the saw table. The cut line is a
@@ -188,13 +212,17 @@ red) while a targeted machine is refusing for room.
   turntable-and-head sprite swings to the signed stop, and standing at
   the saw with cuttable stock ghosts the board on the table, slid to the
   set line.
-- **Band saw** (hand-fed, power switch): one operation, resawing, and one
-  setting — the fence, read in **quarters** because the distance from the
-  blade is the thickness of the piece it takes off. Stock stands on edge
-  against the fence (`OnEdgeBoardSprite`), and both halves stay on the
-  table when the cut ends, like the miter saw's. The blade is thin enough
-  that no kerf comes off the quarter-inch scale, and rough enough that
-  both fresh faces come away `rough`.
+- **Band saw** (hand-fed, power switch): two cuts, told apart by the
+  stock orientation `R` turns. On edge it **resaws** — the fence reads in
+  **quarters** because the distance from the blade is the thickness of the
+  piece it takes off, no reference face is required (the pieces just come
+  away no better referenced than the board went in), the blade is thin
+  enough that no kerf comes off the quarter-inch scale, and rough enough
+  that both fresh faces come away `rough`. Flat it **rips** — the fence
+  reads in inches, a rough edge can ride it (a band saw can't kick back),
+  and the fresh sawn edges are likewise too rough to count as jointed.
+  Either way both pieces stay on the table when the cut ends, like the
+  miter saw's, drawn `OnEdgeBoardSprite` or flat to match the cut.
 - **Benches** keep the classic sheet: a bench is honestly recipe-driven,
   and its picker is labeled "Plan".
 - **The garbage can** is neither. It has one operation (Empty) and no

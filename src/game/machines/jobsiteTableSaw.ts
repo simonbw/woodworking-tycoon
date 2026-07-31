@@ -47,6 +47,11 @@ export const jobsiteTableSaw: MachineType = {
       id: "ripBoard",
       requiredSkill: "basicMilling",
       name: "Rip Board",
+      // A rip wants the board lying flat on the table. Bare, the saw has
+      // no other way to hold stock, so this never gates anything — it
+      // starts mattering when the tall resaw fence is mounted and R can
+      // stand the work on edge instead (see tools/resawFence.ts).
+      stockOrientation: "flat",
       duration: 15,
       dustOutput: 1.6,
       parameters: [

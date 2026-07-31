@@ -24,6 +24,8 @@ import { useApplyGameAction, useGameState } from "./useGameState";
  */
 const OPERATION_CLIP: Record<string, string | null> = {
   ripBoard: null,
+  resaw: null,
+  resawOnTableSaw: null,
   straightLineRip: null,
   crosscutPanel: null,
   cutBoard: null,

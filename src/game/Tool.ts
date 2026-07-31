@@ -34,15 +34,6 @@ export interface ToolType {
    * tool slot — right for sanders, wrong for a crosscut sled.
    */
   readonly compatibleMachines?: ReadonlyArray<MachineId>;
-  /**
-   * Operation ids this tool takes *off* its host station while mounted —
-   * for jigs that physically occupy the machine. A tall resaw fence stands
-   * where a board would have to lie flat to be ripped, so mounting one
-   * replaces ripping rather than adding to it. Without this, two
-   * operations could accept the same board and the machine would have to
-   * guess (see findFeedableOperation).
-   */
-  readonly supersedes?: ReadonlyArray<string>;
   readonly operations: ReadonlyArray<Operation>;
 }
 

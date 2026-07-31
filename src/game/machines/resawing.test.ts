@@ -1,13 +1,21 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard } from "../board-helpers";
-import { Machine, Operation } from "../Machine";
+import { Machine, MachineState, Operation, ParameterValues } from "../Machine";
+import {
+  explainFeedRefusal,
+  findFeedableOperation,
+  stockOrientation,
+} from "../machine-helpers";
 import { materialMeetsInput } from "../material-helpers";
 import { resawFence } from "../tools/resawFence";
 import { bandSaw } from "./bandSaw";
 import { jobsiteTableSaw } from "./jobsiteTableSaw";
 
 const resaw = bandSaw.operations.find((op) => op.id === "resaw") as Operation;
+const bandSawRip = bandSaw.operations.find(
+  (op) => op.id === "ripBoard",
+) as Operation;
 const resawOnTableSaw = resawFence.operations.find(
   (op) => op.id === "resawOnTableSaw",
 ) as Operation;
@@ -15,6 +23,28 @@ const resawOnTableSaw = resawFence.operations.find(
 /** 8/4 stock, milled flat and straight — the resaw's happy path. */
 const blank = (thickness: 4 | 6 | 8 = 8, width: 4 | 6 | 8 = 6) =>
   board("walnut", 6, width, thickness, "rough", { faces: 2, edges: 2 });
+
+const idleSaw = (
+  machineTypeId: MachineState["machineTypeId"],
+  tools: MachineState["tools"] = [],
+  selectedParameters?: ParameterValues,
+) =>
+  new Machine({
+    machineTypeId,
+    position: [0, 0],
+    rotation: 0,
+    selectedOperationId: "none",
+    selectedParameters,
+    operationProgress: {
+      status: "notStarted",
+      phaseIndex: 0,
+      ticksRemaining: 0,
+    },
+    inputMaterials: [],
+    processingMaterials: [],
+    outputMaterials: [],
+    tools,
+  });
 
 describe("band saw resaw", () => {
   it("splits a blank in two at the fence setting, kerf-free", () => {
@@ -53,20 +83,103 @@ describe("band saw resaw", () => {
     assert.notStrictEqual(outputs[0].id, outputs[1].id);
   });
 
-  it("refuses stock with no flat reference face", () => {
+  it("takes stock with no flat face — the pieces just come away unreferenced", () => {
     const requirement = resaw.getInputMaterials({ targetThickness: 4 })[0];
     const rough = board("walnut", 6, 6, 8, "rough", { faces: 0, edges: 0 });
-    assert.ok(!materialMeetsInput(rough, requirement));
-    assert.match(
-      resaw.explainRejection?.(rough, { targetThickness: 4 }) ?? "",
-      /flat reference face/,
-    );
+    assert.ok(materialMeetsInput(rough, requirement));
+    const { outputs } = resaw.output([rough], { targetThickness: 4 });
+    for (const piece of outputs) {
+      assert.ok(isBoard(piece));
+      assert.strictEqual(piece.jointedFaces, 0);
+    }
   });
 
   it("refuses stock no thicker than the fence setting", () => {
     const requirement = resaw.getInputMaterials({ targetThickness: 4 })[0];
     assert.ok(!materialMeetsInput(blank(4), requirement));
     assert.ok(materialMeetsInput(blank(6), requirement));
+  });
+});
+
+describe("band saw rip", () => {
+  it("splits at the fence width, kerf-free", () => {
+    const { outputs } = bandSawRip.output([blank()], { targetWidth: 4 });
+    assert.deepStrictEqual(
+      outputs.map((piece) => (isBoard(piece) ? piece.width : null)),
+      [4, 2],
+    );
+  });
+
+  it("leaves both fresh edges too rough to count as jointed", () => {
+    const { outputs } = bandSawRip.output([blank()], { targetWidth: 4 });
+    const [fenceSide, offcut] = outputs;
+    assert.ok(isBoard(fenceSide) && isBoard(offcut));
+    // Off milled stock each piece keeps only its untouched edge
+    assert.strictEqual(fenceSide.jointedEdges, 1);
+    assert.strictEqual(offcut.jointedEdges, 1);
+    // Faces and length were never touched
+    assert.strictEqual(fenceSide.jointedFaces, 2);
+    assert.strictEqual(fenceSide.length, 6);
+  });
+
+  it("takes a rough-edged board the table saw would refuse", () => {
+    const roughEdged = board("walnut", 6, 6, 8, "rough", {
+      faces: 0,
+      edges: 0,
+    });
+    const bandSawRequirement = bandSawRip.getInputMaterials({
+      targetWidth: 4,
+    })[0];
+    assert.ok(materialMeetsInput(roughEdged, bandSawRequirement));
+
+    const tableSawRip = jobsiteTableSaw.operations.find(
+      (op) => op.id === "ripBoard",
+    ) as Operation;
+    const tableSawRequirement = tableSawRip.getInputMaterials({
+      targetWidth: 4,
+    })[0];
+    assert.ok(!materialMeetsInput(roughEdged, tableSawRequirement));
+
+    // And a board with no straight edge to begin with yields none either
+    const { outputs } = bandSawRip.output([roughEdged], { targetWidth: 4 });
+    for (const piece of outputs) {
+      assert.ok(isBoard(piece));
+      assert.strictEqual(piece.jointedEdges, 0);
+    }
+  });
+
+  it("refuses stock no wider than the fence setting", () => {
+    const requirement = bandSawRip.getInputMaterials({ targetWidth: 4 })[0];
+    assert.ok(!materialMeetsInput(blank(8, 4), requirement));
+    assert.ok(materialMeetsInput(blank(8, 6), requirement));
+    assert.match(
+      bandSawRip.explainRejection?.(blank(8, 4), { targetWidth: 4 }) ?? "",
+      /no wider/,
+    );
+  });
+});
+
+describe("band saw stock orientation", () => {
+  it("rests on edge, so the same blank resaws by default", () => {
+    const saw = idleSaw("bandSaw");
+    assert.strictEqual(stockOrientation(saw), "on edge");
+    const match = findFeedableOperation(saw, saw.operations, [blank()]);
+    assert.strictEqual(match?.operation.id, "resaw");
+  });
+
+  it("rips the blank once R lays it flat", () => {
+    const saw = idleSaw("bandSaw", [], { stockOrientation: "flat" });
+    const match = findFeedableOperation(saw, saw.operations, [blank()]);
+    assert.strictEqual(match?.operation.id, "ripBoard");
+  });
+
+  it("teaches R when the stock would run the other way up", () => {
+    // 4/4 stock can't resaw at a 4/4 fence, but it rips fine — the
+    // refusal should blame the orientation, not the wood
+    const saw = idleSaw("bandSaw");
+    const refusal = explainFeedRefusal(saw, saw.operations, [blank(4)]);
+    assert.match(refusal ?? "", /press R/);
+    assert.match(refusal ?? "", /lay the stock flat/);
   });
 });
 
@@ -86,13 +199,19 @@ describe("table saw resaw", () => {
     const { outputs } = resawOnTableSaw.output([smooth], {
       targetThickness: 4,
     });
-    assert.ok(outputs.every((piece) => "surface" in piece && piece.surface === "smooth"));
+    assert.ok(
+      outputs.every(
+        (piece) => "surface" in piece && piece.surface === "smooth",
+      ),
+    );
     // ...but the blade can't improve what was rough to begin with
     const { outputs: fromRough } = resawOnTableSaw.output([blank()], {
       targetThickness: 4,
     });
     assert.ok(
-      fromRough.every((piece) => "surface" in piece && piece.surface === "rough"),
+      fromRough.every(
+        (piece) => "surface" in piece && piece.surface === "rough",
+      ),
     );
   });
 
@@ -135,48 +254,41 @@ describe("table saw resaw", () => {
 });
 
 describe("mounting the tall fence", () => {
-  const sawAt = (tools: string[]) =>
-    new Machine({
-      machineTypeId: "jobsiteTableSaw",
-      position: [0, 0],
-      rotation: 0,
-      selectedOperationId: "ripBoard",
-      operationProgress: {
-        status: "notStarted",
-        phaseIndex: 0,
-        ticksRemaining: 0,
-      },
-      inputMaterials: [],
-      processingMaterials: [],
-      outputMaterials: [],
-      tools: tools as never,
-    });
-
-  it("takes ripping off the saw while it's bolted on", () => {
-    const bare = sawAt([]).operations.map((op) => op.id);
-    assert.ok(bare.includes("ripBoard"));
-
-    const fenced = sawAt(["resawFence"]).operations.map((op) => op.id);
-    assert.ok(!fenced.includes("ripBoard"));
-    assert.ok(fenced.includes("resawOnTableSaw"));
+  it("keeps ripping on the saw's list — orientation decides, not the rack", () => {
+    const fenced = idleSaw("jobsiteTableSaw", ["resawFence"]);
+    const ids = fenced.operations.map((op) => op.id);
+    assert.ok(ids.includes("ripBoard"));
+    assert.ok(ids.includes("resawOnTableSaw"));
   });
 
-  it("gives the rip back when it comes off", () => {
-    assert.ok(
-      sawAt(["resawFence"])
-        .operations.map((op) => op.id)
-        .includes("resawOnTableSaw"),
-    );
-    assert.ok(
-      sawAt(["crosscutSled"])
-        .operations.map((op) => op.id)
-        .includes("ripBoard"),
-    );
+  it("stands the work on edge as soon as it's bolted on", () => {
+    const fenced = idleSaw("jobsiteTableSaw", ["resawFence"]);
+    assert.strictEqual(stockOrientation(fenced), "on edge");
+    const match = findFeedableOperation(fenced, fenced.operations, [blank()]);
+    assert.strictEqual(match?.operation.id, "resawOnTableSaw");
+  });
+
+  it("rips again once R lays the stock flat, fence still mounted", () => {
+    const fenced = idleSaw("jobsiteTableSaw", ["resawFence"], {
+      stockOrientation: "flat",
+    });
+    const match = findFeedableOperation(fenced, fenced.operations, [blank()]);
+    assert.strictEqual(match?.operation.id, "ripBoard");
+  });
+
+  it("ignores a stale on-edge setting once the fence comes off", () => {
+    // Unmounting removes the only operation that declares the
+    // orientation, so the leftover bag value stops meaning anything and
+    // the bare saw lies its work flat again
+    const bare = idleSaw("jobsiteTableSaw", [], {
+      stockOrientation: "on edge",
+    });
+    assert.strictEqual(stockOrientation(bare), "flat");
+    const match = findFeedableOperation(bare, bare.operations, [blank()]);
+    assert.strictEqual(match?.operation.id, "ripBoard");
   });
 
   it("mounts only on the table saw", () => {
-    assert.deepStrictEqual(resawFence.compatibleMachines, [
-      jobsiteTableSaw.id,
-    ]);
+    assert.deepStrictEqual(resawFence.compatibleMachines, [jobsiteTableSaw.id]);
   });
 });

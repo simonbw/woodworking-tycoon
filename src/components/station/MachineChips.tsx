@@ -13,6 +13,7 @@ import {
   explainFeedRefusal,
   findFeedableOperation,
   machineCanOperate,
+  orientedOperations,
   shopSupply,
   stageableMaterials,
 } from "../../game/machine-helpers";
@@ -133,11 +134,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       {canOperate && (
         <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
           hold to{" "}
-          {(
-            runOperation?.name ??
-            machine.type.feedVerb ??
-            "run"
-          ).toLowerCase()}
+          {(runOperation?.name ?? machine.type.feedVerb ?? "run").toLowerCase()}
         </HintRow>
       )}
       {refusal && (
@@ -213,16 +210,17 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 
 /**
  * The settings the keys drive on this machine, each listed once. A
- * direct-feed machine's settings can belong to any of its operations (the
- * stock in hand decides which runs); a bench only offers the selected
- * plan's. At most one is a "rotate" setting, so R never has to choose.
+ * direct-feed machine's settings can belong to any of its operations the
+ * stock's orientation presents (a band saw set up to resaw offers the
+ * resaw's fence, not the rip's); a bench only offers the selected plan's.
+ * At most one is a "rotate" setting, so R never has to choose.
  */
 function machineSettings(
   machine: Machine,
   operations: ReadonlyArray<Operation>,
 ): ReadonlyArray<OperationParameter> {
   const source = machine.type.directFeed
-    ? operations
+    ? orientedOperations(machine, operations)
     : [machine.selectedOperationOrNull].filter((op) => op != null);
   const settings: OperationParameter[] = [];
   for (const op of source) {

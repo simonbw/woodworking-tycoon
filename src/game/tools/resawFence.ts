@@ -1,3 +1,4 @@
+import { stockOrientationParameter } from "../Machine";
 import { BOARD_DIMENSIONS, BoardDimension } from "../Materials";
 import { isBoard, resawBoard } from "../board-helpers";
 import { ToolType } from "../Tool";
@@ -19,30 +20,35 @@ export const TABLE_SAW_RESAW_CAPACITY = 6;
  * What it gives back is the cut itself. A rip blade leaves a cleaner face
  * than a band saw blade does, so a smooth board resawn here stays smooth.
  *
- * While it's bolted on there's no ripping: a board can't lie flat against
- * a 14"-tall fence. Take it off to rip.
+ * Mounting it stands the saw's work on edge; press R to lay the stock
+ * back flat and rip with the ordinary fence face instead — the tall face
+ * stays bolted on either way.
  */
 export const resawFence: ToolType = {
   id: "resawFence",
   name: "Tall Resaw Fence",
   description:
     "A tall plywood face for the rip fence, so stock can stand on edge. " +
-    "Adds resawing to the table saw and removes ordinary ripping while " +
-    "it is mounted.",
+    "Adds resawing to the table saw; R turns the stock between resawing " +
+    "on edge and ripping flat.",
   cost: 0,
   craftedOnly: true,
   compatibleMachines: ["jobsiteTableSaw"],
-  // A board lying flat can't reach the blade past this thing.
-  supersedes: ["ripBoard"],
   operations: [
     {
       id: "resawOnTableSaw",
       name: "Resaw",
       requiredSkill: "resawing",
+      // Mounting the fence is what gives the saw an on-edge mode at all,
+      // and freshly mounted it starts there — that's what it's for. The
+      // table saw's own rip runs with the stock flat, so the pair stays
+      // disjoint (see orientedOperations).
+      stockOrientation: "on edge",
       // Two passes and a flip, and you're feeding it by hand the whole way.
       duration: 25,
       dustOutput: 2.4,
       parameters: [
+        stockOrientationParameter("on edge"),
         {
           id: "targetThickness",
           name: "Fence",
