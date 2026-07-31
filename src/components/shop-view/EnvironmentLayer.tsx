@@ -1,5 +1,6 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
+import { MaterialInstance } from "../../game/Materials";
 import { DOOR_HALF_WIDTH } from "../../game/ShopInfo";
 import { useTexture } from "../../utils/useTexture";
 import { useGameState } from "../useGameState";
@@ -51,7 +52,8 @@ export const EnvironmentLayer: React.FC<{
   height: number;
   viewport: WorldViewport;
   truckHighlight?: TruckHighlight;
-}> = ({ width, height, viewport, truckHighlight }) => {
+  truckCargoHighlight?: MaterialInstance;
+}> = ({ width, height, viewport, truckHighlight, truckCargoHighlight }) => {
   const gameState = useGameState();
   const concreteTexture = useTexture("/images/concrete-floor-2-big.png");
 
@@ -162,7 +164,10 @@ export const EnvironmentLayer: React.FC<{
           the wall band and its shadow fall across the tailgate. The
           sprite handles its own trip animation and absence — the player
           drove it (see truckStageStore). */}
-      <TruckSprite highlight={truckHighlight} />
+      <TruckSprite
+        highlight={truckHighlight}
+        highlightedCargo={truckCargoHighlight}
+      />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>
   );

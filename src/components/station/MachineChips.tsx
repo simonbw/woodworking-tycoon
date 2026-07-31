@@ -17,6 +17,7 @@ import {
   shopSupply,
   stageableMaterials,
 } from "../../game/machine-helpers";
+import { getMaterialName } from "../../game/material-helpers";
 import { hasStationSheet } from "./station-helpers";
 import { availableOperations } from "../../game/skill-helpers";
 import { HintList, HintRow } from "../shortcuts/HintList";
@@ -54,12 +55,13 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       ? interact
       : null;
 
-  // The F chip: whether the machine would take what's in hand if we set it
-  // down. A switched-off machine takes nothing — E offers the switch first.
-  const canStage =
-    !isOperating &&
-    !switchedOff &&
-    stageableMaterials(machine, carried, gameState.progression).length > 0;
+  // The F chip: what the machine would take out of our hands if we set it
+  // down — named, the way the E chip names what it lifts back off. A
+  // switched-off machine takes nothing; E offers the switch first.
+  const stageable =
+    isOperating || switchedOff
+      ? []
+      : stageableMaterials(machine, carried, gameState.progression);
 
   const settings = machineSettings(machine, operations);
 
@@ -102,11 +104,16 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     gameState.player.carriedMachine == null &&
     canPickUpMachine(gameState, machine.state);
 
+  // What the station says it's doing: its own word for the job when it has
+  // one ("emptying" at the garbage can), the generic motor otherwise.
+  const workingWord =
+    machine.selectedOperationOrNull?.runningName?.toLowerCase() ?? "running";
+
   const status = needsYou ? (
     <span className="text-store-orange">needs you</span>
   ) : isOperating ? (
     <span className="text-green-400">
-      {switchedOff ? "paused · off" : "running"}
+      {switchedOff ? "paused · off" : workingWord}
     </span>
   ) : switchedOff ? (
     "off"
@@ -125,10 +132,10 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           {interactLabel(interactHere)}
         </HintRow>
       )}
-      {canStage && (
+      {stageable.length > 0 && (
         <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
-          {machine.type.stageVerb ??
-            (machine.type.directFeed ? "set stock on it" : "place stock on it")}
+          {machine.type.stageVerb ?? "place"}{" "}
+          {getMaterialName(stageable[0])}
         </HintRow>
       )}
       {canOperate && (

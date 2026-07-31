@@ -40,7 +40,9 @@ export const StatusText: React.FC<{ machine: Machine }> = ({ machine }) => {
       );
     }
     return (
-      <span className="text-ink-blue">Running · {timeLeft}</span>
+      <span className="text-ink-blue">
+        {operation?.runningName ?? "Running"} · {timeLeft}
+      </span>
     );
   }
   if (switchedOff) return <>Switched off</>;

@@ -39,6 +39,7 @@ export const garbageCan: MachineType = {
     {
       name: "Empty",
       id: "empty",
+      runningName: "Emptying",
       // Long enough to feel like a trip to the curb: hauling a piece out
       // is a deliberate hold, not a tap, so a full can is a real errand.
       duration: 7,

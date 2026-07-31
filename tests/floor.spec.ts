@@ -290,6 +290,8 @@ test.describe("Shop floor", () => {
       await leaveStore(page);
       // Stand in the tailgate aisle, one step out the garage door
       await teleportPlayer(page, [6, 17]);
+      // The cargo box names itself, and its verbs name the thing they move
+      await expect(page.getByText("Truck Bed")).toBeVisible();
       await expect(page.getByText("Unpack Jobsite Table Saw")).toBeVisible();
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
@@ -499,6 +501,9 @@ test.describe("Shop floor", () => {
       expect(
         loaded.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
       ).toBe(true);
+      // Standing at the rail, the chip names the piece E would lift back
+      // out rather than the furniture it's lying in
+      await expect(page.getByText("pick up Rustic Shelf")).toBeVisible();
       await movePlayerToCab(page);
       await openTruckMenu(page);
 
