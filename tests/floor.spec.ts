@@ -92,10 +92,26 @@ test.describe("Shop floor", () => {
       expect(loaded).toEqual([]);
     });
 
+    await test.step("an incompatible save disables Continue and says why", async () => {
+      await page.evaluate(() => {
+        localStorage.setItem(
+          "woodworking-tycoon-save",
+          JSON.stringify({ version: 0, gameState: {} }),
+        );
+      });
+      await page.reload();
+      const continueButton = page.getByRole("button", { name: "Continue" });
+      await expect(continueButton).toBeVisible();
+      await expect(continueButton).toBeDisabled();
+      await expect(page.getByTestId("incompatible-save-note")).toBeVisible();
+    });
+
     await test.step("start menu shows and we can start a new game", async () => {
       await expect(
         page.getByRole("heading", { name: "Woodworking Tycoon" }),
       ).toBeVisible();
+      // The incompatible save from the previous step skips the "Clear the
+      // shop?" card — there is nothing loadable to keep.
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
     });

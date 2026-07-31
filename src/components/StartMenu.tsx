@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { GameState } from "../game/GameState";
 import { initialGameState } from "../game/initialGameState";
-import { deleteSave, hasSavedGame, loadGame } from "../game/saveLoad";
+import { deleteSave, getSaveStatus, loadGame } from "../game/saveLoad";
 import { StarIcon } from "./StarIcon";
 
 interface StartMenuProps {
@@ -9,7 +9,7 @@ interface StartMenuProps {
 }
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
-  const [hasSave, setHasSave] = useState(() => hasSavedGame());
+  const [saveStatus, setSaveStatus] = useState(() => getSaveStatus());
   const [confirmingNewGame, setConfirmingNewGame] = useState(false);
 
   const handleContinue = () => {
@@ -17,19 +17,21 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
     if (saved) {
       onStart(saved);
     } else {
-      setHasSave(false);
+      setSaveStatus(getSaveStatus());
     }
   };
 
   // The shop saves itself as you work, so by the second session there is
   // almost always something here to lose. That makes this a routine prompt
   // rather than a rare one, which is why it's a card on the workbench and
-  // not a browser confirm().
+  // not a browser confirm(). An incompatible save skips the prompt — there
+  // is no shop left to keep.
   const handleNewGame = () => {
-    if (hasSave) {
+    if (saveStatus === "ok") {
       setConfirmingNewGame(true);
       return;
     }
+    deleteSave();
     onStart(initialGameState);
   };
 
@@ -60,19 +62,29 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
 
         {/* Menu actions styled as work-order tabs */}
         <div className="w-full flex flex-col gap-3">
-          {hasSave && (
+          {saveStatus !== "none" && (
             <button
               className="button text-base py-3 tracking-[0.2em]"
               onClick={handleContinue}
-              autoFocus
+              disabled={saveStatus === "incompatible"}
+              autoFocus={saveStatus === "ok"}
             >
               Continue
             </button>
           )}
+          {saveStatus === "incompatible" && (
+            <p
+              className="font-typewriter text-xs text-center text-paper-manila/70"
+              data-testid="incompatible-save-note"
+            >
+              This save is from an older version of the game and cannot be
+              opened. Starting a new game replaces it.
+            </p>
+          )}
           <button
             className="button text-base py-3 tracking-[0.2em]"
             onClick={handleNewGame}
-            autoFocus={!hasSave}
+            autoFocus={saveStatus !== "ok"}
           >
             New Game
           </button>

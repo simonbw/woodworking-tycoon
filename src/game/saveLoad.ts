@@ -6,9 +6,29 @@ const SAVE_KEY = "woodworking-tycoon-save";
 /**
  * Increment when GameState changes shape. There is no migration chain
  * (pre-launch, no players): a version mismatch or a save that fails the
- * schema is simply discarded and the game starts fresh.
+ * schema shows as incompatible on the start menu, and starting a new game
+ * writes over it.
  */
 const SAVE_VERSION = 9;
+
+export type SaveStatus = "none" | "ok" | "incompatible";
+
+/** Judge the stored save without loading or touching it. */
+export function getSaveStatus(): SaveStatus {
+  const serialized = localStorage.getItem(SAVE_KEY);
+  if (!serialized) {
+    return "none";
+  }
+  try {
+    const saveData = JSON.parse(serialized) as Partial<SaveData>;
+    if (saveData.version !== SAVE_VERSION) {
+      return "incompatible";
+    }
+    return parseGameState(saveData.gameState) === null ? "incompatible" : "ok";
+  } catch {
+    return "incompatible";
+  }
+}
 
 interface SaveData {
   version: number;
@@ -44,17 +64,17 @@ export function loadGame(): GameState | null {
       return null;
     }
 
+    // An incompatible save is left in place, not deleted: the start menu
+    // reports it, and only starting a new game writes over it.
     const saveData = JSON.parse(serialized) as Partial<SaveData>;
     if (saveData.version !== SAVE_VERSION) {
       console.warn("Save file version mismatch, ignoring old save");
-      deleteSave();
       return null;
     }
 
     const gameState = parseGameState(saveData.gameState);
     if (gameState === null) {
       console.warn("Invalid save data structure, ignoring");
-      deleteSave();
       return null;
     }
 
@@ -63,7 +83,6 @@ export function loadGame(): GameState | null {
     return { ...gameState, pendingSounds: [], pendingPayouts: [] };
   } catch (error) {
     console.error("Failed to load game:", error);
-    deleteSave();
     return null;
   }
 }
