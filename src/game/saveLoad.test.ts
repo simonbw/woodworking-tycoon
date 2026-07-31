@@ -3,7 +3,13 @@ import { beforeEach, describe, it } from "node:test";
 import { TEST_FIXTURES } from "../../tests/fixtures";
 import { parseGameState } from "./gameStateSchema";
 import { initialGameState } from "./initialGameState";
-import { deleteSave, hasSavedGame, loadGame, saveGame } from "./saveLoad";
+import {
+  deleteSave,
+  getSaveStatus,
+  hasSavedGame,
+  loadGame,
+  saveGame,
+} from "./saveLoad";
 
 // node:test has no DOM; back localStorage with a Map for the round-trip.
 const backing = new Map<string, string>();
@@ -77,28 +83,66 @@ describe("loadGame rejection", () => {
     assert.strictEqual(loadGame(), null);
   });
 
-  it("discards a save from another version", () => {
+  it("rejects a save from another version but leaves it in place", () => {
     saveGame(initialGameState);
     const raw = JSON.parse(backing.get(SAVE_KEY)!);
     raw.version = raw.version + 1;
     backing.set(SAVE_KEY, JSON.stringify(raw));
     assert.strictEqual(loadGame(), null);
-    assert.strictEqual(hasSavedGame(), false);
+    assert.strictEqual(hasSavedGame(), true);
   });
 
-  it("discards unparseable JSON", () => {
+  it("rejects unparseable JSON but leaves it in place", () => {
     backing.set(SAVE_KEY, "{not json");
     assert.strictEqual(loadGame(), null);
-    assert.strictEqual(hasSavedGame(), false);
+    assert.strictEqual(hasSavedGame(), true);
   });
 
-  it("discards a save that fails the schema", () => {
+  it("rejects a save that fails the schema but leaves it in place", () => {
     saveGame(initialGameState);
     const raw = JSON.parse(backing.get(SAVE_KEY)!);
     delete raw.gameState.machines;
     backing.set(SAVE_KEY, JSON.stringify(raw));
     assert.strictEqual(loadGame(), null);
-    assert.strictEqual(hasSavedGame(), false);
+    assert.strictEqual(hasSavedGame(), true);
+  });
+});
+
+describe("getSaveStatus", () => {
+  it("reports none with no save present", () => {
+    assert.strictEqual(getSaveStatus(), "none");
+  });
+
+  it("reports ok for a current save", () => {
+    saveGame(initialGameState);
+    assert.strictEqual(getSaveStatus(), "ok");
+  });
+
+  it("reports incompatible for another version", () => {
+    saveGame(initialGameState);
+    const raw = JSON.parse(backing.get(SAVE_KEY)!);
+    raw.version = raw.version + 1;
+    backing.set(SAVE_KEY, JSON.stringify(raw));
+    assert.strictEqual(getSaveStatus(), "incompatible");
+  });
+
+  it("reports incompatible for unparseable JSON", () => {
+    backing.set(SAVE_KEY, "{not json");
+    assert.strictEqual(getSaveStatus(), "incompatible");
+  });
+
+  it("reports incompatible for a save that fails the schema", () => {
+    saveGame(initialGameState);
+    const raw = JSON.parse(backing.get(SAVE_KEY)!);
+    delete raw.gameState.machines;
+    backing.set(SAVE_KEY, JSON.stringify(raw));
+    assert.strictEqual(getSaveStatus(), "incompatible");
+  });
+
+  it("does not touch the save while judging it", () => {
+    backing.set(SAVE_KEY, "{not json");
+    getSaveStatus();
+    assert.strictEqual(backing.get(SAVE_KEY), "{not json");
   });
 });
 
