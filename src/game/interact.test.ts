@@ -90,19 +90,23 @@ describe("resolveInteract", () => {
 });
 
 describe("interactLabel", () => {
-  it("speaks in place and take, not load and unload", () => {
-    // The chip verbs read the way a person talks about a bench and a
-    // board: stock is taken back off a station or out of the bed
+  it("names the piece the key moves, not the furniture it comes off", () => {
+    // You can see which bench you're standing at; what you can't see is
+    // which board is about to end up in your arms, so the chip says that.
+    const pallet = { type: "pallet" } as never;
     assert.strictEqual(
-      interactLabel({ kind: "truck-bed", count: 3 }),
-      "take from bed (3)",
+      interactLabel({ kind: "truck-bed", count: 3, material: pallet }),
+      "pick up Pallet",
     );
     assert.strictEqual(
       interactLabel({
         kind: "take-inputs",
-        machine: { type: { name: "Makeshift Workbench" } } as never,
+        machine: {
+          type: { name: "Makeshift Workbench" },
+          inputMaterials: [pallet],
+        } as never,
       }),
-      "take from Makeshift Workbench",
+      "pick up Pallet",
     );
   });
 });

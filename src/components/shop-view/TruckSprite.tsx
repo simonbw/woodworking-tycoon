@@ -2,6 +2,7 @@ import { useTick } from "@pixi/react";
 import { Container, Rectangle, Texture } from "pixi.js";
 import React, { useMemo, useRef } from "react";
 import { truckBedRect, truckParkedRect } from "../../game/lot";
+import { MaterialInstance } from "../../game/Materials";
 import { TARGET_HIGHLIGHT_FILTERS } from "./targetHighlight";
 import { useTexture } from "../../utils/useTexture";
 import { clamp } from "../../utils/mathUtils";
@@ -57,13 +58,18 @@ const BED_FRAME = new Rectangle(124, 344, 276 - 124, 561 - 344);
 
 /**
  * The targeting treatment the truck wears: the whole body when E would
- * open the cab, just the cargo box while the bed's verbs are on offer.
+ * open the cab, just the cargo box when the bed itself is what the keys
+ * act on (loading it, unpacking a crate out of it). Lifting a piece back
+ * out outlines the piece instead — see `highlightedCargo`.
  */
 export type TruckHighlight = "truck" | "bed" | null;
 
-export const TruckSprite: React.FC<{ highlight?: TruckHighlight }> = ({
-  highlight = null,
-}) => {
+export const TruckSprite: React.FC<{
+  highlight?: TruckHighlight;
+  /** The piece in the bed E would lift out, outlined on its own the way a
+   * pile on the floor is. Matched by identity against `truck.bed`. */
+  highlightedCargo?: MaterialInstance;
+}> = ({ highlight = null, highlightedCargo }) => {
   const gameState = useGameState();
   const truckTexture = useTexture("/images/pickup-truck.png");
   // The bed cropped out of the same art, drawn over itself pixel for
@@ -175,6 +181,11 @@ export const TruckSprite: React.FC<{ highlight?: TruckHighlight }> = ({
           x={bedCenterX}
           y={bedCenterY + ((i % 3) - 1) * 6}
           angle={90 + ((i * 7) % 21) - 10}
+          filters={
+            material === highlightedCargo
+              ? TARGET_HIGHLIGHT_FILTERS
+              : undefined
+          }
         >
           <MaterialSprite material={material} />
         </pixiContainer>

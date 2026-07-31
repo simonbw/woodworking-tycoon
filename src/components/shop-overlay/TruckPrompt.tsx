@@ -16,8 +16,9 @@ import {
 } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { jobPayout } from "../../game/marketplace";
+import { getMaterialName } from "../../game/material-helpers";
 import { formatMoney } from "../../utils/formatNumber";
-import { resolveInteract } from "../../game/interact";
+import { interactLabel, resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
 import { classNames } from "../../utils/classNames";
 import { mod } from "../../utils/mathUtils";
@@ -84,15 +85,18 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
   const rows: React.ReactNode[] = [];
   if (interact?.kind === "truck-bed") {
     rows.push(
+      // Named by the shared resolver, so the chip and the outlined piece
+      // in the bed always agree about what E lifts out.
       <HintRow key="take" keys={<ShortcutKeys shortcut="pick-up" />}>
-        take from bed ({interact.count})
+        {interactLabel(interact)}
+        {interact.count > 1 && ` · ${interact.count} in bed`}
       </HintRow>,
     );
   }
   if (holding) {
     rows.push(
       <HintRow key="place" keys={<ShortcutKeys shortcut="put-down" />}>
-        place in bed
+        place {getMaterialName(gameState.player.inventory[0])}
       </HintRow>,
     );
   }
@@ -120,7 +124,7 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
       }}
     >
       <HintList>
-        <HintRow className="text-paper-manila/60">The bed</HintRow>
+        <HintRow className="text-paper-manila/60">Truck Bed</HintRow>
         {rows}
       </HintList>
     </div>

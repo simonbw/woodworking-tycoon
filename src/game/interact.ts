@@ -4,6 +4,8 @@ import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
 import { Machine } from "./Machine";
+import { getMaterialName } from "./material-helpers";
+import { MaterialInstance } from "./Materials";
 import { handSpaceLeft } from "./Person";
 import { pileWithinReach } from "./pile-helpers";
 import { chebyshevDistance } from "./Vectors";
@@ -28,8 +30,8 @@ export type InteractAction =
   | { kind: "pick-up-floor"; piles: ReadonlyArray<MaterialPile> }
   | { kind: "pick-up-broom" }
   /** Standing at the truck's bed with cargo in it: E lifts the last
-   * piece loaded back out (Shift empties the bed). */
-  | { kind: "truck-bed"; count: number }
+   * piece loaded back out — `material` — and Shift empties the bed. */
+  | { kind: "truck-bed"; count: number; material: MaterialInstance }
   /** `handoffCount` is how much finished work is loaded in the bed. */
   | { kind: "truck-cab"; handoffCount: number };
 
@@ -124,7 +126,13 @@ export function resolveInteract(
     gameState.truck.bed.length > 0 &&
     atTruckBed(gameState.shopInfo, gameState.player.position)
   ) {
-    return { kind: "truck-bed", count: gameState.truck.bed.length };
+    return {
+      kind: "truck-bed",
+      count: gameState.truck.bed.length,
+      // The last piece loaded is the one on top of the heap — what a
+      // plain press lifts back out, and what wears the outline.
+      material: gameState.truck.bed[gameState.truck.bed.length - 1],
+    };
   }
 
   // The cab always answers: scavenging is on offer from day one, and
@@ -156,13 +164,18 @@ export function targetedPile(
   return piles[((offset % piles.length) + piles.length) % piles.length];
 }
 
-/** The short verb the hint chip shows for an interact action. */
+/**
+ * The short verb the hint chip shows for an interact action. A chip names
+ * the *thing* the key moves, not the furniture it comes off: "pick up
+ * pallet", never "take from makeshift workbench" — you can already see
+ * which bench you're standing at.
+ */
 export function interactLabel(action: InteractAction): string {
   switch (action.kind) {
     case "take-outputs":
       return `take (${action.machine.outputMaterials.length})`;
     case "take-inputs":
-      return `take from ${action.machine.type.name}`;
+      return `pick up ${getMaterialName(action.machine.inputMaterials[0])}`;
     case "switch-on":
       return "switch on";
     case "switch-off":
@@ -172,7 +185,7 @@ export function interactLabel(action: InteractAction): string {
     case "pick-up-broom":
       return "pick up broom";
     case "truck-bed":
-      return `take from bed (${action.count})`;
+      return `pick up ${getMaterialName(action.material)}`;
     case "truck-cab":
       return action.handoffCount > 0 ? "deliver work" : "head out";
   }

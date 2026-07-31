@@ -153,8 +153,8 @@ export interface MachineType {
    */
   readonly feedVerb?: string;
   /**
-   * The verb the UI uses for setting stock down here. Defaults to "load"
-   * ("set stock on it" on a direct-feed machine's table); the garbage can
+   * The verb the UI uses for setting stock down here — the chip reads
+   * "<verb> <the piece in hand>". Defaults to "place"; the garbage can
    * says "toss in".
    */
   readonly stageVerb?: string;
@@ -249,6 +249,12 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
    * phase. Declared only when part of the operation runs without you.
    */
   readonly phases?: ReadonlyArray<OperationPhase>;
+  /**
+   * What the station reads out while this is under way, when "running" is
+   * the wrong word for it — a garbage can being emptied isn't running.
+   * Phased operations name their current phase instead and don't need it.
+   */
+  readonly runningName?: string;
   /**
    * The machine pulls the stock through on its own once fed (the planer's
    * power feed): the player doesn't have to stand there, so attended

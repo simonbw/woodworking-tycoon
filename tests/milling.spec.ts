@@ -294,11 +294,12 @@ test.describe("Milling", () => {
       await page.waitForTimeout(30);
       // The machine wears its state and its keys — there is no panel
       await expect(page.getByText("Jointer · off")).toBeVisible();
-      // Switched off it takes nothing: no "set stock on it" chip offered
-      await expect(page.getByText("set stock on it")).toHaveCount(0);
+      // Switched off it takes nothing: no chip offering to place the board
+      await expect(page.getByText(/place Walnut 4\/4/)).toHaveCount(0);
       await switchOn(page);
       await expect(page.getByText("Jointer · on")).toBeVisible();
-      await expect(page.getByText("set stock on it")).toBeVisible();
+      // On, the chip names the very board it would take out of our hands
+      await expect(page.getByText(/place Walnut 4\/4/)).toBeVisible();
     });
 
     await test.step("jointer: the stock decides — face pass, then edge pass", async () => {

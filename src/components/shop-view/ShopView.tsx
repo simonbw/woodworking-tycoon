@@ -154,22 +154,28 @@ export const ShopView: React.FC = () => {
       ? targetedPile(interact.piles, pileOffset)
       : undefined;
 
-  // The truck wears the same outline as any other target: just the
-  // cargo box while the bed's verbs are on offer (E lifts out, F loads,
-  // a crate hoists), the whole body when E would open the cab.
-  const bedVerbsLive =
+  // The truck wears the same outline as any other target, aimed at
+  // whatever the keys would actually move. Lifting a piece back out is a
+  // pickup like any other, so the *piece* lights up, not the truck. The
+  // cargo box itself only lights when the bed is the thing being acted on
+  // — F loading what's in hand over the rail, or a crate hoisting out of
+  // it — and the whole body lights when E would open the cab.
+  const atBed =
     !gameState.player.away &&
     truckStage === "parked" &&
     gameState.player.carriedMachine == null &&
-    atTruckBed(gameState.shopInfo, gameState.player.position) &&
-    (interact?.kind === "truck-bed" ||
-      gameState.player.inventory.length > 0 ||
+    atTruckBed(gameState.shopInfo, gameState.player.position);
+  const bedIsTheTarget =
+    atBed &&
+    (gameState.player.inventory.length > 0 ||
       gameState.truck.crates.length > 0);
-  const truckHighlight: TruckHighlight = bedVerbsLive
+  const truckHighlight: TruckHighlight = bedIsTheTarget
     ? "bed"
     : truckStage === "parked" && interact?.kind === "truck-cab"
       ? "truck"
       : null;
+  const truckCargoHighlight =
+    atBed && interact?.kind === "truck-bed" ? interact.material : undefined;
 
   // Clicking a machine you're standing at aims the keyboard at it; a
   // second click on a recipe-driven station spreads its sheet open. The
@@ -338,6 +344,7 @@ export const ShopView: React.FC = () => {
               height={height}
               viewport={worldViewport}
               truckHighlight={truckHighlight}
+              truckCargoHighlight={truckCargoHighlight}
             />
               <pixiTilingSprite
                 eventMode="static"

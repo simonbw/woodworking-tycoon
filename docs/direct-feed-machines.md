@@ -52,7 +52,9 @@ actually has:
    **These machines have no control panel.** Everything is a key on the
    floor, and the machine wears hint chips naming each one
    (`src/components/station/MachineChips.tsx`): name + status, `[E]`
-   switch on / take, `[F]` set stock on it, `[Space]` hold to run — named
+   switch on / take, `[F]` place the board — both of those name the very
+   piece they move ("pick up Pine 2x4 — 8'"), not the machine it comes off
+   — `[Space]` hold to run, named
    for the operation the stock resolved to ("hold to rip board"), every
    setting with the keys that drive it, and the refusal note when the
    stock won't go. The only page left is a tool rack on `Tab`
