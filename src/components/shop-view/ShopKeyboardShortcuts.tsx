@@ -292,12 +292,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         }
       }
 
-      // The piece lands at the body's actual position — where the
-      // woodworker is standing, not the center of the cell underfoot.
+      // The piece lands at the body's actual position and keeps the
+      // orientation it was carried in — the person sprite draws a
+      // quarter turn off the heading, so the same offset lays the piece
+      // down exactly as it looked in the arms.
       return applyAction(
-        dropMaterialAction(event.shiftKey ? inventory : [inventory[0]], [
-          ...playerMotion.pos,
-        ]),
+        dropMaterialAction(
+          event.shiftKey ? inventory : [inventory[0]],
+          [...playerMotion.pos],
+          playerMotion.heading + Math.PI / 2,
+        ),
       );
     },
     present && !carrying,

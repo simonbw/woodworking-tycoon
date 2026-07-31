@@ -146,6 +146,7 @@ test.describe("Stations", () => {
                 stringerBoardsLeft: 3,
               },
               position: [2.5, 5.5],
+              rotation: 0,
             },
           ],
         }));

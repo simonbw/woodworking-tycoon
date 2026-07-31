@@ -217,6 +217,31 @@ test.describe("Keyboard", () => {
       await expect(store).toHaveCount(0);
     });
 
+    await test.step("the open card claims W, S, and E for its row cursor", async () => {
+      const store = page.getByRole("dialog", { name: "Orange Box" });
+      await movePlayerToCab(page);
+      await openTruckMenu(page);
+      const panel = page.getByTestId("truck-panel");
+      const selected = panel.locator("li[data-selected]");
+      // The cursor starts on the first row — the store
+      await expect(selected).toContainText("Orange Box");
+
+      // W and S drive the cursor, not the body: the highlight moves down
+      // and back while the player stays planted at the cab
+      const before = await settle();
+      await page.keyboard.press("s");
+      await expect(selected).not.toContainText("Orange Box");
+      await page.keyboard.press("w");
+      await expect(selected).toContainText("Orange Box");
+      expect(await playerPosition(page)).toEqual(before);
+
+      // E takes the highlighted row instead of folding the card
+      await page.keyboard.press("e");
+      await expect(store).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(store).toHaveCount(0);
+    });
+
     await test.step("? opens the shop manual and Escape closes it", async () => {
       const manual = page.getByRole("dialog", { name: "Shop manual" });
       await expect(manual).toHaveCount(0);
@@ -459,8 +484,16 @@ test.describe("Keyboard", () => {
           ...s,
           player: { ...s.player, position: [6, 10], inventory: [] },
           materialPiles: [
-            { material: board("pile-oak", "oak"), position: [6.5, 10.5] },
-            { material: board("pile-pine", "pine"), position: [6.5, 10.5] },
+            {
+              material: board("pile-oak", "oak"),
+              position: [6.5, 10.5],
+              rotation: 0,
+            },
+            {
+              material: board("pile-pine", "pine"),
+              position: [6.5, 10.5],
+              rotation: 0,
+            },
           ],
         }));
       });

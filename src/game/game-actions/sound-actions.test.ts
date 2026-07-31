@@ -46,6 +46,7 @@ describe("material movement sound cues", () => {
     const pile = {
       material: makePallet(),
       position: [0, 0] as [number, number],
+      rotation: 0,
     };
     const state = {
       ...initialGameState,
@@ -73,6 +74,7 @@ describe("material movement sound cues", () => {
     const pile = {
       material: makePallet(),
       position: [3, 3] as [number, number],
+      rotation: 0,
     };
     const state = {
       ...initialGameState,

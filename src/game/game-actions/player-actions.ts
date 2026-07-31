@@ -97,12 +97,16 @@ export function pickUpMaterialAction(
  * Set materials down where the player stands. Piles sit at continuous
  * positions: `at` is the landing point in cell units — the keyboard layer
  * passes the body's actual position, so a piece lands exactly where the
- * woodworker is, not snapped to the cell underfoot. Callers without a
- * body (sequence tests) omit it and the piece lands at the cell's center.
+ * woodworker is, not snapped to the cell underfoot. `rotation` is the
+ * orientation the piece lies down in (radians, world frame); the DOM
+ * layer passes the carried orientation so a drop keeps it. Callers
+ * without a body (sequence tests) omit both and the piece lands square
+ * at the cell's center.
  */
 export function dropMaterialAction(
   materials: ReadonlyArray<MaterialInstance>,
   at?: Vector,
+  rotation: number = 0,
 ): GameAction {
   return (gameState) => {
     const position = at ?? cellCenter(gameState.player.position);
@@ -133,7 +137,7 @@ export function dropMaterialAction(
         },
         materialPiles: [
           ...gameState.materialPiles,
-          ...materials.map((material) => ({ material, position })),
+          ...materials.map((material) => ({ material, position, rotation })),
         ],
       },
       { kind: "material-drop" },

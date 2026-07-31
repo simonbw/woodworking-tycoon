@@ -16,6 +16,13 @@ import { Vector } from "./Vectors";
 export type MaterialPile = {
   material: MaterialInstance;
   position: Vector;
+  /**
+   * How the piece lies, in radians, world frame — the orientation it was
+   * dropped in. 0 is square to the shop with long stock running down the
+   * y axis (the way material sprites draw); a piece set down mid-stride
+   * keeps the carrier's heading.
+   */
+  rotation: number;
 };
 
 /**

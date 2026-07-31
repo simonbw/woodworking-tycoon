@@ -37,6 +37,7 @@ const MACHINE_IMAGES = [
   "bandsaw-14-lower.png",
   "bandsaw-14-upper.png",
   "benchtop-jointer.png",
+  "garbage-can.png",
   "jobsite-table-saw-fence.png",
   "jobsite-table-saw-table.png",
   "lunchbox-planer-bottom.png",

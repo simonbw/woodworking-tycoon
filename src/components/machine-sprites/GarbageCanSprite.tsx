@@ -1,64 +1,21 @@
-import { Graphics } from "pixi.js";
-import React, { useCallback } from "react";
+import React from "react";
 import { Machine } from "../../game/Machine";
+import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
+import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
 
 export const GarbageCanSprite: React.FC<{ machine: Machine }> = ({
   machine,
 }) => {
-  const { inputMaterials, processingMaterials, outputMaterials } = machine;
+  const { inputMaterials, processingMaterials } = machine;
+  const canTexture = useTexture("/images/garbage-can.png");
 
   // The can is centered on its 2×2-ft footprint, whose center sits half a
   // cell past the origin cell's center.
   return (
     <pixiContainer x={PIXELS_PER_CELL * 0.5} y={PIXELS_PER_CELL * 0.5}>
-      <pixiGraphics
-        draw={useCallback((g: Graphics) => {
-          g.clear();
-          const radius = PIXELS_PER_CELL * 0.93;
-
-          // Drop shadow offset toward the lower right
-          g.circle(radius * 0.08, radius * 0.1, radius);
-          g.fill({ color: 0x000000, alpha: 0.15 });
-
-          // Rolled outer rim
-          g.circle(0, 0, radius);
-          g.fill({ color: 0x718096 });
-          g.circle(0, 0, radius);
-          g.stroke({ width: 1.5, color: 0x2d3748 });
-
-          // Lid surface inset within the rim
-          g.circle(0, 0, radius * 0.85);
-          g.fill({ color: 0x4a5568 });
-
-          // Concentric ridges pressed into the lid
-          g.circle(0, 0, radius * 0.62);
-          g.stroke({ width: 1.5, color: 0x3b475c });
-          g.circle(0, 0, radius * 0.38);
-          g.stroke({ width: 1.5, color: 0x3b475c });
-
-          // Highlight catching light from the upper left
-          const highlightRadius = radius * 0.92;
-          const highlightStart = Math.PI * 1.05;
-          g.moveTo(
-            Math.cos(highlightStart) * highlightRadius,
-            Math.sin(highlightStart) * highlightRadius,
-          );
-          g.arc(0, 0, highlightRadius, highlightStart, Math.PI * 1.45);
-          g.stroke({ width: 2, color: 0xa0aec0, alpha: 0.8 });
-
-          // Handle bar across the center of the lid
-          g.roundRect(
-            -radius * 0.4,
-            -radius * 0.09,
-            radius * 0.8,
-            radius * 0.18,
-            radius * 0.09,
-          );
-          g.fill({ color: 0x2d3748 });
-        }, [])}
-      />
+      <pixiSprite texture={canTexture} scale={IMAGE_SCALE} anchor={0.5} />
       {inputMaterials.map((material, index) => (
         <pixiContainer angle={index * 25 + 10} scale={0.7} key={`in-${index}`}>
           <MaterialSprite material={material} key={index} alpha={0.7} />

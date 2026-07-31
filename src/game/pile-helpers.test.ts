@@ -5,7 +5,11 @@ import { makePallet } from "./material-helpers";
 import { Board } from "./Materials";
 import { pileWithinReach } from "./pile-helpers";
 
-function boardPile(length: number, position: [number, number]): MaterialPile {
+function boardPile(
+  length: number,
+  position: [number, number],
+  rotation = 0,
+): MaterialPile {
   const board: Board = {
     id: "test-board",
     type: "board",
@@ -17,7 +21,7 @@ function boardPile(length: number, position: [number, number]): MaterialPile {
     jointedFaces: 1,
     jointedEdges: 2,
   };
-  return { material: board, position };
+  return { material: board, position, rotation };
 }
 
 describe("pileWithinReach", () => {
@@ -25,6 +29,7 @@ describe("pileWithinReach", () => {
     const shelf: MaterialPile = {
       material: { id: "f", type: "shelf", species: "pine" },
       position: [1.5, 1.5],
+      rotation: 0,
     };
     assert.ok(pileWithinReach(shelf, [1, 1]));
     assert.ok(!pileWithinReach(shelf, [2, 1]), "a cell over is out of reach");
@@ -37,6 +42,7 @@ describe("pileWithinReach", () => {
     const shelf: MaterialPile = {
       material: { id: "f", type: "shelf", species: "pine" },
       position: [2, 1.5],
+      rotation: 0,
     };
     assert.ok(pileWithinReach(shelf, [1, 1]));
     assert.ok(pileWithinReach(shelf, [2, 1]));
@@ -53,9 +59,36 @@ describe("pileWithinReach", () => {
     assert.ok(!pileWithinReach(pile, [3, 10]));
   });
 
+  it("reaches along the piece as it lies, not an axis-aligned ghost", () => {
+    // The same 8' board dropped while walking east lies across x — its
+    // length is now reachable sideways, and the cells its unrotated self
+    // would have covered are out of reach.
+    const pile = boardPile(8, [3.5, 5.5], Math.PI / 2);
+    assert.ok(pileWithinReach(pile, [3, 5]), "the cell under its center");
+    assert.ok(pileWithinReach(pile, [0, 5]), "one end");
+    assert.ok(pileWithinReach(pile, [7, 5]), "the other end");
+    assert.ok(!pileWithinReach(pile, [3, 3]), "off its side");
+    assert.ok(!pileWithinReach(pile, [3, 8]), "where it would lie unrotated");
+  });
+
+  it("keeps reach honest at in-between angles", () => {
+    // Turned 45°, an 8' board's ends land near [6.3, 2.7] and [0.7, 8.3]
+    // — cells along that diagonal reach it, cells the same distance off
+    // on the other diagonal or straight down its old line do not.
+    const pile = boardPile(8, [3.5, 5.5], Math.PI / 4);
+    assert.ok(pileWithinReach(pile, [5, 3]), "toward one end");
+    assert.ok(pileWithinReach(pile, [1, 7]), "toward the other end");
+    assert.ok(!pileWithinReach(pile, [5, 7]), "the other diagonal misses it");
+    assert.ok(!pileWithinReach(pile, [3, 9]), "straight down misses it");
+  });
+
   it("lets a pallet be grabbed from the side, not just its ends", () => {
     // A pallet is 4'×3' — its edges reach well past the cell it centers on
-    const pile: MaterialPile = { material: makePallet(), position: [5.5, 5.5] };
+    const pile: MaterialPile = {
+      material: makePallet(),
+      position: [5.5, 5.5],
+      rotation: 0,
+    };
     assert.ok(pileWithinReach(pile, [3, 5]), "two cells across");
     assert.ok(pileWithinReach(pile, [7, 6]), "a far corner");
     assert.ok(!pileWithinReach(pile, [9, 5]), "well past the stringers");

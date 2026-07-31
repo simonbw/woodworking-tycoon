@@ -113,6 +113,43 @@ const defs = [
     group: "General",
   },
 
+  // ------------------------------------------------------------ Panel cursor
+  // An open list card (the truck's trip card) puts a cursor on its rows:
+  // W/S walk the cursor instead of the body, and E takes the row it's on.
+  // All three share their keys with the floor's own bindings and only
+  // enable while such a card is open — registry order is what lets E reach
+  // the card before the interact key answers for it.
+  {
+    id: "panel-up",
+    codes: ["KeyW", "ArrowUp"],
+    keys: [["W"], ["↑"]],
+    description: "Up the open card's rows",
+    scope: "home",
+    group: "General",
+    hidden: true,
+    sharesKey: true,
+  },
+  {
+    id: "panel-down",
+    codes: ["KeyS", "ArrowDown"],
+    keys: [["S"], ["↓"]],
+    description: "Down the open card's rows",
+    scope: "home",
+    group: "General",
+    hidden: true,
+    sharesKey: true,
+  },
+  {
+    id: "panel-accept",
+    codes: ["KeyE"],
+    keys: [["E"]],
+    description: "Take the highlighted row",
+    scope: "home",
+    group: "General",
+    hidden: true,
+    sharesKey: true,
+  },
+
   // --------------------------------------------------------------- Materials
   {
     id: "pick-up",

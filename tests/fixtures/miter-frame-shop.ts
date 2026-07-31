@@ -70,8 +70,8 @@ export const miterFrameShop: GameState = {
   consumables: { ...NO_CONSUMABLES, nails: 10 },
   clamps: 0,
   materialPiles: [
-    { material: rail("test-rail-2"), position: [5.5, 4.5] },
-    { material: rail("test-rail-3"), position: [5.5, 4.5] },
+    { material: rail("test-rail-2"), position: [5.5, 4.5], rotation: 0 },
+    { material: rail("test-rail-3"), position: [5.5, 4.5], rotation: 0 },
   ],
   player: {
     name: "Player",

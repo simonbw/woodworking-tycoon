@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   canLeaveShop,
   goToStoreAction,
@@ -19,6 +19,8 @@ import { jobPayout } from "../../game/marketplace";
 import { formatMoney } from "../../utils/formatNumber";
 import { resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
+import { classNames } from "../../utils/classNames";
+import { mod } from "../../utils/mathUtils";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
 import { HintList, HintRow } from "../shortcuts/HintList";
 import { Kbd, ShortcutKeys } from "../shortcuts/Kbd";
@@ -236,6 +238,37 @@ export const TruckPrompt: React.FC<{
     );
   }
 
+  // The card's row cursor: W/S walk it, E takes the row it's on. The raw
+  // index is unbounded and `mod` folds it onto whatever rows the card
+  // currently shows, so the cursor survives the list changing under it
+  // (a delivery leaving the card). Starts back at the top each time the
+  // card spreads open.
+  const [cursor, setCursor] = useState(0);
+  useEffect(() => {
+    if (truckMenuOpen) setCursor(0);
+  }, [truckMenuOpen]);
+  const selectedIndex = rows.length > 0 ? mod(cursor, rows.length) : 0;
+  useShortcut(
+    "panel-up",
+    () => setCursor(selectedIndex - 1),
+    truckMenuOpen && rows.length > 0,
+  );
+  useShortcut(
+    "panel-down",
+    () => setCursor(selectedIndex + 1),
+    truckMenuOpen && rows.length > 0,
+  );
+  // With full hands nothing on the card can run, so the binding steps
+  // aside and E falls through to the interact key, which folds the card.
+  useShortcut(
+    "panel-accept",
+    () => {
+      const row = rows[selectedIndex];
+      if (row) applyAction(row.action());
+    },
+    truckMenuOpen && handsFree && rows.length > 0,
+  );
+
   if (!atCab || rows.length === 0) {
     return null;
   }
@@ -322,7 +355,16 @@ export const TruckPrompt: React.FC<{
                   {row.group === "go" ? "Places to go" : "Work to deliver"}
                 </li>
               )}
-              <li className="flex items-center gap-3 py-2">
+              <li
+                className={classNames(
+                  "flex items-center gap-3 py-2 pl-1.5 border-l-2",
+                  index === selectedIndex
+                    ? "border-ink-blue bg-ink-blue/10"
+                    : "border-transparent",
+                )}
+                data-selected={index === selectedIndex || undefined}
+                onMouseEnter={() => setCursor(index)}
+              >
                 <Kbd>{index + 1}</Kbd>
                 <div className="grow">
                   <div className="font-condensed font-semibold text-sm uppercase tracking-wide">
@@ -346,6 +388,12 @@ export const TruckPrompt: React.FC<{
             </React.Fragment>
           ))}
         </ul>
+        <p className="flex items-center gap-1.5 border-t border-ink-black/15 pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
+          <Kbd>W</Kbd>
+          <Kbd>S</Kbd> choose
+          <span className="px-0.5">·</span>
+          <Kbd>E</Kbd> {rows[selectedIndex].verb.toLowerCase()}
+        </p>
         {carried && (
           <p className="font-condensed text-xs text-ink-fade">
             Set the {MACHINE_TYPES[carried.machineTypeId].name} down before
