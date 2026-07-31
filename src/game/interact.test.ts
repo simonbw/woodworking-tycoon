@@ -30,9 +30,9 @@ describe("resolveInteract", () => {
     // materialPiles keeps drop order, so `second` was set down on top of
     // `first` — and it's what E takes back, making drop-then-pickup a
     // round trip.
-    const first = pileAt([5, 5]);
-    const second = pileAt([5, 5]);
-    const elsewhere = pileAt([8, 8]);
+    const first = pileAt([5.5, 5.5]);
+    const second = pileAt([5.5, 5.5]);
+    const elsewhere = pileAt([8.5, 8.5]);
     const action = resolveInteract(
       shopWithPiles(first, second, elsewhere),
       undefined,
@@ -43,9 +43,9 @@ describe("resolveInteract", () => {
   });
 
   it("steps the rummage offset through the pile and wraps it", () => {
-    const top = pileAt([5, 5]);
-    const middle = pileAt([5, 5]);
-    const bottom = pileAt([5, 5]);
+    const top = pileAt([5.5, 5.5]);
+    const middle = pileAt([5.5, 5.5]);
+    const bottom = pileAt([5.5, 5.5]);
     const piles = [top, middle, bottom];
     assert.strictEqual(targetedPile(piles, 0), top);
     assert.strictEqual(targetedPile(piles, 2), bottom);
@@ -54,10 +54,10 @@ describe("resolveInteract", () => {
     assert.strictEqual(targetedPile(piles, -1), bottom);
   });
 
-  it("reaches long stock overhanging from a neighbor anchor cell", () => {
-    // An 8' board anchored two cells away still lies across the player's
-    // cell — the pile E grabs isn't necessarily anchored underfoot.
-    const overhanging = pileAt([5, 7], 8);
+  it("reaches long stock resting across the player's cell", () => {
+    // An 8' board centered two cells away still lies across the player's
+    // cell — the pile E grabs isn't necessarily centered underfoot.
+    const overhanging = pileAt([5.5, 7.5], 8);
     const action = resolveInteract(shopWithPiles(overhanging), undefined);
     assert.strictEqual(action?.kind, "pick-up-floor");
     assert.strictEqual(action.piles[0], overhanging);
@@ -66,7 +66,7 @@ describe("resolveInteract", () => {
   it("steps pickup aside when the hands are full", () => {
     // With the arms at capacity the chip never offers a pickup the
     // action would refuse
-    const underfoot = pileAt([5, 5]);
+    const underfoot = pileAt([5.5, 5.5]);
     const state = shopWithPiles(underfoot);
     const fullHanded = {
       ...state,
@@ -81,7 +81,10 @@ describe("resolveInteract", () => {
   });
 
   it("offers nothing on a bare cell", () => {
-    const action = resolveInteract(shopWithPiles(pileAt([8, 8])), undefined);
+    const action = resolveInteract(
+      shopWithPiles(pileAt([8.5, 8.5])),
+      undefined,
+    );
     assert.strictEqual(action, null);
   });
 });

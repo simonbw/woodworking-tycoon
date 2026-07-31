@@ -60,7 +60,7 @@ export const resawShop: GameState = {
   materialPiles: [
     {
       material: { id: "test-resaw-fence", type: "tool", toolId: "resawFence" },
-      position: [10, 13],
+      position: [10.5, 13.5],
     },
   ],
   player: {

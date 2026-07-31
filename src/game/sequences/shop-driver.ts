@@ -61,6 +61,8 @@ import {
   takeFromTruckBedAction,
 } from "../game-actions/truck-actions";
 import { isOutdoors, truckCabSideCell } from "../lot";
+import { motionCell } from "../player-motion";
+import { MaterialPile } from "../GameState";
 import {
   goToStoreAction,
   returnFromStoreAction,
@@ -207,6 +209,15 @@ export class ShopDriver {
   }
 
   /**
+   * Walk to a pile. Piles rest at continuous positions, not on cells —
+   * standing in the cell under the piece's center is always within reach
+   * (see pileWithinReach).
+   */
+  standNear(pile: MaterialPile): this {
+    return this.standAt(motionCell(pile.position));
+  }
+
+  /**
    * Stand where this machine is worked from. Attended phases check the
    * player's cell every tick, so a job run from the wrong side of the
    * machine stalls instead of failing — hence a verb for it rather than
@@ -266,7 +277,7 @@ export class ShopDriver {
       isTheTool(candidate.material),
     );
     if (pile) {
-      this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+      this.standNear(pile).apply(pickUpMaterialAction([pile]));
     } else {
       const inBed = this.state.truck.bed.find(isTheTool);
       if (inBed) {
@@ -454,7 +465,7 @@ export class ShopDriver {
         handSpaceLeft(this.state.player),
       )) {
         const held = this.inventory.length;
-        this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+        this.standNear(pile).apply(pickUpMaterialAction([pile]));
         if (this.inventory.length === held) {
           throw new Error(
             `Couldn't pick ${pile.material.type} up off the floor — ` +
@@ -922,7 +933,7 @@ export class ShopDriver {
     }
     // Piles can sit on different cells; take them one cell at a time.
     for (const pile of wanted) {
-      this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+      this.standNear(pile).apply(pickUpMaterialAction([pile]));
     }
     return this;
   }
@@ -967,7 +978,7 @@ export class ShopDriver {
         handSpaceLeft(this.state.player),
       )) {
         const held = this.inventory.length;
-        this.standAt(pile.position).apply(pickUpMaterialAction([pile]));
+        this.standNear(pile).apply(pickUpMaterialAction([pile]));
         if (this.inventory.length === held) {
           throw new Error(
             `Couldn't pick ${pile.material.type} up to load the bed`,

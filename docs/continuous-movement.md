@@ -3,7 +3,8 @@
 The player walks continuously with held WASD/arrow keys; only machines and
 the shop layout live on the grid. This replaced the original
 one-cell-per-tick queued movement, which made the woodworker feel like a
-cursor instead of a person.
+cursor instead of a person. Material piles came off the grid the same way
+(see "Free-floating piles" below).
 
 ## The split: body vs. cell
 
@@ -60,9 +61,10 @@ building's walls are ordinary box solids with a gap at the garage door
 world's hard edges are the lot's (`lotSize`: the shop's width, extended
 down past the truck's nose). `collisionWorld(gameState)` in
 `machine-collision.ts` assembles all of it. Outdoor cells have no
-CellMap entry, which is what keeps placement, piles, and every other
+CellMap entry, which is what keeps machine placement and every other
 cell verb indoors for free — the lot is walkable ground and nothing
-else.
+else. (Piles aren't in the CellMap; `dropMaterialAction` checks
+`isOutdoors` itself.)
 
 The machine solids come from `shopSolids`: each
 machine contributes its `MachineType.collisionShapes` — a list of
@@ -91,6 +93,34 @@ body radius of its footprint's edges (enforced in
 never sees the player standing "in" a machine. Load the game with
 `?collision` in the URL to see the solids painted over the shop, plus
 the body circle that collides with them.
+
+## Free-floating piles
+
+Material piles don't live on the grid either: `MaterialPile.position` is
+the piece's **center point** in continuous cell units, the same
+coordinate space as the body. Dropping (F, or a hands-strip slot) passes
+the body's actual position into `dropMaterialAction`, so a piece lands
+exactly where the woodworker is standing; sequence tests omit the point
+and it defaults to the standing cell's center (`cellCenter`).
+
+Reach is geometry, not cell membership: a pile is grabbable when its
+material's resting rectangle (`materialExtentInches`, the piece's real
+dimensions) comes within `PILE_REACH_CELLS` of the player's cell center
+(`pileWithinReach` in `pile-helpers.ts`). Long stock is grabbable
+anywhere along its length with no special-cased overhang cells, and the
+CellMap knows nothing about piles at all — `resolveInteract` scans
+`gameState.materialPiles` directly (a list of dozens at most).
+
+The simulation still validates reach against `player.position` (the cell
+underfoot), not the continuous body — actions stay pure and the hint
+chips can never disagree with the keypress. Only the *drop point* comes
+from the body, threaded in as an action argument by the DOM layer.
+
+Piles render individually at their positions (`MaterialPileSprite`),
+keyed by the material's `id`, in drop order so the newest piece draws on
+top — matching the order E picks from. Pieces set down on the very same
+spot stay legible by wearing a small deterministic resting angle hashed
+from that id.
 
 ## Speed, not busy-ticks
 

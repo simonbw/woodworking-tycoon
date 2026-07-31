@@ -27,6 +27,7 @@ import { Board, MaterialInstance } from "../Materials";
 import { isMiteredFrameRail } from "../board-helpers";
 import { makePallet } from "../material-helpers";
 import { isPanel } from "../panel-helpers";
+import { cellCenter } from "../player-motion";
 import { clampsFor } from "../Clamp";
 import { checkProgressionMilestonesAction } from "../game-actions/progression-actions";
 import { openShop, ShopDriver } from "./shop-driver";
@@ -283,7 +284,7 @@ function fetchAPallet(shop: ShopDriver): ShopDriver {
       ...state.materialPiles,
       {
         material: makePallet(),
-        position: state.shopInfo.materialDropoffPosition,
+        position: cellCenter(state.shopInfo.materialDropoffPosition),
       },
     ],
   }));

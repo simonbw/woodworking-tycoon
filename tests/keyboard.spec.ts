@@ -459,8 +459,8 @@ test.describe("Keyboard", () => {
           ...s,
           player: { ...s.player, position: [6, 10], inventory: [] },
           materialPiles: [
-            { material: board("pile-oak", "oak"), position: [6, 10] },
-            { material: board("pile-pine", "pine"), position: [6, 10] },
+            { material: board("pile-oak", "oak"), position: [6.5, 10.5] },
+            { material: board("pile-pine", "pine"), position: [6.5, 10.5] },
           ],
         }));
       });

@@ -10,8 +10,10 @@ import { holdingBroom } from "../game/HeldTool";
 import { HAND_CAPACITY } from "../game/Person";
 import { canisterFillFraction, carryingShopVac } from "../game/ShopVac";
 import { getMaterialFullName } from "../game/material-helpers";
+import { Vector } from "../game/Vectors";
 import { groupBy } from "../utils/arrayUtils";
 import { MaterialIcon } from "./current-cell-info/MaterialIcon";
+import { playerMotion } from "./shop-view/playerMotionStore";
 import { ShiftHint } from "./shortcuts/Kbd";
 import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
@@ -129,10 +131,12 @@ const HandSlot: React.FC<{
       <button
         className="flex items-center gap-1.5 rounded border border-workshop-edge bg-workshop-panel px-1.5 py-1 text-left hover:border-gold-dark"
         onClick={(event) => {
+          // Same landing point as the F key: the body's actual position
+          const at: Vector = [...playerMotion.pos];
           if (event.shiftKey) {
-            applyAction(dropMaterialAction(materials));
+            applyAction(dropMaterialAction(materials, at));
           } else {
-            applyAction(dropMaterialAction([materials[0]]));
+            applyAction(dropMaterialAction([materials[0]], at));
           }
         }}
       >

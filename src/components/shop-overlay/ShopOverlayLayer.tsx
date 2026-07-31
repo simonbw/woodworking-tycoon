@@ -180,3 +180,33 @@ export const CellAnchored: React.FC<{
     </div>
   );
 };
+
+/**
+ * CellAnchored's free-floating twin: positions a hint cluster against a
+ * continuous world point (a pile's resting spot), half a cell above or
+ * below it — the same visual gap CellAnchored leaves around its cell.
+ */
+export const PointAnchored: React.FC<{
+  point: Vector;
+  children: React.ReactNode;
+  className?: string;
+  placement?: "above" | "below";
+}> = ({ point, children, className, placement = "below" }) => {
+  const scale = useContext(OverlayScaleContext);
+  const cellPx = PIXELS_PER_CELL * scale;
+  const above = placement === "above" && (point[1] - 0.5) * cellPx >= 64;
+  return (
+    <div
+      className={"absolute z-10 " + (className ?? "")}
+      style={{
+        left: point[0] * cellPx,
+        top: above
+          ? (point[1] - 0.5) * cellPx - 4
+          : (point[1] + 0.5) * cellPx + 4,
+        transform: above ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+      }}
+    >
+      {children}
+    </div>
+  );
+};

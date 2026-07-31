@@ -26,20 +26,20 @@ function stateWithPile(
 }
 
 describe("pickUpMaterialAction", () => {
-  it("picks up from the pile's anchor cell", () => {
+  it("picks up from the cell the pile rests in", () => {
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
-      position: [1, 3],
+      position: [1.5, 3.5],
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 3]));
     assert.strictEqual(result.materialPiles.length, 0);
     assert.strictEqual(result.player.inventory.length, 1);
   });
 
-  it("picks up a long board from a cell it overhangs", () => {
+  it("picks up a long board from anywhere along its length", () => {
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
-      position: [1, 3],
+      position: [1.5, 3.5],
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
     assert.strictEqual(result.materialPiles.length, 0);
@@ -47,24 +47,32 @@ describe("pickUpMaterialAction", () => {
   });
 
   it("refuses cells the board does not reach", () => {
-    // An 8' board spans four cells past its anchor; [1, 8] is beyond it
+    // An 8' board centered at [1.5, 3.5] ends at y 7.5; [1, 8] is past it
     const pile: MaterialPile = {
       material: board("pine", 8, 4, 1),
-      position: [1, 3],
+      position: [1.5, 3.5],
     };
     const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 8]));
     assert.strictEqual(result.materialPiles.length, 1);
     assert.strictEqual(result.player.inventory.length, 0);
   });
 
-  it("keeps foot-long stock a one-cell grab", () => {
+  it("keeps foot-long stock a close grab", () => {
+    // A 1' board's end reaches the shared cell line, so the cell straight
+    // ahead of it can still grab it — but a cell to the side, or two cells
+    // away, cannot.
     const pile: MaterialPile = {
       material: board("pine", 1, 4, 1),
-      position: [1, 3],
+      position: [1.5, 3.5],
     };
-    const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
-    assert.strictEqual(result.materialPiles.length, 1);
-    assert.strictEqual(result.player.inventory.length, 0);
+    const ahead = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
+    assert.strictEqual(ahead.player.inventory.length, 1);
+    const sideways = pickUpMaterialAction([pile])(stateWithPile(pile, [0, 3]));
+    assert.strictEqual(sideways.materialPiles.length, 1);
+    assert.strictEqual(sideways.player.inventory.length, 0);
+    const far = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 1]));
+    assert.strictEqual(far.materialPiles.length, 1);
+    assert.strictEqual(far.player.inventory.length, 0);
   });
 
   it("refuses a load bigger than the arm room left", () => {
@@ -353,6 +361,9 @@ describe("settings lock while a station is working", () => {
 
 describe("dropMaterialAction", () => {
   it("drops carried stock as a pile underfoot", () => {
+    // Without an explicit landing point the piece rests at the center of
+    // the cell the player occupies (the keyboard layer passes the body's
+    // actual position instead).
     const material = board("pine", 4, 4, 1);
     const state: GameState = {
       ...initialGameState,
@@ -364,10 +375,21 @@ describe("dropMaterialAction", () => {
     };
     const result = dropMaterialAction([material])(state);
     assert.strictEqual(result.player.inventory.length, 0);
-    assert.deepStrictEqual(
-      result.materialPiles.at(-1)?.position,
-      [5, 5],
-    );
+    assert.deepStrictEqual(result.materialPiles.at(-1)?.position, [5.5, 5.5]);
+  });
+
+  it("drops at the landing point it is given", () => {
+    const material = board("pine", 4, 4, 1);
+    const state: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        position: [5, 5],
+        inventory: [material],
+      },
+    };
+    const result = dropMaterialAction([material], [5.2, 5.8])(state);
+    assert.deepStrictEqual(result.materialPiles.at(-1)?.position, [5.2, 5.8]);
   });
 
   it("keeps stock in hand on the lot — no piles outdoors", () => {

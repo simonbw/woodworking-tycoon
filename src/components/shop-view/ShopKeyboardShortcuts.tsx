@@ -50,6 +50,7 @@ import { hasStationSheet } from "../station/station-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
+import { playerMotion } from "./playerMotionStore";
 import { useTruckStage } from "./truckStageStore";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
@@ -287,8 +288,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         }
       }
 
+      // The piece lands at the body's actual position — where the
+      // woodworker is standing, not the center of the cell underfoot.
       return applyAction(
-        dropMaterialAction(event.shiftKey ? inventory : [inventory[0]]),
+        dropMaterialAction(event.shiftKey ? inventory : [inventory[0]], [
+          ...playerMotion.pos,
+        ]),
       );
     },
     present && !carrying,

@@ -9,6 +9,7 @@ import React, {
 import { useCellMap } from "./useCellMap";
 import { Machine, machineKey as machineStateKey } from "../game/Machine";
 import { atTruckCab } from "../game/lot";
+import { pileWithinReach } from "../game/pile-helpers";
 import {
   Direction,
   Vector,
@@ -130,13 +131,17 @@ export const TargetedMachineProvider: React.FC<{
 
   useEffect(() => setOffset(0), [positionKey, direction]);
 
-  // Rummaging starts over from the top of the pile when the player moves
-  // or the pile itself changes (a piece grabbed or dropped re-stacks it).
-  // Unlike the machine target, turning in place keeps the choice — the
-  // pile doesn't care which way the player faces.
-  const grabbableCount =
-    cellMap.at(gameState.player.position)?.grabbablePiles.length ?? 0;
-  useEffect(() => setPileOffset(0), [positionKey, grabbableCount]);
+  // Rummaging starts over from the top of the pile when the set of pieces
+  // within reach changes — one grabbed, dropped, or walked away from. Keyed
+  // on the pieces themselves rather than the player's cell: reach is
+  // continuous now, so crossing a cell line with the same pieces at hand
+  // keeps the cursor. Turning in place keeps it too — the pile doesn't
+  // care which way the player faces.
+  const reachableKey = gameState.materialPiles
+    .filter((pile) => pileWithinReach(pile, gameState.player.position))
+    .map((pile) => pile.material.id)
+    .join("|");
+  useEffect(() => setPileOffset(0), [reachableKey]);
 
   const cyclePile = useCallback(
     (step: 1 | -1) => setPileOffset((i) => i + step),

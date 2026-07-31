@@ -1,13 +1,17 @@
 import { MaterialPile } from "./GameState";
 import { MaterialInstance, panelWidth } from "./Materials";
+import { cellCenter } from "./player-motion";
 import { INCHES_PER_FOOT, inchesToCells } from "./shop-scale";
-import { Vector, vectorEquals } from "./Vectors";
+import { Vector } from "./Vectors";
 
 /**
- * How much of a material must reach into a cell before you can grab it from
- * there — a sliver of overhanging tip doesn't count.
+ * How far past a standing cell's center the arms reach, in cells. A pile
+ * counts as grabbable when its material's footprint comes within this of
+ * the cell the player occupies — the continuous replacement for the old
+ * one-cell-grab: a piece resting anywhere in your cell is in reach, a
+ * piece centered in the next cell over is not.
  */
-const MIN_OVERLAP_CELLS = 0.25;
+const PILE_REACH_CELLS = 0.75;
 
 /** A pallet is 4' of stringer across by 3' of deck board along (PalletSprite). */
 const PALLET_ACROSS_FEET = 4;
@@ -18,7 +22,7 @@ const PALLET_ALONG_FEET = 3;
  * the x axis, `along` runs down the y axis — matching how the sprites draw
  * (see MaterialSprite): long stock lies lengthwise on the vertical axis, and
  * only the broad materials (sheets, pallets) reach past a cell sideways.
- * Anything not listed is small enough to sit inside its own cell.
+ * Anything not listed is small enough to count as a point.
  */
 export function materialExtentInches(material: MaterialInstance): {
   across: number;
@@ -54,38 +58,21 @@ export function materialExtentInches(material: MaterialInstance): {
 }
 
 /**
- * How many cells past the anchor a material of this extent reaches. A cell
- * |d| away from the anchor is overlapped by half the extent + 0.5 - d cells
- * of material; include it while that clears the minimum.
+ * Whether a pile can be grabbed by someone standing at the given cell.
+ * Piles sit at continuous positions (`pile.position` is the material's
+ * center point, in cell units — see docs/continuous-movement.md), so reach
+ * is geometry, not cell membership: the distance from the standing cell's
+ * center to the material's resting rectangle, against PILE_REACH_CELLS.
+ * Long stock is grabbable anywhere along its length this way, with no
+ * special casing for the cells it overhangs.
  */
-function reachCells(extentInches: number): number {
-  const halfCells = inchesToCells(extentInches) / 2;
-  return Math.max(0, Math.ceil(halfCells + 0.5 - MIN_OVERLAP_CELLS) - 1);
-}
-
-/**
- * The cells a pile can be grabbed from: every cell its material meaningfully
- * overlaps. Piles render centered on their anchor cell (see
- * MaterialPilesSprite), so with 1-ft cells an 8' board reaches four cells
- * past its anchor along the vertical axis, a pallet or a sheet spreads both
- * ways, and anything a foot or under stays a one-cell grab.
- */
-export function pileFootprint(pile: MaterialPile): Vector[] {
+export function pileWithinReach(pile: MaterialPile, cell: Vector): boolean {
   const { across, along } = materialExtentInches(pile.material);
-  const reachX = reachCells(across);
-  const reachY = reachCells(along);
-
-  const [x, y] = pile.position;
-  const cells: Vector[] = [];
-  for (let dx = -reachX; dx <= reachX; dx++) {
-    for (let dy = -reachY; dy <= reachY; dy++) {
-      cells.push([x + dx, y + dy]);
-    }
-  }
-  return cells;
-}
-
-/** Whether a pile can be grabbed by someone standing at the given cell. */
-export function pileCoversCell(pile: MaterialPile, cell: Vector): boolean {
-  return pileFootprint(pile).some((c) => vectorEquals(c, cell));
+  const halfX = inchesToCells(across) / 2;
+  const halfY = inchesToCells(along) / 2;
+  const [cx, cy] = cellCenter(cell);
+  const [px, py] = pile.position;
+  const dx = Math.max(Math.abs(cx - px) - halfX, 0);
+  const dy = Math.max(Math.abs(cy - py) - halfY, 0);
+  return Math.hypot(dx, dy) <= PILE_REACH_CELLS;
 }

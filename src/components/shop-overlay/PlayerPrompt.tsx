@@ -19,7 +19,7 @@ import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
-import { CellAnchored } from "./ShopOverlayLayer";
+import { CellAnchored, PointAnchored } from "./ShopOverlayLayer";
 
 /**
  * The small cluster of key hints that follows the player: verbs aimed at
@@ -195,11 +195,11 @@ export const PlayerPrompt: React.FC = () => {
 
 /**
  * The pickup chip sits on the pile it would grab — the same piece wearing
- * the targeting outline on the canvas, wherever its anchor cell is (long
- * stock overhangs; the piece underfoot may live on a neighbor cell). It
- * names the piece, and with more of them within reach offers R to rummage
- * — unless a machine's rotate setting claims the key (the binding steps
- * aside the same way).
+ * the targeting outline on the canvas, wherever it lies (long stock is
+ * grabbable along its whole length; the piece underfoot may rest well off
+ * to the side). It names the piece, and with more of them within reach
+ * offers R to rummage — unless a machine's rotate setting claims the key
+ * (the binding steps aside the same way).
  */
 const PickupChip: React.FC<{
   piles: ReadonlyArray<MaterialPile>;
@@ -210,7 +210,7 @@ const PickupChip: React.FC<{
   const place =
     piles.length > 1 ? ` · ${piles.indexOf(pile) + 1} of ${piles.length}` : "";
   return (
-    <CellAnchored cell={pile.position} placement="above">
+    <PointAnchored point={pile.position} placement="above">
       <HintList>
         <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
           pick up · {getMaterialFullName(pile.material)}
@@ -222,6 +222,6 @@ const PickupChip: React.FC<{
           </HintRow>
         )}
       </HintList>
-    </CellAnchored>
+    </PointAnchored>
   );
 };

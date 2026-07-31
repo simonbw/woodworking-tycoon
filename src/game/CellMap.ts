@@ -1,9 +1,13 @@
 import { LRUCache } from "typescript-lru-cache";
-import { GameState, MaterialPile } from "./GameState";
+import { GameState } from "./GameState";
 import { getMachines, Machine } from "./Machine";
-import { pileFootprint } from "./pile-helpers";
 import { Vector, rotateVec, translateVec, vectorKey } from "./Vectors";
 
+/**
+ * The machine side of the shop, indexed by cell. Material piles are not
+ * here: they sit at continuous positions (see pile-helpers.ts) and only
+ * machines and the shop layout live on the grid.
+ */
 export type CellInfo = {
   readonly position: Vector;
   /**
@@ -20,13 +24,6 @@ export type CellInfo = {
   readonly operableMachines: ReadonlyArray<Machine>;
   /** Machines whose outfeed lands here — outputs are collected from this cell. */
   readonly outputMachines: ReadonlyArray<Machine>;
-  /** Piles anchored to this cell (this is where they render). */
-  readonly materialPiles: ReadonlyArray<MaterialPile>;
-  /**
-   * Piles grabbable from this cell: anchored here or overhanging from a
-   * neighbor (long boards span several cells — see pileFootprint).
-   */
-  readonly grabbablePiles: ReadonlyArray<MaterialPile>;
 };
 
 // The type used internally by the cell map to allow mutation
@@ -36,8 +33,6 @@ type MutableCellInfo = {
   tableMachine: Machine | undefined;
   readonly operableMachines: Machine[];
   readonly outputMachines: Machine[];
-  readonly materialPiles: MaterialPile[];
-  readonly grabbablePiles: MaterialPile[];
 };
 
 // Keep computed cell maps for game states.
@@ -63,10 +58,6 @@ export class CellMap {
       const machines = getMachines(gameState.machines);
       for (const machine of machines) {
         cellMap.addMachine(machine);
-      }
-
-      for (const materialPile of gameState.materialPiles) {
-        cellMap.addMaterialPile(materialPile);
       }
 
       cellMapCache.set(gameState, cellMap);
@@ -110,8 +101,6 @@ export class CellMap {
         tableMachine: partial.tableMachine ?? undefined,
         operableMachines: partial.operableMachines ?? [],
         outputMachines: partial.outputMachines ?? [],
-        materialPiles: partial.materialPiles ?? [],
-        grabbablePiles: partial.grabbablePiles ?? [],
       };
       this._cells.push(cell);
       this._map.set(vectorKey(position), cell);
@@ -149,16 +138,6 @@ export class CellMap {
     for (const cell of machine.outputZone) {
       if (this.has(cell)) {
         this._at(cell)!.outputMachines.push(machine);
-      }
-    }
-  }
-
-  addMaterialPile(materialPile: MaterialPile) {
-    const [x, y] = materialPile.position;
-    this._at([x, y])!.materialPiles.push(materialPile);
-    for (const cell of pileFootprint(materialPile)) {
-      if (this.has(cell)) {
-        this._at(cell)!.grabbablePiles.push(materialPile);
       }
     }
   }

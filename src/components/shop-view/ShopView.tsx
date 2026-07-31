@@ -39,7 +39,7 @@ import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { ShopOverlayLayer } from "../shop-overlay/ShopOverlayLayer";
-import { MaterialPilesSprite } from "./MaterialPileSprite";
+import { MaterialPileSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
 import { FootstepSoundLayer } from "./FootstepSoundLayer";
 import { PlayerMotionLayer } from "./PlayerMotionLayer";
@@ -52,7 +52,7 @@ import { camera } from "./cameraStore";
 import { useTruckStage } from "./truckStageStore";
 import { atTruckBed, lotSize } from "../../game/lot";
 import { TruckHighlight } from "./TruckSprite";
-import { PIXELS_PER_CELL, cellToPixel, cellToPixelVec } from "./shop-scale";
+import { PIXELS_PER_CELL, cellToPixel } from "./shop-scale";
 
 /**
  * Grass and driveway kept visible around the building when fitting the
@@ -186,11 +186,6 @@ export const ShopView: React.FC = () => {
       }
     };
   };
-
-  const materialPileGroups = cellMap
-    .getCells()
-    .filter((cell) => cell.materialPiles.length > 0)
-    .map((cell) => cell.materialPiles);
 
   const width = cellToPixel(cellMap.getWidth());
   const height = cellToPixel(cellMap.getHeight());
@@ -370,21 +365,15 @@ export const ShopView: React.FC = () => {
                 />
               ))}
 
-              {materialPileGroups.map((materialPiles, i) => {
-                const [x, y] = cellToPixelVec(materialPiles[0].position);
-                return (
-                  <pixiContainer
-                    key={`pile${vectorKey(materialPiles[0].position)}`}
-                    x={x}
-                    y={y}
-                  >
-                    <MaterialPilesSprite
-                      materialPiles={materialPiles}
-                      highlightedPile={pickupTarget}
-                    />
-                  </pixiContainer>
-                );
-              })}
+              {/* Piles draw in drop order, so the last piece set down on a
+                  spot is on top — matching the pickup order E offers */}
+              {gameState.materialPiles.map((pile) => (
+                <MaterialPileSprite
+                  key={`pile-${pile.material.id}`}
+                  pile={pile}
+                  highlighted={pile === pickupTarget}
+                />
+              ))}
               {[...machines]
                 // Worktables draw first so mounted benchtop machines sit on top
                 .sort(

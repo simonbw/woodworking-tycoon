@@ -307,12 +307,12 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("the pickup chip sits on the pile it would grab", async () => {
-      // An 8' board anchored at [10,9] lies across y 5..13 — the player
-      // can stand at either end and E grabs the same piece. The [E] pick
-      // up chip anchors to the pile's cell, not the player's, so it must
-      // not move between the two stances. Column 10 keeps clear of the
-      // fixture's machines (miter saw at [6,3] with stock waiting, the
-      // worktable carried to [5,8]) whose take/unload verbs outrank a
+      // An 8' board resting at [10.5,9.5] lies across y 5.5..13.5 — the
+      // player can stand at either end and E grabs the same piece. The
+      // [E] pick up chip anchors to the pile itself, not the player, so
+      // it must not move between the two stances. Column 10 keeps clear
+      // of the fixture's machines (miter saw at [6,3] with stock waiting,
+      // the worktable carried to [5,8]) whose take/unload verbs outrank a
       // floor pickup.
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
@@ -331,7 +331,7 @@ test.describe("Shop floor", () => {
                 jointedFaces: 1,
                 jointedEdges: 2,
               },
-              position: [10, 9],
+              position: [10.5, 9.5],
             },
           ],
         }));

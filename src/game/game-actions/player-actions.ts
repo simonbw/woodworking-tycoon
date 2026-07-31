@@ -18,7 +18,8 @@ import {
 } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { Direction, Vector, vectorEquals } from "../Vectors";
-import { pileCoversCell } from "../pile-helpers";
+import { cellCenter } from "../player-motion";
+import { pileWithinReach } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
 import { emitSound } from "./sound-actions";
 
@@ -65,9 +66,10 @@ export function pickUpMaterialAction(
       return gameState;
     }
     for (const materialPile of materialPiles) {
-      // Long stock overhangs its anchor cell — any overlapped cell is
-      // close enough to grab from (see pileFootprint).
-      if (!pileCoversCell(materialPile, gameState.player.position)) {
+      // Reach is geometric: the piece's resting footprint must come within
+      // arm's reach of the player's cell (see pileWithinReach), so long
+      // stock is grabbable anywhere along its length.
+      if (!pileWithinReach(materialPile, gameState.player.position)) {
         console.warn("Tried to pick up material from wrong position");
         return gameState;
       }
@@ -91,13 +93,26 @@ export function pickUpMaterialAction(
   };
 }
 
+/**
+ * Set materials down where the player stands. Piles sit at continuous
+ * positions: `at` is the landing point in cell units — the keyboard layer
+ * passes the body's actual position, so a piece lands exactly where the
+ * woodworker is, not snapped to the cell underfoot. Callers without a
+ * body (sequence tests) omit it and the piece lands at the cell's center.
+ */
 export function dropMaterialAction(
   materials: ReadonlyArray<MaterialInstance>,
+  at?: Vector,
 ): GameAction {
   return (gameState) => {
-    // Piles live on floor cells; the lot has none. What's carried stays
-    // in hand until the player is back inside (or, later, at the truck).
-    if (isOutdoors(gameState.shopInfo, gameState.player.position)) {
+    const position = at ?? cellCenter(gameState.player.position);
+    // Piles live on the shop floor; the lot is walkable ground and nothing
+    // else. What's carried stays in hand until the player is back inside
+    // (or at the truck's bed, where F loads instead).
+    if (
+      isOutdoors(gameState.shopInfo, gameState.player.position) ||
+      position[1] >= gameState.shopInfo.size[1]
+    ) {
       console.warn("Tried to drop material outside the shop");
       return gameState;
     }
@@ -118,10 +133,7 @@ export function dropMaterialAction(
         },
         materialPiles: [
           ...gameState.materialPiles,
-          ...materials.map((material) => ({
-            material,
-            position: gameState.player.position,
-          })),
+          ...materials.map((material) => ({ material, position })),
         ],
       },
       { kind: "material-drop" },

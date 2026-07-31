@@ -5,6 +5,7 @@ import { heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
 import { Machine } from "./Machine";
 import { handSpaceLeft } from "./Person";
+import { pileWithinReach } from "./pile-helpers";
 import { chebyshevDistance } from "./Vectors";
 
 /**
@@ -89,15 +90,20 @@ export function resolveInteract(
     return { kind: "switch-on", machine: targetedMachine };
   }
 
-  if (handsFree && cell?.grabbablePiles.length) {
-    // grabbablePiles keeps drop order (oldest first), and the fanned stack
-    // renders in that order too — so the last piece dropped is drawn on
-    // top. Reversed here so a plain press takes the top of the pile, and
+  if (handsFree) {
+    // materialPiles keeps drop order (oldest first), and a stack renders
+    // in that order too — so the last piece dropped is drawn on top.
+    // Reversed here so a plain press takes the top of the pile, and
     // dropping a piece then picking it back up is a round trip.
-    return {
-      kind: "pick-up-floor",
-      piles: [...cell.grabbablePiles].reverse(),
-    };
+    const reachable = gameState.materialPiles.filter((pile) =>
+      pileWithinReach(pile, gameState.player.position),
+    );
+    if (reachable.length > 0) {
+      return {
+        kind: "pick-up-floor",
+        piles: reachable.reverse(),
+      };
+    }
   }
 
   // The broom leans where it was left; picking it up needs empty hands
