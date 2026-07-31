@@ -366,7 +366,7 @@ test.describe("Market, supplies, and sound", () => {
       // Nothing to run without the nails — the sheet says so where the
       // run button used to be
       await expect(
-        workspaceCard(page).getByText("Load the bay to run it"),
+        workspaceCard(page).getByText("Place stock in the bay to run it"),
       ).toBeVisible();
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();

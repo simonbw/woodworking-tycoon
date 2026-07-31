@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { GameState, MaterialPile } from "./GameState";
 import { initialGameState } from "./initialGameState";
-import { resolveInteract, targetedPile } from "./interact";
+import { interactLabel, resolveInteract, targetedPile } from "./interact";
 import { Board } from "./Materials";
 import { HAND_CAPACITY } from "./Person";
 
@@ -83,5 +83,23 @@ describe("resolveInteract", () => {
   it("offers nothing on a bare cell", () => {
     const action = resolveInteract(shopWithPiles(pileAt([8, 8])), undefined);
     assert.strictEqual(action, null);
+  });
+});
+
+describe("interactLabel", () => {
+  it("speaks in place and take, not load and unload", () => {
+    // The chip verbs read the way a person talks about a bench and a
+    // board: stock is taken back off a station or out of the bed
+    assert.strictEqual(
+      interactLabel({ kind: "truck-bed", count: 3 }),
+      "take from bed (3)",
+    );
+    assert.strictEqual(
+      interactLabel({
+        kind: "take-inputs",
+        machine: { type: { name: "Makeshift Workbench" } } as never,
+      }),
+      "take from Makeshift Workbench",
+    );
   });
 });

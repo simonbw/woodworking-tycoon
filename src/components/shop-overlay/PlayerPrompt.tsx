@@ -8,7 +8,6 @@ import {
 import { canPutDownCarriedMachine } from "../../game/game-actions/machine-actions";
 import { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { holdingBroom } from "../../game/HeldTool";
-import { atTruckBed } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { MaterialPile } from "../../game/GameState";
@@ -37,7 +36,6 @@ export const PlayerPrompt: React.FC = () => {
 
   const carried = gameState.player.carriedMachine ?? null;
   const cell = cellMap.at(gameState.player.position);
-  const holding = gameState.player.inventory.length > 0;
   const draggingVac = carryingShopVac(gameState);
   const standingOnVac =
     gameState.shopVac?.position != null &&
@@ -93,34 +91,8 @@ export const PlayerPrompt: React.FC = () => {
         </HintRow>,
       );
     }
-    // The truck's bed offers its verbs to whoever stands at the rail:
-    // stock lifts out with E, what's in hand loads with F, and a crated
-    // machine hoists onto the shoulders like any shop-floor crate.
-    const atBed = atTruckBed(gameState.shopInfo, gameState.player.position);
-    if (atBed && interact?.kind === "truck-bed") {
-      rows.push(
-        <HintRow key="unload-bed" keys={<ShortcutKeys shortcut="pick-up" />}>
-          unload bed ({interact.count})
-        </HintRow>,
-      );
-    }
-    if (atBed && holding) {
-      rows.push(
-        <HintRow key="load-bed" keys={<ShortcutKeys shortcut="put-down" />}>
-          load into bed
-        </HintRow>,
-      );
-    }
-    if (atBed && gameState.truck.crates.length > 0 && !holding) {
-      rows.push(
-        <HintRow
-          key="unpack-bed-crate"
-          keys={<ShortcutKeys shortcut="carry-machine" />}
-        >
-          unpack {MACHINE_TYPES[gameState.truck.crates[0].machineTypeId].name}
-        </HintRow>,
-      );
-    }
+    // The truck's bed wears its own chips, pinned over the tailgate
+    // (TruckBedPrompt) — nothing for the player's cluster to carry there.
     if (interact?.kind === "pick-up-broom") {
       rows.push(
         <HintRow key="pick-up-broom" keys={<ShortcutKeys shortcut="pick-up" />}>

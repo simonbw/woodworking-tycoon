@@ -1,7 +1,8 @@
 import { useTick } from "@pixi/react";
-import { Container } from "pixi.js";
-import React, { useRef } from "react";
+import { Container, Rectangle, Texture } from "pixi.js";
+import React, { useMemo, useRef } from "react";
 import { truckBedRect, truckParkedRect } from "../../game/lot";
+import { TARGET_HIGHLIGHT_FILTERS } from "./targetHighlight";
 import { useTexture } from "../../utils/useTexture";
 import { clamp } from "../../utils/mathUtils";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
@@ -46,9 +47,32 @@ const TRUCK_TAIL_INSET = 11 / 600;
  * pixels — past the walkable lot's bottom edge at full camera scroll. */
 const TRUCK_TRAVEL_PX = 1200;
 
-export const TruckSprite: React.FC = () => {
+/** The 400×600 art's canvas, in source pixels. */
+const TRUCK_SRC_WIDTH = 400;
+const TRUCK_SRC_HEIGHT = 600;
+
+/** The cargo box's pixels inside the art — rail to rail, tailgate to
+ * cab wall — so the bed can wear the targeting outline on its own. */
+const BED_FRAME = new Rectangle(124, 344, 276 - 124, 561 - 344);
+
+/**
+ * The targeting treatment the truck wears: the whole body when E would
+ * open the cab, just the cargo box while the bed's verbs are on offer.
+ */
+export type TruckHighlight = "truck" | "bed" | null;
+
+export const TruckSprite: React.FC<{ highlight?: TruckHighlight }> = ({
+  highlight = null,
+}) => {
   const gameState = useGameState();
   const truckTexture = useTexture("/images/pickup-truck.png");
+  // The bed cropped out of the same art, drawn over itself pixel for
+  // pixel — the outline shader rims a display object's silhouette, so
+  // scoping the rim to the bed takes a bed-shaped object to rim.
+  const bedTexture = useMemo(
+    () => new Texture({ source: truckTexture.source, frame: BED_FRAME }),
+    [truckTexture],
+  );
   const stage = useTruckStage();
   const rollRef = useRef<Container>(null);
 
@@ -93,6 +117,17 @@ export const TruckSprite: React.FC = () => {
   const bedCenterX = cellToPixel((bed.min[0] + bed.max[0]) / 2);
   const bedCenterY = cellToPixel((bed.min[1] + bed.max[1]) / 2);
 
+  // The bed crop rides exactly over its own pixels in the body art: the
+  // sprite is anchored at its center and turned 180°, so a source-pixel
+  // offset from the canvas center lands negated in the world.
+  const srcToWorld = TRUCK_CANVAS_WIDTH / TRUCK_SRC_WIDTH;
+  const bedFrameX =
+    centerX -
+    (BED_FRAME.x + BED_FRAME.width / 2 - TRUCK_SRC_WIDTH / 2) * srcToWorld;
+  const bedFrameY =
+    centerY -
+    (BED_FRAME.y + BED_FRAME.height / 2 - TRUCK_SRC_HEIGHT / 2) * srcToWorld;
+
   return (
     <pixiContainer ref={rollRef}>
       <pixiSprite
@@ -103,7 +138,20 @@ export const TruckSprite: React.FC = () => {
         height={TRUCK_CANVAS_HEIGHT}
         anchor={{ x: 0.5, y: 0.5 }}
         angle={180}
+        filters={highlight === "truck" ? TARGET_HIGHLIGHT_FILTERS : undefined}
       />
+      {highlight === "bed" && (
+        <pixiSprite
+          texture={bedTexture}
+          x={bedFrameX}
+          y={bedFrameY}
+          width={BED_FRAME.width * srcToWorld}
+          height={BED_FRAME.height * srcToWorld}
+          anchor={{ x: 0.5, y: 0.5 }}
+          angle={180}
+          filters={TARGET_HIGHLIGHT_FILTERS}
+        />
+      )}
       {/* Cargo lies lengthwise in the bed, fanned like a floor pile.
           Long stock overhangs the tailgate — that's what the truck's
           for. Crates ride behind the cab, stock toward the gate. */}

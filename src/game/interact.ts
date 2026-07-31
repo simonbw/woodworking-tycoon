@@ -156,7 +156,7 @@ export function interactLabel(action: InteractAction): string {
     case "take-outputs":
       return `take (${action.machine.outputMaterials.length})`;
     case "take-inputs":
-      return `unload ${action.machine.type.name}`;
+      return `take from ${action.machine.type.name}`;
     case "switch-on":
       return "switch on";
     case "switch-off":
@@ -166,7 +166,7 @@ export function interactLabel(action: InteractAction): string {
     case "pick-up-broom":
       return "pick up broom";
     case "truck-bed":
-      return `unload bed (${action.count})`;
+      return `take from bed (${action.count})`;
     case "truck-cab":
       return action.handoffCount > 0 ? "deliver work" : "head out";
   }
