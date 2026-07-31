@@ -39,9 +39,9 @@ export const garbageCan: MachineType = {
     {
       name: "Empty",
       id: "empty",
-      // Long enough to feel like a trip to the curb, short enough that
-      // clearing a full can is a held key rather than a chore.
-      duration: 2,
+      // Long enough to feel like a trip to the curb: hauling a piece out
+      // is a deliberate hold, not a tap, so a full can is a real errand.
+      duration: 7,
       // One piece at a time: the hold empties the can as long as you keep
       // holding it, and letting go leaves the rest where it is.
       getInputMaterials: () => [{ quantity: 1 }],
