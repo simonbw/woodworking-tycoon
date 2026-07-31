@@ -141,6 +141,7 @@ export const ShopView: React.FC = () => {
     setTarget,
     toggleSheet,
     pileOffset,
+    truckMenuOpen,
   } = useTargetedMachine();
 
   // The pile E is about to grab wears the shared targeting outline —
@@ -302,6 +303,7 @@ export const ShopView: React.FC = () => {
         enabled={
           !gameState.player.away && !modalOpen && truckStage === "parked"
         }
+        captureVertical={truckMenuOpen}
       />
       <HeldOperateListener
         enabled={

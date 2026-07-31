@@ -41,6 +41,13 @@ const heldCodes = new Set<string>();
  */
 let movementEnabled = false;
 
+/**
+ * Whether an open panel has claimed the vertical keys for its row cursor
+ * (see the panel-up/panel-down shortcuts). Horizontal movement keeps
+ * working — sidestepping off the cell is still how such a card is left.
+ */
+let verticalCaptured = false;
+
 /** The current input direction; diagonal when two keys are held. */
 export function readHeldMovement(): Vector {
   if (!movementEnabled) {
@@ -53,7 +60,7 @@ export function readHeldMovement(): Vector {
     x += vec[0];
     y += vec[1];
   }
-  return [Math.sign(x), Math.sign(y)];
+  return [Math.sign(x), verticalCaptured ? 0 : Math.sign(y)];
 }
 
 /** Typing in a field shouldn't drive the player around the shop. */
@@ -70,14 +77,17 @@ function isEditable(target: EventTarget | null): boolean {
  * marching forever, and a key still down when a modal closes must take
  * effect without being re-pressed.
  */
-export const HeldMovementListener: React.FC<{ enabled: boolean }> = ({
-  enabled,
-}) => {
+export const HeldMovementListener: React.FC<{
+  enabled: boolean;
+  /** An open panel is using W/S for its row cursor; only A/D drive the body. */
+  captureVertical?: boolean;
+}> = ({ enabled, captureVertical = false }) => {
   // Read at dispatch time so the listener never needs re-subscribing, and
   // so a key pressed the same frame a modal opens can't slip through.
   const enabledRef = React.useRef(enabled);
   enabledRef.current = enabled;
   movementEnabled = enabled;
+  verticalCaptured = captureVertical;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -107,6 +117,7 @@ export const HeldMovementListener: React.FC<{ enabled: boolean }> = ({
       window.removeEventListener("blur", onBlur);
       heldCodes.clear();
       movementEnabled = false;
+      verticalCaptured = false;
     };
   }, []);
 
