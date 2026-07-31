@@ -10,6 +10,7 @@ import {
   Species,
 } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
+import { stockOrientation } from "../../game/machine-helpers";
 import { isPanel } from "../../game/panel-helpers";
 import { TOOL_TYPES } from "../../game/Tool";
 import { lerp } from "../../utils/mathUtils";
@@ -159,9 +160,17 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
       (param) => param.id === "targetWidth" || param.id === "targetThickness",
     );
 
-  // The tall fence stands the stock on edge, and moves the fence in to a
-  // reading in quarters instead of inches.
-  const resawing = machine.state.tools.includes("resawFence");
+  // The tall fence rides the rail whenever it's bolted on; whether the
+  // work actually stands on edge against it is the stock orientation (R
+  // turns it over), which also moves the fence to a reading in quarters
+  // instead of inches. Work already committed to the blade keeps the
+  // orientation of the cut that claimed it.
+  const tallFenceMounted = machine.state.tools.includes("resawFence");
+  const committedWork =
+    processingMaterials.length > 0 || outputMaterials.length > 0;
+  const resawing = committedWork
+    ? machine.state.selectedOperationId === "resawOnTableSaw"
+    : stockOrientation(machine) === "on edge";
 
   // Mounted jigs sit on the table — the mode you can see from across the
   // shop. During a sled cut the active one travels with the stock.
@@ -272,7 +281,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
           );
         })}
         {/* The tall fence bolts on ahead of the rip fence and rides with it */}
-        {resawing && <TallFenceSprite />}
+        {tallFenceMounted && <TallFenceSprite />}
         <pixiSprite
           texture={tableSawFenceTexture}
           scale={IMAGE_SCALE * 0.8}

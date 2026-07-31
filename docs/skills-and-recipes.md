@@ -5,9 +5,9 @@ Companion to `docs/tools-and-surfaces.md`. **Now** = implemented; **Later**
 
 ## The two progression axes
 
-- **Skills (XP + tree)**: *what you know how to make.* Supply-side,
+- **Skills (XP + tree)**: _what you know how to make._ Supply-side,
   player-directed. Earned by doing the craft.
-- **Reputation**: *who trusts you.* Demand-side. Reserved for commission
+- **Reputation**: _who trusts you._ Demand-side. Reserved for commission
   tiers, special orders, and store relationships — it does NOT gate recipes.
   (Not yet consumed by anything; that's its future.)
 
@@ -42,7 +42,8 @@ glue-up cures 40% faster) and → `jigs-and-fixtures` (shop-made tooling: Build
 Crosscut Sled → Crosscut Panel on the table saw — the first recipe whose
 output is a tool, not a product) → `resawing` (Build Tall Resaw Fence →
 Resaw on the table saw: the band saw's trick performed on a machine that
-wasn't built for it, and the jig displaces ripping while it's bolted on)
+wasn't built for it; R turns the stock between resawing on edge and
+ripping flat while the jig is bolted on)
 
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
 cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →

@@ -149,11 +149,12 @@ export interface ResawSetup {
  * Splits a board along its thickness: one piece at the fence setting, one
  * offcut, instead of planing the difference into shavings.
  *
- * The stock rides on a flat reference face, and the fence-side piece is
- * the one that keeps it — the offcut only comes away flat-faced if the
- * input had both faces true. Neither piece can be better than
- * one-face-jointed afterwards, because the blade leaves a fresh sawn face
- * on each. Edges and ends are untouched, so both inherit them.
+ * The fence-side piece keeps the face that rode the fence — flat only if
+ * the input had a flat face to offer — and the offcut's outer face is the
+ * input's far one, flat only if the board was already planed to two.
+ * Neither piece can be better than one-face-jointed afterwards, because
+ * the blade leaves a fresh sawn face on each. Edges and ends are
+ * untouched, so both inherit them.
  */
 export function resawBoard(
   inputBoard: Board,
@@ -169,7 +170,11 @@ export function resawBoard(
   return {
     inputs: [],
     outputs: [
-      makeMaterial<Board>({ ...fenceSide, jointedFaces: 1, surface }),
+      makeMaterial<Board>({
+        ...fenceSide,
+        jointedFaces: Math.min(inputBoard.jointedFaces, 1) as JointedCount,
+        surface,
+      }),
       ...(offcut
         ? [
             makeMaterial<Board>({

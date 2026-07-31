@@ -2,7 +2,9 @@ import React from "react";
 import { Machine } from "../../game/Machine";
 import { Board } from "../../game/Materials";
 import { isBoard } from "../../game/board-helpers";
+import { stockOrientation } from "../../game/machine-helpers";
 import { useTexture } from "../../utils/useTexture";
+import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { OnEdgeBoardSprite } from "../material-sprites/OnEdgeBoardSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { feetToPixels, inchesToPixels } from "../shop-view/shop-scale";
@@ -45,8 +47,9 @@ const HOUSING_OFFSET = artToShop(80 - BLADE_ART_X);
 /**
  * Top-down 14" band saw: the cast-iron table with the wheel housings and
  * motor hanging off its left, and the upper housing's arm reaching over the
- * work to the guides. Stock stands on edge against the fence, which slides
- * in toward the blade as the fence setting comes down.
+ * work to the guides. Stock rides against the fence, which slides in toward
+ * the blade as the fence setting comes down — standing on edge for a resaw,
+ * lying flat for a rip (R turns it over).
  *
  * Everything the saw does happens on the blade line, so the stock, the cut,
  * and the dust are all placed relative to it rather than to the art.
@@ -60,14 +63,33 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   const fenceTexture = useTexture("/images/bandsaw-14-fence.png");
   const upperTexture = useTexture("/images/bandsaw-14-upper.png");
 
-  // The fence stands off the blade by its setting, back down the table.
-  const fenceSetting = Number(machine.selectedParameters?.targetThickness) || 4;
-  const fenceFace = -inchesToPixels(fenceSetting / 4);
+  // How the stock sits right now decides how staged boards draw and which
+  // fence setting positions the fence: the resaw's, in quarters, or the
+  // rip's, in inches. Mid-cut (and for the pieces left on the table after
+  // one) the recorded operation says which cut it was, so toggling R
+  // never flips work already committed to the blade.
+  const onEdgeNow = stockOrientation(machine) === "on edge";
+  const committedWork =
+    processingMaterials.length > 0 || outputMaterials.length > 0;
+  const cutOnEdge = committedWork
+    ? machine.state.selectedOperationId !== "ripBoard"
+    : onEdgeNow;
+  const fenceSetting = onEdgeNow
+    ? (Number(machine.selectedParameters?.targetThickness) || 4) / 4
+    : Number(machine.selectedParameters?.targetWidth) || 4;
+  const fenceFace = -inchesToPixels(fenceSetting);
 
-  // A board rides one face against the fence, so it hangs off the fence
-  // toward (and past) the blade by its own thickness.
-  const boardX = (board: Board) =>
-    fenceFace + inchesToPixels(board.thickness / 8);
+  // Stock rides one surface against the fence, so it hangs off the fence
+  // toward (and past) the blade by its own extent: its thickness standing
+  // on edge, its width lying flat.
+  const boardX = (board: Board, onEdge: boolean) =>
+    fenceFace + inchesToPixels(onEdge ? board.thickness / 8 : board.width / 2);
+  const boardSprite = (board: Board, onEdge: boolean) =>
+    onEdge ? (
+      <OnEdgeBoardSprite board={board} seed={board.id} />
+    ) : (
+      <MaterialSprite material={board} />
+    );
 
   // Canvas-centered art; MachineSprite mounts it on the footprint center.
   return (
@@ -78,10 +100,10 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         {inputMaterials.filter(isBoard).map((board, index) => (
           <pixiContainer
             key={`in-${index}`}
-            x={boardX(board)}
+            x={boardX(board, onEdgeNow)}
             y={feetToPixels(board.length / 2)}
           >
-            <OnEdgeBoardSprite board={board} seed={board.id} />
+            {boardSprite(board, onEdgeNow)}
           </pixiContainer>
         ))}
         {processingMaterials.filter(isBoard).map((board, index) => (
@@ -90,26 +112,33 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
             fraction={fraction}
             fromY={feetToPixels(board.length / 2)}
             toY={-feetToPixels(board.length / 2)}
-            x={boardX(board)}
+            x={boardX(board, cutOnEdge)}
             key={`proc-${index}`}
           >
-            <OnEdgeBoardSprite board={board} seed={board.id} />
+            {boardSprite(board, cutOnEdge)}
           </FeedingBoard>
         ))}
-        {/* Both halves come off the back of the table, side by side */}
-        {outputMaterials.filter(isBoard).map((board, index) => (
-          <pixiContainer
-            key={`out-${index}`}
-            x={
-              fenceFace +
-              inchesToPixels(index * 1.2) +
-              inchesToPixels(board.thickness / 8)
-            }
-            y={-feetToPixels(board.length / 2) - inchesToPixels(2)}
-          >
-            <OnEdgeBoardSprite board={board} seed={board.id} />
-          </pixiContainer>
-        ))}
+        {/* Both pieces come off the back of the table, side by side — a
+            resaw's thin halves at a fixed pitch, a rip's two widths laid
+            out edge to edge */}
+        {(() => {
+          let flatEdge = fenceFace;
+          return outputMaterials.filter(isBoard).map((board, index) => {
+            const x = cutOnEdge
+              ? boardX(board, true) + inchesToPixels(index * 1.2)
+              : flatEdge + inchesToPixels(board.width / 2);
+            flatEdge += inchesToPixels(board.width + 0.6);
+            return (
+              <pixiContainer
+                key={`out-${index}`}
+                x={x}
+                y={-feetToPixels(board.length / 2) - inchesToPixels(2)}
+              >
+                {boardSprite(board, cutOnEdge)}
+              </pixiContainer>
+            );
+          });
+        })()}
         {cutting && (
           <>
             {/* Most of the dust drops through the table into the lower

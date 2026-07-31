@@ -65,8 +65,9 @@ function loadRatio(
       // this saw is ever asked to do.
       return operationId === "resawOnTableSaw" ? widthRatio : thicknessRatio;
     case "bandSaw":
-      // Resawing: the blade is buried in the full width of the board.
-      return widthRatio;
+      // Resawing buries the blade in the full width of the board; a rip
+      // lays the stock flat and only ever meets the thickness.
+      return operationId === "ripBoard" ? thicknessRatio : widthRatio;
     case "miterSaw":
       return Math.sqrt(widthRatio * thicknessRatio);
     default:

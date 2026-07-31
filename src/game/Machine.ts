@@ -206,6 +206,39 @@ export interface OperationPhase {
   readonly attended: boolean;
 }
 
+/**
+ * How stock sits on a saw table: lying flat on a face, or standing on edge
+ * against a tall fence. One physical fact per machine, kept in the shared
+ * settings bag under `stockOrientation` (see stockOrientationParameter) and
+ * flipped with R like any other rotating setting — turning the workpiece
+ * over is the shop's most literal rotation.
+ */
+export type StockOrientation = "on edge" | "flat";
+
+/**
+ * The settings-bag parameter that records which way stock sits on the
+ * machine. Declared by every operation that needs the stock a particular
+ * way (see Operation.stockOrientation), with one consistent defaultValue
+ * per machine — the bag is shared, so disagreeing defaults would leave the
+ * machine in two modes at once.
+ *
+ * (The values are a literal in here, not a module const: machine modules
+ * call this while Machine.ts is still initializing — the MACHINE_TYPES
+ * cycle — where a top-level const would still be in its temporal dead
+ * zone.)
+ */
+export function stockOrientationParameter(
+  defaultValue: StockOrientation,
+): OperationParameter {
+  return {
+    id: "stockOrientation",
+    name: "Stock",
+    values: ["on edge", "flat"] satisfies StockOrientation[],
+    defaultValue,
+    presentation: "rotate",
+  };
+}
+
 export interface Operation<TParams extends ParameterValues = ParameterValues> {
   readonly id: string;
   readonly name: string;
@@ -227,6 +260,16 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
   readonly powerFeed?: boolean;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
+  /**
+   * The way the stock must sit on the table for this to be the cut that
+   * runs: a band saw rips a board lying flat and resaws one standing on
+   * edge. Omitted, the operation doesn't care how the stock sits and is
+   * never gated by it. Declaring this keeps two operations that would
+   * accept the same board disjoint — the machine's current orientation
+   * (see stockOrientation in machine-helpers) picks between them, and R
+   * turns the stock over.
+   */
+  readonly stockOrientation?: StockOrientation;
   /**
    * Shop supplies drawn from GameState.consumables when the operation
    * starts (no refunds — the glue is already out of the bottle).
@@ -508,14 +551,13 @@ export class Machine {
 
   /**
    * All operations available at this station: the machine's own plus those
-   * of every mounted tool, minus the ones a mounted jig physically
-   * displaces (ToolType.supersedes).
+   * of every mounted tool. Two operations that would accept the same stock
+   * stay disjoint through Operation.stockOrientation, not by hiding one.
    */
   get operations(): ReadonlyArray<Operation> {
     const tools = this.state.tools.map((toolId) => TOOL_TYPES[toolId]);
-    const superseded = new Set(tools.flatMap((tool) => tool.supersedes ?? []));
     return [
-      ...this.type.operations.filter((op) => !superseded.has(op.id)),
+      ...this.type.operations,
       ...tools.flatMap((tool) => tool.operations),
     ];
   }

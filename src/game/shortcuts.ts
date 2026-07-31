@@ -228,7 +228,8 @@ const defs = [
     id: "rotate-setting",
     codes: ["KeyR"],
     keys: [["R"]],
-    description: "Swing the machine's head (the miter saw's angle)",
+    description:
+      "Swing the machine's head (the miter saw's angle), or turn the stock between flat and on edge (the saws that both rip and resaw)",
     scope: "home",
     group: "Machines",
     shiftHint: "the other way",
