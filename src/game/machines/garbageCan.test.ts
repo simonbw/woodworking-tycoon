@@ -141,12 +141,17 @@ describe("garbage can", () => {
       "inProgress",
     );
 
-    for (let i = 0; i < 10; i++) {
+    let ticks = 0;
+    for (let i = 0; i < 30; i++) {
       if (theCan(gameState).operationProgress.status !== "inProgress") break;
       gameState = tickAction(gameState);
+      ticks++;
     }
 
     assert.strictEqual(theCan(gameState).operationProgress.status, "notStarted");
+    // Hauling a piece to the curb is a hold worth a second or more, not a
+    // tap — a full can should feel like an errand.
+    assert.ok(ticks >= 5, `emptying one piece took only ${ticks} ticks`);
     assert.deepStrictEqual(theCan(gameState).inputMaterials, [kept]);
     assert.deepStrictEqual(theCan(gameState).outputMaterials, []);
     assert.deepStrictEqual(gameState.player.inventory, []);
