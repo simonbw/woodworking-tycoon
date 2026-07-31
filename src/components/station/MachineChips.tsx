@@ -11,6 +11,7 @@ import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import { heldTool } from "../../game/HeldTool";
 import {
   explainFeedRefusal,
+  findFeedableOperation,
   machineCanOperate,
   shopSupply,
   stageableMaterials,
@@ -70,6 +71,16 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     heldTool(gameState) === null &&
     machineCanOperate(machine, shopSupply(gameState), gameState.progression);
 
+  // The chip names the very work Space would do, resolved the same way
+  // the action resolves it: the stock on a direct-feed machine picks its
+  // operation, a bench runs its selected plan.
+  const runOperation = !canOperate
+    ? null
+    : machine.type.directFeed
+      ? (findFeedableOperation(machine, operations, machine.inputMaterials)
+          ?.operation ?? null)
+      : machine.selectedOperationOrNull;
+
   // Why the cut won't run — the teaching moment that used to live under
   // the sheet's feed button. It advises on the board that's on the machine
   // if there is one ("slide the cut line inside it", "raise the cut
@@ -116,12 +127,17 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       {canStage && (
         <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
           {machine.type.stageVerb ??
-            (machine.type.directFeed ? "set stock on it" : "load")}
+            (machine.type.directFeed ? "set stock on it" : "place stock on it")}
         </HintRow>
       )}
       {canOperate && (
         <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
-          hold to {(machine.type.feedVerb ?? "run").toLowerCase()}
+          hold to{" "}
+          {(
+            runOperation?.name ??
+            machine.type.feedVerb ??
+            "run"
+          ).toLowerCase()}
         </HintRow>
       )}
       {refusal && (

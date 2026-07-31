@@ -50,7 +50,8 @@ import { EnvironmentLayer } from "./EnvironmentLayer";
 import { CameraLayer } from "./CameraLayer";
 import { camera } from "./cameraStore";
 import { useTruckStage } from "./truckStageStore";
-import { lotSize } from "../../game/lot";
+import { atTruckBed, lotSize } from "../../game/lot";
+import { TruckHighlight } from "./TruckSprite";
 import { PIXELS_PER_CELL, cellToPixel, cellToPixelVec } from "./shop-scale";
 
 /**
@@ -151,6 +152,23 @@ export const ShopView: React.FC = () => {
     interact?.kind === "pick-up-floor"
       ? targetedPile(interact.piles, pileOffset)
       : undefined;
+
+  // The truck wears the same outline as any other target: just the
+  // cargo box while the bed's verbs are on offer (E lifts out, F loads,
+  // a crate hoists), the whole body when E would open the cab.
+  const bedVerbsLive =
+    !gameState.player.away &&
+    truckStage === "parked" &&
+    gameState.player.carriedMachine == null &&
+    atTruckBed(gameState.shopInfo, gameState.player.position) &&
+    (interact?.kind === "truck-bed" ||
+      gameState.player.inventory.length > 0 ||
+      gameState.truck.crates.length > 0);
+  const truckHighlight: TruckHighlight = bedVerbsLive
+    ? "bed"
+    : truckStage === "parked" && interact?.kind === "truck-cab"
+      ? "truck"
+      : null;
 
   // Clicking a machine you're standing at aims the keyboard at it; a
   // second click on a recipe-driven station spreads its sheet open. The
@@ -322,6 +340,7 @@ export const ShopView: React.FC = () => {
               width={width}
               height={height}
               viewport={worldViewport}
+              truckHighlight={truckHighlight}
             />
               <pixiTilingSprite
                 eventMode="static"

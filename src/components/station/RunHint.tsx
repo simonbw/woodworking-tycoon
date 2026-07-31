@@ -18,16 +18,20 @@ export const RunHint: React.FC<{
     return null;
   }
   const verb = (machine.type.feedVerb ?? "run").toLowerCase();
+  // Name the plan the key would run when the station has one selected;
+  // the generic verb covers containers and unset benches.
+  const runLabel =
+    machine.selectedOperationOrNull?.name.toLowerCase() ?? `${verb} it`;
   return (
     <p className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
       {canOperate ? (
         <>
-          <ShortcutKeys shortcut="operate-machine" /> to {verb} it
+          <ShortcutKeys shortcut="operate-machine" /> to {runLabel}
         </>
       ) : machine.type.container ? (
         `Nothing to ${verb}`
       ) : (
-        `Load the bay to ${verb} it`
+        `Place stock in the bay to ${verb} it`
       )}
     </p>
   );

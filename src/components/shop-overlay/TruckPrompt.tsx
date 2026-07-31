@@ -8,7 +8,12 @@ import { deliverJobAction } from "../../game/game-actions/marketplace-actions";
 import { startScavengingAction } from "../../game/game-actions/scavenge-actions";
 import { readyHandoffs } from "../../game/delivery";
 import { GameAction } from "../../game/GameState";
-import { atTruckCab, truckCabRect } from "../../game/lot";
+import {
+  atTruckBed,
+  atTruckCab,
+  truckBedRect,
+  truckCabRect,
+} from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { jobPayout } from "../../game/marketplace";
 import { formatMoney } from "../../utils/formatNumber";
@@ -46,6 +51,79 @@ interface TruckRow {
   readonly verb: string;
   readonly action: () => GameAction;
 }
+
+/**
+ * The bed's own hint chips, pinned over the tailgate end of the truck
+ * the way a machine wears its chips — they stay put while the player
+ * works along the rails. Stock lifts out with E, what's in hand goes in
+ * with F, and a crated machine hoists onto the shoulders like any
+ * shop-floor crate.
+ */
+export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
+  canvasWidth,
+}) => {
+  const gameState = useGameState();
+  const { machine: targetedMachine } = useTargetedMachine();
+  const scale = useContext(OverlayScaleContext);
+  const truckStage = useTruckStage();
+
+  if (
+    gameState.player.away ||
+    truckStage !== "parked" ||
+    gameState.player.carriedMachine != null ||
+    !atTruckBed(gameState.shopInfo, gameState.player.position)
+  ) {
+    return null;
+  }
+
+  const interact = resolveInteract(gameState, targetedMachine);
+  const holding = gameState.player.inventory.length > 0;
+
+  const rows: React.ReactNode[] = [];
+  if (interact?.kind === "truck-bed") {
+    rows.push(
+      <HintRow key="take" keys={<ShortcutKeys shortcut="pick-up" />}>
+        take from bed ({interact.count})
+      </HintRow>,
+    );
+  }
+  if (holding) {
+    rows.push(
+      <HintRow key="place" keys={<ShortcutKeys shortcut="put-down" />}>
+        place in bed
+      </HintRow>,
+    );
+  }
+  if (gameState.truck.crates.length > 0 && !holding) {
+    rows.push(
+      <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
+        unpack {MACHINE_TYPES[gameState.truck.crates[0].machineTypeId].name}
+      </HintRow>,
+    );
+  }
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const bed = truckBedRect(gameState.shopInfo);
+  const cellPx = PIXELS_PER_CELL * scale;
+  const centerX = ((bed.min[0] + bed.max[0]) / 2) * cellPx;
+  return (
+    <div
+      className="absolute z-10"
+      style={{
+        left: Math.min(Math.max(centerX, 70), canvasWidth - 70),
+        top: bed.min[1] * cellPx - 4,
+        transform: "translate(-50%, -100%)",
+      }}
+    >
+      <HintList>
+        <HintRow className="text-paper-manila/60">The bed</HintRow>
+        {rows}
+      </HintList>
+    </div>
+  );
+};
 
 /**
  * The truck's cab: standing at it offers a small hint chip, and the

@@ -4,7 +4,7 @@ import { DOOR_HALF_WIDTH } from "../../game/ShopInfo";
 import { useTexture } from "../../utils/useTexture";
 import { useGameState } from "../useGameState";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
-import { TruckSprite } from "./TruckSprite";
+import { TruckHighlight, TruckSprite } from "./TruckSprite";
 
 /**
  * What the full-bleed canvas can see, in world pixels — the shop floor
@@ -50,7 +50,8 @@ export const EnvironmentLayer: React.FC<{
   width: number;
   height: number;
   viewport: WorldViewport;
-}> = ({ width, height, viewport }) => {
+  truckHighlight?: TruckHighlight;
+}> = ({ width, height, viewport, truckHighlight }) => {
   const gameState = useGameState();
   const concreteTexture = useTexture("/images/concrete-floor-2-big.png");
 
@@ -161,7 +162,7 @@ export const EnvironmentLayer: React.FC<{
           the wall band and its shadow fall across the tailgate. The
           sprite handles its own trip animation and absence — the player
           drove it (see truckStageStore). */}
-      <TruckSprite />
+      <TruckSprite highlight={truckHighlight} />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>
   );

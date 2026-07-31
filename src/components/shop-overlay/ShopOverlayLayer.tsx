@@ -7,7 +7,7 @@ import { MachineChips, OutfeedChips } from "../station/MachineChips";
 import { StationSheet } from "../station/StationSheet";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
-import { TruckPrompt } from "./TruckPrompt";
+import { TruckBedPrompt, TruckPrompt } from "./TruckPrompt";
 import { PlayerPrompt } from "./PlayerPrompt";
 
 /**
@@ -80,6 +80,7 @@ export const ShopOverlayLayer: React.FC<{
           ))}
 
         <TruckPrompt canvasWidth={width} canvasHeight={height} />
+        <TruckBedPrompt canvasWidth={width} />
         <PlayerPrompt />
         <StationSheet />
       </div>
