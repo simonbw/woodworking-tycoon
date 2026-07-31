@@ -285,6 +285,7 @@ function fetchAPallet(shop: ShopDriver): ShopDriver {
       {
         material: makePallet(),
         position: cellCenter(state.shopInfo.materialDropoffPosition),
+        rotation: 0,
       },
     ],
   }));

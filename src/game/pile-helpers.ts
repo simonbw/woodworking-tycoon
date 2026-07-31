@@ -64,7 +64,9 @@ export function materialExtentInches(material: MaterialInstance): {
  * is geometry, not cell membership: the distance from the standing cell's
  * center to the material's resting rectangle, against PILE_REACH_CELLS.
  * Long stock is grabbable anywhere along its length this way, with no
- * special casing for the cells it overhangs.
+ * special casing for the cells it overhangs. The rectangle lies at the
+ * pile's rotation — a board dropped mid-stride is reachable along where
+ * it actually points, not along an axis-aligned ghost of it.
  */
 export function pileWithinReach(pile: MaterialPile, cell: Vector): boolean {
   const { across, along } = materialExtentInches(pile.material);
@@ -72,7 +74,15 @@ export function pileWithinReach(pile: MaterialPile, cell: Vector): boolean {
   const halfY = inchesToCells(along) / 2;
   const [cx, cy] = cellCenter(cell);
   const [px, py] = pile.position;
-  const dx = Math.max(Math.abs(cx - px) - halfX, 0);
-  const dy = Math.max(Math.abs(cy - py) - halfY, 0);
+  // Carry the offset into the piece's own frame, then it's a plain
+  // distance-to-axis-aligned-rectangle again.
+  const cos = Math.cos(pile.rotation);
+  const sin = Math.sin(pile.rotation);
+  const wx = cx - px;
+  const wy = cy - py;
+  const lx = wx * cos + wy * sin;
+  const ly = -wx * sin + wy * cos;
+  const dx = Math.max(Math.abs(lx) - halfX, 0);
+  const dy = Math.max(Math.abs(ly) - halfY, 0);
   return Math.hypot(dx, dy) <= PILE_REACH_CELLS;
 }

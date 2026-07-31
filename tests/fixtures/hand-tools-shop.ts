@@ -36,7 +36,7 @@ export const handToolsShop: GameState = {
     deckBoard("fx-slat-2", 2),
     deckBoard("fx-slat-3", 2),
     deckBoard("fx-slat-4", 2),
-  ].map((material) => ({ material, position: [1.5, 4.5] })),
+  ].map((material) => ({ material, position: [1.5, 4.5], rotation: 0 })),
   consumables: NO_CONSUMABLES,
   clamps: 0,
   player: {

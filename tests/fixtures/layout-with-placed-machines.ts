@@ -23,6 +23,7 @@ export const layoutWithPlacedMachines: GameState = {
         jointedEdges: 2,
       },
       position: [4.5, 5.5],
+      rotation: 0,
     },
   ],
   player: {

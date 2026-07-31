@@ -163,7 +163,9 @@ describe("garbage can", () => {
     // board underfoot
     const gameState: GameState = {
       ...shopWithCan([board("pine", 1, 2, 1)]),
-      materialPiles: [{ material: board("oak", 2, 4, 1), position: [3, 4] }],
+      materialPiles: [
+        { material: board("oak", 2, 4, 1), position: [3, 4], rotation: 0 },
+      ],
     };
 
     assert.deepStrictEqual(resolveInteract(gameState, theCan(gameState)), {

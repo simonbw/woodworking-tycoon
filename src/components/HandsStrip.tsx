@@ -131,12 +131,14 @@ const HandSlot: React.FC<{
       <button
         className="flex items-center gap-1.5 rounded border border-workshop-edge bg-workshop-panel px-1.5 py-1 text-left hover:border-gold-dark"
         onClick={(event) => {
-          // Same landing point as the F key: the body's actual position
+          // Same landing point and orientation as the F key: the body's
+          // actual position, lying the way it was carried
           const at: Vector = [...playerMotion.pos];
+          const rotation = playerMotion.heading + Math.PI / 2;
           if (event.shiftKey) {
-            applyAction(dropMaterialAction(materials, at));
+            applyAction(dropMaterialAction(materials, at, rotation));
           } else {
-            applyAction(dropMaterialAction([materials[0]], at));
+            applyAction(dropMaterialAction([materials[0]], at, rotation));
           }
         }}
       >

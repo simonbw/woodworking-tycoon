@@ -76,6 +76,7 @@ function twoToneShop(learned: boolean): ShopDriver {
         ...strips.slice(2).map((material) => ({
           material,
           position: state.player.position,
+          rotation: 0,
         })),
       ],
       machines: state.machines.map((machine) =>

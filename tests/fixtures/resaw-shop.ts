@@ -61,6 +61,7 @@ export const resawShop: GameState = {
     {
       material: { id: "test-resaw-fence", type: "tool", toolId: "resawFence" },
       position: [10.5, 13.5],
+      rotation: 0,
     },
   ],
   player: {

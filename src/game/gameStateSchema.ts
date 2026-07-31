@@ -125,7 +125,11 @@ export const gameStateSchema = z.object({
   money: z.number(),
   reputation: z.number(),
   materialPiles: z.array(
-    z.object({ material: materialSchema, position: vectorSchema }),
+    z.object({
+      material: materialSchema,
+      position: vectorSchema,
+      rotation: z.number(),
+    }),
   ),
   consumables: z.record(consumableIdSchema, z.number()),
   clamps: z.number(),
