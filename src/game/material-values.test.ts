@@ -14,10 +14,10 @@ import { panel, uniformPanel } from "./panel-helpers";
 
 describe("getSellValue", () => {
   it("prices boards by board-foot volume", () => {
-    // 4' x 6" x 3/4 stringer: 1.5 bf at pallet wood's $4.80/bf craft rate
-    assert.strictEqual(getSellValue(board("pallet", 4, 6, 3)), 7.2);
+    // 4' x 6" x 3/4 stringer: 1.5 bf at pallet wood's $1.50/bf craft rate
+    assert.strictEqual(getSellValue(board("pallet", 4, 6, 3)), 2.25);
     // 3' x 4" x 1/4 deck board: 0.25 bf
-    assert.strictEqual(getSellValue(board("pallet", 3, 4, 1)), 1.2);
+    assert.strictEqual(getSellValue(board("pallet", 3, 4, 1)), 0.38);
     // A 2x4 stud is 8' x 4" x 8/4 = 5.33 bf of pine at $0.25/bf
     assert.strictEqual(getSellValue(board("pine", 8, 4, 8)), 1.33);
   });
@@ -38,7 +38,7 @@ describe("getSellValue", () => {
     const inputWood =
       2 * getSellValue(board("pallet", 4, 6, 3)) +
       3 * getSellValue(board("pallet", 3, 4, 1));
-    assert.strictEqual(getSellValue(shelf), 60);
+    assert.strictEqual(getSellValue(shelf), 12);
     assert.ok(getSellValue(shelf) > 2 * inputWood);
   });
 
@@ -75,7 +75,7 @@ describe("getSellValue", () => {
     });
     assert.strictEqual(
       getSellValue(mapleBoard),
-      40 * SPECIES_VALUE_MULTIPLIER.maple,
+      8 * SPECIES_VALUE_MULTIPLIER.maple,
     );
   });
 });

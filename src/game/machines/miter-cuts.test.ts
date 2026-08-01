@@ -256,6 +256,6 @@ describe("picture frame", () => {
       type: "pictureFrame",
       species: "walnut",
     });
-    assert.strictEqual(getSellValue(frame), 55 * 5);
+    assert.strictEqual(getSellValue(frame), 11 * 5);
   });
 });

@@ -196,8 +196,8 @@ describe("finishEndGrainBoard", () => {
     assert.ok(isFinishedProduct(product));
     assert.strictEqual(product.type, "endGrainCuttingBoard");
     assert.strictEqual(product.species, "maple");
-    // 150 base x maple 3
-    assert.strictEqual(getSellValue(product), 450);
+    // $30 base x maple 3
+    assert.strictEqual(getSellValue(product), 90);
   });
 });
 

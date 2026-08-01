@@ -112,7 +112,7 @@ describe("finishTwoToneBoard", () => {
     const { outputs } = finishTwoTone.output([twoTone("sanded")], {});
     const twoToneValue = getSellValue(outputs[0]);
     // walnut 5, maple 3 -> avg 4 x 1.5 premium = x6 vs walnut's x5
-    assert.strictEqual(twoToneValue, 40 * 6);
-    assert.ok(twoToneValue > 40 * 5);
+    assert.strictEqual(twoToneValue, 8 * 6);
+    assert.ok(twoToneValue > 8 * 5);
   });
 });

@@ -176,9 +176,9 @@ describe("oiling cutting boards", () => {
     const output = result.machines[0].outputMaterials[0] as FinishedProduct;
     assert.strictEqual(output.finish, "mineralOil");
     assert.ok(getMaterialName(output).startsWith("Oiled "));
-    // Maple simple cutting board: 40 x 3 = 120 raw, x1.25 oiled
-    assert.strictEqual(getSellValue(output), 150);
-    assert.strictEqual(getSellValue(rawMapleBoard()), 120);
+    // Maple simple cutting board: 8 x 3 = 24 raw, x1.25 oiled
+    assert.strictEqual(getSellValue(output), 30);
+    assert.strictEqual(getSellValue(rawMapleBoard()), 24);
   });
 
   it("will not oil a board twice", () => {

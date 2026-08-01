@@ -136,10 +136,10 @@ describe("two-tone chain", () => {
   it("pays back the point it cost", () => {
     const shop = buildTheTwoToneBoard(twoToneShop(true));
 
-    // $240 board -> 240 XP -> level 2 -> +1 point, so the one still unspent
+    // $48 board -> 48 XP -> level 2 -> +1 point, so the one still unspent
     // plus the one just earned makes two.
-    assert.equal(getSellValue(shop.theOne(isCuttingBoard)), 240);
-    assert.equal(shop.shop.progression.xp, 240);
+    assert.equal(getSellValue(shop.theOne(isCuttingBoard)), 48);
+    assert.equal(shop.shop.progression.xp, 48);
     assert.equal(shop.shop.progression.skillPoints, 2);
   });
 });

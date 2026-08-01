@@ -164,7 +164,7 @@ describe("pattern board chain", () => {
     );
   });
 
-  it("pays 960 XP for both boards, which is level 4 and 3 points back", () => {
+  it("pays 192 XP for both boards, which is level 4 and 3 points back", () => {
     const shop = shopWithPatternSkills();
     shop.make(WORKBENCH, "finishStripedBoard", isMixedPanel);
     glueTheSunriseFade(shop);
@@ -173,9 +173,9 @@ describe("pattern board chain", () => {
       .make(WORKBENCH, "orbitSandPanel", isMixedPanel)
       .make(WORKBENCH, "finishSunriseBoard", isMixedPanel);
 
-    // Striped $360 + sunrise $600 = 960 XP -> level 4 -> the 3 points this
+    // Striped $72 + sunrise $120 = 192 XP -> level 4 -> the 3 points this
     // chain spent on Striped, Freeform, and Sunrise come back.
-    assert.equal(shop.shop.progression.xp, 960);
+    assert.equal(shop.shop.progression.xp, 192);
     assert.equal(shop.shop.progression.skillPoints, 3);
   });
 });

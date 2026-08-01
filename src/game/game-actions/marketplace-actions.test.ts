@@ -142,10 +142,12 @@ describe("repriceListingAction", () => {
 
 describe("marketplaceTickPass listings", () => {
   it("pays out, removes the listing, and cues a sale when the roll hits", () => {
-    const { state, listing } = listedState(75);
+    // Asked slightly over the shelf's ~$12 fair value: still sellable, and
+    // close enough to fair that the buyer's review rounds above zero
+    const { state, listing } = listedState(15);
     const result = marketplaceTickPass(alwaysRng)(state);
     assert.deepStrictEqual(result.listings, []);
-    assert.strictEqual(result.money, state.money + 75);
+    assert.strictEqual(result.money, state.money + 15);
     assert.ok(
       result.pendingSounds?.some((event) => event.kind === "sale"),
       "expected a sale sound cue",

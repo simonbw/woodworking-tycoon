@@ -293,8 +293,8 @@ describe("finishStripedBoard", () => {
     assert.strictEqual(output.type, "stripedCuttingBoard");
     assert.strictEqual(output.species, "walnut"); // 3 strips vs 2
     assert.strictEqual(output.accentSpecies, "maple");
-    // walnut 5, maple 3 -> avg 4 x 1.5 premium on a $60 base
-    assert.strictEqual(getSellValue(output), 60 * 6);
+    // walnut 5, maple 3 -> avg 4 x 1.5 premium on a $12 base
+    assert.strictEqual(getSellValue(output), 12 * 6);
   });
 });
 
@@ -360,8 +360,8 @@ describe("finishSunriseBoard", () => {
 
   it("is the priciest strip board", () => {
     const { outputs } = finishSunrise.output([sunrise], {});
-    // walnut 5, maple 3 -> avg 4 x 1.5 premium on a $100 base
-    assert.strictEqual(getSellValue(outputs[0]), 100 * 6);
+    // walnut 5, maple 3 -> avg 4 x 1.5 premium on a $20 base
+    assert.strictEqual(getSellValue(outputs[0]), 20 * 6);
   });
 });
 

@@ -6,11 +6,6 @@ import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
 
-interface MachineSaleInfo {
-  machine: MachineType;
-  price: number;
-}
-
 export const StoreMachinesSection: React.FC<{ className?: string }> = ({
   className,
 }) => {
@@ -18,12 +13,14 @@ export const StoreMachinesSection: React.FC<{ className?: string }> = ({
   // build-worktable recipes in benchOperations.ts). Neither is the
   // garbage can: every shop opens with one already on the floor (see
   // initialGameState), so a shelf tag for it sold nothing.
-  const machinesToSell: MachineSaleInfo[] = [
-    { machine: MACHINE_TYPES.jobsiteTableSaw, price: 200 },
-    { machine: MACHINE_TYPES.miterSaw, price: 200 },
-    { machine: MACHINE_TYPES.lunchboxPlaner, price: 450 },
-    { machine: MACHINE_TYPES.jointer, price: 600 },
-    { machine: MACHINE_TYPES.bandSaw, price: 700 },
+  // Prices come from MACHINE_TYPES.cost — the one price the store, the
+  // resale market, and the playthrough ledger all agree on.
+  const machinesToSell: MachineType[] = [
+    MACHINE_TYPES.miterSaw,
+    MACHINE_TYPES.jobsiteTableSaw,
+    MACHINE_TYPES.lunchboxPlaner,
+    MACHINE_TYPES.jointer,
+    MACHINE_TYPES.bandSaw,
   ];
   return (
     // Three to a row whatever the window. The photo is capped by its
@@ -35,14 +32,17 @@ export const StoreMachinesSection: React.FC<{ className?: string }> = ({
       template="repeat(3, minmax(0, 1fr))"
       className={className}
     >
-      {machinesToSell.map((info) => (
-        <MachineProductTile key={info.machine.id} {...info} />
+      {machinesToSell.map((machine) => (
+        <MachineProductTile key={machine.id} machine={machine} />
       ))}
     </AisleSection>
   );
 };
 
-const MachineProductTile: React.FC<MachineSaleInfo> = ({ machine, price }) => {
+const MachineProductTile: React.FC<{ machine: MachineType }> = ({
+  machine,
+}) => {
+  const price = machine.cost;
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
   const machines = useMachines();

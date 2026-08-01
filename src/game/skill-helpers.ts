@@ -7,7 +7,7 @@ import { SkillId } from "./Skill";
  * skill points feeling like events, not drips.
  */
 export function xpCostOfLevel(level: number): number {
-  return 150 + (level - 1) * 100;
+  return 30 + (level - 1) * 20;
 }
 
 /** The level a player with this much lifetime XP has reached (starts at 1). */

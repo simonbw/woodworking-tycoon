@@ -221,8 +221,8 @@ describe("tickAction", () => {
       },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
-    // Rustic shelf sells for $60 -> 60 XP
-    assert.strictEqual(result.progression.xp, 60);
+    // Rustic shelf sells for $12 -> 12 XP
+    assert.strictEqual(result.progression.xp, 12);
   });
 });
 

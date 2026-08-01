@@ -91,7 +91,7 @@ describe("cutting board chain (no planer)", () => {
     assert.equal((board as { species: string }).species, "maple");
   });
 
-  it("prices the maple board at 120", () => {
+  it("prices the maple board at 24", () => {
     const shop = shopWithSanderMounted();
     shop
       .make(WORKBENCH, "glueUpPanel", isStrip)
@@ -99,7 +99,7 @@ describe("cutting board chain (no planer)", () => {
       .make(WORKBENCH, "orbitSandPanel", isMaplePanel)
       .make(WORKBENCH, "finishCuttingBoard", isMaplePanel);
 
-    // simpleCuttingBoard base 40 x maple multiplier 3
-    assert.equal(getSellValue(shop.theOne(isCuttingBoard)), 120);
+    // simpleCuttingBoard base 8 x maple multiplier 3
+    assert.equal(getSellValue(shop.theOne(isCuttingBoard)), 24);
   });
 });

@@ -15,8 +15,9 @@ function stateWithPoints(skillPoints: number): GameState {
 
 describe("withXp", () => {
   it("accumulates xp", () => {
-    const result = withXp(initialGameState, 50);
-    assert.strictEqual(result.progression.xp, 50);
+    const belowFirstLevel = xpCostOfLevel(1) - 1;
+    const result = withXp(initialGameState, belowFirstLevel);
+    assert.strictEqual(result.progression.xp, belowFirstLevel);
     assert.strictEqual(result.progression.skillPoints, 0);
   });
 

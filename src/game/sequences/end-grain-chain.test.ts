@@ -149,7 +149,7 @@ describe("end-grain chain", () => {
     }
   });
 
-  it("finishes into a maple board worth 450, which is level 3", () => {
+  it("finishes into a maple board worth 90, which is level 3", () => {
     const shop = withSledMounted(shopWithSkillsAndPlywood());
     shop
       .make(TABLE_SAW, "crosscutPanel", isPanel)
@@ -160,9 +160,9 @@ describe("end-grain chain", () => {
 
     const board = shop.theOne(isBoard);
     assert.equal((board as { species: string }).species, "maple");
-    // A $450 board pays 450 XP, which is level 3 — and level 3 hands back
+    // A $90 board pays 90 XP, which is level 3 — and level 3 hands back
     // the two points this chain spent on Jigs & Fixtures and End-Grain.
-    assert.equal(shop.shop.progression.xp, 450);
+    assert.equal(shop.shop.progression.xp, 90);
     assert.equal(shop.shop.progression.skillPoints, 2);
   });
 });

@@ -13,9 +13,12 @@ import { TOOL_TYPES } from "./Tool";
 
 /**
  * Free-sell prices. Value comes from processing depth: raw stock is priced
- * by real board-foot volume at per-species rates, finished products are
- * worth far more than the wood that went into them. Commissions pay ~3x
- * these prices — free selling is the grind, commissions are the paydays.
+ * by real board-foot volume at per-species rates, finished products at
+ * realistic craft-fair prices — worth more than the wood that went into
+ * them, but margins are thin from expensive lumber channels and fat from
+ * cheap ones, so every channel unlock reprices the shop's work. Commissions
+ * pay ~1.5-2x these prices — jobs and listings are the living, commissions
+ * are the milestones.
  */
 const WHOLE_PALLET_VALUE = 5;
 
@@ -47,33 +50,33 @@ function sheetBoardFeet(sheet: SheetGood): number {
 const SLICE_LENGTH_FEET = 0.5;
 
 const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
-  rusticShelf: 60,
+  rusticShelf: 12,
   // Screwed joinery and bought fasteners edge it past the nailed shelf
-  planterBox: 65,
-  shelf: 45,
-  simpleCuttingBoard: 40,
+  planterBox: 13,
+  shelf: 9,
+  simpleCuttingBoard: 8,
   // The strip-board tiers: same materials, fancier patterns, better money
-  stripedCuttingBoard: 60,
-  sunriseCuttingBoard: 100,
+  stripedCuttingBoard: 12,
+  sunriseCuttingBoard: 20,
   // Two glue-ups, two flattenings, and a jig you built yourself
-  endGrainCuttingBoard: 150,
-  jewelryBox: 90,
+  endGrainCuttingBoard: 30,
+  jewelryBox: 18,
   // Eight miters that all have to close up — precision money
-  pictureFrame: 55,
+  pictureFrame: 11,
   // The rustic tier below the shelf: quick nailed builds from scrap
-  birdhouse: 35,
-  crate: 50,
+  birdhouse: 7,
+  crate: 10,
   // Screwed like the planter box, but it has to hold a person
-  stepStool: 70,
+  stepStool: 14,
   // Twelve 30° miters — the saw's other stops earning their keep
-  hexFrame: 75,
+  hexFrame: 15,
   // A panel wrapped in mitered rails: two systems in one piece
-  servingTray: 90,
-  bookshelf: 130,
+  servingTray: 18,
+  bookshelf: 26,
   // The first real furniture: a wide glued top on four legs
-  sideTable: 220,
+  sideTable: 44,
   // Striped slices, alternated: the showpiece above the butcher block
-  checkerboardCuttingBoard: 250,
+  checkerboardCuttingBoard: 50,
 };
 
 /**
@@ -101,12 +104,13 @@ export const SPECIES_VALUE_MULTIPLIER: Record<Species, number> = {
  * retail: a $4 stud, $5/bf big-box poplar, $12/bf lumberyard walnut.
  *
  * Pallet wood is the exception: reclaimed craft stock, never on a store
- * shelf. Its rate is what neighbors pay per board ($1.20 a deck board),
- * not commodity volume — which keeps the scavenge-and-sell early game and
- * its job-board payouts exactly where they were.
+ * shelf. Its rate is what neighbors pay per board (about 40¢ a deck
+ * board), not commodity volume — high enough that board jobs pay for the
+ * prying, low enough that building something always beats selling the
+ * boards it's made of.
  */
 export const SPECIES_LUMBER_RATE: Record<Species, number> = {
-  pallet: 4.8,
+  pallet: 1.5,
   pine: 0.25,
   poplar: 1.0,
   oak: 1.5,
