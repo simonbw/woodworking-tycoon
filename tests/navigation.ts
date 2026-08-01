@@ -111,6 +111,16 @@ export async function dismissClientCard(page: any) {
 }
 
 /**
+ * Sit through the commission phone call (see CommissionCallLayer) and
+ * accept it — the only way the takeover modal closes.
+ */
+export async function answerPhoneCall(page: any) {
+  await page.getByTestId("commission-call").waitFor({ state: "visible" });
+  await page.getByTestId("commission-call-accept").click();
+  await page.waitForTimeout(30);
+}
+
+/**
  * Drive out to Orange Box. Returns the player's previous cell so
  * `leaveStore` can put them back where the test needs them — the specs
  * predate the truck and assume browsing the store doesn't move the player.

@@ -234,7 +234,7 @@ test.describe("Stations", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("commission 6 is active", async () => {
+    await test.step("the cutting-board commission is active", async () => {
       await expect(page.getByText("A Proper Cutting Board")).toBeVisible();
     });
 

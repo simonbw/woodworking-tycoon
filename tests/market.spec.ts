@@ -1,6 +1,8 @@
 import { expect, Page, test } from "@playwright/test";
 import { selectMode } from "./machine-panel";
 import {
+  advanceTicks,
+  answerPhoneCall,
   closePhone,
   goToStore,
   deliverFromTruck,
@@ -90,7 +92,7 @@ test.describe("Market, supplies, and sound", () => {
     // Every clip the page fetches, for the sound half at the end.
     const requested: string[] = [];
     page.on("request", (req) => {
-      const m = req.url().match(/\/sounds\/([^/?]+\.ogg)/);
+      const m = req.url().match(/\/sounds\/([^/?]+\.(?:ogg|flac))/);
       if (m) requested.push(m[1]);
     });
 
@@ -130,7 +132,7 @@ test.describe("Market, supplies, and sound", () => {
         page.getByText("SawdustList", { exact: true }),
       ).toBeVisible();
 
-      // The shelf row in "List an item" is pre-priced at fair value ($60)
+      // The shelf row in "List an item" is pre-priced at fair value ($12)
       await page
         .locator("li", { hasText: /Rustic/i })
         .getByRole("button", { name: "List" })
@@ -140,7 +142,7 @@ test.describe("Market, supplies, and sound", () => {
       await page.waitForFunction(
         () => {
           const s = (window as any).__GET_GAME_STATE__();
-          return s.listings.length === 1 || s.money === 160;
+          return s.listings.length === 1 || s.money === 112;
         },
         undefined,
         { timeout: 5000 },
@@ -149,7 +151,7 @@ test.describe("Market, supplies, and sound", () => {
         (window as any).__GET_GAME_STATE__(),
       );
       if (state.listings.length === 1) {
-        expect(state.listings[0].askingPrice).toBe(60);
+        expect(state.listings[0].askingPrice).toBe(12);
         // Listing boxes the item up: it leaves the inventory unpaid
         expect(state.money).toBe(100);
       }
@@ -171,7 +173,7 @@ test.describe("Market, supplies, and sound", () => {
         );
       });
       await page.waitForFunction(
-        () => (window as any).__GET_GAME_STATE__().money === 160,
+        () => (window as any).__GET_GAME_STATE__().money === 112,
         undefined,
         { timeout: 5000 },
       );
@@ -272,6 +274,50 @@ test.describe("Market, supplies, and sound", () => {
       ).toBe(false);
       // A job is routine work: money flies, but no client card to dismiss
       await expect(page.getByTestId("client-card")).not.toBeVisible();
+    });
+
+    await test.step("the phone rings when reputation reaches the next gate", async () => {
+      // The next commission arrives at its reputation threshold — push the
+      // shop over it and let the next tick's milestone pass ring the phone
+      const gate = await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          reputation: 30,
+        }));
+        return 30;
+      });
+      expect(gate).toBe(30);
+      await advanceTicks(page, 1);
+
+      // The call is a takeover: the client's messages, and no way out but
+      // through — Escape doesn't dismiss it
+      const call = page.getByTestId("commission-call");
+      await expect(call).toBeVisible();
+      await expect(call).toContainText("Anton Reyes");
+      await expect(call).toContainText("hardwood cutting boards");
+      await page.keyboard.press("Escape");
+      await expect(call).toBeVisible();
+    });
+
+    await test.step("accepting the call puts the order on the clipboard", async () => {
+      await answerPhoneCall(page);
+      await expect(page.getByTestId("commission-call")).toHaveCount(0);
+      // The clipboard holds itself up with the new work order
+      const clipboard = page.getByRole("dialog", { name: "Clipboard" });
+      await expect(clipboard).toBeVisible();
+      await expect(clipboard).toContainText("A Proper Cutting Board");
+      await page.keyboard.press("Escape");
+      await expect(clipboard).toHaveCount(0);
+      // The tracker chip carries it from here, and the call stays answered
+      await expect(page.getByTestId("commission-tracker")).toContainText(
+        "A Proper Cutting Board",
+      );
+      const seen = await page.evaluate(
+        () =>
+          (window as any).__GET_GAME_STATE__().progression
+            .commissionArrivalSeen,
+      );
+      expect(seen).toBe(true);
     });
 
     await test.step("scavenging trip starts at the truck's cab", async () => {
@@ -512,6 +558,11 @@ test.describe("Market, supplies, and sound", () => {
     await test.step("the commission reward stinger plays", async () => {
       await queueCue(page, { kind: "commission-complete" });
       await expect.poll(() => requested).toContain("commission-complete.ogg");
+    });
+
+    await test.step("the phone-ring cue plays the notification clip", async () => {
+      await queueCue(page, { kind: "phone-ring" });
+      await expect.poll(() => requested).toContain("ui-notification.flac");
     });
 
     await test.step("material handling cues play", async () => {

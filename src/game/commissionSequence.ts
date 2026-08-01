@@ -44,6 +44,10 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardMoney: 20,
     rewardReputation: 2,
     minReputation: 0,
+    call: [
+      "Hi! It's Marguerite, two doors down. I hear you've been setting up a workshop in there.",
+      "Could you build me a shelf? Nothing fancy — rustic is fine. Sturdy is the thing.",
+    ],
     client: "Marguerite, two doors down",
     thanks:
       "Oh, that's solid. I was expecting something I'd have to re-hang by Tuesday. Do you take other work?",
@@ -67,6 +71,11 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardMoney: 30,
     rewardReputation: 2,
     minReputation: 6,
+    call: [
+      "Hello — Ellis, of Ellis Frame & Glass. Marguerite showed me your shelf.",
+      "I need frame stock: four short boards, two foot even, two inches wide, sanded smooth enough to swear by.",
+      "Every supplier I've tried cuts crooked. Prove me wrong?",
+    ],
     client: "Ellis, of Ellis Frame & Glass",
     thanks:
       "Every one the same length, the same width, and no snags anywhere. You would not believe how rarely that happens. I'll send people your way.",
@@ -87,6 +96,11 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardMoney: 95,
     rewardReputation: 3,
     minReputation: 30,
+    call: [
+      "This is Anton Reyes — chef. Ellis showed me the boards you cut for him.",
+      "I want two real hardwood cutting boards for my line. Glued up proper, sanded silky, oiled and food-ready.",
+      "Not the bamboo junk they sell restaurants. Real wood. Can you do it?",
+    ],
     client: "Chef Anton Reyes",
     thanks:
       "Flat, I can't find the glue lines, and there's no work left on my end. I've thrown out boards that cost more than these.",
@@ -109,6 +123,11 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardMoney: 240,
     rewardReputation: 4,
     minReputation: 40,
+    call: [
+      "Priya, from The Second Cup! We're renovating, and I want the whole works from your shop.",
+      "Two real hardwood shelves for behind the machine. Two planter boxes for the patio — screwed together, they live outside.",
+      "And a striped walnut-and-maple board for the counter, where everybody sees it. Say yes — I've already painted.",
+    ],
     client: "Priya, of The Second Cup",
     thanks:
       "The shelves go up behind the espresso machine, the planters flank the door, and the striped board sits by the register where everybody sees it. This place finally looks like somewhere.",
@@ -125,6 +144,11 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardMoney: 290,
     rewardReputation: 4,
     minReputation: 52,
+    call: [
+      "My name is Idris Farouk; I keep a jewelry shop on Fifth.",
+      "I would like two boxes worthy of what goes inside them, and two frames for the wall behind the counter.",
+      "Thin stock, corners that interlock, miters that disappear. I'm told you're the one to ask.",
+    ],
     client: "Idris Farouk",
     thanks:
       "The corners interlock and the miters disappear. People are going to open these boxes before they look at what's inside them.",
@@ -145,6 +169,11 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     rewardMoney: 340,
     rewardReputation: 5,
     minReputation: 66,
+    call: [
+      "Anton again. The restaurant's growing, and my line needs a real block.",
+      "True end grain. Oiled, heavy, flat as glass. The kind of board that outlives the restaurant.",
+      "Everything you know, in one board. Name your day.",
+    ],
     client: "Chef Anton Reyes",
     thanks:
       "End grain, oiled, flat as glass. That first board you sold me is still on my line, you know. This one outlives the restaurant.",

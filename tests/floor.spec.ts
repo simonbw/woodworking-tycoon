@@ -530,21 +530,23 @@ test.describe("Shop floor", () => {
       await expect(card).toContainText("Your First Shelf");
       await expect(card).toContainText("Marguerite");
       // The payout is itemized on the card: money, reputation, craft XP
-      await expect(card).toContainText("$200.00");
+      await expect(card).toContainText("$20.00");
     });
 
     await test.step("the payout has already landed behind the card", async () => {
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
       );
-      expect(state.money).toBe(before.money + 200);
+      expect(state.money).toBe(before.money + 20);
       expect(state.reputation).toBe(before.reputation + 2);
       expect(state.progression.commissionsCompleted).toBe(1);
       expect(
         state.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
       ).toBe(false);
-      // Completing the first commission is what unlocks the store
+      // Completing the first commission unlocks the store and the phone —
+      // the job board is how the next commission's gear gets funded
       expect(state.progression.storeUnlocked).toBe(true);
+      expect(state.progression.marketplaceUnlocked).toBe(true);
     });
 
     await test.step("dismissing the card flies the rewards to their readouts", async () => {
@@ -565,21 +567,27 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("the readouts show the new totals", async () => {
-      await expect(page.getByTestId("balance")).toHaveText("$200.00");
+      await expect(page.getByTestId("balance")).toHaveText("$20.00");
       await expect(page.getByTestId("reputation")).toHaveText("2.0");
     });
 
-    await test.step("the next work order holds the clipboard up by itself", async () => {
-      // Once the payout landed, the clipboard opened to the new order
+    await test.step("between commissions the shop goes quiet, not busy", async () => {
+      // The next commission is reputation-gated (the phone will ring for
+      // it later) — so no clipboard holds itself up, no tracker chip, and
+      // no call yet at 2 reputation against a gate of 6.
+      await expect(
+        page.getByRole("dialog", { name: "Clipboard" }),
+      ).toHaveCount(0);
+      await expect(page.getByTestId("commission-tracker")).toHaveCount(0);
+      await expect(page.getByTestId("commission-call")).toHaveCount(0);
+      // The clipboard still opens by hand, empty of orders
+      await page.keyboard.press("c");
       const clipboard = page.getByRole("dialog", { name: "Clipboard" });
-      await expect(clipboard).toBeVisible();
-      await expect(clipboard).toContainText("Cut to Order");
+      await expect(clipboard).toContainText("No open work orders");
       await page.keyboard.press("Escape");
       await expect(clipboard).toHaveCount(0);
-      // The tracker chip carries it from here
-      await expect(page.getByTestId("commission-tracker")).toContainText(
-        "Cut to Order",
-      );
+      // The phone the delivery unlocked is in the top bar now
+      await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
       // ...and the cab is no longer offering the one just delivered
       await movePlayerToCab(page);
       await openTruckMenu(page);
@@ -603,11 +611,11 @@ test.describe("Shop floor", () => {
       await continueButton.click();
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
 
-      // The handoff's earnings are still there, so is the commission it
+      // The handoff's earnings are still there, so is the phone it
       // unlocked — this is the same shop, not a fresh one.
-      await expect(page.getByTestId("balance")).toHaveText("$200.00");
+      await expect(page.getByTestId("balance")).toHaveText("$20.00");
       await expect(page.getByTestId("reputation")).toHaveText("2.0");
-      await expect(page.getByText("Cut to Order")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
     });
 
     await test.step("starting over asks first, then clears the shop", async () => {

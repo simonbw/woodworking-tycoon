@@ -209,12 +209,53 @@
       opacity: 1;
     }
   }
+
+  /* The phone held up when a commission calls (see CommissionCallLayer):
+     the handset swings up ringing, and each message pops in. */
+  .phone-ring-in {
+    animation: phone-ring-in 480ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  }
+
+  @keyframes phone-ring-in {
+    0% {
+      transform: translateY(3rem) rotate(4deg) scale(0.9);
+      opacity: 0;
+    }
+    55% {
+      transform: translateY(-0.25rem) rotate(-1.5deg) scale(1.01);
+      opacity: 1;
+    }
+    75% {
+      transform: translateY(0) rotate(1deg) scale(1);
+    }
+    100% {
+      transform: translateY(0) rotate(0deg) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .bubble-in {
+    animation: bubble-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+
+  @keyframes bubble-in {
+    0% {
+      transform: translateY(0.5rem) scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .reward-chip,
   .reward-pulse,
-  .payout-card-in {
+  .payout-card-in,
+  .phone-ring-in,
+  .bubble-in {
     animation-duration: 1ms !important;
   }
 }

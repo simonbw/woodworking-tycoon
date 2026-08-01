@@ -280,11 +280,11 @@ test.describe("Screens", () => {
     });
 
     await test.step("the Skills button meters XP toward the next point", async () => {
-      // Level 1 costs 150 XP, so 75 lifetime XP is exactly half a point away
+      // Level 1 costs 30 XP, so 15 lifetime XP is exactly half a point away
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          progression: { ...state.progression, xp: 75 },
+          progression: { ...state.progression, xp: 15 },
         }));
       });
       await page.waitForTimeout(30);

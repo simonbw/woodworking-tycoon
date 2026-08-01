@@ -256,7 +256,7 @@ test.describe("Milling", () => {
       await leaveStore(page, returnTo);
     });
 
-    await test.step("lumberyard: both channels open at 22 reputation", async () => {
+    await test.step("lumberyard: both channels open at 48 reputation", async () => {
       const returnTo = await goToLumberyard(page);
       await expect(page.getByText("Sawyer & Sons")).toBeVisible();
       await expect(page.getByText("S2S Rack")).toBeVisible();

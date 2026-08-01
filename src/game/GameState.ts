@@ -237,6 +237,13 @@ export interface Commission {
    * between commissions the player builds it up with jobs and listings.
    */
   readonly minReputation: number;
+  /**
+   * The text messages the client sends when the commission arrives, in
+   * their own voice — played out as the phone-call moment (see
+   * CommissionCallLayer). The description stays the work order's
+   * manual-voice summary.
+   */
+  readonly call: ReadonlyArray<string>;
   /** Who takes delivery at the garage door. */
   readonly client: string;
   /** What they say when you hand the work over. Shown on the payout card. */

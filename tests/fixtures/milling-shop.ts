@@ -51,7 +51,7 @@ function roughWalnut(id: string): Board {
  * [8,10]), and a workspace (op cell [10,4]). The feed-through machines sit
  * mid-shop in their own columns, each with the 6–7' of lane an 8' board
  * needs both sides (see feed-clearance.ts). Two rough walnut boards in the
- * player's pockets, 22 reputation so every lumber channel is open in the
+ * player's pockets, 48 reputation so every lumber channel is open in the
  * store, and jigsAndFixtures unlocked so the sled operates.
  *
  * The player starts a step back from the jointer's infeed, facing it,
@@ -63,7 +63,7 @@ function roughWalnut(id: string): Board {
 export const millingShop: GameState = {
   tick: 0,
   money: 1000,
-  reputation: 22,
+  reputation: 48,
   consumables: NO_CONSUMABLES,
   clamps: 4,
   materialPiles: [],

@@ -6,6 +6,7 @@ import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
 import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
+import { CommissionCallLayer } from "./phone/CommissionCallLayer";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { TripOverlays, TripTransitionLayer } from "./trip/TripTransitionLayer";
@@ -51,6 +52,7 @@ export const Main: React.FC = () => {
                     <TripOverlays />
                   </TripTransitionLayer>
                   <RewardFlightLayer />
+                  <CommissionCallLayer />
                   <GameSoundLayer />
                   <MachineSoundLayer />
                   <DebugView />
