@@ -36,16 +36,17 @@ After this change the game has three income tracks with distinct roles:
 
 | Track       | Pay vs. fair value | Guaranteed?         | Role                                        |
 | ----------- | ------------------ | ------------------- | ------------------------------------------- |
-| Commissions | ~3×                | Yes                 | Story progression, unlocks, boss paydays    |
+| Commissions | ~1.5–2×            | Yes                 | Story progression, unlocks, milestone events |
 | Jobs        | ~1.5–2× (+ tip)    | Yes                 | Guided grind, guaranteed price              |
 | Listings    | You set the price  | No (probabilistic)  | Higher ceiling for skilled pricing/rep play |
 
 ## What we're keeping
 
-- **The authored commission sequence** (`commissionSequence.ts`) is untouched:
-  linear, story-driven, each entry introduces one new element, big money and
-  reputation on completion. The word *commission* now refers exclusively to
-  this track; generated work is a *job*.
+- **The authored commission sequence** (`commissionSequence.ts`): linear and
+  story-driven. (Since the commission-merge rebalance: six reputation-gated
+  milestones, each demanding a cluster of new capabilities, arriving by
+  phone call — jobs and listings are the living in between.) The word
+  *commission* refers exclusively to this track; generated work is a *job*.
 - **`getSellValue()`** (`material-values.ts`) survives as the price anchor,
   but its meaning changes: it is no longer "what you get," it is **fair
   value** — what the market thinks an item is worth. All sale-chance math and
@@ -73,9 +74,9 @@ After this change the game has three income tracks with distinct roles:
   `MachineSprite.tsx`, and the auto-sell pass at the bottom of
   `tickAction.ts`. Instant "item → money next tick" selling is gone entirely.
 - **The `freeSelling` progression flag**, replaced by `marketplaceUnlocked`.
-  Same unlock trigger (completing the *Cut to Order* commission, per
-  `UNLOCK_CONDITIONS`), but it now reveals the Marketplace tab instead of
-  granting a machine.
+  (Unlock trigger since the commission-merge rebalance: completing the
+  *first* commission, per `UNLOCK_CONDITIONS` — the job board is how the
+  second commission's pile of gear gets funded.)
 - **The sales-table grant** in `progression-actions.ts` (the machine no
   longer exists to grant).
 - **The `StoreSellingSection` copy** pointing players at the sales table —
@@ -95,9 +96,9 @@ styled as the player's phone or laptop. It has two panes:
 2. **Job Board** — open offers, plus your currently accepted jobs and their
    tip timers.
 
-Hidden entirely until `marketplaceUnlocked` (completing *Cut to Order*),
-preserving the current tutorial cadence: first commission unlocks the store,
-second commission unlocks earning money freely.
+Hidden entirely until `marketplaceUnlocked` (completing the first
+commission, which unlocks the store and the phone together — earning money
+freely is what funds the second commission's gear).
 
 ## Selling: listings
 
@@ -185,7 +186,7 @@ A job reuses the commission data shape where possible:
 
 Jobs are generated from the player's **capability envelope** — what they can
 actually build right now, derived from owned machines and mounted tools
-(`ownsMachine` etc.) plus `progression.commissionsCompleted` as a tech-tier
+(`ownsMachine` etc.) plus completed-commission checks as a tech-tier
 marker. Rules:
 
 - Never generate a job the player cannot physically produce.

@@ -6,11 +6,10 @@ Woodworking Tycoon is an incremental/idle-inspired simulation game where players
 
 **Key Design Principles:**
 - More active than typical idle games, but with incremental progression satisfaction
-- Linear commission sequence acts as primary progression driver
-- Commissions are like "bosses" - high-reward milestone moments
-- Manual operations (no automation initially)  
-- Money as primary progression metric
-- Each commission introduces one new element (tool, material, or technique)
+- Most of play is non-commission work: the job board and marketplace listings are the day-to-day living, where money, reputation, and XP come from
+- Commissions are rare "bosses" — reputation-gated milestone events that arrive as a phone call, each demanding a cluster of capabilities (machines, tools, skills) the shop doesn't have yet
+- Manual operations (no automation initially)
+- Reputation is the pacing metric (it decides when the next commission calls); money is the capability metric (it buys the gear each commission demands)
 
 ## Early Game: Tutorial Phase (First 8-10 Commissions)
 
@@ -21,44 +20,39 @@ Woodworking Tycoon is an incremental/idle-inspired simulation game where players
 - **Money**: $0
 - **UI Access**: Main workshop view; the truck offers scavenging from day one
 
-### Tutorial Sequence (Commissions 1-2)
-1. **Commission 1: First Shelf**
-   - Scavenge a pallet with the truck
-   - Break down pallet using workspace
-   - Build basic pallet wood shelf
-   - Complete first commission → receive payment (enough for miter saw)
-   - **Unlocks**: Store access (the Orange Box trip from the truck's cab)
+### The Commission Ladder (implemented: 6 rungs, `commissionSequence.ts`)
 
-2. **Commission 2: Precise Cuts**
-   - Purchase miter saw from store, carry it into place (carrying is
-     always available)
-   - Build project requiring precise cuts (picture frame?)
-   - Complete second commission → receive improved payment
-   - **Unlocks**: Free selling (at ~30% of commission prices)
+Each commission is reputation-gated — the client doesn't call until the
+shop's reputation reaches its threshold — and demands a cluster of
+capabilities the player has to earn between calls, living on the job board
+and listings:
 
-### Early Tool Progression (Commissions 3-6)
-3. **Commission 3: First Pine Project**
-   - Introduces pine boards (better than pallet wood)
-   - Project utilizing miter saw precision
+1. **Your First Shelf** ($20, gate 0) — the tutorial: scavenge a pallet,
+   break it down, build a rustic shelf. Completing it unlocks the store
+   *and* the phone (marketplace).
+2. **The Frame Shop Order** ($30, gate 6) — boards cut to length, ripped
+   to width, sanded: the whole starter shop (miter saw + table saw +
+   sanding block, ~$460 of gear funded off the job board).
+3. **A Proper Cutting Board** ($95, gate 30) — hardwood, clamps, the
+   glue-up chain, and an oil finish.
+4. **The Cafe Fit-Out** ($240, gate 40) — fine shelves, planter boxes
+   (drill + screws), and a striped board: three skill points' worth of
+   journal work.
+5. **Small Treasures** ($290, gate 52) — jewelry boxes and mitered frames:
+   the planer, Box Joinery, and Mitered Frames.
+6. **The Butcher's Block** ($340, gate 66) — the finale: a shop-built
+   crosscut sled and a true end-grain block.
 
-4. **Commission 4: Width Control**
-   - Requires table saw for ripping boards to width
-   - Project needing specific board dimensions
-
-5. **Commission 5: Smooth Surfaces**  
-   - Requires lunchbox planer
-   - Project emphasizing surface quality
-
-6. **Commission 6: Complex Assembly**
-   - Multi-component project using all acquired tools
-   - Introduces more sophisticated joinery concepts
-
-### Key Mechanics Introduced
-- **Commission System**: Linear sequence, clear requirements, boss-like rewards
-- **Tool Acquisition**: Store purchases unlock new capabilities  
-- **Workshop Layout**: Strategic tool placement becomes important
-- **Material Quality**: Progression from pallet wood to pine boards
-- **Free Market**: Lower-profit alternative to commissions for grinding money
+### Key Mechanics
+- **Commission System**: rare, rep-gated milestone events that arrive as a
+  phone call and land on the clipboard
+- **Jobs & Listings**: the day-to-day income, reputation, and XP between
+  commissions (see `docs/marketplace-and-jobs.md`)
+- **Tool Acquisition**: store purchases unlock new capabilities, funded by
+  grinding — power tools take real work to afford
+- **Workshop Layout**: strategic tool placement becomes important
+- **Material Quality**: progression from pallet wood through big-box
+  hardwood to the lumberyard's cheaper rough stock (rep-gated channels)
 
 ## Mid Game: Workshop Building Phase (Commissions 7-20)
 

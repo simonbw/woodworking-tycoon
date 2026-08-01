@@ -81,11 +81,13 @@ export const WelcomeArticle: React.FC = () => (
       the cab, so build first, then load up.
     </P>
     <P>
-      Delivering a commission pays money and builds reputation, and each new
-      commission asks for something more advanced. The first payment is enough
-      to start shopping at the hardware store — once you hear about it, the
-      trip starts at the same cab. What you buy rides home in the bed; unload
-      it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
+      Delivering a commission pays money and builds reputation, and it opens
+      two doors: the hardware store — the trip starts at the same cab — and
+      the phone in the top bar, where work gets listed for sale and one-off
+      jobs get taken. Jobs and sales are how the shop earns between
+      commissions; when your reputation grows enough, the phone rings with
+      the next big order. What you buy rides home in the bed; unload it at
+      the tailgate with <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

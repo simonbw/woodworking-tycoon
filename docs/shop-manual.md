@@ -48,8 +48,8 @@ directly to it. The standalone overlay component retires.
 | Welcome to the Shop          | always (auto-opens once on a brand-new game)    |
 | Controls                     | always                                          |
 | Milling & Surfaces           | the lumberyard opens, or a milling machine/tool |
-| Glue-Ups & Clamps            | the panel-work skill, or a clamp bought         |
-| Finishing                    | first time a finish is required or bought       |
+| Glue-Ups & Clamps            | the cutting-board commission's call, or a clamp |
+| Finishing                    | the cutting-board commission's call, or oil     |
 | Tools & Tool Slots           | first mountable tool owned                      |
 | Shop Layout: Moving Machines | `shopLayoutUnlocked`                            |
 | Marketplace & Jobs           | `marketplaceUnlocked`                           |
