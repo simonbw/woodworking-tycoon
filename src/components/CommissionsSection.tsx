@@ -42,7 +42,7 @@ export const CommissionsSection: React.FC = () => {
     // Ink scrawl straight on the hardboard
     return (
       <p className="font-ink text-lg text-paper-manila/70 text-center py-4 -rotate-1">
-        No more work orders (yet)
+        No open work orders
       </p>
     );
   }

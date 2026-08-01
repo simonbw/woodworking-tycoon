@@ -1,3 +1,4 @@
+import { hasCompletedCommission } from "./commissionSequence";
 import { GameState, JobOffer } from "./GameState";
 import { InputMaterialWithQuantity } from "./Machine";
 import { createMockMaterial } from "./material-helpers";
@@ -376,7 +377,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     zeroMaterialCost: false,
     available: (gameState) =>
       // The proper-cutting-board commission taught the glue-up chain
-      gameState.progression.commissionsCompleted >= 6,
+      hasCompletedCommission(gameState.progression, "proper-cutting-board"),
     generate: (rng, gameState) => {
       const quantity = intBetween(rng, 1, 2);
       const request = speciesRequest(rng, gameState);
@@ -418,11 +419,13 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     },
   },
   {
-    // Finished goods: the oiled-and-ready commission taught the wipe-down.
+    // Finished goods: the proper-cutting-board commission taught the
+    // wipe-down along with the glue-up.
     id: "oiled-boards",
     tier: 5,
     zeroMaterialCost: false,
-    available: (gameState) => gameState.progression.commissionsCompleted >= 9,
+    available: (gameState) =>
+      hasCompletedCommission(gameState.progression, "proper-cutting-board"),
     generate: (rng, gameState) => {
       const quantity = intBetween(rng, 1, 2);
       const request = speciesRequest(rng, gameState);

@@ -45,6 +45,8 @@ function stateAtCommission(
     progression: {
       ...initialGameState.progression,
       commissionsCompleted,
+      // The commission being delivered has been offered and is active
+      commissionsOffered: commissionsCompleted + 1,
       storeUnlocked: commissionsCompleted >= 1,
       tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
     },
@@ -152,14 +154,24 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.progression.tutorialStage, 1);
   });
 
-  it("unlocks the marketplace after the second commission", () => {
-    // Commission 2 (cut-to-order) requires 4 pallet boards at 2x4x1
-    const boards = Array.from({ length: 4 }, () => board("pallet", 2, 4, 1));
-    const result = completeCommissionAction()(stateAtCommission(1, boards));
-    assert.strictEqual(result.progression.commissionsCompleted, 2);
+  it("unlocks the marketplace with the first commission too", () => {
+    // The phone arrives with the first payday: the job board is how the
+    // second commission's pile of gear gets funded
+    const result = completeCommissionAction()(
+      stateAtCommission(0, [makeShelf()]),
+    );
     assert.strictEqual(result.progression.marketplaceUnlocked, true);
     // No machine grant — the marketplace is a tab, not equipment
     assert.deepStrictEqual(result.machineCrates, []);
+  });
+
+  it("delivers the frame shop order from the bed", () => {
+    // Commission 2 requires 4 sanded pallet boards at 2'x2"x1
+    const boards = Array.from({ length: 4 }, () =>
+      board("pallet", 2, 2, 1, "sanded"),
+    );
+    const result = completeCommissionAction()(stateAtCommission(1, boards));
+    assert.strictEqual(result.progression.commissionsCompleted, 2);
   });
 
   it("does nothing, including progression, when materials are missing", () => {

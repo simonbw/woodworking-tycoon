@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard } from "../board-helpers";
+import { COMMISSION_SEQUENCE } from "../commissionSequence";
 import { Operation,  } from "../Machine";
 import { LUMBER_CHANNELS, unlockedLumberChannels } from "../lumberStock";
 import { materialMeetsInput } from "../material-helpers";
@@ -273,15 +274,18 @@ describe("lumber channels", () => {
     assert.deepStrictEqual(unlockedLumberChannels(0, "lumberyard"), []);
     const atTwelve = unlockedLumberChannels(12, "lumberyard").map((c) => c.id);
     assert.deepStrictEqual(atTwelve, ["s2sRack"]);
-    const all = unlockedLumberChannels(30, "lumberyard").map((c) => c.id);
+    const all = unlockedLumberChannels(48, "lumberyard").map((c) => c.id);
     assert.deepStrictEqual(all, ["s2sRack", "roughRack"]);
   });
 
-  it("keeps every unlock threshold reachable within the commission sequence", () => {
-    // Commissions award 30 lifetime reputation; every channel must unlock
+  it("keeps every unlock threshold below the finale's reputation gate", () => {
+    // Reputation comes from jobs and listings between commissions; by the
+    // time the finale's call comes, every lumber channel must be open.
+    const finaleGate =
+      COMMISSION_SEQUENCE[COMMISSION_SEQUENCE.length - 1].minReputation;
     for (const channel of LUMBER_CHANNELS) {
       assert.ok(
-        channel.minReputation <= 30,
+        channel.minReputation <= finaleGate,
         `${channel.id} unlocks at ${channel.minReputation}`,
       );
     }

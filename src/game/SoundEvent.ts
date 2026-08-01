@@ -14,7 +14,8 @@ export type SoundEventKind =
   | "commission-complete"
   | "material-pickup"
   | "material-drop"
-  | "sale";
+  | "sale"
+  | "phone-ring";
 
 export interface SoundEvent {
   readonly kind: SoundEventKind;

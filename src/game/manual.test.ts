@@ -81,12 +81,15 @@ describe("manual article unlock conditions", () => {
         consumables: { ...initialGameState.consumables, mineralOil: 1 },
       }),
     );
+    // The cutting-board commission being *offered* is enough — the manual
+    // teaches finishing the moment a client starts asking for it
     assert.ok(
       unlocked("finishing", {
         ...initialGameState,
         progression: {
           ...initialGameState.progression,
-          commissionsCompleted: 5,
+          commissionsCompleted: 2,
+          commissionsOffered: 3,
         },
       }),
     );

@@ -82,6 +82,8 @@ export const handToolsShop: GameState = {
     lumberyardUnlocked: false,
     marketplaceUnlocked: true,
     commissionsCompleted: 2,
+    commissionsOffered: 2,
+    commissionArrivalSeen: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,

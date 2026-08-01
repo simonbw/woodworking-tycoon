@@ -63,6 +63,18 @@ export interface ProgressionState {
   /** Reveals the phone (listings + job board) in the top bar. */
   readonly marketplaceUnlocked: boolean;
   readonly commissionsCompleted: number;
+  /**
+   * How many commissions have been offered over the phone. Always
+   * `commissionsCompleted` (waiting for reputation to reach the next
+   * commission's threshold) or `commissionsCompleted + 1` (an active
+   * work order). See commissionSequence.ts.
+   */
+  readonly commissionsOffered: number;
+  /**
+   * False from the moment a commission is offered until the player has
+   * sat through the phone call that delivers it (see CommissionCallLayer).
+   */
+  readonly commissionArrivalSeen: boolean;
   /** The floor has gotten properly dusty — puts up the one-time sweeping note. */
   readonly sweepingUnlocked: boolean;
   /** The one-time "sweep it up" note has been read. */
@@ -209,8 +221,9 @@ export interface AcceptedJob extends JobOffer {
 
 /**
  * A work order in the authored commission sequence. The active commission is
- * derived from `progression.commissionsCompleted` (see commissionSequence.ts)
- * rather than stored in GameState.
+ * derived from `progression.commissionsCompleted` and
+ * `progression.commissionsOffered` (see commissionSequence.ts) rather than
+ * stored in GameState.
  */
 export interface Commission {
   readonly id: string;
@@ -219,6 +232,11 @@ export interface Commission {
   readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly rewardMoney: number;
   readonly rewardReputation: number;
+  /**
+   * The client doesn't call until the shop's reputation reaches this —
+   * between commissions the player builds it up with jobs and listings.
+   */
+  readonly minReputation: number;
   /** Who takes delivery at the garage door. */
   readonly client: string;
   /** What they say when you hand the work over. Shown on the payout card. */

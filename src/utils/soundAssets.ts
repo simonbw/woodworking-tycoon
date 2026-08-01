@@ -43,6 +43,7 @@ const GAME_SOUND_CLIPS = [
   "pallet-dismantle",
   "truck-arrive",
   "truck-depart",
+  "ui-notification",
 ];
 
 /** Every clip name the game can ask `playSound` for. */
@@ -83,7 +84,6 @@ export const SOUND_FILES_NOT_PRELOADED: readonly string[] = [
   "/sounds/table-saw-rip.ogg",
   // Recorded but not yet wired to a cue
   "/sounds/ui-error.flac",
-  "/sounds/ui-notification.flac",
 ];
 
 /**

@@ -1,4 +1,4 @@
-import { hasCompletedCommission } from "./commissionSequence";
+import { hasBeenOfferedCommission } from "./commissionSequence";
 import { GameState, ProgressionState } from "./GameState";
 import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import type { MachineId } from "./Machine";
@@ -85,23 +85,23 @@ const defs = [
     tab: "Glue-Ups",
     title: "Glue-Ups & Clamps",
     category: "The Craft",
-    // The first clamp bought, or the commission that first asks for a
-    // glued panel (the cutting boards, right after Double Shelf Order) —
-    // the same pair of triggers Finishing uses.
+    // The first clamp bought, or the moment the cutting-board commission
+    // starts asking for a glued panel — the same pair of triggers
+    // Finishing uses.
     unlocked: (gameState: GameState) =>
       gameState.clamps > 0 ||
-      hasCompletedCommission(gameState.progression, "double-shelf-order"),
+      hasBeenOfferedCommission(gameState.progression, "proper-cutting-board"),
   },
   {
     id: "finishing",
     tab: "Finishing",
     title: "Finishing",
     category: "The Craft",
-    // First bottle of finish, or the commission that first demands a
-    // finished piece (the cutting boards, right after Double Shelf Order).
+    // First bottle of finish, or the moment the cutting-board commission
+    // starts demanding a finished piece.
     unlocked: (gameState: GameState) =>
       gameState.consumables.mineralOil > 0 ||
-      hasCompletedCommission(gameState.progression, "double-shelf-order"),
+      hasBeenOfferedCommission(gameState.progression, "proper-cutting-board"),
   },
   {
     id: "tools",

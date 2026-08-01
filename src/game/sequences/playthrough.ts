@@ -4,8 +4,15 @@
  * This is not a test — it's the ledger the progression tests and the fixtures
  * both read from. Each rung is a function from the shop as it stood to the
  * shop after that commission has been handed over at the door, done entirely
- * through the real actions: buy the stock, buy the machine, carry it into
+ * through the real actions: grind jobs and listings until the phone rings and
+ * the till covers the gear, buy the stock, buy the machine, carry it into
  * place, mill, glue, sand, finish, walk to the door.
+ *
+ * Commissions are rep-gated events now (see commissionSequence.ts), so the
+ * ledger lives the way a player does: pallet-board jobs for reputation,
+ * rustic shelves listed at fair value for money (the two-day pity timer
+ * makes fair-priced listings deterministic income), and a commission only
+ * when the reputation gate lets the phone ring.
  *
  * Two things follow from that. Every checkpoint is a shop a player could
  * actually own — which is more than the hand-written fixtures could claim.
@@ -25,6 +32,7 @@ import { initialGameState } from "../initialGameState";
 import { MACHINE_TYPES } from "../Machine";
 import { Board, MaterialInstance } from "../Materials";
 import { isMiteredFrameRail } from "../board-helpers";
+import { consumeRequiredMaterials } from "../delivery";
 import { makePallet } from "../material-helpers";
 import { isPanel } from "../panel-helpers";
 import { cellCenter } from "../player-motion";
@@ -53,10 +61,11 @@ const stringer = palletBoard(6);
 /** The 4"-wide deck boards nailed across it, 3' as pried off. */
 const deckBoard = palletBoard(4);
 const deckBoardOfLength = (length: number) => palletBoard(4, length);
-const roughDeckBoard = (m: MaterialInstance) =>
-  deckBoard(m) && (m as { surface: string }).surface === "rough";
-const smoothDeckBoard = (m: MaterialInstance) =>
-  deckBoard(m) && (m as { surface: string }).surface === "smooth";
+
+/** Any loose pallet stock — what a sell round puts up on the phone. */
+const anyPalletBoard = (m: MaterialInstance) =>
+  isBoard(m) && (m as { species: string }).species === "pallet";
+const isRusticShelf = (m: MaterialInstance) => m.type === "rusticShelf";
 
 /** Maple stock at an exact length and width — the hardwood era's material. */
 const mapleBoard = (length: number, width: number) => (m: MaterialInstance) =>
@@ -68,24 +77,6 @@ const mapleBoard = (length: number, width: number) => (m: MaterialInstance) =>
 /** A glued-up panel of one species, whatever its surface. */
 const isSinglePanel = (m: MaterialInstance) => isPanel(m);
 
-/** Pallet stock at an exact length, width, and thickness. */
-const palletBoardAt =
-  (width: number, length: number, thickness: number) =>
-  (m: MaterialInstance) =>
-    palletBoard(width, length)(m) &&
-    (m as { thickness: number }).thickness === thickness;
-
-/** Walnut stock at an exact size — the frame and shelf era. */
-const walnutBoard =
-  (length: number, width: number, thickness: number) =>
-  (m: MaterialInstance) =>
-    isBoard(m) &&
-    (m as { species: string }).species === "walnut" &&
-    (m as { length: number }).length === length &&
-    (m as { width: number }).width === width &&
-    (m as { thickness: number }).thickness === thickness;
-
-const isPlanterBox = (m: MaterialInstance) => m.type === "planterBox";
 const isEndGrainPanel = (m: MaterialInstance) =>
   isPanel(m) && (m as { grain?: string }).grain === "end";
 const isUnoiledEndGrainBoard = (m: MaterialInstance) =>
@@ -195,9 +186,12 @@ function millOneBoard(shop: ShopDriver, from: BoardSize, to: BoardSize): void {
     grades.indexOf(current.surface ?? "smooth") < grades.indexOf(to.surface)
   ) {
     const from_ = current.surface ?? "smooth";
-    shop.make(WORKBENCH, "blockSandBoard", sized({ ...current, surface: from_ }), {
-      count: 1,
-    });
+    shop.make(
+      WORKBENCH,
+      "blockSandBoard",
+      sized({ ...current, surface: from_ }),
+      { count: 1 },
+    );
     current = { ...current, surface: grades[grades.indexOf(from_) + 1] };
   }
 }
@@ -297,20 +291,111 @@ function machinePrice(machineTypeId: keyof typeof MACHINE_TYPES): number {
 }
 
 // ---------------------------------------------------------------------------
+// The grind: what the shop lives on between commissions.
+// ---------------------------------------------------------------------------
+
+/**
+ * One selling round: scavenge a truckload, pry it apart, build two rustic
+ * shelves, and put everything — shelves, spare boards, stringers — up on
+ * the phone at fair value. Fair-priced listings are guaranteed out by the
+ * two-day pity timer, so a round is deterministic money (about $35) plus
+ * the review-reputation trickle and the shelves' craft XP.
+ */
+function sellRound(shop: ShopDriver): ShopDriver {
+  shop.putEverythingDown();
+  shop.scavenge();
+  for (let i = 0; i < 2; i++) {
+    shop.takeFromFloor(isPallet, 1);
+    dismantleAPallet(shop);
+    buildRusticShelf(shop);
+    shop.putEverythingDown();
+  }
+  shop.list((m) => isRusticShelf(m) || anyPalletBoard(m));
+  return shop.awaitListingSales();
+}
+
+/**
+ * One reputation job: seed the board (rng 0 always leads with the
+ * pallet-boards income-floor offer), pry pallets until the ask is covered,
+ * and drive it off. Delivered fresh, a job pays double reputation — the
+ * tip hasn't decayed — so each cycle is worth about +2.
+ */
+function grindPalletJob(shop: ShopDriver): ShopDriver {
+  shop.putEverythingDown();
+  shop.seedJobBoard();
+  const offer = shop.shop.jobBoard.find(
+    (candidate) =>
+      candidate.materialCostFree &&
+      candidate.requiredMaterials.length === 1 &&
+      (
+        candidate.requiredMaterials[0].type as
+          | ReadonlyArray<string>
+          | undefined
+      )?.includes("board"),
+  );
+  if (!offer) {
+    throw new Error(
+      `No pallet-board job on the seeded board — it offers ` +
+        `[${shop.shop.jobBoard.map((o) => o.description).join("; ")}]`,
+    );
+  }
+  const satisfied = () =>
+    consumeRequiredMaterials(
+      [
+        ...shop.inventory,
+        ...shop.shop.materialPiles.map((pile) => pile.material),
+      ],
+      offer.requiredMaterials,
+    ) !== null;
+  while (!satisfied()) {
+    if (shop.stock(isPallet).length === 0) {
+      shop.scavenge();
+    }
+    shop.takeFromFloor(isPallet, 1);
+    dismantleAPallet(shop);
+    shop.putEverythingDown();
+  }
+  return shop.acceptJob(offer.id).deliverJob(offer.id);
+}
+
+/**
+ * Live off the marketplace until the shop holds this much money and the
+ * phone's next call is within reach. Money first (selling rounds trickle
+ * reputation too), then reputation jobs, then a money top-up in case the
+ * job runs spent anything — each loop converges because nothing here can
+ * lose either number.
+ */
+function grindUntil(
+  shop: ShopDriver,
+  minReputation: number,
+  minMoney: number,
+): ShopDriver {
+  while (shop.money < minMoney) {
+    sellRound(shop);
+  }
+  while (shop.shop.reputation < minReputation) {
+    grindPalletJob(shop);
+  }
+  while (shop.money < minMoney) {
+    sellRound(shop);
+  }
+  return shop;
+}
+
+// ---------------------------------------------------------------------------
 // The rungs
 // ---------------------------------------------------------------------------
 
 /** A brand-new save, with the progression flags settled. */
 export function newGame(): ShopDriver {
-  return openShop(initialGameState).apply(
-    checkProgressionMilestonesAction(),
-  );
+  return openShop(initialGameState).apply(checkProgressionMilestonesAction());
 }
 
 /**
  * 1. Your First Shelf. No money, no store, an empty floor and a hammer on
  *    the bench — the first pallet is scavenged with the truck, and the
- *    nails to build with come out of it.
+ *    nails to build with come out of it. On the clipboard from the start;
+ *    every later commission has to be earned into ringing.
  */
 function commission1(shop: ShopDriver): ShopDriver {
   shop.scavenge();
@@ -323,61 +408,25 @@ function commission1(shop: ShopDriver): ShopDriver {
 }
 
 /**
- * 2. Cut to Order — four deck boards cut to 2'. The first purchase: a miter
- *    saw.
+ * 2. The Frame Shop Order — four deck boards cut to 2', ripped to 2", and
+ *    sanded. The whole starter shop in one buy: a miter saw, a table saw,
+ *    and a sanding block, all funded off the job board — the first real
+ *    stretch of living between commissions.
  */
 function commission2(shop: ShopDriver): ShopDriver {
-  // A crate takes both hands: the offcuts from the first shelf go on the floor.
+  grindUntil(shop, COMMISSION_SEQUENCE[1].minReputation, 480);
+  // A crate takes both hands: the leftovers go on the floor.
   shop.putEverythingDown();
   shop.goShopping("orangeBox");
   // Against the left wall, clear of the milling lanes down columns 4 and
   // 8 — the feed-through machines need their runway (see feed-clearance)
   shop.buyAndPlaceMachine("miterSaw", machinePrice("miterSaw"), [1, 7]);
-  shop.comeHome();
-
-  // A pallet yields five deck boards; four of them become the order.
-  fetchAPallet(shop);
-  shop.takeFromFloor(isPallet, 1);
-  dismantleAPallet(shop);
-  // The saw is direct-feed: swing the head square, slide the cut line to
-  // the 2' mark, and every board fed through comes off at 2' plus a 1' drop.
-  for (let i = 0; i < 4; i++) {
-    shop.feed("miterSaw", deckBoardOfLength(3), { angle: 0, cutPosition: 2 });
-  }
-  return shop.handOverCommission();
-}
-
-/**
- * 3. Slat Set — four deck boards ripped from 4" down to 2". The table saw
- *    is the second purchase, and the first machine bought out of profit.
- */
-function commission3(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.goShopping("orangeBox");
   // Centered on the long axis: an 8' rip needs 7' of lane each side
   shop.buyAndPlaceMachine(
     "jobsiteTableSaw",
     machinePrice("jobsiteTableSaw"),
     [8, 10],
   );
-  shop.comeHome();
-
-  fetchAPallet(shop);
-  shop.takeFromFloor(isPallet, 1);
-  dismantleAPallet(shop);
-  for (let i = 0; i < 4; i++) {
-    shop.feed("jobsiteTableSaw", deckBoardOfLength(3), { targetWidth: 2 });
-  }
-  return shop.handOverCommission();
-}
-
-/**
- * 4. Sanded Set — four deck boards taken to sanded. A $10 sanding block off
- *    the tool wall does it: tools before machines.
- */
-function commission4(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.goShopping("orangeBox");
   shop.buyTool("sandingBlock");
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
@@ -385,130 +434,41 @@ function commission4(shop: ShopDriver): ShopDriver {
   fetchAPallet(shop);
   shop.takeFromFloor(isPallet, 1);
   dismantleAPallet(shop);
-  // rough → smooth → sanded, one pass each, on four boards
   for (let i = 0; i < 4; i++) {
-    shop.select(WORKBENCH, "blockSandBoard").load(WORKBENCH, roughDeckBoard, 1);
-    shop.run(WORKBENCH).collect(WORKBENCH);
-    shop.load(WORKBENCH, smoothDeckBoard, 1).run(WORKBENCH).collect(WORKBENCH);
-  }
-  return shop.handOverCommission();
-}
-
-/** 5. Double Shelf Order — two rustic shelves, so two pallets' worth. */
-function commission5(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  for (let shelf = 0; shelf < 2; shelf++) {
-    fetchAPallet(shop);
-    shop.takeFromFloor(isPallet, 1);
-    dismantleAPallet(shop);
-    buildRusticShelf(shop);
+    millOneBoard(
+      shop,
+      { species: "pallet", length: 3, width: 4, thickness: 1, surface: "rough" },
+      { species: "pallet", length: 2, width: 2, thickness: 1, surface: "sanded" },
+    );
   }
   return shop.handOverCommission();
 }
 
 /**
- * 6. A Proper Cutting Board — the first real hardwood. Two boards, each five
- *    2"-wide maple strips glued into a panel, sanded twice, and finished.
- *    Needs clamps, which nothing before this did.
+ * 3. A Proper Cutting Board — the first real hardwood, oiled and done. Two
+ *    boards, each five 2"-wide maple strips glued into a panel, sanded
+ *    twice, finished, and wiped with mineral oil. Needs clamps, which
+ *    nothing before this did.
  */
-function commission6(shop: ShopDriver): ShopDriver {
+function commission3(shop: ShopDriver): ShopDriver {
+  grindUntil(shop, COMMISSION_SEQUENCE[2].minReputation, 160);
   shop.putEverythingDown();
   shop.goShopping("orangeBox");
   // A panel glue-up ties up four bars, and the panels are done one at a time.
-  const glueUp = shop.machine(WORKBENCH).operations.find(
-    (op) => op.id === "glueUpPanel",
-  )!;
+  const glueUp = shop
+    .machine(WORKBENCH)
+    .operations.find((op) => op.id === "glueUpPanel")!;
   shop.buyClamps(Math.max(0, clampsFor(glueUp) - shop.shop.clamps));
+  shop.buySupplies("mineralOil");
   // The glue-up wants 2' × 2" strips, five to a panel. The big-box rack sells
   // 4' × 4" maple, so each board crosscuts into two and rips into four.
-  shop.buyBoards(
-    "bigBoxRack",
-    "maple",
-    { length: 4, width: 4, thickness: 4 },
-    3,
-  );
+  shop.buyBoards("bigBoxRack", "maple", { length: 4, width: 4, thickness: 4 }, 3);
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 
   makeMapleStrips(shop);
 
   for (let panel = 0; panel < 2; panel++) {
-    shop
-      .make(WORKBENCH, "glueUpPanel", mapleBoard(2, 2), { count: 5 })
-      .make(WORKBENCH, "blockSandPanel", isSinglePanel)
-      .make(WORKBENCH, "blockSandPanel", isSinglePanel)
-      .make(WORKBENCH, "finishCuttingBoard", isSinglePanel);
-  }
-  return shop.handOverCommission();
-}
-
-/**
- * 7. Dimensioned Stock — two stringers taken from 3/4 down to 2/4. Sanding
- *    can't remove a quarter inch; this is what the planer is for.
- */
-function commission7(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.goShopping("orangeBox");
-  // Its own lane down column 4, clear now that the miter saw parks by
-  // the left wall
-  shop.buyAndPlaceMachine(
-    "lunchboxPlaner",
-    machinePrice("lunchboxPlaner"),
-    [4, 9],
-  );
-  shop.comeHome();
-
-  fetchAPallet(shop);
-  shop.takeFromFloor(isPallet, 1);
-  dismantleAPallet(shop);
-  // The rollers pull the stock through on their own: one pass, one detent.
-  for (let i = 0; i < 2; i++) {
-    shop.feed("lunchboxPlaner", palletBoardAt(6, 4, 3), { targetThickness: 2 });
-  }
-  return shop.handOverCommission();
-}
-
-/** 8. Balcony Garden — two planter boxes, five 2' slats and 8 screws each. */
-function commission8(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.goShopping("orangeBox");
-  shop.buyTool("drill");
-  shop.buySupplies("screws");
-  shop.comeHome();
-  // Two slots, three tools: the sanding block comes off to make room. The
-  // starter bench runs out of room right about here.
-  shop.fitOut(WORKBENCH, ["hammer", "drill"]);
-
-  for (let box = 0; box < 2; box++) {
-    fetchAPallet(shop);
-    shop.takeFromFloor(isPallet, 1);
-    dismantleAPallet(shop);
-    for (let slat = 0; slat < 5; slat++) {
-      shop.feed("miterSaw", deckBoardOfLength(3), { angle: 0, cutPosition: 2 });
-    }
-    shop.make(WORKBENCH, "buildPlanterBox", deckBoardOfLength(2), { count: 5 });
-    shop.putEverythingDown();
-  }
-  shop.takeFromFloor(isPlanterBox);
-  return shop.handOverCommission();
-}
-
-/** 9. Oiled & Ready — the same two boards as rung 6, wiped with oil. */
-function commission9(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.goShopping("orangeBox");
-  shop.buySupplies("mineralOil");
-  shop.buyBoards(
-    "bigBoxRack",
-    "maple",
-    { length: 4, width: 4, thickness: 4 },
-    3,
-  );
-  shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
-
-  makeMapleStrips(shop);
-  for (let board = 0; board < 2; board++) {
     shop
       .make(WORKBENCH, "glueUpPanel", mapleBoard(2, 2), { count: 5 })
       .make(WORKBENCH, "blockSandPanel", isSinglePanel)
@@ -520,16 +480,112 @@ function commission9(shop: ShopDriver): ShopDriver {
 }
 
 /**
- * 10. Gallery Wall — two frames, four mirrored 45° rails each. The first
- *     commission that needs a skill point spent, and the first to use both
- *     of the miter saw's angle stops.
+ * 4. The Cafe Fit-Out — the first commission that's a whole shop's worth of
+ *    work: two fine oak shelves, a striped walnut-and-maple counter board,
+ *    and two screwed planter boxes. Three skill points and a drill.
  */
-function commission10(shop: ShopDriver): ShopDriver {
+function commission4(shop: ShopDriver): ShopDriver {
+  grindUntil(shop, COMMISSION_SEQUENCE[3].minReputation, 270);
   shop.putEverythingDown();
+  shop.learn("fineShelving");
+  shop.learn("twoToneBoards");
+  shop.learn("stripedBoards");
+  shop.goShopping("orangeBox");
+  shop.buyTool("drill");
+  shop.buySupplies("screws");
+  shop.buySupplies("nails");
+  shop.buyBoards("bigBoxRack", "oak", { length: 4, width: 6, thickness: 4 }, 4);
+  // One board per strip of the counter board: three walnut, two maple.
+  shop.buyBoards(
+    "bigBoxRack",
+    "walnut",
+    { length: 4, width: 4, thickness: 4 },
+    3,
+  );
+  shop.buyBoards(
+    "bigBoxRack",
+    "maple",
+    { length: 4, width: 4, thickness: 4 },
+    2,
+  );
+  shop.comeHome();
+  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
+
+  // The shelves: four oak boards taken to sanded, two to a shelf.
+  const oakStock: BoardSize = {
+    species: "oak",
+    length: 4,
+    width: 6,
+    thickness: 4,
+  };
+  for (let i = 0; i < 4; i++) {
+    millOneBoard(shop, oakStock, { ...oakStock, surface: "sanded" });
+  }
+  for (let shelf = 0; shelf < 2; shelf++) {
+    shop.make(
+      WORKBENCH,
+      "buildShelf",
+      sized({ ...oakStock, surface: "sanded" }),
+      { count: 2 },
+    );
+  }
+
+  // The striped board: strict alternation, walnut-maple-walnut-maple-walnut.
+  stripsOf(shop, "walnut", 3);
+  stripsOf(shop, "maple", 2);
+  shop.standAtOperatorCell(WORKBENCH).select(WORKBENCH, "glueUpPanel");
+  for (const species of ["walnut", "maple", "walnut", "maple", "walnut"]) {
+    shop.load(WORKBENCH, stripOfSpecies(species), 1);
+  }
+  shop.run(WORKBENCH).collect(WORKBENCH);
+  shop
+    .make(WORKBENCH, "blockSandPanel", isSinglePanel)
+    .make(WORKBENCH, "blockSandPanel", isSinglePanel)
+    .make(WORKBENCH, "finishStripedBoard", isSinglePanel);
+
+  // The planter boxes: five 2' slats and eight screws each. Two slots on
+  // the bench, three tools — the sanding block comes off for the drill.
+  shop.fitOut(WORKBENCH, ["hammer", "drill"]);
+  fetchAPallet(shop);
+  shop.takeFromFloor(isPallet, 1);
+  dismantleAPallet(shop);
+  for (let slat = 0; slat < 10; slat++) {
+    shop.feed("miterSaw", deckBoardOfLength(3), { angle: 0, cutPosition: 2 });
+  }
+  for (let box = 0; box < 2; box++) {
+    shop.make(WORKBENCH, "buildPlanterBox", deckBoardOfLength(2), { count: 5 });
+    shop.putEverythingDown();
+  }
+  return shop.handOverCommission();
+}
+
+/**
+ * 5. Small Treasures — the jeweler's refit: two cherry jewelry boxes from
+ *    thin planed stock, and two walnut frames with mirrored miters. The
+ *    planer is what this rung buys; Box Joinery and Mitered Frames are
+ *    what it learns.
+ */
+function commission5(shop: ShopDriver): ShopDriver {
+  grindUntil(shop, COMMISSION_SEQUENCE[4].minReputation, 820);
+  shop.putEverythingDown();
+  shop.learn("boxJoinery");
   shop.learn("miteredFrames");
   shop.goShopping("orangeBox");
+  // Its own lane down column 4, clear now that the miter saw parks by
+  // the left wall
+  shop.buyAndPlaceMachine(
+    "lunchboxPlaner",
+    machinePrice("lunchboxPlaner"),
+    [4, 9],
+  );
   shop.buySupplies("nails");
-  // Frame rails are 2' × 1" × 1/4 sanded: rip 1" strips off 4" stock.
+  shop.buyBoards(
+    "bigBoxRack",
+    "cherry",
+    { length: 4, width: 4, thickness: 4 },
+    8,
+  );
+  // One walnut board per frame rail: rip 1" strips off 4" stock.
   shop.buyBoards(
     "bigBoxRack",
     "walnut",
@@ -539,7 +595,27 @@ function commission10(shop: ShopDriver): ShopDriver {
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 
-  // Eight rails: four to a frame.
+  // The boxes: eight thin sanded panels, four to a box.
+  const cherryStock: BoardSize = {
+    species: "cherry",
+    length: 4,
+    width: 4,
+    thickness: 4,
+  };
+  const boxPanel: BoardSize = { ...cherryStock, length: 2, thickness: 2 };
+  for (let i = 0; i < 8; i++) {
+    millOneBoard(shop, cherryStock, { ...boxPanel, surface: "sanded" });
+  }
+  for (let box = 0; box < 2; box++) {
+    shop.make(
+      WORKBENCH,
+      "buildJewelryBox",
+      sized({ ...boxPanel, surface: "sanded" }),
+      { count: 4 },
+    );
+  }
+
+  // The frames: eight mirrored rails, four to a frame.
   for (let rail = 0; rail < 8; rail++) {
     makeOneFrameRail(shop);
   }
@@ -549,178 +625,20 @@ function commission10(shop: ShopDriver): ShopDriver {
   return shop.handOverCommission();
 }
 
-/** 11. Shelving, But Nice — two hardwood shelves, two sanded boards each. */
-function commission11(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.learn("fineShelving");
-  shop.goShopping("orangeBox");
-  shop.buyBoards("bigBoxRack", "oak", { length: 4, width: 6, thickness: 4 }, 4);
-  shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
-
-  const stock: BoardSize = {
-    species: "oak",
-    length: 4,
-    width: 6,
-    thickness: 4,
-  };
-  for (let i = 0; i < 4; i++) {
-    millOneBoard(shop, stock, { ...stock, surface: "sanded" });
-  }
-  for (let shelf = 0; shelf < 2; shelf++) {
-    shop.make(WORKBENCH, "buildShelf", sized({ ...stock, surface: "sanded" }), {
-      count: 2,
-    });
-  }
-  return shop.handOverCommission();
-}
-
 /**
- * 12. Stripes — walnut and maple in strict alternation. Two points down the
- *     pattern branch, and the first glue-up that cares what order the strips
- *     go in.
+ * 6. The Butcher's Block — everything at once. Build a sled out of plywood
+ *    and pallet runners, mount it on the saw, slice a sanded panel, stand
+ *    the grain on end, glue it all again, sand, finish, oil.
  */
-function commission12(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.learn("twoToneBoards");
-  shop.learn("stripedBoards");
-  shop.goShopping("orangeBox");
-  // One board per strip: three walnut, two maple.
-  shop.buyBoards("bigBoxRack", "walnut", { length: 4, width: 4, thickness: 4 }, 3);
-  shop.buyBoards("bigBoxRack", "maple", { length: 4, width: 4, thickness: 4 }, 2);
-  shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
-
-  stripsOf(shop, "walnut", 3);
-  stripsOf(shop, "maple", 2);
-  shop.standAtOperatorCell(WORKBENCH).select(WORKBENCH, "glueUpPanel");
-  // Load in pattern order: the glue-up preserves it, and the stripe recipe
-  // rejects anything that isn't strictly alternating.
-  for (const species of ["walnut", "maple", "walnut", "maple", "walnut"]) {
-    shop.load(WORKBENCH, stripOfSpecies(species), 1);
-  }
-  shop.run(WORKBENCH).collect(WORKBENCH);
-
-  shop
-    .make(WORKBENCH, "blockSandPanel", isSinglePanel)
-    .make(WORKBENCH, "blockSandPanel", isSinglePanel)
-    .make(WORKBENCH, "finishStripedBoard", isSinglePanel);
-  return shop.handOverCommission();
-}
-
-/** 13. Small Treasures — two jewelry boxes, four thin sanded boards each. */
-function commission13(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.learn("boxJoinery");
-  shop.goShopping("orangeBox");
-  shop.buyBoards(
-    "bigBoxRack",
-    "cherry",
-    { length: 4, width: 4, thickness: 4 },
-    8,
-  );
-  shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
-
-  const stock: BoardSize = {
-    species: "cherry",
-    length: 4,
-    width: 4,
-    thickness: 4,
-  };
-  const panelStock: BoardSize = { ...stock, length: 2, thickness: 2 };
-  for (let i = 0; i < 8; i++) {
-    millOneBoard(shop, stock, { ...panelStock, surface: "sanded" });
-  }
-  for (let box = 0; box < 2; box++) {
-    shop.make(
-      WORKBENCH,
-      "buildJewelryBox",
-      sized({ ...panelStock, surface: "sanded" }),
-      { count: 4 },
-    );
-  }
-  return shop.handOverCommission();
-}
-
-/**
- * 14. The Sunrise Board — one wood fading into the other, glued a strip at a
- *     time. Freeform Lamination is what lets the widths differ.
- */
-function commission14(shop: ShopDriver): ShopDriver {
-  shop.putEverythingDown();
-  shop.learn("freeformLamination");
-  shop.learn("sunriseBoards");
-  shop.goShopping("orangeBox");
-  // One board per strip of the fade: three of each species.
-  for (const species of ["walnut", "maple"] as const) {
-    shop.buyBoards(
-      "bigBoxRack",
-      species,
-      { length: 4, width: 6, thickness: 4 },
-      3,
-    );
-  }
-  shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
-
-  // Walnut narrows 3-2-1 as maple widens 1-2-3: that gradient is the fade.
-  const fade: ReadonlyArray<[string, number]> = [
-    ["walnut", 3],
-    ["maple", 1],
-    ["walnut", 2],
-    ["maple", 2],
-    ["walnut", 1],
-    ["maple", 3],
-  ];
-  for (const [species, width] of fade) {
-    millOneBoard(
-      shop,
-      { species, length: 4, width: 6, thickness: 4 },
-      { species, length: 2, width, thickness: 4 },
-    );
-  }
-
-  const strip = (species: string, width: number) =>
-    sized({ species, length: 2, width, thickness: 4, surface: "smooth" });
-
-  shop.standAtOperatorCell(WORKBENCH).select(WORKBENCH, "glueUpPair");
-  shop.load(WORKBENCH, strip("walnut", 3), 1);
-  shop.load(WORKBENCH, strip("maple", 1), 1);
-  shop.run(WORKBENCH).collect(WORKBENCH);
-
-  shop.select(WORKBENCH, "extendPanel");
-  for (const [species, width] of fade.slice(2)) {
-    shop.load(WORKBENCH, isSinglePanel, 1);
-    shop.load(WORKBENCH, strip(species, width), 1);
-    shop.run(WORKBENCH).collect(WORKBENCH);
-  }
-
-  shop
-    .make(WORKBENCH, "blockSandPanel", isSinglePanel)
-    .make(WORKBENCH, "blockSandPanel", isSinglePanel)
-    .make(WORKBENCH, "finishSunriseBoard", isSinglePanel);
-  return shop.handOverCommission();
-}
-
-/**
- * 15. The Butcher's Block — everything at once. Build a sled out of plywood
- *     and pallet runners, mount it on the saw, slice a sanded panel, stand
- *     the grain on end, glue it all again, sand, finish, oil.
- */
-function commission15(shop: ShopDriver): ShopDriver {
+function commission6(shop: ShopDriver): ShopDriver {
+  grindUntil(shop, COMMISSION_SEQUENCE[5].minReputation, 100);
   shop.putEverythingDown();
   shop.learn("jigsAndFixtures");
   shop.learn("endGrainBoards");
   shop.goShopping("orangeBox");
   shop.buySheet("plywoodB");
   shop.buySupplies("mineralOil");
-  shop.buyBoards(
-    "bigBoxRack",
-    "maple",
-    { length: 4, width: 4, thickness: 4 },
-    3,
-  );
+  shop.buyBoards("bigBoxRack", "maple", { length: 4, width: 4, thickness: 4 }, 3);
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 
@@ -766,15 +684,6 @@ const RUNGS: ReadonlyArray<(shop: ShopDriver) => ShopDriver> = [
   commission4,
   commission5,
   commission6,
-  commission7,
-  commission8,
-  commission9,
-  commission10,
-  commission11,
-  commission12,
-  commission13,
-  commission14,
-  commission15,
 ];
 
 const checkpoints: GameState[] = [];

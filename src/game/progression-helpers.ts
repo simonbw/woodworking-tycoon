@@ -88,8 +88,10 @@ export const UNLOCK_CONDITIONS: Record<
   // Word of the yard gets around once your work has a reputation
   lumberyardUnlocked: (gameState) =>
     gameState.reputation >= LUMBERYARD_MIN_REPUTATION,
+  // The phone arrives with the first payday: commission 2 asks for a whole
+  // starter shop's worth of gear, and the job board is how it gets funded
   marketplaceUnlocked: (gameState) =>
-    hasCompletedCommission(gameState.progression, "cut-to-order"),
+    hasCompletedCommission(gameState.progression, "first-shelf"),
   // The sweeping note goes up once there's visibly something to sweep
   sweepingUnlocked: (gameState) =>
     Object.values(gameState.dust).reduce(

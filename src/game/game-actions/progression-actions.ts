@@ -1,6 +1,8 @@
+import { COMMISSION_SEQUENCE } from "../commissionSequence";
 import { GameAction } from "../GameState";
 import { ManualArticleId, MANUAL_ARTICLES } from "../manual";
 import { tutorialStageFor, UNLOCK_CONDITIONS } from "../progression-helpers";
+import { emitSound } from "./sound-actions";
 
 /** The player opened these manual articles — clears their NEW markers. */
 export function markArticlesReadAction(
@@ -41,6 +43,17 @@ export function incrementCommissionsCompletedAction(): GameAction {
   };
 }
 
+/** The player has sat through the phone call that delivered a commission. */
+export function markCommissionArrivalSeenAction(): GameAction {
+  return (gameState) =>
+    gameState.progression.commissionArrivalSeen
+      ? gameState
+      : {
+          ...gameState,
+          progression: { ...gameState.progression, commissionArrivalSeen: true },
+        };
+}
+
 /**
  * Applies any unlock whose condition is now met (see UNLOCK_CONDITIONS) and
  * advances the tutorial stage to match. Run this after any action that could
@@ -55,6 +68,24 @@ export function checkProgressionMilestonesAction(): GameAction {
       if (!progression[key] && conditionMet(gameState)) {
         progression = { ...progression, [key]: true };
       }
+    }
+
+    // The next commission arrives when reputation reaches its threshold:
+    // the phone rings and the call plays out in the UI. Runs before the
+    // article scan so anything gated on the offer unlocks the same pass.
+    const nextCommission =
+      progression.commissionsOffered === progression.commissionsCompleted
+        ? COMMISSION_SEQUENCE[progression.commissionsCompleted]
+        : undefined;
+    const phoneRings =
+      nextCommission !== undefined &&
+      gameState.reputation >= nextCommission.minReputation;
+    if (phoneRings) {
+      progression = {
+        ...progression,
+        commissionsOffered: progression.commissionsOffered + 1,
+        commissionArrivalSeen: false,
+      };
     }
 
     // Manual articles unlock off the post-flag state, so an article gated on
@@ -83,9 +114,10 @@ export function checkProgressionMilestonesAction(): GameAction {
     ) {
       return gameState;
     }
-    return {
+    const result = {
       ...updatedState,
       progression: { ...progression, tutorialStage },
     };
+    return phoneRings ? emitSound(result, { kind: "phone-ring" }) : result;
   };
 }

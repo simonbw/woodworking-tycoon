@@ -115,6 +115,8 @@ export const layoutWithPlacedMachines: GameState = {
     lumberyardUnlocked: false,
     marketplaceUnlocked: false,
     commissionsCompleted: 1,
+    commissionsOffered: 1,
+    commissionArrivalSeen: true,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,

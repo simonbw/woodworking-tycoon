@@ -15,6 +15,7 @@
  */
 
 import {
+  InputMaterialWithQuantity,
   Machine,
   MachineState,
   Operation,
@@ -74,10 +75,21 @@ import {
 } from "../game-actions/scavenge-actions";
 import { clearPendingPayoutsAction } from "../game-actions/payout-actions";
 import { spendSkillPointAction } from "../game-actions/skill-actions";
+import {
+  acceptJobAction,
+  deliverJobAction,
+  listItemAction,
+} from "../game-actions/marketplace-actions";
+import { generateJobBoard } from "../job-generation";
+import { LISTING_PITY_TICKS } from "../marketplace";
 import { getActiveCommission } from "../commissionSequence";
 import { board } from "../board-helpers";
 import { LUMBER_CHANNELS } from "../lumberStock";
-import { getBoardBuyPrice, getSheetBuyPrice } from "../material-values";
+import {
+  getBoardBuyPrice,
+  getSellValue,
+  getSheetBuyPrice,
+} from "../material-values";
 import { SHEET_SKUS } from "../sheetStock";
 import { makeMaterial } from "../material-helpers";
 import { Board, SheetGood, ToolItem } from "../Materials";
@@ -990,36 +1002,44 @@ export class ShopDriver {
   }
 
   /**
-   * Deliver the active commission: gather what the order requires out of
-   * the hands and off the floor, ferry it into the bed, walk to the cab,
-   * and drive it off. Fails loudly rather than quietly doing nothing,
-   * because "the commission silently didn't complete" is the exact bug a
-   * playthrough exists to catch.
+   * Ferry what an order requires into the bed: exactly the pieces its
+   * matcher would claim, out of the hands and off the floor. Anything the
+   * order doesn't want stays in the shop. If what's in reach can't
+   * satisfy it, the hands are loaded anyway so the delivery fails with
+   * its own message naming the bed.
    */
-  handOverCommission(): this {
-    const commission = getActiveCommission(this.state.progression);
-    if (!commission) {
-      throw new Error("No active commission to hand over");
-    }
-    const before = this.state.progression.commissionsCompleted;
-    // Pick exactly the pieces the order's matcher would claim; anything
-    // it doesn't want stays in the shop. If what's in reach can't satisfy
-    // the order, load the hands anyway and let the delivery fail with its
-    // own message naming the bed.
+  private loadBedFor(
+    requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>,
+  ): this {
     const candidates = [
       ...this.inventory,
       ...this.state.materialPiles.map((pile) => pile.material),
     ];
-    const leftover = consumeRequiredMaterials(
-      candidates,
-      commission.requiredMaterials,
-    );
+    const leftover = consumeRequiredMaterials(candidates, requiredMaterials);
     if (leftover !== null) {
       const leftoverSet = new Set(leftover);
-      this.loadBed(candidates.filter((m) => !leftoverSet.has(m)));
-    } else {
-      this.loadBed();
+      return this.loadBed(candidates.filter((m) => !leftoverSet.has(m)));
     }
+    return this.loadBed();
+  }
+
+  /**
+   * Deliver the active commission: gather what the order requires, ferry
+   * it into the bed, walk to the cab, and drive it off. Fails loudly
+   * rather than quietly doing nothing, because "the commission silently
+   * didn't complete" is the exact bug a playthrough exists to catch.
+   */
+  handOverCommission(): this {
+    const commission = getActiveCommission(this.state.progression);
+    if (!commission) {
+      throw new Error(
+        "No active commission to hand over — the phone hasn't rung yet " +
+          `(${this.state.reputation} reputation, ` +
+          `${this.state.progression.commissionsCompleted} completed)`,
+      );
+    }
+    const before = this.state.progression.commissionsCompleted;
+    this.loadBedFor(commission.requiredMaterials);
     this.standAtCab().apply(completeCommissionAction());
     if (this.state.progression.commissionsCompleted !== before + 1) {
       throw new Error(
@@ -1029,6 +1049,128 @@ export class ShopDriver {
       );
     }
     return this.apply(clearPendingPayoutsAction);
+  }
+
+  // ---------------------------------------------------------------------
+  // The marketplace: the living between commissions. Jobs and listings
+  // are where reputation and money come from while the phone is quiet.
+  // ---------------------------------------------------------------------
+
+  /**
+   * Put a fresh set of offers on the job board, rolling the same
+   * generator the daily refresh rolls — just with a chosen rng, so a
+   * sequence gets a board it can count on. Everything after this (accept,
+   * build, deliver) goes through the real actions.
+   */
+  seedJobBoard(rng: () => number = () => 0): this {
+    return this.arrange((state) => ({
+      ...state,
+      jobBoard: generateJobBoard(state, rng),
+    }));
+  }
+
+  /** Accept an open offer off the board, if a job slot is free. */
+  acceptJob(offerId: string): this {
+    const before = this.state.acceptedJobs.length;
+    this.apply(acceptJobAction(offerId));
+    if (this.state.acceptedJobs.length !== before + 1) {
+      throw new Error(
+        `Couldn't accept job ${offerId} — the board holds ` +
+          `[${this.state.jobBoard.map((o) => o.id).join(", ")}] and ` +
+          `${before} accepted jobs are using the slots`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Deliver an accepted job at the cab, the same drive a commission
+   * takes: gather its requirements into the bed and drive them off.
+   */
+  deliverJob(jobId: string): this {
+    const job = this.state.acceptedJobs.find(
+      (candidate) => candidate.id === jobId,
+    );
+    if (!job) {
+      throw new Error(
+        `No accepted job ${jobId} — accepted ` +
+          `[${this.state.acceptedJobs.map((j) => j.id).join(", ")}]`,
+      );
+    }
+    const before = this.state.acceptedJobs.length;
+    this.loadBedFor(job.requiredMaterials);
+    this.standAtCab().apply(deliverJobAction(jobId));
+    if (this.state.acceptedJobs.length !== before - 1) {
+      throw new Error(
+        `Job "${job.description}" would not deliver. The bed holds ` +
+          `[${this.state.truck.bed.map((m) => m.type).join(", ")}], which ` +
+          `does not satisfy ${JSON.stringify(job.requiredMaterials)}`,
+      );
+    }
+    return this.apply(clearPendingPayoutsAction);
+  }
+
+  /**
+   * Put everything matching up for sale on the phone, at fair value
+   * unless the caller prices it otherwise. Fair-priced listings are
+   * guaranteed money: if no buyer rolls sooner, the pity timer sells
+   * them at two days (see awaitListingSales).
+   */
+  list(
+    predicate: MaterialPredicate,
+    price: (material: MaterialInstance) => number = getSellValue,
+  ): this {
+    const count = this.stock(predicate).length;
+    if (count === 0) {
+      throw new Error(
+        `Nothing in reach to list — holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}], floor has ` +
+          `[${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
+      );
+    }
+    const before = this.state.listings.length;
+    // Listing takes the item out of the hands, so the arms never fill up;
+    // floor stock is picked up a piece at a time on the way to the phone.
+    while (this.stock(predicate).length > 0) {
+      const inHand = this.inventory.find(predicate);
+      if (inHand) {
+        this.apply(listItemAction(inHand, price(inHand)));
+        if (this.inventory.includes(inHand)) {
+          throw new Error(`Couldn't list ${inHand.type}`);
+        }
+        continue;
+      }
+      this.takeFromFloor(predicate, 1);
+    }
+    if (this.state.listings.length !== before + count) {
+      throw new Error(
+        `Listed ${this.state.listings.length - before} of ${count} pieces — ` +
+          `this is a driver bug`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Let the clock run until every listing has sold. Fair-priced listings
+   * are guaranteed out by the pity timer at two days; anything still up
+   * after that was overpriced, and this fails naming it.
+   */
+  awaitListingSales(): this {
+    const ceiling = LISTING_PITY_TICKS + 100;
+    for (let i = 0; i < ceiling && this.state.listings.length > 0; i += 25) {
+      this.tick(25);
+    }
+    if (this.state.listings.length > 0) {
+      throw new Error(
+        `${this.state.listings.length} listings never sold — asking above ` +
+          `fair value? Still up: ` +
+          `[${this.state.listings
+            .map((l) => `${l.material.type} at $${l.askingPrice}`)
+            .join(", ")}]`,
+      );
+    }
+    return this;
   }
 }
 

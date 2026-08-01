@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { getActiveCommission } from "../../game/commissionSequence";
 import { clearPendingPayoutsAction } from "../../game/game-actions/payout-actions";
 import { PayoutEvent } from "../../game/PayoutEvent";
 import { playSound } from "../../utils/sfx";
-import { useClipboard } from "../clipboard/ClipboardProvider";
 import { SparkIcon, StarIcon } from "../StarIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ClientCard } from "./ClientCard";
@@ -109,23 +107,11 @@ interface Flight {
 export const RewardFlightLayer: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const clipboard = useClipboard();
   const pending = gameState.pendingPayouts;
 
   /** Commission cards waiting to be dismissed, oldest first. */
   const [cards, setCards] = useState<ReadonlyArray<PayoutEvent>>([]);
   const [flights, setFlights] = useState<ReadonlyArray<Flight>>([]);
-  /** Flights that were commissions — the next order shows when they land. */
-  const commissionFlights = useRef(new Set<string>());
-
-  // Getting a new commission means seeing it: once a commission's payout
-  // has finished celebrating, the clipboard holds itself up with the next
-  // work order on it.
-  const showNextOrder = useCallback(() => {
-    if (getActiveCommission(gameState.progression) !== null) {
-      clipboard.open();
-    }
-  }, [gameState.progression, clipboard]);
 
   const launch = useCallback((payout: PayoutEvent) => {
     const chips = chipsFor(payout);
@@ -156,31 +142,19 @@ export const RewardFlightLayer: React.FC = () => {
     applyAction(clearPendingPayoutsAction);
   }, [pending, applyAction, launch]);
 
+  // No next-order reveal here: the next commission arrives later, by
+  // phone, once reputation reaches its threshold (see CommissionCallLayer)
   const dismissCard = useCallback(
     (payout: PayoutEvent) => {
       setCards((current) => current.filter((card) => card.id !== payout.id));
-      if (chipsFor(payout).length === 0) {
-        // Nothing to fly (a zero-reward commission): show the next order now
-        showNextOrder();
-      } else {
-        commissionFlights.current.add(payout.id);
-      }
       launch(payout);
     },
-    [launch, showNextOrder],
+    [launch],
   );
 
-  const endFlight = useCallback(
-    (flightId: string) => {
-      setFlights((current) =>
-        current.filter((flight) => flight.id !== flightId),
-      );
-      if (commissionFlights.current.delete(flightId)) {
-        showNextOrder();
-      }
-    },
-    [showNextOrder],
-  );
+  const endFlight = useCallback((flightId: string) => {
+    setFlights((current) => current.filter((flight) => flight.id !== flightId));
+  }, []);
 
   return (
     <>

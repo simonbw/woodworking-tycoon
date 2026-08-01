@@ -126,7 +126,9 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
     jointedFaces: 0,
     jointedEdges: 0,
     priceMultiplier: 0.55,
-    minReputation: 22,
+    // Lands just before the planer era — rough stock is no bargain until
+    // the shop can flatten it
+    minReputation: 48,
   },
 ];
 

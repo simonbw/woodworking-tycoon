@@ -90,7 +90,9 @@ export const cuttingBoardShop: GameState = {
     storeUnlocked: true,
     lumberyardUnlocked: true,
     marketplaceUnlocked: true,
-    commissionsCompleted: 5,
+    commissionsCompleted: 2,
+    commissionsOffered: 3,
+    commissionArrivalSeen: true,
     // Lets specs use the speed keys to fast-forward through glue cures
     sweepingUnlocked: false,
     dustTipDismissed: false,

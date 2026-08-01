@@ -114,6 +114,8 @@ export const endGrainShop: GameState = {
     lumberyardUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 5,
+    commissionsOffered: 5,
+    commissionArrivalSeen: true,
     // Lets specs use the speed keys to fast-forward through glue cures
     sweepingUnlocked: false,
     dustTipDismissed: false,

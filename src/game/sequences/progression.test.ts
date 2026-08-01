@@ -17,7 +17,6 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import { COMMISSION_SEQUENCE } from "../commissionSequence";
 import { GameState } from "../GameState";
-import { MACHINE_TYPES } from "../Machine";
 import { LUMBERYARD_MIN_REPUTATION } from "../lumberStock";
 import { SKILL_TYPES, SkillId } from "../Skill";
 import { checkpointAfter, LEDGER_DEPTH } from "./playthrough";
@@ -72,44 +71,43 @@ describe("progression", () => {
           `"${commission.name}" ended with $${after.money.toFixed(2)} ` +
             `against $${before.money.toFixed(2)} going in — this rung loses money`,
         );
-        assert.equal(
-          after.reputation,
-          before.reputation + commission.rewardReputation,
-          "reputation went up by exactly the reward",
+        // Grinding jobs and reviews add reputation on top of the reward, so
+        // the reward is a floor, not an exact step.
+        assert.ok(
+          after.reputation >= before.reputation + commission.rewardReputation,
+          "reputation went up by at least the reward",
         );
       });
 
-      it("leaves the till able to buy a machine, not just survive", () => {
+      it("earned its way through the reputation gate", () => {
+        // The phone only rings at minReputation, and the ledger only plays
+        // real actions — so the checkpoint after a delivery must sit at or
+        // above the gate plus the delivery's own reward. This is the check
+        // that the between-commission grind actually happened.
         const after = checkpointAfter(number);
-        // The ladder is meant to keep the shop shopping. Clearing the cheapest
-        // machine on the floor is a low bar deliberately — the point is that a
-        // rung never leaves the player unable to buy *anything*, which is what
-        // a dead end feels like from the inside. The playthrough itself proves
-        // the specific machine each rung needs was affordable.
-        const cheapest = Math.min(
-          ...Object.values(MACHINE_TYPES)
-            .map((type) => type.cost)
-            .filter((cost) => cost > 0),
-        );
         assert.ok(
-          after.money >= cheapest,
-          `after "${commission.name}" the shop has $${after.money.toFixed(2)}, ` +
-            `less than the $${cheapest} of the cheapest machine sold. This ` +
-            `rung has left the player unable to buy their way forward.`,
+          after.reputation >=
+            commission.minReputation + commission.rewardReputation,
+          `after "${commission.name}" the shop has ${after.reputation} ` +
+            `reputation against a ${commission.minReputation} gate`,
         );
       });
     });
   }
 
-  it("reputation opens the lumberyard before a rung needs it", () => {
-    // The hardwood commissions start at 6, and the yard is where hardwood
-    // gets affordable. Whichever rung first buys real wood, the yard should
-    // already be open to it.
-    const atSix = checkpointAfter(6);
+  it("reputation opens the lumberyard before the hardwood era", () => {
+    // The cutting-board commission is where real wood enters the game; its
+    // arrival gate must sit past the lumberyard's door, so by the time a
+    // client asks for hardwood the yard is open. (The ledger buys its maple
+    // at the big box for convenience — this protects the player who
+    // doesn't.)
+    const hardwoodCommission = COMMISSION_SEQUENCE.find(
+      (commission) => commission.id === "proper-cutting-board",
+    )!;
     assert.ok(
-      atSix.reputation >= LUMBERYARD_MIN_REPUTATION,
-      `by the first hardwood commission the shop has ${atSix.reputation} ` +
-        `reputation, and the lumberyard opens at ${LUMBERYARD_MIN_REPUTATION}`,
+      hardwoodCommission.minReputation >= LUMBERYARD_MIN_REPUTATION,
+      `the hardwood commission arrives at ${hardwoodCommission.minReputation} ` +
+        `reputation, before the lumberyard opens at ${LUMBERYARD_MIN_REPUTATION}`,
     );
   });
 

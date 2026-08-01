@@ -113,7 +113,9 @@ export const patternBoardShop: GameState = {
     storeUnlocked: true,
     lumberyardUnlocked: true,
     marketplaceUnlocked: true,
-    commissionsCompleted: 5,
+    commissionsCompleted: 4,
+    commissionsOffered: 4,
+    commissionArrivalSeen: true,
     // Lets specs use the speed keys to fast-forward through glue cures
     sweepingUnlocked: false,
     dustTipDismissed: false,

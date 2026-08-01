@@ -93,6 +93,8 @@ const progressionSchema = z.object({
   lumberyardUnlocked: z.boolean(),
   marketplaceUnlocked: z.boolean(),
   commissionsCompleted: z.number(),
+  commissionsOffered: z.number(),
+  commissionArrivalSeen: z.boolean(),
   sweepingUnlocked: z.boolean(),
   dustTipDismissed: z.boolean(),
   unlockedArticles: z.array(z.string()),

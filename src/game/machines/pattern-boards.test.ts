@@ -369,9 +369,10 @@ describe("quickDryGlue covers the freeform ops", () => {
   const progression = {
     tutorialStage: 2,
     storeUnlocked: true,
-    shopLayoutUnlocked: true,
     marketplaceUnlocked: true,
     commissionsCompleted: 0,
+    commissionsOffered: 1,
+    commissionArrivalSeen: true,
     lumberyardUnlocked: false,
     sweepingUnlocked: false,
     dustTipDismissed: false,

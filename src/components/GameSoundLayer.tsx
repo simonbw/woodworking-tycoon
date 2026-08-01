@@ -60,6 +60,7 @@ const CLIP_GAIN: Record<string, number> = {
   "cash-register": 0.6,
   "material-pickup": 0.45,
   "material-drop": 0.45,
+  "ui-notification": 0.8,
 };
 
 /**
@@ -77,7 +78,11 @@ const CLIP_MIN_GAP_MS: Record<string, number> = {
  * marketplace bookkeeping play dry, while everything else goes through the
  * room bus and picks up the shop's acoustics (see `audioBus.ts`).
  */
-const NON_DIEGETIC_CLIPS = new Set(["commission-complete", "cash-register"]);
+const NON_DIEGETIC_CLIPS = new Set([
+  "commission-complete",
+  "cash-register",
+  "ui-notification",
+]);
 
 const lastPlayedAt = new Map<string, number>();
 
@@ -97,6 +102,8 @@ function clipFor(event: SoundEvent): string | null {
       return "material-pickup";
     case "material-drop":
       return "material-drop";
+    case "phone-ring":
+      return "ui-notification";
   }
 }
 
