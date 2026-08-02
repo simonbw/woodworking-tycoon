@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import {
-  coverageComplete,
+  coverageFraction,
   makeCoverageGrid,
   stampStroke,
 } from "../../game/bench-work/coverage";
@@ -26,6 +26,13 @@ const BEAD_RADIUS_IN = 1;
 
 /** Glue laid per second of active spreading, in²/s — one tunable. */
 const SPREAD_PER_SECOND = 14;
+
+/**
+ * How much of a joint the bead must cover. Deliberately short of the
+ * sanding mask's 98%: squeeze-out closes small gaps, and pixel-hunting
+ * the last half-inch of a glue line is nobody's idea of joinery.
+ */
+const SPREAD_COMPLETE = 0.85;
 
 type GlueStage = "spread" | "butt" | "clamp";
 
@@ -46,10 +53,19 @@ export const GlueSurface: React.FC<{
   onWork: () => void;
   onStage?: (stage: GlueStage, done: number, total: number) => void;
 }> = ({ pieces, requiredClamps, fit, bus, onCommit, onWork, onStage }) => {
-  const layout = useMemo(() => rowLayout(pieces, GLUE_GAP_IN), [pieces]);
+  // The staged-piece list is rebuilt from GameState every render (the
+  // world keeps ticking under the bench view), so everything ephemeral
+  // here keys on the pieces' IDs — not array identity — or the beads
+  // would wipe five times a second.
+  const piecesKey = pieces.map((piece) => piece.id).join("|");
+  const layout = useMemo(
+    () => rowLayout(pieces, GLUE_GAP_IN),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [piecesKey],
+  );
   const jointCount = Math.max(pieces.length - 1, 1);
 
-  // One 1-D coverage strip per joint, keyed by the pieces' identity
+  // One 1-D coverage strip per joint
   const joints = useMemo(
     () =>
       Array.from({ length: jointCount }, (_, i) => {
@@ -126,7 +142,9 @@ export const GlueSurface: React.FC<{
           BEAD_RADIUS_IN,
           gain / 4,
         );
-        const done = joints.filter((j) => coverageComplete(j.grid)).length;
+        const done = joints.filter(
+          (j) => coverageFraction(j.grid) >= SPREAD_COMPLETE,
+        ).length;
         setSpreadDone(done);
         if (done === jointCount) {
           setStage("butt");
@@ -167,7 +185,8 @@ export const GlueSurface: React.FC<{
   useEffect(() => bus.register(handlePointer), [bus, handlePointer]);
 
   // Once butted, pieces close ranks: recompute a gapless layout
-  const closed = useMemo(() => rowLayout(pieces, 0), [pieces]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const closed = useMemo(() => rowLayout(pieces, 0), [piecesKey]);
   const slots = stage === "spread" ? layout.slots : closed.slots;
   const centerOffset =
     stage === "spread" ? 0 : (layout.size.widthIn - closed.size.widthIn) / 2;

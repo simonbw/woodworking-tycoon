@@ -76,18 +76,18 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
           <ShortcutKeys shortcut="pick-up" />, carry it to the workbench, and
           set it down with <ShortcutKeys shortcut="put-down" />. Open the bench
           with <ShortcutKeys shortcut="open-station-sheet" />, choose the plan{" "}
-          <em>Dismantle Pallet</em>, then hold{" "}
-          <ShortcutKeys shortcut="operate-machine" /> to pry it apart. The nails
-          go back in your tin.
+          <em>Dismantle Pallet</em>, and pry the marked nails with the mouse.
+          Every board comes free one pull at a time, and the nails go back in
+          your tin.
         </p>
       );
     case "buildShelf":
       return (
         <p>
           You have the wood for Marguerite's shelf: two thick stringers and
-          three deck boards. At the bench, choose the plan{" "}
-          <em>Build Rustic Pallet Shelf</em> and hold{" "}
-          <ShortcutKeys shortcut="operate-machine" />.
+          three deck boards. Load them at the bench, choose the plan{" "}
+          <em>Build Rustic Pallet Shelf</em>, then set each piece in place and
+          drive the nails home.
         </p>
       );
     case "loadShelf":

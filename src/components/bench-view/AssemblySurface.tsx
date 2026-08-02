@@ -35,8 +35,15 @@ export const AssemblySurface: React.FC<{
   onCommit: () => void;
   onStage?: (snapped: number, driven: number, fastenerTotal: number) => void;
 }> = ({ pieces, fasteners, fit, bus, onCommit, onStage }) => {
-  const layout = useMemo(() => rowLayout(pieces, ASSEMBLY_GAP_IN), [pieces]);
-  const closed = useMemo(() => rowLayout(pieces, 0.5), [pieces]);
+  // Keyed on IDs: the piece list is rebuilt from GameState every render
+  const piecesKey = pieces.map((piece) => piece.id).join("|");
+  const layout = useMemo(
+    () => rowLayout(pieces, ASSEMBLY_GAP_IN),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [piecesKey],
+  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const closed = useMemo(() => rowLayout(pieces, 0.5), [piecesKey]);
   const fastenerTotal = useMemo(
     () => fasteners.reduce((sum, f) => sum + f.amount, 0),
     [fasteners],

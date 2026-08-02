@@ -10,6 +10,7 @@ import { miterFrameShop } from "./miter-frame-shop";
 import { patternBoardShop } from "./pattern-board-shop";
 import { endGrainShop } from "./end-grain-shop";
 import { handToolsShop } from "./hand-tools-shop";
+import { benchWorkShop } from "./bench-work-shop";
 
 export const TEST_FIXTURES: Record<string, GameState> = {
   "miter-saw-crate-shop": miterSawCrateShop,
@@ -20,6 +21,7 @@ export const TEST_FIXTURES: Record<string, GameState> = {
   "end-grain-shop": endGrainShop,
   "consumables-shop": consumablesShop,
   "hand-tools-shop": handToolsShop,
+  "bench-work-shop": benchWorkShop,
   "milling-shop": millingShop,
   "resaw-shop": resawShop,
   "miter-frame-shop": miterFrameShop,

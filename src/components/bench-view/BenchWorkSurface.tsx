@@ -343,12 +343,12 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
       data-script={script.kind}
       data-progress={progress}
     >
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-3">
         <p className="font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-ink-fade">
           {instruction}
         </p>
         {progressLine && (
-          <span className="font-condensed text-[0.7rem] text-ink-fade tabular-nums">
+          <span className="shrink-0 whitespace-nowrap font-condensed text-[0.7rem] text-ink-fade tabular-nums">
             {progressLine}
           </span>
         )}
