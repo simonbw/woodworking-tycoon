@@ -130,3 +130,14 @@ describe("kerf mask", () => {
     assert.strictEqual(kerfFraction(mask), 1);
   });
 });
+
+describe("coverage progress readout", () => {
+  it("moves from the very first thin pass, while completion stays strict", async () => {
+    const { coverageProgress } = await import("./coverage");
+    const grid = makeCoverageGrid(24, 4);
+    stampStroke(grid, 2, 2, 22, 2, 1.25, 0.05);
+    assert.ok(coverageProgress(grid) > 0, "the readout should move");
+    assert.strictEqual(coverageFraction(grid), 0, "nothing saturated yet");
+    assert.ok(!coverageComplete(grid));
+  });
+});

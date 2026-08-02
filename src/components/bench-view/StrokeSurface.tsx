@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import {
   coverageComplete,
-  coverageFraction,
+  coverageProgress,
   makeCoverageGrid,
   stampStroke,
 } from "../../game/bench-work/coverage";
@@ -174,7 +174,7 @@ export const StrokeSurface: React.FC<{
       );
       stampStroke(grid, last.xIn, last.yIn, xIn, yIn, radiusIn, gain);
       lastPoint.current = { xIn, yIn, at: now };
-      onProgress?.(coverageFraction(grid));
+      onProgress?.(coverageProgress(grid));
 
       if (coverageComplete(grid) && !doneRef.current) {
         doneRef.current = true;

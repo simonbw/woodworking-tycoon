@@ -528,7 +528,17 @@ test.describe("Milling", () => {
       await movePlayerTo(page, [7, 4]);
       await setStockDown(page);
       await setStockDown(page);
-      await runWhileHolding(page, () => {
+      // Assembly is bench-view hand work now; commit through the same
+      // actions the mini-game dispatches (snap the rails, drive the
+      // brads) — this spec's business is the milling chain, not the feel.
+      await page.evaluate(() => {
+        const i = (window as any)
+          .__GET_GAME_STATE__()
+          .machines.findIndex((m: any) => m.machineTypeId === "workspace");
+        (window as any).__START_OPERATION__(i);
+        (window as any).__FINISH_ATTENDED_WORK__(i);
+      });
+      await page.waitForFunction(() => {
         const state = (window as any).__GET_GAME_STATE__();
         const all = [
           ...state.player.inventory,

@@ -1,7 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import { BASE_WALK_SPEED } from "../src/game/player-motion";
 import {
-  holdOperate,
   openStationSheet,
   selectMode,
   takeAllHere,
@@ -537,7 +536,7 @@ test.describe("Keyboard", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("sanding pauses when you let go, resumes when you take hold", async () => {
+    await test.step("sanding ignores Space — the bench view owns hand work", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
@@ -550,42 +549,54 @@ test.describe("Keyboard", () => {
       await page.keyboard.press("f");
       await page.waitForTimeout(30);
 
-      // Freeze the clock so starting the op and stepping away is deterministic
-      await setPaused(page, true);
+      // Space is not a path into hand work: held at the bench, nothing
+      // starts (docs/bench-minigames.md decision 1)
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );
-      // A tap starts the work; without the key held it goes no further
-      await page.keyboard.press("Space");
-      await page.waitForTimeout(30);
-      await teleportPlayer(page, FAR_AWAY);
-      await setPaused(page, false);
+      await page.keyboard.down("Space");
+      await page.waitForTimeout(600);
+      await page.keyboard.up("Space");
+      expect((await workspaceProgress(page)).status).toBe("notStarted");
 
-      // Ticks flow again, but nobody is at the bench: progress is frozen
+      // Started through the real start commit, held Space still moves
+      // nothing: the tick never advances interactive attended work —
+      // the strokes do, and their commit is the same action tests use
+      await page.evaluate(() => {
+        const i = (window as any)
+          .__GET_GAME_STATE__()
+          .machines.findIndex((m: any) => m.machineTypeId === "workspace");
+        (window as any).__START_OPERATION__(i);
+      });
+      await expect
+        .poll(async () => (await workspaceProgress(page)).status)
+        .toBe("inProgress");
       const before = await workspaceProgress(page);
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.down("Space");
       await page.waitForTimeout(800);
-      const after = await workspaceProgress(page);
-      expect(before.status).toBe("inProgress");
-      expect(after.ticksRemaining).toBe(before.ticksRemaining);
-
-      // Standing there isn't enough either — the key has to be down
-      await teleportPlayer(page, WORKSPACE_CELL);
-      await page.waitForTimeout(800);
+      await page.keyboard.up("Space");
       expect((await workspaceProgress(page)).ticksRemaining).toBe(
         before.ticksRemaining,
       );
 
-      // Back at the bench with the key held, it finishes
-      await holdOperate(page, () =>
-        page.evaluate(() =>
-          (window as any)
-            .__GET_GAME_STATE__()
-            .machines.some((m: any) =>
-              m.outputMaterials.some(
-                (mat: any) => mat.type === "board" && mat.surface === "sanded",
-              ),
+      // The finish commit resolves the pass: a sanded strip in the bay
+      await page.evaluate(() => {
+        const i = (window as any)
+          .__GET_GAME_STATE__()
+          .machines.findIndex((m: any) => m.machineTypeId === "workspace");
+        (window as any).__FINISH_ATTENDED_WORK__(i);
+      });
+      await page.waitForFunction(() =>
+        (window as any)
+          .__GET_GAME_STATE__()
+          .machines.some((m: any) =>
+            m.outputMaterials.some(
+              (mat: any) => mat.type === "board" && mat.surface === "sanded",
             ),
-        ),
+          ),
       );
       await takeAllHere(page);
     });
@@ -600,31 +611,22 @@ test.describe("Keyboard", () => {
       await page.keyboard.press("Shift+f");
       await page.waitForTimeout(30);
 
-      await setPaused(page, true);
-      await page.evaluate(() =>
-        (document.activeElement as HTMLElement)?.blur?.(),
-      );
-      await page.keyboard.press("Space");
-      await page.waitForTimeout(30);
-      await teleportPlayer(page, FAR_AWAY);
-      await setPaused(page, false);
-
-      // Clamping is attended: frozen at full duration while away
-      await page.waitForTimeout(800);
-      const paused = await workspaceProgress(page);
-      expect(paused.phaseIndex).toBe(0);
-      expect(paused.ticksRemaining).toBe(8);
-
-      // Return and take hold: the clamp phase runs, then curing begins
-      await teleportPlayer(page, WORKSPACE_CELL);
-      await holdOperate(page, () =>
-        page.evaluate(
-          () =>
-            (window as any)
-              .__GET_GAME_STATE__()
-              .machines.find((m: any) => m.machineTypeId === "workspace")
-              .operationProgress.phaseIndex === 1,
-        ),
+      // The last clamp is the single commit: start (spend the glue, tie
+      // up the clamps) and the handoff into the hands-free cure resolve
+      // back to back through the same actions the bench view dispatches
+      await page.evaluate(() => {
+        const i = (window as any)
+          .__GET_GAME_STATE__()
+          .machines.findIndex((m: any) => m.machineTypeId === "workspace");
+        (window as any).__START_OPERATION__(i);
+        (window as any).__FINISH_ATTENDED_WORK__(i);
+      });
+      await page.waitForFunction(
+        () =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "workspace")
+            .operationProgress.phaseIndex === 1,
       );
       // The phase-by-phase status reads off the station sheet
       await openStationSheet(page);

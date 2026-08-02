@@ -8,6 +8,11 @@ import React, {
 import { GameState } from "../game/GameState";
 import { UpdateFunction } from "../utils/typeUtils";
 import { saveGame } from "../game/saveLoad";
+import {
+  finishAttendedWorkAction,
+  pryPalletNailAction,
+} from "../game/game-actions/operation-actions";
+import { operateMachineAction } from "../game/game-actions/player-actions";
 import { getMachines, Machine } from "../game/Machine";
 import { useAutosave } from "./useAutosave";
 
@@ -44,12 +49,35 @@ export const GameStateProvider: React.FC<{
       (window as any).__GAME_STATE__ = gameState;
       (window as any).__UPDATE_GAME_STATE__ = setGameState;
       (window as any).__GET_GAME_STATE__ = () => gameState;
+      // The bench view's commit actions, for tests and debug tooling:
+      // interactive hand work completes through the SAME actions the
+      // mini-game dispatches (docs/bench-minigames.md, decision 1). This
+      // hook is never exposed as UI.
+      (window as any).__START_OPERATION__ = (machineIndex: number) =>
+        setGameState((state) =>
+          operateMachineAction(getMachines(state.machines)[machineIndex])(
+            state,
+          ),
+        );
+      (window as any).__FINISH_ATTENDED_WORK__ = (machineIndex: number) =>
+        setGameState((state) =>
+          finishAttendedWorkAction(getMachines(state.machines)[machineIndex])(
+            state,
+          ),
+        );
+      (window as any).__PRY_PALLET_NAIL__ = (machineIndex: number) =>
+        setGameState((state) =>
+          pryPalletNailAction(getMachines(state.machines)[machineIndex])(state),
+        );
     }
     return () => {
       if (typeof window !== "undefined") {
         delete (window as any).__GAME_STATE__;
         delete (window as any).__UPDATE_GAME_STATE__;
         delete (window as any).__GET_GAME_STATE__;
+        delete (window as any).__START_OPERATION__;
+        delete (window as any).__FINISH_ATTENDED_WORK__;
+        delete (window as any).__PRY_PALLET_NAIL__;
       }
     };
   }, [gameState]);

@@ -25,7 +25,8 @@ export const RunHint: React.FC<{
   // Interactive plans are performed by hand on the work surface above —
   // there is no held-Space path to point at (docs/bench-minigames.md)
   if (machine.selectedOperationOrNull?.interaction) {
-    return canOperate ? null : (
+    const working = machine.operationProgress.status === "inProgress";
+    return canOperate || working ? null : (
       <p className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
         Place stock in the bay to {runLabel} by hand
       </p>

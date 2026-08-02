@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import {
   coverageFraction,
+  coverageProgress,
   makeCoverageGrid,
   stampStroke,
 } from "../../game/bench-work/coverage";
@@ -197,8 +198,7 @@ export const GlueSurface: React.FC<{
       if (stage === "spread") {
         // Beads: amber along each joint, opacity following coverage
         for (const joint of joints) {
-          const covered =
-            joint.grid.covered / (joint.grid.cols * joint.grid.rows);
+          const covered = coverageProgress(joint.grid);
           g.moveTo(joint.xIn * fit.pxPerIn, 0)
             .lineTo(joint.xIn * fit.pxPerIn, joint.heightIn * fit.pxPerIn)
             .stroke({

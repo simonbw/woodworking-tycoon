@@ -409,10 +409,12 @@ test.describe("Market, supplies, and sound", () => {
         "Build Rustic Pallet Shelf",
       );
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
-      // Nothing to run without the nails — the sheet says so where the
-      // run button used to be
+      // Nothing to build without the nails — the sheet says so where the
+      // run button used to be (assembly is bench-view hand work now)
       await expect(
-        workspaceCard(page).getByText("Place stock in the bay to run it"),
+        workspaceCard(page).getByText(
+          "Place stock in the bay to build rustic pallet shelf by hand",
+        ),
       ).toBeVisible();
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();

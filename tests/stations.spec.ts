@@ -368,10 +368,18 @@ test.describe("Stations", () => {
       await closeJournal(page);
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
       await pressKey(page, "Shift+f");
-      // The built sled is a physical thing: it lands in the bench's
-      // output bay like any other product
-      await runWhileHolding(
-        page,
+      // Building is bench-view hand work now; the spec commits through
+      // the same actions the assembly script dispatches. The built sled
+      // is a physical thing: it lands in the bench's output bay like any
+      // other product
+      await page.evaluate(() => {
+        const i = (window as any)
+          .__GET_GAME_STATE__()
+          .machines.findIndex((m: any) => m.machineTypeId === "workspace");
+        (window as any).__START_OPERATION__(i);
+        (window as any).__FINISH_ATTENDED_WORK__(i);
+      });
+      await page.waitForFunction(
         () =>
           (window as any)
             .__GET_GAME_STATE__()

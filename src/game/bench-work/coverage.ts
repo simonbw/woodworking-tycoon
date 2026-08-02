@@ -38,6 +38,9 @@ export interface CoverageGrid {
   readonly cells: Float32Array;
   /** Count of cells at or above 1 — kept incrementally. */
   covered: number;
+  /** Total clamped accumulation across all cells — the smooth progress
+   * readout, where `covered` is the strict completion test. */
+  accumulated: number;
 }
 
 /** A fresh, untouched grid over a workpiece of the given size (inches). */
@@ -54,6 +57,7 @@ export function makeCoverageGrid(
     heightIn,
     cells: new Float32Array(cols * rows),
     covered: 0,
+    accumulated: 0,
   };
 }
 
@@ -94,6 +98,7 @@ export function stampBrush(
       }
       const after = Math.min(1, before + amount * falloff);
       grid.cells[index] = after;
+      grid.accumulated += after - before;
       if (after >= 1) {
         grid.covered++;
       }
@@ -137,6 +142,17 @@ export function stampStroke(
 /** The fraction of cells at full accumulation, 0..1. */
 export function coverageFraction(grid: CoverageGrid): number {
   return grid.covered / (grid.cols * grid.rows);
+}
+
+/**
+ * The smooth progress readout, 0..1: average accumulation across the
+ * grid. Moves from the very first stroke, unlike `coverageFraction`,
+ * which only counts fully-saturated cells — the completion test stays
+ * strict (no credit for a board sanded thin everywhere), but a progress
+ * bar that sits at 0 through the first pass reads as broken.
+ */
+export function coverageProgress(grid: CoverageGrid): number {
+  return grid.accumulated / (grid.cols * grid.rows);
 }
 
 /** Whether the pass is done — coverage past the completion threshold. */
