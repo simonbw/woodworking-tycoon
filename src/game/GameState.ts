@@ -56,7 +56,14 @@ export type TruckState = {
 
 /** Represents all of the state for the game simulation. This is what gets loaded/saved. Does not include UI state. */
 export interface ProgressionState {
-  readonly tutorialStage: number;
+  /**
+   * How far the guided opening has gotten: an index into TUTORIAL_STEPS,
+   * ratcheted forward by the milestone pass and never backward. Equal to
+   * TUTORIAL_COMPLETE once every step is done. See tutorial.ts.
+   */
+  readonly tutorialStep: number;
+  /** The player retired the coach early ("Skip"), or it ran out of steps. */
+  readonly tutorialDismissed: boolean;
   readonly storeUnlocked: boolean;
   /** Reveals the lumberyard (S2S and rough stock) at the garage door. */
   readonly lumberyardUnlocked: boolean;

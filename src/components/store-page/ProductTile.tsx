@@ -23,10 +23,29 @@ export const ProductTile: React.FC<{
   onBuy: () => void;
   /** Routed to the delegated click-sound listener (e.g. "ui-purchase"). */
   sfx?: string;
-}> = ({ name, icon, price, info, owned, canAfford, onBuy, sfx }) => (
+  /**
+   * Marks the whole tile for the guided opening to ring (see
+   * TutorialSpotlightLayer) — the shelf tag is what you look for in an
+   * aisle, not the Buy button on it.
+   */
+  tutorialTarget?: string;
+}> = ({
+  name,
+  icon,
+  price,
+  info,
+  owned,
+  canAfford,
+  onBuy,
+  sfx,
+  tutorialTarget,
+}) => (
   // The picture centers over the tile, the words hang off its left edge
   // — the way a shelf tag is printed.
-  <li className="product-card relative flex flex-col items-stretch gap-0.5 text-left">
+  <li
+    className="product-card relative flex flex-col items-stretch gap-0.5 text-left"
+    data-tutorial-target={tutorialTarget}
+  >
     <InfoButton name={name} info={info} />
     {/* min-h rather than h: the picture sets the row, so an aisle of
         big machine photos can breathe without dragging the tool wall's

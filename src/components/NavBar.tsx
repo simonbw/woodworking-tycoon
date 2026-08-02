@@ -51,6 +51,7 @@ export const NavBar: React.FC = () => {
                 className="button-ghost"
                 onClick={() => setPhoneOpen(true)}
                 data-sfx="ui-tab"
+                data-tutorial-target="navbar-phone"
               >
                 Phone
               </button>
@@ -65,6 +66,7 @@ export const NavBar: React.FC = () => {
               onClick={() => setJournalOpen(true)}
               data-sfx="ui-tab"
               data-reward-target="xp"
+              data-tutorial-target="navbar-journal"
             >
               Skills
               <XpMeter current={xp.current} needed={xp.needed} />

@@ -14,6 +14,7 @@ export const SKILL_IDS = [
   "basicMilling",
   "quickDryGlue",
   "rusticCarpentry",
+  "rusticProjects",
   "panelWork",
   "fineShelving",
   "boxJoinery",
@@ -71,6 +72,14 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
     branch: "joinery",
     requires: [],
     startsUnlocked: true,
+  },
+  rusticProjects: {
+    id: "rusticProjects",
+    name: "Rustic Projects",
+    description:
+      "The small stuff pallet wood is good for: birdhouses and slatted crates.",
+    branch: "joinery",
+    requires: ["rusticCarpentry"],
   },
   panelWork: {
     id: "panelWork",

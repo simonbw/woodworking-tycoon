@@ -2,7 +2,10 @@ import React from "react";
 import { MaterialPile } from "../../game/GameState";
 import { cellToPixelVec } from "./shop-scale";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
-import { TARGET_HIGHLIGHT_FILTERS } from "./targetHighlight";
+import {
+  TARGET_HIGHLIGHT_FILTERS,
+  TUTORIAL_HIGHLIGHT_FILTERS,
+} from "./targetHighlight";
 
 /**
  * One pile where it lies: `pile.position` is the piece's center point in
@@ -18,14 +21,22 @@ export const MaterialPileSprite: React.FC<{
    * which piece E grabs.
    */
   highlighted?: boolean;
-}> = ({ pile, highlighted }) => {
+  /** Whether the guided opening is pointing the player at this piece. */
+  tutorialTarget?: boolean;
+}> = ({ pile, highlighted, tutorialTarget }) => {
   const [x, y] = cellToPixelVec(pile.position);
   return (
     <pixiContainer
       x={x}
       y={y}
       rotation={pile.rotation}
-      filters={highlighted ? TARGET_HIGHLIGHT_FILTERS : undefined}
+      filters={
+        highlighted
+          ? TARGET_HIGHLIGHT_FILTERS
+          : tutorialTarget
+            ? TUTORIAL_HIGHLIGHT_FILTERS
+            : undefined
+      }
     >
       <MaterialSprite material={pile.material} />
     </pixiContainer>

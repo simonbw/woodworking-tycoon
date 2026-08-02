@@ -34,7 +34,7 @@ visible in the journal (that's where aspiration lives).
 - Levels follow an increasing-cost curve; each level grants 1 skill point.
   Points are spent in the journal. No respec (nothing is a trap yet).
 
-## The tree (Now: 20 nodes, 3 branches)
+## The tree (Now: 21 nodes, 3 branches)
 
 **Milling** — `basic-milling`★ (dismantle, crosscut, rip, plane; resawing on
 a band saw, which is bought rather than learned) → `quick-dry-glue` (all
@@ -46,7 +46,13 @@ wasn't built for it; R turns the stock between resawing on edge and
 ripping flat while the jig is bolted on)
 
 **Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
-cutting board) → `fine-shelving` (Proper Shelf: sanded hardwood, $45 base) →
+cutting board). `rustic-carpentry` → `rustic-projects` (Birdhouse + Crate:
+the other things pallet wood is good for). That node is the guided
+opening's spend — see `docs/tutorial.md`. It is deliberately the cheapest
+useful point in the tree and it pays off immediately, because the job
+board bursts offers for newly-available templates and both of its recipes
+have one. `rustic-carpentry` also → `fine-shelving` (Proper Shelf: sanded
+hardwood, $45 base) →
 `box-joinery` (Jewelry Box: thin sanded stock — planer-era product, $90 base).
 `rustic-carpentry` also → `mitered-frames` (Picture Frame: four sanded
 real-wood rails mitered 45° both ends on the saw's angle stops, joined with

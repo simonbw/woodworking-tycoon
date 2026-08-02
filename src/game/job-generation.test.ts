@@ -50,11 +50,15 @@ describe("generateJobBoard", () => {
     // Everything currently available has been seen — except nothing yet:
     // mark all seen, then check no burst; then forget one and check it
     // lands a guaranteed offer.
-    const allSeen = stateWith({});
+    // Crate work is what Rustic Projects buys — the skill the guided
+    // opening spends its first point on, which is exactly the burst this
+    // is about (see tutorial.ts).
+    const allSeen = stateWith({ skills: ["rusticProjects"] });
     const seen = availableJobTemplateIds(allSeen);
-    assert.ok(seen.includes("crates"), "starter hammer offers crate work");
+    assert.ok(seen.includes("crates"), "Rustic Projects offers crate work");
 
     const forgotten = stateWith({
+      skills: ["rusticProjects"],
       seenJobTemplateIds: seen.filter((id) => id !== "crates"),
     });
     // Deterministic: unseen templates are guaranteed a slot

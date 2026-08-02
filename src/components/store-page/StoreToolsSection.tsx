@@ -132,6 +132,7 @@ const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       canAfford={gameState.money >= tool.cost}
       onBuy={() => applyAction(buyToolAction(tool.id as ToolId))}
+      tutorialTarget={`store-tool-${tool.id}`}
     />
   );
 };

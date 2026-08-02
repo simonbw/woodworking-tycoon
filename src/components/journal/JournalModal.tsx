@@ -150,7 +150,10 @@ const SkillCard: React.FC<{ skill: SkillType }> = ({ skill }) => {
   const recipes = recipesForSkill(skill.id);
 
   return (
-    <li className="paper-card p-3 space-y-1.5">
+    <li
+      className="paper-card p-3 space-y-1.5"
+      data-tutorial-target={`skill-${skill.id}`}
+    >
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-condensed font-bold text-sm uppercase tracking-wide">
           {skill.name}

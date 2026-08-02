@@ -1,7 +1,8 @@
 import { COMMISSION_SEQUENCE } from "../commissionSequence";
 import { GameAction } from "../GameState";
 import { ManualArticleId, MANUAL_ARTICLES } from "../manual";
-import { tutorialStageFor, UNLOCK_CONDITIONS } from "../progression-helpers";
+import { UNLOCK_CONDITIONS } from "../progression-helpers";
+import { advanceTutorialStep } from "../tutorial";
 import { emitSound } from "./sound-actions";
 
 /** The player opened these manual articles — clears their NEW markers. */
@@ -29,6 +30,17 @@ export function dismissDustTipAction(): GameAction {
     ...gameState,
     progression: { ...gameState.progression, dustTipDismissed: true },
   });
+}
+
+/** The player retired the guided opening early. One way, like an unlock. */
+export function dismissTutorialAction(): GameAction {
+  return (gameState) =>
+    gameState.progression.tutorialDismissed
+      ? gameState
+      : {
+          ...gameState,
+          progression: { ...gameState.progression, tutorialDismissed: true },
+        };
 }
 
 export function incrementCommissionsCompletedAction(): GameAction {
@@ -103,20 +115,19 @@ export function checkProgressionMilestonesAction(): GameAction {
     }
 
     const updatedState = { ...gameState, progression };
-    const tutorialStage = Math.max(
-      progression.tutorialStage,
-      tutorialStageFor(updatedState),
-    );
+    // The coach walks forward over everything the shop already satisfies.
+    // This pass runs every tick, so no action has to know it exists.
+    const tutorialStep = advanceTutorialStep(updatedState);
 
     if (
       progression === gameState.progression &&
-      tutorialStage === progression.tutorialStage
+      tutorialStep === progression.tutorialStep
     ) {
       return gameState;
     }
     const result = {
       ...updatedState,
-      progression: { ...progression, tutorialStage },
+      progression: { ...progression, tutorialStep },
     };
     return phoneRings ? emitSound(result, { kind: "phone-ring" }) : result;
   };

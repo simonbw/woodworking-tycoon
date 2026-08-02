@@ -68,6 +68,7 @@ The game follows a state-driven architecture with clear separation between game 
 2. **Game Loop**: Managed by `Ticker` component for regular game updates; the player's body moves continuously between ticks with WASD (see `docs/continuous-movement.md`) while `GameState` tracks only the cell underfoot. The shop runs at one pace with no speed controls; time always advances unless the pause menu is open — the other overlays don't stop the world.
 3. **Diegetic UI**: The shop floor (`HomePage`) is the game's only screen — there are no tabs. The canvas runs full-bleed with the garage drawn as a building on its lot (grass, driveway, walls, and the garage-door opening: `EnvironmentLayer`), and the remaining chrome floats over it as a HUD. Everything else is an object reached from it:
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
+   - **The guided opening** (`src/components/tutorial/`, steps in `src/game/tutorial.ts`): a coach card in the HUD's left column showing one instruction at a time, with the thing it names outlined in the world or ringed in the chrome. Steps are predicates over `GameState`, not a script (see `docs/tutorial.md`)
    - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
    - **Clipboard** (`ClipboardModal`): the active commission's full work order, held up with C or by clicking the top-left tracker chip (`CommissionTracker`); it holds itself up when a new commission arrives after a payout

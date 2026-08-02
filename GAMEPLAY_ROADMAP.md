@@ -43,6 +43,16 @@ and listings:
 6. **The Butcher's Block** ($340, gate 66) — the finale: a shop-built
    crosscut sled and a true end-grain block.
 
+### The Guided Opening (implemented, `docs/tutorial.md`)
+
+A ten-step coach card that teaches one pass through each part of the early
+game and then retires: commission 1 start to finish, then a listing, a
+job, a bought-and-mounted tool, and the first skill point. Steps are
+derived from game state rather than scripted, so it can't desync or lock.
+It deliberately stops short of commission 2 — the climb to it is many
+iterations of the loop it just taught — and never mentions that
+reputation summons the next client. The phone ringing is the reveal.
+
 ### Key Mechanics
 - **Commission System**: rare, rep-gated milestone events that arrive as a
   phone call and land on the clipboard

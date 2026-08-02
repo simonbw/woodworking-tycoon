@@ -207,7 +207,9 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     tier: 1,
     zeroMaterialCost: true,
     available: (gameState) =>
-      ownsTool(gameState, "hammer") && hasAnySaw(gameState),
+      hasSkill(gameState.progression, "rusticProjects") &&
+      ownsTool(gameState, "hammer") &&
+      hasAnySaw(gameState),
     generate: (rng, gameState) => {
       const quantity = intBetween(rng, 2, 4) + repBatchBonus(gameState);
       return {
@@ -221,7 +223,9 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     id: "crates",
     tier: 1,
     zeroMaterialCost: true,
-    available: (gameState) => ownsTool(gameState, "hammer"),
+    available: (gameState) =>
+      hasSkill(gameState.progression, "rusticProjects") &&
+      ownsTool(gameState, "hammer"),
     generate: (rng, gameState) => {
       const quantity =
         intBetween(rng, 2, 3) + Math.min(3, repBatchBonus(gameState));

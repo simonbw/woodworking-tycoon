@@ -6,7 +6,10 @@ import { MaterialInstance } from "../../game/Materials";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
 import { useMachineActivity } from "./useMachineActivity";
-import { TARGET_HIGHLIGHT_FILTERS } from "./targetHighlight";
+import {
+  TARGET_HIGHLIGHT_FILTERS,
+  TUTORIAL_HIGHLIGHT_FILTERS,
+} from "./targetHighlight";
 import { BandSawSprite } from "../machine-sprites/BandSawSprite";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
 import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
@@ -47,8 +50,10 @@ const FootprintArt: React.FC<{
 export const MachineSprite: React.FC<{
   machine: Machine;
   isSelected?: boolean;
+  /** Whether the guided opening is sending the player to this station. */
+  tutorialTarget?: boolean;
   onClick?: () => void;
-}> = ({ machine, isSelected = false, onClick }) => {
+}> = ({ machine, isSelected = false, tutorialTarget = false, onClick }) => {
   const [x, y] = cellToPixelCenter(machine.position);
   const angle = machine.rotation * -90;
   const operatorPositionTexture = useTexture("/images/operator-position.png");
@@ -68,7 +73,13 @@ export const MachineSprite: React.FC<{
           the dust bag alike — while the player stands at its operator
           position. Same treatment as the pile E would pick up. */}
       <pixiContainer
-        filters={isSelected ? TARGET_HIGHLIGHT_FILTERS : undefined}
+        filters={
+          isSelected
+            ? TARGET_HIGHLIGHT_FILTERS
+            : tutorialTarget
+              ? TUTORIAL_HIGHLIGHT_FILTERS
+              : undefined
+        }
       >
         <LocalMachineSprite machine={machine} />
 

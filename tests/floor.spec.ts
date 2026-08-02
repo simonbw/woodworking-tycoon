@@ -126,6 +126,17 @@ test.describe("Shop floor", () => {
       await expect(manual).toHaveCount(0);
     });
 
+    await test.step("the guided opening puts up its first instruction", async () => {
+      // The step itself is proven in the sequence tier (sequences/
+      // tutorial.test.ts walks all ten); what the browser is for is that
+      // the card is mounted, reads off game state, and can be retired.
+      const card = page.getByTestId("tutorial-card");
+      await expect(card).toBeVisible();
+      await expect(card).toContainText("Take the truck out for a pallet");
+      await card.getByTestId("tutorial-skip").click();
+      await expect(card).toHaveCount(0);
+    });
+
     await test.step("page loads under 30 seconds", async () => {
       const loadTime = Date.now() - startTime;
       expect(loadTime).toBeLessThan(30000);

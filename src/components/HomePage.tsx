@@ -5,6 +5,7 @@ import { HandsStrip } from "./HandsStrip";
 import { NavBar } from "./NavBar";
 import { SuppliesSection } from "./SuppliesSection";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
+import { TutorialCard } from "./tutorial/TutorialCard";
 import { ShopView } from "./shop-view/ShopView";
 
 export const HomePage: React.FC = () => {
@@ -41,6 +42,7 @@ const HomePageContent: React.FC = () => {
 
       <div className="absolute left-6 top-6 z-20 w-80 space-y-3">
         <CommissionTracker />
+        <TutorialCard />
         <DustTutorialCard />
       </div>
 

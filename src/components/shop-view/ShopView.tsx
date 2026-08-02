@@ -2,7 +2,8 @@ import { Application, useApplication } from "@pixi/react";
 import type { Application as PixiApplication, Container } from "pixi.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../useCellMap";
-import { isSameMachine, machineKey } from "../../game/Machine";
+import { isSameMachine, MachineId, machineKey } from "../../game/Machine";
+import { tutorialTargets } from "../tutorial/tutorialTargets";
 import { vectorKey } from "../../game/Vectors";
 import { useTexture } from "../../utils/useTexture";
 import {
@@ -177,6 +178,10 @@ export const ShopView: React.FC = () => {
   const truckCargoHighlight =
     atBed && interact?.kind === "truck-bed" ? interact.material : undefined;
 
+  // Where the guided opening is pointing, in the world. Empty once the
+  // tutorial is done, so this costs nothing for the rest of the game.
+  const coach = tutorialTargets(gameState);
+
   // Clicking a machine you're standing at aims the keyboard at it; a
   // second click on a recipe-driven station spreads its sheet open. The
   // mouse can't reach machines you're not at — walk over first.
@@ -345,6 +350,7 @@ export const ShopView: React.FC = () => {
               viewport={worldViewport}
               truckHighlight={truckHighlight}
               truckCargoHighlight={truckCargoHighlight}
+              truckTutorialHighlight={coach.truck}
             />
               <pixiTilingSprite
                 eventMode="static"
@@ -381,6 +387,7 @@ export const ShopView: React.FC = () => {
                   key={`pile-${pile.material.id}`}
                   pile={pile}
                   highlighted={pile === pickupTarget}
+                  tutorialTarget={coach.matchesPile?.(pile.material) ?? false}
                 />
               ))}
               {[...machines]
@@ -399,6 +406,9 @@ export const ShopView: React.FC = () => {
                       gameState.player.carriedMachine == null &&
                       isTargeted(machinePlacement)
                     }
+                    tutorialTarget={coach.machineTypeIds.has(
+                      machinePlacement.type.id as MachineId,
+                    )}
                     onClick={machineClickHandler(machinePlacement)}
                   />
                 ))}

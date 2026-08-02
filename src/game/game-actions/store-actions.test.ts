@@ -7,6 +7,7 @@ import { MaterialInstance, FinishedProduct } from "../Materials";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
 import { truckCabSideCell } from "../lot";
+import { currentTutorialStep } from "../tutorial";
 import {
   buyMachineAction,
   buyMaterialAction,
@@ -48,7 +49,6 @@ function stateAtCommission(
       // The commission being delivered has been offered and is active
       commissionsOffered: commissionsCompleted + 1,
       storeUnlocked: commissionsCompleted >= 1,
-      tutorialStage: commissionsCompleted >= 1 ? 1 : 0,
     },
   });
   return {
@@ -151,7 +151,9 @@ describe("completeCommissionAction", () => {
       stateAtCommission(0, [makeShelf()]),
     );
     assert.strictEqual(result.progression.storeUnlocked, true);
-    assert.strictEqual(result.progression.tutorialStage, 1);
+    // The handoff is the tutorial's fifth step; the coach moves on to the
+    // marketplace half in the same pass
+    assert.strictEqual(currentTutorialStep(result)?.id, "listStock");
   });
 
   it("unlocks the marketplace with the first commission too", () => {

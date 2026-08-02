@@ -10,6 +10,7 @@ import { CommissionCallLayer } from "./phone/CommissionCallLayer";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { TripOverlays, TripTransitionLayer } from "./trip/TripTransitionLayer";
+import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
 import { UiSoundLayer } from "./UiSoundLayer";
 import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
 import { PauseProvider } from "./PauseContext";
@@ -53,6 +54,9 @@ export const Main: React.FC = () => {
                   </TripTransitionLayer>
                   <RewardFlightLayer />
                   <CommissionCallLayer />
+                  {/* Above the overlays, because what it points at is
+                      often inside one */}
+                  <TutorialSpotlightLayer />
                   <GameSoundLayer />
                   <MachineSoundLayer />
                   <DebugView />
