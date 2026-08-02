@@ -12,6 +12,7 @@ import {
   colorBySpecies,
 } from "../shop-view/colorBySpecies";
 import { classNames } from "../../utils/classNames";
+import { formatCount } from "../../utils/formatNumber";
 import { toolIconSrc } from "../../utils/uiImages";
 import { Tooltip } from "../Tooltip";
 
@@ -245,8 +246,14 @@ const Wrapper: React.FC<{
       >
         {children}
         {quantity && (
-          <span className="absolute bottom-0.5 right-0.5 text-xs select-none bg-black/70 px-1 rounded">
-            {quantity}
+          <span
+            className="absolute bottom-0.5 right-1 text-xs font-condensed font-semibold tabular-nums text-white select-none"
+            style={{
+              textShadow:
+                "1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000",
+            }}
+          >
+            {formatCount(quantity)}
           </span>
         )}
         {/* Validation indicator for invalid materials */}
