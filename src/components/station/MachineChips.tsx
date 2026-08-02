@@ -137,12 +137,23 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           {machine.type.stageVerb ?? "place"} {getMaterialName(stageable[0])}
         </HintRow>
       )}
-      {canOperate && (
-        <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
-          hold to{" "}
-          {(runOperation?.name ?? machine.type.feedVerb ?? "run").toLowerCase()}
-        </HintRow>
-      )}
+      {canOperate &&
+        (runOperation?.interaction ? (
+          // Hand work has no held-Space path: the bench view owns it
+          // (docs/bench-minigames.md) — the chip sends you to the bench
+          <HintRow keys={<ShortcutKeys shortcut="open-station-sheet" />}>
+            {runOperation.name.toLowerCase()} by hand
+          </HintRow>
+        ) : (
+          <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
+            hold to{" "}
+            {(
+              runOperation?.name ??
+              machine.type.feedVerb ??
+              "run"
+            ).toLowerCase()}
+          </HintRow>
+        ))}
       {refusal && (
         <HintRow className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
           {refusal}

@@ -5,6 +5,7 @@ import { Tooltip } from "../Tooltip";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
 import { BenchSheet } from "./BenchSheet";
+import { BenchWorkSurface } from "../bench-view/BenchWorkSurface";
 import { ContentsSheet } from "./ContentsSheet";
 import { ToolSheet } from "./ToolSheet";
 import { StatusText } from "./StatusText";
@@ -43,7 +44,12 @@ export const StationSheet: React.FC = () => {
       data-testid="station-sheet"
     >
       <div
-        className="max-h-full w-full max-w-md overflow-y-auto"
+        className={`max-h-full w-full overflow-y-auto ${
+          // Benches spread wider: the zoomed work surface needs the room
+          !sheetMachine.type.directFeed && !sheetMachine.type.container
+            ? "max-w-xl"
+            : "max-w-md"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <StationSheetBody machine={sheetMachine} onClose={closeSheet} />
@@ -95,7 +101,12 @@ const StationSheetBody: React.FC<{
       ) : machine.type.container || operations.length === 0 ? (
         <ContentsSheet machine={machine} />
       ) : (
-        <BenchSheet machine={machine} operations={operations} />
+        <>
+          {/* The zoomed bench view: hand work happens here, over the
+              station's actual staged stock (docs/bench-minigames.md) */}
+          <BenchWorkSurface machine={machine} />
+          <BenchSheet machine={machine} operations={operations} />
+        </>
       )}
     </SheetFrame>
   );

@@ -3,7 +3,13 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { CellMap } from "../CellMap";
 import { GameState } from "../GameState";
-import { Machine, MACHINE_TYPES, Operation, MachineState, getMachines } from "../Machine";
+import {
+  Machine,
+  MACHINE_TYPES,
+  Operation,
+  MachineState,
+  getMachines,
+} from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
 import { SheetGood } from "../Materials";

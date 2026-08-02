@@ -314,7 +314,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       // tickAction, so the press mustn't also start the machine underfoot.
       if (heldTool(gameState.current) !== null) return;
       const machine = targeted.current;
-      if (machine) applyAction(operateMachineAction(machine));
+      if (!machine) return;
+      // Interactive bench plans have no held-Space path — the work is
+      // performed by hand in the bench view (docs/bench-minigames.md)
+      if (
+        !machine.type.directFeed &&
+        machine.selectedOperationOrNull?.interaction != null
+      ) {
+        return;
+      }
+      applyAction(operateMachineAction(machine));
     },
     present && !carrying,
   );

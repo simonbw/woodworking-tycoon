@@ -79,7 +79,10 @@ function glueStrips() {
  */
 function sandedPanel() {
   return panel(
-    Array.from({ length: 5 }, () => ({ species: "maple" as const, width: 2 as const })),
+    Array.from({ length: 5 }, () => ({
+      species: "maple" as const,
+      width: 2 as const,
+    })),
     2,
     4,
     "sanded",

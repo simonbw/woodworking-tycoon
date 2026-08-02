@@ -18,6 +18,10 @@ import { UpgradeId } from "../Upgrade";
 import { Vector } from "../Vectors";
 import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { withXp } from "./skill-actions";
+import { PryTarget } from "../bench-work/workpiece";
+import { deriveMachineCutLoad } from "../cut-load";
+import { emitMachineDust } from "../Dust";
+import { materialSpecies } from "../material-helpers";
 
 /**
  * The commit-action split (see docs/bench-minigames.md): the bench view
@@ -288,9 +292,14 @@ export function finishAttendedWorkAction(machine: Machine): GameAction {
  *
  * Deck boards come off first (top of the stack down), one nail each; then
  * the three stringers, one nail each — the same 14-nail, 11-board yield
- * the one-shot recipe paid out.
+ * the one-shot recipe paid out. The bench view passes the nail the
+ * player actually pried; without one, the topmost remaining board frees
+ * (the driver's path).
  */
-export function pryPalletNailAction(machine: Machine): GameAction {
+export function pryPalletNailAction(
+  machine: Machine,
+  target?: PryTarget,
+): GameAction {
   return (gameState) => {
     const machineState = findMachineState(gameState, machine);
     if (!machineState) {
@@ -322,7 +331,12 @@ export function pryPalletNailAction(machine: Machine): GameAction {
       return gameState;
     }
 
-    const deckIndex = pallet.deckBoards.findLastIndex((b: boolean) => b);
+    const deckIndex =
+      target?.kind === "deck" && pallet.deckBoards[target.index]
+        ? target.index
+        : target?.kind === "stringer"
+          ? -1
+          : pallet.deckBoards.findLastIndex((b: boolean) => b);
     let remainingPallet: typeof pallet | null;
     let freedBoard;
     if (deckIndex !== -1) {
@@ -389,4 +403,55 @@ export function interactionFor(
   operation: Operation | null,
 ): Operation["interaction"] | null {
   return operation?.interaction ?? null;
+}
+
+/**
+ * How often the bench view lands a dust emission while a stroke is
+ * actively moving, so the dust simulation — slowdown, sweeping — stays
+ * honest without waiting for the commit.
+ */
+export const BENCH_DUST_EMISSIONS_PER_SECOND = 2;
+
+/**
+ * One throttled emission of hand-work dust: what the tick would have
+ * shed over the equivalent stretch of attended machine time (dustOutput
+ * is per tick at 5 ticks/second, scaled by the cut load the way
+ * machineTickPass scales it). The bench view calls this about twice a
+ * second while the tool is moving; sanding a whole board sheds roughly
+ * the same total mess either way.
+ */
+export function emitBenchDustAction(machine: Machine): GameAction {
+  return (gameState) => {
+    const machineState = findMachineState(gameState, machine);
+    if (!machineState) {
+      return gameState;
+    }
+    const live = new Machine(machineState);
+    const operation = live.operations.find(
+      (op) => op.id === machineState.selectedOperationId,
+    );
+    const dustOutput = operation?.dustOutput ?? 0;
+    if (dustOutput === 0) {
+      return gameState;
+    }
+    const materials =
+      machineState.processingMaterials.length > 0
+        ? machineState.processingMaterials
+        : machineState.inputMaterials;
+    const species = [...new Set(materials.flatMap(materialSpecies))];
+    if (species.length === 0) {
+      return gameState;
+    }
+    const ticksPerEmission = 5 / BENCH_DUST_EMISSIONS_PER_SECOND;
+    return {
+      ...gameState,
+      dust: emitMachineDust(
+        gameState.dust,
+        live,
+        species,
+        dustOutput * deriveMachineCutLoad(live) * ticksPerEmission,
+        gameState.shopInfo.size,
+      ),
+    };
+  };
 }
