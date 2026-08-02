@@ -248,6 +248,27 @@
       opacity: 1;
     }
   }
+
+  /* The guided opening's ring around a button (see TutorialSpotlightLayer).
+     Same blue as the in-world tutorial outline, breathing so the eye finds
+     it among chrome that is otherwise all the same weight. */
+  .tutorial-ring {
+    border: 2px solid theme("colors.sky.400");
+    box-shadow:
+      0 0 0 2px rgb(12 74 110 / 0.35),
+      0 0 12px rgb(56 189 248 / 0.5);
+    animation: tutorial-ring 1.6s ease-in-out infinite;
+  }
+
+  @keyframes tutorial-ring {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -257,5 +278,12 @@
   .phone-ring-in,
   .bubble-in {
     animation-duration: 1ms !important;
+  }
+
+  /* Not shortened but stopped: a ring that blinks once and holds is still
+     a ring, and an infinite animation is the thing being opted out of. */
+  .tutorial-ring {
+    animation: none !important;
+    opacity: 1;
   }
 }

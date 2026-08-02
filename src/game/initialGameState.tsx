@@ -54,7 +54,8 @@ export const initialGameState: GameState = {
     entrancePosition: defaultEntrancePosition([12, 16]),
   },
   progression: {
-    tutorialStage: 0,
+    tutorialStep: 0,
+    tutorialDismissed: false,
     storeUnlocked: false,
     lumberyardUnlocked: false,
     marketplaceUnlocked: false,

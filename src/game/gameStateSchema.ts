@@ -88,7 +88,8 @@ const personSchema = z.object({
 });
 
 const progressionSchema = z.object({
-  tutorialStage: z.number(),
+  tutorialStep: z.number(),
+  tutorialDismissed: z.boolean(),
   storeUnlocked: z.boolean(),
   lumberyardUnlocked: z.boolean(),
   marketplaceUnlocked: z.boolean(),

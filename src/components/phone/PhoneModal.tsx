@@ -118,6 +118,7 @@ const TabSwitcher: React.FC<{
           onClick={() => onSelect(id)}
           data-sfx={tab === id ? "none" : "ui-tab"}
           aria-current={tab === id ? "page" : undefined}
+          data-tutorial-target={`phone-tab-${id}`}
           className={classNames(
             "grow border-b-2 py-1.5 font-condensed text-xs uppercase tracking-[0.2em] transition-colors",
             tab === id

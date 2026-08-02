@@ -77,7 +77,8 @@ export const handToolsShop: GameState = {
     entrancePosition: [6, 15],
   },
   progression: {
-    tutorialStage: 2,
+    tutorialStep: 0,
+    tutorialDismissed: true,
     storeUnlocked: true,
     lumberyardUnlocked: false,
     marketplaceUnlocked: true,

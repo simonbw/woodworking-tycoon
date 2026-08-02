@@ -99,12 +99,3 @@ export const UNLOCK_CONDITIONS: Record<
       0,
     ) >= DUST_TUTORIAL_THRESHOLD,
 };
-
-/**
- * The tutorial stage is derived from which features have been unlocked:
- * 0 = nothing yet, 1 = store unlocked.
- */
-export function tutorialStageFor(gameState: GameState): number {
-  if (gameState.progression.storeUnlocked) return 1;
-  return 0;
-}

@@ -26,3 +26,25 @@ export const TARGET_HIGHLIGHT_FILTERS: Filter[] = [
     quality: 0.5,
   }),
 ];
+
+/**
+ * What the guided opening points at (see game/tutorial.ts). Deliberately
+ * a different color from the amber targeting rim: amber means "the keys
+ * act on this, here, now", and blue means "go to this next" — a thing you
+ * usually aren't standing at yet. When both apply the amber wins, because
+ * by then the tutorial's arrow has done its job.
+ */
+export const TUTORIAL_HIGHLIGHT_FILTERS: Filter[] = [
+  new OutlineFilter({
+    thickness: 2.5,
+    color: 0x38bdf8,
+    alpha: 0.9,
+    quality: 0.5,
+  }),
+  new OutlineFilter({
+    thickness: 2,
+    color: 0x0c4a6e,
+    alpha: 0.35,
+    quality: 0.5,
+  }),
+];

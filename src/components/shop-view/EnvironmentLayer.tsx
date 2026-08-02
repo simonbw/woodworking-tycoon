@@ -53,7 +53,15 @@ export const EnvironmentLayer: React.FC<{
   viewport: WorldViewport;
   truckHighlight?: TruckHighlight;
   truckCargoHighlight?: MaterialInstance;
-}> = ({ width, height, viewport, truckHighlight, truckCargoHighlight }) => {
+  truckTutorialHighlight?: TruckHighlight;
+}> = ({
+  width,
+  height,
+  viewport,
+  truckHighlight,
+  truckCargoHighlight,
+  truckTutorialHighlight,
+}) => {
   const gameState = useGameState();
   const concreteTexture = useTexture("/images/concrete-floor-2-big.png");
 
@@ -167,6 +175,7 @@ export const EnvironmentLayer: React.FC<{
       <TruckSprite
         highlight={truckHighlight}
         highlightedCargo={truckCargoHighlight}
+        tutorialHighlight={truckTutorialHighlight}
       />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>

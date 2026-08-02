@@ -3,7 +3,10 @@ import { Container, Rectangle, Texture } from "pixi.js";
 import React, { useMemo, useRef } from "react";
 import { truckBedRect, truckParkedRect } from "../../game/lot";
 import { MaterialInstance } from "../../game/Materials";
-import { TARGET_HIGHLIGHT_FILTERS } from "./targetHighlight";
+import {
+  TARGET_HIGHLIGHT_FILTERS,
+  TUTORIAL_HIGHLIGHT_FILTERS,
+} from "./targetHighlight";
 import { useTexture } from "../../utils/useTexture";
 import { clamp } from "../../utils/mathUtils";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
@@ -69,7 +72,13 @@ export const TruckSprite: React.FC<{
   /** The piece in the bed E would lift out, outlined on its own the way a
    * pile on the floor is. Matched by identity against `truck.bed`. */
   highlightedCargo?: MaterialInstance;
-}> = ({ highlight = null, highlightedCargo }) => {
+  /**
+   * Where the guided opening is sending the player — the cab to drive
+   * somewhere, the bed to load work into. Drawn in the tutorial's blue,
+   * and only where the amber targeting rim isn't already lit.
+   */
+  tutorialHighlight?: TruckHighlight;
+}> = ({ highlight = null, highlightedCargo, tutorialHighlight = null }) => {
   const gameState = useGameState();
   const truckTexture = useTexture("/images/pickup-truck.png");
   // The bed cropped out of the same art, drawn over itself pixel for
@@ -144,9 +153,15 @@ export const TruckSprite: React.FC<{
         height={TRUCK_CANVAS_HEIGHT}
         anchor={{ x: 0.5, y: 0.5 }}
         angle={180}
-        filters={highlight === "truck" ? TARGET_HIGHLIGHT_FILTERS : undefined}
+        filters={
+          highlight === "truck"
+            ? TARGET_HIGHLIGHT_FILTERS
+            : tutorialHighlight === "truck"
+              ? TUTORIAL_HIGHLIGHT_FILTERS
+              : undefined
+        }
       />
-      {highlight === "bed" && (
+      {(highlight === "bed" || tutorialHighlight === "bed") && (
         <pixiSprite
           texture={bedTexture}
           x={bedFrameX}
@@ -155,7 +170,11 @@ export const TruckSprite: React.FC<{
           height={BED_FRAME.height * srcToWorld}
           anchor={{ x: 0.5, y: 0.5 }}
           angle={180}
-          filters={TARGET_HIGHLIGHT_FILTERS}
+          filters={
+            highlight === "bed"
+              ? TARGET_HIGHLIGHT_FILTERS
+              : TUTORIAL_HIGHLIGHT_FILTERS
+          }
         />
       )}
       {/* Cargo lies lengthwise in the bed, fanned like a floor pile.

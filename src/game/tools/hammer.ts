@@ -69,7 +69,7 @@ export const hammer: ToolType = {
     {
       name: "Build Birdhouse",
       id: "buildBirdhouse",
-      requiredSkill: "rusticCarpentry",
+      requiredSkill: "rusticProjects",
       duration: 20,
       requiredConsumables: [{ id: "nails", amount: 6 }],
       getInputMaterials: () => [
@@ -103,7 +103,7 @@ export const hammer: ToolType = {
     {
       name: "Build Crate",
       id: "buildCrate",
-      requiredSkill: "rusticCarpentry",
+      requiredSkill: "rusticProjects",
       duration: 25,
       requiredConsumables: [{ id: "nails", amount: 12 }],
       getInputMaterials: () => [
