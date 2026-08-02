@@ -24,6 +24,8 @@ const PIXEL_ART_ASSETS = [
 
 // List of all texture assets used in the game
 export const TEXTURE_ASSETS = [
+  "/images/asphalt.png",
+  "/images/grass.png",
   "/images/bandsaw-14-lower.png",
   "/images/bandsaw-14-fence.png",
   "/images/bandsaw-14-upper.png",

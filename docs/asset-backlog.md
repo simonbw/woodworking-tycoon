@@ -134,10 +134,11 @@ wiring: same path, same size, same component.
 - [ ] Floor tiles — `shop-view/FloorTileSprite.tsx`. Flat zinc rects under
       the concrete floor texture; likely folds into the floor art rather than
       becoming its own asset.
-- [ ] The lot — `shop-view/EnvironmentLayer.tsx`. Grass is a flat fill with
-      hashed tufts, and the driveway reuses the interior concrete texture
-      under a darker tint. Wants a tiling grass texture and an
-      outdoor-concrete texture of its own.
+- [x] The lot — `shop-view/EnvironmentLayer.tsx`. The lawn tiles
+      `grass.png` (tinted down to sit in the shop's palette) across the
+      viewport, and the driveway tiles `asphalt.png` instead of borrowing
+      the interior concrete. Both are photographic 2048² tiles scaled so
+      one repeat covers a believable stretch of lot.
 - [ ] Walls and garage door — `shop-view/EnvironmentLayer.tsx`. The stud
       walls, jambs, and threshold are flat bands. Art could carry siding,
       corner trim, and door tracks — but it has to follow an arbitrary shop
