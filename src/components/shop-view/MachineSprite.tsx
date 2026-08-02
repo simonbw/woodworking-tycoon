@@ -68,8 +68,8 @@ export const MachineSprite: React.FC<{
       onClick={onClick}
       cursor={onClick ? "pointer" : "default"}
     >
-      {/* The targeting outline: the machine the keyboard acts on wears an
-          amber rim hugging its silhouette — art, stock riding on it, and
+      {/* The targeting outline: the machine the keyboard acts on wears a
+          white rim hugging its silhouette — art, stock riding on it, and
           the dust bag alike — while the player stands at its operator
           position. Same treatment as the pile E would pick up. */}
       <pixiContainer

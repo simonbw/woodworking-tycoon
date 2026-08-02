@@ -250,13 +250,13 @@
   }
 
   /* The guided opening's ring around a button (see TutorialSpotlightLayer).
-     Same blue as the in-world tutorial outline, breathing so the eye finds
-     it among chrome that is otherwise all the same weight. */
+     Same orange as the in-world tutorial outline, breathing so the eye
+     finds it among chrome that is otherwise all the same weight. */
   .tutorial-ring {
-    border: 2px solid theme("colors.sky.400");
+    border: 2px solid theme("colors.amber.400");
     box-shadow:
-      0 0 0 2px rgb(12 74 110 / 0.35),
-      0 0 12px rgb(56 189 248 / 0.5);
+      0 0 0 2px rgb(28 25 23 / 0.35),
+      0 0 12px rgb(245 158 11 / 0.5);
     animation: tutorial-ring 1.6s ease-in-out infinite;
   }
 

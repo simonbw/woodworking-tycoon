@@ -74,8 +74,8 @@ export const TruckSprite: React.FC<{
   highlightedCargo?: MaterialInstance;
   /**
    * Where the guided opening is sending the player — the cab to drive
-   * somewhere, the bed to load work into. Drawn in the tutorial's blue,
-   * and only where the amber targeting rim isn't already lit.
+   * somewhere, the bed to load work into. Drawn in the tutorial's orange,
+   * and only where the white targeting rim isn't already lit.
    */
   tutorialHighlight?: TruckHighlight;
 }> = ({ highlight = null, highlightedCargo, tutorialHighlight = null }) => {

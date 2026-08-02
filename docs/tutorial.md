@@ -81,10 +81,10 @@ Whatever the current step points at lights up. Targets are declared on the
 step and sorted by `tutorialTargets()`:
 
 - **In the world** — machines, floor piles, and the truck (cab or bed)
-  wear `TUTORIAL_HIGHLIGHT_FILTERS`, an outline shader in blue. The amber
-  rim already means "the keys act on this, here, now"; blue means "go to
+  wear `TUTORIAL_HIGHLIGHT_FILTERS`, an outline shader in orange. The white
+  rim already means "the keys act on this, here, now"; orange means "go to
   this next", which is usually a thing you are not standing at yet. When
-  both apply the amber wins, because by then the arrow has done its job.
+  both apply the white rim wins, because by then the arrow has done its job.
 - **In the chrome** — buttons self-mark with `data-tutorial-target` and
   `TutorialSpotlightLayer` measures them and draws a ring, the same
   arrangement reward flights use (`payout/rewardTargets.ts`). It sits above
