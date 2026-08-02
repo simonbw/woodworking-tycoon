@@ -151,7 +151,10 @@ describe("vacuumTickPass", () => {
   it("the same hold empties the canister beside the garbage can", () => {
     // The garbage can occupies [0..1, 13..14]; [0,12] touches its top edge
     const state = draggingState({
-      shopVac: { position: null, canister: { walnut: SHOP_VAC_EMPTY_RATE * 2 } },
+      shopVac: {
+        position: null,
+        canister: { walnut: SHOP_VAC_EMPTY_RATE * 2 },
+      },
       player: {
         ...draggingState().player,
         position: [0, 12],

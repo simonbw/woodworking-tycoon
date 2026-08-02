@@ -112,8 +112,8 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
           ))}
         {machine.state.tools.length === 0 && mountableTools.length === 0 && (
           <li className="py-1 italic text-ink-fade text-xs">
-            Empty — carry a tool here to mount it. Tools are sold on the
-            store's tool wall.
+            Empty — carry a tool here to mount it. Tools are sold on the store's
+            tool wall.
           </li>
         )}
       </ul>

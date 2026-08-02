@@ -134,8 +134,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       )}
       {stageable.length > 0 && (
         <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
-          {machine.type.stageVerb ?? "place"}{" "}
-          {getMaterialName(stageable[0])}
+          {machine.type.stageVerb ?? "place"} {getMaterialName(stageable[0])}
         </HintRow>
       )}
       {canOperate && (

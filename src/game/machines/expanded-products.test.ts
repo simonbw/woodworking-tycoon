@@ -77,12 +77,15 @@ describe("buildStepStool", () => {
     // A tread is too thin to be a side
     assert.ok(!materialMeetsInput(board("pallet", 2, 4, 1), sides));
 
-    const { outputs } = op.output([
-      board("pallet", 2, 6, 3),
-      board("pallet", 2, 6, 3),
-      board("pallet", 2, 4, 1),
-      board("pallet", 2, 4, 1),
-    ], {});
+    const { outputs } = op.output(
+      [
+        board("pallet", 2, 6, 3),
+        board("pallet", 2, 6, 3),
+        board("pallet", 2, 4, 1),
+        board("pallet", 2, 4, 1),
+      ],
+      {},
+    );
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "stepStool");
   });
@@ -152,10 +155,10 @@ describe("buildServingTray", () => {
   });
 
   it("produces a tray named for the panel's dominant wood", () => {
-    const { outputs } = op.output([
-      bottom(),
-      ...Array.from({ length: 4 }, () => rail("maple", 2, 45)),
-    ], {});
+    const { outputs } = op.output(
+      [bottom(), ...Array.from({ length: 4 }, () => rail("maple", 2, 45))],
+      {},
+    );
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "servingTray");
     assert.strictEqual(outputs[0].species, "maple");

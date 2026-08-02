@@ -354,11 +354,12 @@ export const TruckPrompt: React.FC<{
               {/* Subheadings only earn their space when the card is
                   actually mixed — with one kind of row the card header
                   has already said what these are. */}
-              {mixed && (index === 0 || rows[index - 1].group !== row.group) && (
-                <li className="pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
-                  {row.group === "go" ? "Places to go" : "Work to deliver"}
-                </li>
-              )}
+              {mixed &&
+                (index === 0 || rows[index - 1].group !== row.group) && (
+                  <li className="pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
+                    {row.group === "go" ? "Places to go" : "Work to deliver"}
+                  </li>
+                )}
               <li
                 className={classNames(
                   "flex items-center gap-3 py-2 pl-1.5 border-l-2",

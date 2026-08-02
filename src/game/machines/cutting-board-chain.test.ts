@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
-import { Operation,  } from "../Machine";
+import { Operation } from "../Machine";
 import { materialMeetsInput } from "../material-helpers";
 import { panelWidth } from "../Materials";
 import { isPanel, panel, uniformPanel } from "../panel-helpers";

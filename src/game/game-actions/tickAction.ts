@@ -102,258 +102,264 @@ function advanceTickPass(): GameAction {
  */
 export function machineTickPass(): GameAction {
   return (gameState) => {
-  let xpEarned = 0;
-  const soundEvents: SoundEvent[] = [];
-  const machinesGranted: Array<{ machineTypeId: MachineId; near: Vector }> = [];
-  const upgradesGranted: UpgradeId[] = [];
-  const consumablesGranted: ConsumableAmount[] = [];
-  const dustEmissions: Array<{
-    machine: Machine;
-    species: ReadonlyArray<Species>;
-    amount: number;
-  }> = [];
-  const updatedMachines = gameState.machines.map((machineState) => {
-    if (machineState.operationProgress.status !== "inProgress") {
-      return machineState;
-    }
-
-    // Look the operation up through the Machine view so mounted tools'
-    // operations resolve too.
-    const machine = new Machine(machineState);
-    const selectedOperation = machine.operations.find(
-      (op) => op.id === machineState.selectedOperationId,
-    );
-    if (!selectedOperation) {
-      throw new Error(
-        `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`,
-      );
-    }
-
-    const dustMultiplier = machineDustMultiplier(
-      gameState.dust,
-      machine,
-      gameState.shopInfo.size,
-    );
-    const phases = getOperationPhases(
-      selectedOperation,
-      gameState.progression,
-      dustMultiplier,
-      machine.workSpeed,
-    );
-    // Attended phases need the player at the machine, holding the operate
-    // key, AND the machine powered — switching off mid-cut pauses the work
-    // like stepping away, and so does letting go. Power-feed operations
-    // (the planer) pull the stock through on their own: neither the
-    // player's whereabouts nor their grip matters, but the switch still
-    // does.
-    const attended =
-      ((playerAttendsMachine(
-        machine,
-        gameState.player.position,
-        gameState.player.away !== null,
-      ) &&
-        gameState.player.operating === true) ||
-        selectedOperation.powerFeed === true) &&
-      machine.isPowered;
-    const { phaseIndex, ticksRemaining } = machineState.operationProgress;
-
-    // Waiting at a phase boundary: the previous phase is done but the next
-    // one is attended and the player wasn't there. Enter it once they are.
-    if (ticksRemaining === 0) {
-      const nextPhase = phases[phaseIndex + 1];
-      if (!nextPhase || (nextPhase.attended && !attended)) {
+    let xpEarned = 0;
+    const soundEvents: SoundEvent[] = [];
+    const machinesGranted: Array<{ machineTypeId: MachineId; near: Vector }> =
+      [];
+    const upgradesGranted: UpgradeId[] = [];
+    const consumablesGranted: ConsumableAmount[] = [];
+    const dustEmissions: Array<{
+      machine: Machine;
+      species: ReadonlyArray<Species>;
+      amount: number;
+    }> = [];
+    const updatedMachines = gameState.machines.map((machineState) => {
+      if (machineState.operationProgress.status !== "inProgress") {
         return machineState;
       }
-      return {
-        ...machineState,
-        operationProgress: {
-          status: "inProgress" as const,
-          phaseIndex: phaseIndex + 1,
-          ticksRemaining: nextPhase.duration,
-        },
-      };
-    }
 
-    // Attended phases pause (never cancel) while the player is elsewhere
-    const currentPhase = phases[Math.min(phaseIndex, phases.length - 1)];
-    if (currentPhase.attended && !attended) {
-      return machineState;
-    }
+      // Look the operation up through the Machine view so mounted tools'
+      // operations resolve too.
+      const machine = new Machine(machineState);
+      const selectedOperation = machine.operations.find(
+        (op) => op.id === machineState.selectedOperationId,
+      );
+      if (!selectedOperation) {
+        throw new Error(
+          `Unknown operation: ${machineState.selectedOperationId} for machine ${machineState.machineTypeId}`,
+        );
+      }
 
-    // The cut is happening this tick, so the sawdust flies now too —
-    // hands-free phases (glue curing) make no mess. Scaled down by the
-    // slowdown so a dust-choked operation sheds the same total dust over
-    // its longer run, instead of compounding into a runaway, and scaled up
-    // by the cut load — a wide slab sheds more than a skinny strip. A
-    // mounted dust bag catches most of it at the port.
-    const dustOutput = selectedOperation.dustOutput ?? 0;
-    if (dustOutput > 0 && currentPhase.attended) {
-      const species = [
-        ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
-      ];
-      const bagFactor = machineState.tools.includes("dustBag")
-        ? 1 - DUST_BAG_CAPTURE
-        : 1;
-      if (species.length > 0) {
-        dustEmissions.push({
+      const dustMultiplier = machineDustMultiplier(
+        gameState.dust,
+        machine,
+        gameState.shopInfo.size,
+      );
+      const phases = getOperationPhases(
+        selectedOperation,
+        gameState.progression,
+        dustMultiplier,
+        machine.workSpeed,
+      );
+      // Attended phases need the player at the machine, holding the operate
+      // key, AND the machine powered — switching off mid-cut pauses the work
+      // like stepping away, and so does letting go. Power-feed operations
+      // (the planer) pull the stock through on their own: neither the
+      // player's whereabouts nor their grip matters, but the switch still
+      // does.
+      const attended =
+        ((playerAttendsMachine(
           machine,
-          species,
-          amount:
-            (dustOutput * bagFactor * deriveMachineCutLoad(machine)) /
-            dustMultiplier,
-        });
+          gameState.player.position,
+          gameState.player.away !== null,
+        ) &&
+          gameState.player.operating === true) ||
+          selectedOperation.powerFeed === true) &&
+        machine.isPowered;
+      const { phaseIndex, ticksRemaining } = machineState.operationProgress;
+
+      // Waiting at a phase boundary: the previous phase is done but the next
+      // one is attended and the player wasn't there. Enter it once they are.
+      if (ticksRemaining === 0) {
+        const nextPhase = phases[phaseIndex + 1];
+        if (!nextPhase || (nextPhase.attended && !attended)) {
+          return machineState;
+        }
+        return {
+          ...machineState,
+          operationProgress: {
+            status: "inProgress" as const,
+            phaseIndex: phaseIndex + 1,
+            ticksRemaining: nextPhase.duration,
+          },
+        };
       }
-    }
 
-    const newTicksRemaining = ticksRemaining - 1;
+      // Attended phases pause (never cancel) while the player is elsewhere
+      const currentPhase = phases[Math.min(phaseIndex, phases.length - 1)];
+      if (currentPhase.attended && !attended) {
+        return machineState;
+      }
 
-    // Phase still in progress
-    if (newTicksRemaining > 0) {
+      // The cut is happening this tick, so the sawdust flies now too —
+      // hands-free phases (glue curing) make no mess. Scaled down by the
+      // slowdown so a dust-choked operation sheds the same total dust over
+      // its longer run, instead of compounding into a runaway, and scaled up
+      // by the cut load — a wide slab sheds more than a skinny strip. A
+      // mounted dust bag catches most of it at the port.
+      const dustOutput = selectedOperation.dustOutput ?? 0;
+      if (dustOutput > 0 && currentPhase.attended) {
+        const species = [
+          ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
+        ];
+        const bagFactor = machineState.tools.includes("dustBag")
+          ? 1 - DUST_BAG_CAPTURE
+          : 1;
+        if (species.length > 0) {
+          dustEmissions.push({
+            machine,
+            species,
+            amount:
+              (dustOutput * bagFactor * deriveMachineCutLoad(machine)) /
+              dustMultiplier,
+          });
+        }
+      }
+
+      const newTicksRemaining = ticksRemaining - 1;
+
+      // Phase still in progress
+      if (newTicksRemaining > 0) {
+        return {
+          ...machineState,
+          operationProgress: {
+            ...machineState.operationProgress,
+            ticksRemaining: newTicksRemaining,
+          },
+        };
+      }
+
+      // Phase finished with more to go: advance, or hold at the boundary if
+      // the next phase needs the player and they've stepped away
+      if (phaseIndex < phases.length - 1) {
+        const nextPhase = phases[phaseIndex + 1];
+        const canEnterNext = !nextPhase.attended || attended;
+        return {
+          ...machineState,
+          operationProgress: canEnterNext
+            ? {
+                status: "inProgress" as const,
+                phaseIndex: phaseIndex + 1,
+                ticksRemaining: nextPhase.duration,
+              }
+            : {
+                status: "inProgress" as const,
+                phaseIndex,
+                ticksRemaining: 0,
+              },
+        };
+      }
+
+      // Operation completed - apply the transformation
+      const {
+        inputs,
+        outputs,
+        consumableOutputs,
+        machineOutputs,
+        upgradeOutputs,
+      } = selectedOperation.output(
+        machineState.processingMaterials,
+        machine.resolvedParameters(selectedOperation),
+      );
+
+      for (const output of outputs) {
+        if (isFinishedProduct(output)) {
+          xpEarned += Math.round(getSellValue(output));
+        }
+      }
+
+      // Shop-built furniture (worktables) comes off the bench crated, ready
+      // to be carried into place
+      if (machineOutputs) {
+        machinesGranted.push(
+          ...machineOutputs.map((machineTypeId) => ({
+            machineTypeId,
+            near: machine.absoluteOperationPosition ?? machine.position,
+          })),
+        );
+      }
+
+      // Shop-built worktable upgrades (drawers, shelves) land in upgrade
+      // storage, to be installed from a table's card
+      if (upgradeOutputs) {
+        upgradesGranted.push(...upgradeOutputs);
+      }
+
+      // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock
+      if (consumableOutputs) {
+        consumablesGranted.push(...consumableOutputs);
+      }
+
+      // Cue a sound for the finished operation; GameSoundLayer picks the clip
+      // from the operation (so tool operations sound like the tool).
+      soundEvents.push({
+        kind: "operation-complete",
+        machineTypeId: machineState.machineTypeId,
+        operationId: machineState.selectedOperationId,
+      });
+
       return {
         ...machineState,
+        inputMaterials: [...machineState.inputMaterials, ...inputs],
+        processingMaterials: [],
+        outputMaterials: [...machineState.outputMaterials, ...outputs],
         operationProgress: {
-          ...machineState.operationProgress,
-          ticksRemaining: newTicksRemaining,
+          status: "notStarted" as const,
+          phaseIndex: 0,
+          ticksRemaining: 0,
         },
       };
-    }
+    });
 
-    // Phase finished with more to go: advance, or hold at the boundary if
-    // the next phase needs the player and they've stepped away
-    if (phaseIndex < phases.length - 1) {
-      const nextPhase = phases[phaseIndex + 1];
-      const canEnterNext = !nextPhase.attended || attended;
-      return {
-        ...machineState,
-        operationProgress: canEnterNext
-          ? {
-              status: "inProgress" as const,
-              phaseIndex: phaseIndex + 1,
-              ticksRemaining: nextPhase.duration,
-            }
-          : {
-              status: "inProgress" as const,
-              phaseIndex,
-              ticksRemaining: 0,
-            },
-      };
-    }
-
-    // Operation completed - apply the transformation
-    const { inputs, outputs, consumableOutputs, machineOutputs, upgradeOutputs } =
-      selectedOperation.output(
-      machineState.processingMaterials,
-      machine.resolvedParameters(selectedOperation),
-    );
-
-    for (const output of outputs) {
-      if (isFinishedProduct(output)) {
-        xpEarned += Math.round(getSellValue(output));
-      }
-    }
-
-    // Shop-built furniture (worktables) comes off the bench crated, ready
-    // to be carried into place
-    if (machineOutputs) {
-      machinesGranted.push(
-        ...machineOutputs.map((machineTypeId) => ({
-          machineTypeId,
-          near: machine.absoluteOperationPosition ?? machine.position,
-        })),
+    // Reference stays stable on dustless ticks so caches keyed on it hold
+    let dust = gameState.dust;
+    for (const emission of dustEmissions) {
+      dust = emitMachineDust(
+        dust,
+        emission.machine,
+        emission.species,
+        emission.amount,
+        gameState.shopInfo.size,
       );
     }
 
-    // Shop-built worktable upgrades (drawers, shelves) land in upgrade
-    // storage, to be installed from a table's card
-    if (upgradeOutputs) {
-      upgradesGranted.push(...upgradeOutputs);
+    // Only override pendingSounds when there's something to add, so quiet ticks
+    // keep the queue's reference stable and don't re-trigger the sound drain.
+    const nextState =
+      soundEvents.length > 0
+        ? {
+            ...gameState,
+            machines: updatedMachines,
+            dust,
+            pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
+          }
+        : {
+            ...gameState,
+            machines: updatedMachines,
+            dust,
+          };
+
+    let withUpgrades: GameState =
+      upgradesGranted.length > 0
+        ? {
+            ...nextState,
+            storage: {
+              ...nextState.storage,
+              upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
+            },
+          }
+        : nextState;
+
+    // Shop-built machines land crated beside the bench that made them
+    for (const granted of machinesGranted) {
+      withUpgrades = deliverMachineCrate(
+        withUpgrades,
+        freshMachineState(granted.machineTypeId, withUpgrades.progression),
+        granted.near,
+      );
     }
 
-    // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock
-    if (consumableOutputs) {
-      consumablesGranted.push(...consumableOutputs);
-    }
+    const withConsumables =
+      consumablesGranted.length > 0
+        ? {
+            ...withUpgrades,
+            consumables: addConsumables(
+              withUpgrades.consumables,
+              consumablesGranted,
+            ),
+          }
+        : withUpgrades;
 
-    // Cue a sound for the finished operation; GameSoundLayer picks the clip
-    // from the operation (so tool operations sound like the tool).
-    soundEvents.push({
-      kind: "operation-complete",
-      machineTypeId: machineState.machineTypeId,
-      operationId: machineState.selectedOperationId,
-    });
-
-    return {
-      ...machineState,
-      inputMaterials: [...machineState.inputMaterials, ...inputs],
-      processingMaterials: [],
-      outputMaterials: [...machineState.outputMaterials, ...outputs],
-      operationProgress: {
-        status: "notStarted" as const,
-        phaseIndex: 0,
-        ticksRemaining: 0,
-      },
-    };
-  });
-
-  // Reference stays stable on dustless ticks so caches keyed on it hold
-  let dust = gameState.dust;
-  for (const emission of dustEmissions) {
-    dust = emitMachineDust(
-      dust,
-      emission.machine,
-      emission.species,
-      emission.amount,
-      gameState.shopInfo.size,
-    );
-  }
-
-  // Only override pendingSounds when there's something to add, so quiet ticks
-  // keep the queue's reference stable and don't re-trigger the sound drain.
-  const nextState =
-    soundEvents.length > 0
-      ? {
-          ...gameState,
-          machines: updatedMachines,
-          dust,
-          pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
-        }
-      : {
-          ...gameState,
-          machines: updatedMachines,
-          dust,
-        };
-
-  let withUpgrades: GameState =
-    upgradesGranted.length > 0
-      ? {
-          ...nextState,
-          storage: {
-            ...nextState.storage,
-            upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
-          },
-        }
-      : nextState;
-
-  // Shop-built machines land crated beside the bench that made them
-  for (const granted of machinesGranted) {
-    withUpgrades = deliverMachineCrate(
-      withUpgrades,
-      freshMachineState(granted.machineTypeId, withUpgrades.progression),
-      granted.near,
-    );
-  }
-
-  const withConsumables =
-    consumablesGranted.length > 0
-      ? {
-          ...withUpgrades,
-          consumables: addConsumables(
-            withUpgrades.consumables,
-            consumablesGranted,
-          ),
-        }
-      : withUpgrades;
-
-  return withXp(withConsumables, xpEarned);
+    return withXp(withConsumables, xpEarned);
   };
 }

@@ -26,8 +26,7 @@ const WORKBENCH = "workspace";
 
 const isStrip = (m: MaterialInstance) => m.type === "board";
 const isMixedPanel = (m: MaterialInstance) => isPanel(m);
-const isCuttingBoard = (m: MaterialInstance) =>
-  m.type === "simpleCuttingBoard";
+const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
 /** Walnut-maple-walnut-maple-walnut: strict alternation, five strips wide. */
 function mixedStrips(): Board[] {

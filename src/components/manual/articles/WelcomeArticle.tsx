@@ -5,9 +5,9 @@ import { FigureRow, H, Note, P, Photo, Term, UL } from "./elements";
 export const WelcomeArticle: React.FC = () => (
   <>
     <P>
-      You start with a one-car garage, a makeshift workbench, and a truck in
-      the driveway. Free lumber is out there on pallets, and the first
-      commission can be built from a single one.
+      You start with a one-car garage, a makeshift workbench, and a truck in the
+      driveway. Free lumber is out there on pallets, and the first commission
+      can be built from a single one.
     </P>
     <FigureRow>
       <Photo src="/images/makeshift-bench.png" caption="the makeshift bench" />
@@ -23,12 +23,12 @@ export const WelcomeArticle: React.FC = () => (
       hints appear on it, naming the keys that work there.{" "}
       <ShortcutKeys shortcut="pick-up" /> does the natural thing — pick up,
       take, switch a machine on — and <ShortcutKeys shortcut="put-down" /> sets
-      down what you're holding, on a machine if you're standing at one.
-      Hold <ShortcutKeys shortcut="operate-machine" /> to run the machine
-      you're at, for as long as the work takes.{" "}
-      <ShortcutKeys shortcut="open-station-sheet" /> spreads out a bench's
-      sheet of plans and tools. <ShortcutKeys shortcut="pause-menu" /> stops
-      the clock and opens the pause menu.
+      down what you're holding, on a machine if you're standing at one. Hold{" "}
+      <ShortcutKeys shortcut="operate-machine" /> to run the machine you're at,
+      for as long as the work takes.{" "}
+      <ShortcutKeys shortcut="open-station-sheet" /> spreads out a bench's sheet
+      of plans and tools. <ShortcutKeys shortcut="pause-menu" /> stops the clock
+      and opens the pause menu.
     </P>
 
     <H>Your First Commission</H>
@@ -41,9 +41,10 @@ export const WelcomeArticle: React.FC = () => (
     </P>
     <UL>
       <li>
-        Walk out to the truck's cab and press <ShortcutKeys shortcut="pick-up" />
-        , then pick <Term>Scavenge for pallets</Term>. A couple of hours poking
-        around loading docks brings home 1-2 pallets in the bed.
+        Walk out to the truck's cab and press{" "}
+        <ShortcutKeys shortcut="pick-up" />, then pick{" "}
+        <Term>Scavenge for pallets</Term>. A couple of hours poking around
+        loading docks brings home 1-2 pallets in the bed.
       </li>
       <li>
         Lift a pallet out of the bed with <ShortcutKeys shortcut="pick-up" /> at
@@ -70,9 +71,9 @@ export const WelcomeArticle: React.FC = () => (
         tailgate.
       </li>
       <li>
-        Walk down to the cab and press <ShortcutKeys shortcut="pick-up" />.
-        The truck lists the work riding in the bed; the number beside a row
-        delivers it.
+        Walk down to the cab and press <ShortcutKeys shortcut="pick-up" />. The
+        truck lists the work riding in the bed; the number beside a row delivers
+        it.
       </li>
     </UL>
     <P>
@@ -81,13 +82,13 @@ export const WelcomeArticle: React.FC = () => (
       the cab, so build first, then load up.
     </P>
     <P>
-      Delivering a commission pays money and builds reputation, and it opens
-      two doors: the hardware store — the trip starts at the same cab — and
-      the phone in the top bar, where work gets listed for sale and one-off
-      jobs get taken. Jobs and sales are how the shop earns between
-      commissions; when your reputation grows enough, the phone rings with
-      the next big order. What you buy rides home in the bed; unload it at
-      the tailgate with <ShortcutKeys shortcut="pick-up" />.
+      Delivering a commission pays money and builds reputation, and it opens two
+      doors: the hardware store — the trip starts at the same cab — and the
+      phone in the top bar, where work gets listed for sale and one-off jobs get
+      taken. Jobs and sales are how the shop earns between commissions; when
+      your reputation grows enough, the phone rings with the next big order.
+      What you buy rides home in the bed; unload it at the tailgate with{" "}
+      <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

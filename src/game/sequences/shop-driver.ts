@@ -370,7 +370,9 @@ export class ShopDriver {
         `${machineTypeId} does not offer "${operationId}" — it offers ` +
           `[${availableOperations(machine, this.state.progression)
             .map((op) => op.id)
-            .join(", ")}]. A locked skill or an unmounted tool is the usual cause.`,
+            .join(
+              ", ",
+            )}]. A locked skill or an unmounted tool is the usual cause.`,
       );
     }
     return found;
@@ -427,8 +429,7 @@ export class ShopDriver {
       );
     }
     const before = this.machine(machineTypeId).state.inputMaterials.length;
-    const spaces =
-      this.machine(machineTypeId).type.inputSpaces - before;
+    const spaces = this.machine(machineTypeId).type.inputSpaces - before;
     if (materials.length > spaces) {
       throw new Error(
         `The ${machineTypeId} would not take ${materials.length} more ` +
@@ -472,10 +473,7 @@ export class ShopDriver {
             `driver bug`,
         );
       }
-      for (const pile of piles.slice(
-        0,
-        handSpaceLeft(this.state.player),
-      )) {
+      for (const pile of piles.slice(0, handSpaceLeft(this.state.player))) {
         const held = this.inventory.length;
         this.standNear(pile).apply(pickUpMaterialAction([pile]));
         if (this.inventory.length === held) {
@@ -506,7 +504,10 @@ export class ShopDriver {
    */
   run(machineTypeId: MachineState["machineTypeId"]): this {
     this.apply(operateMachineAction(this.machine(machineTypeId)));
-    if (this.machine(machineTypeId).state.operationProgress.status !== "inProgress") {
+    if (
+      this.machine(machineTypeId).state.operationProgress.status !==
+      "inProgress"
+    ) {
       throw new Error(
         `The ${machineTypeId} would not start. Unpowered, nothing loaded, ` +
           `or short of clamps or supplies.`,
@@ -562,9 +563,7 @@ export class ShopDriver {
           machine,
         ),
       );
-      if (
-        this.machine(machineTypeId).state.outputMaterials.length === before
-      ) {
+      if (this.machine(machineTypeId).state.outputMaterials.length === before) {
         throw new Error(
           `The ${machineTypeId}'s outputs would not come off — holding a tool?`,
         );
@@ -985,10 +984,7 @@ export class ShopDriver {
         this.standAt(this.state.shopInfo.materialDropoffPosition);
         this.apply(dropMaterialAction(this.inventory));
       }
-      for (const pile of piles.slice(
-        0,
-        handSpaceLeft(this.state.player),
-      )) {
+      for (const pile of piles.slice(0, handSpaceLeft(this.state.player))) {
         const held = this.inventory.length;
         this.standNear(pile).apply(pickUpMaterialAction([pile]));
         if (this.inventory.length === held) {

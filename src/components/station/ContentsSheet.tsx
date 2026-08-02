@@ -63,7 +63,9 @@ export const ContentsSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
                 }
                 applyAction(
                   takeInputsFromMachineAction(
-                    event.shiftKey ? materials.slice(0, handSpace) : [materials[0]],
+                    event.shiftKey
+                      ? materials.slice(0, handSpace)
+                      : [materials[0]],
                     machine,
                   ),
                 );

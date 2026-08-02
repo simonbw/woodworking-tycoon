@@ -110,7 +110,11 @@ export const TruckSprite: React.FC<{
       offset = p * p * TRUCK_TRAVEL_PX;
     } else if (now === "arriving") {
       // Backing in: fast off the street, settling gently into the spot.
-      const p = clamp(elapsed / Math.min(TRUCK_ROLL_IN_MS, TRUCK_ARRIVE_MS), 0, 1);
+      const p = clamp(
+        elapsed / Math.min(TRUCK_ROLL_IN_MS, TRUCK_ARRIVE_MS),
+        0,
+        1,
+      );
       const eased = 1 - Math.pow(1 - p, 3);
       offset = (1 - eased) * TRUCK_TRAVEL_PX;
     }
@@ -126,7 +130,9 @@ export const TruckSprite: React.FC<{
   const tailgateY = cellToPixel(rect.min[1]);
   // Flipped canvas: its top edge rides TAIL_INSET above the rear bumper
   const centerY =
-    tailgateY - TRUCK_CANVAS_HEIGHT * TRUCK_TAIL_INSET + TRUCK_CANVAS_HEIGHT / 2;
+    tailgateY -
+    TRUCK_CANVAS_HEIGHT * TRUCK_TAIL_INSET +
+    TRUCK_CANVAS_HEIGHT / 2;
 
   const bed = truckBedRect(gameState.shopInfo);
   const bedCenterX = cellToPixel((bed.min[0] + bed.max[0]) / 2);
@@ -201,9 +207,7 @@ export const TruckSprite: React.FC<{
           y={bedCenterY + ((i % 3) - 1) * 6}
           angle={90 + ((i * 7) % 21) - 10}
           filters={
-            material === highlightedCargo
-              ? TARGET_HIGHLIGHT_FILTERS
-              : undefined
+            material === highlightedCargo ? TARGET_HIGHLIGHT_FILTERS : undefined
           }
         >
           <MaterialSprite material={material} />

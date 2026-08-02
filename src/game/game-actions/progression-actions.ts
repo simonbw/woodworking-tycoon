@@ -62,7 +62,10 @@ export function markCommissionArrivalSeenAction(): GameAction {
       ? gameState
       : {
           ...gameState,
-          progression: { ...gameState.progression, commissionArrivalSeen: true },
+          progression: {
+            ...gameState.progression,
+            commissionArrivalSeen: true,
+          },
         };
 }
 

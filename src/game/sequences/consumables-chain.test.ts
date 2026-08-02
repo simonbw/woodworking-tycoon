@@ -26,8 +26,7 @@ const isPalletBoard = (m: MaterialInstance) =>
 const byWidth = (width: number) => (m: MaterialInstance) =>
   isPalletBoard(m) && (m as { width: number }).width === width;
 const isShelf = (m: MaterialInstance) => m.type === "rusticShelf";
-const isCuttingBoard = (m: MaterialInstance) =>
-  m.type === "simpleCuttingBoard";
+const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
 /**
  * Pry the pallet apart until nothing is left. Four single deck boards come

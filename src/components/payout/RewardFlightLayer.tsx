@@ -132,7 +132,9 @@ export const RewardFlightLayer: React.FC = () => {
   // Drain the queue: commissions become a card to dismiss, jobs fly at once.
   useEffect(() => {
     if (!pending || pending.length === 0) return;
-    const commissions = pending.filter((payout) => payout.kind === "commission");
+    const commissions = pending.filter(
+      (payout) => payout.kind === "commission",
+    );
     if (commissions.length > 0) {
       setCards((current) => [...current, ...commissions]);
     }

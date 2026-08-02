@@ -38,7 +38,11 @@ function shopWithBothTools(): ShopDriver {
       // mount() makes the tailgate trips a player would
       truck: {
         ...state.truck,
-        bed: [...state.truck.bed, makeToolItem("handSaw"), makeToolItem("drill")],
+        bed: [
+          ...state.truck.bed,
+          makeToolItem("handSaw"),
+          makeToolItem("drill"),
+        ],
       },
       consumables: { ...state.consumables, screws: 50 },
     }))

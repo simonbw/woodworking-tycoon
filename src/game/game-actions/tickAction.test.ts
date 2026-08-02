@@ -451,7 +451,10 @@ describe("tickAction dust emission", () => {
     // Let go of the operate key and the cut — and its sawdust — stops
     const released = tickAction(jointingWith(false));
     assert.deepStrictEqual(released.dust, {});
-    assert.strictEqual(released.machines[0].operationProgress.ticksRemaining, 5);
+    assert.strictEqual(
+      released.machines[0].operationProgress.ticksRemaining,
+      5,
+    );
   });
 
   it("pauses the cut (and its dust) while the machine is switched off", () => {

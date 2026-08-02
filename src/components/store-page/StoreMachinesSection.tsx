@@ -72,7 +72,9 @@ const MachineProductTile: React.FC<{ machine: MachineType }> = ({
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       canAfford={gameState.money >= price}
       sfx="ui-purchase"
-      onBuy={() => applyAction(buyMachineAction(machine.id as MachineId, price))}
+      onBuy={() =>
+        applyAction(buyMachineAction(machine.id as MachineId, price))
+      }
     />
   );
 };

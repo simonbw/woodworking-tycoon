@@ -73,7 +73,10 @@ describe("drill", () => {
   it("rejects uncut deck boards — the slats must be crosscut to 2' first", () => {
     const freshDeckBoard = board("pallet", 3, 4, 1);
     assert.strictEqual(
-      materialMeetsInput(freshDeckBoard, buildPlanterBox.getInputMaterials({})[0]),
+      materialMeetsInput(
+        freshDeckBoard,
+        buildPlanterBox.getInputMaterials({})[0],
+      ),
       false,
     );
     assert.strictEqual(

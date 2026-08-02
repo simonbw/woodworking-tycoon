@@ -30,7 +30,9 @@ export const handPlane: ToolType = {
       requiredSkill: "basicMilling",
       duration: 35,
       dustOutput: 0.2,
-      getInputMaterials: () => [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
+      getInputMaterials: () => [
+        { type: ["board"], jointedFaces: [0], quantity: 1 },
+      ],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {
@@ -48,7 +50,9 @@ export const handPlane: ToolType = {
       requiredSkill: "basicMilling",
       duration: 30,
       dustOutput: 0.2,
-      getInputMaterials: () => [{ type: ["board"], jointedEdges: [0], quantity: 1 }],
+      getInputMaterials: () => [
+        { type: ["board"], jointedEdges: [0], quantity: 1 },
+      ],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {

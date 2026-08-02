@@ -51,10 +51,12 @@ describe("outletPositions", () => {
 
   it("covers all four walls", () => {
     const sides = new Set(outletPositions(shop).map((o) => o.side));
-    assert.deepStrictEqual(
-      [...sides].sort(),
-      ["bottom", "left", "right", "top"],
-    );
+    assert.deepStrictEqual([...sides].sort(), [
+      "bottom",
+      "left",
+      "right",
+      "top",
+    ]);
   });
 
   it("keeps the garage door strip clear", () => {

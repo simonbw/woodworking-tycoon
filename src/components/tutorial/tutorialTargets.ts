@@ -1,10 +1,7 @@
 import { GameState } from "../../game/GameState";
 import { MachineId } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
-import {
-  currentTutorialStep,
-  TutorialDomTargetId,
-} from "../../game/tutorial";
+import { currentTutorialStep, TutorialDomTargetId } from "../../game/tutorial";
 import { TruckHighlight } from "../shop-view/TruckSprite";
 
 /**

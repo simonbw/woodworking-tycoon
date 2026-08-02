@@ -19,7 +19,9 @@ import { Vector, vectorKey } from "../Vectors";
 import { GARBAGE_CAN_CAPACITY } from "./garbageCan";
 
 /** A shop with one can in the middle of the floor, player beside it. */
-function shopWithCan(contents: ReadonlyArray<MaterialInstance> = []): GameState {
+function shopWithCan(
+  contents: ReadonlyArray<MaterialInstance> = [],
+): GameState {
   const can: MachineState = {
     machineTypeId: "garbageCan",
     position: [4, 4],
@@ -148,7 +150,10 @@ describe("garbage can", () => {
       ticks++;
     }
 
-    assert.strictEqual(theCan(gameState).operationProgress.status, "notStarted");
+    assert.strictEqual(
+      theCan(gameState).operationProgress.status,
+      "notStarted",
+    );
     // Hauling a piece to the curb is a hold worth a second or more, not a
     // tap — a full can should feel like an errand.
     assert.ok(ticks >= 5, `emptying one piece took only ${ticks} ticks`);

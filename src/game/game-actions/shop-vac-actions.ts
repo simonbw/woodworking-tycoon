@@ -254,8 +254,7 @@ function moveDustToCanister(
 
 /** Anything a suction tick from here could pick up? Drives the hint. */
 export function canVacuumAt(gameState: GameState): boolean {
-  return sweepSwath(
-    gameState.player.position,
-    gameState.player.direction,
-  ).some((cell) => cellDust(gameState.dust, cell) > 0.05);
+  return sweepSwath(gameState.player.position, gameState.player.direction).some(
+    (cell) => cellDust(gameState.dust, cell) > 0.05,
+  );
 }

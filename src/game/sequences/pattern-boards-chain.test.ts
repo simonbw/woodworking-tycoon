@@ -49,10 +49,7 @@ function shopWithPatternSkills(): ShopDriver {
     progression: {
       ...state.progression,
       skillPoints: 0,
-      unlockedSkills: [
-        ...state.progression.unlockedSkills,
-        ...PATTERN_SKILLS,
-      ],
+      unlockedSkills: [...state.progression.unlockedSkills, ...PATTERN_SKILLS],
     },
   }));
 }
@@ -137,10 +134,7 @@ describe("pattern board chain", () => {
     const panel = shop.theOne(isMixedPanel);
     assert.ok(isPanel(panel));
     // 3 + 1 + 2 + 2 + 1 + 3 = 12"
-    assert.equal(
-      getMaterialName(panel),
-      "Mixed Wood Panel 4/4 — 12\" × 2'",
-    );
+    assert.equal(getMaterialName(panel), "Mixed Wood Panel 4/4 — 12\" × 2'");
   });
 
   it("names the sunrise board for its dominant wood, accent second", () => {

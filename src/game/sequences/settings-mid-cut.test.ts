@@ -49,7 +49,9 @@ function midResaw(): ShopDriver {
 function finishTheCut(shop: ShopDriver): void {
   for (let i = 0; i < 200; i++) {
     shop.tick();
-    if (shop.machine(BAND_SAW).state.operationProgress.status !== "inProgress") {
+    if (
+      shop.machine(BAND_SAW).state.operationProgress.status !== "inProgress"
+    ) {
       shop.apply(setOperatingAction(false));
       return;
     }

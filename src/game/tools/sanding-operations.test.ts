@@ -22,9 +22,10 @@ describe("sanding operations", () => {
   });
 
   it("bumps a smooth board to sanded", () => {
-    const { outputs } = blockSandBoard.output([
-      board("pallet", 3, 4, 1, "smooth"),
-    ], {});
+    const { outputs } = blockSandBoard.output(
+      [board("pallet", 3, 4, 1, "smooth")],
+      {},
+    );
     assert.ok(isBoard(outputs[0]));
     assert.strictEqual(outputs[0].surface, "sanded");
   });

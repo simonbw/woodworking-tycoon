@@ -25,7 +25,9 @@ export const straightLineSled: ToolType = {
       requiredSkill: "jigsAndFixtures",
       duration: 18,
       dustOutput: 1.6,
-      getInputMaterials: () => [{ type: ["board"], jointedEdges: [0], quantity: 1 }],
+      getInputMaterials: () => [
+        { type: ["board"], jointedEdges: [0], quantity: 1 },
+      ],
       output: (materials: ReadonlyArray<MaterialInstance>) => {
         const inputBoard = materials[0];
         if (!isBoard(inputBoard)) {

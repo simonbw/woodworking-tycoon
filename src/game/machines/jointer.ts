@@ -57,7 +57,9 @@ export const jointer: MachineType = {
       name: "Joint Face",
       duration: 10,
       dustOutput: 2.4,
-      getInputMaterials: () => [{ type: ["board"], jointedFaces: [0], quantity: 1 }],
+      getInputMaterials: () => [
+        { type: ["board"], jointedFaces: [0], quantity: 1 },
+      ],
       // Only reached when no jointer op takes the board — a flat-faced
       // board with a rough edge feeds the edge pass instead, so landing
       // here means the stock is already flat AND straight

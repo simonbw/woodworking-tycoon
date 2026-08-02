@@ -2,11 +2,7 @@ import { BOARD_DIMENSIONS, Board, BoardDimension, Panel } from "../Materials";
 import { isBoard } from "../board-helpers";
 import { isPanel } from "../panel-helpers";
 import { makeMaterial } from "../material-helpers";
-import {
-  InputMaterialWithQuantity,
-  MachineType,
-  Operation,
-} from "../Machine";
+import { InputMaterialWithQuantity, MachineType, Operation } from "../Machine";
 import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
 
 /** The next detent up the thickness scale, or undefined at the top. */

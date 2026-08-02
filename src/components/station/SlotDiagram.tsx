@@ -87,7 +87,9 @@ export const SlotDiagram: React.FC<{
               }
               applyAction(
                 takeOutputsFromMachineAction(
-                  event.shiftKey ? materials.slice(0, handSpace) : [materials[0]],
+                  event.shiftKey
+                    ? materials.slice(0, handSpace)
+                    : [materials[0]],
                   machine,
                 ),
               );

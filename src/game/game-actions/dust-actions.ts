@@ -312,8 +312,7 @@ export function sweepTickPass(): GameAction {
 
 /** True when there's anything the broom in hand could sweep from here. */
 export function canSweepAt(gameState: GameState): boolean {
-  return sweepSwath(
-    gameState.player.position,
-    gameState.player.direction,
-  ).some((cell) => cellDust(gameState.dust, cell) > CLEAN_EPSILON);
+  return sweepSwath(gameState.player.position, gameState.player.direction).some(
+    (cell) => cellDust(gameState.dust, cell) > CLEAN_EPSILON,
+  );
 }

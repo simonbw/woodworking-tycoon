@@ -14,10 +14,9 @@ export const ToolsArticle: React.FC = () => (
       Tools are sold on the store's <Term>Tool Wall</Term>. A bought tool rides
       home in the truck's bed like any other purchase: lift it out at the
       tailgate, carry it to the station, and mount it from the station's card
-      while standing there. Unmounting puts the tool back in your hands — set
-      it down, shelve it, or carry it to another station. The makeshift
-      workbench has two slots. Built worktables have three to six, depending
-      on size.
+      while standing there. Unmounting puts the tool back in your hands — set it
+      down, shelve it, or carry it to another station. The makeshift workbench
+      has two slots. Built worktables have three to six, depending on size.
     </P>
 
     <H>Tool Tiers</H>
@@ -35,8 +34,8 @@ export const ToolsArticle: React.FC = () => (
       <Term>crosscut sled</Term> and <Term>straight-line sled</Term> are made at
       a bench from plywood and scrap, and come off the bench like any other
       output. They mount only on the machines they fit — both sleds ride the
-      table saw, where the mounted sled determines what feeding a piece will
-      do. The sled recipes come with the Jigs &amp; Fixtures skill.
+      table saw, where the mounted sled determines what feeding a piece will do.
+      The sled recipes come with the Jigs &amp; Fixtures skill.
     </P>
 
     <Note>

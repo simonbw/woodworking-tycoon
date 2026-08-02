@@ -73,7 +73,11 @@ describe("the guided opening", () => {
     assert.strictEqual(step(shop), "loadShelf", "the shelf exists");
 
     shop.putEverythingDown().takeFromFloor(isRusticShelf, 1).loadBed();
-    assert.strictEqual(step(shop), "deliverShelf", "the shelf rides in the bed");
+    assert.strictEqual(
+      step(shop),
+      "deliverShelf",
+      "the shelf rides in the bed",
+    );
 
     shop.handOverCommission();
     assert.strictEqual(step(shop), "listStock", "Marguerite has her shelf");
@@ -85,7 +89,9 @@ describe("the guided opening", () => {
     assert.strictEqual(step(shop), "acceptJob", "spare wood is sold");
 
     shop.seedJobBoard();
-    const offer = shop.shop.jobBoard.find((candidate) => candidate.materialCostFree);
+    const offer = shop.shop.jobBoard.find(
+      (candidate) => candidate.materialCostFree,
+    );
     assert.ok(offer, "the board always carries a material-free offer");
     shop.acceptJob(offer.id);
     assert.strictEqual(step(shop), "buySandingBlock", "a job is accepted");

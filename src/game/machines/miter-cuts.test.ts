@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
-import { Operation,  } from "../Machine";
+import { Operation } from "../Machine";
 import {
   getMaterialFullName,
   materialMeetsInput,
@@ -239,12 +239,10 @@ describe("picture frame", () => {
     assert.deepStrictEqual(buildPictureFrame.requiredConsumables, [
       { id: "nails", amount: 4 },
     ]);
-    const { outputs } = buildPictureFrame.output([
-      rail(),
-      rail(),
-      rail(),
-      rail(),
-    ], {});
+    const { outputs } = buildPictureFrame.output(
+      [rail(), rail(), rail(), rail()],
+      {},
+    );
     assert.strictEqual(outputs.length, 1);
     const frame = outputs[0];
     assert.strictEqual(frame.type, "pictureFrame");

@@ -57,11 +57,10 @@ describe("buildCrosscutSled", () => {
   });
 
   it("produces tooling, not product", () => {
-    const result = buildSled.output([
-      plywood(),
-      board("pallet", 3, 4, 1),
-      board("pallet", 3, 4, 1),
-    ], {});
+    const result = buildSled.output(
+      [plywood(), board("pallet", 3, 4, 1), board("pallet", 3, 4, 1)],
+      {},
+    );
     assert.strictEqual(result.outputs.length, 1);
     const sled = result.outputs[0];
     assert.ok(sled.type === "tool" && sled.toolId === "crosscutSled");
@@ -118,12 +117,10 @@ describe("crosscutPanel", () => {
 
 describe("glueUpEndGrain", () => {
   it("stands four slices on end into a thick rough blank", () => {
-    const { outputs } = glueEndGrain.output([
-      slice(),
-      slice(),
-      slice(),
-      slice(),
-    ], {});
+    const { outputs } = glueEndGrain.output(
+      [slice(), slice(), slice(), slice()],
+      {},
+    );
     const blank = outputs[0];
     assert.strictEqual(blank.type, "panel");
     if (blank.type !== "panel") return;

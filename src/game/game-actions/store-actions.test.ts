@@ -111,7 +111,6 @@ describe("buyMachineAction", () => {
     const result = buyMachineAction("miterSaw", 150)(state);
     assert.strictEqual(result, state);
   });
-
 });
 
 describe("completeCommissionAction", () => {

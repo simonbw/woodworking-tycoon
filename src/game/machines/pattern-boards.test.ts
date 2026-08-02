@@ -131,10 +131,10 @@ describe("widthDominantSpecies", () => {
 
 describe("glueUpPair", () => {
   it("glues two strips of any width into a rough panel, in order", () => {
-    const { outputs } = glueUpPair.output([
-      board("walnut", 2, 3, 4, "smooth"),
-      board("maple", 2, 1, 4, "sanded"),
-    ], {});
+    const { outputs } = glueUpPair.output(
+      [board("walnut", 2, 3, 4, "smooth"), board("maple", 2, 1, 4, "sanded")],
+      {},
+    );
     const output = outputs[0];
     assert.strictEqual(output.type, "panel");
     if (output.type !== "panel") return;
@@ -149,10 +149,10 @@ describe("glueUpPair", () => {
 describe("extendPanel", () => {
   it("appends the strip and re-roughs the panel", () => {
     const base = panel(strips(["walnut", 3], ["maple", 1]), 2, 4, "sanded");
-    const { outputs } = extendPanel.output([
-      base,
-      board("walnut", 2, 2, 4, "smooth"),
-    ], {});
+    const { outputs } = extendPanel.output(
+      [base, board("walnut", 2, 2, 4, "smooth")],
+      {},
+    );
     const output = outputs[0];
     assert.strictEqual(output.type, "panel");
     if (output.type !== "panel") return;

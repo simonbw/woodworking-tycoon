@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board, isBoard } from "../board-helpers";
 import { COMMISSION_SEQUENCE } from "../commissionSequence";
-import { Operation,  } from "../Machine";
+import { Operation } from "../Machine";
 import { LUMBER_CHANNELS, unlockedLumberChannels } from "../lumberStock";
 import { materialMeetsInput } from "../material-helpers";
 import { millingLabel } from "../Materials";
@@ -68,9 +68,10 @@ describe("jointer", () => {
         requirement,
       ),
     );
-    const { outputs } = jointEdge.output([
-      board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 }),
-    ], {});
+    const { outputs } = jointEdge.output(
+      [board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 })],
+      {},
+    );
     const result = outputs[0];
     assert.ok(isBoard(result));
     assert.strictEqual(result.jointedEdges, 1);

@@ -49,12 +49,11 @@ const WORKBENCH = "workspace";
 
 const isPallet = (m: MaterialInstance) => m.type === "pallet";
 const isBoard = (m: MaterialInstance) => m.type === "board";
-const palletBoard =
-  (width: number, length?: number) => (m: MaterialInstance) =>
-    isBoard(m) &&
-    (m as { species: string }).species === "pallet" &&
-    (m as { width: number }).width === width &&
-    (length === undefined || (m as { length: number }).length === length);
+const palletBoard = (width: number, length?: number) => (m: MaterialInstance) =>
+  isBoard(m) &&
+  (m as { species: string }).species === "pallet" &&
+  (m as { width: number }).width === width &&
+  (length === undefined || (m as { length: number }).length === length);
 
 /** The 6"-wide stringers a pallet's frame is made of. */
 const stringer = palletBoard(6);
@@ -95,8 +94,10 @@ function stripsOf(shop: ShopDriver, species: string, count: number): void {
 }
 
 /** Match a smooth 2' x 2" strip of one species, for pattern-order loading. */
-const stripOfSpecies = (species: string) => (m: MaterialInstance): boolean =>
-  sized({ species, length: 2, width: 2, thickness: 4, surface: "smooth" })(m);
+const stripOfSpecies =
+  (species: string) =>
+  (m: MaterialInstance): boolean =>
+    sized({ species, length: 2, width: 2, thickness: 4, surface: "smooth" })(m);
 /** A finished product that hasn't been oiled yet. */
 const isUnfinishedBoard = (m: MaterialInstance) =>
   m.type === "simpleCuttingBoard" &&
@@ -328,9 +329,7 @@ function grindPalletJob(shop: ShopDriver): ShopDriver {
       candidate.materialCostFree &&
       candidate.requiredMaterials.length === 1 &&
       (
-        candidate.requiredMaterials[0].type as
-          | ReadonlyArray<string>
-          | undefined
+        candidate.requiredMaterials[0].type as ReadonlyArray<string> | undefined
       )?.includes("board"),
   );
   if (!offer) {
@@ -437,8 +436,20 @@ function commission2(shop: ShopDriver): ShopDriver {
   for (let i = 0; i < 4; i++) {
     millOneBoard(
       shop,
-      { species: "pallet", length: 3, width: 4, thickness: 1, surface: "rough" },
-      { species: "pallet", length: 2, width: 2, thickness: 1, surface: "sanded" },
+      {
+        species: "pallet",
+        length: 3,
+        width: 4,
+        thickness: 1,
+        surface: "rough",
+      },
+      {
+        species: "pallet",
+        length: 2,
+        width: 2,
+        thickness: 1,
+        surface: "sanded",
+      },
     );
   }
   return shop.handOverCommission();
@@ -462,7 +473,12 @@ function commission3(shop: ShopDriver): ShopDriver {
   shop.buySupplies("mineralOil");
   // The glue-up wants 2' × 2" strips, five to a panel. The big-box rack sells
   // 4' × 4" maple, so each board crosscuts into two and rips into four.
-  shop.buyBoards("bigBoxRack", "maple", { length: 4, width: 4, thickness: 4 }, 3);
+  shop.buyBoards(
+    "bigBoxRack",
+    "maple",
+    { length: 4, width: 4, thickness: 4 },
+    3,
+  );
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 
@@ -638,7 +654,12 @@ function commission6(shop: ShopDriver): ShopDriver {
   shop.goShopping("orangeBox");
   shop.buySheet("plywoodB");
   shop.buySupplies("mineralOil");
-  shop.buyBoards("bigBoxRack", "maple", { length: 4, width: 4, thickness: 4 }, 3);
+  shop.buyBoards(
+    "bigBoxRack",
+    "maple",
+    { length: 4, width: 4, thickness: 4 },
+    3,
+  );
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 

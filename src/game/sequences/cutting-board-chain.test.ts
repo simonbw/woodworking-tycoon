@@ -15,10 +15,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import { cuttingBoardShop } from "../../../tests/fixtures/cutting-board-shop";
 import { isPanel } from "../panel-helpers";
-import {
-  getMaterialFullName,
-  getMaterialName,
-} from "../material-helpers";
+import { getMaterialFullName, getMaterialName } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { MaterialInstance } from "../Materials";
 import { openShop, ShopDriver } from "./shop-driver";
@@ -27,8 +24,7 @@ const WORKBENCH = "workspace";
 
 const isStrip = (m: MaterialInstance) => m.type === "board";
 const isMaplePanel = (m: MaterialInstance) => isPanel(m);
-const isCuttingBoard = (m: MaterialInstance) =>
-  m.type === "simpleCuttingBoard";
+const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
 /** The sander comes in tool storage; the spec mounts it through the sheet. */
 function shopWithSanderMounted(): ShopDriver {

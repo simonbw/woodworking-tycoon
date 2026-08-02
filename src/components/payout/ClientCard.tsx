@@ -1,6 +1,10 @@
 import React from "react";
 import { PayoutEvent } from "../../game/PayoutEvent";
-import { formatCount, formatDecimal, formatMoney } from "../../utils/formatNumber";
+import {
+  formatCount,
+  formatDecimal,
+  formatMoney,
+} from "../../utils/formatNumber";
 import { Modal } from "../Modal";
 
 /**

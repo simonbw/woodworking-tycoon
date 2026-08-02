@@ -25,9 +25,11 @@ function sheetRequirementOf(operationId: string) {
     (op) => op.id === operationId,
   ) as Operation;
   assert.ok(operation, `${operationId} should exist on the bench`);
-  const requirement = operation.getInputMaterials({}).find((req) =>
-    (req.type as ReadonlyArray<string> | undefined)?.includes("plywood"),
-  );
+  const requirement = operation
+    .getInputMaterials({})
+    .find((req) =>
+      (req.type as ReadonlyArray<string> | undefined)?.includes("plywood"),
+    );
   assert.ok(requirement, `${operationId} should take a sheet`);
   return requirement;
 }
@@ -79,7 +81,9 @@ describe("storage rack", () => {
     const build = workspace.operations.find(
       (op) => op.id === "buildStorageRack",
     ) as Operation;
-    assert.deepStrictEqual(build.output([], {}).machineOutputs, ["storageRack"]);
+    assert.deepStrictEqual(build.output([], {}).machineOutputs, [
+      "storageRack",
+    ]);
   });
 
   it("out-shelves a worktable of the same footprint, and does nothing else", () => {

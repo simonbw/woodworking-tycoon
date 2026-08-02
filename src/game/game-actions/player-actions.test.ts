@@ -327,7 +327,11 @@ describe("direct feed (planer)", () => {
 /** A jointer part-way through a pass, stock on the beds. */
 const working = (): MachineState =>
   jointer({
-    operationProgress: { status: "inProgress", phaseIndex: 0, ticksRemaining: 5 },
+    operationProgress: {
+      status: "inProgress",
+      phaseIndex: 0,
+      ticksRemaining: 5,
+    },
     processingMaterials: [roughStock()],
     selectedParameters: { targetThickness: 4 },
   });
@@ -409,9 +413,11 @@ describe("dropMaterialAction", () => {
         inventory: [material],
       },
     };
-    const result = dropMaterialAction([material], [5.5, 5.5], Math.PI / 3)(
-      state,
-    );
+    const result = dropMaterialAction(
+      [material],
+      [5.5, 5.5],
+      Math.PI / 3,
+    )(state);
     assert.strictEqual(result.materialPiles.at(-1)?.rotation, Math.PI / 3);
   });
 

@@ -82,9 +82,7 @@ export function takeFromTruckBedAction(
         },
         truck: {
           ...gameState.truck,
-          bed: gameState.truck.bed.filter(
-            (item) => !materials.includes(item),
-          ),
+          bed: gameState.truck.bed.filter((item) => !materials.includes(item)),
         },
       },
       { kind: "material-pickup" },

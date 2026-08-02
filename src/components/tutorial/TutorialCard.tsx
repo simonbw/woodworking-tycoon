@@ -101,9 +101,9 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
     case "deliverShelf":
       return (
         <p>
-          Walk around to the cab and press{" "}
-          <ShortcutKeys shortcut="pick-up" />. The shelf is listed under work to
-          deliver — take that row and drive it over.
+          Walk around to the cab and press <ShortcutKeys shortcut="pick-up" />.
+          The shelf is listed under work to deliver — take that row and drive it
+          over.
         </p>
       );
     case "listStock":

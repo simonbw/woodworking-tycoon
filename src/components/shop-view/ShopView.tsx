@@ -344,14 +344,14 @@ export const ShopView: React.FC = () => {
           />
           <pixiContainer x={offsetX} y={offsetY} scale={scale}>
             <pixiContainer ref={cameraContainerRef}>
-            <EnvironmentLayer
-              width={width}
-              height={height}
-              viewport={worldViewport}
-              truckHighlight={truckHighlight}
-              truckCargoHighlight={truckCargoHighlight}
-              truckTutorialHighlight={coach.truck}
-            />
+              <EnvironmentLayer
+                width={width}
+                height={height}
+                viewport={worldViewport}
+                truckHighlight={truckHighlight}
+                truckCargoHighlight={truckCargoHighlight}
+                truckTutorialHighlight={coach.truck}
+              />
               <pixiTilingSprite
                 eventMode="static"
                 texture={floorTexture}
@@ -413,7 +413,7 @@ export const ShopView: React.FC = () => {
                   />
                 ))}
               {/* Painted over the machines: a blocked lane cell is usually
-                  *under* the machine that's blocking it */}
+               *under* the machine that's blocking it */}
               <FeedLaneLayer />
               {collisionDebugRequested() && <CollisionDebugLayer />}
               <PlayerMotionLayer paused={paused} />
@@ -427,31 +427,31 @@ export const ShopView: React.FC = () => {
               <CarriedMachineLayer />
             </pixiContainer>
           </pixiContainer>
-          </gameStateContext.Provider>
-        </Application>
-        {/* The DOM overlay sits exactly on the shop floor's box, so every
+        </gameStateContext.Provider>
+      </Application>
+      {/* The DOM overlay sits exactly on the shop floor's box, so every
             anchor inside keeps world-times-scale coordinates. The inner
             wrapper rides the camera (CameraLayer sets its transform
             imperatively; React never writes that style, so they can't
             fight). */}
-        <div
-          className="absolute z-30 pointer-events-none"
-          style={{
-            left: offsetX,
-            top: offsetY,
-            width: scaledWidth,
-            height: scaledHeight,
-          }}
-        >
-          <div ref={overlayScrollRef} className="absolute inset-0">
-            {/* Everything you can do, shown at the thing you'd do it to */}
-            <ShopOverlayLayer
-              width={scaledWidth}
-              height={scaledHeight}
-              scale={scale}
-            />
-          </div>
+      <div
+        className="absolute z-30 pointer-events-none"
+        style={{
+          left: offsetX,
+          top: offsetY,
+          width: scaledWidth,
+          height: scaledHeight,
+        }}
+      >
+        <div ref={overlayScrollRef} className="absolute inset-0">
+          {/* Everything you can do, shown at the thing you'd do it to */}
+          <ShopOverlayLayer
+            width={scaledWidth}
+            height={scaledHeight}
+            scale={scale}
+          />
         </div>
       </div>
-    );
+    </div>
+  );
 };
