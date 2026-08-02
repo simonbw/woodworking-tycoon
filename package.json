@@ -4,7 +4,7 @@
   "description": "Woodworking idle game",
   "main": "index.js",
   "scripts": {
-    "format": "npx prettier --write ./src/**/*.{ts,tsx}",
+    "format": "prettier --write \"./src/**/*.{ts,tsx}\"",
     "build": "node esbuild-client.config.mjs",
     "dev": "node esbuild-client.config.mjs --dev",
     "tsc": "tsc --noEmit",
@@ -66,6 +66,7 @@
     "@playwright/test": "^1.56.1",
     "@types/pngjs": "^6.0.5",
     "pngjs": "^7.0.0",
+    "prettier": "3.9.6",
     "tsx": "^4.23.1"
   }
 }
