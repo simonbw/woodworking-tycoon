@@ -1,25 +1,23 @@
-import { addConsumables, ConsumableAmount } from "../Consumable";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
 import { truckCabSideCell } from "../lot";
 import { Species } from "../Materials";
-import { SoundEvent } from "../SoundEvent";
-import { Vector } from "../Vectors";
-import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { sweepTickPass } from "./dust-actions";
 import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { combineActions } from "./misc-actions";
-import { isFinishedProduct, materialSpecies } from "../material-helpers";
+import { materialSpecies } from "../material-helpers";
 import { playerAttendsMachine } from "../machine-helpers";
-import { Machine, MachineId } from "../Machine";
-import { getSellValue } from "../material-values";
+import { Machine } from "../Machine";
 import { getOperationPhases } from "../skill-helpers";
-import { UpgradeId } from "../Upgrade";
-import { withXp } from "./skill-actions";
+import {
+  applyCompletionGrants,
+  completeOperation,
+  OperationCompletion,
+} from "./operation-actions";
 
 /**
  * One simulation tick, as an explicit ordered pipeline. Ordering is
@@ -102,12 +100,7 @@ function advanceTickPass(): GameAction {
  */
 export function machineTickPass(): GameAction {
   return (gameState) => {
-    let xpEarned = 0;
-    const soundEvents: SoundEvent[] = [];
-    const machinesGranted: Array<{ machineTypeId: MachineId; near: Vector }> =
-      [];
-    const upgradesGranted: UpgradeId[] = [];
-    const consumablesGranted: ConsumableAmount[] = [];
+    const completions: OperationCompletion[] = [];
     const dustEmissions: Array<{
       machine: Machine;
       species: ReadonlyArray<Species>;
@@ -146,8 +139,12 @@ export function machineTickPass(): GameAction {
       // like stepping away, and so does letting go. Power-feed operations
       // (the planer) pull the stock through on their own: neither the
       // player's whereabouts nor their grip matters, but the switch still
-      // does.
+      // does. Interactive operations never tick their attended work at
+      // all — the bench view performs it and commits through
+      // finishAttendedWorkAction (see docs/bench-minigames.md).
+      const interactive = selectedOperation.interaction != null;
       const attended =
+        !interactive &&
         ((playerAttendsMachine(
           machine,
           gameState.player.position,
@@ -240,65 +237,11 @@ export function machineTickPass(): GameAction {
         };
       }
 
-      // Operation completed - apply the transformation
-      const {
-        inputs,
-        outputs,
-        consumableOutputs,
-        machineOutputs,
-        upgradeOutputs,
-      } = selectedOperation.output(
-        machineState.processingMaterials,
-        machine.resolvedParameters(selectedOperation),
-      );
-
-      for (const output of outputs) {
-        if (isFinishedProduct(output)) {
-          xpEarned += Math.round(getSellValue(output));
-        }
-      }
-
-      // Shop-built furniture (worktables) comes off the bench crated, ready
-      // to be carried into place
-      if (machineOutputs) {
-        machinesGranted.push(
-          ...machineOutputs.map((machineTypeId) => ({
-            machineTypeId,
-            near: machine.absoluteOperationPosition ?? machine.position,
-          })),
-        );
-      }
-
-      // Shop-built worktable upgrades (drawers, shelves) land in upgrade
-      // storage, to be installed from a table's card
-      if (upgradeOutputs) {
-        upgradesGranted.push(...upgradeOutputs);
-      }
-
-      // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock
-      if (consumableOutputs) {
-        consumablesGranted.push(...consumableOutputs);
-      }
-
-      // Cue a sound for the finished operation; GameSoundLayer picks the clip
-      // from the operation (so tool operations sound like the tool).
-      soundEvents.push({
-        kind: "operation-complete",
-        machineTypeId: machineState.machineTypeId,
-        operationId: machineState.selectedOperationId,
-      });
-
-      return {
-        ...machineState,
-        inputMaterials: [...machineState.inputMaterials, ...inputs],
-        processingMaterials: [],
-        outputMaterials: [...machineState.outputMaterials, ...outputs],
-        operationProgress: {
-          status: "notStarted" as const,
-          phaseIndex: 0,
-          ticksRemaining: 0,
-        },
-      };
+      // Operation completed — through the shared finish commit, so a
+      // tick-completed cut and a hand-finished pass do the same things
+      const completion = completeOperation(machineState);
+      completions.push(completion);
+      return completion.machine;
     });
 
     // Reference stays stable on dustless ticks so caches keyed on it hold
@@ -313,53 +256,11 @@ export function machineTickPass(): GameAction {
       );
     }
 
-    // Only override pendingSounds when there's something to add, so quiet ticks
-    // keep the queue's reference stable and don't re-trigger the sound drain.
-    const nextState =
-      soundEvents.length > 0
-        ? {
-            ...gameState,
-            machines: updatedMachines,
-            dust,
-            pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
-          }
-        : {
-            ...gameState,
-            machines: updatedMachines,
-            dust,
-          };
-
-    let withUpgrades: GameState =
-      upgradesGranted.length > 0
-        ? {
-            ...nextState,
-            storage: {
-              ...nextState.storage,
-              upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
-            },
-          }
-        : nextState;
-
-    // Shop-built machines land crated beside the bench that made them
-    for (const granted of machinesGranted) {
-      withUpgrades = deliverMachineCrate(
-        withUpgrades,
-        freshMachineState(granted.machineTypeId, withUpgrades.progression),
-        granted.near,
-      );
-    }
-
-    const withConsumables =
-      consumablesGranted.length > 0
-        ? {
-            ...withUpgrades,
-            consumables: addConsumables(
-              withUpgrades.consumables,
-              consumablesGranted,
-            ),
-          }
-        : withUpgrades;
-
-    return withXp(withConsumables, xpEarned);
+    // Grants (sounds, upgrades, crates, supplies, XP) land through the
+    // same application the bench view's finish commit uses.
+    return applyCompletionGrants(
+      { ...gameState, machines: updatedMachines, dust },
+      completions,
+    );
   };
 }

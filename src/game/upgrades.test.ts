@@ -2,14 +2,14 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { GameState } from "./GameState";
-import { Machine, Operation, MachineState } from "./Machine";
+import { Machine, Operation, MachineState, getMachines } from "./Machine";
 import { initialGameState } from "./initialGameState";
 import {
   buyUpgradeAction,
   installUpgradeAction,
   uninstallUpgradeAction,
 } from "./game-actions/upgrade-actions";
-import { tickAction } from "./game-actions/tickAction";
+import { finishAttendedWorkAction } from "./game-actions/operation-actions";
 import { getOperationPhases } from "./skill-helpers";
 import { workspace } from "./machines/workspace";
 import { worktable1x1, worktable1x2 } from "./machines/worktables";
@@ -188,7 +188,10 @@ describe("shop-built upgrades", () => {
         operating: true,
       },
     });
-    const result = tickAction(state);
+    // Assembly commits through the bench view's finish action now
+    const result = finishAttendedWorkAction(getMachines(state.machines)[0])(
+      state,
+    );
     assert.deepStrictEqual(result.storage.upgrades, ["materialShelf"]);
   });
 });

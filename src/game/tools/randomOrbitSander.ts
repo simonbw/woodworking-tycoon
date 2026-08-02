@@ -15,5 +15,9 @@ export const randomOrbitSander: ToolType = {
     "worktable1x3",
     "worktable2x2",
   ],
-  operations: makeSandingOperations("orbit", 12),
+  operations: makeSandingOperations("orbit", 12, {
+    // A wider, faster brush — not a multiplier on a bar
+    brushWidthIn: 5,
+    coveragePerSecond: 50,
+  }),
 };

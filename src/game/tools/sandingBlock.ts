@@ -14,5 +14,9 @@ export const sandingBlock: ToolType = {
     "worktable1x3",
     "worktable2x2",
   ],
-  operations: makeSandingOperations("block", 40),
+  operations: makeSandingOperations("block", 40, {
+    // A cork block is a narrow, patient brush
+    brushWidthIn: 2.5,
+    coveragePerSecond: 15,
+  }),
 };

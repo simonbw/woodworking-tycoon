@@ -32,6 +32,7 @@ export const drill: ToolType = {
       id: "buildPlanterBox",
       requiredSkill: "rusticCarpentry",
       duration: 25,
+      interaction: { kind: "assembly" },
       // Screws hold an outdoor box together through wet soil and weather
       // where nails would work loose — and unlike nails, they never come
       // back as pallet salvage, so this is the screw economy's anchor.
@@ -69,6 +70,7 @@ export const drill: ToolType = {
       id: "buildStepStool",
       requiredSkill: "rusticCarpentry",
       duration: 30,
+      interaction: { kind: "assembly" },
       // It has to hold a person, so every joint gets a screw
       requiredConsumables: [{ id: "screws", amount: 10 }],
       getInputMaterials: () => [
@@ -110,6 +112,7 @@ export const drill: ToolType = {
       id: "buildBookshelf",
       requiredSkill: "fineShelving",
       duration: 40,
+      interaction: { kind: "assembly" },
       requiredConsumables: [{ id: "screws", amount: 12 }],
       getInputMaterials: () => [
         // Twice the stock of a single shelf: two shelves, two sides

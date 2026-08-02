@@ -57,6 +57,11 @@ import {
   putDownCarriedMachineAction,
 } from "../game-actions/machine-actions";
 import {
+  finishAttendedWorkAction,
+  palletPryTargetsLeft,
+  pryPalletNailAction,
+} from "../game-actions/operation-actions";
+import {
   loadTruckBedAction,
   takeCrateFromTruckAction,
   takeFromTruckBedAction,
@@ -496,13 +501,23 @@ export class ShopDriver {
   }
 
   /**
-   * Start the station and stay on it until the work is done, holding the
-   * operate key the whole time. That grip is what makes attended phases
-   * legal — the flag lives in GameState, so a tick loop reads it exactly
-   * as a real one does — and hands-free phases ignore it, so one verb
+   * Start the station and stay on it until the work is done. For legacy
+   * operations that means holding the operate key through the ticks. For
+   * interactive operations (the bench view's hand work) the driver
+   * commits through the SAME actions the mini-game commits through —
+   * start, then `finishAttendedWorkAction` — with no mini-game in
+   * between; there is nothing else it could legally hold. Either way,
+   * hands-free phases (glue curing) run out on the clock, so one verb
    * covers both halves of a glue-up.
    */
   run(machineTypeId: MachineState["machineTypeId"]): this {
+    // Dismantling never "runs": the pallet transforms nail by nail
+    // through incremental commits, so one run() is one whole teardown.
+    const selected = this.machine(machineTypeId).selectedOperationOrNull;
+    if (selected?.interaction?.kind === "pry") {
+      return this.performWork(machineTypeId);
+    }
+
     this.apply(operateMachineAction(this.machine(machineTypeId)));
     if (
       this.machine(machineTypeId).state.operationProgress.status !==
@@ -512,6 +527,9 @@ export class ShopDriver {
         `The ${machineTypeId} would not start. Unpowered, nothing loaded, ` +
           `or short of clamps or supplies.`,
       );
+    }
+    if (selected?.interaction) {
+      return this.performWork(machineTypeId);
     }
     this.apply(setOperatingAction(true));
     for (let i = 0; i < TICK_CEILING; i++) {
@@ -527,6 +545,63 @@ export class ShopDriver {
     throw new Error(
       `The ${machineTypeId} never finished in ${TICK_CEILING} ticks. An ` +
         `attended phase with the player standing somewhere else is the usual cause.`,
+    );
+  }
+
+  /**
+   * Complete a station's interactive hand work through the real commit
+   * actions — the same ones the bench view dispatches, with no mini-game
+   * in between. Assumes the operation is already started (run() does
+   * that) except for pry work, which never starts an operation at all:
+   * a staged pallet is torn down pull by pull. Ends by ticking out any
+   * hands-free remainder (a glue-up's cure).
+   */
+  performWork(machineTypeId: MachineState["machineTypeId"]): this {
+    const machine = this.machine(machineTypeId);
+    if (machine.selectedOperationOrNull?.interaction?.kind === "pry") {
+      let pulls = palletPryTargetsLeft(machine);
+      if (pulls === 0) {
+        throw new Error(
+          `Nothing on the ${machineTypeId} to pry — stage a pallet first`,
+        );
+      }
+      while (pulls > 0) {
+        this.apply(pryPalletNailAction(this.machine(machineTypeId)));
+        const left = palletPryTargetsLeft(this.machine(machineTypeId));
+        if (left >= pulls) {
+          throw new Error(
+            `A pry at the ${machineTypeId} freed nothing — the player ` +
+              `isn't standing at it, or the skill is locked`,
+          );
+        }
+        pulls = left;
+      }
+      return this;
+    }
+
+    if (
+      this.machine(machineTypeId).state.operationProgress.status !==
+      "inProgress"
+    ) {
+      throw new Error(
+        `No work in progress on the ${machineTypeId} to perform — run() starts it`,
+      );
+    }
+    this.apply(finishAttendedWorkAction(this.machine(machineTypeId)));
+    // A hands-free remainder (the cure) runs out on the clock
+    for (let i = 0; i < TICK_CEILING; i++) {
+      if (
+        this.machine(machineTypeId).state.operationProgress.status !==
+        "inProgress"
+      ) {
+        return this;
+      }
+      this.tick();
+    }
+    throw new Error(
+      `The ${machineTypeId}'s hand work never resolved in ${TICK_CEILING} ` +
+        `ticks. finishAttendedWorkAction refusing (player not at the ` +
+        `station?) is the usual cause.`,
     );
   }
 

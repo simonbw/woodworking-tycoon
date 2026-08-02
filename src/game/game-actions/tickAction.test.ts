@@ -6,8 +6,9 @@ import { GameState } from "../GameState";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
-import { Pallet } from "../Materials";
+import { FinishedProduct, Pallet } from "../Materials";
 import { GLUE_CURE_TICKS } from "../machines/workspace";
+import { panel } from "../panel-helpers";
 import { tickAction } from "./tickAction";
 
 /** The fixture workspace sits at [1,2] rotation 0 — its operation cell. */
@@ -69,6 +70,22 @@ function glueStrips() {
   return Array.from({ length: 5 }, () => board("maple", 2, 2, 4, "smooth"));
 }
 
+/**
+ * A sanded 10"-wide maple panel — a finished cutting board's blank. The
+ * finish recipes are the bench's remaining legacy (attended-tick) hand
+ * work, so they are the guinea pigs for generic tick mechanics now that
+ * dismantling, sanding, gluing and assembly commit through the bench
+ * view's actions instead.
+ */
+function sandedPanel() {
+  return panel(
+    Array.from({ length: 5 }, () => ({ species: "maple" as const, width: 2 as const })),
+    2,
+    4,
+    "sanded",
+  );
+}
+
 describe("tickAction", () => {
   it("increments the tick counter", () => {
     const result = tickAction(stateWith({ tick: 7 }));
@@ -83,7 +100,8 @@ describe("tickAction", () => {
 
   it("counts down an attended operation while the player is at the machine", () => {
     const machine = workspaceMachine({
-      processingMaterials: [nearlyDismantledPallet()],
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -100,7 +118,8 @@ describe("tickAction", () => {
 
   it("pauses an attended operation while the player is elsewhere", () => {
     const machine = workspaceMachine({
-      processingMaterials: [nearlyDismantledPallet()],
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -114,7 +133,8 @@ describe("tickAction", () => {
 
   it("emits an operation-complete sound cue when an operation finishes", () => {
     const machine = workspaceMachine({
-      processingMaterials: [nearlyDismantledPallet()],
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -126,7 +146,7 @@ describe("tickAction", () => {
       {
         kind: "operation-complete",
         machineTypeId: "workspace",
-        operationId: "dismantlePallet",
+        operationId: "finishCuttingBoard",
       },
     ]);
   });
@@ -139,7 +159,8 @@ describe("tickAction", () => {
 
   it("pauses attended work during away trips — you're not there to do it", () => {
     const machine = workspaceMachine({
-      processingMaterials: [nearlyDismantledPallet()],
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -179,7 +200,8 @@ describe("tickAction", () => {
 
   it("applies the operation output when the countdown finishes", () => {
     const machine = workspaceMachine({
-      processingMaterials: [nearlyDismantledPallet()],
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -189,31 +211,20 @@ describe("tickAction", () => {
     const result = tickAction(attendingStateWith({ machines: [machine] }));
     const finished = result.machines[0];
 
-    // Dismantling the last deck board yields 3 stringers + 1 deck board
-    assert.strictEqual(finished.outputMaterials.length, 4);
-    assert.ok(finished.outputMaterials.every((m) => m.type === "board"));
+    assert.strictEqual(finished.outputMaterials.length, 1);
+    assert.strictEqual(finished.outputMaterials[0].type, "simpleCuttingBoard");
     assert.deepStrictEqual(finished.processingMaterials, []);
     assert.deepStrictEqual(finished.operationProgress, {
       status: "notStarted",
       phaseIndex: 0,
       ticksRemaining: 0,
     });
-    // Boards are not finished products: no craft XP for milling
-    assert.strictEqual(result.progression.xp, 0);
   });
 
   it("awards craft XP equal to sell value when a product completes", () => {
-    const shelfBoards = [
-      board("pallet", 4, 6, 3),
-      board("pallet", 4, 6, 3),
-      board("pallet", 3, 4, 1),
-      board("pallet", 3, 4, 1),
-      board("pallet", 3, 4, 1),
-    ];
     const machine = workspaceMachine({
-      tools: ["hammer"],
-      selectedOperationId: "buildRusticPalletShelf",
-      processingMaterials: shelfBoards,
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -221,16 +232,24 @@ describe("tickAction", () => {
       },
     });
     const result = tickAction(attendingStateWith({ machines: [machine] }));
-    // Rustic shelf sells for $12 -> 12 XP
-    assert.strictEqual(result.progression.xp, 12);
+    // Maple simple cutting board sells for $24 -> 24 XP
+    assert.strictEqual(result.progression.xp, 24);
   });
 });
 
 describe("tickAction operation phases", () => {
-  it("advances from clamping into hands-free curing", () => {
+  /** A raw maple cutting board, ready for the oil recipe's two phases. */
+  function rawCuttingBoard(): FinishedProduct {
+    return makeMaterial<FinishedProduct>({
+      type: "simpleCuttingBoard",
+      species: "maple",
+    });
+  }
+
+  it("advances from the attended wipe into hands-free soaking", () => {
     const machine = workspaceMachine({
-      selectedOperationId: "glueUpPanel",
-      processingMaterials: glueStrips(),
+      selectedOperationId: "oilCuttingBoard",
+      processingMaterials: [rawCuttingBoard()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -241,14 +260,14 @@ describe("tickAction operation phases", () => {
     assert.deepStrictEqual(result.machines[0].operationProgress, {
       status: "inProgress",
       phaseIndex: 1,
-      ticksRemaining: GLUE_CURE_TICKS,
+      ticksRemaining: 24,
     });
   });
 
-  it("pauses clamping when the player steps away", () => {
+  it("pauses the attended wipe when the player steps away", () => {
     const machine = workspaceMachine({
-      selectedOperationId: "glueUpPanel",
-      processingMaterials: glueStrips(),
+      selectedOperationId: "oilCuttingBoard",
+      processingMaterials: [rawCuttingBoard()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -470,7 +489,8 @@ describe("tickAction dust emission", () => {
 
   it("emits nothing for operations without a dustOutput", () => {
     const machine = workspaceMachine({
-      processingMaterials: [nearlyDismantledPallet()],
+      selectedOperationId: "finishCuttingBoard",
+      processingMaterials: [sandedPanel()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,

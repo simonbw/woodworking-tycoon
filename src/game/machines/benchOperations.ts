@@ -100,6 +100,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "dismantlePallet",
     requiredSkill: "basicMilling",
     duration: 4,
+    // Prying happens nail by nail through pryPalletNailAction — the
+    // operation is never "run"; this output survives as the whole-teardown
+    // shape the recipe promises (previews, and one pry-step per legacy run)
+    interaction: { kind: "pry" },
     getInputMaterials: () => [{ type: ["pallet"], quantity: 1 }],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
       const inputPallet = materials[0];
@@ -151,6 +155,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "panelWork",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
+    interaction: { kind: "glue" },
     requiredClamps: PANEL_CLAMPS,
     getInputMaterials: () => [
       {
@@ -195,6 +200,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "freeformLamination",
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
+    interaction: { kind: "glue" },
     requiredClamps: PAIR_CLAMPS,
     getInputMaterials: () => [
       {
@@ -233,6 +239,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "freeformLamination",
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
+    interaction: { kind: "glue" },
     requiredClamps: STRIP_CLAMPS,
     getInputMaterials: () => [
       { type: ["panel"], length: [2], thickness: [4], quantity: 1 },
@@ -271,6 +278,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "freeformLamination",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
+    interaction: { kind: "glue" },
     requiredClamps: WIDE_PANEL_CLAMPS,
     getInputMaterials: () => [
       { type: ["panel"], length: [2], thickness: [4], quantity: 2 },
@@ -300,6 +308,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildCrosscutSled",
     requiredSkill: "jigsAndFixtures",
     duration: 40,
+    interaction: { kind: "assembly" },
     getInputMaterials: () => [
       // A flat sheet base plus scrap runners and a fence
       {
@@ -331,6 +340,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildStraightLineSled",
     requiredSkill: "jigsAndFixtures",
     duration: 30,
+    interaction: { kind: "assembly" },
     getInputMaterials: () => [
       // A long flat base with toggle clamps to carry wavy-edged stock;
       // same pallet-scrap ingredients as the crosscut sled
@@ -361,6 +371,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildResawFence",
     requiredSkill: "resawing",
     duration: 25,
+    interaction: { kind: "assembly" },
     getInputMaterials: () => [
       // A tall sheet face and two triangular braces to keep it square to
       // the table — nothing rides, so it's the cheapest jig of the three
@@ -392,6 +403,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredSkill: "endGrainBoards",
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
+    interaction: { kind: "glue" },
     requiredClamps: PANEL_CLAMPS,
     getInputMaterials: () => [{ type: ["endGrainSlice"], quantity: 4 }],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
@@ -668,6 +680,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildShelf",
     requiredSkill: "fineShelving",
     duration: 35,
+    interaction: { kind: "assembly" },
     getInputMaterials: () => [
       {
         type: ["board"],
@@ -700,6 +713,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildPictureFrame",
     requiredSkill: "miteredFrames",
     duration: 30,
+    interaction: { kind: "assembly" },
     // Frames are joined with brads across the miters — the nail
     // economy's second consumer
     requiredConsumables: [{ id: "nails", amount: 4 }],
@@ -783,6 +797,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildHexFrame",
     requiredSkill: "polygonJoinery",
     duration: 35,
+    interaction: { kind: "assembly" },
     // Twelve miters joined with brads, like the picture frame's four
     requiredConsumables: [{ id: "nails", amount: 6 }],
     getInputMaterials: () => [
@@ -820,6 +835,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildServingTray",
     requiredSkill: "trayWork",
     duration: 35,
+    interaction: { kind: "assembly" },
     requiredConsumables: [{ id: "nails", amount: 8 }],
     getInputMaterials: () => [
       {
@@ -868,6 +884,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildSideTable",
     requiredSkill: "furnitureBasics",
     duration: 60,
+    interaction: { kind: "assembly" },
     requiredConsumables: [{ id: "screws", amount: 8 }],
     getInputMaterials: () => [
       {
@@ -913,6 +930,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildJewelryBox",
     requiredSkill: "boxJoinery",
     duration: 45,
+    interaction: { kind: "assembly" },
     getInputMaterials: () => [
       {
         type: ["board"],
@@ -975,6 +993,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     name: "Build Storage Rack",
     id: "buildStorageRack",
     duration: 30,
+    interaction: { kind: "assembly" },
     requiredConsumables: [{ id: "nails", amount: 10 }],
     getInputMaterials: () => [
       // A cheap deck on stout legs — the one build where OSB belongs.
@@ -1008,6 +1027,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     name: "Build Tool Drawers",
     id: "buildToolDrawers",
     duration: 30,
+    interaction: { kind: "assembly" },
     requiredConsumables: [{ id: "nails", amount: 8 }],
     getInputMaterials: () => [
       // A sheet carcass with thin drawer stock — deck boards qualify
@@ -1032,6 +1052,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     name: "Build Material Shelf",
     id: "buildMaterialShelf",
     duration: 20,
+    interaction: { kind: "assembly" },
     requiredConsumables: [{ id: "nails", amount: 6 }],
     getInputMaterials: () => [
       // Two planks spanning the stretchers — that's the whole build
@@ -1065,6 +1086,7 @@ function worktableBuildOperation(
       name,
       id: `build-${worktableId}`,
       duration,
+      interaction: { kind: "assembly" },
       requiredConsumables: [{ id: "nails", amount: nails }],
       getInputMaterials: () => [
         {

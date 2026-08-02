@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { CellMap } from "../CellMap";
 import { GameState } from "../GameState";
-import { Machine, MACHINE_TYPES, Operation, MachineState } from "../Machine";
+import { Machine, MACHINE_TYPES, Operation, MachineState, getMachines } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
 import { SheetGood } from "../Materials";
@@ -16,7 +16,7 @@ import {
   stowMaterialsInMachineAction,
   takeStoredMaterialsFromMachineAction,
 } from "../game-actions/player-actions";
-import { tickAction } from "../game-actions/tickAction";
+import { finishAttendedWorkAction } from "../game-actions/operation-actions";
 import { getOperationPhases } from "../skill-helpers";
 import { workspace } from "./workspace";
 import { worktable1x1, worktable1x3 } from "./worktables";
@@ -112,7 +112,10 @@ describe("worktable build recipes", () => {
       },
     });
 
-    const result = tickAction(state);
+    // Assembly commits through the bench view's finish action now
+    const result = finishAttendedWorkAction(getMachines(state.machines)[0])(
+      state,
+    );
     // The finished table lands crated at the bench's operator cell
     assert.strictEqual(result.machineCrates.length, 1);
     assert.strictEqual(

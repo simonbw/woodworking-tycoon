@@ -239,6 +239,57 @@ export function stockOrientationParameter(
   };
 }
 
+/**
+ * How the player performs an operation's attended work with their own
+ * hands in the bench view (see docs/bench-minigames.md). Declaring this
+ * converts the operation: it no longer advances on held Space — the bench
+ * view runs the script and commits through the actions in
+ * `game-actions/operation-actions.ts`. Omitted, the operation keeps the
+ * legacy attended-tick behavior (the op-by-op migration path).
+ *
+ * One small gesture vocabulary, composed per operation: strokes (coverage
+ * work), points (pry a nail, place a clamp, drive a fastener, snap a
+ * part), and marks (the hand saw's cut line).
+ */
+export type OperationInteraction =
+  | {
+      /** Drag the tool across the workpiece to full coverage: sanding,
+       * planing. Brush size and speed are the tool's feel — a block is
+       * narrow and slow, the orbit sander wide and fast. */
+      readonly kind: "stroke";
+      /** Brush diameter on the workpiece, in inches. */
+      readonly brushWidthIn: number;
+      /** Coverage laid down per second of active stroking, in in²/s —
+       * with area from the actual workpiece, this IS the work budget. */
+      readonly coveragePerSecond: number;
+      /** Where the strokes land: a face, or the narrow edge band. */
+      readonly band?: "face" | "edge";
+    }
+  | {
+      /** Mark the cut line, then push–pull strokes deepen the kerf. The
+       * budget scales with the stock's cross-section. */
+      readonly kind: "saw";
+      /** Kerf area cut per second of stroking, in in² of cross-section
+       * per second (width × thickness quarters / 4). */
+      readonly kerfPerSecond: number;
+    }
+  | {
+      /** Pry marked nails one at a time; every pull commits immediately
+       * (see pryPalletNailAction — the pallet transforms nail by nail). */
+      readonly kind: "pry";
+    }
+  | {
+      /** Spread glue along the joints, butt the boards, place the clamps
+       * (one per requiredClamps). Everything before the last clamp is
+       * ephemeral; that clamp commits start + cure in one stroke. */
+      readonly kind: "glue";
+    }
+  | {
+      /** Snap components onto their ghost outlines, then drive one
+       * fastener per requiredConsumables unit. */
+      readonly kind: "assembly";
+    };
+
 export interface Operation<TParams extends ParameterValues = ParameterValues> {
   readonly id: string;
   readonly name: string;
@@ -264,6 +315,12 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
    * `attended: false` (glue curing), this is active machine work.
    */
   readonly powerFeed?: boolean;
+  /**
+   * The hand-work script for this operation's attended stretch (see
+   * OperationInteraction). Declared, the bench view owns the work and the
+   * tick never advances the attended phase; omitted, held Space does.
+   */
+  readonly interaction?: OperationInteraction;
   /** Skill that must be unlocked before this recipe is usable (see Skill.ts). */
   readonly requiredSkill?: SkillId;
   /**

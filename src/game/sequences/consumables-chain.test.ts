@@ -29,15 +29,13 @@ const isShelf = (m: MaterialInstance) => m.type === "rusticShelf";
 const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
 /**
- * Pry the pallet apart until nothing is left. Four single deck boards come
- * off one at a time, then the last pass takes the three stringers and the
- * final deck board together — five runs, eight boards.
+ * Pry the pallet apart until nothing is left: nail by nail through the
+ * same incremental commits the bench view dispatches — five deck boards,
+ * then the three stringers, a nail back in the tin for every pull.
  */
 function dismantleThePallet(shop: ShopDriver): ShopDriver {
   shop.standAtOperatorCell(WORKBENCH).select(WORKBENCH, "dismantlePallet");
-  for (let pass = 0; pass < 5; pass++) {
-    shop.run(WORKBENCH);
-  }
+  shop.run(WORKBENCH);
   return shop.collect(WORKBENCH);
 }
 

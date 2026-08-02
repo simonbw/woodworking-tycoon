@@ -6,6 +6,7 @@ import { getMachines, Operation, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { mountToolAction } from "../game-actions/tool-actions";
 import { tickAction } from "../game-actions/tickAction";
+import { finishAttendedWorkAction } from "../game-actions/operation-actions";
 import {
   isFinishedProduct,
   makeMaterial,
@@ -251,7 +252,12 @@ describe("shop-made tooling", () => {
   }
 
   it("finishing the sled recipe lands the sled in the output bay", () => {
-    const result = tickAction(sledBuildState());
+    // Assembly is bench-view hand work: the build resolves through the
+    // same finish commit the mini-game dispatches, not a tick.
+    const state = sledBuildState();
+    const result = finishAttendedWorkAction(getMachines(state.machines)[0])(
+      state,
+    );
     const outputs = result.machines[0].outputMaterials;
     assert.strictEqual(outputs.length, 1);
     const sled = outputs[0];

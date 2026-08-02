@@ -29,6 +29,14 @@ export const handPlane: ToolType = {
       name: "Flatten Face by Hand",
       requiredSkill: "basicMilling",
       duration: 35,
+      // Strokes along the face; shavings, not dust, but the sim doesn't
+      // care what shape the mess takes
+      interaction: {
+        kind: "stroke",
+        band: "face",
+        brushWidthIn: 2,
+        coveragePerSecond: 14,
+      },
       dustOutput: 0.2,
       getInputMaterials: () => [
         { type: ["board"], jointedFaces: [0], quantity: 1 },
@@ -49,6 +57,13 @@ export const handPlane: ToolType = {
       name: "Straighten Edge by Hand",
       requiredSkill: "basicMilling",
       duration: 30,
+      // Strokes constrained to the narrow edge band
+      interaction: {
+        kind: "stroke",
+        band: "edge",
+        brushWidthIn: 1.5,
+        coveragePerSecond: 8,
+      },
       dustOutput: 0.2,
       getInputMaterials: () => [
         { type: ["board"], jointedEdges: [0], quantity: 1 },

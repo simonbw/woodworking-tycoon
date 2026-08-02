@@ -16,6 +16,7 @@ import { FinishedProduct, Pallet } from "../Materials";
 import { initialGameState } from "../initialGameState";
 import { operateMachineAction } from "./player-actions";
 import { buyConsumablePackAction } from "./store-actions";
+import { pryPalletNailAction } from "./operation-actions";
 import { tickAction } from "./tickAction";
 
 /** The starter workspace sits at [1,2] rotation 0 — its operation cell. */
@@ -87,28 +88,33 @@ describe("buyConsumablePackAction", () => {
 });
 
 describe("salvaged nails", () => {
-  it("dismantling a pallet returns one nail per board freed", () => {
+  it("prying a pallet apart returns one nail per board freed", () => {
+    // Dismantling is incremental now: each pull is its own commit, the
+    // nail clinks into the tin immediately, and the freed board pops out
+    // right then (see pryPalletNailAction).
     const machine = workspaceMachine({
       selectedOperationId: "dismantlePallet",
-      processingMaterials: [nearlyDismantledPallet()],
-      operationProgress: {
-        status: "inProgress",
-        phaseIndex: 0,
-        ticksRemaining: 1,
-      },
+      inputMaterials: [nearlyDismantledPallet()],
     });
-    const state = stateWith({
+    let state = stateWith({
       player: {
         ...initialGameState.player,
         position: WORKSPACE_OPERATION_CELL,
-        operating: true,
       },
       machines: [machine],
     });
-    const result = tickAction(state);
-    // Final pry-apart: 3 stringers + 1 deck board -> 4 nails
-    assert.strictEqual(result.machines[0].outputMaterials.length, 4);
-    assert.strictEqual(result.consumables.nails, 4);
+    // Last deck board, then the three stringers: 4 pulls, 4 boards, 4 nails
+    for (let pull = 1; pull <= 4; pull++) {
+      state = pryPalletNailAction(getMachines(state.machines)[0])(state);
+      assert.strictEqual(state.machines[0].outputMaterials.length, pull);
+      assert.strictEqual(state.consumables.nails, pull);
+    }
+    // The pallet itself is gone with the last stringer
+    assert.strictEqual(state.machines[0].inputMaterials.length, 0);
+    // A fifth pull finds nothing to pry and changes nothing
+    const spent = pryPalletNailAction(getMachines(state.machines)[0])(state);
+    assert.strictEqual(spent.machines[0].outputMaterials.length, 4);
+    assert.strictEqual(spent.consumables.nails, 4);
   });
 });
 

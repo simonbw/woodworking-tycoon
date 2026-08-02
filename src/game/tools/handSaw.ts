@@ -32,6 +32,9 @@ export const handSaw: ToolType = {
       requiredSkill: "basicMilling",
       name: "Cut Board by Hand",
       duration: 40,
+      // Mark the line, then push-pull strokes deepen the kerf — the
+      // budget scales with the stock's cross-section
+      interaction: { kind: "saw", kerfPerSecond: 0.25 },
       dustOutput: 0.3,
       // The same setup the miter saw models: drop the saw into an angle
       // slot, choose which end faces the blade, measure off the kept length.
