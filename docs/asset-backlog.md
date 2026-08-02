@@ -197,6 +197,17 @@ Decided — don't re-open these without a reason.
   re-routes to the nearest outlet whenever a machine moves; no fixed asset
   can follow that. The outlet plates are a few rectangles at outlet size.
 - **Collision debug overlay** — `CollisionDebugLayer`. Dev-only, `?collision`.
+- **Bench-view overlays** — the nail markers, pry-bar lever, glue beads,
+  clamp bars, ghost outlines, fastener heads, and cut/kerf lines in
+  `src/components/bench-view/` (`PrySurface`, `GlueSurface`,
+  `AssemblySurface`, `SawSurface`). Interaction UI drawn over the real
+  material sprites at zoom — markers and state readouts, not art. The
+  scratch-off brush in `StrokeSurface` is a mask stamped into a
+  `RenderTexture` and never renders directly.
+- **Edge band** — `bench-view/EdgeBandSprite`. The block plane's edge-on
+  view of a board: a strip of the species' edge color with grain/saw
+  marks, the same procedural language as `BoardSprite`, which owns the
+  faces.
 - **Default material pile** — `DefaultMaterialPileSprite`. A black square,
   and now only ever reached by `UnknownMaterial` — the type-system escape
   hatch, which has nothing real to draw. Every product type has a sprite. If

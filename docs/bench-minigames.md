@@ -3,8 +3,8 @@
 This doc captures the agreed design for interactive hand work — the zoomed
 bench view where materials and tools are manipulated directly — so
 implementation builds toward one vision instead of colliding with it.
-Nothing in here is built yet; where a section firms up into code, mark it
-**Now** the way `docs/tools-and-surfaces.md` does.
+Sections marked **Now** are built and live (the way
+`docs/tools-and-surfaces.md` marks them); the rest stays design.
 
 ## The thesis
 
@@ -56,7 +56,7 @@ vocabulary, and per-operation scripts that compose it.
    bar); a real machine removes the mini-game entirely. Buying equipment
    literally buys back your hands.
 
-## The gesture vocabulary
+## The gesture vocabulary — **Now**
 
 Three primitives, pointer-driven, composed per operation:
 
@@ -73,7 +73,14 @@ Keeping the vocabulary this small is the point: one input framework, one
 tuning surface, and each new operation is a script over existing verbs
 rather than a new engine.
 
-## The coverage mask (stroke work)
+## The coverage mask (stroke work) — **Now**
+
+**Now**: `src/game/bench-work/coverage.ts` (the accumulation grid, the
+98% threshold, the saw's kerf mask) with the RenderTexture scratch-off in
+`src/components/bench-view/StrokeSurface.tsx`. One addition the design
+didn't call: the grid tracks average accumulation alongside saturated
+cells, because a % readout that sits at zero through the first thin pass
+reads as broken — completion still requires 98% *saturated*.
 
 Stroke work renders as a per-pixel transition — the rough texture visibly
 giving way to the smooth one under the tool:
@@ -100,7 +107,16 @@ The same engine covers the block plane (strokes constrained to an edge
 band, shavings instead of dust) and the hand saw (a 1-D mask along the
 marked line, deepened by push–pull strokes).
 
-## The commit-action split
+## The commit-action split — **Now**
+
+**Now**: `src/game/game-actions/operation-actions.ts` — start is still
+`operateMachineAction`; `finishAttendedWorkAction` is the extracted
+completion (or the handoff into a hands-free remainder);
+`machineTickPass` calls the same `completeOperation`/grant application.
+Operations declare their script via `Operation.interaction`, and the
+tick never advances a declared operation's attended phase. Dev builds
+expose the commits as `__START_OPERATION__` / `__FINISH_ATTENDED_WORK__`
+/ `__PRY_PALLET_NAIL__` for tests and debug tooling — never as UI.
 
 The bench view decides *when*; actions decide *what*. Every interactive
 operation gets two commit points in `game-actions/`:
@@ -134,7 +150,7 @@ honest, and continuous tool foley runs UI-side the way `UiSoundLayer`
 works, with the completion stinger going through the `SoundEvent` queue
 as usual.
 
-## Pallet dismantling: progressive transformation
+## Pallet dismantling: progressive transformation — **Now**
 
 The richest script, and the pilot for incremental commits. Dismantling is
 modeled as the pallet instance transforming nail by nail:
@@ -150,7 +166,7 @@ modeled as the pallet instance transforming nail by nail:
   not because mini-game state was saved, but because every pull *was*
   game state.
 
-## Script sketches for the rest
+## Script sketches for the rest — **Now**
 
 | Activity | Script | Lands on |
 | --- | --- | --- |
@@ -164,7 +180,16 @@ Note how many target counts already live in the data (`requiredClamps`,
 `requiredConsumables`, pallet nail yields): the scripts mostly reveal
 numbers the simulation already has.
 
-## The bench view itself
+## The bench view itself — **Now**
+
+**Now**: `src/components/bench-view/` — the work surface lives inside the
+station sheet (Tab), widened for benches, its own PIXI `Application` at
+high zoom, with the plan picker surviving below as designed. The camera
+zoom-in transition remains future presentation work. Every operation
+listed in the rollout is converted; the remaining legacy attended-tick
+ops are the single-piece finishing recipes (`finish*`, `oilCuttingBoard`)
+and the shop-furniture/jig builds run through them — a coherent
+"finishing" batch for a future script.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a
@@ -182,7 +207,7 @@ keyboard-first; `Person.sweepAim` is the one pointer precedent). Assist
 options — bigger brush, lower threshold — are deliberately deferred, but
 nothing in the design forecloses them: they're per-script constants.
 
-## Testing
+## Testing — **Now**
 
 - **Unit**: commit actions, the pallet transform, accumulation-grid math.
 - **Sequence**: `ShopDriver` grows `performWork(machine)` — start + finish
@@ -200,16 +225,16 @@ nothing in the design forecloses them: they're per-script constants.
 ## Rollout order
 
 1. **Sanding** — pilots the mask engine, the commit split, and the bench
-   view shell. (The pilot pattern the planer served for direct-feed.)
+   view shell. (The pilot pattern the planer served for direct-feed.) **Now**
 2. **Pallet dismantling** — pilots incremental commits and the material
-   state change; the game's opening minutes get the biggest win.
-3. **Hand saw + block plane** — reuse the mask engine.
+   state change; the game's opening minutes get the biggest win. **Now**
+3. **Hand saw + block plane** — reuse the mask engine. **Now**
 4. **Glue-up** — pilots ephemeral-until-last-clamp and the hands-free
-   handoff.
+   handoff. **Now**
 5. **Assembly** — last; per-recipe component layouts are the long-tail
    authoring cost. Mitigation: a generic derived layout (components in a
    row, fasteners at the joints), hand-authored art only for hero
-   products.
+   products. **Now** (the generic layout; hero art still future)
 
 ## Open questions
 
