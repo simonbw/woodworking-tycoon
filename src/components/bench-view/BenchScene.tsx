@@ -2,25 +2,35 @@ import { useTick } from "@pixi/react";
 import { Container, Graphics } from "pixi.js";
 import React, { useCallback, useRef } from "react";
 import {
+  faceNails,
   isSameNail,
+  palletBoardSlot,
   palletNailPosition,
-  PALLET_HEIGHT_IN,
-  PALLET_WIDTH_IN,
+  palletSlotRefFromId,
 } from "../../game/bench-work/pallet-geometry";
-import { BenchPlacement } from "../../game/bench-work/bench-layout";
+import {
+  PalletLayer,
+  palletLayerOrder,
+  PalletSprite,
+} from "../material-sprites/PalletSprite";
+import {
+  BenchPlacement,
+  berthPlacementOnBench,
+  palletPointOnBench,
+} from "../../game/bench-work/bench-layout";
 import { pieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
-import { PalletSprite } from "../material-sprites/PalletSprite";
 import { StageFit } from "./stageMath";
 
 /**
  * The freeform half of the bench view: the bench's actual contents laid
- * out on the wood — a staged pallet with its remaining nails, and every
- * loose piece lying where the bench layout (real game state) says it
- * lies. Pure renderer: hit-testing and all state live in
- * BenchWorkSurface, which shares this file's coordinate space (bench-top
- * inches, the bench's top-left at the fit origin).
+ * out on the wood — a staged pallet lying where its own placement says
+ * (draggable, turnable, flippable like any piece), and every loose piece
+ * lying where the bench layout (real game state) says it lies. Pure
+ * renderer: hit-testing and all state live in BenchWorkSurface, which
+ * shares this file's coordinate space (bench-top inches, the bench's
+ * top-left at the fit origin).
  */
 
 export interface LoosePiece {
@@ -47,20 +57,19 @@ function stepSpring(
 }
 
 /**
- * One loose piece, its turn and flip tweened on the PIXI ticker — R and
- * F read as the piece being turned by hand, not teleported. Position
+ * A container whose turn and flip tween on the PIXI ticker — R and F
+ * read as the piece being turned by hand, not teleported. Position
  * tracks the drag directly; only angle and flip ease in. Deliberately
  * NOT react-spring's animated("pixiContainer"): its web-targeted prop
  * applier doesn't drive the PIXI reconciler, and the container silently
  * renders nothing.
  */
-const TweenedPiece: React.FC<{
-  piece: LoosePiece;
+const TweenedTransform: React.FC<{
+  placement: BenchPlacement;
   fit: StageFit;
-  hovered: boolean;
-  dragging: boolean;
-}> = ({ piece, fit, hovered, dragging }) => {
-  const { placement, material } = piece;
+  alpha?: number;
+  children: React.ReactNode;
+}> = ({ placement, fit, alpha, children }) => {
   const targetAngle = placement.angleDeg;
   const targetFlip = placement.flipped ? -1 : 1;
   const nodeRef = useRef<Container | null>(null);
@@ -92,13 +101,36 @@ const TweenedPiece: React.FC<{
     node.scale.set(a.flip * fit.spriteScale, fit.spriteScale);
   });
 
+  return (
+    <pixiContainer
+      ref={nodeRef}
+      x={fit.originX + placement.xIn * fit.pxPerIn}
+      y={fit.originY + placement.yIn * fit.pxPerIn}
+      angle={anim.current.angle}
+      scale={{
+        x: anim.current.flip * fit.spriteScale,
+        y: fit.spriteScale,
+      }}
+      alpha={alpha ?? 1}
+    >
+      {children}
+    </pixiContainer>
+  );
+};
+
+/** The white attention ring, drawn in sprite pixels inside the tweened
+ * container so it hugs the piece through the turn. */
+const PieceRing: React.FC<{
+  material: MaterialInstance;
+  fit: StageFit;
+  hovered: boolean;
+  dragging: boolean;
+}> = ({ material, fit, hovered, dragging }) => {
   const drawRing = useCallback(
     (g: Graphics) => {
       g.clear();
       if (!hovered && !dragging) return;
       const size = pieceSize(material);
-      // Drawn in sprite pixels (inside the scaled container), so the
-      // ring hugs the piece through the tweened turn.
       const w = (size.widthIn * fit.pxPerIn) / fit.spriteScale;
       const h = (size.heightIn * fit.pxPerIn) / fit.spriteScale;
       const pad = 4 / fit.spriteScale;
@@ -116,33 +148,62 @@ const TweenedPiece: React.FC<{
     },
     [hovered, dragging, material, fit],
   );
-
-  return (
-    <pixiContainer
-      ref={nodeRef}
-      x={fit.originX + placement.xIn * fit.pxPerIn}
-      y={fit.originY + placement.yIn * fit.pxPerIn}
-      angle={anim.current.angle}
-      scale={{
-        x: anim.current.flip * fit.spriteScale,
-        y: fit.spriteScale,
-      }}
-      alpha={dragging ? 0.9 : 1}
-    >
-      <MaterialSprite material={material} />
-      <pixiGraphics draw={drawRing} />
-    </pixiContainer>
-  );
+  return <pixiGraphics draw={drawRing} />;
 };
+
+const TweenedPiece: React.FC<{
+  piece: LoosePiece;
+  fit: StageFit;
+  hovered: boolean;
+  dragging: boolean;
+}> = ({ piece, fit, hovered, dragging }) => (
+  <TweenedTransform
+    placement={piece.placement}
+    fit={fit}
+    alpha={dragging ? 0.9 : 1}
+  >
+    <MaterialSprite material={piece.material} />
+    <PieceRing
+      material={piece.material}
+      fit={fit}
+      hovered={hovered}
+      dragging={dragging}
+    />
+  </TweenedTransform>
+);
+
+/**
+ * Which of the pallet's layers a freed board still visually belongs to:
+ * a board lying untouched on its berth keeps its place in the stack (a
+ * stringer slid out of the sandwich stays under the deck), and a board
+ * that's been moved — or whose pallet has — is just loose stock on top.
+ */
+function berthLayerOf(
+  piece: LoosePiece,
+  pallet: Pallet,
+  palletPlacement: BenchPlacement,
+): PalletLayer | null {
+  const ref = palletSlotRefFromId(pallet.id, piece.material.id);
+  if (!ref) return null;
+  const berth = palletBoardSlot(ref);
+  const expected = berthPlacementOnBench(palletPlacement, berth);
+  const angleDiff =
+    (((piece.placement.angleDeg - expected.angleDeg) % 360) + 360) % 360;
+  const near =
+    Math.abs(piece.placement.xIn - expected.xIn) < 0.6 &&
+    Math.abs(piece.placement.yIn - expected.yIn) < 0.6 &&
+    (angleDiff < 1 || angleDiff > 359) &&
+    piece.placement.flipped === expected.flipped;
+  return near ? berth.layer : null;
+}
 
 export const BenchScene: React.FC<{
   pallet: Pallet | null;
-  targets: ReadonlyArray<PalletNail>;
+  /** The pallet's live placement (drag included), when staged. */
+  palletPlacement: BenchPlacement | null;
   pieces: ReadonlyArray<LoosePiece>;
   /** Bench-inch fit: origin at the bench top's top-left corner. */
   fit: StageFit;
-  /** The staged pallet's top-left corner, in bench inches. */
-  palletOriginIn: { xIn: number; yIn: number };
   /** Nails light up while the hammer is in hand. */
   hammerHeld: boolean;
   prying: PalletNail | null;
@@ -152,10 +213,9 @@ export const BenchScene: React.FC<{
   draggingId: string | null;
 }> = ({
   pallet,
-  targets,
+  palletPlacement,
   pieces,
   fit,
-  palletOriginIn,
   hammerHeld,
   prying,
   hoveredNail,
@@ -163,36 +223,42 @@ export const BenchScene: React.FC<{
   draggingId,
 }) => {
   // The nail heads themselves are part of the pallet (PalletSprite draws
-  // them in both views); this layer is only the pry chrome around them.
+  // them in both views); this layer is only the pry chrome around them,
+  // carried through the pallet's placement like everything else.
   const drawNailChrome = useCallback(
     (g: Graphics) => {
       g.clear();
-      if (!pallet) return;
-      for (const nail of targets) {
-        if (!hammerHeld) continue;
-        const at = palletNailPosition(nail);
-        const x = fit.originX + (palletOriginIn.xIn + at.xIn) * fit.pxPerIn;
-        const y = fit.originY + (palletOriginIn.yIn + at.yIn) * fit.pxPerIn;
-        if (isSameNail(hoveredNail, nail)) {
-          // The hammer is over this one: the ring warms and widens
-          g.circle(x, y, 9).fill({ color: 0xd97c26, alpha: 0.2 });
-          g.circle(x, y, 9).stroke({ width: 3, color: 0xd97c26, alpha: 1 });
-        } else {
-          // The "pry here" ring, lit while the hammer is in hand
-          g.circle(x, y, 7).stroke({
-            width: 2.5,
-            color: 0xf5efe3,
-            alpha: 0.95,
-          });
+      if (!pallet || !palletPlacement) return;
+      const toStage = (nail: PalletNail) => {
+        const local = palletNailPosition(nail);
+        const at = palletPointOnBench(palletPlacement, local.xIn, local.yIn);
+        return {
+          x: fit.originX + at.xIn * fit.pxPerIn,
+          y: fit.originY + at.yIn * fit.pxPerIn,
+        };
+      };
+      if (hammerHeld) {
+        for (const nail of faceNails(pallet, palletPlacement.flipped)) {
+          const { x, y } = toStage(nail);
+          if (isSameNail(hoveredNail, nail)) {
+            // The hammer is over this one: the ring warms and widens
+            g.circle(x, y, 9).fill({ color: 0xd97c26, alpha: 0.2 });
+            g.circle(x, y, 9).stroke({ width: 3, color: 0xd97c26, alpha: 1 });
+          } else {
+            // The "pry here" ring, lit while the hammer is in hand
+            g.circle(x, y, 7).stroke({
+              width: 2.5,
+              color: 0xf5efe3,
+              alpha: 0.95,
+            });
+          }
         }
       }
       if (prying) {
         // The pull in progress: the press already committed, so the nail
         // is gone from the pallet — the widened ring and the claw's
         // lever line play out over the empty hole.
-        const at = palletNailPosition(prying);
-        const x = fit.originX + (palletOriginIn.xIn + at.xIn) * fit.pxPerIn;
-        const y = fit.originY + (palletOriginIn.yIn + at.yIn) * fit.pxPerIn;
+        const { x, y } = toStage(prying);
         g.circle(x, y, 10).stroke({
           width: 2.5,
           color: 0xd97c26,
@@ -203,44 +269,76 @@ export const BenchScene: React.FC<{
           .stroke({ width: 3.5, color: 0x8a8378, alpha: 0.9 });
       }
     },
-    [pallet, targets, fit, palletOriginIn, hammerHeld, prying, hoveredNail],
+    [pallet, palletPlacement, fit, hammerHeld, prying, hoveredNail],
   );
 
-  // The dragged piece rides on top of the stack
+  // Freed boards still lying on their berths keep their place inside the
+  // pallet's stack; everything else is loose on top. The dragged piece
+  // always rides the very top.
+  const berthed = new Map<PalletLayer, LoosePiece[]>();
+  const free: LoosePiece[] = [];
+  for (const piece of pieces) {
+    const layer =
+      pallet && palletPlacement && piece.material.id !== draggingId
+        ? berthLayerOf(piece, pallet, palletPlacement)
+        : null;
+    if (layer) {
+      const group = berthed.get(layer) ?? [];
+      group.push(piece);
+      berthed.set(layer, group);
+    } else {
+      free.push(piece);
+    }
+  }
   const ordered =
     draggingId === null
-      ? pieces
+      ? free
       : [
-          ...pieces.filter((p) => p.material.id !== draggingId),
-          ...pieces.filter((p) => p.material.id === draggingId),
+          ...free.filter((p) => p.material.id !== draggingId),
+          ...free.filter((p) => p.material.id === draggingId),
         ];
+
+  const renderPiece = (piece: LoosePiece) => (
+    <TweenedPiece
+      key={piece.material.id}
+      piece={piece}
+      fit={fit}
+      hovered={hoveredId === piece.material.id}
+      dragging={draggingId === piece.material.id}
+    />
+  );
 
   return (
     <pixiContainer>
-      {pallet && (
-        <pixiContainer
-          x={
-            fit.originX +
-            (palletOriginIn.xIn + PALLET_WIDTH_IN / 2) * fit.pxPerIn
-          }
-          y={
-            fit.originY +
-            (palletOriginIn.yIn + PALLET_HEIGHT_IN / 2) * fit.pxPerIn
-          }
-          scale={fit.spriteScale}
-        >
-          <PalletSprite pallet={pallet} />
-        </pixiContainer>
+      {pallet &&
+        palletPlacement &&
+        palletLayerOrder(palletPlacement.flipped).map((layer) => (
+          <React.Fragment key={layer}>
+            <TweenedTransform
+              placement={palletPlacement}
+              fit={fit}
+              alpha={draggingId === pallet.id ? 0.9 : 1}
+            >
+              <PalletSprite
+                pallet={pallet}
+                flipped={palletPlacement.flipped}
+                layers={[layer]}
+              />
+            </TweenedTransform>
+            {(berthed.get(layer) ?? []).map(renderPiece)}
+          </React.Fragment>
+        ))}
+      {pallet && palletPlacement && (
+        <TweenedTransform placement={palletPlacement} fit={fit}>
+          <PieceRing
+            material={pallet}
+            fit={fit}
+            hovered={hoveredId === pallet.id}
+            dragging={draggingId === pallet.id}
+          />
+        </TweenedTransform>
       )}
-      {ordered.map((piece) => (
-        <TweenedPiece
-          key={piece.material.id}
-          piece={piece}
-          fit={fit}
-          hovered={hoveredId === piece.material.id}
-          dragging={draggingId === piece.material.id}
-        />
-      ))}
+      {ordered.map(renderPiece)}
       <pixiGraphics draw={drawNailChrome} />
     </pixiContainer>
   );

@@ -28,6 +28,7 @@ import { LunchboxPlanerSprite } from "../machine-sprites/LunchboxPlanerSprite";
 import { MiterSawSprite } from "../machine-sprites/MiterSawSprite";
 import { WorktableSprite } from "../machine-sprites/WorktableSprite";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
+import { PalletSprite } from "../material-sprites/PalletSprite";
 import {
   PIXELS_PER_CELL,
   PIXELS_PER_INCH,
@@ -202,13 +203,6 @@ const BenchTopMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
   return (
     <>
       {machine.inputMaterials.map((material) => {
-        if (material.type === "pallet") {
-          return (
-            <pixiContainer key={material.id}>
-              <MaterialSprite material={material} />
-            </pixiContainer>
-          );
-        }
         const placement = benchPlacementFor(machine, material);
         return (
           <pixiContainer
@@ -218,7 +212,13 @@ const BenchTopMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
             angle={placement.angleDeg}
             scale={{ x: placement.flipped ? -1 : 1, y: 1 }}
           >
-            <MaterialSprite material={material} />
+            {material.type === "pallet" ? (
+              // The pallet lies as arranged, showing the face the bench
+              // view shows — same placement, same nails, two zooms
+              <PalletSprite pallet={material} flipped={placement.flipped} />
+            ) : (
+              <MaterialSprite material={material} />
+            )}
           </pixiContainer>
         );
       })}

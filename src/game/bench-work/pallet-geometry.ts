@@ -128,3 +128,40 @@ export function isSameNail(
 ): boolean {
   return a != null && a.deck === b.deck && a.stringer === b.stringer;
 }
+
+/** Which face a nail's head is on — the side its deck board lives on. */
+export function nailFace(nail: PalletNail): "top" | "bottom" {
+  return nail.deck < MAX_BOTTOM_DECK ? "bottom" : "top";
+}
+
+/** The nails whose heads the shown face presents: top-deck nails on the
+ * top face, bottom-deck nails when the pallet is flipped over. The rest
+ * are driven from the other side — flip to get at them. */
+export function faceNails(
+  pallet: Pallet,
+  flipped: boolean,
+): ReadonlyArray<PalletNail> {
+  const face = flipped ? "bottom" : "top";
+  return pallet.nails.filter((nail) => nailFace(nail) === face);
+}
+
+/** The stable id a pallet's board frees under — also its grain seed. */
+export function palletSlotId(
+  pallet: { id: string },
+  target: PalletBoardRef,
+): string {
+  return `${pallet.id}:${target.kind}-${target.index}`;
+}
+
+/** The slot a freed board came out of, recovered from its id — or null
+ * for stock that never was part of this pallet. */
+export function palletSlotRefFromId(
+  palletId: string,
+  materialId: string,
+): PalletBoardRef | null {
+  if (!materialId.startsWith(`${palletId}:`)) return null;
+  const suffix = materialId.slice(palletId.length + 1);
+  const match = /^(deck|stringer)-(\d+)$/.exec(suffix);
+  if (!match) return null;
+  return { kind: match[1] as "deck" | "stringer", index: Number(match[2]) };
+}

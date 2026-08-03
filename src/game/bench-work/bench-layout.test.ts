@@ -1,12 +1,15 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
+import { makePallet } from "../material-helpers";
 import { MACHINE_TYPES, Machine, MachineState } from "../Machine";
 import {
   benchPlacementFor,
+  benchPointOnPallet,
   benchTopSizeIn,
+  berthPlacementOnBench,
   defaultBenchPlacement,
-  palletOriginOnBench,
+  palletPointOnBench,
 } from "./bench-layout";
 import { PALLET_WIDTH_IN } from "./pallet-geometry";
 
@@ -42,11 +45,46 @@ describe("bench layout", () => {
     });
   });
 
-  it("centers the pallet on the bench, overhang and all", () => {
-    const origin = palletOriginOnBench(MACHINE_TYPES.workspace);
-    // A 46" pallet on a 36" bench hangs 5" past each end
-    assert.strictEqual(origin.xIn, (36 - PALLET_WIDTH_IN) / 2);
-    assert.ok(origin.xIn < 0);
+  it("seats an unplaced pallet squarely centered, overhang and all", () => {
+    const pallet = makePallet();
+    const seat = defaultBenchPlacement(MACHINE_TYPES.workspace, pallet);
+    // A 46" pallet centered on a 36" bench hangs 5" past each end
+    assert.deepStrictEqual(seat, {
+      xIn: 18,
+      yIn: 12,
+      angleDeg: 0,
+      flipped: false,
+    });
+    assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 < 0);
+  });
+
+  it("carries pallet points through the placement, there and back", () => {
+    // Turned a quarter and flipped, dragged off-center
+    const placement = { xIn: 20, yIn: 10, angleDeg: 90, flipped: true };
+    const local = { xIn: 5, yIn: 8 };
+    const bench = palletPointOnBench(placement, local.xIn, local.yIn);
+    const back = benchPointOnPallet(placement, bench.xIn, bench.yIn);
+    assert.ok(Math.abs(back.xIn - local.xIn) < 1e-9);
+    assert.ok(Math.abs(back.yIn - local.yIn) < 1e-9);
+  });
+
+  it("a berth rides the pallet's turn and flip", () => {
+    const square = { xIn: 23, yIn: 17, angleDeg: 0, flipped: false };
+    const berth = { xIn: 0, yIn: 17, angleDeg: 0 };
+    // Squarely placed: the berth is just offset by the pallet's corner
+    const plain = berthPlacementOnBench(square, berth);
+    assert.strictEqual(plain.xIn, 23 - PALLET_WIDTH_IN / 2);
+    assert.strictEqual(plain.yIn, 17);
+    assert.strictEqual(plain.flipped, false);
+    // Flipped: the same berth mirrors to the other side, face down
+    const flipped = berthPlacementOnBench({ ...square, flipped: true }, berth);
+    assert.strictEqual(flipped.xIn, 23 + PALLET_WIDTH_IN / 2);
+    assert.strictEqual(flipped.flipped, true);
+    // Turned a quarter: the berth swings with it
+    const turned = berthPlacementOnBench({ ...square, angleDeg: 90 }, berth);
+    assert.strictEqual(turned.angleDeg, 90);
+    assert.ok(Math.abs(turned.xIn - 23) < 1e-9);
+    assert.ok(Math.abs(turned.yIn - (17 - PALLET_WIDTH_IN / 2)) < 1e-9);
   });
 
   it("seats an unplaced piece deterministically by its id", () => {

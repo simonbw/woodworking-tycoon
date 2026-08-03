@@ -57,10 +57,12 @@ export const WelcomeArticle: React.FC = () => (
       </li>
       <li>
         Open the bench with <ShortcutKeys shortcut="open-station-sheet" />, take
-        the hammer down off the rail, and pry the nails with it. Every board
-        comes free one pull at a time and stays lying on the bench — stop
-        whenever you like; the pallet remembers where you left off — and each
-        nail goes back in your tin.
+        the hammer down off the rail, and pry the nails with it. A board comes
+        free when its last nail is out and stays lying on the bench; the bottom
+        boards are nailed from the other side, so flip the pallet over with{" "}
+        <ShortcutKeys shortcut="put-down" /> to get at them. Stop whenever you
+        like — the pallet remembers where you left off — and each nail goes back
+        in your tin.
       </li>
       <li>
         With the wood already on the bench, switch its plan with{" "}

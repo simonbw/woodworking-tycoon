@@ -21,11 +21,13 @@ import { withXp } from "./skill-actions";
 import { PalletNail } from "../Materials";
 import {
   BenchPlacement,
-  palletOriginOnBench,
+  berthPlacementOnBench,
+  defaultBenchPlacement,
 } from "../bench-work/bench-layout";
 import {
   isSameNail,
   palletBoardSlot,
+  palletSlotId,
   PalletBoardRef,
 } from "../bench-work/pallet-geometry";
 import { deriveMachineCutLoad } from "../cut-load";
@@ -383,7 +385,11 @@ export function pryPalletNailAction(
         : board("pallet", 4, 6, 3)),
       id: palletSlotId(pallet, ref),
     }));
-    const palletOrigin = palletOriginOnBench(live.type);
+    // The berth rides the pallet's own arrangement: dragged aside,
+    // turned, or flipped, the freed board lies where the slot really is
+    const palletPlacement =
+      machineState.benchLayout?.[pallet.id] ??
+      defaultBenchPlacement(live.type, pallet);
 
     return {
       ...gameState,
@@ -407,18 +413,13 @@ export function pryPalletNailAction(
           benchLayout: {
             ...prunedBenchLayout(m.benchLayout, inputMaterials),
             ...Object.fromEntries(
-              freedBoards.map((freedBoard, i) => {
-                const berth = palletBoardSlot(freedRefs[i]);
-                return [
-                  freedBoard.id,
-                  {
-                    xIn: palletOrigin.xIn + berth.xIn,
-                    yIn: palletOrigin.yIn + berth.yIn,
-                    angleDeg: berth.angleDeg,
-                    flipped: false,
-                  },
-                ];
-              }),
+              freedBoards.map((freedBoard, i) => [
+                freedBoard.id,
+                berthPlacementOnBench(
+                  palletPlacement,
+                  palletBoardSlot(freedRefs[i]),
+                ),
+              ]),
             ),
           },
         };
@@ -430,11 +431,6 @@ export function pryPalletNailAction(
       ],
     };
   };
-}
-
-/** The stable id a pallet's board frees under — also its grain seed. */
-function palletSlotId(pallet: { id: string }, target: PalletBoardRef): string {
-  return `${pallet.id}:${target.kind}-${target.index}`;
 }
 
 /** The layout with entries for departed pieces dropped. */

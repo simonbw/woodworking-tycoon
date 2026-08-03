@@ -4,6 +4,7 @@ import { Pallet } from "../Materials";
 import { Tuple } from "../../utils/typeUtils";
 import {
   deckBoardXIn,
+  faceNails,
   initialPalletNails,
   MAX_BOTTOM_DECK,
   MAX_STRINGERS,
@@ -13,6 +14,7 @@ import {
   palletBoardSlot,
   palletBoardSlots,
   palletNailPosition,
+  palletSlotRefFromId,
   stringerYIn,
 } from "./pallet-geometry";
 import { pryTargets } from "./workpiece";
@@ -72,6 +74,25 @@ describe("pallet geometry", () => {
       assert.ok(at.xIn >= 0 && at.xIn <= PALLET_WIDTH_IN);
       assert.ok(at.yIn >= 0 && at.yIn <= PALLET_HEIGHT_IN);
     }
+  });
+
+  it("each face presents only its own deck's nail heads", () => {
+    const full = pallet(11, 3);
+    const top = faceNails(full, false);
+    const bottom = faceNails(full, true);
+    assert.strictEqual(top.length, 7 * 3);
+    assert.strictEqual(bottom.length, 4 * 3);
+    assert.ok(top.every((n) => n.deck >= MAX_BOTTOM_DECK));
+    assert.ok(bottom.every((n) => n.deck < MAX_BOTTOM_DECK));
+  });
+
+  it("recovers a freed board's slot from its id", () => {
+    const full = pallet(11, 3);
+    assert.deepStrictEqual(palletSlotRefFromId(full.id, `${full.id}:deck-6`), {
+      kind: "deck",
+      index: 6,
+    });
+    assert.strictEqual(palletSlotRefFromId(full.id, "some-maple-board"), null);
   });
 
   it("a freed board's berth stays where it was nailed", () => {

@@ -190,6 +190,17 @@ modeled as the pallet instance transforming nail by nail:
   boards and joins exactly them. They render in both views from the
   same geometry (`palletNailPosition` inside `PalletSprite`), so the
   shop floor shows the same half-pried pallet the bench view does.
+- Each face only presents its own side's nail heads: top-deck nails on
+  the top, bottom-deck nails underneath. The pallet is a piece like any
+  other — its placement lives in `MachineState.benchLayout` (default:
+  squarely centered), it drags, R turns it, F flips it (also with the
+  hammer in hand) — and flipping it over is how the bottom boards'
+  nails come on offer. Berths, nails, and hit tests all carry through
+  the placement (`palletPointOnBench` / `berthPlacementOnBench`).
+- Z-order is physical: a freed board lying untouched on its berth keeps
+  its place inside the pallet's layer stack (a stringer slid out of the
+  sandwich stays under the deck boards), and only moved pieces ride on
+  top. E takes the piece under the pointer, not the first in the bay.
 - Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
   consumables (each one flies to the supplies tally and clinks in —
   `flyToSupply`).

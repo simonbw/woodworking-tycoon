@@ -261,6 +261,54 @@ test.describe("Bench view", () => {
       // The exact deck board whose nails were pressed came off
       expect((await palletState()).deckBoards[7]).toBe(false);
       expect((await palletState()).stringers).toEqual([true, true, true]);
+
+      // E takes the piece under the pointer — the freed board lying on
+      // its berth, not whatever sits first in the bay
+      await page.keyboard.press("Escape"); // hang the hammer up
+      const berth = await palletPoint(page, 23, 17);
+      await page.mouse.move(berth.x, berth.y);
+      await page.waitForTimeout(150);
+      await page.keyboard.press("e");
+      await expect
+        .poll(async () =>
+          page.evaluate(() =>
+            window.__GET_GAME_STATE__().player.inventory.map((m: any) => m.id),
+          ),
+        )
+        .toContain("fx-bench-pallet:deck-7");
+
+      // F over the pallet turns it over — the bottom face's own nails
+      // come on offer (they're driven from that side). Hover is pointer
+      // state: nudge the mouse so the pallet is what's under the hand.
+      await page.mouse.move(berth.x + 6, berth.y + 6);
+      await page.waitForTimeout(150);
+      await page.keyboard.press("f");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout?.[
+                "fx-bench-pallet"
+              ]?.flipped ?? false,
+          ),
+        )
+        .toBe(true);
+      await page.getByTestId("bench-tool-hammer").click();
+      // Bottom board 0's crossing at local (5.75, 0) mirrors to (40.25, 0)
+      await page.waitForTimeout(400);
+      const bottomNail = await palletPoint(page, 46 - 5.75, 0);
+      await page.mouse.click(bottomNail.x, bottomNail.y);
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () => window.__GET_GAME_STATE__().consumables.nails ?? 0,
+          ),
+        )
+        .toBe(4);
+      const nailsLeft = await palletState();
+      expect(
+        nailsLeft.nails.some((n: any) => n.deck === 0 && n.stringer === 0),
+      ).toBe(false);
     });
 
     await test.step("glue, assembly, saw, and the cure each mount their script", async () => {

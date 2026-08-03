@@ -38,33 +38,21 @@ export function benchTopSizeIn(type: MachineType): {
 }
 
 /**
- * A staged pallet's top-left corner in bench inches: centered on the
- * bench top, overhanging symmetrically when the pallet outsizes the
- * bench (negative components). The pallet always lies here — it covers
- * the bench and isn't draggable.
- */
-export function palletOriginOnBench(type: MachineType): {
-  xIn: number;
-  yIn: number;
-} {
-  const { widthIn, heightIn } = benchTopSizeIn(type);
-  return {
-    xIn: (widthIn - PALLET_WIDTH_IN) / 2,
-    yIn: (heightIn - PALLET_HEIGHT_IN) / 2,
-  };
-}
-
-/**
- * The deterministic seat for a piece nobody has placed yet: scattered a
- * little askew across the front half of the bench, seeded by the piece's
- * id so it lands in the same spot on every render, every tick, and both
- * views — a piece never jumps when the bench is opened.
+ * The deterministic seat for a piece nobody has placed yet: a staged
+ * pallet lands squarely centered (it covers the bench, overhanging
+ * symmetrically when it outsizes the top); anything else scatters a
+ * little askew across the front half of the bench, seeded by the
+ * piece's id so it lands in the same spot on every render, every tick,
+ * and both views — a piece never jumps when the bench is opened.
  */
 export function defaultBenchPlacement(
   type: MachineType,
   material: MaterialInstance,
 ): BenchPlacement {
   const { widthIn, heightIn } = benchTopSizeIn(type);
+  if (material.type === "pallet") {
+    return { xIn: widthIn / 2, yIn: heightIn / 2, angleDeg: 0, flipped: false };
+  }
   const rng = seededRandom(`bench-seat-${material.id}`);
   return {
     xIn: widthIn * (0.22 + rng() * 0.56),
@@ -72,6 +60,65 @@ export function defaultBenchPlacement(
     // Lying across the bench, a few degrees off true
     angleDeg: 90 + Math.round((rng() * 2 - 1) * 7),
     flipped: false,
+  };
+}
+
+/**
+ * A point on the pallet, carried through the pallet's own placement to
+ * bench inches: pallet-local coordinates measure from the pallet's
+ * top-left corner in its unflipped, unturned frame; the placement flips
+ * (mirror across the vertical centerline), turns, and seats it.
+ */
+export function palletPointOnBench(
+  placement: BenchPlacement,
+  localXIn: number,
+  localYIn: number,
+): { xIn: number; yIn: number } {
+  const dx = (localXIn - PALLET_WIDTH_IN / 2) * (placement.flipped ? -1 : 1);
+  const dy = localYIn - PALLET_HEIGHT_IN / 2;
+  const rad = (placement.angleDeg * Math.PI) / 180;
+  return {
+    xIn: placement.xIn + dx * Math.cos(rad) - dy * Math.sin(rad),
+    yIn: placement.yIn + dx * Math.sin(rad) + dy * Math.cos(rad),
+  };
+}
+
+/** The inverse: a bench point in the pallet's local frame, for hit
+ * tests against nails and edges. */
+export function benchPointOnPallet(
+  placement: BenchPlacement,
+  xIn: number,
+  yIn: number,
+): { xIn: number; yIn: number } {
+  const rad = (-placement.angleDeg * Math.PI) / 180;
+  const dx = xIn - placement.xIn;
+  const dy = yIn - placement.yIn;
+  const localDx =
+    (dx * Math.cos(rad) - dy * Math.sin(rad)) * (placement.flipped ? -1 : 1);
+  const localDy = dx * Math.sin(rad) + dy * Math.cos(rad);
+  return {
+    xIn: localDx + PALLET_WIDTH_IN / 2,
+    yIn: localDy + PALLET_HEIGHT_IN / 2,
+  };
+}
+
+/**
+ * Where a board freed from the pallet lies: its berth, carried through
+ * the pallet's placement — turned with the pallet, mirrored when it's
+ * flipped, showing the face the pallet was showing.
+ */
+export function berthPlacementOnBench(
+  placement: BenchPlacement,
+  berth: { xIn: number; yIn: number; angleDeg: number },
+): BenchPlacement {
+  const at = palletPointOnBench(placement, berth.xIn, berth.yIn);
+  return {
+    xIn: at.xIn,
+    yIn: at.yIn,
+    angleDeg:
+      placement.angleDeg +
+      (placement.flipped ? -berth.angleDeg : berth.angleDeg),
+    flipped: placement.flipped,
   };
 }
 

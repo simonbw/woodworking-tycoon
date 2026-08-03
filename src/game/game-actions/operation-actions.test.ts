@@ -11,7 +11,10 @@ import {
   finishAttendedWorkAction,
   pryPalletNailAction,
 } from "./operation-actions";
-import { palletOriginOnBench } from "../bench-work/bench-layout";
+import {
+  berthPlacementOnBench,
+  defaultBenchPlacement,
+} from "../bench-work/bench-layout";
 import {
   initialPalletNails,
   palletBoardSlot,
@@ -317,11 +320,33 @@ describe("pryPalletNailAction targeting", () => {
     assert.strictEqual(freed.id, "test-pallet:deck-6");
     const placement = state.machines[0].benchLayout?.[freed.id];
     assert.ok(placement);
-    const origin = palletOriginOnBench(MACHINE_TYPES.workspace);
-    const berth = palletBoardSlot({ kind: "deck", index: 6 });
-    assert.strictEqual(placement.xIn, origin.xIn + berth.xIn);
-    assert.strictEqual(placement.yIn, origin.yIn + berth.yIn);
-    assert.strictEqual(placement.angleDeg, berth.angleDeg);
+    const pallet = state.machines[0].inputMaterials[0];
+    const expected = berthPlacementOnBench(
+      defaultBenchPlacement(MACHINE_TYPES.workspace, pallet as never),
+      palletBoardSlot({ kind: "deck", index: 6 }),
+    );
+    assert.deepStrictEqual(placement, expected);
+  });
+
+  it("the berth rides the pallet's own arrangement", () => {
+    // The player dragged and quarter-turned the pallet before prying
+    const moved = { xIn: 30, yIn: 20, angleDeg: 90, flipped: false };
+    let state = stateWith({
+      machines: [{ ...palletOnBench(), benchLayout: { "test-pallet": moved } }],
+    });
+    for (const stringer of [0, 1, 2]) {
+      state = pryPalletNailAction(getMachines(state.machines)[0], {
+        deck: 6,
+        stringer,
+      })(state);
+    }
+    const placement = state.machines[0].benchLayout?.["test-pallet:deck-6"];
+    assert.ok(placement);
+    assert.deepStrictEqual(
+      placement,
+      berthPlacementOnBench(moved, palletBoardSlot({ kind: "deck", index: 6 })),
+    );
+    assert.strictEqual(placement.angleDeg, 90);
   });
 });
 

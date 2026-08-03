@@ -11,17 +11,18 @@ import {
   BenchScript,
   benchScriptFor,
   pieceSize,
-  pryTargets,
   rowLayout,
   strokeSurfaceSize,
 } from "../../game/bench-work/workpiece";
 import {
   BenchPlacement,
   benchPlacementFor,
+  benchPointOnPallet,
   benchTopSizeIn,
-  palletOriginOnBench,
+  palletPointOnBench,
 } from "../../game/bench-work/bench-layout";
 import {
+  faceNails,
   PALLET_HEIGHT_IN,
   PALLET_WIDTH_IN,
   palletNailPosition,
@@ -32,7 +33,10 @@ import {
   finishAttendedWorkAction,
   pryPalletNailAction,
 } from "../../game/game-actions/operation-actions";
-import { operateMachineAction } from "../../game/game-actions/player-actions";
+import {
+  operateMachineAction,
+  takeInputsFromMachineAction,
+} from "../../game/game-actions/player-actions";
 import { isBenchType, Machine } from "../../game/Machine";
 import {
   Board,
@@ -155,7 +159,7 @@ export const BenchWorkSurface: React.FC<{
     },
     [],
   );
-  const cursorRef = useRef<HTMLImageElement | null>(null);
+  const cursorRef = useRef<HTMLDivElement | null>(null);
   const pointerPos = useRef<{ x: number; y: number } | null>(null);
   const fitRef = useRef<StageFit | null>(null);
 
@@ -239,11 +243,8 @@ export const BenchWorkSurface: React.FC<{
     xIn: (frame.widthIn - benchSize.widthIn) / 2,
     yIn: (frame.heightIn - benchSize.heightIn) / 2,
   };
-  const palletOriginIn = palletOriginOnBench(machine.type);
-
   const scenePallet: Pallet | null =
     sceneActive && script?.kind === "pry" ? script.pallet : null;
-  const targets = scenePallet ? pryTargets(scenePallet) : [];
   const loose: ReadonlyArray<MaterialInstance> = sceneActive
     ? machine.inputMaterials.filter((m) => m !== scenePallet)
     : [];
@@ -275,22 +276,33 @@ export const BenchWorkSurface: React.FC<{
     material,
     placement: placementOf(material),
   }));
+  // The pallet is arranged like any piece — dragged, turned, flipped —
+  // through the same placement store (default: squarely centered).
+  const palletPlacement: BenchPlacement | null = scenePallet
+    ? placementOf(scenePallet)
+    : null;
+  // Only the shown face's nails are on offer; the rest are driven from
+  // the other side, and F turns the pallet over to get at them.
+  const targets =
+    scenePallet && palletPlacement
+      ? faceNails(scenePallet, palletPlacement.flipped)
+      : [];
 
   const hasHammer = machine.state.tools.includes("hammer");
   const hammerHeld = heldTool === "hammer";
 
   const nailAt = useCallback(
     (xIn: number, yIn: number): PalletNail | null => {
-      // Nearest wins — neighboring crossings can sit closer together
-      // than the hit radius, and the pointer means the closest one.
+      if (!palletPlacement) return null;
+      // The pointer, carried into the pallet's own frame — then nearest
+      // wins: neighboring crossings can sit closer together than the
+      // hit radius, and the pointer means the closest one.
+      const local = benchPointOnPallet(palletPlacement, xIn, yIn);
       let best: PalletNail | null = null;
       let bestDist = NAIL_HIT_RADIUS_IN;
       for (const target of targets) {
         const at = palletNailPosition(target);
-        const dist = Math.hypot(
-          palletOriginIn.xIn + at.xIn - xIn,
-          palletOriginIn.yIn + at.yIn - yIn,
-        );
+        const dist = Math.hypot(at.xIn - local.xIn, at.yIn - local.yIn);
         if (dist <= bestDist) {
           best = target;
           bestDist = dist;
@@ -298,7 +310,7 @@ export const BenchWorkSurface: React.FC<{
       }
       return best;
     },
-    [targets, palletOriginIn.xIn, palletOriginIn.yIn],
+    [targets, palletPlacement],
   );
 
   const lastPryAt = useRef(0);
@@ -316,43 +328,46 @@ export const BenchWorkSurface: React.FC<{
       pryTimer.current = setTimeout(() => setPrying(null), PRY_MS);
       // The nail's flight to the supplies tally, from where it was
       const rect = wrapRef.current?.getBoundingClientRect();
-      if (rect) {
-        const at = palletNailPosition(target);
+      if (rect && palletPlacement) {
+        const local = palletNailPosition(target);
+        const at = palletPointOnBench(palletPlacement, local.xIn, local.yIn);
         flyToSupply(
           "nails",
-          rect.left +
-            sceneFit.originX +
-            (palletOriginIn.xIn + at.xIn) * sceneFit.pxPerIn,
-          rect.top +
-            sceneFit.originY +
-            (palletOriginIn.yIn + at.yIn) * sceneFit.pxPerIn,
+          rect.left + sceneFit.originX + at.xIn * sceneFit.pxPerIn,
+          rect.top + sceneFit.originY + at.yIn * sceneFit.pxPerIn,
         );
       }
     },
-    [applyAction, machine, sceneFit, scenePallet, palletOriginIn],
+    [applyAction, machine, sceneFit, scenePallet, palletPlacement],
   );
 
-  /** Point-in-piece test in bench inches, honoring the piece's turn. */
+  /** Point-in-piece test in bench inches, honoring the piece's turn.
+   * Loose stock picks first (it lies on top); the pallet underneath
+   * takes the grab when nothing smaller is under the pointer. */
   const pieceAt = useCallback(
     (xIn: number, yIn: number): LoosePiece | null => {
-      for (let i = loosePieces.length - 1; i >= 0; i--) {
-        const piece = loosePieces[i];
+      const hits = (piece: LoosePiece): boolean => {
         const size = pieceSize(piece.material);
         const rad = (-piece.placement.angleDeg * Math.PI) / 180;
         const dx = xIn - piece.placement.xIn;
         const dy = yIn - piece.placement.yIn;
         const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
         const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
-        if (
+        return (
           Math.abs(localX) <= size.widthIn / 2 + 0.5 &&
           Math.abs(localY) <= size.heightIn / 2 + 0.5
-        ) {
-          return piece;
-        }
+        );
+      };
+      for (let i = loosePieces.length - 1; i >= 0; i--) {
+        if (hits(loosePieces[i])) return loosePieces[i];
+      }
+      if (scenePallet && palletPlacement) {
+        const pallet = { material: scenePallet, placement: palletPlacement };
+        if (hits(pallet)) return pallet;
       }
       return null;
     },
-    [loosePieces],
+    [loosePieces, scenePallet, palletPlacement],
   );
 
   const commitDrag = useCallback(() => {
@@ -459,11 +474,43 @@ export const BenchWorkSurface: React.FC<{
         setHoveredNail(null);
         return;
       }
+      // With the hammer in hand, F turns the pallet over without putting
+      // the hammer down — the rest of the nails are on the other side.
+      if (heldTool) {
+        if (
+          event.code === "KeyF" &&
+          scenePallet &&
+          palletPlacement &&
+          !draggingId
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          setHoveredNail(null);
+          applyAction(
+            arrangeBenchMaterialAction(machine, scenePallet.id, {
+              ...palletPlacement,
+              flipped: !palletPlacement.flipped,
+            }),
+          );
+        }
+        return;
+      }
       const id = draggingId ?? hoveredId;
       if (!id) return;
-      if (event.code !== "KeyR" && event.code !== "KeyF") return;
       const material = machine.inputMaterials.find((m) => m.id === id);
       if (!material) return;
+      // E takes the piece under the hand — the one being dragged or
+      // moused over, never just the first in the bay.
+      if (event.code === "KeyE" && !event.shiftKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        dragPlacement.current = null;
+        setDraggingId(null);
+        setHoveredId(null);
+        applyAction(takeInputsFromMachineAction([material], machine));
+        return;
+      }
+      if (event.code !== "KeyR" && event.code !== "KeyF") return;
       event.preventDefault();
       event.stopPropagation();
       const current =
@@ -484,7 +531,16 @@ export const BenchWorkSurface: React.FC<{
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [sceneActive, heldTool, draggingId, hoveredId, machine, applyAction]);
+  }, [
+    sceneActive,
+    heldTool,
+    draggingId,
+    hoveredId,
+    machine,
+    applyAction,
+    scenePallet,
+    palletPlacement,
+  ]);
 
   // Hang the tool up when the hands leave the scene (a script mounts,
   // the pallet is cleared away, the sheet re-renders into another mode).
@@ -656,20 +712,23 @@ export const BenchWorkSurface: React.FC<{
         : scenePallet
           ? !hasHammer
             ? "A mounted hammer would pry those nails loose."
-            : hammerHeld
-              ? "Press a nail to pry it loose."
-              : "Take the hammer down off the rail."
+            : targets.length === 0 && scenePallet.nails.length > 0
+              ? "The rest are nailed from the other side. Press F to flip the pallet."
+              : hammerHeld
+                ? "Press a nail to pry it loose."
+                : "Take the hammer down off the rail."
           : loosePieces.length > 0
             ? "Loose stock on the bench. Drag to arrange it."
             : "The bench is clear. Set stock down on it with F.",
-      progressLine: scenePallet ? `${targets.length} nails left` : null,
+      progressLine: scenePallet
+        ? `${scenePallet.nails.length} nails left`
+        : null,
       node: sceneActive ? (
         <BenchScene
           pallet={scenePallet}
-          targets={targets}
+          palletPlacement={palletPlacement}
           pieces={loosePieces}
           fit={sceneFit}
-          palletOriginIn={palletOriginIn}
           hammerHeld={hammerHeld}
           prying={prying}
           hoveredNail={hoveredNail}
@@ -737,11 +796,14 @@ export const BenchWorkSurface: React.FC<{
   const keyHints: Array<[string, string]> = heldTool
     ? [
         ["Click", "pry a nail"],
+        ...(scenePallet
+          ? ([["F", "flip the pallet"]] as Array<[string, string]>)
+          : []),
         ["Esc", "hang the hammer up"],
         ["Tab", "step back"],
       ]
     : [
-        ...(loosePieces.length > 0
+        ...(loosePieces.length > 0 || scenePallet
           ? ([
               ["Drag", "move a piece"],
               ["R", "turn"],
@@ -772,8 +834,16 @@ export const BenchWorkSurface: React.FC<{
         data-px-per-in={surface ? surface.fit.pxPerIn.toFixed(4) : undefined}
         data-origin-x={surface ? surface.fit.originX.toFixed(2) : undefined}
         data-origin-y={surface ? surface.fit.originY.toFixed(2) : undefined}
-        data-pallet-x={palletOriginIn.xIn.toFixed(2)}
-        data-pallet-y={palletOriginIn.yIn.toFixed(2)}
+        data-pallet-x={
+          palletPlacement
+            ? (palletPlacement.xIn - PALLET_WIDTH_IN / 2).toFixed(2)
+            : undefined
+        }
+        data-pallet-y={
+          palletPlacement
+            ? (palletPlacement.yIn - PALLET_HEIGHT_IN / 2).toFixed(2)
+            : undefined
+        }
         onPointerDown={handlePointer("down")}
         onPointerMove={handlePointer("move")}
         onPointerUp={handlePointer("up")}
@@ -805,20 +875,28 @@ export const BenchWorkSurface: React.FC<{
           </Application>
         )}
         {heldTool && (
-          <img
+          // Two elements on purpose: the wrapper carries the cursor
+          // translate, the img carries the pry rotation — composed on
+          // one element the rotation would pivot about the pre-translate
+          // origin (the window corner), reading as a swing from afar.
+          <div
             ref={cursorRef}
-            src={toolIconSrc(heldTool)}
-            alt=""
-            draggable={false}
-            className={`pointer-events-none absolute left-0 top-0 z-10 size-12 select-none [image-rendering:pixelated] drop-shadow-[0_4px_5px_rgba(0,0,0,0.5)] ${
-              prying ? "bench-pry-swing" : ""
-            }`}
+            className="pointer-events-none absolute left-0 top-0 z-10"
             style={{
               transform: pointerPos.current
                 ? `translate(${pointerPos.current.x - 12}px, ${pointerPos.current.y - 11}px)`
                 : "translate(-100px, -100px)",
             }}
-          />
+          >
+            <img
+              src={toolIconSrc(heldTool)}
+              alt=""
+              draggable={false}
+              className={`size-12 select-none [image-rendering:pixelated] drop-shadow-[0_4px_5px_rgba(0,0,0,0.5)] ${
+                prying ? "bench-pry-swing" : ""
+              }`}
+            />
+          </div>
         )}
       </div>
 

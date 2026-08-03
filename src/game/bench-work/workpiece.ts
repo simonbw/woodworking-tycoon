@@ -14,6 +14,7 @@ import {
   panelWidth,
 } from "../Materials";
 import { INCHES_PER_FOOT } from "../shop-scale";
+import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
 import { materialMeetsInput } from "../material-helpers";
 import { availableOperations } from "../skill-helpers";
 
@@ -269,6 +270,8 @@ export function benchScriptFor(
  * width across, length down). */
 export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
   switch (material.type) {
+    case "pallet":
+      return { widthIn: PALLET_WIDTH_IN, heightIn: PALLET_HEIGHT_IN };
     case "board": {
       const b = material as Board;
       return { widthIn: b.width, heightIn: b.length * INCHES_PER_FOOT };
