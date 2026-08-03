@@ -601,6 +601,36 @@ test.describe("Keyboard", () => {
       await takeAllHere(page);
     });
 
+    await test.step("the bench view pins the feet — no walking away mid-lean", async () => {
+      // The full-window bench view is open from the step above. Held
+      // movement keys drive nothing while leaning over the bench…
+      const positionOf = () =>
+        page.evaluate(
+          () => (window as any).__GET_GAME_STATE__().player.position,
+        );
+      await expect(page.getByTestId("bench-work")).toBeVisible();
+      const pinned = await positionOf();
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.down("d");
+      await page.waitForTimeout(500);
+      await page.keyboard.up("d");
+      expect(await positionOf()).toEqual(pinned);
+
+      // …and stepping back (Tab) frees them again
+      await page.keyboard.press("Tab");
+      await expect(page.getByTestId("bench-work")).toHaveCount(0);
+      await page.keyboard.down("d");
+      await page.waitForTimeout(500);
+      await page.keyboard.up("d");
+      expect(await positionOf()).not.toEqual(pinned);
+      // Walk back for the next step's glue-up
+      await page.keyboard.down("a");
+      await page.waitForTimeout(500);
+      await page.keyboard.up("a");
+    });
+
     await test.step("glue-up: clamping needs you, curing runs without you", async () => {
       await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
       // Shift+F stages everything the plan will take in one press:

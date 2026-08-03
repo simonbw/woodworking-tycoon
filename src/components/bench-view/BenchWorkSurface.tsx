@@ -97,7 +97,9 @@ const SIDE_CHROME_PX = 24;
  * it, F flips it) — every arrangement committed to game state, so it
  * shows on the shop floor too. Plan-driven scripts (sanding, the saw,
  * glue-ups, assembly) mount their own work surfaces over the same scene.
- * See docs/bench-minigames.md. The world does not stop while it's open.
+ * See docs/bench-minigames.md. The world does not stop while it's open,
+ * but the body does: leaning over the bench pins the feet (ShopView
+ * disables held movement via sheetIsBenchView) until Tab steps back.
  */
 export const BenchWorkSurface: React.FC<{
   machine: Machine;

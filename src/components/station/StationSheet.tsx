@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { isBenchType, Machine, Operation } from "../../game/Machine";
+import { ProgressionState } from "../../game/GameState";
 import { availableOperations } from "../../game/skill-helpers";
 import { Tooltip } from "../Tooltip";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -26,6 +27,22 @@ import { StatusText } from "./StatusText";
  * — a garbage can has an operation but no plan to pick, so what its sheet
  * owes you is what's in it.
  */
+/**
+ * Whether this station's sheet is the full-window bench view: the player
+ * leans over the bench top rather than reading a card. ShopView pins the
+ * body while this is open — hands on the bench, no walking away.
+ */
+export function sheetIsBenchView(
+  machine: Machine,
+  progression: ProgressionState,
+): boolean {
+  return (
+    isBenchType(machine.type) &&
+    !machine.type.container &&
+    availableOperations(machine, progression).length > 0
+  );
+}
+
 export const StationSheet: React.FC = () => {
   const { sheetMachine, closeSheet } = useTargetedMachine();
   const gameState = useGameState();
@@ -39,10 +56,7 @@ export const StationSheet: React.FC = () => {
   }
 
   const operations = availableOperations(sheetMachine, gameState.progression);
-  const bench =
-    isBenchType(sheetMachine.type) &&
-    !sheetMachine.type.container &&
-    operations.length > 0;
+  const bench = sheetIsBenchView(sheetMachine, gameState.progression);
 
   // Portaled to the body: the shop-overlay layer this renders from is
   // pinned to the shop floor's box (and rides the camera transform), but

@@ -39,6 +39,7 @@ import { HeldOperateListener } from "./heldOperateInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { useTargetedMachine } from "../TargetedMachineContext";
+import { sheetIsBenchView } from "../station/StationSheet";
 import { ShopOverlayLayer } from "../shop-overlay/ShopOverlayLayer";
 import { MaterialPileSprite } from "./MaterialPileSprite";
 import { PersonSprite } from "./PersonSprite";
@@ -141,9 +142,17 @@ export const ShopView: React.FC = () => {
     isTargeted,
     setTarget,
     toggleSheet,
+    sheetMachine,
     pileOffset,
     truckMenuOpen,
   } = useTargetedMachine();
+
+  // Leaning over a bench (the full-window bench view) pins the feet:
+  // hands are on the work, so the body stays put until Tab steps back.
+  // The small card sheets keep the walk-away-to-close behavior.
+  const leaningOverBench =
+    sheetMachine != null &&
+    sheetIsBenchView(sheetMachine, gameState.progression);
 
   // The pile E is about to grab wears the shared targeting outline —
   // resolved by the same resolver the keyboard uses (with R's rummage
@@ -312,7 +321,10 @@ export const ShopView: React.FC = () => {
       <ShopKeyboardShortcuts />
       <HeldMovementListener
         enabled={
-          !gameState.player.away && !modalOpen && truckStage === "parked"
+          !gameState.player.away &&
+          !modalOpen &&
+          truckStage === "parked" &&
+          !leaningOverBench
         }
         captureVertical={truckMenuOpen}
       />
