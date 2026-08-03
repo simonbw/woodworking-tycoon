@@ -515,7 +515,7 @@ describe("stageableMaterials on a bench", () => {
     id: "test-pallet",
     type: "pallet",
     deckBoards: Array(11).fill(true) as never,
-    stringerBoardsLeft: 3,
+    stringers: [true, true, true],
   };
 
   it("takes a pallet with no plan selected — a bench is a table", () => {

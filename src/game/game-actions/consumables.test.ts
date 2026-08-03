@@ -50,7 +50,7 @@ function nearlyDismantledPallet(): Pallet {
       true,
       ...(Array(10).fill(false) as boolean[]),
     ] as Pallet["deckBoards"],
-    stringerBoardsLeft: 3,
+    stringers: [true, true, true],
   });
 }
 

@@ -156,7 +156,7 @@ describe("explainFeedRefusal", () => {
         true,
         true,
       ],
-      stringerBoardsLeft: 3 as const,
+      stringers: [true, true, true],
     });
     assert.match(
       refusalAt("jointer", "jointFace", undefined, [pallet])!,

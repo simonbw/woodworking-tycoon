@@ -48,7 +48,7 @@ const fullPallet = (): Pallet => ({
   id: "p1",
   type: "pallet",
   deckBoards: Array(11).fill(true) as Pallet["deckBoards"],
-  stringerBoardsLeft: 3,
+  stringers: [true, true, true],
 });
 
 describe("workpiece geometry", () => {

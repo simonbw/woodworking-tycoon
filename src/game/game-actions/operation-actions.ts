@@ -19,6 +19,11 @@ import { Vector } from "../Vectors";
 import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { withXp } from "./skill-actions";
 import { PryTarget } from "../bench-work/workpiece";
+import {
+  BenchPlacement,
+  palletOriginOnBench,
+} from "../bench-work/bench-layout";
+import { palletBoardSlot } from "../bench-work/pallet-geometry";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust } from "../Dust";
 import { materialSpecies } from "../material-helpers";
@@ -332,54 +337,166 @@ export function pryPalletNailAction(
       return gameState;
     }
 
-    const deckIndex =
+    // Resolve which board this pull frees: the exact one the player's
+    // nail belongs to, or (driver's path, no target) the topmost deck
+    // board, then the bottom-most stringer.
+    const freed: PryTarget | null =
       target?.kind === "deck" && pallet.deckBoards[target.index]
-        ? target.index
-        : target?.kind === "stringer"
-          ? -1
-          : pallet.deckBoards.findLastIndex((b: boolean) => b);
-    let remainingPallet: typeof pallet | null;
-    let freedBoard;
-    if (deckIndex !== -1) {
-      const deckBoards = [...pallet.deckBoards] as typeof pallet.deckBoards;
-      deckBoards[deckIndex] = false;
-      remainingPallet = { ...pallet, deckBoards };
-      freedBoard = board("pallet", 3, 4, 1);
-    } else if (pallet.stringerBoardsLeft > 0) {
-      remainingPallet =
-        pallet.stringerBoardsLeft > 1
-          ? { ...pallet, stringerBoardsLeft: pallet.stringerBoardsLeft - 1 }
-          : null;
-      freedBoard = board("pallet", 4, 6, 3);
-    } else {
-      console.warn("Nothing left on the pallet to pry");
+        ? target
+        : target?.kind === "stringer" && pallet.stringers[target.index]
+          ? target
+          : target
+            ? null
+            : pallet.deckBoards.some((b: boolean) => b)
+              ? {
+                  kind: "deck",
+                  index: pallet.deckBoards.findLastIndex((b: boolean) => b),
+                }
+              : pallet.stringers.some((b: boolean) => b)
+                ? {
+                    kind: "stringer",
+                    index: pallet.stringers.findLastIndex((b: boolean) => b),
+                  }
+                : null;
+    if (!freed) {
+      console.warn("No such nail left on the pallet to pry");
       return gameState;
     }
+
+    let remainingPallet: typeof pallet | null;
+    if (freed.kind === "deck") {
+      const deckBoards = [...pallet.deckBoards] as typeof pallet.deckBoards;
+      deckBoards[freed.index] = false;
+      remainingPallet = { ...pallet, deckBoards };
+    } else {
+      const stringers = [...pallet.stringers] as typeof pallet.stringers;
+      stringers[freed.index] = false;
+      remainingPallet =
+        remainingBoards({ ...pallet, stringers }) > 0
+          ? { ...pallet, stringers }
+          : null;
+    }
+    // The freed board's id doubles as its sprite seed and matches the
+    // seed the pallet drew it with (see PalletSprite), so the very same
+    // grain keeps lying there — the pull frees the board, it doesn't
+    // swap it for a different one.
+    const freedBoard = {
+      ...(freed.kind === "deck"
+        ? board("pallet", 3, 4, 1)
+        : board("pallet", 4, 6, 3)),
+      id: palletSlotId(pallet, freed),
+    };
+    // And it keeps lying on its berth: the placement lands in the bench
+    // layout in the same commit, so nothing pops or reshuffles.
+    const berth = palletBoardSlot(freed);
+    const palletOrigin = palletOriginOnBench(live.type);
 
     return {
       ...gameState,
       consumables: addConsumables(gameState.consumables, [
         { id: "nails", amount: 1 },
       ]),
-      machines: gameState.machines.map((m) =>
-        isSameMachine(m, machineState)
-          ? {
-              ...m,
-              // The freed board stays right on the bench: loose stock the
-              // next plan can claim, or E takes back into the arms.
-              inputMaterials: [
-                ...m.inputMaterials.filter((material) => material !== pallet),
-                ...(remainingPallet ? [remainingPallet] : []),
-                freedBoard,
-              ],
-            }
-          : m,
-      ),
+      machines: gameState.machines.map((m) => {
+        if (!isSameMachine(m, machineState)) {
+          return m;
+        }
+        // The freed board stays right on the bench: loose stock the
+        // next plan can claim, or E takes back into the arms.
+        const inputMaterials = [
+          ...m.inputMaterials.filter((material) => material !== pallet),
+          ...(remainingPallet ? [remainingPallet] : []),
+          freedBoard,
+        ];
+        return {
+          ...m,
+          inputMaterials,
+          benchLayout: {
+            ...prunedBenchLayout(m.benchLayout, inputMaterials),
+            [freedBoard.id]: {
+              xIn: palletOrigin.xIn + berth.xIn,
+              yIn: palletOrigin.yIn + berth.yIn,
+              angleDeg: berth.angleDeg,
+              flipped: false,
+            },
+          },
+        };
+      }),
       // The nail's own creak-and-pop; the board settling is part of it.
       pendingSounds: [
         ...(gameState.pendingSounds ?? []),
         { kind: "nail-pry" as const },
       ],
+    };
+  };
+}
+
+/** Boards still nailed to a pallet. */
+function remainingBoards(pallet: {
+  deckBoards: ReadonlyArray<boolean>;
+  stringers: ReadonlyArray<boolean>;
+}): number {
+  return (
+    pallet.deckBoards.filter(Boolean).length +
+    pallet.stringers.filter(Boolean).length
+  );
+}
+
+/** The stable id a pallet's board frees under — also its grain seed. */
+function palletSlotId(pallet: { id: string }, target: PryTarget): string {
+  return `${pallet.id}:${target.kind}-${target.index}`;
+}
+
+/** The layout with entries for departed pieces dropped. */
+function prunedBenchLayout(
+  layout: Readonly<Record<string, BenchPlacement>> | undefined,
+  inputMaterials: ReadonlyArray<{ id: string }>,
+): Record<string, BenchPlacement> {
+  const pruned: Record<string, BenchPlacement> = {};
+  for (const [id, placement] of Object.entries(layout ?? {})) {
+    if (inputMaterials.some((material) => material.id === id)) {
+      pruned[id] = placement;
+    }
+  }
+  return pruned;
+}
+
+/**
+ * Commit where a piece lies on the bench top — the drag, turn, or flip
+ * the player just made in the bench view. The arrangement is real state
+ * (see bench-work/bench-layout.ts), so it survives closing the view and
+ * shows on the shop floor too.
+ */
+export function arrangeBenchMaterialAction(
+  machine: Machine,
+  materialId: string,
+  placement: BenchPlacement,
+): GameAction {
+  return (gameState) => {
+    const machineState = findMachineState(gameState, machine);
+    if (!machineState) {
+      console.warn("No such bench to arrange");
+      return gameState;
+    }
+    if (
+      !machineState.inputMaterials.some(
+        (material) => material.id === materialId,
+      )
+    ) {
+      return gameState;
+    }
+    return {
+      ...gameState,
+      machines: gameState.machines.map((m) =>
+        isSameMachine(m, machineState)
+          ? {
+              ...m,
+              benchLayout: {
+                ...prunedBenchLayout(m.benchLayout, m.inputMaterials),
+                [materialId]: placement,
+              },
+            }
+          : m,
+      ),
     };
   };
 }
@@ -394,7 +511,7 @@ export function palletPryTargetsLeft(machine: Machine): number {
   }
   return (
     pallet.deckBoards.filter((b: boolean) => b).length +
-    pallet.stringerBoardsLeft
+    pallet.stringers.filter((b: boolean) => b).length
   );
 }
 

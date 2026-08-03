@@ -17,12 +17,18 @@ import {
   strokeSurfaceSize,
 } from "../../game/bench-work/workpiece";
 import {
+  BenchPlacement,
+  benchPlacementFor,
+  benchTopSizeIn,
+  palletOriginOnBench,
+} from "../../game/bench-work/bench-layout";
+import {
   PALLET_HEIGHT_IN,
   PALLET_WIDTH_IN,
-  palletBoardSlot,
   palletNailPosition,
 } from "../../game/bench-work/pallet-geometry";
 import {
+  arrangeBenchMaterialAction,
   emitBenchDustAction,
   finishAttendedWorkAction,
   pryPalletNailAction,
@@ -36,15 +42,11 @@ import { ToolId } from "../../game/Tool";
 import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
 import { AssemblySurface, ASSEMBLY_GAP_IN } from "./AssemblySurface";
-import { BenchBackdrop, TOOL_RAIL_HEIGHT } from "./BenchBackdrop";
-import {
-  BenchScene,
-  LoosePiece,
-  NAIL_HIT_RADIUS_IN,
-  PiecePlacement,
-} from "./BenchScene";
+import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
+import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
 import { BenchToolRail } from "./BenchToolRail";
 import { flyToSupply } from "./flyToSupply";
 import { GlueSurface, GLUE_GAP_IN } from "./GlueSurface";
@@ -68,27 +70,31 @@ export const PRY_MS = 280;
 /** Dust lands about twice a second while the tool is moving. */
 const DUST_THROTTLE_MS = 500;
 
-/** The freeform scene's frame when a pallet is (or was) on the bench:
- * the pallet plus a strip of open bench below it for loose stock. */
-const PALLET_FRAME = {
-  widthIn: PALLET_WIDTH_IN,
-  heightIn: PALLET_HEIGHT_IN + 14,
-};
+/** Open floor kept around the bench in the scene frame, in inches. */
+const FRAME_MARGIN_IN = 9;
+
+/** Canvas kept clear for the floating chrome, in px. */
+const TOP_CHROME_PX = 96;
+const BOTTOM_CHROME_PX = 96;
+const SIDE_CHROME_PX = 24;
 
 /**
- * The bench view: the whole top of the bench at high zoom, rendered at
- * device resolution. Mounted tools hang on the rail across the top and
- * are taken in hand by clicking; the bench's contents lie on the wood —
- * a staged pallet pries apart nail by nail under the hammer, freed
- * boards stay right where they were nailed, and loose stock drags
- * around (R turns it, F flips it). Plan-driven scripts (sanding, the
- * saw, glue-ups, assembly) mount their own work surfaces over the same
- * wood. See docs/bench-minigames.md. The world does not stop while
- * it's open.
+ * The bench view: the whole bench at high zoom, filling the window — the
+ * same concrete floor and the same bench art the shop view draws, leaned
+ * into (BenchSceneBackdrop), with the bench's contents lying on it
+ * exactly where the persistent bench layout says they lie. Mounted tools
+ * hang on the floating rail and are taken in hand by clicking; a staged
+ * pallet pries apart nail by nail under the hammer, freed boards stay
+ * right where they were nailed, and loose stock drags around (R turns
+ * it, F flips it) — every arrangement committed to game state, so it
+ * shows on the shop floor too. Plan-driven scripts (sanding, the saw,
+ * glue-ups, assembly) mount their own work surfaces over the same scene.
+ * See docs/bench-minigames.md. The world does not stop while it's open.
  */
-export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
-  machine,
-}) => {
+export const BenchWorkSurface: React.FC<{
+  machine: Machine;
+  onClose: () => void;
+}> = ({ machine, onClose }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const script = benchScriptFor(machine, gameState.progression);
@@ -99,8 +105,8 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
   const { active, poke } = useActivityFlag();
 
   // ---------------------------------------------------------- the stage
-  // The canvas takes the size the sheet gives it, measured for real —
-  // rendering at CSS size × devicePixelRatio is the whole blur fix.
+  // The canvas takes the whole window, measured for real — rendering at
+  // CSS size × devicePixelRatio is the whole blur fix.
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [stageSize, setStageSize] = useState<{
     width: number;
@@ -130,14 +136,13 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
   // ---------------------------------------------------------- the hands
   const [heldTool, setHeldTool] = useState<ToolId | null>(null);
   const [prying, setPrying] = useState<PryTarget | null>(null);
+  const [hoveredNail, setHoveredNail] = useState<PryTarget | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragOffset = useRef({ dxIn: 0, dyIn: 0 });
-  /** Where each loose piece lies — ephemeral view state (decision 3). */
-  const placements = useRef(new Map<string, PiecePlacement>());
-  /** The berth the next unseen piece should land on (a freed board). */
-  const pendingBerth = useRef<PiecePlacement | null>(null);
-  const overflowCount = useRef(0);
+  /** The dragged piece's live placement, committed on release — the one
+   * sliver of layout that is view state, and only mid-gesture. */
+  const dragPlacement = useRef<BenchPlacement | null>(null);
   const [, bump] = useReducer((c: number) => c + 1, 0);
   const pryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -186,13 +191,12 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
 
   // -------------------------------------------------------- mode picking
   const rail = machine.toolSlots > 0;
-  const railHeight = rail ? TOOL_RAIL_HEIGHT : 0;
   const workRect: StageRect | null = stageSize
     ? {
-        x: 0,
-        y: railHeight,
-        width: stageSize.width,
-        height: stageSize.height - railHeight,
+        x: SIDE_CHROME_PX,
+        y: TOP_CHROME_PX,
+        width: stageSize.width - SIDE_CHROME_PX * 2,
+        height: stageSize.height - TOP_CHROME_PX - BOTTOM_CHROME_PX,
       }
     : null;
 
@@ -214,108 +218,109 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
   const sceneActive = isBench && !surfaceScript && !curing;
 
   // ---------------------------------------------------------- the scene
+  // The scene frame: the bench top plus enough floor around it to hold a
+  // staged pallet's overhang. Constant per bench type, so the zoom never
+  // jumps as boards come and go.
+  const benchSize = benchTopSizeIn(machine.type);
+  const frame = useMemo(
+    () => ({
+      widthIn:
+        Math.max(benchSize.widthIn, PALLET_WIDTH_IN) + FRAME_MARGIN_IN * 2,
+      heightIn:
+        Math.max(benchSize.heightIn, PALLET_HEIGHT_IN) + FRAME_MARGIN_IN * 2,
+    }),
+    [benchSize.widthIn, benchSize.heightIn],
+  );
+  const benchOriginIn = {
+    xIn: (frame.widthIn - benchSize.widthIn) / 2,
+    yIn: (frame.heightIn - benchSize.heightIn) / 2,
+  };
+  const palletOriginIn = palletOriginOnBench(machine.type);
+
   const scenePallet: Pallet | null =
     sceneActive && script?.kind === "pry" ? script.pallet : null;
   const targets = scenePallet ? pryTargets(scenePallet) : [];
   const loose: ReadonlyArray<MaterialInstance> = sceneActive
     ? machine.inputMaterials.filter((m) => m !== scenePallet)
     : [];
-  // The pallet's frame outlives the pallet: freed boards keep lying on
-  // their berths after the last stringer comes off.
-  const palletFrame =
-    scenePallet !== null || loose.some((m) => placements.current.has(m.id));
 
+  // The whole-frame fit paints the backdrop; the scene works in
+  // bench-top inches (origin at the bench's top-left), which is also the
+  // space placements persist in (bench-work/bench-layout.ts).
+  let frameFit: StageFit | null = null;
   let sceneFit: StageFit | null = null;
-  if (sceneActive && workRect) {
-    const layout = palletFrame ? null : rowLayout(loose, 4);
-    sceneFit = fitToStage(
-      palletFrame
-        ? PALLET_FRAME
-        : {
-            widthIn: Math.max(layout!.size.widthIn, 24),
-            heightIn: Math.max(layout!.size.heightIn, 16),
-          },
-      workRect,
-    );
-    // Seat every unseen piece: a just-freed board lands on its berth,
-    // anything else on open bench below the pallet (or its row slot).
-    for (const material of loose) {
-      if (placements.current.has(material.id)) continue;
-      if (pendingBerth.current) {
-        placements.current.set(material.id, pendingBerth.current);
-        pendingBerth.current = null;
-      } else if (layout) {
-        const slot = layout.slots.find((s) => s.material === material);
-        placements.current.set(material.id, {
-          xIn: (slot?.xIn ?? 0) + (slot?.widthIn ?? 8) / 2,
-          yIn: layout.size.heightIn / 2,
-          angleDeg: 0,
-          flipped: false,
-        });
-      } else {
-        const n = overflowCount.current++;
-        placements.current.set(material.id, {
-          xIn: 10 + (n % 4) * 9,
-          yIn: PALLET_HEIGHT_IN + 7 + Math.floor(n / 4) * 3,
-          angleDeg: 90,
-          flipped: false,
-        });
-      }
-    }
-    // Forget pieces that left the bench
-    for (const id of [...placements.current.keys()]) {
-      if (!loose.some((m) => m.id === id)) placements.current.delete(id);
-    }
+  if (workRect) {
+    frameFit = fitToStage(frame, workRect);
+    sceneFit = {
+      ...frameFit,
+      originX: frameFit.originX + benchOriginIn.xIn * frameFit.pxPerIn,
+      originY: frameFit.originY + benchOriginIn.yIn * frameFit.pxPerIn,
+      widthIn: benchSize.widthIn,
+      heightIn: benchSize.heightIn,
+    };
   }
-  const loosePieces: ReadonlyArray<LoosePiece> = sceneFit
-    ? loose.map((material) => ({
-        material,
-        placement: placements.current.get(material.id)!,
-      }))
-    : [];
+
+  const placementOf = useCallback(
+    (material: MaterialInstance): BenchPlacement =>
+      draggingId === material.id && dragPlacement.current
+        ? dragPlacement.current
+        : benchPlacementFor(machine, material),
+    [draggingId, machine],
+  );
+  const loosePieces: ReadonlyArray<LoosePiece> = loose.map((material) => ({
+    material,
+    placement: placementOf(material),
+  }));
 
   const hasHammer = machine.state.tools.includes("hammer");
   const hammerHeld = heldTool === "hammer";
 
+  const nailAt = useCallback(
+    (xIn: number, yIn: number): PryTarget | null =>
+      targets.find((target) => {
+        const at = palletNailPosition(target);
+        return (
+          Math.hypot(
+            palletOriginIn.xIn + at.xIn - xIn,
+            palletOriginIn.yIn + at.yIn - yIn,
+          ) <= NAIL_HIT_RADIUS_IN
+        );
+      }) ?? null,
+    [targets, palletOriginIn.xIn, palletOriginIn.yIn],
+  );
+
+  const lastPryAt = useRef(0);
   const beginPry = useCallback(
     (target: PryTarget) => {
       if (!scenePallet || !sceneFit) return;
+      // The press is the commit: one action frees the board AND seats it
+      // on its berth in the bench layout (see pryPalletNailAction) —
+      // nothing to hand off, nothing to pop. The swing and lever line
+      // are pure presentation over the already-settled pull.
+      lastPryAt.current = performance.now();
+      applyAction(pryPalletNailAction(machine, target));
       setPrying(target);
-      const fit = sceneFit;
-      const stringersLeft = scenePallet.stringerBoardsLeft;
-      pryTimer.current = setTimeout(() => {
-        setPrying(null);
-        // The freed board keeps lying on its berth. A stringer pull
-        // frees the bottom-most remaining stringer's berth (the count is
-        // what the pallet tracks), a deck pull frees exactly its own.
-        const berth = palletBoardSlot(
-          target.kind === "stringer"
-            ? { kind: "stringer", index: Math.max(stringersLeft - 1, 0) }
-            : target,
+      if (pryTimer.current) clearTimeout(pryTimer.current);
+      pryTimer.current = setTimeout(() => setPrying(null), PRY_MS);
+      // The nail's flight to the supplies tally, from where it was
+      const rect = wrapRef.current?.getBoundingClientRect();
+      if (rect) {
+        const at = palletNailPosition(target);
+        flyToSupply(
+          "nails",
+          rect.left +
+            sceneFit.originX +
+            (palletOriginIn.xIn + at.xIn) * sceneFit.pxPerIn,
+          rect.top +
+            sceneFit.originY +
+            (palletOriginIn.yIn + at.yIn) * sceneFit.pxPerIn,
         );
-        pendingBerth.current = {
-          xIn: berth.xIn,
-          yIn: berth.yIn,
-          angleDeg: berth.angleDeg,
-          flipped: false,
-        };
-        applyAction(pryPalletNailAction(machine, target));
-        // The nail's flight to the supplies tally, from where it was
-        const rect = wrapRef.current?.getBoundingClientRect();
-        if (rect) {
-          const at = palletNailPosition(target);
-          flyToSupply(
-            "nails",
-            rect.left + fit.originX + at.xIn * fit.pxPerIn,
-            rect.top + fit.originY + at.yIn * fit.pxPerIn,
-          );
-        }
-      }, PRY_MS);
+      }
     },
-    [applyAction, machine, sceneFit, scenePallet],
+    [applyAction, machine, sceneFit, scenePallet, palletOriginIn],
   );
 
-  /** Point-in-piece test in scene inches, honoring the piece's turn. */
+  /** Point-in-piece test in bench inches, honoring the piece's turn. */
   const pieceAt = useCallback(
     (xIn: number, yIn: number): LoosePiece | null => {
       for (let i = loosePieces.length - 1; i >= 0; i--) {
@@ -338,21 +343,31 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
     [loosePieces],
   );
 
+  const commitDrag = useCallback(() => {
+    if (draggingId && dragPlacement.current) {
+      applyAction(
+        arrangeBenchMaterialAction(machine, draggingId, dragPlacement.current),
+      );
+    }
+    dragPlacement.current = null;
+    setDraggingId(null);
+  }, [applyAction, draggingId, machine]);
+
   const sceneHandler = useCallback(
     (event: BenchPointerEvent) => {
       if (event.type === "leave") {
         setHoveredId(null);
-        setDraggingId(null);
+        setHoveredNail(null);
+        commitDrag();
         return;
       }
       const { xIn, yIn } = event;
       if (event.type === "down") {
-        if (prying) return;
+        // One pull per swing — clocked, not gated on the animation state,
+        // so a throttled timer can never eat a press
+        if (performance.now() - lastPryAt.current < PRY_MS) return;
         if (hammerHeld && scenePallet) {
-          const hit = targets.find((target) => {
-            const at = palletNailPosition(target);
-            return Math.hypot(at.xIn - xIn, at.yIn - yIn) <= NAIL_HIT_RADIUS_IN;
-          });
+          const hit = nailAt(xIn, yIn);
           if (hit) beginPry(hit);
           return;
         }
@@ -360,6 +375,7 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
         const hit = pieceAt(xIn, yIn);
         if (hit) {
           setDraggingId(hit.material.id);
+          dragPlacement.current = hit.placement;
           dragOffset.current = {
             dxIn: hit.placement.xIn - xIn,
             dyIn: hit.placement.yIn - yIn,
@@ -368,42 +384,48 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
         return;
       }
       if (event.type === "move") {
-        if (draggingId && event.held && sceneFit) {
-          const placement = placements.current.get(draggingId);
-          if (placement) {
-            placements.current.set(draggingId, {
-              ...placement,
-              xIn: Math.min(
-                Math.max(xIn + dragOffset.current.dxIn, 0),
-                sceneFit.widthIn,
-              ),
-              yIn: Math.min(
-                Math.max(yIn + dragOffset.current.dyIn, 0),
-                sceneFit.heightIn,
-              ),
-            });
-            bump();
-          }
+        if (draggingId && event.held && dragPlacement.current) {
+          // The stage edge is the wall — the whole visible frame is
+          // droppable, bench overhang included.
+          dragPlacement.current = {
+            ...dragPlacement.current,
+            xIn: Math.min(
+              Math.max(xIn + dragOffset.current.dxIn, -benchOriginIn.xIn + 1),
+              frame.widthIn - benchOriginIn.xIn - 1,
+            ),
+            yIn: Math.min(
+              Math.max(yIn + dragOffset.current.dyIn, -benchOriginIn.yIn + 1),
+              frame.heightIn - benchOriginIn.yIn - 1,
+            ),
+          };
+          bump();
           return;
         }
-        if (draggingId) setDraggingId(null);
+        if (draggingId) {
+          commitDrag();
+        }
         setHoveredId(
           heldTool ? null : (pieceAt(xIn, yIn)?.material.id ?? null),
         );
+        setHoveredNail(hammerHeld && !prying ? nailAt(xIn, yIn) : null);
         return;
       }
-      if (event.type === "up") setDraggingId(null);
+      if (event.type === "up") commitDrag();
     },
     [
       beginPry,
+      benchOriginIn.xIn,
+      benchOriginIn.yIn,
+      commitDrag,
       draggingId,
+      frame.widthIn,
+      frame.heightIn,
       hammerHeld,
       heldTool,
+      nailAt,
       pieceAt,
       prying,
-      sceneFit,
       scenePallet,
-      targets,
     ],
   );
   useEffect(() => {
@@ -422,26 +444,35 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
         event.preventDefault();
         event.stopPropagation();
         setHeldTool(null);
+        setHoveredNail(null);
         return;
       }
       const id = draggingId ?? hoveredId;
       if (!id) return;
       if (event.code !== "KeyR" && event.code !== "KeyF") return;
-      const placement = placements.current.get(id);
-      if (!placement) return;
+      const material = machine.inputMaterials.find((m) => m.id === id);
+      if (!material) return;
       event.preventDefault();
       event.stopPropagation();
-      placements.current.set(
-        id,
+      const current =
+        draggingId === id && dragPlacement.current
+          ? dragPlacement.current
+          : benchPlacementFor(machine, material);
+      const turned: BenchPlacement =
         event.code === "KeyR"
-          ? { ...placement, angleDeg: (placement.angleDeg + 90) % 360 }
-          : { ...placement, flipped: !placement.flipped },
-      );
-      bump();
+          ? { ...current, angleDeg: current.angleDeg + 90 }
+          : { ...current, flipped: !current.flipped };
+      if (draggingId === id) {
+        // Mid-drag the turn rides the drag; the release commits both
+        dragPlacement.current = turned;
+        bump();
+      } else {
+        applyAction(arrangeBenchMaterialAction(machine, id, turned));
+      }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [sceneActive, heldTool, draggingId, hoveredId]);
+  }, [sceneActive, heldTool, draggingId, hoveredId, machine, applyAction]);
 
   // Hang the tool up when the hands leave the scene (a script mounts,
   // the pallet is cleared away, the sheet re-renders into another mode).
@@ -454,23 +485,6 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
       ? foleyClipFor(script.operation.id)
       : null;
   useWorkFoley(foleyClip, active);
-
-  if (!isBench && !script) {
-    return null;
-  }
-
-  // The cure runs on the clock; the bench just says so
-  if (curing) {
-    return (
-      <div
-        className="rounded border-2 border-ink-black/20 bg-manila-dark/40 px-3 py-2 font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-ink-fade"
-        data-testid="bench-work"
-        data-script="curing"
-      >
-        In the clamps — the glue cures on its own. Work something else.
-      </div>
-    );
-  }
 
   const surface = buildSurface();
 
@@ -625,28 +639,32 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
     if (!sceneFit) return null;
     return {
       fit: sceneFit,
-      instruction: scenePallet
-        ? !hasHammer
-          ? "A mounted hammer would pry those nails loose."
-          : hammerHeld
-            ? "Press a nail to pry it. Every board comes off one pull at a time."
-            : "Take the hammer down off the rail."
-        : loosePieces.length > 0
-          ? "Loose stock on the bench. Drag to arrange it — R turns, F flips."
-          : "The bench is clear. Set stock down on it with F.",
+      instruction: curing
+        ? "In the clamps — the glue cures on its own. Work something else."
+        : scenePallet
+          ? !hasHammer
+            ? "A mounted hammer would pry those nails loose."
+            : hammerHeld
+              ? "Press a nail to pry it loose."
+              : "Take the hammer down off the rail."
+          : loosePieces.length > 0
+            ? "Loose stock on the bench. Drag to arrange it."
+            : "The bench is clear. Set stock down on it with F.",
       progressLine: scenePallet ? `${targets.length} nails left` : null,
-      node: (
+      node: sceneActive ? (
         <BenchScene
           pallet={scenePallet}
           targets={targets}
           pieces={loosePieces}
           fit={sceneFit}
+          palletOriginIn={palletOriginIn}
           hammerHeld={hammerHeld}
           prying={prying}
+          hoveredNail={hoveredNail}
           hoveredId={hoveredId}
           draggingId={draggingId}
         />
-      ),
+      ) : null,
     };
   }
 
@@ -692,43 +710,58 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
       });
     };
 
-  const scriptName = surfaceScript
-    ? surfaceScript.kind
-    : scenePallet
-      ? "pry"
-      : "idle";
+  const scriptName = curing
+    ? "curing"
+    : surfaceScript
+      ? surfaceScript.kind
+      : scenePallet
+        ? "pry"
+        : "idle";
+
+  if (!isBench && !script) {
+    return null;
+  }
+
+  const keyHints: Array<[string, string]> = heldTool
+    ? [
+        ["Click", "pry a nail"],
+        ["Esc", "hang the hammer up"],
+        ["Tab", "step back"],
+      ]
+    : [
+        ...(loosePieces.length > 0
+          ? ([
+              ["Drag", "move a piece"],
+              ["R", "turn"],
+              ["F", "flip"],
+            ] as Array<[string, string]>)
+          : []),
+        ["E", "take back"],
+        ["Tab", "step back"],
+      ];
 
   return (
     <div
-      className="space-y-1"
+      className="absolute inset-0"
       data-testid="bench-work"
       data-script={scriptName}
       data-progress={progress}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-ink-fade">
-          {surface?.instruction ?? ""}
-        </p>
-        {surface?.progressLine && (
-          <span className="shrink-0 whitespace-nowrap font-condensed text-[0.7rem] text-ink-fade tabular-nums">
-            {surface.progressLine}
-          </span>
-        )}
-      </div>
       <div
         ref={wrapRef}
-        className={`relative select-none touch-none overflow-hidden rounded border-2 border-ink-black/40 shadow-inner ${
+        className={`absolute inset-0 select-none touch-none overflow-hidden bg-ink-black ${
           heldTool
             ? "cursor-none"
             : sceneActive
               ? "cursor-default"
               : "cursor-crosshair"
         }`}
-        style={{ width: "100%", height: "min(52vh, 560px)", minHeight: 320 }}
         data-testid="bench-stage"
         data-px-per-in={surface ? surface.fit.pxPerIn.toFixed(4) : undefined}
         data-origin-x={surface ? surface.fit.originX.toFixed(2) : undefined}
         data-origin-y={surface ? surface.fit.originY.toFixed(2) : undefined}
+        data-pallet-x={palletOriginIn.xIn.toFixed(2)}
+        data-pallet-y={palletOriginIn.yIn.toFixed(2)}
         onPointerDown={handlePointer("down")}
         onPointerMove={handlePointer("move")}
         onPointerUp={handlePointer("up")}
@@ -737,10 +770,11 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
           if (heldTool) {
             event.preventDefault();
             setHeldTool(null);
+            setHoveredNail(null);
           }
         }}
       >
-        {stageSize && (
+        {stageSize && frameFit && (
           <Application
             width={stageSize.width}
             height={stageSize.height}
@@ -749,23 +783,14 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
             autoDensity={true}
             resolution={Math.min(window.devicePixelRatio || 1, 2)}
           >
-            <BenchBackdrop
-              width={stageSize.width}
-              height={stageSize.height}
-              rail={rail}
+            <BenchSceneBackdrop
+              machine={machine}
+              fit={frameFit}
+              stageWidth={stageSize.width}
+              stageHeight={stageSize.height}
             />
             {surface?.node}
           </Application>
-        )}
-        {rail && (
-          <BenchToolRail
-            tools={machine.state.tools}
-            heldTool={heldTool}
-            interactive={sceneActive}
-            onToggle={(toolId) =>
-              setHeldTool((current) => (current === toolId ? null : toolId))
-            }
-          />
         )}
         {heldTool && (
           <img
@@ -782,6 +807,63 @@ export const BenchWorkSurface: React.FC<{ machine: Machine }> = ({
                 : "translate(-100px, -100px)",
             }}
           />
+        )}
+      </div>
+
+      {/* The station's nameplate, floating over the scene */}
+      <div className="pointer-events-auto absolute left-4 top-4 z-10 flex items-center gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">
+        <h3 className="font-condensed font-bold uppercase tracking-wide text-paper-manila">
+          {machine.type.name}
+        </h3>
+        <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-paper-manila/60">
+          <StatusText machine={machine} />
+        </span>
+        <button
+          className="rounded border border-paper-manila/40 px-1.5 text-xs leading-relaxed text-paper-manila/80 hover:bg-paper-manila/10"
+          onClick={onClose}
+          aria-label="Close station sheet"
+        >
+          ✕
+        </button>
+      </div>
+
+      {rail && (
+        <BenchToolRail
+          tools={machine.state.tools}
+          heldTool={heldTool}
+          interactive={sceneActive}
+          onToggle={(toolId) =>
+            setHeldTool((current) => (current === toolId ? null : toolId))
+          }
+        />
+      )}
+
+      {/* Instruction and key hints, floating below the bench */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-2">
+        <div className="flex items-baseline gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">
+          <p className="font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-paper-manila">
+            {surface?.instruction ?? ""}
+          </p>
+          {surface?.progressLine && (
+            <span className="shrink-0 whitespace-nowrap font-condensed text-[0.7rem] text-paper-manila/70 tabular-nums">
+              {surface.progressLine}
+            </span>
+          )}
+        </div>
+        {sceneActive && (
+          <div className="flex gap-2">
+            {keyHints.map(([key, label]) => (
+              <span
+                key={`${key}-${label}`}
+                className="flex items-baseline gap-1.5 rounded bg-ink-black/60 px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] text-paper-manila/70"
+              >
+                <kbd className="rounded border border-paper-manila/35 px-1 font-sans text-[0.6rem] normal-case text-paper-manila">
+                  {key}
+                </kbd>
+                {label}
+              </span>
+            ))}
+          </div>
         )}
       </div>
     </div>

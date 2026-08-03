@@ -22,7 +22,10 @@ function pallet(deckLeft: number, stringersLeft: number): Pallet {
       boolean,
       11
     >,
-    stringerBoardsLeft: stringersLeft,
+    stringers: Array.from({ length: 3 }, (_, i) => i < stringersLeft) as Tuple<
+      boolean,
+      3
+    >,
   };
 }
 
@@ -65,16 +68,31 @@ describe("pallet geometry", () => {
     assert.deepStrictEqual(again, before);
   });
 
-  it("deck nails sit by the middle stringer, stringers at mid-span", () => {
-    const bottomNail = palletNailPosition({ kind: "deck", index: 1 });
-    assert.strictEqual(bottomNail.yIn, PALLET_HEIGHT_IN / 2 + 6);
-    const topNail = palletNailPosition({
-      kind: "deck",
-      index: MAX_BOTTOM_DECK,
-    });
-    assert.strictEqual(topNail.yIn, PALLET_HEIGHT_IN / 2 - 6);
-    const stringerNail = palletNailPosition({ kind: "stringer", index: 1 });
-    assert.strictEqual(stringerNail.xIn, PALLET_WIDTH_IN / 2);
-    assert.strictEqual(stringerNail.yIn, PALLET_HEIGHT_IN / 2);
+  it("every nail sits on a deck-board × stringer crossing", () => {
+    const stringerYs = Array.from({ length: MAX_STRINGERS }, (_, i) =>
+      i === 0 ? 0 : (PALLET_HEIGHT_IN * i) / (MAX_STRINGERS - 1),
+    );
+    for (const target of pryTargets(pallet(11, 3))) {
+      const nail = palletNailPosition(target);
+      // On a stringer's centerline…
+      assert.ok(
+        stringerYs.some((y) => Math.abs(y - nail.yIn) < 1e-9),
+        `${target.kind} ${target.index} y=${nail.yIn}`,
+      );
+      if (target.kind === "deck") {
+        // …at the board's own centerline
+        assert.strictEqual(nail.xIn, palletBoardSlot(target).xIn);
+      }
+    }
+  });
+
+  it("no two boards share a nail crossing", () => {
+    const seen = new Set<string>();
+    for (const target of pryTargets(pallet(11, 3))) {
+      const nail = palletNailPosition(target);
+      const key = `${nail.xIn.toFixed(3)},${nail.yIn.toFixed(3)}`;
+      assert.ok(!seen.has(key), `${target.kind} ${target.index} at ${key}`);
+      seen.add(key);
+    }
   });
 });

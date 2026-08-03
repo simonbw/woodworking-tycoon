@@ -46,10 +46,22 @@ async function inchPoint(
   };
 }
 
+/** A point in pallet inches → page coordinates: the stage also publishes
+ * the staged pallet's top-left corner in bench inches. */
+async function palletPoint(
+  page: import("@playwright/test").Page,
+  xIn: number,
+  yIn: number,
+) {
+  const stage = page.getByTestId("bench-stage");
+  const palletX = Number(await stage.getAttribute("data-pallet-x"));
+  const palletY = Number(await stage.getAttribute("data-pallet-y"));
+  return inchPoint(page, palletX + xIn, palletY + yIn);
+}
+
 test.describe("Bench view", () => {
-  // The bench sheet (work canvas + plan picker + racks) runs tall; the
-  // default 720px viewport clips the canvas top and strokes fall on the
-  // backdrop instead of the wood.
+  // The bench view fills the window; a roomy viewport keeps the zoom
+  // comfortable for the synthetic strokes.
   test.use({ viewport: { width: 1280, height: 900 } });
 
   test("hand work happens on the bench's zoomed work surface", async ({
@@ -94,9 +106,10 @@ test.describe("Bench view", () => {
       page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
 
     await test.step("Space won't run hand work — the chips send it to the bench", async () => {
-      // The chip row offers the plan "by hand" at the sheet key, and the
-      // operate key does nothing: the mini-game is the only player path.
-      await expect(page.getByText("sand board by hand")).toBeVisible();
+      // The chip row offers exactly one door — "use workbench" at the
+      // sheet key — and the operate key does nothing: the bench view is
+      // the only player path to hand work.
+      await expect(page.getByText("use workbench")).toBeVisible();
       await blur();
       await page.keyboard.down("Space");
       await page.waitForTimeout(400);
@@ -192,9 +205,10 @@ test.describe("Bench view", () => {
       // The hammer comes off the rail and becomes the pointer
       await page.getByTestId("bench-tool-hammer").click();
 
-      // One real press on a marked nail: the top stringer's nail sits at
-      // pallet inches (23, 0), published through the stage's fit attrs.
-      const nail = await inchPoint(page, 23, 0);
+      // One real press on a marked nail: the top stringer's own nail
+      // sits on its second top-deck crossing — pallet inches
+      // (46/6 · 1, 0) — published through the stage's fit attrs.
+      const nail = await palletPoint(page, 46 / 6, 0);
       await page.mouse.click(nail.x, nail.y);
       // The pry takes a beat — the hammer's swing is the pacing
       await expect
@@ -213,13 +227,14 @@ test.describe("Bench view", () => {
         width: 6,
       });
       expect(after.outputs).toEqual([]);
-      const palletLeft = await page.evaluate(() => {
+      const stringersLeft = await page.evaluate(() => {
         const pallet = window
           .__GET_GAME_STATE__()
           .machines[0].inputMaterials.find((m: any) => m.type === "pallet");
-        return pallet?.stringerBoardsLeft;
+        return pallet?.stringers;
       });
-      expect(palletLeft).toBe(2);
+      // The exact stringer whose nail was pressed came off
+      expect(stringersLeft).toEqual([false, true, true]);
     });
 
     await test.step("glue, assembly, saw, and the cure each mount their script", async () => {

@@ -56,7 +56,7 @@ export function makePallet() {
       true,
       true,
     ],
-    stringerBoardsLeft: 3,
+    stringers: [true, true, true],
   });
 }
 
@@ -429,7 +429,7 @@ export function createMockMaterial(
           true,
           true,
         ],
-        stringerBoardsLeft: 3,
+        stringers: [true, true, true],
       });
 
     case "endGrainSlice":

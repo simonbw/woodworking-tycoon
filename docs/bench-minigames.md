@@ -36,9 +36,11 @@ vocabulary, and per-operation scripts that compose it.
    products: builds (glue-ups, assemblies) and, until their scripts
    convert, the legacy finishing recipes. Pry work is hidden from the
    plan picker entirely. Freed boards stay lying on the bench
-   (`inputMaterials`, real state) right where they were nailed; their
-   *arrangement* — dragging, R to turn, F to flip — is view state per
-   decision 3.
+   (`inputMaterials`, real state) right where they were nailed, and the
+   *arrangement* — dragging, R to turn, F to flip — is real state too
+   (`MachineState.benchLayout`, see decision 3's amendment): the same
+   layout shows in the zoomed view and the shop view, and survives
+   closing either.
 
 1. **The mini-game is the only player path.** There is no player-facing
    "hold Space instead". Tests and debug tooling complete work through the
@@ -53,6 +55,12 @@ vocabulary, and per-operation scripts that compose it.
 3. **Mid-action progress is ephemeral.** Refresh mid-sanding and the board
    starts that sanding pass over. Masks, glue beads, and tool positions are
    UI state, never saved. The one principled exception is rule 4.
+   *Amended:* where pieces **lie** on the bench is not mid-action progress
+   — it's the state of the shop, like a machine's position on the floor.
+   `MachineState.benchLayout` persists each staged piece's spot/turn/flip
+   (written by the pry commit and by `arrangeBenchMaterialAction`), and
+   both the bench view and the shop-floor sprite render from it. Only
+   the in-flight gesture (the drag under the button) is view state.
 4. **Work that grants resources commits incrementally; work that only
    transforms the workpiece commits atomically.** Each nail pried out of a
    pallet lands in `GameState.consumables` immediately — so the pallet must
@@ -191,7 +199,12 @@ modeled as the pallet instance transforming nail by nail:
   bench scene, and the freed board's berth can never disagree.
 - Refresh mid-dismantle and you resume at the exact nail you left —
   not because mini-game state was saved, but because every pull *was*
-  game state. (Only the dragged-around arrangement resets: decision 3.)
+  game state — the dragged-around arrangement included
+  (`MachineState.benchLayout`, decision 3's amendment). Every nail sits
+  on a deck-board × stringer crossing (`palletNailPosition`), and the
+  stringers are per-board state like the deck (`Pallet.stringers`), so
+  the nail you press frees exactly that board, grain and all (the freed
+  board's id is its slot id, which is also its sprite seed).
 
 ## Script sketches for the rest — **Now**
 
@@ -209,20 +222,25 @@ numbers the simulation already has.
 
 ## The bench view itself — **Now**
 
-**Now**: `src/components/bench-view/` — the bench *top* lives inside the
-station sheet (Tab), spread nearly window-wide for benches: one measured
-PIXI `Application` rendered at device resolution (no fixed logical size,
-no CSS upscale — `stageMath.fitToStage` takes the real rect), a
-procedural wood surface (`BenchBackdrop`) with the mounted tools hung on
-a rail across the top (`BenchToolRail`, DOM buttons over the canvas),
-and the bench's contents lying on the wood (`BenchScene`). The plan
-picker survives below, folded into a "Plans & paperwork" drawer that
-starts closed while a pallet holds the bench. The camera zoom-in
-transition remains future presentation work. Every operation listed in
-the rollout is converted; the remaining legacy attended-tick ops are the
-single-piece finishing recipes (`finish*`, `oilCuttingBoard`) and the
-shop-furniture/jig builds run through them — a coherent "finishing"
-batch for a future script.
+**Now**: `src/components/bench-view/` — Tab at a bench fills the whole
+window with the shop itself, leaned into: one measured PIXI
+`Application` at device resolution (no fixed logical size, no CSS
+upscale — `stageMath.fitToStage` takes the real rect) draws the same
+concrete floor the shop view tiles and the *same bench art* the shop
+floor uses (`BenchSceneBackdrop`: `makeshift-bench.png`
+nearest-sampled for the starting bench, the `WorktableSprite` vectors
+for built tables), so the zoomed bench and the floor bench are one
+asset at two zooms. The bench's contents lie on it exactly where
+`MachineState.benchLayout` says (`BenchScene`, turns and flips tweened),
+the mounted tools hang on a floating rail (`BenchToolRail`, DOM buttons),
+and the chrome floats: nameplate top-left, instruction + key hints
+bottom-center, and the plan picker in a "Plans & paperwork" paper
+drawer bottom-left that starts closed while a pallet holds the bench.
+The camera zoom-in transition remains future presentation work. Every
+operation listed in the rollout is converted; the remaining legacy
+attended-tick ops are the single-piece finishing recipes (`finish*`,
+`oilCuttingBoard`) and the shop-furniture/jig builds run through them —
+a coherent "finishing" batch for a future script.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a

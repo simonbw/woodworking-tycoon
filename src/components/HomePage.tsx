@@ -36,7 +36,9 @@ const HomePageContent: React.FC = () => {
         <ShopView />
       </div>
 
-      <div className="absolute inset-x-0 top-0 z-40 px-6 pt-6">
+      {/* pointer-events-none so the full-width strip doesn't eat clicks
+          meant for what's underneath (the NavBar re-enables its buttons) */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 px-6 pt-6">
         <NavBar />
       </div>
 

@@ -7,9 +7,13 @@ import { GLUE_CURE_TICKS } from "../machines/workspace";
 import { initialGameState } from "../initialGameState";
 import { NO_CONSUMABLES } from "../Consumable";
 import {
+  arrangeBenchMaterialAction,
   finishAttendedWorkAction,
   pryPalletNailAction,
 } from "./operation-actions";
+import { palletOriginOnBench } from "../bench-work/bench-layout";
+import { palletBoardSlot } from "../bench-work/pallet-geometry";
+import { MACHINE_TYPES } from "../Machine";
 import { operateMachineAction } from "./player-actions";
 import { tickAction } from "./tickAction";
 
@@ -233,7 +237,7 @@ describe("pryPalletNailAction targeting", () => {
           id: "test-pallet",
           type: "pallet" as const,
           deckBoards: Array(11).fill(true) as never,
-          stringerBoardsLeft: 3,
+          stringers: [true, true, true],
         },
       ],
     });
@@ -260,10 +264,62 @@ describe("pryPalletNailAction targeting", () => {
     })(state);
     const pallet = result.machines[0].inputMaterials[0];
     assert.ok(pallet.type === "pallet");
-    assert.strictEqual(pallet.stringerBoardsLeft, 2);
+    // The exact stringer the nail belonged to came off, not "one of them"
+    assert.deepStrictEqual(pallet.stringers, [false, true, true]);
     // The freed board stays lying on the bench, not in an output bay
     const freed = result.machines[0].inputMaterials.at(-1)!;
     assert.ok(freed.type === "board" && freed.width === 6);
     assert.strictEqual(result.machines[0].outputMaterials.length, 0);
+  });
+
+  it("seats the freed board on its berth in the bench layout", () => {
+    const state = stateWith({ machines: [palletOnBench()] });
+    const result = pryPalletNailAction(getMachines(state.machines)[0], {
+      kind: "deck",
+      index: 6,
+    })(state);
+    const freed = result.machines[0].inputMaterials.at(-1)!;
+    // The id is the slot's — the very board the pallet was drawing
+    assert.strictEqual(freed.id, "test-pallet:deck-6");
+    const placement = result.machines[0].benchLayout?.[freed.id];
+    assert.ok(placement);
+    const origin = palletOriginOnBench(MACHINE_TYPES.workspace);
+    const berth = palletBoardSlot({ kind: "deck", index: 6 });
+    assert.strictEqual(placement.xIn, origin.xIn + berth.xIn);
+    assert.strictEqual(placement.yIn, origin.yIn + berth.yIn);
+    assert.strictEqual(placement.angleDeg, berth.angleDeg);
+  });
+});
+
+describe("arrangeBenchMaterialAction", () => {
+  it("stores where a piece lies and prunes departed ids", () => {
+    const loose = board("pallet", 3, 4, 1);
+    const machine = workspaceMachine({
+      inputMaterials: [loose],
+      benchLayout: {
+        "long-gone": { xIn: 1, yIn: 1, angleDeg: 0, flipped: false },
+      },
+    });
+    const state = stateWith({ machines: [machine] });
+    const placement = { xIn: 8, yIn: 14, angleDeg: 180, flipped: true };
+    const result = arrangeBenchMaterialAction(
+      getMachines(state.machines)[0],
+      loose.id,
+      placement,
+    )(state);
+    assert.deepStrictEqual(result.machines[0].benchLayout, {
+      [loose.id]: placement,
+    });
+  });
+
+  it("ignores a piece that isn't on the bench", () => {
+    const machine = workspaceMachine({});
+    const state = stateWith({ machines: [machine] });
+    const result = arrangeBenchMaterialAction(
+      getMachines(state.machines)[0],
+      "nobody",
+      { xIn: 0, yIn: 0, angleDeg: 0, flipped: false },
+    )(state);
+    assert.strictEqual(result, state);
   });
 });

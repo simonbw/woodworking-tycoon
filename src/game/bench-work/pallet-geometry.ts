@@ -71,8 +71,8 @@ export function palletBoardSlots(
   const deck = pallet.deckBoards.flatMap((present, index) =>
     present ? [palletBoardSlot({ kind: "deck", index })] : [],
   );
-  const stringers = Array.from({ length: pallet.stringerBoardsLeft }, (_, i) =>
-    palletBoardSlot({ kind: "stringer", index: i }),
+  const stringers = pallet.stringers.flatMap((present, index) =>
+    present ? [palletBoardSlot({ kind: "stringer", index })] : [],
   );
   const order = { bottom: 0, stringer: 1, top: 2 } as const;
   return [...deck, ...stringers].sort(
@@ -80,19 +80,45 @@ export function palletBoardSlots(
   );
 }
 
+/** A stringer's centerline, in pallet inches from the top edge. */
+function stringerYIn(index: number): number {
+  return lerp(0, PALLET_HEIGHT_IN, index / (MAX_STRINGERS - 1));
+}
+
+/** A top-deck board's centerline, by its 0..6 position across the run. */
+function topDeckXIn(position: number): number {
+  return lerp(0, PALLET_WIDTH_IN, position / (MAX_TOP_DECK - 1));
+}
+
 /**
- * Where a board's one nail sits, in pallet inches. Deck boards wear
- * theirs near the middle stringer (bottom row just below it, top row
- * just above); stringers wear theirs at mid-span.
+ * Which top-deck crossing each stringer's own nail is driven through —
+ * chosen so no stringer nail lands on the same crossing as that deck
+ * board's own nail (see palletNailPosition).
+ */
+const STRINGER_NAIL_DECK_POSITION: ReadonlyArray<number> = [1, 5, 3];
+
+/**
+ * Where a board's one nail sits, in pallet inches. A nail only makes
+ * sense where wood crosses wood, so every nail sits on a deck-board ×
+ * stringer crossing: each deck board's nail is driven into one of the
+ * three stringers it crosses (spread around the pallet by index), and
+ * each stringer's own nail sits at one of its top-deck crossings. The
+ * assignments are chosen so no two boards share a crossing.
  */
 export function palletNailPosition(target: PryTarget): {
   xIn: number;
   yIn: number;
 } {
-  const slot = palletBoardSlot(target);
   if (target.kind === "stringer") {
-    return { xIn: slot.xIn, yIn: slot.yIn };
+    return {
+      xIn: topDeckXIn(STRINGER_NAIL_DECK_POSITION[target.index] ?? 3),
+      yIn: stringerYIn(target.index),
+    };
   }
+  const slot = palletBoardSlot(target);
   const bottom = target.index < MAX_BOTTOM_DECK;
-  return { xIn: slot.xIn, yIn: slot.yIn + (bottom ? 6 : -6) };
+  const stringer = bottom
+    ? (((target.index * 2) % MAX_STRINGERS) + 1) % MAX_STRINGERS
+    : (target.index - MAX_BOTTOM_DECK) % MAX_STRINGERS;
+  return { xIn: slot.xIn, yIn: stringerYIn(stringer) };
 }

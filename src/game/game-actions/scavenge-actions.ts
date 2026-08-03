@@ -55,8 +55,8 @@ function makeDamagedPallet(rng: () => number): Pallet {
   return makeMaterial<Pallet>({
     type: "pallet",
     deckBoards: deckBoards as Tuple<boolean, 11>,
-    // Usually all 3 stringers, sometimes one is cracked
-    stringerBoardsLeft: rng() < 0.3 ? 2 : 3,
+    // Usually all 3 stringers, sometimes the bottom one is cracked off
+    stringers: rng() < 0.3 ? [true, true, false] : [true, true, true],
   });
 }
 

@@ -41,9 +41,8 @@ describe("generateScavengeLoot", () => {
       if (pallet.type === "pallet") {
         const deckCount = pallet.deckBoards.filter(Boolean).length;
         assert.ok(deckCount >= 6 && deckCount <= 11, `deck=${deckCount}`);
-        assert.ok(
-          pallet.stringerBoardsLeft >= 2 && pallet.stringerBoardsLeft <= 3,
-        );
+        const stringerCount = pallet.stringers.filter(Boolean).length;
+        assert.ok(stringerCount >= 2 && stringerCount <= 3);
       }
     }
   });

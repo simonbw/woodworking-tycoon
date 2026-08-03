@@ -21,8 +21,11 @@ export const PalletSprite: React.FC<{
   alpha?: number;
   tint?: number;
 }> = ({ pallet, alpha, tint }) => {
-  const deckBoard = useMemo(() => board("pallet", 3, 4, 2), []);
-  const stringerBoard = useMemo(() => board("pallet", 4, 1, 2), []);
+  // The very boards prying frees (see pryPalletNailAction) — same dims,
+  // and seeded below by the same slot id the freed board inherits, so a
+  // pulled board keeps its exact grain lying in place.
+  const deckBoard = useMemo(() => board("pallet", 3, 4, 1), []);
+  const stringerBoard = useMemo(() => board("pallet", 4, 6, 3), []);
 
   return (
     <pixiContainer
@@ -39,7 +42,7 @@ export const PalletSprite: React.FC<{
         >
           <BoardSprite
             board={slot.layer === "stringer" ? stringerBoard : deckBoard}
-            seed={`${slot.target.kind}-${slot.target.index}`}
+            seed={`${pallet.id}:${slot.target.kind}-${slot.target.index}`}
             tint={tint}
           />
         </pixiContainer>

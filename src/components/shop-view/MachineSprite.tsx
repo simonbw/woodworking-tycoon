@@ -1,7 +1,16 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { animated, useSpring } from "react-spring";
-import { MACHINE_TYPES, Machine, footprintCenter } from "../../game/Machine";
+import {
+  MACHINE_TYPES,
+  Machine,
+  footprintCenter,
+  isBenchType,
+} from "../../game/Machine";
+import {
+  benchPlacementFor,
+  benchTopSizeIn,
+} from "../../game/bench-work/bench-layout";
 import { MaterialInstance } from "../../game/Materials";
 import { colors } from "../../utils/colors";
 import { useTexture } from "../../utils/useTexture";
@@ -181,16 +190,56 @@ const ProcessingMaterialSprite: React.FC<{
   );
 };
 
+/**
+ * A bench's staged stock, lying exactly where the bench layout says it
+ * lies (see bench-work/bench-layout.ts) — the same arrangement the bench
+ * view shows, at shop-floor zoom. The pallet always lies centered.
+ * Positions are bench-top inches converted to footprint-center-relative
+ * pixels, so this renders inside FootprintArt.
+ */
+const BenchTopMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const { widthIn, heightIn } = benchTopSizeIn(machine.type);
+  return (
+    <>
+      {machine.inputMaterials.map((material) => {
+        if (material.type === "pallet") {
+          return (
+            <pixiContainer key={material.id}>
+              <MaterialSprite material={material} />
+            </pixiContainer>
+          );
+        }
+        const placement = benchPlacementFor(machine, material);
+        return (
+          <pixiContainer
+            key={material.id}
+            x={(placement.xIn - widthIn / 2) * PIXELS_PER_INCH}
+            y={(placement.yIn - heightIn / 2) * PIXELS_PER_INCH}
+            angle={placement.angleDeg}
+            scale={{ x: placement.flipped ? -1 : 1, y: 1 }}
+          >
+            <MaterialSprite material={material} />
+          </pixiContainer>
+        );
+      })}
+    </>
+  );
+};
+
 const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { working } = useMachineActivity(machine);
 
   return (
     <>
-      {machine.inputMaterials.map((material, index) => (
-        <pixiContainer angle={index * 10} key={`in-${index}`}>
-          <MaterialSprite material={material} />
-        </pixiContainer>
-      ))}
+      {isBenchType(machine.type) ? (
+        <BenchTopMaterials machine={machine} />
+      ) : (
+        machine.inputMaterials.map((material, index) => (
+          <pixiContainer angle={index * 10} key={`in-${index}`}>
+            <MaterialSprite material={material} />
+          </pixiContainer>
+        ))
+      )}
       {machine.processingMaterials.map((material, index) => (
         <ProcessingMaterialSprite
           material={material}
@@ -216,7 +265,10 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
     return (
       <pixiContainer>
         <WorktableSprite machine={machine} />
-        <MachineMaterials machine={machine} />
+        {/* Placements are footprint-center-relative, like image art */}
+        <FootprintArt machine={machine}>
+          <MachineMaterials machine={machine} />
+        </FootprintArt>
       </pixiContainer>
     );
   }

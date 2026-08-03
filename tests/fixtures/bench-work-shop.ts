@@ -22,7 +22,7 @@ export const benchWorkPallet: Pallet = {
   id: "fx-bench-pallet",
   type: "pallet",
   deckBoards: Array(11).fill(true) as Tuple<boolean, 11>,
-  stringerBoardsLeft: 3,
+  stringers: [true, true, true],
 };
 
 /**

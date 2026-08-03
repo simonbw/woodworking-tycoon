@@ -117,7 +117,12 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       // Every board pried loose gives its nails back — one per board.
       // A whole pallet worth of prying keeps the rustic shelf free.
       if (deckBoardsCount <= 1) {
-        const stringers = array(3).map(() => board("pallet", 4, 6, 3));
+        const stringerCount = inputPallet.stringers.filter(
+          (present: boolean) => present,
+        ).length;
+        const stringers = array(stringerCount).map(() =>
+          board("pallet", 4, 6, 3),
+        );
         const deckBoards = array(deckBoardsCount).map(() =>
           board("pallet", 3, 4, 1),
         );
@@ -125,7 +130,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
           inputs: [],
           outputs: [...stringers, ...deckBoards],
           consumableOutputs: [
-            { id: "nails" as const, amount: 3 + deckBoardsCount },
+            { id: "nails" as const, amount: stringerCount + deckBoardsCount },
           ],
         };
       } else {

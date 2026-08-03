@@ -292,7 +292,9 @@ export type Pallet = {
   readonly id: string;
   readonly type: "pallet";
   readonly deckBoards: Tuple<boolean, 11>;
-  readonly stringerBoardsLeft: number;
+  /** Which stringers still hold on, top to bottom — per board, like the
+   * deck, so prying a particular stringer's nail frees that stringer. */
+  readonly stringers: Tuple<boolean, 3>;
 };
 
 /**

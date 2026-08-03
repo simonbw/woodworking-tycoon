@@ -63,6 +63,16 @@ const machineStateSchema = z.object({
   storedMaterials: z.array(materialSchema).optional(),
   upgrades: z.array(upgradeIdSchema).optional(),
   poweredOn: z.boolean().optional(),
+  benchLayout: z
+    .record(
+      z.object({
+        xIn: z.number(),
+        yIn: z.number(),
+        angleDeg: z.number(),
+        flipped: z.boolean(),
+      }),
+    )
+    .optional(),
 });
 
 const awayTripSchema = z.discriminatedUnion("kind", [

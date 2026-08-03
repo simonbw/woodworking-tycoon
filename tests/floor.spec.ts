@@ -253,7 +253,7 @@ test.describe("Shop floor", () => {
     await test.step("carry a worktable to a new spot", async () => {
       // The fixture's small worktable at [9,2] operates from [9,4]
       await teleportPlayer(page, [9, 4]);
-      const machineHint = page.getByText(/plans & tools/i);
+      const machineHint = page.getByText(/use workbench/i);
       await expect(machineHint.first()).toBeVisible();
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
@@ -271,7 +271,7 @@ test.describe("Shop floor", () => {
       );
       expect(table.position).toEqual([5, 8]);
       // Standing at the freshly placed table's operator cell brings it back
-      await expect(page.getByText(/plans & tools/i).first()).toBeVisible();
+      await expect(page.getByText(/use workbench/i).first()).toBeVisible();
     });
 
     await test.step("buying a machine crates it into the truck's bed", async () => {

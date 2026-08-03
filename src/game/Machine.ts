@@ -1,4 +1,5 @@
 import { LRUCache } from "typescript-lru-cache";
+import type { BenchPlacement } from "./bench-work/bench-layout";
 import type { ConsumableAmount } from "./Consumable";
 import { MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
@@ -536,6 +537,14 @@ export interface MachineState {
    * (machines come up switched off, like after any power outage).
    */
   readonly poweredOn?: boolean;
+  /**
+   * Where each staged piece lies on a bench's top, keyed by material id
+   * (see bench-work/bench-layout.ts). Real state, not view state: the
+   * arrangement survives closing the bench view and shows in the shop
+   * view. Pieces without an entry sit at their seeded default; stale ids
+   * are pruned whenever the layout is written.
+   */
+  readonly benchLayout?: Readonly<Record<string, BenchPlacement>>;
 }
 
 /**

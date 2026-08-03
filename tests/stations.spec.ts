@@ -143,7 +143,7 @@ test.describe("Stations", () => {
                   true,
                   true,
                 ],
-                stringerBoardsLeft: 3,
+                stringers: [true, true, true],
               },
               position: [2.5, 5.5],
               rotation: 0,
@@ -306,6 +306,10 @@ test.describe("Stations", () => {
 
     await test.step("mount the carried sander at the workspace", async () => {
       await expect(page.getByText("1/2 slots")).not.toBeVisible();
+      // Stand at the workspace explicitly — inheriting the pre-trip cell
+      // through two leaveStore round-trips has proven racy under CPU
+      // contention, and this step is about the rack, not the walk.
+      await movePlayerTo(page, [1, 4]);
       // The tool rack lives on the station sheet; the fixture's sander is
       // in the player's hands, which is where the rack mounts from
       await openStationSheet(page);

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { Machine, Operation } from "../../game/Machine";
+import { isBenchType, Machine, Operation } from "../../game/Machine";
 import { availableOperations } from "../../game/skill-helpers";
 import { Tooltip } from "../Tooltip";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -38,31 +38,47 @@ export const StationSheet: React.FC = () => {
     return null;
   }
 
+  const operations = availableOperations(sheetMachine, gameState.progression);
+  const bench =
+    isBenchType(sheetMachine.type) &&
+    !sheetMachine.type.container &&
+    operations.length > 0;
+
   // Portaled to the body: the shop-overlay layer this renders from is
   // pinned to the shop floor's box (and rides the camera transform), but
-  // the sheet wants the whole window — a bench top is the entire
-  // interface while it's spread out. Still deliberately not a modal.
+  // the sheet wants the whole window. Still deliberately not a modal —
+  // below the top bar (z-40) on purpose, so the phone, journal, and menu
+  // stay clickable over it.
   return createPortal(
-    <div
-      // Below the top bar (z-40) on purpose: the sheet is not a modal,
-      // so the phone, journal, and menu stay clickable over it
-      className="fixed inset-0 z-[35] flex items-center justify-center bg-ink-black/30 p-3 pt-24 pointer-events-auto"
-      onClick={closeSheet}
-      data-testid="station-sheet"
-    >
-      <div
-        className={`max-h-full w-full overflow-y-auto ${
-          // Benches spread wide: the bench top itself is the interface,
-          // and it wants nearly the whole window
-          !sheetMachine.type.directFeed && !sheetMachine.type.container
-            ? "max-w-[min(72rem,95vw)]"
-            : "max-w-md"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    bench ? (
+      // A bench IS the whole window: the bench view fills it edge to
+      // edge, and the paperwork floats over it as a drawer. A <section>
+      // so the test helpers' heading-anchored card locator still works.
+      <section
+        className="fixed inset-0 z-[35] pointer-events-auto"
+        data-testid="station-sheet"
       >
-        <StationSheetBody machine={sheetMachine} onClose={closeSheet} />
+        <BenchWorkSurface machine={sheetMachine} onClose={closeSheet} />
+        <div className="absolute bottom-4 left-4 z-20 w-96 max-w-[85vw]">
+          <div className="paper-card max-h-[55vh] overflow-y-auto shadow-xl">
+            <BenchPaperwork machine={sheetMachine} operations={operations} />
+          </div>
+        </div>
+      </section>
+    ) : (
+      <div
+        className="fixed inset-0 z-[35] flex items-center justify-center bg-ink-black/30 p-3 pt-24 pointer-events-auto"
+        onClick={closeSheet}
+        data-testid="station-sheet"
+      >
+        <div
+          className="max-h-full w-full max-w-md overflow-y-auto"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <StationSheetBody machine={sheetMachine} onClose={closeSheet} />
+        </div>
       </div>
-    </div>,
+    ),
     document.body,
   );
 };
@@ -99,27 +115,15 @@ const SheetFrame: React.FC<{
 const StationSheetBody: React.FC<{
   machine: Machine;
   onClose: () => void;
-}> = ({ machine, onClose }) => {
-  const gameState = useGameState();
-  const operations = availableOperations(machine, gameState.progression);
-
-  return (
-    <SheetFrame machine={machine} onClose={onClose}>
-      {machine.type.directFeed ? (
-        <ToolSheet machine={machine} />
-      ) : machine.type.container || operations.length === 0 ? (
-        <ContentsSheet machine={machine} />
-      ) : (
-        <>
-          {/* The bench top itself: hand work happens here, over the
-              station's actual staged stock (docs/bench-minigames.md) */}
-          <BenchWorkSurface machine={machine} />
-          <BenchPaperwork machine={machine} operations={operations} />
-        </>
-      )}
-    </SheetFrame>
-  );
-};
+}> = ({ machine, onClose }) => (
+  <SheetFrame machine={machine} onClose={onClose}>
+    {machine.type.directFeed ? (
+      <ToolSheet machine={machine} />
+    ) : (
+      <ContentsSheet machine={machine} />
+    )}
+  </SheetFrame>
+);
 
 /**
  * The bench's paperwork — plan picker, supplies, racks — folded under

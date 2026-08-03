@@ -53,7 +53,7 @@ export const consumablesShop: GameState = {
             false,
             false,
           ],
-          stringerBoardsLeft: 3,
+          stringers: [true, true, true],
         },
       ],
       processingMaterials: [],

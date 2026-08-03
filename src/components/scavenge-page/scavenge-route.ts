@@ -162,10 +162,9 @@ export function buildScavengeLog(trip: ScavengingTrip): ScavengeLogEntry[] {
 
 function describePalletFind(pallet: Pallet): string {
   const deckCount = pallet.deckBoards.filter(Boolean).length;
-  const stringers =
-    pallet.stringerBoardsLeft >= 3
-      ? "stringers solid"
-      : "one stringer's cracked";
+  const stringers = pallet.stringers.every(Boolean)
+    ? "stringers solid"
+    : "one stringer's cracked";
   return `A pallet, ${deckCount} of 11 deck boards, ${stringers}.`;
 }
 

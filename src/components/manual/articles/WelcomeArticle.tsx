@@ -26,10 +26,10 @@ export const WelcomeArticle: React.FC = () => (
       down what you're holding, on a machine if you're standing at one. Hold{" "}
       <ShortcutKeys shortcut="operate-machine" /> to run a power machine, for as
       long as the cut takes. <ShortcutKeys shortcut="open-station-sheet" />{" "}
-      spreads out a bench's sheet of plans and tools — hand work happens right
-      there, on the bench, with the mouse.{" "}
-      <ShortcutKeys shortcut="pause-menu" /> stops the clock and opens the pause
-      menu.
+      leans you over a bench, filling the screen with its top — hand work
+      happens right there, with the mouse, and the wood stays where you leave
+      it. <ShortcutKeys shortcut="pause-menu" /> stops the clock and opens the
+      pause menu.
     </P>
 
     <H>Your First Commission</H>

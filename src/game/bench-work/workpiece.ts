@@ -78,10 +78,9 @@ export function pryTargets(pallet: Pallet): ReadonlyArray<PryTarget> {
     ...pallet.deckBoards.flatMap((present, index) =>
       present ? [{ kind: "deck" as const, index }] : [],
     ),
-    ...Array.from({ length: pallet.stringerBoardsLeft }, (_, index) => ({
-      kind: "stringer" as const,
-      index,
-    })),
+    ...pallet.stringers.flatMap((present, index) =>
+      present ? [{ kind: "stringer" as const, index }] : [],
+    ),
   ];
 }
 

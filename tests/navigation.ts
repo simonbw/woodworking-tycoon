@@ -171,24 +171,38 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
  * bed — they're lifted with the carry key, not E.
  */
 export async function unloadTruckBed(page: any) {
-  const bedCount = await page.evaluate(
-    () => (window as any).__GET_GAME_STATE__().truck.bed.length,
-  );
-  if (bedCount === 0) return;
-  await page.evaluate(() => {
-    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-      ...state,
-      player: {
-        ...state.player,
-        // The tailgate aisle, one step out the garage door
-        position: [state.shopInfo.entrancePosition[0], state.shopInfo.size[1] + 1],
-      },
-    }));
-  });
-  await page.waitForTimeout(30);
-  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
-  await page.keyboard.press("Shift+E");
-  await page.waitForTimeout(30);
+  const bedCount = () =>
+    page.evaluate(
+      () => (window as any).__GET_GAME_STATE__().truck.bed.length,
+    );
+  if ((await bedCount()) === 0) return;
+  // The arrival performance holds input until the truck is parked, so
+  // pressing once and hoping is a race under CPU contention — keep
+  // stepping to the tailgate and pressing until the bed actually empties.
+  const deadline = Date.now() + 15000;
+  while ((await bedCount()) > 0) {
+    if (Date.now() > deadline) {
+      throw new Error("unloadTruckBed: the bed never emptied");
+    }
+    await page.evaluate(() => {
+      (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+        ...state,
+        player: {
+          ...state.player,
+          // The tailgate aisle, one step out the garage door
+          position: [
+            state.shopInfo.entrancePosition[0],
+            state.shopInfo.size[1] + 1,
+          ],
+        },
+      }));
+    });
+    await page.evaluate(() =>
+      (document.activeElement as HTMLElement)?.blur?.(),
+    );
+    await page.keyboard.press("Shift+E");
+    await page.waitForTimeout(120);
+  }
 }
 
 /**
@@ -201,7 +215,15 @@ export async function leaveStore(page: any, returnTo?: [number, number]) {
   await page
     .getByRole("button", { name: "Head Home" })
     .click({ force: true });
-  await page.waitForTimeout(30);
+  // The click starts the arrival performance; returnFromStoreAction (which
+  // also PARKS THE PLAYER AT THE CAB) only lands when it finishes. Wait it
+  // out, or that late position write clobbers the returnTo teleport below.
+  await page.waitForFunction(
+    () => (window as any).__GET_GAME_STATE__().player.away === null,
+    undefined,
+    { timeout: 20000 },
+  );
+  await page.waitForTimeout(50);
   await unloadTruckBed(page);
   if (returnTo) {
     await page.evaluate((position: [number, number]) => {

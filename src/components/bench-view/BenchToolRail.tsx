@@ -1,14 +1,13 @@
 import React from "react";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { toolIconSrc } from "../../utils/uiImages";
-import { TOOL_RAIL_HEIGHT } from "./BenchBackdrop";
 
 /**
- * The mounted tools, hanging on the rail across the top of the bench —
- * not a list in a sheet, the tools themselves. Click one to take it in
- * hand (it becomes the cursor); click its empty hook, right-click, or
- * press Escape to hang it back up. DOM buttons over the canvas so they
- * keep focus states, titles, and testability for free.
+ * The mounted tools, hanging on a rail floated across the top of the
+ * bench view — not a list in a sheet, the tools themselves. Click one to
+ * take it in hand (it becomes the cursor); click its empty hook,
+ * right-click, or press Escape to hang it back up. DOM buttons over the
+ * canvas so they keep focus states, titles, and testability for free.
  */
 export const BenchToolRail: React.FC<{
   tools: ReadonlyArray<ToolId>;
@@ -21,10 +20,10 @@ export const BenchToolRail: React.FC<{
     return null;
   }
   return (
-    <div
-      className="absolute inset-x-0 top-0 flex items-center gap-3 px-4"
-      style={{ height: TOOL_RAIL_HEIGHT }}
-    >
+    <div className="pointer-events-auto absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
+      <span className="mr-1 font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
+        Tools
+      </span>
       {tools.map((toolId, index) => {
         const held = heldTool === toolId;
         return (
@@ -46,7 +45,7 @@ export const BenchToolRail: React.FC<{
             className={`rounded p-1 transition-transform ${
               interactive
                 ? "cursor-pointer hover:-translate-y-0.5 hover:drop-shadow-[0_3px_4px_rgba(0,0,0,0.5)]"
-                : "cursor-default"
+                : "cursor-default opacity-60"
             } ${held ? "opacity-30" : ""}`}
           >
             <img
