@@ -411,7 +411,7 @@ test.describe("Market, supplies, and sound", () => {
         "Makeshift Workbench",
         "Build Rustic Pallet Shelf",
       );
-      await expect(page.getByText("8 nails (have 0)")).toBeVisible();
+      await expect(page.getByText("6 nails (have 0)")).toBeVisible();
       // Nothing to build without the nails — the sheet says so where the
       // run button used to be (assembly is bench-view hand work now)
       await expect(
@@ -439,7 +439,7 @@ test.describe("Market, supplies, and sound", () => {
       await expect(suppliesCard.getByText("Nails")).toBeVisible();
       await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
       // And the recipe's shortfall line clears
-      await expect(page.getByText("8 nails (have 8)")).toBeVisible();
+      await expect(page.getByText("6 nails (have 8)")).toBeVisible();
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {

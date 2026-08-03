@@ -482,6 +482,14 @@ test.describe("Bench view", () => {
       });
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "assembly");
+      // Fold the paperwork drawer out of the way — open, it overlaps the
+      // build's left column and would eat the presses (a real player sees
+      // it covering the work and folds it too)
+      const drawer = page.getByTestId("bench-paperwork");
+      if ((await drawer.getAttribute("open")) !== null) {
+        await drawer.locator("summary").click();
+        await page.waitForTimeout(100);
+      }
       const stage = page.getByTestId("bench-stage");
       await expect(stage).toHaveAttribute("data-seated", "4");
 
