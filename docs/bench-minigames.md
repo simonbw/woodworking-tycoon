@@ -227,7 +227,7 @@ modeled as the pallet instance transforming nail by nail:
 | Hand saw | mark the line, then push–pull strokes deepen the kerf | shares the miter saw's parameterized crosscut operation — same outputs, zoomed presentation |
 | Block plane | strokes along a face or edge | `jointedFaces`/`jointedEdges` axes and their prerequisites, unchanged |
 | Glue-up | spread glue (stroke) → butt boards (point/snap) → clamps (point, one per `requiredClamps`) → commit starts the hands-free cure | the existing phase system fits 1:1 |
-| Assembly | snap components onto ghost outlines → drive fasteners, one per `requiredConsumables` | ghost rendering precedent from the miter saw; drill vs hammer picks the animation |
+| Assembly | snap components onto ghost outlines → drive fasteners, one per `requiredConsumables` | ghost rendering precedent from the miter saw; drill vs hammer picks the animation. *Superseded for blueprint products:* recipes with a `ProductBlueprint` assemble on the bench scene itself — real parts laid on ghost slots, one nail per crossing — see `docs/assembly.md`; the generic row surface remains for the rest |
 
 Note how many target counts already live in the data (`requiredClamps`,
 `requiredConsumables`, pallet nail yields): the scripts mostly reveal
@@ -298,7 +298,11 @@ nothing in the design forecloses them: they're per-script constants.
 5. **Assembly** — last; per-recipe component layouts are the long-tail
    authoring cost. Mitigation: a generic derived layout (components in a
    row, fasteners at the joints), hand-authored art only for hero
-   products. **Now** (the generic layout; hero art still future)
+   products. **Now** — and superseded where a product has a
+   `ProductBlueprint` (the rustic shelf): the authored layout turned out
+   cheap (a dozen lines of slots; fasteners derive), and it buys the
+   real place-and-nail build plus the product drawn from its own parts.
+   See `docs/assembly.md` for that whole design.
 
 ## Open questions
 

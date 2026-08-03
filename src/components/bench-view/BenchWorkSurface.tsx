@@ -490,8 +490,15 @@ export const BenchWorkSurface: React.FC<{
           Math.abs(localY) <= size.heightIn / 2 + 0.5
         );
       };
-      for (let i = scenePieces.length - 1; i >= 0; i--) {
-        if (hits(scenePieces[i])) return scenePieces[i];
+      // Free pieces lie on top of seated ones (the scene draws them
+      // that way), so the grab prefers them in the same order.
+      const seatedIds = new Set(seated.values());
+      const stacked = [
+        ...scenePieces.filter((p) => seatedIds.has(p.material.id)),
+        ...scenePieces.filter((p) => !seatedIds.has(p.material.id)),
+      ];
+      for (let i = stacked.length - 1; i >= 0; i--) {
+        if (hits(stacked[i])) return stacked[i];
       }
       if (scenePallet && palletPlacement) {
         const pallet = { material: scenePallet, placement: palletPlacement };
@@ -499,7 +506,7 @@ export const BenchWorkSurface: React.FC<{
       }
       return null;
     },
-    [scenePieces, scenePallet, palletPlacement],
+    [scenePieces, scenePallet, palletPlacement, seated],
   );
 
   const commitDrag = useCallback(() => {
@@ -919,7 +926,8 @@ export const BenchWorkSurface: React.FC<{
                 : "The bench is clear. Set stock down on it with F.",
       progressLine: scenePallet
         ? `${scenePallet.nails.length} nails left`
-        : assemblyScript
+        : assemblyScript &&
+            !(sceneOutputs.length > 0 && loosePieces.length === 0)
           ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} nailed`
           : null,
       node: sceneActive ? (

@@ -427,5 +427,109 @@ test.describe("Bench view", () => {
       ).toBe("curing");
       await expect(page.getByText("the glue cures on its own")).toBeVisible();
     });
+
+    await test.step("blueprint assembly: one drag seats the rail, the hammer nails the crossings", async () => {
+      // Stage the shelf build: plan pinned, hammer mounted, four parts
+      // already lying on their outlines, one rail parked askew. The
+      // workspace bench is 36×24, so the 48×36 ghost frame centers at
+      // (18,12) and every slot lands at its product position − (6,6).
+      await page.evaluate(() => {
+        const board = (id: string, w: number, l: number, t: number) => ({
+          id,
+          type: "board",
+          species: "pallet",
+          length: l,
+          width: w,
+          thickness: t,
+          surface: "rough",
+          jointedFaces: 1,
+          jointedEdges: 2,
+        });
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          consumables: { ...state.consumables, nails: 10 },
+          machines: state.machines.map((m: any, i: number) =>
+            i === 0
+              ? {
+                  ...m,
+                  tools: ["sandingBlock", "hammer"],
+                  selectedOperationId: "buildRusticPalletShelf",
+                  inputMaterials: [
+                    board("bp-r1", 6, 4, 3),
+                    board("bp-r2", 6, 4, 3),
+                    board("bp-s1", 4, 3, 1),
+                    board("bp-s2", 4, 3, 1),
+                    board("bp-s3", 4, 3, 1),
+                  ],
+                  processingMaterials: [],
+                  outputMaterials: [],
+                  operationProgress: {
+                    status: "notStarted",
+                    phaseIndex: 0,
+                    ticksRemaining: 0,
+                  },
+                  benchLayout: {
+                    "bp-r1": { xIn: 33, yIn: 4, angleDeg: 96, flipped: false },
+                    "bp-r2": { xIn: 18, yIn: 24, angleDeg: 90, flipped: false },
+                    "bp-s1": { xIn: 2, yIn: 12, angleDeg: 0, flipped: false },
+                    "bp-s2": { xIn: 18, yIn: 12, angleDeg: 0, flipped: false },
+                    "bp-s3": { xIn: 34, yIn: 12, angleDeg: 0, flipped: false },
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+      const work = page.getByTestId("bench-work");
+      await expect(work).toHaveAttribute("data-script", "assembly");
+      const stage = page.getByTestId("bench-stage");
+      await expect(stage).toHaveAttribute("data-seated", "4");
+
+      // The one real snap-drag: the parked rail onto rail-0's outline
+      // (product (24,6) → bench (18,0)). The park spot overlaps a seated
+      // shelf on purpose — a free piece lies on top and the grab must
+      // prefer it.
+      const from = await inchPoint(page, 33, 4);
+      const seat = await inchPoint(page, 18, 0);
+      await page.mouse.move(from.x, from.y);
+      await page.mouse.down();
+      await page.mouse.move(seat.x + 4, seat.y - 3, { steps: 12 });
+      await page.mouse.up();
+      await expect(stage).toHaveAttribute("data-seated", "5");
+
+      // The hammer drives one nail per lit crossing; the sixth commits
+      // the whole build — nails spent, the shelf lying where it was built
+      await page.getByTestId("bench-tool-hammer").click();
+      const productX = Number(await stage.getAttribute("data-product-x"));
+      const productY = Number(await stage.getAttribute("data-product-y"));
+      const crossings = [
+        [8, 6],
+        [24, 6],
+        [40, 6],
+        [8, 30],
+        [24, 30],
+        [40, 30],
+      ];
+      for (const [fx, fy] of crossings) {
+        const p = await inchPoint(page, productX + fx, productY + fy);
+        await page.mouse.click(p.x, p.y);
+        await page.waitForTimeout(400);
+      }
+      const built = await page.evaluate(() => {
+        const state = window.__GET_GAME_STATE__();
+        const m = state.machines[0];
+        return {
+          nails: state.consumables.nails,
+          inputs: m.inputMaterials.length,
+          output: m.outputMaterials[0]?.type,
+          parts: m.outputMaterials[0]?.parts?.length,
+        };
+      });
+      expect(built.output).toBe("rusticShelf");
+      // The bill of materials rides the product: all five parts
+      expect(built.parts).toBe(5);
+      expect(built.inputs).toBe(0);
+      expect(built.nails).toBe(4);
+    });
   });
 });

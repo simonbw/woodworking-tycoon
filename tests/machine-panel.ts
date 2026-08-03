@@ -1,10 +1,10 @@
 /**
- * Helpers for driving the machine spec sheet's mode and parameter controls.
+ * Helpers for driving the machine spec sheet's plan and parameter controls.
  *
- * The mode picker renders three ways depending on how many operations the
- * station offers — a fixed plate (1), a segmented switch (a few), or a
- * collapsible recipe index (many) — and every variant marks its operation
- * names with `data-mode-option`, so these helpers work against all three.
+ * The bench's plan picker is a stack of shop drawings (BlueprintStack):
+ * every drawing's edge marks its operation name with `data-mode-option`,
+ * exactly once, so selecting a plan is clicking the sheet by name — the
+ * same contract the older mode controls kept.
  */
 
 import { pumpTicks } from "./navigation";

@@ -523,6 +523,13 @@ test.describe("Stations", () => {
     await test.step("the planter box reads its screw cost against the tin", async () => {
       await selectMode(page, "Makeshift Workbench", "Build Rustic Planter Box");
       await expect(page.getByText("8 screws (have 50)")).toBeVisible();
+      // Selecting a plan pulls its sheet to the top of the blueprint
+      // stack — the drawing pinned over the bench IS the selection
+      await expect(
+        page
+          .getByTestId("blueprint-sheet")
+          .getByText("Build Rustic Planter Box"),
+      ).toBeVisible();
     });
 
     await test.step("plans quote shop time, never ticks", async () => {

@@ -202,26 +202,28 @@ const BenchTopMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { widthIn, heightIn } = benchTopSizeIn(machine.type);
   return (
     <>
-      {machine.inputMaterials.map((material) => {
-        const placement = benchPlacementFor(machine, material);
-        return (
-          <pixiContainer
-            key={material.id}
-            x={(placement.xIn - widthIn / 2) * PIXELS_PER_INCH}
-            y={(placement.yIn - heightIn / 2) * PIXELS_PER_INCH}
-            angle={placement.angleDeg}
-            scale={{ x: placement.flipped ? -1 : 1, y: 1 }}
-          >
-            {material.type === "pallet" ? (
-              // The pallet lies as arranged, showing the face the bench
-              // view shows — same placement, same nails, two zooms
-              <PalletSprite pallet={material} flipped={placement.flipped} />
-            ) : (
-              <MaterialSprite material={material} />
-            )}
-          </pixiContainer>
-        );
-      })}
+      {[...machine.inputMaterials, ...machine.outputMaterials].map(
+        (material) => {
+          const placement = benchPlacementFor(machine, material);
+          return (
+            <pixiContainer
+              key={material.id}
+              x={(placement.xIn - widthIn / 2) * PIXELS_PER_INCH}
+              y={(placement.yIn - heightIn / 2) * PIXELS_PER_INCH}
+              angle={placement.angleDeg}
+              scale={{ x: placement.flipped ? -1 : 1, y: 1 }}
+            >
+              {material.type === "pallet" ? (
+                // The pallet lies as arranged, showing the face the bench
+                // view shows — same placement, same nails, two zooms
+                <PalletSprite pallet={material} flipped={placement.flipped} />
+              ) : (
+                <MaterialSprite material={material} />
+              )}
+            </pixiContainer>
+          );
+        },
+      )}
     </>
   );
 };
@@ -248,11 +250,14 @@ const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
           key={`proc-${index}`}
         />
       ))}
-      {machine.outputMaterials.map((material, index) => (
-        <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
-          <MaterialSprite material={material} />
-        </pixiContainer>
-      ))}
+      {/* Bench outputs lie on the bench top through their placements
+          (BenchTopMaterials above); only other machines fan theirs out */}
+      {!isBenchType(machine.type) &&
+        machine.outputMaterials.map((material, index) => (
+          <pixiContainer angle={index * 10 + 5} key={`out-${index}`}>
+            <MaterialSprite material={material} />
+          </pixiContainer>
+        ))}
     </>
   );
 };

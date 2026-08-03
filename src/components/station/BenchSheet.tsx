@@ -21,7 +21,7 @@ import {
 import { MaterialInstance } from "../../game/Materials";
 import { handSpaceLeft } from "../../game/Person";
 import { generateOperationPreview } from "../../game/operation-helpers";
-import { ModeControl } from "../current-cell-info/ModeControl";
+import { BlueprintStack } from "./BlueprintStack";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ParameterScaleRow } from "./ParameterScaleRow";
@@ -118,7 +118,9 @@ export const BenchSheet: React.FC<{
   return (
     <>
       <div className="space-y-2 text-sm">
-        <ModeControl
+        {/* A bench is honestly recipe-driven — and the recipes are a
+            literal stack of shop drawings, thumbed through by hand */}
+        <BlueprintStack
           operations={plannableOperations}
           selected={selectedOperation}
           onSelect={(operation) =>
@@ -135,14 +137,6 @@ export const BenchSheet: React.FC<{
           workSpeed={machine.workSpeed}
           showShortcut={isTargeted(machine)}
           locked={working}
-          // A bench is honestly recipe-driven: you're picking which plan
-          // is clipped above it, not flipping a machine mode
-          labelText={
-            machine.type.worktable ||
-            machine.state.machineTypeId === "workspace"
-              ? "Plan"
-              : "Mode"
-          }
         />
 
         {selectedOperation &&
