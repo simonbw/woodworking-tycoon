@@ -225,6 +225,25 @@
     }
   }
 
+  /* The drive is the pry run in reverse: a short strike, timed to
+     DRIVE_MS, about the same claw pivot so the head stays on the nail. */
+  .bench-drive-tap {
+    animation: bench-drive-tap 240ms ease-out;
+    transform-origin: 12px 11px;
+  }
+
+  @keyframes bench-drive-tap {
+    0% {
+      rotate: -16deg;
+    }
+    55% {
+      rotate: 3deg;
+    }
+    100% {
+      rotate: 0deg;
+    }
+  }
+
   @keyframes reward-pulse {
     0% {
       transform: scale(1);

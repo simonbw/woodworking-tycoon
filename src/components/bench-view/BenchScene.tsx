@@ -18,8 +18,14 @@ import {
   berthPlacementOnBench,
   palletPointOnBench,
 } from "../../game/bench-work/bench-layout";
+import { fastenerOnBench, slotOnBench } from "../../game/bench-work/assembly";
+import {
+  BlueprintFastener,
+  ProductBlueprint,
+} from "../../game/bench-work/blueprint";
 import { pieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
+import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { StageFit } from "./stageMath";
 
@@ -36,6 +42,26 @@ import { StageFit } from "./stageMath";
 export interface LoosePiece {
   readonly material: MaterialInstance;
   readonly placement: BenchPlacement;
+}
+
+/** Everything the scene needs to dress a blueprint assembly: ghost
+ * outlines on the empty slots, fastener chrome on the armed crossings,
+ * and driven nail heads. All derived in BenchWorkSurface — this is
+ * pure rendering. */
+export interface AssemblyChrome {
+  readonly blueprint: ProductBlueprint;
+  readonly productPlacement: BenchPlacement;
+  /** slot id → material id for every seated piece. */
+  readonly seated: ReadonlyMap<string, string>;
+  /** Fasteners already driven this build (ephemeral until commit). */
+  readonly driven: ReadonlyArray<BlueprintFastener>;
+  /** Fasteners whose both parts are seated and not yet driven. */
+  readonly armed: ReadonlyArray<BlueprintFastener>;
+  readonly hoveredFastener: BlueprintFastener | null;
+  /** The drive animation playing right now. */
+  readonly driving: BlueprintFastener | null;
+  /** The slot the dragged piece would snap onto if released. */
+  readonly snapCandidateSlot: string | null;
 }
 
 /** Pointer must land this close (in inches) to pry a nail. */
@@ -211,6 +237,9 @@ export const BenchScene: React.FC<{
   hoveredNail: PalletNail | null;
   hoveredId: string | null;
   draggingId: string | null;
+  /** Blueprint assembly dressing (ghosts, fastener chrome), when a
+   * blueprint plan is pinned above the bench. */
+  assembly?: AssemblyChrome | null;
 }> = ({
   pallet,
   palletPlacement,
@@ -221,6 +250,7 @@ export const BenchScene: React.FC<{
   hoveredNail,
   hoveredId,
   draggingId,
+  assembly,
 }) => {
   // The nail heads themselves are part of the pallet (PalletSprite draws
   // them in both views); this layer is only the pry chrome around them,
@@ -272,11 +302,112 @@ export const BenchScene: React.FC<{
     [pallet, palletPlacement, fit, hammerHeld, prying, hoveredNail],
   );
 
+  // Ghost outlines on the empty slots, under everything: where the
+  // remaining parts belong, the candidate seat glowing while a fitting
+  // piece is dragged near.
+  const drawGhosts = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      if (!assembly) return;
+      const { blueprint, productPlacement, seated, snapCandidateSlot } =
+        assembly;
+      for (const slot of blueprint.slots) {
+        if (seated.has(slot.id)) continue;
+        const seat = slotOnBench(blueprint, productPlacement, slot);
+        const w = slot.part.widthIn;
+        const h = slot.part.lengthFt * INCHES_PER_FOOT;
+        const rad = (seat.angleDeg * Math.PI) / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        const corner = (dx: number, dy: number) => ({
+          x: fit.originX + (seat.xIn + dx * cos - dy * sin) * fit.pxPerIn,
+          y: fit.originY + (seat.yIn + dx * sin + dy * cos) * fit.pxPerIn,
+        });
+        const corners = [
+          corner(-w / 2, -h / 2),
+          corner(w / 2, -h / 2),
+          corner(w / 2, h / 2),
+          corner(-w / 2, h / 2),
+        ];
+        const candidate = snapCandidateSlot === slot.id;
+        g.poly(corners.map((c) => [c.x, c.y]).flat()).stroke({
+          width: candidate ? 3 : 2,
+          color: candidate ? 0xd97c26 : 0xf5efe3,
+          alpha: candidate ? 0.95 : 0.4,
+        });
+      }
+    },
+    [assembly, fit],
+  );
+
+  // Fastener chrome over the seated parts: driven heads are real nails
+  // now, armed crossings ring up while the hammer is in hand, and the
+  // drive in progress flashes — the pry chrome's vocabulary, reversed.
+  const drawFastenerChrome = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      if (!assembly) return;
+      const { blueprint, productPlacement } = assembly;
+      const toStage = (fastener: BlueprintFastener) => {
+        const at = fastenerOnBench(blueprint, productPlacement, fastener);
+        return {
+          x: fit.originX + at.xIn * fit.pxPerIn,
+          y: fit.originY + at.yIn * fit.pxPerIn,
+        };
+      };
+      for (const fastener of assembly.driven) {
+        const { x, y } = toStage(fastener);
+        const r = Math.max(0.28 * fit.pxPerIn, 2);
+        g.circle(x, y, r).fill({ color: 0x4a443e });
+        g.circle(x - r * 0.3, y - r * 0.3, r * 0.4).fill({ color: 0x9a938c });
+      }
+      if (hammerHeld) {
+        for (const fastener of assembly.armed) {
+          const { x, y } = toStage(fastener);
+          if (assembly.hoveredFastener === fastener) {
+            // The hammer is over this crossing: the ring warms and widens
+            g.circle(x, y, 9).fill({ color: 0xd97c26, alpha: 0.2 });
+            g.circle(x, y, 9).stroke({ width: 3, color: 0xd97c26, alpha: 1 });
+          } else {
+            g.circle(x, y, 7).stroke({
+              width: 2.5,
+              color: 0xf5efe3,
+              alpha: 0.95,
+            });
+          }
+        }
+      }
+      if (assembly.driving) {
+        // The strike: the press already committed the drive, so the head
+        // is drawn — the flash plays out over it.
+        const { x, y } = toStage(assembly.driving);
+        g.circle(x, y, 10).stroke({
+          width: 2.5,
+          color: 0xd97c26,
+          alpha: 0.95,
+        });
+      }
+    },
+    [assembly, fit, hammerHeld],
+  );
+
   // Freed boards still lying on their berths keep their place inside the
   // pallet's stack; everything else is loose on top. The dragged piece
-  // always rides the very top.
+  // always rides the very top. Under an assembly plan the same physical
+  // rule holds for the build itself: seated parts stack in blueprint
+  // layer order (rails under shelves), loose stock above them.
+  const seatedLayerOf = (piece: LoosePiece): number | null => {
+    if (!assembly || piece.material.id === draggingId) return null;
+    for (const slot of assembly.blueprint.slots) {
+      if (assembly.seated.get(slot.id) === piece.material.id) {
+        return slot.layer;
+      }
+    }
+    return null;
+  };
   const berthed = new Map<PalletLayer, LoosePiece[]>();
   const free: LoosePiece[] = [];
+  const seatedByLayer = new Map<number, LoosePiece[]>();
   for (const piece of pieces) {
     const layer =
       pallet && palletPlacement && piece.material.id !== draggingId
@@ -286,6 +417,13 @@ export const BenchScene: React.FC<{
       const group = berthed.get(layer) ?? [];
       group.push(piece);
       berthed.set(layer, group);
+      continue;
+    }
+    const seatLayer = seatedLayerOf(piece);
+    if (seatLayer !== null) {
+      const group = seatedByLayer.get(seatLayer) ?? [];
+      group.push(piece);
+      seatedByLayer.set(seatLayer, group);
     } else {
       free.push(piece);
     }
@@ -308,8 +446,14 @@ export const BenchScene: React.FC<{
     />
   );
 
+  const seatedOrdered = [...seatedByLayer.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .flatMap(([, group]) => group);
+
   return (
     <pixiContainer>
+      <pixiGraphics draw={drawGhosts} />
+      {seatedOrdered.map(renderPiece)}
       {pallet &&
         palletPlacement &&
         palletLayerOrder(palletPlacement.flipped).map((layer) => (
@@ -340,6 +484,7 @@ export const BenchScene: React.FC<{
       )}
       {ordered.map(renderPiece)}
       <pixiGraphics draw={drawNailChrome} />
+      <pixiGraphics draw={drawFastenerChrome} />
     </pixiContainer>
   );
 };

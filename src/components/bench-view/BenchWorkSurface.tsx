@@ -36,7 +36,19 @@ import {
 import {
   operateMachineAction,
   takeInputsFromMachineAction,
+  takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
+import {
+  armedFasteners,
+  fastenedPieceIds,
+  fastenerAt,
+  seatedParts,
+  snapPlacementFor,
+} from "../../game/bench-work/assembly";
+import {
+  BlueprintFastener,
+  ProductBlueprint,
+} from "../../game/bench-work/blueprint";
 import { isBenchType, Machine } from "../../game/Machine";
 import {
   Board,
@@ -48,6 +60,7 @@ import { machineCanOperate, shopSupply } from "../../game/machine-helpers";
 import { clampsFor } from "../../game/Clamp";
 import { ToolId } from "../../game/Tool";
 import { INCHES_PER_FOOT } from "../../game/shop-scale";
+import { playSound } from "../../utils/sfx";
 import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { StatusText } from "../station/StatusText";
@@ -74,6 +87,9 @@ function foleyClipFor(operationId: string): string | null {
 
 /** How long one pry takes, press to commit — the animation IS the pacing. */
 export const PRY_MS = 280;
+
+/** One nail driven per strike, same clocking as the pry. */
+export const DRIVE_MS = 240;
 
 /** Dust lands about twice a second while the tool is moving. */
 const DUST_THROTTLE_MS = 500;
@@ -147,6 +163,13 @@ export const BenchWorkSurface: React.FC<{
   const [heldTool, setHeldTool] = useState<ToolId | null>(null);
   const [prying, setPrying] = useState<PalletNail | null>(null);
   const [hoveredNail, setHoveredNail] = useState<PalletNail | null>(null);
+  // Blueprint assembly: which fasteners this build has driven (ephemeral
+  // until the last one commits — decision 4: assembly only spends), the
+  // strike animation, and the crossing under the held hammer.
+  const [driven, setDriven] = useState<ReadonlyArray<BlueprintFastener>>([]);
+  const [driving, setDriving] = useState<BlueprintFastener | null>(null);
+  const [hoveredFastener, setHoveredFastener] =
+    useState<BlueprintFastener | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragOffset = useRef({ dxIn: 0, dyIn: 0 });
@@ -155,9 +178,11 @@ export const BenchWorkSurface: React.FC<{
   const dragPlacement = useRef<BenchPlacement | null>(null);
   const [, bump] = useReducer((c: number) => c + 1, 0);
   const pryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
       if (pryTimer.current) clearTimeout(pryTimer.current);
+      if (driveTimer.current) clearTimeout(driveTimer.current);
     },
     [],
   );
@@ -219,13 +244,20 @@ export const BenchWorkSurface: React.FC<{
     (script.kind === "stroke" ||
       script.kind === "saw" ||
       script.kind === "glue" ||
-      script.kind === "assembly") &&
+      // Blueprint assembly happens on the scene itself, not a surface
+      (script.kind === "assembly" && !script.blueprint)) &&
     (canOperate || started)
       ? script
       : null;
   const curing = script?.kind === "curing";
   const isBench = isBenchType(machine.type);
   const sceneActive = isBench && !surfaceScript && !curing;
+  const assemblyScript =
+    sceneActive && script?.kind === "assembly" && script.blueprint
+      ? script
+      : null;
+  const assemblyBlueprint: ProductBlueprint | null =
+    assemblyScript?.blueprint ?? null;
 
   // ---------------------------------------------------------- the scene
   // The scene frame: the bench top plus enough floor around it to hold a
@@ -249,6 +281,10 @@ export const BenchWorkSurface: React.FC<{
     sceneActive && script?.kind === "pry" ? script.pallet : null;
   const loose: ReadonlyArray<MaterialInstance> = sceneActive
     ? machine.inputMaterials.filter((m) => m !== scenePallet)
+    : [];
+  // Finished work lies on the bench too — hover it, nudge it, E takes it
+  const sceneOutputs: ReadonlyArray<MaterialInstance> = sceneActive
+    ? machine.outputMaterials
     : [];
 
   // The whole-frame fit paints the backdrop; the scene works in
@@ -289,6 +325,72 @@ export const BenchWorkSurface: React.FC<{
     scenePallet && palletPlacement
       ? faceNails(scenePallet, palletPlacement.flipped)
       : [];
+
+  const outputPieces: ReadonlyArray<LoosePiece> = sceneOutputs.map(
+    (material) => ({ material, placement: placementOf(material) }),
+  );
+  /** Everything lying on the bench, draw order: staged stock first,
+   * finished work on top. */
+  const scenePieces: ReadonlyArray<LoosePiece> = [
+    ...loosePieces,
+    ...outputPieces,
+  ];
+
+  // ------------------------------------------------- blueprint assembly
+  // The ghost frame stands squarely centered — the same seat the
+  // finished product's default placement lands on, so the build never
+  // moves at the moment it completes.
+  const productPlacement: BenchPlacement = useMemo(
+    () => ({
+      xIn: benchSize.widthIn / 2,
+      yIn: benchSize.heightIn / 2,
+      angleDeg: 0,
+      flipped: false,
+    }),
+    [benchSize.widthIn, benchSize.heightIn],
+  );
+  // Seating is derived from the pieces' persistent placements, never
+  // stored — a refresh finds every part exactly as seated as it was.
+  const seated: ReadonlyMap<string, string> = assemblyBlueprint
+    ? seatedParts(assemblyBlueprint, productPlacement, loosePieces)
+    : new Map();
+  const armed: ReadonlyArray<BlueprintFastener> = assemblyBlueprint
+    ? armedFasteners(assemblyBlueprint, seated).filter(
+        (fastener) => !driven.includes(fastener),
+      )
+    : [];
+  // Pieces a driven fastener holds are nailed on: no drag, turn, or take
+  const fastened = fastenedPieceIds(seated, driven);
+  // A fresh build (or a commit) starts with an empty schedule
+  useEffect(() => {
+    if (driven.length > 0 && !assemblyBlueprint) setDriven([]);
+  }, [driven.length, assemblyBlueprint]);
+
+  // Where the dragged piece would settle if released right now
+  const dragMaterial = draggingId
+    ? scenePieces.find((piece) => piece.material.id === draggingId)?.material
+    : null;
+  const takenSlots = assemblyBlueprint
+    ? new Set(
+        [...seated.entries()]
+          .filter(([, materialId]) => materialId !== draggingId)
+          .map(([slotId]) => slotId),
+      )
+    : null;
+  const snapCandidate =
+    assemblyBlueprint && dragMaterial && dragPlacement.current && takenSlots
+      ? snapPlacementFor(
+          assemblyBlueprint,
+          productPlacement,
+          dragMaterial,
+          dragPlacement.current,
+          takenSlots,
+        )
+      : null;
+  const snapRef = useRef<typeof snapCandidate>(null);
+  snapRef.current = snapCandidate;
+  const fastenedRef = useRef<ReadonlySet<string>>(fastened);
+  fastenedRef.current = fastened;
 
   const hasHammer = machine.state.tools.includes("hammer");
   const hammerHeld = heldTool === "hammer";
@@ -343,8 +445,36 @@ export const BenchWorkSurface: React.FC<{
     [applyAction, machine, sceneFit, scenePallet, palletPlacement],
   );
 
+  /**
+   * One nail driven at an armed crossing. Everything before the last
+   * nail is ephemeral — but the last one commits the whole build: start
+   * and finish resolve back to back (spend the nails, the product
+   * appears), and because the ghost frame is the finished product's own
+   * default seat, the assembled sprite lands exactly where the parts
+   * were lying. Nothing moves at the moment it becomes one piece.
+   */
+  const beginDrive = useCallback(
+    (target: BlueprintFastener) => {
+      if (!assemblyBlueprint) return;
+      lastPryAt.current = performance.now();
+      playSound("assembly-mallet", 0.5);
+      setDriving(target);
+      setHoveredFastener(null);
+      if (driveTimer.current) clearTimeout(driveTimer.current);
+      driveTimer.current = setTimeout(() => setDriving(null), DRIVE_MS);
+      const nextDriven = [...driven, target];
+      if (nextDriven.length >= assemblyBlueprint.fasteners.length) {
+        setDriven([]);
+        commitWhole();
+      } else {
+        setDriven(nextDriven);
+      }
+    },
+    [assemblyBlueprint, commitWhole, driven],
+  );
+
   /** Point-in-piece test in bench inches, honoring the piece's turn.
-   * Loose stock picks first (it lies on top); the pallet underneath
+   * Finished work lies on top of loose stock; the pallet underneath
    * takes the grab when nothing smaller is under the pointer. */
   const pieceAt = useCallback(
     (xIn: number, yIn: number): LoosePiece | null => {
@@ -360,8 +490,8 @@ export const BenchWorkSurface: React.FC<{
           Math.abs(localY) <= size.heightIn / 2 + 0.5
         );
       };
-      for (let i = loosePieces.length - 1; i >= 0; i--) {
-        if (hits(loosePieces[i])) return loosePieces[i];
+      for (let i = scenePieces.length - 1; i >= 0; i--) {
+        if (hits(scenePieces[i])) return scenePieces[i];
       }
       if (scenePallet && palletPlacement) {
         const pallet = { material: scenePallet, placement: palletPlacement };
@@ -369,14 +499,21 @@ export const BenchWorkSurface: React.FC<{
       }
       return null;
     },
-    [loosePieces, scenePallet, palletPlacement],
+    [scenePieces, scenePallet, palletPlacement],
   );
 
   const commitDrag = useCallback(() => {
     if (draggingId && dragPlacement.current) {
+      // A release near an open, fitting slot settles the piece onto it
+      const snapped = snapRef.current;
       applyAction(
-        arrangeBenchMaterialAction(machine, draggingId, dragPlacement.current),
+        arrangeBenchMaterialAction(
+          machine,
+          draggingId,
+          snapped ? snapped.placement : dragPlacement.current,
+        ),
       );
+      if (snapped) playSound("material-drop", 0.4);
     }
     dragPlacement.current = null;
     setDraggingId(null);
@@ -387,6 +524,7 @@ export const BenchWorkSurface: React.FC<{
       if (event.type === "leave") {
         setHoveredId(null);
         setHoveredNail(null);
+        setHoveredFastener(null);
         commitDrag();
         return;
       }
@@ -400,8 +538,24 @@ export const BenchWorkSurface: React.FC<{
           if (hit) beginPry(hit);
           return;
         }
+        if (hammerHeld && assemblyBlueprint) {
+          // Driving only starts when the plan could actually run — the
+          // last nail spends the supplies and claims the stock
+          if (!canOperate) return;
+          const hit = fastenerAt(
+            assemblyBlueprint,
+            productPlacement,
+            armed,
+            xIn,
+            yIn,
+          );
+          if (hit) beginDrive(hit);
+          return;
+        }
         if (heldTool) return;
         const hit = pieceAt(xIn, yIn);
+        // Nailed-on parts don't drag — they're part of the build now
+        if (hit && fastenedRef.current.has(hit.material.id)) return;
         if (hit) {
           setDraggingId(hit.material.id);
           dragPlacement.current = hit.placement;
@@ -437,22 +591,33 @@ export const BenchWorkSurface: React.FC<{
           heldTool ? null : (pieceAt(xIn, yIn)?.material.id ?? null),
         );
         setHoveredNail(hammerHeld && !prying ? nailAt(xIn, yIn) : null);
+        setHoveredFastener(
+          hammerHeld && !driving && assemblyBlueprint
+            ? fastenerAt(assemblyBlueprint, productPlacement, armed, xIn, yIn)
+            : null,
+        );
         return;
       }
       if (event.type === "up") commitDrag();
     },
     [
+      armed,
+      assemblyBlueprint,
+      beginDrive,
       beginPry,
       benchOriginIn.xIn,
       benchOriginIn.yIn,
+      canOperate,
       commitDrag,
       draggingId,
+      driving,
       frame.widthIn,
       frame.heightIn,
       hammerHeld,
       heldTool,
       nailAt,
       pieceAt,
+      productPlacement,
       prying,
       scenePallet,
     ],
@@ -499,8 +664,13 @@ export const BenchWorkSurface: React.FC<{
       }
       const id = draggingId ?? hoveredId;
       if (!id) return;
-      const material = machine.inputMaterials.find((m) => m.id === id);
+      // A nailed-on part is part of the build: no taking, no turning
+      if (fastenedRef.current.has(id)) return;
+      const material =
+        machine.inputMaterials.find((m) => m.id === id) ??
+        machine.outputMaterials.find((m) => m.id === id);
       if (!material) return;
+      const isOutput = machine.outputMaterials.some((m) => m.id === id);
       // E takes the piece under the hand — the one being dragged or
       // moused over, never just the first in the bay.
       if (event.code === "KeyE" && !event.shiftKey) {
@@ -509,7 +679,11 @@ export const BenchWorkSurface: React.FC<{
         dragPlacement.current = null;
         setDraggingId(null);
         setHoveredId(null);
-        applyAction(takeInputsFromMachineAction([material], machine));
+        applyAction(
+          isOutput
+            ? takeOutputsFromMachineAction([material], machine)
+            : takeInputsFromMachineAction([material], machine),
+        );
         return;
       }
       if (event.code !== "KeyR" && event.code !== "KeyF") return;
@@ -707,6 +881,23 @@ export const BenchWorkSurface: React.FC<{
       }
     }
     if (!sceneFit) return null;
+    const slotsTotal = assemblyBlueprint?.slots.length ?? 0;
+    const assemblyInstruction = () => {
+      if (!assemblyBlueprint) return "";
+      if (seated.size >= slotsTotal) {
+        return !canOperate
+          ? "Short on supplies — the plan calls for nails."
+          : hammerHeld
+            ? "Nail each lit crossing."
+            : "All laid out. Take the hammer down off the rail.";
+      }
+      if (sceneOutputs.length > 0 && loosePieces.length === 0) {
+        return "Finished. Press E over the piece to take it.";
+      }
+      return loosePieces.length < slotsTotal
+        ? "Set the plan's stock down on the bench (F), then lay each piece on its outline."
+        : "Lay each piece on its ghost outline — drag it close and it settles. R turns it.";
+    };
     return {
       fit: sceneFit,
       instruction: curing
@@ -719,23 +910,43 @@ export const BenchWorkSurface: React.FC<{
               : hammerHeld
                 ? "Press a nail to pry it loose."
                 : "Take the hammer down off the rail."
-          : loosePieces.length > 0
-            ? "Loose stock on the bench. Drag to arrange it."
-            : "The bench is clear. Set stock down on it with F.",
+          : assemblyScript
+            ? assemblyInstruction()
+            : sceneOutputs.length > 0
+              ? "Finished work on the bench. Press E over a piece to take it."
+              : loosePieces.length > 0
+                ? "Loose stock on the bench. Drag to arrange it."
+                : "The bench is clear. Set stock down on it with F.",
       progressLine: scenePallet
         ? `${scenePallet.nails.length} nails left`
-        : null,
+        : assemblyScript
+          ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} nailed`
+          : null,
       node: sceneActive ? (
         <BenchScene
           pallet={scenePallet}
           palletPlacement={palletPlacement}
-          pieces={loosePieces}
+          pieces={scenePieces}
           fit={sceneFit}
           hammerHeld={hammerHeld}
           prying={prying}
           hoveredNail={hoveredNail}
           hoveredId={hoveredId}
           draggingId={draggingId}
+          assembly={
+            assemblyBlueprint
+              ? {
+                  blueprint: assemblyBlueprint,
+                  productPlacement,
+                  seated,
+                  driven,
+                  armed,
+                  hoveredFastener,
+                  driving,
+                  snapCandidateSlot: snapCandidate?.slotId ?? null,
+                }
+              : null
+          }
         />
       ) : null,
     };
@@ -787,9 +998,11 @@ export const BenchWorkSurface: React.FC<{
     ? "curing"
     : surfaceScript
       ? surfaceScript.kind
-      : scenePallet
-        ? "pry"
-        : "idle";
+      : assemblyScript
+        ? "assembly"
+        : scenePallet
+          ? "pry"
+          : "idle";
 
   if (!isBench && !script) {
     return null;
@@ -797,7 +1010,7 @@ export const BenchWorkSurface: React.FC<{
 
   const keyHints: Array<[string, string]> = heldTool
     ? [
-        ["Click", "pry a nail"],
+        ["Click", assemblyScript ? "drive a nail" : "pry a nail"],
         ...(scenePallet
           ? ([["F", "flip the pallet"]] as Array<[string, string]>)
           : []),
@@ -846,6 +1059,18 @@ export const BenchWorkSurface: React.FC<{
             ? (palletPlacement.yIn - PALLET_HEIGHT_IN / 2).toFixed(2)
             : undefined
         }
+        data-product-x={
+          assemblyBlueprint
+            ? (productPlacement.xIn - assemblyBlueprint.widthIn / 2).toFixed(2)
+            : undefined
+        }
+        data-product-y={
+          assemblyBlueprint
+            ? (productPlacement.yIn - assemblyBlueprint.heightIn / 2).toFixed(2)
+            : undefined
+        }
+        data-seated={assemblyScript ? seated.size : undefined}
+        data-driven={assemblyScript ? driven.length : undefined}
         onPointerDown={handlePointer("down")}
         onPointerMove={handlePointer("move")}
         onPointerUp={handlePointer("up")}
@@ -895,7 +1120,7 @@ export const BenchWorkSurface: React.FC<{
               alt=""
               draggable={false}
               className={`size-12 select-none [image-rendering:pixelated] drop-shadow-[0_4px_5px_rgba(0,0,0,0.5)] ${
-                prying ? "bench-pry-swing" : ""
+                prying ? "bench-pry-swing" : driving ? "bench-drive-tap" : ""
               }`}
             />
           </div>

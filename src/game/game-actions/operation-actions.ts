@@ -411,7 +411,10 @@ export function pryPalletNailAction(
           ...m,
           inputMaterials,
           benchLayout: {
-            ...prunedBenchLayout(m.benchLayout, inputMaterials),
+            ...prunedBenchLayout(m.benchLayout, [
+              ...inputMaterials,
+              ...m.outputMaterials,
+            ]),
             ...Object.fromEntries(
               freedBoards.map((freedBoard, i) => [
                 freedBoard.id,
@@ -464,11 +467,13 @@ export function arrangeBenchMaterialAction(
       console.warn("No such bench to arrange");
       return gameState;
     }
-    if (
-      !machineState.inputMaterials.some(
-        (material) => material.id === materialId,
-      )
-    ) {
+    // Finished work lies on the bench too until it's taken, so outputs
+    // arrange the same way staged stock does.
+    const onBench = [
+      ...machineState.inputMaterials,
+      ...machineState.outputMaterials,
+    ];
+    if (!onBench.some((material) => material.id === materialId)) {
       return gameState;
     }
     return {
@@ -478,7 +483,10 @@ export function arrangeBenchMaterialAction(
           ? {
               ...m,
               benchLayout: {
-                ...prunedBenchLayout(m.benchLayout, m.inputMaterials),
+                ...prunedBenchLayout(m.benchLayout, [
+                  ...m.inputMaterials,
+                  ...m.outputMaterials,
+                ]),
                 [materialId]: placement,
               },
             }

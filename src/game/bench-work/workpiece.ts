@@ -15,6 +15,7 @@ import {
 } from "../Materials";
 import { INCHES_PER_FOOT } from "../shop-scale";
 import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
+import { ProductBlueprint, productBlueprintFor } from "./blueprint";
 import { materialMeetsInput } from "../material-helpers";
 import { availableOperations } from "../skill-helpers";
 
@@ -116,10 +117,16 @@ export interface GlueScript {
 }
 
 export interface AssemblyScript {
-  /** Snap components onto ghosts, drive fasteners, commit at the end. */
+  /** Snap components onto ghosts, drive fasteners, commit at the end.
+   * With a blueprint, the work happens on the bench scene itself: the
+   * ghosts are the blueprint's slots, the pieces are whatever is staged
+   * (complete or not — parts arrive as the player sets them down), and
+   * the hammer drives a nail at each armed crossing. Without one, the
+   * legacy row surface mounts. */
   readonly kind: "assembly";
   readonly operation: Operation;
   readonly pieces: ReadonlyArray<MaterialInstance>;
+  readonly blueprint?: ProductBlueprint;
 }
 
 export interface CuringScript {
@@ -236,6 +243,20 @@ export function benchScriptFor(
     return null;
   }
   const interaction = selected.interaction;
+  // Blueprint assembly runs on the scene, ghosts first: it doesn't wait
+  // for a full load — the outlines show what's missing, and parts join
+  // the build as the player sets them down (F) and lays them on.
+  if (interaction.kind === "assembly" && interaction.blueprint) {
+    const blueprint = productBlueprintFor(interaction.blueprint);
+    if (blueprint) {
+      return {
+        kind: "assembly",
+        operation: selected,
+        pieces: machine.inputMaterials,
+        blueprint,
+      };
+    }
+  }
   const pieces = stagedPieces(machine, selected);
   if (!pieces || pieces.length === 0) {
     return null;
