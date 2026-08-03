@@ -1,4 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
+import { DEV_SCAVENGE_DURATION_TICKS } from "../src/game/game-actions/scavenge-actions";
 import { selectMode } from "./machine-panel";
 import {
   advanceTicks,
@@ -338,25 +339,31 @@ test.describe("Market, supplies, and sound", () => {
         () => (window as any).__GET_GAME_STATE__().truck.bed.length,
       );
 
-      // Fast-forward most of the trip: every stop has been visited, so the
-      // log now records the haul (always at least one pallet)
-      await page.evaluate(() => {
+      // Fast-forward past the last stop — every stop has been visited, so
+      // the log now records the haul (always at least one pallet). The clock
+      // is stopped first: a dev build's trip is only a couple of seconds
+      // long, so the last stretch would otherwise tick past mid-assertion.
+      await page.evaluate((duration) => {
+        (window as any).__SET_PAUSED__(true);
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          tick: state.player.away.returnTick - 25,
+          tick:
+            state.player.away.returnTick -
+            Math.max(1, Math.floor(duration * 0.12)),
         }));
-      });
+      }, DEV_SCAVENGE_DURATION_TICKS);
       await expect(page.getByTestId("scavenge-log")).toContainText(/score!/);
       await expect(page.getByTestId("scavenge-log")).toContainText(
         /heading home/,
       );
 
-      // Fast-forward to the return tick instead of waiting 30s
+      // Jump to the return tick and let the clock run again
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
           tick: state.player.away.returnTick,
         }));
+        (window as any).__SET_PAUSED__(false);
       });
 
       // Next real tick resolves the trip

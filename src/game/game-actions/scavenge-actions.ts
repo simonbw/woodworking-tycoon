@@ -5,7 +5,24 @@ import { Tuple } from "../../utils/typeUtils";
 import { canLeaveShop } from "./door-actions";
 
 /** How long a scavenging trip takes — about a quarter of a 600-tick day. */
-export const SCAVENGE_DURATION_TICKS = 150;
+const FULL_SCAVENGE_DURATION_TICKS = 150;
+
+/**
+ * What a dev build shortens the drive to: a couple of seconds instead of
+ * thirty, so working on anything downstream of a pallet doesn't mean
+ * waiting out the travel log every time.
+ */
+export const DEV_SCAVENGE_DURATION_TICKS = 10;
+
+/**
+ * The trip length the shop actually runs at. Only the dev bundle shortens
+ * it — esbuild defines NODE_ENV, so a production build and the test runners
+ * (where it is unset) both keep the real quarter-day.
+ */
+export const SCAVENGE_DURATION_TICKS =
+  process.env.NODE_ENV === "development"
+    ? DEV_SCAVENGE_DURATION_TICKS
+    : FULL_SCAVENGE_DURATION_TICKS;
 
 /**
  * What a scavenging trip brings home: 1-2 pallets in randomly rough shape.
