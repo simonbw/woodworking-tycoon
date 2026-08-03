@@ -1,7 +1,7 @@
 import { LRUCache } from "typescript-lru-cache";
 import type { BenchPlacement } from "./bench-work/bench-layout";
 import type { ConsumableAmount } from "./Consumable";
-import { MaterialInstance } from "./Materials";
+import { FinishedProductType, MaterialInstance } from "./Materials";
 import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
 import { UPGRADE_TYPES, UpgradeId } from "./Upgrade";
@@ -298,8 +298,14 @@ export type OperationInteraction =
     }
   | {
       /** Snap components onto their ghost outlines, then drive one
-       * fastener per requiredConsumables unit. */
+       * fastener per requiredConsumables unit. With a blueprint named,
+       * the work happens on the bench scene itself: lay each part on
+       * its ghost slot, then hammer a nail at every crossing (see
+       * bench-work/blueprint.ts — resolved via productBlueprintFor,
+       * referenced by product type to keep this module import-light).
+       * Without one, the legacy row layout stands in. */
       readonly kind: "assembly";
+      readonly blueprint?: FinishedProductType;
     };
 
 export interface Operation<TParams extends ParameterValues = ParameterValues> {

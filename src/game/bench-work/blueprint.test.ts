@@ -1,0 +1,330 @@
+import assert from "node:assert";
+import { describe, it } from "node:test";
+import { board } from "../board-helpers";
+import {
+  assembleFromBlueprint,
+  blueprintFastenerCost,
+  blueprintInputs,
+  defaultPartsFor,
+  matchPartsToSlots,
+  productBlueprintFor,
+  RUSTIC_SHELF_BLUEPRINT,
+} from "./blueprint";
+import {
+  armedFasteners,
+  fastenedPieceIds,
+  fastenerAt,
+  seatedParts,
+  slotOnBench,
+  snapPlacementFor,
+} from "./assembly";
+import { BenchPlacement } from "./bench-layout";
+
+const stringer = () => board("pallet", 4, 6, 3);
+const deckBoard = () => board("pallet", 3, 4, 1);
+const shelfParts = () => [
+  stringer(),
+  stringer(),
+  deckBoard(),
+  deckBoard(),
+  deckBoard(),
+];
+
+/** The shelf frame centered on a 36×24 bench top. */
+const centered: BenchPlacement = {
+  xIn: 18,
+  yIn: 12,
+  angleDeg: 0,
+  flipped: false,
+};
+
+/** Every piece lying exactly on its slot. */
+function allSeated(placement: BenchPlacement) {
+  const pieces = shelfParts();
+  return RUSTIC_SHELF_BLUEPRINT.slots.map((slot, i) => ({
+    material: pieces[i],
+    placement: slotOnBench(RUSTIC_SHELF_BLUEPRINT, placement, slot),
+  }));
+}
+
+describe("the rustic shelf blueprint", () => {
+  it("derives one fastener per rail × shelf crossing", () => {
+    assert.strictEqual(RUSTIC_SHELF_BLUEPRINT.fasteners.length, 6);
+    // Every fastener joins a rail to a shelf — never rail/rail
+    for (const fastener of RUSTIC_SHELF_BLUEPRINT.fasteners) {
+      assert.ok(fastener.joins[0].startsWith("rail-"));
+      assert.ok(fastener.joins[1].startsWith("shelf-"));
+    }
+  });
+
+  it("puts the fasteners on the crossings", () => {
+    const spots = RUSTIC_SHELF_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(
+      spots,
+      ["8,6", "24,6", "40,6", "8,30", "24,30", "40,30"].sort(),
+    );
+  });
+
+  it("derives the recipe's inputs from the slots", () => {
+    const inputs = blueprintInputs(RUSTIC_SHELF_BLUEPRINT);
+    assert.strictEqual(inputs.length, 2);
+    assert.strictEqual(inputs[0].quantity, 2);
+    assert.deepStrictEqual(inputs[0].width, [6]);
+    assert.strictEqual(inputs[1].quantity, 3);
+    assert.deepStrictEqual(inputs[1].width, [4]);
+  });
+
+  it("bills one nail per fastener", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(RUSTIC_SHELF_BLUEPRINT), [
+      { id: "nails", amount: 6 },
+    ]);
+  });
+
+  it("is registered under its product type", () => {
+    assert.strictEqual(
+      productBlueprintFor("rusticShelf"),
+      RUSTIC_SHELF_BLUEPRINT,
+    );
+    assert.strictEqual(productBlueprintFor("shelf"), null);
+  });
+
+  it("slot part dims agree with slot requirements", () => {
+    for (const slot of RUSTIC_SHELF_BLUEPRINT.slots) {
+      assert.deepStrictEqual(slot.requirement.width, [slot.part.widthIn]);
+      assert.deepStrictEqual(slot.requirement.length, [slot.part.lengthFt]);
+    }
+  });
+});
+
+describe("assembleFromBlueprint", () => {
+  it("matches rails and shelves to their slots and keeps their grain", () => {
+    const materials = shelfParts();
+    const matched = matchPartsToSlots(RUSTIC_SHELF_BLUEPRINT, materials);
+    assert.strictEqual(matched[0].material, materials[0]);
+    assert.strictEqual(matched[2].material, materials[2]);
+
+    const product = assembleFromBlueprint(RUSTIC_SHELF_BLUEPRINT, materials);
+    assert.strictEqual(product.type, "rusticShelf");
+    assert.strictEqual(product.species, "pallet");
+    assert.strictEqual(product.parts?.length, 5);
+    // The consumed board's id IS the part's grain seed
+    assert.strictEqual(product.parts?.[0].seed, materials[0].id);
+    assert.strictEqual(product.parts?.[0].slot, "rail-0");
+    assert.strictEqual(product.parts?.[4].slot, "shelf-2");
+    assert.strictEqual(product.parts?.[4].width, 4);
+  });
+
+  it("refuses a load that can't fill every slot", () => {
+    assert.throws(() =>
+      matchPartsToSlots(RUSTIC_SHELF_BLUEPRINT, [
+        stringer(),
+        stringer(),
+        deckBoard(),
+      ]),
+    );
+  });
+
+  it("stands in nominal parts for products from older saves", () => {
+    const parts = defaultPartsFor(RUSTIC_SHELF_BLUEPRINT, {
+      id: "old-shelf",
+      type: "rusticShelf",
+      species: "pallet",
+    });
+    assert.strictEqual(parts.length, 5);
+    assert.strictEqual(parts[0].seed, "old-shelf:rail-0");
+    assert.strictEqual(parts[0].thickness, 3);
+  });
+});
+
+describe("seating and snapping", () => {
+  it("sees every piece seated when each lies on its slot", () => {
+    const seated = seatedParts(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      allSeated(centered),
+    );
+    assert.strictEqual(seated.size, 5);
+  });
+
+  it("seats through the product frame's turn", () => {
+    const turned: BenchPlacement = { ...centered, angleDeg: 90 };
+    const seated = seatedParts(
+      RUSTIC_SHELF_BLUEPRINT,
+      turned,
+      allSeated(turned),
+    );
+    assert.strictEqual(seated.size, 5);
+  });
+
+  it("accepts a board turned end for end (angle mod 180)", () => {
+    const pieces = allSeated(centered).map((piece) => ({
+      ...piece,
+      placement: {
+        ...piece.placement,
+        angleDeg: piece.placement.angleDeg + 180,
+      },
+    }));
+    const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, pieces);
+    assert.strictEqual(seated.size, 5);
+  });
+
+  it("does not seat a piece lying askew or off its slot", () => {
+    const pieces = allSeated(centered);
+    const askew = [
+      { ...pieces[0], placement: { ...pieces[0].placement, angleDeg: 45 } },
+      {
+        ...pieces[1],
+        placement: { ...pieces[1].placement, xIn: pieces[1].placement.xIn + 4 },
+      },
+      ...pieces.slice(2),
+    ];
+    const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, askew);
+    assert.strictEqual(seated.size, 3);
+  });
+
+  it("never seats a shelf board in a rail slot", () => {
+    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+    const impostor = {
+      material: deckBoard(),
+      placement: slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot),
+    };
+    const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [impostor]);
+    assert.strictEqual(seated.size, 0);
+  });
+
+  it("snaps a near, roughly aligned drop onto the empty slot", () => {
+    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    const snap = snapPlacementFor(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      stringer(),
+      { xIn: seat.xIn + 3, yIn: seat.yIn - 2, angleDeg: 82, flipped: false },
+      new Set(),
+    );
+    assert.ok(snap);
+    assert.strictEqual(snap.slotId, "rail-0");
+    assert.strictEqual(snap.placement.xIn, seat.xIn);
+    assert.strictEqual(snap.placement.angleDeg, seat.angleDeg);
+  });
+
+  it("keeps the accumulated turn: a 270° board seats without unwinding", () => {
+    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    const snap = snapPlacementFor(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      stringer(),
+      { xIn: seat.xIn, yIn: seat.yIn, angleDeg: 270, flipped: false },
+      new Set(),
+    );
+    assert.ok(snap);
+    assert.strictEqual(snap.placement.angleDeg, 270);
+  });
+
+  it("refuses a drop that is too far, misaligned, or already taken", () => {
+    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    const far = snapPlacementFor(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      stringer(),
+      { ...seat, xIn: seat.xIn + 20, yIn: 60 },
+      new Set(),
+    );
+    // 20in right of rail-0's seat could still be near rail-1; push well away
+    assert.strictEqual(far, null);
+    const askew = snapPlacementFor(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      stringer(),
+      { ...seat, angleDeg: seat.angleDeg + 50 },
+      new Set(),
+    );
+    assert.strictEqual(askew, null);
+    const taken = snapPlacementFor(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      stringer(),
+      seat,
+      new Set(["rail-0", "rail-1"]),
+    );
+    assert.strictEqual(taken, null);
+  });
+
+  it("arms a fastener only when both its parts are seated", () => {
+    const pieces = allSeated(centered);
+    // Rails only: nothing to nail yet
+    const railsOnly = seatedParts(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      pieces.slice(0, 2),
+    );
+    assert.strictEqual(
+      armedFasteners(RUSTIC_SHELF_BLUEPRINT, railsOnly).length,
+      0,
+    );
+    // Rails + one shelf: that shelf's two crossings arm
+    const oneShelf = seatedParts(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      pieces.slice(0, 3),
+    );
+    assert.strictEqual(
+      armedFasteners(RUSTIC_SHELF_BLUEPRINT, oneShelf).length,
+      2,
+    );
+    const all = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, pieces);
+    assert.strictEqual(armedFasteners(RUSTIC_SHELF_BLUEPRINT, all).length, 6);
+  });
+
+  it("finds the nearest armed fastener under the pointer, through a turn", () => {
+    const turned: BenchPlacement = { ...centered, angleDeg: 90 };
+    const seated = seatedParts(
+      RUSTIC_SHELF_BLUEPRINT,
+      turned,
+      allSeated(turned),
+    );
+    const armed = armedFasteners(RUSTIC_SHELF_BLUEPRINT, seated);
+    const target = armed[0];
+    const at = fastenerOnBenchForTest(turned, target);
+    const hit = fastenerAt(
+      RUSTIC_SHELF_BLUEPRINT,
+      turned,
+      armed,
+      at.xIn + 1,
+      at.yIn - 1,
+    );
+    assert.strictEqual(hit, target);
+    const miss = fastenerAt(
+      RUSTIC_SHELF_BLUEPRINT,
+      turned,
+      armed,
+      at.xIn + 30,
+      at.yIn + 30,
+    );
+    assert.notStrictEqual(miss, target);
+  });
+
+  it("locks the pieces a driven fastener already holds", () => {
+    const pieces = allSeated(centered);
+    const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, pieces);
+    const armed = armedFasteners(RUSTIC_SHELF_BLUEPRINT, seated);
+    const locked = fastenedPieceIds(seated, [armed[0]]);
+    assert.strictEqual(locked.size, 2);
+    assert.ok(locked.has(seated.get(armed[0].joins[0])!));
+    assert.ok(locked.has(seated.get(armed[0].joins[1])!));
+  });
+});
+
+// Small local wrapper so the turn test reads at a glance.
+import { fastenerOnBench } from "./assembly";
+import type { BlueprintFastener } from "./blueprint";
+function fastenerOnBenchForTest(
+  placement: BenchPlacement,
+  fastener: BlueprintFastener,
+) {
+  return fastenerOnBench(RUSTIC_SHELF_BLUEPRINT, placement, fastener);
+}

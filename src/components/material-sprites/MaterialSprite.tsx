@@ -1,5 +1,6 @@
 import React from "react";
 import { FinishedProduct, MaterialInstance } from "../../game/Materials";
+import { AssembledProductSprite } from "./AssembledProductSprite";
 import { BoardSprite } from "./BoardSprite";
 import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
@@ -77,8 +78,18 @@ export const MaterialSprite: React.FC<{
         />
       );
 
-    case "shelf":
+    // Blueprint-assembled products draw from their bill of materials —
+    // the same slots the bench view assembled them on
     case "rusticShelf":
+      return (
+        <AssembledProductSprite
+          material={material as FinishedProduct}
+          alpha={alpha}
+          tint={tint}
+        />
+      );
+
+    case "shelf":
     case "bookshelf":
     case "sideTable":
       return (

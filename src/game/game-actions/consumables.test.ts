@@ -158,7 +158,7 @@ describe("operations that consume supplies", () => {
       machineCanOperate(getMachines(state.machines)[0], shopSupply(state)),
     );
     const result = operateMachineAction(getMachines(state.machines)[0])(state);
-    assert.strictEqual(result.consumables.nails, 2);
+    assert.strictEqual(result.consumables.nails, 4);
     assert.strictEqual(
       result.machines[0].operationProgress.status,
       "inProgress",

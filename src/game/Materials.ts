@@ -278,6 +278,22 @@ export const FINISHED_PRODUCT_TYPES = [
 
 export type FinishedProductType = (typeof FINISHED_PRODUCT_TYPES)[number];
 
+/**
+ * One board in an assembled product's bill of materials: which blueprint
+ * slot it fills, the stock it was (Board units: width in inches, length
+ * in feet, thickness in quarters), and the grain seed it keeps — the
+ * consumed board's own id, so the very grain that lay on the bench is
+ * the grain in the finished piece.
+ */
+export type AssembledPart = {
+  readonly slot: string;
+  readonly species: Species;
+  readonly width: BoardDimension;
+  readonly length: BoardDimension;
+  readonly thickness: BoardDimension;
+  readonly seed: string;
+};
+
 export type FinishedProduct = {
   readonly id: string;
   readonly type: FinishedProductType;
@@ -286,6 +302,13 @@ export type FinishedProduct = {
   readonly accentSpecies?: Species;
   /** Absent means raw wood — finishing is a separate, value-adding step. */
   readonly finish?: Finish;
+  /**
+   * The parts a blueprint-assembled product is built from (see
+   * bench-work/blueprint.ts). Absent on products from before blueprints
+   * (and on non-assembled products); renderers fall back to the
+   * blueprint's nominal parts.
+   */
+  readonly parts?: ReadonlyArray<AssembledPart>;
 };
 
 /** One nail in a pallet, at the crossing of a deck board and a stringer

@@ -4,10 +4,10 @@
  * `game-actions/consumables.test.ts` covers the accounting one operation at a
  * time. The loop is the point here — a part-stripped pallet (five deck
  * boards on three stringers) holds fifteen nails, one per crossing, and
- * a rustic shelf costs eight of them: the pallet pays for its own shelf
- * with nails to spare. If either number drifts, the fixture's premise
- * breaks and the shelf stops being free, which is the whole idea of
- * salvage.
+ * a rustic shelf costs six of them (one per rail × shelf crossing of its
+ * blueprint): the pallet pays for its own shelf with nails to spare. If
+ * either number drifts, the fixture's premise breaks and the shelf stops
+ * being free, which is the whole idea of salvage.
  *
  * `consumables.spec.ts` keeps the shortfall readout, the supply cabinet's
  * appearance, and the store aisle.
@@ -55,13 +55,13 @@ describe("consumables loop", () => {
     assert.equal(shop.shop.consumables.nails, 15);
   });
 
-  it("one shelf costs eight of the nails the pallet returned", () => {
+  it("one shelf costs six of the nails the pallet returned", () => {
     const shop = openShop(consumablesShop);
     dismantleThePallet(shop);
 
     shop
       .select(WORKBENCH, "buildRusticPalletShelf")
-      // Two stringers as the shelves, three deck boards as the back. The
+      // Two stringers as the rails, three deck boards as the shelves. The
       // bay only holds five, so the counts have to be exact.
       .load(WORKBENCH, byWidth(6), 2)
       .load(WORKBENCH, byWidth(4), 3)
@@ -69,7 +69,7 @@ describe("consumables loop", () => {
       .collect(WORKBENCH);
 
     assert.equal(shop.holding(isShelf).length, 1);
-    assert.equal(shop.shop.consumables.nails, 15 - 8);
+    assert.equal(shop.shop.consumables.nails, 15 - 6);
   });
 
   it("the shelf won't start without the nails", () => {
@@ -77,7 +77,7 @@ describe("consumables loop", () => {
     dismantleThePallet(shop);
     shop.arrange((state: GameState) => ({
       ...state,
-      consumables: { ...state.consumables, nails: 7 },
+      consumables: { ...state.consumables, nails: 5 },
     }));
 
     shop

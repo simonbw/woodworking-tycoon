@@ -38,7 +38,7 @@ replaces the furniture, not what's sitting in it.
 
 ## The pixel-art exception
 
-The furniture products (shelf, rustic shelf, bookshelf, side table) break
+The furniture products (shelf, bookshelf, side table) break
 the rules above: they are pixel art rather than the smooth flat-shaded style
 the machines use, generated through the PixelLab MCP. They are placeholders
 — see "Generated placeholders" below — but until they're replaced they
@@ -68,14 +68,17 @@ PixelLab MCP, committed as a stopgap. It renders, it reads, and it is not
 what the game should ship with. Replacing one of these is a swap, not new
 wiring: same path, same size, same component.
 
-- [ ] Furniture products: shelf, rustic shelf, bookshelf, side table —
-      `static/images/{shelf,rustic-shelf,bookshelf,side-table}.png`, drawn by
+- [ ] Furniture products: shelf, bookshelf, side table —
+      `static/images/{shelf,bookshelf,side-table}.png`, drawn by
       `material-sprites/FurnitureSprite.tsx`. Pixel art against the smooth
       machines, so the shop floor is currently mixed-style. A replacement
       wants the neutral-wood treatment kept so the species tint still works,
-      and should be trimmed to its content box. Sizes today: 88×21, 79×15,
+      and should be trimmed to its content box. Sizes today: 79×15,
       41×43, 49×51 at 4 px/inch. Update `FURNITURE_ICON_FIT` in
-      `FurnitureSprite.tsx` if the dimensions change.
+      `FurnitureSprite.tsx` if the dimensions change. (The rustic shelf
+      left this list on purpose: blueprint-assembled products draw
+      themselves from their parts — `AssembledProductSprite` — and should
+      never get flat art.)
 - [ ] Tool icons — `static/images/icons/tool-<id>.png`, 64×64, rendered by
       `ToolIcon` in `components/ItemIcon.tsx`. Nine of them: hammer, hand
       saw, drill, sanding block, random orbit sander, hand plane, crosscut

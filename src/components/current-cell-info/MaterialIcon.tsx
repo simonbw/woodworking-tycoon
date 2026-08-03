@@ -1,5 +1,6 @@
 import { Application } from "@pixi/react";
 import React, { ReactNode } from "react";
+import { productBlueprintFor } from "../../game/bench-work/blueprint";
 import { MaterialInstance } from "../../game/Materials";
 import {
   FURNITURE_ICON_FIT,
@@ -41,6 +42,15 @@ export const SimpleSpriteStage: React.FC<{
     </Application>
   );
 };
+
+/** A blueprint-assembled product spans its blueprint's footprint, which
+ * is far wider than one cell — fit the icon to its longest side. */
+function blueprintIconFit(type: string): number | null {
+  const blueprint = productBlueprintFor(type);
+  return blueprint
+    ? Math.max(blueprint.widthIn, blueprint.heightIn) * PIXELS_PER_INCH
+    : null;
+}
 
 // TODO: Optimize this a lot
 
@@ -187,7 +197,7 @@ export const MaterialIcon: React.FC<{
             fit={
               isFurniture(material.type)
                 ? FURNITURE_ICON_FIT[material.type]
-                : undefined
+                : (blueprintIconFit(material.type) ?? undefined)
             }
           >
             <MaterialSprite material={material} />

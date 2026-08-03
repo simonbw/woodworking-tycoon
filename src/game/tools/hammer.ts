@@ -1,6 +1,12 @@
 import { ToolType } from "../Tool";
 import { makeMaterial } from "../material-helpers";
 import { Board, FinishedProduct, MaterialInstance } from "../Materials";
+import {
+  assembleFromBlueprint,
+  blueprintFastenerCost,
+  blueprintInputs,
+  RUSTIC_SHELF_BLUEPRINT,
+} from "../bench-work/blueprint";
 
 /**
  * The starter tool: every new shop opens with one mounted on the workspace.
@@ -27,45 +33,18 @@ export const hammer: ToolType = {
       id: "buildRusticPalletShelf",
       requiredSkill: "rusticCarpentry",
       duration: 30,
-      interaction: { kind: "assembly" },
-      // The wood is free if you pried it off a pallet — and so are the
-      // nails, which come back out with the boards (see dismantlePallet)
-      requiredConsumables: [{ id: "nails", amount: 8 }],
-      getInputMaterials: () => [
-        {
-          type: ["board"],
-          species: ["pallet"],
-          width: [6],
-          length: [4],
-          quantity: 2,
-        }, // stringers as shelves
-        {
-          type: ["board"],
-          species: ["pallet"],
-          width: [4],
-          length: [3],
-          quantity: 3,
-        }, // deck boards as back support
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        // Validate inputs
-        const boards = materials.filter(
-          (m: MaterialInstance): m is Board => m.type === "board",
-        );
-        if (boards.length !== 5) {
-          throw new Error("Need exactly 5 boards to build a rustic shelf");
-        }
-
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "rusticShelf",
-              species: "pallet",
-            }),
-          ],
-        };
-      },
+      // The whole recipe reads off the blueprint — inputs (two stringers
+      // as rails, three deck boards as shelves), the nail bill (one per
+      // rail × shelf crossing), and the bench-view build itself. The
+      // wood is free if you pried it off a pallet — and so are the
+      // nails, which come back out with the boards (see dismantlePallet).
+      interaction: { kind: "assembly", blueprint: "rusticShelf" },
+      requiredConsumables: blueprintFastenerCost(RUSTIC_SHELF_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(RUSTIC_SHELF_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(RUSTIC_SHELF_BLUEPRINT, materials)],
+      }),
     },
     {
       name: "Build Birdhouse",

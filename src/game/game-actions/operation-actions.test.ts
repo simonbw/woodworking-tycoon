@@ -223,12 +223,20 @@ describe("finishAttendedWorkAction", () => {
       },
     });
     state = operateMachineAction(getMachines(state.machines)[0])(state);
-    assert.strictEqual(state.consumables.nails, 2);
+    assert.strictEqual(state.consumables.nails, 4);
     state = finishAttendedWorkAction(getMachines(state.machines)[0])(state);
     assert.strictEqual(state.machines[0].outputMaterials.length, 1);
+    const product = state.machines[0].outputMaterials[0];
+    assert.strictEqual(product.type, "rusticShelf");
+    // The bill of materials rides the product: the very boards that went
+    // in, their ids as grain seeds (see bench-work/blueprint.ts)
     assert.strictEqual(
-      state.machines[0].outputMaterials[0].type,
-      "rusticShelf",
+      (product as { parts?: readonly { seed: string }[] }).parts?.length,
+      5,
+    );
+    assert.strictEqual(
+      (product as { parts: readonly { seed: string }[] }).parts[0].seed,
+      shelfBoards[0].id,
     );
     // Craft XP for the finished product, exactly as a tick completion pays
     assert.ok(state.progression.xp > 0);

@@ -2,6 +2,7 @@ import { seededRandom } from "../../utils/randUtils";
 import type { Machine, MachineType } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { INCHES_PER_CELL } from "../shop-scale";
+import { productBlueprintFor } from "./blueprint";
 import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
 
 /**
@@ -50,7 +51,10 @@ export function defaultBenchPlacement(
   material: MaterialInstance,
 ): BenchPlacement {
   const { widthIn, heightIn } = benchTopSizeIn(type);
-  if (material.type === "pallet") {
+  // A pallet covers the bench; a blueprint-assembled product lands
+  // centered too — exactly where its ghost frame stood while it was
+  // built, so the finished piece lies right where the last nail went in.
+  if (material.type === "pallet" || productBlueprintFor(material.type)) {
     return { xIn: widthIn / 2, yIn: heightIn / 2, angleDeg: 0, flipped: false };
   }
   const rng = seededRandom(`bench-seat-${material.id}`);
@@ -63,19 +67,27 @@ export function defaultBenchPlacement(
   };
 }
 
+/** A framed piece's span in its own local inches — a pallet, a
+ * blueprint's product frame — for the shared frame transforms below. */
+export interface FrameSizeIn {
+  readonly widthIn: number;
+  readonly heightIn: number;
+}
+
 /**
- * A point on the pallet, carried through the pallet's own placement to
- * bench inches: pallet-local coordinates measure from the pallet's
- * top-left corner in its unflipped, unturned frame; the placement flips
- * (mirror across the vertical centerline), turns, and seats it.
+ * A point in a framed piece's local inches (measured from its top-left
+ * corner in its unflipped, unturned frame), carried through the frame's
+ * placement to bench inches: the placement flips (mirror across the
+ * vertical centerline), turns, and seats it.
  */
-export function palletPointOnBench(
+export function framePointOnBench(
   placement: BenchPlacement,
+  size: FrameSizeIn,
   localXIn: number,
   localYIn: number,
 ): { xIn: number; yIn: number } {
-  const dx = (localXIn - PALLET_WIDTH_IN / 2) * (placement.flipped ? -1 : 1);
-  const dy = localYIn - PALLET_HEIGHT_IN / 2;
+  const dx = (localXIn - size.widthIn / 2) * (placement.flipped ? -1 : 1);
+  const dy = localYIn - size.heightIn / 2;
   const rad = (placement.angleDeg * Math.PI) / 180;
   return {
     xIn: placement.xIn + dx * Math.cos(rad) - dy * Math.sin(rad),
@@ -83,10 +95,11 @@ export function palletPointOnBench(
   };
 }
 
-/** The inverse: a bench point in the pallet's local frame, for hit
- * tests against nails and edges. */
-export function benchPointOnPallet(
+/** The inverse: a bench point in the framed piece's local inches, for
+ * hit tests against nails, slots, and edges. */
+export function benchPointInFrame(
   placement: BenchPlacement,
+  size: FrameSizeIn,
   xIn: number,
   yIn: number,
 ): { xIn: number; yIn: number } {
@@ -97,29 +110,64 @@ export function benchPointOnPallet(
     (dx * Math.cos(rad) - dy * Math.sin(rad)) * (placement.flipped ? -1 : 1);
   const localDy = dx * Math.sin(rad) + dy * Math.cos(rad);
   return {
-    xIn: localDx + PALLET_WIDTH_IN / 2,
-    yIn: localDy + PALLET_HEIGHT_IN / 2,
+    xIn: localDx + size.widthIn / 2,
+    yIn: localDy + size.heightIn / 2,
   };
 }
 
 /**
+ * A slot inside a framed piece (a pallet berth, a blueprint slot),
+ * carried through the frame's placement to a bench placement of its own
+ * — turned with the frame, mirrored when it's flipped, showing the face
+ * the frame is showing.
+ */
+export function slotPlacementOnBench(
+  placement: BenchPlacement,
+  size: FrameSizeIn,
+  slot: { xIn: number; yIn: number; angleDeg: number },
+): BenchPlacement {
+  const at = framePointOnBench(placement, size, slot.xIn, slot.yIn);
+  return {
+    xIn: at.xIn,
+    yIn: at.yIn,
+    angleDeg:
+      placement.angleDeg + (placement.flipped ? -slot.angleDeg : slot.angleDeg),
+    flipped: placement.flipped,
+  };
+}
+
+const PALLET_SIZE: FrameSizeIn = {
+  widthIn: PALLET_WIDTH_IN,
+  heightIn: PALLET_HEIGHT_IN,
+};
+
+/** A point on the pallet, carried through its placement to bench inches. */
+export function palletPointOnBench(
+  placement: BenchPlacement,
+  localXIn: number,
+  localYIn: number,
+): { xIn: number; yIn: number } {
+  return framePointOnBench(placement, PALLET_SIZE, localXIn, localYIn);
+}
+
+/** The inverse: a bench point in the pallet's local frame. */
+export function benchPointOnPallet(
+  placement: BenchPlacement,
+  xIn: number,
+  yIn: number,
+): { xIn: number; yIn: number } {
+  return benchPointInFrame(placement, PALLET_SIZE, xIn, yIn);
+}
+
+/**
  * Where a board freed from the pallet lies: its berth, carried through
- * the pallet's placement — turned with the pallet, mirrored when it's
- * flipped, showing the face the pallet was showing.
+ * the pallet's placement.
  */
 export function berthPlacementOnBench(
   placement: BenchPlacement,
   berth: { xIn: number; yIn: number; angleDeg: number },
 ): BenchPlacement {
-  const at = palletPointOnBench(placement, berth.xIn, berth.yIn);
-  return {
-    xIn: at.xIn,
-    yIn: at.yIn,
-    angleDeg:
-      placement.angleDeg +
-      (placement.flipped ? -berth.angleDeg : berth.angleDeg),
-    flipped: placement.flipped,
-  };
+  return slotPlacementOnBench(placement, PALLET_SIZE, berth);
 }
 
 /** Where this piece lies on the bench: its stored placement, or its seed. */

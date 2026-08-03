@@ -25,7 +25,6 @@ const SPECIES_TINT_SOFTENING = 0.3;
 
 const FURNITURE_TEXTURES = {
   shelf: "/images/shelf.png",
-  rusticShelf: "/images/rustic-shelf.png",
   bookshelf: "/images/bookshelf.png",
   sideTable: "/images/side-table.png",
 } as const;
@@ -44,7 +43,6 @@ export function isFurniture(type: string): type is FurnitureType {
  */
 export const FURNITURE_ICON_FIT: Record<FurnitureType, number> = {
   shelf: 79,
-  rusticShelf: 88,
   bookshelf: 43,
   sideTable: 51,
 };
