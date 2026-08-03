@@ -111,6 +111,28 @@ describe("benchScriptFor", () => {
     assert.strictEqual(script?.kind, "pry");
   });
 
+  it("offers prying with no plan selected at all — the pallet is the offer", () => {
+    const machine = workspaceWith({
+      selectedOperationId: undefined,
+      inputMaterials: [fullPallet()],
+    });
+    const script = benchScriptFor(machine, progressionWith());
+    assert.strictEqual(script?.kind, "pry");
+  });
+
+  it("a staged pallet wins over a lingering plan selection", () => {
+    // Sand Board is selected and its board is staged, but the pallet
+    // physically covers the bench — prying is what's on offer until it
+    // comes off.
+    const machine = workspaceWith({
+      tools: ["sandingBlock"],
+      selectedOperationId: "blockSandBoard",
+      inputMaterials: [board("maple", 2, 4, 4, "rough"), fullPallet()],
+    });
+    const script = benchScriptFor(machine, progressionWith("surfacePrep"));
+    assert.strictEqual(script?.kind, "pry");
+  });
+
   it("offers nothing when the selected plan is legacy hand work", () => {
     const machine = workspaceWith({
       selectedOperationId: "finishCuttingBoard",

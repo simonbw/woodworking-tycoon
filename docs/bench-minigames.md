@@ -23,6 +23,23 @@ vocabulary, and per-operation scripts that compose it.
 
 ## Decisions (settled — don't relitigate casually)
 
+0. **The tool is the bench's mode selector.** (Amends the original
+   "benches are honestly recipe-driven" stance — deliberately, after
+   playtesting the pry pilot.) The bench top is the interface: mounted
+   tools hang on a rail across the top of the zoomed view and are taken
+   in hand by clicking; applying the held tool to a valid target IS the
+   operation. A staged pallet offers its nails to the hammer with no
+   plan selected — a bench takes any stock a bench recipe could want
+   (`stageableMaterials` gives benches the direct-feed treatment), and
+   the pallet wins the bench top over a lingering plan selection while
+   it's staged. Plans survive only where they genuinely choose between
+   products: builds (glue-ups, assemblies) and, until their scripts
+   convert, the legacy finishing recipes. Pry work is hidden from the
+   plan picker entirely. Freed boards stay lying on the bench
+   (`inputMaterials`, real state) right where they were nailed; their
+   *arrangement* — dragging, R to turn, F to flip — is view state per
+   decision 3.
+
 1. **The mini-game is the only player path.** There is no player-facing
    "hold Space instead". Tests and debug tooling complete work through the
    same commit actions the bench view dispatches (see The commit-action
@@ -152,19 +169,29 @@ as usual.
 
 ## Pallet dismantling: progressive transformation — **Now**
 
-The richest script, and the pilot for incremental commits. Dismantling is
+The richest script, and the pilot for incremental commits — and, since
+the tool-in-hand rework, the pilot for decision 0. Dismantling is
 modeled as the pallet instance transforming nail by nail:
 
-- Each pry is an action: `+1 nail` to consumables (they clink in one at a
-  time), and the pallet's remaining-nail state updates on the
-  `MaterialInstance` itself (absent = full, per the established
-  absent-means-default migration pattern — old saves load untouched).
-- When a slat's last nail comes out, that board pops free as an output
-  *right then* — mid-job you hold a genuinely half-stripped pallet plus
-  loose boards, all real state.
+- No plan is selected: the staged pallet is the offer. The player takes
+  the hammer off the rail (it becomes the cursor, nails light up) and
+  presses a nail; a short swing animation paces the pull, then the
+  commit lands.
+- Each pry is an action: `+1 nail` to consumables (each one flies to the
+  supplies tally and clinks in — `flyToSupply`), and the pallet's
+  remaining-nail state updates on the `MaterialInstance` itself (absent
+  = full, per the established absent-means-default migration pattern —
+  old saves load untouched).
+- When a slat's last nail comes out, that board comes free *right then*
+  and stays lying on the bench where it was nailed
+  (`inputMaterials`, so the next plan's `stagedPieces` finds it) —
+  mid-job you hold a genuinely half-stripped pallet plus loose boards,
+  all real state. The shared layout lives in
+  `src/game/bench-work/pallet-geometry.ts`, so the floor sprite, the
+  bench scene, and the freed board's berth can never disagree.
 - Refresh mid-dismantle and you resume at the exact nail you left —
   not because mini-game state was saved, but because every pull *was*
-  game state.
+  game state. (Only the dragged-around arrangement resets: decision 3.)
 
 ## Script sketches for the rest — **Now**
 
@@ -182,14 +209,20 @@ numbers the simulation already has.
 
 ## The bench view itself — **Now**
 
-**Now**: `src/components/bench-view/` — the work surface lives inside the
-station sheet (Tab), widened for benches, its own PIXI `Application` at
-high zoom, with the plan picker surviving below as designed. The camera
-zoom-in transition remains future presentation work. Every operation
-listed in the rollout is converted; the remaining legacy attended-tick
-ops are the single-piece finishing recipes (`finish*`, `oilCuttingBoard`)
-and the shop-furniture/jig builds run through them — a coherent
-"finishing" batch for a future script.
+**Now**: `src/components/bench-view/` — the bench *top* lives inside the
+station sheet (Tab), spread nearly window-wide for benches: one measured
+PIXI `Application` rendered at device resolution (no fixed logical size,
+no CSS upscale — `stageMath.fitToStage` takes the real rect), a
+procedural wood surface (`BenchBackdrop`) with the mounted tools hung on
+a rail across the top (`BenchToolRail`, DOM buttons over the canvas),
+and the bench's contents lying on the wood (`BenchScene`). The plan
+picker survives below, folded into a "Plans & paperwork" drawer that
+starts closed while a pallet holds the bench. The camera zoom-in
+transition remains future presentation work. Every operation listed in
+the rollout is converted; the remaining legacy attended-tick ops are the
+single-piece finishing recipes (`finish*`, `oilCuttingBoard`) and the
+shop-furniture/jig builds run through them — a coherent "finishing"
+batch for a future script.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a

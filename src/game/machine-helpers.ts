@@ -13,6 +13,7 @@ import {
 import { GameState, ProgressionState } from "./GameState";
 import {
   InputMaterialWithQuantity,
+  isBenchType,
   Machine,
   Operation,
   OperationParameter,
@@ -464,13 +465,18 @@ export function stageableMaterials(
   if (freeSpaces <= 0 || carried.length === 0) {
     return [];
   }
-  if (machine.type.directFeed) {
+  if (machine.type.directFeed || isBenchType(machine.type)) {
     // A saw table takes any board. Setting stock down is not the same act
     // as cutting it: the settings decide whether the *cut* works, and you
     // have to be able to put the board on the machine before you can slide
     // it to the mark. So this matches on material kind only — whether the
     // stock is millable at the current settings is the trigger's business,
     // and the refusal chip explains it in the meantime.
+    //
+    // A bench gets the same treatment for a homelier reason: it's a table.
+    // Any stock a bench recipe could ever want can be set on it — no plan
+    // has to be picked first. The work itself decides later (the pallet's
+    // nails offer prying, a chosen plan claims its pieces).
     const operations = progression
       ? availableOperations(machine, progression)
       : machine.operations;
@@ -481,9 +487,29 @@ export function stageableMaterials(
           .flatMap((input) => (input.type ? [...input.type] : [])),
       ),
     );
-    return carried
-      .filter((material) => kinds.has(material.type))
-      .slice(0, freeSpaces);
+    const takeable = carried.filter((material) => kinds.has(material.type));
+    // On a bench with a plan picked, F grabs the plan's pieces out of the
+    // armful first — the bench still takes anything, but the single press
+    // sets down the piece the work actually wants. (Pry work isn't a
+    // plan, so a stale dismantle selection expresses no preference.)
+    const selected = machine.selectedOperationOrNull;
+    if (
+      isBenchType(machine.type) &&
+      selected &&
+      selected.interaction?.kind !== "pry"
+    ) {
+      const inputs = selected.getInputMaterials(
+        machine.resolvedParameters(selected),
+      );
+      const preferred = takeable.filter((material) =>
+        inputs.some((input) => materialMeetsInput(material, input)),
+      );
+      return [
+        ...preferred,
+        ...takeable.filter((material) => !preferred.includes(material)),
+      ].slice(0, freeSpaces);
+    }
+    return takeable.slice(0, freeSpaces);
   }
   const operation = machine.selectedOperationOrNull;
   if (!operation) {

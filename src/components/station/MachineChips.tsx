@@ -8,6 +8,7 @@ import {
   operationParameters,
 } from "../../game/Machine";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
+import { palletPryTargetsLeft } from "../../game/game-actions/operation-actions";
 import { heldTool } from "../../game/HeldTool";
 import {
   explainFeedRefusal,
@@ -100,6 +101,14 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       ? explainFeedRefusal(machine, operations, adviseOn, shopSupply(gameState))
       : null;
 
+  // A staged pallet's own offer: prying happens on the bench top, no
+  // plan involved — the chip points at the sheet key the way hand work
+  // always does.
+  const pryable =
+    !isOperating &&
+    palletPryTargetsLeft(machine) > 0 &&
+    operations.some((operation) => operation.interaction?.kind === "pry");
+
   const liftable =
     gameState.player.carriedMachine == null &&
     canPickUpMachine(gameState, machine.state);
@@ -137,10 +146,18 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           {machine.type.stageVerb ?? "place"} {getMaterialName(stageable[0])}
         </HintRow>
       )}
-      {canOperate &&
+      {pryable && (
+        <HintRow keys={<ShortcutKeys shortcut="open-station-sheet" />}>
+          pry the pallet apart
+        </HintRow>
+      )}
+      {!pryable &&
+        canOperate &&
         (runOperation?.interaction ? (
           // Hand work has no held-Space path: the bench view owns it
-          // (docs/bench-minigames.md) — the chip sends you to the bench
+          // (docs/bench-minigames.md) — the chip sends you to the bench.
+          // A staged pallet's pry chip stands in for this one: the
+          // pallet wins the bench top until it's cleared off.
           <HintRow keys={<ShortcutKeys shortcut="open-station-sheet" />}>
             {runOperation.name.toLowerCase()} by hand
           </HintRow>

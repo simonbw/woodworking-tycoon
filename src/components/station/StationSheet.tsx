@@ -1,5 +1,6 @@
-import React from "react";
-import { Machine } from "../../game/Machine";
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import { Machine, Operation } from "../../game/Machine";
 import { availableOperations } from "../../game/skill-helpers";
 import { Tooltip } from "../Tooltip";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -37,24 +38,32 @@ export const StationSheet: React.FC = () => {
     return null;
   }
 
-  return (
+  // Portaled to the body: the shop-overlay layer this renders from is
+  // pinned to the shop floor's box (and rides the camera transform), but
+  // the sheet wants the whole window — a bench top is the entire
+  // interface while it's spread out. Still deliberately not a modal.
+  return createPortal(
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center bg-ink-black/30 pointer-events-auto"
+      // Below the top bar (z-40) on purpose: the sheet is not a modal,
+      // so the phone, journal, and menu stay clickable over it
+      className="fixed inset-0 z-[35] flex items-center justify-center bg-ink-black/30 p-3 pt-24 pointer-events-auto"
       onClick={closeSheet}
       data-testid="station-sheet"
     >
       <div
         className={`max-h-full w-full overflow-y-auto ${
-          // Benches spread wider: the zoomed work surface needs the room
+          // Benches spread wide: the bench top itself is the interface,
+          // and it wants nearly the whole window
           !sheetMachine.type.directFeed && !sheetMachine.type.container
-            ? "max-w-xl"
+            ? "max-w-[min(72rem,95vw)]"
             : "max-w-md"
         }`}
         onClick={(event) => event.stopPropagation()}
       >
         <StationSheetBody machine={sheetMachine} onClose={closeSheet} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
@@ -102,12 +111,41 @@ const StationSheetBody: React.FC<{
         <ContentsSheet machine={machine} />
       ) : (
         <>
-          {/* The zoomed bench view: hand work happens here, over the
+          {/* The bench top itself: hand work happens here, over the
               station's actual staged stock (docs/bench-minigames.md) */}
           <BenchWorkSurface machine={machine} />
-          <BenchSheet machine={machine} operations={operations} />
+          <BenchPaperwork machine={machine} operations={operations} />
         </>
       )}
     </SheetFrame>
+  );
+};
+
+/**
+ * The bench's paperwork — plan picker, supplies, racks — folded under
+ * the bench top. It starts closed when a pallet is on the bench (a
+ * teardown needs no paperwork at all) and open otherwise, and holds
+ * whichever way the player last flipped it while the sheet stays up.
+ */
+const BenchPaperwork: React.FC<{
+  machine: Machine;
+  operations: ReadonlyArray<Operation>;
+}> = ({ machine, operations }) => {
+  const [open, setOpen] = useState(
+    () => !machine.inputMaterials.some((m) => m.type === "pallet"),
+  );
+  return (
+    <details
+      open={open}
+      onToggle={(event) => setOpen((event.target as HTMLDetailsElement).open)}
+      data-testid="bench-paperwork"
+    >
+      <summary className="cursor-pointer select-none font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-ink-fade hover:text-ink-black">
+        Plans &amp; paperwork
+      </summary>
+      <div className="space-y-3 pt-2">
+        <BenchSheet machine={machine} operations={operations} />
+      </div>
+    </details>
   );
 };

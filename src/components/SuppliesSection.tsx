@@ -32,7 +32,12 @@ export const SuppliesSection: React.FC = () => {
           const type = CONSUMABLE_TYPES[id];
           const amount = gameState.consumables[id];
           return (
-            <li key={id} className="flex items-baseline justify-between gap-4">
+            <li
+              key={id}
+              // The landing pad for salvage flights (see flyToSupply)
+              data-supply-id={id}
+              className="flex items-baseline justify-between gap-4"
+            >
               <span className="flex items-center gap-2 font-condensed text-sm text-paper-manila">
                 <ConsumableIcon
                   consumableId={id}

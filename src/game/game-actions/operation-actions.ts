@@ -285,8 +285,9 @@ export function finishAttendedWorkAction(machine: Machine): GameAction {
  * One nail pried out of the pallet staged at this bench — the pilot for
  * incremental commits. Every pull is real state: the nail lands in the
  * shop's stock immediately, the pallet's own board flags update on the
- * MaterialInstance, and the freed board pops into the output bay right
- * then. Refresh mid-dismantle and you resume at the exact nail you left,
+ * MaterialInstance, and the freed board stays lying on the bench (it
+ * joins inputMaterials, where the next recipe's stagedPieces will find
+ * it). Refresh mid-dismantle and you resume at the exact nail you left,
  * not because mini-game state was saved, but because every pull WAS game
  * state.
  *
@@ -364,18 +365,20 @@ export function pryPalletNailAction(
         isSameMachine(m, machineState)
           ? {
               ...m,
+              // The freed board stays right on the bench: loose stock the
+              // next plan can claim, or E takes back into the arms.
               inputMaterials: [
                 ...m.inputMaterials.filter((material) => material !== pallet),
                 ...(remainingPallet ? [remainingPallet] : []),
+                freedBoard,
               ],
-              outputMaterials: [...m.outputMaterials, freedBoard],
             }
           : m,
       ),
-      // The nails clink in one at a time; the freed board is the thump.
+      // The nail's own creak-and-pop; the board settling is part of it.
       pendingSounds: [
         ...(gameState.pendingSounds ?? []),
-        { kind: "material-drop" as const },
+        { kind: "nail-pry" as const },
       ],
     };
   };

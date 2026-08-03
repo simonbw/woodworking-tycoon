@@ -261,7 +261,9 @@ describe("pryPalletNailAction targeting", () => {
     const pallet = result.machines[0].inputMaterials[0];
     assert.ok(pallet.type === "pallet");
     assert.strictEqual(pallet.stringerBoardsLeft, 2);
-    const freed = result.machines[0].outputMaterials[0];
+    // The freed board stays lying on the bench, not in an output bay
+    const freed = result.machines[0].inputMaterials.at(-1)!;
     assert.ok(freed.type === "board" && freed.width === 6);
+    assert.strictEqual(result.machines[0].outputMaterials.length, 0);
   });
 });

@@ -10,6 +10,7 @@ import {
   movePlayerToCab,
   openTruckMenu,
   openPhone,
+  pressTruckRow,
   startNewGame,
 } from "./navigation";
 
@@ -323,12 +324,7 @@ test.describe("Market, supplies, and sound", () => {
     await test.step("scavenging trip starts at the truck's cab", async () => {
       await movePlayerToCab(page);
       await openTruckMenu(page);
-      await page
-        .getByTestId("truck-panel")
-        .locator("li", { hasText: "Scavenge for pallets" })
-        .getByRole("button", { name: "Go" })
-        .click({ force: true });
-      await page.waitForTimeout(30);
+      await pressTruckRow(page, "Scavenge for pallets");
 
       // The trip covers the screen with a travel log: a route map and
       // field notes that fill in as the trip progresses

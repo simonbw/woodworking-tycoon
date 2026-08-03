@@ -103,17 +103,21 @@ describe("salvaged nails", () => {
       },
       machines: [machine],
     });
-    // Last deck board, then the three stringers: 4 pulls, 4 boards, 4 nails
+    // Last deck board, then the three stringers: 4 pulls, 4 boards, 4
+    // nails — every freed board stays lying on the bench (inputMaterials)
+    const boardsOnBench = (s: typeof state) =>
+      s.machines[0].inputMaterials.filter((m) => m.type === "board").length;
     for (let pull = 1; pull <= 4; pull++) {
       state = pryPalletNailAction(getMachines(state.machines)[0])(state);
-      assert.strictEqual(state.machines[0].outputMaterials.length, pull);
+      assert.strictEqual(boardsOnBench(state), pull);
       assert.strictEqual(state.consumables.nails, pull);
     }
-    // The pallet itself is gone with the last stringer
-    assert.strictEqual(state.machines[0].inputMaterials.length, 0);
+    // The pallet itself is gone with the last stringer; its boards remain
+    assert.strictEqual(state.machines[0].inputMaterials.length, 4);
+    assert.strictEqual(state.machines[0].outputMaterials.length, 0);
     // A fifth pull finds nothing to pry and changes nothing
     const spent = pryPalletNailAction(getMachines(state.machines)[0])(state);
-    assert.strictEqual(spent.machines[0].outputMaterials.length, 4);
+    assert.strictEqual(boardsOnBench(spent), 4);
     assert.strictEqual(spent.consumables.nails, 4);
   });
 });

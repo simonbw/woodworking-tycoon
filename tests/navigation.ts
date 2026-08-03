@@ -59,6 +59,28 @@ export async function openTruckMenu(page: any) {
 }
 
 /**
+ * Take a row on the open truck card by pressing its number key. The card
+ * is anchored to the truck in the world and glides while the camera
+ * settles after a teleport, so pointer clicks on its buttons race the
+ * motion (force-clicks dispatch at a point the button has already left).
+ * The digits answer to the rows wherever the card happens to be.
+ */
+export async function pressTruckRow(page: any, rowText: string | RegExp) {
+  const row = page
+    .getByTestId("truck-panel")
+    .locator("li", { hasText: rowText });
+  await row.waitFor({ state: "visible" });
+  const label = (await row.textContent()) ?? "";
+  const digit = label.match(/\d+/)?.[0];
+  if (!digit) {
+    throw new Error(`No row number found in truck row "${label}"`);
+  }
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press(digit);
+  await page.waitForTimeout(30);
+}
+
+/**
  * Load everything in hand into the truck's bed through the real keys:
  * stand in the tailgate aisle and press Shift+F.
  */
@@ -91,14 +113,7 @@ export async function deliverFromTruck(page: any, name: string | RegExp) {
   await loadTruckBed(page);
   await movePlayerToCab(page);
   await openTruckMenu(page);
-  // force: the world keeps ticking (job tips decay every tick), so the
-  // row's text re-renders and the stability check can starve.
-  await page
-    .getByTestId("truck-panel")
-    .locator("li", { hasText: name })
-    .getByRole("button", { name: "Deliver" })
-    .click({ force: true });
-  await page.waitForTimeout(30);
+  await pressTruckRow(page, name);
 }
 
 /** Dismiss the client's card shown after a commission handoff. */
@@ -131,14 +146,7 @@ export async function goToStore(page: any): Promise<[number, number]> {
   );
   await movePlayerToCab(page);
   await openTruckMenu(page);
-  // force: the world keeps ticking, so nearby text re-renders can make
-  // Playwright's stability check starve on slow machines
-  await page
-    .getByTestId("truck-panel")
-    .locator("li", { hasText: "Orange Box" })
-    .getByRole("button", { name: "Go" })
-    .click({ force: true });
-  await page.waitForTimeout(30);
+  await pressTruckRow(page, "Orange Box");
   return previousPosition;
 }
 
@@ -152,12 +160,7 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
   );
   await movePlayerToCab(page);
   await openTruckMenu(page);
-  await page
-    .getByTestId("truck-panel")
-    .locator("li", { hasText: "Sawyer & Sons" })
-    .getByRole("button", { name: "Go" })
-    .click({ force: true });
-  await page.waitForTimeout(30);
+  await pressTruckRow(page, "Sawyer & Sons");
   return previousPosition;
 }
 

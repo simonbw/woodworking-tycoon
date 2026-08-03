@@ -179,6 +179,29 @@
     animation: reward-pulse 420ms ease-out;
   }
 
+  /* The held hammer's pry: a quick lever back and snap forward, timed to
+     PRY_MS in BenchWorkSurface. `rotate` composes with the inline
+     translate that keeps the tool under the pointer. */
+  .bench-pry-swing {
+    animation: bench-pry-swing 280ms ease-in-out;
+    transform-origin: 25% 80%;
+  }
+
+  @keyframes bench-pry-swing {
+    0% {
+      rotate: 0deg;
+    }
+    40% {
+      rotate: -26deg;
+    }
+    75% {
+      rotate: 12deg;
+    }
+    100% {
+      rotate: 0deg;
+    }
+  }
+
   @keyframes reward-pulse {
     0% {
       transform: scale(1);

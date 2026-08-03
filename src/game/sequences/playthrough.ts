@@ -245,15 +245,13 @@ function makeOneFrameRail(shop: ShopDriver): void {
  * nails go back into the shop's tin.
  */
 function dismantleAPallet(shop: ShopDriver): ShopDriver {
-  shop
+  // No plan gets selected: a staged pallet offers prying on its own, and
+  // the freed boards stay lying on the bench until they're taken off.
+  return shop
     .standAtOperatorCell(WORKBENCH)
-    .select(WORKBENCH, "dismantlePallet")
-    .load(WORKBENCH, isPallet, 1);
-  // Runs until the bench has nothing left to pry.
-  while (shop.machine(WORKBENCH).state.inputMaterials.length > 0) {
-    shop.run(WORKBENCH);
-  }
-  return shop.collect(WORKBENCH);
+    .load(WORKBENCH, isPallet, 1)
+    .run(WORKBENCH)
+    .takeStock(WORKBENCH);
 }
 
 /** Build one rustic shelf: two stringers as the shelves, three boards behind. */

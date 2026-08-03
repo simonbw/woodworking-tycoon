@@ -2,9 +2,11 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import {
+  getMachines,
   InputMaterialWithQuantity,
   Machine,
   MachineId,
+  MachineState,
   Operation,
   ParameterValues,
   operationParameters,
@@ -13,6 +15,7 @@ import {
   findFeedableOperation,
   matchMaterialsToSlots,
   parameterValueSatisfiable,
+  stageableMaterials,
 } from "./machine-helpers";
 import { MaterialInstance } from "./Materials";
 
@@ -482,5 +485,59 @@ describe("findFeedableOperation", () => {
     assert.strictEqual(match?.operation.id, "straightLineRip");
     assert.deepStrictEqual(match?.materials, [rough]);
     assert.deepStrictEqual(match?.remaining, [spare]);
+  });
+});
+
+describe("stageableMaterials on a bench", () => {
+  function bench(overrides: Partial<MachineState> = {}): Machine {
+    return getMachines([
+      {
+        machineTypeId: "workspace",
+        position: [1, 2],
+        rotation: 0,
+        inputMaterials: [],
+        processingMaterials: [],
+        outputMaterials: [],
+        // A fresh bench: nothing selected (no id resolves to a plan)
+        selectedOperationId: "",
+        operationProgress: {
+          status: "notStarted",
+          phaseIndex: 0,
+          ticksRemaining: 0,
+        },
+        tools: [],
+        ...overrides,
+      },
+    ])[0];
+  }
+
+  const fullPallet: MaterialInstance = {
+    id: "test-pallet",
+    type: "pallet",
+    deckBoards: Array(11).fill(true) as never,
+    stringerBoardsLeft: 3,
+  };
+
+  it("takes a pallet with no plan selected — a bench is a table", () => {
+    const staged = stageableMaterials(bench(), [fullPallet]);
+    assert.deepStrictEqual(staged, [fullPallet]);
+  });
+
+  it("takes boards regardless of which plan is selected", () => {
+    const walnut = board("walnut", 4, 6, 4);
+    const staged = stageableMaterials(
+      bench({ selectedOperationId: "dismantlePallet" }),
+      [walnut],
+    );
+    assert.deepStrictEqual(staged, [walnut]);
+  });
+
+  it("still refuses when the bay is full", () => {
+    const full = bench({
+      inputMaterials: Array.from({ length: 5 }, () =>
+        board("pine", 2, 4, 4, "rough"),
+      ),
+    });
+    assert.deepStrictEqual(stageableMaterials(full, [fullPallet]), []);
   });
 });

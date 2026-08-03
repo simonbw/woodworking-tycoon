@@ -2,17 +2,28 @@ import { WorkSurfaceSize } from "../../game/bench-work/workpiece";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 /**
- * The bench stage: a fixed-size canvas the workpiece is fitted into,
+ * The bench stage: the measured canvas the workpiece is fitted into,
  * zoomed well past the shop view's 4 px/inch — leaning over the bench.
- * All pointer work happens in workpiece inches; these helpers own the
- * mapping so every surface component shares one idea of where the wood
- * is.
+ * The canvas takes whatever size the sheet gives it (measured by the
+ * wrapper, rendered at device resolution — no CSS upscale, no blur), so
+ * every fit is computed from real pixels. All pointer work happens in
+ * workpiece inches; these helpers own the mapping so every surface
+ * component shares one idea of where the wood is.
  */
-export const STAGE_WIDTH = 460;
-export const STAGE_HEIGHT = 320;
+
+/** The rectangle of the canvas a workpiece may occupy, in stage px. */
+export interface StageRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
 
 /** Padding kept around the workpiece so edges stay strokable. */
 const STAGE_MARGIN = 36;
+
+/** Leaning in only goes so far — cap the zoom for tiny pieces. */
+const MAX_PX_PER_IN = 40;
 
 export interface StageFit {
   /** Pixels per workpiece inch at this zoom. */
@@ -26,37 +37,36 @@ export interface StageFit {
   readonly heightIn: number;
 }
 
-/** Fit a workpiece (inches) into the stage, centered. */
-export function fitToStage(size: WorkSurfaceSize): StageFit {
+/** Fit a workpiece (inches) into a stage rectangle, centered. */
+export function fitToStage(size: WorkSurfaceSize, rect: StageRect): StageFit {
   const pxPerIn = Math.min(
-    (STAGE_WIDTH - STAGE_MARGIN * 2) / size.widthIn,
-    (STAGE_HEIGHT - STAGE_MARGIN * 2) / size.heightIn,
-    40,
+    (rect.width - STAGE_MARGIN * 2) / size.widthIn,
+    (rect.height - STAGE_MARGIN * 2) / size.heightIn,
+    MAX_PX_PER_IN,
   );
   return {
     pxPerIn,
     spriteScale: pxPerIn / PIXELS_PER_INCH,
-    originX: (STAGE_WIDTH - size.widthIn * pxPerIn) / 2,
-    originY: (STAGE_HEIGHT - size.heightIn * pxPerIn) / 2,
+    originX: rect.x + (rect.width - size.widthIn * pxPerIn) / 2,
+    originY: rect.y + (rect.height - size.heightIn * pxPerIn) / 2,
     widthIn: size.widthIn,
     heightIn: size.heightIn,
   };
 }
 
-/** A DOM pointer event's position in workpiece inches. */
+/**
+ * A DOM pointer event's position in workpiece inches. The canvas renders
+ * at its CSS size (autoDensity), so client px map 1:1 onto stage px.
+ */
 export function pointerToInches(
   fit: StageFit,
   rect: DOMRect,
   clientX: number,
   clientY: number,
 ): { xIn: number; yIn: number } {
-  const scaleX = rect.width / STAGE_WIDTH;
-  const scaleY = rect.height / STAGE_HEIGHT;
   return {
-    xIn:
-      (clientX - rect.left) / scaleX / fit.pxPerIn - fit.originX / fit.pxPerIn,
-    yIn:
-      (clientY - rect.top) / scaleY / fit.pxPerIn - fit.originY / fit.pxPerIn,
+    xIn: (clientX - rect.left - fit.originX) / fit.pxPerIn,
+    yIn: (clientY - rect.top - fit.originY) / fit.pxPerIn,
   };
 }
 

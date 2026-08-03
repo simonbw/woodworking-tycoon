@@ -230,12 +230,15 @@ export function benchScriptFor(
     return null;
   }
 
-  // Idle: a staged pallet offers prying whenever dismantling is known
+  // Idle: a staged pallet offers prying whenever dismantling is known —
+  // no plan is picked for tool work; the pallet's own nails are the offer.
+  // The pallet wins over a lingering plan selection: it physically covers
+  // the bench, and clearing it off (E takes it back) restores the plan.
   const dismantle = operations.find((op) => op.interaction?.kind === "pry");
   const pallet = machine.inputMaterials.find(
     (material): material is Pallet => material.type === "pallet",
   );
-  if (dismantle && pallet && selected?.id === dismantle.id) {
+  if (dismantle && pallet) {
     return { kind: "pry", operation: dismantle, pallet };
   }
 

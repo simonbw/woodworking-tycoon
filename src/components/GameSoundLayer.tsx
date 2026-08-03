@@ -53,6 +53,7 @@ const CLIP_GAIN: Record<string, number> = {
   "hand-sanding": 0.5,
   "orbital-sander": 0.6,
   "pallet-dismantle": 0.7,
+  "nail-pry": 0.7,
   "glue-clamp": 0.5,
   "assembly-mallet": 0.6,
   "dispose-toss": 0.6,
@@ -102,6 +103,8 @@ function clipFor(event: SoundEvent): string | null {
       return "material-pickup";
     case "material-drop":
       return "material-drop";
+    case "nail-pry":
+      return "nail-pry";
     case "phone-ring":
       return "ui-notification";
   }

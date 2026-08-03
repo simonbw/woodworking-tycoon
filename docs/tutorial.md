@@ -63,8 +63,9 @@ ascending order of importance:
 
 1. **The first pallet's nails.** A shelf needs 8 and a bad pallet yields
    9. A birdhouse quietly spends 6 of them, and a new player with $0 can't
-   buy more. Gating the recipes means the tutorial bench offers exactly two
-   plans: Dismantle and Shelf.
+   buy more. Gating the recipes means the tutorial bench offers exactly one
+   plan: Shelf. (Dismantling isn't a plan at all — a staged pallet offers
+   its nails to the hammer by itself.)
 2. **The first skill point had no right answer.** There is no respec, and
    no commission needs a bought skill until the fourth one (reputation
    40). A point spent at random is dead weight for a long time. A directed

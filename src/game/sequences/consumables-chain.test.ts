@@ -34,9 +34,11 @@ const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
  * then the three stringers, a nail back in the tin for every pull.
  */
 function dismantleThePallet(shop: ShopDriver): ShopDriver {
-  shop.standAtOperatorCell(WORKBENCH).select(WORKBENCH, "dismantlePallet");
+  // No plan: the staged pallet offers prying on its own, and the freed
+  // boards stay on the bench until takeStock clears them into the arms.
+  shop.standAtOperatorCell(WORKBENCH);
   shop.run(WORKBENCH);
-  return shop.collect(WORKBENCH);
+  return shop.takeStock(WORKBENCH);
 }
 
 describe("consumables loop", () => {

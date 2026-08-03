@@ -39,6 +39,7 @@ const GAME_SOUND_CLIPS = [
   "hand-sanding",
   "material-drop",
   "material-pickup",
+  "nail-pry",
   "orbital-sander",
   "pallet-dismantle",
   "truck-arrive",

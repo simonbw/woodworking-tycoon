@@ -38,14 +38,13 @@ function step(shop: ShopDriver): TutorialStepId | undefined {
 }
 
 function dismantleAPallet(shop: ShopDriver): ShopDriver {
-  shop
+  // No plan gets selected: a staged pallet offers prying on its own, and
+  // the freed boards stay lying on the bench until they're taken off.
+  return shop
     .standAtOperatorCell(WORKBENCH)
-    .select(WORKBENCH, "dismantlePallet")
-    .load(WORKBENCH, isPallet, 1);
-  while (shop.machine(WORKBENCH).state.inputMaterials.length > 0) {
-    shop.run(WORKBENCH);
-  }
-  return shop.collect(WORKBENCH);
+    .load(WORKBENCH, isPallet, 1)
+    .run(WORKBENCH)
+    .takeStock(WORKBENCH);
 }
 
 function buildRusticShelf(shop: ShopDriver): ShopDriver {

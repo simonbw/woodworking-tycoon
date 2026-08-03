@@ -177,6 +177,17 @@ export interface MachineType {
   readonly upgradeSlots?: number;
 }
 
+/**
+ * A bench: a station where hand work happens on the work surface — the
+ * makeshift workbench and every built worktable. Benches take any stock
+ * a bench recipe could ever want (a bench is a table; you can set things
+ * on a table) and host the bench view's tool-driven work, as opposed to
+ * direct-feed machines (the stock decides the cut) and containers.
+ */
+export function isBenchType(type: MachineType): boolean {
+  return type.worktable === true || type.id === "workspace";
+}
+
 export const MACHINE_TYPES = {
   workspace,
   worktable1x1,

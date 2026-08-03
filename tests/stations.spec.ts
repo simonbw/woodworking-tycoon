@@ -395,7 +395,11 @@ test.describe("Stations", () => {
     });
 
     await test.step("carry the sled to the table saw and mount it", async () => {
-      // Pick the sled up off the bench's output bay...
+      // Pick the sled up off the bench's output bay — and the panel off
+      // the input bay: a bench takes anything now, so Shift+F staged the
+      // whole armful and the sled build only consumed its own pieces.
+      // (The second Shift+E reaches the bay once the outputs are clear.)
+      await takeAllHere(page);
       await takeAllHere(page);
       // ...and carry it across the floor to the saw
       await movePlayerTo(page, SAW_CELL);

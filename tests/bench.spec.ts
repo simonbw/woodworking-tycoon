@@ -23,19 +23,26 @@ declare global {
   }
 }
 
-/** The stage's logical size (see bench-view/stageMath.ts). */
-const STAGE_W = 460;
-const STAGE_H = 320;
-
-/** A point in stage-logical pixels → page coordinates inside the box. */
-function stagePoint(
-  box: { x: number; y: number; width: number; height: number },
-  logicalX: number,
-  logicalY: number,
+/**
+ * A point in workpiece inches → page coordinates. The stage publishes
+ * its current fit (px-per-inch and the workpiece origin) as data
+ * attributes, and the canvas renders at CSS size, so the mapping is a
+ * straight offset — no logical-to-physical scaling involved.
+ */
+async function inchPoint(
+  page: import("@playwright/test").Page,
+  xIn: number,
+  yIn: number,
 ) {
+  const stage = page.getByTestId("bench-stage");
+  await stage.scrollIntoViewIfNeeded();
+  const box = (await stage.boundingBox())!;
+  const pxPerIn = Number(await stage.getAttribute("data-px-per-in"));
+  const originX = Number(await stage.getAttribute("data-origin-x"));
+  const originY = Number(await stage.getAttribute("data-origin-y"));
   return {
-    x: box.x + (logicalX / STAGE_W) * box.width,
-    y: box.y + (logicalY / STAGE_H) * box.height,
+    x: box.x + originX + xIn * pxPerIn,
+    y: box.y + originY + yIn * pxPerIn,
   };
 }
 
@@ -71,7 +78,11 @@ test.describe("Bench view", () => {
         return {
           status: m.operationProgress.status,
           phaseIndex: m.operationProgress.phaseIndex,
-          inputs: m.inputMaterials.length,
+          inputs: m.inputMaterials.map((o: any) => ({
+            type: o.type,
+            surface: o.surface,
+            width: o.width,
+          })),
           outputs: m.outputMaterials.map((o: any) => ({
             type: o.type,
             surface: o.surface,
@@ -100,24 +111,26 @@ test.describe("Bench view", () => {
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "stroke");
       await expect(page.getByTestId("bench-stage")).toBeVisible();
-      // The plan picker survives inside the bench view, pinned below
-      await expect(page.getByText("Plan")).toBeVisible();
+      // The plan picker survives under the bench top, in the paperwork
+      // drawer (open by default while no pallet holds the bench)
+      await expect(page.getByText("Plans & paperwork")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Sand Board/ }),
+      ).toBeVisible();
     });
 
     await test.step("one real stroke starts the pass; strokes finish it", async () => {
       // The 4"×24" board stands mid-stage; sand along its length in
       // overlapping columns. The first stroke is the one real gesture
       // under test — it must start the operation and move the needle.
-      // The box is measured per stroke: starting the operation re-renders
+      // Points are measured per stroke: starting the operation re-renders
       // the sheet and can shift the canvas under a cached box.
-      const column = async (logicalX: number) => {
-        await page.getByTestId("bench-stage").scrollIntoViewIfNeeded();
-        const box = (await page.getByTestId("bench-stage").boundingBox())!;
-        const top = stagePoint(box, logicalX, 26);
+      const column = async (xIn: number) => {
+        const top = await inchPoint(page, xIn, 1.5);
         await page.mouse.move(top.x, top.y);
         await page.mouse.down();
         for (let i = 1; i <= 14; i++) {
-          const at = stagePoint(box, logicalX, 26 + (270 * i) / 14);
+          const at = await inchPoint(page, xIn, 1.5 + (21 * i) / 14);
           await page.mouse.move(at.x, at.y, { steps: 2 });
           await page.waitForTimeout(16);
         }
@@ -125,14 +138,13 @@ test.describe("Bench view", () => {
       };
       // A deliberate press on the board starts the pass (the sheet can
       // re-render around the canvas as the operation claims the piece)…
-      const startBox = (await page.getByTestId("bench-stage").boundingBox())!;
-      const at = stagePoint(startBox, 230, 160);
+      const at = await inchPoint(page, 2, 12);
       await page.mouse.click(at.x, at.y);
       await expect
         .poll(async () => (await machineState()).status)
         .toBe("inProgress");
       // …and one real stroke moves the needle.
-      await column(230);
+      await column(2);
       const progress = Number(
         await page.getByTestId("bench-work").getAttribute("data-progress"),
       );
@@ -151,9 +163,10 @@ test.describe("Bench view", () => {
       ]);
     });
 
-    await test.step("the pallet pries apart one real press at a time", async () => {
+    await test.step("the pallet pries apart under the hammer, one press at a time", async () => {
       // Restage the bench for dismantling: the fixture's pallet moves
-      // from its floor pile onto the bench, plan already Dismantle.
+      // from its floor pile onto the bench — no plan gets selected; the
+      // pallet itself is the offer — and a hammer joins the tool rail.
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -162,7 +175,7 @@ test.describe("Bench view", () => {
             i === 0
               ? {
                   ...m,
-                  selectedOperationId: "dismantlePallet",
+                  tools: ["sandingBlock", "hammer"],
                   inputMaterials: [
                     state.materialPiles[0].material,
                     ...m.inputMaterials,
@@ -176,13 +189,14 @@ test.describe("Bench view", () => {
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "pry");
 
+      // The hammer comes off the rail and becomes the pointer
+      await page.getByTestId("bench-tool-hammer").click();
+
       // One real press on a marked nail: the top stringer's nail sits at
-      // workpiece (23", 0") — stage-logical (230, 36) under the pallet's
-      // fit (pxPerIn ≈ 7.29, origin ≈ (62, 36)).
-      const box = (await page.getByTestId("bench-stage").boundingBox())!;
-      const nail = stagePoint(box, 230, 36);
+      // pallet inches (23, 0), published through the stage's fit attrs.
+      const nail = await inchPoint(page, 23, 0);
       await page.mouse.click(nail.x, nail.y);
-      // The pry takes a beat — the lever animation is the pacing
+      // The pry takes a beat — the hammer's swing is the pacing
       await expect
         .poll(async () =>
           page.evaluate(
@@ -191,10 +205,14 @@ test.describe("Bench view", () => {
         )
         .toBe(1);
       const after = await machineState();
-      // The freed stringer popped out mid-job — real state, not a payout
-      expect(after.outputs).toEqual([
-        { type: "board", surface: "rough", width: 6 },
-      ]);
+      // The freed stringer stays lying on the bench — real state in the
+      // input bay, ready for the next plan, nothing in an output tray
+      expect(after.inputs).toContainEqual({
+        type: "board",
+        surface: "rough",
+        width: 6,
+      });
+      expect(after.outputs).toEqual([]);
       const palletLeft = await page.evaluate(() => {
         const pallet = window
           .__GET_GAME_STATE__()

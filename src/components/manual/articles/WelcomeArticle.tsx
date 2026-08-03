@@ -56,16 +56,18 @@ export const WelcomeArticle: React.FC = () => (
         <ShortcutKeys shortcut="put-down" />.
       </li>
       <li>
-        Open the bench with <ShortcutKeys shortcut="open-station-sheet" /> and
-        pry the marked nails with the mouse. Every board comes free one pull at
-        a time — stop whenever you like; the pallet remembers where you left
-        off — and each nail goes back in your tin.
+        Open the bench with <ShortcutKeys shortcut="open-station-sheet" />, take
+        the hammer down off the rail, and pry the nails with it. Every board
+        comes free one pull at a time and stays lying on the bench — stop
+        whenever you like; the pallet remembers where you left off — and each
+        nail goes back in your tin.
       </li>
       <li>
-        Switch the bench's plan with <ShortcutKeys shortcut="cycle-operation" />{" "}
-        to <Term>Build Rustic Shelf</Term>: two stringers, three deck boards,
-        and eight of the salvaged nails. On the bench, set each piece on its
-        outline, then drive the nails home.
+        With the wood already on the bench, switch its plan with{" "}
+        <ShortcutKeys shortcut="cycle-operation" /> to{" "}
+        <Term>Build Rustic Shelf</Term>: two stringers, three deck boards, and
+        eight of the salvaged nails. Set each piece on its outline, then drive
+        the nails home.
       </li>
       <li>
         Pick up the finished shelf, carry it out the garage door, and load it

@@ -101,8 +101,22 @@ export async function takeAllHere(page: any) {
   await page.waitForTimeout(30);
 }
 
+/**
+ * Unfold a bench's "Plans & paperwork" drawer if it's folded (it starts
+ * closed while a pallet holds the bench top); no-op elsewhere.
+ */
+export async function openPaperwork(card: any) {
+  const drawer = card.locator("[data-testid='bench-paperwork']");
+  if ((await drawer.count()) > 0) {
+    if ((await drawer.getAttribute("open")) === null) {
+      await drawer.locator("summary").click();
+    }
+  }
+}
+
 /** Open a collapsed recipe index; no-op for the other control shapes. */
 export async function openRecipeIndex(card: any) {
+  await openPaperwork(card);
   const toggle = card.locator("button[aria-expanded]");
   if (
     (await toggle.count()) > 0 &&

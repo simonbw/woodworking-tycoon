@@ -37,6 +37,7 @@ import {
   setMachineSettingsAction,
   setOperatingAction,
   setPlayerPositionAction,
+  takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
   toggleMachinePowerAction,
 } from "../game-actions/player-actions";
@@ -511,10 +512,11 @@ export class ShopDriver {
    * covers both halves of a glue-up.
    */
   run(machineTypeId: MachineState["machineTypeId"]): this {
-    // Dismantling never "runs": the pallet transforms nail by nail
-    // through incremental commits, so one run() is one whole teardown.
+    // Dismantling never "runs": a staged pallet transforms nail by nail
+    // through incremental commits — no plan is ever selected for it — so
+    // one run() is one whole teardown.
     const selected = this.machine(machineTypeId).selectedOperationOrNull;
-    if (selected?.interaction?.kind === "pry") {
+    if (this.offersPry(machineTypeId)) {
       return this.performWork(machineTypeId);
     }
 
@@ -558,7 +560,7 @@ export class ShopDriver {
    */
   performWork(machineTypeId: MachineState["machineTypeId"]): this {
     const machine = this.machine(machineTypeId);
-    if (machine.selectedOperationOrNull?.interaction?.kind === "pry") {
+    if (this.offersPry(machineTypeId)) {
       let pulls = palletPryTargetsLeft(machine);
       if (pulls === 0) {
         throw new Error(
@@ -645,6 +647,60 @@ export class ShopDriver {
       }
     }
     return this;
+  }
+
+  /**
+   * Clear the loose stock lying on a bench back into the arms — a
+   * teardown's freed boards live in the input bay (they stay on the bench,
+   * see pryPalletNailAction), so collect() never sees them. An armful at a
+   * time, dropping what doesn't fit at the feet, exactly like collect().
+   */
+  takeStock(machineTypeId: MachineState["machineTypeId"]): this {
+    while (this.machine(machineTypeId).state.inputMaterials.length > 0) {
+      if (handSpaceLeft(this.state.player) === 0) {
+        const held = this.inventory.length;
+        this.apply(dropMaterialAction(this.inventory));
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down while clearing the ${machineTypeId}`,
+          );
+        }
+        continue;
+      }
+      const machine = this.machine(machineTypeId);
+      const before = machine.state.inputMaterials.length;
+      this.apply(
+        takeInputsFromMachineAction(
+          machine.state.inputMaterials.slice(
+            0,
+            handSpaceLeft(this.state.player),
+          ),
+          machine,
+        ),
+      );
+      if (this.machine(machineTypeId).state.inputMaterials.length === before) {
+        throw new Error(
+          `The ${machineTypeId}'s stock would not come off — holding a tool?`,
+        );
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Whether the station's bench view would be offering pry work right
+   * now: idle, a pallet staged, dismantling known. Mirrors
+   * benchScriptFor's pallet-wins rule — no plan selection involved.
+   */
+  private offersPry(machineTypeId: MachineState["machineTypeId"]): boolean {
+    const machine = this.machine(machineTypeId);
+    return (
+      machine.operationProgress.status !== "inProgress" &&
+      palletPryTargetsLeft(machine) > 0 &&
+      availableOperations(machine, this.state.progression).some(
+        (op) => op.interaction?.kind === "pry",
+      )
+    );
   }
 
   /**

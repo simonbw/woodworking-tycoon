@@ -47,7 +47,15 @@ export const BenchSheet: React.FC<{
   const gameState = useGameState();
   const { isTargeted } = useTargetedMachine();
 
-  const selectedOperation = machine.selectedOperationOrNull;
+  // Pry work isn't a plan: a staged pallet offers it by itself on the
+  // bench top, so the picker neither lists it nor honors a stale
+  // selection of it (old saves may still carry one).
+  const plannableOperations = operations.filter(
+    (op) => op.interaction?.kind !== "pry",
+  );
+  const rawSelection = machine.selectedOperationOrNull;
+  const selectedOperation =
+    rawSelection?.interaction?.kind === "pry" ? null : rawSelection;
   // A running job resolves against the plan and settings it finds when it
   // finishes, so both are held where they were until the work comes off.
   const working = machine.operationProgress.status === "inProgress";
@@ -111,7 +119,7 @@ export const BenchSheet: React.FC<{
     <>
       <div className="space-y-2 text-sm">
         <ModeControl
-          operations={operations}
+          operations={plannableOperations}
           selected={selectedOperation}
           onSelect={(operation) =>
             applyAction(
