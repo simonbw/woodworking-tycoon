@@ -12,7 +12,10 @@ import {
   pryPalletNailAction,
 } from "./operation-actions";
 import { palletOriginOnBench } from "../bench-work/bench-layout";
-import { palletBoardSlot } from "../bench-work/pallet-geometry";
+import {
+  initialPalletNails,
+  palletBoardSlot,
+} from "../bench-work/pallet-geometry";
 import { MACHINE_TYPES } from "../Machine";
 import { operateMachineAction } from "./player-actions";
 import { tickAction } from "./tickAction";
@@ -237,51 +240,82 @@ describe("pryPalletNailAction targeting", () => {
           id: "test-pallet",
           type: "pallet" as const,
           deckBoards: Array(11).fill(true) as never,
-          stringers: [true, true, true],
+          stringers: [true, true, true] as never,
+          nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
         },
       ],
     });
   }
 
-  it("pries the exact nail the player pressed", () => {
+  it("pulls exactly the nail the player pressed — no board frees yet", () => {
     const state = stateWith({ machines: [palletOnBench()] });
     const result = pryPalletNailAction(getMachines(state.machines)[0], {
-      kind: "deck",
-      index: 2,
+      deck: 2,
+      stringer: 1,
     })(state);
     const pallet = result.machines[0].inputMaterials[0];
     assert.ok(pallet.type === "pallet");
-    assert.strictEqual(pallet.deckBoards[2], false);
-    assert.strictEqual(pallet.deckBoards[10], true);
+    assert.strictEqual(pallet.nails.length, 32);
+    assert.ok(!pallet.nails.some((n) => n.deck === 2 && n.stringer === 1));
+    // Two nails still hold deck board 2; nothing came free
+    assert.strictEqual(pallet.deckBoards[2], true);
+    assert.deepStrictEqual(pallet.stringers, [true, true, true]);
+    assert.strictEqual(result.machines[0].inputMaterials.length, 1);
     assert.strictEqual(result.consumables.nails, 1);
   });
 
-  it("a stringer pull frees a stringer even while deck boards remain", () => {
-    const state = stateWith({ machines: [palletOnBench()] });
-    const result = pryPalletNailAction(getMachines(state.machines)[0], {
-      kind: "stringer",
-      index: 0,
-    })(state);
-    const pallet = result.machines[0].inputMaterials[0];
+  it("a board comes free when its last nail is pulled", () => {
+    let state = stateWith({ machines: [palletOnBench()] });
+    for (const stringer of [0, 1, 2]) {
+      state = pryPalletNailAction(getMachines(state.machines)[0], {
+        deck: 6,
+        stringer,
+      })(state);
+    }
+    const pallet = state.machines[0].inputMaterials[0];
     assert.ok(pallet.type === "pallet");
-    // The exact stringer the nail belonged to came off, not "one of them"
-    assert.deepStrictEqual(pallet.stringers, [false, true, true]);
+    assert.strictEqual(pallet.deckBoards[6], false);
+    assert.strictEqual(pallet.deckBoards[10], true);
     // The freed board stays lying on the bench, not in an output bay
-    const freed = result.machines[0].inputMaterials.at(-1)!;
-    assert.ok(freed.type === "board" && freed.width === 6);
-    assert.strictEqual(result.machines[0].outputMaterials.length, 0);
+    const freed = state.machines[0].inputMaterials.at(-1)!;
+    assert.ok(freed.type === "board" && freed.width === 4);
+    assert.strictEqual(state.machines[0].outputMaterials.length, 0);
+    assert.strictEqual(state.consumables.nails, 3);
+  });
+
+  it("the last nail on a crossing frees both of its boards", () => {
+    let state = stateWith({ machines: [palletOnBench()] });
+    const machine = () => getMachines(state.machines)[0];
+    // Pull every nail; the very last one frees a deck board AND the
+    // last stringer in the same commit.
+    let guard = 40;
+    while (guard-- > 0) {
+      const pallet = machine().inputMaterials.find((m) => m.type === "pallet");
+      if (!pallet || pallet.type !== "pallet" || pallet.nails.length === 0)
+        break;
+      state = pryPalletNailAction(machine(), pallet.nails[0])(state);
+    }
+    // 33 pulls: the pallet is gone, all 14 boards lie on the bench
+    assert.ok(!machine().inputMaterials.some((m) => m.type === "pallet"));
+    assert.strictEqual(
+      machine().inputMaterials.filter((m) => m.type === "board").length,
+      14,
+    );
+    assert.strictEqual(state.consumables.nails, 33);
   });
 
   it("seats the freed board on its berth in the bench layout", () => {
-    const state = stateWith({ machines: [palletOnBench()] });
-    const result = pryPalletNailAction(getMachines(state.machines)[0], {
-      kind: "deck",
-      index: 6,
-    })(state);
-    const freed = result.machines[0].inputMaterials.at(-1)!;
+    let state = stateWith({ machines: [palletOnBench()] });
+    for (const stringer of [0, 1, 2]) {
+      state = pryPalletNailAction(getMachines(state.machines)[0], {
+        deck: 6,
+        stringer,
+      })(state);
+    }
+    const freed = state.machines[0].inputMaterials.at(-1)!;
     // The id is the slot's — the very board the pallet was drawing
     assert.strictEqual(freed.id, "test-pallet:deck-6");
-    const placement = result.machines[0].benchLayout?.[freed.id];
+    const placement = state.machines[0].benchLayout?.[freed.id];
     assert.ok(placement);
     const origin = palletOriginOnBench(MACHINE_TYPES.workspace);
     const berth = palletBoardSlot({ kind: "deck", index: 6 });

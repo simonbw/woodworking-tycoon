@@ -2,10 +2,12 @@
  * The consumables loop: a pallet pays for the shelf it becomes.
  *
  * `game-actions/consumables.test.ts` covers the accounting one operation at a
- * time. The loop is the point here — a part-stripped pallet has to yield
- * *exactly* eight nails across five pry-aparts, because eight is what one
- * rustic shelf costs. If either number drifts, the fixture's premise breaks
- * and the shelf stops being free, which is the whole idea of salvage.
+ * time. The loop is the point here — a part-stripped pallet (five deck
+ * boards on three stringers) holds fifteen nails, one per crossing, and
+ * a rustic shelf costs eight of them: the pallet pays for its own shelf
+ * with nails to spare. If either number drifts, the fixture's premise
+ * breaks and the shelf stops being free, which is the whole idea of
+ * salvage.
  *
  * `consumables.spec.ts` keeps the shortfall readout, the supply cabinet's
  * appearance, and the store aisle.
@@ -30,8 +32,9 @@ const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
 /**
  * Pry the pallet apart until nothing is left: nail by nail through the
- * same incremental commits the bench view dispatches — five deck boards,
- * then the three stringers, a nail back in the tin for every pull.
+ * same incremental commits the bench view dispatches — fifteen pulls for
+ * five deck boards and three stringers, a nail back in the tin for
+ * every pull, each board dropping free with its last one.
  */
 function dismantleThePallet(shop: ShopDriver): ShopDriver {
   // No plan: the staged pallet offers prying on its own, and the freed
@@ -42,17 +45,17 @@ function dismantleThePallet(shop: ShopDriver): ShopDriver {
 }
 
 describe("consumables loop", () => {
-  it("a stripped pallet gives back eight boards and eight nails", () => {
+  it("a stripped pallet gives back eight boards and fifteen nails", () => {
     const shop = openShop(consumablesShop);
     assert.equal(shop.shop.consumables.nails, 0);
 
     dismantleThePallet(shop);
 
     assert.equal(shop.stock(isPalletBoard).length, 8);
-    assert.equal(shop.shop.consumables.nails, 8);
+    assert.equal(shop.shop.consumables.nails, 15);
   });
 
-  it("one shelf costs exactly the eight nails the pallet returned", () => {
+  it("one shelf costs eight of the nails the pallet returned", () => {
     const shop = openShop(consumablesShop);
     dismantleThePallet(shop);
 
@@ -66,7 +69,7 @@ describe("consumables loop", () => {
       .collect(WORKBENCH);
 
     assert.equal(shop.holding(isShelf).length, 1);
-    assert.equal(shop.shop.consumables.nails, 0);
+    assert.equal(shop.shop.consumables.nails, 15 - 8);
   });
 
   it("the shelf won't start without the nails", () => {

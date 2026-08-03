@@ -1,4 +1,5 @@
 import { humanizeString } from "../utils/humanizeString";
+import { initialPalletNails } from "./bench-work/pallet-geometry";
 import { idMaker } from "../utils/idMaker";
 import { InputMaterial, InputMaterialWithQuantity } from "./Machine";
 import {
@@ -57,6 +58,7 @@ export function makePallet() {
       true,
     ],
     stringers: [true, true, true],
+    nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
   });
 }
 
@@ -430,6 +432,7 @@ export function createMockMaterial(
           true,
         ],
         stringers: [true, true, true],
+        nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
       });
 
     case "endGrainSlice":

@@ -114,8 +114,9 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       const deckBoardsCount = inputPallet.deckBoards.filter(
         (board: boolean) => board,
       ).length;
-      // Every board pried loose gives its nails back — one per board.
-      // A whole pallet worth of prying keeps the rustic shelf free.
+      // Every pried nail goes back into the shop's stock — one per
+      // deck-board × stringer crossing (Pallet.nails). A whole pallet
+      // worth of prying keeps the rustic shelf free.
       if (deckBoardsCount <= 1) {
         const stringerCount = inputPallet.stringers.filter(
           (present: boolean) => present,
@@ -130,7 +131,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
           inputs: [],
           outputs: [...stringers, ...deckBoards],
           consumableOutputs: [
-            { id: "nails" as const, amount: stringerCount + deckBoardsCount },
+            { id: "nails" as const, amount: inputPallet.nails.length },
           ],
         };
       } else {
@@ -141,15 +142,24 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
           (board: boolean) => board === true,
         );
         deckBoardsLeft[index] = false;
+        // The board comes off with all the nails that held it; with
+        // deck boards still left, every stringer keeps at least one
+        const nailsLeft = inputPallet.nails.filter((n) => n.deck !== index);
         return {
           inputs: [
             makeMaterial<Pallet>({
               ...inputPallet,
               deckBoards: deckBoardsLeft,
+              nails: nailsLeft,
             }),
           ],
           outputs: [board("pallet", 3, 4, 1)],
-          consumableOutputs: [{ id: "nails" as const, amount: 1 }],
+          consumableOutputs: [
+            {
+              id: "nails" as const,
+              amount: inputPallet.nails.length - nailsLeft.length,
+            },
+          ],
         };
       }
     },

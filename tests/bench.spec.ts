@@ -205,12 +205,24 @@ test.describe("Bench view", () => {
       // The hammer comes off the rail and becomes the pointer
       await page.getByTestId("bench-tool-hammer").click();
 
-      // One real press on a marked nail: the top stringer's own nail
-      // sits on its second top-deck crossing — pallet inches
-      // (46/6 · 1, 0) — published through the stage's fit attrs.
-      const nail = await palletPoint(page, 46 / 6, 0);
-      await page.mouse.click(nail.x, nail.y);
-      // The pry takes a beat — the hammer's swing is the pacing
+      // Real presses walk one deck board's three nails — a nail sits on
+      // every deck-board × stringer crossing, and the board only drops
+      // with its last one. The center top-deck board's crossings are
+      // pallet inches (23, 0), (23, 17), (23, 34), published through the
+      // stage's fit attrs (the center column stays clear of the floating
+      // paperwork drawer, which the sanding step left open).
+      const palletState = () =>
+        page.evaluate(
+          () =>
+            window
+              .__GET_GAME_STATE__()
+              .machines[0].inputMaterials.find(
+                (m: any) => m.type === "pallet",
+              ) ?? null,
+        );
+      const first = await palletPoint(page, 23, 0);
+      await page.mouse.click(first.x, first.y);
+      // The pry takes a beat — the hammer's lever is the pacing
       await expect
         .poll(async () =>
           page.evaluate(
@@ -218,23 +230,37 @@ test.describe("Bench view", () => {
           ),
         )
         .toBe(1);
+      // One nail banked, but two still hold the board: nothing freed
+      expect((await palletState()).nails).toHaveLength(32);
+      expect((await machineState()).inputs).not.toContainEqual(
+        expect.objectContaining({ type: "board" }),
+      );
+      for (const yIn of [17, 34]) {
+        // One pull per lever: presses inside PRY_MS are deliberately
+        // ignored, so give each one its beat before the next
+        await page.waitForTimeout(400);
+        const at = await palletPoint(page, 23, yIn);
+        await page.mouse.click(at.x, at.y);
+      }
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () => window.__GET_GAME_STATE__().consumables.nails ?? 0,
+          ),
+        )
+        .toBe(3);
       const after = await machineState();
-      // The freed stringer stays lying on the bench — real state in the
-      // input bay, ready for the next plan, nothing in an output tray
+      // The last nail freed exactly that board — lying on the bench in
+      // the input bay, ready for the next plan, nothing in an output tray
       expect(after.inputs).toContainEqual({
         type: "board",
         surface: "rough",
-        width: 6,
+        width: 4,
       });
       expect(after.outputs).toEqual([]);
-      const stringersLeft = await page.evaluate(() => {
-        const pallet = window
-          .__GET_GAME_STATE__()
-          .machines[0].inputMaterials.find((m: any) => m.type === "pallet");
-        return pallet?.stringers;
-      });
-      // The exact stringer whose nail was pressed came off
-      expect(stringersLeft).toEqual([false, true, true]);
+      // The exact deck board whose nails were pressed came off
+      expect((await palletState()).deckBoards[7]).toBe(false);
+      expect((await palletState()).stringers).toEqual([true, true, true]);
     });
 
     await test.step("glue, assembly, saw, and the cure each mount their script", async () => {

@@ -17,6 +17,7 @@ import { initialGameState } from "../initialGameState";
 import { operateMachineAction } from "./player-actions";
 import { buyConsumablePackAction } from "./store-actions";
 import { pryPalletNailAction } from "./operation-actions";
+import { initialPalletNails } from "../bench-work/pallet-geometry";
 import { tickAction } from "./tickAction";
 
 /** The starter workspace sits at [1,2] rotation 0 — its operation cell. */
@@ -44,13 +45,15 @@ function shelfBoards() {
 
 /** A pallet with a single deck board left, so dismantling finishes it. */
 function nearlyDismantledPallet(): Pallet {
+  const deckBoards = [
+    true,
+    ...(Array(10).fill(false) as boolean[]),
+  ] as Pallet["deckBoards"];
   return makeMaterial<Pallet>({
     type: "pallet",
-    deckBoards: [
-      true,
-      ...(Array(10).fill(false) as boolean[]),
-    ] as Pallet["deckBoards"],
+    deckBoards,
     stringers: [true, true, true],
+    nails: initialPalletNails(deckBoards, [true, true, true]),
   });
 }
 
@@ -88,10 +91,10 @@ describe("buyConsumablePackAction", () => {
 });
 
 describe("salvaged nails", () => {
-  it("prying a pallet apart returns one nail per board freed", () => {
-    // Dismantling is incremental now: each pull is its own commit, the
-    // nail clinks into the tin immediately, and the freed board pops out
-    // right then (see pryPalletNailAction).
+  it("every pull banks a nail; boards drop with their last one", () => {
+    // Dismantling is incremental: each pull is its own commit, the nail
+    // clinks into the tin immediately, and a board comes free the moment
+    // its last nail is out (see pryPalletNailAction).
     const machine = workspaceMachine({
       selectedOperationId: "dismantlePallet",
       inputMaterials: [nearlyDismantledPallet()],
@@ -103,22 +106,28 @@ describe("salvaged nails", () => {
       },
       machines: [machine],
     });
-    // Last deck board, then the three stringers: 4 pulls, 4 boards, 4
-    // nails — every freed board stays lying on the bench (inputMaterials)
+    // One deck board across three stringers: three nails hold all four
+    // boards. Each of the first two pulls drops the stringer that just
+    // lost its only nail; the third frees the deck board and the last
+    // stringer together — every board lying on the bench (inputMaterials)
     const boardsOnBench = (s: typeof state) =>
       s.machines[0].inputMaterials.filter((m) => m.type === "board").length;
-    for (let pull = 1; pull <= 4; pull++) {
+    for (const [pull, boards] of [
+      [1, 1],
+      [2, 2],
+      [3, 4],
+    ]) {
       state = pryPalletNailAction(getMachines(state.machines)[0])(state);
-      assert.strictEqual(boardsOnBench(state), pull);
+      assert.strictEqual(boardsOnBench(state), boards);
       assert.strictEqual(state.consumables.nails, pull);
     }
-    // The pallet itself is gone with the last stringer; its boards remain
+    // The pallet itself is gone with the last nail; its boards remain
     assert.strictEqual(state.machines[0].inputMaterials.length, 4);
     assert.strictEqual(state.machines[0].outputMaterials.length, 0);
-    // A fifth pull finds nothing to pry and changes nothing
+    // Another pull finds nothing to pry and changes nothing
     const spent = pryPalletNailAction(getMachines(state.machines)[0])(state);
     assert.strictEqual(boardsOnBench(spent), 4);
-    assert.strictEqual(spent.consumables.nails, 4);
+    assert.strictEqual(spent.consumables.nails, 3);
   });
 });
 

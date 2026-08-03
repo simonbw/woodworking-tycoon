@@ -11,7 +11,6 @@ import {
   BenchScript,
   benchScriptFor,
   pieceSize,
-  PryTarget,
   pryTargets,
   rowLayout,
   strokeSurfaceSize,
@@ -35,7 +34,12 @@ import {
 } from "../../game/game-actions/operation-actions";
 import { operateMachineAction } from "../../game/game-actions/player-actions";
 import { isBenchType, Machine } from "../../game/Machine";
-import { Board, MaterialInstance, Pallet } from "../../game/Materials";
+import {
+  Board,
+  MaterialInstance,
+  Pallet,
+  PalletNail,
+} from "../../game/Materials";
 import { machineCanOperate, shopSupply } from "../../game/machine-helpers";
 import { clampsFor } from "../../game/Clamp";
 import { ToolId } from "../../game/Tool";
@@ -135,8 +139,8 @@ export const BenchWorkSurface: React.FC<{
 
   // ---------------------------------------------------------- the hands
   const [heldTool, setHeldTool] = useState<ToolId | null>(null);
-  const [prying, setPrying] = useState<PryTarget | null>(null);
-  const [hoveredNail, setHoveredNail] = useState<PryTarget | null>(null);
+  const [prying, setPrying] = useState<PalletNail | null>(null);
+  const [hoveredNail, setHoveredNail] = useState<PalletNail | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragOffset = useRef({ dxIn: 0, dyIn: 0 });
@@ -276,22 +280,30 @@ export const BenchWorkSurface: React.FC<{
   const hammerHeld = heldTool === "hammer";
 
   const nailAt = useCallback(
-    (xIn: number, yIn: number): PryTarget | null =>
-      targets.find((target) => {
+    (xIn: number, yIn: number): PalletNail | null => {
+      // Nearest wins — neighboring crossings can sit closer together
+      // than the hit radius, and the pointer means the closest one.
+      let best: PalletNail | null = null;
+      let bestDist = NAIL_HIT_RADIUS_IN;
+      for (const target of targets) {
         const at = palletNailPosition(target);
-        return (
-          Math.hypot(
-            palletOriginIn.xIn + at.xIn - xIn,
-            palletOriginIn.yIn + at.yIn - yIn,
-          ) <= NAIL_HIT_RADIUS_IN
+        const dist = Math.hypot(
+          palletOriginIn.xIn + at.xIn - xIn,
+          palletOriginIn.yIn + at.yIn - yIn,
         );
-      }) ?? null,
+        if (dist <= bestDist) {
+          best = target;
+          bestDist = dist;
+        }
+      }
+      return best;
+    },
     [targets, palletOriginIn.xIn, palletOriginIn.yIn],
   );
 
   const lastPryAt = useRef(0);
   const beginPry = useCallback(
-    (target: PryTarget) => {
+    (target: PalletNail) => {
       if (!scenePallet || !sceneFit) return;
       // The press is the commit: one action frees the board AND seats it
       // on its berth in the bench layout (see pryPalletNailAction) —
@@ -692,7 +704,7 @@ export const BenchWorkSurface: React.FC<{
       const y = event.clientY - rect.top;
       pointerPos.current = { x, y };
       if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate(${x - 12}px, ${y - 38}px)`;
+        cursorRef.current.style.transform = `translate(${x - 12}px, ${y - 11}px)`;
       }
       const fit = fitRef.current;
       if (!fit) return;
@@ -803,7 +815,7 @@ export const BenchWorkSurface: React.FC<{
             }`}
             style={{
               transform: pointerPos.current
-                ? `translate(${pointerPos.current.x - 12}px, ${pointerPos.current.y - 38}px)`
+                ? `translate(${pointerPos.current.x - 12}px, ${pointerPos.current.y - 11}px)`
                 : "translate(-100px, -100px)",
             }}
           />

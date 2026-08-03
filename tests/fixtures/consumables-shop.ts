@@ -1,5 +1,6 @@
 import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { GameState } from "../../src/game/GameState";
+import { initialPalletNails } from "../../src/game/bench-work/pallet-geometry";
 import { ALL_ARTICLE_IDS } from "../../src/game/manual";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
@@ -7,8 +8,8 @@ import { STARTER_SKILLS } from "../../src/game/Skill";
  * A shop staged for the consumables loop: the starter workspace (hammer
  * mounted) already loaded with a part-stripped pallet, an unfinished maple
  * cutting board in the player's pocket, and an empty supply shelf. Five
- * deck boards remain, so a full dismantle yields 8 boards and 8 nails —
- * exactly one rustic shelf's worth.
+ * deck boards remain on three stringers, so a full dismantle yields 8
+ * boards and 15 nails — a rustic shelf's eight with change to spare.
  */
 export const consumablesShop: GameState = {
   tick: 0,
@@ -54,6 +55,10 @@ export const consumablesShop: GameState = {
             false,
           ],
           stringers: [true, true, true],
+          nails: initialPalletNails(
+            [true, true, true, true, true],
+            [true, true, true],
+          ),
         },
       ],
       processingMaterials: [],

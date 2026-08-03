@@ -183,28 +183,30 @@ modeled as the pallet instance transforming nail by nail:
 
 - No plan is selected: the staged pallet is the offer. The player takes
   the hammer off the rail (it becomes the cursor, nails light up) and
-  presses a nail; a short swing animation paces the pull, then the
-  commit lands.
-- Each pry is an action: `+1 nail` to consumables (each one flies to the
-  supplies tally and clinks in — `flyToSupply`), and the pallet's
-  remaining-nail state updates on the `MaterialInstance` itself (absent
-  = full, per the established absent-means-default migration pattern —
-  old saves load untouched).
-- When a slat's last nail comes out, that board comes free *right then*
-  and stays lying on the bench where it was nailed
-  (`inputMaterials`, so the next plan's `stagedPieces` finds it) —
-  mid-job you hold a genuinely half-stripped pallet plus loose boards,
-  all real state. The shared layout lives in
+  presses a nail; a short lever animation — a rotation about the claw,
+  not a swing — paces the pull, then the commit lands.
+- The nails are pallet state (`Pallet.nails`): one at every crossing of
+  a present deck board and a present stringer, so every nail is in two
+  boards and joins exactly them. They render in both views from the
+  same geometry (`palletNailPosition` inside `PalletSprite`), so the
+  shop floor shows the same half-pried pallet the bench view does.
+- Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
+  consumables (each one flies to the supplies tally and clinks in —
+  `flyToSupply`).
+- A board comes free the moment its *last* nail comes out — never
+  before, and the very last nail on a crossing frees its deck board and
+  its stringer together. The freed board stays lying on the bench where
+  it was nailed (`inputMaterials`, so the next plan's `stagedPieces`
+  finds it) — mid-job you hold a genuinely half-stripped pallet plus
+  loose boards, all real state. The shared layout lives in
   `src/game/bench-work/pallet-geometry.ts`, so the floor sprite, the
-  bench scene, and the freed board's berth can never disagree.
+  bench scene, and the freed board's berth can never disagree (a freed
+  board's id is its slot id, which is also its sprite seed — the grain
+  doesn't change when the board drops).
 - Refresh mid-dismantle and you resume at the exact nail you left —
   not because mini-game state was saved, but because every pull *was*
   game state — the dragged-around arrangement included
-  (`MachineState.benchLayout`, decision 3's amendment). Every nail sits
-  on a deck-board × stringer crossing (`palletNailPosition`), and the
-  stringers are per-board state like the deck (`Pallet.stringers`), so
-  the nail you press frees exactly that board, grain and all (the freed
-  board's id is its slot id, which is also its sprite seed).
+  (`MachineState.benchLayout`, decision 3's amendment).
 
 ## Script sketches for the rest — **Now**
 

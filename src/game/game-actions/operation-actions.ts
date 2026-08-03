@@ -18,12 +18,16 @@ import { UpgradeId } from "../Upgrade";
 import { Vector } from "../Vectors";
 import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { withXp } from "./skill-actions";
-import { PryTarget } from "../bench-work/workpiece";
+import { PalletNail } from "../Materials";
 import {
   BenchPlacement,
   palletOriginOnBench,
 } from "../bench-work/bench-layout";
-import { palletBoardSlot } from "../bench-work/pallet-geometry";
+import {
+  isSameNail,
+  palletBoardSlot,
+  PalletBoardRef,
+} from "../bench-work/pallet-geometry";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust } from "../Dust";
 import { materialSpecies } from "../material-helpers";
@@ -288,23 +292,23 @@ export function finishAttendedWorkAction(machine: Machine): GameAction {
 
 /**
  * One nail pried out of the pallet staged at this bench — the pilot for
- * incremental commits. Every pull is real state: the nail lands in the
- * shop's stock immediately, the pallet's own board flags update on the
- * MaterialInstance, and the freed board stays lying on the bench (it
- * joins inputMaterials, where the next recipe's stagedPieces will find
- * it). Refresh mid-dismantle and you resume at the exact nail you left,
- * not because mini-game state was saved, but because every pull WAS game
- * state.
+ * incremental commits. Every pull is real state: the nail leaves
+ * Pallet.nails and lands in the shop's stock immediately, and any board
+ * that just lost its last nail comes free right there on the bench (it
+ * joins inputMaterials, lying on its berth, where the next recipe's
+ * stagedPieces will find it). A nail joins a deck board to a stringer,
+ * so one pull loosens both — and the last nail on a crossing can free
+ * both at once. Refresh mid-dismantle and you resume at the exact nail
+ * you left, not because mini-game state was saved, but because every
+ * pull WAS game state.
  *
- * Deck boards come off first (top of the stack down), one nail each; then
- * the three stringers, one nail each — the same 14-nail, 11-board yield
- * the one-shot recipe paid out. The bench view passes the nail the
- * player actually pried; without one, the topmost remaining board frees
- * (the driver's path).
+ * The bench view passes the nail the player actually pried; without one
+ * (the driver's path) the first remaining nail pulls, which walks the
+ * deck board by board.
  */
 export function pryPalletNailAction(
   machine: Machine,
-  target?: PryTarget,
+  target?: PalletNail,
 ): GameAction {
   return (gameState) => {
     const machineState = findMachineState(gameState, machine);
@@ -337,58 +341,48 @@ export function pryPalletNailAction(
       return gameState;
     }
 
-    // Resolve which board this pull frees: the exact one the player's
-    // nail belongs to, or (driver's path, no target) the topmost deck
-    // board, then the bottom-most stringer.
-    const freed: PryTarget | null =
-      target?.kind === "deck" && pallet.deckBoards[target.index]
-        ? target
-        : target?.kind === "stringer" && pallet.stringers[target.index]
-          ? target
-          : target
-            ? null
-            : pallet.deckBoards.some((b: boolean) => b)
-              ? {
-                  kind: "deck",
-                  index: pallet.deckBoards.findLastIndex((b: boolean) => b),
-                }
-              : pallet.stringers.some((b: boolean) => b)
-                ? {
-                    kind: "stringer",
-                    index: pallet.stringers.findLastIndex((b: boolean) => b),
-                  }
-                : null;
-    if (!freed) {
+    const nail = target
+      ? (pallet.nails.find((n) => isSameNail(target, n)) ?? null)
+      : (pallet.nails[0] ?? null);
+    if (!nail) {
       console.warn("No such nail left on the pallet to pry");
       return gameState;
     }
+    const nails = pallet.nails.filter((n) => n !== nail);
 
-    let remainingPallet: typeof pallet | null;
-    if (freed.kind === "deck") {
-      const deckBoards = [...pallet.deckBoards] as typeof pallet.deckBoards;
-      deckBoards[freed.index] = false;
-      remainingPallet = { ...pallet, deckBoards };
-    } else {
-      const stringers = [...pallet.stringers] as typeof pallet.stringers;
-      stringers[freed.index] = false;
-      remainingPallet =
-        remainingBoards({ ...pallet, stringers }) > 0
-          ? { ...pallet, stringers }
-          : null;
+    // The pull loosens both boards the nail joined; each comes free the
+    // moment its last nail is out (the very last nail frees two).
+    const freedRefs: PalletBoardRef[] = [];
+    const deckBoards = [...pallet.deckBoards] as typeof pallet.deckBoards;
+    const stringers = [...pallet.stringers] as typeof pallet.stringers;
+    if (deckBoards[nail.deck] && !nails.some((n) => n.deck === nail.deck)) {
+      deckBoards[nail.deck] = false;
+      freedRefs.push({ kind: "deck", index: nail.deck });
     }
-    // The freed board's id doubles as its sprite seed and matches the
-    // seed the pallet drew it with (see PalletSprite), so the very same
-    // grain keeps lying there — the pull frees the board, it doesn't
-    // swap it for a different one.
-    const freedBoard = {
-      ...(freed.kind === "deck"
+    if (
+      stringers[nail.stringer] &&
+      !nails.some((n) => n.stringer === nail.stringer)
+    ) {
+      stringers[nail.stringer] = false;
+      freedRefs.push({ kind: "stringer", index: nail.stringer });
+    }
+    const boardsLeft =
+      deckBoards.filter(Boolean).length + stringers.filter(Boolean).length;
+    const remainingPallet =
+      boardsLeft > 0 ? { ...pallet, deckBoards, stringers, nails } : null;
+
+    // A freed board's id doubles as its sprite seed and matches the seed
+    // the pallet drew it with (see PalletSprite), so the very same grain
+    // keeps lying there — the pull frees the board, it doesn't swap it
+    // for a different one. And it keeps lying on its berth: the
+    // placement lands in the bench layout in the same commit, so nothing
+    // pops or reshuffles.
+    const freedBoards = freedRefs.map((ref) => ({
+      ...(ref.kind === "deck"
         ? board("pallet", 3, 4, 1)
         : board("pallet", 4, 6, 3)),
-      id: palletSlotId(pallet, freed),
-    };
-    // And it keeps lying on its berth: the placement lands in the bench
-    // layout in the same commit, so nothing pops or reshuffles.
-    const berth = palletBoardSlot(freed);
+      id: palletSlotId(pallet, ref),
+    }));
     const palletOrigin = palletOriginOnBench(live.type);
 
     return {
@@ -400,28 +394,36 @@ export function pryPalletNailAction(
         if (!isSameMachine(m, machineState)) {
           return m;
         }
-        // The freed board stays right on the bench: loose stock the
-        // next plan can claim, or E takes back into the arms.
+        // Freed boards stay right on the bench: loose stock the next
+        // plan can claim, or E takes back into the arms.
         const inputMaterials = [
           ...m.inputMaterials.filter((material) => material !== pallet),
           ...(remainingPallet ? [remainingPallet] : []),
-          freedBoard,
+          ...freedBoards,
         ];
         return {
           ...m,
           inputMaterials,
           benchLayout: {
             ...prunedBenchLayout(m.benchLayout, inputMaterials),
-            [freedBoard.id]: {
-              xIn: palletOrigin.xIn + berth.xIn,
-              yIn: palletOrigin.yIn + berth.yIn,
-              angleDeg: berth.angleDeg,
-              flipped: false,
-            },
+            ...Object.fromEntries(
+              freedBoards.map((freedBoard, i) => {
+                const berth = palletBoardSlot(freedRefs[i]);
+                return [
+                  freedBoard.id,
+                  {
+                    xIn: palletOrigin.xIn + berth.xIn,
+                    yIn: palletOrigin.yIn + berth.yIn,
+                    angleDeg: berth.angleDeg,
+                    flipped: false,
+                  },
+                ];
+              }),
+            ),
           },
         };
       }),
-      // The nail's own creak-and-pop; the board settling is part of it.
+      // The nail's own creak-and-pop; a board settling is part of it.
       pendingSounds: [
         ...(gameState.pendingSounds ?? []),
         { kind: "nail-pry" as const },
@@ -430,19 +432,8 @@ export function pryPalletNailAction(
   };
 }
 
-/** Boards still nailed to a pallet. */
-function remainingBoards(pallet: {
-  deckBoards: ReadonlyArray<boolean>;
-  stringers: ReadonlyArray<boolean>;
-}): number {
-  return (
-    pallet.deckBoards.filter(Boolean).length +
-    pallet.stringers.filter(Boolean).length
-  );
-}
-
 /** The stable id a pallet's board frees under — also its grain seed. */
-function palletSlotId(pallet: { id: string }, target: PryTarget): string {
+function palletSlotId(pallet: { id: string }, target: PalletBoardRef): string {
   return `${pallet.id}:${target.kind}-${target.index}`;
 }
 
@@ -501,7 +492,7 @@ export function arrangeBenchMaterialAction(
   };
 }
 
-/** True when the staged pallet (if any) still has a nail to pry. */
+/** How many nails the staged pallet (if any) still has to pry. */
 export function palletPryTargetsLeft(machine: Machine): number {
   const pallet = machine.inputMaterials.find(
     (material) => material.type === "pallet",
@@ -509,10 +500,7 @@ export function palletPryTargetsLeft(machine: Machine): number {
   if (!pallet || pallet.type !== "pallet") {
     return 0;
   }
-  return (
-    pallet.deckBoards.filter((b: boolean) => b).length +
-    pallet.stringers.filter((b: boolean) => b).length
-  );
+  return pallet.nails.length;
 }
 
 /**

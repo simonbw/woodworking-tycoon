@@ -2,6 +2,7 @@ import { NO_CONSUMABLES } from "../../src/game/Consumable";
 import { ALL_ARTICLE_IDS } from "../../src/game/manual";
 import { GameState } from "../../src/game/GameState";
 import { Board, Pallet } from "../../src/game/Materials";
+import { initialPalletNails } from "../../src/game/bench-work/pallet-geometry";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 import { Tuple } from "../../src/utils/typeUtils";
 
@@ -23,6 +24,7 @@ export const benchWorkPallet: Pallet = {
   type: "pallet",
   deckBoards: Array(11).fill(true) as Tuple<boolean, 11>,
   stringers: [true, true, true],
+  nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
 };
 
 /**

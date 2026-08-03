@@ -1,9 +1,11 @@
-import React, { useMemo } from "react";
+import { Graphics } from "pixi.js";
+import React, { useCallback, useMemo } from "react";
 import { Pallet } from "../../game/Materials";
 import {
   PALLET_HEIGHT_IN,
   PALLET_WIDTH_IN,
   palletBoardSlots,
+  palletNailPosition,
 } from "../../game/bench-work/pallet-geometry";
 import { board } from "../../game/board-helpers";
 import { omitUndefined } from "../../utils/objectUtils";
@@ -12,9 +14,10 @@ import { BoardSprite } from "./BoardSprite";
 
 /**
  * A pallet drawn from its shared geometry (bench-work/pallet-geometry):
- * every board still nailed in, laid out exactly where the bench view's
- * pry scene will find it — the floor sprite and the zoomed scene can
- * never disagree about which boards remain or where they lie.
+ * every board still nailed in and every nail still driven, laid out
+ * exactly where the bench view's pry scene will find them — the floor
+ * sprite and the zoomed scene are the same drawing at two zooms, so
+ * they can never disagree about which boards remain or where a nail is.
  */
 export const PalletSprite: React.FC<{
   pallet: Pallet;
@@ -26,6 +29,22 @@ export const PalletSprite: React.FC<{
   // pulled board keeps its exact grain lying in place.
   const deckBoard = useMemo(() => board("pallet", 3, 4, 1), []);
   const stringerBoard = useMemo(() => board("pallet", 4, 6, 3), []);
+
+  // Nail heads at their crossings — pallet state, so a pried nail is
+  // gone here in the shop view exactly as in the bench view.
+  const drawNails = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      for (const nail of pallet.nails) {
+        const at = palletNailPosition(nail);
+        const x = at.xIn * PIXELS_PER_INCH;
+        const y = at.yIn * PIXELS_PER_INCH;
+        g.circle(x, y, 1).fill({ color: 0x4a443e });
+        g.circle(x - 0.3, y - 0.3, 0.4).fill({ color: 0x9a938c });
+      }
+    },
+    [pallet.nails],
+  );
 
   return (
     <pixiContainer
@@ -47,6 +66,7 @@ export const PalletSprite: React.FC<{
           />
         </pixiContainer>
       ))}
+      <pixiGraphics draw={drawNails} />
     </pixiContainer>
   );
 };

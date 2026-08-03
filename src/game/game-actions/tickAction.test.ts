@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { cellDust } from "../Dust";
 import { GameState } from "../GameState";
+import { initialPalletNails } from "../bench-work/pallet-geometry";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
@@ -55,13 +56,15 @@ function attendingStateWith(overrides: Partial<GameState>): GameState {
 
 /** A pallet with a single deck board left, so dismantling finishes it. */
 function nearlyDismantledPallet(): Pallet {
+  const deckBoards = [
+    true,
+    ...(Array(10).fill(false) as boolean[]),
+  ] as Pallet["deckBoards"];
   return makeMaterial<Pallet>({
     type: "pallet",
-    deckBoards: [
-      true,
-      ...(Array(10).fill(false) as boolean[]),
-    ] as Pallet["deckBoards"],
+    deckBoards,
     stringers: [true, true, true],
+    nails: initialPalletNails(deckBoards, [true, true, true]),
   });
 }
 

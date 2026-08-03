@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
+import { initialPalletNails } from "./bench-work/pallet-geometry";
 import {
   getMachines,
   InputMaterialWithQuantity,
@@ -516,6 +517,7 @@ describe("stageableMaterials on a bench", () => {
     type: "pallet",
     deckBoards: Array(11).fill(true) as never,
     stringers: [true, true, true],
+    nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
   };
 
   it("takes a pallet with no plan selected — a bench is a table", () => {

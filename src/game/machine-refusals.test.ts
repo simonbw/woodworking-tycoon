@@ -5,6 +5,7 @@ import { ConsumableStock, NO_CONSUMABLES } from "./Consumable";
 import { Machine, MachineId, ParameterValues } from "./Machine";
 import { explainFeedRefusal, NO_SUPPLY } from "./machine-helpers";
 import { makeMaterial } from "./material-helpers";
+import { initialPalletNails } from "./bench-work/pallet-geometry";
 import { MaterialInstance, Pallet, Panel } from "./Materials";
 
 /** The refusal line standing at a machine with this stock in hand. */
@@ -157,6 +158,7 @@ describe("explainFeedRefusal", () => {
         true,
       ],
       stringers: [true, true, true],
+      nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
     });
     assert.match(
       refusalAt("jointer", "jointFace", undefined, [pallet])!,

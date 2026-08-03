@@ -288,13 +288,24 @@ export type FinishedProduct = {
   readonly finish?: Finish;
 };
 
+/** One nail in a pallet, at the crossing of a deck board and a stringer
+ * — a nail always joins exactly those two boards. */
+export type PalletNail = {
+  readonly deck: number;
+  readonly stringer: number;
+};
+
 export type Pallet = {
   readonly id: string;
   readonly type: "pallet";
   readonly deckBoards: Tuple<boolean, 11>;
   /** Which stringers still hold on, top to bottom — per board, like the
-   * deck, so prying a particular stringer's nail frees that stringer. */
+   * deck. A board comes free when its last nail is pried. */
   readonly stringers: Tuple<boolean, 3>;
+  /** Every nail still driven, one per crossing of two present boards.
+   * Prying is per-nail (pryPalletNailAction); these render in both the
+   * shop view and the bench view (PalletSprite). */
+  readonly nails: ReadonlyArray<PalletNail>;
 };
 
 /**

@@ -1,14 +1,15 @@
-import { Graphics } from "pixi.js";
-import React, { useCallback } from "react";
-import { animated, useSpring } from "react-spring";
+import { useTick } from "@pixi/react";
+import { Container, Graphics } from "pixi.js";
+import React, { useCallback, useRef } from "react";
 import {
+  isSameNail,
+  palletNailPosition,
   PALLET_HEIGHT_IN,
   PALLET_WIDTH_IN,
-  palletNailPosition,
 } from "../../game/bench-work/pallet-geometry";
 import { BenchPlacement } from "../../game/bench-work/bench-layout";
-import { pieceSize, PryTarget } from "../../game/bench-work/workpiece";
-import { MaterialInstance, Pallet } from "../../game/Materials";
+import { pieceSize } from "../../game/bench-work/workpiece";
+import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PalletSprite } from "../material-sprites/PalletSprite";
 import { StageFit } from "./stageMath";
@@ -30,12 +31,28 @@ export interface LoosePiece {
 /** Pointer must land this close (in inches) to pry a nail. */
 export const NAIL_HIT_RADIUS_IN = 3.5;
 
-const AnimatedPixiContainer = animated("pixiContainer");
+/** The tween the pieces turn with: the spring react-spring would run
+ * (tension 300, friction 26) — a hand turning the piece, no bounce. */
+function stepSpring(
+  value: number,
+  velocity: number,
+  target: number,
+  dt: number,
+): [number, number] {
+  const nextVelocity = velocity + (300 * (target - value) - 26 * velocity) * dt;
+  const next = value + nextVelocity * dt;
+  return Math.abs(target - next) < 0.01 && Math.abs(nextVelocity) < 0.05
+    ? [target, 0]
+    : [next, nextVelocity];
+}
 
 /**
- * One loose piece, its turn and flip tweened — R and F read as the piece
- * being turned by hand, not teleported. Position tracks the drag
- * directly; only angle and flip ease in.
+ * One loose piece, its turn and flip tweened on the PIXI ticker — R and
+ * F read as the piece being turned by hand, not teleported. Position
+ * tracks the drag directly; only angle and flip ease in. Deliberately
+ * NOT react-spring's animated("pixiContainer"): its web-targeted prop
+ * applier doesn't drive the PIXI reconciler, and the container silently
+ * renders nothing.
  */
 const TweenedPiece: React.FC<{
   piece: LoosePiece;
@@ -44,10 +61,35 @@ const TweenedPiece: React.FC<{
   dragging: boolean;
 }> = ({ piece, fit, hovered, dragging }) => {
   const { placement, material } = piece;
-  const spring = useSpring({
-    angle: placement.angleDeg,
-    flip: placement.flipped ? -1 : 1,
-    config: { tension: 300, friction: 26 },
+  const targetAngle = placement.angleDeg;
+  const targetFlip = placement.flipped ? -1 : 1;
+  const nodeRef = useRef<Container | null>(null);
+  const anim = useRef({
+    angle: targetAngle,
+    flip: targetFlip,
+    angleVelocity: 0,
+    flipVelocity: 0,
+  });
+
+  useTick((ticker) => {
+    const node = nodeRef.current;
+    if (!node) return;
+    const a = anim.current;
+    const dt = Math.min(ticker.deltaMS, 50) / 1000;
+    [a.angle, a.angleVelocity] = stepSpring(
+      a.angle,
+      a.angleVelocity,
+      targetAngle,
+      dt,
+    );
+    [a.flip, a.flipVelocity] = stepSpring(
+      a.flip,
+      a.flipVelocity,
+      targetFlip,
+      dt,
+    );
+    node.angle = a.angle;
+    node.scale.set(a.flip * fit.spriteScale, fit.spriteScale);
   });
 
   const drawRing = useCallback(
@@ -76,25 +118,26 @@ const TweenedPiece: React.FC<{
   );
 
   return (
-    <AnimatedPixiContainer
+    <pixiContainer
+      ref={nodeRef}
       x={fit.originX + placement.xIn * fit.pxPerIn}
       y={fit.originY + placement.yIn * fit.pxPerIn}
-      angle={spring.angle}
+      angle={anim.current.angle}
       scale={{
-        x: spring.flip.to((f: number) => f * fit.spriteScale),
+        x: anim.current.flip * fit.spriteScale,
         y: fit.spriteScale,
       }}
       alpha={dragging ? 0.9 : 1}
     >
       <MaterialSprite material={material} />
       <pixiGraphics draw={drawRing} />
-    </AnimatedPixiContainer>
+    </pixiContainer>
   );
 };
 
 export const BenchScene: React.FC<{
   pallet: Pallet | null;
-  targets: ReadonlyArray<PryTarget>;
+  targets: ReadonlyArray<PalletNail>;
   pieces: ReadonlyArray<LoosePiece>;
   /** Bench-inch fit: origin at the bench top's top-left corner. */
   fit: StageFit;
@@ -102,9 +145,9 @@ export const BenchScene: React.FC<{
   palletOriginIn: { xIn: number; yIn: number };
   /** Nails light up while the hammer is in hand. */
   hammerHeld: boolean;
-  prying: PryTarget | null;
+  prying: PalletNail | null;
   /** The nail under the held hammer right now. */
-  hoveredNail: PryTarget | null;
+  hoveredNail: PalletNail | null;
   hoveredId: string | null;
   draggingId: string | null;
 }> = ({
@@ -119,46 +162,45 @@ export const BenchScene: React.FC<{
   hoveredId,
   draggingId,
 }) => {
-  const sameTarget = (a: PryTarget | null, b: PryTarget) =>
-    a !== null && a.kind === b.kind && a.index === b.index;
-
-  const drawNails = useCallback(
+  // The nail heads themselves are part of the pallet (PalletSprite draws
+  // them in both views); this layer is only the pry chrome around them.
+  const drawNailChrome = useCallback(
     (g: Graphics) => {
       g.clear();
       if (!pallet) return;
-      for (const target of targets) {
-        const at = palletNailPosition(target);
+      for (const nail of targets) {
+        if (!hammerHeld) continue;
+        const at = palletNailPosition(nail);
         const x = fit.originX + (palletOriginIn.xIn + at.xIn) * fit.pxPerIn;
         const y = fit.originY + (palletOriginIn.yIn + at.yIn) * fit.pxPerIn;
-        const active = sameTarget(prying, target);
-        const hovered = !active && sameTarget(hoveredNail, target);
-        if (hammerHeld || active) {
-          if (hovered) {
-            // The hammer is over this one: the ring warms and widens
-            g.circle(x, y, 9).fill({ color: 0xd97c26, alpha: 0.2 });
-            g.circle(x, y, 9).stroke({
-              width: 3,
-              color: 0xd97c26,
-              alpha: 1,
-            });
-          } else {
-            // The "pry here" ring, lit while the hammer is in hand
-            g.circle(x, y, active ? 10 : 7).stroke({
-              width: 2.5,
-              color: active ? 0xd97c26 : 0xf5efe3,
-              alpha: 0.95,
-            });
-          }
+        if (isSameNail(hoveredNail, nail)) {
+          // The hammer is over this one: the ring warms and widens
+          g.circle(x, y, 9).fill({ color: 0xd97c26, alpha: 0.2 });
+          g.circle(x, y, 9).stroke({ width: 3, color: 0xd97c26, alpha: 1 });
+        } else {
+          // The "pry here" ring, lit while the hammer is in hand
+          g.circle(x, y, 7).stroke({
+            width: 2.5,
+            color: 0xf5efe3,
+            alpha: 0.95,
+          });
         }
-        // The nail head itself, always visible
-        g.circle(x, y, 3).fill({ color: 0x4a443e });
-        g.circle(x - 0.8, y - 0.8, 1.1).fill({ color: 0x9a938c });
-        if (active) {
-          // The claw's lever line, kicked out during the pull
-          g.moveTo(x, y)
-            .lineTo(x + 16, y - 22)
-            .stroke({ width: 3.5, color: 0x8a8378, alpha: 0.9 });
-        }
+      }
+      if (prying) {
+        // The pull in progress: the press already committed, so the nail
+        // is gone from the pallet — the widened ring and the claw's
+        // lever line play out over the empty hole.
+        const at = palletNailPosition(prying);
+        const x = fit.originX + (palletOriginIn.xIn + at.xIn) * fit.pxPerIn;
+        const y = fit.originY + (palletOriginIn.yIn + at.yIn) * fit.pxPerIn;
+        g.circle(x, y, 10).stroke({
+          width: 2.5,
+          color: 0xd97c26,
+          alpha: 0.95,
+        });
+        g.moveTo(x, y)
+          .lineTo(x + 16, y - 22)
+          .stroke({ width: 3.5, color: 0x8a8378, alpha: 0.9 });
       }
     },
     [pallet, targets, fit, palletOriginIn, hammerHeld, prying, hoveredNail],
@@ -199,7 +241,7 @@ export const BenchScene: React.FC<{
           dragging={draggingId === piece.material.id}
         />
       ))}
-      <pixiGraphics draw={drawNails} />
+      <pixiGraphics draw={drawNailChrome} />
     </pixiContainer>
   );
 };

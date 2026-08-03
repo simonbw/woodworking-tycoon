@@ -1,3 +1,4 @@
+import { initialPalletNails } from "../bench-work/pallet-geometry";
 import { GameAction } from "../GameState";
 import { makeMaterial } from "../material-helpers";
 import { MaterialInstance, Pallet } from "../Materials";
@@ -52,11 +53,16 @@ function makeDamagedPallet(rng: () => number): Pallet {
     deckBoards[position] = true;
   }
 
+  // Usually all 3 stringers, sometimes the bottom one is cracked off
+  const stringers: Tuple<boolean, 3> =
+    rng() < 0.3 ? [true, true, false] : [true, true, true];
   return makeMaterial<Pallet>({
     type: "pallet",
     deckBoards: deckBoards as Tuple<boolean, 11>,
-    // Usually all 3 stringers, sometimes the bottom one is cracked off
-    stringers: rng() < 0.3 ? [true, true, false] : [true, true, true],
+    stringers,
+    // A weathered pallet still holds a nail at every crossing that has
+    // wood on both sides — missing boards took theirs with them
+    nails: initialPalletNails(deckBoards, stringers),
   });
 }
 

@@ -9,6 +9,7 @@ import {
   Board,
   MaterialInstance,
   Pallet,
+  PalletNail,
   Panel,
   panelWidth,
 } from "../Materials";
@@ -67,21 +68,10 @@ export function sawCrossSection(board: Board): {
   return { widthIn: board.width, thicknessIn: board.thickness / 4 };
 }
 
-/** One remaining nail on a staged pallet, locatable by the sprite. */
-export type PryTarget =
-  | { readonly kind: "deck"; readonly index: number }
-  | { readonly kind: "stringer"; readonly index: number };
-
-/** Every nail still holding the pallet together, deck first. */
-export function pryTargets(pallet: Pallet): ReadonlyArray<PryTarget> {
-  return [
-    ...pallet.deckBoards.flatMap((present, index) =>
-      present ? [{ kind: "deck" as const, index }] : [],
-    ),
-    ...pallet.stringers.flatMap((present, index) =>
-      present ? [{ kind: "stringer" as const, index }] : [],
-    ),
-  ];
+/** Every nail still holding the pallet together — real pallet state
+ * (Pallet.nails), one per crossing of two present boards. */
+export function pryTargets(pallet: Pallet): ReadonlyArray<PalletNail> {
+  return pallet.nails;
 }
 
 /**

@@ -4,6 +4,7 @@ import { board } from "../board-helpers";
 import { initialGameState } from "../initialGameState";
 import { getMachines, MachineState } from "../Machine";
 import { Pallet } from "../Materials";
+import { initialPalletNails } from "./pallet-geometry";
 import {
   benchScriptFor,
   pieceSize,
@@ -49,6 +50,7 @@ const fullPallet = (): Pallet => ({
   type: "pallet",
   deckBoards: Array(11).fill(true) as Pallet["deckBoards"],
   stringers: [true, true, true],
+  nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
 });
 
 describe("workpiece geometry", () => {
@@ -96,11 +98,10 @@ describe("workpiece geometry", () => {
     );
   });
 
-  it("pryTargets counts every remaining nail, deck first", () => {
+  it("pryTargets is the pallet's own nails — one per crossing", () => {
     const targets = pryTargets(fullPallet());
-    assert.strictEqual(targets.length, 14);
-    assert.strictEqual(targets.filter((t) => t.kind === "deck").length, 11);
-    assert.strictEqual(targets.filter((t) => t.kind === "stringer").length, 3);
+    assert.strictEqual(targets.length, 33);
+    assert.deepStrictEqual(targets[0], { deck: 0, stringer: 0 });
   });
 });
 
