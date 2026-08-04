@@ -244,11 +244,18 @@ floor uses (`BenchSceneBackdrop`: `makeshift-bench.png`
 nearest-sampled for the starting bench, the `WorktableSprite` vectors
 for built tables), so the zoomed bench and the floor bench are one
 asset at two zooms. The bench's contents lie on it exactly where
-`MachineState.benchLayout` says (`BenchScene`, turns and flips tweened),
-the mounted tools hang on a floating rail (`BenchToolRail`, DOM buttons),
-and the chrome floats: nameplate top-left, instruction + key hints
-bottom-center, and the plan picker in a "Plans & paperwork" paper
-drawer bottom-left that starts closed while a pallet holds the bench.
+`MachineState.benchLayout` says (`BenchScene`, turns and flips tweened;
+a board tipped on edge with T narrows to its thickness,
+`BoardOnEdgeSprite`), the mounted tools hang on a floating rail
+(`BenchToolRail` — which is also where tools mount and unmount: empty
+hooks take a compatible carried tool), and the chrome floats: nameplate
+top-left, instruction + key hints bottom-center, the plan picker as a
+diegetic pile of blueprint sheets bottom-right (`BlueprintCorner`,
+folded by default — the pulled drawing is the selection and its title
+block reads supplies against shop stock), and a worktable's
+shelf/upgrades in an "Under the bench" drawer bottom-left
+(`UnderBenchPanel`). There is no paperwork card and no input/output
+diagram: a bench top holds stock, not bays.
 The camera zoom-in transition remains future presentation work. Every
 operation listed in the rollout is converted; the remaining legacy
 attended-tick ops are the single-piece finishing recipes (`finish*`,

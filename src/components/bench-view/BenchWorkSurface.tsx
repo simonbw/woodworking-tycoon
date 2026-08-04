@@ -10,13 +10,14 @@ import React, {
 import {
   BenchScript,
   benchScriptFor,
-  pieceSize,
+  placedPieceSize,
   rowLayout,
   strokeSurfaceSize,
 } from "../../game/bench-work/workpiece";
 import {
   BenchPlacement,
   benchPlacementFor,
+  benchPointInFrame,
   benchPointOnPallet,
   benchTopSizeIn,
   palletPointOnBench,
@@ -40,6 +41,7 @@ import {
 } from "../../game/game-actions/player-actions";
 import {
   armedFasteners,
+  blueprintFrame,
   fastenedPieceIds,
   fastenerAt,
   seatedParts,
@@ -47,8 +49,14 @@ import {
 } from "../../game/bench-work/assembly";
 import {
   BlueprintFastener,
+  BlueprintSlot,
   ProductBlueprint,
+  slotExtent,
 } from "../../game/bench-work/blueprint";
+import {
+  describeMaterialRequirement,
+  materialMeetsInput,
+} from "../../game/material-helpers";
 import { isBenchType, Machine } from "../../game/Machine";
 import {
   Board,
@@ -69,6 +77,8 @@ import { AssemblySurface, ASSEMBLY_GAP_IN } from "./AssemblySurface";
 import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
 import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
 import { BenchToolRail } from "./BenchToolRail";
+import { BlueprintCorner } from "./BlueprintCorner";
+import { UnderBenchPanel } from "./UnderBenchPanel";
 import { flyToSupply } from "./flyToSupply";
 import { GlueSurface, GLUE_GAP_IN } from "./GlueSurface";
 import { SawSurface } from "./SawSurface";
@@ -170,6 +180,9 @@ export const BenchWorkSurface: React.FC<{
   const [driving, setDriving] = useState<BlueprintFastener | null>(null);
   const [hoveredFastener, setHoveredFastener] =
     useState<BlueprintFastener | null>(null);
+  // The empty ghost outline under a bare hand: its tag names what stock
+  // the slot calls for.
+  const [hoveredSlot, setHoveredSlot] = useState<BlueprintSlot | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragOffset = useRef({ dxIn: 0, dyIn: 0 });
@@ -187,6 +200,7 @@ export const BenchWorkSurface: React.FC<{
     [],
   );
   const cursorRef = useRef<HTMLDivElement | null>(null);
+  const slotTipRef = useRef<HTMLDivElement | null>(null);
   const pointerPos = useRef<{ x: number; y: number } | null>(null);
   const fitRef = useRef<StageFit | null>(null);
 
@@ -473,20 +487,22 @@ export const BenchWorkSurface: React.FC<{
     [assemblyBlueprint, commitWhole, driven],
   );
 
-  /** Point-in-piece test in bench inches, honoring the piece's turn.
-   * Finished work lies on top of loose stock; the pallet underneath
-   * takes the grab when nothing smaller is under the pointer. */
+  /** Point-in-piece test in bench inches, honoring the piece's turn and
+   * whether it stands on edge. Finished work lies on top of loose stock;
+   * the pallet underneath takes the grab when nothing smaller is under
+   * the pointer. */
   const pieceAt = useCallback(
     (xIn: number, yIn: number): LoosePiece | null => {
       const hits = (piece: LoosePiece): boolean => {
-        const size = pieceSize(piece.material);
+        const size = placedPieceSize(piece.material, piece.placement);
         const rad = (-piece.placement.angleDeg * Math.PI) / 180;
         const dx = xIn - piece.placement.xIn;
         const dy = yIn - piece.placement.yIn;
         const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
         const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+        // A board on edge is a sliver — the grab zone stays finger-wide
         return (
-          Math.abs(localX) <= size.widthIn / 2 + 0.5 &&
+          Math.abs(localX) <= Math.max(size.widthIn / 2 + 0.5, 1.4) &&
           Math.abs(localY) <= size.heightIn / 2 + 0.5
         );
       };
@@ -507,6 +523,35 @@ export const BenchWorkSurface: React.FC<{
       return null;
     },
     [scenePieces, scenePallet, palletPlacement, seated],
+  );
+
+  /** The empty ghost outline under a bench point, generously padded —
+   * hovering it with a bare hand tags what the slot calls for. */
+  const slotAt = useCallback(
+    (xIn: number, yIn: number): BlueprintSlot | null => {
+      if (!assemblyBlueprint) return null;
+      const local = benchPointInFrame(
+        productPlacement,
+        blueprintFrame(assemblyBlueprint),
+        xIn,
+        yIn,
+      );
+      for (const slot of assemblyBlueprint.slots) {
+        if (seated.has(slot.id)) continue;
+        const ext = slotExtent(slot);
+        const pad = 1;
+        if (
+          local.xIn >= ext.x0 - pad &&
+          local.xIn <= ext.x1 + pad &&
+          local.yIn >= ext.y0 - pad &&
+          local.yIn <= ext.y1 + pad
+        ) {
+          return slot;
+        }
+      }
+      return null;
+    },
+    [assemblyBlueprint, productPlacement, seated],
   );
 
   const commitDrag = useCallback(() => {
@@ -532,6 +577,7 @@ export const BenchWorkSurface: React.FC<{
         setHoveredId(null);
         setHoveredNail(null);
         setHoveredFastener(null);
+        setHoveredSlot(null);
         commitDrag();
         return;
       }
@@ -588,15 +634,17 @@ export const BenchWorkSurface: React.FC<{
               frame.heightIn - benchOriginIn.yIn - 1,
             ),
           };
+          setHoveredSlot(null);
           bump();
           return;
         }
         if (draggingId) {
           commitDrag();
         }
-        setHoveredId(
-          heldTool ? null : (pieceAt(xIn, yIn)?.material.id ?? null),
-        );
+        const hit = heldTool ? null : pieceAt(xIn, yIn);
+        setHoveredId(hit?.material.id ?? null);
+        // An empty hand over an empty outline: tag what belongs there
+        setHoveredSlot(!heldTool && !hit ? slotAt(xIn, yIn) : null);
         setHoveredNail(hammerHeld && !prying ? nailAt(xIn, yIn) : null);
         setHoveredFastener(
           hammerHeld && !driving && assemblyBlueprint
@@ -627,6 +675,7 @@ export const BenchWorkSurface: React.FC<{
       productPlacement,
       prying,
       scenePallet,
+      slotAt,
     ],
   );
   useEffect(() => {
@@ -693,7 +742,15 @@ export const BenchWorkSurface: React.FC<{
         );
         return;
       }
-      if (event.code !== "KeyR" && event.code !== "KeyF") return;
+      if (
+        event.code !== "KeyR" &&
+        event.code !== "KeyF" &&
+        event.code !== "KeyT"
+      ) {
+        return;
+      }
+      // Only a board can stand on its long edge
+      if (event.code === "KeyT" && material.type !== "board") return;
       event.preventDefault();
       event.stopPropagation();
       const current =
@@ -703,7 +760,9 @@ export const BenchWorkSurface: React.FC<{
       const turned: BenchPlacement =
         event.code === "KeyR"
           ? { ...current, angleDeg: current.angleDeg + 90 }
-          : { ...current, flipped: !current.flipped };
+          : event.code === "KeyT"
+            ? { ...current, onEdge: !current.onEdge }
+            : { ...current, flipped: !current.flipped };
       if (draggingId === id) {
         // Mid-drag the turn rides the drag; the release commits both
         dragPlacement.current = turned;
@@ -889,6 +948,18 @@ export const BenchWorkSurface: React.FC<{
     }
     if (!sceneFit) return null;
     const slotsTotal = assemblyBlueprint?.slots.length ?? 0;
+    // An empty on-edge slot with a fitting piece still lying flat: the
+    // next move is tipping it up, and the instruction line says so.
+    const tippableSlot = assemblyBlueprint?.slots.find(
+      (slot) =>
+        slot.onEdge &&
+        !seated.has(slot.id) &&
+        loosePieces.some(
+          (p) =>
+            !p.placement.onEdge &&
+            materialMeetsInput(p.material, slot.requirement),
+        ),
+    );
     const assemblyInstruction = () => {
       if (!assemblyBlueprint) return "";
       if (seated.size >= slotsTotal) {
@@ -901,8 +972,11 @@ export const BenchWorkSurface: React.FC<{
       if (sceneOutputs.length > 0 && loosePieces.length === 0) {
         return "Finished. Press E over the piece to take it.";
       }
-      return loosePieces.length < slotsTotal
-        ? "Set the plan's stock down on the bench (F), then lay each piece on its outline."
+      if (loosePieces.length < slotsTotal) {
+        return "Set the plan's stock down on the bench (F), then lay each piece on its outline.";
+      }
+      return tippableSlot
+        ? `Tip each ${tippableSlot.role} up on its long edge (T), then lay it on its thin outline.`
         : "Lay each piece on its ghost outline — drag it close and it settles. R turns it.";
     };
     return {
@@ -986,6 +1060,9 @@ export const BenchWorkSurface: React.FC<{
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate(${x - 12}px, ${y - 11}px)`;
       }
+      if (slotTipRef.current) {
+        slotTipRef.current.style.transform = `translate(${x + 14}px, ${y + 16}px)`;
+      }
       const fit = fitRef.current;
       if (!fit) return;
       const { xIn, yIn } = pointerToInches(
@@ -1031,6 +1108,9 @@ export const BenchWorkSurface: React.FC<{
               ["Drag", "move a piece"],
               ["R", "turn"],
               ["F", "flip"],
+              // Tipping only means something under an assembly plan —
+              // the verb works anywhere, but this is where it matters
+              ...(assemblyScript ? [["T", "tip on edge"]] : []),
             ] as Array<[string, string]>)
           : []),
         ["E", "take back"],
@@ -1079,6 +1159,7 @@ export const BenchWorkSurface: React.FC<{
         }
         data-seated={assemblyScript ? seated.size : undefined}
         data-driven={assemblyScript ? driven.length : undefined}
+        data-hovered={sceneActive ? (hoveredId ?? "") : undefined}
         onPointerDown={handlePointer("down")}
         onPointerMove={handlePointer("move")}
         onPointerUp={handlePointer("up")}
@@ -1108,6 +1189,29 @@ export const BenchWorkSurface: React.FC<{
             />
             {surface?.node}
           </Application>
+        )}
+        {hoveredSlot && !heldTool && !draggingId && (
+          // The outline's tag, trailing the pointer: what stock this
+          // slot calls for, read before anything is picked up
+          <div
+            ref={slotTipRef}
+            data-testid="slot-tip"
+            className="pointer-events-none absolute left-0 top-0 z-10"
+            style={{
+              transform: pointerPos.current
+                ? `translate(${pointerPos.current.x + 14}px, ${pointerPos.current.y + 16}px)`
+                : "translate(-100px, -100px)",
+            }}
+          >
+            <div className="whitespace-nowrap rounded bg-ink-black/80 px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] text-paper-manila shadow-lg">
+              <span className="font-semibold">{hoveredSlot.role}</span>
+              {" — "}
+              {describeMaterialRequirement(hoveredSlot.requirement)}
+              {hoveredSlot.onEdge && (
+                <span className="text-gold-light"> · stood on edge (T)</span>
+              )}
+            </div>
+          </div>
         )}
         {heldTool && (
           // Two elements on purpose: the wrapper carries the cursor
@@ -1154,7 +1258,7 @@ export const BenchWorkSurface: React.FC<{
 
       {rail && (
         <BenchToolRail
-          tools={machine.state.tools}
+          machine={machine}
           heldTool={heldTool}
           interactive={sceneActive}
           onToggle={(toolId) =>
@@ -1162,6 +1266,11 @@ export const BenchWorkSurface: React.FC<{
           }
         />
       )}
+
+      {/* The plans pile in the corner and whatever the bench keeps
+          underneath — the whole of the old paperwork card that survived */}
+      {isBench && <BlueprintCorner machine={machine} />}
+      {isBench && <UnderBenchPanel machine={machine} />}
 
       {/* Instruction and key hints, floating below the bench */}
       <div className="pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-2">

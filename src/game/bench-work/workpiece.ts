@@ -145,8 +145,7 @@ export type BenchScript =
 
 /**
  * The first staged material meeting each of the operation's input slots,
- * in slot order — or null if any slot is short. (The strict version of
- * what the sheet's SlotDiagram shows.)
+ * in slot order — or null if any slot is short.
  */
 export function stagedPieces(
   machine: Machine,
@@ -318,6 +317,27 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
     default:
       return { widthIn: 10, heightIn: 10 };
   }
+}
+
+/**
+ * A piece's footprint as placed: a board tipped on edge (T) stands on
+ * its edge face, so its footprint narrows from its width to its
+ * thickness. Everything that hit-tests or outlines a placed piece reads
+ * this rather than pieceSize, so a rail on edge is exactly as grabbable
+ * as it looks.
+ */
+export function placedPieceSize(
+  material: MaterialInstance,
+  placement: { onEdge?: boolean },
+): WorkSurfaceSize {
+  if (placement.onEdge && material.type === "board") {
+    const b = material as Board;
+    return {
+      widthIn: b.thickness / 4,
+      heightIn: b.length * INCHES_PER_FOOT,
+    };
+  }
+  return pieceSize(material);
 }
 
 /** One piece's slot in a bench row layout, in inches from the row's

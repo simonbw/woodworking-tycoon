@@ -1,10 +1,11 @@
 /**
  * Helpers for driving the machine spec sheet's plan and parameter controls.
  *
- * The bench's plan picker is a stack of shop drawings (BlueprintStack):
+ * The bench's plan picker is a pile of shop drawings in the bench view's
+ * corner (BlueprintCorner): the fold toggle carries `aria-expanded`, and
  * every drawing's edge marks its operation name with `data-mode-option`,
- * exactly once, so selecting a plan is clicking the sheet by name — the
- * same contract the older mode controls kept.
+ * exactly once, so selecting a plan is unfolding the pile and clicking
+ * the sheet by name — the same contract the older mode controls kept.
  */
 
 import { pumpTicks } from "./navigation";
@@ -101,28 +102,15 @@ export async function takeAllHere(page: any) {
   await page.waitForTimeout(30);
 }
 
-/**
- * Unfold a bench's "Plans & paperwork" drawer if it's folded (it starts
- * closed while a pallet holds the bench top); no-op elsewhere.
- */
-export async function openPaperwork(card: any) {
-  const drawer = card.locator("[data-testid='bench-paperwork']");
-  if ((await drawer.count()) > 0) {
-    if ((await drawer.getAttribute("open")) === null) {
-      await drawer.locator("summary").click();
-    }
-  }
-}
-
-/** Open a collapsed recipe index; no-op for the other control shapes. */
+/** Unfold a collapsed plan pile (the bench view's blueprint corner, or
+ * any older aria-expanded recipe index); no-op for other control shapes. */
 export async function openRecipeIndex(card: any) {
-  await openPaperwork(card);
   const toggle = card.locator("button[aria-expanded]");
   if (
     (await toggle.count()) > 0 &&
-    (await toggle.getAttribute("aria-expanded")) === "false"
+    (await toggle.first().getAttribute("aria-expanded")) === "false"
   ) {
-    await toggle.click();
+    await toggle.first().click();
   }
 }
 
@@ -151,13 +139,13 @@ export async function modesOf(
   const card = machineCard(page, machineName);
   await openRecipeIndex(card);
   const modes = await card.locator("[data-mode-option]").allTextContents();
-  // Leave the recipe index the way we found it
+  // Leave the pile folded the way we found it
   const toggle = card.locator("button[aria-expanded]");
   if (
     (await toggle.count()) > 0 &&
-    (await toggle.getAttribute("aria-expanded")) === "true"
+    (await toggle.first().getAttribute("aria-expanded")) === "true"
   ) {
-    await toggle.click();
+    await toggle.first().click();
   }
   return modes;
 }

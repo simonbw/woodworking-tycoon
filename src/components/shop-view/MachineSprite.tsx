@@ -218,7 +218,7 @@ const BenchTopMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
                 // view shows — same placement, same nails, two zooms
                 <PalletSprite pallet={material} flipped={placement.flipped} />
               ) : (
-                <MaterialSprite material={material} />
+                <MaterialSprite material={material} onEdge={placement.onEdge} />
               )}
             </pixiContainer>
           );

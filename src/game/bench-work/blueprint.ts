@@ -51,6 +51,10 @@ export interface BlueprintSlot {
   readonly angleDeg: number;
   /** Stacking order: fasteners join a part to one on the next layer. */
   readonly layer: number;
+  /** The part stands on its long edge — a rail or joist — so its
+   * footprint is its thickness, not its width, and the bench only seats
+   * a piece that has been tipped up to match (T in the bench view). */
+  readonly onEdge?: boolean;
 }
 
 /** One fastener, at the overlap of exactly two parts — like a pallet
@@ -73,6 +77,12 @@ export interface ProductBlueprint {
   readonly fastenerConsumable: ConsumableId;
 }
 
+/** The footprint a slot's part presents, in inches: width across when it
+ * lies flat, thickness across when it stands on edge. */
+export function slotFaceWidthIn(slot: BlueprintSlot): number {
+  return slot.onEdge ? slot.part.thicknessQ / 4 : slot.part.widthIn;
+}
+
 /** A slot's axis-aligned footprint in product inches. */
 export function slotExtent(slot: BlueprintSlot): {
   x0: number;
@@ -81,9 +91,10 @@ export function slotExtent(slot: BlueprintSlot): {
   y1: number;
 } {
   const lengthIn = slot.part.lengthFt * INCHES_PER_FOOT;
+  const faceWidth = slotFaceWidthIn(slot);
   const across = slot.angleDeg % 180 !== 0;
-  const w = across ? lengthIn : slot.part.widthIn;
-  const h = across ? slot.part.widthIn : lengthIn;
+  const w = across ? lengthIn : faceWidth;
+  const h = across ? faceWidth : lengthIn;
   return {
     x0: slot.xIn - w / 2,
     y0: slot.yIn - h / 2,
@@ -109,7 +120,18 @@ function deriveFasteners(
       const y0 = Math.max(a.y0, b.y0);
       const x1 = Math.min(a.x1, b.x1);
       const y1 = Math.min(a.y1, b.y1);
-      if (x1 - x0 < MIN_OVERLAP_IN || y1 - y0 < MIN_OVERLAP_IN) continue;
+      // The bite required per axis relaxes for thin parts: a deck board
+      // crossing a rail stood on edge covers the rail's whole 3/4"
+      // thickness, and full contact is all the bite there is to have.
+      const needX = Math.min(
+        MIN_OVERLAP_IN,
+        0.75 * Math.min(a.x1 - a.x0, b.x1 - b.x0),
+      );
+      const needY = Math.min(
+        MIN_OVERLAP_IN,
+        0.75 * Math.min(a.y1 - a.y0, b.y1 - b.y0),
+      );
+      if (x1 - x0 < needX || y1 - y0 < needY) continue;
       fasteners.push({
         xIn: (x0 + x1) / 2,
         yIn: (y0 + y1) / 2,
@@ -147,10 +169,11 @@ function makeBlueprint(spec: {
 }
 
 /**
- * The rustic shelf, grounded: a pallet-wood ladder shelf, drawn lying on
- * its back the way it's built. Two stringers run the long way as rails;
- * three deck boards lie across them as shelves, nailed at every crossing
- * — six nails, straight out of the pallet they came from.
+ * The rustic shelf, grounded: a pallet-wood slatted shelf, drawn from
+ * above the way it's built. Two stringers stand on edge as rails — the
+ * joists the whole thing hangs on — and three deck boards lie flat
+ * across their top edges as slats, nailed at every crossing: six nails,
+ * straight out of the pallet they came from.
  */
 export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
   productType: "rusticShelf",
@@ -172,6 +195,7 @@ export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
       yIn,
       angleDeg: 90,
       layer: 0,
+      onEdge: true,
     })),
     ...[8, 24, 40].map((xIn) => ({
       role: "shelf",

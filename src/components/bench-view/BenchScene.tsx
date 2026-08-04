@@ -22,8 +22,9 @@ import { fastenerOnBench, slotOnBench } from "../../game/bench-work/assembly";
 import {
   BlueprintFastener,
   ProductBlueprint,
+  slotFaceWidthIn,
 } from "../../game/bench-work/blueprint";
-import { pieceSize } from "../../game/bench-work/workpiece";
+import { placedPieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
 import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
@@ -148,15 +149,16 @@ const TweenedTransform: React.FC<{
  * container so it hugs the piece through the turn. */
 const PieceRing: React.FC<{
   material: MaterialInstance;
+  placement: BenchPlacement;
   fit: StageFit;
   hovered: boolean;
   dragging: boolean;
-}> = ({ material, fit, hovered, dragging }) => {
+}> = ({ material, placement, fit, hovered, dragging }) => {
   const drawRing = useCallback(
     (g: Graphics) => {
       g.clear();
       if (!hovered && !dragging) return;
-      const size = pieceSize(material);
+      const size = placedPieceSize(material, placement);
       const w = (size.widthIn * fit.pxPerIn) / fit.spriteScale;
       const h = (size.heightIn * fit.pxPerIn) / fit.spriteScale;
       const pad = 4 / fit.spriteScale;
@@ -172,7 +174,7 @@ const PieceRing: React.FC<{
         alpha: dragging ? 0.9 : 0.55,
       });
     },
-    [hovered, dragging, material, fit],
+    [hovered, dragging, material, placement, fit],
   );
   return <pixiGraphics draw={drawRing} />;
 };
@@ -188,9 +190,10 @@ const TweenedPiece: React.FC<{
     fit={fit}
     alpha={dragging ? 0.9 : 1}
   >
-    <MaterialSprite material={piece.material} />
+    <MaterialSprite material={piece.material} onEdge={piece.placement.onEdge} />
     <PieceRing
       material={piece.material}
+      placement={piece.placement}
       fit={fit}
       hovered={hovered}
       dragging={dragging}
@@ -314,7 +317,9 @@ export const BenchScene: React.FC<{
       for (const slot of blueprint.slots) {
         if (seated.has(slot.id)) continue;
         const seat = slotOnBench(blueprint, productPlacement, slot);
-        const w = slot.part.widthIn;
+        // An on-edge slot's outline is the thin strip the tipped board
+        // will stand in — the narrowness is the tell
+        const w = slotFaceWidthIn(slot);
         const h = slot.part.lengthFt * INCHES_PER_FOOT;
         const rad = (seat.angleDeg * Math.PI) / 180;
         const cos = Math.cos(rad);
@@ -476,6 +481,7 @@ export const BenchScene: React.FC<{
         <TweenedTransform placement={palletPlacement} fit={fit}>
           <PieceRing
             material={pallet}
+            placement={palletPlacement}
             fit={fit}
             hovered={hoveredId === pallet.id}
             dragging={draggingId === pallet.id}

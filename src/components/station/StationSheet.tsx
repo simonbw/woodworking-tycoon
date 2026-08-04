@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { createPortal } from "react-dom";
-import { isBenchType, Machine, Operation } from "../../game/Machine";
+import { isBenchType, Machine } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
 import { availableOperations } from "../../game/skill-helpers";
 import { Tooltip } from "../Tooltip";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
-import { BenchSheet } from "./BenchSheet";
 import { BenchWorkSurface } from "../bench-view/BenchWorkSurface";
 import { ContentsSheet } from "./ContentsSheet";
 import { ToolSheet } from "./ToolSheet";
@@ -22,10 +21,11 @@ import { StatusText } from "./StatusText";
  * A direct-feed machine keeps only its tool rack (ToolSheet): a jointer,
  * planer, table saw or miter saw is a switch, a scale or two, and stock
  * you set down, and every one of those is a key on the floor. Fitting a
- * jig is the one thing left that needs a page. Benches keep the full
- * paperwork (BenchSheet); containers list their contents (ContentsSheet)
- * — a garbage can has an operation but no plan to pick, so what its sheet
- * owes you is what's in it.
+ * jig is the one thing left that needs a page. Benches have no card at
+ * all — the bench view carries its own chrome (the tool rail on top, the
+ * blueprint pile in the corner: BlueprintCorner). Containers list their
+ * contents (ContentsSheet) — a garbage can has an operation but no plan
+ * to pick, so what its sheet owes you is what's in it.
  */
 /**
  * Whether this station's sheet is the full-window bench view: the player
@@ -55,7 +55,6 @@ export const StationSheet: React.FC = () => {
     return null;
   }
 
-  const operations = availableOperations(sheetMachine, gameState.progression);
   const bench = sheetIsBenchView(sheetMachine, gameState.progression);
 
   // Portaled to the body: the shop-overlay layer this renders from is
@@ -66,18 +65,14 @@ export const StationSheet: React.FC = () => {
   return createPortal(
     bench ? (
       // A bench IS the whole window: the bench view fills it edge to
-      // edge, and the paperwork floats over it as a drawer. A <section>
-      // so the test helpers' heading-anchored card locator still works.
+      // edge, with the tool rail on top and the blueprint pile in the
+      // corner — no paperwork card at all. A <section> so the test
+      // helpers' heading-anchored card locator still works.
       <section
         className="fixed inset-0 z-[35] pointer-events-auto"
         data-testid="station-sheet"
       >
         <BenchWorkSurface machine={sheetMachine} onClose={closeSheet} />
-        <div className="absolute bottom-4 left-4 z-20 w-96 max-w-[85vw]">
-          <div className="paper-card max-h-[55vh] overflow-y-auto shadow-xl">
-            <BenchPaperwork machine={sheetMachine} operations={operations} />
-          </div>
-        </div>
       </section>
     ) : (
       <div
@@ -138,32 +133,3 @@ const StationSheetBody: React.FC<{
     )}
   </SheetFrame>
 );
-
-/**
- * The bench's paperwork — plan picker, supplies, racks — folded under
- * the bench top. It starts closed when a pallet is on the bench (a
- * teardown needs no paperwork at all) and open otherwise, and holds
- * whichever way the player last flipped it while the sheet stays up.
- */
-const BenchPaperwork: React.FC<{
-  machine: Machine;
-  operations: ReadonlyArray<Operation>;
-}> = ({ machine, operations }) => {
-  const [open, setOpen] = useState(
-    () => !machine.inputMaterials.some((m) => m.type === "pallet"),
-  );
-  return (
-    <details
-      open={open}
-      onToggle={(event) => setOpen((event.target as HTMLDetailsElement).open)}
-      data-testid="bench-paperwork"
-    >
-      <summary className="cursor-pointer select-none font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-ink-fade hover:text-ink-black">
-        Plans &amp; paperwork
-      </summary>
-      <div className="space-y-3 pt-2">
-        <BenchSheet machine={machine} operations={operations} />
-      </div>
-    </details>
-  );
-};

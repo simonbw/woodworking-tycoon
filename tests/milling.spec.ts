@@ -550,13 +550,9 @@ test.describe("Milling", () => {
         ];
         return all.some((m: any) => m.type === "pictureFrame");
       });
-      // The ferrying above walked off the bench, which puts its sheet away
-      // for good — ask for it again to reach the transfer buttons.
-      await openStationSheet(page);
-      await machineCard(page, "Makeshift Workbench")
-        .getByRole("button", { name: /Take All/ })
-        .click();
-      await page.waitForTimeout(30);
+      // The bench has no Take All button — finished work lies on the
+      // bench top, and the interact key sweeps it into the arms.
+      await takeAllHere(page);
       await expect(page.getByText("Picture Frame").first()).toBeVisible();
       // The brads came out of the shop stock
       const nails = await page.evaluate(

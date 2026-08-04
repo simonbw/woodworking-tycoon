@@ -310,11 +310,12 @@ test.describe("Stations", () => {
       // through two leaveStore round-trips has proven racy under CPU
       // contention, and this step is about the rack, not the walk.
       await movePlayerTo(page, [1, 4]);
-      // The tool rack lives on the station sheet; the fixture's sander is
-      // in the player's hands, which is where the rack mounts from
+      // Tools hang on the bench view's top rail; the fixture's sander is
+      // in the player's hands, which is where the rail mounts from —
+      // ghosted on an empty hook until it's clicked on
       await openStationSheet(page);
       await expect(
-        page.getByText("Random Orbit Sander (in hand)"),
+        page.getByRole("button", { name: "Attach the Random Orbit Sander" }),
       ).toBeVisible();
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
@@ -487,17 +488,13 @@ test.describe("Stations", () => {
     });
 
     await test.step("both tools mount at the workbench and add their trades", async () => {
-      // The tool rack lives on the station sheet
+      // Tools hang on the bench view's top rail, one empty hook each
       await openStationSheet(page);
       await page
-        .locator("li", { hasText: "Hand Saw (in hand)" })
-        .getByRole("button", { name: "Attach" })
+        .getByRole("button", { name: "Attach the Hand Saw" })
         .click();
       await page.waitForTimeout(30);
-      await page
-        .locator("li", { hasText: "Drill (in hand)" })
-        .getByRole("button", { name: "Attach" })
-        .click();
+      await page.getByRole("button", { name: "Attach the Drill" }).click();
       await page.waitForTimeout(30);
       await expect(page.getByText("2/2 slots")).toBeVisible();
 

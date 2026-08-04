@@ -36,11 +36,6 @@ declare global {
   }
 }
 
-/** The workspace's spec-sheet card. */
-function workspaceCard(page: any) {
-  return page.locator("section", { hasText: "Makeshift Workbench" });
-}
-
 async function bootShopCountingAudio(page: Page) {
   // Count every clip the page actually starts playing. Footsteps are
   // preloaded, so their fetch proves nothing about playback — but a fresh
@@ -411,14 +406,9 @@ test.describe("Market, supplies, and sound", () => {
         "Makeshift Workbench",
         "Build Rustic Pallet Shelf",
       );
+      // The shortfall reads right on the pulled drawing's title block —
+      // there is no separate supplies row or run hint any more
       await expect(page.getByText("6 nails (have 0)")).toBeVisible();
-      // Nothing to build without the nails — the sheet says so where the
-      // run button used to be (assembly is bench-view hand work now)
-      await expect(
-        workspaceCard(page).getByText(
-          "Place stock in the bay to build rustic pallet shelf by hand",
-        ),
-      ).toBeVisible();
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });

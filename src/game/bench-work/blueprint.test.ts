@@ -38,12 +38,16 @@ const centered: BenchPlacement = {
   flipped: false,
 };
 
-/** Every piece lying exactly on its slot. */
+/** Every piece lying exactly on its slot — tipped on edge where the
+ * slot stands its part on edge (the rails). */
 function allSeated(placement: BenchPlacement) {
   const pieces = shelfParts();
   return RUSTIC_SHELF_BLUEPRINT.slots.map((slot, i) => ({
     material: pieces[i],
-    placement: slotOnBench(RUSTIC_SHELF_BLUEPRINT, placement, slot),
+    placement: {
+      ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, placement, slot),
+      onEdge: slot.onEdge,
+    },
   }));
 }
 
@@ -201,13 +205,55 @@ describe("seating and snapping", () => {
       RUSTIC_SHELF_BLUEPRINT,
       centered,
       stringer(),
-      { xIn: seat.xIn + 3, yIn: seat.yIn - 2, angleDeg: 82, flipped: false },
+      {
+        xIn: seat.xIn + 3,
+        yIn: seat.yIn - 2,
+        angleDeg: 82,
+        flipped: false,
+        onEdge: true,
+      },
       new Set(),
     );
     assert.ok(snap);
     assert.strictEqual(snap.slotId, "rail-0");
     assert.strictEqual(snap.placement.xIn, seat.xIn);
     assert.strictEqual(snap.placement.angleDeg, seat.angleDeg);
+    assert.strictEqual(snap.placement.onEdge, true);
+  });
+
+  it("holds seating and snapping to the slot's orientation", () => {
+    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    // A rail lying flat on its on-edge seat is not seated…
+    const flat = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
+      { material: stringer(), placement: seat },
+    ]);
+    assert.strictEqual(flat.size, 0);
+    // …and doesn't snap either, until it's tipped up (T)
+    assert.strictEqual(
+      snapPlacementFor(
+        RUSTIC_SHELF_BLUEPRINT,
+        centered,
+        stringer(),
+        seat,
+        new Set(),
+      ),
+      null,
+    );
+    const tipped = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
+      { material: stringer(), placement: { ...seat, onEdge: true } },
+    ]);
+    assert.strictEqual(tipped.size, 1);
+    // A shelf board tipped on edge over its flat slot won't seat there
+    const shelfSlot = RUSTIC_SHELF_BLUEPRINT.slots[2];
+    const shelfSeat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, shelfSlot);
+    const edgyShelf = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
+      {
+        material: deckBoard(),
+        placement: { ...shelfSeat, onEdge: true },
+      },
+    ]);
+    assert.strictEqual(edgyShelf.size, 0);
   });
 
   it("keeps the accumulated turn: a 270° board seats without unwinding", () => {
@@ -217,7 +263,13 @@ describe("seating and snapping", () => {
       RUSTIC_SHELF_BLUEPRINT,
       centered,
       stringer(),
-      { xIn: seat.xIn, yIn: seat.yIn, angleDeg: 270, flipped: false },
+      {
+        xIn: seat.xIn,
+        yIn: seat.yIn,
+        angleDeg: 270,
+        flipped: false,
+        onEdge: true,
+      },
       new Set(),
     );
     assert.ok(snap);
@@ -226,7 +278,10 @@ describe("seating and snapping", () => {
 
   it("refuses a drop that is too far, misaligned, or already taken", () => {
     const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
-    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    const seat = {
+      ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot),
+      onEdge: true,
+    };
     const far = snapPlacementFor(
       RUSTIC_SHELF_BLUEPRINT,
       centered,

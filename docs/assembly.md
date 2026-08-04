@@ -49,20 +49,34 @@ each crossing. Not a new engine — the pallet generalized.
    views, through the same placements) until E takes it.
 6. **Parts nailed on are part of the build**: a piece a driven fastener
    holds won't drag, turn, or leave the bench until the build commits.
-7. **The plan picker is diegetic**: a stack of shop drawings
-   (`BlueprintStack`). The pulled sheet — blueprint blue, white line
-   work, a title block — IS the selected plan; the rest of the stack
-   shows as clickable sheet edges. Blueprint plans draw their real part
-   layout; other plans draw their ingredients to scale.
+7. **The plan picker is diegetic**: a pile of shop drawings sitting in
+   the bench view's bottom-right corner (`BlueprintCorner`, sheets by
+   `BlueprintStack.tsx`). The pulled sheet — blueprint blue, white line
+   work, a title block that reads supplies against the shop's stock —
+   IS the selected plan; the rest of the stack shows as clickable sheet
+   edges. Blueprint plans draw their real part layout; other plans draw
+   their ingredients to scale. There is no paperwork card and no
+   input/output diagram for benches: a bench top holds stock, not bays
+   (tools manage on the top rail, a worktable's shelf/upgrades in the
+   `UnderBenchPanel` drawer).
+8. **Orientation is part of the slot.** A `BlueprintSlot` can stand its
+   part on edge (`onEdge`); its footprint (`slotFaceWidthIn`) narrows
+   to the part's thickness, seating and snapping demand a piece tipped
+   to match (`BenchPlacement.onEdge`, the T verb), and the fastener
+   derivation's per-axis bite requirement relaxes to what a thin edge
+   can offer. Hovering an empty outline bare-handed tags the slot's
+   role and required stock — the drawing teaches at the bench, not in
+   a sheet.
 
 ## The first commission, grounded — **Now**
 
 The rustic shelf was never nonsense — 2 stringers + 3 deck boards is a
-classic pallet-wood ladder shelf — it just never *showed* it. Its
-blueprint: two stringers run the long way as rails (layer 0), three
-deck boards lie across them as shelves (layer 1), six derived nails at
-the crossings (down from a hand-set 8; the consumables-chain numbers
-follow). Drawn lying on its back, 48″ × 36″, the way it's built.
+classic pallet-wood slatted shelf — it just never *showed* it. Its
+blueprint: two stringers stand on edge as rails, the joists the piece
+hangs on (layer 0, `onEdge`), three deck boards lie flat across their
+top edges as slats (layer 1), six derived nails at the crossings (down
+from a hand-set 8; the consumables-chain numbers follow). Drawn from
+above, 48″ × 36″, the way it's built.
 
 ## What stays for later phases
 

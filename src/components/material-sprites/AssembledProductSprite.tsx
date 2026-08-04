@@ -8,6 +8,7 @@ import {
 import { AssembledPart, FinishedProduct } from "../../game/Materials";
 import { omitUndefined } from "../../utils/objectUtils";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { BoardOnEdgeSprite } from "./BoardOnEdgeSprite";
 import { BoardSprite } from "./BoardSprite";
 
 /**
@@ -82,6 +83,15 @@ const BlueprintPartsSprite: React.FC<{
             thickness: slot.part.thicknessQ,
             seed: slot.id,
           };
+        const board = {
+          species: part.species,
+          width: part.width,
+          length: part.length,
+          thickness: part.thickness,
+          surface: "rough" as const,
+          jointedFaces: 1 as const,
+          jointedEdges: 2 as const,
+        };
         return (
           <pixiContainer
             key={slot.id}
@@ -89,19 +99,13 @@ const BlueprintPartsSprite: React.FC<{
             y={slot.yIn * PIXELS_PER_INCH}
             angle={slot.angleDeg}
           >
-            <BoardSprite
-              board={{
-                species: part.species,
-                width: part.width,
-                length: part.length,
-                thickness: part.thickness,
-                surface: "rough",
-                jointedFaces: 1,
-                jointedEdges: 2,
-              }}
-              seed={part.seed}
-              tint={tint}
-            />
+            {slot.onEdge ? (
+              // A rail stands on edge in the finished piece exactly as
+              // it stood while the slats were nailed across it
+              <BoardOnEdgeSprite board={board} seed={part.seed} tint={tint} />
+            ) : (
+              <BoardSprite board={board} seed={part.seed} tint={tint} />
+            )}
           </pixiContainer>
         );
       })}

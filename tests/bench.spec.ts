@@ -124,12 +124,17 @@ test.describe("Bench view", () => {
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "stroke");
       await expect(page.getByTestId("bench-stage")).toBeVisible();
-      // The plan picker survives under the bench top, in the paperwork
-      // drawer (open by default while no pallet holds the bench)
-      await expect(page.getByText("Plans & paperwork")).toBeVisible();
+      // The plan picker is the blueprint pile in the corner: folded it
+      // still names the drawing that's set out, and unfolding it offers
+      // the rest of the stack
+      const corner = page.getByTestId("blueprint-corner");
+      await expect(corner).toBeVisible();
+      await expect(corner).toContainText("Sand Board");
+      await corner.click();
       await expect(
-        page.getByRole("button", { name: /Sand Board/ }),
+        page.getByTestId("blueprint-stack").getByText("Sand Board"),
       ).toBeVisible();
+      await corner.click();
     });
 
     await test.step("one real stroke starts the pass; strokes finish it", async () => {
@@ -209,8 +214,8 @@ test.describe("Bench view", () => {
       // every deck-board × stringer crossing, and the board only drops
       // with its last one. The center top-deck board's crossings are
       // pallet inches (23, 0), (23, 17), (23, 34), published through the
-      // stage's fit attrs (the center column stays clear of the floating
-      // paperwork drawer, which the sanding step left open).
+      // stage's fit attrs (the center column stays clear of the bench
+      // view's floating corner chrome).
       const palletState = () =>
         page.evaluate(
           () =>
@@ -428,9 +433,10 @@ test.describe("Bench view", () => {
       await expect(page.getByText("the glue cures on its own")).toBeVisible();
     });
 
-    await test.step("blueprint assembly: one drag seats the rail, the hammer nails the crossings", async () => {
+    await test.step("blueprint assembly: tip the rail on edge, one drag seats it, the hammer nails the crossings", async () => {
       // Stage the shelf build: plan pinned, hammer mounted, four parts
-      // already lying on their outlines, one rail parked askew. The
+      // already on their outlines (the seated rail stood on edge, the
+      // way its slot demands), one rail parked askew and still flat. The
       // workspace bench is 36×24, so the 48×36 ghost frame centers at
       // (18,12) and every slot lands at its product position − (6,6).
       await page.evaluate(() => {
@@ -470,7 +476,13 @@ test.describe("Bench view", () => {
                   },
                   benchLayout: {
                     "bp-r1": { xIn: 33, yIn: 4, angleDeg: 96, flipped: false },
-                    "bp-r2": { xIn: 18, yIn: 24, angleDeg: 90, flipped: false },
+                    "bp-r2": {
+                      xIn: 18,
+                      yIn: 24,
+                      angleDeg: 90,
+                      flipped: false,
+                      onEdge: true,
+                    },
                     "bp-s1": { xIn: 2, yIn: 12, angleDeg: 0, flipped: false },
                     "bp-s2": { xIn: 18, yIn: 12, angleDeg: 0, flipped: false },
                     "bp-s3": { xIn: 34, yIn: 12, angleDeg: 0, flipped: false },
@@ -482,22 +494,43 @@ test.describe("Bench view", () => {
       });
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "assembly");
-      // Fold the paperwork drawer out of the way — open, it overlaps the
-      // build's left column and would eat the presses (a real player sees
-      // it covering the work and folds it too)
-      const drawer = page.getByTestId("bench-paperwork");
-      if ((await drawer.getAttribute("open")) !== null) {
-        await drawer.locator("summary").click();
-        await page.waitForTimeout(100);
-      }
       const stage = page.getByTestId("bench-stage");
       await expect(stage).toHaveAttribute("data-seated", "4");
 
-      // The one real snap-drag: the parked rail onto rail-0's outline
-      // (product (24,6) → bench (18,0)). The park spot overlaps a seated
-      // shelf on purpose — a free piece lies on top and the grab must
-      // prefer it.
+      // A bare hand over the empty rail outline reads its requirement —
+      // bench (-4, 0) sits on rail-0's thin strip out on the overhang,
+      // clear of every piece (the parked rail crosses the strip's middle)
+      const overGhost = await inchPoint(page, -4, 0);
+      await page.mouse.move(overGhost.x, overGhost.y);
+      await expect(page.getByTestId("slot-tip")).toBeVisible();
+      await expect(page.getByTestId("slot-tip")).toContainText("rail");
+      await expect(page.getByTestId("slot-tip")).toContainText(
+        "stood on edge",
+      );
+
+      // The parked rail lies flat: T tips it up on its long edge. The
+      // park spot overlaps a seated shelf on purpose — a free piece lies
+      // on top and the hover must prefer it.
       const from = await inchPoint(page, 33, 4);
+      await page.mouse.move(from.x, from.y);
+      await expect(page.getByTestId("slot-tip")).toBeHidden();
+      // Wait for the hover to land before the keypress — the key handler
+      // reads the hovered piece, and a busy renderer commits it a beat
+      // after the pointer arrives
+      await expect(stage).toHaveAttribute("data-hovered", "bp-r1");
+      await page.keyboard.press("KeyT");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+                .onEdge ?? false,
+          ),
+        )
+        .toBe(true);
+
+      // The one real snap-drag: the tipped rail onto rail-0's outline
+      // (product (24,6) → bench (18,0)).
       const seat = await inchPoint(page, 18, 0);
       await page.mouse.move(from.x, from.y);
       await page.mouse.down();

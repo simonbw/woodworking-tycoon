@@ -1,6 +1,7 @@
 import React from "react";
 import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { AssembledProductSprite } from "./AssembledProductSprite";
+import { BoardOnEdgeSprite } from "./BoardOnEdgeSprite";
 import { BoardSprite } from "./BoardSprite";
 import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
@@ -19,10 +20,20 @@ export const MaterialSprite: React.FC<{
   material: MaterialInstance;
   alpha?: number;
   tint?: number;
-}> = ({ material, alpha, tint }) => {
+  /** The piece's bench placement has it standing on its long edge —
+   * boards draw edge-up (BoardOnEdgeSprite); other types ignore it. */
+  onEdge?: boolean;
+}> = ({ material, alpha, tint, onEdge }) => {
   switch (material.type) {
     case "board":
-      return (
+      return onEdge ? (
+        <BoardOnEdgeSprite
+          board={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />
+      ) : (
         <BoardSprite
           board={material}
           seed={material.id}

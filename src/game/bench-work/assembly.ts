@@ -82,10 +82,15 @@ export function fastenerOnBench(
 function pieceSeatsSlot(
   piece: PlacedPiece,
   requirementMet: boolean,
+  slot: BlueprintSlot,
   slotPlace: BenchPlacement,
 ): boolean {
   return (
     requirementMet &&
+    // An on-edge slot only seats a piece that has been tipped on edge
+    // (T), and a flat slot only a piece lying flat — the orientation is
+    // part of where the part belongs, not a nicety.
+    !!piece.placement.onEdge === !!slot.onEdge &&
     Math.hypot(
       piece.placement.xIn - slotPlace.xIn,
       piece.placement.yIn - slotPlace.yIn,
@@ -116,6 +121,7 @@ export function seatedParts(
         pieceSeatsSlot(
           p,
           materialMeetsInput(p.material, slot.requirement),
+          slot,
           slotPlace,
         ),
     );
@@ -146,6 +152,9 @@ export function snapPlacementFor(
   for (const slot of blueprint.slots) {
     if (takenSlotIds.has(slot.id)) continue;
     if (!materialMeetsInput(material, slot.requirement)) continue;
+    // A piece snaps only in the orientation the slot calls for — a flat
+    // rail dragged over its on-edge seat stays in hand until it's tipped
+    if (!!at.onEdge !== !!slot.onEdge) continue;
     const slotPlace = slotOnBench(blueprint, productPlacement, slot);
     const dist = Math.hypot(at.xIn - slotPlace.xIn, at.yIn - slotPlace.yIn);
     if (dist > bestDist) continue;
@@ -163,6 +172,7 @@ export function snapPlacementFor(
         yIn: slotPlace.yIn,
         angleDeg: slotPlace.angleDeg + step,
         flipped: at.flipped,
+        onEdge: at.onEdge,
       },
     };
     bestDist = dist;
