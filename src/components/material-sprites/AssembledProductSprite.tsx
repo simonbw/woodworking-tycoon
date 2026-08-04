@@ -86,6 +86,7 @@ const BlueprintPartsSprite: React.FC<{
             width: slot.part.widthIn,
             length: slot.part.lengthIn,
             thickness: slot.part.thicknessQ,
+            ...(slot.part.ends ? { ends: slot.part.ends } : {}),
             seed: slot.id,
           } satisfies AssembledPart);
         const board = {
@@ -96,6 +97,9 @@ const BlueprintPartsSprite: React.FC<{
           surface: part.surface ?? ("rough" as const),
           jointedFaces: 1 as const,
           jointedEdges: 2 as const,
+          // A frame rail's mitered ends draw in the finished piece — the
+          // corner seams are the product
+          ...(part.ends ? { ends: part.ends } : {}),
         };
         return (
           <pixiContainer
