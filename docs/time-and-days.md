@@ -43,15 +43,17 @@ and the Ticker feeds ticks accordingly:
   pulling stock through on its own), the broom or vac working under the
   same hold, a busy body (trudging dust, mid-sweep), or a scavenging
   run's timer burning down.
-- **waiting** — the wait verb: hold <kbd>T</kbd> and the clock spins,
-  faster than working (`WAIT_TICKS_PER_SECOND`, four times work pace —
-  a full day drains in half a minute, an hour's cure in seconds). It
-  needs no target and works anywhere in the shop; the player's hint
-  cluster offers it whenever work is running with nobody spending time.
-- **idle** — nobody is spending time. The clock still creeps, close to
-  real time minute-for-minute (`IDLE_TICKS_PER_SECOND`): walking the
-  floor, reading, arranging stock, and browsing a store's aisles are
-  all nearly free.
+- **waiting** — the wait verb: hold <kbd>T</kbd> and the clock winds up
+  from a gentle spin to twice working pace over a few seconds (the
+  Ticker's `waitTicksPerSecond` ramp) — a tap costs only minutes, a
+  held key drains an hour's cure in about seven seconds and a whole day
+  in roughly a minute. It needs no target and works anywhere in the
+  shop; the player's hint cluster offers it whenever work is running
+  with nobody spending time.
+- **idle** — nobody is spending time. The clock still creeps at about
+  five times real life (`IDLE_TICKS_PER_SECOND`; a full day of pure
+  idling takes around two real hours): walking the floor, reading,
+  arranging stock, and browsing a store's aisles are all nearly free.
 - **stopped** — the shop is closed for the night (or the player is home
   in bed). No idle creep, and the wait key stands down — there is
   nothing left to spend. The only ticks left are the ones work causes.

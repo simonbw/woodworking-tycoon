@@ -11,18 +11,32 @@ import { useApplyGameAction, useGameState } from "./useGameState";
 
 /**
  * How fast the clock creeps when nobody is spending time — walking the
- * floor, reading, browsing a store's aisles. Close to real time
- * minute-for-minute: thinking is nearly free, and deliberately passing
- * time is what the wait key is for (see docs/time-and-days.md).
+ * floor, reading, browsing a store's aisles. About five times real
+ * life, so a full day of pure idling takes around two hours: thinking
+ * is nearly free, and deliberately passing time is what the wait key
+ * is for (see docs/time-and-days.md).
  */
-const IDLE_TICKS_PER_SECOND = 1 / 60;
+const IDLE_TICKS_PER_SECOND = 5 / 60;
 
 /**
- * How fast the clock spins under the held wait key — quicker than
- * working, so waiting *reads* as the clock pouring out: a full day
- * drains in half a minute, a one-hour glue cure in about three seconds.
+ * The wait key's ramp. Holding it starts the clock at a gentle spin and
+ * winds it up over a few seconds to twice working pace — the jump from
+ * the idle creep lands gradually, and a short tap costs only a few
+ * minutes. At full wind a one-hour cure passes in about seven seconds
+ * and a whole day in roughly a minute.
  */
-const WAIT_TICKS_PER_SECOND = 4 * TICKS_PER_SECOND;
+const WAIT_START_TICKS_PER_SECOND = 2;
+const WAIT_MAX_TICKS_PER_SECOND = 2 * TICKS_PER_SECOND;
+const WAIT_RAMP_SECONDS = 5;
+
+/** The wait rate after the key has been held this long. */
+function waitTicksPerSecond(heldSeconds: number): number {
+  const t = Math.min(1, Math.max(0, heldSeconds / WAIT_RAMP_SECONDS));
+  return (
+    WAIT_START_TICKS_PER_SECOND +
+    t * (WAIT_MAX_TICKS_PER_SECOND - WAIT_START_TICKS_PER_SECOND)
+  );
+}
 
 /** How often the loop wakes to see whether a tick is owed. */
 const LOOP_INTERVAL_MS = 100;
@@ -44,15 +58,17 @@ export const Ticker: React.FC = () => {
   const [testRate, setTestRate] = useState<number | null>(null);
 
   const speed = timeSpeed(gameState);
-  const ticksPerSecond =
+  // The steady paces. Waiting is the odd one out — its rate ramps with
+  // how long the key has been held, so it's computed inside the loop.
+  const steadyRate =
     testRate ??
-    (speed === "waiting"
-      ? WAIT_TICKS_PER_SECOND
-      : speed === "working"
-        ? TICKS_PER_SECOND
-        : speed === "idle"
-          ? IDLE_TICKS_PER_SECOND
-          : 0);
+    (speed === "working"
+      ? TICKS_PER_SECOND
+      : speed === "idle"
+        ? IDLE_TICKS_PER_SECOND
+        : speed === "stopped"
+          ? 0
+          : null);
 
   // Fractional ticks owed so far. Lives across interval restarts so a
   // pace change mid-accumulation doesn't drop what the idle creep had
@@ -60,9 +76,15 @@ export const Ticker: React.FC = () => {
   const owed = useRef(0);
 
   useEffect(() => {
-    if (paused || ticksPerSecond === 0) return;
+    if (paused || steadyRate === 0) return;
+    // The effect re-runs when the speed changes, so this marks the
+    // moment the wait key's hold began — the ramp winds up from here.
+    const heldSince = performance.now();
     const interval = setInterval(() => {
-      owed.current += ticksPerSecond * (LOOP_INTERVAL_MS / 1000);
+      const rate =
+        steadyRate ??
+        waitTicksPerSecond((performance.now() - heldSince) / 1000);
+      owed.current += rate * (LOOP_INTERVAL_MS / 1000);
       const due = Math.floor(owed.current);
       owed.current -= due;
       for (let i = 0; i < due; i++) {
@@ -70,7 +92,7 @@ export const Ticker: React.FC = () => {
       }
     }, LOOP_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [paused, ticksPerSecond]);
+  }, [paused, steadyRate, speed]);
 
   // Bookkeeping that answers the player's actions rather than the
   // clock: milestone unlocks, the coach's next card, and the empty-board

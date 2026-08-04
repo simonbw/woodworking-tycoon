@@ -13,14 +13,17 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  * player is doing. The Ticker asks this model how fast to feed ticks;
  * the tick pipeline itself never changes.
  *
- *  waiting — the wait key is held: time deliberately spent on nothing,
- *            faster than work so the clock visibly spins. The easy
- *            answer to a cure; every hour waited is an hour not worked.
+ *  waiting — the wait key is held: time deliberately spent on nothing.
+ *            The rate ramps up the longer the hold (see the Ticker's
+ *            waitTicksPerSecond), topping out past working pace. The
+ *            easy answer to a cure; every hour waited is an hour not
+ *            worked.
  *  working — time is being spent: attended machine work, a busy body
  *            (trudging, sweeping), or a scavenging run's timer. Full
  *            pace, the familiar five minutes a second.
- *  idle    — nobody is spending time. The clock still creeps, close to
- *            real time minute-for-minute: thinking is nearly free.
+ *  idle    — nobody is spending time. The clock still creeps at about
+ *            five times real life (a couple of real hours to idle away
+ *            a whole day): thinking is nearly free.
  *  stopped — the shop is closed for the night (or the player is home in
  *            bed). Nothing moves until work finishes it or morning does.
  */

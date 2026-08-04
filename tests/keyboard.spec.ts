@@ -683,8 +683,12 @@ test.describe("Keyboard", () => {
         () => (window as any).__GET_GAME_STATE__().tick,
       );
       await page.keyboard.down("t");
+      // The rate ramps up from a gentle start, so give the wind-up room
       await expect
-        .poll(() => page.evaluate(() => (window as any).__GET_GAME_STATE__().tick))
+        .poll(
+          () => page.evaluate(() => (window as any).__GET_GAME_STATE__().tick),
+          { timeout: 10_000 },
+        )
         .toBeGreaterThan(tickBefore + 10);
       await page.keyboard.up("t");
 
