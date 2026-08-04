@@ -258,7 +258,9 @@ test.describe("Milling", () => {
 
     await test.step("lumberyard: both channels open at 48 reputation", async () => {
       const returnTo = await goToLumberyard(page);
-      await expect(page.getByText("Sawyer & Sons")).toBeVisible();
+      await expect(
+        page.getByRole("img", { name: "Sawyer & Sons" }),
+      ).toBeVisible();
       await expect(page.getByText("S2S Rack")).toBeVisible();
       await expect(page.getByText("Rough Rack")).toBeVisible();
       // Rough walnut sells at the deepest discount in town. Every

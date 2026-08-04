@@ -1,6 +1,7 @@
 import React from "react";
 import { returnFromStoreAction } from "../../game/game-actions/door-actions";
 import { BoardSelector } from "../store-page/BoardSelector";
+import { SawyerAndSonsLogo } from "./SawyerAndSonsLogo";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";
 import { useHeadHome } from "../trip/TripTransitionLayer";
@@ -34,11 +35,7 @@ export const LumberyardTripOverlay: React.FC = () => {
     <TripOverlay label="Sawyer & Sons" onHeadHome={headHome}>
       <div className="rounded-md overflow-hidden shadow-2xl border border-mill-green-dark grow min-h-0 flex flex-col">
         <TripHeader
-          brand={
-            <span className="font-lumberjack text-4xl tracking-wide leading-none">
-              Sawyer &amp; Sons
-            </span>
-          }
+          brand={<SawyerAndSonsLogo className="h-12 w-auto shrink-0" />}
           tagline="Hardwoods · Rough & Surfaced · Since 1962"
           barClassName="bg-mill-green text-paper-cream"
           brandRowClassName="items-baseline"

@@ -296,7 +296,9 @@ test.describe("Stations", () => {
 
     await test.step("lumberyard: open at 17 reputation, rough rack still hidden", async () => {
       const returnTo = await goToLumberyard(page);
-      await expect(page.getByText("Sawyer & Sons")).toBeVisible();
+      await expect(
+        page.getByRole("img", { name: "Sawyer & Sons" }),
+      ).toBeVisible();
       // At 17 reputation the S2S rack (12) has appeared...
       await expect(page.getByText("S2S Rack")).toBeVisible();
       // ...but the rough rack (22) doesn't exist yet — not even greyed out
