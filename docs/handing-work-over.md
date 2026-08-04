@@ -93,7 +93,7 @@ than the distinction is worth.
 
 `player.away` still flips the instant a row is picked; the departure and
 arrival rolls are pure theater layered on top (`truckStageStore` +
-`TripTransitionLayer`, scored by the `truck-depart`/`truck-arrive` clips
+`TripTransitionLayer`, scored by the `truck-start`/`truck-arrive` clips
 — see `docs/sound-design.md`). Delivery itself is instant: pick the row,
 the payout lands, no timed trip. A timed delivery run would change pacing
 across the whole progression ledger and stays future work.

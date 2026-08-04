@@ -73,7 +73,7 @@ export const TripTransitionLayer: React.FC<{
   // provider that no longer exists. Warm the trip clips on the way in —
   // the crank should land with the click, not a fetch later.
   useEffect(() => {
-    preloadSound("truck-depart");
+    preloadSound("truck-start");
     preloadSound("truck-arrive");
     return () => {
       if (pendingReturn.current) clearTimeout(pendingReturn.current);
@@ -126,7 +126,7 @@ export const TripTransitionLayer: React.FC<{
       }
       setTruckStage("departing");
       // Dry, not through the garage reverb — the driveway is outdoors.
-      playSound("truck-depart", 0.7, "sfx");
+      playSound("truck-start", 0.7, "sfx");
       const fadeTimer = setTimeout(
         () => setFaded(true),
         TRUCK_DEPART_MS - FADE_MS,

@@ -274,7 +274,7 @@ rhythm anyway, cells being a foot across against a nearly three-foot stride.
 `playerMotion.moving` is already false when paused, away on a trip, or busy
 sweeping, so all of those go quiet without the layer knowing about them.
 
-### The truck (`truck-depart.ogg` / `truck-arrive.ogg`)
+### The truck (`truck-start.flac` / `truck-arrive.ogg`)
 
 The trip performance (see `TripTransitionLayer`) plays two generated
 one-shot clips: the departure is a cold start — crank, catch, idle, pull

@@ -43,7 +43,7 @@ const GAME_SOUND_CLIPS = [
   "orbital-sander",
   "pallet-dismantle",
   "truck-arrive",
-  "truck-depart",
+  "truck-start",
   "ui-notification",
 ];
 

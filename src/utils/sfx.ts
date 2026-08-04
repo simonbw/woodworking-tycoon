@@ -74,6 +74,7 @@ const SOUND_EXTENSION: Record<string, string> = {
   "ui-click-end": "flac",
   "ui-hover": "flac",
   "ui-notification": "flac",
+  "truck-start": "flac",
 };
 
 /** The URL a bare clip name resolves to, extension and all. */
