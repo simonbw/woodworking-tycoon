@@ -132,7 +132,7 @@ describe("widthDominantSpecies", () => {
 describe("glueUpPair", () => {
   it("glues two strips of any width into a rough panel, in order", () => {
     const { outputs } = glueUpPair.output(
-      [board("walnut", 2, 3, 4, "smooth"), board("maple", 2, 1, 4, "sanded")],
+      [board("walnut", 24, 3, 4, "smooth"), board("maple", 24, 1, 4, "sanded")],
       {},
     );
     const output = outputs[0];
@@ -148,9 +148,9 @@ describe("glueUpPair", () => {
 
 describe("extendPanel", () => {
   it("appends the strip and re-roughs the panel", () => {
-    const base = panel(strips(["walnut", 3], ["maple", 1]), 2, 4, "sanded");
+    const base = panel(strips(["walnut", 3], ["maple", 1]), 24, 4, "sanded");
     const { outputs } = extendPanel.output(
-      [base, board("walnut", 2, 2, 4, "smooth")],
+      [base, board("walnut", 24, 2, 4, "smooth")],
       {},
     );
     const output = outputs[0];
@@ -167,17 +167,20 @@ describe("extendPanel", () => {
   it("requires clean strips but takes the panel in any condition", () => {
     const [panelReq, stripReq] = extendPanel.getInputMaterials({});
     assert.ok(
-      materialMeetsInput(panel(strips(["walnut", 3]), 2, 4, "rough"), panelReq),
+      materialMeetsInput(
+        panel(strips(["walnut", 3]), 24, 4, "rough"),
+        panelReq,
+      ),
     );
-    assert.ok(!materialMeetsInput(board("maple", 2, 2, 4, "rough"), stripReq));
-    assert.ok(materialMeetsInput(board("maple", 2, 2, 4, "smooth"), stripReq));
+    assert.ok(!materialMeetsInput(board("maple", 24, 2, 4, "rough"), stripReq));
+    assert.ok(materialMeetsInput(board("maple", 24, 2, 4, "smooth"), stripReq));
   });
 });
 
 describe("joinPanels", () => {
   it("marries two sub-panels in order and re-roughs the joint", () => {
-    const left = panel(strips(["walnut", 3], ["maple", 1]), 2, 4, "sanded");
-    const right = panel(strips(["walnut", 2], ["maple", 2]), 2, 4, "smooth");
+    const left = panel(strips(["walnut", 3], ["maple", 1]), 24, 4, "sanded");
+    const right = panel(strips(["walnut", 2], ["maple", 2]), 24, 4, "smooth");
     const { outputs } = joinPanels.output([left, right], {});
     const output = outputs[0];
     assert.strictEqual(output.type, "panel");
@@ -232,7 +235,7 @@ describe("finishStripedBoard", () => {
       ["maple", 2],
       ["walnut", 2],
     ),
-    2,
+    24,
     3,
     "sanded",
   );
@@ -250,7 +253,7 @@ describe("finishStripedBoard", () => {
         ["maple", 2],
         ["maple", 2],
       ),
-      2,
+      24,
       3,
       "sanded",
     );
@@ -266,7 +269,7 @@ describe("finishStripedBoard", () => {
         ["maple", 2],
         ["maple", 2],
       ),
-      2,
+      24,
       3,
       "sanded",
     );
@@ -279,7 +282,7 @@ describe("finishStripedBoard", () => {
         ["pallet", 2],
         ["walnut", 2],
       ),
-      2,
+      24,
       3,
       "sanded",
     );
@@ -309,7 +312,7 @@ describe("finishSunriseBoard", () => {
       ["walnut", 1],
       ["maple", 3],
     ),
-    2,
+    24,
     3,
     "sanded",
   );
@@ -328,7 +331,7 @@ describe("finishSunriseBoard", () => {
         ["walnut", 2],
         ["maple", 2],
       ),
-      2,
+      24,
       3,
       "sanded",
     );
@@ -346,7 +349,7 @@ describe("finishSunriseBoard", () => {
         ["maple", 3],
         ["walnut", 1],
       ),
-      2,
+      24,
       3,
       "sanded",
     );

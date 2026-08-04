@@ -5,21 +5,21 @@ import { panel, uniformPanel } from "./panel-helpers";
 
 describe("uniformPanel", () => {
   it("builds the requested number of identical strips", () => {
-    const result = uniformPanel("maple", 5, 2, 2, 4);
+    const result = uniformPanel("maple", 5, 2, 24, 4);
     assert.strictEqual(result.strips.length, 5);
     assert.ok(
       result.strips.every(
         (strip) => strip.species === "maple" && strip.width === 2,
       ),
     );
-    assert.strictEqual(result.length, 2);
+    assert.strictEqual(result.length, 24);
     assert.strictEqual(result.thickness, 4);
   });
 });
 
 describe("panelWidth", () => {
   it("is the sum of strip widths", () => {
-    assert.strictEqual(panelWidth(uniformPanel("maple", 5, 2, 2, 4)), 10);
+    assert.strictEqual(panelWidth(uniformPanel("maple", 5, 2, 24, 4)), 10);
   });
 
   it("handles mixed strip widths", () => {
@@ -29,7 +29,7 @@ describe("panelWidth", () => {
         { species: "maple", width: 1 },
         { species: "walnut", width: 2 },
       ],
-      2,
+      24,
       4,
     );
     assert.strictEqual(panelWidth(mixed), 6);
@@ -38,7 +38,7 @@ describe("panelWidth", () => {
 
 describe("panelSpecies", () => {
   it("returns a single species once for uniform panels", () => {
-    assert.deepStrictEqual(panelSpecies(uniformPanel("cherry", 4, 2, 2, 4)), [
+    assert.deepStrictEqual(panelSpecies(uniformPanel("cherry", 4, 2, 24, 4)), [
       "cherry",
     ]);
   });
@@ -50,7 +50,7 @@ describe("panelSpecies", () => {
         { species: "maple", width: 2 },
         { species: "walnut", width: 2 },
       ],
-      2,
+      24,
       4,
     );
     assert.deepStrictEqual(panelSpecies(striped), ["walnut", "maple"]);

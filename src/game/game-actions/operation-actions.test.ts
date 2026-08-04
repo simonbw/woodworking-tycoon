@@ -54,14 +54,14 @@ function stateWith(overrides: Partial<GameState>): GameState {
   };
 }
 
-const smoothMaple = () => board("maple", 2, 2, 4, "smooth");
+const smoothMaple = () => board("maple", 24, 2, 4, "smooth");
 
 describe("finishAttendedWorkAction", () => {
   it("resolves a started sanding pass: outputs, sound, and an idle bench", () => {
     const machine = workspaceMachine({
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
-      inputMaterials: [board("maple", 2, 4, 4, "rough")],
+      inputMaterials: [board("maple", 24, 4, 4, "rough")],
     });
     let state = stateWith({
       machines: [machine],
@@ -111,7 +111,7 @@ describe("finishAttendedWorkAction", () => {
     const machine = workspaceMachine({
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
-      processingMaterials: [board("maple", 2, 4, 4, "rough")],
+      processingMaterials: [board("maple", 24, 4, 4, "rough")],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -200,11 +200,11 @@ describe("finishAttendedWorkAction", () => {
 
   it("assembly's paired commit spends the fasteners and yields the build", () => {
     const shelfBoards = [
-      board("pallet", 4, 6, 3),
-      board("pallet", 4, 6, 3),
-      board("pallet", 3, 4, 1),
-      board("pallet", 3, 4, 1),
-      board("pallet", 3, 4, 1),
+      board("pallet", 48, 6, 3),
+      board("pallet", 48, 6, 3),
+      board("pallet", 36, 4, 1),
+      board("pallet", 36, 4, 1),
+      board("pallet", 36, 4, 1),
     ];
     const machine = workspaceMachine({
       tools: ["hammer"],
@@ -360,7 +360,7 @@ describe("pryPalletNailAction targeting", () => {
 
 describe("arrangeBenchMaterialAction", () => {
   it("stores where a piece lies and prunes departed ids", () => {
-    const loose = board("pallet", 3, 4, 1);
+    const loose = board("pallet", 36, 4, 1);
     const machine = workspaceMachine({
       inputMaterials: [loose],
       benchLayout: {

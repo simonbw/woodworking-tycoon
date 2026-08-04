@@ -213,7 +213,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
 
   // One spring drives the feeding stock (fence or sled side) and the kerf
   // that opens behind the blade (the blade sits at the machine's center).
-  const cutLength = cutting ? feetToPixels(cutting.length) : 0;
+  const cutLength = cutting ? inchesToPixels(cutting.length) : 0;
   const feed = useSpring({
     y: cutting
       ? lerp(
@@ -250,7 +250,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
           return (
             <pixiContainer
               angle={resawing ? 0 : index * 10}
-              y={feetToPixels(board.length / 2) + inchesToPixels(2)}
+              y={inchesToPixels(board.length / 2) + inchesToPixels(2)}
               x={stockOffset(board)}
               key={`in-${index}`}
             >
@@ -269,7 +269,7 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
           return (
             <pixiContainer
               angle={resawing ? 0 : -index - 1}
-              y={-feetToPixels(length / 2) - inchesToPixels(3)}
+              y={-inchesToPixels(length / 2) - inchesToPixels(3)}
               x={
                 stockOffset(material) -
                 (resawing ? inchesToPixels(index * 1.2) : 0)

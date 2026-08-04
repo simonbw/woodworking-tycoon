@@ -15,18 +15,18 @@ import { panel, uniformPanel } from "./panel-helpers";
 describe("getSellValue", () => {
   it("prices boards by board-foot volume", () => {
     // 4' x 6" x 3/4 stringer: 1.5 bf at pallet wood's $1.50/bf craft rate
-    assert.strictEqual(getSellValue(board("pallet", 4, 6, 3)), 2.25);
+    assert.strictEqual(getSellValue(board("pallet", 48, 6, 3)), 2.25);
     // 3' x 4" x 1/4 deck board: 0.25 bf
-    assert.strictEqual(getSellValue(board("pallet", 3, 4, 1)), 0.38);
+    assert.strictEqual(getSellValue(board("pallet", 36, 4, 1)), 0.38);
     // A 2x4 stud is 8' x 4" x 8/4 = 5.33 bf of pine at $0.25/bf
-    assert.strictEqual(getSellValue(board("pine", 8, 4, 8)), 1.33);
+    assert.strictEqual(getSellValue(board("pine", 96, 4, 8)), 1.33);
   });
 
   it("prices a whole pallet below its dismantled boards", () => {
     const pallet = makePallet();
     const dismantledValue =
-      3 * getSellValue(board("pallet", 4, 6, 3)) +
-      11 * getSellValue(board("pallet", 3, 4, 1));
+      3 * getSellValue(board("pallet", 48, 6, 3)) +
+      11 * getSellValue(board("pallet", 36, 4, 1));
     assert.ok(getSellValue(pallet) < dismantledValue);
   });
 
@@ -36,22 +36,22 @@ describe("getSellValue", () => {
       species: "pallet",
     });
     const inputWood =
-      2 * getSellValue(board("pallet", 4, 6, 3)) +
-      3 * getSellValue(board("pallet", 3, 4, 1));
+      2 * getSellValue(board("pallet", 48, 6, 3)) +
+      3 * getSellValue(board("pallet", 36, 4, 1));
     assert.strictEqual(getSellValue(shelf), 12);
     assert.ok(getSellValue(shelf) > 2 * inputWood);
   });
 
   it("scales board value by species rate", () => {
     // 3' x 4" x 4/4 is exactly one board foot
-    assert.strictEqual(getSellValue(board("pine", 3, 4, 4)), 0.25);
-    assert.strictEqual(getSellValue(board("maple", 3, 4, 4)), 1.75);
-    assert.strictEqual(getSellValue(board("walnut", 3, 4, 4)), 4);
+    assert.strictEqual(getSellValue(board("pine", 36, 4, 4)), 0.25);
+    assert.strictEqual(getSellValue(board("maple", 36, 4, 4)), 1.75);
+    assert.strictEqual(getSellValue(board("walnut", 36, 4, 4)), 4);
   });
 
   it("prices panels strip by strip", () => {
     // 5 maple strips at 3' x 4" x 4/4: one board foot each at $1.75/bf
-    assert.strictEqual(getSellValue(uniformPanel("maple", 5, 3, 4, 4)), 8.75);
+    assert.strictEqual(getSellValue(uniformPanel("maple", 5, 3, 48, 4)), 8.75);
   });
 
   it("prices multi-species panels by each strip's own species", () => {
@@ -60,11 +60,11 @@ describe("getSellValue", () => {
         { species: "walnut", width: 4 },
         { species: "pine", width: 4 },
       ],
-      3,
+      36,
       4,
     );
-    const walnutStrip = getSellValue(board("walnut", 3, 4, 4));
-    const pineStrip = getSellValue(board("pine", 3, 4, 4));
+    const walnutStrip = getSellValue(board("walnut", 36, 4, 4));
+    const pineStrip = getSellValue(board("pine", 36, 4, 4));
     assert.strictEqual(getSellValue(striped), walnutStrip + pineStrip);
   });
 
@@ -99,8 +99,8 @@ describe("getBoardBuyPrice", () => {
 
   it("charges more for fancier species", () => {
     assert.ok(
-      getBoardBuyPrice(board("walnut", 4, 4, 2)) >
-        getBoardBuyPrice(board("pine", 4, 4, 2)),
+      getBoardBuyPrice(board("walnut", 48, 4, 2)) >
+        getBoardBuyPrice(board("pine", 48, 4, 2)),
     );
   });
 
@@ -129,7 +129,7 @@ describe("getBoardBuyPrice", () => {
     const bigBox = LUMBER_CHANNELS.find((c) => c.id === "bigBoxRack")!;
     const s2sRack = LUMBER_CHANNELS.find((c) => c.id === "s2sRack")!;
     const roughRack = LUMBER_CHANNELS.find((c) => c.id === "roughRack")!;
-    const b = board("maple", 8, 4, 4);
+    const b = board("maple", 96, 4, 4);
     const bigBoxPrice = getBoardBuyPrice(b, bigBox.priceMultiplier);
     const s2sPrice = getBoardBuyPrice(b, s2sRack.priceMultiplier);
     const roughPrice = getBoardBuyPrice(b, roughRack.priceMultiplier);
@@ -141,11 +141,11 @@ describe("getBoardBuyPrice", () => {
     // the nominal thickness), sell smooth
     const roughRack = LUMBER_CHANNELS.find((c) => c.id === "roughRack")!;
     const roughCost = getBoardBuyPrice(
-      board("maple", 8, 4, 4, "rough", { faces: 0, edges: 0 }),
+      board("maple", 96, 4, 4, "rough", { faces: 0, edges: 0 }),
       roughRack.priceMultiplier,
     );
     const milledValue = getSellValue(
-      board("maple", 8, 4, 4, "smooth", { faces: 2, edges: 2 }),
+      board("maple", 96, 4, 4, "smooth", { faces: 2, edges: 2 }),
     );
     assert.ok(roughCost > milledValue);
   });
@@ -153,9 +153,9 @@ describe("getBoardBuyPrice", () => {
 
 describe("surface value", () => {
   it("rewards sanding raw stock a little", () => {
-    const rough = getSellValue(board("pallet", 4, 6, 3, "rough"));
-    const smooth = getSellValue(board("pallet", 4, 6, 3, "smooth"));
-    const sanded = getSellValue(board("pallet", 4, 6, 3, "sanded"));
+    const rough = getSellValue(board("pallet", 48, 6, 3, "rough"));
+    const smooth = getSellValue(board("pallet", 48, 6, 3, "smooth"));
+    const sanded = getSellValue(board("pallet", 48, 6, 3, "sanded"));
     assert.ok(rough < smooth && smooth < sanded);
     // ...but not product-level money: still less than double
     assert.ok(sanded < rough * 2);
@@ -210,8 +210,8 @@ describe("sheet good pricing", () => {
     makeMaterial<SheetGood>({
       type: "plywood",
       kind,
-      length: 4,
-      width: 4,
+      length: 48,
+      width: 48,
       thickness: 2,
     });
 
@@ -245,7 +245,7 @@ describe("sheet good pricing", () => {
 
   it("puts store shelves near real-world prices", () => {
     // The classic 2x4x8 stud: ~$4 at the big box
-    assert.strictEqual(getBoardBuyPrice(board("pine", 8, 4, 8)), 3.99);
+    assert.strictEqual(getBoardBuyPrice(board("pine", 96, 4, 8)), 3.99);
     // 4' x 4' half-inch particle board: ~$10
     assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 9.6);
   });

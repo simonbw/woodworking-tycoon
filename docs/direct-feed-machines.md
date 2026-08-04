@@ -161,7 +161,8 @@ Feed-through machines (`MachineType.feedsThrough`: planer, jointer, table
 saw, band saw) check the floor at feed time, not just at placement. A
 board travels its whole length through the cutter — fully on the infeed
 side before the cut, fully past it after — so each side needs
-`length − ceil(bed/2)` cells of clear lane beyond the footprint, counted
+`ceil(length/12) − ceil(bed/2)` cells of clear lane beyond the
+footprint (lengths are inches, cells are feet), counted
 along the operation column (`src/game/feed-clearance.ts`). Machines and
 walls block the lane; a **bare worktable doesn't** — stock slides over a
 table top, which is exactly what an outfeed table is (a worktable with a
@@ -199,8 +200,9 @@ red) while a targeted machine is refusing for room.
   through the blade with the stock clamped to it — panels included, with
   the same kerf and dust as a rip.
 - **Miter saw** (trigger tool — no switch, verb "Cut"): two settings —
-  the head angle and the **cut line** (`cutPosition`, feet from the
-  stock's left end); cut pieces stay on the saw table. The cut line is a
+  the head angle and the **cut line** (`cutPosition`, inches from the
+  stock's left end; the detents sit at the foot marks); cut pieces stay
+  on the saw table. The cut line is a
   slide input (`OperationParameter.presentation: "slide"`, drawn by
   `CutLineScale`): the carried board itself lies under the blade line,
   the readouts inside it are the two pieces the cut makes, and the

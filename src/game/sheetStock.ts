@@ -9,9 +9,9 @@ import { BoardDimension, SheetGoodKind, SheetThickness } from "./Materials";
  */
 export interface SheetSku {
   readonly kind: SheetGoodKind;
-  /** Feet — sheets measure both cross dimensions in feet. */
-  readonly length: BoardDimension;
-  readonly width: BoardDimension;
+  /** Inches — a full sheet is 96 × 48. */
+  readonly length: number;
+  readonly width: number;
   readonly thickness: SheetThickness;
   /** Store-voice flavor line on the product card. */
   readonly tagline: string;
@@ -21,32 +21,32 @@ export interface SheetSku {
 export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
   {
     kind: "particleBoard",
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 2,
     tagline: "Pressed wood chips. The cheapest sheet stock, and the weakest.",
     minReputation: 0,
   },
   {
     kind: "osb",
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 2,
     tagline: "Pressed wood strands. Structural sheathing, rough on both faces.",
     minReputation: 0,
   },
   {
     kind: "plywoodC",
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 2,
     tagline: "Construction-grade plywood. Knots and voids in both faces.",
     minReputation: 0,
   },
   {
     kind: "plywoodB",
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 2,
     tagline:
       "Utility-grade plywood. Sound faces, patched knots. Standard jig stock.",
@@ -54,8 +54,8 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
   },
   {
     kind: "mdf",
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 3,
     tagline:
       "Medium-density fiberboard. Flat and grainless, with no wood grain to follow.",
@@ -63,8 +63,8 @@ export const SHEET_SKUS: ReadonlyArray<SheetSku> = [
   },
   {
     kind: "plywoodA",
-    length: 8,
-    width: 4,
+    length: 96,
+    width: 48,
     thickness: 3,
     tagline: "Cabinet-grade plywood. Clean veneer on both faces.",
     minReputation: 12,

@@ -70,7 +70,7 @@ function nearlyDismantledPallet(): Pallet {
 
 /** Five smooth maple strips, mid-glue-up. */
 function glueStrips() {
-  return Array.from({ length: 5 }, () => board("maple", 2, 2, 4, "smooth"));
+  return Array.from({ length: 5 }, () => board("maple", 24, 2, 4, "smooth"));
 }
 
 /**
@@ -86,7 +86,7 @@ function sandedPanel() {
       species: "maple" as const,
       width: 2 as const,
     })),
-    2,
+    24,
     4,
     "sanded",
   );
@@ -354,7 +354,7 @@ describe("tickAction dust emission", () => {
    */
   function planingStateWith(
     overrides: Partial<GameState> = {},
-    stock = board("walnut", 4, 5, 4),
+    stock = board("walnut", 48, 5, 4),
   ): GameState {
     const planer: MachineState = {
       machineTypeId: "lunchboxPlaner",
@@ -393,8 +393,8 @@ describe("tickAction dust emission", () => {
   });
 
   it("sheds dust in proportion to the stock being cut", () => {
-    const wide = tickAction(planingStateWith({}, board("walnut", 4, 8, 4)));
-    const narrow = tickAction(planingStateWith({}, board("walnut", 4, 2, 4)));
+    const wide = tickAction(planingStateWith({}, board("walnut", 48, 8, 4)));
+    const narrow = tickAction(planingStateWith({}, board("walnut", 48, 2, 4)));
     const reference = tickAction(planingStateWith());
     assert.ok(
       cellDust(wide.dust, [1, 1]) > cellDust(reference.dust, [1, 1]),

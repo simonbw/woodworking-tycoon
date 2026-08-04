@@ -18,7 +18,6 @@ import { createMockMaterial } from "../../game/material-helpers";
 import { describeOperationIO } from "../../game/operation-helpers";
 import { getOperationDuration } from "../../game/skill-helpers";
 import { formatDuration } from "../../game/time";
-import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { useGameState } from "../useGameState";
 
 /**
@@ -159,7 +158,7 @@ const BlueprintSchematic: React.FC<{ blueprint: ProductBlueprint }> = ({
           // An on-edge part draws as the thin strip it presents from
           // above — the drawing shows the build the way the bench does
           const w = slotFaceWidthIn(slot);
-          const h = slot.part.lengthFt * INCHES_PER_FOOT;
+          const h = slot.part.lengthIn;
           return (
             <rect
               key={slot.id}

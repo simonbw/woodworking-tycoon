@@ -76,17 +76,18 @@ const BlueprintPartsSprite: React.FC<{
       {...omitUndefined({ alpha })}
     >
       {slots.map((slot) => {
-        const part = parts.find((p) => p.slot === slot.id) ??
+        const part =
+          parts.find((p) => p.slot === slot.id) ??
           // A part list that predates a blueprint revision: draw the
           // slot's nominal stock rather than a hole.
-          {
+          ({
             slot: slot.id,
-            species: "pallet" as const,
+            species: "pallet",
             width: slot.part.widthIn,
-            length: slot.part.lengthFt,
+            length: slot.part.lengthIn,
             thickness: slot.part.thicknessQ,
             seed: slot.id,
-          };
+          } satisfies AssembledPart);
         const board = {
           species: part.species,
           width: part.width,

@@ -30,7 +30,7 @@ function idleMachine(
 }
 
 /** Sanded S4S walnut frame stock, 1" wide and 1/4 thick. */
-function frameStock(id: string, length: BoardDimension): Board {
+function frameStock(id: string, length: number): Board {
   return {
     id,
     type: "board",
@@ -47,7 +47,7 @@ function frameStock(id: string, length: BoardDimension): Board {
 /** A finished rail: mirrored 45° miters — the ends lean toward each other. */
 function rail(id: string): Board {
   return {
-    ...frameStock(id, 2),
+    ...frameStock(id, 24),
     ends: {
       left: { kind: "mitered", angle: -45 },
       right: { kind: "mitered", angle: 45 },
@@ -77,7 +77,7 @@ export const miterFrameShop: GameState = {
     name: "Player",
     position: [2, 4], // the miter saw's operation cell
     direction: 0,
-    inventory: [frameStock("test-stock-1", 8), rail("test-rail-1")],
+    inventory: [frameStock("test-stock-1", 96), rail("test-rail-1")],
     busyTicks: 0,
     away: null,
   },

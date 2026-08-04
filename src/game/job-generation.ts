@@ -7,6 +7,7 @@ import { roundToCents } from "./marketplace";
 import { ownsMachine, ownsTool } from "./progression-helpers";
 import { hasSkill } from "./skill-helpers";
 import { unlockedLumberChannels } from "./lumberStock";
+import { formatLength } from "../utils/formatNumber";
 import { BoardDimension, REAL_WOOD_SPECIES, Species } from "./Materials";
 import { humanizeString } from "../utils/humanizeString";
 import { idMaker } from "../utils/idMaker";
@@ -171,7 +172,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
           {
             type: ["board"],
             species: ["pallet"],
-            length: [3],
+            length: [36],
             width: [4],
             thickness: [1],
             quantity,
@@ -242,10 +243,10 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     zeroMaterialCost: true,
     available: (gameState) => ownsMachine(gameState, "miterSaw"),
     generate: (rng, gameState) => {
-      const length = pick(rng, [1, 2] as const) satisfies BoardDimension;
+      const length = pick(rng, [12, 24] as const);
       const quantity = intBetween(rng, 3, 6) + repBatchBonus(gameState);
       return {
-        description: `Needs ${quantity} pallet boards crosscut to ${length}' exactly. Bring your miter saw game.`,
+        description: `Needs ${quantity} pallet boards crosscut to ${formatLength(length)} exactly. Bring your miter saw game.`,
         requiredMaterials: [
           {
             type: ["board"],
@@ -274,7 +275,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
           {
             type: ["board"],
             species: ["pallet"],
-            length: [3],
+            length: [36],
             width: [width],
             thickness: [1],
             quantity,
@@ -297,7 +298,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
           {
             type: ["board"],
             species: ["pallet"],
-            length: [3],
+            length: [36],
             width: [4],
             thickness: [1],
             surface: ["sanded"],
@@ -363,7 +364,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
           {
             type: ["board"],
             species: ["pallet"],
-            length: [4],
+            length: [48],
             width: [6],
             thickness: [2],
             surface: ["smooth", "sanded"],
@@ -556,7 +557,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
         requiredMaterials: [
           {
             type: ["panel"],
-            length: [2],
+            length: [24],
             thickness: [4],
             surface: ["smooth", "sanded"],
             minPanelWidth: minWidth,

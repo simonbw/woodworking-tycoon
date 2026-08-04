@@ -381,8 +381,8 @@ export function pryPalletNailAction(
     // pops or reshuffles.
     const freedBoards = freedRefs.map((ref) => ({
       ...(ref.kind === "deck"
-        ? board("pallet", 3, 4, 1)
-        : board("pallet", 4, 6, 3)),
+        ? board("pallet", 36, 4, 1)
+        : board("pallet", 48, 6, 3)),
       id: palletSlotId(pallet, ref),
     }));
     // The berth rides the pallet's own arrangement: dragged aside,

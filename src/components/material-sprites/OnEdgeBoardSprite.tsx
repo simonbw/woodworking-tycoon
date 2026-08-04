@@ -5,7 +5,7 @@ import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 const WEATHERED_GRAY = 0x9a9186;
 
@@ -23,7 +23,7 @@ export const OnEdgeBoardSprite: React.FC<{
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
-      const height = length * PIXELS_PER_INCH * INCHES_PER_FOOT;
+      const height = length * PIXELS_PER_INCH;
       const width = Math.max(3, (thickness * PIXELS_PER_INCH) / 4);
       const rng = seededRandom(seed ?? `${species}-edge-${length}`);
       const { secondary } = colorBySpecies[species];

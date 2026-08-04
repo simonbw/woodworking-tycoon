@@ -28,14 +28,14 @@ function stateAt(
 
 describe("loadTruckBedAction", () => {
   it("moves carried stock over the rail into the bed", () => {
-    const stock = board("pine", 4, 4, 1);
+    const stock = board("pine", 48, 4, 1);
     const result = loadTruckBedAction([stock])(stateAt(AT_BED, {}, [stock]));
     assert.deepStrictEqual(result.truck.bed, [stock]);
     assert.strictEqual(result.player.inventory.length, 0);
   });
 
   it("does nothing away from the bed", () => {
-    const stock = board("pine", 4, 4, 1);
+    const stock = board("pine", 48, 4, 1);
     const state = stateAt([6, 12], {}, [stock]);
     assert.strictEqual(loadTruckBedAction([stock])(state), state);
   });
@@ -43,7 +43,7 @@ describe("loadTruckBedAction", () => {
 
 describe("takeFromTruckBedAction", () => {
   it("lifts stock out of the bed into the arms", () => {
-    const stock = board("pine", 4, 4, 1);
+    const stock = board("pine", 48, 4, 1);
     const result = takeFromTruckBedAction([stock])(
       stateAt(AT_BED, { bed: [stock] }),
     );
@@ -52,16 +52,16 @@ describe("takeFromTruckBedAction", () => {
   });
 
   it("does nothing from indoors, even at the door", () => {
-    const stock = board("pine", 4, 4, 1);
+    const stock = board("pine", 48, 4, 1);
     const state = stateAt([6, 15], { bed: [stock] });
     assert.strictEqual(takeFromTruckBedAction([stock])(state), state);
   });
 
   it("refuses an armful bigger than the room left in the hands", () => {
     // One free hand left; a two-board armful doesn't fit and refuses whole
-    const inBed = [board("pine", 4, 4, 1), board("pine", 4, 4, 1)];
+    const inBed = [board("pine", 48, 4, 1), board("pine", 48, 4, 1)];
     const carried = Array.from({ length: HAND_CAPACITY - 1 }, () =>
-      board("pine", 2, 4, 1),
+      board("pine", 24, 4, 1),
     );
     const state = stateAt(AT_BED, { bed: inBed }, carried);
     assert.strictEqual(takeFromTruckBedAction(inBed)(state), state);
@@ -81,7 +81,7 @@ describe("takeCrateFromTruckAction", () => {
   it("needs genuinely empty hands", () => {
     const crate = freshMachineState("miterSaw", initialGameState.progression);
     const state = stateAt(AT_BED, { crates: [crate] }, [
-      board("pine", 4, 4, 1),
+      board("pine", 48, 4, 1),
     ]);
     assert.strictEqual(takeCrateFromTruckAction()(state), state);
   });

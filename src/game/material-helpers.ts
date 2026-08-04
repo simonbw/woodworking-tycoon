@@ -1,3 +1,4 @@
+import { formatLength } from "../utils/formatNumber";
 import { humanizeString } from "../utils/humanizeString";
 import { initialPalletNails } from "./bench-work/pallet-geometry";
 import { idMaker } from "../utils/idMaker";
@@ -149,9 +150,9 @@ export function getMaterialName(material: MaterialInstance): string {
       const { species, width, length, thickness } = material;
       const nominal = nominalSizeLabel(material);
       if (nominal) {
-        return `${speciesLabel(species)} ${nominal} — ${length}'`;
+        return `${speciesLabel(species)} ${nominal} — ${formatLength(length)}`;
       }
-      return `${speciesLabel(species)} ${thickness}/4 — ${width}" × ${length}'`;
+      return `${speciesLabel(species)} ${thickness}/4 — ${width}" × ${formatLength(length)}`;
     }
     case "panel": {
       const species = panelSpecies(material);
@@ -160,12 +161,12 @@ export function getMaterialName(material: MaterialInstance): string {
       const grainTag = material.grain === "end" ? "End-Grain " : "";
       return `${speciesName} ${grainTag}Panel ${material.thickness}/4 — ${panelWidth(
         material,
-      )}" × ${material.length}'`;
+      )}" × ${formatLength(material.length)}`;
     }
     case "plywood": {
-      // Sheet grammar: both cross dimensions are feet (see lumber-naming.md)
+      // Sheet grammar: both cross dimensions read in feet (lumber-naming.md)
       const { kind, thickness, width, length } = material;
-      return `${sheetKindLabel(kind)} ${thickness}/4 — ${width}' × ${length}'`;
+      return `${sheetKindLabel(kind)} ${thickness}/4 — ${formatLength(width)} × ${formatLength(length)}`;
     }
     case "endGrainSlice": {
       const species = [...new Set(material.strips.map((s) => s.species))];
@@ -252,15 +253,14 @@ export function describeStockDimensionsPlain(
   material: MaterialInstance,
 ): string | null {
   if (material.type === "plywood") {
-    // Sheets measure both cross dimensions in feet
-    return `${quartersToInches(material.thickness)}" thick · ${material.width}' wide · ${material.length}' long`;
+    return `${quartersToInches(material.thickness)}" thick · ${formatLength(material.width)} wide · ${formatLength(material.length)} long`;
   }
   if (material.type !== "board" && material.type !== "panel") {
     return null;
   }
   const width =
     material.type === "panel" ? panelWidth(material) : material.width;
-  return `${quartersToInches(material.thickness)}" thick · ${width}" wide · ${material.length}' long`;
+  return `${quartersToInches(material.thickness)}" thick · ${width}" wide · ${formatLength(material.length)} long`;
 }
 
 // Returns the amount of space an item takes up in the inventory
@@ -395,7 +395,7 @@ export function createMockMaterial(
       const r = requirement as InputMaterialWithQuantity<Board>;
       return makeMaterial<Board>({
         type: "board",
-        length: r.length?.[0] || 8,
+        length: r.length?.[0] || 96,
         width: r.width?.[0] || 4,
         thickness: r.thickness?.[0] || 2,
         species: r.species?.[0] || "pine",
@@ -409,8 +409,8 @@ export function createMockMaterial(
       return makeMaterial<SheetGood>({
         type: "plywood",
         kind: r.kind?.[0] || "plywoodA",
-        length: (r.length?.[0] || 8) as BoardDimension,
-        width: (r.width?.[0] || 4) as BoardDimension,
+        length: r.length?.[0] || 96,
+        width: r.width?.[0] || 48,
         thickness: (r.thickness?.[0] || 2) as SheetGood["thickness"],
       });
     }
@@ -487,7 +487,7 @@ export function createMockMaterial(
       );
       return makeMaterial<Panel>({
         type: "panel",
-        length: 2,
+        length: 24,
         thickness: r.thickness?.[0] || 4,
         surface: r.surface?.[0] || "rough",
         strips: Array.from({ length: stripCount }, () => ({
@@ -528,9 +528,10 @@ function joinOr(parts: ReadonlyArray<string>): string {
 }
 
 // Suffix that turns a raw dimension value into a readable measurement.
-// Length is feet, width inches, thickness quarter-inches — matching getMaterialName.
+// Width is inches, thickness quarter-inches — matching getMaterialName.
+// Lengths are stored in inches but read as shop talk via formatLength.
 const DIMENSION_UNITS = {
-  length: "'",
+  length: "",
   width: '"',
   thickness: "/4",
 } as const;
@@ -677,15 +678,18 @@ export function describeMaterialRequirement(
     presentDims.length === DIMENSION_KEYS.length &&
     presentDims.every((key) => requirementValues(req, key)!.length === 1);
 
-  // Sheets measure width in feet, boards and panels in inches
-  const unitFor = (key: DimensionKey) =>
-    key === "width" && typeKey === "plywood" ? "'" : DIMENSION_UNITS[key];
+  // Lengths (and a sheet's foot-scale width) read as shop talk; the
+  // cross-section detents keep their plain unit suffixes
+  const formatDim = (key: DimensionKey, value: unknown) =>
+    key === "length" || (key === "width" && typeKey === "plywood")
+      ? formatLength(value as number)
+      : `${value}${DIMENSION_UNITS[key]}`;
 
   const dimClauses: string[] = [];
   if (allDimsSingle) {
     dimClauses.push(
-      DIMENSION_KEYS.map(
-        (key) => `${requirementValues(req, key)![0]}${unitFor(key)}`,
+      DIMENSION_KEYS.map((key) =>
+        formatDim(key, requirementValues(req, key)![0]),
       ).join("×"),
     );
   } else {
@@ -698,7 +702,7 @@ export function describeMaterialRequirement(
         }
       } else {
         dimClauses.push(
-          `${label} ${joinOr(values.map((v) => `${v}${unitFor(key)}`))}`,
+          `${label} ${joinOr(values.map((v) => formatDim(key, v)))}`,
         );
       }
     }

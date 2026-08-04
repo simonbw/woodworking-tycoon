@@ -10,7 +10,7 @@ const roughBoard: Board = {
   id: "fx-bench-board",
   type: "board",
   species: "maple",
-  length: 2,
+  length: 24,
   width: 4,
   thickness: 4,
   surface: "rough",

@@ -3,7 +3,7 @@ import React, { useCallback } from "react";
 import { Board, MaterialInstance } from "../../game/Materials";
 import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 const WEATHERED_GRAY = 0x9a9186;
 
@@ -25,7 +25,7 @@ export const EdgeBandSprite: React.FC<{
       }
       const board = material as Board;
       const width = (board.thickness / 4) * PIXELS_PER_INCH;
-      const height = board.length * INCHES_PER_FOOT * PIXELS_PER_INCH;
+      const height = board.length * PIXELS_PER_INCH;
       const { secondary } = colorBySpecies[board.species];
       const color = finished
         ? colorToNumber(secondary)

@@ -101,7 +101,7 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           <pixiContainer
             key={`in-${index}`}
             x={boardX(board, onEdgeNow)}
-            y={feetToPixels(board.length / 2)}
+            y={inchesToPixels(board.length / 2)}
           >
             {boardSprite(board, onEdgeNow)}
           </pixiContainer>
@@ -110,8 +110,8 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
           <FeedingBoard
             board={board}
             fraction={fraction}
-            fromY={feetToPixels(board.length / 2)}
-            toY={-feetToPixels(board.length / 2)}
+            fromY={inchesToPixels(board.length / 2)}
+            toY={-inchesToPixels(board.length / 2)}
             x={boardX(board, cutOnEdge)}
             key={`proc-${index}`}
           >
@@ -132,7 +132,7 @@ export const BandSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
               <pixiContainer
                 key={`out-${index}`}
                 x={x}
-                y={-feetToPixels(board.length / 2) - inchesToPixels(2)}
+                y={-inchesToPixels(board.length / 2) - inchesToPixels(2)}
               >
                 {boardSprite(board, cutOnEdge)}
               </pixiContainer>

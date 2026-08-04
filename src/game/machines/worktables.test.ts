@@ -60,8 +60,8 @@ function plywoodSheet(): SheetGood {
   return makeMaterial<SheetGood>({
     type: "plywood",
     kind: "plywoodB",
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 2,
   });
 }
@@ -98,9 +98,9 @@ describe("worktable build recipes", () => {
       selectedOperationId: "build-worktable1x1",
       processingMaterials: [
         plywoodSheet(),
-        board("pallet", 4, 6, 3),
-        board("pallet", 4, 6, 3),
-        board("pallet", 4, 6, 3),
+        board("pallet", 48, 6, 3),
+        board("pallet", 48, 6, 3),
+        board("pallet", 48, 6, 3),
       ],
       operationProgress: {
         status: "inProgress",
@@ -252,7 +252,7 @@ describe("moving and removing tables", () => {
 
   it("keeps shelf stock aboard when a table is carried", () => {
     const stocked = machineAt("worktable1x1", [2, 2], {
-      storedMaterials: [board("maple", 2, 2, 4)],
+      storedMaterials: [board("maple", 24, 2, 4)],
     });
     const state = stateWith({ machines: [stocked], materialPiles: [] });
     const result = pickUpMachineAction(stocked)(state);
@@ -267,7 +267,7 @@ describe("moving and removing tables", () => {
 
 describe("the shelf", () => {
   it("stows carried materials up to capacity and takes them back", () => {
-    const stock = Array.from({ length: 4 }, () => board("maple", 2, 2, 4));
+    const stock = Array.from({ length: 4 }, () => board("maple", 24, 2, 4));
     const table = machineAt("worktable1x1", [2, 2]);
     const state = stateWith({
       machines: [table],

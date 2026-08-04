@@ -12,7 +12,6 @@ import {
   Species,
 } from "../Materials";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
-import { INCHES_PER_FOOT } from "../shop-scale";
 
 /**
  * Product blueprints: the single authored artifact behind an assembled
@@ -42,7 +41,7 @@ export interface BlueprintSlot {
    * parts on products from older saves (Board units). */
   readonly part: {
     readonly widthIn: BoardDimension;
-    readonly lengthFt: BoardDimension;
+    readonly lengthIn: number;
     readonly thicknessQ: BoardDimension;
   };
   /** Part center in product inches from the product's top-left corner. */
@@ -92,7 +91,7 @@ export function slotExtent(slot: BlueprintSlot): {
   x1: number;
   y1: number;
 } {
-  const lengthIn = slot.part.lengthFt * INCHES_PER_FOOT;
+  const lengthIn = slot.part.lengthIn;
   const faceWidth = slotFaceWidthIn(slot);
   const across = slot.angleDeg % 180 !== 0;
   const w = across ? lengthIn : faceWidth;
@@ -189,10 +188,10 @@ export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthFt: 4, thicknessQ: 3 } as const,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 3 } as const,
       xIn: 24,
       yIn,
       angleDeg: 90,
@@ -205,10 +204,10 @@ export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
         type: ["board"],
         species: ["pallet"],
         width: [4],
-        length: [3],
+        length: [36],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthFt: 3, thicknessQ: 1 } as const,
+      part: { widthIn: 4, lengthIn: 36, thicknessQ: 1 } as const,
       xIn,
       yIn: 18,
       angleDeg: 0,
@@ -279,11 +278,11 @@ export const CRATE_BLUEPRINT: ProductBlueprint = makeBlueprint({
     requirement: {
       type: ["board"],
       width: [4],
-      length: [3],
+      length: [36],
       thickness: [1],
       quantity: 1,
     } as InputMaterialWithQuantity<Board>,
-    part: { widthIn: 4, lengthFt: 3, thicknessQ: 1 } as const,
+    part: { widthIn: 4, lengthIn: 36, thicknessQ: 1 } as const,
   }),
 });
 
@@ -306,11 +305,11 @@ export const PLANTER_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
       type: ["board"],
       species: ["pallet"],
       width: [4],
-      length: [2],
+      length: [24],
       thickness: [1],
       quantity: 1,
     } as InputMaterialWithQuantity<Board>,
-    part: { widthIn: 4, lengthFt: 2, thicknessQ: 1 } as const,
+    part: { widthIn: 4, lengthIn: 24, thicknessQ: 1 } as const,
   }),
 });
 
@@ -332,11 +331,11 @@ export const STEP_STOOL_BLUEPRINT: ProductBlueprint = makeBlueprint({
       requirement: {
         type: ["board"],
         width: [6],
-        length: [2],
+        length: [24],
         thickness: [3, 4],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthFt: 2, thicknessQ: 3 } as const,
+      part: { widthIn: 6, lengthIn: 24, thicknessQ: 3 } as const,
       xIn,
       yIn: 12,
       angleDeg: 0,
@@ -348,11 +347,11 @@ export const STEP_STOOL_BLUEPRINT: ProductBlueprint = makeBlueprint({
       requirement: {
         type: ["board"],
         width: [4],
-        length: [2],
+        length: [24],
         thickness: [1, 2],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthFt: 2, thicknessQ: 1 } as const,
+      part: { widthIn: 4, lengthIn: 24, thicknessQ: 1 } as const,
       xIn: 12,
       yIn,
       angleDeg: 90,
@@ -380,13 +379,13 @@ export const BOOKSHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
       requirement: {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [4],
+        length: [48],
         width: [6],
         thickness: [4],
         surface: ["sanded"],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthFt: 4, thicknessQ: 4 } as const,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 4 } as const,
       xIn,
       yIn: 24,
       angleDeg: 0,
@@ -398,13 +397,13 @@ export const BOOKSHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
       requirement: {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [4],
+        length: [48],
         width: [6],
         thickness: [4],
         surface: ["sanded"],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthFt: 4, thicknessQ: 4 } as const,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 4 } as const,
       xIn: 24,
       yIn,
       angleDeg: 90,
@@ -542,7 +541,7 @@ export function defaultPartsFor(
     slot: slot.id,
     species: product.species,
     width: slot.part.widthIn,
-    length: slot.part.lengthFt,
+    length: slot.part.lengthIn,
     thickness: slot.part.thicknessQ,
     ...(slot.requirement.surface?.[0]
       ? { surface: slot.requirement.surface[0] }

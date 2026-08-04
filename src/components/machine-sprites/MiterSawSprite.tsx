@@ -33,14 +33,14 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   // first, then slide it to the mark.
   const stock = inputBoards[0] ?? processingBoards[0];
 
-  // The cut line sits cutPosition feet from the stock's left end, so the
-  // rest of the board slides out past the blade to the right. Clamped so a
-  // mark beyond the board's far end parks the whole board short of the
-  // blade instead of detaching it from the saw.
+  // The cut line sits cutPosition inches from the stock's left end, so
+  // the rest of the board slides out past the blade to the right. Clamped
+  // so a mark beyond the board's far end parks the whole board short of
+  // the blade instead of detaching it from the saw.
   const cutPosition = Number(machine.selectedParameters?.cutPosition) || 0;
   const slidBoard = stock;
   const slideOffset = slidBoard
-    ? feetToPixels(Math.max(0, slidBoard.length - cutPosition))
+    ? inchesToPixels(Math.max(0, slidBoard.length - cutPosition))
     : 0;
   const springProps = useSpring({ x: slideOffset });
 
@@ -94,7 +94,7 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
       </AnimatedPixiContainer>
       <AnimatedPixiContainer x={springProps.x}>
         {[...inputBoards, ...processingBoards].map((board, index) => {
-          const x = feetToPixels(-board.length / 2) - 3;
+          const x = inchesToPixels(-board.length / 2) - 3;
           const y = inchesToPixels(board.width / 2 - 3);
           return (
             <pixiContainer angle={90} x={x} y={y} key={index}>
@@ -104,7 +104,7 @@ export const MiterSawSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         })}
       </AnimatedPixiContainer>
       {outputMaterials.filter(isBoard).map((board, index) => {
-        const x = feetToPixels(board.length / 2) + 3;
+        const x = inchesToPixels(board.length / 2) + 3;
         const y = inchesToPixels(board.width / 2 - 3);
         return (
           <pixiContainer angle={90 + index * 5} x={x} y={y} key={index}>

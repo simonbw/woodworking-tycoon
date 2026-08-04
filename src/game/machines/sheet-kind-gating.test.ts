@@ -14,8 +14,8 @@ function sheet(kind: SheetGoodKind): SheetGood {
   return makeMaterial<SheetGood>({
     type: "plywood",
     kind,
-    length: 4,
-    width: 4,
+    length: 48,
+    width: 48,
     thickness: 2,
   });
 }

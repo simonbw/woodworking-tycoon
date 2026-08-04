@@ -54,7 +54,7 @@ export const FeedLaneLayer: React.FC = () => {
       if (!machine || !shortfall) {
         return;
       }
-      const lane = feedLaneCells(machine, cellMap, shortfall.lengthFt);
+      const lane = feedLaneCells(machine, cellMap, shortfall.lengthIn);
       const paint = (cells: Vector[], color: number) => {
         for (const [x, y] of cells) {
           g.rect(

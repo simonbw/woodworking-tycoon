@@ -14,7 +14,7 @@ function boardPile(
     id: "test-board",
     type: "board",
     species: "pine",
-    length: length as Board["length"],
+    length,
     width: 4,
     thickness: 1,
     surface: "rough",
@@ -51,7 +51,7 @@ describe("pileWithinReach", () => {
 
   it("lets long stock be grabbed anywhere along its length", () => {
     // An 8' board centered at [3.5, 5.5] lies across y 1.5..9.5
-    const pile = boardPile(8, [3.5, 5.5]);
+    const pile = boardPile(96, [3.5, 5.5]);
     assert.ok(pileWithinReach(pile, [3, 5]), "the cell under its center");
     assert.ok(pileWithinReach(pile, [3, 1]), "one end");
     assert.ok(pileWithinReach(pile, [3, 9]), "the other end");
@@ -63,7 +63,7 @@ describe("pileWithinReach", () => {
     // The same 8' board dropped while walking east lies across x — its
     // length is now reachable sideways, and the cells its unrotated self
     // would have covered are out of reach.
-    const pile = boardPile(8, [3.5, 5.5], Math.PI / 2);
+    const pile = boardPile(96, [3.5, 5.5], Math.PI / 2);
     assert.ok(pileWithinReach(pile, [3, 5]), "the cell under its center");
     assert.ok(pileWithinReach(pile, [0, 5]), "one end");
     assert.ok(pileWithinReach(pile, [7, 5]), "the other end");
@@ -75,7 +75,7 @@ describe("pileWithinReach", () => {
     // Turned 45°, an 8' board's ends land near [6.3, 2.7] and [0.7, 8.3]
     // — cells along that diagonal reach it, cells the same distance off
     // on the other diagonal or straight down its old line do not.
-    const pile = boardPile(8, [3.5, 5.5], Math.PI / 4);
+    const pile = boardPile(96, [3.5, 5.5], Math.PI / 4);
     assert.ok(pileWithinReach(pile, [5, 3]), "toward one end");
     assert.ok(pileWithinReach(pile, [1, 7]), "toward the other end");
     assert.ok(!pileWithinReach(pile, [5, 7]), "the other diagonal misses it");

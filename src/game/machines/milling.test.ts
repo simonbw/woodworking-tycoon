@@ -34,7 +34,7 @@ const glueUp = workspace.operations.find(
 
 /** A board fresh off the rough rack: nothing flat, nothing straight. */
 const roughBoard = (thickness: 4 | 8 = 4) =>
-  board("walnut", 8, 6, thickness, "rough", { faces: 0, edges: 0 });
+  board("walnut", 96, 6, thickness, "rough", { faces: 0, edges: 0 });
 
 describe("jointer", () => {
   it("joints a face only on boards with no flat face", () => {
@@ -42,7 +42,7 @@ describe("jointer", () => {
     assert.ok(materialMeetsInput(roughBoard(), requirement));
     assert.ok(
       !materialMeetsInput(
-        board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 }),
+        board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 0 }),
         requirement,
       ),
     );
@@ -64,12 +64,12 @@ describe("jointer", () => {
     assert.ok(!materialMeetsInput(roughBoard(), requirement));
     assert.ok(
       materialMeetsInput(
-        board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 }),
+        board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 0 }),
         requirement,
       ),
     );
     const { outputs } = jointEdge.output(
-      [board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 })],
+      [board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 0 })],
       {},
     );
     const result = outputs[0];
@@ -123,7 +123,7 @@ describe("planer face prerequisites", () => {
     assert.ok(!materialMeetsInput(roughBoard(), requirement));
     assert.ok(
       materialMeetsInput(
-        board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 }),
+        board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 0 }),
         requirement,
       ),
     );
@@ -132,7 +132,7 @@ describe("planer face prerequisites", () => {
   it("skim-passes at nominal thickness and makes faces parallel", () => {
     // Rough stock carries sacrificial material: 4/4 rough planes to 4/4 done
     const { outputs } = plane.output(
-      [board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 0 })],
+      [board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 0 })],
       { targetThickness: 4 },
     );
     const result = outputs[0];
@@ -146,7 +146,7 @@ describe("planer face prerequisites", () => {
   it("takes stock at the cut height or one detent above, nothing thicker", () => {
     const requirement = plane.getInputMaterials({ targetThickness: 4 })[0];
     const atHeight = (thickness: 4 | 5 | 6) =>
-      board("walnut", 8, 6, thickness, "rough", { faces: 1, edges: 0 });
+      board("walnut", 96, 6, thickness, "rough", { faces: 1, edges: 0 });
     // Skim pass and full-depth bite
     assert.ok(materialMeetsInput(atHeight(4), requirement));
     assert.ok(materialMeetsInput(atHeight(5), requirement));
@@ -156,7 +156,7 @@ describe("planer face prerequisites", () => {
 
   it("removes one detent per pass — thicknessing is sequential passes", () => {
     // 8/4 down to 4/4: four passes, cranking the head down between each
-    let stock = board("walnut", 8, 6, 8, "rough", { faces: 1, edges: 0 });
+    let stock = board("walnut", 96, 6, 8, "rough", { faces: 1, edges: 0 });
     for (const cutHeight of [7, 6, 5, 4]) {
       const requirement = plane.getInputMaterials({
         targetThickness: cutHeight,
@@ -177,7 +177,7 @@ describe("planer face prerequisites", () => {
     const requirement = plane.getInputMaterials({ targetThickness: 8 })[0];
     assert.ok(
       materialMeetsInput(
-        board("walnut", 8, 6, 8, "rough", { faces: 1, edges: 0 }),
+        board("walnut", 96, 6, 8, "rough", { faces: 1, edges: 0 }),
         requirement,
       ),
     );
@@ -190,14 +190,14 @@ describe("table saw rip edge prerequisites", () => {
     assert.ok(!materialMeetsInput(roughBoard(), requirement));
     assert.ok(
       materialMeetsInput(
-        board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 1 }),
+        board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 1 }),
         requirement,
       ),
     );
   });
 
   it("leaves the kept piece with two straight edges, the offcut as it was", () => {
-    const input = board("walnut", 8, 6, 4, "rough", { faces: 2, edges: 1 });
+    const input = board("walnut", 96, 6, 4, "rough", { faces: 2, edges: 1 });
     const { outputs } = ripBoard.output([input], { targetWidth: 4 });
     const [kept, offcut] = outputs;
     assert.ok(isBoard(kept) && isBoard(offcut));
@@ -213,9 +213,9 @@ describe("glue-ups demand straight edges", () => {
   it("rejects smooth S2S stock until its edges are jointed and ripped", () => {
     const requirement = glueUp.getInputMaterials({})[0];
     // Right size and surface, straight-from-the-lumberyard edges: no glue
-    const s2sStrip = board("maple", 2, 2, 4, "smooth", { faces: 2, edges: 0 });
+    const s2sStrip = board("maple", 24, 2, 4, "smooth", { faces: 2, edges: 0 });
     assert.ok(!materialMeetsInput(s2sStrip, requirement));
-    const rippedStrip = board("maple", 2, 2, 4, "smooth", {
+    const rippedStrip = board("maple", 24, 2, 4, "smooth", {
       faces: 2,
       edges: 2,
     });
@@ -252,7 +252,7 @@ describe("milling ladder integration", () => {
 describe("millingLabel", () => {
   it("names the classic lumber states", () => {
     const b = (faces: 0 | 1 | 2, edges: 0 | 1 | 2) =>
-      board("maple", 8, 6, 4, "rough", { faces, edges });
+      board("maple", 96, 6, 4, "rough", { faces, edges });
     assert.strictEqual(millingLabel(b(2, 2)), "S4S");
     assert.strictEqual(millingLabel(b(2, 1)), "S3S");
     assert.strictEqual(millingLabel(b(2, 0)), "S2S");

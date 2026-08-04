@@ -152,7 +152,9 @@ describe("buy / install / uninstall", () => {
         "randomOrbitSander",
         "dustBag",
       ],
-      storedMaterials: Array.from({ length: 8 }, () => board("maple", 2, 2, 4)),
+      storedMaterials: Array.from({ length: 8 }, () =>
+        board("maple", 24, 2, 4),
+      ),
     });
     const state = stateWith({ machines: [overloaded] });
     const view = new Machine(overloaded);
@@ -173,7 +175,10 @@ describe("shop-built upgrades", () => {
     const bench = tableAt([1, 2], {
       machineTypeId: "workspace",
       selectedOperationId: "buildMaterialShelf",
-      processingMaterials: [board("pallet", 3, 4, 1), board("pallet", 3, 4, 1)],
+      processingMaterials: [
+        board("pallet", 36, 4, 1),
+        board("pallet", 36, 4, 1),
+      ],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,

@@ -469,11 +469,11 @@ test.describe("Milling", () => {
       // the saw, not a ghost of one you're holding
       await setStockDown(page);
       await setAngle(page, 45);
-      await setCutLine(page, 5);
+      await setCutLine(page, 60);
       await runWhileHolding(
         page,
         anyMaterialMatches,
-        "m.type === 'board' && m.length === 5 && m.ends && m.ends.right.kind === 'mitered' && m.ends.left.kind === 'square'",
+        "m.type === 'board' && m.length === 60 && m.ends && m.ends.right.kind === 'mitered' && m.ends.left.kind === 'square'",
       );
       // Cut pieces stay on the saw table until collected. Park the
       // carried rail first so the armful is exactly the two cut pieces.
@@ -495,11 +495,11 @@ test.describe("Milling", () => {
       await dropAllExcept(page, /1" × 5'/);
       await setStockDown(page);
       await setAngle(page, -45);
-      await setCutLine(page, 3);
+      await setCutLine(page, 36);
       await runWhileHolding(
         page,
         anyMaterialMatches,
-        "m.type === 'board' && m.length === 2 && m.ends && m.ends.left.kind === 'mitered' && m.ends.right.kind === 'mitered'",
+        "m.type === 'board' && m.length === 24 && m.ends && m.ends.left.kind === 'mitered' && m.ends.right.kind === 'mitered'",
       );
       await takeAllHere(page);
     });

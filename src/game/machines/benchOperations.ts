@@ -122,10 +122,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
           (present: boolean) => present,
         ).length;
         const stringers = array(stringerCount).map(() =>
-          board("pallet", 4, 6, 3),
+          board("pallet", 48, 6, 3),
         );
         const deckBoards = array(deckBoardsCount).map(() =>
-          board("pallet", 3, 4, 1),
+          board("pallet", 36, 4, 1),
         );
         return {
           inputs: [],
@@ -153,7 +153,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
               nails: nailsLeft,
             }),
           ],
-          outputs: [board("pallet", 3, 4, 1)],
+          outputs: [board("pallet", 36, 4, 1)],
           consumableOutputs: [
             {
               id: "nails" as const,
@@ -176,7 +176,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["board"],
         width: [2],
-        length: [2],
+        length: [24],
         thickness: [4],
         // Edge joints need straight edges, and clean faces make good
         // glue joints — rough stock won't do
@@ -220,7 +220,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["board"],
-        length: [2],
+        length: [24],
         thickness: [4],
         jointedEdges: [2],
         surface: ["smooth", "sanded"],
@@ -257,10 +257,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     interaction: { kind: "glue" },
     requiredClamps: STRIP_CLAMPS,
     getInputMaterials: () => [
-      { type: ["panel"], length: [2], thickness: [4], quantity: 1 },
+      { type: ["panel"], length: [24], thickness: [4], quantity: 1 },
       {
         type: ["board"],
-        length: [2],
+        length: [24],
         thickness: [4],
         jointedEdges: [2],
         surface: ["smooth", "sanded"],
@@ -296,7 +296,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     interaction: { kind: "glue" },
     requiredClamps: WIDE_PANEL_CLAMPS,
     getInputMaterials: () => [
-      { type: ["panel"], length: [2], thickness: [4], quantity: 2 },
+      { type: ["panel"], length: [24], thickness: [4], quantity: 2 },
     ],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
       const panels = materials.filter(isPanel);
@@ -329,14 +329,14 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["plywood"],
         kind: JIG_GRADE_KINDS,
-        length: [4],
-        width: [4],
+        length: [48],
+        width: [48],
         quantity: 1,
       },
       {
         type: ["board"],
         width: [4],
-        length: [3],
+        length: [36],
         thickness: [1],
         quantity: 2,
       },
@@ -362,14 +362,14 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["plywood"],
         kind: JIG_GRADE_KINDS,
-        length: [4],
-        width: [4],
+        length: [48],
+        width: [48],
         quantity: 1,
       },
       {
         type: ["board"],
         width: [4],
-        length: [3],
+        length: [36],
         thickness: [1],
         quantity: 2,
       },
@@ -393,14 +393,14 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["plywood"],
         kind: JIG_GRADE_KINDS,
-        length: [3],
-        width: [2],
+        length: [36],
+        width: [24],
         quantity: 1,
       },
       {
         type: ["board"],
         width: [4],
-        length: [1],
+        length: [12],
         thickness: [1],
         quantity: 2,
       },
@@ -437,7 +437,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
             type: "panel",
             grain: "end",
             strips: slices[0].strips,
-            length: 1,
+            length: 12,
             thickness: 8,
             surface: "rough",
           }),
@@ -453,7 +453,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [1],
+        length: [12],
         thickness: [8],
         surface: ["sanded"],
         quantity: 1,
@@ -491,7 +491,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [2],
+        length: [24],
         thickness: [3, 4],
         // Food-safe means fully sanded — a planed surface isn't enough
         surface: ["sanded"],
@@ -531,7 +531,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [2],
+        length: [24],
         thickness: [3, 4],
         surface: ["sanded"],
         quantity: 1,
@@ -571,7 +571,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [2],
+        length: [24],
         thickness: [3, 4],
         surface: ["sanded"],
         quantity: 1,
@@ -613,7 +613,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [2],
+        length: [24],
         thickness: [3, 4],
         surface: ["sanded"],
         quantity: 1,
@@ -700,7 +700,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [4],
+        length: [48],
         width: [6],
         thickness: [4],
         surface: ["sanded"],
@@ -736,7 +736,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [2],
+        length: [24],
         width: [1],
         thickness: [1],
         surface: ["sanded"],
@@ -772,7 +772,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [1],
+        length: [12],
         thickness: [8],
         surface: ["sanded"],
         quantity: 1,
@@ -819,7 +819,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [1],
+        length: [12],
         width: [1],
         thickness: [1],
         surface: ["sanded"],
@@ -855,7 +855,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [2],
+        length: [24],
         thickness: [3, 4],
         surface: ["sanded"],
         quantity: 1,
@@ -869,7 +869,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         // Four frame rails wrap the panel — the picture frame's stock
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [2],
+        length: [24],
         width: [1],
         thickness: [1],
         surface: ["sanded"],
@@ -904,7 +904,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     getInputMaterials: () => [
       {
         type: ["panel"],
-        length: [2],
+        length: [24],
         thickness: [4],
         surface: ["sanded"],
         quantity: 1,
@@ -917,7 +917,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         // Four square legs from 8/4 stock, ripped and crosscut
         type: ["board"],
-        length: [2],
+        length: [24],
         width: [2],
         thickness: [6, 8],
         surface: ["smooth", "sanded"],
@@ -950,7 +950,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["board"],
         species: REAL_WOOD_SPECIES,
-        length: [2],
+        length: [24],
         width: [4],
         // Thin stock: you'll be planing for this
         thickness: [2],
@@ -1017,14 +1017,14 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["plywood"],
         kind: RACK_GRADE_KINDS,
-        length: [4],
-        width: [4],
+        length: [48],
+        width: [48],
         quantity: 1,
       },
       {
         type: ["board"],
         thickness: [3, 4],
-        length: [3, 4],
+        length: [36, 48],
         quantity: 4,
       },
     ],
@@ -1049,11 +1049,11 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       {
         type: ["plywood"],
         kind: SHOP_FURNITURE_KINDS,
-        length: [4],
-        width: [4],
+        length: [48],
+        width: [48],
         quantity: 1,
       },
-      { type: ["board"], thickness: [1, 2], length: [2, 3], quantity: 2 },
+      { type: ["board"], thickness: [1, 2], length: [24, 36], quantity: 2 },
     ],
     output: () => {
       return {
@@ -1071,7 +1071,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     requiredConsumables: [{ id: "nails", amount: 6 }],
     getInputMaterials: () => [
       // Two planks spanning the stretchers — that's the whole build
-      { type: ["board"], thickness: [1, 2], length: [3, 4], quantity: 2 },
+      { type: ["board"], thickness: [1, 2], length: [36, 48], quantity: 2 },
     ],
     output: () => {
       return {
@@ -1107,8 +1107,8 @@ function worktableBuildOperation(
         {
           type: ["plywood"],
           kind: SHOP_FURNITURE_KINDS,
-          length: [4],
-          width: [4],
+          length: [48],
+          width: [48],
           quantity: plywood,
         },
         {
@@ -1116,7 +1116,7 @@ function worktableBuildOperation(
           // qualify; deck boards are too thin
           type: ["board"],
           thickness: [3, 4],
-          length: [3, 4],
+          length: [36, 48],
           quantity: legBoards,
         },
       ],

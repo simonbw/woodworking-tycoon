@@ -192,10 +192,10 @@ describe("minPanelWidth matching", () => {
         width: 2 as const,
       }));
     assert.ok(
-      materialMeetsInput(panel(strips(6), 2, 4, "sanded"), requirement),
+      materialMeetsInput(panel(strips(6), 24, 4, "sanded"), requirement),
     );
     assert.ok(
-      !materialMeetsInput(panel(strips(5), 2, 4, "sanded"), requirement),
+      !materialMeetsInput(panel(strips(5), 24, 4, "sanded"), requirement),
     );
   });
 
@@ -210,7 +210,7 @@ describe("minPanelWidth matching", () => {
         species: "maple" as const,
         width: 2 as const,
       })),
-      2,
+      24,
       4,
       "sanded",
     );

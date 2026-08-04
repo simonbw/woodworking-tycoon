@@ -33,30 +33,30 @@ const SQUARE = { kind: "square" } as const;
 
 describe("miter saw angle stops", () => {
   it("a 45° cut at the 5' mark miters both fresh faces at the cut line", () => {
-    const { outputs } = cutBoardOp.output([board("oak", 8, 4, 4)], {
+    const { outputs } = cutBoardOp.output([board("oak", 96, 4, 4)], {
       angle: 45,
-      cutPosition: 5,
+      cutPosition: 60,
     });
     const [left, right] = outputs;
     assert.ok(isBoard(left) && isBoard(right));
     // The cut line is 5' from the board's left end: a 5' and a 3' piece,
     // each freshly mitered on the side that faced the blade
-    assert.strictEqual(left.length, 5);
+    assert.strictEqual(left.length, 60);
     assert.deepStrictEqual(boardEnds(left).right, MITERED_45);
     assert.deepStrictEqual(boardEnds(left).left, SQUARE);
-    assert.strictEqual(right.length, 3);
+    assert.strictEqual(right.length, 36);
     assert.deepStrictEqual(boardEnds(right).left, MITERED_45);
     assert.deepStrictEqual(boardEnds(right).right, SQUARE);
   });
 
   it("a square crosscut squares the cut line and keeps the far ends' miters", () => {
-    const mitered = withEnds(board("oak", 6, 4, 4), {
+    const mitered = withEnds(board("oak", 72, 4, 4), {
       left: MITERED_45,
       right: MITERED_45,
     });
     const { outputs } = cutBoardOp.output([mitered], {
       angle: 0,
-      cutPosition: 4,
+      cutPosition: 48,
     });
     const [left, right] = outputs;
     assert.ok(isBoard(left) && isBoard(right));
@@ -67,9 +67,9 @@ describe("miter saw angle stops", () => {
   });
 
   it("a frame rail takes both stops: +45 one end, -45 the other", () => {
-    const first = cutBoardOp.output([board("walnut", 8, 1, 1, "sanded")], {
+    const first = cutBoardOp.output([board("walnut", 96, 1, 1, "sanded")], {
       angle: 45,
-      cutPosition: 4,
+      cutPosition: 48,
     });
     const halfDone = first.outputs[0];
     assert.ok(isBoard(halfDone));
@@ -78,25 +78,25 @@ describe("miter saw angle stops", () => {
     // of the new line carries -45 on its left and the old +45 on its right
     const second = cutBoardOp.output([halfDone], {
       angle: -45,
-      cutPosition: 2,
+      cutPosition: 24,
     });
     const rail = second.outputs[1];
     assert.ok(isBoard(rail));
-    assert.strictEqual(rail.length, 2);
+    assert.strictEqual(rail.length, 24);
     assert.ok(isMiteredFrameRail(rail, 45));
   });
 
   it("the same stop twice makes parallel ends, not a rail", () => {
-    const first = cutBoardOp.output([board("walnut", 8, 1, 1, "sanded")], {
+    const first = cutBoardOp.output([board("walnut", 96, 1, 1, "sanded")], {
       angle: 45,
-      cutPosition: 4,
+      cutPosition: 48,
     });
     const halfDone = first.outputs[0];
     assert.ok(isBoard(halfDone));
     // Head never moves: both end lines are parallel — a parallelogram
     const second = cutBoardOp.output([halfDone], {
       angle: 45,
-      cutPosition: 2,
+      cutPosition: 24,
     });
     const skewed = second.outputs[1];
     assert.ok(isBoard(skewed));
@@ -106,9 +106,9 @@ describe("miter saw angle stops", () => {
   });
 
   it("a negative stop records the signed angle on both fresh ends", () => {
-    const { outputs } = cutBoardOp.output([board("oak", 8, 4, 4)], {
+    const { outputs } = cutBoardOp.output([board("oak", 96, 4, 4)], {
       angle: -30,
-      cutPosition: 5,
+      cutPosition: 60,
     });
     const [left, right] = outputs;
     assert.ok(isBoard(left) && isBoard(right));
@@ -126,16 +126,16 @@ describe("miter saw angle stops", () => {
   it("only boards the cut line lands inside are accepted", () => {
     const requirement = cutBoardOp.getInputMaterials({
       angle: 0,
-      cutPosition: 4,
+      cutPosition: 48,
     })[0];
-    assert.ok(materialMeetsInput(board("oak", 6, 4, 4), requirement));
+    assert.ok(materialMeetsInput(board("oak", 72, 4, 4), requirement));
     // The blade needs wood on both sides of the line
-    assert.ok(!materialMeetsInput(board("oak", 4, 4, 4), requirement));
-    assert.ok(!materialMeetsInput(board("oak", 3, 4, 4), requirement));
+    assert.ok(!materialMeetsInput(board("oak", 48, 4, 4), requirement));
+    assert.ok(!materialMeetsInput(board("oak", 36, 4, 4), requirement));
   });
 
   it("ripping runs along the board, so both pieces keep their ends", () => {
-    const mitered = withEnds(board("oak", 4, 4, 4, "smooth"), {
+    const mitered = withEnds(board("oak", 48, 4, 4, "smooth"), {
       left: MITERED_45,
       right: SQUARE,
     });
@@ -152,7 +152,7 @@ describe("end labels", () => {
   const MITERED_NEG_45 = { kind: "mitered", angle: -45 } as const;
 
   it("names mitered ends like a cut list", () => {
-    const base = board("oak", 2, 1, 1, "sanded");
+    const base = board("oak", 24, 1, 1, "sanded");
     assert.strictEqual(endsLabel(base), null);
     assert.strictEqual(
       endsLabel(withEnds(base, { left: MITERED_45, right: SQUARE })),
@@ -186,7 +186,7 @@ describe("picture frame", () => {
     left: { kind: "mitered", angle: -45 },
     right: { kind: "mitered", angle: 45 },
   } as const;
-  const rail = () => withEnds(board("walnut", 2, 1, 1, "sanded"), MIRRORED_45);
+  const rail = () => withEnds(board("walnut", 24, 1, 1, "sanded"), MIRRORED_45);
 
   it("takes only true rails: 45° ends mirrored so the corners close", () => {
     const requirement = buildPictureFrame.getInputMaterials({})[0];
@@ -195,7 +195,7 @@ describe("picture frame", () => {
     // both ends at once
     assert.ok(
       materialMeetsInput(
-        withEnds(board("walnut", 2, 1, 1, "sanded"), {
+        withEnds(board("walnut", 24, 1, 1, "sanded"), {
           left: { kind: "mitered", angle: 45 },
           right: { kind: "mitered", angle: -45 },
         }),
@@ -204,12 +204,12 @@ describe("picture frame", () => {
     );
     // A square-ended board of the right size is not a rail
     assert.ok(
-      !materialMeetsInput(board("walnut", 2, 1, 1, "sanded"), requirement),
+      !materialMeetsInput(board("walnut", 24, 1, 1, "sanded"), requirement),
     );
     // A parallelogram has two 45° ends and still can't close a corner
     assert.ok(
       !materialMeetsInput(
-        withEnds(board("walnut", 2, 1, 1, "sanded"), {
+        withEnds(board("walnut", 24, 1, 1, "sanded"), {
           left: MITERED_45,
           right: MITERED_45,
         }),
@@ -219,7 +219,7 @@ describe("picture frame", () => {
     // Neither is one mitered at the wrong stop
     assert.ok(
       !materialMeetsInput(
-        withEnds(board("walnut", 2, 1, 1, "sanded"), {
+        withEnds(board("walnut", 24, 1, 1, "sanded"), {
           left: { kind: "mitered", angle: -30 },
           right: { kind: "mitered", angle: 30 },
         }),
@@ -229,7 +229,7 @@ describe("picture frame", () => {
     // Pallet wood stays out of fine work
     assert.ok(
       !materialMeetsInput(
-        withEnds(board("pallet", 2, 1, 1, "sanded"), MIRRORED_45),
+        withEnds(board("pallet", 24, 1, 1, "sanded"), MIRRORED_45),
         requirement,
       ),
     );

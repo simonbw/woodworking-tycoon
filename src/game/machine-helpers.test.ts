@@ -23,11 +23,11 @@ import { MaterialInstance } from "./Materials";
 describe("matchMaterialsToSlots", () => {
   it("should match all materials when placed in correct order", () => {
     const materials = [
-      board("pallet", 4, 6, 3), // stringer
-      board("pallet", 4, 6, 3), // stringer
-      board("pallet", 3, 4, 1), // deck
-      board("pallet", 3, 4, 1), // deck
-      board("pallet", 3, 4, 1), // deck
+      board("pallet", 48, 6, 3), // stringer
+      board("pallet", 48, 6, 3), // stringer
+      board("pallet", 36, 4, 1), // deck
+      board("pallet", 36, 4, 1), // deck
+      board("pallet", 36, 4, 1), // deck
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -35,14 +35,14 @@ describe("matchMaterialsToSlots", () => {
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 2,
       },
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
-        length: [3],
+        length: [36],
         quantity: 3,
       },
     ];
@@ -65,11 +65,11 @@ describe("matchMaterialsToSlots", () => {
   it("should match materials even when placed in wrong order", () => {
     // Place deck boards first, then stringers - opposite of requirement order
     const materials = [
-      board("pallet", 3, 4, 1), // deck
-      board("pallet", 3, 4, 1), // deck
-      board("pallet", 3, 4, 1), // deck
-      board("pallet", 4, 6, 3), // stringer
-      board("pallet", 4, 6, 3), // stringer
+      board("pallet", 36, 4, 1), // deck
+      board("pallet", 36, 4, 1), // deck
+      board("pallet", 36, 4, 1), // deck
+      board("pallet", 48, 6, 3), // stringer
+      board("pallet", 48, 6, 3), // stringer
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -77,14 +77,14 @@ describe("matchMaterialsToSlots", () => {
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 2,
       }, // stringers first
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
-        length: [3],
+        length: [36],
         quantity: 3,
       }, // decks second
     ];
@@ -104,7 +104,7 @@ describe("matchMaterialsToSlots", () => {
 
   it("should handle partial materials with placeholders", () => {
     const materials = [
-      board("pallet", 4, 6, 3), // only 1 stringer
+      board("pallet", 48, 6, 3), // only 1 stringer
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -112,14 +112,14 @@ describe("matchMaterialsToSlots", () => {
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 2,
       },
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
-        length: [3],
+        length: [36],
         quantity: 3,
       },
     ];
@@ -147,7 +147,7 @@ describe("matchMaterialsToSlots", () => {
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 2,
       },
     ];
@@ -170,11 +170,11 @@ describe("matchMaterialsToSlots", () => {
   it("should handle mix of valid and invalid materials", () => {
     // User places 3 wrong boards, then 2 correct stringers
     const materials = [
-      board("pine", 8, 4, 1), // wrong species
-      board("pine", 8, 4, 1), // wrong species
-      board("pine", 8, 4, 1), // wrong species
-      board("pallet", 4, 6, 3), // correct stringer
-      board("pallet", 4, 6, 3), // correct stringer
+      board("pine", 96, 4, 1), // wrong species
+      board("pine", 96, 4, 1), // wrong species
+      board("pine", 96, 4, 1), // wrong species
+      board("pallet", 48, 6, 3), // correct stringer
+      board("pallet", 48, 6, 3), // correct stringer
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -182,14 +182,14 @@ describe("matchMaterialsToSlots", () => {
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 2,
       }, // stringers
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
-        length: [3],
+        length: [36],
         quantity: 3,
       }, // decks
     ];
@@ -220,8 +220,8 @@ describe("matchMaterialsToSlots", () => {
     // This is the actual issue the user experiences:
     // User places deck boards first, then adds stringers one at a time
     const materials = [
-      board("pallet", 3, 4, 1), // deck board placed first
-      board("pallet", 4, 6, 3), // stringer placed second
+      board("pallet", 36, 4, 1), // deck board placed first
+      board("pallet", 48, 6, 3), // stringer placed second
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -229,14 +229,14 @@ describe("matchMaterialsToSlots", () => {
         type: ["board"],
         species: ["pallet"],
         width: [6],
-        length: [4],
+        length: [48],
         quantity: 2,
       }, // stringers required first
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
-        length: [3],
+        length: [36],
         quantity: 3,
       }, // decks required second
     ];
@@ -297,7 +297,7 @@ describe("parameterValueSatisfiable", () => {
     const { machine, operation } = machineWith(
       "miterSaw",
       "cutBoard",
-      { cutPosition: 4 },
+      { cutPosition: 48 },
       [],
     );
     for (const value of operationParameters(operation)[0].values) {
@@ -311,15 +311,19 @@ describe("parameterValueSatisfiable", () => {
     const { machine, operation } = machineWith(
       "miterSaw",
       "cutBoard",
-      { cutPosition: 4 },
-      [board("pine", 6, 4, 4)],
+      { cutPosition: 48 },
+      [board("pine", 72, 4, 4)],
     );
     // The line must land inside the board: marks short of 6' work, the
     // board's own end and beyond don't
-    assert.ok(parameterValueSatisfiable(machine, operation, "cutPosition", 4));
-    assert.ok(parameterValueSatisfiable(machine, operation, "cutPosition", 5));
-    assert.ok(!parameterValueSatisfiable(machine, operation, "cutPosition", 6));
-    assert.ok(!parameterValueSatisfiable(machine, operation, "cutPosition", 7));
+    assert.ok(parameterValueSatisfiable(machine, operation, "cutPosition", 48));
+    assert.ok(parameterValueSatisfiable(machine, operation, "cutPosition", 60));
+    assert.ok(
+      !parameterValueSatisfiable(machine, operation, "cutPosition", 72),
+    );
+    assert.ok(
+      !parameterValueSatisfiable(machine, operation, "cutPosition", 84),
+    );
   });
 
   it("planer cut height reads against carried stock: skim or one detent", () => {
@@ -331,7 +335,7 @@ describe("parameterValueSatisfiable", () => {
       { targetThickness: 4 },
       [],
     );
-    const carried = [board("pine", 6, 4, 4)];
+    const carried = [board("pine", 72, 4, 4)];
     // Skim pass at the loaded thickness
     assert.ok(
       parameterValueSatisfiable(
@@ -453,13 +457,13 @@ describe("findFeedableOperation", () => {
   it("the carried stock decides the cut — the specs are disjoint", () => {
     const saw = loadedSaw({ targetWidth: 4 });
     // A rough edge can't ride the fence: it goes on the straight-line sled
-    const rough = board("walnut", 8, 6, 4, "rough", { faces: 0, edges: 0 });
+    const rough = board("walnut", 96, 6, 4, "rough", { faces: 0, edges: 0 });
     assert.strictEqual(
       findFeedableOperation(saw, saw.operations, [rough])?.operation.id,
       "straightLineRip",
     );
     // An edge-jointed board rips against the fence
-    const jointed = board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 1 });
+    const jointed = board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 1 });
     assert.strictEqual(
       findFeedableOperation(saw, saw.operations, [jointed])?.operation.id,
       "ripBoard",
@@ -469,7 +473,7 @@ describe("findFeedableOperation", () => {
   it("reads the machine's settings bag, with defaults underneath", () => {
     // Fence at 6": a 6"-wide board can't be ripped narrower than it is
     const saw = loadedSaw({ targetWidth: 6 });
-    const jointed = board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 1 });
+    const jointed = board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 1 });
     assert.strictEqual(
       findFeedableOperation(saw, saw.operations, [jointed]),
       null,
@@ -478,8 +482,8 @@ describe("findFeedableOperation", () => {
 
   it("consumes the matching piece and returns the rest", () => {
     const saw = loadedSaw({ targetWidth: 4 });
-    const rough = board("walnut", 8, 6, 4, "rough", { faces: 0, edges: 0 });
-    const spare = board("pine", 2, 2, 1);
+    const rough = board("walnut", 96, 6, 4, "rough", { faces: 0, edges: 0 });
+    const spare = board("pine", 24, 2, 1);
     const match = findFeedableOperation(saw, saw.operations, [spare, rough]);
     // The pine offcut satisfies neither op at these settings; walnut rides
     // the sled and the pine stays in hand
@@ -526,7 +530,7 @@ describe("stageableMaterials on a bench", () => {
   });
 
   it("takes boards regardless of which plan is selected", () => {
-    const walnut = board("walnut", 4, 6, 4);
+    const walnut = board("walnut", 48, 6, 4);
     const staged = stageableMaterials(
       bench({ selectedOperationId: "dismantlePallet" }),
       [walnut],
@@ -537,7 +541,7 @@ describe("stageableMaterials on a bench", () => {
   it("still refuses when the bench top is full", () => {
     const full = bench({
       inputMaterials: Array.from({ length: 12 }, () =>
-        board("pine", 2, 4, 4, "rough"),
+        board("pine", 24, 4, 4, "rough"),
       ),
     });
     assert.deepStrictEqual(stageableMaterials(full, [fullPallet]), []);

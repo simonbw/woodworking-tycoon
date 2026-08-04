@@ -15,7 +15,7 @@ import { panel, uniformPanel } from "./panel-helpers";
 
 describe("materialMeetsInput", () => {
   it("matches on flat allowed-value fields", () => {
-    const material = board("maple", 2, 2, 4);
+    const material = board("maple", 24, 2, 4);
     assert.ok(
       materialMeetsInput(material, { type: ["board"], species: ["maple"] }),
     );
@@ -25,7 +25,7 @@ describe("materialMeetsInput", () => {
   });
 
   it("applies the matches predicate in addition to flat fields", () => {
-    const material = board("maple", 2, 2, 4);
+    const material = board("maple", 24, 2, 4);
     assert.ok(
       materialMeetsInput(material, {
         type: ["board"],
@@ -41,7 +41,7 @@ describe("materialMeetsInput", () => {
   });
 
   it("rejects when flat fields fail even if the predicate passes", () => {
-    const material = board("maple", 2, 2, 4);
+    const material = board("maple", 24, 2, 4);
     assert.ok(
       !materialMeetsInput(material, {
         type: ["board"],
@@ -58,7 +58,7 @@ describe("describeMaterialRequirement", () => {
       describeMaterialRequirement({
         type: ["board"],
         species: ["pallet"],
-        length: [2],
+        length: [24],
         width: [4],
         thickness: [1],
         quantity: 4,
@@ -72,7 +72,7 @@ describe("describeMaterialRequirement", () => {
       describeMaterialRequirement({
         type: ["board"],
         species: ["pallet"],
-        length: [3],
+        length: [36],
         width: [4],
         thickness: [1],
         surface: ["sanded"],
@@ -87,7 +87,7 @@ describe("describeMaterialRequirement", () => {
     assert.strictEqual(
       describeMaterialRequirement({
         type: ["board"],
-        length: [2],
+        length: [24],
         thickness: [4],
         surface: ["smooth", "sanded"],
         quantity: 2,
@@ -150,7 +150,7 @@ describe("describeMaterialRequirement", () => {
     assert.strictEqual(
       describeMaterialRequirement({
         type: ["board"],
-        length: [2],
+        length: [24],
         width: [2],
         thickness: [4],
         surface: ["smooth", "sanded"],
@@ -174,16 +174,16 @@ describe("describeMaterialRequirement", () => {
 describe("getMaterialName", () => {
   it("gives construction pine the nominal callout, length last", () => {
     assert.strictEqual(
-      getMaterialName(board("pine", 8, 4, 8, "smooth")),
+      getMaterialName(board("pine", 96, 4, 8, "smooth")),
       "Pine 2x4 — 8'",
     );
     assert.strictEqual(
-      getMaterialName(board("pine", 8, 4, 4, "smooth")),
+      getMaterialName(board("pine", 96, 4, 4, "smooth")),
       "Pine 1x4 — 8'",
     );
     // Crosscuts keep the callout: a 4' 2x4 is still a 2x4
     assert.strictEqual(
-      getMaterialName(board("pine", 4, 4, 8, "smooth")),
+      getMaterialName(board("pine", 48, 4, 8, "smooth")),
       "Pine 2x4 — 4'",
     );
   });
@@ -191,38 +191,38 @@ describe("getMaterialName", () => {
   it("drops the callout when the board leaves a nominal size", () => {
     // Planed to 6/4: no longer a true 2" — quarters take over
     assert.strictEqual(
-      getMaterialName(board("pine", 8, 4, 6, "smooth")),
+      getMaterialName(board("pine", 96, 4, 6, "smooth")),
       "Pine 6/4 — 4\" × 8'",
     );
     // Ripped to a 1" strip
     assert.strictEqual(
-      getMaterialName(board("pine", 8, 1, 8, "smooth")),
+      getMaterialName(board("pine", 96, 1, 8, "smooth")),
       "Pine 8/4 — 1\" × 8'",
     );
   });
 
   it("names hardwood in quarters, cut-list order", () => {
     assert.strictEqual(
-      getMaterialName(board("walnut", 8, 6, 8, "rough")),
+      getMaterialName(board("walnut", 96, 6, 8, "rough")),
       "Walnut 8/4 — 6\" × 8'",
     );
     // Hardwood is never nominal, even on a nominal size
     assert.strictEqual(
-      getMaterialName(board("oak", 8, 4, 8, "smooth")),
+      getMaterialName(board("oak", 96, 4, 8, "smooth")),
       "Oak 8/4 — 4\" × 8'",
     );
   });
 
   it("names pallet stock as pallet wood", () => {
     assert.strictEqual(
-      getMaterialName(board("pallet", 3, 4, 1)),
+      getMaterialName(board("pallet", 36, 4, 1)),
       "Pallet Wood 1/4 — 4\" × 3'",
     );
   });
 
   it("names single-species panels by species and size", () => {
     assert.strictEqual(
-      getMaterialName(uniformPanel("maple", 5, 2, 2, 4)),
+      getMaterialName(uniformPanel("maple", 5, 2, 24, 4)),
       "Maple Panel 4/4 — 10\" × 2'",
     );
   });
@@ -233,7 +233,7 @@ describe("getMaterialName", () => {
         { species: "walnut", width: 2 },
         { species: "maple", width: 2 },
       ],
-      2,
+      24,
       4,
       "smooth",
     );
@@ -248,16 +248,16 @@ describe("getMaterialState", () => {
   it("carries surface and milling, without the rough-sawn stutter", () => {
     assert.strictEqual(
       getMaterialState(
-        board("walnut", 8, 6, 4, "rough", { faces: 0, edges: 0 }),
+        board("walnut", 96, 6, 4, "rough", { faces: 0, edges: 0 }),
       ),
       "rough sawn",
     );
     assert.strictEqual(
-      getMaterialState(board("maple", 2, 2, 4, "sanded")),
+      getMaterialState(board("maple", 24, 2, 4, "sanded")),
       "sanded, S4S",
     );
     assert.strictEqual(
-      getMaterialState(uniformPanel("maple", 5, 2, 2, 4)),
+      getMaterialState(uniformPanel("maple", 5, 2, 24, 4)),
       "rough",
     );
   });
@@ -278,7 +278,7 @@ describe("getMaterialState", () => {
 describe("getMaterialFullName", () => {
   it("joins name and state for grouping keys", () => {
     assert.strictEqual(
-      getMaterialFullName(board("pine", 8, 4, 8, "smooth")),
+      getMaterialFullName(board("pine", 96, 4, 8, "smooth")),
       "Pine 2x4 — 8' (smooth, S4S)",
     );
   });
@@ -287,15 +287,15 @@ describe("getMaterialFullName", () => {
 describe("describeStockDimensionsPlain", () => {
   it("translates quarters into fractional inches", () => {
     assert.strictEqual(
-      describeStockDimensionsPlain(board("walnut", 8, 6, 8)),
+      describeStockDimensionsPlain(board("walnut", 96, 6, 8)),
       '2" thick · 6" wide · 8\' long',
     );
     assert.strictEqual(
-      describeStockDimensionsPlain(board("walnut", 8, 6, 6)),
+      describeStockDimensionsPlain(board("walnut", 96, 6, 6)),
       '1-1/2" thick · 6" wide · 8\' long',
     );
     assert.strictEqual(
-      describeStockDimensionsPlain(board("pallet", 3, 4, 1)),
+      describeStockDimensionsPlain(board("pallet", 36, 4, 1)),
       '1/4" thick · 4" wide · 3\' long',
     );
   });
@@ -330,22 +330,22 @@ describe("sheet good naming", () => {
 
   it("names sheets by kind in sheet grammar — feet both ways", () => {
     assert.strictEqual(
-      getMaterialName(sheet("plywoodB", 4, 4, 2)),
+      getMaterialName(sheet("plywoodB", 48, 48, 2)),
       "Shop Plywood 2/4 — 4' × 4'",
     );
     assert.strictEqual(
-      getMaterialName(sheet("plywoodA", 8, 4, 3)),
+      getMaterialName(sheet("plywoodA", 96, 48, 3)),
       "Cabinet Plywood 3/4 — 4' × 8'",
     );
     assert.strictEqual(
-      getMaterialName(sheet("mdf", 4, 4, 3)),
+      getMaterialName(sheet("mdf", 48, 48, 3)),
       "MDF 3/4 — 4' × 4'",
     );
   });
 
   it("spells sheet dimensions in plain feet and inches", () => {
     assert.strictEqual(
-      describeStockDimensionsPlain(sheet("osb", 4, 4, 2)),
+      describeStockDimensionsPlain(sheet("osb", 48, 48, 2)),
       "1/2\" thick · 4' wide · 4' long",
     );
   });
@@ -357,8 +357,8 @@ describe("describeMaterialRequirement for sheets", () => {
       describeMaterialRequirement({
         type: ["plywood"],
         kind: ["plywoodB", "mdf"],
-        length: [4],
-        width: [4],
+        length: [48],
+        width: [48],
         quantity: 1,
       }),
       "Plywood (Shop Plywood or MDF, any thickness, width 4', length 4')",

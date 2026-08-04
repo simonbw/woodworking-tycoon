@@ -23,20 +23,20 @@ describe("buildShelf", () => {
   it("requires sanded hardwood, not pallet wood", () => {
     const requirement = buildShelf.getInputMaterials({})[0];
     assert.ok(
-      materialMeetsInput(board("maple", 4, 6, 4, "sanded"), requirement),
+      materialMeetsInput(board("maple", 48, 6, 4, "sanded"), requirement),
     );
     assert.ok(
-      !materialMeetsInput(board("pallet", 4, 6, 4, "sanded"), requirement),
+      !materialMeetsInput(board("pallet", 48, 6, 4, "sanded"), requirement),
     );
     assert.ok(
-      !materialMeetsInput(board("maple", 4, 6, 4, "smooth"), requirement),
+      !materialMeetsInput(board("maple", 48, 6, 4, "smooth"), requirement),
     );
   });
 
   it("produces a shelf of the input species", () => {
     const inputs = [
-      board("cherry", 4, 6, 4, "sanded"),
-      board("cherry", 4, 6, 4, "sanded"),
+      board("cherry", 48, 6, 4, "sanded"),
+      board("cherry", 48, 6, 4, "sanded"),
     ];
     const { outputs } = buildShelf.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
@@ -49,17 +49,17 @@ describe("buildJewelryBox", () => {
   it("requires thin sanded stock — the planer era", () => {
     const requirement = buildJewelryBox.getInputMaterials({})[0];
     assert.ok(
-      materialMeetsInput(board("walnut", 2, 4, 2, "sanded"), requirement),
+      materialMeetsInput(board("walnut", 24, 4, 2, "sanded"), requirement),
     );
     // Full-thickness stock won't do
     assert.ok(
-      !materialMeetsInput(board("walnut", 2, 4, 4, "sanded"), requirement),
+      !materialMeetsInput(board("walnut", 24, 4, 4, "sanded"), requirement),
     );
   });
 
   it("produces a jewelry box of the input species", () => {
     const inputs = Array.from({ length: 4 }, () =>
-      board("walnut", 2, 4, 2, "sanded"),
+      board("walnut", 24, 4, 2, "sanded"),
     );
     const { outputs } = buildJewelryBox.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
@@ -79,7 +79,7 @@ describe("finishTwoToneBoard", () => {
         { species: "maple" as const, width: 2 as const },
         { species: "walnut" as const, width: 2 as const },
       ],
-      2,
+      24,
       3,
       surface,
     );
@@ -94,7 +94,7 @@ describe("finishTwoToneBoard", () => {
         species: "maple" as const,
         width: 2 as const,
       })),
-      2,
+      24,
       3,
       "sanded",
     );

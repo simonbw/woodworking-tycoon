@@ -11,7 +11,7 @@ import { makeMaterial } from "./material-helpers";
 /** Syntactic sugar to create a panel material instance */
 export function panel(
   strips: ReadonlyArray<PanelStrip>,
-  length: BoardDimension,
+  length: number,
   thickness: BoardDimension,
   surface: SurfaceCondition = "rough",
 ): Panel {
@@ -29,7 +29,7 @@ export function uniformPanel(
   species: Species,
   stripCount: number,
   stripWidth: BoardDimension,
-  length: BoardDimension,
+  length: number,
   thickness: BoardDimension,
   surface: SurfaceCondition = "rough",
 ): Panel {

@@ -347,7 +347,7 @@ describe("accept / cancel / deliver job", () => {
     // The zero-cost guarantee is only real if scavenged deck boards
     // actually match the generated requirement
     const offers = generateJobBoard(stateWith({}), neverRng);
-    const deckBoard = board("pallet", 3, 4, 1);
+    const deckBoard = board("pallet", 36, 4, 1);
     const boardJob = offers.find((offer) =>
       offer.requiredMaterials.some((req) =>
         (req.type as readonly string[] | undefined)?.includes("board"),

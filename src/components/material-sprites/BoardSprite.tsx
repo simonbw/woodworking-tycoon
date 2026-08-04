@@ -6,7 +6,7 @@ import { lerp } from "../../utils/mathUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;
@@ -45,7 +45,7 @@ export const BoardSprite: React.FC<
     (g: Graphics) => {
       g.clear();
       const width = boardWidth * PIXELS_PER_INCH;
-      const height = boardLength * PIXELS_PER_INCH * INCHES_PER_FOOT;
+      const height = boardLength * PIXELS_PER_INCH;
       const depth = (thickness * PIXELS_PER_INCH) / 4;
       const rng = seededRandom(
         seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`,

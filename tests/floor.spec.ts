@@ -353,7 +353,7 @@ test.describe("Shop floor", () => {
                 id: "e2e-long-board",
                 type: "board",
                 species: "pine",
-                length: 8,
+                length: 96,
                 width: 4,
                 thickness: 1,
                 surface: "rough",

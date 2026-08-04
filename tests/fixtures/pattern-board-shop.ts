@@ -38,7 +38,7 @@ function strip(
     id,
     type: "board",
     species,
-    length: 2,
+    length: 24,
     width,
     thickness: 4,
     surface: "smooth",
@@ -51,7 +51,7 @@ function strip(
 const stripedBlank: Panel = {
   id: "test-striped-blank",
   type: "panel",
-  length: 2,
+  length: 24,
   thickness: 4,
   surface: "sanded",
   strips: [

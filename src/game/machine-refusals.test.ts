@@ -43,7 +43,7 @@ describe("explainFeedRefusal", () => {
     // A skim pass: stock right at the cut height
     assert.strictEqual(
       refusalAt("lunchboxPlaner", "plane", { targetThickness: 4 }, [
-        board("oak", 8, 4, 4),
+        board("oak", 96, 4, 4),
       ]),
       null,
     );
@@ -61,7 +61,7 @@ describe("explainFeedRefusal", () => {
   it("planer: a board with no flat face is taught to visit the jointer", () => {
     assert.match(
       refusalAt("lunchboxPlaner", "plane", { targetThickness: 4 }, [
-        board("oak", 8, 4, 4, "rough", { faces: 0 }),
+        board("oak", 96, 4, 4, "rough", { faces: 0 }),
       ])!,
       /Joint a face first/,
     );
@@ -70,7 +70,7 @@ describe("explainFeedRefusal", () => {
   it("planer: stock too thick blames the crank, with the mark to hit", () => {
     assert.match(
       refusalAt("lunchboxPlaner", "plane", { targetThickness: 2 }, [
-        board("oak", 8, 4, 8),
+        board("oak", 96, 4, 8),
       ])!,
       /raise the cut height to 7\/4/,
     );
@@ -79,7 +79,7 @@ describe("explainFeedRefusal", () => {
   it("planer: stock below the head blames the crank the other way", () => {
     assert.match(
       refusalAt("lunchboxPlaner", "plane", { targetThickness: 4 }, [
-        board("oak", 8, 4, 1),
+        board("oak", 96, 4, 1),
       ])!,
       /lower the cut height to 1\/4/,
     );
@@ -108,7 +108,7 @@ describe("explainFeedRefusal", () => {
   it("jointer: fully milled stock hears there's nothing left to joint", () => {
     assert.match(
       refusalAt("jointer", "jointFace", undefined, [
-        board("oak", 6, 4, 4, "smooth"),
+        board("oak", 72, 4, 4, "smooth"),
       ])!,
       /nothing left to joint/i,
     );
@@ -117,7 +117,7 @@ describe("explainFeedRefusal", () => {
   it("table saw: a rough edge is warned off the fence", () => {
     assert.match(
       refusalAt("jobsiteTableSaw", "ripBoard", { targetWidth: 2 }, [
-        board("pine", 6, 4, 4, "rough", { edges: 0 }),
+        board("pine", 72, 4, 4, "rough", { edges: 0 }),
       ])!,
       /rough edge can't ride the fence/i,
     );
@@ -126,7 +126,7 @@ describe("explainFeedRefusal", () => {
   it("table saw: a fence set wider than the stock blames the fence", () => {
     assert.match(
       refusalAt("jobsiteTableSaw", "ripBoard", { targetWidth: 4 }, [
-        board("pine", 6, 2, 4),
+        board("pine", 72, 2, 4),
       ])!,
       /fence is set to 4/,
     );
@@ -134,8 +134,8 @@ describe("explainFeedRefusal", () => {
 
   it("miter saw: a cut line past the board says slide it, not wrong wood", () => {
     assert.match(
-      refusalAt("miterSaw", "cutBoard", { angle: 0, cutPosition: 4 }, [
-        board("walnut", 2, 1, 1, "sanded"),
+      refusalAt("miterSaw", "cutBoard", { angle: 0, cutPosition: 48 }, [
+        board("walnut", 24, 1, 1, "sanded"),
       ])!,
       /slide the cut line/i,
     );
@@ -168,7 +168,7 @@ describe("explainFeedRefusal", () => {
 
   it("reports missing supplies once the stock itself qualifies", () => {
     const rail = () => ({
-      ...board("walnut", 2, 1, 1, "sanded"),
+      ...board("walnut", 24, 1, 1, "sanded"),
       ends: {
         left: { kind: "mitered", angle: -45 },
         right: { kind: "mitered", angle: 45 },
