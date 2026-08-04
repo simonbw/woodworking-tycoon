@@ -3,6 +3,7 @@ import { GameAction } from "../GameState";
 import { makeMaterial } from "../material-helpers";
 import { MaterialInstance, Pallet } from "../Materials";
 import { Tuple } from "../../utils/typeUtils";
+import { isNight } from "../time-flow";
 import { canLeaveShop } from "./door-actions";
 
 /** How long a scavenging trip takes — about a quarter of a 600-tick day. */
@@ -78,6 +79,10 @@ export function startScavengingAction(
   return (gameState) => {
     if (!canLeaveShop(gameState)) {
       console.warn("Can't leave the shop right now");
+      return gameState;
+    }
+    if (isNight(gameState)) {
+      console.warn("Shop's closed for the night — nowhere to go but home");
       return gameState;
     }
     return {

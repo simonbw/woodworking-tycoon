@@ -9,6 +9,9 @@ import { STARTER_SKILLS } from "../../src/game/Skill";
  */
 export const marketplaceShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 100,
   reputation: 5,
   consumables: NO_CONSUMABLES,

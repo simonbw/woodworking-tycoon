@@ -1,9 +1,28 @@
 /**
- * How many ticks make an in-game day. The Ticker's calendar strip renders it,
- * and the marketplace runs on it: sale pity timers, job-offer lifetimes, and
- * the daily job-board refresh are all expressed in days.
+ * How many ticks make a working day — the budget of minutes between the
+ * 7 AM open and the 5 PM close. Spending them is the game: work, trips,
+ * and waiting all draw the day down; walking and thinking barely do
+ * (see docs/time-and-days.md). When they're gone the shop is closed for
+ * the night and the only way forward is driving home.
  */
 export const TICKS_PER_DAY = 600;
+
+/**
+ * The overnight, 5 PM back around to 7 AM: fourteen hours of minutes,
+ * run as one batch of ordinary ticks while the player sleeps. Glue
+ * cures, listings sell, demand recovers — everything that happens
+ * overnight happens because the tick pipeline says so.
+ */
+export const NIGHT_TICKS = 840;
+
+/**
+ * A full calendar day of shop time, wall-clock: the working day plus the
+ * night. Anything the marketplace quotes "in days" — offer lifetimes,
+ * pity timers, demand recovery — is denominated in this, so "three days"
+ * still means three mornings from now even though most of those ticks
+ * pass in overnight batches.
+ */
+export const TICKS_PER_CALENDAR_DAY = TICKS_PER_DAY + NIGHT_TICKS;
 
 /**
  * One tick is one minute on the shop clock, so a day is 600 minutes — a
@@ -13,12 +32,9 @@ export const TICKS_PER_DAY = 600;
  *
  * Ticks are the simulation's unit and stay in the code; minutes and hours are
  * what the player sees. Anything rendering a span of time goes through
- * `formatDuration`, and anything rendering a moment goes through `formatClock`.
+ * `formatDuration`; moments are told only as broadly as `dayPhase`.
  */
 export const MINUTES_PER_TICK = 1;
-
-/** The hour the shop day starts on, in 24h form. Ends ten hours later, at 5 PM. */
-export const DAY_START_HOUR = 7;
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = TICKS_PER_DAY * MINUTES_PER_TICK;
@@ -46,22 +62,19 @@ export function formatDuration(ticks: number): string {
   return `${minutes} min`;
 }
 
-/** Which day the shop is on, counting from 1. */
-export function dayNumber(tick: number): number {
-  return Math.floor(tick / TICKS_PER_DAY) + 1;
-}
-
 /**
- * The moment on the shop's wall clock: "7:00 AM" at the start of a day
- * through "4:59 PM" at the end of it.
+ * Where the day stands, told the way someone glancing at the light
+ * through the garage door would tell it — there is deliberately no wall
+ * clock. "night" is the closed shop: nothing new starts, and time only
+ * passes to finish what's already running.
  */
-export function formatClock(tick: number): string {
-  const minuteOfDay =
-    (((tick % TICKS_PER_DAY) + TICKS_PER_DAY) % TICKS_PER_DAY) *
-    MINUTES_PER_TICK;
-  const hour24 = DAY_START_HOUR + Math.floor(minuteOfDay / MINUTES_PER_HOUR);
-  const minute = minuteOfDay % MINUTES_PER_HOUR;
-  const suffix = hour24 % 24 < 12 ? "AM" : "PM";
-  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-  return `${hour12}:${String(minute).padStart(2, "0")} ${suffix}`;
+export type DayPhase = "morning" | "midday" | "afternoon" | "evening" | "night";
+
+/** The phase of the day after `dayTicks` of it have been spent. */
+export function dayPhase(dayTicks: number): DayPhase {
+  if (dayTicks >= TICKS_PER_DAY) return "night";
+  if (dayTicks >= TICKS_PER_DAY * 0.75) return "evening";
+  if (dayTicks >= TICKS_PER_DAY * 0.5) return "afternoon";
+  if (dayTicks >= TICKS_PER_DAY * 0.25) return "midday";
+  return "morning";
 }

@@ -6,6 +6,9 @@ import { STARTER_SKILLS } from "../../src/game/Skill";
 /** A miter saw delivery waiting crated at the entrance, carrying unlocked. */
 export const miterSawCrateShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 50,
   reputation: 2,
   consumables: NO_CONSUMABLES,

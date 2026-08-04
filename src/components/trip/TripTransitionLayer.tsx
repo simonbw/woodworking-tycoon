@@ -10,6 +10,7 @@ import { playSound, preloadSound } from "../../utils/sfx";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
 import { StoreTripOverlay } from "../store-page/StoreTripOverlay";
+import { SleepOverlay } from "./SleepOverlay";
 import { setTruckStage, useTruckStage } from "../shop-view/truckStageStore";
 import { useGameState } from "../useGameState";
 
@@ -190,6 +191,7 @@ export const TripOverlays: React.FC = () => {
       <StoreTripOverlay />
       <LumberyardTripOverlay />
       <ScavengeTripOverlay />
+      <SleepOverlay />
     </div>
   );
 };

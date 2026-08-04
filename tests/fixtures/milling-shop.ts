@@ -62,6 +62,9 @@ function roughWalnut(id: string): Board {
  */
 export const millingShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 1000,
   reputation: 48,
   consumables: NO_CONSUMABLES,

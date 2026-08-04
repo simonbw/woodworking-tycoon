@@ -37,6 +37,9 @@ export const benchWorkPallet: Pallet = {
  */
 export const benchWorkShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 0,
   reputation: 0,
   materialPiles: [

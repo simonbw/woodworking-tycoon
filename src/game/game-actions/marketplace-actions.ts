@@ -19,7 +19,6 @@ import {
 } from "../marketplace";
 import { getSellValue } from "../material-values";
 import { canHandOff, consumeRequiredMaterials } from "../delivery";
-import { TICKS_PER_DAY } from "../time";
 import { idMaker } from "../../utils/idMaker";
 import { emitPayout } from "./payout-actions";
 import { emitSound } from "./sound-actions";
@@ -321,9 +320,32 @@ function rollListingSales(
 }
 
 /**
- * At each day boundary — or whenever the board has emptied out — stale
- * offers rotate off and fresh ones roll in. Gated on the marketplace
- * unlock, so the board first fills the moment the tab appears.
+ * The empty-board refill alone, on demand. The tick pass does this too,
+ * but ticks creep while the player idles — this lets the UI cadence
+ * (see Ticker) top the board back up the moment the marketplace unlocks
+ * or the last offer is accepted, the way the next tick used to.
+ */
+export function refillEmptyJobBoardAction(
+  rng: () => number = Math.random,
+): GameAction {
+  return (gameState) => {
+    if (!gameState.progression.marketplaceUnlocked) {
+      return gameState;
+    }
+    if (gameState.jobBoard.length > 0) {
+      return gameState;
+    }
+    return refreshJobBoard(gameState, rng);
+  };
+}
+
+/**
+ * Each morning the shop hasn't seen yet — or whenever the board has
+ * emptied out — stale offers rotate off and fresh ones roll in. The day
+ * only turns over by sleeping, so in play this is *new offers every
+ * morning*, checked on the phone with the first coffee. Gated on the
+ * marketplace unlock, so the board first fills the moment the tab
+ * appears.
  */
 function refreshJobBoard(
   gameState: Parameters<GameAction>[0],
@@ -332,8 +354,8 @@ function refreshJobBoard(
   if (!gameState.progression.marketplaceUnlocked) {
     return gameState;
   }
-  const dayBoundary = gameState.tick % TICKS_PER_DAY === 0;
-  if (!dayBoundary && gameState.jobBoard.length > 0) {
+  const newMorning = gameState.day !== gameState.jobBoardDay;
+  if (!newMorning && gameState.jobBoard.length > 0) {
     return gameState;
   }
   const fresh = gameState.jobBoard.filter(
@@ -360,6 +382,7 @@ function refreshJobBoard(
   return {
     ...gameState,
     jobBoard,
+    jobBoardDay: gameState.day,
     seenJobTemplateIds: availableJobTemplateIds(gameState),
   };
 }

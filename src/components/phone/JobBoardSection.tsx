@@ -16,7 +16,7 @@ import {
   describeMaterialRequirement,
   materialMeetsInput,
 } from "../../game/material-helpers";
-import { TICKS_PER_DAY } from "../../game/time";
+import { TICKS_PER_CALENDAR_DAY } from "../../game/time";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -134,7 +134,8 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
 
   const payout = jobPayout(job, gameState.tick);
   const tipRemaining = jobTipRemaining(job, gameState.tick);
-  const tipDaysLeft = (tipRemaining * JOB_TIP_DECAY_TICKS) / TICKS_PER_DAY;
+  const tipDaysLeft =
+    (tipRemaining * JOB_TIP_DECAY_TICKS) / TICKS_PER_CALENDAR_DAY;
   const pool = [...gameState.player.inventory, ...gameState.truck.bed];
   const canDeliver = job.requiredMaterials.every(
     (req) =>

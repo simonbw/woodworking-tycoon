@@ -65,6 +65,9 @@ function rail(id: string): Board {
  */
 export const miterFrameShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 1000,
   reputation: 10,
   consumables: { ...NO_CONSUMABLES, nails: 10 },

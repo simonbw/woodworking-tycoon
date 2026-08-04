@@ -10,7 +10,7 @@ import { sweepTickPass } from "./dust-actions";
 import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { combineActions } from "./misc-actions";
 import { materialSpecies } from "../material-helpers";
-import { playerAttendsMachine } from "../machine-helpers";
+import { operationAttendanceSatisfied } from "../machine-helpers";
 import { Machine } from "../Machine";
 import { getOperationPhases } from "../skill-helpers";
 import {
@@ -134,25 +134,14 @@ export function machineTickPass(): GameAction {
         dustMultiplier,
         machine.workSpeed,
       );
-      // Attended phases need the player at the machine, holding the operate
-      // key, AND the machine powered — switching off mid-cut pauses the work
-      // like stepping away, and so does letting go. Power-feed operations
-      // (the planer) pull the stock through on their own: neither the
-      // player's whereabouts nor their grip matters, but the switch still
-      // does. Interactive operations never tick their attended work at
-      // all — the bench view performs it and commits through
-      // finishAttendedWorkAction (see docs/bench-minigames.md).
-      const interactive = selectedOperation.interaction != null;
-      const attended =
-        !interactive &&
-        ((playerAttendsMachine(
-          machine,
-          gameState.player.position,
-          gameState.player.away !== null,
-        ) &&
-          gameState.player.operating === true) ||
-          selectedOperation.powerFeed === true) &&
-        machine.isPowered;
+      // What "attended" takes — presence, grip, power — lives in
+      // operationAttendanceSatisfied, shared with the time-flow model so
+      // the clock's pace and the work's progress can't disagree.
+      const attended = operationAttendanceSatisfied(
+        machine,
+        selectedOperation,
+        gameState,
+      );
       const { phaseIndex, ticksRemaining } = machineState.operationProgress;
 
       // Waiting at a phase boundary: the previous phase is done but the next

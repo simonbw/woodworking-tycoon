@@ -71,10 +71,13 @@ import { isOutdoors, truckCabSideCell } from "../lot";
 import { motionCell } from "../player-motion";
 import { MaterialPile } from "../GameState";
 import {
+  goHomeAction,
   goToStoreAction,
   returnFromStoreAction,
   storeUnlocked,
+  wakeUpAction,
 } from "../game-actions/door-actions";
+import { isNight } from "../time-flow";
 import {
   SCAVENGE_DURATION_TICKS,
   startScavengingAction,
@@ -520,6 +523,9 @@ export class ShopDriver {
       return this.performWork(machineTypeId);
     }
 
+    // Nothing new starts at night; a long sequence sleeps through to
+    // morning and picks the work back up.
+    this.ensureDaylight();
     this.apply(operateMachineAction(this.machine(machineTypeId)));
     if (
       this.machine(machineTypeId).state.operationProgress.status !==
@@ -761,12 +767,50 @@ export class ShopDriver {
   // ---------------------------------------------------------------------
 
   /**
+   * Call it a day the way the player does: walk to the cab, drive home,
+   * and wake up the next morning — the overnight runs as one batch of
+   * ordinary ticks (cures finish, listings roll, the job board rotates).
+   */
+  sleep(): this {
+    this.standAtCab();
+    this.apply(goHomeAction());
+    if (this.state.player.away?.kind !== "home") {
+      throw new Error(
+        "The drive home would not start — hands full, or mid-trip already",
+      );
+    }
+    const before = this.state.day;
+    this.apply(wakeUpAction());
+    if (this.state.player.away || this.state.day !== before + 1) {
+      throw new Error("Morning never came — this is a driver bug");
+    }
+    return this;
+  }
+
+  /**
+   * Sleep off the night if the shop has closed, putting the body back
+   * where it stood. Every verb that *starts* something time-shaped runs
+   * through this, so a long sequence rolls through its days the way a
+   * player does — nothing new starts at night, but nobody wants a test
+   * to fail over it either.
+   */
+  private ensureDaylight(): this {
+    if (!isNight(this.state)) {
+      return this;
+    }
+    const [x, y] = this.state.player.position;
+    this.sleep();
+    return this.standAt([x, y]);
+  }
+
+  /**
    * Take the truck out scavenging and sit through the trip, coming home
    * with the haul ferried out of the bed onto the dropoff spot. The loot
    * is rolled up front from the rng; the default always finds two pallets
    * with all eleven deck boards, so sequences can count on the wood.
    */
   scavenge(rng: () => number = () => 0.9): this {
+    this.ensureDaylight();
     this.standAtCab();
     this.apply(startScavengingAction(rng));
     if (!this.state.player.away) {
@@ -788,8 +832,15 @@ export class ShopDriver {
         `The truck doesn't offer ${store} yet — check the progression flags`,
       );
     }
+    this.ensureDaylight();
     this.standAtCab();
-    return this.apply(goToStoreAction(store));
+    this.apply(goToStoreAction(store));
+    if (this.state.player.away?.kind !== "shopping") {
+      throw new Error(
+        `The trip to ${store} would not start — hands full, or mid-trip already`,
+      );
+    }
+    return this;
   }
 
   /**

@@ -23,6 +23,7 @@ import { Direction, Vector, vectorEquals } from "../Vectors";
 import { cellCenter } from "../player-motion";
 import { pileWithinReach } from "../pile-helpers";
 import { availableOperations, getOperationPhases } from "../skill-helpers";
+import { isNight } from "../time-flow";
 import { emitSound } from "./sound-actions";
 
 /**
@@ -489,6 +490,13 @@ export function operateMachineAction(machine: Machine): GameAction {
     // Can't start a new operation if one is in progress
     if (machineState.operationProgress.status === "inProgress") {
       console.warn("Machine is already operating");
+      return gameState;
+    }
+
+    // After 5 PM nothing new starts — what's already running may finish,
+    // but the next cut belongs to tomorrow (see docs/time-and-days.md)
+    if (isNight(gameState)) {
+      console.warn("Shop's closed for the night");
       return gameState;
     }
 

@@ -71,6 +71,9 @@ const stripedBlank: Panel = {
  */
 export const patternBoardShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 100,
   reputation: 20,
   consumables: NO_CONSUMABLES,

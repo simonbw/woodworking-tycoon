@@ -664,12 +664,16 @@ test.describe("Keyboard", () => {
         workspaceCard(page).getByText(/Curing \(hands-free\)/),
       ).toBeVisible();
 
-      // Walk away mid-cure: it keeps going without you
+      // Walk away mid-cure: hands-free work needs no attendance, so the
+      // ticks that do pass advance it with the player across the shop.
+      // (They come from the clock spending time elsewhere — an idle shop
+      // barely ticks now, so the spec feeds them directly.)
       await teleportPlayer(page, FAR_AWAY);
       const cureBefore = await workspaceProgress(page);
-      await page.waitForTimeout(800);
-      const cureAfter = await workspaceProgress(page);
-      expect(cureAfter.ticksRemaining).toBeLessThan(cureBefore.ticksRemaining);
+      await advanceTicks(page, 5);
+      await expect
+        .poll(async () => (await workspaceProgress(page)).ticksRemaining)
+        .toBeLessThan(cureBefore.ticksRemaining);
 
       // Fast-forward the rest of the cure; the panel finishes with the
       // player still across the shop

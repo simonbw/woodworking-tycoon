@@ -13,6 +13,9 @@ import { STARTER_SKILLS } from "../../src/game/Skill";
  */
 export const consumablesShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 20,
   reputation: 0,
   materialPiles: [],

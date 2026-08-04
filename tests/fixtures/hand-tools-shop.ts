@@ -28,6 +28,9 @@ function deckBoard(id: string, length: Board["length"]): Board {
  */
 export const handToolsShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 150,
   reputation: 0,
   materialPiles: [

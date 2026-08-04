@@ -52,6 +52,9 @@ function walnutBlank(id: string): Board {
  */
 export const resawShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 1000,
   reputation: 22,
   consumables: NO_CONSUMABLES,

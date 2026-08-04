@@ -1,7 +1,7 @@
 import { AcceptedJob, MarketListing } from "./GameState";
 import { MaterialInstance } from "./Materials";
 import { getSellValue } from "./material-values";
-import { TICKS_PER_DAY } from "./time";
+import { TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY } from "./time";
 
 /**
  * The marketplace sale model (see docs/marketplace-and-jobs.md).
@@ -20,8 +20,12 @@ import { TICKS_PER_DAY } from "./time";
  */
 export const BASE_SALE_RATE = 1 / 300;
 
-/** A fairly-priced listing (r ≤ 1) never waits longer than this to sell. */
-export const LISTING_PITY_TICKS = 2 * TICKS_PER_DAY;
+/**
+ * A fairly-priced listing (r ≤ 1) never waits longer than this to sell.
+ * Two calendar days: most of those ticks pass in overnight batches, so
+ * in play it reads as "up by the second morning at the latest".
+ */
+export const LISTING_PITY_TICKS = 2 * TICKS_PER_CALENDAR_DAY;
 
 /**
  * Reputation shifts the price curve's center right — pricing power. The
@@ -57,8 +61,8 @@ export function priceFactor(r: number, reputation: number): number {
  * rather than dead.
  */
 export const DEMAND_DIP_PER_SALE = 0.3;
-/** Full recovery from zero takes about a day and a half. */
-export const DEMAND_RECOVERY_PER_TICK = 1 / (1.5 * TICKS_PER_DAY);
+/** Full recovery from zero takes about a calendar day and a half. */
+export const DEMAND_RECOVERY_PER_TICK = 1 / (1.5 * TICKS_PER_CALENDAR_DAY);
 
 export function demandFactor(demand: number): number {
   return 0.25 + 0.75 * demand;
@@ -163,8 +167,9 @@ export function listingInterest(
 
 // ---------------------------------------------------------------------- Jobs
 
-/** Open offers rotate off the board this long after being posted. */
-export const JOB_OFFER_LIFETIME_TICKS = 3 * TICKS_PER_DAY;
+/** Open offers rotate off the board this long after being posted —
+ * three mornings, in calendar time. */
+export const JOB_OFFER_LIFETIME_TICKS = 3 * TICKS_PER_CALENDAR_DAY;
 
 /**
  * The speed bonus: a tip worth up to this fraction of base pay (plus a
@@ -173,7 +178,7 @@ export const JOB_OFFER_LIFETIME_TICKS = 3 * TICKS_PER_DAY;
  * negative — a slow job is merely less lucrative, not a failure.
  */
 export const JOB_TIP_FRACTION = 0.4;
-export const JOB_TIP_DECAY_TICKS = 3 * TICKS_PER_DAY;
+export const JOB_TIP_DECAY_TICKS = 3 * TICKS_PER_CALENDAR_DAY;
 
 /** Cancelling an accepted job is the only true penalty in the system. */
 export const JOB_CANCEL_REPUTATION_LOSS = 1;

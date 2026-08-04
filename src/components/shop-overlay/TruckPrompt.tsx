@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
   canLeaveShop,
+  goHomeAction,
   goToStoreAction,
 } from "../../game/game-actions/door-actions";
+import { isNight } from "../../game/time-flow";
 import { completeCommissionAction } from "../../game/game-actions/store-actions";
 import { deliverJobAction } from "../../game/game-actions/marketplace-actions";
 import { startScavengingAction } from "../../game/game-actions/scavenge-actions";
@@ -167,8 +169,12 @@ export const TruckPrompt: React.FC<{
     atTruckCab(gameState.shopInfo, gameState.player.position);
   const handsFree = canLeaveShop(gameState);
 
+  // After close the errands are done for the day — the only place left
+  // to go is home, so the other destinations step off the card.
+  const night = isNight(gameState);
+
   const rows: TruckRow[] = [];
-  if (storeUnlocked) {
+  if (storeUnlocked && !night) {
     rows.push({
       key: "orangeBox",
       group: "go",
@@ -179,7 +185,7 @@ export const TruckPrompt: React.FC<{
       action: () => goToStoreAction("orangeBox"),
     });
   }
-  if (lumberyardUnlocked) {
+  if (lumberyardUnlocked && !night) {
     rows.push({
       key: "lumberyard",
       group: "go",
@@ -192,14 +198,29 @@ export const TruckPrompt: React.FC<{
   }
   // Scavenging is on offer from day one — it's how the first pallet
   // gets into the shop.
+  if (!night) {
+    rows.push({
+      key: "scavenge",
+      group: "go",
+      name: "Scavenge for pallets",
+      description:
+        "A couple of hours poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
+      verb: "Go",
+      action: () => startScavengingAction(),
+    });
+  }
+  // Home closes out the card the way it closes out the day. Anything
+  // still curing finishes overnight; the day's unspent hours don't
+  // carry over.
   rows.push({
-    key: "scavenge",
+    key: "home",
     group: "go",
-    name: "Scavenge for pallets",
-    description:
-      "A couple of hours poking around loading docks. Come back with 1-2 pallets in whatever shape you find them.",
+    name: "Home",
+    description: night
+      ? "Call it a night. Anything still curing is dry by morning."
+      : "Call it a day early. Anything still curing is dry by morning.",
     verb: "Go",
-    action: () => startScavengingAction(),
+    action: () => goHomeAction(),
   });
 
   for (const handoff of readyHandoffs(gameState)) {

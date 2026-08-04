@@ -85,6 +85,9 @@ const awayTripSchema = z.discriminatedUnion("kind", [
     kind: z.literal("shopping"),
     store: z.string(),
   }),
+  z.object({
+    kind: z.literal("home"),
+  }),
 ]);
 
 const personSchema = z.object({
@@ -135,6 +138,11 @@ const jobOfferSchema = z.object({
 
 export const gameStateSchema = z.object({
   tick: z.number(),
+  // Optional so saves from before the day was a real unit still load;
+  // parseGameState backfills them as a fresh morning at the saved tick.
+  day: z.number().optional(),
+  dayStartTick: z.number().optional(),
+  jobBoardDay: z.number().optional(),
   money: z.number(),
   reputation: z.number(),
   materialPiles: z.array(
@@ -206,6 +214,14 @@ export function parseGameState(data: unknown): GameState | null {
     return null;
   }
   // The schema mirrors GameState structurally; materials are validated
-  // loosely (see above), so the cast bridges the last gap.
-  return result.data as unknown as GameState;
+  // loosely (see above), so the cast bridges the last gap. Saves from
+  // before the day was a real unit wake as a fresh morning: whatever the
+  // old free-running clock said, the player gets a full day from here.
+  const parsed = result.data;
+  return {
+    ...parsed,
+    day: parsed.day ?? 1,
+    dayStartTick: parsed.dayStartTick ?? parsed.tick,
+    jobBoardDay: parsed.jobBoardDay ?? 0,
+  } as unknown as GameState;
 }

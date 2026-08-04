@@ -158,17 +158,23 @@ test.describe("Market, supplies, and sound", () => {
     });
 
     await test.step("a fairly priced listing sells within the pity window", async () => {
-      // Fast-forward past the pity window rather than waiting out the roll
+      // Fast-forward past the pity window (two calendar days) rather
+      // than waiting out the roll, then feed the tick that fires it —
+      // an idle shop barely ticks on its own now.
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) =>
           state.listings.length === 0
             ? state
             : {
                 ...state,
-                tick: state.listings[0].listedAtTick + 2 * 600,
+                tick: state.listings[0].listedAtTick + 2 * 1440,
+                // The jump would strand the shop deep in "night";
+                // restamp the morning so the day's budget is fresh
+                dayStartTick: state.listings[0].listedAtTick + 2 * 1440,
               },
         );
       });
+      await advanceTicks(page, 1);
       await page.waitForFunction(
         () => (window as any).__GET_GAME_STATE__().money === 112,
         undefined,

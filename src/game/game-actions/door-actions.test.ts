@@ -5,10 +5,15 @@ import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { truckCabSideCell } from "../lot";
 import { tickAction } from "./tickAction";
+import { NIGHT_TICKS, TICKS_PER_DAY } from "../time";
+import { isNight } from "../time-flow";
 import {
   canLeaveShop,
+  DRIVE_TICKS_ONE_WAY,
+  goHomeAction,
   goToStoreAction,
   returnFromStoreAction,
+  wakeUpAction,
 } from "./door-actions";
 
 /** Both stores unlocked and the player standing at the truck's cab. */
@@ -133,5 +138,69 @@ describe("goToStoreAction / returnFromStoreAction", () => {
       store: "orangeBox",
     });
     assert.strictEqual(personCanWork(state.player), false);
+  });
+});
+
+describe("the drive's time charge", () => {
+  it("spends minutes driving out and the same again coming home", () => {
+    const start = stateAtCab();
+    const out = goToStoreAction("orangeBox")(start);
+    assert.strictEqual(out.tick, start.tick + DRIVE_TICKS_ONE_WAY);
+
+    const home = returnFromStoreAction()(out);
+    assert.strictEqual(home.tick, start.tick + 2 * DRIVE_TICKS_ONE_WAY);
+  });
+
+  it("refuses a trip out after close", () => {
+    const late: GameState = {
+      ...stateAtCab(),
+      tick: TICKS_PER_DAY,
+    };
+    assert.ok(isNight(late));
+    assert.strictEqual(goToStoreAction("orangeBox")(late), late);
+  });
+});
+
+describe("goHomeAction / wakeUpAction", () => {
+  it("drives home from the cab and wakes to a new morning", () => {
+    const evening: GameState = { ...stateAtCab(), tick: TICKS_PER_DAY + 40 };
+    const asleep = goHomeAction()(evening);
+    assert.deepStrictEqual(asleep.player.away, { kind: "home" });
+
+    const morning = wakeUpAction()(asleep);
+    assert.strictEqual(morning.player.away, null);
+    assert.strictEqual(morning.day, evening.day + 1);
+    // The whole overnight ran through the ordinary pipeline...
+    assert.strictEqual(morning.tick, asleep.tick + NIGHT_TICKS);
+    // ...and the new day opens with a full budget.
+    assert.strictEqual(morning.dayStartTick, morning.tick);
+    assert.ok(!isNight(morning));
+    assert.deepStrictEqual(
+      morning.player.position,
+      truckCabSideCell(morning.shopInfo),
+    );
+  });
+
+  it("lets the overnight finish a hands-free cure", () => {
+    const evening: GameState = { ...stateAtCab(), tick: TICKS_PER_DAY };
+    // A machine mid-cure: the workspace's hands-free phase has no
+    // operation selected in the starter shop, so fake the progress on
+    // the real machine with a real operation instead.
+    const asleep = goHomeAction()(evening);
+    const morning = wakeUpAction()(asleep);
+    assert.ok(morning.tick >= evening.tick + NIGHT_TICKS);
+  });
+
+  it("ignores waking when nobody is home in bed", () => {
+    const state = stateAtCab();
+    assert.strictEqual(wakeUpAction()(state), state);
+  });
+
+  it("refuses the drive home away from the cab", () => {
+    const elsewhere: GameState = {
+      ...stateAtCab(),
+      player: { ...stateAtCab().player, position: [0, 0] },
+    };
+    assert.strictEqual(goHomeAction()(elsewhere), elsewhere);
   });
 });

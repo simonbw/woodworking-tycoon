@@ -50,6 +50,9 @@ const strips = Array.from({ length: 5 }, (_, i) => ({
 
 export const cuttingBoardShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 100,
   reputation: 17,
   consumables: NO_CONSUMABLES,

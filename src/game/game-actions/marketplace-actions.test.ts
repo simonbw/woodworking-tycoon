@@ -208,22 +208,29 @@ describe("marketplaceTickPass job board", () => {
     assert.deepStrictEqual(result.jobBoard, []);
   });
 
-  it("rotates expired offers out at the day boundary", () => {
+  it("rotates expired offers out on a morning it hasn't seen", () => {
     const seeded = marketplaceTickPass(neverRng)(stateWith({}));
-    const expired = {
+    // A new morning (the day turned over by sleeping) with every offer
+    // past its lifetime.
+    const newMorning = {
       ...seeded,
-      tick: seeded.tick + JOB_OFFER_LIFETIME_TICKS + TICKS_PER_DAY,
+      tick: seeded.tick + JOB_OFFER_LIFETIME_TICKS + 1,
+      day: seeded.day + 1,
     };
-    // Land exactly on a day boundary
-    const atBoundary = {
-      ...expired,
-      tick: Math.ceil(expired.tick / TICKS_PER_DAY) * TICKS_PER_DAY,
-    };
-    const result = marketplaceTickPass(neverRng)(atBoundary);
+    const result = marketplaceTickPass(neverRng)(newMorning);
     assert.ok(result.jobBoard.length >= 3);
     for (const offer of result.jobBoard) {
-      assert.strictEqual(offer.postedAtTick, atBoundary.tick);
+      assert.strictEqual(offer.postedAtTick, newMorning.tick);
     }
+    assert.strictEqual(result.jobBoardDay, newMorning.day);
+  });
+
+  it("keeps a full board unrotated until the day turns over", () => {
+    const seeded = marketplaceTickPass(neverRng)(stateWith({}));
+    // Ticks alone — even a lot of them — don't make a new morning.
+    const laterSameDay = { ...seeded, tick: seeded.tick + TICKS_PER_DAY };
+    const result = marketplaceTickPass(neverRng)(laterSameDay);
+    assert.deepStrictEqual(result.jobBoard, seeded.jobBoard);
   });
 
   it("always keeps a material-cost-free job on the board", () => {

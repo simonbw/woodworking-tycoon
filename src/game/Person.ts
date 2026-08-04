@@ -64,7 +64,7 @@ export interface Person {
  * open and ends when the player heads home. Either way the shop keeps
  * running — hands-free work continues, attended work waits.
  */
-export type AwayTrip = ScavengingTrip | ShoppingTrip;
+export type AwayTrip = ScavengingTrip | ShoppingTrip | HomeTrip;
 
 export type ScavengingTrip = {
   readonly kind: "scavenging";
@@ -78,6 +78,15 @@ export type ShoppingTrip = {
   readonly kind: "shopping";
   /** Which store the trip is to; each is its own overlay. */
   readonly store: StoreId;
+};
+
+/**
+ * Gone home for the night. Ends via wakeUpAction, which runs the
+ * overnight in one batch and puts the player back beside the cab the
+ * next morning (see door-actions.ts).
+ */
+export type HomeTrip = {
+  readonly kind: "home";
 };
 
 /**

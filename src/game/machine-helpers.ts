@@ -160,6 +160,40 @@ export function playerAttendsMachine(
 }
 
 /**
+ * Whether an operation's attended phases would advance this tick.
+ * Attended phases need the player at the machine, holding the operate
+ * key, AND the machine powered — switching off mid-cut pauses the work
+ * like stepping away, and so does letting go. Power-feed operations (the
+ * planer) pull the stock through on their own: neither the player's
+ * whereabouts nor their grip matters, but the switch still does.
+ * Interactive operations never tick their attended work at all — the
+ * bench view performs it and commits through finishAttendedWorkAction
+ * (see docs/bench-minigames.md).
+ *
+ * Shared between the tick pipeline (which advances the work) and the
+ * time-flow model (which decides that this is the player spending time),
+ * so the two can never disagree about what counts as working.
+ */
+export function operationAttendanceSatisfied(
+  machine: Machine,
+  operation: Operation,
+  gameState: GameState,
+): boolean {
+  const interactive = operation.interaction != null;
+  return (
+    !interactive &&
+    ((playerAttendsMachine(
+      machine,
+      gameState.player.position,
+      gameState.player.away !== null,
+    ) &&
+      gameState.player.operating === true) ||
+      operation.powerFeed === true) &&
+    machine.isPowered
+  );
+}
+
+/**
  * Whether the machine's loaded inputs could run this operation with
  * `paramId` set to `value` (other parameters kept as currently selected).
  * With nothing loaded there's nothing to contradict, so every value counts

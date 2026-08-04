@@ -5,6 +5,9 @@ import { STARTER_SKILLS } from "../../src/game/Skill";
 
 export const layoutWithPlacedMachines: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 50,
   reputation: 2,
   consumables: NO_CONSUMABLES,

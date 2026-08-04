@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { TICKS_PER_DAY } from "../../game/time";
 import { classNames } from "../../utils/classNames";
 import { Modal } from "../Modal";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
@@ -60,7 +59,7 @@ export const PhoneModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 /** The phone's status strip — the in-game day stands in for the clock. */
 const StatusBar: React.FC = () => {
   const gameState = useGameState();
-  const day = Math.floor(gameState.tick / TICKS_PER_DAY) + 1;
+  const day = gameState.day;
   return (
     <div
       className="flex items-center justify-between bg-ink-blue px-5 py-1 text-[0.65rem] text-white/90"

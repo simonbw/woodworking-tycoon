@@ -11,7 +11,7 @@ import { MaterialLabel } from "../MaterialLabel";
 import { getSellValue } from "../../game/material-values";
 import { MaterialInstance } from "../../game/Materials";
 import { handSpaceLeft } from "../../game/Person";
-import { TICKS_PER_DAY } from "../../game/time";
+import { TICKS_PER_CALENDAR_DAY } from "../../game/time";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -118,7 +118,7 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
   const priceChanged =
     Number.isFinite(parsedPrice) && parsedPrice !== listing.askingPrice;
   const daysListed = Math.floor(
-    (gameState.tick - listing.listedAtTick) / TICKS_PER_DAY,
+    (gameState.tick - listing.listedAtTick) / TICKS_PER_CALENDAR_DAY,
   );
 
   return (

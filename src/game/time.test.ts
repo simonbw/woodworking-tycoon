@@ -2,7 +2,13 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { SCAVENGE_DURATION_TICKS } from "./game-actions/scavenge-actions";
 import { GLUE_CURE_TICKS } from "./machines/benchOperations";
-import { dayNumber, formatClock, formatDuration, TICKS_PER_DAY } from "./time";
+import {
+  dayPhase,
+  formatDuration,
+  NIGHT_TICKS,
+  TICKS_PER_CALENDAR_DAY,
+  TICKS_PER_DAY,
+} from "./time";
 
 describe("formatDuration", () => {
   it("reads a short span in minutes", () => {
@@ -42,38 +48,34 @@ describe("formatDuration", () => {
   });
 });
 
-describe("formatClock", () => {
-  it("opens the day at seven", () => {
-    assert.equal(formatClock(0), "7:00 AM");
+describe("dayPhase", () => {
+  it("opens the day in the morning", () => {
+    assert.equal(dayPhase(0), "morning");
   });
 
-  it("crosses noon without repeating twelve", () => {
-    assert.equal(formatClock(300), "12:00 PM");
+  it("crosses into midday a quarter of the way through", () => {
+    assert.equal(dayPhase(TICKS_PER_DAY / 4), "midday");
   });
 
-  it("reads afternoon hours in twelve-hour form", () => {
-    assert.equal(formatClock(360), "1:00 PM");
+  it("reads the last stretch before close as evening", () => {
+    assert.equal(dayPhase(TICKS_PER_DAY - 1), "evening");
   });
 
-  it("ends the day just before five", () => {
-    assert.equal(formatClock(TICKS_PER_DAY - 1), "4:59 PM");
+  it("closes the shop at the day's last minute", () => {
+    assert.equal(dayPhase(TICKS_PER_DAY), "night");
   });
 
-  it("opens the next day back at seven", () => {
-    assert.equal(formatClock(TICKS_PER_DAY), "7:00 AM");
+  it("stays night through overtime", () => {
+    assert.equal(dayPhase(TICKS_PER_DAY + 200), "night");
   });
 });
 
-describe("dayNumber", () => {
-  it("counts the first day as one", () => {
-    assert.equal(dayNumber(0), 1);
+describe("the calendar day", () => {
+  it("is the working day plus the overnight", () => {
+    assert.equal(TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY + NIGHT_TICKS);
   });
 
-  it("holds the day until the last tick of it", () => {
-    assert.equal(dayNumber(TICKS_PER_DAY - 1), 1);
-  });
-
-  it("turns over on the day boundary", () => {
-    assert.equal(dayNumber(TICKS_PER_DAY), 2);
+  it("spans a full 24 hours of minutes", () => {
+    assert.equal(TICKS_PER_CALENDAR_DAY, 24 * 60);
   });
 });

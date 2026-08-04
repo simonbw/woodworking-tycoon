@@ -15,6 +15,8 @@ import { defaultEntrancePosition } from "./ShopInfo";
 
 export const initialGameState: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
   money: 0,
   reputation: 0,
   // An empty floor: the first pallet is scavenged with the truck
@@ -75,6 +77,7 @@ export const initialGameState: GameState = {
   },
   listings: [],
   jobBoard: [],
+  jobBoardDay: 0,
   seenJobTemplateIds: [],
   acceptedJobs: [],
   categoryDemand: {},

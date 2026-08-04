@@ -99,6 +99,18 @@ export interface ProgressionState {
 
 export interface GameState {
   readonly tick: number;
+  /**
+   * Which calendar day the shop is on, counting from 1. Advances only by
+   * sleeping — driving home at the end of the day — never by the tick
+   * counter rolling over (see docs/time-and-days.md).
+   */
+  readonly day: number;
+  /**
+   * The tick this morning started on. `tick - dayStartTick` is how much
+   * of today's working-minute budget has been spent; past TICKS_PER_DAY
+   * the shop is closed for the night (see time-flow.ts).
+   */
+  readonly dayStartTick: number;
   readonly money: number;
   readonly reputation: number;
   readonly materialPiles: ReadonlyArray<MaterialPile>;
@@ -130,6 +142,12 @@ export interface GameState {
   readonly listings: ReadonlyArray<MarketListing>;
   /** Open job offers the player hasn't accepted (refreshed daily). */
   readonly jobBoard: ReadonlyArray<JobOffer>;
+  /**
+   * The day the board last rotated. New offers roll in each morning —
+   * the first tick of a day the board hasn't seen yet refreshes it
+   * (see marketplace-actions.ts). 0 = never refreshed.
+   */
+  readonly jobBoardDay: number;
   /**
    * Job template ids that were available at the last board refresh. A
    * template appearing for the first time (new machine, tool, or skill)

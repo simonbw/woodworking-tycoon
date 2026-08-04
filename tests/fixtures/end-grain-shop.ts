@@ -68,6 +68,9 @@ function palletBoard(id: string): Board {
  */
 export const endGrainShop: GameState = {
   tick: 0,
+  day: 1,
+  dayStartTick: 0,
+  jobBoardDay: 0,
   money: 100,
   reputation: 20,
   consumables: NO_CONSUMABLES,

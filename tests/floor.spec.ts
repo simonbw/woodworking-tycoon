@@ -8,6 +8,7 @@ import {
   loadTruckBed,
   movePlayerToCab,
   openTruckMenu,
+  pressTruckRow,
   startNewGame,
 } from "./navigation";
 
@@ -168,12 +169,10 @@ test.describe("Shop floor", () => {
       await expect(money).toHaveText(/^\$\d+\.\d{2}$/);
     });
 
-    await test.step("the top bar keeps a wall clock beside the day", async () => {
-      // The anchor for every duration the shop quotes: plans and station
-      // status speak in minutes and hours, so the player needs the time.
-      await expect(page.getByTestId("shop-clock")).toHaveText(
-        /^\d{1,2}:\d{2} (AM|PM)$/,
-      );
+    await test.step("the top bar tells the day by its light, not a clock", async () => {
+      // Deliberately no wall clock — the day reads as morning through
+      // night, and a fresh save opens in the morning.
+      await expect(page.getByTestId("day-phase")).toHaveText(/^morning$/i);
     });
 
     await test.step("day job button is not present", async () => {
@@ -187,7 +186,7 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("no layout tab — no tabs at all, just the readout chip", async () => {
-      await expect(page.getByTestId("shop-clock")).toBeVisible();
+      await expect(page.getByTestId("day-phase")).toBeVisible();
       await expect(page.getByText("Shop Layout")).toHaveCount(0);
     });
 
@@ -609,6 +608,37 @@ test.describe("Shop floor", () => {
       ).toHaveCount(0);
       // The store trip it unlocked is there instead
       await expect(panel).toContainText("Orange Box");
+    });
+
+    await test.step("night closes the card down to Home, and sleeping brings the morning", async () => {
+      // Spend the whole day in one jump: the shop is closed for the night
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          tick: state.dayStartTick + 600,
+        }));
+      });
+      await expect(page.getByTestId("day-phase")).toHaveText(/night/i);
+
+      // Nowhere left to go but home — the errands step off the card
+      const panel = page.getByTestId("truck-panel");
+      await expect(panel).toContainText("Home");
+      await expect(panel).not.toContainText("Orange Box");
+      await expect(panel).not.toContainText("Scavenge");
+
+      const dayBefore = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().day,
+      );
+      await pressTruckRow(page, "Home");
+      // The overnight runs as one batch; morning is a new day with a
+      // fresh budget, the player back beside the cab
+      await page.waitForFunction(
+        (before: number) =>
+          (window as any).__GET_GAME_STATE__().day === before + 1 &&
+          (window as any).__GET_GAME_STATE__().player.away === null,
+        dayBefore,
+      );
+      await expect(page.getByTestId("day-phase")).toHaveText(/morning/i);
     });
 
     await test.step("a refresh keeps the shop, without anyone saving it", async () => {
