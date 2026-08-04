@@ -557,7 +557,7 @@ function commission4(shop: ShopDriver): ShopDriver {
     .make(WORKBENCH, "blockSandPanel", isSinglePanel)
     .make(WORKBENCH, "finishStripedBoard", isSinglePanel);
 
-  // The planter boxes: five 2' slats and eight screws each. Two slots on
+  // The planter boxes: five 2' slats and six screws each. Two slots on
   // the bench, three tools — the sanding block comes off for the drill.
   shop.fitOut(WORKBENCH, ["hammer", "drill"]);
   fetchAPallet(shop);

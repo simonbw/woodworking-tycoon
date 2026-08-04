@@ -4,6 +4,12 @@ import {
   REAL_WOOD_SPECIES,
 } from "../Materials";
 import { makeMaterial } from "../material-helpers";
+import {
+  assembleFromBlueprint,
+  blueprintFastenerCost,
+  blueprintInputs,
+  PLANTER_BOX_BLUEPRINT,
+} from "../bench-work/blueprint";
 import { ToolType } from "../Tool";
 
 /**
@@ -32,38 +38,19 @@ export const drill: ToolType = {
       id: "buildPlanterBox",
       requiredSkill: "rusticCarpentry",
       duration: 25,
-      interaction: { kind: "assembly" },
       // Screws hold an outdoor box together through wet soil and weather
       // where nails would work loose — and unlike nails, they never come
       // back as pallet salvage, so this is the screw economy's anchor.
-      requiredConsumables: [{ id: "screws", amount: 8 }],
-      getInputMaterials: () => [
-        // Deck boards crosscut to 2' — four sides and a bottom slat. The
-        // first rustic build that needs a saw before the assembly starts.
-        {
-          type: ["board"],
-          species: ["pallet"],
-          width: [4],
-          length: [2],
-          thickness: [1],
-          quantity: 5,
-        },
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        const boards = materials.filter((m) => m.type === "board");
-        if (boards.length !== 5) {
-          throw new Error("Need exactly 5 boards to build a planter box");
-        }
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "planterBox",
-              species: "pallet",
-            }),
-          ],
-        };
-      },
+      // The recipe reads off the blueprint: 2' crosscuts — the first
+      // rustic build that needs a saw before the assembly starts — one
+      // bottom slat and four walls stood on edge.
+      interaction: { kind: "assembly", blueprint: "planterBox" },
+      requiredConsumables: blueprintFastenerCost(PLANTER_BOX_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(PLANTER_BOX_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(PLANTER_BOX_BLUEPRINT, materials)],
+      }),
     },
     {
       name: "Build Step Stool",

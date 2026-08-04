@@ -35,6 +35,7 @@ const GAME_SOUND_CLIPS = [
   "cash-register",
   "commission-complete",
   "dispose-toss",
+  "drill-driver",
   "glue-clamp",
   "hand-sanding",
   "material-drop",

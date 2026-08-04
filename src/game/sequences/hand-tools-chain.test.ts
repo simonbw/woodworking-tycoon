@@ -91,19 +91,21 @@ describe("hand tool chain", () => {
     );
   });
 
-  it("five slats and eight screws become a planter box", () => {
+  it("five slats and six screws become a planter box", () => {
     const shop = shopWithBothTools();
     cutTheLongBoardDown(shop);
     shop.make(WORKBENCH, "buildPlanterBox", byLength(2), { count: 5 });
 
     assert.equal(shop.holding(isPlanterBox).length, 1);
-    assert.equal(shop.shop.consumables.screws, 42);
+    // The blueprint derives the bill: one screw per lapped corner, one
+    // where the bottom slat crosses each lower wall — six of the 50
+    assert.equal(shop.shop.consumables.screws, 44);
   });
 
   it("the box won't start when the screw tin is short", () => {
     const shop = shopWithBothTools().arrange((state: GameState) => ({
       ...state,
-      consumables: { ...state.consumables, screws: 7 },
+      consumables: { ...state.consumables, screws: 5 },
     }));
 
     cutTheLongBoardDown(shop);

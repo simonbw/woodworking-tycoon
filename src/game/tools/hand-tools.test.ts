@@ -60,8 +60,10 @@ describe("hand saw", () => {
 
 describe("drill", () => {
   it("builds a planter box from five short pallet slats and screws", () => {
+    // The bill is derived from the blueprint: four lapped corners plus
+    // the bottom slat's two wall crossings
     assert.deepStrictEqual(buildPlanterBox.requiredConsumables, [
-      { id: "screws", amount: 8 },
+      { id: "screws", amount: 6 },
     ]);
     const slats = Array.from({ length: 5 }, () => board("pallet", 2, 4, 1));
     const { outputs } = buildPlanterBox.output(slats, {});

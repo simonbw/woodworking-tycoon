@@ -11,7 +11,6 @@ import { FurnitureSprite, FurnitureType } from "./FurnitureSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
 import { PictureFrameSprite } from "./PictureFrameSprite";
-import { PlanterBoxSprite } from "./PlanterBoxSprite";
 import { SheetGoodSprite } from "./SheetGoodSprite";
 import { ToolItemSprite } from "./ToolItemSprite";
 
@@ -57,7 +56,6 @@ export const MaterialSprite: React.FC<{
 
     case "jewelryBox":
     case "birdhouse":
-    case "crate":
     case "stepStool":
       return (
         <FinishedBoxSprite
@@ -80,18 +78,11 @@ export const MaterialSprite: React.FC<{
         />
       );
 
-    case "planterBox":
-      return (
-        <PlanterBoxSprite
-          material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
     // Blueprint-assembled products draw from their bill of materials —
     // the same slots the bench view assembled them on
     case "rusticShelf":
+    case "crate":
+    case "planterBox":
       return (
         <AssembledProductSprite
           material={material as FinishedProduct}

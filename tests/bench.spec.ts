@@ -573,5 +573,124 @@ test.describe("Bench view", () => {
       expect(built.inputs).toBe(0);
       expect(built.nails).toBe(4);
     });
+
+    await test.step("screwed assembly: the drill drives the planter box's screws", async () => {
+      // The planter's five 2' slats staged on their outlines (walls on
+      // edge), drill on the rail, screws in the cabinet. The 24×24 ghost
+      // frame centers on the 36×24 bench at (18,12) — product top-left
+      // lands at (6, 0).
+      await page.evaluate(() => {
+        const board = (id: string, l: number) => ({
+          id,
+          type: "board",
+          species: "pallet",
+          length: l,
+          width: 4,
+          thickness: 1,
+          surface: "rough",
+          jointedFaces: 1,
+          jointedEdges: 2,
+        });
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          consumables: { ...state.consumables, screws: 10 },
+          machines: state.machines.map((m: any, i: number) =>
+            i === 0
+              ? {
+                  ...m,
+                  tools: ["drill"],
+                  selectedOperationId: "buildPlanterBox",
+                  inputMaterials: [
+                    board("pb-slat", 2),
+                    board("pb-n", 2),
+                    board("pb-s", 2),
+                    board("pb-w", 2),
+                    board("pb-e", 2),
+                  ],
+                  processingMaterials: [],
+                  outputMaterials: [],
+                  operationProgress: {
+                    status: "notStarted",
+                    phaseIndex: 0,
+                    ticksRemaining: 0,
+                  },
+                  benchLayout: {
+                    "pb-slat": { xIn: 18, yIn: 12, angleDeg: 0, flipped: false },
+                    "pb-n": {
+                      xIn: 18,
+                      yIn: 2,
+                      angleDeg: 90,
+                      flipped: false,
+                      onEdge: true,
+                    },
+                    "pb-s": {
+                      xIn: 18,
+                      yIn: 22,
+                      angleDeg: 90,
+                      flipped: false,
+                      onEdge: true,
+                    },
+                    "pb-w": {
+                      xIn: 8,
+                      yIn: 12,
+                      angleDeg: 0,
+                      flipped: false,
+                      onEdge: true,
+                    },
+                    "pb-e": {
+                      xIn: 28,
+                      yIn: 12,
+                      angleDeg: 0,
+                      flipped: false,
+                      onEdge: true,
+                    },
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+      const work = page.getByTestId("bench-work");
+      await expect(work).toHaveAttribute("data-script", "assembly");
+      const stage = page.getByTestId("bench-stage");
+      await expect(stage).toHaveAttribute("data-seated", "5");
+      // The screw plan names its own driver
+      await expect(
+        page.getByText("All laid out. Take the drill down off the rail."),
+      ).toBeVisible();
+
+      await page.getByTestId("bench-tool-drill").click();
+      await expect(
+        page.getByText("Drive a screw at each lit crossing."),
+      ).toBeVisible();
+      const productX = Number(await stage.getAttribute("data-product-x"));
+      const productY = Number(await stage.getAttribute("data-product-y"));
+      // Six screws: the slat's two wall crossings and the four lapped
+      // corners — the sixth commits the build
+      for (const [fx, fy] of [
+        [12, 2],
+        [12, 22],
+        [2, 2],
+        [22, 2],
+        [2, 22],
+        [22, 22],
+      ]) {
+        const p = await inchPoint(page, productX + fx, productY + fy);
+        await page.mouse.click(p.x, p.y);
+        await page.waitForTimeout(400);
+      }
+      const built = await page.evaluate(() => {
+        const state = window.__GET_GAME_STATE__();
+        const m = state.machines[0];
+        return {
+          screws: state.consumables.screws,
+          output: m.outputMaterials[0]?.type,
+          parts: m.outputMaterials[0]?.parts?.length,
+        };
+      });
+      expect(built.output).toBe("planterBox");
+      expect(built.parts).toBe(5);
+      expect(built.screws).toBe(4);
+    });
   });
 });

@@ -5,6 +5,7 @@ import {
   assembleFromBlueprint,
   blueprintFastenerCost,
   blueprintInputs,
+  CRATE_BLUEPRINT,
   RUSTIC_SHELF_BLUEPRINT,
 } from "../bench-work/blueprint";
 
@@ -86,35 +87,16 @@ export const hammer: ToolType = {
       id: "buildCrate",
       requiredSkill: "rusticProjects",
       duration: 25,
-      interaction: { kind: "assembly" },
-      requiredConsumables: [{ id: "nails", amount: 12 }],
-      getInputMaterials: () => [
-        // Six whole deck boards: slatted sides and a bottom
-        {
-          type: ["board"],
-          width: [4],
-          length: [3],
-          thickness: [1],
-          quantity: 6,
-        },
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        const boards = materials.filter(
-          (m: MaterialInstance): m is Board => m.type === "board",
-        );
-        if (boards.length !== 6) {
-          throw new Error("Need exactly 6 boards to build a crate");
-        }
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "crate",
-              species: boards[0].species,
-            }),
-          ],
-        };
-      },
+      // The whole recipe reads off the blueprint, like the shelf: six
+      // whole deck boards — two bottom slats, four walls stood on edge —
+      // nailed at the lapped corners and the slat crossings.
+      interaction: { kind: "assembly", blueprint: "crate" },
+      requiredConsumables: blueprintFastenerCost(CRATE_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(CRATE_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(CRATE_BLUEPRINT, materials)],
+      }),
     },
   ],
 };

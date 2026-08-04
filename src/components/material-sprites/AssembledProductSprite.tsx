@@ -10,6 +10,7 @@ import { omitUndefined } from "../../utils/objectUtils";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import { BoardOnEdgeSprite } from "./BoardOnEdgeSprite";
 import { BoardSprite } from "./BoardSprite";
+import { drawFastenerHead } from "./fastenerHead";
 
 /**
  * A blueprint-assembled product drawn from its bill of materials: the
@@ -56,10 +57,13 @@ const BlueprintPartsSprite: React.FC<{
     (g: Graphics) => {
       g.clear();
       for (const fastener of blueprint.fasteners) {
-        const x = fastener.xIn * PIXELS_PER_INCH;
-        const y = fastener.yIn * PIXELS_PER_INCH;
-        g.circle(x, y, 1).fill({ color: 0x4a443e });
-        g.circle(x - 0.3, y - 0.3, 0.4).fill({ color: 0x9a938c });
+        drawFastenerHead(
+          g,
+          fastener.xIn * PIXELS_PER_INCH,
+          fastener.yIn * PIXELS_PER_INCH,
+          1,
+          blueprint.fastenerConsumable,
+        );
       }
     },
     [blueprint],

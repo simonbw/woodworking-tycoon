@@ -5,8 +5,11 @@ import {
   assembleFromBlueprint,
   blueprintFastenerCost,
   blueprintInputs,
+  CRATE_BLUEPRINT,
   defaultPartsFor,
+  fastenerToolId,
   matchPartsToSlots,
+  PLANTER_BOX_BLUEPRINT,
   productBlueprintFor,
   RUSTIC_SHELF_BLUEPRINT,
 } from "./blueprint";
@@ -383,3 +386,91 @@ function fastenerOnBenchForTest(
 ) {
   return fastenerOnBench(RUSTIC_SHELF_BLUEPRINT, placement, fastener);
 }
+
+describe("the crate and planter box blueprints", () => {
+  it("derives the crate's eight nails: four lapped corners, four slat crossings", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(CRATE_BLUEPRINT), [
+      { id: "nails", amount: 8 },
+    ]);
+    const spots = CRATE_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(
+      spots,
+      [
+        // The bottom slats crossing the lower pair of walls
+        "12,2",
+        "24,2",
+        "12,34",
+        "24,34",
+        // The lapped corners, where neighboring walls cross
+        "2,2",
+        "34,2",
+        "2,34",
+        "34,34",
+      ].sort(),
+    );
+  });
+
+  it("derives the planter's six screws", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(PLANTER_BOX_BLUEPRINT), [
+      { id: "screws", amount: 6 },
+    ]);
+    const spots = PLANTER_BOX_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(
+      spots,
+      ["12,2", "12,22", "2,2", "22,2", "2,22", "22,22"].sort(),
+    );
+  });
+
+  it("folds each box's identical stock to one input row", () => {
+    const crateInputs = blueprintInputs(CRATE_BLUEPRINT);
+    assert.strictEqual(crateInputs.length, 1);
+    assert.strictEqual(crateInputs[0].quantity, 6);
+    const planterInputs = blueprintInputs(PLANTER_BOX_BLUEPRINT);
+    assert.strictEqual(planterInputs.length, 1);
+    assert.strictEqual(planterInputs[0].quantity, 5);
+  });
+
+  it("stands all four walls on edge and lies the slats flat", () => {
+    for (const blueprint of [CRATE_BLUEPRINT, PLANTER_BOX_BLUEPRINT]) {
+      const walls = blueprint.slots.filter((s) => s.role === "wall");
+      assert.strictEqual(walls.length, 4);
+      assert.ok(walls.every((w) => w.onEdge));
+      assert.ok(
+        blueprint.slots
+          .filter((s) => s.role === "slat")
+          .every((s) => !s.onEdge),
+      );
+    }
+  });
+
+  it("is registered under its product type and carries its parts", () => {
+    assert.strictEqual(productBlueprintFor("crate"), CRATE_BLUEPRINT);
+    assert.strictEqual(
+      productBlueprintFor("planterBox"),
+      PLANTER_BOX_BLUEPRINT,
+    );
+    const crate = assembleFromBlueprint(
+      CRATE_BLUEPRINT,
+      Array.from({ length: 6 }, () => board("pallet", 3, 4, 1)),
+    );
+    assert.strictEqual(crate.type, "crate");
+    assert.strictEqual(crate.parts?.length, 6);
+  });
+
+  it("maps each fastener to its driver: nails the hammer, screws the drill", () => {
+    assert.strictEqual(fastenerToolId("nails"), "hammer");
+    assert.strictEqual(fastenerToolId("screws"), "drill");
+    assert.strictEqual(
+      fastenerToolId(CRATE_BLUEPRINT.fastenerConsumable),
+      "hammer",
+    );
+    assert.strictEqual(
+      fastenerToolId(PLANTER_BOX_BLUEPRINT.fastenerConsumable),
+      "drill",
+    );
+  });
+});

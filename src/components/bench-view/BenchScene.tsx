@@ -27,6 +27,7 @@ import {
 import { placedPieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
 import { INCHES_PER_FOOT } from "../../game/shop-scale";
+import { drawFastenerHead } from "../material-sprites/fastenerHead";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { StageFit } from "./stageMath";
 
@@ -52,6 +53,9 @@ export interface LoosePiece {
 export interface AssemblyChrome {
   readonly blueprint: ProductBlueprint;
   readonly productPlacement: BenchPlacement;
+  /** The blueprint's driving tool is in hand — armed crossings ring up.
+   * Nails light for the hammer, screws for the drill (fastenerToolId). */
+  readonly toolHeld: boolean;
   /** slot id → material id for every seated piece. */
   readonly seated: ReadonlyMap<string, string>;
   /** Fasteners already driven this build (ephemeral until commit). */
@@ -345,9 +349,10 @@ export const BenchScene: React.FC<{
     [assembly, fit],
   );
 
-  // Fastener chrome over the seated parts: driven heads are real nails
-  // now, armed crossings ring up while the hammer is in hand, and the
-  // drive in progress flashes — the pry chrome's vocabulary, reversed.
+  // Fastener chrome over the seated parts: driven heads are real
+  // hardware now, armed crossings ring up while the driving tool is in
+  // hand, and the drive in progress flashes — the pry chrome's
+  // vocabulary, reversed.
   const drawFastenerChrome = useCallback(
     (g: Graphics) => {
       g.clear();
@@ -363,10 +368,9 @@ export const BenchScene: React.FC<{
       for (const fastener of assembly.driven) {
         const { x, y } = toStage(fastener);
         const r = Math.max(0.28 * fit.pxPerIn, 2);
-        g.circle(x, y, r).fill({ color: 0x4a443e });
-        g.circle(x - r * 0.3, y - r * 0.3, r * 0.4).fill({ color: 0x9a938c });
+        drawFastenerHead(g, x, y, r, blueprint.fastenerConsumable);
       }
-      if (hammerHeld) {
+      if (assembly.toolHeld) {
         for (const fastener of assembly.armed) {
           const { x, y } = toStage(fastener);
           if (assembly.hoveredFastener === fastener) {
@@ -393,7 +397,7 @@ export const BenchScene: React.FC<{
         });
       }
     },
-    [assembly, fit, hammerHeld],
+    [assembly, fit],
   );
 
   // Freed boards still lying on their berths keep their place inside the

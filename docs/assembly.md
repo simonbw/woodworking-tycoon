@@ -79,14 +79,30 @@ top edges as slats (layer 1), six derived nails at the crossings (down
 from a hand-set 8; the consumables-chain numbers follow). Drawn from
 above, 48″ × 36″, the way it's built.
 
+## Phase 2, partly landed — **Now**
+
+The crate and the planter box are blueprints. Both are boxes, and a box
+in this model's vocabulary is `boxSlots`: four walls stand on edge
+spanning the full frame, inset from the edges so neighboring walls lap
+past each other at every corner — log-cabin corners, one derived
+fastener where the two thin footprints cross — with bottom slats lying
+flat across the lower pair of walls (opposite walls share a layer so
+only crossing pairs are fastener candidates). The crate is the 3'
+version (two slats, eight nails, was a hand-set 12); the planter box is
+the 2' version on screws (one slat — a planter drains — six screws,
+was 8). The fastener declares its consumable and the consumable its
+driver (`fastenerToolId`: nails → hammer, screws → drill), so the bench
+scene's driving, instructions, armed-crossing chrome, and clip
+(`drill-driver`) all follow from the blueprint; screw heads draw with a
+driver cross (`fastenerHead.ts`) in every view.
+
 ## What stays for later phases
 
-- **Phase 2**: blueprints for the rest of the nailed rustic tier
-  (birdhouse, crate, planter box with the drill driving screws — the
-  fastener declares its consumable, so only the tool/animation/clip
-  differ), the storage rack, and the worktable builds (their commit
-  already differs only in granting machines). Until then those keep the
-  legacy row surface (`AssemblySurface`).
+- **Phase 2, the rest**: blueprints for the birdhouse (its pitched roof
+  doesn't flatten into nail-the-crossings top-down — needs a call), the
+  step stool and bookshelf, the storage rack, and the worktable builds
+  (their commit already differs only in granting machines). Until then
+  those keep the legacy row surface (`AssemblySurface`).
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of

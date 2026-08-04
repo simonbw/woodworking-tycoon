@@ -51,6 +51,7 @@ import {
 import {
   BlueprintFastener,
   BlueprintSlot,
+  fastenerToolId,
   ProductBlueprint,
   slotExtent,
 } from "../../game/bench-work/blueprint";
@@ -67,7 +68,8 @@ import {
 } from "../../game/Materials";
 import { machineCanOperate, shopSupply } from "../../game/machine-helpers";
 import { clampsFor } from "../../game/Clamp";
-import { ToolId } from "../../game/Tool";
+import { CONSUMABLE_TYPES } from "../../game/Consumable";
+import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { playSound } from "../../utils/sfx";
 import { toolIconSrc } from "../../utils/uiImages";
@@ -408,6 +410,12 @@ export const BenchWorkSurface: React.FC<{
 
   const hasHammer = machine.state.tools.includes("hammer");
   const hammerHeld = heldTool === "hammer";
+  // The blueprint names its fastener and the fastener its driver: nails
+  // take the hammer, screws the drill. The op comes from that very tool,
+  // so the driver is always on the rail whenever the plan is offered.
+  const fastenerId = assemblyBlueprint?.fastenerConsumable ?? null;
+  const driveTool = fastenerId ? fastenerToolId(fastenerId) : null;
+  const driveToolHeld = driveTool !== null && heldTool === driveTool;
 
   const nailAt = useCallback(
     (xIn: number, yIn: number): PalletNail | null => {
@@ -471,7 +479,12 @@ export const BenchWorkSurface: React.FC<{
     (target: BlueprintFastener) => {
       if (!assemblyBlueprint) return;
       lastPryAt.current = performance.now();
-      playSound("assembly-mallet", 0.5);
+      playSound(
+        assemblyBlueprint.fastenerConsumable === "screws"
+          ? "drill-driver"
+          : "assembly-mallet",
+        0.5,
+      );
       setDriving(target);
       setHoveredFastener(null);
       if (driveTimer.current) clearTimeout(driveTimer.current);
@@ -591,9 +604,9 @@ export const BenchWorkSurface: React.FC<{
           if (hit) beginPry(hit);
           return;
         }
-        if (hammerHeld && assemblyBlueprint) {
+        if (driveToolHeld && assemblyBlueprint) {
           // Driving only starts when the plan could actually run — the
-          // last nail spends the supplies and claims the stock
+          // last fastener spends the supplies and claims the stock
           if (!canOperate) return;
           const hit = fastenerAt(
             assemblyBlueprint,
@@ -647,7 +660,7 @@ export const BenchWorkSurface: React.FC<{
         setHoveredSlot(!heldTool && !hit ? slotAt(xIn, yIn) : null);
         setHoveredNail(hammerHeld && !prying ? nailAt(xIn, yIn) : null);
         setHoveredFastener(
-          hammerHeld && !driving && assemblyBlueprint
+          driveToolHeld && !driving && assemblyBlueprint
             ? fastenerAt(assemblyBlueprint, productPlacement, armed, xIn, yIn)
             : null,
         );
@@ -665,6 +678,7 @@ export const BenchWorkSurface: React.FC<{
       canOperate,
       commitDrag,
       draggingId,
+      driveToolHeld,
       driving,
       frame.widthIn,
       frame.heightIn,
@@ -959,12 +973,20 @@ export const BenchWorkSurface: React.FC<{
     );
     const assemblyInstruction = () => {
       if (!assemblyBlueprint) return "";
+      const fastenerName = fastenerId
+        ? CONSUMABLE_TYPES[fastenerId].unit
+        : "nails";
+      const driverName = driveTool
+        ? TOOL_TYPES[driveTool].name.toLowerCase()
+        : "hammer";
       if (seated.size >= slotsTotal) {
         return !canOperate
-          ? "Short on supplies — the plan calls for nails."
-          : hammerHeld
-            ? "Nail each lit crossing."
-            : "All laid out. Take the hammer down off the rail.";
+          ? `Short on supplies — the plan calls for ${fastenerName}.`
+          : driveToolHeld
+            ? fastenerId === "screws"
+              ? "Drive a screw at each lit crossing."
+              : "Nail each lit crossing."
+            : `All laid out. Take the ${driverName} down off the rail.`;
       }
       if (sceneOutputs.length > 0 && loosePieces.length === 0) {
         return "Finished. Press E over the piece to take it.";
@@ -999,7 +1021,7 @@ export const BenchWorkSurface: React.FC<{
         ? `${scenePallet.nails.length} nails left`
         : assemblyScript &&
             !(sceneOutputs.length > 0 && loosePieces.length === 0)
-          ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} nailed`
+          ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} ${fastenerId === "screws" ? "screwed" : "nailed"}`
           : null,
       node: sceneActive ? (
         <BenchScene
@@ -1017,6 +1039,7 @@ export const BenchWorkSurface: React.FC<{
               ? {
                   blueprint: assemblyBlueprint,
                   productPlacement,
+                  toolHeld: driveToolHeld,
                   seated,
                   driven,
                   armed,
@@ -1092,11 +1115,18 @@ export const BenchWorkSurface: React.FC<{
 
   const keyHints: Array<[string, string]> = heldTool
     ? [
-        ["Click", assemblyScript ? "drive a nail" : "pry a nail"],
+        [
+          "Click",
+          assemblyScript
+            ? fastenerId === "screws"
+              ? "drive a screw"
+              : "drive a nail"
+            : "pry a nail",
+        ],
         ...(scenePallet
           ? ([["F", "flip the pallet"]] as Array<[string, string]>)
           : []),
-        ["Esc", "hang the hammer up"],
+        ["Esc", `hang the ${TOOL_TYPES[heldTool].name.toLowerCase()} up`],
         ["Tab", "step back"],
       ]
     : [

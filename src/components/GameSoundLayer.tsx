@@ -44,6 +44,10 @@ const OPERATION_CLIP: Record<string, string | null> = {
   buildJewelryBox: "assembly-mallet",
   finishCuttingBoard: "assembly-mallet",
   finishTwoToneBoard: "assembly-mallet",
+  // Screwed assembly finishes with the driver, not a mallet whack
+  buildPlanterBox: "drill-driver",
+  buildStepStool: "drill-driver",
+  buildBookshelf: "drill-driver",
 };
 
 const FALLBACK_OPERATION_CLIP = "assembly-mallet";
@@ -56,6 +60,7 @@ const CLIP_GAIN: Record<string, number> = {
   "nail-pry": 0.7,
   "glue-clamp": 0.5,
   "assembly-mallet": 0.6,
+  "drill-driver": 0.6,
   "dispose-toss": 0.6,
   "commission-complete": 0.9,
   "cash-register": 0.6,

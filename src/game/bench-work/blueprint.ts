@@ -1,5 +1,6 @@
 import { InputMaterialWithQuantity } from "../Machine";
 import { ConsumableAmount, ConsumableId } from "../Consumable";
+import type { ToolId } from "../Tool";
 import {
   AssembledPart,
   Board,
@@ -215,8 +216,106 @@ export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/**
+ * A box, in this model's vocabulary: four walls stand on edge spanning
+ * the full frame, inset from the edges so neighboring walls lap past
+ * each other near every corner — log-cabin corners, one derived
+ * fastener where the two thin footprints cross. Opposite walls share a
+ * layer (N/S below E/W) so only crossing pairs are fastener candidates,
+ * and the bottom slats lie flat on layer 0, crossing the lower pair of
+ * walls to earn a fastener each end.
+ */
+function boxSlots(spec: {
+  sideIn: number;
+  wallInsetIn: number;
+  slatXsIn: ReadonlyArray<number>;
+  requirement: InputMaterialWithQuantity<Board>;
+  part: BlueprintSlot["part"];
+}): ReadonlyArray<Omit<BlueprintSlot, "id">> {
+  const { sideIn, wallInsetIn, slatXsIn, requirement, part } = spec;
+  const mid = sideIn / 2;
+  const far = sideIn - wallInsetIn;
+  return [
+    ...slatXsIn.map((xIn) => ({
+      role: "slat",
+      requirement,
+      part,
+      xIn,
+      yIn: mid,
+      angleDeg: 0,
+      layer: 0,
+    })),
+    ...[
+      { xIn: mid, yIn: wallInsetIn, angleDeg: 90, layer: 1 },
+      { xIn: mid, yIn: far, angleDeg: 90, layer: 1 },
+      { xIn: wallInsetIn, yIn: mid, angleDeg: 0, layer: 2 },
+      { xIn: far, yIn: mid, angleDeg: 0, layer: 2 },
+    ].map((at) => ({
+      role: "wall",
+      requirement,
+      part,
+      ...at,
+      onEdge: true,
+    })),
+  ];
+}
+
+/**
+ * The crate: a 3-foot pallet-wood box — two bottom slats and four whole
+ * deck boards stood on edge as walls, nailed at the four lapped corners
+ * and where each slat crosses the lower walls. Eight nails, all derived.
+ */
+export const CRATE_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "crate",
+  widthIn: 36,
+  heightIn: 36,
+  fastenerConsumable: "nails",
+  slots: boxSlots({
+    sideIn: 36,
+    wallInsetIn: 2,
+    slatXsIn: [12, 24],
+    requirement: {
+      type: ["board"],
+      width: [4],
+      length: [3],
+      thickness: [1],
+      quantity: 1,
+    } as InputMaterialWithQuantity<Board>,
+    part: { widthIn: 4, lengthFt: 3, thicknessQ: 1 } as const,
+  }),
+});
+
+/**
+ * The planter box: the crate's little sibling in 2-foot crosscuts — one
+ * bottom slat (a planter drains through a gappy bottom), four walls on
+ * edge, and screws instead of nails: it lives outdoors holding wet
+ * soil, where nails would work loose. Six screws, all derived.
+ */
+export const PLANTER_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "planterBox",
+  widthIn: 24,
+  heightIn: 24,
+  fastenerConsumable: "screws",
+  slots: boxSlots({
+    sideIn: 24,
+    wallInsetIn: 2,
+    slatXsIn: [12],
+    requirement: {
+      type: ["board"],
+      species: ["pallet"],
+      width: [4],
+      length: [2],
+      thickness: [1],
+      quantity: 1,
+    } as InputMaterialWithQuantity<Board>,
+    part: { widthIn: 4, lengthFt: 2, thicknessQ: 1 } as const,
+  }),
+});
+
 const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
+  crate: CRATE_BLUEPRINT,
+  planterBox: PLANTER_BOX_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */
@@ -246,6 +345,13 @@ export function blueprintInputs(
     }
   }
   return rows.map((row) => row.input);
+}
+
+/** The tool that drives a blueprint's fasteners in the bench view:
+ * nails take the hammer, screws the drill. The op already comes from
+ * that very tool, so the driver is always on the rail when the plan is. */
+export function fastenerToolId(consumable: ConsumableId): ToolId {
+  return consumable === "screws" ? "drill" : "hammer";
 }
 
 /** The fastener bill, derived from the derived fasteners. */
