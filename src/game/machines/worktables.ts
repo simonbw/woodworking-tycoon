@@ -74,7 +74,9 @@ export const worktable1x1 = worktable(
   "A sturdy shop-built bench, 2'×2'. Solid top, tool slots, and a shelf below.",
   2,
   2,
-  { materialStorage: 3, toolSlots: 3, inputSpaces: 5, upgradeSlots: 1 },
+  // Bench tops hold stock, not bays: every table takes the widest
+  // blueprint build (the crate's ten boards), bigger tops take more
+  { materialStorage: 3, toolSlots: 3, inputSpaces: 12, upgradeSlots: 1 },
 );
 
 export const worktable1x2 = worktable(
@@ -83,7 +85,7 @@ export const worktable1x2 = worktable(
   "A full-size shop-built bench, 4'×2': room to work and a benchtop machine.",
   4,
   2,
-  { materialStorage: 6, toolSlots: 4, inputSpaces: 6, upgradeSlots: 2 },
+  { materialStorage: 6, toolSlots: 4, inputSpaces: 14, upgradeSlots: 2 },
 );
 
 export const worktable1x3 = worktable(
@@ -92,7 +94,7 @@ export const worktable1x3 = worktable(
   "A 6'×2' run of bench: machines on the ends, hand work in the middle.",
   6,
   2,
-  { materialStorage: 9, toolSlots: 5, inputSpaces: 7, upgradeSlots: 3 },
+  { materialStorage: 9, toolSlots: 5, inputSpaces: 16, upgradeSlots: 3 },
 );
 
 export const worktable2x2 = worktable(
@@ -101,5 +103,5 @@ export const worktable2x2 = worktable(
   "A deep 4'×4' island of bench space with a generous shelf underneath.",
   4,
   4,
-  { materialStorage: 12, toolSlots: 6, inputSpaces: 8, upgradeSlots: 3 },
+  { materialStorage: 12, toolSlots: 6, inputSpaces: 18, upgradeSlots: 3 },
 );

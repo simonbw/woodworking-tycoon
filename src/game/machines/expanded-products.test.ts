@@ -57,9 +57,9 @@ describe("buildBirdhouse", () => {
 });
 
 describe("buildCrate", () => {
-  it("takes six whole deck boards", () => {
+  it("takes ten whole deck boards — a slatted bottom and four walls", () => {
     const op = toolOp("hammer", "buildCrate");
-    const inputs = Array.from({ length: 6 }, () => board("pallet", 3, 4, 1));
+    const inputs = Array.from({ length: 10 }, () => board("pallet", 3, 4, 1));
     const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "crate");

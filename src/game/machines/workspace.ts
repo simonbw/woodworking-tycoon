@@ -36,6 +36,8 @@ export const workspace: MachineType = {
   materialStorage: 0,
   // Two slots: the starter hammer plus room for a sander
   toolSlots: 2,
-  inputSpaces: 5,
+  // A bench top holds stock, not bays: generous enough for the widest
+  // blueprint build (the crate's ten boards) with room to shuffle
+  inputSpaces: 12,
   operations: BENCH_OPERATIONS,
 };

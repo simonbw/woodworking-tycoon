@@ -534,9 +534,9 @@ describe("stageableMaterials on a bench", () => {
     assert.deepStrictEqual(staged, [walnut]);
   });
 
-  it("still refuses when the bay is full", () => {
+  it("still refuses when the bench top is full", () => {
     const full = bench({
-      inputMaterials: Array.from({ length: 5 }, () =>
+      inputMaterials: Array.from({ length: 12 }, () =>
         board("pine", 2, 4, 4, "rough"),
       ),
     });

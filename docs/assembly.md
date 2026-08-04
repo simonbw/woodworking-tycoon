@@ -88,9 +88,10 @@ past each other at every corner — log-cabin corners, one derived
 fastener where the two thin footprints cross — with bottom slats lying
 flat across the lower pair of walls (opposite walls share a layer so
 only crossing pairs are fastener candidates). The crate is the 3'
-version (two slats, eight nails, was a hand-set 12); the planter box is
-the 2' version on screws (one slat — a planter drains — six screws,
-was 8). The fastener declares its consumable and the consumable its
+version (six slats edge to edge with 2" gaps — a properly covered
+bottom — sixteen nails, was a hand-set 12 over a mostly-open floor);
+the planter box is the 2' version on screws (one slat — a planter
+drains — six screws, was 8). The fastener declares its consumable and the consumable its
 driver (`fastenerToolId`: nails → hammer, screws → drill), so the bench
 scene's driving, instructions, armed-crossing chrome, and clip
 (`drill-driver`) all follow from the blueprint; screw heads draw with a

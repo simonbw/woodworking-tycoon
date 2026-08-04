@@ -388,9 +388,9 @@ function fastenerOnBenchForTest(
 }
 
 describe("the crate and planter box blueprints", () => {
-  it("derives the crate's eight nails: four lapped corners, four slat crossings", () => {
+  it("derives the crate's sixteen nails: four lapped corners, twelve slat crossings", () => {
     assert.deepStrictEqual(blueprintFastenerCost(CRATE_BLUEPRINT), [
-      { id: "nails", amount: 8 },
+      { id: "nails", amount: 16 },
     ]);
     const spots = CRATE_BLUEPRINT.fasteners
       .map((f) => `${f.xIn},${f.yIn}`)
@@ -398,11 +398,8 @@ describe("the crate and planter box blueprints", () => {
     assert.deepStrictEqual(
       spots,
       [
-        // The bottom slats crossing the lower pair of walls
-        "12,2",
-        "24,2",
-        "12,34",
-        "24,34",
+        // Each of the six bottom slats crossing the lower pair of walls
+        ...[3, 9, 15, 21, 27, 33].flatMap((x) => [`${x},2`, `${x},34`]),
         // The lapped corners, where neighboring walls cross
         "2,2",
         "34,2",
@@ -428,7 +425,7 @@ describe("the crate and planter box blueprints", () => {
   it("folds each box's identical stock to one input row", () => {
     const crateInputs = blueprintInputs(CRATE_BLUEPRINT);
     assert.strictEqual(crateInputs.length, 1);
-    assert.strictEqual(crateInputs[0].quantity, 6);
+    assert.strictEqual(crateInputs[0].quantity, 10);
     const planterInputs = blueprintInputs(PLANTER_BOX_BLUEPRINT);
     assert.strictEqual(planterInputs.length, 1);
     assert.strictEqual(planterInputs[0].quantity, 5);
@@ -455,10 +452,10 @@ describe("the crate and planter box blueprints", () => {
     );
     const crate = assembleFromBlueprint(
       CRATE_BLUEPRINT,
-      Array.from({ length: 6 }, () => board("pallet", 3, 4, 1)),
+      Array.from({ length: 10 }, () => board("pallet", 3, 4, 1)),
     );
     assert.strictEqual(crate.type, "crate");
-    assert.strictEqual(crate.parts?.length, 6);
+    assert.strictEqual(crate.parts?.length, 10);
   });
 
   it("maps each fastener to its driver: nails the hammer, screws the drill", () => {

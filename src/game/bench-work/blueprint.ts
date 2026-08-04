@@ -261,9 +261,10 @@ function boxSlots(spec: {
 }
 
 /**
- * The crate: a 3-foot pallet-wood box — two bottom slats and four whole
- * deck boards stood on edge as walls, nailed at the four lapped corners
- * and where each slat crosses the lower walls. Eight nails, all derived.
+ * The crate: a 3-foot pallet-wood box — a properly slatted bottom (six
+ * slats edge to edge, 2" drainage gaps) and four whole deck boards
+ * stood on edge as walls, nailed at the four lapped corners and where
+ * each slat crosses the lower walls. Sixteen nails, all derived.
  */
 export const CRATE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   productType: "crate",
@@ -273,7 +274,7 @@ export const CRATE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   slots: boxSlots({
     sideIn: 36,
     wallInsetIn: 2,
-    slatXsIn: [12, 24],
+    slatXsIn: [3, 9, 15, 21, 27, 33],
     requirement: {
       type: ["board"],
       width: [4],
