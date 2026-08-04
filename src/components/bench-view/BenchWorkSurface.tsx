@@ -12,8 +12,14 @@ import {
   benchScriptFor,
   placedPieceSize,
   rowLayout,
-  strokeSurfaceSize,
 } from "../../game/bench-work/workpiece";
+import {
+  nearestSawMark,
+  sawMarkParameters,
+  toolForOperation,
+  toolOperationFor,
+} from "../../game/bench-work/tool-work";
+import { SAW_ANGLE_STOPS } from "../../game/machines/miterSaw";
 import {
   BenchPlacement,
   benchPlacementFor,
@@ -36,6 +42,7 @@ import {
 } from "../../game/game-actions/operation-actions";
 import {
   operateMachineAction,
+  setMachineSettingsAction,
   takeInputsFromMachineAction,
   takeOutputsFromMachineAction,
 } from "../../game/game-actions/player-actions";
@@ -59,7 +66,7 @@ import {
   describeMaterialRequirement,
   materialMeetsInput,
 } from "../../game/material-helpers";
-import { isBenchType, Machine } from "../../game/Machine";
+import { isBenchType, Machine, Operation } from "../../game/Machine";
 import {
   Board,
   MaterialInstance,
@@ -123,8 +130,11 @@ const SIDE_CHROME_PX = 24;
  * pallet pries apart nail by nail under the hammer, freed boards stay
  * right where they were nailed, and loose stock drags around (R turns
  * it, F flips it) — every arrangement committed to game state, so it
- * shows on the shop floor too. Plan-driven scripts (sanding, the saw,
- * glue-ups, assembly) mount their own work surfaces over the same scene.
+ * shows on the shop floor too. Single-piece tool work is tool-first and
+ * in place: the held tool over a piece it can work IS the operation
+ * (bench-work/tool-work.ts), and the strokes, kerf, and finished piece
+ * all land through the piece's own placement. Only glue-ups and the
+ * legacy row assemblies still mount a takeover surface over the scene.
  * See docs/bench-minigames.md. The world does not stop while it's open,
  * but the body does: leaning over the bench pins the feet (ShopView
  * disables held movement via sheetIsBenchView) until Tab steps back.
@@ -185,6 +195,31 @@ export const BenchWorkSurface: React.FC<{
   // The empty ghost outline under a bare hand: its tag names what stock
   // the slot calls for.
   const [hoveredSlot, setHoveredSlot] = useState<BlueprintSlot | null>(null);
+  // The piece under a held work tool that the tool can actually work,
+  // and the operation it would start — tool-first selection
+  // (bench-work/tool-work.ts). Kept in state for the chrome and in the
+  // handler's event-time computation for the press itself.
+  const [hoveredWork, setHoveredWorkState] = useState<{
+    materialId: string;
+    operationId: string;
+    kind: "stroke" | "saw";
+  } | null>(null);
+  const setHoveredWork = useCallback(
+    (
+      next: {
+        materialId: string;
+        operationId: string;
+        kind: "stroke" | "saw";
+      } | null,
+    ) =>
+      setHoveredWorkState((previous) =>
+        previous?.materialId === next?.materialId &&
+        previous?.operationId === next?.operationId
+          ? previous
+          : next,
+      ),
+    [],
+  );
   const [hoveredId, setHoveredIdState] = useState<string | null>(null);
   // The keydown listener re-registers in an effect — a beat after the
   // render that computed a new hover — so a fast keypress can reach a
@@ -226,10 +261,6 @@ export const BenchWorkSurface: React.FC<{
     }
   }, [applyAction, machine, poke]);
 
-  const start = useCallback(
-    () => applyAction(operateMachineAction(machine)),
-    [applyAction, machine],
-  );
   const finish = useCallback(
     () => applyAction(finishAttendedWorkAction(machine)),
     [applyAction, machine],
@@ -260,23 +291,50 @@ export const BenchWorkSurface: React.FC<{
       }
     : null;
 
-  const started =
-    script?.kind === "stroke" || script?.kind === "saw"
-      ? script.started
-      : machine.operationProgress.status === "inProgress";
+  const started = machine.operationProgress.status === "inProgress";
+  // Stroke and saw work happens ON the scene (in place, tool in hand);
+  // only glue-ups and legacy row assemblies still mount a takeover
+  // surface. Blueprint assembly happens on the scene itself too.
   const surfaceScript =
     script &&
-    (script.kind === "stroke" ||
-      script.kind === "saw" ||
-      script.kind === "glue" ||
-      // Blueprint assembly happens on the scene itself, not a surface
+    (script.kind === "glue" ||
       (script.kind === "assembly" && !script.blueprint)) &&
     (canOperate || started)
+      ? script
+      : null;
+  // The in-progress hand work drawn in place over the scene
+  const inPlaceWork =
+    script && (script.kind === "stroke" || script.kind === "saw")
       ? script
       : null;
   const curing = script?.kind === "curing";
   const isBench = isBenchType(machine.type);
   const sceneActive = isBench && !surfaceScript && !curing;
+  // The mounted tool the running work needs back in hand to continue
+  const workTool = inPlaceWork
+    ? toolForOperation(machine, inPlaceWork.operation)
+    : null;
+  const workActive =
+    inPlaceWork !== null && heldTool !== null && heldTool === workTool;
+  const workPlacement = inPlaceWork
+    ? benchPlacementFor(machine, inPlaceWork.workpiece)
+    : null;
+  // A held saw's ghost line wants the hovered board even before the mark
+  const heldToolSawHover =
+    sceneActive && !inPlaceWork && heldTool && hoveredWork?.kind === "saw"
+      ? hoveredWork
+      : null;
+  const sawAngle = Number(machine.selectedParameters?.angle ?? 0);
+  const heldToolIsSaw =
+    heldTool !== null &&
+    TOOL_TYPES[heldTool].operations.some(
+      (op) => op.interaction?.kind === "saw",
+    );
+  // A fresh workpiece starts its readout over
+  const workpieceId = inPlaceWork?.workpiece.id ?? null;
+  useEffect(() => {
+    setProgress(0);
+  }, [workpieceId]);
   const assemblyScript =
     sceneActive && script?.kind === "assembly" && script.blueprint
       ? script
@@ -424,6 +482,30 @@ export const BenchWorkSurface: React.FC<{
   const fastenerId = assemblyBlueprint?.fastenerConsumable ?? null;
   const driveTool = fastenerId ? fastenerToolId(fastenerId) : null;
   const driveToolHeld = driveTool !== null && heldTool === driveTool;
+  // A held tool with stroke or saw jobs is looking for work on the
+  // bench top — the tool-first path (the hammer and drill drive builds
+  // instead, and keep their own chrome)
+  const heldWorkTool =
+    heldTool &&
+    TOOL_TYPES[heldTool].operations.some(
+      (op) =>
+        op.interaction?.kind === "stroke" || op.interaction?.kind === "saw",
+    )
+      ? heldTool
+      : null;
+  // The board a held saw is ghosting its line over, pre-mark
+  const sawHoverPiece = heldToolSawHover
+    ? (scenePieces.find(
+        (piece) => piece.material.id === heldToolSawHover.materialId,
+      ) ?? null)
+    : null;
+  const sawHoverInteraction = heldToolSawHover
+    ? ((machine.operations.find((op) => op.id === heldToolSawHover.operationId)
+        ?.interaction ?? null) as Extract<
+        NonNullable<Operation["interaction"]>,
+        { kind: "saw" }
+      > | null)
+    : null;
 
   const nailAt = useCallback(
     (xIn: number, yIn: number): PalletNail | null => {
@@ -599,6 +681,7 @@ export const BenchWorkSurface: React.FC<{
         setHoveredNail(null);
         setHoveredFastener(null);
         setHoveredSlot(null);
+        setHoveredWork(null);
         commitDrag();
         return;
       }
@@ -626,7 +709,46 @@ export const BenchWorkSurface: React.FC<{
           if (hit) beginDrive(hit);
           return;
         }
-        if (heldTool) return;
+        if (heldTool) {
+          // The tool-first press: the held tool applied to the piece
+          // under it IS the operation. Computed at event time — never
+          // from hover state, which can lag a fast press by a paint.
+          if (machine.operationProgress.status === "inProgress") return;
+          const target = pieceAt(xIn, yIn);
+          const offer = target
+            ? toolOperationFor(
+                machine,
+                gameState.progression,
+                heldTool,
+                target.material,
+                target.placement,
+              )
+            : null;
+          if (target && offer) {
+            if (offer.interaction?.kind === "saw") {
+              const size = placedPieceSize(target.material, target.placement);
+              const local = benchPointInFrame(target.placement, size, xIn, yIn);
+              const mark = nearestSawMark(target.material as Board, local.yIn);
+              if (mark !== null) {
+                applyAction(
+                  operateMachineAction(machine, {
+                    operationId: offer.id,
+                    materialId: target.material.id,
+                    parameters: sawMarkParameters(mark, sawAngle),
+                  }),
+                );
+              }
+            } else {
+              applyAction(
+                operateMachineAction(machine, {
+                  operationId: offer.id,
+                  materialId: target.material.id,
+                }),
+              );
+            }
+          }
+          return;
+        }
         const hit = pieceAt(xIn, yIn);
         // Nailed-on parts don't drag — they're part of the build now
         if (hit && fastenedRef.current.has(hit.material.id)) return;
@@ -662,7 +784,29 @@ export const BenchWorkSurface: React.FC<{
         if (draggingId) {
           commitDrag();
         }
-        const hit = heldTool ? null : pieceAt(xIn, yIn);
+        // With a work tool in hand the hover is the tool's valid target;
+        // bare-handed it's whatever piece is under the pointer.
+        const under = pieceAt(xIn, yIn);
+        const offer =
+          heldTool && under && machine.operationProgress.status !== "inProgress"
+            ? toolOperationFor(
+                machine,
+                gameState.progression,
+                heldTool,
+                under.material,
+                under.placement,
+              )
+            : null;
+        setHoveredWork(
+          offer && under
+            ? {
+                materialId: under.material.id,
+                operationId: offer.id,
+                kind: offer.interaction?.kind === "saw" ? "saw" : "stroke",
+              }
+            : null,
+        );
+        const hit = heldTool ? (offer ? under : null) : under;
         setHoveredId(hit?.material.id ?? null);
         // An empty hand over an empty outline: tag what belongs there
         setHoveredSlot(!heldTool && !hit ? slotAt(xIn, yIn) : null);
@@ -677,6 +821,7 @@ export const BenchWorkSurface: React.FC<{
       if (event.type === "up") commitDrag();
     },
     [
+      applyAction,
       armed,
       assemblyBlueprint,
       beginDrive,
@@ -690,13 +835,18 @@ export const BenchWorkSurface: React.FC<{
       driving,
       frame.widthIn,
       frame.heightIn,
+      gameState.progression,
       hammerHeld,
       heldTool,
+      machine,
       nailAt,
       pieceAt,
       productPlacement,
       prying,
+      sawAngle,
       scenePallet,
+      setHoveredId,
+      setHoveredWork,
       slotAt,
     ],
   );
@@ -722,6 +872,23 @@ export const BenchWorkSurface: React.FC<{
       // With the hammer in hand, F turns the pallet over without putting
       // the hammer down — the rest of the nails are on the other side.
       if (heldTool) {
+        // With the saw in hand, R swings the miter box's angle stop —
+        // the ghost line follows. Locked once a cut is marked, like any
+        // machine setting mid-job (setMachineSettingsAction refuses).
+        if (
+          event.code === "KeyR" &&
+          heldToolIsSaw &&
+          machine.operationProgress.status !== "inProgress"
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          const index = SAW_ANGLE_STOPS.findIndex((stop) => stop === sawAngle);
+          const next =
+            SAW_ANGLE_STOPS[(index + 1) % SAW_ANGLE_STOPS.length] ??
+            SAW_ANGLE_STOPS[0];
+          applyAction(setMachineSettingsAction(machine, { angle: next }));
+          return;
+        }
         if (
           event.code === "KeyF" &&
           scenePallet &&
@@ -795,6 +962,8 @@ export const BenchWorkSurface: React.FC<{
   }, [
     sceneActive,
     heldTool,
+    heldToolIsSaw,
+    sawAngle,
     draggingId,
     hoveredId,
     machine,
@@ -826,83 +995,6 @@ export const BenchWorkSurface: React.FC<{
     if (!workRect) return null;
     if (surfaceScript) {
       switch (surfaceScript.kind) {
-        case "stroke": {
-          const s = surfaceScript as Extract<BenchScript, { kind: "stroke" }>;
-          const band =
-            s.interaction.kind === "stroke"
-              ? (s.interaction.band ?? "face")
-              : "face";
-          const fit = fitToStage(
-            strokeSurfaceSize(s.workpiece, band),
-            workRect,
-          );
-          const finished = finishedPreview(s);
-          const interaction = s.interaction as Extract<
-            typeof s.interaction,
-            { kind: "stroke" }
-          >;
-          return {
-            fit,
-            instruction:
-              band === "edge"
-                ? "Run the plane along the edge until it cuts clean end to end."
-                : s.operation.id.startsWith("handPlane")
-                  ? "Work the plane across the face until the whole board cuts clean."
-                  : "Rub the whole face down. The wood shows you where you've been.",
-            progressLine: `${progress}%`,
-            node: (
-              <StrokeSurface
-                interaction={interaction}
-                workpiece={s.workpiece}
-                finished={finished}
-                fit={fit}
-                bus={bus}
-                started={s.started}
-                onFirstStroke={start}
-                onComplete={finish}
-                onWork={onWork}
-                onProgress={onProgress}
-              />
-            ),
-          };
-        }
-        case "saw": {
-          const s = surfaceScript as Extract<BenchScript, { kind: "saw" }>;
-          const board = s.workpiece as Board;
-          const fit = fitToStage(
-            {
-              widthIn: board.width,
-              heightIn: board.length,
-            },
-            workRect,
-          );
-          return {
-            fit,
-            instruction: s.started
-              ? "Saw along the line — long, even push and pull."
-              : "Press on the line to start the cut. Z and X slide it; R swings the angle.",
-            progressLine: `${progress}%`,
-            node: (
-              <SawSurface
-                machine={machine}
-                interaction={
-                  s.interaction as Extract<
-                    typeof s.interaction,
-                    { kind: "saw" }
-                  >
-                }
-                workpiece={board}
-                fit={fit}
-                bus={bus}
-                started={s.started}
-                onMark={start}
-                onComplete={finish}
-                onWork={onWork}
-                onProgress={onProgress}
-              />
-            ),
-          };
-        }
         case "glue": {
           const s = surfaceScript as Extract<BenchScript, { kind: "glue" }>;
           const layout = rowLayout(s.pieces, GLUE_GAP_IN);
@@ -1006,58 +1098,138 @@ export const BenchWorkSurface: React.FC<{
         ? `Flip each ${tippableSlot.role} up on its long edge (F), then lay it on its thin outline.`
         : "Lay each piece on its ghost outline — drag it close and it settles. R turns it.";
     };
+    // In-place tool work: the instruction follows the running job, or the
+    // held tool looking for one
+    const workInstruction = () => {
+      if (!inPlaceWork) return null;
+      const toolName = workTool
+        ? TOOL_TYPES[workTool].name.toLowerCase()
+        : "tool";
+      if (!workActive) {
+        return `Take the ${toolName} down off the rail to finish the job.`;
+      }
+      if (inPlaceWork.kind === "saw") {
+        return "Saw along the line — long, even push and pull.";
+      }
+      const band = inPlaceWork.interaction.band ?? "face";
+      return band === "edge"
+        ? "Run the plane along the edge until it cuts clean end to end."
+        : inPlaceWork.operation.id.startsWith("handPlane")
+          ? "Work the plane across the face until the whole board cuts clean."
+          : "Rub the whole face down. The wood shows you where you've been.";
+    };
+    const heldWorkInstruction = () => {
+      if (!heldWorkTool) return null;
+      if (hoveredWork) {
+        return hoveredWork.kind === "saw"
+          ? "Press on the line to mark the cut. R swings the angle."
+          : "Press and stroke the piece to work it over.";
+      }
+      return `Move the ${TOOL_TYPES[heldWorkTool].name.toLowerCase()} over a piece it can work.`;
+    };
     return {
       fit: sceneFit,
       instruction: curing
         ? "In the clamps — the glue cures on its own. Work something else."
+        : (workInstruction() ??
+          (scenePallet
+            ? !hasHammer
+              ? "A mounted hammer would pry those nails loose."
+              : targets.length === 0 && scenePallet.nails.length > 0
+                ? "The rest are nailed from the other side. Press F to flip the pallet."
+                : hammerHeld
+                  ? "Press a nail to pry it loose."
+                  : "Take the hammer down off the rail."
+            : assemblyScript
+              ? assemblyInstruction()
+              : (heldWorkInstruction() ??
+                (sceneOutputs.length > 0
+                  ? "Finished work on the bench. Press E over a piece to take it."
+                  : loosePieces.length > 0
+                    ? "Loose stock on the bench. Drag to arrange it."
+                    : "The bench is clear. Set stock down on it with F.")))),
+      progressLine: inPlaceWork
+        ? `${progress}%`
         : scenePallet
-          ? !hasHammer
-            ? "A mounted hammer would pry those nails loose."
-            : targets.length === 0 && scenePallet.nails.length > 0
-              ? "The rest are nailed from the other side. Press F to flip the pallet."
-              : hammerHeld
-                ? "Press a nail to pry it loose."
-                : "Take the hammer down off the rail."
-          : assemblyScript
-            ? assemblyInstruction()
-            : sceneOutputs.length > 0
-              ? "Finished work on the bench. Press E over a piece to take it."
-              : loosePieces.length > 0
-                ? "Loose stock on the bench. Drag to arrange it."
-                : "The bench is clear. Set stock down on it with F.",
-      progressLine: scenePallet
-        ? `${scenePallet.nails.length} nails left`
-        : assemblyScript &&
-            !(sceneOutputs.length > 0 && loosePieces.length === 0)
-          ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} ${fastenerId === "screws" ? "screwed" : "nailed"}`
-          : null,
+          ? `${scenePallet.nails.length} nails left`
+          : assemblyScript &&
+              !(sceneOutputs.length > 0 && loosePieces.length === 0)
+            ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} ${fastenerId === "screws" ? "screwed" : "nailed"}`
+            : null,
       node: sceneActive ? (
-        <BenchScene
-          pallet={scenePallet}
-          palletPlacement={palletPlacement}
-          pieces={scenePieces}
-          fit={sceneFit}
-          hammerHeld={hammerHeld}
-          prying={prying}
-          hoveredNail={hoveredNail}
-          hoveredId={hoveredId}
-          draggingId={draggingId}
-          assembly={
-            assemblyBlueprint
-              ? {
-                  blueprint: assemblyBlueprint,
-                  productPlacement,
-                  toolHeld: driveToolHeld,
-                  seated,
-                  driven,
-                  armed,
-                  hoveredFastener,
-                  driving,
-                  snapCandidateSlot: snapCandidate?.slotId ?? null,
-                }
-              : null
-          }
-        />
+        <>
+          <BenchScene
+            pallet={scenePallet}
+            palletPlacement={palletPlacement}
+            pieces={scenePieces}
+            fit={sceneFit}
+            hammerHeld={hammerHeld}
+            prying={prying}
+            hoveredNail={hoveredNail}
+            hoveredId={hoveredId}
+            draggingId={draggingId}
+            assembly={
+              assemblyBlueprint
+                ? {
+                    blueprint: assemblyBlueprint,
+                    productPlacement,
+                    toolHeld: driveToolHeld,
+                    seated,
+                    driven,
+                    armed,
+                    hoveredFastener,
+                    driving,
+                    snapCandidateSlot: snapCandidate?.slotId ?? null,
+                  }
+                : null
+            }
+          />
+          {/* The running hand work, drawn on the piece where it lies */}
+          {inPlaceWork?.kind === "stroke" && workPlacement && (
+            <StrokeSurface
+              interaction={inPlaceWork.interaction}
+              workpiece={inPlaceWork.workpiece}
+              finished={finishedPreview(inPlaceWork)}
+              placement={workPlacement}
+              fit={sceneFit}
+              bus={bus}
+              active={workActive}
+              onComplete={finish}
+              onWork={onWork}
+              onProgress={onProgress}
+            />
+          )}
+          {inPlaceWork?.kind === "saw" && workPlacement && (
+            <SawSurface
+              interaction={inPlaceWork.interaction}
+              workpiece={inPlaceWork.workpiece}
+              placement={workPlacement}
+              fit={sceneFit}
+              bus={bus}
+              started
+              active={workActive}
+              params={machine.resolvedParameters(inPlaceWork.operation)}
+              onComplete={finish}
+              onWork={onWork}
+              onProgress={onProgress}
+            />
+          )}
+          {/* The held saw's pencil line, trailing the hand pre-mark */}
+          {sawHoverPiece && sawHoverInteraction && (
+            <SawSurface
+              interaction={sawHoverInteraction}
+              workpiece={sawHoverPiece.material as Board}
+              placement={sawHoverPiece.placement}
+              fit={sceneFit}
+              bus={bus}
+              started={false}
+              active
+              params={{ angle: sawAngle }}
+              onComplete={() => {}}
+              onWork={onWork}
+            />
+          )}
+        </>
       ) : null,
     };
   }
@@ -1109,13 +1281,15 @@ export const BenchWorkSurface: React.FC<{
 
   const scriptName = curing
     ? "curing"
-    : surfaceScript
-      ? surfaceScript.kind
-      : assemblyScript
-        ? "assembly"
-        : scenePallet
-          ? "pry"
-          : "idle";
+    : inPlaceWork
+      ? inPlaceWork.kind
+      : surfaceScript
+        ? surfaceScript.kind
+        : assemblyScript
+          ? "assembly"
+          : scenePallet
+            ? "pry"
+            : "idle";
 
   if (!isBench && !script) {
     return null;
@@ -1123,17 +1297,31 @@ export const BenchWorkSurface: React.FC<{
 
   const keyHints: Array<[string, string]> = heldTool
     ? [
-        [
-          "Click",
-          assemblyScript
-            ? fastenerId === "screws"
-              ? "drive a screw"
-              : "drive a nail"
-            : "pry a nail",
-        ],
-        ...(scenePallet
-          ? ([["F", "flip the pallet"]] as Array<[string, string]>)
-          : []),
+        ...(heldWorkTool
+          ? ([
+              [
+                "Drag",
+                hoveredWork?.kind === "saw" || inPlaceWork?.kind === "saw"
+                  ? "saw the line"
+                  : "work the piece",
+              ],
+              ...(heldToolIsSaw && !inPlaceWork
+                ? ([["R", "swing the angle"]] as Array<[string, string]>)
+                : []),
+            ] as Array<[string, string]>)
+          : ([
+              [
+                "Click",
+                assemblyScript
+                  ? fastenerId === "screws"
+                    ? "drive a screw"
+                    : "drive a nail"
+                  : "pry a nail",
+              ],
+              ...(scenePallet
+                ? ([["F", "flip the pallet"]] as Array<[string, string]>)
+                : []),
+            ] as Array<[string, string]>)),
         ["Esc", `hang the ${TOOL_TYPES[heldTool].name.toLowerCase()} up`],
         ["Tab", "step back"],
       ]
@@ -1194,6 +1382,13 @@ export const BenchWorkSurface: React.FC<{
         data-seated={assemblyScript ? seated.size : undefined}
         data-driven={assemblyScript ? driven.length : undefined}
         data-hovered={sceneActive ? (hoveredId ?? "") : undefined}
+        data-work-hover={
+          sceneActive && heldWorkTool
+            ? (hoveredWork?.operationId ?? "")
+            : undefined
+        }
+        data-work-x={workPlacement ? workPlacement.xIn.toFixed(2) : undefined}
+        data-work-y={workPlacement ? workPlacement.yIn.toFixed(2) : undefined}
         onPointerDown={handlePointer("down")}
         onPointerMove={handlePointer("move")}
         onPointerUp={handlePointer("up")}

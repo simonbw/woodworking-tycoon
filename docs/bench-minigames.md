@@ -32,15 +32,31 @@ vocabulary, and per-operation scripts that compose it.
    plan selected — a bench takes any stock a bench recipe could want
    (`stageableMaterials` gives benches the direct-feed treatment), and
    the pallet wins the bench top over a lingering plan selection while
-   it's staged. Plans survive only where they genuinely choose between
-   products: builds (glue-ups, assemblies) and, until their scripts
-   convert, the legacy finishing recipes. Pry work is hidden from the
-   plan picker entirely. Freed boards stay lying on the bench
-   (`inputMaterials`, real state) right where they were nailed, and the
-   *arrangement* — dragging, R to turn, F to flip — is real state too
-   (`MachineState.benchLayout`, see decision 3's amendment): the same
-   layout shows in the zoomed view and the shop view, and survives
-   closing either.
+   it's staged. **Now this covers every single-piece tool job**: the
+   sanding block (or orbit sander) strokes the very piece it's over,
+   the plane offers the face when the board lies flat and the edge when
+   it's stood on edge (the arrangement is the mode picker), and the
+   hand saw ghosts its cut line along the half-foot detents under the
+   pointer, R swinging the angle stop — the press marks the cut and
+   starts it. The offer is pure and unit-tested
+   (`bench-work/tool-work.ts`: held tool + piece + how it lies →
+   operation), and the claim takes exactly the piece under the tool
+   (`operateMachineAction`'s `BenchToolClaim`, mirroring direct-feed's
+   inferred start — it works pieces out of the output bay too, so
+   rework needs no restaging). Work lands *in place*: the mask, kerf,
+   and finished piece render through the piece's persistent placement,
+   and the finish commit hands the workpiece's spot to its outputs — a
+   sanded board doesn't move, a sawn board parts into two pieces lying
+   end to end at the mark (`inheritedBenchLayout`). Plans survive only
+   where they genuinely choose between products: builds (glue-ups,
+   assemblies) and, until their scripts convert, the legacy finishing
+   recipes. Tool work — pry, stroke, saw — is hidden from the plan
+   picker entirely, and a stale selection of it (old saves) is inert.
+   Freed boards stay lying on the bench (`inputMaterials`, real state)
+   right where they were nailed, and the *arrangement* — dragging, R to
+   turn, F to flip — is real state too (`MachineState.benchLayout`, see
+   decision 3's amendment): the same layout shows in the zoomed view
+   and the shop view, and survives closing either.
 
 1. **The mini-game is the only player path.** There is no player-facing
    "hold Space instead". Tests and debug tooling complete work through the
@@ -246,7 +262,10 @@ for built tables), so the zoomed bench and the floor bench are one
 asset at two zooms. The bench's contents lie on it exactly where
 `MachineState.benchLayout` says (`BenchScene`, turns and flips tweened;
 a board flipped up on edge with F narrows to its thickness,
-`BoardOnEdgeSprite`), the mounted tools hang on a floating rail
+`BoardOnEdgeSprite`), stroke and saw work runs on those very pieces in
+place (`StrokeSurface` / `SawSurface` mount over the scene at the
+piece's placement; only glue-ups and the legacy row assemblies still
+take the surface over), the mounted tools hang on a floating rail
 (`BenchToolRail` — which is also where tools mount and unmount: empty
 hooks take a compatible carried tool), and the chrome floats: nameplate
 top-left, instruction + key hints bottom-center, the plan picker as a

@@ -29,11 +29,13 @@ export const benchWorkPallet: Pallet = {
 
 /**
  * A shop staged for the bench view: the player already standing at the
- * workbench, a sanding block mounted, a rough board in the bay with Sand
- * Board selected — one Tab away from stroke work. A full pallet waits in
- * a floor pile for the pry half (the spec restages the bench itself).
- * Sanding (surfacePrep) and dismantling (basicMilling) are starter
- * skills, so nothing needs granting.
+ * workbench, a sanding block mounted, a rough board lying on the bench
+ * at a pinned spot — one Tab and a tool off the rail away from stroke
+ * work. The stale Sand Board selection is deliberate: tool work isn't a
+ * plan anymore, and the view must treat the leftover selection as inert.
+ * A full pallet waits in a floor pile for the pry half (the spec
+ * restages the bench itself). Sanding (surfacePrep) and dismantling
+ * (basicMilling) are starter skills, so nothing needs granting.
  */
 export const benchWorkShop: GameState = {
   tick: 0,
@@ -62,6 +64,11 @@ export const benchWorkShop: GameState = {
       outputMaterials: [],
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
+      // Pinned so the spec can aim its strokes: flat, centered, length
+      // running down the bench — local inches match bench inches + (10,0)
+      benchLayout: {
+        "fx-bench-board": { xIn: 12, yIn: 12, angleDeg: 0, flipped: false },
+      },
       operationProgress: {
         status: "notStarted",
         phaseIndex: 0,

@@ -23,18 +23,21 @@ export interface BenchPointerBus {
 }
 
 export function makeBenchPointerBus(): BenchPointerBus {
-  let current: BenchPointerHandler | null = null;
+  // A set, not a single slot: in-place tool work listens alongside the
+  // scene's own hover/drag handler — the scene stands down from grabbing
+  // while a tool is held, the work overlay ignores everything until then.
+  const handlers = new Set<BenchPointerHandler>();
   return {
     register(handler) {
-      current = handler;
+      handlers.add(handler);
       return () => {
-        if (current === handler) {
-          current = null;
-        }
+        handlers.delete(handler);
       };
     },
     dispatch(event) {
-      current?.(event);
+      for (const handler of [...handlers]) {
+        handler(event);
+      }
     },
   };
 }

@@ -12,6 +12,7 @@ import { handSpaceLeft } from "../Person";
 import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
+  defaultParametersFor,
   isSameMachine,
   Machine,
   Operation,
@@ -483,7 +484,22 @@ export function setMachineSettingsAction(
   };
 }
 
-export function operateMachineAction(machine: Machine): GameAction {
+/**
+ * A tool-first start from the bench view: the held tool applied to the
+ * very piece under it. Names the operation (chosen by tool + piece, see
+ * bench-work/tool-work.ts), the one material to claim, and any
+ * parameters the gesture itself decided (the saw's mark).
+ */
+export interface BenchToolClaim {
+  readonly operationId: string;
+  readonly materialId: string;
+  readonly parameters?: ParameterValues;
+}
+
+export function operateMachineAction(
+  machine: Machine,
+  toolClaim?: BenchToolClaim,
+): GameAction {
   return (gameState) => {
     const machineState = machine.state;
     // Can't start a new operation if one is in progress
@@ -496,6 +512,87 @@ export function operateMachineAction(machine: Machine): GameAction {
     if (!machine.isPowered) {
       console.warn("Machine is switched off");
       return gameState;
+    }
+
+    // The bench-top mirror of the direct-feed branch below: the tool in
+    // hand and the piece under it decided the operation, so the claim
+    // takes exactly that piece — never the first match, which with spare
+    // stock lying around would sand a board nobody was touching. The
+    // inferred operation is recorded so completion knows what it's
+    // finishing, same as a direct-feed cut.
+    if (toolClaim) {
+      const operation = availableOperations(
+        machine,
+        gameState.progression,
+      ).find((op) => op.id === toolClaim.operationId);
+      // The piece may be staged stock or finished work still lying on the
+      // bench (a saw's offcut) — the tool doesn't care which bay it's in,
+      // it works the piece where it lies.
+      const material = [
+        ...machineState.inputMaterials,
+        ...machineState.outputMaterials,
+      ].find((m) => m.id === toolClaim.materialId);
+      if (!operation || !material) {
+        console.warn("No such operation or piece to start tool work on");
+        return gameState;
+      }
+      const parameters: ParameterValues = {
+        ...machineState.selectedParameters,
+        ...toolClaim.parameters,
+      };
+      const input = operation.getInputMaterials({
+        ...defaultParametersFor(operation),
+        ...parameters,
+      })[0];
+      if (!input || !materialMeetsInput(material, input)) {
+        console.warn("The piece under the tool doesn't take this work");
+        return gameState;
+      }
+      const consumableCosts = operation.requiredConsumables ?? [];
+      if (!hasConsumables(gameState.consumables, consumableCosts)) {
+        console.warn("Tried to perform operation without required supplies");
+        return gameState;
+      }
+      if (
+        clampsFor(operation) > clampsFree(gameState.clamps, gameState.machines)
+      ) {
+        console.warn("Tried to perform operation without enough free clamps");
+        return gameState;
+      }
+      const [firstPhase] = getOperationPhases(
+        operation,
+        gameState.progression,
+        machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
+        machine.workSpeed,
+      );
+      return {
+        ...gameState,
+        consumables: subtractConsumables(
+          gameState.consumables,
+          consumableCosts,
+        ),
+        machines: gameState.machines.map((m) =>
+          isSameMachine(m, machineState)
+            ? {
+                ...m,
+                selectedOperationId: operation.id,
+                selectedParameters: parameters,
+                inputMaterials: machineState.inputMaterials.filter(
+                  (candidate) => candidate.id !== material.id,
+                ),
+                outputMaterials: machineState.outputMaterials.filter(
+                  (candidate) => candidate.id !== material.id,
+                ),
+                processingMaterials: [material],
+                operationProgress: {
+                  status: "inProgress" as const,
+                  phaseIndex: 0,
+                  ticksRemaining: firstPhase.duration,
+                },
+              }
+            : m,
+        ),
+      };
     }
 
     // Direct-feed machines run whatever is sitting on them — set down
@@ -573,12 +670,21 @@ export function operateMachineAction(machine: Machine): GameAction {
     const inventory = [...machineState.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
+    // A selection the machine no longer knows (a tool was unmounted, an
+    // old save) refuses quietly — the getter's throw must never escape a
+    // reducer and take the shop down with it.
+    const selectedOperation = machine.selectedOperationOrNull;
+    if (!selectedOperation) {
+      console.warn("No known operation selected to start");
+      return gameState;
+    }
+
     // A blueprint build consumes the very boards seated on its outlines —
     // with spare matching stock lying on the bench, first-match would take
     // the spares and leave the seated boards under the finished piece. A
     // slot nobody seated (the ShopDriver skips the mini-game) still fills
     // by first match, in slot order so the bill of materials lines up.
-    const interaction = machine.selectedOperation.interaction;
+    const interaction = selectedOperation.interaction;
     const blueprint =
       interaction?.kind === "assembly"
         ? productBlueprintFor(interaction.blueprint)
@@ -599,8 +705,8 @@ export function operateMachineAction(machine: Machine): GameAction {
       }
     } else {
       // Validate that we have all required materials
-      const inputMaterials = machine.selectedOperation.getInputMaterials(
-        machine.resolvedParameters(machine.selectedOperation),
+      const inputMaterials = selectedOperation.getInputMaterials(
+        machine.resolvedParameters(selectedOperation),
       );
 
       for (const inputMaterial of inputMaterials) {
@@ -622,7 +728,7 @@ export function operateMachineAction(machine: Machine): GameAction {
 
     // Supplies are spent up front — once the operation starts, the glue is
     // out of the bottle and the nails are in the wood.
-    const consumableCosts = machine.selectedOperation.requiredConsumables ?? [];
+    const consumableCosts = selectedOperation.requiredConsumables ?? [];
     if (!hasConsumables(gameState.consumables, consumableCosts)) {
       console.warn("Tried to perform operation without required supplies");
       return gameState;
@@ -634,7 +740,7 @@ export function operateMachineAction(machine: Machine): GameAction {
     // machines running (see Clamp.ts), so this operation starting IS the
     // checkout, and finishing is the return.
     if (
-      clampsFor(machine.selectedOperation) >
+      clampsFor(selectedOperation) >
       clampsFree(gameState.clamps, gameState.machines)
     ) {
       console.warn("Tried to perform operation without enough free clamps");
@@ -643,7 +749,7 @@ export function operateMachineAction(machine: Machine): GameAction {
 
     // Start the operation - move materials to processing and enter phase 0
     const [firstPhase] = getOperationPhases(
-      machine.selectedOperation,
+      selectedOperation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
       machine.workSpeed,

@@ -117,30 +117,47 @@ test.describe("Bench view", () => {
       expect((await machineState()).status).toBe("notStarted");
     });
 
-    await test.step("Tab spreads the bench open onto the stroke surface", async () => {
+    await test.step("Tab spreads the bench open onto the scene — no plan for tool work", async () => {
       await blur();
       await page.keyboard.press("Tab");
       await expect(page.getByTestId("station-sheet")).toBeVisible();
+      // Tool work isn't a plan: the stale Sand Board selection in the
+      // fixture is inert, the bench opens idle with the board lying on
+      // it, and the plan pile holds only builds — no sanding sheet
       const work = page.getByTestId("bench-work");
-      await expect(work).toHaveAttribute("data-script", "stroke");
+      await expect(work).toHaveAttribute("data-script", "idle");
       await expect(page.getByTestId("bench-stage")).toBeVisible();
-      // The plan picker is the blueprint pile in the corner: folded it
-      // still names the drawing that's set out, and unfolding it offers
-      // the rest of the stack
       const corner = page.getByTestId("blueprint-corner");
       await expect(corner).toBeVisible();
-      await expect(corner).toContainText("Sand Board");
+      await expect(corner).not.toContainText("Sand Board");
       await corner.click();
+      await expect(page.getByTestId("blueprint-stack")).toBeVisible();
       await expect(
         page.getByTestId("blueprint-stack").getByText("Sand Board"),
-      ).toBeVisible();
+      ).toHaveCount(0);
       await corner.click();
+      // The sanding block hangs on the rail, waiting for a hand
+      await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
     });
 
-    await test.step("one real stroke starts the pass; strokes finish it", async () => {
-      // The 4"×24" board stands mid-stage; sand along its length in
-      // overlapping columns. The first stroke is the one real gesture
-      // under test — it must start the operation and move the needle.
+    await test.step("the sanding block strokes the board where it lies", async () => {
+      // The fixture pins the 4"×24" board flat at bench (12,12) — it
+      // spans x 10..14, y 0..24. Take the block off the rail; over the
+      // board it reports the work it would start (tool-first selection).
+      await page.getByTestId("bench-tool-sandingBlock").click();
+      const work = page.getByTestId("bench-work");
+      const stage = page.getByTestId("bench-stage");
+      const over = await inchPoint(page, 12, 12);
+      // Hover is pointer state computed on mousemove — wiggle until the
+      // stage reports the offer, the same pattern the pry step uses
+      let wiggleSand = 0;
+      await expect
+        .poll(async () => {
+          await page.mouse.move(over.x + (wiggleSand++ % 2), over.y);
+          return stage.getAttribute("data-work-hover");
+        })
+        .toBe("blockSandBoard");
+
       // Points are measured per stroke: starting the operation re-renders
       // the sheet and can shift the canvas under a cached box.
       const column = async (xIn: number) => {
@@ -154,15 +171,15 @@ test.describe("Bench view", () => {
         }
         await page.mouse.up();
       };
-      // A deliberate press on the board starts the pass (the sheet can
-      // re-render around the canvas as the operation claims the piece)…
-      const at = await inchPoint(page, 2, 12);
-      await page.mouse.click(at.x, at.y);
+      // The press claims the very board under the block and starts the
+      // pass (the sheet can re-render around the canvas as it does)…
+      await page.mouse.click(over.x, over.y);
       await expect
         .poll(async () => (await machineState()).status)
         .toBe("inProgress");
-      // …and one real stroke moves the needle.
-      await column(2);
+      await expect(work).toHaveAttribute("data-script", "stroke");
+      // …and one real stroke moves the needle, in place on the bench.
+      await column(12);
       const progress = Number(
         await page.getByTestId("bench-work").getAttribute("data-progress"),
       );
@@ -179,6 +196,15 @@ test.describe("Bench view", () => {
       expect((await machineState()).outputs).toEqual([
         { type: "board", surface: "smooth", width: 4 },
       ]);
+      // The smooth board lies exactly where the rough one lay — the
+      // finish commit hands the workpiece's spot to its output
+      const seat = await page.evaluate(() => {
+        const m = window.__GET_GAME_STATE__().machines[0];
+        return m.benchLayout[m.outputMaterials[0].id];
+      });
+      expect(seat).toEqual({ xIn: 12, yIn: 12, angleDeg: 0, flipped: false });
+      // Hang the block back up before the next act
+      await page.keyboard.press("Escape");
     });
 
     await test.step("the pallet pries apart under the hammer, one press at a time", async () => {
@@ -412,14 +438,31 @@ test.describe("Bench view", () => {
         }),
       ).toBe("assembly");
 
+      // A saw cut mid-kerf (refresh mid-stroke lands here): the marked
+      // cut resumes in place. An idle bench never mounts "saw" from a
+      // selection — the held saw over a board is the only way in.
       expect(
         await scriptFor({
           tools: ["sandingBlock", "handSaw"],
           selectedOperationId: "handSawCut",
-          selectedParameters: { angle: 0, cutEnd: "left", targetLength: 24 },
-          inputMaterials: [palletBoard("saw1", 4, 36, 2)],
+          selectedParameters: { angle: 0, cutEnd: "right", targetLength: 24 },
+          inputMaterials: [],
+          processingMaterials: [palletBoard("saw1", 4, 36, 2)],
+          operationProgress: {
+            status: "inProgress",
+            phaseIndex: 0,
+            ticksRemaining: 40,
+          },
         }),
       ).toBe("saw");
+      expect(
+        await scriptFor({
+          tools: ["sandingBlock", "handSaw"],
+          selectedOperationId: "handSawCut",
+          selectedParameters: { angle: 0, cutEnd: "right", targetLength: 24 },
+          inputMaterials: [palletBoard("saw2", 4, 36, 2)],
+        }),
+      ).toBe("idle");
 
       // Mid-cure the surface stands down and says so
       expect(

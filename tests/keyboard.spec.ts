@@ -541,13 +541,25 @@ test.describe("Keyboard", () => {
       await openStationSheet(page);
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
-      await selectMode(page, "Makeshift Workbench", "Sand Board");
-      // F stages the first strip the plan will take
+      // F stages the first strip
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );
       await page.keyboard.press("f");
       await page.waitForTimeout(30);
+      // Tool work no longer appears in the plan picker — the block in
+      // hand offers it on the bench top. The driver-path selection is
+      // written directly, exactly the way ShopDriver selects work.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace"
+              ? { ...m, selectedOperationId: "orbitSandBoard" }
+              : m,
+          ),
+        }));
+      });
 
       // Space is not a path into hand work: held at the bench, nothing
       // starts (docs/bench-minigames.md decision 1)

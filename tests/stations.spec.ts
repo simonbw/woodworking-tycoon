@@ -322,9 +322,13 @@ test.describe("Stations", () => {
       await page.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
       await expect(page.getByText("1/2 slots")).toBeVisible();
-      // The sander's operations joined the workspace's Mode list
+      // The sander's work is offered by the tool itself on the bench
+      // top, never as a plan — the picker holds only builds
       const modeOptions = await modesOf(page, "Makeshift Workbench");
-      expect(modeOptions).toContain("Sand Panel");
+      expect(modeOptions).not.toContain("Sand Panel");
+      await expect(
+        page.getByTestId("bench-tool-randomOrbitSander"),
+      ).toBeVisible();
     });
 
     await test.step("load the end-grain-shop", async () => {
@@ -501,22 +505,11 @@ test.describe("Stations", () => {
       await expect(page.getByText("2/2 slots")).toBeVisible();
 
       const modes = await modesOf(page, "Makeshift Workbench");
-      expect(modes).toContain("Cut Board by Hand");
+      // The saw's cut is tool work — marked on the bench top with the
+      // saw in hand, never a plan. Only the drill's builds join the pile.
+      expect(modes).not.toContain("Cut Board by Hand");
       expect(modes).toContain("Build Rustic Planter Box");
-    });
-
-    await test.step("the hand cut is dialled in on three scales", async () => {
-      await selectMode(page, "Makeshift Workbench", "Cut Board by Hand");
-      const card = workspaceCard(page);
-      await expect(
-        card.getByRole("radiogroup", { name: "Angle" }),
-      ).toBeVisible();
-      await expect(
-        card.getByRole("radiogroup", { name: "Cut End" }),
-      ).toBeVisible();
-      await expect(
-        card.getByRole("radiogroup", { name: "Target Length" }),
-      ).toBeVisible();
+      await expect(page.getByTestId("bench-tool-handSaw")).toBeVisible();
     });
 
     await test.step("the planter box reads its screw cost against the tin", async () => {

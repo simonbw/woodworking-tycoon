@@ -390,3 +390,188 @@ describe("arrangeBenchMaterialAction", () => {
     assert.strictEqual(result, state);
   });
 });
+
+describe("tool-first claims (operateMachineAction with a BenchToolClaim)", () => {
+  const roughBoard = () => board("maple", 24, 4, 4, "rough");
+
+  it("claims exactly the piece under the tool, never the first match", () => {
+    const first = roughBoard();
+    const second = roughBoard();
+    const machine = workspaceMachine({
+      tools: ["sandingBlock"],
+      selectedOperationId: undefined,
+      inputMaterials: [first, second],
+    });
+    const state = stateWith({ machines: [machine] });
+    const started = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "blockSandBoard",
+      materialId: second.id,
+    })(state);
+    assert.strictEqual(
+      started.machines[0].processingMaterials[0].id,
+      second.id,
+    );
+    assert.deepStrictEqual(
+      started.machines[0].inputMaterials.map((m) => m.id),
+      [first.id],
+    );
+    assert.strictEqual(
+      started.machines[0].selectedOperationId,
+      "blockSandBoard",
+    );
+    assert.strictEqual(
+      started.machines[0].operationProgress.status,
+      "inProgress",
+    );
+  });
+
+  it("works a piece lying in the output bay too — rework needs no restaging", () => {
+    const offcut = roughBoard();
+    const machine = workspaceMachine({
+      tools: ["sandingBlock"],
+      selectedOperationId: undefined,
+      outputMaterials: [offcut],
+    });
+    const state = stateWith({ machines: [machine] });
+    const started = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "blockSandBoard",
+      materialId: offcut.id,
+    })(state);
+    assert.strictEqual(
+      started.machines[0].processingMaterials[0].id,
+      offcut.id,
+    );
+    assert.deepStrictEqual(started.machines[0].outputMaterials, []);
+  });
+
+  it("records the mark's parameters so completion cuts where it was marked", () => {
+    const stock = board("pine", 48, 4, 4);
+    const machine = workspaceMachine({
+      tools: ["handSaw"],
+      selectedOperationId: undefined,
+      inputMaterials: [stock],
+    });
+    const state = stateWith({ machines: [machine] });
+    const started = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "handSawCut",
+      materialId: stock.id,
+      parameters: { targetLength: 18, cutEnd: "right", angle: 0 },
+    })(state);
+    assert.strictEqual(started.machines[0].selectedOperationId, "handSawCut");
+    assert.strictEqual(
+      started.machines[0].selectedParameters?.targetLength,
+      18,
+    );
+    const done = finishAttendedWorkAction(getMachines(started.machines)[0])(
+      started,
+    );
+    const lengths = done.machines[0].outputMaterials.map((m) =>
+      m.type === "board" ? m.length : 0,
+    );
+    assert.deepStrictEqual(
+      lengths.sort((a, b) => a - b),
+      [18, 30],
+    );
+  });
+
+  it("refuses a piece the operation doesn't take", () => {
+    const doneBoard = board("maple", 24, 4, 4, "sanded");
+    const machine = workspaceMachine({
+      tools: ["sandingBlock"],
+      selectedOperationId: undefined,
+      inputMaterials: [doneBoard],
+    });
+    const state = stateWith({ machines: [machine] });
+    const result = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "blockSandBoard",
+      materialId: doneBoard.id,
+    })(state);
+    assert.strictEqual(
+      result.machines[0].operationProgress.status,
+      "notStarted",
+    );
+  });
+});
+
+describe("finished tool work lies where the workpiece lay", () => {
+  it("a sanded board keeps its exact spot — nothing moves at the commit", () => {
+    const stock = board("maple", 24, 4, 4, "rough");
+    const seat = { xIn: 10, yIn: 20, angleDeg: 97, flipped: false };
+    const machine = workspaceMachine({
+      tools: ["sandingBlock"],
+      selectedOperationId: undefined,
+      inputMaterials: [stock],
+      benchLayout: { [stock.id]: seat },
+    });
+    const state = stateWith({ machines: [machine] });
+    const started = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "blockSandBoard",
+      materialId: stock.id,
+    })(state);
+    const done = finishAttendedWorkAction(getMachines(started.machines)[0])(
+      started,
+    );
+    const output = done.machines[0].outputMaterials[0];
+    assert.deepStrictEqual(done.machines[0].benchLayout?.[output.id], seat);
+    assert.strictEqual(done.machines[0].benchLayout?.[stock.id], undefined);
+  });
+
+  it("a cut parts into two pieces lying end to end at the mark", () => {
+    const stock = board("pine", 48, 4, 4);
+    const seat = { xIn: 24, yIn: 18, angleDeg: 0, flipped: false };
+    const machine = workspaceMachine({
+      tools: ["handSaw"],
+      selectedOperationId: undefined,
+      inputMaterials: [stock],
+      benchLayout: { [stock.id]: seat },
+    });
+    const state = stateWith({ machines: [machine] });
+    const started = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "handSawCut",
+      materialId: stock.id,
+      parameters: { targetLength: 18, cutEnd: "right", angle: 0 },
+    })(state);
+    const done = finishAttendedWorkAction(getMachines(started.machines)[0])(
+      started,
+    );
+    const [kept, offcut] = done.machines[0].outputMaterials;
+    assert.ok(kept.type === "board" && kept.length === 18);
+    assert.ok(offcut.type === "board" && offcut.length === 30);
+    // Kept: center 9" down from the top end that sat at yIn 18 - 24 = -6
+    assert.deepStrictEqual(done.machines[0].benchLayout?.[kept.id], {
+      ...seat,
+      yIn: 18 + (18 / 2 - 24),
+    });
+    // Offcut: the remaining stretch below the mark
+    assert.deepStrictEqual(done.machines[0].benchLayout?.[offcut.id], {
+      ...seat,
+      yIn: 18 + (18 + 30 / 2 - 24),
+    });
+  });
+
+  it("a turned board's pieces part along its turned length axis", () => {
+    const stock = board("pine", 48, 4, 4);
+    const seat = { xIn: 24, yIn: 18, angleDeg: 90, flipped: false };
+    const machine = workspaceMachine({
+      tools: ["handSaw"],
+      selectedOperationId: undefined,
+      inputMaterials: [stock],
+      benchLayout: { [stock.id]: seat },
+    });
+    const state = stateWith({ machines: [machine] });
+    const started = operateMachineAction(getMachines(state.machines)[0], {
+      operationId: "handSawCut",
+      materialId: stock.id,
+      parameters: { targetLength: 18, cutEnd: "right", angle: 0 },
+    })(state);
+    const done = finishAttendedWorkAction(getMachines(started.machines)[0])(
+      started,
+    );
+    const [kept] = done.machines[0].outputMaterials;
+    const placement = done.machines[0].benchLayout?.[kept.id];
+    // At 90° the length axis runs along -x: offset -15 lands at x 39
+    assert.ok(placement);
+    assert.ok(Math.abs(placement.xIn - 39) < 1e-9);
+    assert.ok(Math.abs(placement.yIn - 18) < 1e-9);
+  });
+});

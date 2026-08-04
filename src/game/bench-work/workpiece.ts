@@ -255,29 +255,12 @@ export function benchScriptFor(
       };
     }
   }
+  // Stroke and saw work is tool-first (bench-work/tool-work.ts): the
+  // held tool over a staged piece offers it — no plan, so an idle bench
+  // never mounts those scripts from a selection. Only builds are plans.
   const pieces = stagedPieces(machine, selected);
   if (!pieces || pieces.length === 0) {
     return null;
-  }
-  if (interaction.kind === "stroke") {
-    return {
-      kind: "stroke",
-      operation: selected,
-      interaction,
-      workpiece: pieces[0],
-      started: false,
-    };
-  }
-  if (interaction.kind === "saw") {
-    return pieces[0].type === "board"
-      ? {
-          kind: "saw",
-          operation: selected,
-          interaction,
-          workpiece: pieces[0],
-          started: false,
-        }
-      : null;
   }
   if (interaction.kind === "glue" || interaction.kind === "assembly") {
     return { kind: interaction.kind, operation: selected, pieces };

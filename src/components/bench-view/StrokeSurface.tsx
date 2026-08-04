@@ -13,6 +13,11 @@ import {
   makeCoverageGrid,
   stampStroke,
 } from "../../game/bench-work/coverage";
+import {
+  BenchPlacement,
+  benchPointInFrame,
+} from "../../game/bench-work/bench-layout";
+import { placedPieceSize } from "../../game/bench-work/workpiece";
 import { OperationInteraction } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
@@ -21,23 +26,29 @@ import { EdgeBandSprite } from "./EdgeBandSprite";
 import { StageFit, strokeGain } from "./stageMath";
 
 /**
- * Stroke work as a per-pixel transition: the workpiece draws its two
- * surface states stacked, the upper (finished) one revealed through a
- * PIXI RenderTexture the brush stamps into — standard scratch-off
- * rendering, one draw call per stamp, never read back from the GPU.
- * Completion is the CPU-side accumulation grid's call (see
- * bench-work/coverage.ts), bumped analytically as the same stamps land.
+ * Stroke work, in place: the claimed workpiece drawn exactly where it
+ * lies on the bench (its persistent placement — position, turn, flip, on
+ * edge), its two surface states stacked with the finished one revealed
+ * through a PIXI RenderTexture the brush stamps into. Standard
+ * scratch-off rendering, one draw call per stamp, never read back from
+ * the GPU; completion is the CPU-side accumulation grid's call
+ * (bench-work/coverage.ts), bumped analytically as the same stamps land.
+ * Mounted only once the operation has started — the tool-first press
+ * that claims the piece happens in the scene handler — so the scene
+ * never draws the piece twice.
  */
 export const StrokeSurface: React.FC<{
   interaction: Extract<OperationInteraction, { kind: "stroke" }>;
   /** The piece as it is now and as the work leaves it. */
   workpiece: MaterialInstance;
   finished: MaterialInstance | null;
+  /** Where the piece lies — strokes land through this transform. */
+  placement: BenchPlacement;
+  /** Scene fit: bench-top inches, the same space the pointer reports. */
   fit: StageFit;
   bus: BenchPointerBus;
-  started: boolean;
-  /** First gesture — starts the operation (claims the piece). */
-  onFirstStroke: () => void;
+  /** The owning tool is in hand — strokes land only then. */
+  active: boolean;
   /** Coverage crossed the threshold — the finish commit. */
   onComplete: () => void;
   /** Every active stroke event (dust + foley throttles upstream). */
@@ -47,10 +58,10 @@ export const StrokeSurface: React.FC<{
   interaction,
   workpiece,
   finished,
+  placement,
   fit,
   bus,
-  started,
-  onFirstStroke,
+  active,
   onComplete,
   onWork,
   onProgress,
@@ -58,20 +69,19 @@ export const StrokeSurface: React.FC<{
   const { app } = useApplication();
   const band = interaction.band ?? "face";
   const radiusIn = interaction.brushWidthIn / 2;
+  const size = placedPieceSize(workpiece, placement);
+  const widthPx = Math.max(2, Math.round(size.widthIn * fit.pxPerIn));
+  const heightPx = Math.max(2, Math.round(size.heightIn * fit.pxPerIn));
 
   // One attempt per workpiece: a fresh grid and a fresh scratch texture.
   // Ephemeral by design (decision 3) — close the sheet and it's gone.
   const grid = useMemo(
-    () => makeCoverageGrid(fit.widthIn, fit.heightIn),
+    () => makeCoverageGrid(size.widthIn, size.heightIn),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [workpiece.id, band],
   );
   const renderTexture = useMemo(
-    () =>
-      RenderTexture.create({
-        width: Math.max(2, Math.round(fit.widthIn * fit.pxPerIn)),
-        height: Math.max(2, Math.round(fit.heightIn * fit.pxPerIn)),
-      }),
+    () => RenderTexture.create({ width: widthPx, height: heightPx }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [workpiece.id, band],
   );
@@ -97,8 +107,8 @@ export const StrokeSurface: React.FC<{
   useEffect(() => {
     doneRef.current = false;
   }, [workpiece.id]);
-  const startedRef = useRef(started);
-  startedRef.current = started;
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const lastPoint = useRef<{ xIn: number; yIn: number; at: number } | null>(
     null,
   );
@@ -117,23 +127,33 @@ export const StrokeSurface: React.FC<{
 
   const handlePointer = useCallback(
     (event: BenchPointerEvent) => {
-      if (doneRef.current) return;
-      const { xIn, yIn, type } = event;
+      if (doneRef.current || !activeRef.current) {
+        lastPoint.current = null;
+        return;
+      }
+      const { type } = event;
       if (type === "up" || type === "leave") {
         lastPoint.current = null;
         return;
       }
+      // The pointer arrives in bench inches; the piece's placement
+      // carries it into the workpiece's own frame, turn and flip and all
+      const { xIn, yIn } = benchPointInFrame(
+        placement,
+        size,
+        event.xIn,
+        event.yIn,
+      );
       const inBounds =
         xIn >= -radiusIn &&
-        xIn <= fit.widthIn + radiusIn &&
+        xIn <= size.widthIn + radiusIn &&
         yIn >= -radiusIn &&
-        yIn <= fit.heightIn + radiusIn;
+        yIn <= size.heightIn + radiusIn;
       if (!inBounds) {
         lastPoint.current = null;
         return;
       }
       if (type === "down") {
-        if (!startedRef.current) onFirstStroke();
         lastPoint.current = { xIn, yIn, at: performance.now() };
         return;
       }
@@ -146,10 +166,9 @@ export const StrokeSurface: React.FC<{
       const now = performance.now();
       const distance = Math.hypot(xIn - last.xIn, yIn - last.yIn);
       if (distance < 0.05) return;
-      if (!startedRef.current) onFirstStroke();
       onWork();
 
-      // Visual layer: stamp the brush along the segment
+      // Visual layer: stamp the brush along the segment, in texture px
       const spacing = Math.max(radiusIn / 2, 0.05);
       const steps = Math.max(1, Math.ceil(distance / spacing));
       for (let i = 0; i <= steps; i++) {
@@ -184,44 +203,55 @@ export const StrokeSurface: React.FC<{
     [
       app,
       brush,
-      fit,
+      fit.pxPerIn,
       grid,
       interaction.coveragePerSecond,
       onComplete,
-      onFirstStroke,
       onProgress,
       onWork,
+      placement,
       radiusIn,
       renderTexture,
+      size,
     ],
   );
   useEffect(() => bus.register(handlePointer), [bus, handlePointer]);
 
-  const centerX = (fit.widthIn * fit.pxPerIn) / 2;
-  const centerY = (fit.heightIn * fit.pxPerIn) / 2;
+  const before =
+    band === "face" ? (
+      <MaterialSprite material={workpiece} onEdge={placement.onEdge} />
+    ) : (
+      <EdgeBandSprite material={workpiece} finished={false} />
+    );
+  const after = finished ? (
+    band === "face" ? (
+      <MaterialSprite material={finished} onEdge={placement.onEdge} />
+    ) : (
+      <EdgeBandSprite material={finished} finished />
+    )
+  ) : null;
+
   return (
-    <pixiContainer x={fit.originX} y={fit.originY}>
+    <pixiContainer
+      x={fit.originX + placement.xIn * fit.pxPerIn}
+      y={fit.originY + placement.yIn * fit.pxPerIn}
+      angle={placement.angleDeg}
+      scale={{ x: placement.flipped ? -1 : 1, y: 1 }}
+    >
       {/* Before state */}
-      <pixiContainer x={centerX} y={centerY} scale={fit.spriteScale}>
-        {band === "face" ? (
-          <MaterialSprite material={workpiece} />
-        ) : (
-          <EdgeBandSprite material={workpiece} finished={false} />
-        )}
-      </pixiContainer>
+      <pixiContainer scale={fit.spriteScale}>{before}</pixiContainer>
       {/* Finished state, revealed through the scratch mask */}
-      {finished && (
+      {after && (
         <pixiContainer ref={setRevealed}>
-          <pixiContainer x={centerX} y={centerY} scale={fit.spriteScale}>
-            {band === "face" ? (
-              <MaterialSprite material={finished} />
-            ) : (
-              <EdgeBandSprite material={finished} finished />
-            )}
-          </pixiContainer>
+          <pixiContainer scale={fit.spriteScale}>{after}</pixiContainer>
         </pixiContainer>
       )}
-      <pixiSprite ref={setMaskSprite} texture={renderTexture} />
+      <pixiSprite
+        ref={setMaskSprite}
+        texture={renderTexture}
+        x={-widthPx / 2}
+        y={-heightPx / 2}
+      />
     </pixiContainer>
   );
 };

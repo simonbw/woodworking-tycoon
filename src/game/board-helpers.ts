@@ -116,10 +116,18 @@ export function cutBoard(
 
   const offcutSize = startingDimension - outputSize - waste;
 
+  // Each piece is a new material (makeMaterial — a fresh id): two pieces
+  // sharing the input's id would be indistinguishable to everything
+  // id-keyed (bench layout, hover, take), and every other operation's
+  // outputs already get fresh ids.
   if (dimension !== "length") {
-    const outputs = [{ ...inputBoard, [dimension]: outputSize }];
+    const outputs = [
+      makeMaterial<Board>({ ...inputBoard, [dimension]: outputSize }),
+    ];
     if (offcutSize > 0) {
-      outputs.push({ ...inputBoard, [dimension]: offcutSize });
+      outputs.push(
+        makeMaterial<Board>({ ...inputBoard, [dimension]: offcutSize }),
+      );
     }
     return { inputs: [], outputs };
   }
@@ -131,19 +139,21 @@ export function cutBoard(
 
   // The kept piece's fresh face is on the cut end; the offcut's fresh face
   // is on its side toward the blade — the opposite label.
-  const kept = {
+  const kept = makeMaterial<Board>({
     ...inputBoard,
     length: outputSize,
     ends: { ...ends, [cutEnd]: freshEnd },
-  };
+  });
   const outputs = [kept];
   if (offcutSize > 0) {
     const offcutFreshEnd = cutEnd === "left" ? "right" : "left";
-    outputs.push({
-      ...inputBoard,
-      length: offcutSize,
-      ends: { ...ends, [offcutFreshEnd]: freshEnd },
-    });
+    outputs.push(
+      makeMaterial<Board>({
+        ...inputBoard,
+        length: offcutSize,
+        ends: { ...ends, [offcutFreshEnd]: freshEnd },
+      }),
+    );
   }
 
   return { inputs: [], outputs };
