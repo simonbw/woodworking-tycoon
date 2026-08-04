@@ -1,5 +1,9 @@
 import React from "react";
-import { resolveInteract, interactLabel } from "../../game/interact";
+import {
+  interactLabel,
+  materialSources,
+  resolveInteract,
+} from "../../game/interact";
 import {
   isSameMachine,
   Machine,
@@ -12,6 +16,7 @@ import { heldTool } from "../../game/HeldTool";
 import {
   explainFeedRefusal,
   findFeedableOperation,
+  liveSettingParameter,
   machineCanOperate,
   orientedOperations,
   shopSupply,
@@ -36,7 +41,7 @@ import { useMachineActivity } from "../shop-view/useMachineActivity";
  */
 export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const gameState = useGameState();
-  const { machines, isTargeted } = useTargetedMachine();
+  const { machines, isTargeted, pileOffset } = useTargetedMachine();
   const { isOperating, needsYou } = useMachineActivity(machine);
 
   const operations = availableOperations(machine, gameState.progression);
@@ -46,14 +51,31 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   // The E chip shows exactly what the interact key resolved to — but
   // only when its subject is this machine (floor and door hints render
-  // next to the player and the door instead).
-  const interact = resolveInteract(gameState, machine);
+  // next to the player and the door instead). The rummage offset applies
+  // only when this machine really is the keyboard's target, so the chip
+  // steps aside the moment R cycles E onto the floor.
+  const targeted = isTargeted(machine);
+  const interact = resolveInteract(
+    gameState,
+    machine,
+    targeted ? pileOffset : 0,
+  );
   const interactHere =
     interact != null &&
     "machine" in interact &&
     isSameMachine(interact.machine.state, machine.state)
       ? interact
       : null;
+
+  // With more material in reach than this machine's stock — pieces on
+  // the floor beside the bench — R steps E through the whole ring, and
+  // the chip says so (unless R belongs to a rotate setting here).
+  const rummageable =
+    targeted &&
+    (interactHere?.kind === "take-inputs" ||
+      interactHere?.kind === "take-outputs") &&
+    materialSources(gameState, machine).length > 1 &&
+    liveSettingParameter(machine, gameState.progression, "rotate") == null;
 
   // The F chip: what the machine would take out of our hands if we set it
   // down — named, the way the E chip names what it lifts back off. A
@@ -130,6 +152,14 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       {interactHere && (
         <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
           {interactLabel(interactHere)}
+        </HintRow>
+      )}
+      {rummageable && (
+        <HintRow
+          className="text-paper-manila/70"
+          keys={<ShortcutKeys shortcut="cycle-pile" />}
+        >
+          next piece
         </HintRow>
       )}
       {stageable.length > 0 && (

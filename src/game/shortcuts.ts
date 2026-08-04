@@ -179,7 +179,8 @@ const defs = [
     id: "cycle-pile",
     codes: ["KeyR"],
     keys: [["R"]],
-    description: "Target the next piece in the pile underfoot",
+    description:
+      "Target the next piece within reach — the floor's pieces and a loaded bench's stock",
     scope: "home",
     group: "Materials",
     sharesKey: true,

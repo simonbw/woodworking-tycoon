@@ -13,7 +13,7 @@ import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { MaterialPile } from "../../game/GameState";
 import { getMaterialFullName } from "../../game/material-helpers";
 import { liveSettingParameter } from "../../game/machine-helpers";
-import { resolveInteract, targetedPile } from "../../game/interact";
+import { materialSources, resolveInteract } from "../../game/interact";
 import { chebyshevDistance } from "../../game/Vectors";
 import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
@@ -52,7 +52,9 @@ export const PlayerPrompt: React.FC = () => {
   // resting broom renders here at the player; floor pickups render at the
   // pile itself (below); machine and door interactions render at the
   // machine and the door.
-  const interact = carried ? null : resolveInteract(gameState, targetedMachine);
+  const interact = carried
+    ? null
+    : resolveInteract(gameState, targetedMachine, pileOffset);
 
   // Whether R belongs to the targeted machine's rotate setting — the same
   // test the keyboard bindings split the key on, so the rummage hint only
@@ -180,7 +182,8 @@ export const PlayerPrompt: React.FC = () => {
       {interact?.kind === "pick-up-floor" && (
         <PickupChip
           piles={interact.piles}
-          pileOffset={pileOffset}
+          target={interact.target}
+          sourceCount={materialSources(gameState, targetedMachine).length}
           rotateSettingLive={rotateSettingLive}
         />
       )}
@@ -203,20 +206,24 @@ export const PlayerPrompt: React.FC = () => {
  */
 const PickupChip: React.FC<{
   piles: ReadonlyArray<MaterialPile>;
-  pileOffset: number;
+  target: MaterialPile;
+  /** Every material source in reach — the floor's pieces plus a loaded
+   * machine's stock — since R steps through them as one ring. */
+  sourceCount: number;
   rotateSettingLive: boolean;
-}> = ({ piles, pileOffset, rotateSettingLive }) => {
-  const pile = targetedPile(piles, pileOffset);
+}> = ({ piles, target, sourceCount, rotateSettingLive }) => {
   const place =
-    piles.length > 1 ? ` · ${piles.indexOf(pile) + 1} of ${piles.length}` : "";
+    piles.length > 1
+      ? ` · ${piles.indexOf(target) + 1} of ${piles.length}`
+      : "";
   return (
-    <PointAnchored point={pile.position} placement="above">
+    <PointAnchored point={target.position} placement="above">
       <HintList>
         <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-          pick up · {getMaterialFullName(pile.material)}
+          pick up · {getMaterialFullName(target.material)}
           {place}
         </HintRow>
-        {piles.length > 1 && !rotateSettingLive && (
+        {sourceCount > 1 && !rotateSettingLive && (
           <HintRow keys={<ShortcutKeys shortcut="cycle-pile" />}>
             next piece
           </HintRow>

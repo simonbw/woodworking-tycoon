@@ -21,7 +21,7 @@ import {
 } from "../../game/game-actions/player-actions";
 import { SWEEP_AIM_REACH } from "../../game/game-actions/dust-actions";
 import { holdingBroom } from "../../game/HeldTool";
-import { resolveInteract, targetedPile } from "../../game/interact";
+import { resolveInteract } from "../../game/interact";
 import { clamp } from "../../utils/mathUtils";
 import { usePaused } from "../PauseContext";
 import { BroomSprite } from "./BroomSprite";
@@ -158,11 +158,9 @@ export const ShopView: React.FC = () => {
   // resolved by the same resolver the keyboard uses (with R's rummage
   // offset applied), so the highlight and the keypress can never disagree
   // about which piece leaves the floor.
-  const interact = resolveInteract(gameState, targetedMachine);
+  const interact = resolveInteract(gameState, targetedMachine, pileOffset);
   const pickupTarget =
-    interact?.kind === "pick-up-floor"
-      ? targetedPile(interact.piles, pileOffset)
-      : undefined;
+    interact?.kind === "pick-up-floor" ? interact.target : undefined;
 
   // The truck wears the same outline as any other target, aimed at
   // whatever the keys would actually move. Lifting a piece back out is a

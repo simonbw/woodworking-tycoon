@@ -8,8 +8,8 @@ import React, {
 } from "react";
 import { useCellMap } from "./useCellMap";
 import { Machine, machineKey as machineStateKey } from "../game/Machine";
+import { materialSourceKey, materialSources } from "../game/interact";
 import { atTruckCab } from "../game/lot";
-import { pileWithinReach } from "../game/pile-helpers";
 import {
   Direction,
   Vector,
@@ -29,9 +29,11 @@ interface TargetedMachineValue {
   /** Aim the keyboard at a specific machine on this square (mouse path). */
   setTarget: (machine: Machine) => void;
   /**
-   * How far R has rummaged from the top of the pile underfoot. Applied to
-   * an interact's `piles` via `targetedPile`; resets when the player moves
-   * or the pile changes (a piece picked up or dropped).
+   * How far R has rummaged from the top of the material-source ring —
+   * a loaded machine's stock first, then the pieces on the floor within
+   * reach. Passed to `resolveInteract` as its source offset; resets when
+   * the ring's entries change (a piece taken or dropped, a different
+   * machine faced).
    */
   pileOffset: number;
   cyclePile: (step: 1 | -1) => void;
@@ -131,18 +133,6 @@ export const TargetedMachineProvider: React.FC<{
 
   useEffect(() => setOffset(0), [positionKey, direction]);
 
-  // Rummaging starts over from the top of the pile when the set of pieces
-  // within reach changes — one grabbed, dropped, or walked away from. Keyed
-  // on the pieces themselves rather than the player's cell: reach is
-  // continuous now, so crossing a cell line with the same pieces at hand
-  // keeps the cursor. Turning in place keeps it too — the pile doesn't
-  // care which way the player faces.
-  const reachableKey = gameState.materialPiles
-    .filter((pile) => pileWithinReach(pile, gameState.player.position))
-    .map((pile) => pile.material.id)
-    .join("|");
-  useEffect(() => setPileOffset(0), [reachableKey]);
-
   const cyclePile = useCallback(
     (step: 1 | -1) => setPileOffset((i) => i + step),
     [],
@@ -167,6 +157,17 @@ export const TargetedMachineProvider: React.FC<{
       : undefined;
 
   const cycleTarget = useCallback(() => setOffset((i) => i + 1), []);
+
+  // Rummaging starts over from the top of the ring when its entries
+  // change — a piece grabbed or dropped, a bay emptied, a different
+  // machine faced, or the player walking away. Keyed on the sources
+  // themselves rather than the player's cell: reach is continuous, so
+  // crossing a cell line with the same pieces at hand keeps the cursor,
+  // and so does turning in place at the same bench.
+  const sourcesKey = materialSources(gameState, machine)
+    .map(materialSourceKey)
+    .join("|");
+  useEffect(() => setPileOffset(0), [sourcesKey]);
 
   // The sheet stays open only while its station is still at hand; walking
   // away (or carrying the station off) folds it up.

@@ -3,12 +3,13 @@ import { readyHandoffs } from "./delivery";
 import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
-import { Machine } from "./Machine";
+import { Machine, machineKey } from "./Machine";
 import { getMaterialName } from "./material-helpers";
 import { MaterialInstance } from "./Materials";
 import { handSpaceLeft } from "./Person";
 import { pileWithinReach } from "./pile-helpers";
 import { chebyshevDistance } from "./Vectors";
+import { mod } from "../utils/mathUtils";
 
 /**
  * What pressing E (the interact key) would do right now. One resolver
@@ -24,10 +25,15 @@ export type InteractAction =
   | { kind: "take-inputs"; machine: Machine }
   | { kind: "switch-on"; machine: Machine }
   | { kind: "switch-off"; machine: Machine }
-  /** Newest-dropped first, so `piles[0]` is the top of the pile — what a
-   * plain press grabs (`targetedPile` applies the rummage offset); Shift
-   * takes them all. */
-  | { kind: "pick-up-floor"; piles: ReadonlyArray<MaterialPile> }
+  /** Newest-dropped first, so `piles[0]` is the top of the pile. `target`
+   * is what a plain press grabs — the top by default, stepped through the
+   * rest by the rummage offset (R); Shift takes them all, starting at the
+   * target. */
+  | {
+      kind: "pick-up-floor";
+      piles: ReadonlyArray<MaterialPile>;
+      target: MaterialPile;
+    }
   | { kind: "pick-up-broom" }
   /** Standing at the truck's bed with cargo in it: E lifts the last
    * piece loaded back out — `material` — and Shift empties the bed. */
@@ -35,54 +41,135 @@ export type InteractAction =
   /** `handoffCount` is how much finished work is loaded in the bed. */
   | { kind: "truck-cab"; handoffCount: number };
 
+/**
+ * One place E could take material from: a machine's outfeed, a machine's
+ * loaded bay, or a piece lying on the floor. Together they form the ring
+ * the rummage key (R) steps through, in the same priority order the
+ * resolver would pick them — so a bench's stock never *hides* the board
+ * on the floor beside it, it just goes first.
+ */
+export type MaterialSource =
+  | { kind: "take-outputs"; machine: Machine }
+  | { kind: "take-inputs"; machine: Machine }
+  | { kind: "floor-pile"; pile: MaterialPile };
+
+/** A stable identity for a ring entry, for spotting when the ring itself
+ * has changed (a piece taken, a bay emptied, a different machine faced) —
+ * that's when the rummage cursor goes back to the top. */
+export function materialSourceKey(source: MaterialSource): string {
+  switch (source.kind) {
+    case "take-outputs":
+      return `out:${machineKey(source.machine.state)}`;
+    case "take-inputs":
+      return `in:${machineKey(source.machine.state)}`;
+    case "floor-pile":
+      return `pile:${source.pile.material.id}`;
+  }
+}
+
+/**
+ * Every material source in reach, in priority order: outfeeds, then
+ * loaded bays, then the floor's pieces newest-first. Empty when the
+ * hands aren't free to take anything (a held tool, full arms, a carried
+ * machine, or the player away).
+ */
+export function materialSources(
+  gameState: GameState,
+  targetedMachine: Machine | undefined,
+): ReadonlyArray<MaterialSource> {
+  if (gameState.player.away || gameState.player.carriedMachine != null) {
+    return [];
+  }
+
+  // A tool in hand commits the hands: material verbs (take, unload, pick
+  // up the floor) step aside until it's set down. Full arms step the same
+  // verbs aside: the chip never offers a pickup the action would refuse.
+  const handsFree =
+    heldTool(gameState) === null && handSpaceLeft(gameState.player) > 0;
+  if (!handsFree) return [];
+
+  const cellMap = CellMap.fromGameState(gameState);
+  const cell = cellMap.at(gameState.player.position);
+
+  const candidates = dedupeMachines(
+    [targetedMachine, ...(cell?.operableMachines ?? [])]
+      .filter((machine) => machine != null)
+      // A container is opened, not reached into: what you toss in comes back
+      // out through its sheet (Tab). Leaving it off the interact key also
+      // keeps a garbage can — reachable from a whole ring of cells, since it
+      // has no front — from swallowing E from a board at your feet.
+      .filter((machine) => !machine.type.container),
+  );
+
+  // Outputs are collected where they land: at this cell for machines
+  // whose outfeed points here, at the machine itself for single-point
+  // stations (no outputPosition).
+  const outputSources = dedupeMachines([
+    ...(cell?.outputMachines ?? []),
+    ...candidates.filter(
+      (machine) => machine.type.outputPosition === undefined,
+    ),
+  ]);
+
+  const sources: MaterialSource[] = [];
+  for (const machine of outputSources) {
+    if (machine.outputMaterials.length > 0) {
+      sources.push({ kind: "take-outputs", machine });
+    }
+  }
+  for (const machine of candidates) {
+    if (machine.inputMaterials.length > 0) {
+      sources.push({ kind: "take-inputs", machine });
+    }
+  }
+
+  // materialPiles keeps drop order (oldest first), and a stack renders
+  // in that order too — so the last piece dropped is drawn on top.
+  // Reversed here so a plain press takes the top of the pile, and
+  // dropping a piece then picking it back up is a round trip.
+  const reachable = gameState.materialPiles
+    .filter((pile) => pileWithinReach(pile, gameState.player.position))
+    .reverse();
+  for (const pile of reachable) {
+    sources.push({ kind: "floor-pile", pile });
+  }
+
+  return sources;
+}
+
+function dedupeMachines(machines: ReadonlyArray<Machine>): Machine[] {
+  const seen = new Set<string>();
+  return machines.filter((machine) => {
+    const key = machineKey(machine.state);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function resolveInteract(
   gameState: GameState,
   targetedMachine: Machine | undefined,
+  sourceOffset = 0,
 ): InteractAction | null {
   if (gameState.player.away || gameState.player.carriedMachine != null) {
     return null;
   }
 
-  const cellMap = CellMap.fromGameState(gameState);
-  const cell = cellMap.at(gameState.player.position);
+  const sources = materialSources(gameState, targetedMachine);
+  const piles = sources
+    .filter((source) => source.kind === "floor-pile")
+    .map((source) => source.pile);
+  const machineSources = sources.length - piles.length;
 
-  // A tool in hand commits the hands: material verbs (take, unload, pick
-  // up the floor) step aside until it's set down. Switches and the door
-  // still answer — flipping a switch doesn't need a free hand. Full arms
-  // step the same verbs aside: the chip never offers a pickup the action
-  // would refuse.
-  const handsFree =
-    heldTool(gameState) === null && handSpaceLeft(gameState.player) > 0;
-
-  const candidates = [targetedMachine, ...(cell?.operableMachines ?? [])]
-    .filter((machine) => machine != null)
-    // A container is opened, not reached into: what you toss in comes back
-    // out through its sheet (Tab). Leaving it off the interact key also
-    // keeps a garbage can — reachable from a whole ring of cells, since it
-    // has no front — from swallowing E from a board at your feet.
-    .filter((machine) => !machine.type.container);
-
-  // Outputs are collected where they land: at this cell for machines
-  // whose outfeed points here, at the machine itself for single-point
-  // stations (no outputPosition).
-  const outputSources = [
-    ...(cell?.outputMachines ?? []),
-    ...candidates.filter(
-      (machine) => machine.type.outputPosition === undefined,
-    ),
-  ];
-  if (handsFree) {
-    for (const machine of outputSources) {
-      if (machine.outputMaterials.length > 0) {
-        return { kind: "take-outputs", machine };
-      }
-    }
-
-    for (const machine of candidates) {
-      if (machine.inputMaterials.length > 0) {
-        return { kind: "take-inputs", machine };
-      }
-    }
+  // A loaded machine goes first, but doesn't hide the floor: the rummage
+  // offset (R) steps the whole ring — the bench's stock, then each piece
+  // lying within reach.
+  if (machineSources > 0) {
+    const source = sources[mod(sourceOffset, sources.length)];
+    return source.kind === "floor-pile"
+      ? { kind: "pick-up-floor", piles, target: source.pile }
+      : source;
   }
 
   if (
@@ -92,21 +179,16 @@ export function resolveInteract(
     return { kind: "switch-on", machine: targetedMachine };
   }
 
-  if (handsFree) {
-    // materialPiles keeps drop order (oldest first), and a stack renders
-    // in that order too — so the last piece dropped is drawn on top.
-    // Reversed here so a plain press takes the top of the pile, and
-    // dropping a piece then picking it back up is a round trip.
-    const reachable = gameState.materialPiles.filter((pile) =>
-      pileWithinReach(pile, gameState.player.position),
-    );
-    if (reachable.length > 0) {
-      return {
-        kind: "pick-up-floor",
-        piles: reachable.reverse(),
-      };
-    }
+  if (piles.length > 0) {
+    return {
+      kind: "pick-up-floor",
+      piles,
+      target: piles[mod(sourceOffset, piles.length)],
+    };
   }
+
+  const handsFree =
+    heldTool(gameState) === null && handSpaceLeft(gameState.player) > 0;
 
   // The broom leans where it was left; picking it up needs empty hands
   // (and a free shoulder). Floor pickups outrank it so a pile lying at
@@ -149,19 +231,6 @@ export function resolveInteract(
   }
 
   return null;
-}
-
-/**
- * The piece a press of E takes from a `pick-up-floor` action: the top of
- * the pile by default, stepped through the rest by the rummage offset (R).
- * One helper shared by the keyboard, the outline, and the chip, so all
- * three always name the same piece.
- */
-export function targetedPile(
-  piles: ReadonlyArray<MaterialPile>,
-  offset: number,
-): MaterialPile {
-  return piles[((offset % piles.length) + piles.length) % piles.length];
 }
 
 /**

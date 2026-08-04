@@ -36,7 +36,7 @@ import {
   takeFromTruckBedAction,
 } from "../../game/game-actions/truck-actions";
 import { chebyshevDistance } from "../../game/Vectors";
-import { resolveInteract, targetedPile } from "../../game/interact";
+import { materialSources, resolveInteract } from "../../game/interact";
 import {
   findFeedableOperation,
   liveSettingParameter,
@@ -174,7 +174,11 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (truckMenuOpenRef.current) {
         return closeTruckMenu();
       }
-      const action = resolveInteract(gs, targeted.current);
+      const action = resolveInteract(
+        gs,
+        targeted.current,
+        pileOffsetRef.current,
+      );
       if (!action) return;
       // Shift takes armfuls, and an armful is HAND_CAPACITY: the batch is
       // clamped to the room left so a big pile takes trips instead of the
@@ -207,8 +211,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
           // Shift's armful starts there too and wraps around the pile, so
           // a cycled-to piece is always in the batch.
           const piles = action.piles;
-          const target = targetedPile(piles, pileOffsetRef.current);
-          const from = piles.indexOf(target);
+          const from = piles.indexOf(action.target);
           return applyAction(
             pickUpMaterialAction(
               event.shiftKey
@@ -216,7 +219,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
                     0,
                     space,
                   )
-                : [target],
+                : [action.target],
             ),
           );
         }
@@ -456,9 +459,19 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     liveSettingParameter(targetedMachine, _gameState.progression, "rotate") !=
       null;
   const interactNow =
-    present && !carrying ? resolveInteract(_gameState, targetedMachine) : null;
-  const pilesWithinReach =
-    interactNow?.kind === "pick-up-floor" ? interactNow.piles.length : 0;
+    present && !carrying
+      ? resolveInteract(_gameState, targetedMachine, pileOffset)
+      : null;
+  // R rummages whenever E is taking material and there's more than one
+  // source within reach — a loaded machine's stock and the floor's pieces
+  // form one ring, so a bench never hides the board lying beside it.
+  const rummageLive =
+    interactNow?.kind === "take-outputs" ||
+    interactNow?.kind === "take-inputs" ||
+    interactNow?.kind === "pick-up-floor";
+  const sourceCount = rummageLive
+    ? materialSources(_gameState, targetedMachine).length
+    : 0;
 
   useShortcut(
     "rotate-setting",
@@ -469,7 +482,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   useShortcut(
     "cycle-pile",
     (event) => cyclePile(event.shiftKey ? -1 : 1),
-    present && !carrying && pilesWithinReach > 1 && !rotateSettingLive,
+    present && !carrying && sourceCount > 1 && !rotateSettingLive,
   );
 
   return null;
