@@ -39,6 +39,15 @@ describe("sanding operations", () => {
     assert.strictEqual(outputs[0].thickness, 4);
   });
 
+  it("only the orbit sander is powered — it cuts while resting, the block only while moving", () => {
+    for (const op of TOOL_TYPES.randomOrbitSander.operations) {
+      assert.ok(op.interaction?.kind === "stroke" && op.interaction.powered);
+    }
+    for (const op of TOOL_TYPES.sandingBlock.operations) {
+      assert.ok(op.interaction?.kind === "stroke" && !op.interaction.powered);
+    }
+  });
+
   it("won't accept an already-sanded material", () => {
     const requirement = blockSandBoard.getInputMaterials({})[0];
     assert.ok(

@@ -249,6 +249,11 @@ export const BenchWorkSurface: React.FC<{
   const slotTipRef = useRef<HTMLDivElement | null>(null);
   const pointerPos = useRef<{ x: number; y: number } | null>(null);
   const fitRef = useRef<StageFit | null>(null);
+  const lastPointer = useRef<{
+    xIn: number;
+    yIn: number;
+    held: boolean;
+  } | null>(null);
 
   const canOperate = machineCanOperate(machine, shopSupply(gameState));
 
@@ -1193,6 +1198,7 @@ export const BenchWorkSurface: React.FC<{
               placement={workPlacement}
               fit={sceneFit}
               bus={bus}
+              pointer={lastPointer}
               active={workActive}
               onComplete={finish}
               onWork={onWork}
@@ -1271,12 +1277,19 @@ export const BenchWorkSurface: React.FC<{
         event.clientX,
         event.clientY,
       );
-      bus.dispatch({
+      const benchEvent = {
         type,
         xIn,
         yIn,
         held: type === "move" ? event.buttons === 1 : type === "down",
-      });
+      } as const;
+      // The last pointer state, for surfaces that mount mid-press: the
+      // claiming press arrives before the work overlay exists, and a
+      // hand held perfectly still sends no further events — a powered
+      // tool's dwell tick reads this snapshot at mount instead.
+      lastPointer.current =
+        type === "up" || type === "leave" ? null : benchEvent;
+      bus.dispatch(benchEvent);
     };
 
   const scriptName = curing

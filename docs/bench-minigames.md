@@ -94,7 +94,10 @@ vocabulary, and per-operation scripts that compose it.
    products — gains a corollary. Hand interaction is the slow, cheap,
    engaging path; better tools shrink the interaction (sanding block →
    random orbit sander is a wider, faster brush, not a multiplier on a
-   bar); a real machine removes the mini-game entirely. Buying equipment
+   bar — and a *powered* brush: `powered` on the stroke interaction
+   means the pad does its own scrubbing, so the sander keeps cutting
+   while it rests on a spot, where the block only cuts while it moves);
+   a real machine removes the mini-game entirely. Buying equipment
    literally buys back your hands.
 
 ## The gesture vocabulary — **Now**

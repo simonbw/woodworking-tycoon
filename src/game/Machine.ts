@@ -276,6 +276,10 @@ export type OperationInteraction =
       readonly coveragePerSecond: number;
       /** Where the strokes land: a face, or the narrow edge band. */
       readonly band?: "face" | "edge";
+      /** The tool does its own scrubbing: held down, it keeps working
+       * the spot under the pad even while the hand rests (the orbit
+       * sander's orbit). Unpowered tools only cut while they move. */
+      readonly powered?: boolean;
     }
   | {
       /** Mark the cut line, then push–pull strokes deepen the kerf. The

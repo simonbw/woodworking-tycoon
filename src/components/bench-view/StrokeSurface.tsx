@@ -1,4 +1,4 @@
-import { useApplication } from "@pixi/react";
+import { useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, RenderTexture, Sprite } from "pixi.js";
 import React, {
   useCallback,
@@ -23,7 +23,28 @@ import { MaterialInstance } from "../../game/Materials";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { BenchPointerBus, BenchPointerEvent } from "./benchPointer";
 import { EdgeBandSprite } from "./EdgeBandSprite";
-import { StageFit, strokeGain } from "./stageMath";
+import { dwellGain, StageFit, strokeGain } from "./stageMath";
+
+/**
+ * The one scratch texture every stroke pass reveals through, resized per
+ * workpiece and NEVER destroyed: destroying a texture that has served as
+ * a sprite mask leaves the mask pipe's pooled bind groups pointing at
+ * freed GPU state (pixi v8), and the next masked surface crashes the
+ * renderer. Only one stroke surface ever exists at a time, so one
+ * texture serves them all; each pass wipes it at mount.
+ */
+let scratchTexture: RenderTexture | null = null;
+function scratchTextureFor(widthPx: number, heightPx: number): RenderTexture {
+  if (!scratchTexture) {
+    scratchTexture = RenderTexture.create({ width: widthPx, height: heightPx });
+  } else {
+    scratchTexture.resize(widthPx, heightPx);
+  }
+  return scratchTexture;
+}
+
+/** An empty container rendered with clear: true — the wipe. */
+const SCRATCH_WIPE = new Container();
 
 /**
  * Stroke work, in place: the claimed workpiece drawn exactly where it
@@ -47,6 +68,10 @@ export const StrokeSurface: React.FC<{
   /** Scene fit: bench-top inches, the same space the pointer reports. */
   fit: StageFit;
   bus: BenchPointerBus;
+  /** The stage's live pointer (bench inches) — read once at mount, because
+   * the claiming press happened before this surface existed and a hand
+   * held still sends no further events for the dwell tick to see. */
+  pointer: React.RefObject<{ xIn: number; yIn: number; held: boolean } | null>;
   /** The owning tool is in hand — strokes land only then. */
   active: boolean;
   /** Coverage crossed the threshold — the finish commit. */
@@ -61,6 +86,7 @@ export const StrokeSurface: React.FC<{
   placement,
   fit,
   bus,
+  pointer,
   active,
   onComplete,
   onWork,
@@ -73,24 +99,30 @@ export const StrokeSurface: React.FC<{
   const widthPx = Math.max(2, Math.round(size.widthIn * fit.pxPerIn));
   const heightPx = Math.max(2, Math.round(size.heightIn * fit.pxPerIn));
 
-  // One attempt per workpiece: a fresh grid and a fresh scratch texture.
-  // Ephemeral by design (decision 3) — close the sheet and it's gone.
+  // One attempt per workpiece: a fresh grid, and the scratch texture
+  // wiped clean. Ephemeral by design (decision 3) — close the sheet and
+  // it's gone.
   const grid = useMemo(
     () => makeCoverageGrid(size.widthIn, size.heightIn),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [workpiece.id, band],
   );
   const renderTexture = useMemo(
-    () => RenderTexture.create({ width: widthPx, height: heightPx }),
+    () => scratchTextureFor(widthPx, heightPx),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [workpiece.id, band],
   );
-  useEffect(
-    () => () => {
-      renderTexture.destroy(true);
-    },
-    [renderTexture],
-  );
+  useEffect(() => {
+    // A fresh pass starts from an empty scratch — the texture outlives
+    // every surface (see scratchTextureFor), so wipe it here. Effects
+    // run outside the ticker's render pass, where a render-to-texture
+    // is safe.
+    app.renderer.render({
+      container: SCRATCH_WIPE,
+      target: renderTexture,
+      clear: true,
+    });
+  }, [app, renderTexture]);
 
   // The soft brush stamped into the texture: full core, feathered rim
   const brush = useMemo(() => {
@@ -112,6 +144,21 @@ export const StrokeSurface: React.FC<{
   const lastPoint = useRef<{ xIn: number; yIn: number; at: number } | null>(
     null,
   );
+  /** Where the pad rests right now (workpiece inches) and whether the
+   * button is down — read by the powered tool's dwell tick. Seeded from
+   * the stage's live pointer at mount: the claiming press pre-dates
+   * this surface, and a hand held still never sends another event. */
+  const pointerRef = useRef<{ xIn: number; yIn: number; held: boolean } | null>(
+    null,
+  );
+  useEffect(() => {
+    const at = pointer.current;
+    pointerRef.current = at
+      ? { ...benchPointInFrame(placement, size, at.xIn, at.yIn), held: at.held }
+      : null;
+    // Seed once per workpiece — afterwards the pointer events own it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workpiece.id]);
 
   // Mask plumbing: the finished layer only shows through the scratch
   const [maskSprite, setMaskSprite] = useState<Sprite | null>(null);
@@ -129,11 +176,13 @@ export const StrokeSurface: React.FC<{
     (event: BenchPointerEvent) => {
       if (doneRef.current || !activeRef.current) {
         lastPoint.current = null;
+        pointerRef.current = null;
         return;
       }
       const { type } = event;
       if (type === "up" || type === "leave") {
         lastPoint.current = null;
+        pointerRef.current = null;
         return;
       }
       // The pointer arrives in bench inches; the piece's placement
@@ -144,6 +193,11 @@ export const StrokeSurface: React.FC<{
         event.xIn,
         event.yIn,
       );
+      pointerRef.current = {
+        xIn,
+        yIn,
+        held: type === "down" ? true : event.held,
+      };
       const inBounds =
         xIn >= -radiusIn &&
         xIn <= size.widthIn + radiusIn &&
@@ -216,6 +270,59 @@ export const StrokeSurface: React.FC<{
     ],
   );
   useEffect(() => bus.register(handlePointer), [bus, handlePointer]);
+
+  // A powered tool does its own scrubbing: while the button is down and
+  // the pad rests on the piece, every frame lands work at that spot —
+  // the orbit sander keeps cutting while the hand rests. The block has
+  // no tick: it only cuts through the movement handler above. The
+  // visual stamp is deferred out of the ticker: rendering into the
+  // scratch texture mid-frame corrupts the mask pipe's state (the
+  // pointer path is safe because events fire between frames).
+  const dwellFlush = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (dwellFlush.current) clearTimeout(dwellFlush.current);
+    },
+    [],
+  );
+  useTick((ticker) => {
+    if (!interaction.powered || doneRef.current || !activeRef.current) return;
+    const pad = pointerRef.current;
+    if (!pad?.held) return;
+    const inBounds =
+      pad.xIn >= -radiusIn &&
+      pad.xIn <= size.widthIn + radiusIn &&
+      pad.yIn >= -radiusIn &&
+      pad.yIn <= size.heightIn + radiusIn;
+    if (!inBounds) return;
+    onWork();
+    if (dwellFlush.current === null) {
+      const at = { xIn: pad.xIn, yIn: pad.yIn };
+      dwellFlush.current = setTimeout(() => {
+        dwellFlush.current = null;
+        brush.position.set(at.xIn * fit.pxPerIn, at.yIn * fit.pxPerIn);
+        app.renderer.render({
+          container: brush,
+          target: renderTexture,
+          clear: false,
+        });
+      }, 0);
+    }
+    stampStroke(
+      grid,
+      pad.xIn,
+      pad.yIn,
+      pad.xIn,
+      pad.yIn,
+      radiusIn,
+      dwellGain(interaction.coveragePerSecond, radiusIn, ticker.deltaMS),
+    );
+    onProgress?.(coverageProgress(grid));
+    if (coverageComplete(grid) && !doneRef.current) {
+      doneRef.current = true;
+      onComplete();
+    }
+  });
 
   const before =
     band === "face" ? (

@@ -16,8 +16,11 @@ export const randomOrbitSander: ToolType = {
     "worktable2x2",
   ],
   operations: makeSandingOperations("orbit", 12, {
-    // A wider, faster brush — not a multiplier on a bar
+    // A wider, faster brush — not a multiplier on a bar. And it's a
+    // power tool: the pad orbits by itself, so it keeps cutting while
+    // it rests on a spot — the block only cuts while it moves.
     brushWidthIn: 5,
     coveragePerSecond: 50,
+    powered: true,
   }),
 };
