@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 140 48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-144.372,-276.455)">
+        <g>
+            <g transform="matrix(1,0,0,1,32.9673,37.4066)">
+                <text x="138.935px" y="270.627px" style="font-family:'Lumberjack';font-size:37.714px;">A<tspan x="158.269px 191.598px 212.002px " y="270.627px 270.627px 270.627px ">WYE</tspan>R</text>
+            </g>
+            <g transform="matrix(1.3168,0,0,1.37166,-65.6248,-114.261)">
+                <text x="158.035px" y="318.933px" style="font-family:'Lumberjack';font-size:48px;">S</text>
+            </g>
+        </g>
+        <g transform="matrix(1,0,0,1,-128.622,48.3221)">
+            <g transform="matrix(1.2,0,0,1,-62.3665,0)">
+                <text x="311.833px" y="275.445px" style="font-family:'Lumberjack';font-size:18px;">&amp;</text>
+            </g>
+            <g transform="matrix(1.2,0,0,1,-65.7145,0)">
+                <text x="328.573px" y="275.445px" style="font-family:'Lumberjack';font-size:17.286px;">S</text>
+            </g>
+            <g transform="matrix(1.2,0,0,1,-67.8303,0)">
+                <text x="339.152px" y="275.445px" style="font-family:'Lumberjack';font-size:17.286px;">O<tspan x="349.281px 359.808px " y="275.445px 275.445px ">NS</tspan></text>
+            </g>
+        </g>
+    </g>
+</svg>
