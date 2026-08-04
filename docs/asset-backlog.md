@@ -152,11 +152,10 @@ wiring: same path, same size, same component.
 Fixed-form objects that happen to be tinted by species — good candidates for
 one asset plus a tint, the way `MaterialSprite` already passes `tint` down.
 
-- [ ] Boxes: jewelry box, birdhouse —
-      `material-sprites/FinishedBoxSprite.tsx` (one sprite serves both
-      today; the crate, planter box, step stool, and bookshelf now draw
-      from their bills of materials via `AssembledProductSprite`,
-      procedural on purpose).
+- [ ] Jewelry box — `material-sprites/FinishedBoxSprite.tsx` (the last
+      product it serves; the crate, planter box, step stool, bookshelf,
+      and birdhouse now draw from their bills of materials via
+      `AssembledProductSprite`, procedural on purpose).
 - [ ] Picture frame and hex frame — `material-sprites/PictureFrameSprite.tsx`.
 - [ ] Serving tray — `material-sprites/CuttingBoardSprite.tsx`.
 

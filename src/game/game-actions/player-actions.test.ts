@@ -441,8 +441,8 @@ describe("dropMaterialAction", () => {
 
 describe("the blueprint assembly's claim", () => {
   it("consumes the seated boards, leaving spare matching stock on the bench", () => {
-    const stringer = () => board("pallet", 48, 6, 3);
-    const deckBoard = () => board("pallet", 36, 4, 1);
+    const stringer = () => board("pallet", 48, 6, 6);
+    const deckBoard = () => board("pallet", 36, 4, 2);
     // The spares come first in the bay: a first-match claim would take
     // them and leave the seated boards lying under the finished shelf
     const spares = [stringer(), deckBoard()];

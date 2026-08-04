@@ -1,8 +1,11 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
+import { makeMaterial } from "../material-helpers";
+import { Board } from "../Materials";
 import {
   assembleFromBlueprint,
+  BIRDHOUSE_BLUEPRINT,
   blueprintFastenerCost,
   blueprintInputs,
   BOOKSHELF_BLUEPRINT,
@@ -25,8 +28,8 @@ import {
 } from "./assembly";
 import { BenchPlacement } from "./bench-layout";
 
-const stringer = () => board("pallet", 48, 6, 3);
-const deckBoard = () => board("pallet", 36, 4, 1);
+const stringer = () => board("pallet", 48, 6, 6);
+const deckBoard = () => board("pallet", 36, 4, 2);
 const shelfParts = () => [
   stringer(),
   stringer(),
@@ -143,7 +146,7 @@ describe("assembleFromBlueprint", () => {
     });
     assert.strictEqual(parts.length, 5);
     assert.strictEqual(parts[0].seed, "old-shelf:rail-0");
-    assert.strictEqual(parts[0].thickness, 3);
+    assert.strictEqual(parts[0].thickness, 6);
   });
 });
 
@@ -454,7 +457,7 @@ describe("the crate and planter box blueprints", () => {
     );
     const crate = assembleFromBlueprint(
       CRATE_BLUEPRINT,
-      Array.from({ length: 10 }, () => board("pallet", 36, 4, 1)),
+      Array.from({ length: 10 }, () => board("pallet", 36, 4, 2)),
     );
     assert.strictEqual(crate.type, "crate");
     assert.strictEqual(crate.parts?.length, 10);
@@ -526,10 +529,10 @@ describe("the step stool and bookshelf blueprints", () => {
     assert.strictEqual(productBlueprintFor("stepStool"), STEP_STOOL_BLUEPRINT);
     assert.strictEqual(productBlueprintFor("bookshelf"), BOOKSHELF_BLUEPRINT);
     const stool = assembleFromBlueprint(STEP_STOOL_BLUEPRINT, [
-      board("pallet", 24, 6, 3),
-      board("pallet", 24, 6, 3),
-      board("pallet", 24, 4, 1),
-      board("pallet", 24, 4, 1),
+      board("pallet", 24, 6, 6),
+      board("pallet", 24, 6, 6),
+      board("pallet", 24, 4, 2),
+      board("pallet", 24, 4, 2),
     ]);
     assert.strictEqual(stool.type, "stepStool");
     assert.strictEqual(stool.parts?.length, 4);
@@ -539,5 +542,81 @@ describe("the step stool and bookshelf blueprints", () => {
     );
     assert.strictEqual(bookshelf.species, "oak");
     assert.ok(bookshelf.parts?.every((part) => part.surface === "sanded"));
+  });
+});
+
+describe("the birdhouse blueprint", () => {
+  it("derives six nails: front to side, front through floor, roof into front", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(BIRDHOUSE_BLUEPRINT), [
+      { id: "nails", amount: 6 },
+    ]);
+    const spots = BIRDHOUSE_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(
+      spots,
+      [
+        // Each front board into its side wall
+        "3.25,13",
+        "11.75,13",
+        // Each front board through the floor strip
+        "5,15.75",
+        "10,15.75",
+        // The roof down into each front board's mitered top
+        "5,5.25",
+        "10,5.25",
+      ].sort(),
+    );
+    // The roof never nails into the sides — the ventilation gaps are open
+    for (const fastener of BIRDHOUSE_BLUEPRINT.fasteners) {
+      assert.ok(
+        !(
+          fastener.joins.some((id) => id.startsWith("roof")) &&
+          fastener.joins.some((id) => id.startsWith("side"))
+        ),
+      );
+    }
+  });
+
+  it("folds the recipe to four rows: fronts, roof, sides, floor", () => {
+    const inputs = blueprintInputs(BIRDHOUSE_BLUEPRINT);
+    assert.deepStrictEqual(
+      inputs.map((row) => row.quantity),
+      [2, 1, 2, 1],
+    );
+    // The mitered fronts read their predicate's note on the sheet
+    assert.strictEqual(inputs[0].matchesNote, "one end mitered 45°");
+  });
+
+  it("lies the roof flat on the slope and stands the flanks on edge", () => {
+    const roof = BIRDHOUSE_BLUEPRINT.slots.find((s) => s.role === "roof");
+    assert.ok(roof && !roof.onEdge);
+    assert.ok(
+      BIRDHOUSE_BLUEPRINT.slots
+        .filter((s) => s.role === "side" || s.role === "floor")
+        .every((s) => s.onEdge),
+    );
+  });
+
+  it("is registered and assembles from its six boards", () => {
+    assert.strictEqual(productBlueprintFor("birdhouse"), BIRDHOUSE_BLUEPRINT);
+    const mitered = () =>
+      makeMaterial<Board>({
+        ...board("pallet", 12, 4, 2),
+        ends: {
+          left: { kind: "square" },
+          right: { kind: "mitered", angle: -45 },
+        },
+      });
+    const birdhouse = assembleFromBlueprint(BIRDHOUSE_BLUEPRINT, [
+      mitered(),
+      mitered(),
+      board("pallet", 12, 6, 6),
+      board("pallet", 6, 4, 2),
+      board("pallet", 6, 4, 2),
+      board("pallet", 12, 4, 2),
+    ]);
+    assert.strictEqual(birdhouse.type, "birdhouse");
+    assert.strictEqual(birdhouse.parts?.length, 6);
   });
 });

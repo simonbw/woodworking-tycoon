@@ -35,11 +35,11 @@ function workspaceMachine(overrides: Partial<MachineState>): MachineState {
 /** Boards for one rustic shelf: 2 stringers and 3 deck boards. */
 function shelfBoards() {
   return [
-    board("pallet", 48, 6, 3),
-    board("pallet", 48, 6, 3),
-    board("pallet", 36, 4, 1),
-    board("pallet", 36, 4, 1),
-    board("pallet", 36, 4, 1),
+    board("pallet", 48, 6, 6),
+    board("pallet", 48, 6, 6),
+    board("pallet", 36, 4, 2),
+    board("pallet", 36, 4, 2),
+    board("pallet", 36, 4, 2),
   ];
 }
 

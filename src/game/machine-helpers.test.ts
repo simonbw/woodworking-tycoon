@@ -23,11 +23,11 @@ import { MaterialInstance } from "./Materials";
 describe("matchMaterialsToSlots", () => {
   it("should match all materials when placed in correct order", () => {
     const materials = [
-      board("pallet", 48, 6, 3), // stringer
-      board("pallet", 48, 6, 3), // stringer
-      board("pallet", 36, 4, 1), // deck
-      board("pallet", 36, 4, 1), // deck
-      board("pallet", 36, 4, 1), // deck
+      board("pallet", 48, 6, 6), // stringer
+      board("pallet", 48, 6, 6), // stringer
+      board("pallet", 36, 4, 2), // deck
+      board("pallet", 36, 4, 2), // deck
+      board("pallet", 36, 4, 2), // deck
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -65,11 +65,11 @@ describe("matchMaterialsToSlots", () => {
   it("should match materials even when placed in wrong order", () => {
     // Place deck boards first, then stringers - opposite of requirement order
     const materials = [
-      board("pallet", 36, 4, 1), // deck
-      board("pallet", 36, 4, 1), // deck
-      board("pallet", 36, 4, 1), // deck
-      board("pallet", 48, 6, 3), // stringer
-      board("pallet", 48, 6, 3), // stringer
+      board("pallet", 36, 4, 2), // deck
+      board("pallet", 36, 4, 2), // deck
+      board("pallet", 36, 4, 2), // deck
+      board("pallet", 48, 6, 6), // stringer
+      board("pallet", 48, 6, 6), // stringer
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -104,7 +104,7 @@ describe("matchMaterialsToSlots", () => {
 
   it("should handle partial materials with placeholders", () => {
     const materials = [
-      board("pallet", 48, 6, 3), // only 1 stringer
+      board("pallet", 48, 6, 6), // only 1 stringer
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -173,8 +173,8 @@ describe("matchMaterialsToSlots", () => {
       board("pine", 96, 4, 1), // wrong species
       board("pine", 96, 4, 1), // wrong species
       board("pine", 96, 4, 1), // wrong species
-      board("pallet", 48, 6, 3), // correct stringer
-      board("pallet", 48, 6, 3), // correct stringer
+      board("pallet", 48, 6, 6), // correct stringer
+      board("pallet", 48, 6, 6), // correct stringer
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -220,8 +220,8 @@ describe("matchMaterialsToSlots", () => {
     // This is the actual issue the user experiences:
     // User places deck boards first, then adds stringers one at a time
     const materials = [
-      board("pallet", 36, 4, 1), // deck board placed first
-      board("pallet", 48, 6, 3), // stringer placed second
+      board("pallet", 36, 4, 2), // deck board placed first
+      board("pallet", 48, 6, 6), // stringer placed second
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [

@@ -65,7 +65,7 @@ describe("drill", () => {
     assert.deepStrictEqual(buildPlanterBox.requiredConsumables, [
       { id: "screws", amount: 6 },
     ]);
-    const slats = Array.from({ length: 5 }, () => board("pallet", 24, 4, 1));
+    const slats = Array.from({ length: 5 }, () => board("pallet", 24, 4, 2));
     const { outputs } = buildPlanterBox.output(slats, {});
     assert.strictEqual(outputs.length, 1);
     assert.strictEqual(outputs[0].type, "planterBox");
@@ -73,7 +73,7 @@ describe("drill", () => {
   });
 
   it("rejects uncut deck boards — the slats must be crosscut to 2' first", () => {
-    const freshDeckBoard = board("pallet", 36, 4, 1);
+    const freshDeckBoard = board("pallet", 36, 4, 2);
     assert.strictEqual(
       materialMeetsInput(
         freshDeckBoard,
@@ -83,7 +83,7 @@ describe("drill", () => {
     );
     assert.strictEqual(
       materialMeetsInput(
-        board("pallet", 24, 4, 1),
+        board("pallet", 24, 4, 2),
         buildPlanterBox.getInputMaterials({})[0],
       ),
       true,

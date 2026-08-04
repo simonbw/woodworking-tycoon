@@ -122,10 +122,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
           (present: boolean) => present,
         ).length;
         const stringers = array(stringerCount).map(() =>
-          board("pallet", 48, 6, 3),
+          board("pallet", 48, 6, 6),
         );
         const deckBoards = array(deckBoardsCount).map(() =>
-          board("pallet", 36, 4, 1),
+          board("pallet", 36, 4, 2),
         );
         return {
           inputs: [],
@@ -153,7 +153,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
               nails: nailsLeft,
             }),
           ],
-          outputs: [board("pallet", 36, 4, 1)],
+          outputs: [board("pallet", 36, 4, 2)],
           consumableOutputs: [
             {
               id: "nails" as const,
@@ -337,7 +337,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         type: ["board"],
         width: [4],
         length: [36],
-        thickness: [1],
+        thickness: [2],
         quantity: 2,
       },
     ],
@@ -370,7 +370,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         type: ["board"],
         width: [4],
         length: [36],
-        thickness: [1],
+        thickness: [2],
         quantity: 2,
       },
     ],
@@ -401,7 +401,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         type: ["board"],
         width: [4],
         length: [12],
-        thickness: [1],
+        thickness: [2],
         quantity: 2,
       },
     ],
@@ -746,6 +746,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         // that's the whole point of the saw swinging both ways.
         matches: (material) =>
           isBoard(material) && isMiteredFrameRail(material, 45),
+        matchesNote: "45° both ends, mirrored",
       },
     ],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
@@ -827,6 +828,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         // Six rails mitered at the 30° stop, mirrored so a hexagon closes
         matches: (material) =>
           isBoard(material) && isMiteredFrameRail(material, 30),
+        matchesNote: "30° both ends, mirrored",
       },
     ],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
@@ -876,6 +878,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         quantity: 4,
         matches: (material) =>
           isBoard(material) && isMiteredFrameRail(material, 45),
+        matchesNote: "45° both ends, mirrored",
       },
     ],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
@@ -1023,7 +1026,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       },
       {
         type: ["board"],
-        thickness: [3, 4],
+        thickness: [6, 8],
         length: [36, 48],
         quantity: 4,
       },
@@ -1115,7 +1118,7 @@ function worktableBuildOperation(
           // Legs and stretchers want stout stock — stringers and 2×4s
           // qualify; deck boards are too thin
           type: ["board"],
-          thickness: [3, 4],
+          thickness: [6, 8],
           length: [36, 48],
           quantity: legBoards,
         },

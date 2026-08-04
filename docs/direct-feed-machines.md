@@ -201,7 +201,7 @@ red) while a targeted machine is refusing for room.
   the same kerf and dust as a rip.
 - **Miter saw** (trigger tool — no switch, verb "Cut"): two settings —
   the head angle and the **cut line** (`cutPosition`, inches from the
-  stock's left end; the detents sit at the foot marks); cut pieces stay
+  stock's left end; the detents sit every half foot); cut pieces stay
   on the saw table. The cut line is a
   slide input (`OperationParameter.presentation: "slide"`, drawn by
   `CutLineScale`): the carried board itself lies under the blade line,

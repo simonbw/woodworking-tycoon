@@ -268,11 +268,21 @@ test.describe("Bench view", () => {
       expect((await palletState()).stringers).toEqual([true, true, true]);
 
       // E takes the piece under the pointer — the freed board lying on
-      // its berth, not whatever sits first in the bay
+      // its berth, not whatever sits first in the bay. Hover is pointer
+      // state computed on mousemove, so under load the first move can
+      // land before the freed board reaches the scene — wiggle until
+      // the stage reports the board under the hand, then take it.
       await page.keyboard.press("Escape"); // hang the hammer up
       const berth = await palletPoint(page, 23, 17);
-      await page.mouse.move(berth.x, berth.y);
-      await page.waitForTimeout(150);
+      let wiggle = 0;
+      await expect
+        .poll(async () => {
+          await page.mouse.move(berth.x + (wiggle++ % 2), berth.y);
+          return page
+            .getByTestId("bench-stage")
+            .getAttribute("data-hovered");
+        })
+        .toBe("fx-bench-pallet:deck-7");
       await page.keyboard.press("e");
       await expect
         .poll(async () =>
@@ -393,11 +403,11 @@ test.describe("Bench view", () => {
           tools: ["sandingBlock", "hammer"],
           selectedOperationId: "buildRusticPalletShelf",
           inputMaterials: [
-            palletBoard("a1", 6, 48, 3),
-            palletBoard("a2", 6, 48, 3),
-            palletBoard("a3", 4, 36, 1),
-            palletBoard("a4", 4, 36, 1),
-            palletBoard("a5", 4, 36, 1),
+            palletBoard("a1", 6, 48, 6),
+            palletBoard("a2", 6, 48, 6),
+            palletBoard("a3", 4, 36, 2),
+            palletBoard("a4", 4, 36, 2),
+            palletBoard("a5", 4, 36, 2),
           ],
         }),
       ).toBe("assembly");
@@ -407,7 +417,7 @@ test.describe("Bench view", () => {
           tools: ["sandingBlock", "handSaw"],
           selectedOperationId: "handSawCut",
           selectedParameters: { angle: 0, cutEnd: "left", targetLength: 24 },
-          inputMaterials: [palletBoard("saw1", 4, 36, 1)],
+          inputMaterials: [palletBoard("saw1", 4, 36, 2)],
         }),
       ).toBe("saw");
 
@@ -461,11 +471,11 @@ test.describe("Bench view", () => {
                   tools: ["sandingBlock", "hammer"],
                   selectedOperationId: "buildRusticPalletShelf",
                   inputMaterials: [
-                    board("bp-r1", 6, 48, 3),
-                    board("bp-r2", 6, 48, 3),
-                    board("bp-s1", 4, 36, 1),
-                    board("bp-s2", 4, 36, 1),
-                    board("bp-s3", 4, 36, 1),
+                    board("bp-r1", 6, 48, 6),
+                    board("bp-r2", 6, 48, 6),
+                    board("bp-s1", 4, 36, 2),
+                    board("bp-s2", 4, 36, 2),
+                    board("bp-s3", 4, 36, 2),
                   ],
                   processingMaterials: [],
                   outputMaterials: [],
@@ -586,7 +596,7 @@ test.describe("Bench view", () => {
           species: "pallet",
           length: l,
           width: 4,
-          thickness: 1,
+          thickness: 2,
           surface: "rough",
           jointedFaces: 1,
           jointedEdges: 2,

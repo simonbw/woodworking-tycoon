@@ -53,13 +53,13 @@ describe("buildCrosscutSled", () => {
   it("takes a plywood base and two scrap boards", () => {
     const [baseReq, runnerReq] = buildSled.getInputMaterials({});
     assert.ok(materialMeetsInput(plywood(), baseReq));
-    assert.ok(materialMeetsInput(board("pallet", 36, 4, 1), runnerReq));
+    assert.ok(materialMeetsInput(board("pallet", 36, 4, 2), runnerReq));
     assert.strictEqual(runnerReq.quantity, 2);
   });
 
   it("produces tooling, not product", () => {
     const result = buildSled.output(
-      [plywood(), board("pallet", 36, 4, 1), board("pallet", 36, 4, 1)],
+      [plywood(), board("pallet", 36, 4, 2), board("pallet", 36, 4, 2)],
       {},
     );
     assert.strictEqual(result.outputs.length, 1);
@@ -231,8 +231,8 @@ describe("shop-made tooling", () => {
       selectedOperationId: "buildCrosscutSled",
       processingMaterials: [
         plywood(),
-        board("pallet", 36, 4, 1),
-        board("pallet", 36, 4, 1),
+        board("pallet", 36, 4, 2),
+        board("pallet", 36, 4, 2),
       ],
       operationProgress: {
         status: "inProgress",

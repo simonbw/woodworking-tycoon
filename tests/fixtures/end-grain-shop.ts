@@ -52,7 +52,7 @@ function palletBoard(id: string): Board {
     species: "pallet",
     length: 36,
     width: 4,
-    thickness: 1,
+    thickness: 2,
     surface: "rough",
     jointedFaces: 1,
     jointedEdges: 2,

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { Operation } from "../Machine";
 import {
+  describeMaterialRequirement,
   isFinishedProduct,
   makeMaterial,
   materialMeetsInput,
@@ -41,25 +42,78 @@ function rail(
 }
 
 describe("buildBirdhouse", () => {
-  it("takes short deck-board crosscuts and yields a birdhouse", () => {
-    const op = toolOp("hammer", "buildBirdhouse");
-    const requirement = op.getInputMaterials({})[0];
-    assert.ok(materialMeetsInput(board("pallet", 12, 4, 1), requirement));
-    // Whole deck boards are too long
-    assert.ok(!materialMeetsInput(board("pallet", 36, 4, 1), requirement));
+  const op = toolOp("hammer", "buildBirdhouse");
 
-    const inputs = Array.from({ length: 4 }, () => board("pallet", 12, 4, 1));
+  /** A front-wall board: 12" deck crosscut, top end mitered at 45°. */
+  const frontBoard = (): Board =>
+    makeMaterial<Board>({
+      ...board("pallet", 12, 4, 2),
+      ends: {
+        left: { kind: "square" },
+        right: { kind: "mitered", angle: 45 },
+      },
+    });
+
+  it("gates the front walls on a single 45° mitered end", () => {
+    const frontReq = op.getInputMaterials({})[0];
+    assert.ok(materialMeetsInput(frontBoard(), frontReq));
+    // A plain square crosscut can't seat the sloped roof
+    assert.ok(!materialMeetsInput(board("pallet", 12, 4, 2), frontReq));
+    // A frame rail is mitered at both ends — too much saw work
+    assert.ok(
+      !materialMeetsInput(
+        makeMaterial<Board>({
+          ...board("pallet", 12, 4, 2),
+          ends: {
+            left: { kind: "mitered", angle: -45 },
+            right: { kind: "mitered", angle: 45 },
+          },
+        }),
+        frontReq,
+      ),
+    );
+    // The sheet says what the predicate wants
+    assert.match(describeMaterialRequirement(frontReq), /one end mitered 45°/);
+  });
+
+  it("assembles the lean-to from six boards and carries its parts", () => {
+    const inputs = [
+      frontBoard(),
+      frontBoard(),
+      board("pallet", 12, 6, 6), // stringer-crosscut roof
+      board("pallet", 6, 4, 2),
+      board("pallet", 6, 4, 2),
+      board("pallet", 12, 4, 2), // floor, square-ended
+    ];
     const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "birdhouse");
     assert.strictEqual(outputs[0].species, "pallet");
+    assert.strictEqual(outputs[0].parts?.length, 6);
+  });
+
+  it("keeps a mitered board out of the plain floor slot", () => {
+    // Two mitered boards, then squares: the constrained front slots
+    // claim the miters first, so the floor gets a square board even
+    // when the mitered ones come earlier in the load.
+    const inputs = [
+      frontBoard(),
+      frontBoard(),
+      board("pallet", 12, 4, 2),
+      board("pallet", 12, 6, 6),
+      board("pallet", 6, 4, 2),
+      board("pallet", 6, 4, 2),
+    ];
+    const { outputs } = op.output(inputs, {});
+    assert.ok(isFinishedProduct(outputs[0]));
+    assert.strictEqual(outputs[0].parts?.length, 6);
   });
 });
 
 describe("buildCrate", () => {
   it("takes ten whole deck boards — a slatted bottom and four walls", () => {
     const op = toolOp("hammer", "buildCrate");
-    const inputs = Array.from({ length: 10 }, () => board("pallet", 36, 4, 1));
+    const inputs = Array.from({ length: 10 }, () => board("pallet", 36, 4, 2));
     const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "crate");
@@ -71,18 +125,18 @@ describe("buildStepStool", () => {
     const op = toolOp("drill", "buildStepStool");
     const [sides, treads] = op.getInputMaterials({});
     // Crosscut pallet stringers qualify as sides
-    assert.ok(materialMeetsInput(board("pallet", 24, 6, 3), sides));
+    assert.ok(materialMeetsInput(board("pallet", 24, 6, 6), sides));
     // Deck-board crosscuts qualify as treads
-    assert.ok(materialMeetsInput(board("pallet", 24, 4, 1), treads));
+    assert.ok(materialMeetsInput(board("pallet", 24, 4, 2), treads));
     // A tread is too thin to be a side
-    assert.ok(!materialMeetsInput(board("pallet", 24, 4, 1), sides));
+    assert.ok(!materialMeetsInput(board("pallet", 24, 4, 2), sides));
 
     const { outputs } = op.output(
       [
-        board("pallet", 24, 6, 3),
-        board("pallet", 24, 6, 3),
-        board("pallet", 24, 4, 1),
-        board("pallet", 24, 4, 1),
+        board("pallet", 24, 6, 6),
+        board("pallet", 24, 6, 6),
+        board("pallet", 24, 4, 2),
+        board("pallet", 24, 4, 2),
       ],
       {},
     );

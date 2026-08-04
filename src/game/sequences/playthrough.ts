@@ -440,14 +440,14 @@ function commission2(shop: ShopDriver): ShopDriver {
         species: "pallet",
         length: 36,
         width: 4,
-        thickness: 1,
+        thickness: 2,
         surface: "rough",
       },
       {
         species: "pallet",
         length: 24,
         width: 2,
-        thickness: 1,
+        thickness: 2,
         surface: "sanded",
       },
     );

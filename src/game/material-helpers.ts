@@ -359,7 +359,12 @@ export function materialInputMismatches(
   }
   for (const key of Object.keys(inputMaterial)) {
     // Skip the constraint keys that aren't properties of the material
-    if (key === "quantity" || key === "matches" || key === "minPanelWidth") {
+    if (
+      key === "quantity" ||
+      key === "matches" ||
+      key === "matchesNote" ||
+      key === "minPanelWidth"
+    ) {
       continue;
     } else if (
       !(key in material) ||
@@ -640,6 +645,10 @@ export function describeMaterialRequirement(
     DESCRIBABLE_KEYS.filter((key) => requirementValues(req, key) !== undefined);
 
   const qualifiers: string[] = [];
+  // A matches predicate is opaque to this walker; its note speaks for it
+  if (req.matchesNote) {
+    qualifiers.push(req.matchesNote);
+  }
   const presentDims: DimensionKey[] = [];
 
   for (const key of applicable) {

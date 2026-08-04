@@ -1,8 +1,8 @@
 import { ToolType } from "../Tool";
-import { makeMaterial } from "../material-helpers";
-import { Board, FinishedProduct, MaterialInstance } from "../Materials";
+import { MaterialInstance } from "../Materials";
 import {
   assembleFromBlueprint,
+  BIRDHOUSE_BLUEPRINT,
   blueprintFastenerCost,
   blueprintInputs,
   CRATE_BLUEPRINT,
@@ -51,36 +51,18 @@ export const hammer: ToolType = {
       name: "Build Birdhouse",
       id: "buildBirdhouse",
       requiredSkill: "rusticProjects",
-      duration: 20,
-      interaction: { kind: "assembly" },
-      requiredConsumables: [{ id: "nails", amount: 6 }],
-      getInputMaterials: () => [
-        // Short deck-board crosscuts: walls, floor, and a pitched roof
-        {
-          type: ["board"],
-          width: [4],
-          length: [12],
-          thickness: [1],
-          quantity: 4,
-        },
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        const boards = materials.filter(
-          (m: MaterialInstance): m is Board => m.type === "board",
-        );
-        if (boards.length !== 4) {
-          throw new Error("Need exactly 4 boards to build a birdhouse");
-        }
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "birdhouse",
-              species: boards[0].species,
-            }),
-          ],
-        };
-      },
+      duration: 25,
+      // A lean-to wren house, all off the blueprint: two tall front
+      // boards with mitered tops (the first recipe that sends the player
+      // to the saw's angle stops), short sides, a perch floor, and a
+      // stringer crosscut laid flat over the slope as the roof.
+      interaction: { kind: "assembly", blueprint: "birdhouse" },
+      requiredConsumables: blueprintFastenerCost(BIRDHOUSE_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(BIRDHOUSE_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(BIRDHOUSE_BLUEPRINT, materials)],
+      }),
     },
     {
       name: "Build Crate",

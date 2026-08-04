@@ -11,6 +11,7 @@ import {
   REAL_WOOD_SPECIES,
   Species,
 } from "../Materials";
+import { hasOneMiteredEnd, isBoard } from "../board-helpers";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
 
 /**
@@ -191,7 +192,7 @@ export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
         length: [48],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthIn: 48, thicknessQ: 3 } as const,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 6 } as const,
       xIn: 24,
       yIn,
       angleDeg: 90,
@@ -207,7 +208,7 @@ export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
         length: [36],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 36, thicknessQ: 1 } as const,
+      part: { widthIn: 4, lengthIn: 36, thicknessQ: 2 } as const,
       xIn,
       yIn: 18,
       angleDeg: 0,
@@ -279,10 +280,10 @@ export const CRATE_BLUEPRINT: ProductBlueprint = makeBlueprint({
       type: ["board"],
       width: [4],
       length: [36],
-      thickness: [1],
+      thickness: [2],
       quantity: 1,
     } as InputMaterialWithQuantity<Board>,
-    part: { widthIn: 4, lengthIn: 36, thicknessQ: 1 } as const,
+    part: { widthIn: 4, lengthIn: 36, thicknessQ: 2 } as const,
   }),
 });
 
@@ -306,10 +307,10 @@ export const PLANTER_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
       species: ["pallet"],
       width: [4],
       length: [24],
-      thickness: [1],
+      thickness: [2],
       quantity: 1,
     } as InputMaterialWithQuantity<Board>,
-    part: { widthIn: 4, lengthIn: 24, thicknessQ: 1 } as const,
+    part: { widthIn: 4, lengthIn: 24, thicknessQ: 2 } as const,
   }),
 });
 
@@ -332,10 +333,10 @@ export const STEP_STOOL_BLUEPRINT: ProductBlueprint = makeBlueprint({
         type: ["board"],
         width: [6],
         length: [24],
-        thickness: [3, 4],
+        thickness: [6, 8],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthIn: 24, thicknessQ: 3 } as const,
+      part: { widthIn: 6, lengthIn: 24, thicknessQ: 6 } as const,
       xIn,
       yIn: 12,
       angleDeg: 0,
@@ -348,10 +349,10 @@ export const STEP_STOOL_BLUEPRINT: ProductBlueprint = makeBlueprint({
         type: ["board"],
         width: [4],
         length: [24],
-        thickness: [1, 2],
+        thickness: [2],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 24, thicknessQ: 1 } as const,
+      part: { widthIn: 4, lengthIn: 24, thicknessQ: 2 } as const,
       xIn: 12,
       yIn,
       angleDeg: 90,
@@ -412,12 +413,104 @@ export const BOOKSHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/**
+ * The birdhouse: a lean-to for wrens, drawn as its front elevation — the
+ * build lies on its back, so the plan you assemble on is the face you'd
+ * see on the fence post. Two tall front boards stand side by side with a
+ * 1" slit between them (the entrance — no drill bit needed), each with
+ * its top end mitered at the 45° stop so the roof seats flush. The roof
+ * is a stringer crosscut laid flat over the slope, overhanging both
+ * sides; the floor is a deck crosscut on edge, running long as a landing
+ * perch; two short side walls stop below the roofline, and the gaps they
+ * leave are the ventilation. No back wall — it hangs against a post,
+ * which is the fourth wall. Six nails, all derived: each front board
+ * takes one into a side, one through the floor, and one down from the
+ * roof.
+ */
+export const BIRDHOUSE_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "birdhouse",
+  widthIn: 15,
+  heightIn: 16,
+  fastenerConsumable: "nails",
+  slots: [
+    // Front boards first: the most constrained slots claim their mitered
+    // stock before the plain floor slot can steal it (matchPartsToSlots
+    // walks in declaration order).
+    ...[5, 10].map((xIn) => ({
+      role: "front",
+      requirement: {
+        type: ["board"],
+        width: [4],
+        length: [12],
+        thickness: [2],
+        matches: (material: MaterialInstance) =>
+          isBoard(material) && hasOneMiteredEnd(material, 45),
+        matchesNote: "one end mitered 45°",
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn,
+      yIn: 10,
+      angleDeg: 0,
+      layer: 1,
+    })),
+    {
+      role: "roof",
+      requirement: {
+        type: ["board"],
+        width: [6],
+        length: [12],
+        thickness: [6],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 6, lengthIn: 12, thicknessQ: 6 } as const,
+      xIn: 7.5,
+      yIn: 3.5,
+      angleDeg: 90,
+      layer: 2,
+    },
+    ...[3.25, 11.75].map((xIn) => ({
+      role: "side",
+      requirement: {
+        type: ["board"],
+        width: [4],
+        length: [6],
+        thickness: [2],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 4, lengthIn: 6, thicknessQ: 2 } as const,
+      xIn,
+      yIn: 13,
+      angleDeg: 0,
+      layer: 0,
+      onEdge: true,
+    })),
+    {
+      role: "floor",
+      requirement: {
+        type: ["board"],
+        width: [4],
+        length: [12],
+        thickness: [2],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn: 7.5,
+      yIn: 15.75,
+      angleDeg: 90,
+      layer: 0,
+      onEdge: true,
+    },
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
   planterBox: PLANTER_BOX_BLUEPRINT,
   stepStool: STEP_STOOL_BLUEPRINT,
   bookshelf: BOOKSHELF_BLUEPRINT,
+  birdhouse: BIRDHOUSE_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */

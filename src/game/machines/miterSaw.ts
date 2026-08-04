@@ -14,12 +14,16 @@ export const SAW_ANGLE_STOPS = [-45, -30, -22.5, 0, 22.5, 30, 45] as const;
 /**
  * Where along the stock the blade can land, in inches from the board's
  * left end — you slide the board under the blade to a mark, you don't
- * dial in "how long the kept piece is". The detents sit at the foot
- * marks for now (lengths are stored in inches; finer marks are a design
- * decision, not a storage one), and a cut needs wood on both sides of
- * the line, so the marks stop one foot shy of the longest board.
+ * dial in "how long the kept piece is". The detents sit every half foot:
+ * fine enough for short work (a birdhouse's 6" sides come off one 12"
+ * crosscut, halved), coarse enough that the scale still reads at a
+ * glance. A cut needs wood on both sides of the line, so the marks stop
+ * short of the longest board.
  */
-export const CUT_POSITIONS = [12, 24, 36, 48, 60, 72, 84] as const;
+export const CUT_POSITIONS = Array.from(
+  { length: 15 },
+  (_, i) => (i + 1) * 6,
+) as ReadonlyArray<number>;
 
 export const miterSaw: MachineType = {
   id: "miterSaw",

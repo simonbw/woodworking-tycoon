@@ -45,6 +45,22 @@ export function isBoard(material: MaterialInstance): material is Board {
 }
 
 /**
+ * True when exactly one of the board's ends is mitered at the given
+ * magnitude and the other is square — the top of a lean-to wall, cut to
+ * seat a sloped roof flush. Sign is irrelevant: a lone miter on a
+ * faceless board reads the same either way up (see SignedMiterAngle).
+ */
+export function hasOneMiteredEnd(board: Board, angle: MiterAngle): boolean {
+  const { left, right } = boardEnds(board);
+  const miters = [left, right].filter(
+    (end) => end.kind === "mitered" && Math.abs(end.angle) === angle,
+  );
+  return (
+    miters.length === 1 && (left.kind === "square" || right.kind === "square")
+  );
+}
+
+/**
  * True when the board is a frame rail at the given stop: both ends
  * mitered at that magnitude, leaning toward each other (opposite signs —
  * see SignedMiterAngle). Equal-signed ends are a parallelogram, whose

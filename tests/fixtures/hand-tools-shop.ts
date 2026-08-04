@@ -11,7 +11,7 @@ function deckBoard(id: string, length: Board["length"]): Board {
     species: "pallet",
     length,
     width: 4,
-    thickness: 1,
+    thickness: 2,
     surface: "rough",
     jointedFaces: 1,
     jointedEdges: 2,

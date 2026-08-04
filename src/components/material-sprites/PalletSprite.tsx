@@ -46,8 +46,8 @@ export const PalletSprite: React.FC<{
   // The very boards prying frees (see pryPalletNailAction) — same dims,
   // and seeded below by the same slot id the freed board inherits, so a
   // pulled board keeps its exact grain lying in place.
-  const deckBoard = useMemo(() => board("pallet", 36, 4, 1), []);
-  const stringerBoard = useMemo(() => board("pallet", 48, 6, 3), []);
+  const deckBoard = useMemo(() => board("pallet", 36, 4, 2), []);
+  const stringerBoard = useMemo(() => board("pallet", 48, 6, 6), []);
 
   const order = palletLayerOrder(flipped);
   const shown = layers ?? order;

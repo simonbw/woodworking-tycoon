@@ -200,11 +200,11 @@ describe("finishAttendedWorkAction", () => {
 
   it("assembly's paired commit spends the fasteners and yields the build", () => {
     const shelfBoards = [
-      board("pallet", 48, 6, 3),
-      board("pallet", 48, 6, 3),
-      board("pallet", 36, 4, 1),
-      board("pallet", 36, 4, 1),
-      board("pallet", 36, 4, 1),
+      board("pallet", 48, 6, 6),
+      board("pallet", 48, 6, 6),
+      board("pallet", 36, 4, 2),
+      board("pallet", 36, 4, 2),
+      board("pallet", 36, 4, 2),
     ];
     const machine = workspaceMachine({
       tools: ["hammer"],
@@ -360,7 +360,7 @@ describe("pryPalletNailAction targeting", () => {
 
 describe("arrangeBenchMaterialAction", () => {
   it("stores where a piece lies and prunes departed ids", () => {
-    const loose = board("pallet", 36, 4, 1);
+    const loose = board("pallet", 36, 4, 2);
     const machine = workspaceMachine({
       inputMaterials: [loose],
       benchLayout: {

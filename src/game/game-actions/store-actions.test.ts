@@ -167,9 +167,9 @@ describe("completeCommissionAction", () => {
   });
 
   it("delivers the frame shop order from the bed", () => {
-    // Commission 2 requires 4 sanded pallet boards at 2'x2"x1
+    // Commission 2 requires 4 sanded pallet boards at 2'x2"x2/4
     const boards = Array.from({ length: 4 }, () =>
-      board("pallet", 24, 2, 1, "sanded"),
+      board("pallet", 24, 2, 2, "sanded"),
     );
     const result = completeCommissionAction()(stateAtCommission(1, boards));
     assert.strictEqual(result.progression.commissionsCompleted, 2);

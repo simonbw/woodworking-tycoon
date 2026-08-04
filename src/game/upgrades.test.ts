@@ -176,8 +176,8 @@ describe("shop-built upgrades", () => {
       machineTypeId: "workspace",
       selectedOperationId: "buildMaterialShelf",
       processingMaterials: [
-        board("pallet", 36, 4, 1),
-        board("pallet", 36, 4, 1),
+        board("pallet", 36, 4, 2),
+        board("pallet", 36, 4, 2),
       ],
       operationProgress: {
         status: "inProgress",

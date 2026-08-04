@@ -64,7 +64,9 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   // Eight miters that all have to close up — precision money
   pictureFrame: 11,
   // The rustic tier below the shelf: quick nailed builds from scrap
-  birdhouse: 7,
+  // Six boards, two of them mitered — fiddlier than its old four-board
+  // self, and priced up accordingly
+  birdhouse: 10,
   crate: 10,
   // Screwed like the planter box, but it has to hold a person
   stepStool: 14,
@@ -107,10 +109,12 @@ export const SPECIES_VALUE_MULTIPLIER: Record<Species, number> = {
  * shelf. Its rate is what neighbors pay per board (about 40¢ a deck
  * board), not commodity volume — high enough that board jobs pay for the
  * prying, low enough that building something always beats selling the
- * boards it's made of.
+ * boards it's made of. (When the deck boards fattened from 1/4" to a
+ * true 1/2", this rate halved so a board still fetches the same 40¢ —
+ * the realism lives in the wood, not the wallet.)
  */
 export const SPECIES_LUMBER_RATE: Record<Species, number> = {
-  pallet: 1.5,
+  pallet: 0.75,
   pine: 0.25,
   poplar: 1.0,
   oak: 1.5,

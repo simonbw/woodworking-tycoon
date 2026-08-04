@@ -87,7 +87,7 @@ describe("hand tool chain", () => {
     assert.equal(shop.stock(byLength(36)).length, 0);
     assert.equal(
       getMaterialName(shop.theOne(byLength(12))),
-      "Pallet Wood 1/4 — 4\" × 1'",
+      "Pallet Wood 2/4 — 4\" × 1'",
     );
   });
 

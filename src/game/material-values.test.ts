@@ -14,10 +14,10 @@ import { panel, uniformPanel } from "./panel-helpers";
 
 describe("getSellValue", () => {
   it("prices boards by board-foot volume", () => {
-    // 4' x 6" x 3/4 stringer: 1.5 bf at pallet wood's $1.50/bf craft rate
-    assert.strictEqual(getSellValue(board("pallet", 48, 6, 3)), 2.25);
-    // 3' x 4" x 1/4 deck board: 0.25 bf
-    assert.strictEqual(getSellValue(board("pallet", 36, 4, 1)), 0.38);
+    // 4' x 6" x 6/4 stringer: 3 bf at pallet wood's $0.75/bf craft rate
+    assert.strictEqual(getSellValue(board("pallet", 48, 6, 6)), 2.25);
+    // 3' x 4" x 2/4 deck board: 0.5 bf — the same 40¢ it always fetched
+    assert.strictEqual(getSellValue(board("pallet", 36, 4, 2)), 0.38);
     // A 2x4 stud is 8' x 4" x 8/4 = 5.33 bf of pine at $0.25/bf
     assert.strictEqual(getSellValue(board("pine", 96, 4, 8)), 1.33);
   });
@@ -25,8 +25,8 @@ describe("getSellValue", () => {
   it("prices a whole pallet below its dismantled boards", () => {
     const pallet = makePallet();
     const dismantledValue =
-      3 * getSellValue(board("pallet", 48, 6, 3)) +
-      11 * getSellValue(board("pallet", 36, 4, 1));
+      3 * getSellValue(board("pallet", 48, 6, 6)) +
+      11 * getSellValue(board("pallet", 36, 4, 2));
     assert.ok(getSellValue(pallet) < dismantledValue);
   });
 
@@ -36,8 +36,8 @@ describe("getSellValue", () => {
       species: "pallet",
     });
     const inputWood =
-      2 * getSellValue(board("pallet", 48, 6, 3)) +
-      3 * getSellValue(board("pallet", 36, 4, 1));
+      2 * getSellValue(board("pallet", 48, 6, 6)) +
+      3 * getSellValue(board("pallet", 36, 4, 2));
     assert.strictEqual(getSellValue(shelf), 12);
     assert.ok(getSellValue(shelf) > 2 * inputWood);
   });

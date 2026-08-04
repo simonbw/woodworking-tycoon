@@ -42,7 +42,7 @@ describe("pickUpMachineAction", () => {
 
   it("refuses while the machine holds materials", () => {
     const saw = machineAt("miterSaw", [2, 2], {
-      inputMaterials: [board("pallet", 24, 4, 1)],
+      inputMaterials: [board("pallet", 24, 4, 2)],
     });
     const state = stateWith({ machines: [saw] });
     assert.strictEqual(pickUpMachineAction(saw)(state), state);
@@ -66,7 +66,7 @@ describe("pickUpMachineAction", () => {
       machines: [saw],
       player: {
         ...initialGameState.player,
-        inventory: [board("pallet", 24, 4, 1)],
+        inventory: [board("pallet", 24, 4, 2)],
       },
     });
     assert.strictEqual(pickUpMachineAction(saw)(state), state);

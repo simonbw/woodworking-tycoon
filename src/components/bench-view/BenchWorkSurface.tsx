@@ -185,7 +185,16 @@ export const BenchWorkSurface: React.FC<{
   // The empty ghost outline under a bare hand: its tag names what stock
   // the slot calls for.
   const [hoveredSlot, setHoveredSlot] = useState<BlueprintSlot | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredId, setHoveredIdState] = useState<string | null>(null);
+  // The keydown listener re-registers in an effect — a beat after the
+  // render that computed a new hover — so a fast keypress can reach a
+  // stale closure. The ref is written at pointer-event time and read at
+  // key time, so E/R/F always act on the piece truly under the hand.
+  const hoveredIdRef = useRef<string | null>(null);
+  const setHoveredId = useCallback((id: string | null) => {
+    hoveredIdRef.current = id;
+    setHoveredIdState(id);
+  }, []);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragOffset = useRef({ dxIn: 0, dyIn: 0 });
   /** The dragged piece's live placement, committed on release — the one
@@ -731,7 +740,7 @@ export const BenchWorkSurface: React.FC<{
         }
         return;
       }
-      const id = draggingId ?? hoveredId;
+      const id = draggingId ?? hoveredIdRef.current;
       if (!id) return;
       // A nailed-on part is part of the build: no taking, no turning
       if (fastenedRef.current.has(id)) return;

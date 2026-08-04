@@ -42,8 +42,8 @@ different materials and must never collapse into one row.
 Dimension order is cut-list order everywhere: **thickness × width ×
 length**. Width is inches (`"`), thickness quarters of an inch (`/4` —
 which conveniently reads correctly both as quarters notation and as a
-fraction of an inch for thin stock: `1/4` pallet wood really is a
-quarter inch thick). Length is **stored in inches** (`Board.length`, a
+fraction of an inch for thin stock: `2/4` pallet deck boards really are
+a half inch thick). Length is **stored in inches** (`Board.length`, a
 plain number) but always *reads* as shop talk through `formatLength`:
 whole feet as `4'`, under a foot as `7"`, mixed as `3'6"`.
 
@@ -64,7 +64,7 @@ letter grades; the engineered boards keep their shop names ("MDF",
 "OSB", "Particle Board").
 
 Species display names come from `speciesLabel`: `pallet` → "Pallet
-Wood" (so thin stock doesn't read "1/4 Pallet"), `purpleHeart` →
+Wood" (so thin stock doesn't read "2/4 Pallet"), `purpleHeart` →
 "Purple Heart", everything else via `humanizeString`. Multi-species
 panels stay "Mixed Wood".
 

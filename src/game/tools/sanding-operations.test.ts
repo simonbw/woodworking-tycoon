@@ -16,7 +16,7 @@ const orbitSandPanel = TOOL_TYPES.randomOrbitSander.operations.find(
 
 describe("sanding operations", () => {
   it("bumps a rough board to smooth", () => {
-    const { outputs } = blockSandBoard.output([board("pallet", 36, 4, 1)], {});
+    const { outputs } = blockSandBoard.output([board("pallet", 36, 4, 2)], {});
     assert.ok(isBoard(outputs[0]));
     assert.strictEqual(outputs[0].surface, "smooth");
   });

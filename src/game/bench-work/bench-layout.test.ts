@@ -88,7 +88,7 @@ describe("bench layout", () => {
   });
 
   it("seats an unplaced piece deterministically by its id", () => {
-    const piece = board("pallet", 36, 4, 1);
+    const piece = board("pallet", 36, 4, 2);
     const first = defaultBenchPlacement(MACHINE_TYPES.workspace, piece);
     const again = defaultBenchPlacement(MACHINE_TYPES.workspace, piece);
     assert.deepStrictEqual(first, again);
@@ -98,7 +98,7 @@ describe("bench layout", () => {
   });
 
   it("prefers the stored placement over the seed", () => {
-    const piece = board("pallet", 36, 4, 1);
+    const piece = board("pallet", 36, 4, 2);
     const stored = { xIn: 3, yIn: 4, angleDeg: 270, flipped: true };
     const machine = benchWith({
       inputMaterials: [piece],

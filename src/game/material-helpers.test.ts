@@ -215,8 +215,8 @@ describe("getMaterialName", () => {
 
   it("names pallet stock as pallet wood", () => {
     assert.strictEqual(
-      getMaterialName(board("pallet", 36, 4, 1)),
-      "Pallet Wood 1/4 — 4\" × 3'",
+      getMaterialName(board("pallet", 36, 4, 2)),
+      "Pallet Wood 2/4 — 4\" × 3'",
     );
   });
 
@@ -295,8 +295,8 @@ describe("describeStockDimensionsPlain", () => {
       '1-1/2" thick · 6" wide · 8\' long',
     );
     assert.strictEqual(
-      describeStockDimensionsPlain(board("pallet", 36, 4, 1)),
-      '1/4" thick · 4" wide · 3\' long',
+      describeStockDimensionsPlain(board("pallet", 36, 4, 2)),
+      '1/2" thick · 4" wide · 3\' long',
     );
   });
 

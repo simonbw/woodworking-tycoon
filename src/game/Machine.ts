@@ -432,6 +432,13 @@ export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
    */
   readonly matches?: (material: MaterialInstance) => boolean;
   /**
+   * What the `matches` predicate demands, in shop language ("one end
+   * mitered 45°"). A predicate is invisible to the requirement
+   * describer, so any recipe that gates on one should say what it wants
+   * here — the sheet and the slot tip render this as a qualifier.
+   */
+  readonly matchesNote?: string;
+  /**
    * Minimum derived width in inches for panel requirements — a panel's
    * width lives in its strip list, not a flat field, so allowed-value
    * arrays can't express "at least this wide". Serializable, unlike

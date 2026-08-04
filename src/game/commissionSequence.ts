@@ -63,7 +63,7 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
         species: ["pallet"],
         length: [24],
         width: [2],
-        thickness: [1],
+        thickness: [2],
         surface: ["sanded"],
         quantity: 4,
       },

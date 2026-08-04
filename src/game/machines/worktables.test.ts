@@ -98,9 +98,9 @@ describe("worktable build recipes", () => {
       selectedOperationId: "build-worktable1x1",
       processingMaterials: [
         plywoodSheet(),
-        board("pallet", 48, 6, 3),
-        board("pallet", 48, 6, 3),
-        board("pallet", 48, 6, 3),
+        board("pallet", 48, 6, 6),
+        board("pallet", 48, 6, 6),
+        board("pallet", 48, 6, 6),
       ],
       operationProgress: {
         status: "inProgress",

@@ -109,13 +109,35 @@ saves' parts default to rough). Its pixel art (`bookshelf.png`) is
 retired per decision 3; the step stool likewise left
 `FinishedBoxSprite`.
 
+The birdhouse landed as a **lean-to**, and its pitched-roof problem
+dissolved into two ideas that cost no model extensions:
+
+- **A blueprint may be an elevation.** The birdhouse assembles lying on
+  its back, so the plan the player builds on is the front face — two
+  tall boards with a 1″ entrance slit between them, side walls and a
+  perch floor on edge at the flanks, no back wall (it hangs on a post).
+- **The roof lies flat on the slope.** A single-slope roof is a board
+  you *lay onto* the leaning walls — which in the lying-down assembly
+  is simply a flat piece on the top layer, overhanging both sides. The
+  slope itself lives in the stock: the front walls' top ends are
+  **mitered at the 45° stop** so the roof seats flush, expressed as a
+  `matches` requirement (`hasOneMiteredEnd`) with a `matchesNote`
+  ("one end mitered 45°") so the sheet and slot tips can still describe
+  what the predicate wants. It's the first recipe that sends the player
+  to the saw's angle stops before the bench.
+
+Six nails, all derived: front→side, front→floor, roof→front. The roof
+never touches the sides — those gaps are the ventilation, and the
+adjacent-layer rule derives exactly that. (The parts don't record end
+treatments; the fronts' miters hide under the roof in every view, so
+nothing is lost — revisit if a blueprint ever shows a mitered end.)
+
 ## What stays for later phases
 
-- **Phase 2, the rest**: blueprints for the birdhouse (its pitched roof
-  doesn't flatten into nail-the-crossings top-down — needs a call), the
-  storage rack, and the worktable builds (their commit already differs
-  only in granting machines). Until then those keep the legacy row
-  surface (`AssemblySurface`).
+- **Phase 2, the rest**: blueprints for the storage rack and the
+  worktable builds (their commit already differs only in granting
+  machines). Until then those keep the legacy row surface
+  (`AssemblySurface`).
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of
