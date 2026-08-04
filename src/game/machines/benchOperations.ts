@@ -1,4 +1,10 @@
 import { array } from "../../utils/arrayUtils";
+import {
+  assembleFromBlueprint,
+  blueprintFastenerCost,
+  blueprintInputs,
+  PICTURE_FRAME_BLUEPRINT,
+} from "../bench-work/blueprint";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
 import { Operation, OperationPhase } from "../Machine";
 import {
@@ -728,42 +734,16 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildPictureFrame",
     requiredSkill: "miteredFrames",
     duration: 30,
-    interaction: { kind: "assembly" },
-    // Frames are joined with brads across the miters — the nail
-    // economy's second consumer
-    requiredConsumables: [{ id: "nails", amount: 4 }],
-    getInputMaterials: () => [
-      {
-        type: ["board"],
-        species: REAL_WOOD_SPECIES,
-        length: [24],
-        width: [1],
-        thickness: [1],
-        surface: ["sanded"],
-        quantity: 4,
-        // Four true frame rails: 45° both ends, mirrored so the corners
-        // close. Parallel-mitered stock (a parallelogram) won't frame —
-        // that's the whole point of the saw swinging both ways.
-        matches: (material) =>
-          isBoard(material) && isMiteredFrameRail(material, 45),
-        matchesNote: "45° both ends, mirrored",
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const rails = materials.filter(isBoard);
-      if (rails.length !== 4) {
-        throw new Error("Need exactly 4 rails to build a picture frame");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "pictureFrame",
-            species: rails[0].species,
-          }),
-        ],
-      };
-    },
+    // The whole recipe reads off the blueprint: four mirrored-miter
+    // rails laid around the opening, one brad derived at each 1×1
+    // corner lap — the nail economy's second consumer, still four.
+    interaction: { kind: "assembly", blueprint: "pictureFrame" },
+    requiredConsumables: blueprintFastenerCost(PICTURE_FRAME_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(PICTURE_FRAME_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(PICTURE_FRAME_BLUEPRINT, materials)],
+    }),
   },
   {
     name: "Finish Checkerboard Board",

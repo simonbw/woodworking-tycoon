@@ -5,13 +5,20 @@ import {
   AssembledPart,
   Board,
   BoardDimension,
+  BoardEnd,
+  BoardEnds,
   FinishedProduct,
   FinishedProductType,
   MaterialInstance,
   REAL_WOOD_SPECIES,
+  SignedMiterAngle,
   Species,
 } from "../Materials";
-import { hasOneMiteredEnd, isBoard } from "../board-helpers";
+import {
+  hasOneMiteredEnd,
+  isBoard,
+  isMiteredFrameRail,
+} from "../board-helpers";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
 
 /**
@@ -44,6 +51,13 @@ export interface BlueprintSlot {
     readonly widthIn: BoardDimension;
     readonly lengthIn: number;
     readonly thicknessQ: BoardDimension;
+    /** The end treatments the part shows lying in this slot, signed the
+     * way the finished piece needs them — a frame rail's long edge must
+     * face the frame's outside for the corners to close. A consumed
+     * board whose ends are the flip of these is turned over on the way
+     * in (flipping a board negates both ends at once and costs nothing),
+     * and stand-in parts for older saves synthesize exactly these. */
+    readonly ends?: BoardEnds;
   };
   /** Part center in product inches from the product's top-left corner. */
   readonly xIn: number;
@@ -504,6 +518,87 @@ export const BIRDHOUSE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/** The frame rail's nominal ends: mirrored 45s, long edge to the left.
+ * Every frame slot is turned so its local left edge faces the frame's
+ * outside, so one nominal orientation serves all four. */
+const FRAME_RAIL_ENDS: BoardEnds = {
+  left: { kind: "mitered", angle: -45 },
+  right: { kind: "mitered", angle: 45 },
+};
+
+/** All four rails are the same stock, so the sheet folds them to one row
+ * of four — the same requirement the legacy recipe declared. */
+const FRAME_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [24],
+  width: [1],
+  thickness: [1],
+  surface: ["sanded"],
+  quantity: 1,
+  // Four true frame rails: 45° both ends, mirrored so the corners
+  // close. Parallel-mitered stock (a parallelogram) won't frame —
+  // that's the whole point of the saw swinging both ways.
+  matches: (material: MaterialInstance) =>
+    isBoard(material) && isMiteredFrameRail(material, 45),
+  matchesNote: "45° both ends, mirrored",
+};
+
+/**
+ * The picture frame: four mitered rails around an open middle, drawn at
+ * the 24" square their 2' rails actually make. The horizontal pair lies
+ * on the lower layer, the vertical pair laps over it, and each 1"×1"
+ * corner overlap derives one brad — four nails, right on the seams. Every
+ * slot is turned so its rail's long (outer) edge faces out, which is what
+ * lets the mitered ends close the corners visually; a rail cut with the
+ * opposite flip is simply turned over on the way in.
+ */
+export const PICTURE_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "pictureFrame",
+  widthIn: 24,
+  heightIn: 24,
+  fastenerConsumable: "nails",
+  slots: [
+    // Top and bottom rails lie across on layer 0…
+    ...[
+      { yIn: 0.5, angleDeg: 90 },
+      { yIn: 23.5, angleDeg: 270 },
+    ].map(({ yIn, angleDeg }) => ({
+      role: "rail",
+      requirement: FRAME_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: 24,
+        thicknessQ: 1,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn: 12,
+      yIn,
+      angleDeg,
+      layer: 0,
+    })),
+    // …and the side rails lap over them on layer 1, overlapping exactly
+    // at the four 1×1 corners.
+    ...[
+      { xIn: 0.5, angleDeg: 0 },
+      { xIn: 23.5, angleDeg: 180 },
+    ].map(({ xIn, angleDeg }) => ({
+      role: "rail",
+      requirement: FRAME_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: 24,
+        thicknessQ: 1,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn,
+      yIn: 12,
+      angleDeg,
+      layer: 1,
+    })),
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
@@ -511,6 +606,7 @@ const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
   stepStool: STEP_STOOL_BLUEPRINT,
   bookshelf: BOOKSHELF_BLUEPRINT,
   birdhouse: BIRDHOUSE_BLUEPRINT,
+  pictureFrame: PICTURE_FRAME_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */
@@ -592,6 +688,48 @@ function dominantSpecies(parts: ReadonlyArray<{ species: Species }>): Species {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
+const negateEnd = (end: BoardEnd): BoardEnd =>
+  end.kind === "mitered"
+    ? // The signed-angle union is symmetric, so a negation stays in it
+      { kind: "mitered", angle: -end.angle as SignedMiterAngle }
+    : end;
+
+const endsEqual = (a: BoardEnd, b: BoardEnd): boolean =>
+  a.kind === b.kind &&
+  (a.kind !== "mitered" || b.kind !== "mitered" || a.angle === b.angle);
+
+/**
+ * The consumed board's ends, turned over if that lands them on the
+ * slot's nominal orientation. Flipping a board negates both ends at once
+ * and costs nothing, so a frame rail cut with either swing of the saw
+ * head seats with its long edge out — the same board, laid the way the
+ * corners close. Ends that match neither way are kept as recorded.
+ */
+function orientEndsToSlot(
+  slot: BlueprintSlot,
+  material: Board,
+): BoardEnds | undefined {
+  const ends = material.ends;
+  const nominal = slot.part.ends;
+  if (!ends || !nominal) {
+    return ends;
+  }
+  if (
+    endsEqual(ends.left, nominal.left) &&
+    endsEqual(ends.right, nominal.right)
+  ) {
+    return ends;
+  }
+  const flipped: BoardEnds = {
+    left: negateEnd(ends.left),
+    right: negateEnd(ends.right),
+  };
+  return endsEqual(flipped.left, nominal.left) &&
+    endsEqual(flipped.right, nominal.right)
+    ? flipped
+    : ends;
+}
+
 /**
  * The finished product, carrying its bill of materials: the very boards
  * that went in, seeded by their ids so each part keeps the grain it had
@@ -603,17 +741,23 @@ export function assembleFromBlueprint(
   materials: ReadonlyArray<MaterialInstance>,
 ): FinishedProduct {
   const matched = matchPartsToSlots(blueprint, materials);
-  const parts: AssembledPart[] = matched.map(({ slot, material }) => ({
-    slot: slot.id,
-    species: material.species,
-    width: material.width,
-    length: material.length,
-    thickness: material.thickness,
-    // A sanded board stays sanded in the finished piece — the bookshelf
-    // is built from surfaced stock, not pallet wood
-    surface: material.surface,
-    seed: material.id,
-  }));
+  const parts: AssembledPart[] = matched.map(({ slot, material }) => {
+    const ends = orientEndsToSlot(slot, material);
+    return {
+      slot: slot.id,
+      species: material.species,
+      width: material.width,
+      length: material.length,
+      thickness: material.thickness,
+      // A sanded board stays sanded in the finished piece — the bookshelf
+      // is built from surfaced stock, not pallet wood
+      surface: material.surface,
+      // …and a mitered board stays mitered: a frame rail's corners are
+      // its ends, visible in the finished piece
+      ...(ends ? { ends } : {}),
+      seed: material.id,
+    };
+  });
   return makeMaterial<FinishedProduct>({
     type: blueprint.productType,
     species: dominantSpecies(parts),
@@ -639,6 +783,9 @@ export function defaultPartsFor(
     ...(slot.requirement.surface?.[0]
       ? { surface: slot.requirement.surface[0] }
       : {}),
+    // The slot's nominal ends, so a frame from before parts carried end
+    // treatments still draws closed corners
+    ...(slot.part.ends ? { ends: slot.part.ends } : {}),
     seed: `${product.id}:${slot.id}`,
   }));
 }

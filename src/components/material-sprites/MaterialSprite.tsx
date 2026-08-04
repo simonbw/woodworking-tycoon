@@ -66,7 +66,8 @@ export const MaterialSprite: React.FC<{
     case "panel":
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
-    case "pictureFrame":
+    // The hex frame still draws flat art; its blueprint waits on
+    // rotated-slot fastener derivation
     case "hexFrame":
       return (
         <PictureFrameSprite
@@ -84,6 +85,7 @@ export const MaterialSprite: React.FC<{
     case "stepStool":
     case "bookshelf":
     case "birdhouse":
+    case "pictureFrame":
       return (
         <AssembledProductSprite
           material={material as FinishedProduct}

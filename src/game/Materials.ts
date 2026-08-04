@@ -303,6 +303,10 @@ export type AssembledPart = {
   /** The board's surface as it went in — sanded stock draws sanded in
    * the finished piece. Absent (older saves) means rough. */
   readonly surface?: SurfaceCondition;
+  /** The board's end treatments as it lies in its slot — a frame rail's
+   * mirrored miters are what close the corners, so the finished piece
+   * keeps them. Absent (older saves, square stock) means square. */
+  readonly ends?: BoardEnds;
   readonly seed: string;
 };
 

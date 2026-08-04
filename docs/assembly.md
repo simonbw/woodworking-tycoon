@@ -128,16 +128,37 @@ dissolved into two ideas that cost no model extensions:
 
 Six nails, all derived: front→side, front→floor, roof→front. The roof
 never touches the sides — those gaps are the ventilation, and the
-adjacent-layer rule derives exactly that. (The parts don't record end
-treatments; the fronts' miters hide under the roof in every view, so
-nothing is lost — revisit if a blueprint ever shows a mitered end.)
+adjacent-layer rule derives exactly that. (The birdhouse's own miters
+hide under the roof in every view; the picture frame is the blueprint
+that finally *shows* its mitered ends, and it's what made parts record
+them — see below.)
+
+The picture frame is a blueprint, and it's the one that put mitered
+ends on assembled parts. Four 2' rails, 1" wide, mirrored 45s both
+ends — the horizontal pair on one layer, the vertical pair lapped over
+it, and the four 1×1 corner overlaps derive one brad each (four nails,
+right on the seams; the per-axis bite requirement relaxes to what a 1"
+face can offer). A frame's corners ARE its ends, so `AssembledPart` now
+carries the consumed board's `ends` and `AssembledProductSprite` hands
+them to the board sprite's miter geometry — each rail draws as its true
+trapezoid and the four seams close. Every slot is turned so its rail's
+long edge faces out, with the slot's nominal `part.ends` saying which
+flip that is: a rail cut with the other swing of the head is simply
+turned over on the way in (flipping negates both ends and costs
+nothing), and frames from older saves synthesize the nominal ends so
+they still draw closed corners. (Fixing this exposed a sprite sign slip:
+BoardSprite drew mirrored ends as a parallelogram and parallel ends as
+a trapezoid — inverted from `SignedMiterAngle`'s convention. Loose
+mitered stock on the floor draws right now too.) The hex frame stays on
+its flat art until fastener derivation learns rotated slots.
 
 ## What stays for later phases
 
 - **Phase 2, the rest**: blueprints for the storage rack and the
   worktable builds (their commit already differs only in granting
-  machines). Until then those keep the legacy row surface
-  (`AssemblySurface`).
+  machines), and the serving tray — the picture frame plus a panel
+  bottom, waiting on a panel-shaped `AssembledPart`. Until then those
+  keep the legacy row surface (`AssemblySurface`).
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of

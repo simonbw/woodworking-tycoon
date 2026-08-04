@@ -154,9 +154,11 @@ one asset plus a tint, the way `MaterialSprite` already passes `tint` down.
 
 - [ ] Jewelry box — `material-sprites/FinishedBoxSprite.tsx` (the last
       product it serves; the crate, planter box, step stool, bookshelf,
-      and birdhouse now draw from their bills of materials via
-      `AssembledProductSprite`, procedural on purpose).
-- [ ] Picture frame and hex frame — `material-sprites/PictureFrameSprite.tsx`.
+      birdhouse, and picture frame now draw from their bills of materials
+      via `AssembledProductSprite`, procedural on purpose).
+- [ ] Hex frame — `material-sprites/PictureFrameSprite.tsx` (the last
+      frame it serves; a hex blueprint waits on rotated-slot fastener
+      derivation).
 - [ ] Serving tray — `material-sprites/CuttingBoardSprite.tsx`.
 
 ## Needs a call

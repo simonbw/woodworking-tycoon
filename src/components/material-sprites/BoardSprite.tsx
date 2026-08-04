@@ -101,18 +101,20 @@ export const BoardSprite: React.FC<
       };
       // Positive skew pulls back the left-edge corner at the top and the
       // right-edge corner at the bottom (and vice versa for negative), so
-      // each end line rises left-to-right by its angle's signed run.
+      // both end lines slant the same way for the same angle — equal
+      // angles draw parallel, mirrored angles converge into the frame
+      // rail's trapezoid (long edge left for -45/+45, right for +45/-45).
       const leftEdge = edgePoints(
         -width / 2,
         leftAmp,
         -height / 2 + Math.max(0, topSkew),
-        height / 2 - Math.max(0, bottomSkew),
+        height / 2 - Math.max(0, -bottomSkew),
       );
       const rightEdge = edgePoints(
         width / 2,
         rightAmp,
         -height / 2 + Math.max(0, -topSkew),
-        height / 2 - Math.max(0, -bottomSkew),
+        height / 2 - Math.max(0, bottomSkew),
       );
 
       // shadow
