@@ -291,6 +291,9 @@ export type AssembledPart = {
   readonly width: BoardDimension;
   readonly length: BoardDimension;
   readonly thickness: BoardDimension;
+  /** The board's surface as it went in — sanded stock draws sanded in
+   * the finished piece. Absent (older saves) means rough. */
+  readonly surface?: SurfaceCondition;
   readonly seed: string;
 };
 

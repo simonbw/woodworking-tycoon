@@ -92,7 +92,7 @@ const BlueprintPartsSprite: React.FC<{
           width: part.width,
           length: part.length,
           thickness: part.thickness,
-          surface: "rough" as const,
+          surface: part.surface ?? ("rough" as const),
           jointedFaces: 1 as const,
           jointedEdges: 2 as const,
         };

@@ -16,7 +16,6 @@ const TOOL_ITEM_ASSETS = (Object.keys(TOOL_TYPES) as ToolId[])
  */
 const PIXEL_ART_ASSETS = [
   "/images/shelf.png",
-  "/images/bookshelf.png",
   "/images/side-table.png",
   ...TOOL_ITEM_ASSETS,
 ];

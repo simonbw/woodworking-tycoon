@@ -38,7 +38,7 @@ replaces the furniture, not what's sitting in it.
 
 ## The pixel-art exception
 
-The furniture products (shelf, bookshelf, side table) break
+The furniture products (shelf, side table) break
 the rules above: they are pixel art rather than the smooth flat-shaded style
 the machines use, generated through the PixelLab MCP. They are placeholders
 — see "Generated placeholders" below — but until they're replaced they
@@ -68,17 +68,17 @@ PixelLab MCP, committed as a stopgap. It renders, it reads, and it is not
 what the game should ship with. Replacing one of these is a swap, not new
 wiring: same path, same size, same component.
 
-- [ ] Furniture products: shelf, bookshelf, side table —
-      `static/images/{shelf,bookshelf,side-table}.png`, drawn by
+- [ ] Furniture products: shelf, side table —
+      `static/images/{shelf,side-table}.png`, drawn by
       `material-sprites/FurnitureSprite.tsx`. Pixel art against the smooth
       machines, so the shop floor is currently mixed-style. A replacement
       wants the neutral-wood treatment kept so the species tint still works,
       and should be trimmed to its content box. Sizes today: 79×15,
-      41×43, 49×51 at 4 px/inch. Update `FURNITURE_ICON_FIT` in
-      `FurnitureSprite.tsx` if the dimensions change. (The rustic shelf
-      left this list on purpose: blueprint-assembled products draw
-      themselves from their parts — `AssembledProductSprite` — and should
-      never get flat art.)
+      49×51 at 4 px/inch. Update `FURNITURE_ICON_FIT` in
+      `FurnitureSprite.tsx` if the dimensions change. (The rustic shelf and
+      the bookshelf left this list on purpose: blueprint-assembled products
+      draw themselves from their parts — `AssembledProductSprite` — and
+      should never get flat art.)
 - [ ] Tool icons — `static/images/icons/tool-<id>.png`, 64×64, rendered by
       `ToolIcon` in `components/ItemIcon.tsx`. Nine of them: hammer, hand
       saw, drill, sanding block, random orbit sander, hand plane, crosscut
@@ -152,10 +152,11 @@ wiring: same path, same size, same component.
 Fixed-form objects that happen to be tinted by species — good candidates for
 one asset plus a tint, the way `MaterialSprite` already passes `tint` down.
 
-- [ ] Boxes: jewelry box, birdhouse, step stool —
-      `material-sprites/FinishedBoxSprite.tsx` (one sprite serves all three
-      today; the crate and planter box now draw from their bills of
-      materials via `AssembledProductSprite`, procedural on purpose).
+- [ ] Boxes: jewelry box, birdhouse —
+      `material-sprites/FinishedBoxSprite.tsx` (one sprite serves both
+      today; the crate, planter box, step stool, and bookshelf now draw
+      from their bills of materials via `AssembledProductSprite`,
+      procedural on purpose).
 - [ ] Picture frame and hex frame — `material-sprites/PictureFrameSprite.tsx`.
 - [ ] Serving tray — `material-sprites/CuttingBoardSprite.tsx`.
 

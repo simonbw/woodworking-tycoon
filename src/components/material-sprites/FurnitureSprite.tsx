@@ -6,7 +6,7 @@ import { useTexture } from "../../utils/useTexture";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 
 /**
- * The furniture pieces — shelves, the bookshelf, the side table — are the
+ * The furniture pieces — the plain shelf and the side table — are the
  * one corner of the shop drawn from pixel art rather than `Graphics`. The
  * art is exported at `PIXELS_PER_INCH`, so it renders at scale 1 and the
  * sprite's pixels line up with world pixels.
@@ -25,7 +25,6 @@ const SPECIES_TINT_SOFTENING = 0.3;
 
 const FURNITURE_TEXTURES = {
   shelf: "/images/shelf.png",
-  bookshelf: "/images/bookshelf.png",
   sideTable: "/images/side-table.png",
 } as const;
 
@@ -43,7 +42,6 @@ export function isFurniture(type: string): type is FurnitureType {
  */
 export const FURNITURE_ICON_FIT: Record<FurnitureType, number> = {
   shelf: 79,
-  bookshelf: 43,
   sideTable: 51,
 };
 

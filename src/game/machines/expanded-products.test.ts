@@ -88,6 +88,8 @@ describe("buildStepStool", () => {
     );
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "stepStool");
+    // Blueprint-assembled: the stool carries the very boards that went in
+    assert.strictEqual(outputs[0].parts?.length, 4);
   });
 });
 
@@ -107,6 +109,7 @@ describe("buildBookshelf", () => {
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "bookshelf");
     assert.strictEqual(outputs[0].species, "oak");
+    assert.strictEqual(outputs[0].parts?.length, 4);
   });
 });
 

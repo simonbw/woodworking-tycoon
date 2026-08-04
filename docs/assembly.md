@@ -97,13 +97,25 @@ scene's driving, instructions, armed-crossing chrome, and clip
 (`drill-driver`) all follow from the blueprint; screw heads draw with a
 driver cross (`fastenerHead.ts`) in every view.
 
+The step stool and the bookshelf are blueprints too — both the rustic
+shelf's shape (two sides on edge, two boards screwed flat across them),
+so they were pure data. The stool's treads sit top-and-middle the way a
+real stool steps; the bookshelf's shelves cross at thirds, 48″ square,
+drawn lying on its back. Four screws each, one per crossing (was a
+hand-set 10 and 12). The bookshelf is the first blueprint built from
+sanded hardwood, so `AssembledPart` now carries the board's `surface` —
+the oak the player surfaced draws sanded in the finished piece (older
+saves' parts default to rough). Its pixel art (`bookshelf.png`) is
+retired per decision 3; the step stool likewise left
+`FinishedBoxSprite`.
+
 ## What stays for later phases
 
 - **Phase 2, the rest**: blueprints for the birdhouse (its pitched roof
   doesn't flatten into nail-the-crossings top-down — needs a call), the
-  step stool and bookshelf, the storage rack, and the worktable builds
-  (their commit already differs only in granting machines). Until then
-  those keep the legacy row surface (`AssemblySurface`).
+  storage rack, and the worktable builds (their commit already differs
+  only in granting machines). Until then those keep the legacy row
+  surface (`AssemblySurface`).
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of

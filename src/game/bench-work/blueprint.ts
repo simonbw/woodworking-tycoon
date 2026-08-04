@@ -8,6 +8,7 @@ import {
   FinishedProduct,
   FinishedProductType,
   MaterialInstance,
+  REAL_WOOD_SPECIES,
   Species,
 } from "../Materials";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
@@ -313,10 +314,111 @@ export const PLANTER_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
   }),
 });
 
+/**
+ * The step stool: the rustic shelf's shape holding a person instead of
+ * paint cans — two stout sides stand on edge (crosscut stringers or
+ * thick hardwood), two treads lie flat across them, the top tread up
+ * top and the step at half height. Screwed, not nailed: a joint that
+ * takes a boot every day works loose around a nail.
+ */
+export const STEP_STOOL_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "stepStool",
+  widthIn: 24,
+  heightIn: 24,
+  fastenerConsumable: "screws",
+  slots: [
+    ...[2, 22].map((xIn) => ({
+      role: "side",
+      requirement: {
+        type: ["board"],
+        width: [6],
+        length: [2],
+        thickness: [3, 4],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 6, lengthFt: 2, thicknessQ: 3 } as const,
+      xIn,
+      yIn: 12,
+      angleDeg: 0,
+      layer: 0,
+      onEdge: true,
+    })),
+    ...[4, 14].map((yIn) => ({
+      role: "tread",
+      requirement: {
+        type: ["board"],
+        width: [4],
+        length: [2],
+        thickness: [1, 2],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 4, lengthFt: 2, thicknessQ: 1 } as const,
+      xIn: 12,
+      yIn,
+      angleDeg: 90,
+      layer: 1,
+    })),
+  ],
+});
+
+/**
+ * The bookshelf: twice the single shelf's stock, drawn lying on its
+ * back — two 4-foot sides stand on edge as the uprights, two shelves
+ * lie flat across them at thirds. All four boards are the same sanded
+ * hardwood, so it's the first blueprint whose finished piece shows a
+ * real-wood grain — the very oak the player sanded is the oak on the
+ * floor.
+ */
+export const BOOKSHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "bookshelf",
+  widthIn: 48,
+  heightIn: 48,
+  fastenerConsumable: "screws",
+  slots: [
+    ...[2, 46].map((xIn) => ({
+      role: "side",
+      requirement: {
+        type: ["board"],
+        species: REAL_WOOD_SPECIES,
+        length: [4],
+        width: [6],
+        thickness: [4],
+        surface: ["sanded"],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 6, lengthFt: 4, thicknessQ: 4 } as const,
+      xIn,
+      yIn: 24,
+      angleDeg: 0,
+      layer: 0,
+      onEdge: true,
+    })),
+    ...[12, 36].map((yIn) => ({
+      role: "shelf",
+      requirement: {
+        type: ["board"],
+        species: REAL_WOOD_SPECIES,
+        length: [4],
+        width: [6],
+        thickness: [4],
+        surface: ["sanded"],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 6, lengthFt: 4, thicknessQ: 4 } as const,
+      xIn: 24,
+      yIn,
+      angleDeg: 90,
+      layer: 1,
+    })),
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
   planterBox: PLANTER_BOX_BLUEPRINT,
+  stepStool: STEP_STOOL_BLUEPRINT,
+  bookshelf: BOOKSHELF_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */
@@ -415,6 +517,9 @@ export function assembleFromBlueprint(
     width: material.width,
     length: material.length,
     thickness: material.thickness,
+    // A sanded board stays sanded in the finished piece — the bookshelf
+    // is built from surfaced stock, not pallet wood
+    surface: material.surface,
     seed: material.id,
   }));
   return makeMaterial<FinishedProduct>({
@@ -439,6 +544,9 @@ export function defaultPartsFor(
     width: slot.part.widthIn,
     length: slot.part.lengthFt,
     thickness: slot.part.thicknessQ,
+    ...(slot.requirement.surface?.[0]
+      ? { surface: slot.requirement.surface[0] }
+      : {}),
     seed: `${product.id}:${slot.id}`,
   }));
 }

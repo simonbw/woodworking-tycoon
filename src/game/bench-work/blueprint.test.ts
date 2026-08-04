@@ -5,6 +5,7 @@ import {
   assembleFromBlueprint,
   blueprintFastenerCost,
   blueprintInputs,
+  BOOKSHELF_BLUEPRINT,
   CRATE_BLUEPRINT,
   defaultPartsFor,
   fastenerToolId,
@@ -12,6 +13,7 @@ import {
   PLANTER_BOX_BLUEPRINT,
   productBlueprintFor,
   RUSTIC_SHELF_BLUEPRINT,
+  STEP_STOOL_BLUEPRINT,
 } from "./blueprint";
 import {
   armedFasteners,
@@ -469,5 +471,73 @@ describe("the crate and planter box blueprints", () => {
       fastenerToolId(PLANTER_BOX_BLUEPRINT.fastenerConsumable),
       "drill",
     );
+  });
+});
+
+describe("the step stool and bookshelf blueprints", () => {
+  it("screws each tread to both sides: four joints, four screws", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(STEP_STOOL_BLUEPRINT), [
+      { id: "screws", amount: 4 },
+    ]);
+    const spots = STEP_STOOL_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(spots, ["2,4", "22,4", "2,14", "22,14"].sort());
+  });
+
+  it("screws each shelf to both sides at thirds", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(BOOKSHELF_BLUEPRINT), [
+      { id: "screws", amount: 4 },
+    ]);
+    const spots = BOOKSHELF_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(spots, ["2,12", "46,12", "2,36", "46,36"].sort());
+  });
+
+  it("derives the recipes' inputs: two-and-two stock, or one folded row", () => {
+    const stoolInputs = blueprintInputs(STEP_STOOL_BLUEPRINT);
+    assert.strictEqual(stoolInputs.length, 2);
+    assert.deepStrictEqual(
+      stoolInputs.map((row) => row.quantity),
+      [2, 2],
+    );
+    // All four bookshelf boards are the same sanded hardwood
+    const shelfInputs = blueprintInputs(BOOKSHELF_BLUEPRINT);
+    assert.strictEqual(shelfInputs.length, 1);
+    assert.strictEqual(shelfInputs[0].quantity, 4);
+    assert.deepStrictEqual(shelfInputs[0].surface, ["sanded"]);
+  });
+
+  it("stands the sides on edge and lies the treads and shelves flat", () => {
+    for (const blueprint of [STEP_STOOL_BLUEPRINT, BOOKSHELF_BLUEPRINT]) {
+      const sides = blueprint.slots.filter((s) => s.role === "side");
+      assert.strictEqual(sides.length, 2);
+      assert.ok(sides.every((s) => s.onEdge));
+      assert.ok(
+        blueprint.slots
+          .filter((s) => s.role !== "side")
+          .every((s) => !s.onEdge),
+      );
+    }
+  });
+
+  it("is registered and keeps a sanded board sanded in the finished piece", () => {
+    assert.strictEqual(productBlueprintFor("stepStool"), STEP_STOOL_BLUEPRINT);
+    assert.strictEqual(productBlueprintFor("bookshelf"), BOOKSHELF_BLUEPRINT);
+    const stool = assembleFromBlueprint(STEP_STOOL_BLUEPRINT, [
+      board("pallet", 2, 6, 3),
+      board("pallet", 2, 6, 3),
+      board("pallet", 2, 4, 1),
+      board("pallet", 2, 4, 1),
+    ]);
+    assert.strictEqual(stool.type, "stepStool");
+    assert.strictEqual(stool.parts?.length, 4);
+    const bookshelf = assembleFromBlueprint(
+      BOOKSHELF_BLUEPRINT,
+      Array.from({ length: 4 }, () => board("oak", 4, 6, 4, "sanded")),
+    );
+    assert.strictEqual(bookshelf.species, "oak");
+    assert.ok(bookshelf.parts?.every((part) => part.surface === "sanded"));
   });
 });

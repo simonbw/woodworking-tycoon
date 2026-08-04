@@ -1,14 +1,11 @@
-import {
-  FinishedProduct,
-  MaterialInstance,
-  REAL_WOOD_SPECIES,
-} from "../Materials";
-import { makeMaterial } from "../material-helpers";
+import { MaterialInstance } from "../Materials";
 import {
   assembleFromBlueprint,
   blueprintFastenerCost,
   blueprintInputs,
+  BOOKSHELF_BLUEPRINT,
   PLANTER_BOX_BLUEPRINT,
+  STEP_STOOL_BLUEPRINT,
 } from "../bench-work/blueprint";
 import { ToolType } from "../Tool";
 
@@ -57,77 +54,33 @@ export const drill: ToolType = {
       id: "buildStepStool",
       requiredSkill: "rusticCarpentry",
       duration: 30,
-      interaction: { kind: "assembly" },
-      // It has to hold a person, so every joint gets a screw
-      requiredConsumables: [{ id: "screws", amount: 10 }],
-      getInputMaterials: () => [
-        // Two stout sides — crosscut stringers or thick hardwood
-        {
-          type: ["board"],
-          width: [6],
-          length: [2],
-          thickness: [3, 4],
-          quantity: 2,
-        },
-        // Two treads of thinner stock
-        {
-          type: ["board"],
-          width: [4],
-          length: [2],
-          thickness: [1, 2],
-          quantity: 2,
-        },
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        const boards = materials.filter((m) => m.type === "board");
-        if (boards.length !== 4) {
-          throw new Error("Need exactly 4 boards to build a step stool");
-        }
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "stepStool",
-              species: boards[0].species,
-            }),
-          ],
-        };
-      },
+      // The blueprint: two stout sides on edge (crosscut stringers or
+      // thick hardwood), two treads screwed flat across them — it has
+      // to hold a person, so every joint takes a screw, not a nail.
+      interaction: { kind: "assembly", blueprint: "stepStool" },
+      requiredConsumables: blueprintFastenerCost(STEP_STOOL_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(STEP_STOOL_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(STEP_STOOL_BLUEPRINT, materials)],
+      }),
     },
     {
       name: "Build Bookshelf",
       id: "buildBookshelf",
       requiredSkill: "fineShelving",
       duration: 40,
-      interaction: { kind: "assembly" },
-      requiredConsumables: [{ id: "screws", amount: 12 }],
-      getInputMaterials: () => [
-        // Twice the stock of a single shelf: two shelves, two sides
-        {
-          type: ["board"],
-          species: REAL_WOOD_SPECIES,
-          length: [4],
-          width: [6],
-          thickness: [4],
-          surface: ["sanded"],
-          quantity: 4,
-        },
-      ],
-      output: (materials: ReadonlyArray<MaterialInstance>) => {
-        const boards = materials.filter((m) => m.type === "board");
-        if (boards.length !== 4) {
-          throw new Error("Need exactly 4 boards to build a bookshelf");
-        }
-        return {
-          inputs: [],
-          outputs: [
-            makeMaterial<FinishedProduct>({
-              type: "bookshelf",
-              species: boards[0].species,
-            }),
-          ],
-        };
-      },
+      // Twice the single shelf's stock: two sides up on edge, two
+      // shelves across them — the first blueprint built from sanded
+      // hardwood, so the grain the player surfaced is the grain on
+      // the floor.
+      interaction: { kind: "assembly", blueprint: "bookshelf" },
+      requiredConsumables: blueprintFastenerCost(BOOKSHELF_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(BOOKSHELF_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(BOOKSHELF_BLUEPRINT, materials)],
+      }),
     },
   ],
 };

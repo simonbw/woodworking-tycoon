@@ -56,7 +56,6 @@ export const MaterialSprite: React.FC<{
 
     case "jewelryBox":
     case "birdhouse":
-    case "stepStool":
       return (
         <FinishedBoxSprite
           material={material as FinishedProduct}
@@ -83,6 +82,8 @@ export const MaterialSprite: React.FC<{
     case "rusticShelf":
     case "crate":
     case "planterBox":
+    case "stepStool":
+    case "bookshelf":
       return (
         <AssembledProductSprite
           material={material as FinishedProduct}
@@ -92,7 +93,6 @@ export const MaterialSprite: React.FC<{
       );
 
     case "shelf":
-    case "bookshelf":
     case "sideTable":
       return (
         <FurnitureSprite
