@@ -1,6 +1,9 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
+import { assemblyFramePlacement, slotOnBench } from "../bench-work/assembly";
+import { benchTopSizeIn } from "../bench-work/bench-layout";
+import { RUSTIC_SHELF_BLUEPRINT } from "../bench-work/blueprint";
 import { GameState, MaterialPile } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { HAND_CAPACITY } from "../Person";
@@ -433,5 +436,71 @@ describe("dropMaterialAction", () => {
     };
     const result = dropMaterialAction([material])(state);
     assert.strictEqual(result, state);
+  });
+});
+
+describe("the blueprint assembly's claim", () => {
+  it("consumes the seated boards, leaving spare matching stock on the bench", () => {
+    const stringer = () => board("pallet", 4, 6, 3);
+    const deckBoard = () => board("pallet", 3, 4, 1);
+    // The spares come first in the bay: a first-match claim would take
+    // them and leave the seated boards lying under the finished shelf
+    const spares = [stringer(), deckBoard()];
+    const seatedPieces = [
+      stringer(),
+      stringer(),
+      deckBoard(),
+      deckBoard(),
+      deckBoard(),
+    ];
+    const base: MachineState = {
+      machineTypeId: "workspace",
+      position: [4, 2],
+      rotation: 0,
+      selectedOperationId: "buildRusticPalletShelf",
+      selectedParameters: undefined,
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [...spares, ...seatedPieces],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: ["hammer"],
+    };
+    const frame = assemblyFramePlacement(
+      benchTopSizeIn(new Machine(base).type),
+    );
+    const bench: MachineState = {
+      ...base,
+      benchLayout: Object.fromEntries(
+        RUSTIC_SHELF_BLUEPRINT.slots.map((slot, i) => [
+          seatedPieces[i].id,
+          {
+            ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, frame, slot),
+            onEdge: slot.onEdge,
+          },
+        ]),
+      ),
+    };
+    const state: GameState = {
+      ...initialGameState,
+      machines: [bench],
+      consumables: { ...initialGameState.consumables, nails: 6 },
+    };
+    const result = operateMachineAction(new Machine(bench))(state);
+    assert.strictEqual(
+      result.machines[0].operationProgress.status,
+      "inProgress",
+    );
+    assert.deepStrictEqual(
+      result.machines[0].processingMaterials.map((m) => m.id).sort(),
+      seatedPieces.map((m) => m.id).sort(),
+    );
+    assert.deepStrictEqual(
+      result.machines[0].inputMaterials.map((m) => m.id).sort(),
+      spares.map((m) => m.id).sort(),
+    );
   });
 });

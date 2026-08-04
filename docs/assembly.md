@@ -62,7 +62,8 @@ each crossing. Not a new engine — the pallet generalized.
 8. **Orientation is part of the slot.** A `BlueprintSlot` can stand its
    part on edge (`onEdge`); its footprint (`slotFaceWidthIn`) narrows
    to the part's thickness, seating and snapping demand a piece tipped
-   to match (`BenchPlacement.onEdge`, the T verb), and the fastener
+   to match (`BenchPlacement.onEdge` — F, the one flip verb, tips a board
+   on edge where it flips the pallet over), and the fastener
    derivation's per-axis bite requirement relaxes to what a thin edge
    can offer. Hovering an empty outline bare-handed tags the slot's
    role and required stock — the drawing teaches at the bench, not in

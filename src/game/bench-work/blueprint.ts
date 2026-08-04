@@ -53,7 +53,7 @@ export interface BlueprintSlot {
   readonly layer: number;
   /** The part stands on its long edge — a rail or joist — so its
    * footprint is its thickness, not its width, and the bench only seats
-   * a piece that has been tipped up to match (T in the bench view). */
+   * a piece that has been tipped up to match (F in the bench view). */
   readonly onEdge?: boolean;
 }
 

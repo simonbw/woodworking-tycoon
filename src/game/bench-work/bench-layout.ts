@@ -24,7 +24,7 @@ export interface BenchPlacement {
   readonly angleDeg: number;
   readonly flipped: boolean;
   /**
-   * Tipped up on its long edge (T in the bench view): the piece stands on
+   * Flipped up on its long edge (F in the bench view): the piece stands on
    * its edge face, so its footprint narrows to its thickness — how a rail
    * or joist is stood before the deck is nailed across it. Boards only;
    * absent means lying flat (older saves never carry it).

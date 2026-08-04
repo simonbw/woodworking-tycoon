@@ -41,6 +41,7 @@ import {
 } from "../../game/game-actions/player-actions";
 import {
   armedFasteners,
+  assemblyFramePlacement,
   blueprintFrame,
   fastenedPieceIds,
   fastenerAt,
@@ -351,16 +352,15 @@ export const BenchWorkSurface: React.FC<{
   ];
 
   // ------------------------------------------------- blueprint assembly
-  // The ghost frame stands squarely centered — the same seat the
-  // finished product's default placement lands on, so the build never
-  // moves at the moment it completes.
+  // The ghost frame's centered seat — shared with the claim in
+  // operateMachineAction, which rebuilds this seating to consume the
+  // very boards lying on the outlines.
   const productPlacement: BenchPlacement = useMemo(
-    () => ({
-      xIn: benchSize.widthIn / 2,
-      yIn: benchSize.heightIn / 2,
-      angleDeg: 0,
-      flipped: false,
-    }),
+    () =>
+      assemblyFramePlacement({
+        widthIn: benchSize.widthIn,
+        heightIn: benchSize.heightIn,
+      }),
     [benchSize.widthIn, benchSize.heightIn],
   );
   // Seating is derived from the pieces' persistent placements, never
@@ -742,25 +742,22 @@ export const BenchWorkSurface: React.FC<{
         );
         return;
       }
-      if (
-        event.code !== "KeyR" &&
-        event.code !== "KeyF" &&
-        event.code !== "KeyT"
-      ) {
+      if (event.code !== "KeyR" && event.code !== "KeyF") {
         return;
       }
-      // Only a board can stand on its long edge
-      if (event.code === "KeyT" && material.type !== "board") return;
       event.preventDefault();
       event.stopPropagation();
       const current =
         draggingId === id && dragPlacement.current
           ? dragPlacement.current
           : benchPlacementFor(machine, material);
+      // One flip verb: a board flips up onto its long edge (and back
+      // flat); anything else — the pallet — turns over. Mirroring a
+      // board face-for-face never showed anyway.
       const turned: BenchPlacement =
         event.code === "KeyR"
           ? { ...current, angleDeg: current.angleDeg + 90 }
-          : event.code === "KeyT"
+          : material.type === "board"
             ? { ...current, onEdge: !current.onEdge }
             : { ...current, flipped: !current.flipped };
       if (draggingId === id) {
@@ -976,7 +973,7 @@ export const BenchWorkSurface: React.FC<{
         return "Set the plan's stock down on the bench (F), then lay each piece on its outline.";
       }
       return tippableSlot
-        ? `Tip each ${tippableSlot.role} up on its long edge (T), then lay it on its thin outline.`
+        ? `Flip each ${tippableSlot.role} up on its long edge (F), then lay it on its thin outline.`
         : "Lay each piece on its ghost outline — drag it close and it settles. R turns it.";
     };
     return {
@@ -1107,10 +1104,9 @@ export const BenchWorkSurface: React.FC<{
           ? ([
               ["Drag", "move a piece"],
               ["R", "turn"],
+              // The one flip verb: boards tip up on edge, the pallet
+              // turns over
               ["F", "flip"],
-              // Tipping only means something under an assembly plan —
-              // the verb works anywhere, but this is where it matters
-              ...(assemblyScript ? [["T", "tip on edge"]] : []),
             ] as Array<[string, string]>)
           : []),
         ["E", "take back"],
@@ -1208,7 +1204,7 @@ export const BenchWorkSurface: React.FC<{
               {" — "}
               {describeMaterialRequirement(hoveredSlot.requirement)}
               {hoveredSlot.onEdge && (
-                <span className="text-gold-light"> · stood on edge (T)</span>
+                <span className="text-gold-light"> · stood on edge (F)</span>
               )}
             </div>
           </div>

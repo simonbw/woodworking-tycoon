@@ -1,4 +1,6 @@
 import { materialMeetsInput } from "../material-helpers";
+import { seatedAssemblyPieces } from "../bench-work/assembly";
+import { productBlueprintFor } from "../bench-work/blueprint";
 import { CellMap } from "../CellMap";
 import { clampsFor, clampsFree } from "../Clamp";
 import { hasConsumables, subtractConsumables } from "../Consumable";
@@ -571,22 +573,50 @@ export function operateMachineAction(machine: Machine): GameAction {
     const inventory = [...machineState.inputMaterials];
     const materialsToConsume: MaterialInstance[] = [];
 
-    // Validate that we have all required materials
-    const inputMaterials = machine.selectedOperation.getInputMaterials(
-      machine.resolvedParameters(machine.selectedOperation),
-    );
-
-    for (const inputMaterial of inputMaterials) {
-      for (let i = 0; i < inputMaterial.quantity; i++) {
-        const index = inventory.findIndex((m) =>
-          materialMeetsInput(m, inputMaterial),
-        );
+    // A blueprint build consumes the very boards seated on its outlines —
+    // with spare matching stock lying on the bench, first-match would take
+    // the spares and leave the seated boards under the finished piece. A
+    // slot nobody seated (the ShopDriver skips the mini-game) still fills
+    // by first match, in slot order so the bill of materials lines up.
+    const interaction = machine.selectedOperation.interaction;
+    const blueprint =
+      interaction?.kind === "assembly"
+        ? productBlueprintFor(interaction.blueprint)
+        : null;
+    if (blueprint) {
+      const seatedBySlot = seatedAssemblyPieces(machine, blueprint);
+      for (const slot of blueprint.slots) {
+        const seatedId = seatedBySlot.get(slot.id)?.id;
+        const index = seatedId
+          ? inventory.findIndex((m) => m.id === seatedId)
+          : inventory.findIndex((m) => materialMeetsInput(m, slot.requirement));
         if (index === -1) {
           console.warn("Tried to perform operation without required materials");
           return gameState;
         }
         materialsToConsume.push(inventory[index]);
         inventory.splice(index, 1);
+      }
+    } else {
+      // Validate that we have all required materials
+      const inputMaterials = machine.selectedOperation.getInputMaterials(
+        machine.resolvedParameters(machine.selectedOperation),
+      );
+
+      for (const inputMaterial of inputMaterials) {
+        for (let i = 0; i < inputMaterial.quantity; i++) {
+          const index = inventory.findIndex((m) =>
+            materialMeetsInput(m, inputMaterial),
+          );
+          if (index === -1) {
+            console.warn(
+              "Tried to perform operation without required materials",
+            );
+            return gameState;
+          }
+          materialsToConsume.push(inventory[index]);
+          inventory.splice(index, 1);
+        }
       }
     }
 

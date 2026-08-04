@@ -508,7 +508,8 @@ test.describe("Bench view", () => {
         "stood on edge",
       );
 
-      // The parked rail lies flat: T tips it up on its long edge. The
+      // The parked rail lies flat: F flips it up on its long edge (the
+      // one flip verb — boards tip on edge, the pallet turns over). The
       // park spot overlaps a seated shelf on purpose — a free piece lies
       // on top and the hover must prefer it.
       const from = await inchPoint(page, 33, 4);
@@ -518,7 +519,7 @@ test.describe("Bench view", () => {
       // reads the hovered piece, and a busy renderer commits it a beat
       // after the pointer arrives
       await expect(stage).toHaveAttribute("data-hovered", "bp-r1");
-      await page.keyboard.press("KeyT");
+      await page.keyboard.press("KeyF");
       await expect
         .poll(async () =>
           page.evaluate(

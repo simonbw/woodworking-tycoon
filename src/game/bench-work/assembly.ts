@@ -1,8 +1,11 @@
+import type { Machine } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { materialMeetsInput } from "../material-helpers";
 import {
+  benchPlacementFor,
   BenchPlacement,
   benchPointInFrame,
+  benchTopSizeIn,
   framePointOnBench,
   FrameSizeIn,
   slotPlacementOnBench,
@@ -88,7 +91,7 @@ function pieceSeatsSlot(
   return (
     requirementMet &&
     // An on-edge slot only seats a piece that has been tipped on edge
-    // (T), and a flat slot only a piece lying flat — the orientation is
+    // (F), and a flat slot only a piece lying flat — the orientation is
     // part of where the part belongs, not a nicety.
     !!piece.placement.onEdge === !!slot.onEdge &&
     Math.hypot(
@@ -178,6 +181,49 @@ export function snapPlacementFor(
     bestDist = dist;
   }
   return best;
+}
+
+/**
+ * The ghost frame's seat: squarely centered on the bench top — the same
+ * seat the finished product's default placement lands on, so the build
+ * never moves at the moment it completes.
+ */
+export function assemblyFramePlacement(benchSize: FrameSizeIn): BenchPlacement {
+  return {
+    xIn: benchSize.widthIn / 2,
+    yIn: benchSize.heightIn / 2,
+    angleDeg: 0,
+    flipped: false,
+  };
+}
+
+/**
+ * Which material is seated on each slot at this bench right now, by slot
+ * id — the bench view's seating derivation rebuilt from persistent state
+ * (MachineState.benchLayout), so the claim that starts a build can
+ * consume the very boards lying on the outlines rather than whatever
+ * spare stock matches first.
+ */
+export function seatedAssemblyPieces(
+  machine: Machine,
+  blueprint: ProductBlueprint,
+): ReadonlyMap<string, MaterialInstance> {
+  const pieces = machine.state.inputMaterials.map((material) => ({
+    material,
+    placement: benchPlacementFor(machine, material),
+  }));
+  const seated = seatedParts(
+    blueprint,
+    assemblyFramePlacement(benchTopSizeIn(machine.type)),
+    pieces,
+  );
+  const byId = new Map(pieces.map((p) => [p.material.id, p.material] as const));
+  const bySlot = new Map<string, MaterialInstance>();
+  for (const [slotId, materialId] of seated) {
+    const material = byId.get(materialId);
+    if (material) bySlot.set(slotId, material);
+  }
+  return bySlot;
 }
 
 /** The fasteners whose both parts are seated — ready for the hammer. */

@@ -320,7 +320,7 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
 }
 
 /**
- * A piece's footprint as placed: a board tipped on edge (T) stands on
+ * A piece's footprint as placed: a board flipped up on edge (F) stands on
  * its edge face, so its footprint narrows from its width to its
  * thickness. Everything that hit-tests or outlines a placed piece reads
  * this rather than pieceSize, so a rail on edge is exactly as grabbable
