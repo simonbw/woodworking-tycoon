@@ -11,11 +11,12 @@ import { useApplyGameAction, useGameState } from "./useGameState";
 
 /**
  * How fast the clock creeps when nobody is spending time — walking the
- * floor, reading, browsing a store's aisles. Close to real time
- * minute-for-minute: thinking is nearly free, and the day is a budget
- * that work draws down, not a metronome (see docs/time-and-days.md).
+ * floor, reading, browsing a store's aisles. Tuned so a day of pure
+ * idling takes about twelve real minutes (working pace burns it in
+ * two): thinking is cheap, and the day is a budget that work draws
+ * down, not a metronome (see docs/time-and-days.md).
  */
-const IDLE_TICKS_PER_SECOND = 1 / 60;
+const IDLE_TICKS_PER_SECOND = 1 / 1.2;
 
 /** How often the loop wakes to see whether a tick is owed. */
 const LOOP_INTERVAL_MS = 100;
@@ -24,7 +25,7 @@ const LOOP_INTERVAL_MS = 100;
  * Drives the game loop and shows the day as a compact strip docked in
  * the top bar. The clock's pace follows what the player is doing
  * (time-flow.ts): full speed while time is being spent — attended work,
- * a scavenging run, trudging — a near-real-time creep while idle, and a
+ * a scavenging run, trudging — a slow creep while idle, and a
  * dead stop at night, when the only thing that moves the world is
  * finishing what's already running (or going home to bed). The pause
  * menu still stops everything.

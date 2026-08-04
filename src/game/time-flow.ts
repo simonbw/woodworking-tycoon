@@ -16,8 +16,9 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  *  working — time is being spent: attended machine work, a busy body
  *            (trudging, sweeping), or a scavenging run's timer. Full
  *            pace, the familiar five minutes a second.
- *  idle    — nobody is spending time. The clock still creeps, close to
- *            real time minute-for-minute: thinking is nearly free.
+ *  idle    — nobody is spending time. The clock still creeps, slowly
+ *            enough that thinking stays cheap (a day of pure idling is
+ *            about twelve real minutes; see IDLE_TICKS_PER_SECOND).
  *  stopped — the shop is closed for the night (or the player is home in
  *            bed). Nothing moves until work finishes it or morning does.
  */

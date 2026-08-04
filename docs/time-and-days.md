@@ -43,10 +43,11 @@ and the Ticker feeds ticks accordingly:
   pulling stock through on its own), the broom or vac working under the
   same hold, a busy body (trudging dust, mid-sweep), or a scavenging
   run's timer burning down.
-- **idle** — nobody is spending time. The clock still creeps, close to
-  real time minute-for-minute (`IDLE_TICKS_PER_SECOND`, one tick a
-  minute): walking the floor, reading, arranging stock, and browsing a
-  store's aisles are all nearly free.
+- **idle** — nobody is spending time. The clock still creeps
+  (`IDLE_TICKS_PER_SECOND`): walking the floor, reading, arranging
+  stock, and browsing a store's aisles cost a sixth of working pace, so
+  a day spent doing nothing at all still runs out in about twelve real
+  minutes — against the two a day of solid work takes.
 - **stopped** — the shop is closed for the night (or the player is home
   in bed). No idle creep; the only ticks left are the ones work causes.
 
@@ -175,6 +176,6 @@ refusing new work but never trapping the shop — live in
 
 The game used to be idle-adjacent — listings sold and glue dried while
 you stood around. Now nothing meaningful happens for free: the clock
-creeps near real time when unspent, so the game stops rewarding leaving
+creeps slowly when unspent, so the game stops rewarding leaving
 the tab open and starts rewarding planning dense days, with the
 real-time *texture* (WASD, hold-to-work, flying dust) fully preserved.
