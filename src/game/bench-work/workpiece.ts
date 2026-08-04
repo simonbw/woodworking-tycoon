@@ -13,7 +13,6 @@ import {
   Panel,
   panelWidth,
 } from "../Materials";
-import { INCHES_PER_FOOT } from "../shop-scale";
 import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
 import { ProductBlueprint, productBlueprintFor } from "./blueprint";
 import { materialMeetsInput } from "../material-helpers";
@@ -46,15 +45,15 @@ export function strokeSurfaceSize(
     return band === "edge"
       ? {
           widthIn: board.thickness / 4,
-          heightIn: board.length * INCHES_PER_FOOT,
+          heightIn: board.length,
         }
-      : { widthIn: board.width, heightIn: board.length * INCHES_PER_FOOT };
+      : { widthIn: board.width, heightIn: board.length };
   }
   if (material.type === "panel") {
     const panel = material as Panel;
     return {
       widthIn: panelWidth(panel),
-      heightIn: panel.length * INCHES_PER_FOOT,
+      heightIn: panel.length,
     };
   }
   // Anything else strokes over its bounding cell — shouldn't happen for
@@ -294,13 +293,13 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
       return { widthIn: PALLET_WIDTH_IN, heightIn: PALLET_HEIGHT_IN };
     case "board": {
       const b = material as Board;
-      return { widthIn: b.width, heightIn: b.length * INCHES_PER_FOOT };
+      return { widthIn: b.width, heightIn: b.length };
     }
     case "panel": {
       const p = material as Panel;
       return {
         widthIn: panelWidth(p),
-        heightIn: p.length * INCHES_PER_FOOT,
+        heightIn: p.length,
       };
     }
     case "endGrainSlice":
@@ -311,8 +310,8 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
       };
     case "plywood":
       return {
-        widthIn: material.width * INCHES_PER_FOOT,
-        heightIn: material.length * INCHES_PER_FOOT,
+        widthIn: material.width,
+        heightIn: material.length,
       };
     default:
       return { widthIn: 10, heightIn: 10 };
@@ -334,7 +333,7 @@ export function placedPieceSize(
     const b = material as Board;
     return {
       widthIn: b.thickness / 4,
-      heightIn: b.length * INCHES_PER_FOOT,
+      heightIn: b.length,
     };
   }
   return pieceSize(material);

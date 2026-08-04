@@ -4,7 +4,7 @@ import { colorToCss, mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;
@@ -45,7 +45,7 @@ export const BoardFaceSvg: React.FC<{
   } = board;
 
   const drawing = useMemo(() => {
-    const length = boardLength * INCHES_PER_FOOT * PIXELS_PER_INCH;
+    const length = boardLength * PIXELS_PER_INCH;
     const width = boardWidth * PIXELS_PER_INCH;
     const depth = (thickness * PIXELS_PER_INCH) / 4;
     const rng = seededRandom(

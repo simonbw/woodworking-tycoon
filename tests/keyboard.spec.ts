@@ -449,7 +449,7 @@ test.describe("Keyboard", () => {
                 id: "hud-board",
                 type: "board",
                 species: "pallet",
-                length: 2,
+                length: 24,
                 width: 4,
                 thickness: 1,
               },
@@ -475,7 +475,7 @@ test.describe("Keyboard", () => {
           type: "board",
           species,
           width: 4,
-          length: 2,
+          length: 24,
           thickness: 1,
           surface: "rough",
         });

@@ -90,8 +90,8 @@ describe("garbage can", () => {
 
   it("takes anything the player is carrying", () => {
     const gameState = shopWithCan();
-    const offcut = board("pine", 1, 3, 1);
-    const panel = board("oak", 4, 6, 1, "sanded");
+    const offcut = board("pine", 12, 3, 1);
+    const panel = board("oak", 48, 6, 1, "sanded");
     const carried = [offcut, panel];
 
     assert.deepStrictEqual(
@@ -111,7 +111,7 @@ describe("garbage can", () => {
   });
 
   it("gives back what was tossed in — nothing is gone until it is emptied", () => {
-    const offcut = board("pine", 2, 4, 1);
+    const offcut = board("pine", 24, 4, 1);
     let gameState: GameState = {
       ...shopWithCan(),
       player: { ...shopWithCan().player, inventory: [offcut] },
@@ -133,8 +133,8 @@ describe("garbage can", () => {
   });
 
   it("destroys one piece per run of Empty, leaving the rest", () => {
-    const kept = board("oak", 3, 5, 1);
-    let gameState = shopWithCan([board("pine", 1, 2, 1), kept]);
+    const kept = board("oak", 36, 5, 1);
+    let gameState = shopWithCan([board("pine", 12, 2, 1), kept]);
 
     gameState = operateMachineAction(theCan(gameState))(gameState);
     gameState = setOperatingAction(true)(gameState);
@@ -163,7 +163,7 @@ describe("garbage can", () => {
   });
 
   it("never answers the interact key — it is opened, not reached into", () => {
-    const gameState = shopWithCan([board("pine", 1, 2, 1)]);
+    const gameState = shopWithCan([board("pine", 12, 2, 1)]);
     assert.strictEqual(resolveInteract(gameState, theCan(gameState)), null);
     assert.strictEqual(resolveInteract(gameState, undefined), null);
   });
@@ -172,9 +172,9 @@ describe("garbage can", () => {
     // A can standing in twelve cells' reach must not take the key from a
     // board underfoot
     const gameState: GameState = {
-      ...shopWithCan([board("pine", 1, 2, 1)]),
+      ...shopWithCan([board("pine", 12, 2, 1)]),
       materialPiles: [
-        { material: board("oak", 2, 4, 1), position: [3, 4], rotation: 0 },
+        { material: board("oak", 24, 4, 1), position: [3, 4], rotation: 0 },
       ],
     };
 
@@ -197,7 +197,7 @@ describe("garbage can", () => {
     // sheet on screen asks this question about the can underfoot.
     assert.strictEqual(machineCanOperate(theCan(shopWithCan())), false);
     assert.strictEqual(
-      machineCanOperate(theCan(shopWithCan([board("pine", 1, 2, 1)]))),
+      machineCanOperate(theCan(shopWithCan([board("pine", 12, 2, 1)]))),
       true,
     );
   });

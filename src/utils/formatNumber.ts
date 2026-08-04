@@ -50,3 +50,18 @@ export function formatCount(value: number): string {
 export function formatDecimal(value: number): string {
   return ONE_DECIMAL.format(value);
 }
+
+/**
+ * A length in inches, written the way a woodworker marks it: whole feet
+ * as feet ("4'"), under a foot as inches ("7\""), anything else as both
+ * ("3'6\""). Lengths are stored in inches everywhere (see Board.length);
+ * this is the one place they turn back into shop talk.
+ */
+export function formatLength(lengthIn: number): string {
+  const feet = Math.floor(lengthIn / 12);
+  const inches = lengthIn % 12;
+  if (feet === 0) {
+    return `${inches}"`;
+  }
+  return inches === 0 ? `${feet}'` : `${feet}'${inches}"`;
+}

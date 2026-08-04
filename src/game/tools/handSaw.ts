@@ -1,10 +1,6 @@
-import {
-  BOARD_DIMENSIONS,
-  BoardDimension,
-  SignedMiterAngle,
-} from "../Materials";
+import { SignedMiterAngle } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
-import { SAW_ANGLE_STOPS } from "../machines/miterSaw";
+import { CUT_POSITIONS, SAW_ANGLE_STOPS } from "../machines/miterSaw";
 import { ToolType } from "../Tool";
 
 /**
@@ -56,16 +52,20 @@ export const handSaw: ToolType = {
         {
           id: "targetLength",
           name: "Target Length",
-          values: BOARD_DIMENSIONS,
-          unit: "'",
+          // The miter box measures in the same inch marks as the saw
+          // it's standing in for
+          values: CUT_POSITIONS,
+          unit: '"',
         },
       ],
       getInputMaterials: (params) => [
         {
           type: ["board"],
-          length: BOARD_DIMENSIONS.filter(
-            (d) => d > (params.targetLength as BoardDimension),
-          ),
+          // Kept length must fit inside the stock — a ">" constraint,
+          // so it's the predicate escape hatch (recipe constant only)
+          matches: (material) =>
+            isBoard(material) &&
+            material.length > (params.targetLength as number),
           quantity: 1,
         },
       ],
@@ -76,7 +76,7 @@ export const handSaw: ToolType = {
         }
         return cutBoard(
           inputBoard,
-          params.targetLength as BoardDimension,
+          params.targetLength as number,
           "length",
           0,
           {

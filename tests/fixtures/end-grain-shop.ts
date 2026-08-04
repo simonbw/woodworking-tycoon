@@ -36,7 +36,7 @@ function idleMachine(
 const sandedBlank: Panel = {
   id: "test-eg-blank",
   type: "panel",
-  length: 2,
+  length: 24,
   thickness: 4,
   surface: "sanded",
   strips: Array.from({ length: 5 }, () => ({
@@ -50,7 +50,7 @@ function palletBoard(id: string): Board {
     id,
     type: "board",
     species: "pallet",
-    length: 3,
+    length: 36,
     width: 4,
     thickness: 1,
     surface: "rough",

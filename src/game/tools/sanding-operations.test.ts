@@ -16,14 +16,14 @@ const orbitSandPanel = TOOL_TYPES.randomOrbitSander.operations.find(
 
 describe("sanding operations", () => {
   it("bumps a rough board to smooth", () => {
-    const { outputs } = blockSandBoard.output([board("pallet", 3, 4, 1)], {});
+    const { outputs } = blockSandBoard.output([board("pallet", 36, 4, 1)], {});
     assert.ok(isBoard(outputs[0]));
     assert.strictEqual(outputs[0].surface, "smooth");
   });
 
   it("bumps a smooth board to sanded", () => {
     const { outputs } = blockSandBoard.output(
-      [board("pallet", 3, 4, 1, "smooth")],
+      [board("pallet", 36, 4, 1, "smooth")],
       {},
     );
     assert.ok(isBoard(outputs[0]));
@@ -31,10 +31,10 @@ describe("sanding operations", () => {
   });
 
   it("never changes dimensions", () => {
-    const input = board("maple", 2, 2, 4, "rough");
+    const input = board("maple", 24, 2, 4, "rough");
     const { outputs } = blockSandBoard.output([input], {});
     assert.ok(isBoard(outputs[0]));
-    assert.strictEqual(outputs[0].length, 2);
+    assert.strictEqual(outputs[0].length, 24);
     assert.strictEqual(outputs[0].width, 2);
     assert.strictEqual(outputs[0].thickness, 4);
   });
@@ -42,15 +42,15 @@ describe("sanding operations", () => {
   it("won't accept an already-sanded material", () => {
     const requirement = blockSandBoard.getInputMaterials({})[0];
     assert.ok(
-      !materialMeetsInput(board("pallet", 3, 4, 1, "sanded"), requirement),
+      !materialMeetsInput(board("pallet", 36, 4, 1, "sanded"), requirement),
     );
     assert.ok(
-      materialMeetsInput(board("pallet", 3, 4, 1, "rough"), requirement),
+      materialMeetsInput(board("pallet", 36, 4, 1, "rough"), requirement),
     );
   });
 
   it("sands panels and preserves their strips", () => {
-    const blank = uniformPanel("maple", 5, 2, 2, 4, "rough");
+    const blank = uniformPanel("maple", 5, 2, 24, 4, "rough");
     const { outputs } = orbitSandPanel.output([blank], {});
     assert.ok(isPanel(outputs[0]));
     assert.strictEqual(outputs[0].surface, "smooth");

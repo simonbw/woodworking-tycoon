@@ -70,7 +70,6 @@ import { machineCanOperate, shopSupply } from "../../game/machine-helpers";
 import { clampsFor } from "../../game/Clamp";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
-import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { playSound } from "../../utils/sfx";
 import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState } from "../useGameState";
@@ -864,7 +863,7 @@ export const BenchWorkSurface: React.FC<{
           const fit = fitToStage(
             {
               widthIn: board.width,
-              heightIn: board.length * INCHES_PER_FOOT,
+              heightIn: board.length,
             },
             workRect,
           );

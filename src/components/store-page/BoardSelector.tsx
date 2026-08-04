@@ -3,7 +3,7 @@ import { Species } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
 import { buyMaterialAction } from "../../game/game-actions/store-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
-import { formatMoney } from "../../utils/formatNumber";
+import { formatLength, formatMoney } from "../../utils/formatNumber";
 import {
   describeStockDimensionsPlain,
   getMaterialFullName,
@@ -208,7 +208,7 @@ const BoardForSale: React.FC<{
     <Tooltip content={tooltip}>
       <button
         className="relative block shrink-0 transition-[filter] enabled:cursor-pointer enabled:hover:brightness-110 disabled:opacity-60"
-        style={{ height: sku.length * PX_PER_FOOT }}
+        style={{ height: (sku.length / 12) * PX_PER_FOOT }}
         disabled={gameState.money < price}
         data-sfx="ui-purchase"
         aria-label={`Buy ${fullName}`}
@@ -228,7 +228,9 @@ const BoardForSale: React.FC<{
           <span className="text-[10px] uppercase whitespace-nowrap">
             {sizeLine}
           </span>
-          <span className="text-[10px] whitespace-nowrap">{`${sku.length}'`}</span>
+          <span className="text-[10px] whitespace-nowrap">
+            {formatLength(sku.length)}
+          </span>
           <span className="text-[11px] font-bold tabular-nums whitespace-nowrap">
             {formatMoney(price)}
           </span>

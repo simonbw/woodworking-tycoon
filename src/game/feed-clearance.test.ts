@@ -49,11 +49,11 @@ function shopWith(...machines: MachineState[]): GameState {
 
 /** An 8-footer ready to rip: one straight edge to ride the fence. */
 const longBoard = () =>
-  board("walnut", 8, 6, 4, "rough", { faces: 1, edges: 1 });
+  board("walnut", 96, 6, 4, "rough", { faces: 1, edges: 1 });
 
 describe("stockTravelLength", () => {
   it("is the length for stock with one, and null otherwise", () => {
-    assert.strictEqual(stockTravelLength(longBoard()), 8);
+    assert.strictEqual(stockTravelLength(longBoard()), 96);
     assert.strictEqual(
       stockTravelLength(
         makeMaterial<FinishedProduct>({ type: "shelf", species: "pine" }),
@@ -67,12 +67,14 @@ describe("feedRunNeeded", () => {
   it("credits half the bed, rounded in the stock's favor", () => {
     // Table saw: 2 cells of bed along the feed axis → 1 credited per side
     const saw = new Machine(machineAt("jobsiteTableSaw", [6, 8]));
-    assert.strictEqual(feedRunNeeded(saw, 8), 7);
-    assert.strictEqual(feedRunNeeded(saw, 2), 1);
-    assert.strictEqual(feedRunNeeded(saw, 1), 0);
+    assert.strictEqual(feedRunNeeded(saw, 96), 7);
+    assert.strictEqual(feedRunNeeded(saw, 24), 1);
+    assert.strictEqual(feedRunNeeded(saw, 12), 0);
+    // Off-grid stock rounds up: a 30" board still needs its third foot
+    assert.strictEqual(feedRunNeeded(saw, 30), 2);
     // Planer: 3 cells of bed → 2 credited per side
     const planer = new Machine(machineAt("lunchboxPlaner", [6, 8]));
-    assert.strictEqual(feedRunNeeded(planer, 8), 6);
+    assert.strictEqual(feedRunNeeded(planer, 96), 6);
   });
 });
 
@@ -134,7 +136,7 @@ describe("feedClearanceShortfall", () => {
     assert.strictEqual(
       feedClearanceShortfall(
         tightSaw,
-        [board("walnut", 2, 6, 4, "rough", { faces: 1, edges: 1 })],
+        [board("walnut", 24, 6, 4, "rough", { faces: 1, edges: 1 })],
         CellMap.fromGameState(tight),
       ),
       null,

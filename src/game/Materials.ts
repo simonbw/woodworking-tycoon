@@ -3,7 +3,13 @@
 import { Tuple } from "../utils/typeUtils";
 import type { ToolId } from "./Tool";
 
-export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const; // either feet, inches, or quarters of an inch
+/**
+ * The cross-section detents: width in inches, thickness in quarters of an
+ * inch. Lengths are NOT on this scale — a length is a plain number of
+ * inches, because cuts do arithmetic on lengths (cutBoard subtracts) and
+ * recipes want off-grid values (a 34" crate wall, a 7" birdhouse side).
+ */
+export const BOARD_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export const SHEET_THICKNESSES = [1, 2, 3, 4] as const; // in quarters of an inch
 export type BoardDimension = (typeof BOARD_DIMENSIONS)[number];
 export type SheetThickness = (typeof SHEET_THICKNESSES)[number];
@@ -108,7 +114,8 @@ export function worseSurface(
 export interface Board {
   readonly id: string;
   readonly type: "board";
-  readonly length: BoardDimension;
+  /** Inches. Integer by convention (saws cut at inch marks). */
+  readonly length: number;
   readonly width: BoardDimension;
   readonly thickness: BoardDimension;
   readonly species: Species;
@@ -184,8 +191,9 @@ export type SheetGoodKind = (typeof SHEET_GOOD_KINDS)[number];
 export interface SheetGood {
   readonly id: string;
   readonly type: "plywood";
-  readonly length: BoardDimension;
-  readonly width: BoardDimension;
+  /** Inches — a full sheet is 96 × 48. */
+  readonly length: number;
+  readonly width: number;
   readonly thickness: SheetThickness;
   readonly kind: SheetGoodKind;
 }
@@ -206,7 +214,8 @@ export interface PanelStrip {
 export interface Panel {
   readonly id: string;
   readonly type: "panel";
-  readonly length: BoardDimension;
+  /** Inches, like a board's. */
+  readonly length: number;
   readonly thickness: BoardDimension;
   readonly strips: ReadonlyArray<PanelStrip>;
   readonly surface: SurfaceCondition;
@@ -281,7 +290,7 @@ export type FinishedProductType = (typeof FINISHED_PRODUCT_TYPES)[number];
 /**
  * One board in an assembled product's bill of materials: which blueprint
  * slot it fills, the stock it was (Board units: width in inches, length
- * in feet, thickness in quarters), and the grain seed it keeps — the
+ * in inches, thickness in quarters), and the grain seed it keeps — the
  * consumed board's own id, so the very grain that lay on the bench is
  * the grain in the finished piece.
  */
@@ -289,7 +298,7 @@ export type AssembledPart = {
   readonly slot: string;
   readonly species: Species;
   readonly width: BoardDimension;
-  readonly length: BoardDimension;
+  readonly length: number;
   readonly thickness: BoardDimension;
   /** The board's surface as it went in — sanded stock draws sanded in
    * the finished piece. Absent (older saves) means rough. */

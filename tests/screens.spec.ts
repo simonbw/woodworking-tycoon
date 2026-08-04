@@ -260,7 +260,7 @@ test.describe("Screens", () => {
                   id: `mixed-strip-${i}`,
                   type: "board",
                   species,
-                  length: 2,
+                  length: 24,
                   width: 2,
                   thickness: 4,
                   surface: "smooth",

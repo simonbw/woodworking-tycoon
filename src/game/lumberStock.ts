@@ -6,7 +6,8 @@ import {
 } from "./Materials";
 
 export interface LumberSku {
-  readonly length: BoardDimension;
+  /** Inches, like Board.length. */
+  readonly length: number;
   readonly width: BoardDimension;
   readonly thickness: BoardDimension;
 }
@@ -63,9 +64,9 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
     species: ["pine"],
     // Framing sizes: 2x4s, 2x6s, and 1x4 strapping
     skus: [
-      { length: 8, width: 4, thickness: 8 },
-      { length: 8, width: 6, thickness: 8 },
-      { length: 8, width: 4, thickness: 4 },
+      { length: 96, width: 4, thickness: 8 },
+      { length: 96, width: 6, thickness: 8 },
+      { length: 96, width: 4, thickness: 4 },
     ],
     surface: "smooth",
     jointedFaces: 2,
@@ -82,9 +83,9 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
     species: ["poplar", "oak", "maple"],
     // Short, small boards — hobbyist portions
     skus: [
-      { length: 4, width: 4, thickness: 4 },
-      { length: 4, width: 6, thickness: 4 },
-      { length: 6, width: 4, thickness: 4 },
+      { length: 48, width: 4, thickness: 4 },
+      { length: 48, width: 6, thickness: 4 },
+      { length: 72, width: 4, thickness: 4 },
     ],
     surface: "smooth",
     jointedFaces: 2,
@@ -100,9 +101,9 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
       "Faces planed, edges as the saw left them. Bring a straight-line rig.",
     species: ["maple", "oak", "cherry", "walnut"],
     skus: [
-      { length: 8, width: 6, thickness: 4 },
-      { length: 8, width: 4, thickness: 8 },
-      { length: 6, width: 8, thickness: 4 },
+      { length: 96, width: 6, thickness: 4 },
+      { length: 96, width: 4, thickness: 8 },
+      { length: 72, width: 8, thickness: 4 },
     ],
     surface: "smooth",
     jointedFaces: 2,
@@ -118,9 +119,9 @@ export const LUMBER_CHANNELS: ReadonlyArray<LumberChannel> = [
       "Straight off the mill. Cheapest wood in town, if your shop can flatten it.",
     species: ["maple", "oak", "cherry", "walnut"],
     skus: [
-      { length: 8, width: 6, thickness: 4 },
-      { length: 8, width: 8, thickness: 8 },
-      { length: 6, width: 6, thickness: 4 },
+      { length: 96, width: 6, thickness: 4 },
+      { length: 96, width: 8, thickness: 8 },
+      { length: 72, width: 6, thickness: 4 },
     ],
     surface: "rough",
     jointedFaces: 0,

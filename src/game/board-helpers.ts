@@ -18,7 +18,7 @@ import { makeMaterial } from "./material-helpers";
 
 export function board(
   species: Board["species"] = "pallet",
-  length: Board["length"] = 1,
+  length: Board["length"] = 12,
   width: Board["width"] = 1,
   thickness: Board["thickness"] = 1,
   surface: Board["surface"] = "rough",
@@ -87,7 +87,7 @@ const SQUARE_LENGTH_CUT: LengthCutSetup = { angle: 0, cutEnd: "left" };
  */
 export function cutBoard(
   inputBoard: Board,
-  outputSize: BoardDimension,
+  outputSize: number,
   dimension: "length" | "width" | "thickness",
   waste: number = 0,
   lengthCut: LengthCutSetup = SQUARE_LENGTH_CUT,
@@ -125,7 +125,7 @@ export function cutBoard(
     const offcutFreshEnd = cutEnd === "left" ? "right" : "left";
     outputs.push({
       ...inputBoard,
-      length: offcutSize as BoardDimension,
+      length: offcutSize,
       ends: { ...ends, [offcutFreshEnd]: freshEnd },
     });
   }

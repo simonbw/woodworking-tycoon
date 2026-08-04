@@ -40,7 +40,7 @@ const strips = Array.from({ length: 5 }, (_, i) => ({
   id: `test-strip-${i}`,
   type: "board" as const,
   species: "maple" as const,
-  length: 2 as const,
+  length: 24,
   width: 2 as const,
   thickness: 4 as const,
   surface: "smooth" as const,

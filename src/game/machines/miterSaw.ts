@@ -1,11 +1,8 @@
 import { MachineType } from "../Machine";
-import {
-  BOARD_DIMENSIONS,
-  BoardDimension,
-  SignedMiterAngle,
-} from "../Materials";
+import { SignedMiterAngle } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
 import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
+import { formatLength } from "../../utils/formatNumber";
 
 /**
  * The saw's detents — the head swings both ways off square, like the real
@@ -15,14 +12,14 @@ import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated
 export const SAW_ANGLE_STOPS = [-45, -30, -22.5, 0, 22.5, 30, 45] as const;
 
 /**
- * Where along the stock the blade can land, measured in feet from the
- * board's left end — you slide the board under the blade to a foot mark,
- * you don't dial in "how long the kept piece is". A cut needs wood on both
- * sides of the line, so the marks stop one foot shy of the longest board.
+ * Where along the stock the blade can land, in inches from the board's
+ * left end — you slide the board under the blade to a mark, you don't
+ * dial in "how long the kept piece is". The detents sit at the foot
+ * marks for now (lengths are stored in inches; finer marks are a design
+ * decision, not a storage one), and a cut needs wood on both sides of
+ * the line, so the marks stop one foot shy of the longest board.
  */
-export const CUT_POSITIONS = BOARD_DIMENSIONS.filter(
-  (d) => d < BOARD_DIMENSIONS[BOARD_DIMENSIONS.length - 1],
-);
+export const CUT_POSITIONS = [12, 24, 36, 48, 60, 72, 84] as const;
 
 export const miterSaw: MachineType = {
   id: "miterSaw",
@@ -74,8 +71,8 @@ export const miterSaw: MachineType = {
           name: "Cut Line",
           values: CUT_POSITIONS,
           // Fresh out of the crate the stock sits mid-table
-          defaultValue: 4,
-          unit: "'",
+          defaultValue: 48,
+          unit: '"',
           presentation: "slide",
         },
         {
@@ -93,10 +90,13 @@ export const miterSaw: MachineType = {
       getInputMaterials: (params) => [
         {
           type: ["board"],
-          // The blade must land inside the board — wood on both sides
-          length: BOARD_DIMENSIONS.filter(
-            (d) => d > (params.cutPosition as BoardDimension),
-          ),
+          // The blade must land inside the board — wood on both sides.
+          // A ">" can't be an allowed-values array now that lengths are
+          // open inches, so it's the predicate escape hatch (recipe
+          // constant — never serialized).
+          matches: (material) =>
+            isBoard(material) &&
+            material.length > (params.cutPosition as number),
           quantity: 1,
         },
       ],
@@ -107,7 +107,7 @@ export const miterSaw: MachineType = {
         const line = params?.cutPosition as number;
         if (material.length <= line) {
           // The wood isn't wrong, the setting is — say so
-          return `The ${line}' mark is past the end of this board — slide the cut line inside it.`;
+          return `The ${formatLength(line)} mark is past the end of this board — slide the cut line inside it.`;
         }
         return null;
       },
@@ -116,18 +116,12 @@ export const miterSaw: MachineType = {
         if (!isBoard(inputBoard)) {
           throw new Error("Input material is not a board");
         }
-        // The cut line sits cutPosition feet from the left end, so the
+        // The cut line sits cutPosition inches from the left end, so the
         // left piece is that long and its fresh face is its right end.
-        return cutBoard(
-          inputBoard,
-          params.cutPosition as BoardDimension,
-          "length",
-          0,
-          {
-            angle: (params.angle as SignedMiterAngle | 0) ?? 0,
-            cutEnd: "right",
-          },
-        );
+        return cutBoard(inputBoard, params.cutPosition as number, "length", 0, {
+          angle: (params.angle as SignedMiterAngle | 0) ?? 0,
+          cutEnd: "right",
+        });
       },
     },
   ],

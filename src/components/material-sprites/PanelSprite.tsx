@@ -3,7 +3,7 @@ import React, { useCallback } from "react";
 import { Panel } from "../../game/Materials";
 import { omitUndefined } from "../../utils/objectUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 /**
  * A glued-up panel: one rect per strip, colored by that strip's species, so
@@ -21,7 +21,7 @@ export const PanelSprite: React.FC<
       g.clear();
       const totalWidth =
         strips.reduce((sum, strip) => sum + strip.width, 0) * PIXELS_PER_INCH;
-      const height = length * PIXELS_PER_INCH * INCHES_PER_FOOT;
+      const height = length * PIXELS_PER_INCH;
       const depth = (thickness * PIXELS_PER_INCH) / 4;
 
       // shadow

@@ -5,7 +5,7 @@ import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;
@@ -39,7 +39,7 @@ export const BoardOnEdgeSprite: React.FC<
     (g: Graphics) => {
       g.clear();
       const width = (thickness / 4) * PIXELS_PER_INCH;
-      const height = boardLength * PIXELS_PER_INCH * INCHES_PER_FOOT;
+      const height = boardLength * PIXELS_PER_INCH;
       // The face leans a hair into view beside the edge — enough to read
       // "standing board", never wider than the edge itself.
       const lean = Math.min(width * 0.8, 3);

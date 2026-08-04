@@ -31,7 +31,7 @@ function stateWithPile(
 describe("pickUpMaterialAction", () => {
   it("picks up from the cell the pile rests in", () => {
     const pile: MaterialPile = {
-      material: board("pine", 8, 4, 1),
+      material: board("pine", 96, 4, 1),
       position: [1.5, 3.5],
       rotation: 0,
     };
@@ -42,7 +42,7 @@ describe("pickUpMaterialAction", () => {
 
   it("picks up a long board from anywhere along its length", () => {
     const pile: MaterialPile = {
-      material: board("pine", 8, 4, 1),
+      material: board("pine", 96, 4, 1),
       position: [1.5, 3.5],
       rotation: 0,
     };
@@ -54,7 +54,7 @@ describe("pickUpMaterialAction", () => {
   it("refuses cells the board does not reach", () => {
     // An 8' board centered at [1.5, 3.5] ends at y 7.5; [1, 8] is past it
     const pile: MaterialPile = {
-      material: board("pine", 8, 4, 1),
+      material: board("pine", 96, 4, 1),
       position: [1.5, 3.5],
       rotation: 0,
     };
@@ -68,7 +68,7 @@ describe("pickUpMaterialAction", () => {
     // ahead of it can still grab it — but a cell to the side, or two cells
     // away, cannot.
     const pile: MaterialPile = {
-      material: board("pine", 1, 4, 1),
+      material: board("pine", 12, 4, 1),
       position: [1.5, 3.5],
       rotation: 0,
     };
@@ -85,11 +85,11 @@ describe("pickUpMaterialAction", () => {
   it("refuses a load bigger than the arm room left", () => {
     // One free hand left; a two-pile grab doesn't fit and refuses whole
     const piles: MaterialPile[] = [
-      { material: board("pine", 2, 4, 1), position: [1, 3], rotation: 0 },
-      { material: board("pine", 2, 4, 1), position: [1, 3], rotation: 0 },
+      { material: board("pine", 24, 4, 1), position: [1, 3], rotation: 0 },
+      { material: board("pine", 24, 4, 1), position: [1, 3], rotation: 0 },
     ];
     const carried = Array.from({ length: HAND_CAPACITY - 1 }, () =>
-      board("pine", 2, 4, 1),
+      board("pine", 24, 4, 1),
     );
     const state: GameState = {
       ...initialGameState,
@@ -107,7 +107,7 @@ describe("pickUpMaterialAction", () => {
 
   it("still takes a single piece into the last free hand", () => {
     const pile: MaterialPile = {
-      material: board("pine", 2, 4, 1),
+      material: board("pine", 24, 4, 1),
       position: [1, 3],
       rotation: 0,
     };
@@ -117,7 +117,7 @@ describe("pickUpMaterialAction", () => {
         ...initialGameState.player,
         position: [1, 3],
         inventory: Array.from({ length: HAND_CAPACITY - 1 }, () =>
-          board("pine", 2, 4, 1),
+          board("pine", 24, 4, 1),
         ),
       },
       materialPiles: [pile],
@@ -129,7 +129,7 @@ describe("pickUpMaterialAction", () => {
 
   it("refuses any pickup once the hands are full", () => {
     const pile: MaterialPile = {
-      material: board("pine", 2, 4, 1),
+      material: board("pine", 24, 4, 1),
       position: [1, 3],
       rotation: 0,
     };
@@ -139,7 +139,7 @@ describe("pickUpMaterialAction", () => {
         ...initialGameState.player,
         position: [1, 3],
         inventory: Array.from({ length: HAND_CAPACITY }, () =>
-          board("pine", 2, 4, 1),
+          board("pine", 24, 4, 1),
         ),
       },
       materialPiles: [pile],
@@ -173,7 +173,7 @@ function jointer(overrides: Partial<MachineState> = {}): MachineState {
 }
 
 const roughStock = () =>
-  board("walnut", 4, 5, 4, "rough", { faces: 0, edges: 0 });
+  board("walnut", 48, 5, 4, "rough", { faces: 0, edges: 0 });
 
 function stateWithMachine(machine: MachineState): GameState {
   return { ...initialGameState, machines: [machine] };
@@ -244,7 +244,7 @@ describe("direct feed infers the operation from the stock (jointer)", () => {
   });
 
   it("a face-jointed board gets its edge — no mode was ever picked", () => {
-    const faceDone = board("walnut", 4, 5, 4, "rough", {
+    const faceDone = board("walnut", 48, 5, 4, "rough", {
       faces: 1,
       edges: 0,
     });
@@ -255,7 +255,7 @@ describe("direct feed infers the operation from the stock (jointer)", () => {
   });
 
   it("fully milled stock is refused — the jointer has nothing to add", () => {
-    const milled = board("walnut", 4, 5, 4, "smooth", { faces: 2, edges: 2 });
+    const milled = board("walnut", 48, 5, 4, "smooth", { faces: 2, edges: 2 });
     const state = stagedOn(jointer({ poweredOn: true }), [milled]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(result, state);
@@ -288,7 +288,7 @@ function planer(overrides: Partial<MachineState> = {}): MachineState {
 describe("direct feed (planer)", () => {
   it("feeds the carried board straight into the cut", () => {
     // 4/4 rough with a flat face: a skim pass at cut height 4
-    const stock = board("walnut", 8, 6, 4, "rough");
+    const stock = board("walnut", 96, 6, 4, "rough");
     const state = stagedOn(planer(), [stock]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(
@@ -301,8 +301,8 @@ describe("direct feed (planer)", () => {
   });
 
   it("feeds the first carried piece the machine is set up to take", () => {
-    const tooThick = board("walnut", 8, 6, 6, "rough");
-    const fits = board("walnut", 8, 6, 5, "rough");
+    const tooThick = board("walnut", 96, 6, 6, "rough");
+    const fits = board("walnut", 96, 6, 5, "rough");
     const state = stagedOn(planer(), [tooThick, fits]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.deepStrictEqual(result.machines[0].processingMaterials, [fits]);
@@ -312,14 +312,14 @@ describe("direct feed (planer)", () => {
 
   it("refuses stock the cut height can't take", () => {
     // Two detents above the cut height won't fit under the head
-    const state = stagedOn(planer(), [board("walnut", 8, 6, 6, "rough")]);
+    const state = stagedOn(planer(), [board("walnut", 96, 6, 6, "rough")]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(result, state);
   });
 
   it("refuses while switched off, leaving the stock on the table", () => {
     const state = stagedOn(planer({ poweredOn: false }), [
-      board("walnut", 8, 6, 4, "rough"),
+      board("walnut", 96, 6, 4, "rough"),
     ]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(result, state);
@@ -377,7 +377,7 @@ describe("dropMaterialAction", () => {
     // Without an explicit landing point the piece rests at the center of
     // the cell the player occupies (the keyboard layer passes the body's
     // actual position instead).
-    const material = board("pine", 4, 4, 1);
+    const material = board("pine", 48, 4, 1);
     const state: GameState = {
       ...initialGameState,
       player: {
@@ -393,7 +393,7 @@ describe("dropMaterialAction", () => {
   });
 
   it("drops at the landing point it is given", () => {
-    const material = board("pine", 4, 4, 1);
+    const material = board("pine", 48, 4, 1);
     const state: GameState = {
       ...initialGameState,
       player: {
@@ -407,7 +407,7 @@ describe("dropMaterialAction", () => {
   });
 
   it("keeps the orientation the piece was dropped in", () => {
-    const material = board("pine", 4, 4, 1);
+    const material = board("pine", 48, 4, 1);
     const state: GameState = {
       ...initialGameState,
       player: {
@@ -425,7 +425,7 @@ describe("dropMaterialAction", () => {
   });
 
   it("keeps stock in hand on the lot — no piles outdoors", () => {
-    const material = board("pine", 4, 4, 1);
+    const material = board("pine", 48, 4, 1);
     const state: GameState = {
       ...initialGameState,
       player: {
@@ -441,8 +441,8 @@ describe("dropMaterialAction", () => {
 
 describe("the blueprint assembly's claim", () => {
   it("consumes the seated boards, leaving spare matching stock on the bench", () => {
-    const stringer = () => board("pallet", 4, 6, 3);
-    const deckBoard = () => board("pallet", 3, 4, 1);
+    const stringer = () => board("pallet", 48, 6, 3);
+    const deckBoard = () => board("pallet", 36, 4, 1);
     // The spares come first in the bay: a first-match claim would take
     // them and leave the seated boards lying under the finished shelf
     const spares = [stringer(), deckBoard()];

@@ -9,7 +9,7 @@ import {
   colorBySheetGoodKind,
   osbFlakeColors,
 } from "../shop-view/colorBySpecies";
-import { INCHES_PER_FOOT, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 /**
  * A sheet good's kind is drawn, not labeled:
@@ -35,8 +35,8 @@ export const SheetGoodSprite: React.FC<
     (g: Graphics) => {
       g.clear();
       // Unlike boards, a sheet's width AND length are both in feet
-      const width = sheetWidth * INCHES_PER_FOOT * PIXELS_PER_INCH;
-      const height = sheetLength * INCHES_PER_FOOT * PIXELS_PER_INCH;
+      const width = sheetWidth * PIXELS_PER_INCH;
+      const height = sheetLength * PIXELS_PER_INCH;
       const depth = (thickness * PIXELS_PER_INCH) / 4;
       const rng = seededRandom(
         seed ?? `${kind}-${sheetWidth}x${sheetLength}x${thickness}`,

@@ -24,7 +24,7 @@ function workspaceMachine(overrides: Partial<MachineState>): MachineState {
 /** Five smooth, edge-jointed strips: one Glue Up Panel's worth. */
 function panelStrips() {
   return Array.from({ length: 5 }, () =>
-    board("maple", 2, 2, 4, "smooth", { faces: 2, edges: 2 }),
+    board("maple", 24, 2, 4, "smooth", { faces: 2, edges: 2 }),
   );
 }
 

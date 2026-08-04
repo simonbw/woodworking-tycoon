@@ -59,7 +59,7 @@ export const hammer: ToolType = {
         {
           type: ["board"],
           width: [4],
-          length: [1],
+          length: [12],
           thickness: [1],
           quantity: 4,
         },

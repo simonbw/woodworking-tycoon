@@ -33,19 +33,19 @@ export function materialExtentInches(material: MaterialInstance): {
       // A board's width is in inches, its length in feet
       return {
         across: material.width,
-        along: material.length * INCHES_PER_FOOT,
+        along: material.length,
       };
     case "panel":
       // Glue-ups can pass a board's width — the strips add up in inches
       return {
         across: panelWidth(material),
-        along: material.length * INCHES_PER_FOOT,
+        along: material.length,
       };
     case "plywood":
       // Sheets measure in feet both ways
       return {
-        across: material.width * INCHES_PER_FOOT,
-        along: material.length * INCHES_PER_FOOT,
+        across: material.width,
+        along: material.length,
       };
     case "pallet":
       return {

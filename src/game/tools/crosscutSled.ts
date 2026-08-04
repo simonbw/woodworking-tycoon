@@ -30,7 +30,7 @@ export const crosscutSled: ToolType = {
       getInputMaterials: () => [
         {
           type: ["panel"],
-          length: [2],
+          length: [24],
           thickness: [3, 4],
           // A clean face makes clean slices; and end grain never goes
           // back through the blade as a panel

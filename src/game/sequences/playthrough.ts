@@ -87,8 +87,8 @@ function stripsOf(shop: ShopDriver, species: string, count: number): void {
   for (let i = 0; i < count; i++) {
     millOneBoard(
       shop,
-      { species, length: 4, width: 4, thickness: 4 },
-      { species, length: 2, width: 2, thickness: 4 },
+      { species, length: 48, width: 4, thickness: 4 },
+      { species, length: 24, width: 2, thickness: 4 },
     );
   }
 }
@@ -97,7 +97,9 @@ function stripsOf(shop: ShopDriver, species: string, count: number): void {
 const stripOfSpecies =
   (species: string) =>
   (m: MaterialInstance): boolean =>
-    sized({ species, length: 2, width: 2, thickness: 4, surface: "smooth" })(m);
+    sized({ species, length: 24, width: 2, thickness: 4, surface: "smooth" })(
+      m,
+    );
 /** A finished product that hasn't been oiled yet. */
 const isUnfinishedBoard = (m: MaterialInstance) =>
   m.type === "simpleCuttingBoard" &&
@@ -108,11 +110,11 @@ const isUnfinishedBoard = (m: MaterialInstance) =>
  * each board in half, then rip each half down the middle.
  */
 function makeMapleStrips(shop: ShopDriver): ShopDriver {
-  while (shop.stock(mapleBoard(4, 4)).length > 0) {
-    shop.feed("miterSaw", mapleBoard(4, 4), { angle: 0, cutPosition: 2 });
+  while (shop.stock(mapleBoard(48, 4)).length > 0) {
+    shop.feed("miterSaw", mapleBoard(48, 4), { angle: 0, cutPosition: 24 });
   }
-  while (shop.stock(mapleBoard(2, 4)).length > 0) {
-    shop.feed("jobsiteTableSaw", mapleBoard(2, 4), { targetWidth: 2 });
+  while (shop.stock(mapleBoard(24, 4)).length > 0) {
+    shop.feed("jobsiteTableSaw", mapleBoard(24, 4), { targetWidth: 2 });
   }
   return shop;
 }
@@ -218,7 +220,7 @@ const isFrameRail = (m: MaterialInstance) =>
 function makeOneFrameRail(shop: ShopDriver): void {
   const stock: BoardSize = {
     species: "walnut",
-    length: 4,
+    length: 48,
     width: 4,
     thickness: 4,
   };
@@ -227,11 +229,11 @@ function makeOneFrameRail(shop: ShopDriver): void {
 
   const blank = { ...milled, surface: "sanded" };
   // Nick 1' off the left end at +45; the 3' offcut carries that miter.
-  shop.feed("miterSaw", sized(blank), { angle: 45, cutPosition: 1 });
+  shop.feed("miterSaw", sized(blank), { angle: 45, cutPosition: 12 });
   // Swing to -45 and take the offcut to length. Its left end keeps the +45.
-  shop.feed("miterSaw", sized({ ...blank, length: 3 }), {
+  shop.feed("miterSaw", sized({ ...blank, length: 36 }), {
     angle: -45,
-    cutPosition: 2,
+    cutPosition: 24,
   });
 }
 
@@ -436,14 +438,14 @@ function commission2(shop: ShopDriver): ShopDriver {
       shop,
       {
         species: "pallet",
-        length: 3,
+        length: 36,
         width: 4,
         thickness: 1,
         surface: "rough",
       },
       {
         species: "pallet",
-        length: 2,
+        length: 24,
         width: 2,
         thickness: 1,
         surface: "sanded",
@@ -474,7 +476,7 @@ function commission3(shop: ShopDriver): ShopDriver {
   shop.buyBoards(
     "bigBoxRack",
     "maple",
-    { length: 4, width: 4, thickness: 4 },
+    { length: 48, width: 4, thickness: 4 },
     3,
   );
   shop.comeHome();
@@ -484,7 +486,7 @@ function commission3(shop: ShopDriver): ShopDriver {
 
   for (let panel = 0; panel < 2; panel++) {
     shop
-      .make(WORKBENCH, "glueUpPanel", mapleBoard(2, 2), { count: 5 })
+      .make(WORKBENCH, "glueUpPanel", mapleBoard(24, 2), { count: 5 })
       .make(WORKBENCH, "blockSandPanel", isSinglePanel)
       .make(WORKBENCH, "blockSandPanel", isSinglePanel)
       .make(WORKBENCH, "finishCuttingBoard", isSinglePanel)
@@ -508,18 +510,23 @@ function commission4(shop: ShopDriver): ShopDriver {
   shop.buyTool("drill");
   shop.buySupplies("screws");
   shop.buySupplies("nails");
-  shop.buyBoards("bigBoxRack", "oak", { length: 4, width: 6, thickness: 4 }, 4);
+  shop.buyBoards(
+    "bigBoxRack",
+    "oak",
+    { length: 48, width: 6, thickness: 4 },
+    4,
+  );
   // One board per strip of the counter board: three walnut, two maple.
   shop.buyBoards(
     "bigBoxRack",
     "walnut",
-    { length: 4, width: 4, thickness: 4 },
+    { length: 48, width: 4, thickness: 4 },
     3,
   );
   shop.buyBoards(
     "bigBoxRack",
     "maple",
-    { length: 4, width: 4, thickness: 4 },
+    { length: 48, width: 4, thickness: 4 },
     2,
   );
   shop.comeHome();
@@ -528,7 +535,7 @@ function commission4(shop: ShopDriver): ShopDriver {
   // The shelves: four oak boards taken to sanded, two to a shelf.
   const oakStock: BoardSize = {
     species: "oak",
-    length: 4,
+    length: 48,
     width: 6,
     thickness: 4,
   };
@@ -564,10 +571,12 @@ function commission4(shop: ShopDriver): ShopDriver {
   shop.takeFromFloor(isPallet, 1);
   dismantleAPallet(shop);
   for (let slat = 0; slat < 10; slat++) {
-    shop.feed("miterSaw", deckBoardOfLength(3), { angle: 0, cutPosition: 2 });
+    shop.feed("miterSaw", deckBoardOfLength(36), { angle: 0, cutPosition: 24 });
   }
   for (let box = 0; box < 2; box++) {
-    shop.make(WORKBENCH, "buildPlanterBox", deckBoardOfLength(2), { count: 5 });
+    shop.make(WORKBENCH, "buildPlanterBox", deckBoardOfLength(24), {
+      count: 5,
+    });
     shop.putEverythingDown();
   }
   return shop.handOverCommission();
@@ -596,14 +605,14 @@ function commission5(shop: ShopDriver): ShopDriver {
   shop.buyBoards(
     "bigBoxRack",
     "cherry",
-    { length: 4, width: 4, thickness: 4 },
+    { length: 48, width: 4, thickness: 4 },
     8,
   );
   // One walnut board per frame rail: rip 1" strips off 4" stock.
   shop.buyBoards(
     "bigBoxRack",
     "walnut",
-    { length: 4, width: 4, thickness: 4 },
+    { length: 48, width: 4, thickness: 4 },
     8,
   );
   shop.comeHome();
@@ -612,11 +621,11 @@ function commission5(shop: ShopDriver): ShopDriver {
   // The boxes: eight thin sanded panels, four to a box.
   const cherryStock: BoardSize = {
     species: "cherry",
-    length: 4,
+    length: 48,
     width: 4,
     thickness: 4,
   };
-  const boxPanel: BoardSize = { ...cherryStock, length: 2, thickness: 2 };
+  const boxPanel: BoardSize = { ...cherryStock, length: 24, thickness: 2 };
   for (let i = 0; i < 8; i++) {
     millOneBoard(shop, cherryStock, { ...boxPanel, surface: "sanded" });
   }
@@ -655,7 +664,7 @@ function commission6(shop: ShopDriver): ShopDriver {
   shop.buyBoards(
     "bigBoxRack",
     "maple",
-    { length: 4, width: 4, thickness: 4 },
+    { length: 48, width: 4, thickness: 4 },
     3,
   );
   shop.comeHome();
@@ -669,7 +678,7 @@ function commission6(shop: ShopDriver): ShopDriver {
     .standAtOperatorCell(WORKBENCH)
     .select(WORKBENCH, "buildCrosscutSled")
     .load(WORKBENCH, (m) => m.type === "plywood", 1)
-    .load(WORKBENCH, deckBoardOfLength(3), 2)
+    .load(WORKBENCH, deckBoardOfLength(36), 2)
     .run(WORKBENCH)
     // The finished sled is a physical thing in the bench's output bay:
     // pick it up and carry it over to the saw
@@ -679,7 +688,7 @@ function commission6(shop: ShopDriver): ShopDriver {
   // A sanded single-species panel is what the sled slices.
   makeMapleStrips(shop);
   shop
-    .make(WORKBENCH, "glueUpPanel", mapleBoard(2, 2), { count: 5 })
+    .make(WORKBENCH, "glueUpPanel", mapleBoard(24, 2), { count: 5 })
     .make(WORKBENCH, "blockSandPanel", isSinglePanel)
     .make(WORKBENCH, "blockSandPanel", isSinglePanel);
 

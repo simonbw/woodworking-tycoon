@@ -40,11 +40,12 @@ different materials and must never collapse into one row.
 ## Name grammar
 
 Dimension order is cut-list order everywhere: **thickness × width ×
-length**. Units are fixed by `BoardDimension`: length in feet (`'`),
-width in inches (`"`), thickness in quarters of an inch (`/4` — which
-conveniently reads correctly both as quarters notation and as a
+length**. Width is inches (`"`), thickness quarters of an inch (`/4` —
+which conveniently reads correctly both as quarters notation and as a
 fraction of an inch for thin stock: `1/4` pallet wood really is a
-quarter inch thick).
+quarter inch thick). Length is **stored in inches** (`Board.length`, a
+plain number) but always *reads* as shop talk through `formatLength`:
+whole feet as `4'`, under a foot as `7"`, mixed as `3'6"`.
 
 | Stock | Grammar | Example |
 | --- | --- | --- |
@@ -54,8 +55,9 @@ quarter inch thick).
 | Sheet good | `{Kind} {t}/4 — {w}' × {l}'` | `Shop Plywood 2/4 — 4' × 4'` |
 | Everything else | unchanged (`Oiled Maple Simple Cutting Board`, …) | |
 
-Sheet goods measure **both** cross dimensions in feet — the tell that
-you're holding a sheet, not a board. Kind display names come from
+Sheet goods *read* **both** cross dimensions in feet — the tell that
+you're holding a sheet, not a board (storage is inches there too: a
+full sheet is 96 × 48). Kind display names come from
 `sheetKindLabel`: the plywood grades read as what they're for
 ("Cabinet Plywood", "Shop Plywood", "Sheathing Plywood"), never as
 letter grades; the engineered boards keep their shop names ("MDF",

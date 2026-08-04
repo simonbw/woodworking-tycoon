@@ -36,7 +36,7 @@ function walnutBlank(id: string): Board {
     id,
     type: "board",
     species: "walnut",
-    length: 6,
+    length: 72,
     width: 6,
     thickness: 8,
     surface: "rough",

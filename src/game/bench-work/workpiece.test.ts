@@ -55,20 +55,20 @@ const fullPallet = (): Pallet => ({
 
 describe("workpiece geometry", () => {
   it("a board's stroked face is width × length in inches", () => {
-    const size = strokeSurfaceSize(board("maple", 2, 4, 4, "rough"));
+    const size = strokeSurfaceSize(board("maple", 24, 4, 4, "rough"));
     assert.deepStrictEqual(size, { widthIn: 4, heightIn: 24 });
   });
 
   it("edge work strokes the thickness band instead", () => {
-    const size = strokeSurfaceSize(board("maple", 2, 4, 4, "rough"), "edge");
+    const size = strokeSurfaceSize(board("maple", 24, 4, 4, "rough"), "edge");
     assert.deepStrictEqual(size, { widthIn: 1, heightIn: 24 });
   });
 
   it("rowLayout spaces pieces with gaps and reports the span", () => {
     const strips = [
-      board("maple", 2, 2, 4, "smooth"),
-      board("maple", 2, 2, 4, "smooth"),
-      board("maple", 2, 2, 4, "smooth"),
+      board("maple", 24, 2, 4, "smooth"),
+      board("maple", 24, 2, 4, "smooth"),
+      board("maple", 24, 2, 4, "smooth"),
     ];
     const { slots, size } = rowLayout(strips, 2);
     assert.strictEqual(slots.length, 3);
@@ -79,21 +79,21 @@ describe("workpiece geometry", () => {
   });
 
   it("pieceSize knows sheets in feet and boards in inches", () => {
-    assert.deepStrictEqual(pieceSize(board("pine", 3, 4, 1)), {
+    assert.deepStrictEqual(pieceSize(board("pine", 36, 4, 1)), {
       widthIn: 4,
       heightIn: 36,
     });
   });
 
   it("sawLineFraction measures the kept length from the uncut end", () => {
-    const stock = board("pine", 4, 4, 1);
+    const stock = board("pine", 48, 4, 1);
     // Cutting the right end to keep 3 of 4 feet: the line sits 3/4 down
     assert.strictEqual(
-      sawLineFraction(stock, { targetLength: 3, cutEnd: "right", angle: 0 }),
+      sawLineFraction(stock, { targetLength: 36, cutEnd: "right", angle: 0 }),
       0.75,
     );
     assert.strictEqual(
-      sawLineFraction(stock, { targetLength: 3, cutEnd: "left", angle: 0 }),
+      sawLineFraction(stock, { targetLength: 36, cutEnd: "left", angle: 0 }),
       0.25,
     );
   });
@@ -128,7 +128,7 @@ describe("benchScriptFor", () => {
     const machine = workspaceWith({
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
-      inputMaterials: [board("maple", 2, 4, 4, "rough"), fullPallet()],
+      inputMaterials: [board("maple", 24, 4, 4, "rough"), fullPallet()],
     });
     const script = benchScriptFor(machine, progressionWith("surfacePrep"));
     assert.strictEqual(script?.kind, "pry");
@@ -148,7 +148,7 @@ describe("benchScriptFor", () => {
     const machine = workspaceWith({
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
-      inputMaterials: [board("maple", 2, 4, 4, "rough")],
+      inputMaterials: [board("maple", 24, 4, 4, "rough")],
     });
     const script = benchScriptFor(machine, progressionWith("surfacePrep"));
     assert.ok(script?.kind === "stroke" && script.started === false);
@@ -158,7 +158,7 @@ describe("benchScriptFor", () => {
     const machine = workspaceWith({
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
-      processingMaterials: [board("maple", 2, 4, 4, "rough")],
+      processingMaterials: [board("maple", 24, 4, 4, "rough")],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,
@@ -188,8 +188,8 @@ describe("benchScriptFor", () => {
     const machine = workspaceWith({
       selectedOperationId: "glueUpPair",
       inputMaterials: [
-        board("maple", 2, 2, 4, "smooth"),
-        board("maple", 2, 2, 4, "smooth"),
+        board("maple", 24, 2, 4, "smooth"),
+        board("maple", 24, 2, 4, "smooth"),
       ],
     });
     assert.strictEqual(benchScriptFor(machine, progressionWith()), null);

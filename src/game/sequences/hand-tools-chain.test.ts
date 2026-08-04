@@ -52,8 +52,8 @@ function shopWithBothTools(): ShopDriver {
 
 /** Saw the 3' board down to 2', the same setup a miter saw would need. */
 function cutTheLongBoardDown(shop: ShopDriver): ShopDriver {
-  return shop.make(WORKBENCH, "handSawCut", byLength(3), {
-    parameters: { angle: 0, cutEnd: "right", targetLength: 2 },
+  return shop.make(WORKBENCH, "handSawCut", byLength(36), {
+    parameters: { angle: 0, cutEnd: "right", targetLength: 24 },
     count: 1,
   });
 }
@@ -78,15 +78,15 @@ describe("hand tool chain", () => {
     const shop = shopWithBothTools();
     // Fetching the tools from the tailgate staged the slats on the floor
     // (full arms can't lift a tool), so count stock, not what's in hand
-    assert.equal(shop.stock(byLength(2)).length, 4);
+    assert.equal(shop.stock(byLength(24)).length, 4);
 
     cutTheLongBoardDown(shop);
 
     // The kept 2' piece joins the four the fixture stocked; the remnant is 1'
-    assert.equal(shop.stock(byLength(2)).length, 5);
-    assert.equal(shop.stock(byLength(3)).length, 0);
+    assert.equal(shop.stock(byLength(24)).length, 5);
+    assert.equal(shop.stock(byLength(36)).length, 0);
     assert.equal(
-      getMaterialName(shop.theOne(byLength(1))),
+      getMaterialName(shop.theOne(byLength(12))),
       "Pallet Wood 1/4 — 4\" × 1'",
     );
   });
@@ -94,7 +94,7 @@ describe("hand tool chain", () => {
   it("five slats and six screws become a planter box", () => {
     const shop = shopWithBothTools();
     cutTheLongBoardDown(shop);
-    shop.make(WORKBENCH, "buildPlanterBox", byLength(2), { count: 5 });
+    shop.make(WORKBENCH, "buildPlanterBox", byLength(24), { count: 5 });
 
     assert.equal(shop.holding(isPlanterBox).length, 1);
     // The blueprint derives the bill: one screw per lapped corner, one
@@ -112,7 +112,7 @@ describe("hand tool chain", () => {
     shop
       .standAtOperatorCell(WORKBENCH)
       .select(WORKBENCH, "buildPlanterBox")
-      .load(WORKBENCH, byLength(2), 5);
+      .load(WORKBENCH, byLength(24), 5);
     assert.throws(() => shop.run(WORKBENCH), /would not start/);
   });
 });

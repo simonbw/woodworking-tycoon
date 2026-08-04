@@ -6,7 +6,11 @@ import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { OnEdgeBoardSprite } from "../material-sprites/OnEdgeBoardSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
-import { PIXELS_PER_INCH, feetToPixels } from "../shop-view/shop-scale";
+import {
+  PIXELS_PER_INCH,
+  feetToPixels,
+  inchesToPixels,
+} from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
 import { CutParticles, cutSprayIntensity } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
@@ -47,7 +51,7 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         <pixiContainer
           key={`in-${index}`}
           x={boardX(board, index)}
-          y={feetToPixels(board.length / 2)}
+          y={inchesToPixels(board.length / 2)}
         >
           {boardSprite(board)}
         </pixiContainer>
@@ -56,8 +60,8 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         <FeedingBoard
           board={board}
           fraction={fraction}
-          fromY={feetToPixels(board.length / 2)}
-          toY={-feetToPixels(board.length / 2)}
+          fromY={inchesToPixels(board.length / 2)}
+          toY={-inchesToPixels(board.length / 2)}
           x={boardX(board, index)}
           key={`proc-${index}`}
         >
@@ -68,7 +72,7 @@ export const JointerSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
         <pixiContainer
           key={`out-${index}`}
           x={boardX(board, index)}
-          y={-feetToPixels(board.length / 2)}
+          y={-inchesToPixels(board.length / 2)}
         >
           {boardSprite(board)}
         </pixiContainer>

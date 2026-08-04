@@ -26,7 +26,6 @@ import {
 } from "../../game/bench-work/blueprint";
 import { placedPieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
-import { INCHES_PER_FOOT } from "../../game/shop-scale";
 import { drawFastenerHead } from "../material-sprites/fastenerHead";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { StageFit } from "./stageMath";
@@ -324,7 +323,7 @@ export const BenchScene: React.FC<{
         // An on-edge slot's outline is the thin strip the tipped board
         // will stand in — the narrowness is the tell
         const w = slotFaceWidthIn(slot);
-        const h = slot.part.lengthFt * INCHES_PER_FOOT;
+        const h = slot.part.lengthIn;
         const rad = (seat.angleDeg * Math.PI) / 180;
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);

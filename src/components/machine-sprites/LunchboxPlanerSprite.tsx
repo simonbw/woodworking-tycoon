@@ -8,7 +8,11 @@ import { lerp } from "../../utils/mathUtils";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { IMAGE_SCALE } from "../shop-view/MachineSprite";
-import { PIXELS_PER_INCH, feetToPixels } from "../shop-view/shop-scale";
+import {
+  PIXELS_PER_INCH,
+  feetToPixels,
+  inchesToPixels,
+} from "../shop-view/shop-scale";
 import { useMachineActivity } from "../shop-view/useMachineActivity";
 import { CutParticles, cutSprayIntensity } from "./CutParticles";
 import { FeedingBoard } from "./FeedingBoard";
@@ -50,7 +54,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
             inputMaterials.length * PIXELS_PER_INCH,
             index / inputMaterials.length,
           )}
-          y={feetToPixels(board.length / 2)}
+          y={inchesToPixels(board.length / 2)}
         >
           <MaterialSprite material={board} key={index} />
         </pixiContainer>
@@ -64,7 +68,7 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
             outputMaterials.length * PIXELS_PER_INCH,
             index / outputMaterials.length,
           )}
-          y={-feetToPixels(board.length / 2)}
+          y={-inchesToPixels(board.length / 2)}
         >
           <MaterialSprite material={board} key={index} />
         </pixiContainer>
@@ -84,8 +88,8 @@ export const LunchboxPlanerSprite: React.FC<{ machine: Machine }> = ({
             surface: "smooth",
           }}
           fraction={fraction}
-          fromY={feetToPixels(board.length / 2)}
-          toY={-feetToPixels(board.length / 2)}
+          fromY={inchesToPixels(board.length / 2)}
+          toY={-inchesToPixels(board.length / 2)}
           x={lerp(
             -processingMaterials.length * PIXELS_PER_INCH,
             processingMaterials.length * PIXELS_PER_INCH,

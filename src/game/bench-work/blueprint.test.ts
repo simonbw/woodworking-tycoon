@@ -25,8 +25,8 @@ import {
 } from "./assembly";
 import { BenchPlacement } from "./bench-layout";
 
-const stringer = () => board("pallet", 4, 6, 3);
-const deckBoard = () => board("pallet", 3, 4, 1);
+const stringer = () => board("pallet", 48, 6, 3);
+const deckBoard = () => board("pallet", 36, 4, 1);
 const shelfParts = () => [
   stringer(),
   stringer(),
@@ -102,7 +102,7 @@ describe("the rustic shelf blueprint", () => {
   it("slot part dims agree with slot requirements", () => {
     for (const slot of RUSTIC_SHELF_BLUEPRINT.slots) {
       assert.deepStrictEqual(slot.requirement.width, [slot.part.widthIn]);
-      assert.deepStrictEqual(slot.requirement.length, [slot.part.lengthFt]);
+      assert.deepStrictEqual(slot.requirement.length, [slot.part.lengthIn]);
     }
   });
 });
@@ -454,7 +454,7 @@ describe("the crate and planter box blueprints", () => {
     );
     const crate = assembleFromBlueprint(
       CRATE_BLUEPRINT,
-      Array.from({ length: 10 }, () => board("pallet", 3, 4, 1)),
+      Array.from({ length: 10 }, () => board("pallet", 36, 4, 1)),
     );
     assert.strictEqual(crate.type, "crate");
     assert.strictEqual(crate.parts?.length, 10);
@@ -526,16 +526,16 @@ describe("the step stool and bookshelf blueprints", () => {
     assert.strictEqual(productBlueprintFor("stepStool"), STEP_STOOL_BLUEPRINT);
     assert.strictEqual(productBlueprintFor("bookshelf"), BOOKSHELF_BLUEPRINT);
     const stool = assembleFromBlueprint(STEP_STOOL_BLUEPRINT, [
-      board("pallet", 2, 6, 3),
-      board("pallet", 2, 6, 3),
-      board("pallet", 2, 4, 1),
-      board("pallet", 2, 4, 1),
+      board("pallet", 24, 6, 3),
+      board("pallet", 24, 6, 3),
+      board("pallet", 24, 4, 1),
+      board("pallet", 24, 4, 1),
     ]);
     assert.strictEqual(stool.type, "stepStool");
     assert.strictEqual(stool.parts?.length, 4);
     const bookshelf = assembleFromBlueprint(
       BOOKSHELF_BLUEPRINT,
-      Array.from({ length: 4 }, () => board("oak", 4, 6, 4, "sanded")),
+      Array.from({ length: 4 }, () => board("oak", 48, 6, 4, "sanded")),
     );
     assert.strictEqual(bookshelf.species, "oak");
     assert.ok(bookshelf.parts?.every((part) => part.surface === "sanded"));

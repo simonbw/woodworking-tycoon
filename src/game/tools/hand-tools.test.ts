@@ -20,25 +20,25 @@ const buildPlanterBox = drill.operations.find(
 
 describe("hand saw", () => {
   it("makes the same cut as the miter saw", () => {
-    const bySaw = handSawCut.output([board("oak", 8, 4, 4)], {
+    const bySaw = handSawCut.output([board("oak", 96, 4, 4)], {
       angle: 45,
       cutEnd: "left",
-      targetLength: 5,
+      targetLength: 60,
     });
     // The machine states the same cut as a blade line 3' from the left
     // end; its left piece is the hand saw's offcut and vice versa
-    const byMachine = miterSawCut.output([board("oak", 8, 4, 4)], {
+    const byMachine = miterSawCut.output([board("oak", 96, 4, 4)], {
       angle: 45,
-      cutPosition: 3,
+      cutPosition: 36,
     });
     const [kept, offcut] = bySaw.outputs;
     assert.ok(isBoard(kept) && isBoard(offcut));
-    assert.strictEqual(kept.length, 5);
+    assert.strictEqual(kept.length, 60);
     assert.deepStrictEqual(boardEnds(kept).left, {
       kind: "mitered",
       angle: 45,
     });
-    assert.strictEqual(offcut.length, 3);
+    assert.strictEqual(offcut.length, 36);
     // Same pieces the miter saw would leave, ignoring instance ids
     const strip = (m: unknown) => {
       const { id: _, ...rest } = m as { id: string };
@@ -65,7 +65,7 @@ describe("drill", () => {
     assert.deepStrictEqual(buildPlanterBox.requiredConsumables, [
       { id: "screws", amount: 6 },
     ]);
-    const slats = Array.from({ length: 5 }, () => board("pallet", 2, 4, 1));
+    const slats = Array.from({ length: 5 }, () => board("pallet", 24, 4, 1));
     const { outputs } = buildPlanterBox.output(slats, {});
     assert.strictEqual(outputs.length, 1);
     assert.strictEqual(outputs[0].type, "planterBox");
@@ -73,7 +73,7 @@ describe("drill", () => {
   });
 
   it("rejects uncut deck boards — the slats must be crosscut to 2' first", () => {
-    const freshDeckBoard = board("pallet", 3, 4, 1);
+    const freshDeckBoard = board("pallet", 36, 4, 1);
     assert.strictEqual(
       materialMeetsInput(
         freshDeckBoard,
@@ -83,7 +83,7 @@ describe("drill", () => {
     );
     assert.strictEqual(
       materialMeetsInput(
-        board("pallet", 2, 4, 1),
+        board("pallet", 24, 4, 1),
         buildPlanterBox.getInputMaterials({})[0],
       ),
       true,

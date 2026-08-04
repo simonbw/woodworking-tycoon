@@ -29,7 +29,7 @@ export const marketplaceShop: GameState = {
         type: "board",
         species: "pallet",
         width: 4,
-        length: 3,
+        length: 36,
         thickness: 1,
         surface: "rough",
         jointedFaces: 1,

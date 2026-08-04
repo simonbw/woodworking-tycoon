@@ -36,7 +36,7 @@ function roughWalnut(id: string): Board {
     id,
     type: "board",
     species: "walnut",
-    length: 8,
+    length: 96,
     width: 6,
     thickness: 4,
     surface: "rough",

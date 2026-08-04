@@ -24,30 +24,30 @@ const WHOLE_PALLET_VALUE = 5;
 
 /**
  * Real lumber volume: one board foot is 12" × 12" × 1". Board dimensions
- * are length in feet, width in inches, thickness in quarters of an inch
- * (see Materials.ts), so the conversion collapses to /48.
+ * are length in inches, width in inches, thickness in quarters of an inch
+ * (see Materials.ts), so the conversion collapses to /576.
  */
 function boardFeet(
-  lengthFeet: number,
+  lengthInches: number,
   widthInches: number,
   thicknessQuarters: number,
 ): number {
-  return (lengthFeet * widthInches * thicknessQuarters) / 48;
+  return (lengthInches * widthInches * thicknessQuarters) / 576;
 }
 
 /**
- * Sheets measure both cross dimensions in feet, so their board footage is
- * square feet times inches of thickness.
+ * A sheet's board footage: face area in square feet times inches of
+ * thickness (both cross dimensions are stored in inches).
  */
 function sheetBoardFeet(sheet: SheetGood): number {
-  return sheet.length * sheet.width * (sheet.thickness / 4);
+  return (sheet.length / 12) * (sheet.width / 12) * (sheet.thickness / 4);
 }
 
 /**
  * A crosscut slice's share of the 2' panel it came from (SLICES_PER_PANEL
  * cuts): 6" of panel length.
  */
-const SLICE_LENGTH_FEET = 0.5;
+const SLICE_LENGTH_IN = 6;
 
 const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   rusticShelf: 12,
@@ -203,7 +203,7 @@ export function getSellValue(material: MaterialInstance): number {
         material.strips.reduce(
           (sum, strip) =>
             sum +
-            boardFeet(SLICE_LENGTH_FEET, strip.width, material.thickness) *
+            boardFeet(SLICE_LENGTH_IN, strip.width, material.thickness) *
               SPECIES_LUMBER_RATE[strip.species],
           0,
         ),

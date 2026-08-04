@@ -1,3 +1,4 @@
+import { formatLength } from "../utils/formatNumber";
 import { CellMap } from "./CellMap";
 import { Machine } from "./Machine";
 import { MaterialInstance } from "./Materials";
@@ -27,8 +28,8 @@ export interface FeedRun {
 
 export interface FeedShortfall {
   readonly material: MaterialInstance;
-  /** Stock length along the direction of travel, in feet. */
-  readonly lengthFt: number;
+  /** Stock length along the direction of travel, in inches. */
+  readonly lengthIn: number;
   /** Clear cells needed past the footprint on each side. */
   readonly needed: number;
   /** Clear cells actually there (counted no further than needed). */
@@ -36,7 +37,7 @@ export interface FeedShortfall {
 }
 
 /**
- * How far this stock travels through a machine, in feet — its length —
+ * How far this stock travels through a machine, in inches — its length —
  * or null for stock with no length to speak of (a finished box doesn't
  * get fed through anything).
  */
@@ -57,9 +58,12 @@ export function stockTravelLength(material: MaterialInstance): number | null {
  * in the stock's favor) supports each side; the rest of the stock needs
  * open lane.
  */
-export function feedRunNeeded(machine: Machine, lengthFt: number): number {
+export function feedRunNeeded(machine: Machine, lengthIn: number): number {
   const { bedLength } = feedLane(machine);
-  return Math.max(0, lengthFt - Math.ceil(bedLength / 2));
+  // Cells are feet; off-grid stock rounds up — a 30" board still needs
+  // its third foot of lane
+  const lengthCells = Math.ceil(lengthIn / 12);
+  return Math.max(0, lengthCells - Math.ceil(bedLength / 2));
 }
 
 /**
@@ -172,17 +176,17 @@ export function feedClearanceShortfall(
     return null;
   }
   for (const material of materials) {
-    const lengthFt = stockTravelLength(material);
-    if (lengthFt === null) {
+    const lengthIn = stockTravelLength(material);
+    if (lengthIn === null) {
       continue;
     }
-    const needed = feedRunNeeded(machine, lengthFt);
+    const needed = feedRunNeeded(machine, lengthIn);
     if (needed === 0) {
       continue;
     }
     const available = feedRunAvailable(machine, cellMap, needed);
     if (available.infeed < needed || available.outfeed < needed) {
-      return { material, lengthFt, needed, available };
+      return { material, lengthIn, needed, available };
     }
   }
   return null;
@@ -193,8 +197,8 @@ export function feedClearanceShortfall(
  * much, and the two ways out (clear the lane, or shorten the stock).
  */
 export function describeFeedShortfall(shortfall: FeedShortfall): string {
-  const { lengthFt, needed, available } = shortfall;
-  const stock = `${lengthFt}' stock needs ${needed}' of clear run`;
+  const { lengthIn, needed, available } = shortfall;
+  const stock = `${formatLength(lengthIn)} stock needs ${needed}' of clear run`;
   const fix = "Clear the lane, or crosscut the stock shorter first.";
   const infeedShort = available.infeed < needed;
   const outfeedShort = available.outfeed < needed;
@@ -260,9 +264,9 @@ export function feedRunRulers(
 export function feedLaneCells(
   machine: Machine,
   cellMap: CellMap,
-  lengthFt: number,
+  lengthIn: number,
 ): { clear: Vector[]; blocked: Vector[] } {
-  const needed = feedRunNeeded(machine, lengthFt);
+  const needed = feedRunNeeded(machine, lengthIn);
   const lane = feedLane(machine);
   const clear: Vector[] = [];
   const blocked: Vector[] = [];

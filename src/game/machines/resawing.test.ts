@@ -22,7 +22,7 @@ const resawOnTableSaw = resawFence.operations.find(
 
 /** 8/4 stock, milled flat and straight — the resaw's happy path. */
 const blank = (thickness: 4 | 6 | 8 = 8, width: 4 | 6 | 8 = 6) =>
-  board("walnut", 6, width, thickness, "rough", { faces: 2, edges: 2 });
+  board("walnut", 72, width, thickness, "rough", { faces: 2, edges: 2 });
 
 const idleSaw = (
   machineTypeId: MachineState["machineTypeId"],
@@ -65,12 +65,12 @@ describe("band saw resaw", () => {
       // Nothing touched the edges or the length
       assert.strictEqual(piece.jointedEdges, 2);
       assert.strictEqual(piece.width, 6);
-      assert.strictEqual(piece.length, 6);
+      assert.strictEqual(piece.length, 72);
     }
   });
 
   it("only the fence-side piece keeps a flat face off a one-faced board", () => {
-    const oneFaced = board("walnut", 6, 6, 8, "rough", { faces: 1, edges: 2 });
+    const oneFaced = board("walnut", 72, 6, 8, "rough", { faces: 1, edges: 2 });
     const { outputs } = resaw.output([oneFaced], { targetThickness: 4 });
     const [fenceSide, offcut] = outputs;
     assert.ok(isBoard(fenceSide) && isBoard(offcut));
@@ -85,7 +85,7 @@ describe("band saw resaw", () => {
 
   it("takes stock with no flat face — the pieces just come away unreferenced", () => {
     const requirement = resaw.getInputMaterials({ targetThickness: 4 })[0];
-    const rough = board("walnut", 6, 6, 8, "rough", { faces: 0, edges: 0 });
+    const rough = board("walnut", 72, 6, 8, "rough", { faces: 0, edges: 0 });
     assert.ok(materialMeetsInput(rough, requirement));
     const { outputs } = resaw.output([rough], { targetThickness: 4 });
     for (const piece of outputs) {
@@ -119,11 +119,11 @@ describe("band saw rip", () => {
     assert.strictEqual(offcut.jointedEdges, 1);
     // Faces and length were never touched
     assert.strictEqual(fenceSide.jointedFaces, 2);
-    assert.strictEqual(fenceSide.length, 6);
+    assert.strictEqual(fenceSide.length, 72);
   });
 
   it("takes a rough-edged board the table saw would refuse", () => {
-    const roughEdged = board("walnut", 6, 6, 8, "rough", {
+    const roughEdged = board("walnut", 72, 6, 8, "rough", {
       faces: 0,
       edges: 0,
     });
@@ -195,7 +195,7 @@ describe("table saw resaw", () => {
   });
 
   it("leaves a cleaner face: smooth stock stays smooth", () => {
-    const smooth = board("walnut", 6, 6, 8, "smooth", { faces: 2, edges: 2 });
+    const smooth = board("walnut", 72, 6, 8, "smooth", { faces: 2, edges: 2 });
     const { outputs } = resawOnTableSaw.output([smooth], {
       targetThickness: 4,
     });
@@ -219,7 +219,7 @@ describe("table saw resaw", () => {
     const requirement = resawOnTableSaw.getInputMaterials({
       targetThickness: 4,
     })[0];
-    const roughEdged = board("walnut", 6, 6, 8, "rough", {
+    const roughEdged = board("walnut", 72, 6, 8, "rough", {
       faces: 2,
       edges: 0,
     });

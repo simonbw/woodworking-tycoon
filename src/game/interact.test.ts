@@ -10,7 +10,7 @@ import { HAND_CAPACITY } from "./Person";
 
 function pileAt(
   position: [number, number],
-  length: Board["length"] = 1,
+  length: Board["length"] = 12,
 ): MaterialPile {
   return { material: board("pine", length), position, rotation: 0 };
 }
@@ -35,7 +35,7 @@ function shopWithLoadedBench(...materialPiles: MaterialPile[]): GameState {
     machineTypeId: "workspace",
     position: [4, 4],
     rotation: 0,
-    inputMaterials: [board("oak", 2)],
+    inputMaterials: [board("oak", 24)],
     processingMaterials: [],
     outputMaterials: [],
     selectedOperationId: "dismantlePallet",
@@ -98,7 +98,7 @@ describe("resolveInteract", () => {
   it("reaches long stock resting across the player's cell", () => {
     // An 8' board centered two cells away still lies across the player's
     // cell — the pile E grabs isn't necessarily centered underfoot.
-    const overhanging = pileAt([5.5, 7.5], 8);
+    const overhanging = pileAt([5.5, 7.5], 96);
     const action = resolveInteract(shopWithPiles(overhanging), undefined);
     assert.strictEqual(action?.kind, "pick-up-floor");
     assert.strictEqual(action.piles[0], overhanging);
@@ -114,7 +114,7 @@ describe("resolveInteract", () => {
       player: {
         ...state.player,
         inventory: Array.from({ length: HAND_CAPACITY }, () =>
-          board("pine", 1),
+          board("pine", 12),
         ),
       },
     };
