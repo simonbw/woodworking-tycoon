@@ -25,6 +25,16 @@ export const MAX_BOTTOM_DECK = 4;
 export const PALLET_WIDTH_IN = 4 * INCHES_PER_FOOT - 2;
 export const PALLET_HEIGHT_IN = 3 * INCHES_PER_FOOT - 2;
 
+/** The boards' real dims — the very stock prying frees (deck boards
+ * 3' × 4", stringers 4' × 6"). The assembled pallet is exactly one
+ * stringer long by one deck board tall (48" × 36"), centered on the
+ * slightly smaller nominal span above: it overhangs the frame by an
+ * inch all around instead of reading oversized in its floor cells. */
+export const DECK_BOARD_LENGTH_IN = 3 * INCHES_PER_FOOT;
+export const DECK_BOARD_WIDTH_IN = 4;
+export const STRINGER_LENGTH_IN = 4 * INCHES_PER_FOOT;
+export const STRINGER_WIDTH_IN = 6;
+
 /** One of the pallet's boards, by which row it's nailed into. */
 export type PalletBoardRef =
   | { readonly kind: "deck"; readonly index: number }
@@ -81,20 +91,27 @@ export function palletBoardSlots(
   );
 }
 
-/** A stringer's centerline, in pallet inches from the top edge. */
+/** A stringer's centerline, in pallet inches from the top edge. The
+ * outer stringers' outer faces sit flush with the deck boards' ends —
+ * spreading them across the frame instead left them proud of the deck. */
 export function stringerYIn(index: number): number {
-  return lerp(0, PALLET_HEIGHT_IN, index / (MAX_STRINGERS - 1));
+  const y0 = (PALLET_HEIGHT_IN - DECK_BOARD_LENGTH_IN + STRINGER_WIDTH_IN) / 2;
+  const y1 = (PALLET_HEIGHT_IN + DECK_BOARD_LENGTH_IN - STRINGER_WIDTH_IN) / 2;
+  return lerp(y0, y1, index / (MAX_STRINGERS - 1));
 }
 
 /** A deck board's centerline, in pallet inches from the left edge. Top
- * boards (4..10) spread edge to edge by sevens; bottom boards (0..3)
- * sit on the gaps between them — offset half a bay, so in the flattened
- * top-down view they peek through instead of hiding underneath, and no
- * bottom-board crossing ever lands on a top board's nail. */
+ * boards (4..10) spread by sevens, the outer two flush with the
+ * stringers' ends; bottom boards (0..3) sit on the gaps between them —
+ * offset half a bay, so in the flattened top-down view they peek
+ * through instead of hiding underneath, and no bottom-board crossing
+ * ever lands on a top board's nail. */
 export function deckBoardXIn(index: number): number {
+  const x0 = (PALLET_WIDTH_IN - STRINGER_LENGTH_IN + DECK_BOARD_WIDTH_IN) / 2;
+  const x1 = (PALLET_WIDTH_IN + STRINGER_LENGTH_IN - DECK_BOARD_WIDTH_IN) / 2;
   return index < MAX_BOTTOM_DECK
-    ? lerp(0, PALLET_WIDTH_IN, (index + 0.5) / MAX_BOTTOM_DECK)
-    : lerp(0, PALLET_WIDTH_IN, (index - MAX_BOTTOM_DECK) / (MAX_TOP_DECK - 1));
+    ? lerp(x0, x1, (index + 0.5) / MAX_BOTTOM_DECK)
+    : lerp(x0, x1, (index - MAX_BOTTOM_DECK) / (MAX_TOP_DECK - 1));
 }
 
 /** Where a nail sits: on the crossing of its deck board and stringer. */

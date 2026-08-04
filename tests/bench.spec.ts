@@ -213,7 +213,7 @@ test.describe("Bench view", () => {
       // Real presses walk one deck board's three nails — a nail sits on
       // every deck-board × stringer crossing, and the board only drops
       // with its last one. The center top-deck board's crossings are
-      // pallet inches (23, 0), (23, 17), (23, 34), published through the
+      // pallet inches (23, 2), (23, 17), (23, 32), published through the
       // stage's fit attrs (the center column stays clear of the bench
       // view's floating corner chrome).
       const palletState = () =>
@@ -225,7 +225,7 @@ test.describe("Bench view", () => {
                 (m: any) => m.type === "pallet",
               ) ?? null,
         );
-      const first = await palletPoint(page, 23, 0);
+      const first = await palletPoint(page, 23, 2);
       await page.mouse.click(first.x, first.y);
       // The pry takes a beat — the hammer's lever is the pacing
       await expect
@@ -240,7 +240,7 @@ test.describe("Bench view", () => {
       expect((await machineState()).inputs).not.toContainEqual(
         expect.objectContaining({ type: "board" }),
       );
-      for (const yIn of [17, 34]) {
+      for (const yIn of [17, 32]) {
         // One pull per lever: presses inside PRY_MS are deliberately
         // ignored, so give each one its beat before the next
         await page.waitForTimeout(400);
@@ -299,9 +299,9 @@ test.describe("Bench view", () => {
         )
         .toBe(true);
       await page.getByTestId("bench-tool-hammer").click();
-      // Bottom board 0's crossing at local (5.75, 0) mirrors to (40.25, 0)
+      // Bottom board 0's crossing at local (6.5, 2) mirrors to (39.5, 2)
       await page.waitForTimeout(400);
-      const bottomNail = await palletPoint(page, 46 - 5.75, 0);
+      const bottomNail = await palletPoint(page, 46 - 6.5, 2);
       await page.mouse.click(bottomNail.x, bottomNail.y);
       await expect
         .poll(async () =>
