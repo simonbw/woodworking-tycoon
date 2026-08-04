@@ -415,6 +415,14 @@ export function setOperatingAction(operating: boolean): GameAction {
       : { ...gameState, player: { ...gameState.player, operating } };
 }
 
+/** The wait key's physical state — transient exactly like `operating`. */
+export function setWaitingAction(waiting: boolean): GameAction {
+  return (gameState) =>
+    (gameState.player.waiting ?? false) === waiting
+      ? gameState
+      : { ...gameState, player: { ...gameState.player, waiting } };
+}
+
 /**
  * Record where the mouse is steering the broom head (already clamped to
  * reach by the pointer layer), or null when the cursor stops aiming.

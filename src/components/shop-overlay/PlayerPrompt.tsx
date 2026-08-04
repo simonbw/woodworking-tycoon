@@ -14,6 +14,7 @@ import { MaterialPile } from "../../game/GameState";
 import { getMaterialFullName } from "../../game/material-helpers";
 import { liveSettingParameter } from "../../game/machine-helpers";
 import { materialSources, resolveInteract } from "../../game/interact";
+import { timeSpeed } from "../../game/time-flow";
 import { chebyshevDistance } from "../../game/Vectors";
 import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
@@ -172,6 +173,22 @@ export const PlayerPrompt: React.FC = () => {
       rows.push(
         <HintRow key="grab-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
           grab shop vac
+        </HintRow>,
+      );
+    }
+    // The wait key earns its chip when there's something to wait *for*:
+    // work running (a cure drying) while nobody spends time. Kept up
+    // while the key is held, or it would vanish mid-wait.
+    const speed = timeSpeed(gameState);
+    if (
+      (speed === "idle" || speed === "waiting") &&
+      gameState.machines.some(
+        (m) => m.operationProgress.status === "inProgress",
+      )
+    ) {
+      rows.push(
+        <HintRow key="wait" keys={<ShortcutKeys shortcut="wait" />}>
+          hold to pass time
         </HintRow>,
       );
     }

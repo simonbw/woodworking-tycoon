@@ -17,6 +17,7 @@ import {
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
 import {
   setOperatingAction,
+  setWaitingAction,
   setSweepAimAction,
 } from "../../game/game-actions/player-actions";
 import { SWEEP_AIM_REACH } from "../../game/game-actions/dust-actions";
@@ -35,7 +36,7 @@ import { DustMotionLayer } from "./DustMotionLayer";
 import { FeedLaneLayer } from "./FeedLaneLayer";
 import { FloorTileSprite } from "./FloorTileSprite";
 import { HeldMovementListener } from "./heldMovementInput";
-import { HeldOperateListener } from "./heldOperateInput";
+import { HeldKeyListener } from "./heldOperateInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -326,11 +327,19 @@ export const ShopView: React.FC = () => {
         }
         captureVertical={truckMenuOpen}
       />
-      <HeldOperateListener
+      <HeldKeyListener
+        shortcut="operate-machine"
         enabled={
           !gameState.player.away && !modalOpen && truckStage === "parked"
         }
         onChange={(held) => updateGameState(setOperatingAction(held))}
+      />
+      <HeldKeyListener
+        shortcut="wait"
+        enabled={
+          !gameState.player.away && !modalOpen && truckStage === "parked"
+        }
+        onChange={(held) => updateGameState(setWaitingAction(held))}
       />
       <Application
         width={view.width}

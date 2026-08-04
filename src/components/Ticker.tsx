@@ -11,12 +11,18 @@ import { useApplyGameAction, useGameState } from "./useGameState";
 
 /**
  * How fast the clock creeps when nobody is spending time — walking the
- * floor, reading, browsing a store's aisles. Tuned so a day of pure
- * idling takes about twelve real minutes (working pace burns it in
- * two): thinking is cheap, and the day is a budget that work draws
- * down, not a metronome (see docs/time-and-days.md).
+ * floor, reading, browsing a store's aisles. Close to real time
+ * minute-for-minute: thinking is nearly free, and deliberately passing
+ * time is what the wait key is for (see docs/time-and-days.md).
  */
-const IDLE_TICKS_PER_SECOND = 1 / 1.2;
+const IDLE_TICKS_PER_SECOND = 1 / 60;
+
+/**
+ * How fast the clock spins under the held wait key — quicker than
+ * working, so waiting *reads* as the clock pouring out: a full day
+ * drains in half a minute, a one-hour glue cure in about three seconds.
+ */
+const WAIT_TICKS_PER_SECOND = 4 * TICKS_PER_SECOND;
 
 /** How often the loop wakes to see whether a tick is owed. */
 const LOOP_INTERVAL_MS = 100;
@@ -40,11 +46,13 @@ export const Ticker: React.FC = () => {
   const speed = timeSpeed(gameState);
   const ticksPerSecond =
     testRate ??
-    (speed === "working"
-      ? TICKS_PER_SECOND
-      : speed === "idle"
-        ? IDLE_TICKS_PER_SECOND
-        : 0);
+    (speed === "waiting"
+      ? WAIT_TICKS_PER_SECOND
+      : speed === "working"
+        ? TICKS_PER_SECOND
+        : speed === "idle"
+          ? IDLE_TICKS_PER_SECOND
+          : 0);
 
   // Fractional ticks owed so far. Lives across interval restarts so a
   // pace change mid-accumulation doesn't drop what the idle creep had

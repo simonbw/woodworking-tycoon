@@ -236,6 +236,20 @@ const defs = [
     shiftHint: "the other way",
   },
   {
+    // Held, not tapped — the same shape as running a machine, aimed at
+    // the clock instead: hold it and time passes fast, release and it
+    // stops. Needs no target and works anywhere in the shop; the easy
+    // answer to a glue cure, against which filling the wait with other
+    // work is the skilled play (docs/time-and-days.md). Stands down at
+    // night, when there's nothing left to spend.
+    id: "wait",
+    codes: ["KeyT"],
+    keys: [["T"]],
+    description: "Hold to let time pass",
+    scope: "home",
+    group: "General",
+  },
+  {
     // Held, not tapped: the press starts the machine and the hold is you
     // pushing the stock through it. Let go and the cut pauses where it is.
     // Power-feed machines (the planer) are the exception — the rollers do

@@ -13,16 +13,18 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  * player is doing. The Ticker asks this model how fast to feed ticks;
  * the tick pipeline itself never changes.
  *
+ *  waiting — the wait key is held: time deliberately spent on nothing,
+ *            faster than work so the clock visibly spins. The easy
+ *            answer to a cure; every hour waited is an hour not worked.
  *  working — time is being spent: attended machine work, a busy body
  *            (trudging, sweeping), or a scavenging run's timer. Full
  *            pace, the familiar five minutes a second.
- *  idle    — nobody is spending time. The clock still creeps, slowly
- *            enough that thinking stays cheap (a day of pure idling is
- *            about twelve real minutes; see IDLE_TICKS_PER_SECOND).
+ *  idle    — nobody is spending time. The clock still creeps, close to
+ *            real time minute-for-minute: thinking is nearly free.
  *  stopped — the shop is closed for the night (or the player is home in
  *            bed). Nothing moves until work finishes it or morning does.
  */
-export type TimeSpeed = "working" | "idle" | "stopped";
+export type TimeSpeed = "waiting" | "working" | "idle" | "stopped";
 
 /** How many of today's working minutes have been spent. */
 export function dayTicksSpent(gameState: GameState): number {
@@ -109,6 +111,13 @@ export function timeSpeed(gameState: GameState): TimeSpeed {
   const machines = gameState.machines.map((state) => new Machine(state));
   if (machines.some((machine) => machineSpendsTime(gameState, machine))) {
     return "working";
+  }
+  // The wait verb: hold it and the clock spins — but only when nothing
+  // else is spending time (working outranks it, so a held wait key can
+  // never speed up an attended cut), and never at night, when the day's
+  // budget is spent and there's nothing left to give.
+  if (gameState.player.waiting === true && !isNight(gameState)) {
+    return "waiting";
   }
   return isNight(gameState) ? "stopped" : "idle";
 }

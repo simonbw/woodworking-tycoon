@@ -32,9 +32,9 @@ Two things fix both problems at once:
 
 ## The model
 
-### Three speeds
+### Four speeds
 
-`timeSpeed` (time-flow.ts) reduces the whole shop to one of three paces,
+`timeSpeed` (time-flow.ts) reduces the whole shop to one of four paces,
 and the Ticker feeds ticks accordingly:
 
 - **working** — time is being spent, at the familiar five shop-minutes a
@@ -43,13 +43,18 @@ and the Ticker feeds ticks accordingly:
   pulling stock through on its own), the broom or vac working under the
   same hold, a busy body (trudging dust, mid-sweep), or a scavenging
   run's timer burning down.
-- **idle** — nobody is spending time. The clock still creeps
-  (`IDLE_TICKS_PER_SECOND`): walking the floor, reading, arranging
-  stock, and browsing a store's aisles cost a sixth of working pace, so
-  a day spent doing nothing at all still runs out in about twelve real
-  minutes — against the two a day of solid work takes.
+- **waiting** — the wait verb: hold <kbd>T</kbd> and the clock spins,
+  faster than working (`WAIT_TICKS_PER_SECOND`, four times work pace —
+  a full day drains in half a minute, an hour's cure in seconds). It
+  needs no target and works anywhere in the shop; the player's hint
+  cluster offers it whenever work is running with nobody spending time.
+- **idle** — nobody is spending time. The clock still creeps, close to
+  real time minute-for-minute (`IDLE_TICKS_PER_SECOND`): walking the
+  floor, reading, arranging stock, and browsing a store's aisles are
+  all nearly free.
 - **stopped** — the shop is closed for the night (or the player is home
-  in bed). No idle creep; the only ticks left are the ones work causes.
+  in bed). No idle creep, and the wait key stands down — there is
+  nothing left to spend. The only ticks left are the ones work causes.
 
 Machines consume time, they never generate it: hands-free phases (glue
 curing) advance whenever ticks flow but cause none themselves. A cure
@@ -57,11 +62,11 @@ finishes on the minutes something else spends — other work, a drive, or
 the overnight. That's the throughput game in miniature: fill the cure
 with a resaw run and get two things out of the same minutes.
 
-There is deliberately no wait verb yet. The overnight is the intended
-answer to a cure ("glue up at the end of the day"), and the idle creep
-covers short remainders; if mid-day dead time turns out to need a
-first-class answer, a hold-to-wait verb can be added on top of this
-model without changing it.
+Wait is the *easy* answer to a cure, and the game never punishes using
+it — but every hour waited is an hour not worked, so the skilled play
+that emerges is filling cures with other work (or gluing up at the end
+of the day and letting the overnight do it). The verb teaches the
+economy by being the baseline against which efficiency is measured.
 
 ### The day, told by its light
 
@@ -170,7 +175,8 @@ refusing new work but never trapping the shop — live in
   old regime. The progression ledger measures days-to-finish; watch it.
   Sale-roll rates (`BASE_SALE_RATE`) now also roll through 840 overnight
   ticks a night, which effectively speeds sales per calendar day.
-- **A wait verb / stamina layer.** Both explicitly deferred; see above.
+- **The stamina layer.** Explicitly deferred; see the design history in
+  git — the workday clock is the only meter for now.
 
 ## Honest flag: this is a genre shift
 

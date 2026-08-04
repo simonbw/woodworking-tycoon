@@ -56,6 +56,12 @@ export interface Person {
    * pointer state, transient exactly like `operating`.
    */
   sweepAim?: Vector | null;
+  /**
+   * Whether the wait key is held right now — deliberately spending time
+   * on nothing, watching the clock spin (see time-flow.ts). Physical
+   * key state, transient exactly like `operating`.
+   */
+  waiting?: boolean;
 }
 
 /**

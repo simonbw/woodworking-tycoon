@@ -1,19 +1,18 @@
 import React, { useEffect } from "react";
-import { getShortcut } from "../../game/shortcuts";
+import { getShortcut, ShortcutId } from "../../game/shortcuts";
 
 /**
- * Tracks whether the operate key is physically held. Running a machine is
- * about key *state*, not key presses — you hold the stock against the
- * blade for as long as the cut takes — so it can't ride the
- * ShortcutProvider (keydown-only, fires handlers once). The same split as
- * heldMovementInput, for the same reason: ShortcutProvider still owns the
- * press that *starts* the operation, this owns the hold that sustains it.
+ * Tracks whether a hold-shaped key is physically held. Running a machine
+ * (or letting time pass under the wait key) is about key *state*, not
+ * key presses — you hold the stock against the blade for as long as the
+ * cut takes — so it can't ride the ShortcutProvider (keydown-only, fires
+ * handlers once). The same split as heldMovementInput, for the same
+ * reason: ShortcutProvider still owns any press that *starts* something,
+ * this owns the hold that sustains it.
  *
- * The registry owns the key itself (`operate-machine`), so rebinding it
- * moves both halves at once.
+ * The registry owns the keys themselves (`operate-machine`, `wait`), so
+ * rebinding one moves both halves at once.
  */
-
-const OPERATE_CODES = new Set(getShortcut("operate-machine").codes);
 
 /** Typing in a field shouldn't run the table saw. */
 function isEditable(target: EventTarget | null): boolean {
@@ -32,14 +31,19 @@ function activatesFocusedControl(target: EventTarget | null): boolean {
 }
 
 /**
- * Reports whether the operate key is down. `enabled` gates key-downs only
- * — a key released must always clear, or a modal opening mid-cut would
- * leave the machine running untended forever.
+ * Reports whether the shortcut's key is down. `enabled` gates key-downs
+ * only — a key released must always clear, or a modal opening mid-cut
+ * would leave the machine running untended forever.
  */
-export const HeldOperateListener: React.FC<{
+export const HeldKeyListener: React.FC<{
+  shortcut: ShortcutId;
   enabled: boolean;
   onChange: (held: boolean) => void;
-}> = ({ enabled, onChange }) => {
+}> = ({ shortcut, enabled, onChange }) => {
+  const codes = React.useMemo(
+    () => new Set(getShortcut(shortcut).codes),
+    [shortcut],
+  );
   // Read at dispatch time so the listener never needs re-subscribing, and
   // so a key pressed the same frame a modal opens can't slip through.
   const enabledRef = React.useRef(enabled);
@@ -60,7 +64,7 @@ export const HeldOperateListener: React.FC<{
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!OPERATE_CODES.has(event.code)) return;
+      if (!codes.has(event.code)) return;
       if (!enabledRef.current) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isEditable(event.target)) return;
@@ -70,7 +74,7 @@ export const HeldOperateListener: React.FC<{
       set(true);
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (!OPERATE_CODES.has(event.code)) return;
+      if (!codes.has(event.code)) return;
       set(false);
     };
     const onBlur = () => set(false);

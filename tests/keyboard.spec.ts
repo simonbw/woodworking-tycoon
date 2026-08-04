@@ -675,6 +675,19 @@ test.describe("Keyboard", () => {
         .poll(async () => (await workspaceProgress(page)).ticksRemaining)
         .toBeLessThan(cureBefore.ticksRemaining);
 
+      // With a cure running and nobody working, the player's cluster
+      // offers the wait key — and holding it spins the clock much
+      // faster than the idle creep ever would
+      await expect(page.getByText("hold to pass time")).toBeVisible();
+      const tickBefore = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().tick,
+      );
+      await page.keyboard.down("t");
+      await expect
+        .poll(() => page.evaluate(() => (window as any).__GET_GAME_STATE__().tick))
+        .toBeGreaterThan(tickBefore + 10);
+      await page.keyboard.up("t");
+
       // Fast-forward the rest of the cure; the panel finishes with the
       // player still across the shop
       await advanceTicks(page, 200);
