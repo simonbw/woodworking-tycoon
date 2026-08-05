@@ -343,11 +343,15 @@ export const ShopKeyboardShortcuts: React.FC = () => {
 
       // Cycle only what the spec sheet offers — skill-locked recipes are
       // hidden there and shouldn't be reachable from the keyboard either,
-      // and pry work isn't a plan (the staged pallet offers it by itself).
+      // and tool work isn't a plan (the staged pallet offers its nails,
+      // the held tool its strokes and cuts, on the bench top itself).
       const operations = availableOperations(
         machine,
         gameState.current.progression,
-      ).filter((operation) => operation.interaction?.kind !== "pry");
+      ).filter(
+        (operation) =>
+          !["pry", "stroke", "saw"].includes(operation.interaction?.kind ?? ""),
+      );
       if (operations.length === 0) return;
 
       // An unset (or no-longer-available) selection cycles in from either

@@ -144,14 +144,18 @@ describe("benchScriptFor", () => {
     );
   });
 
-  it("offers an unstarted stroke script once the board is staged", () => {
+  it("never offers idle stroke work from a plan — the tool in hand does", () => {
+    // A stale sanding selection (old saves may carry one) mounts nothing:
+    // stroke and saw work is tool-first now (bench-work/tool-work.ts).
     const machine = workspaceWith({
       tools: ["sandingBlock"],
       selectedOperationId: "blockSandBoard",
       inputMaterials: [board("maple", 24, 4, 4, "rough")],
     });
-    const script = benchScriptFor(machine, progressionWith("surfacePrep"));
-    assert.ok(script?.kind === "stroke" && script.started === false);
+    assert.strictEqual(
+      benchScriptFor(machine, progressionWith("surfacePrep")),
+      null,
+    );
   });
 
   it("keeps the stroke script through a refresh of a started pass", () => {

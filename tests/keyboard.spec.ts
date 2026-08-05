@@ -1,10 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import { BASE_WALK_SPEED } from "../src/game/player-motion";
-import {
-  openStationSheet,
-  selectMode,
-  takeAllHere,
-} from "./machine-panel";
+import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
 import {
   advanceTicks,
   movePlayerToCab,
@@ -539,15 +535,30 @@ test.describe("Keyboard", () => {
     await test.step("sanding ignores Space — the bench view owns hand work", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
-      await page.getByRole("button", { name: "Attach" }).click();
+      // Two tools ride in hand (sander and finishing kit) — name the one
+      await page
+        .getByRole("button", { name: "Attach the Random Orbit Sander" })
+        .click();
       await page.waitForTimeout(30);
-      await selectMode(page, "Makeshift Workbench", "Sand Board");
-      // F stages the first strip the plan will take
+      // F stages the first strip
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );
       await page.keyboard.press("f");
       await page.waitForTimeout(30);
+      // Tool work no longer appears in the plan picker — the block in
+      // hand offers it on the bench top. The driver-path selection is
+      // written directly, exactly the way ShopDriver selects work.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace"
+              ? { ...m, selectedOperationId: "orbitSandBoard" }
+              : m,
+          ),
+        }));
+      });
 
       // Space is not a path into hand work: held at the bench, nothing
       // starts (docs/bench-minigames.md decision 1)

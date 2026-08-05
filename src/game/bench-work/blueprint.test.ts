@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { makeMaterial } from "../material-helpers";
-import { Board } from "../Materials";
+import { Board, FinishedProduct } from "../Materials";
 import {
   assembleFromBlueprint,
   BIRDHOUSE_BLUEPRINT,
@@ -13,10 +13,18 @@ import {
   defaultPartsFor,
   fastenerToolId,
   matchPartsToSlots,
+  PICTURE_FRAME_BLUEPRINT,
   PLANTER_BOX_BLUEPRINT,
   productBlueprintFor,
   RUSTIC_SHELF_BLUEPRINT,
   STEP_STOOL_BLUEPRINT,
+  CROSSCUT_SLED_BLUEPRINT,
+  MATERIAL_SHELF_BLUEPRINT,
+  RESAW_FENCE_BLUEPRINT,
+  STORAGE_RACK_BLUEPRINT,
+  STRAIGHT_LINE_SLED_BLUEPRINT,
+  TOOL_DRAWERS_BLUEPRINT,
+  WORKTABLE_BLUEPRINTS,
 } from "./blueprint";
 import {
   armedFasteners,
@@ -618,5 +626,163 @@ describe("the birdhouse blueprint", () => {
     ]);
     assert.strictEqual(birdhouse.type, "birdhouse");
     assert.strictEqual(birdhouse.parts?.length, 6);
+  });
+});
+
+describe("the picture frame blueprint", () => {
+  const NOMINAL_ENDS = {
+    left: { kind: "mitered", angle: -45 },
+    right: { kind: "mitered", angle: 45 },
+  } as const;
+  const rail = (ends: Board["ends"] = NOMINAL_ENDS) =>
+    makeMaterial<Board>({
+      ...board("walnut", 24, 1, 1, "sanded"),
+      ends,
+    });
+
+  it("derives four brads, one at each 1×1 corner lap", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(PICTURE_FRAME_BLUEPRINT), [
+      { id: "nails", amount: 4 },
+    ]);
+    const spots = PICTURE_FRAME_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(
+      spots,
+      ["0.5,0.5", "23.5,0.5", "0.5,23.5", "23.5,23.5"].sort(),
+    );
+    // Every brad joins one horizontal rail to one vertical rail — the
+    // same-layer pairs never earn one
+    for (const fastener of PICTURE_FRAME_BLUEPRINT.fasteners) {
+      const [lower, upper] = fastener.joins;
+      assert.ok(["rail-0", "rail-1"].includes(lower));
+      assert.ok(["rail-2", "rail-3"].includes(upper));
+    }
+  });
+
+  it("folds the sheet to one row: four rails, mirrored miters noted", () => {
+    const inputs = blueprintInputs(PICTURE_FRAME_BLUEPRINT);
+    assert.strictEqual(inputs.length, 1);
+    assert.strictEqual(inputs[0].quantity, 4);
+    assert.deepStrictEqual(inputs[0].length, [24]);
+    assert.deepStrictEqual(inputs[0].width, [1]);
+    assert.deepStrictEqual(inputs[0].thickness, [1]);
+    assert.deepStrictEqual(inputs[0].surface, ["sanded"]);
+    assert.strictEqual(inputs[0].matchesNote, "45° both ends, mirrored");
+    // The predicate survives the fold: a rail passes, square stock and a
+    // parallelogram don't
+    assert.ok(inputs[0].matches!(rail()));
+    assert.ok(!inputs[0].matches!(board("walnut", 24, 1, 1, "sanded")));
+    assert.ok(
+      !inputs[0].matches!(
+        rail({
+          left: { kind: "mitered", angle: 45 },
+          right: { kind: "mitered", angle: 45 },
+        }),
+      ),
+    );
+  });
+
+  it("is registered and assembles four rails into a frame with its ends", () => {
+    assert.strictEqual(
+      productBlueprintFor("pictureFrame"),
+      PICTURE_FRAME_BLUEPRINT,
+    );
+    const frame = assembleFromBlueprint(PICTURE_FRAME_BLUEPRINT, [
+      rail(),
+      rail(),
+      rail(),
+      rail(),
+    ]);
+    assert.strictEqual(frame.type, "pictureFrame");
+    assert.strictEqual(frame.species, "walnut");
+    assert.strictEqual(frame.parts?.length, 4);
+    for (const part of frame.parts!) {
+      assert.deepStrictEqual(part.ends, NOMINAL_ENDS);
+    }
+  });
+
+  it("turns a rail cut with the other swing over to seat long edge out", () => {
+    // The same physical rail, recorded off the opposite pair of stops:
+    // flipping it over negates both ends, which is free — the part lands
+    // in the slot's nominal orientation so the corners close
+    const flipped = rail({
+      left: { kind: "mitered", angle: 45 },
+      right: { kind: "mitered", angle: -45 },
+    });
+    const frame = assembleFromBlueprint(PICTURE_FRAME_BLUEPRINT, [
+      flipped,
+      rail(),
+      rail(),
+      rail(),
+    ]);
+    for (const part of frame.parts!) {
+      assert.deepStrictEqual(part.ends, NOMINAL_ENDS);
+    }
+  });
+
+  it("synthesizes mirrored miters on frames from older saves", () => {
+    const legacyFrame = makeMaterial<FinishedProduct>({
+      type: "pictureFrame",
+      species: "cherry",
+    });
+    const parts = defaultPartsFor(PICTURE_FRAME_BLUEPRINT, legacyFrame);
+    assert.strictEqual(parts.length, 4);
+    for (const part of parts) {
+      assert.deepStrictEqual(part.ends, NOMINAL_ENDS);
+      assert.strictEqual(part.surface, "sanded");
+    }
+  });
+});
+
+describe("equipment blueprints", () => {
+  it("derives each build's inputs in the legacy recipe's shape", () => {
+    const rows = blueprintInputs(WORKTABLE_BLUEPRINTS.worktable1x2);
+    assert.strictEqual(rows.length, 2);
+    assert.deepStrictEqual(rows[0].type, ["plywood"]);
+    assert.strictEqual(rows[0].quantity, 1);
+    assert.deepStrictEqual(rows[1].type, ["board"]);
+    assert.strictEqual(rows[1].quantity, 4);
+    assert.deepStrictEqual(rows[1].thickness, [6, 8]);
+  });
+
+  it("nails every sheet–rail seam and rail–stretcher crossing", () => {
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 4);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 6);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 8);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 11);
+    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 6);
+    assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 2);
+  });
+
+  it("the material shelf has no fasteners at all — laying on is the build", () => {
+    assert.strictEqual(MATERIAL_SHELF_BLUEPRINT.fasteners.length, 0);
+    assert.deepStrictEqual(blueprintFastenerCost(MATERIAL_SHELF_BLUEPRINT), []);
+  });
+
+  it("the jigs are screwed, two seams each", () => {
+    for (const jig of [
+      CROSSCUT_SLED_BLUEPRINT,
+      STRAIGHT_LINE_SLED_BLUEPRINT,
+      RESAW_FENCE_BLUEPRINT,
+    ]) {
+      assert.strictEqual(jig.fastenerConsumable, "screws");
+      assert.strictEqual(jig.fasteners.length, 2);
+    }
+  });
+
+  it("is registered under its equipment id and never becomes a product", () => {
+    assert.strictEqual(
+      productBlueprintFor("worktable1x1"),
+      WORKTABLE_BLUEPRINTS.worktable1x1,
+    );
+    assert.strictEqual(
+      WORKTABLE_BLUEPRINTS.worktable1x1.productType,
+      undefined,
+    );
+    assert.throws(
+      () => assembleFromBlueprint(STORAGE_RACK_BLUEPRINT, []),
+      /builds equipment, not a product/,
+    );
   });
 });

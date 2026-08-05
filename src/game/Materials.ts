@@ -188,6 +188,31 @@ export const SHEET_GOOD_KINDS = [
 
 export type SheetGoodKind = (typeof SHEET_GOOD_KINDS)[number];
 
+/**
+ * Which sheet kinds a recipe accepts is a statement about the work, not
+ * the wood budget. A jig base must be flat and hold runner screws — any
+ * plywood or MDF, never the chip boards, which sag and crumble around
+ * screws. Shop furniture is less picky: particle board tops a worktable
+ * honestly, but OSB's lumpy face is fit for nothing that needs flat.
+ * The storage rack is the one build where the cheap stuff belongs — and
+ * it refuses the good sheets, so a rack never eats jig stock by mistake.
+ */
+export const JIG_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
+  "plywoodA",
+  "plywoodB",
+  "plywoodC",
+  "mdf",
+];
+export const SHOP_FURNITURE_KINDS: ReadonlyArray<SheetGoodKind> = [
+  ...JIG_GRADE_KINDS,
+  "particleBoard",
+];
+export const RACK_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
+  "osb",
+  "particleBoard",
+  "plywoodC",
+];
+
 export interface SheetGood {
   readonly id: string;
   readonly type: "plywood";
@@ -303,6 +328,10 @@ export type AssembledPart = {
   /** The board's surface as it went in — sanded stock draws sanded in
    * the finished piece. Absent (older saves) means rough. */
   readonly surface?: SurfaceCondition;
+  /** The board's end treatments as it lies in its slot — a frame rail's
+   * mirrored miters are what close the corners, so the finished piece
+   * keeps them. Absent (older saves, square stock) means square. */
+  readonly ends?: BoardEnds;
   readonly seed: string;
 };
 

@@ -68,7 +68,11 @@ function twoToneShop(learned: boolean): ShopDriver {
       // mount() below takes it out of the hands
       player: {
         ...state.player,
-        inventory: [...strips.slice(0, 2), makeToolItem("randomOrbitSander")],
+        inventory: [
+          ...strips.slice(0, 2),
+          makeToolItem("randomOrbitSander"),
+          makeToolItem("finishingKit"),
+        ],
       },
       materialPiles: [
         ...state.materialPiles,
@@ -84,7 +88,8 @@ function twoToneShop(learned: boolean): ShopDriver {
           : machine,
       ),
     }))
-    .mount(WORKBENCH, "randomOrbitSander");
+    .mount(WORKBENCH, "randomOrbitSander")
+    .mount(WORKBENCH, "finishingKit");
 }
 
 /** Glue, sand twice, finish. */

@@ -29,7 +29,13 @@ function stateWith(overrides: Partial<GameState>): GameState {
 
 /** The starter workspace (hammer mounted) with per-test tweaks applied. */
 function workspaceMachine(overrides: Partial<MachineState>): MachineState {
-  return { ...initialGameState.machines[0], ...overrides };
+  // The starter hammer stays (the shelf build is its op); the kit joins
+  // it so the oiling suite's operations resolve
+  return {
+    ...initialGameState.machines[0],
+    tools: ["hammer", "finishingKit"],
+    ...overrides,
+  };
 }
 
 /** Boards for one rustic shelf: 2 stringers and 3 deck boards. */

@@ -171,7 +171,9 @@ test.describe("Screens", () => {
       // C holds the full clipboard up, and C puts it back down
       await page.keyboard.press("c");
       await expect(clipboard).toBeVisible();
-      await expect(clipboard.getByTestId("commission-delivery-note")).toContainText("truck");
+      await expect(
+        clipboard.getByTestId("commission-delivery-note"),
+      ).toContainText("truck");
       await page.keyboard.press("c");
       await expect(clipboard).toHaveCount(0);
       // Clicking the tracker does the same; Escape closes
@@ -292,20 +294,20 @@ test.describe("Screens", () => {
         "style",
         /width:\s*50%/,
       );
-      await expect(
-        page.getByRole("button", { name: /^Skills/ }),
-      ).toBeVisible();
+      await expect(page.getByRole("button", { name: /^Skills/ })).toBeVisible();
     });
 
     await test.step("locked recipe is hidden at the workspace", async () => {
+      // Fine Shelving's build plan — finishing recipes are the finishing
+      // kit's tool-first work now and never sit in the plan pile
       const modes = await workspaceModes(page);
-      expect(modes).not.toContain("Finish Two-Tone Board");
+      expect(modes).not.toContain("Build Shelf");
     });
 
-    await test.step("learn Two-Tone Boards in the journal", async () => {
+    await test.step("learn Fine Shelving in the journal", async () => {
       await openJournal(page);
       await page
-        .locator("li", { hasText: "Two-Tone Boards" })
+        .locator("li", { hasText: "Fine Shelving" })
         .getByRole("button", { name: /Learn/ })
         .click();
       await page.waitForTimeout(30);
@@ -317,11 +319,13 @@ test.describe("Screens", () => {
     await test.step("learning it puts the recipe on the bench", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
-      await page.getByRole("button", { name: "Attach" }).click();
+      await page
+        .getByRole("button", { name: "Attach the Random Orbit Sander" })
+        .click();
       await page.waitForTimeout(30);
 
       const modes = await workspaceModes(page);
-      expect(modes).toContain("Finish Two-Tone Board");
+      expect(modes).toContain("Build Shelf");
     });
 
     await test.step("load the pattern-board shop", async () => {
@@ -345,7 +349,6 @@ test.describe("Screens", () => {
       await closeJournal(page);
       const modes = await workspaceModes(page);
       expect(modes).not.toContain("Glue Up Pair");
-      expect(modes).not.toContain("Finish Striped Board");
     });
 
     await test.step("spend 3 points down to Sunrise Boards", async () => {
@@ -366,8 +369,6 @@ test.describe("Screens", () => {
       const modes = await workspaceModes(page);
       expect(modes).toContain("Glue Up Pair");
       expect(modes).toContain("Glue On Strip");
-      expect(modes).toContain("Finish Striped Board");
-      expect(modes).toContain("Finish Sunrise Board");
     });
     await test.step("shut the station sheet so Escape reaches the pause menu", async () => {
       // Reading the recipe list spreads the sheet open, and Escape closes the

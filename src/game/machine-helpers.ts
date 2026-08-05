@@ -524,13 +524,14 @@ export function stageableMaterials(
     const takeable = carried.filter((material) => kinds.has(material.type));
     // On a bench with a plan picked, F grabs the plan's pieces out of the
     // armful first — the bench still takes anything, but the single press
-    // sets down the piece the work actually wants. (Pry work isn't a
-    // plan, so a stale dismantle selection expresses no preference.)
+    // sets down the piece the work actually wants. (Tool work — pry,
+    // stroke, saw — isn't a plan, so a stale selection of it expresses
+    // no preference.)
     const selected = machine.selectedOperationOrNull;
     if (
       isBenchType(machine.type) &&
       selected &&
-      selected.interaction?.kind !== "pry"
+      !["pry", "stroke", "saw"].includes(selected.interaction?.kind ?? "")
     ) {
       const inputs = selected.getInputMaterials(
         machine.resolvedParameters(selected),

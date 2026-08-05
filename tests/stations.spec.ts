@@ -319,12 +319,19 @@ test.describe("Stations", () => {
       await expect(
         page.getByRole("button", { name: "Attach the Random Orbit Sander" }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "Attach" }).click();
+      // Two tools ride in hand (sander and finishing kit) — name the one
+      await page
+        .getByRole("button", { name: "Attach the Random Orbit Sander" })
+        .click();
       await page.waitForTimeout(30);
       await expect(page.getByText("1/2 slots")).toBeVisible();
-      // The sander's operations joined the workspace's Mode list
+      // The sander's work is offered by the tool itself on the bench
+      // top, never as a plan — the picker holds only builds
       const modeOptions = await modesOf(page, "Makeshift Workbench");
-      expect(modeOptions).toContain("Sand Panel");
+      expect(modeOptions).not.toContain("Sand Panel");
+      await expect(
+        page.getByTestId("bench-tool-randomOrbitSander"),
+      ).toBeVisible();
     });
 
     await test.step("load the end-grain-shop", async () => {
@@ -492,31 +499,18 @@ test.describe("Stations", () => {
     await test.step("both tools mount at the workbench and add their trades", async () => {
       // Tools hang on the bench view's top rail, one empty hook each
       await openStationSheet(page);
-      await page
-        .getByRole("button", { name: "Attach the Hand Saw" })
-        .click();
+      await page.getByRole("button", { name: "Attach the Hand Saw" }).click();
       await page.waitForTimeout(30);
       await page.getByRole("button", { name: "Attach the Drill" }).click();
       await page.waitForTimeout(30);
       await expect(page.getByText("2/2 slots")).toBeVisible();
 
       const modes = await modesOf(page, "Makeshift Workbench");
-      expect(modes).toContain("Cut Board by Hand");
+      // The saw's cut is tool work — marked on the bench top with the
+      // saw in hand, never a plan. Only the drill's builds join the pile.
+      expect(modes).not.toContain("Cut Board by Hand");
       expect(modes).toContain("Build Rustic Planter Box");
-    });
-
-    await test.step("the hand cut is dialled in on three scales", async () => {
-      await selectMode(page, "Makeshift Workbench", "Cut Board by Hand");
-      const card = workspaceCard(page);
-      await expect(
-        card.getByRole("radiogroup", { name: "Angle" }),
-      ).toBeVisible();
-      await expect(
-        card.getByRole("radiogroup", { name: "Cut End" }),
-      ).toBeVisible();
-      await expect(
-        card.getByRole("radiogroup", { name: "Target Length" }),
-      ).toBeVisible();
+      await expect(page.getByTestId("bench-tool-handSaw")).toBeVisible();
     });
 
     await test.step("the planter box reads its screw cost against the tin", async () => {
@@ -538,9 +532,7 @@ test.describe("Stations", () => {
       // Every plan carries a duration, and each one reads as minutes or
       // hours — the simulation's tick never reaches the player.
       const row = card.locator("li", { hasText: "Build Rustic Planter Box" });
-      await expect(
-        row.getByText(/^(\d+ min|\d+h( \d{2}m)?)$/),
-      ).toBeVisible();
+      await expect(row.getByText(/^(\d+ min|\d+h( \d{2}m)?)$/)).toBeVisible();
       await expect(card.getByText(/\bticks?\b/)).toHaveCount(0);
     });
   });

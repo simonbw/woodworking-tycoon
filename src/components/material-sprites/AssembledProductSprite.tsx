@@ -83,9 +83,13 @@ const BlueprintPartsSprite: React.FC<{
           ({
             slot: slot.id,
             species: "pallet",
-            width: slot.part.widthIn,
+            // Nominal part dims are board-catalog sizes on every product
+            // blueprint (only equipment blueprints use sheet-size parts,
+            // and equipment never renders as a product)
+            width: slot.part.widthIn as AssembledPart["width"],
             length: slot.part.lengthIn,
-            thickness: slot.part.thicknessQ,
+            thickness: slot.part.thicknessQ as AssembledPart["thickness"],
+            ...(slot.part.ends ? { ends: slot.part.ends } : {}),
             seed: slot.id,
           } satisfies AssembledPart);
         const board = {
@@ -96,6 +100,9 @@ const BlueprintPartsSprite: React.FC<{
           surface: part.surface ?? ("rough" as const),
           jointedFaces: 1 as const,
           jointedEdges: 2 as const,
+          // A frame rail's mitered ends draw in the finished piece — the
+          // corner seams are the product
+          ...(part.ends ? { ends: part.ends } : {}),
         };
         return (
           <pixiContainer

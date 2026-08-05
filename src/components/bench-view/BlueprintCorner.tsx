@@ -51,15 +51,19 @@ export const BlueprintCorner: React.FC<{ machine: Machine }> = ({
   const { isTargeted } = useTargetedMachine();
   const [open, setOpen] = useState(false);
 
-  // Pry work isn't a plan: a staged pallet offers it by itself on the
-  // bench top, so the pile neither lists it nor honors a stale
-  // selection of it (old saves may still carry one).
+  // Tool work isn't a plan: a staged pallet offers its nails, a held
+  // tool offers its strokes and cuts, all on the bench top itself
+  // (bench-work/tool-work.ts) — so the pile lists only builds, and never
+  // honors a stale selection of tool work (old saves may carry one).
+  const toolWorkKinds = ["pry", "stroke", "saw"];
   const operations = availableOperations(machine, gameState.progression).filter(
-    (op) => op.interaction?.kind !== "pry",
+    (op) => !toolWorkKinds.includes(op.interaction?.kind ?? ""),
   );
   const rawSelection = machine.selectedOperationOrNull;
   const selected =
-    rawSelection?.interaction?.kind === "pry" ? null : rawSelection;
+    rawSelection && toolWorkKinds.includes(rawSelection.interaction?.kind ?? "")
+      ? null
+      : rawSelection;
   // A running job resolves against the plan and settings it finds when
   // it finishes, so both hold still until the work comes off.
   const working = machine.operationProgress.status === "inProgress";

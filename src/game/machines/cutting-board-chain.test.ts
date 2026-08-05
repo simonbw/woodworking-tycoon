@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { TOOL_TYPES } from "../Tool";
 import { board } from "../board-helpers";
 import { Operation } from "../Machine";
 import { materialMeetsInput } from "../material-helpers";
@@ -11,7 +12,7 @@ import { workspace } from "./workspace";
 const glueUp = workspace.operations.find(
   (op) => op.id === "glueUpPanel",
 ) as Operation;
-const finish = workspace.operations.find(
+const finish = TOOL_TYPES.finishingKit.operations.find(
   (op) => op.id === "finishCuttingBoard",
 ) as Operation;
 const plane = lunchboxPlaner.operations.find(

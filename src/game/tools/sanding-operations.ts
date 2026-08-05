@@ -16,7 +16,7 @@ import { makeMaterial } from "../material-helpers";
 export function makeSandingOperations(
   idPrefix: string,
   duration: number,
-  brush: { brushWidthIn: number; coveragePerSecond: number },
+  brush: { brushWidthIn: number; coveragePerSecond: number; powered?: boolean },
 ): ReadonlyArray<Operation> {
   const interaction: OperationInteraction = { kind: "stroke", ...brush };
   const sand = (materials: ReadonlyArray<MaterialInstance>) => {

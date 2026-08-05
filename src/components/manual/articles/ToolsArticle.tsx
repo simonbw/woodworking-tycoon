@@ -23,23 +23,27 @@ export const ToolsArticle: React.FC = () => (
     <P>
       Higher-tier tools work faster, not differently. The $10 sanding block and
       the $80 random orbit sander perform the same operations — the sander is
-      just several times quicker. Likewise, the $35 hand plane does the same
-      flattening work as the jointer, at a fraction of the price and several
-      times the time.
+      several times quicker, and being a power tool it does its own scrubbing:
+      rest it on a spot and it keeps cutting, where the block only cuts while
+      you move it. Likewise, the $35 hand plane does the same flattening work as
+      the jointer, at a fraction of the price and several times the time.
     </P>
 
     <H>Jigs</H>
     <P>
       Some tools are built rather than bought. Jigs like the{" "}
       <Term>crosscut sled</Term> and <Term>straight-line sled</Term> are made at
-      a bench from plywood and scrap, and come off the bench like any other
-      output. They mount only on the machines they fit — both sleds ride the
-      table saw, where the mounted sled determines what feeding a piece will do.
-      The sled recipes come with the Jigs &amp; Fixtures skill.
+      a bench from plywood and scrap: pull the plan, lay each part on its
+      outline, and drive the screws that hold it together. The finished jig
+      comes off the bench like any other output. Jigs mount only on the machines
+      they fit — both sleds ride the table saw, where the mounted sled
+      determines what feeding a piece will do. The sled recipes come with the
+      Jigs &amp; Fixtures skill.
     </P>
 
     <Note>
-      Jigs are built from plywood and offcuts — keep some scrap around.
+      Jigs are built from plywood and offcuts, held with screws — keep some
+      scrap and a box of screws around.
     </Note>
   </>
 );

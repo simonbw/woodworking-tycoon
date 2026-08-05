@@ -32,15 +32,36 @@ vocabulary, and per-operation scripts that compose it.
    plan selected — a bench takes any stock a bench recipe could want
    (`stageableMaterials` gives benches the direct-feed treatment), and
    the pallet wins the bench top over a lingering plan selection while
-   it's staged. Plans survive only where they genuinely choose between
-   products: builds (glue-ups, assemblies) and, until their scripts
-   convert, the legacy finishing recipes. Pry work is hidden from the
-   plan picker entirely. Freed boards stay lying on the bench
-   (`inputMaterials`, real state) right where they were nailed, and the
-   *arrangement* — dragging, R to turn, F to flip — is real state too
-   (`MachineState.benchLayout`, see decision 3's amendment): the same
-   layout shows in the zoomed view and the shop view, and survives
-   closing either.
+   it's staged. **Now this covers every single-piece tool job**: the
+   sanding block (or orbit sander) strokes the very piece it's over,
+   the plane offers the face when the board lies flat and the edge when
+   it's stood on edge (the arrangement is the mode picker), and the
+   hand saw ghosts its cut line along the half-foot detents under the
+   pointer, R swinging the angle stop — the press marks the cut and
+   starts it. The offer is pure and unit-tested
+   (`bench-work/tool-work.ts`: held tool + piece + how it lies →
+   operation), and the claim takes exactly the piece under the tool
+   (`operateMachineAction`'s `BenchToolClaim`, mirroring direct-feed's
+   inferred start — it works pieces out of the output bay too, so
+   rework needs no restaging). Work lands _in place_: the mask, kerf,
+   and finished piece render through the piece's persistent placement,
+   and the finish commit hands the workpiece's spot to its outputs — a
+   sanded board doesn't move, a sawn board parts into two pieces lying
+   end to end at the mark (`inheritedBenchLayout`). Plans survive only
+   where they genuinely choose between products: builds (glue-ups,
+   assemblies). Finishing converted with the finishing kit
+   (`src/game/tools/finishingKit.ts`): the `finish*` recipes and the
+   oil wipe are the kit's stroke operations, tool-first like sanding —
+   the rag over a sanded blank offers the pickiest finish the panel
+   satisfies (operation order in `finishing-operations.ts` is the
+   tiebreak), and the oil spends its consumable at the claim then
+   soaks hands-free. Tool work — pry, stroke, saw — is hidden from the plan
+   picker entirely, and a stale selection of it (old saves) is inert.
+   Freed boards stay lying on the bench (`inputMaterials`, real state)
+   right where they were nailed, and the _arrangement_ — dragging, R to
+   turn, F to flip — is real state too (`MachineState.benchLayout`, see
+   decision 3's amendment): the same layout shows in the zoomed view
+   and the shop view, and survives closing either.
 
 1. **The mini-game is the only player path.** There is no player-facing
    "hold Space instead". Tests and debug tooling complete work through the
@@ -55,7 +76,7 @@ vocabulary, and per-operation scripts that compose it.
 3. **Mid-action progress is ephemeral.** Refresh mid-sanding and the board
    starts that sanding pass over. Masks, glue beads, and tool positions are
    UI state, never saved. The one principled exception is rule 4.
-   *Amended:* where pieces **lie** on the bench is not mid-action progress
+   _Amended:_ where pieces **lie** on the bench is not mid-action progress
    — it's the state of the shop, like a machine's position on the floor.
    `MachineState.benchLayout` persists each staged piece's spot/turn/flip
    (written by the pry commit and by `arrangeBenchMaterialAction`), and
@@ -78,7 +99,10 @@ vocabulary, and per-operation scripts that compose it.
    products — gains a corollary. Hand interaction is the slow, cheap,
    engaging path; better tools shrink the interaction (sanding block →
    random orbit sander is a wider, faster brush, not a multiplier on a
-   bar); a real machine removes the mini-game entirely. Buying equipment
+   bar — and a _powered_ brush: `powered` on the stroke interaction
+   means the pad does its own scrubbing, so the sander keeps cutting
+   while it rests on a spot, where the block only cuts while it moves);
+   a real machine removes the mini-game entirely. Buying equipment
    literally buys back your hands.
 
 ## The gesture vocabulary — **Now**
@@ -105,7 +129,7 @@ rather than a new engine.
 `src/components/bench-view/StrokeSurface.tsx`. One addition the design
 didn't call: the grid tracks average accumulation alongside saturated
 cells, because a % readout that sits at zero through the first thin pass
-reads as broken — completion still requires 98% *saturated*.
+reads as broken — completion still requires 98% _saturated_.
 
 Stroke work renders as a per-pixel transition — the rough texture visibly
 giving way to the smooth one under the tool:
@@ -143,7 +167,7 @@ tick never advances a declared operation's attended phase. Dev builds
 expose the commits as `__START_OPERATION__` / `__FINISH_ATTENDED_WORK__`
 / `__PRY_PALLET_NAIL__` for tests and debug tooling — never as UI.
 
-The bench view decides *when*; actions decide *what*. Every interactive
+The bench view decides _when_; actions decide _what_. Every interactive
 operation gets two commit points in `game-actions/`:
 
 - **Start**: claims inputs, spends `requiredConsumables`, ties up
@@ -204,7 +228,7 @@ modeled as the pallet instance transforming nail by nail:
 - Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
   consumables (each one flies to the supplies tally and clinks in —
   `flyToSupply`).
-- A board comes free the moment its *last* nail comes out — never
+- A board comes free the moment its _last_ nail comes out — never
   before, and the very last nail on a crossing frees its deck board and
   its stringer together. The freed board stays lying on the bench where
   it was nailed (`inputMaterials`, so the next plan's `stagedPieces`
@@ -215,19 +239,19 @@ modeled as the pallet instance transforming nail by nail:
   board's id is its slot id, which is also its sprite seed — the grain
   doesn't change when the board drops).
 - Refresh mid-dismantle and you resume at the exact nail you left —
-  not because mini-game state was saved, but because every pull *was*
+  not because mini-game state was saved, but because every pull _was_
   game state — the dragged-around arrangement included
   (`MachineState.benchLayout`, decision 3's amendment).
 
 ## Script sketches for the rest — **Now**
 
-| Activity | Script | Lands on |
-| --- | --- | --- |
-| Sanding | strokes to 98% coverage | `surface` rough→smooth→sanded; tool tiers = brush feel; dust per stroke |
-| Hand saw | mark the line, then push–pull strokes deepen the kerf | shares the miter saw's parameterized crosscut operation — same outputs, zoomed presentation |
-| Block plane | strokes along a face or edge | `jointedFaces`/`jointedEdges` axes and their prerequisites, unchanged |
-| Glue-up | spread glue (stroke) → butt boards (point/snap) → clamps (point, one per `requiredClamps`) → commit starts the hands-free cure | the existing phase system fits 1:1 |
-| Assembly | snap components onto ghost outlines → drive fasteners, one per `requiredConsumables` | ghost rendering precedent from the miter saw; drill vs hammer picks the animation. *Superseded for blueprint products:* recipes with a `ProductBlueprint` assemble on the bench scene itself — real parts laid on ghost slots, one nail per crossing — see `docs/assembly.md`; the generic row surface remains for the rest |
+| Activity    | Script                                                                                                                         | Lands on                                                                                                                                                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sanding     | strokes to 98% coverage                                                                                                        | `surface` rough→smooth→sanded; tool tiers = brush feel; dust per stroke                                                                                                                                                                                                                                                     |
+| Hand saw    | mark the line, then push–pull strokes deepen the kerf                                                                          | shares the miter saw's parameterized crosscut operation — same outputs, zoomed presentation                                                                                                                                                                                                                                 |
+| Block plane | strokes along a face or edge                                                                                                   | `jointedFaces`/`jointedEdges` axes and their prerequisites, unchanged                                                                                                                                                                                                                                                       |
+| Glue-up     | spread glue (stroke) → butt boards (point/snap) → clamps (point, one per `requiredClamps`) → commit starts the hands-free cure | the existing phase system fits 1:1                                                                                                                                                                                                                                                                                          |
+| Assembly    | snap components onto ghost outlines → drive fasteners, one per `requiredConsumables`                                           | ghost rendering precedent from the miter saw; drill vs hammer picks the animation. _Superseded for blueprint products:_ recipes with a `ProductBlueprint` assemble on the bench scene itself — real parts laid on ghost slots, one nail per crossing — see `docs/assembly.md`; the generic row surface remains for the rest |
 
 Note how many target counts already live in the data (`requiredClamps`,
 `requiredConsumables`, pallet nail yields): the scripts mostly reveal
@@ -239,14 +263,17 @@ numbers the simulation already has.
 window with the shop itself, leaned into: one measured PIXI
 `Application` at device resolution (no fixed logical size, no CSS
 upscale — `stageMath.fitToStage` takes the real rect) draws the same
-concrete floor the shop view tiles and the *same bench art* the shop
+concrete floor the shop view tiles and the _same bench art_ the shop
 floor uses (`BenchSceneBackdrop`: `makeshift-bench.png`
 nearest-sampled for the starting bench, the `WorktableSprite` vectors
 for built tables), so the zoomed bench and the floor bench are one
 asset at two zooms. The bench's contents lie on it exactly where
 `MachineState.benchLayout` says (`BenchScene`, turns and flips tweened;
 a board flipped up on edge with F narrows to its thickness,
-`BoardOnEdgeSprite`), the mounted tools hang on a floating rail
+`BoardOnEdgeSprite`), stroke and saw work runs on those very pieces in
+place (`StrokeSurface` / `SawSurface` mount over the scene at the
+piece's placement; only glue-ups and the legacy row assemblies still
+take the surface over), the mounted tools hang on a floating rail
 (`BenchToolRail` — which is also where tools mount and unmount: empty
 hooks take a compatible carried tool), and the chrome floats: nameplate
 top-left, instruction + key hints bottom-center, the plan picker as a
@@ -257,10 +284,20 @@ shelf/upgrades in an "Under the bench" drawer bottom-left
 (`UnderBenchPanel`). There is no paperwork card and no input/output
 diagram: a bench top holds stock, not bays.
 The camera zoom-in transition remains future presentation work. Every
-operation listed in the rollout is converted; the remaining legacy
-attended-tick ops are the single-piece finishing recipes (`finish*`,
-`oilCuttingBoard`) and the shop-furniture/jig builds run through them —
-a coherent "finishing" batch for a future script.
+operation listed in the rollout is converted, and so are the batches
+that used to trail it: the finishing recipes are the finishing kit's
+stroke work, and the shop-furniture and jig builds are blueprint
+assemblies (`bench-work/blueprint.ts` — equipment blueprints, keyed by
+what they grant: the four worktables, the storage rack, the tool
+drawers and material shelf, the three saw jigs). An equipment build
+lays out and fastens exactly like a product build; its commit grants
+the machine, upgrade, or jig instead of leaving a product on the
+bench, and the builds lie upside down on the plan — top face-down,
+understructure nailed across it. A blueprint with no fasteners at all
+(the material shelf: two planks side by side) commits the moment the
+last part is laid on its outline. The one attended-tick hold left at a
+bench is the garbage can's Empty; every recipe at a real bench is your
+hands.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a

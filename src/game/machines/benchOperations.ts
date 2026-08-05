@@ -1,56 +1,45 @@
 import { array } from "../../utils/arrayUtils";
+import {
+  assembleFromBlueprint,
+  blueprintFastenerCost,
+  blueprintInputs,
+  CROSSCUT_SLED_BLUEPRINT,
+  MATERIAL_SHELF_BLUEPRINT,
+  PICTURE_FRAME_BLUEPRINT,
+  ProductBlueprint,
+  RESAW_FENCE_BLUEPRINT,
+  STORAGE_RACK_BLUEPRINT,
+  STRAIGHT_LINE_SLED_BLUEPRINT,
+  TOOL_DRAWERS_BLUEPRINT,
+  WORKTABLE_BLUEPRINTS,
+} from "../bench-work/blueprint";
 import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
 import { Operation, OperationPhase } from "../Machine";
-import {
-  isFinishedProduct,
-  makeMaterial,
-  makeToolItem,
-} from "../material-helpers";
+import { makeMaterial, makeToolItem } from "../material-helpers";
 import {
   Pallet,
   EndGrainSlice,
   FinishedProduct,
   Board,
+  JIG_GRADE_KINDS,
   MaterialInstance,
   Panel,
-  panelSpecies,
   panelWidth,
+  RACK_GRADE_KINDS,
   REAL_WOOD_SPECIES,
-  SheetGoodKind,
+  SHOP_FURNITURE_KINDS,
   Species,
 } from "../Materials";
-import {
-  isPanel,
-  isSunrisePattern,
-  panel,
-  stripsAlternate,
-  widthDominantSpecies,
-} from "../panel-helpers";
+import { isPanel, panel } from "../panel-helpers";
 
-/**
- * Which sheet kinds a recipe accepts is a statement about the work, not
- * the wood budget. A jig base must be flat and hold runner screws — any
- * plywood or MDF, never the chip boards, which sag and crumble around
- * screws. Shop furniture is less picky: particle board tops a worktable
- * honestly, but OSB's lumpy face is fit for nothing that needs flat.
- * The storage rack is the one build where the cheap stuff belongs — and
- * it refuses the good sheets, so a rack never eats jig stock by mistake.
- */
-export const JIG_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
-  "plywoodA",
-  "plywoodB",
-  "plywoodC",
-  "mdf",
-];
-export const SHOP_FURNITURE_KINDS: ReadonlyArray<SheetGoodKind> = [
-  ...JIG_GRADE_KINDS,
-  "particleBoard",
-];
-export const RACK_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
-  "osb",
-  "particleBoard",
-  "plywoodC",
-];
+// The sheet-grade vocabulary lives with the materials now (blueprints
+// read it too); re-exported here for the recipes and tests that always
+// imported it from the bench.
+export {
+  JIG_GRADE_KINDS,
+  RACK_GRADE_KINDS,
+  SHOP_FURNITURE_KINDS,
+} from "../Materials";
 
 /**
  * Every glue-up cures for the same long stretch once it's in the clamps —
@@ -323,24 +312,11 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildCrosscutSled",
     requiredSkill: "jigsAndFixtures",
     duration: 40,
-    interaction: { kind: "assembly" },
-    getInputMaterials: () => [
-      // A flat sheet base plus scrap runners and a fence
-      {
-        type: ["plywood"],
-        kind: JIG_GRADE_KINDS,
-        length: [48],
-        width: [48],
-        quantity: 1,
-      },
-      {
-        type: ["board"],
-        width: [4],
-        length: [36],
-        thickness: [2],
-        quantity: 2,
-      },
-    ],
+    // A flat sheet base plus scrap runners and a fence, laid out and
+    // screwed on the bench scene like any blueprint build
+    interaction: { kind: "assembly", blueprint: "crosscutSled" },
+    requiredConsumables: blueprintFastenerCost(CROSSCUT_SLED_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(CROSSCUT_SLED_BLUEPRINT),
     output: () => {
       // The output is tooling, not product: the sled comes off the bench
       // a physical thing, to be carried to the table saw and mounted
@@ -355,25 +331,11 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildStraightLineSled",
     requiredSkill: "jigsAndFixtures",
     duration: 30,
-    interaction: { kind: "assembly" },
-    getInputMaterials: () => [
-      // A long flat base with toggle clamps to carry wavy-edged stock;
-      // same pallet-scrap ingredients as the crosscut sled
-      {
-        type: ["plywood"],
-        kind: JIG_GRADE_KINDS,
-        length: [48],
-        width: [48],
-        quantity: 1,
-      },
-      {
-        type: ["board"],
-        width: [4],
-        length: [36],
-        thickness: [2],
-        quantity: 2,
-      },
-    ],
+    // A long flat base with a reference rail and clamp carrier; same
+    // pallet-scrap ingredients as the crosscut sled
+    interaction: { kind: "assembly", blueprint: "straightLineSled" },
+    requiredConsumables: blueprintFastenerCost(STRAIGHT_LINE_SLED_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(STRAIGHT_LINE_SLED_BLUEPRINT),
     output: () => {
       return {
         inputs: [],
@@ -386,25 +348,11 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildResawFence",
     requiredSkill: "resawing",
     duration: 25,
-    interaction: { kind: "assembly" },
-    getInputMaterials: () => [
-      // A tall sheet face and two triangular braces to keep it square to
-      // the table — nothing rides, so it's the cheapest jig of the three
-      {
-        type: ["plywood"],
-        kind: JIG_GRADE_KINDS,
-        length: [36],
-        width: [24],
-        quantity: 1,
-      },
-      {
-        type: ["board"],
-        width: [4],
-        length: [12],
-        thickness: [2],
-        quantity: 2,
-      },
-    ],
+    // A tall sheet face and two triangular braces to keep it square to
+    // the table — nothing rides, so it's the cheapest jig of the three
+    interaction: { kind: "assembly", blueprint: "resawFence" },
+    requiredConsumables: blueprintFastenerCost(RESAW_FENCE_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(RESAW_FENCE_BLUEPRINT),
     output: () => {
       return {
         inputs: [],
@@ -440,251 +388,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
             length: 12,
             thickness: 8,
             surface: "rough",
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Finish End-Grain Board",
-    id: "finishEndGrainBoard",
-    requiredSkill: "endGrainBoards",
-    duration: 45,
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [12],
-        thickness: [8],
-        surface: ["sanded"],
-        quantity: 1,
-        // v1 is the single-species butcher block; checkerboards come
-        // with slice orientation later
-        matches: (material) =>
-          isPanel(material) &&
-          material.grain === "end" &&
-          panelWidth(material) >= 10 &&
-          panelSpecies(material).length === 1 &&
-          material.strips[0].species !== "pallet",
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const blank = materials[0];
-      if (!isPanel(blank)) {
-        throw new Error("Input material is not a panel");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "endGrainCuttingBoard",
-            species: blank.strips[0].species,
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Finish Cutting Board",
-    id: "finishCuttingBoard",
-    requiredSkill: "panelWork",
-    duration: 20,
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [24],
-        thickness: [3, 4],
-        // Food-safe means fully sanded — a planed surface isn't enough
-        surface: ["sanded"],
-        quantity: 1,
-        // A proper cutting board: a panel at least 10" wide, glued from
-        // 2" strips of a single real hardwood — no pallet chemicals near
-        // food.
-        matches: (material) =>
-          isPanel(material) &&
-          panelWidth(material) >= 10 &&
-          material.strips.every((strip) => strip.width === 2) &&
-          panelSpecies(material).length === 1 &&
-          material.strips[0].species !== "pallet",
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const blank = materials[0];
-      if (!isPanel(blank)) {
-        throw new Error("Input material is not a panel");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "simpleCuttingBoard",
-            species: blank.strips[0].species,
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Finish Two-Tone Board",
-    id: "finishTwoToneBoard",
-    requiredSkill: "twoToneBoards",
-    duration: 25,
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [24],
-        thickness: [3, 4],
-        surface: ["sanded"],
-        quantity: 1,
-        // Like a cutting board, but striped from exactly two real woods
-        matches: (material) =>
-          isPanel(material) &&
-          panelWidth(material) >= 10 &&
-          material.strips.every((strip) => strip.width === 2) &&
-          panelSpecies(material).length === 2 &&
-          material.strips.every((strip) => strip.species !== "pallet"),
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const blank = materials[0];
-      if (!isPanel(blank)) {
-        throw new Error("Input material is not a panel");
-      }
-      const species = dominantSpecies(blank.strips);
-      const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "simpleCuttingBoard",
-            species,
-            accentSpecies,
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Finish Striped Board",
-    id: "finishStripedBoard",
-    requiredSkill: "stripedBoards",
-    duration: 30,
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [24],
-        thickness: [3, 4],
-        surface: ["sanded"],
-        quantity: 1,
-        // A two-tone with discipline: 2" strips of two real woods in
-        // strict alternation, at least 10" wide
-        matches: (material) =>
-          isPanel(material) &&
-          panelWidth(material) >= 10 &&
-          material.strips.every((strip) => strip.width === 2) &&
-          panelSpecies(material).length === 2 &&
-          material.strips.every((strip) => strip.species !== "pallet") &&
-          stripsAlternate(material.strips),
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const blank = materials[0];
-      if (!isPanel(blank)) {
-        throw new Error("Input material is not a panel");
-      }
-      const species = dominantSpecies(blank.strips);
-      const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "stripedCuttingBoard",
-            species,
-            accentSpecies,
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Finish Sunrise Board",
-    id: "finishSunriseBoard",
-    requiredSkill: "sunriseBoards",
-    duration: 40,
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [24],
-        thickness: [3, 4],
-        surface: ["sanded"],
-        quantity: 1,
-        // The gradient fade: two real woods, one shrinking strip by
-        // strip as the other grows (see isSunrisePattern). Minimum
-        // pattern (3,1,2,2,1,3) is already 12" wide.
-        matches: (material) =>
-          isPanel(material) &&
-          panelSpecies(material).length === 2 &&
-          material.strips.every((strip) => strip.species !== "pallet") &&
-          isSunrisePattern(material.strips),
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const blank = materials[0];
-      if (!isPanel(blank)) {
-        throw new Error("Input material is not a panel");
-      }
-      // The wider wood reads as the board's color, the other as accent
-      const species = widthDominantSpecies(blank.strips);
-      const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "sunriseCuttingBoard",
-            species,
-            accentSpecies,
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Oil Cutting Board",
-    id: "oilCuttingBoard",
-    requiredSkill: "surfacePrep",
-    duration: 6 + 24,
-    // The second consumer of hands-free phases: a quick wipe-down, then
-    // the oil soaks in on its own time
-    phases: [
-      { name: "Wipe On Oil", duration: 6, attended: true },
-      { name: "Soaking In", duration: 24, attended: false },
-    ],
-    requiredConsumables: [{ id: "mineralOil", amount: 4 }],
-    getInputMaterials: () => [
-      {
-        type: [
-          "simpleCuttingBoard",
-          "stripedCuttingBoard",
-          "sunriseCuttingBoard",
-          "endGrainCuttingBoard",
-          "checkerboardCuttingBoard",
-        ],
-        quantity: 1,
-        // Boards only get oiled once
-        matches: (material) =>
-          isFinishedProduct(material) && material.finish === undefined,
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const rawBoard = materials[0];
-      if (!isFinishedProduct(rawBoard)) {
-        throw new Error("Input material is not a cutting board");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            ...rawBoard,
-            finish: "mineralOil",
           }),
         ],
       };
@@ -728,85 +431,16 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildPictureFrame",
     requiredSkill: "miteredFrames",
     duration: 30,
-    interaction: { kind: "assembly" },
-    // Frames are joined with brads across the miters — the nail
-    // economy's second consumer
-    requiredConsumables: [{ id: "nails", amount: 4 }],
-    getInputMaterials: () => [
-      {
-        type: ["board"],
-        species: REAL_WOOD_SPECIES,
-        length: [24],
-        width: [1],
-        thickness: [1],
-        surface: ["sanded"],
-        quantity: 4,
-        // Four true frame rails: 45° both ends, mirrored so the corners
-        // close. Parallel-mitered stock (a parallelogram) won't frame —
-        // that's the whole point of the saw swinging both ways.
-        matches: (material) =>
-          isBoard(material) && isMiteredFrameRail(material, 45),
-        matchesNote: "45° both ends, mirrored",
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const rails = materials.filter(isBoard);
-      if (rails.length !== 4) {
-        throw new Error("Need exactly 4 rails to build a picture frame");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "pictureFrame",
-            species: rails[0].species,
-          }),
-        ],
-      };
-    },
-  },
-  {
-    name: "Finish Checkerboard Board",
-    id: "finishCheckerboardBoard",
-    requiredSkill: "checkerboards",
-    duration: 55,
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [12],
-        thickness: [8],
-        surface: ["sanded"],
-        quantity: 1,
-        // An end-grain blank glued from STRIPED slices: two real woods in
-        // strict alternation. Flipping every other slice at the glue-up is
-        // what turns the stripes into checkers.
-        matches: (material) =>
-          isPanel(material) &&
-          material.grain === "end" &&
-          panelWidth(material) >= 10 &&
-          panelSpecies(material).length === 2 &&
-          material.strips.every((strip) => strip.species !== "pallet") &&
-          stripsAlternate(material.strips),
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const blank = materials[0];
-      if (!isPanel(blank)) {
-        throw new Error("Input material is not a panel");
-      }
-      const species = dominantSpecies(blank.strips);
-      const accentSpecies = panelSpecies(blank).find((s) => s !== species)!;
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "checkerboardCuttingBoard",
-            species,
-            accentSpecies,
-          }),
-        ],
-      };
-    },
+    // The whole recipe reads off the blueprint: four mirrored-miter
+    // rails laid around the opening, one brad derived at each 1×1
+    // corner lap — the nail economy's second consumer, still four.
+    interaction: { kind: "assembly", blueprint: "pictureFrame" },
+    requiredConsumables: blueprintFastenerCost(PICTURE_FRAME_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(PICTURE_FRAME_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(PICTURE_FRAME_BLUEPRINT, materials)],
+    }),
   },
   {
     name: "Build Hex Frame",
@@ -978,59 +612,24 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     },
   },
   // Shop furniture: worktables are built, never bought. Like the jigs,
-  // the output is equipment — the table lands in machine storage, ready
-  // to place from the layout editor. Legs are chunky stock (pallet
-  // stringers or 2×4s); the top is plywood. No skill gate: building a
-  // real bench is every woodworker's first project.
-  ...worktableBuildOperation(
-    "worktable1x1",
-    "Build Small Worktable",
-    35,
-    1,
-    3,
-    8,
-  ),
-  ...worktableBuildOperation("worktable1x2", "Build Worktable", 45, 1, 4, 10),
-  ...worktableBuildOperation(
-    "worktable1x3",
-    "Build Long Worktable",
-    55,
-    2,
-    5,
-    14,
-  ),
-  ...worktableBuildOperation(
-    "worktable2x2",
-    "Build Big Worktable",
-    65,
-    2,
-    6,
-    16,
-  ),
+  // the output is equipment — the table comes off the bench crated, to
+  // be carried into place. Legs are chunky stock (pallet stringers or
+  // 2×4s); the top is plywood. No skill gate: building a real bench is
+  // every woodworker's first project.
+  ...worktableBuildOperation("worktable1x1", "Build Small Worktable", 35),
+  ...worktableBuildOperation("worktable1x2", "Build Worktable", 45),
+  ...worktableBuildOperation("worktable1x3", "Build Long Worktable", 55),
+  ...worktableBuildOperation("worktable2x2", "Build Big Worktable", 65),
   {
     name: "Build Storage Rack",
     id: "buildStorageRack",
     duration: 30,
-    interaction: { kind: "assembly" },
-    requiredConsumables: [{ id: "nails", amount: 10 }],
-    getInputMaterials: () => [
-      // A cheap deck on stout legs — the one build where OSB belongs.
-      // Rack-grade only: good sheets are refused so a rack never eats
-      // jig stock by mistake.
-      {
-        type: ["plywood"],
-        kind: RACK_GRADE_KINDS,
-        length: [48],
-        width: [48],
-        quantity: 1,
-      },
-      {
-        type: ["board"],
-        thickness: [6, 8],
-        length: [36, 48],
-        quantity: 4,
-      },
-    ],
+    // A cheap deck on stout legs — the one build where OSB belongs.
+    // Rack-grade only: good sheets are refused so a rack never eats
+    // jig stock by mistake.
+    interaction: { kind: "assembly", blueprint: "storageRack" },
+    requiredConsumables: blueprintFastenerCost(STORAGE_RACK_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(STORAGE_RACK_BLUEPRINT),
     output: () => {
       return {
         inputs: [],
@@ -1045,19 +644,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     name: "Build Tool Drawers",
     id: "buildToolDrawers",
     duration: 30,
-    interaction: { kind: "assembly" },
-    requiredConsumables: [{ id: "nails", amount: 8 }],
-    getInputMaterials: () => [
-      // A sheet carcass with thin drawer stock — deck boards qualify
-      {
-        type: ["plywood"],
-        kind: SHOP_FURNITURE_KINDS,
-        length: [48],
-        width: [48],
-        quantity: 1,
-      },
-      { type: ["board"], thickness: [1, 2], length: [24, 36], quantity: 2 },
-    ],
+    // A sheet carcass with thin drawer stock — deck boards qualify
+    interaction: { kind: "assembly", blueprint: "toolDrawers" },
+    requiredConsumables: blueprintFastenerCost(TOOL_DRAWERS_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(TOOL_DRAWERS_BLUEPRINT),
     output: () => {
       return {
         inputs: [],
@@ -1070,12 +660,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     name: "Build Material Shelf",
     id: "buildMaterialShelf",
     duration: 20,
-    interaction: { kind: "assembly" },
-    requiredConsumables: [{ id: "nails", amount: 6 }],
-    getInputMaterials: () => [
-      // Two planks spanning the stretchers — that's the whole build
-      { type: ["board"], thickness: [1, 2], length: [36, 48], quantity: 2 },
-    ],
+    // Two planks laid side by side — that's the whole build, so the
+    // blueprint has no fasteners and laying the second plank commits it
+    interaction: { kind: "assembly", blueprint: "materialShelf" },
+    getInputMaterials: () => blueprintInputs(MATERIAL_SHELF_BLUEPRINT),
     output: () => {
       return {
         inputs: [],
@@ -1088,41 +676,26 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
 
 /**
  * The worktable builds share one shape: plywood top(s), leg-grade boards,
- * nails, and a stretch of hand work that outputs the table itself.
+ * nails, and a stretch of hand work that grants the table itself. The
+ * whole recipe reads off the blueprint (bench-work/blueprint.ts): the
+ * build lies upside down on the bench, top face-down, rails and
+ * stretchers nailed across its underside.
  */
 function worktableBuildOperation(
   worktableId:
     "worktable1x1" | "worktable1x2" | "worktable1x3" | "worktable2x2",
   name: string,
   duration: number,
-  plywood: number,
-  legBoards: number,
-  nails: number,
 ): [Operation] {
+  const blueprint: ProductBlueprint = WORKTABLE_BLUEPRINTS[worktableId];
   return [
     {
       name,
       id: `build-${worktableId}`,
       duration,
-      interaction: { kind: "assembly" },
-      requiredConsumables: [{ id: "nails", amount: nails }],
-      getInputMaterials: () => [
-        {
-          type: ["plywood"],
-          kind: SHOP_FURNITURE_KINDS,
-          length: [48],
-          width: [48],
-          quantity: plywood,
-        },
-        {
-          // Legs and stretchers want stout stock — stringers and 2×4s
-          // qualify; deck boards are too thin
-          type: ["board"],
-          thickness: [6, 8],
-          length: [36, 48],
-          quantity: legBoards,
-        },
-      ],
+      interaction: { kind: "assembly", blueprint: worktableId },
+      requiredConsumables: blueprintFastenerCost(blueprint),
+      getInputMaterials: () => blueprintInputs(blueprint),
       output: () => {
         return {
           inputs: [],

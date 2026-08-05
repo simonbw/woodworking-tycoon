@@ -66,6 +66,7 @@ export const cuttingBoardShop: GameState = {
     inventory: [
       ...strips.slice(0, 2),
       { id: "test-sander", type: "tool", toolId: "randomOrbitSander" },
+      { id: "test-finishing-kit", type: "tool", toolId: "finishingKit" },
     ],
     busyTicks: 0,
     away: null,

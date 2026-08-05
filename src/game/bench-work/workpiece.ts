@@ -56,9 +56,9 @@ export function strokeSurfaceSize(
       heightIn: panel.length,
     };
   }
-  // Anything else strokes over its bounding cell — shouldn't happen for
-  // the declared recipes, but a sane fallback beats a throw in a renderer.
-  return { widthIn: 12, heightIn: 12 };
+  // Anything else — a finished cutting board under the oil rag — strokes
+  // over the face it shows lying on the bench.
+  return pieceSize(material);
 }
 
 /** A saw cut's cross-section (width × thickness), in in². */
@@ -255,29 +255,12 @@ export function benchScriptFor(
       };
     }
   }
+  // Stroke and saw work is tool-first (bench-work/tool-work.ts): the
+  // held tool over a staged piece offers it — no plan, so an idle bench
+  // never mounts those scripts from a selection. Only builds are plans.
   const pieces = stagedPieces(machine, selected);
   if (!pieces || pieces.length === 0) {
     return null;
-  }
-  if (interaction.kind === "stroke") {
-    return {
-      kind: "stroke",
-      operation: selected,
-      interaction,
-      workpiece: pieces[0],
-      started: false,
-    };
-  }
-  if (interaction.kind === "saw") {
-    return pieces[0].type === "board"
-      ? {
-          kind: "saw",
-          operation: selected,
-          interaction,
-          workpiece: pieces[0],
-          started: false,
-        }
-      : null;
   }
   if (interaction.kind === "glue" || interaction.kind === "assembly") {
     return { kind: interaction.kind, operation: selected, pieces };
@@ -312,6 +295,17 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
       return {
         widthIn: material.width,
         heightIn: material.length,
+      };
+    case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard":
+    case "checkerboardCuttingBoard":
+      // The face CuttingBoardSprite draws, so the oil wipe covers
+      // exactly the board on the bench
+      return {
+        widthIn: material.type === "sunriseCuttingBoard" ? 12 : 10,
+        heightIn: 16,
       };
     default:
       return { widthIn: 10, heightIn: 10 };

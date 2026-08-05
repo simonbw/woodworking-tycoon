@@ -88,3 +88,19 @@ export function strokeGain(
   // Stamps along the segment overlap ~4× at half-radius spacing
   return Math.min(1, workBudget / sweptArea) / 4;
 }
+
+/**
+ * Per-cell accumulation for one frame of a powered tool resting in
+ * place: the same coverage rate spent over the pad's own footprint
+ * instead of a swept band — the orbit sander cutting the spot it sits
+ * on. Halved because a zero-length stampStroke lands the point twice.
+ */
+export function dwellGain(
+  coveragePerSecond: number,
+  radiusIn: number,
+  dtMs: number,
+): number {
+  const padArea = Math.PI * radiusIn * radiusIn;
+  const workBudget = (coveragePerSecond * Math.min(dtMs, 100)) / 1000;
+  return Math.min(1, workBudget / padArea) / 2;
+}

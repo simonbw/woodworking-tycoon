@@ -13,9 +13,21 @@ export const FinishingArticle: React.FC = () => (
     <P>
       Sanding raises a board or panel's surface one grade per pass: rough →
       smooth → sanded. Mount a sanding block or a random orbit sander at any
-      bench to sand there. The two produce identical results; the sander is
-      simply much faster. Sanding only refines the surface — it doesn't flatten,
-      straighten, or thin the stock.
+      bench to sand there: lean over the bench, take the tool down off the rail,
+      and rub the piece down right where it lies. The two produce identical
+      results; the sander is simply much faster. Sanding only refines the
+      surface — it doesn't flatten, straighten, or thin the stock.
+    </P>
+
+    <H>The Finishing Kit</H>
+    <P>
+      Finishing is hand work, done with the <Term>finishing kit</Term> — rags,
+      applicator pads, and a card scraper, sold on the store's Tool Wall and
+      mounted at a bench like any other tool. Take the kit down off the rail and
+      hold it over a fully sanded blank: the kit offers the finish the panel
+      qualifies for, and rubbing the piece down where it lies turns it into the
+      finished board. The wood decides the product — a single hardwood makes a
+      plain cutting board, strict alternation makes a striped one.
     </P>
 
     <H>Buying and Using Finishes</H>
@@ -27,8 +39,9 @@ export const FinishingArticle: React.FC = () => (
     </P>
     <P>
       The first finish you'll need is <Term>mineral oil</Term> — food-safe, and
-      the standard finish for cutting boards. Finishing happens at a bench: a
-      sanded panel plus oil from the cabinet becomes a finished piece.
+      the standard finish for cutting boards. Hold the kit over a finished
+      cutting board and wipe the oil on; it draws from the cabinet as the wipe
+      starts, then soaks in on its own time.
     </P>
 
     <Note>Finish is the last step — sand before you oil.</Note>

@@ -18,7 +18,7 @@ import { UpgradeId } from "../Upgrade";
 import { Vector } from "../Vectors";
 import { deliverMachineCrate, freshMachineState } from "./machine-actions";
 import { withXp } from "./skill-actions";
-import { PalletNail } from "../Materials";
+import { MaterialInstance, PalletNail } from "../Materials";
 import {
   BenchPlacement,
   berthPlacementOnBench,
@@ -100,6 +100,11 @@ export function completeOperation(
       inputMaterials: [...machineState.inputMaterials, ...inputs],
       processingMaterials: [],
       outputMaterials: [...machineState.outputMaterials, ...outputs],
+      benchLayout: inheritedBenchLayout(
+        machineState,
+        selectedOperation,
+        outputs,
+      ),
       operationProgress: {
         status: "notStarted" as const,
         phaseIndex: 0,
@@ -128,6 +133,63 @@ export function completeOperation(
     // Salvaged supplies (e.g. pallet nails) go to the shop-wide stock.
     consumablesGranted: consumableOutputs ?? [],
   };
+}
+
+/**
+ * Where the finished work lies: in-place tool work (stroke, saw)
+ * transforms the piece where it was left, so the outputs inherit the
+ * workpiece's spot instead of scattering to a fresh default seat. A
+ * single output (a sanded face, a straightened edge) stays put exactly;
+ * a saw's kept piece and offcut lie end to end inside the original
+ * footprint, parted at the mark — where the cut physically left them.
+ * Everything else keeps its layout untouched (a blueprint product's
+ * centered seat is already its ghost frame's).
+ */
+function inheritedBenchLayout(
+  machineState: MachineState,
+  operation: Operation,
+  outputs: ReadonlyArray<MaterialInstance>,
+): MachineState["benchLayout"] {
+  const kind = operation.interaction?.kind;
+  const workpiece = machineState.processingMaterials[0];
+  if (
+    (kind !== "stroke" && kind !== "saw") ||
+    machineState.processingMaterials.length !== 1 ||
+    outputs.length === 0
+  ) {
+    return machineState.benchLayout;
+  }
+  const machine = new Machine(machineState);
+  const placement =
+    machineState.benchLayout?.[workpiece.id] ??
+    defaultBenchPlacement(machine.type, workpiece);
+  const layout: Record<string, BenchPlacement> = {
+    ...machineState.benchLayout,
+  };
+  delete layout[workpiece.id];
+  const workpieceLength =
+    workpiece.type === "board" || workpiece.type === "panel"
+      ? workpiece.length
+      : null;
+  const rad = (placement.angleDeg * Math.PI) / 180;
+  let runIn = 0;
+  for (const output of outputs) {
+    const outputLength =
+      output.type === "board" || output.type === "panel" ? output.length : null;
+    // Offset along the piece's length axis (local +y, unaffected by a
+    // flip's mirror), measured from the original board's top end
+    const offsetIn =
+      workpieceLength !== null && outputLength !== null
+        ? runIn + outputLength / 2 - workpieceLength / 2
+        : 0;
+    layout[output.id] = {
+      ...placement,
+      xIn: placement.xIn - offsetIn * Math.sin(rad),
+      yIn: placement.yIn + offsetIn * Math.cos(rad),
+    };
+    runIn += outputLength ?? 0;
+  }
+  return layout;
 }
 
 /**

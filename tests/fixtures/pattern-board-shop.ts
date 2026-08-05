@@ -97,7 +97,10 @@ export const patternBoardShop: GameState = {
     away: null,
   },
   machines: [
-    idleMachine("workspace", [1, 2], "dismantlePallet", ["randomOrbitSander"]),
+    idleMachine("workspace", [1, 2], "dismantlePallet", [
+      "randomOrbitSander",
+      "finishingKit",
+    ]),
   ],
   machineCrates: [],
   truck: { bed: [], crates: [] },

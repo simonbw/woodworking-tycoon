@@ -26,9 +26,12 @@ const isStrip = (m: MaterialInstance) => m.type === "board";
 const isMaplePanel = (m: MaterialInstance) => isPanel(m);
 const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
-/** The sander comes in tool storage; the spec mounts it through the sheet. */
+/** The sander comes in hand; the spec mounts it through the sheet. The
+ * finishing kit rides along — finishing is its work now. */
 function shopWithSanderMounted(): ShopDriver {
-  return openShop(cuttingBoardShop).mount(WORKBENCH, "randomOrbitSander");
+  return openShop(cuttingBoardShop)
+    .mount(WORKBENCH, "randomOrbitSander")
+    .mount(WORKBENCH, "finishingKit");
 }
 
 describe("cutting board chain (no planer)", () => {

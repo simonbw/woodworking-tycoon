@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { TOOL_TYPES } from "./Tool";
 import { Operation, operationParameters } from "./Machine";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { workspace } from "./machines/workspace";
@@ -48,7 +49,7 @@ describe("describeOperationIO", () => {
   });
 
   it("previews panel-consuming recipes via a mock panel", () => {
-    const finishCuttingBoard = workspace.operations.find(
+    const finishCuttingBoard = TOOL_TYPES.finishingKit.operations.find(
       (op) => op.id === "finishCuttingBoard",
     )!;
     const io = describeOperationIO(finishCuttingBoard);

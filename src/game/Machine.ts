@@ -2,6 +2,7 @@ import { LRUCache } from "typescript-lru-cache";
 import type { BenchPlacement } from "./bench-work/bench-layout";
 import type { ConsumableAmount } from "./Consumable";
 import { FinishedProductType, MaterialInstance } from "./Materials";
+import type { BlueprintId } from "./bench-work/blueprint";
 import { SkillId } from "./Skill";
 import { TOOL_TYPES, ToolId } from "./Tool";
 import { UPGRADE_TYPES, UpgradeId } from "./Upgrade";
@@ -276,6 +277,10 @@ export type OperationInteraction =
       readonly coveragePerSecond: number;
       /** Where the strokes land: a face, or the narrow edge band. */
       readonly band?: "face" | "edge";
+      /** The tool does its own scrubbing: held down, it keeps working
+       * the spot under the pad even while the hand rests (the orbit
+       * sander's orbit). Unpowered tools only cut while they move. */
+      readonly powered?: boolean;
     }
   | {
       /** Mark the cut line, then push–pull strokes deepen the kerf. The
@@ -302,10 +307,11 @@ export type OperationInteraction =
        * the work happens on the bench scene itself: lay each part on
        * its ghost slot, then hammer a nail at every crossing (see
        * bench-work/blueprint.ts — resolved via productBlueprintFor,
-       * referenced by product type to keep this module import-light).
+       * referenced by id to keep this module import-light; equipment
+       * builds — worktables, jigs, the rack — have blueprints too).
        * Without one, the legacy row layout stands in. */
       readonly kind: "assembly";
-      readonly blueprint?: FinishedProductType;
+      readonly blueprint?: BlueprintId;
     };
 
 export interface Operation<TParams extends ParameterValues = ParameterValues> {

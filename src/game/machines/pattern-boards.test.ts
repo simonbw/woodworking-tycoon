@@ -24,10 +24,10 @@ const extendPanel = workspace.operations.find(
 const joinPanels = workspace.operations.find(
   (op) => op.id === "joinPanels",
 ) as Operation;
-const finishStriped = workspace.operations.find(
+const finishStriped = TOOL_TYPES.finishingKit.operations.find(
   (op) => op.id === "finishStripedBoard",
 ) as Operation;
-const finishSunrise = workspace.operations.find(
+const finishSunrise = TOOL_TYPES.finishingKit.operations.find(
   (op) => op.id === "finishSunriseBoard",
 ) as Operation;
 
