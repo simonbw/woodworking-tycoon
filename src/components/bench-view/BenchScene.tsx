@@ -22,7 +22,7 @@ import { fastenerOnBench, slotOnBench } from "../../game/bench-work/assembly";
 import {
   BlueprintFastener,
   ProductBlueprint,
-  slotFaceWidthIn,
+  slotFootprintIn,
 } from "../../game/bench-work/blueprint";
 import { placedPieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
@@ -193,7 +193,11 @@ const TweenedPiece: React.FC<{
     fit={fit}
     alpha={dragging ? 0.9 : 1}
   >
-    <MaterialSprite material={piece.material} onEdge={piece.placement.onEdge} />
+    <MaterialSprite
+      material={piece.material}
+      onEdge={piece.placement.onEdge}
+      onEnd={piece.placement.onEnd}
+    />
     <PieceRing
       material={piece.material}
       placement={piece.placement}
@@ -321,9 +325,9 @@ export const BenchScene: React.FC<{
         if (seated.has(slot.id)) continue;
         const seat = slotOnBench(blueprint, productPlacement, slot);
         // An on-edge slot's outline is the thin strip the tipped board
-        // will stand in — the narrowness is the tell
-        const w = slotFaceWidthIn(slot);
-        const h = slot.part.lengthIn;
+        // will stand in; an on-end slot's is the bare cross-section a
+        // standing leg covers — the smallness is the tell
+        const { wIn: w, hIn: h } = slotFootprintIn(slot);
         const rad = (seat.angleDeg * Math.PI) / 180;
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);

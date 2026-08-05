@@ -2,10 +2,6 @@ import { Application } from "@pixi/react";
 import React, { ReactNode } from "react";
 import { productBlueprintFor } from "../../game/bench-work/blueprint";
 import { MaterialInstance } from "../../game/Materials";
-import {
-  FURNITURE_ICON_FIT,
-  isFurniture,
-} from "../material-sprites/FurnitureSprite";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import {
@@ -194,11 +190,7 @@ export const MaterialIcon: React.FC<{
         >
           <SimpleSpriteStage
             scale={sizeToScale[size]}
-            fit={
-              isFurniture(material.type)
-                ? FURNITURE_ICON_FIT[material.type]
-                : (blueprintIconFit(material.type) ?? undefined)
-            }
+            fit={blueprintIconFit(material.type) ?? undefined}
           >
             <MaterialSprite material={material} />
           </SimpleSpriteStage>

@@ -321,8 +321,16 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
  */
 export function placedPieceSize(
   material: MaterialInstance,
-  placement: { onEdge?: boolean },
+  placement: { onEdge?: boolean; onEnd?: boolean },
 ): WorkSurfaceSize {
+  if (placement.onEnd && material.type === "board") {
+    // Standing on its end, the board shows only its cross-section
+    const b = material as Board;
+    return {
+      widthIn: b.width,
+      heightIn: b.thickness / 4,
+    };
+  }
   if (placement.onEdge && material.type === "board") {
     const b = material as Board;
     return {

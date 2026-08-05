@@ -81,6 +81,10 @@ export interface BlueprintSlot {
    * footprint is its thickness, not its width, and the bench only seats
    * a piece that has been tipped up to match (F in the bench view). */
   readonly onEdge?: boolean;
+  /** The part stands on its end — a table leg against the face-down
+   * top — so its footprint is its bare cross-section (width across,
+   * thickness deep), and only a piece stood on end (F twice) seats. */
+  readonly onEnd?: boolean;
 }
 
 /** One fastener, at the overlap of exactly two parts — like a pallet
@@ -133,6 +137,18 @@ export function slotFaceWidthIn(slot: BlueprintSlot): number {
   return slot.onEdge ? slot.part.thicknessQ / 4 : slot.part.widthIn;
 }
 
+/** A slot part's local footprint before the slot's turn: across the
+ * part, then along its length — which for a part stood on end is just
+ * its cross-section (there is no length on the bench). */
+export function slotFootprintIn(slot: BlueprintSlot): {
+  wIn: number;
+  hIn: number;
+} {
+  return slot.onEnd
+    ? { wIn: slot.part.widthIn, hIn: slot.part.thicknessQ / 4 }
+    : { wIn: slotFaceWidthIn(slot), hIn: slot.part.lengthIn };
+}
+
 /** A slot's axis-aligned footprint in product inches. */
 export function slotExtent(slot: BlueprintSlot): {
   x0: number;
@@ -140,11 +156,10 @@ export function slotExtent(slot: BlueprintSlot): {
   x1: number;
   y1: number;
 } {
-  const lengthIn = slot.part.lengthIn;
-  const faceWidth = slotFaceWidthIn(slot);
+  const { wIn, hIn } = slotFootprintIn(slot);
   const across = slot.angleDeg % 180 !== 0;
-  const w = across ? lengthIn : faceWidth;
-  const h = across ? faceWidth : lengthIn;
+  const w = across ? hIn : wIn;
+  const h = across ? wIn : hIn;
   return {
     x0: slot.xIn - w / 2,
     y0: slot.yIn - h / 2,
@@ -1091,6 +1106,68 @@ export const SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/**
+ * The side table, upside down — the way every table is actually built:
+ * the glued top lies face-down on the bench, and the four legs stand on
+ * their ends at its corners, screwed down through the underside. The
+ * legs are the first parts to use the on-end footprint: each ghost is a
+ * bare 2"×1½" cross-section, and only a leg stood on end (F twice)
+ * seats it. The top is the tray bottom's bigger sibling: six 2" strips,
+ * exactly 12" wide.
+ */
+const TABLE_LEG_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  length: [24],
+  width: [2],
+  thickness: [6, 8],
+  surface: ["smooth", "sanded"],
+  quantity: 1,
+};
+
+export const SIDE_TABLE_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "sideTable",
+  widthIn: 12,
+  heightIn: 24,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "top",
+      requirement: {
+        type: ["panel"],
+        length: [24],
+        thickness: [4],
+        surface: ["sanded"],
+        quantity: 1,
+        // Six real-wood strips — wider than any single board gets
+        matches: (material: MaterialInstance) =>
+          isPanel(material) &&
+          panelWidth(material) === 12 &&
+          material.strips.every((strip) => strip.species !== "pallet"),
+        matchesNote: '12" wide, real wood',
+      } as unknown as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 12, lengthIn: 24, thicknessQ: 4 } as const,
+      xIn: 6,
+      yIn: 12,
+      angleDeg: 0,
+      layer: 0,
+    },
+    ...[
+      { xIn: 2, yIn: 2.5 },
+      { xIn: 10, yIn: 2.5 },
+      { xIn: 2, yIn: 21.5 },
+      { xIn: 10, yIn: 21.5 },
+    ].map((at) => ({
+      role: "leg",
+      requirement: TABLE_LEG_REQUIREMENT,
+      part: { widthIn: 2, lengthIn: 24, thicknessQ: 6 } as const,
+      ...at,
+      angleDeg: 0,
+      layer: 1,
+      onEnd: true,
+    })),
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
@@ -1101,6 +1178,7 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
   shelf: SHELF_BLUEPRINT,
   servingTray: SERVING_TRAY_BLUEPRINT,
+  sideTable: SIDE_TABLE_BLUEPRINT,
   worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
   worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
   worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,
@@ -1282,9 +1360,13 @@ export function assembleFromBlueprint(
       seed: material.id,
     };
   });
+  // A build with a panel part reads its species off that face — the
+  // tray's bottom, the table's top — not off a headcount its four legs
+  // would win
+  const facePart = parts.find((part) => part.strips);
   return makeMaterial<FinishedProduct>({
     type: productType,
-    species: dominantSpecies(parts),
+    species: facePart ? facePart.species : dominantSpecies(parts),
     parts,
   });
 }

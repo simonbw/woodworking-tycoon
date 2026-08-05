@@ -10,6 +10,7 @@ import {
   RESAW_FENCE_BLUEPRINT,
   SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
+  SIDE_TABLE_BLUEPRINT,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
   TOOL_DRAWERS_BLUEPRINT,
@@ -487,46 +488,16 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildSideTable",
     requiredSkill: "furnitureBasics",
     duration: 60,
-    interaction: { kind: "assembly" },
-    requiredConsumables: [{ id: "screws", amount: 8 }],
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [24],
-        thickness: [4],
-        surface: ["sanded"],
-        quantity: 1,
-        // A wide glued top — past what any single board can be
-        matches: (material) =>
-          isPanel(material) &&
-          panelWidth(material) >= 12 &&
-          material.strips.every((strip) => strip.species !== "pallet"),
-      },
-      {
-        // Four square legs from 8/4 stock, ripped and crosscut
-        type: ["board"],
-        length: [24],
-        width: [2],
-        thickness: [6, 8],
-        surface: ["smooth", "sanded"],
-        quantity: 4,
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const top = materials.find(isPanel);
-      if (!top) {
-        throw new Error("Side table needs a panel top");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "sideTable",
-            species: dominantSpecies(top.strips),
-          }),
-        ],
-      };
-    },
+    // Built the way every table is: the glued top face-down, four legs
+    // stood on their ends at its corners, screwed down through the
+    // underside — the whole recipe reads off the blueprint
+    interaction: { kind: "assembly", blueprint: "sideTable" },
+    requiredConsumables: blueprintFastenerCost(SIDE_TABLE_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(SIDE_TABLE_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(SIDE_TABLE_BLUEPRINT, materials)],
+    }),
   },
   {
     name: "Build Jewelry Box",

@@ -11,7 +11,7 @@ import { machineDustMultiplier } from "../../game/Dust";
 import {
   productBlueprintFor,
   ProductBlueprint,
-  slotFaceWidthIn,
+  slotFootprintIn,
 } from "../../game/bench-work/blueprint";
 import { rowLayout } from "../../game/bench-work/workpiece";
 import { createMockMaterial } from "../../game/material-helpers";
@@ -157,8 +157,7 @@ const BlueprintSchematic: React.FC<{ blueprint: ProductBlueprint }> = ({
         .map((slot) => {
           // An on-edge part draws as the thin strip it presents from
           // above — the drawing shows the build the way the bench does
-          const w = slotFaceWidthIn(slot);
-          const h = slot.part.lengthIn;
+          const { wIn: w, hIn: h } = slotFootprintIn(slot);
           return (
             <rect
               key={slot.id}

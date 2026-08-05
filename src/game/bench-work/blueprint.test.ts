@@ -23,6 +23,8 @@ import {
   RESAW_FENCE_BLUEPRINT,
   SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
+  SIDE_TABLE_BLUEPRINT,
+  slotExtent,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
   TOOL_DRAWERS_BLUEPRINT,
@@ -868,5 +870,43 @@ describe("the serving tray blueprint", () => {
     assert.strictEqual(bottomPart?.width, 12);
     // The panel part seeds off the very panel that went in
     assert.strictEqual(bottomPart?.seed, bottom.id);
+  });
+});
+
+describe("the side table blueprint", () => {
+  it("stands the legs on end — bare cross-section footprints at the corners", () => {
+    const legs = SIDE_TABLE_BLUEPRINT.slots.filter((s) => s.role === "leg");
+    assert.strictEqual(legs.length, 4);
+    assert.ok(legs.every((leg) => leg.onEnd));
+    for (const leg of legs) {
+      const e = slotExtent(leg);
+      assert.strictEqual(e.x1 - e.x0, 2);
+      assert.strictEqual(e.y1 - e.y0, 1.5);
+    }
+  });
+
+  it("screws each leg down through the face-down top", () => {
+    assert.strictEqual(SIDE_TABLE_BLUEPRINT.fasteners.length, 4);
+    assert.deepStrictEqual(blueprintFastenerCost(SIDE_TABLE_BLUEPRINT), [
+      { id: "screws", amount: 4 },
+    ]);
+  });
+
+  it("reads its species off the top, not a headcount its legs would win", () => {
+    const top = makeMaterial({
+      type: "panel",
+      strips: Array.from({ length: 6 }, () => ({
+        species: "walnut" as const,
+        width: 2 as const,
+      })),
+      length: 24,
+      thickness: 4,
+      surface: "sanded",
+    } as never);
+    const legs = Array.from({ length: 4 }, () =>
+      board("pine", 24, 2, 6, "sanded"),
+    );
+    const table = assembleFromBlueprint(SIDE_TABLE_BLUEPRINT, [top, ...legs]);
+    assert.strictEqual(table.species, "walnut");
   });
 });

@@ -8,6 +8,7 @@ import { initialPalletNails } from "./pallet-geometry";
 import {
   benchScriptFor,
   pieceSize,
+  placedPieceSize,
   pryTargets,
   rowLayout,
   sawLineFraction,
@@ -201,5 +202,15 @@ describe("benchScriptFor", () => {
       benchScriptFor(machine, progressionWith("freeformLamination"))?.kind,
       "glue",
     );
+  });
+});
+
+describe("placedPieceSize on end", () => {
+  it("a standing board covers only its cross-section", () => {
+    const b = board("oak", 24, 2, 6);
+    assert.deepStrictEqual(placedPieceSize(b, { onEnd: true }), {
+      widthIn: 2,
+      heightIn: 1.5,
+    });
   });
 });

@@ -2,12 +2,12 @@ import React from "react";
 import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { AssembledProductSprite } from "./AssembledProductSprite";
 import { BoardOnEdgeSprite } from "./BoardOnEdgeSprite";
+import { BoardOnEndSprite } from "./BoardOnEndSprite";
 import { BoardSprite } from "./BoardSprite";
 import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
 import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
 import { FinishedBoxSprite } from "./FinishedBoxSprite";
-import { FurnitureSprite, FurnitureType } from "./FurnitureSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
 import { PictureFrameSprite } from "./PictureFrameSprite";
@@ -22,10 +22,19 @@ export const MaterialSprite: React.FC<{
   /** The piece's bench placement has it standing on its long edge —
    * boards draw edge-up (BoardOnEdgeSprite); other types ignore it. */
   onEdge?: boolean;
-}> = ({ material, alpha, tint, onEdge }) => {
+  /** …or standing on its end: boards draw as bare end grain. */
+  onEnd?: boolean;
+}> = ({ material, alpha, tint, onEdge, onEnd }) => {
   switch (material.type) {
     case "board":
-      return onEdge ? (
+      return onEnd ? (
+        <BoardOnEndSprite
+          board={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />
+      ) : onEdge ? (
         <BoardOnEdgeSprite
           board={material}
           seed={material.id}
@@ -88,18 +97,10 @@ export const MaterialSprite: React.FC<{
     case "pictureFrame":
     case "shelf":
     case "servingTray":
+    case "sideTable":
       return (
         <AssembledProductSprite
           material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
-    case "sideTable":
-      return (
-        <FurnitureSprite
-          material={material as FinishedProduct & { type: FurnitureType }}
           alpha={alpha}
           tint={tint}
         />

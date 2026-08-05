@@ -969,14 +969,18 @@ export const BenchWorkSurface: React.FC<{
         draggingId === id && dragPlacement.current
           ? dragPlacement.current
           : benchPlacementFor(machine, material);
-      // One flip verb: a board flips up onto its long edge (and back
-      // flat); anything else — the pallet — turns over. Mirroring a
-      // board face-for-face never showed anyway.
+      // One flip verb: a board cycles flat → up on its long edge → up
+      // on its end → flat again; anything else — the pallet — turns
+      // over. Mirroring a board face-for-face never showed anyway.
       const turned: BenchPlacement =
         event.code === "KeyR"
           ? { ...current, angleDeg: current.angleDeg + 90 }
           : material.type === "board"
-            ? { ...current, onEdge: !current.onEdge }
+            ? current.onEnd
+              ? { ...current, onEdge: false, onEnd: false }
+              : current.onEdge
+                ? { ...current, onEdge: false, onEnd: true }
+                : { ...current, onEdge: true, onEnd: false }
             : { ...current, flipped: !current.flipped };
       if (draggingId === id) {
         // Mid-drag the turn rides the drag; the release commits both
@@ -1088,15 +1092,16 @@ export const BenchWorkSurface: React.FC<{
     }
     if (!sceneFit) return null;
     const slotsTotal = assemblyBlueprint?.slots.length ?? 0;
-    // An empty on-edge slot with a fitting piece still lying flat: the
-    // next move is tipping it up, and the instruction line says so.
+    // An empty on-edge (or on-end) slot with a fitting piece still in
+    // the wrong orientation: the next move is F, and the line says so.
     const tippableSlot = assemblyBlueprint?.slots.find(
       (slot) =>
-        slot.onEdge &&
+        (slot.onEdge || slot.onEnd) &&
         !seated.has(slot.id) &&
         loosePieces.some(
           (p) =>
-            !p.placement.onEdge &&
+            (!!p.placement.onEdge !== !!slot.onEdge ||
+              !!p.placement.onEnd !== !!slot.onEnd) &&
             materialMeetsInput(p.material, slot.requirement),
         ),
     );
@@ -1124,7 +1129,9 @@ export const BenchWorkSurface: React.FC<{
         return "Set the plan's stock down on the bench (F), then lay each piece on its outline.";
       }
       return tippableSlot
-        ? `Flip each ${tippableSlot.role} up on its long edge (F), then lay it on its thin outline.`
+        ? tippableSlot.onEnd
+          ? `Stand each ${tippableSlot.role} on its end (F cycles), then set it on its small outline.`
+          : `Flip each ${tippableSlot.role} up on its long edge (F), then lay it on its thin outline.`
         : "Lay each piece on its ghost outline — drag it close and it settles. R turns it.";
     };
     // In-place tool work: the instruction follows the running job, or the
@@ -1475,6 +1482,9 @@ export const BenchWorkSurface: React.FC<{
               {describeMaterialRequirement(hoveredSlot.requirement)}
               {hoveredSlot.onEdge && (
                 <span className="text-gold-light"> · stood on edge (F)</span>
+              )}
+              {hoveredSlot.onEnd && (
+                <span className="text-gold-light"> · stood on end (F)</span>
               )}
             </div>
           </div>
