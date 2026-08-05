@@ -36,6 +36,9 @@ export const BAR_CLAMP_ICON = `${ICON_DIR}/misc-barClamp.png`;
 export const SHOP_VAC_ICON = `${ICON_DIR}/misc-shopVac.png`;
 export const BROOM_ICON = `${ICON_DIR}/misc-broom.png`;
 
+/** The painted shop sign on the start menu. */
+export const MAIN_TITLE_LOGO = "/images/main-title-logo.png";
+
 /**
  * Shop-floor art first, pixel stand-in second, so the thing on the store
  * shelf is the thing that lands on the floor. A machine with neither
@@ -102,6 +105,10 @@ export const UI_IMAGE_ASSETS: readonly string[] = Array.from(
     BAR_CLAMP_ICON,
     SHOP_VAC_ICON,
     BROOM_ICON,
+    // On screen before this ever runs — index.html preloads it so it's
+    // painted with the start menu. Listed here so it's held for the
+    // session and the registration check can see it.
+    MAIN_TITLE_LOGO,
     ...Object.values(MACHINE_ICON_SRC),
     ...LOOSE_UI_IMAGES,
   ]),

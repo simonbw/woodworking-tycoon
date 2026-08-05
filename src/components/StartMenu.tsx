@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { GameState } from "../game/GameState";
 import { initialGameState } from "../game/initialGameState";
 import { deleteSave, getSaveStatus, loadGame } from "../game/saveLoad";
-import { StarIcon } from "./StarIcon";
+import { MAIN_TITLE_LOGO } from "../utils/uiImages";
 
 interface StartMenuProps {
   onStart: (state: GameState) => void;
@@ -45,19 +45,16 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
       <div className="w-full max-w-md flex flex-col items-center gap-12">
         {/* Hand-painted shop sign */}
         <div className="flex flex-col items-center">
-          <span className="font-condensed uppercase tracking-[0.4em] text-paper-manila/50 text-xs mb-2">
+          <span className="font-condensed uppercase tracking-[0.4em] text-paper-manila/50 text-xs mb-3">
             Established 2026
           </span>
-          <h1 className="font-lumberjack text-6xl text-center text-paper-manila leading-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
-            Woodworking
-            <br />
-            Tycoon
+          <h1>
+            <img
+              src={MAIN_TITLE_LOGO}
+              alt="Woodworking Tycoon"
+              className="w-full max-w-sm drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]"
+            />
           </h1>
-          <span className="flex gap-[0.6em] text-gold text-sm mt-3" aria-hidden>
-            <StarIcon />
-            <StarIcon />
-            <StarIcon />
-          </span>
         </div>
 
         {/* Menu actions styled as work-order tabs */}
