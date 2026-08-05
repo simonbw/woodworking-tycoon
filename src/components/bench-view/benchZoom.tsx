@@ -58,7 +58,7 @@ export function benchZoomAnchor(
   // The machine container's rotation on the shop floor, normalized to
   // the short way around so the un-turning never unwinds 270°.
   const rawAngle = machine.rotation * -90;
-  const angleDeg = ((((rawAngle % 360) + 540) % 360) - 180) || 0;
+  const angleDeg = (((rawAngle % 360) + 540) % 360) - 180 || 0;
   const rad = (rawAngle * Math.PI) / 180;
   // The bench top's center in the machine container's own coordinates
   // (cell centers at integer multiples of PIXELS_PER_CELL — see
@@ -150,6 +150,29 @@ export function useBenchZoomActive(): boolean {
     subscribeBenchZoom,
     () => benchZoomStage.anchor !== null,
   );
+}
+
+/**
+ * The bench the player is fully leaned over — set once the dive lands,
+ * cleared the instant the pull-back (or a mid-dive reversal) starts.
+ * The shop's renderer hides ITS copies of that bench's stock, progress
+ * badge, and processing sprites while this is set: the scene canvas is
+ * opaque over them and draws the live versions (drags, turn springs,
+ * cure chrome), so the shop's static copies would only ghost out from
+ * underneath. Everywhere else — including all through the dive, while
+ * the scene is still translucent — the shop draws everything, because
+ * the shop IS the picture.
+ */
+let leanedBenchKey: string | null = null;
+
+export function setLeanedBench(key: string | null): void {
+  if (leanedBenchKey === key) return;
+  leanedBenchKey = key;
+  notify();
+}
+
+export function useLeanedBenchKey(): string | null {
+  return React.useSyncExternalStore(subscribeBenchZoom, () => leanedBenchKey);
 }
 
 export function easeInOutCubic(t: number): number {

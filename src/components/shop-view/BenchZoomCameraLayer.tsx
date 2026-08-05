@@ -20,8 +20,10 @@ import { shopFrame } from "./shopFrameStore";
  *
  * Imperative through the ref like CameraLayer's scroll: the transform
  * moves every frame and React owns none of these properties, so
- * re-renders can't fight the tick. Under reduced motion the ramp pins to
- * its ends and this layer holds identity — the shop never transforms.
+ * re-renders can't fight the tick. Under reduced motion the ramp pins
+ * to its ends, so the shop snaps between framings instead of animating
+ * — it must still land zoomed, because the zoomed shop is the open
+ * bench view's backdrop (the scene canvas draws no floor of its own).
  */
 export const BenchZoomCameraLayer: React.FC<{
   worldRef: RefObject<Container | null>;
@@ -33,9 +35,8 @@ export const BenchZoomCameraLayer: React.FC<{
   useTick(() => {
     const node = worldRef.current;
     if (!node) return;
-    const { anchor, instant } = benchZoomStage;
-    const eased =
-      anchor && !instant ? easeInOutCubic(benchZoomProgress()) : 0;
+    const { anchor } = benchZoomStage;
+    const eased = anchor ? easeInOutCubic(benchZoomProgress()) : 0;
     if (!anchor || eased === 0) {
       node.position.set(0, 0);
       node.pivot.set(0, 0);
@@ -45,8 +46,7 @@ export const BenchZoomCameraLayer: React.FC<{
     }
     // The anchor speaks window px; this container's children live in
     // world px behind the fitted offset and scale.
-    const toLocalX = (px: number) =>
-      (px - shopFrame.left - offsetX) / scale;
+    const toLocalX = (px: number) => (px - shopFrame.left - offsetX) / scale;
     const toLocalY = (px: number) => (px - shopFrame.top - offsetY) / scale;
     node.pivot.set(toLocalX(anchor.xPx), toLocalY(anchor.yPx));
     node.position.set(

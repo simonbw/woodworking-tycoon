@@ -66,7 +66,12 @@ import {
   describeMaterialRequirement,
   materialMeetsInput,
 } from "../../game/material-helpers";
-import { isBenchType, Machine, Operation } from "../../game/Machine";
+import {
+  isBenchType,
+  Machine,
+  machineKey,
+  Operation,
+} from "../../game/Machine";
 import {
   Board,
   MaterialInstance,
@@ -101,6 +106,7 @@ import {
   benchZoomProgress,
   BenchZoomRig,
   easeInOutCubic,
+  setLeanedBench,
 } from "./benchZoom";
 import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
 import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
@@ -1395,7 +1401,9 @@ export const BenchWorkSurface: React.FC<{
   }, [sceneActive, heldTool]);
 
   // Stepping back hangs everything up on the way out — the tool to its
-  // hook, the clamps to the rack, the hover chrome cleared.
+  // hook, the clamps to the rack, the hover chrome cleared, and any
+  // mid-drag abandoned where it was last committed (the shop's copy of
+  // the piece reappears under the fading scene, and the two must agree).
   useEffect(() => {
     if (!closing) return;
     setHeldTool(null);
@@ -1405,7 +1413,21 @@ export const BenchWorkSurface: React.FC<{
     setHoveredNail(null);
     setHoveredId(null);
     setHoveredSlot(null);
+    setDraggingId(null);
+    dragPlacement.current = null;
   }, [closing]);
+
+  // While the scene is opaque it draws the live bench — drags, turn
+  // springs, cure chrome — so the shop hides its static copies of this
+  // bench's stock underneath (see setLeanedBench). The instant the
+  // pull-back starts they come back, and the fading scene hands off to
+  // them.
+  const benchKey = machineKey(machine.state);
+  useEffect(() => {
+    if (!interactive) return;
+    setLeanedBench(benchKey);
+    return () => setLeanedBench(null);
+  }, [interactive, benchKey]);
 
   const foleyClip =
     script && (script.kind === "stroke" || script.kind === "saw")
@@ -1789,16 +1811,9 @@ export const BenchWorkSurface: React.FC<{
       data-progress={progress}
       data-zoom={closing ? "out" : settled ? "open" : "in"}
     >
-      {/* The black backstop behind the scene. It must never show during
-          the dive — the swelling shop IS the transition — so it only
-          comes up once the camera has landed and the scene canvas
-          already covers the window, and it drops the instant the
-          pull-back starts so the zoomed shop shows behind the scene. */}
-      <div
-        className={`absolute inset-0 bg-ink-black transition-opacity duration-150 ${
-          settled && !closing ? "opacity-100" : "opacity-0"
-        }`}
-      />
+      {/* No backdrop of any kind here: the zoomed live shop underneath
+          IS the backdrop, the whole time the view is open. The scene
+          canvas only adds what's bench-local. */}
       <div
         ref={wrapRef}
         className={`absolute inset-0 select-none touch-none overflow-hidden ${

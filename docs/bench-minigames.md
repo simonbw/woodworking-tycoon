@@ -331,31 +331,38 @@ the material sprites scaled up, mounted tools on their hooks. Closing it
 abandons any uncommitted work per decision 3. Opening and closing are
 performed by a camera dive (`bench-view/benchZoom.tsx`), pure
 presentation the way `truckStageStore` performs the truck. The dive is
-the whole world moving, not a picture growing over a frozen one: both
-views draw the same bench from the same state, so one similarity ramp is
-evaluated on both canvases at once — the shop's world container swells
-about the bench (`shop-view/BenchZoomCameraLayer.tsx`: scaling toward
-the bench view's zoom, panning the bench to center, un-turning the
-machine's floor rotation so a turned bench squares up as you lean in)
-while `BenchZoomRig` keeps the bench scene glued to that swelling
-footprint, crossfading it in across the ramp (opacity written per frame
-— a CSS transition on a freshly inserted subtree has no painted start
-state to run from). The two canvases render on separate tickers, so the
-shared progress is a clock, not an integration (`benchZoomStage` +
-`benchZoomProgress()`, anchored by `shop-view/shopFrameStore.ts`) — they
-can never drift apart, and a Tab-Tab mid-flight just rolls the ramp
-back. The floor's DOM chips fade and go `inert` during the dive, the
-bench chrome settles in only once it lands, and the black backstop
-behind the scene only comes up after landing — mid-dive the zoomed shop
-IS the picture. Closing runs the ramp backwards: `StationSheet` holds
-the surface mounted as a departing theater — no `station-sheet` testid,
-no pointer targets, input gated the whole way — until the rig reports
-the pull-back landed. The world never stops for any of it.
-`prefers-reduced-motion` skips straight to the end states (the shop
-never transforms at all), which is also how the E2E suite runs
-(`reducedMotion: "reduce"` in the Playwright config): the specs drive
-surfaces, not choreography, and `bench.spec` pins the landed stage via
-`data-zoom="open"`.
+the whole world moving, not a picture growing over a frozen one: the
+shop's world container swells about the bench
+(`shop-view/BenchZoomCameraLayer.tsx`: scaling toward the bench view's
+zoom, panning the bench to center, un-turning the machine's floor
+rotation so a turned bench squares up as you lean in), and the zoomed
+live shop remains the backdrop the whole time the view is open — the
+scene canvas paints no floor of its own (a floor patch over the real
+view is exactly the seam that reads as a picture instead of a camera).
+What the scene adds is only what's bench-local: a dim over the
+periphery, the pool of light, the bench and its stock re-drawn at the
+scene's resolution, and the interaction chrome — `BenchZoomRig` keeps
+it glued to the swelling footprint, crossfading it in across the ramp
+(opacity written per frame — a CSS transition on a freshly inserted
+subtree has no painted start state to run from). Once the dive lands,
+the shop hides its own copies of that bench's stock, badge, and
+processing sprites (`setLeanedBench`/`useLeanedBenchKey`) so the
+scene's live versions — drags, turn springs, cure chrome — don't ghost
+against static ones; they return the instant the pull-back starts. The
+two canvases render on separate tickers, so the shared progress is a
+clock, not an integration (`benchZoomStage` + `benchZoomProgress()`,
+anchored by `shop-view/shopFrameStore.ts`) — they can never drift
+apart, and a Tab-Tab mid-flight just rolls the ramp back. The floor's
+DOM chips fade and go `inert` during the dive, and the bench chrome
+settles in only once it lands. Closing runs the ramp backwards:
+`StationSheet` holds the surface mounted as a departing theater — no
+`station-sheet` testid, no pointer targets, input gated the whole way —
+until the rig reports the pull-back landed. The world never stops for
+any of it. `prefers-reduced-motion` snaps both canvases straight to the
+end states (the shop still lands zoomed — it is the backdrop), which is
+also how the E2E suite runs (`reducedMotion: "reduce"` in the
+Playwright config): the specs drive surfaces, not choreography, and
+`bench.spec` pins the landed stage via `data-zoom="open"`.
 
 This is the game's first pointer-primary surface (the floor is
 keyboard-first; `Person.sweepAim` is the one pointer precedent). Assist

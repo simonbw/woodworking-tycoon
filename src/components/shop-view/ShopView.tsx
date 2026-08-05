@@ -399,87 +399,90 @@ export const ShopView: React.FC = () => {
           <pixiContainer x={offsetX} y={offsetY} scale={scale}>
             <pixiContainer ref={benchZoomContainerRef}>
               <pixiContainer ref={cameraContainerRef}>
-              <EnvironmentLayer
-                width={width}
-                height={height}
-                viewport={worldViewport}
-                truckHighlight={truckHighlight}
-                truckCargoHighlight={truckCargoHighlight}
-                truckTutorialHighlight={coach.truck}
-              />
-              <pixiTilingSprite
-                eventMode="static"
-                texture={floorTexture}
-                tilePosition={{ x: 0, y: 0 }}
-                tileScale={{ x: 0.25, y: 0.25 }}
-                width={width}
-                height={height}
-              />
-              {cellMap.getCells().map((cell) => (
-                <FloorTileSprite
-                  cell={cell}
-                  key={`cell-${vectorKey(cell.position)}`}
+                <EnvironmentLayer
+                  width={width}
+                  height={height}
+                  viewport={worldViewport}
+                  truckHighlight={truckHighlight}
+                  truckCargoHighlight={truckCargoHighlight}
+                  truckTutorialHighlight={coach.truck}
                 />
-              ))}
-              {/* Settled sawdust sits on the floor, under everything that moves */}
-              <DustLayer width={width} height={height} />
-              {/* Cords run along the slab from the electric machines to
-                  the wall outlets, under everything that sits on it */}
-              <PowerCordLayer />
-              <BroomSprite />
-
-              {gameState.machineCrates.map((crate, index) => (
-                <MachineCrateSprite
-                  crate={crate}
-                  key={`crate-${index}-${vectorKey(crate.position)}`}
+                <pixiTilingSprite
+                  eventMode="static"
+                  texture={floorTexture}
+                  tilePosition={{ x: 0, y: 0 }}
+                  tileScale={{ x: 0.25, y: 0.25 }}
+                  width={width}
+                  height={height}
                 />
-              ))}
-
-              {/* Piles draw in drop order, so the last piece set down on a
-                  spot is on top — matching the pickup order E offers */}
-              {gameState.materialPiles.map((pile) => (
-                <MaterialPileSprite
-                  key={`pile-${pile.material.id}`}
-                  pile={pile}
-                  highlighted={pile === pickupTarget}
-                  tutorialTarget={coach.matchesPile?.(pile.material) ?? false}
-                />
-              ))}
-              {[...machines]
-                // Worktables draw first so mounted benchtop machines sit on top
-                .sort(
-                  (a, b) =>
-                    Number(b.type.worktable ?? false) -
-                    Number(a.type.worktable ?? false),
-                )
-                .map((machinePlacement) => (
-                  <MachineSprite
-                    key={machineKey(machinePlacement.state)}
-                    machine={machinePlacement}
-                    isSelected={
-                      !gameState.player.away &&
-                      gameState.player.carriedMachine == null &&
-                      isTargeted(machinePlacement)
-                    }
-                    tutorialTarget={coach.machineTypeIds.has(
-                      machinePlacement.type.id as MachineId,
-                    )}
-                    onClick={machineClickHandler(machinePlacement)}
+                {cellMap.getCells().map((cell) => (
+                  <FloorTileSprite
+                    cell={cell}
+                    key={`cell-${vectorKey(cell.position)}`}
                   />
                 ))}
-              {/* Painted over the machines: a blocked lane cell is usually
-               *under* the machine that's blocking it */}
-              <FeedLaneLayer />
-              {collisionDebugRequested() && <CollisionDebugLayer />}
-              <PlayerMotionLayer paused={paused} />
-              <FootstepSoundLayer />
-              <ShopVacSprite />
-              {!gameState.player.away && truckStage === "parked" && (
-                <PersonSprite person={gameState.player} />
-              )}
-              {/* Dust in flight rides above the tools taking it */}
-              <DustMotionLayer />
-              <CarriedMachineLayer />
+                {/* Settled sawdust sits on the floor, under everything that moves */}
+                <DustLayer width={width} height={height} />
+                {/* Cords run along the slab from the electric machines to
+                  the wall outlets, under everything that sits on it */}
+                <PowerCordLayer />
+                <BroomSprite />
+
+                {gameState.machineCrates.map((crate, index) => (
+                  <MachineCrateSprite
+                    crate={crate}
+                    key={`crate-${index}-${vectorKey(crate.position)}`}
+                  />
+                ))}
+
+                {/* Piles draw in drop order, so the last piece set down on a
+                  spot is on top — matching the pickup order E offers */}
+                {gameState.materialPiles.map((pile) => (
+                  <MaterialPileSprite
+                    key={`pile-${pile.material.id}`}
+                    pile={pile}
+                    highlighted={pile === pickupTarget && !benchDive}
+                    tutorialTarget={coach.matchesPile?.(pile.material) ?? false}
+                  />
+                ))}
+                {[...machines]
+                  // Worktables draw first so mounted benchtop machines sit on top
+                  .sort(
+                    (a, b) =>
+                      Number(b.type.worktable ?? false) -
+                      Number(a.type.worktable ?? false),
+                  )
+                  .map((machinePlacement) => (
+                    <MachineSprite
+                      key={machineKey(machinePlacement.state)}
+                      machine={machinePlacement}
+                      isSelected={
+                        !gameState.player.away &&
+                        gameState.player.carriedMachine == null &&
+                        // Diving into a bench, the giant outline rim
+                        // would only clutter the close-up
+                        !benchDive &&
+                        isTargeted(machinePlacement)
+                      }
+                      tutorialTarget={coach.machineTypeIds.has(
+                        machinePlacement.type.id as MachineId,
+                      )}
+                      onClick={machineClickHandler(machinePlacement)}
+                    />
+                  ))}
+                {/* Painted over the machines: a blocked lane cell is usually
+                 *under* the machine that's blocking it */}
+                <FeedLaneLayer />
+                {collisionDebugRequested() && <CollisionDebugLayer />}
+                <PlayerMotionLayer paused={paused} />
+                <FootstepSoundLayer />
+                <ShopVacSprite />
+                {!gameState.player.away && truckStage === "parked" && (
+                  <PersonSprite person={gameState.player} />
+                )}
+                {/* Dust in flight rides above the tools taking it */}
+                <DustMotionLayer />
+                <CarriedMachineLayer />
               </pixiContainer>
             </pixiContainer>
           </pixiContainer>

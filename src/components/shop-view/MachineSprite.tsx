@@ -6,7 +6,9 @@ import {
   Machine,
   footprintCenter,
   isBenchType,
+  machineKey,
 } from "../../game/Machine";
+import { useLeanedBenchKey } from "../bench-view/benchZoom";
 import {
   benchPlacementFor,
   benchTopSizeIn,
@@ -131,6 +133,9 @@ export const MachineSprite: React.FC<{
 const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { isOperating, needsYou, fraction, relevantPhase } =
     useMachineActivity(machine);
+  // Leaned over this bench, the scene carries its own progress line —
+  // a floating badge would hang giant over the close-up.
+  const leanedOver = useLeanedBenchKey() === machineKey(machine.state);
 
   const draw = useCallback(
     (g: Graphics) => {
@@ -161,6 +166,7 @@ const OperationStatusBadge: React.FC<{ machine: Machine }> = ({ machine }) => {
     [isOperating, needsYou, fraction, relevantPhase],
   );
 
+  if (leanedOver) return null;
   return <pixiGraphics draw={draw} />;
 };
 
@@ -230,7 +236,13 @@ const BenchTopMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
 
 const MachineMaterials: React.FC<{ machine: Machine }> = ({ machine }) => {
   const { working } = useMachineActivity(machine);
+  // The bench the player is leaned over draws its stock in the bench
+  // view's scene instead — live, with drags and cure chrome — opaque
+  // exactly over this spot. These static copies would only ghost out
+  // from underneath it (see setLeanedBench).
+  const leanedOver = useLeanedBenchKey() === machineKey(machine.state);
 
+  if (leanedOver) return null;
   return (
     <>
       {isBenchType(machine.type) ? (
