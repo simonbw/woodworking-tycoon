@@ -116,9 +116,26 @@ freely is what funds the second commission's gear).
 5. Listings can be repriced or delisted at any time (delisting returns the
    item to inventory).
 
+### Stacked offers
+
+A listing holds one *or more* interchangeable pieces at one price. Pieces
+stack when they share a **listing group key** — same full name and state
+(`getMaterialFullName`) *and* the same fair value — so ten cutting boards
+are one row reading `×10`, priced once, rather than ten rows priced ten
+times. Listing more of something already up at that price adds to the
+standing offer instead of opening a second one, and repricing onto another
+offer's price merges the two: at most one listing exists per key and price.
+
+The economy is unchanged by this. Sale rolls happen **per piece**, and each
+sale dips the category's demand meter before the next piece rolls — exactly
+what N separate listings did. What stacking changes is the pity timer's
+subject: it belongs to the *offer*, so a stack that ages out sells a piece
+per tick until it's gone, and adding stock to a standing offer doesn't
+restart its clock.
+
 ### Sale model
 
-Per listing, per tick:
+Per piece, per tick:
 
 ```
 P(sale) = BASE_RATE × priceFactor(r, reputation) × demandFactor(category)
@@ -218,8 +235,8 @@ New persisted state (all in `GameState` / `saveLoad`):
 ```ts
 interface MarketListing {
   readonly id: string;
-  readonly material: MaterialInstance;
-  readonly askingPrice: number;
+  readonly materials: ReadonlyArray<MaterialInstance>; // one offer, N pieces
+  readonly askingPrice: number;                        // per piece
   readonly listedAtTick: number;
 }
 
@@ -245,7 +262,7 @@ readonly categoryDemand: Readonly<Record<string, number>>; // 0–1 saturation m
 ```
 
 New actions (`src/game/game-actions/marketplace-actions.ts`):
-`listItemAction`, `delistItemAction`, `repriceListingAction`,
+`listItemsAction`, `delistItemAction`, `repriceListingAction`,
 `acceptJobAction`, `cancelJobAction`, `deliverJobAction`. Two new tick
 passes replace the sales-table pass in `tickAction`: sale rolls (+ pity
 timer + demand recovery) every tick, and a board refresh on day boundaries

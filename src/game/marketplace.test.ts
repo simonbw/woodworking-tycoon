@@ -25,7 +25,7 @@ function shelf(): FinishedProduct {
 }
 
 function listingAt(askingPrice: number, listedAtTick = 0): MarketListing {
-  return { id: "l-1", material: shelf(), askingPrice, listedAtTick };
+  return { id: "l-1", materials: [shelf()], askingPrice, listedAtTick };
 }
 
 describe("priceFactor", () => {
@@ -50,21 +50,16 @@ describe("priceFactor", () => {
 
 describe("listingSaleChance", () => {
   it("slows down when the category is saturated", () => {
-    const listing = listingAt(getSellValue(shelf()));
-    const fullDemand = listingSaleChance(listing, 0, {});
-    const saturated = listingSaleChance(listing, 0, { rusticShelf: 0 });
+    const price = getSellValue(shelf());
+    const fullDemand = listingSaleChance(shelf(), price, 0, {});
+    const saturated = listingSaleChance(shelf(), price, 0, { rusticShelf: 0 });
     assert.ok(saturated < fullDemand);
     assert.ok(saturated > 0, "saturation slows sales but never stops them");
   });
 
   it("gives a worthless material no chance to sell", () => {
-    const junk: MarketListing = {
-      id: "l-2",
-      material: { id: "u-1", type: "unknown" },
-      askingPrice: 10,
-      listedAtTick: 0,
-    };
-    assert.strictEqual(listingSaleChance(junk, 0, {}), 0);
+    const junk = { id: "u-1", type: "unknown" } as const;
+    assert.strictEqual(listingSaleChance(junk, 10, 0, {}), 0);
   });
 });
 

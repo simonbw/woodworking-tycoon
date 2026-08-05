@@ -90,10 +90,10 @@ import { spendSkillPointAction } from "../game-actions/skill-actions";
 import {
   acceptJobAction,
   deliverJobAction,
-  listItemAction,
+  listItemsAction,
 } from "../game-actions/marketplace-actions";
 import { generateJobBoard } from "../job-generation";
-import { LISTING_PITY_TICKS } from "../marketplace";
+import { LISTING_PITY_TICKS, listingCount, listingItem } from "../marketplace";
 import { getActiveCommission } from "../commissionSequence";
 import { board } from "../board-helpers";
 import { LUMBER_CHANNELS } from "../lumberStock";
@@ -1380,13 +1380,13 @@ export class ShopDriver {
           `[${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
       );
     }
-    const before = this.state.listings.length;
+    const before = this.listedPieces;
     // Listing takes the item out of the hands, so the arms never fill up;
     // floor stock is picked up a piece at a time on the way to the phone.
     while (this.stock(predicate).length > 0) {
       const inHand = this.inventory.find(predicate);
       if (inHand) {
-        this.apply(listItemAction(inHand, price(inHand)));
+        this.apply(listItemsAction([inHand], price(inHand)));
         if (this.inventory.includes(inHand)) {
           throw new Error(`Couldn't list ${inHand.type}`);
         }
@@ -1394,13 +1394,23 @@ export class ShopDriver {
       }
       this.takeFromFloor(predicate, 1);
     }
-    if (this.state.listings.length !== before + count) {
+    // Identical pieces at one price stack into a single offer, so count
+    // pieces rather than rows.
+    if (this.listedPieces !== before + count) {
       throw new Error(
-        `Listed ${this.state.listings.length - before} of ${count} pieces — ` +
+        `Listed ${this.listedPieces - before} of ${count} pieces — ` +
           `this is a driver bug`,
       );
     }
     return this;
+  }
+
+  /** How many pieces are up for sale, across every standing offer. */
+  private get listedPieces(): number {
+    return this.state.listings.reduce(
+      (total, listing) => total + listingCount(listing),
+      0,
+    );
   }
 
   /**
@@ -1415,10 +1425,13 @@ export class ShopDriver {
     }
     if (this.state.listings.length > 0) {
       throw new Error(
-        `${this.state.listings.length} listings never sold — asking above ` +
+        `${this.listedPieces} pieces never sold — asking above ` +
           `fair value? Still up: ` +
           `[${this.state.listings
-            .map((l) => `${l.material.type} at $${l.askingPrice}`)
+            .map(
+              (l) =>
+                `${listingCount(l)}× ${listingItem(l).type} at $${l.askingPrice}`,
+            )
             .join(", ")}]`,
       );
     }

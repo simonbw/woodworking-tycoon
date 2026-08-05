@@ -184,7 +184,7 @@ export const gameStateSchema = z.object({
   listings: z.array(
     z.object({
       id: z.string(),
-      material: materialSchema,
+      materials: z.array(materialSchema),
       askingPrice: z.number(),
       listedAtTick: z.number(),
     }),

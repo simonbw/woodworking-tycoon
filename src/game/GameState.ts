@@ -202,15 +202,27 @@ export interface GameState {
   readonly pendingPayouts?: ReadonlyArray<PayoutEvent>;
 }
 
-/** An item the player has put up for sale on the marketplace. */
+/**
+ * A standing offer on the marketplace: one or more interchangeable pieces
+ * at one price. Listing several of the same thing makes one stack rather
+ * than a wall of identical rows — see `listingGroupKey` in marketplace.ts
+ * for what counts as "the same thing".
+ */
 export interface MarketListing {
   readonly id: string;
-  readonly material: MaterialInstance;
+  /**
+   * The pieces on offer, all sharing a listing group key. Buyers take one
+   * at a time; a listing whose last piece sells is removed, so this is
+   * never empty.
+   */
+  readonly materials: ReadonlyArray<MaterialInstance>;
+  /** Asking price for one piece. */
   readonly askingPrice: number;
   /**
-   * When the item went up at its current price. Repricing resets this —
+   * When the offer went up at its current price. Repricing resets this —
    * the pity timer (see marketplace.ts) runs from here, and a price change
-   * is a new offer to the market.
+   * is a new offer to the market. Adding stock to a standing offer does
+   * not reset it: the offer is what's been sitting there, not the pieces.
    */
   readonly listedAtTick: number;
 }

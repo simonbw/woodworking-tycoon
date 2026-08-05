@@ -1,5 +1,6 @@
 import { AcceptedJob, MarketListing } from "./GameState";
 import { MaterialInstance } from "./Materials";
+import { getMaterialFullName } from "./material-helpers";
 import { getSellValue } from "./material-values";
 import { TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY } from "./time";
 
@@ -94,27 +95,58 @@ export function categoryDemandFor(
   return categoryDemand[category] ?? 1;
 }
 
-/** The per-tick chance that a listing sells, all three factors combined. */
+/**
+ * What makes two pieces the same offer. Stock only stacks into one listing
+ * when a buyer would have no reason to prefer one piece over the other:
+ * same name and state (the established grouping identity — see
+ * `getMaterialFullName`) *and* the same fair value, since that is what the
+ * whole sale model is expressed against.
+ */
+export function listingGroupKey(material: MaterialInstance): string {
+  return `${getMaterialFullName(material)} @ ${getSellValue(material)}`;
+}
+
+/**
+ * The piece that speaks for the stack. Every piece in a listing shares a
+ * group key, so any of them prices and names the whole offer.
+ */
+export function listingItem(listing: MarketListing): MaterialInstance {
+  return listing.materials[0];
+}
+
+/** How many pieces are still on offer. */
+export function listingCount(listing: MarketListing): number {
+  return listing.materials.length;
+}
+
+/**
+ * The per-tick chance that one piece sells, all three factors combined.
+ * Rolled per piece, not per listing: five identical shelves find buyers
+ * about five times as fast as one, and each sale dips the category's
+ * demand meter under the next roll.
+ */
 export function listingSaleChance(
-  listing: MarketListing,
+  material: MaterialInstance,
+  askingPrice: number,
   reputation: number,
   categoryDemand: Readonly<Record<string, number>>,
 ): number {
-  const fairValue = getSellValue(listing.material);
+  const fairValue = getSellValue(material);
   if (fairValue <= 0) {
     return 0;
   }
-  const r = listing.askingPrice / fairValue;
-  const demand = categoryDemandFor(
-    categoryDemand,
-    demandCategory(listing.material),
-  );
+  const r = askingPrice / fairValue;
+  const demand = categoryDemandFor(categoryDemand, demandCategory(material));
   return BASE_SALE_RATE * priceFactor(r, reputation) * demandFactor(demand);
 }
 
-/** Whether the pity timer fires: fairly priced, waited long enough. */
+/**
+ * Whether the pity timer fires: fairly priced, waited long enough. It
+ * applies to the offer, so a stack that ages out sells a piece per tick
+ * until it's gone.
+ */
 export function listingPitySale(listing: MarketListing, tick: number): boolean {
-  const fairValue = getSellValue(listing.material);
+  const fairValue = getSellValue(listingItem(listing));
   return (
     fairValue > 0 &&
     listing.askingPrice <= fairValue &&
@@ -154,7 +186,8 @@ export function listingInterest(
   categoryDemand: Readonly<Record<string, number>>,
 ): ListingInterest {
   const chance = listingSaleChance(
-    { id: "", material, askingPrice, listedAtTick: 0 },
+    material,
+    askingPrice,
     reputation,
     categoryDemand,
   );

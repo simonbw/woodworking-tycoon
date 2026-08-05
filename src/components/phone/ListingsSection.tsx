@@ -2,11 +2,17 @@ import React, { useState } from "react";
 import { MarketListing } from "../../game/GameState";
 import {
   delistItemAction,
-  listItemAction,
+  listItemsAction,
   repriceListingAction,
 } from "../../game/game-actions/marketplace-actions";
-import { ListingInterest, listingInterest } from "../../game/marketplace";
-import { formatMoney } from "../../utils/formatNumber";
+import {
+  ListingInterest,
+  listingCount,
+  listingGroupKey,
+  listingInterest,
+  listingItem,
+} from "../../game/marketplace";
+import { formatCount, formatMoney } from "../../utils/formatNumber";
 import { MaterialLabel } from "../MaterialLabel";
 import { getSellValue } from "../../game/material-values";
 import { MaterialInstance } from "../../game/Materials";
@@ -21,9 +27,7 @@ import { useApplyGameAction, useGameState } from "../useGameState";
  */
 export const ListingsSection: React.FC = () => {
   const gameState = useGameState();
-  const sellable = gameState.player.inventory.filter(
-    (material) => getSellValue(material) > 0,
-  );
+  const sellable = groupSellable(gameState.player.inventory);
 
   return (
     <section className="space-y-4">
@@ -48,12 +52,48 @@ export const ListingsSection: React.FC = () => {
         </p>
       ) : (
         <ul className="space-y-2">
-          {sellable.map((material) => (
-            <ListItemRow key={material.id} material={material} />
+          {sellable.map((group) => (
+            <ListItemRow key={group[0].id} materials={group} />
           ))}
         </ul>
       )}
     </section>
+  );
+};
+
+/**
+ * Sellable inventory collapsed into offers: identical pieces share one row
+ * so they can be priced once and listed together, rather than repeating a
+ * row per piece.
+ */
+function groupSellable(
+  inventory: ReadonlyArray<MaterialInstance>,
+): MaterialInstance[][] {
+  const groups = new Map<string, MaterialInstance[]>();
+  for (const material of inventory) {
+    if (getSellValue(material) <= 0) {
+      continue;
+    }
+    const key = listingGroupKey(material);
+    const group = groups.get(key);
+    if (group) {
+      group.push(material);
+    } else {
+      groups.set(key, [material]);
+    }
+  }
+  return [...groups.values()];
+}
+
+/** "×3" on a stacked offer; nothing at all on a single piece. */
+const StackTag: React.FC<{ count: number }> = ({ count }) => {
+  if (count < 2) {
+    return null;
+  }
+  return (
+    <span className="font-condensed text-xs tabular-nums text-ink-fade shrink-0">
+      ×{formatCount(count)}
+    </span>
   );
 };
 
@@ -120,19 +160,26 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
   const daysListed = Math.floor(
     (gameState.tick - listing.listedAtTick) / TICKS_PER_CALENDAR_DAY,
   );
+  const material = listingItem(listing);
+  const count = listingCount(listing);
+  // Whatever the arms can still take, up to the whole stack — a full-handed
+  // player can't pull anything back.
+  const takeable = Math.min(count, handSpaceLeft(gameState.player));
 
   return (
     <li className="bg-white border border-ink-black/15 rounded-sm p-2 space-y-1 shadow-sm">
       <div className="flex items-baseline justify-between gap-2">
-        <MaterialLabel material={listing.material} />
+        <MaterialLabel material={material} />
+        <StackTag count={count} />
         <InterestTag
-          material={listing.material}
+          material={material}
           askingPrice={priceChanged ? parsedPrice : listing.askingPrice}
         />
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-ink-fade">
         <span>
-          fair value {formatMoney(getSellValue(listing.material))} ·{" "}
+          fair value {formatMoney(getSellValue(material))}
+          {count > 1 ? " each" : ""} ·{" "}
           {daysListed === 0
             ? "listed today"
             : `up ${daysListed} day${daysListed === 1 ? "" : "s"}`}
@@ -151,15 +198,17 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
           )}
           <button
             className="button-paper text-xs"
-            disabled={handSpaceLeft(gameState.player) === 0}
+            disabled={takeable === 0}
             title={
-              handSpaceLeft(gameState.player) === 0
-                ? "Hands full — the item comes back into your arms"
-                : undefined
+              takeable === 0
+                ? "Hands full — the pieces come back into your arms"
+                : takeable < count
+                  ? `Only ${formatCount(takeable)} will fit in your arms`
+                  : undefined
             }
-            onClick={() => applyAction(delistItemAction(listing.id))}
+            onClick={() => applyAction(delistItemAction(listing.id, takeable))}
           >
-            Take Down
+            {takeable > 1 ? `Take Down ×${formatCount(takeable)}` : "Take Down"}
           </button>
         </span>
       </div>
@@ -167,10 +216,12 @@ const ListingRow: React.FC<{ listing: MarketListing }> = ({ listing }) => {
   );
 };
 
-const ListItemRow: React.FC<{ material: MaterialInstance }> = ({
-  material,
+const ListItemRow: React.FC<{ materials: MaterialInstance[] }> = ({
+  materials,
 }) => {
   const applyAction = useApplyGameAction();
+  const material = materials[0];
+  const count = materials.length;
   const fairValue = getSellValue(material);
   // Bare for the same reason as the listing row's field above: this is
   // input text, not a readout.
@@ -182,20 +233,24 @@ const ListItemRow: React.FC<{ material: MaterialInstance }> = ({
     <li className="bg-paper-cream border border-ink-black/10 rounded-sm p-2 space-y-1">
       <div className="flex items-baseline justify-between gap-2">
         <MaterialLabel material={material} />
+        <StackTag count={count} />
         {priceValid && (
           <InterestTag material={material} askingPrice={parsedPrice} />
         )}
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-ink-fade">
-        <span>fair value {formatMoney(fairValue)}</span>
+        <span>
+          fair value {formatMoney(fairValue)}
+          {count > 1 ? " each" : ""}
+        </span>
         <span className="flex items-center gap-1">
           <PriceInput value={price} onChange={setPrice} />
           <button
             className="button-paper text-xs"
             disabled={!priceValid}
-            onClick={() => applyAction(listItemAction(material, parsedPrice))}
+            onClick={() => applyAction(listItemsAction(materials, parsedPrice))}
           >
-            List
+            {count > 1 ? `List ×${formatCount(count)}` : "List"}
           </button>
         </span>
       </div>

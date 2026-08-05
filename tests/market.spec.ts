@@ -123,23 +123,23 @@ test.describe("Market, supplies, and sound", () => {
       await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
     });
 
-    await test.step("list a shelf at fair value", async () => {
+    await test.step("list both shelves at fair value as one offer", async () => {
       await openPhone(page);
       await expect(
         page.getByText("SawdustList", { exact: true }),
       ).toBeVisible();
 
-      // The shelf row in "List an item" is pre-priced at fair value ($12)
-      await page
-        .locator("li", { hasText: /Rustic/i })
-        .getByRole("button", { name: "List" })
-        .click();
+      // Two identical shelves share one row in "List an item", pre-priced
+      // at fair value ($12 each), and go up together
+      const shelfRow = page.locator("li", { hasText: /Rustic/i });
+      await expect(shelfRow).toHaveCount(1);
+      await shelfRow.getByRole("button", { name: "List ×2" }).click();
       // A fairly priced listing can legitimately sell within a tick or two,
       // so accept either "listed" or "already sold" here
       await page.waitForFunction(
         () => {
           const s = (window as any).__GET_GAME_STATE__();
-          return s.listings.length === 1 || s.money === 112;
+          return s.listings.length === 1 || s.money === 124;
         },
         undefined,
         { timeout: 5000 },
@@ -149,7 +149,9 @@ test.describe("Market, supplies, and sound", () => {
       );
       if (state.listings.length === 1) {
         expect(state.listings[0].askingPrice).toBe(12);
-        // Listing boxes the item up: it leaves the inventory unpaid
+        // One stacked offer, not a row per shelf
+        expect(state.listings[0].materials.length).toBe(2);
+        // Listing boxes the items up: they leave the inventory unpaid
         expect(state.money).toBe(100);
       }
       expect(
@@ -176,7 +178,7 @@ test.describe("Market, supplies, and sound", () => {
       });
       await advanceTicks(page, 1);
       await page.waitForFunction(
-        () => (window as any).__GET_GAME_STATE__().money === 112,
+        () => (window as any).__GET_GAME_STATE__().money === 124,
         undefined,
         { timeout: 5000 },
       );

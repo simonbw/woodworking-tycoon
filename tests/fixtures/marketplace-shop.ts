@@ -22,8 +22,15 @@ export const marketplaceShop: GameState = {
     position: [0, 0],
     direction: 0,
     inventory: [
+      // Two identical shelves: they collapse into one priced row on the
+      // phone and go up as a single stacked offer.
       {
         id: "test-shelf-1",
+        type: "rusticShelf",
+        species: "pallet",
+      },
+      {
+        id: "test-shelf-2",
         type: "rusticShelf",
         species: "pallet",
       },

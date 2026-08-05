@@ -10,6 +10,8 @@ import {
   categoryDemandFor,
   demandCategory,
   jobPayout,
+  listingGroupKey,
+  listingItem,
   listingPitySale,
   listingSaleChance,
   maxAcceptedJobs,
@@ -28,9 +30,14 @@ const makeListingId = idMaker();
 
 // ------------------------------------------------------------------ Listings
 
-/** Puts an inventory item up for sale at the player's chosen price. */
-export function listItemAction(
-  material: MaterialInstance,
+/**
+ * Puts inventory items up for sale at the player's chosen price. Pieces
+ * that belong to the same offer — same group key, same price — go up as
+ * one stacked listing rather than a row apiece, whether they're listed
+ * together or added to an offer that's already standing.
+ */
+export function listItemsAction(
+  materials: ReadonlyArray<MaterialInstance>,
   askingPrice: number,
 ): GameAction {
   return (gameState) => {
@@ -38,53 +45,100 @@ export function listItemAction(
       console.warn("Marketplace is not unlocked yet");
       return gameState;
     }
-    if (!gameState.player.inventory.some((item) => item === material)) {
+    if (materials.length === 0) {
+      console.warn("Tried to list nothing");
+      return gameState;
+    }
+    if (
+      !materials.every((material) =>
+        gameState.player.inventory.some((item) => item === material),
+      )
+    ) {
       console.warn("Tried to list material not in inventory");
+      return gameState;
+    }
+    const key = listingGroupKey(materials[0]);
+    if (!materials.every((material) => listingGroupKey(material) === key)) {
+      console.warn("Tried to list mismatched materials as one offer");
       return gameState;
     }
     if (!(askingPrice > 0)) {
       console.warn("Listings need a positive asking price");
       return gameState;
     }
-    const listing: MarketListing = {
-      id: `listing-${makeListingId()}`,
-      material,
-      askingPrice: roundToCents(askingPrice),
-      listedAtTick: gameState.tick,
-    };
+
+    const price = roundToCents(askingPrice);
+    const standing = gameState.listings.find(
+      (listing) =>
+        listing.askingPrice === price &&
+        listingGroupKey(listingItem(listing)) === key,
+    );
+    const listings = standing
+      ? gameState.listings.map((listing) =>
+          listing === standing
+            ? { ...listing, materials: [...listing.materials, ...materials] }
+            : listing,
+        )
+      : [
+          ...gameState.listings,
+          {
+            id: `listing-${makeListingId()}`,
+            materials: [...materials],
+            askingPrice: price,
+            listedAtTick: gameState.tick,
+          },
+        ];
+
     return {
       ...gameState,
-      listings: [...gameState.listings, listing],
+      listings,
       player: {
         ...gameState.player,
         inventory: gameState.player.inventory.filter(
-          (item) => item !== material,
+          (item) => !materials.includes(item),
         ),
       },
     };
   };
 }
 
-/** Takes a listing down and returns the item to the player's inventory. */
-export function delistItemAction(listingId: string): GameAction {
+/**
+ * Takes pieces off a listing and back into the player's inventory —
+ * as many as asked for, capped by what the arms can still hold. An offer
+ * with nothing left on it comes down.
+ */
+export function delistItemAction(listingId: string, count = 1): GameAction {
   return (gameState) => {
     const listing = gameState.listings.find((l) => l.id === listingId);
     if (!listing) {
       console.warn("Tried to delist an unknown listing");
       return gameState;
     }
-    // The item comes back into the arms, so it needs the same room any
+    // The pieces come back into the arms, so they need the same room any
     // pickup does.
-    if (handSpaceLeft(gameState.player) === 0) {
+    const taken = Math.min(
+      count,
+      listing.materials.length,
+      handSpaceLeft(gameState.player),
+    );
+    if (taken <= 0) {
       console.warn("Tried to delist with full hands");
       return gameState;
     }
+    const returned = listing.materials.slice(0, taken);
+    const left = listing.materials.slice(taken);
     return {
       ...gameState,
-      listings: gameState.listings.filter((l) => l !== listing),
+      listings: gameState.listings.flatMap((l) =>
+        l !== listing
+          ? [l]
+          : left.length > 0
+            ? [{ ...l, materials: left }]
+            : [],
+      ),
       player: {
         ...gameState.player,
-        inventory: [...gameState.player.inventory, listing.material],
+        inventory: [...gameState.player.inventory, ...returned],
       },
     };
   };
@@ -92,7 +146,9 @@ export function delistItemAction(listingId: string): GameAction {
 
 /**
  * Changes a listing's asking price. Resets the listing clock — a new price
- * is a new offer to the market, so the pity timer starts over.
+ * is a new offer to the market, so the pity timer starts over. Repricing
+ * onto another offer's price merges the two: at most one listing exists
+ * per group key and price.
  */
 export function repriceListingAction(
   listingId: string,
@@ -108,17 +164,28 @@ export function repriceListingAction(
       console.warn("Listings need a positive asking price");
       return gameState;
     }
+    const price = roundToCents(askingPrice);
+    const key = listingGroupKey(listingItem(listing));
+    const twin = gameState.listings.find(
+      (l) =>
+        l !== listing &&
+        l.askingPrice === price &&
+        listingGroupKey(listingItem(l)) === key,
+    );
     return {
       ...gameState,
-      listings: gameState.listings.map((l) =>
-        l === listing
-          ? {
-              ...l,
-              askingPrice: roundToCents(askingPrice),
-              listedAtTick: gameState.tick,
-            }
-          : l,
-      ),
+      listings: gameState.listings.flatMap((l) => {
+        if (l === listing) {
+          // Merged away into the twin, which keeps its own id and clock.
+          return twin
+            ? []
+            : [{ ...l, askingPrice: price, listedAtTick: gameState.tick }];
+        }
+        if (l === twin) {
+          return [{ ...l, materials: [...l.materials, ...listing.materials] }];
+        }
+        return [l];
+      }),
     };
   };
 }
@@ -275,33 +342,42 @@ function rollListingSales(
   const remaining: MarketListing[] = [];
 
   for (const listing of gameState.listings) {
-    const chance = listingSaleChance(
-      listing,
-      gameState.reputation,
-      categoryDemand,
-    );
-    const sells = rng() < chance || listingPitySale(listing, gameState.tick);
-    if (!sells) {
-      remaining.push(listing);
-      continue;
-    }
-    sold = true;
-    money = roundToCents(money + listing.askingPrice);
-    reputation = roundToHundredth(
-      reputation +
-        reviewReputationGain(
-          getSellValue(listing.material),
-          listing.askingPrice,
+    // Every piece on the offer rolls for its own buyer, and each sale dips
+    // the category meter under the rolls still to come — so a stack of ten
+    // floods its market exactly the way ten separate listings used to.
+    const pity = listingPitySale(listing, gameState.tick);
+    const unsold: MaterialInstance[] = [];
+    for (const material of listing.materials) {
+      const chance = listingSaleChance(
+        material,
+        listing.askingPrice,
+        gameState.reputation,
+        categoryDemand,
+      );
+      if (!(rng() < chance || pity)) {
+        unsold.push(material);
+        continue;
+      }
+      sold = true;
+      money = roundToCents(money + listing.askingPrice);
+      reputation = roundToHundredth(
+        reputation +
+          reviewReputationGain(getSellValue(material), listing.askingPrice),
+      );
+      const category = demandCategory(material);
+      categoryDemand = {
+        ...categoryDemand,
+        [category]: Math.max(
+          0,
+          categoryDemandFor(categoryDemand, category) - DEMAND_DIP_PER_SALE,
         ),
-    );
-    const category = demandCategory(listing.material);
-    categoryDemand = {
-      ...categoryDemand,
-      [category]: Math.max(
-        0,
-        categoryDemandFor(categoryDemand, category) - DEMAND_DIP_PER_SALE,
-      ),
-    };
+      };
+    }
+    if (unsold.length === listing.materials.length) {
+      remaining.push(listing);
+    } else if (unsold.length > 0) {
+      remaining.push({ ...listing, materials: unsold });
+    }
   }
 
   if (!sold) {

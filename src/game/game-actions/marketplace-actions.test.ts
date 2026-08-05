@@ -18,7 +18,7 @@ import {
   cancelJobAction,
   delistItemAction,
   deliverJobAction,
-  listItemAction,
+  listItemsAction,
   marketplaceTickPass,
   repriceListingAction,
 } from "./marketplace-actions";
@@ -66,14 +66,14 @@ function listedState(
   overrides: Partial<GameState> = {},
 ): { state: GameState; listing: MarketListing } {
   const shelf = makeShelf();
-  const state = listItemAction(
-    shelf,
+  const state = listItemsAction(
+    [shelf],
     askingPrice,
   )(stateWith(overrides, [shelf]));
   return { state, listing: state.listings[0] };
 }
 
-describe("listItemAction", () => {
+describe("listItemsAction", () => {
   it("moves the item from inventory to a listing at the asking price", () => {
     const { state, listing } = listedState(75);
     assert.deepStrictEqual(state.player.inventory, []);
@@ -91,17 +91,65 @@ describe("listItemAction", () => {
         marketplaceUnlocked: false,
       },
     };
-    const result = listItemAction(shelf, 75)(state);
+    const result = listItemsAction([shelf], 75)(state);
     assert.strictEqual(result, state);
   });
 
   it("rejects items not in the inventory and non-positive prices", () => {
     const state = stateWith({}, []);
-    assert.strictEqual(listItemAction(makeShelf(), 75)(state), state);
+    assert.strictEqual(listItemsAction([makeShelf()], 75)(state), state);
 
     const shelf = makeShelf();
     const withItem = stateWith({}, [shelf]);
-    assert.strictEqual(listItemAction(shelf, 0)(withItem), withItem);
+    assert.strictEqual(listItemsAction([shelf], 0)(withItem), withItem);
+  });
+
+  it("puts identical pieces up as one stacked offer", () => {
+    const shelves = [makeShelf(), makeShelf(), makeShelf()];
+    const state = listItemsAction(shelves, 20)(stateWith({}, shelves));
+    assert.strictEqual(state.listings.length, 1);
+    assert.deepStrictEqual(state.listings[0].materials, shelves);
+    assert.deepStrictEqual(state.player.inventory, []);
+  });
+
+  it("adds to a standing offer at the same price without restarting its clock", () => {
+    const first = makeShelf();
+    const listed = listItemsAction([first], 20)(stateWith({}, [first]));
+
+    const second = makeShelf();
+    const later = {
+      ...listed,
+      tick: listed.tick + 500,
+      player: { ...listed.player, inventory: [second] },
+    };
+    const result = listItemsAction([second], 20)(later);
+
+    assert.strictEqual(result.listings.length, 1);
+    assert.deepStrictEqual(result.listings[0].materials, [first, second]);
+    // The offer has been standing since the first piece went up
+    assert.strictEqual(result.listings[0].listedAtTick, listed.tick);
+  });
+
+  it("keeps a differently priced offer of the same thing separate", () => {
+    const first = makeShelf();
+    const listed = listItemsAction([first], 20)(stateWith({}, [first]));
+
+    const second = makeShelf();
+    const result = listItemsAction(
+      [second],
+      30,
+    )({
+      ...listed,
+      player: { ...listed.player, inventory: [second] },
+    });
+    assert.strictEqual(result.listings.length, 2);
+  });
+
+  it("refuses to stack pieces that aren't the same offer", () => {
+    const shelf = makeShelf();
+    const plank = board("pallet", 36);
+    const state = stateWith({}, [shelf, plank]);
+    assert.strictEqual(listItemsAction([shelf, plank], 20)(state), state);
   });
 });
 
@@ -110,7 +158,7 @@ describe("delistItemAction", () => {
     const { state, listing } = listedState(75);
     const result = delistItemAction(listing.id)(state);
     assert.deepStrictEqual(result.listings, []);
-    assert.deepStrictEqual(result.player.inventory, [listing.material]);
+    assert.deepStrictEqual(result.player.inventory, listing.materials);
   });
 
   it("refuses when the hands are already full", () => {
@@ -128,6 +176,26 @@ describe("delistItemAction", () => {
     assert.strictEqual(result.player.inventory.length, HAND_CAPACITY);
     assert.strictEqual(listing.id, result.listings[0].id);
   });
+
+  it("takes pieces off a stack and leaves the rest up", () => {
+    const shelves = [makeShelf(), makeShelf(), makeShelf()];
+    const state = listItemsAction(shelves, 20)(stateWith({}, shelves));
+    const result = delistItemAction(state.listings[0].id, 2)(state);
+    assert.strictEqual(result.listings.length, 1);
+    assert.deepStrictEqual(result.listings[0].materials, [shelves[2]]);
+    assert.deepStrictEqual(result.player.inventory, [shelves[0], shelves[1]]);
+  });
+
+  it("takes back no more than the arms can hold", () => {
+    const shelves = Array.from({ length: HAND_CAPACITY + 2 }, makeShelf);
+    const state = listItemsAction(shelves, 20)(stateWith({}, shelves));
+    const result = delistItemAction(
+      state.listings[0].id,
+      shelves.length,
+    )(state);
+    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY);
+    assert.strictEqual(result.listings[0].materials.length, 2);
+  });
 });
 
 describe("repriceListingAction", () => {
@@ -137,6 +205,21 @@ describe("repriceListingAction", () => {
     const result = repriceListingAction(listing.id, 60)(later);
     assert.strictEqual(result.listings[0].askingPrice, 60);
     assert.strictEqual(result.listings[0].listedAtTick, 500);
+  });
+
+  it("merges into a standing offer when repriced onto its price", () => {
+    const cheap = makeShelf();
+    const dear = makeShelf();
+    const state = listItemsAction(
+      [dear],
+      30,
+    )(listItemsAction([cheap], 20)(stateWith({}, [cheap, dear])));
+    assert.strictEqual(state.listings.length, 2);
+
+    const result = repriceListingAction(state.listings[1].id, 20)(state);
+    assert.strictEqual(result.listings.length, 1);
+    assert.strictEqual(result.listings[0].id, state.listings[0].id);
+    assert.deepStrictEqual(result.listings[0].materials, [cheap, dear]);
   });
 });
 
@@ -183,6 +266,34 @@ describe("marketplaceTickPass listings", () => {
     const later = { ...state, tick: state.tick + LISTING_PITY_TICKS * 5 };
     const result = marketplaceTickPass(neverRng)(later);
     assert.strictEqual(result.listings.length, 1);
+  });
+
+  it("sells a stack a piece at a time, dipping demand for each sale", () => {
+    const shelves = [makeShelf(), makeShelf(), makeShelf()];
+    // A single roll that hits, then misses: only the first piece finds a
+    // buyer this tick, and the offer stays up with the other two.
+    let rolls = 0;
+    const onceRng = () => (rolls++ === 0 ? 0 : 0.999999);
+    const state = listItemsAction(shelves, 15)(stateWith({}, shelves));
+    const result = marketplaceTickPass(onceRng)(state);
+
+    assert.strictEqual(result.listings.length, 1);
+    assert.deepStrictEqual(result.listings[0].materials, [
+      shelves[1],
+      shelves[2],
+    ]);
+    assert.strictEqual(result.money, state.money + 15);
+    assert.ok((result.categoryDemand.rusticShelf ?? 1) < 1);
+  });
+
+  it("pity-sells a whole fairly priced stack once the window passes", () => {
+    const shelves = [makeShelf(), makeShelf(), makeShelf()];
+    const fairValue = getSellValue(shelves[0]);
+    const state = listItemsAction(shelves, fairValue)(stateWith({}, shelves));
+    const later = { ...state, tick: state.tick + LISTING_PITY_TICKS };
+    const result = marketplaceTickPass(neverRng)(later);
+    assert.deepStrictEqual(result.listings, []);
+    assert.strictEqual(result.money, state.money + fairValue * 3);
   });
 
   it("recovers demand meters over time and drops them when full", () => {
