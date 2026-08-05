@@ -1911,12 +1911,7 @@ export const BenchWorkSurface: React.FC<{
                 instant={reduceMotion}
                 onRest={onZoomRest}
               >
-                <BenchSceneBackdrop
-                  machine={machine}
-                  fit={frameFit}
-                  stageWidth={stageSize.width}
-                  stageHeight={stageSize.height}
-                />
+                <BenchSceneBackdrop machine={machine} fit={frameFit} />
                 {surface?.node}
               </BenchZoomRig>
             </Application>

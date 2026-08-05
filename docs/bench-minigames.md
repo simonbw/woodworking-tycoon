@@ -337,10 +337,11 @@ shop's world container swells about the bench
 zoom, panning the bench to center, un-turning the machine's floor
 rotation so a turned bench squares up as you lean in), and the zoomed
 live shop remains the backdrop the whole time the view is open — the
-scene canvas paints no floor of its own (a floor patch over the real
-view is exactly the seam that reads as a picture instead of a camera).
-What the scene adds is only what's bench-local: a dim over the
-periphery, the pool of light, the bench and its stock re-drawn at the
+scene canvas paints no floor of its own, and no vignette either (a
+floor patch or a dim over the real view is exactly the seam that reads
+as a picture instead of a camera; the zoom and the bench chrome are
+signal enough that these are workbench hands). What the scene adds is
+only what's bench-local: the bench and its stock re-drawn at the
 scene's resolution, and the interaction chrome — `BenchZoomRig` keeps
 it glued to the swelling footprint, crossfading it in across the ramp
 (opacity written per frame — a CSS transition on a freshly inserted
