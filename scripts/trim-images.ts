@@ -44,6 +44,10 @@ const MACHINE_IMAGES = [
   "lunchbox-planer-screws.png",
   "lunchbox-planer-top.png",
   "makeshift-bench.png",
+  // The bench view's own copy of the bench: the same art exported at
+  // 32 px/inch. It trims symmetrically about the same canvas center as
+  // the 8 px/inch export, so the two stay registered on top of each other.
+  "makeshift-bench-zoomed.png",
   "miter-saw-rotating-base.png",
   "miter-saw-stationary-base.png",
   "miter-saw-top.png",

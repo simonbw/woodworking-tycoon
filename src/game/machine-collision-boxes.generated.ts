@@ -38,8 +38,9 @@ export const GENERATED_COLLISION_SHAPES = {
     { kind: "box", min: [-0.417, 1.25], max: [1.75, 1.417] },
   ],
   workspace: [
-    { kind: "box", min: [-1.083, -1.333], max: [1.083, 0.25] },
-    { kind: "box", min: [-1.083, 0.25], max: [0, 0.333] },
-    { kind: "box", min: [-1.25, -0.583], max: [-1.083, -0.083] },
+    { kind: "box", min: [-1.667, -1.667], max: [1.583, 0.667] },
+    { kind: "box", min: [1.583, -0.083], max: [1.917, 0.583] },
+    { kind: "box", min: [-1.667, 0.667], max: [0.833, 0.75] },
+    { kind: "box", min: [-0.75, -1.75], max: [1.583, -1.667] },
   ],
 } satisfies Record<string, ReadonlyArray<CollisionShape>>;

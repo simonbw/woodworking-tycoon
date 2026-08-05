@@ -38,6 +38,8 @@ export const TEXTURE_ASSETS = [
   "/images/pickup-truck.png",
   "/images/workspace.png",
   "/images/makeshift-bench.png",
+  // The bench view's close-up copy of the same art (see BenchSceneBackdrop)
+  "/images/makeshift-bench-zoomed.png",
   "/images/person.png",
   ...PIXEL_ART_ASSETS,
 ];

@@ -265,11 +265,16 @@ yields): the scripts mostly reveal numbers the simulation already has.
 window with the shop itself, leaned into: one measured PIXI
 `Application` at device resolution (no fixed logical size, no CSS
 upscale — `stageMath.fitToStage` takes the real rect) draws the same
-concrete floor the shop view tiles and the _same bench art_ the shop
-floor uses (`BenchSceneBackdrop`: `makeshift-bench.png`
-nearest-sampled for the starting bench, the `WorktableSprite` vectors
-for built tables), so the zoomed bench and the floor bench are one
-asset at two zooms. The bench's contents lie on it exactly where
+concrete floor the shop view tiles and the _same bench_ the shop floor
+draws (`BenchSceneBackdrop`: `makeshift-bench-zoomed.png` — the
+starting bench's own drawing re-exported at 32 px/inch instead of the
+pipeline's 8, because leaning over it puts it on screen at roughly
+native size; the `WorktableSprite` vectors for built tables), so the
+zoomed bench and the floor bench are one drawing at two zooms. Both
+exports anchor on their canvas center and `trim:images` crops them
+symmetrically about it, so the close-up lands exactly over the shop's
+copy — and until it decodes, the shop's copy is already underneath,
+zoomed and in register, so there is nothing to fall back to. The bench's contents lie on it exactly where
 `MachineState.benchLayout` says (`BenchScene`, turns and flips tweened;
 a board flipped up on edge with F narrows to its thickness,
 `BoardOnEdgeSprite`), stroke and saw work runs on those very pieces in
