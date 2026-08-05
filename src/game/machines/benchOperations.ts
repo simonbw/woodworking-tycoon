@@ -4,6 +4,7 @@ import {
   blueprintFastenerCost,
   blueprintInputs,
   CROSSCUT_SLED_BLUEPRINT,
+  HEX_FRAME_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
   PICTURE_FRAME_BLUEPRINT,
   ProductBlueprint,
@@ -432,39 +433,16 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildHexFrame",
     requiredSkill: "polygonJoinery",
     duration: 35,
-    interaction: { kind: "assembly" },
-    // Twelve miters joined with brads, like the picture frame's four
-    requiredConsumables: [{ id: "nails", amount: 6 }],
-    getInputMaterials: () => [
-      {
-        type: ["board"],
-        species: REAL_WOOD_SPECIES,
-        length: [12],
-        width: [1],
-        thickness: [1],
-        surface: ["sanded"],
-        quantity: 6,
-        // Six rails mitered at the 30° stop, mirrored so a hexagon closes
-        matches: (material) =>
-          isBoard(material) && isMiteredFrameRail(material, 30),
-        matchesNote: "30° both ends, mirrored",
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const rails = materials.filter(isBoard);
-      if (rails.length !== 6) {
-        throw new Error("Need exactly 6 rails to build a hex frame");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "hexFrame",
-            species: rails[0].species,
-          }),
-        ],
-      };
-    },
+    // Six mitered rails around a hexagonal opening, bradded at the six
+    // skewed corner laps — the whole recipe reads off the blueprint,
+    // the first whose slots turn off the square grid
+    interaction: { kind: "assembly", blueprint: "hexFrame" },
+    requiredConsumables: blueprintFastenerCost(HEX_FRAME_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(HEX_FRAME_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(HEX_FRAME_BLUEPRINT, materials)],
+    }),
   },
   {
     name: "Build Serving Tray",

@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { array } from "../../utils/arrayUtils";
 import { board } from "../board-helpers";
 import { makeMaterial } from "../material-helpers";
 import { Board, FinishedProduct } from "../Materials";
@@ -19,6 +20,7 @@ import {
   RUSTIC_SHELF_BLUEPRINT,
   STEP_STOOL_BLUEPRINT,
   CROSSCUT_SLED_BLUEPRINT,
+  HEX_FRAME_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
   RESAW_FENCE_BLUEPRINT,
   SERVING_TRAY_BLUEPRINT,
@@ -908,5 +910,53 @@ describe("the side table blueprint", () => {
     );
     const table = assembleFromBlueprint(SIDE_TABLE_BLUEPRINT, [top, ...legs]);
     assert.strictEqual(table.species, "walnut");
+  });
+});
+
+describe("the hex frame blueprint", () => {
+  it("turns its rails off the square grid, alternating layers around", () => {
+    assert.strictEqual(HEX_FRAME_BLUEPRINT.slots.length, 6);
+    assert.deepStrictEqual(
+      HEX_FRAME_BLUEPRINT.slots.map((s) => s.angleDeg),
+      [90, 150, 210, 270, 330, 390],
+    );
+    assert.deepStrictEqual(
+      HEX_FRAME_BLUEPRINT.slots.map((s) => s.layer),
+      [0, 1, 0, 1, 0, 1],
+    );
+  });
+
+  it("derives one brad per skewed corner lap — six, on the seams", () => {
+    assert.strictEqual(HEX_FRAME_BLUEPRINT.fasteners.length, 6);
+    // Every fastener joins two *adjacent* rails: a corner, not a span
+    for (const f of HEX_FRAME_BLUEPRINT.fasteners) {
+      const [a, b] = f.joins.map((id) => Number(id.split("-")[1]));
+      assert.strictEqual(Math.min((a - b + 6) % 6, (b - a + 6) % 6), 1);
+    }
+    // …and lands near its hexagon vertex, inside the frame
+    const cx = 12;
+    const cy = HEX_FRAME_BLUEPRINT.heightIn / 2;
+    for (const f of HEX_FRAME_BLUEPRINT.fasteners) {
+      const r = Math.hypot(f.xIn - cx, f.yIn - cy);
+      assert.ok(r > 9 && r < 12, `corner brad at radius ${r}`);
+    }
+  });
+
+  it("assembles a frame from six mirrored 30° rails", () => {
+    const rail = () =>
+      makeMaterial({
+        ...board("walnut", 12, 1, 1, "sanded"),
+        ends: {
+          left: { kind: "mitered", angle: -30 },
+          right: { kind: "mitered", angle: 30 },
+        },
+      } as never);
+    const frame = assembleFromBlueprint(
+      HEX_FRAME_BLUEPRINT,
+      array(6).map(rail),
+    );
+    assert.strictEqual(frame.type, "hexFrame");
+    assert.strictEqual(frame.species, "walnut");
+    assert.strictEqual(frame.parts?.length, 6);
   });
 });

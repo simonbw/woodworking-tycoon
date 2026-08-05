@@ -10,7 +10,6 @@ import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
 import { FinishedBoxSprite } from "./FinishedBoxSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
-import { PictureFrameSprite } from "./PictureFrameSprite";
 import { SheetGoodSprite } from "./SheetGoodSprite";
 import { ToolItemSprite } from "./ToolItemSprite";
 
@@ -76,16 +75,6 @@ export const MaterialSprite: React.FC<{
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
     // The hex frame still draws flat art; its blueprint waits on
-    // rotated-slot fastener derivation
-    case "hexFrame":
-      return (
-        <PictureFrameSprite
-          material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
     // Blueprint-assembled products draw from their bill of materials —
     // the same slots the bench view assembled them on
     case "rusticShelf":
@@ -95,6 +84,7 @@ export const MaterialSprite: React.FC<{
     case "bookshelf":
     case "birdhouse":
     case "pictureFrame":
+    case "hexFrame":
     case "shelf":
     case "servingTray":
     case "sideTable":

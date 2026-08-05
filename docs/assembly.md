@@ -182,12 +182,39 @@ makeshift top) leans the scene back to hold it (the frame maxes in the
 active blueprint's size). Jigs bill screws now — two per jig, derived —
 where the legacy recipes charged nothing.
 
+## The legacy conversions — **Now**
+
+The row-surface tail is nearly gone; each fell to one small extension:
+
+- **The seam rule.** `deriveFasteners` spaces fasteners along long
+  overlaps (`FASTENER_SPACING_IN`, 16″): crossings keep their single
+  pallet-style nail, a cleat seam takes a row, a laminated double top
+  takes a grid. The **shelf** rode it (plank face-down, cleat on edge,
+  three screws down the seam), and the equipment bills recounted
+  honestly — the small worktables landed back on their original
+  hand-set numbers.
+- **Panel parts.** `AssembledPart.strips` records a glued-up part, and
+  such parts draw through `PanelSprite`. The **serving tray** rode it:
+  a six-strip bottom (exactly 12″ — the width its mitered wrap
+  genuinely closes around) under two long rails and two 12″ ends.
+  A build with a panel part reads its species off that face.
+- **On-end placement.** `BenchPlacement.onEnd` / `BlueprintSlot.onEnd`:
+  a standing board covers only its cross-section; F cycles flat →
+  on edge → on end. The **side table** rode it, assembling upside
+  down — top face-down, legs stood on end at its corners.
+- **Rotated slots.** Slot angles left the square grid; a lap with a
+  turned member derives its fastener by clipping the two rects
+  (Sutherland–Hodgman) and bradding the centroid. The **hex frame**
+  rode it: six rails at 60° steps on alternating layers, six brads at
+  the skewed corner laps.
+
 ## What stays for later phases
 
-- **Phase 2, the last one**: the serving tray — the picture frame plus
-  a panel bottom, waiting on a panel-shaped `AssembledPart`. It keeps
-  the legacy row surface (`AssemblySurface`), along with the hex
-  frame, side table, jewelry box, and shelf.
+- **The jewelry box** is the one legacy row assembly left
+  (`AssemblySurface`). Geometrically it's the planter box's pattern,
+  but its recipe wants an honesty pass first — four 24″ boards make a
+  two-foot "jewelry box" with no bottom — and that ripples into
+  commission 5's milling chain, so it waits on a design decision.
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of

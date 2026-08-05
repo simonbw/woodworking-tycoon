@@ -190,6 +190,90 @@ function fastenerRun(from: number, to: number): ReadonlyArray<number> {
   return array(count).map((_, i) => from + (span * (i + 0.5)) / count);
 }
 
+/** A slot part's rect corners in product inches, honoring its turn. */
+function slotCorners(slot: BlueprintSlot): ReadonlyArray<Point> {
+  const { wIn, hIn } = slotFootprintIn(slot);
+  const rad = (slot.angleDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return [
+    [-wIn / 2, -hIn / 2],
+    [wIn / 2, -hIn / 2],
+    [wIn / 2, hIn / 2],
+    [-wIn / 2, hIn / 2],
+  ].map(([dx, dy]) => ({
+    x: slot.xIn + dx * cos - dy * sin,
+    y: slot.yIn + dx * sin + dy * cos,
+  }));
+}
+
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Sutherland–Hodgman: the subject polygon clipped to a convex clip. */
+function clipPolygon(
+  subject: ReadonlyArray<Point>,
+  clip: ReadonlyArray<Point>,
+): ReadonlyArray<Point> {
+  let output = [...subject];
+  for (let i = 0; i < clip.length && output.length > 0; i++) {
+    const a = clip[i];
+    const b = clip[(i + 1) % clip.length];
+    const input = output;
+    output = [];
+    const side = (p: Point) =>
+      (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+    for (let j = 0; j < input.length; j++) {
+      const current = input[j];
+      const previous = input[(j + input.length - 1) % input.length];
+      const currentIn = side(current) >= 0;
+      const previousIn = side(previous) >= 0;
+      if (currentIn !== previousIn) {
+        const t = side(previous) / (side(previous) - side(current));
+        output.push({
+          x: previous.x + (current.x - previous.x) * t,
+          y: previous.y + (current.y - previous.y) * t,
+        });
+      }
+      if (currentIn) output.push(current);
+    }
+  }
+  return output;
+}
+
+function polygonArea(poly: ReadonlyArray<Point>): number {
+  let sum = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function polygonCentroid(poly: ReadonlyArray<Point>): Point {
+  let area = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    const cross = a.x * b.y - b.x * a.y;
+    area += cross;
+    cx += (a.x + b.x) * cross;
+    cy += (a.y + b.y) * cross;
+  }
+  return { x: cx / (3 * area), y: cy / (3 * area) };
+}
+
+/** The short side of a slot's footprint — the bite-limiting dimension. */
+function slotShortSideIn(slot: BlueprintSlot): number {
+  const { wIn, hIn } = slotFootprintIn(slot);
+  return Math.min(wIn, hIn);
+}
+
 function deriveFasteners(
   slots: ReadonlyArray<BlueprintSlot>,
 ): ReadonlyArray<BlueprintFastener> {
@@ -197,6 +281,24 @@ function deriveFasteners(
   for (const lower of slots) {
     for (const upper of slots) {
       if (upper.layer !== lower.layer + 1) continue;
+      // A pair with a turned member (the hex frame's rails) laps in a
+      // skewed polygon, not an axis-aligned box: clip the two rects
+      // against each other and put one fastener at the lap's centroid.
+      // The bite bar carries over from the square rule — the product of
+      // the per-axis requirements, relaxed a step further because an
+      // angled lap spreads the same bite over a slanted seam.
+      if (lower.angleDeg % 90 !== 0 || upper.angleDeg % 90 !== 0) {
+        const lap = clipPolygon(slotCorners(lower), slotCorners(upper));
+        if (lap.length < 3) continue;
+        const needArea =
+          Math.min(MIN_OVERLAP_IN, 0.75 * slotShortSideIn(lower)) *
+          Math.min(MIN_OVERLAP_IN, 0.75 * slotShortSideIn(upper)) *
+          0.75;
+        if (polygonArea(lap) < needArea) continue;
+        const at = polygonCentroid(lap);
+        fasteners.push({ xIn: at.x, yIn: at.y, joins: [lower.id, upper.id] });
+        continue;
+      }
       const a = slotExtent(lower);
       const b = slotExtent(upper);
       const x0 = Math.max(a.x0, b.x0);
@@ -239,9 +341,6 @@ function makeBlueprint(spec: {
   }
   const counts = new Map<string, number>();
   const slots = spec.slots.map((slot) => {
-    if (slot.angleDeg % 90 !== 0) {
-      throw new Error(`Blueprint slot angles must be square: ${slot.role}`);
-    }
     const index = counts.get(slot.role) ?? 0;
     counts.set(slot.role, index + 1);
     return { ...slot, id: `${slot.role}-${index}` };
@@ -1168,6 +1267,64 @@ export const SIDE_TABLE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/** The hex rail's nominal ends: mirrored 30s, like the frame rail's 45s. */
+const HEX_RAIL_ENDS: BoardEnds = {
+  left: { kind: "mitered", angle: -30 },
+  right: { kind: "mitered", angle: 30 },
+};
+
+const HEX_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [12],
+  width: [1],
+  thickness: [1],
+  surface: ["sanded"],
+  quantity: 1,
+  // Six true hex rails: 30° both ends, mirrored so the hexagon closes
+  matches: (material: MaterialInstance) =>
+    isBoard(material) && isMiteredFrameRail(material, 30),
+  matchesNote: "30° both ends, mirrored",
+};
+
+/**
+ * The hex frame: six foot-long rails around a hexagonal opening — the
+ * first blueprint whose slots turn off the square grid. Alternate rails
+ * sit on alternate layers, so each of the six corners is an adjacent-
+ * layer lap of two turned rails; the lap is a skewed polygon, and its
+ * derived brad lands at the lap's centroid, right on the seam. Six
+ * brads — the legacy hand-set bill, now earned.
+ */
+const HEX_SIDE_IN = 12;
+const HEX_APOTHEM_IN = (Math.sqrt(3) / 2) * HEX_SIDE_IN;
+
+export const HEX_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "hexFrame",
+  widthIn: HEX_SIDE_IN * 2,
+  heightIn: HEX_APOTHEM_IN * 2,
+  fastenerConsumable: "nails",
+  slots: array(6).map((_, i) => {
+    // Edge i's outward normal, walking clockwise from the top edge
+    const normal = ((i * 60 - 90) * Math.PI) / 180;
+    return {
+      role: "rail",
+      requirement: HEX_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: HEX_SIDE_IN,
+        thicknessQ: 1,
+        ends: HEX_RAIL_ENDS,
+      } as const,
+      // Rail centers sit half a rail-width inside each edge
+      xIn: HEX_SIDE_IN + Math.cos(normal) * (HEX_APOTHEM_IN - 0.5),
+      yIn: HEX_APOTHEM_IN + Math.sin(normal) * (HEX_APOTHEM_IN - 0.5),
+      // The rail runs along its edge: perpendicular to the normal
+      angleDeg: i * 60 + 90,
+      layer: i % 2,
+    };
+  }),
+});
+
 const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
@@ -1176,6 +1333,7 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   bookshelf: BOOKSHELF_BLUEPRINT,
   birdhouse: BIRDHOUSE_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
+  hexFrame: HEX_FRAME_BLUEPRINT,
   shelf: SHELF_BLUEPRINT,
   servingTray: SERVING_TRAY_BLUEPRINT,
   sideTable: SIDE_TABLE_BLUEPRINT,

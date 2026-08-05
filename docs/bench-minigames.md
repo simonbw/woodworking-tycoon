@@ -297,7 +297,12 @@ understructure nailed across it. A blueprint with no fasteners at all
 (the material shelf: two planks side by side) commits the moment the
 last part is laid on its outline. The one attended-tick hold left at a
 bench is the garbage can's Empty; every recipe at a real bench is your
-hands.
+hands. The legacy row assemblies followed batch by batch — the shelf
+(seam-spaced fasteners), the serving tray (panel parts), the side
+table (boards standing on end; F cycles flat → edge → end), and the
+hex frame (rotated slots, laps clipped as polygons) — leaving the
+jewelry box as the last `AssemblySurface` tenant, parked on a recipe
+honesty question.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a
