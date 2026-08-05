@@ -12,6 +12,8 @@ import {
   FinishedProductType,
   JIG_GRADE_KINDS,
   MaterialInstance,
+  Panel,
+  panelWidth,
   RACK_GRADE_KINDS,
   REAL_WOOD_SPECIES,
   SHOP_FURNITURE_KINDS,
@@ -24,6 +26,7 @@ import {
   isMiteredFrameRail,
 } from "../board-helpers";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
+import { isPanel } from "../panel-helpers";
 
 /**
  * Product blueprints: the single authored artifact behind an assembled
@@ -78,6 +81,10 @@ export interface BlueprintSlot {
    * footprint is its thickness, not its width, and the bench only seats
    * a piece that has been tipped up to match (F in the bench view). */
   readonly onEdge?: boolean;
+  /** The part stands on its end — a table leg against the face-down
+   * top — so its footprint is its bare cross-section (width across,
+   * thickness deep), and only a piece stood on end (F twice) seats. */
+  readonly onEnd?: boolean;
 }
 
 /** One fastener, at the overlap of exactly two parts — like a pallet
@@ -130,6 +137,18 @@ export function slotFaceWidthIn(slot: BlueprintSlot): number {
   return slot.onEdge ? slot.part.thicknessQ / 4 : slot.part.widthIn;
 }
 
+/** A slot part's local footprint before the slot's turn: across the
+ * part, then along its length — which for a part stood on end is just
+ * its cross-section (there is no length on the bench). */
+export function slotFootprintIn(slot: BlueprintSlot): {
+  wIn: number;
+  hIn: number;
+} {
+  return slot.onEnd
+    ? { wIn: slot.part.widthIn, hIn: slot.part.thicknessQ / 4 }
+    : { wIn: slotFaceWidthIn(slot), hIn: slot.part.lengthIn };
+}
+
 /** A slot's axis-aligned footprint in product inches. */
 export function slotExtent(slot: BlueprintSlot): {
   x0: number;
@@ -137,11 +156,10 @@ export function slotExtent(slot: BlueprintSlot): {
   x1: number;
   y1: number;
 } {
-  const lengthIn = slot.part.lengthIn;
-  const faceWidth = slotFaceWidthIn(slot);
+  const { wIn, hIn } = slotFootprintIn(slot);
   const across = slot.angleDeg % 180 !== 0;
-  const w = across ? lengthIn : faceWidth;
-  const h = across ? faceWidth : lengthIn;
+  const w = across ? hIn : wIn;
+  const h = across ? wIn : hIn;
   return {
     x0: slot.xIn - w / 2,
     y0: slot.yIn - h / 2,
@@ -150,9 +168,111 @@ export function slotExtent(slot: BlueprintSlot): {
   };
 }
 
-/** Two overlapping rects on adjacent layers get one fastener at the
- * overlap's center — enough bite to matter, so grazing corners don't. */
+/** Two overlapping rects on adjacent layers get fasteners at the
+ * overlap — enough bite to matter, so grazing corners don't. */
 const MIN_OVERLAP_IN = 1;
+
+/**
+ * How far apart fasteners sit along a long joint. A crossing (a slat
+ * over a rail) is smaller than this in both directions and gets exactly
+ * one fastener at its center, the way a pallet does; a long parallel
+ * seam — a cleat under a shelf, an apron along a table top — takes a
+ * row of them, because one screw in a four-foot joint holds nothing.
+ * A big two-dimensional lap (a doubled sheet top) takes a grid.
+ */
+const FASTENER_SPACING_IN = 16;
+
+/** Fastener positions along one axis of an overlap: evenly spaced,
+ * centered, one per FASTENER_SPACING_IN (rounded), never fewer than 1. */
+function fastenerRun(from: number, to: number): ReadonlyArray<number> {
+  const span = to - from;
+  const count = Math.max(1, Math.round(span / FASTENER_SPACING_IN));
+  return array(count).map((_, i) => from + (span * (i + 0.5)) / count);
+}
+
+/** A slot part's rect corners in product inches, honoring its turn. */
+function slotCorners(slot: BlueprintSlot): ReadonlyArray<Point> {
+  const { wIn, hIn } = slotFootprintIn(slot);
+  const rad = (slot.angleDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return [
+    [-wIn / 2, -hIn / 2],
+    [wIn / 2, -hIn / 2],
+    [wIn / 2, hIn / 2],
+    [-wIn / 2, hIn / 2],
+  ].map(([dx, dy]) => ({
+    x: slot.xIn + dx * cos - dy * sin,
+    y: slot.yIn + dx * sin + dy * cos,
+  }));
+}
+
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Sutherland–Hodgman: the subject polygon clipped to a convex clip. */
+function clipPolygon(
+  subject: ReadonlyArray<Point>,
+  clip: ReadonlyArray<Point>,
+): ReadonlyArray<Point> {
+  let output = [...subject];
+  for (let i = 0; i < clip.length && output.length > 0; i++) {
+    const a = clip[i];
+    const b = clip[(i + 1) % clip.length];
+    const input = output;
+    output = [];
+    const side = (p: Point) =>
+      (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+    for (let j = 0; j < input.length; j++) {
+      const current = input[j];
+      const previous = input[(j + input.length - 1) % input.length];
+      const currentIn = side(current) >= 0;
+      const previousIn = side(previous) >= 0;
+      if (currentIn !== previousIn) {
+        const t = side(previous) / (side(previous) - side(current));
+        output.push({
+          x: previous.x + (current.x - previous.x) * t,
+          y: previous.y + (current.y - previous.y) * t,
+        });
+      }
+      if (currentIn) output.push(current);
+    }
+  }
+  return output;
+}
+
+function polygonArea(poly: ReadonlyArray<Point>): number {
+  let sum = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function polygonCentroid(poly: ReadonlyArray<Point>): Point {
+  let area = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    const cross = a.x * b.y - b.x * a.y;
+    area += cross;
+    cx += (a.x + b.x) * cross;
+    cy += (a.y + b.y) * cross;
+  }
+  return { x: cx / (3 * area), y: cy / (3 * area) };
+}
+
+/** The short side of a slot's footprint — the bite-limiting dimension. */
+function slotShortSideIn(slot: BlueprintSlot): number {
+  const { wIn, hIn } = slotFootprintIn(slot);
+  return Math.min(wIn, hIn);
+}
 
 function deriveFasteners(
   slots: ReadonlyArray<BlueprintSlot>,
@@ -161,6 +281,24 @@ function deriveFasteners(
   for (const lower of slots) {
     for (const upper of slots) {
       if (upper.layer !== lower.layer + 1) continue;
+      // A pair with a turned member (the hex frame's rails) laps in a
+      // skewed polygon, not an axis-aligned box: clip the two rects
+      // against each other and put one fastener at the lap's centroid.
+      // The bite bar carries over from the square rule — the product of
+      // the per-axis requirements, relaxed a step further because an
+      // angled lap spreads the same bite over a slanted seam.
+      if (lower.angleDeg % 90 !== 0 || upper.angleDeg % 90 !== 0) {
+        const lap = clipPolygon(slotCorners(lower), slotCorners(upper));
+        if (lap.length < 3) continue;
+        const needArea =
+          Math.min(MIN_OVERLAP_IN, 0.75 * slotShortSideIn(lower)) *
+          Math.min(MIN_OVERLAP_IN, 0.75 * slotShortSideIn(upper)) *
+          0.75;
+        if (polygonArea(lap) < needArea) continue;
+        const at = polygonCentroid(lap);
+        fasteners.push({ xIn: at.x, yIn: at.y, joins: [lower.id, upper.id] });
+        continue;
+      }
       const a = slotExtent(lower);
       const b = slotExtent(upper);
       const x0 = Math.max(a.x0, b.x0);
@@ -179,11 +317,11 @@ function deriveFasteners(
         0.75 * Math.min(a.y1 - a.y0, b.y1 - b.y0),
       );
       if (x1 - x0 < needX || y1 - y0 < needY) continue;
-      fasteners.push({
-        xIn: (x0 + x1) / 2,
-        yIn: (y0 + y1) / 2,
-        joins: [lower.id, upper.id],
-      });
+      for (const xIn of fastenerRun(x0, x1)) {
+        for (const yIn of fastenerRun(y0, y1)) {
+          fasteners.push({ xIn, yIn, joins: [lower.id, upper.id] });
+        }
+      }
     }
   }
   return fasteners;
@@ -203,9 +341,6 @@ function makeBlueprint(spec: {
   }
   const counts = new Map<string, number>();
   const slots = spec.slots.map((slot) => {
-    if (slot.angleDeg % 90 !== 0) {
-      throw new Error(`Blueprint slot angles must be square: ${slot.role}`);
-    }
     const index = counts.get(slot.role) ?? 0;
     counts.set(slot.role, index + 1);
     return { ...slot, id: `${slot.role}-${index}` };
@@ -945,6 +1080,328 @@ export const RESAW_FENCE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/** A short frame rail for the tray's ends: the same 1×1 mirrored-miter
+ * stock as every frame, crosscut at the 12" detent. */
+const SHORT_FRAME_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  ...FRAME_RAIL_REQUIREMENT,
+  length: [12],
+};
+
+/**
+ * The serving tray: a glued-up panel bottom with the picture frame's
+ * rail wrap around its rim — the first blueprint with a panel part. The
+ * bottom is exactly six 2" strips (12" wide), so the four mitered rails
+ * genuinely close around it: two long rails lap the panel's long edges
+ * and screw down their seams, and the two short rails lap over the long
+ * ones at the corners, brad at each 1×1 lap. Eight nails, all derived —
+ * the legacy recipe's hand-set bill, now earned.
+ */
+export const SERVING_TRAY_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "servingTray",
+  widthIn: 12,
+  heightIn: 24,
+  fastenerConsumable: "nails",
+  slots: [
+    {
+      role: "bottom",
+      requirement: {
+        type: ["panel"],
+        length: [24],
+        thickness: [3, 4],
+        surface: ["sanded"],
+        quantity: 1,
+        // Six real-wood strips: the one width the mitered wrap closes on
+        matches: (material: MaterialInstance) =>
+          isPanel(material) &&
+          panelWidth(material) === 12 &&
+          material.strips.every((strip) => strip.species !== "pallet"),
+        matchesNote: '12" wide, real wood',
+      } as unknown as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 12, lengthIn: 24, thicknessQ: 4 } as const,
+      xIn: 6,
+      yIn: 12,
+      angleDeg: 0,
+      layer: 0,
+    },
+    ...[
+      { xIn: 0.5, angleDeg: 0 },
+      { xIn: 11.5, angleDeg: 180 },
+    ].map(({ xIn, angleDeg }) => ({
+      role: "rail",
+      requirement: FRAME_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: 24,
+        thicknessQ: 1,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn,
+      yIn: 12,
+      angleDeg,
+      layer: 1,
+    })),
+    ...[
+      { yIn: 0.5, angleDeg: 90 },
+      { yIn: 23.5, angleDeg: 270 },
+    ].map(({ yIn, angleDeg }) => ({
+      role: "end",
+      requirement: SHORT_FRAME_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: 12,
+        thicknessQ: 1,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn: 6,
+      yIn,
+      angleDeg,
+      layer: 2,
+    })),
+  ],
+});
+
+/**
+ * The fine hardwood shelf, face-down: the plank lies on the bench show
+ * face down, and the cleat — the same stock stood on its long edge —
+ * runs along the back edge of its underside, screwed down its length
+ * (the seam rule: one screw in a four-foot joint holds nothing). On the
+ * wall the cleat is what carries it.
+ */
+const SHELF_STOCK: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [48],
+  width: [6],
+  thickness: [4],
+  surface: ["sanded"],
+  quantity: 1,
+};
+
+export const SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "shelf",
+  widthIn: 48,
+  heightIn: 8,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "plank",
+      requirement: SHELF_STOCK,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 4 } as const,
+      xIn: 24,
+      yIn: 4,
+      angleDeg: 90,
+      layer: 0,
+    },
+    {
+      role: "cleat",
+      requirement: SHELF_STOCK,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 4 } as const,
+      xIn: 24,
+      yIn: 1.5,
+      angleDeg: 90,
+      layer: 1,
+      onEdge: true,
+    },
+  ],
+});
+
+/**
+ * The side table, upside down — the way every table is actually built:
+ * the glued top lies face-down on the bench, and the four legs stand on
+ * their ends at its corners, screwed down through the underside. The
+ * legs are the first parts to use the on-end footprint: each ghost is a
+ * bare 2"×1½" cross-section, and only a leg stood on end (F twice)
+ * seats it. The top is the tray bottom's bigger sibling: six 2" strips,
+ * exactly 12" wide.
+ */
+const TABLE_LEG_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  length: [24],
+  width: [2],
+  thickness: [6, 8],
+  surface: ["smooth", "sanded"],
+  quantity: 1,
+};
+
+export const SIDE_TABLE_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "sideTable",
+  widthIn: 12,
+  heightIn: 24,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "top",
+      requirement: {
+        type: ["panel"],
+        length: [24],
+        thickness: [4],
+        surface: ["sanded"],
+        quantity: 1,
+        // Six real-wood strips — wider than any single board gets
+        matches: (material: MaterialInstance) =>
+          isPanel(material) &&
+          panelWidth(material) === 12 &&
+          material.strips.every((strip) => strip.species !== "pallet"),
+        matchesNote: '12" wide, real wood',
+      } as unknown as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 12, lengthIn: 24, thicknessQ: 4 } as const,
+      xIn: 6,
+      yIn: 12,
+      angleDeg: 0,
+      layer: 0,
+    },
+    ...[
+      { xIn: 2, yIn: 2.5 },
+      { xIn: 10, yIn: 2.5 },
+      { xIn: 2, yIn: 21.5 },
+      { xIn: 10, yIn: 21.5 },
+    ].map((at) => ({
+      role: "leg",
+      requirement: TABLE_LEG_REQUIREMENT,
+      part: { widthIn: 2, lengthIn: 24, thicknessQ: 6 } as const,
+      ...at,
+      angleDeg: 0,
+      layer: 1,
+      onEnd: true,
+    })),
+  ],
+});
+
+/** The hex rail's nominal ends: mirrored 30s, like the frame rail's 45s. */
+const HEX_RAIL_ENDS: BoardEnds = {
+  left: { kind: "mitered", angle: -30 },
+  right: { kind: "mitered", angle: 30 },
+};
+
+const HEX_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [12],
+  width: [1],
+  thickness: [1],
+  surface: ["sanded"],
+  quantity: 1,
+  // Six true hex rails: 30° both ends, mirrored so the hexagon closes
+  matches: (material: MaterialInstance) =>
+    isBoard(material) && isMiteredFrameRail(material, 30),
+  matchesNote: "30° both ends, mirrored",
+};
+
+/**
+ * The hex frame: six foot-long rails around a hexagonal opening — the
+ * first blueprint whose slots turn off the square grid. Alternate rails
+ * sit on alternate layers, so each of the six corners is an adjacent-
+ * layer lap of two turned rails; the lap is a skewed polygon, and its
+ * derived brad lands at the lap's centroid, right on the seam. Six
+ * brads — the legacy hand-set bill, now earned.
+ */
+const HEX_SIDE_IN = 12;
+const HEX_APOTHEM_IN = (Math.sqrt(3) / 2) * HEX_SIDE_IN;
+
+export const HEX_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "hexFrame",
+  widthIn: HEX_SIDE_IN * 2,
+  heightIn: HEX_APOTHEM_IN * 2,
+  fastenerConsumable: "nails",
+  slots: array(6).map((_, i) => {
+    // Edge i's outward normal, walking clockwise from the top edge
+    const normal = ((i * 60 - 90) * Math.PI) / 180;
+    return {
+      role: "rail",
+      requirement: HEX_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: HEX_SIDE_IN,
+        thicknessQ: 1,
+        ends: HEX_RAIL_ENDS,
+      } as const,
+      // Rail centers sit half a rail-width inside each edge
+      xIn: HEX_SIDE_IN + Math.cos(normal) * (HEX_APOTHEM_IN - 0.5),
+      yIn: HEX_APOTHEM_IN + Math.sin(normal) * (HEX_APOTHEM_IN - 0.5),
+      // The rail runs along its edge: perpendicular to the normal
+      angleDeg: i * 60 + 90,
+      layer: i % 2,
+    };
+  }),
+});
+
+/**
+ * The jewelry box, finally jewelry-sized: 12"×6" and two inches tall,
+ * all thin 2/4 stock the planer earns. The fanciest small build in the
+ * shop — seven parts in three cuts of the same milled hardwood: two
+ * bottom slats laid side by side, four walls stood on edge in lapped
+ * log-cabin corners, and a divider splitting the well in half. Eight
+ * brads, all derived: one down through each slat into a long wall, one
+ * at each corner lap, one at each end of the divider.
+ */
+const BOX_STOCK = (
+  lengthIn: number,
+  widthIn: 2 | 3,
+): InputMaterialWithQuantity<Board> => ({
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [lengthIn],
+  width: [widthIn],
+  // Thin stock: you'll be planing for this
+  thickness: [2],
+  surface: ["sanded"],
+  quantity: 1,
+});
+
+export const JEWELRY_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "jewelryBox",
+  widthIn: 12,
+  heightIn: 6,
+  fastenerConsumable: "nails",
+  slots: [
+    // The bottom: two slats side by side, each riding a long wall's seam
+    ...[1.5, 4.5].map((yIn) => ({
+      role: "slat",
+      requirement: BOX_STOCK(12, 3),
+      part: { widthIn: 3, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn: 6,
+      yIn,
+      angleDeg: 90,
+      layer: 0,
+    })),
+    // Long walls on edge along the slats' outer edges
+    ...[0.5, 5.5].map((yIn) => ({
+      role: "wall",
+      requirement: BOX_STOCK(12, 2),
+      part: { widthIn: 2, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn: 6,
+      yIn,
+      angleDeg: 90,
+      layer: 1,
+      onEdge: true,
+    })),
+    // End walls lap the long walls at the four corners…
+    ...[0.5, 11.5].map((xIn) => ({
+      role: "end",
+      requirement: BOX_STOCK(6, 2),
+      part: { widthIn: 2, lengthIn: 6, thicknessQ: 2 } as const,
+      xIn,
+      yIn: 3,
+      angleDeg: 0,
+      layer: 2,
+      onEdge: true,
+    })),
+    // …and the divider parts a ring well off the main one, bradded into
+    // both long walls (off-center, so its brads never stack on the
+    // slat seams' center brads)
+    {
+      role: "divider",
+      requirement: BOX_STOCK(6, 2),
+      part: { widthIn: 2, lengthIn: 6, thicknessQ: 2 } as const,
+      xIn: 4,
+      yIn: 3,
+      angleDeg: 0,
+      layer: 2,
+      onEdge: true,
+    },
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
@@ -953,6 +1410,11 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   bookshelf: BOOKSHELF_BLUEPRINT,
   birdhouse: BIRDHOUSE_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
+  hexFrame: HEX_FRAME_BLUEPRINT,
+  jewelryBox: JEWELRY_BOX_BLUEPRINT,
+  shelf: SHELF_BLUEPRINT,
+  servingTray: SERVING_TRAY_BLUEPRINT,
+  sideTable: SIDE_TABLE_BLUEPRINT,
   worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
   worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
   worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,
@@ -1018,7 +1480,7 @@ export function blueprintFastenerCost(
 export function matchPartsToSlots(
   blueprint: ProductBlueprint,
   materials: ReadonlyArray<MaterialInstance>,
-): ReadonlyArray<{ slot: BlueprintSlot; material: Board }> {
+): ReadonlyArray<{ slot: BlueprintSlot; material: Board | Panel }> {
   const pool = [...materials];
   return blueprint.slots.map((slot) => {
     const index = pool.findIndex((material) =>
@@ -1029,7 +1491,7 @@ export function matchPartsToSlots(
         `No staged piece fits the ${slot.role} slot of ${blueprint.id}`,
       );
     }
-    const material = pool[index] as Board;
+    const material = pool[index] as Board | Panel;
     pool.splice(index, 1);
     return { slot, material };
   });
@@ -1104,6 +1566,20 @@ export function assembleFromBlueprint(
   }
   const matched = matchPartsToSlots(blueprint, materials);
   const parts: AssembledPart[] = matched.map(({ slot, material }) => {
+    // A glued-up part keeps its strips — the tray's bottom shows the
+    // very stripes the player glued
+    if (isPanel(material)) {
+      return {
+        slot: slot.id,
+        species: dominantSpecies(material.strips),
+        width: panelWidth(material),
+        length: material.length,
+        thickness: material.thickness,
+        surface: material.surface,
+        strips: material.strips,
+        seed: material.id,
+      };
+    }
     const ends = orientEndsToSlot(slot, material);
     return {
       slot: slot.id,
@@ -1120,9 +1596,13 @@ export function assembleFromBlueprint(
       seed: material.id,
     };
   });
+  // A build with a panel part reads its species off that face — the
+  // tray's bottom, the table's top — not off a headcount its four legs
+  // would win
+  const facePart = parts.find((part) => part.strips);
   return makeMaterial<FinishedProduct>({
     type: productType,
-    species: dominantSpecies(parts),
+    species: facePart ? facePart.species : dominantSpecies(parts),
     parts,
   });
 }

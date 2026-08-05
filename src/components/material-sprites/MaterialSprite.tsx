@@ -2,15 +2,13 @@ import React from "react";
 import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { AssembledProductSprite } from "./AssembledProductSprite";
 import { BoardOnEdgeSprite } from "./BoardOnEdgeSprite";
+import { BoardOnEndSprite } from "./BoardOnEndSprite";
 import { BoardSprite } from "./BoardSprite";
 import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
 import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
-import { FinishedBoxSprite } from "./FinishedBoxSprite";
-import { FurnitureSprite, FurnitureType } from "./FurnitureSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
-import { PictureFrameSprite } from "./PictureFrameSprite";
 import { SheetGoodSprite } from "./SheetGoodSprite";
 import { ToolItemSprite } from "./ToolItemSprite";
 
@@ -22,10 +20,19 @@ export const MaterialSprite: React.FC<{
   /** The piece's bench placement has it standing on its long edge —
    * boards draw edge-up (BoardOnEdgeSprite); other types ignore it. */
   onEdge?: boolean;
-}> = ({ material, alpha, tint, onEdge }) => {
+  /** …or standing on its end: boards draw as bare end grain. */
+  onEnd?: boolean;
+}> = ({ material, alpha, tint, onEdge, onEnd }) => {
   switch (material.type) {
     case "board":
-      return onEdge ? (
+      return onEnd ? (
+        <BoardOnEndSprite
+          board={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />
+      ) : onEdge ? (
         <BoardOnEdgeSprite
           board={material}
           seed={material.id}
@@ -54,29 +61,10 @@ export const MaterialSprite: React.FC<{
         />
       );
 
-    case "jewelryBox":
-      return (
-        <FinishedBoxSprite
-          material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
     case "panel":
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
     // The hex frame still draws flat art; its blueprint waits on
-    // rotated-slot fastener derivation
-    case "hexFrame":
-      return (
-        <PictureFrameSprite
-          material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
     // Blueprint-assembled products draw from their bill of materials —
     // the same slots the bench view assembled them on
     case "rusticShelf":
@@ -86,19 +74,14 @@ export const MaterialSprite: React.FC<{
     case "bookshelf":
     case "birdhouse":
     case "pictureFrame":
+    case "hexFrame":
+    case "jewelryBox":
+    case "shelf":
+    case "servingTray":
+    case "sideTable":
       return (
         <AssembledProductSprite
           material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
-    case "shelf":
-    case "sideTable":
-      return (
-        <FurnitureSprite
-          material={material as FinishedProduct & { type: FurnitureType }}
           alpha={alpha}
           tint={tint}
         />
@@ -115,7 +98,6 @@ export const MaterialSprite: React.FC<{
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
     case "checkerboardCuttingBoard":
-    case "servingTray":
       return (
         <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
       );

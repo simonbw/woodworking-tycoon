@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { array } from "../../utils/arrayUtils";
 import { board } from "../board-helpers";
 import { makeMaterial } from "../material-helpers";
 import { Board, FinishedProduct } from "../Materials";
@@ -19,8 +20,13 @@ import {
   RUSTIC_SHELF_BLUEPRINT,
   STEP_STOOL_BLUEPRINT,
   CROSSCUT_SLED_BLUEPRINT,
+  HEX_FRAME_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
   RESAW_FENCE_BLUEPRINT,
+  SERVING_TRAY_BLUEPRINT,
+  SHELF_BLUEPRINT,
+  SIDE_TABLE_BLUEPRINT,
+  slotExtent,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
   TOOL_DRAWERS_BLUEPRINT,
@@ -107,7 +113,9 @@ describe("the rustic shelf blueprint", () => {
       productBlueprintFor("rusticShelf"),
       RUSTIC_SHELF_BLUEPRINT,
     );
-    assert.strictEqual(productBlueprintFor("shelf"), null);
+    // Every product carries a blueprint now — the registry has no holes
+    assert.ok(productBlueprintFor("jewelryBox"));
+    assert.strictEqual(productBlueprintFor("nonsense"), null);
   });
 
   it("slot part dims agree with slot requirements", () => {
@@ -746,13 +754,14 @@ describe("equipment blueprints", () => {
     assert.deepStrictEqual(rows[1].thickness, [6, 8]);
   });
 
-  it("nails every sheet–rail seam and rail–stretcher crossing", () => {
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 4);
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 6);
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 8);
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 11);
-    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 6);
-    assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 2);
+  it("nails every seam by the spacing rule — a row per long joint", () => {
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 8);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 10);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 12);
+    // The doubled top is a lamination: a 3×3 grid holds the sheets flat
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 23);
+    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 10);
+    assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 4);
   });
 
   it("the material shelf has no fasteners at all — laying on is the build", () => {
@@ -760,15 +769,19 @@ describe("equipment blueprints", () => {
     assert.deepStrictEqual(blueprintFastenerCost(MATERIAL_SHELF_BLUEPRINT), []);
   });
 
-  it("the jigs are screwed, two seams each", () => {
+  it("the jigs are screwed", () => {
     for (const jig of [
       CROSSCUT_SLED_BLUEPRINT,
       STRAIGHT_LINE_SLED_BLUEPRINT,
       RESAW_FENCE_BLUEPRINT,
     ]) {
       assert.strictEqual(jig.fastenerConsumable, "screws");
-      assert.strictEqual(jig.fasteners.length, 2);
     }
+    // The sleds' 3-foot runner and fence seams take two screws each;
+    // the resaw fence's short braces take one
+    assert.strictEqual(CROSSCUT_SLED_BLUEPRINT.fasteners.length, 4);
+    assert.strictEqual(STRAIGHT_LINE_SLED_BLUEPRINT.fasteners.length, 4);
+    assert.strictEqual(RESAW_FENCE_BLUEPRINT.fasteners.length, 2);
   });
 
   it("is registered under its equipment id and never becomes a product", () => {
@@ -784,5 +797,168 @@ describe("equipment blueprints", () => {
       () => assembleFromBlueprint(STORAGE_RACK_BLUEPRINT, []),
       /builds equipment, not a product/,
     );
+  });
+});
+
+describe("the shelf blueprint", () => {
+  it("screws the cleat down the length of the seam, not once at its middle", () => {
+    assert.strictEqual(SHELF_BLUEPRINT.fasteners.length, 3);
+    assert.deepStrictEqual(
+      SHELF_BLUEPRINT.fasteners.map((f) => f.xIn),
+      [8, 24, 40],
+    );
+    assert.deepStrictEqual(blueprintFastenerCost(SHELF_BLUEPRINT), [
+      { id: "screws", amount: 3 },
+    ]);
+  });
+
+  it("derives the legacy recipe's two-board bill", () => {
+    const rows = blueprintInputs(SHELF_BLUEPRINT);
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].quantity, 2);
+    assert.deepStrictEqual(rows[0].surface, ["sanded"]);
+  });
+
+  it("builds a shelf carrying the very boards that went in", () => {
+    const oak = () => board("oak", 48, 6, 4, "sanded");
+    const product = assembleFromBlueprint(SHELF_BLUEPRINT, [oak(), oak()]);
+    assert.strictEqual(product.type, "shelf");
+    assert.strictEqual(product.species, "oak");
+    assert.strictEqual(product.parts?.length, 2);
+    assert.ok(productBlueprintFor("shelf"));
+  });
+});
+
+describe("the serving tray blueprint", () => {
+  const strips = Array.from({ length: 6 }, () => ({
+    species: "maple" as const,
+    width: 2 as const,
+  }));
+
+  it("screws the long seams twice each and brads the four corner laps", () => {
+    assert.strictEqual(SERVING_TRAY_BLUEPRINT.fasteners.length, 8);
+    const corners = SERVING_TRAY_BLUEPRINT.fasteners.filter((f) =>
+      f.joins.every(
+        (slot) => slot.startsWith("rail") || slot.startsWith("end"),
+      ),
+    );
+    assert.strictEqual(corners.length, 4);
+  });
+
+  it("assembles a tray whose bottom part keeps its strips", () => {
+    const bottom = makeMaterial({
+      type: "panel",
+      strips,
+      length: 24,
+      thickness: 4,
+      surface: "sanded",
+    } as never);
+    const rail = (length: number) =>
+      makeMaterial({
+        ...board("maple", length, 1, 1, "sanded"),
+        ends: {
+          left: { kind: "mitered", angle: -45 },
+          right: { kind: "mitered", angle: 45 },
+        },
+      } as never);
+    const tray = assembleFromBlueprint(SERVING_TRAY_BLUEPRINT, [
+      bottom,
+      rail(24),
+      rail(24),
+      rail(12),
+      rail(12),
+    ]);
+    assert.strictEqual(tray.type, "servingTray");
+    const bottomPart = tray.parts?.find((p) => p.strips);
+    assert.deepStrictEqual(bottomPart?.strips, strips);
+    assert.strictEqual(bottomPart?.width, 12);
+    // The panel part seeds off the very panel that went in
+    assert.strictEqual(bottomPart?.seed, bottom.id);
+  });
+});
+
+describe("the side table blueprint", () => {
+  it("stands the legs on end — bare cross-section footprints at the corners", () => {
+    const legs = SIDE_TABLE_BLUEPRINT.slots.filter((s) => s.role === "leg");
+    assert.strictEqual(legs.length, 4);
+    assert.ok(legs.every((leg) => leg.onEnd));
+    for (const leg of legs) {
+      const e = slotExtent(leg);
+      assert.strictEqual(e.x1 - e.x0, 2);
+      assert.strictEqual(e.y1 - e.y0, 1.5);
+    }
+  });
+
+  it("screws each leg down through the face-down top", () => {
+    assert.strictEqual(SIDE_TABLE_BLUEPRINT.fasteners.length, 4);
+    assert.deepStrictEqual(blueprintFastenerCost(SIDE_TABLE_BLUEPRINT), [
+      { id: "screws", amount: 4 },
+    ]);
+  });
+
+  it("reads its species off the top, not a headcount its legs would win", () => {
+    const top = makeMaterial({
+      type: "panel",
+      strips: Array.from({ length: 6 }, () => ({
+        species: "walnut" as const,
+        width: 2 as const,
+      })),
+      length: 24,
+      thickness: 4,
+      surface: "sanded",
+    } as never);
+    const legs = Array.from({ length: 4 }, () =>
+      board("pine", 24, 2, 6, "sanded"),
+    );
+    const table = assembleFromBlueprint(SIDE_TABLE_BLUEPRINT, [top, ...legs]);
+    assert.strictEqual(table.species, "walnut");
+  });
+});
+
+describe("the hex frame blueprint", () => {
+  it("turns its rails off the square grid, alternating layers around", () => {
+    assert.strictEqual(HEX_FRAME_BLUEPRINT.slots.length, 6);
+    assert.deepStrictEqual(
+      HEX_FRAME_BLUEPRINT.slots.map((s) => s.angleDeg),
+      [90, 150, 210, 270, 330, 390],
+    );
+    assert.deepStrictEqual(
+      HEX_FRAME_BLUEPRINT.slots.map((s) => s.layer),
+      [0, 1, 0, 1, 0, 1],
+    );
+  });
+
+  it("derives one brad per skewed corner lap — six, on the seams", () => {
+    assert.strictEqual(HEX_FRAME_BLUEPRINT.fasteners.length, 6);
+    // Every fastener joins two *adjacent* rails: a corner, not a span
+    for (const f of HEX_FRAME_BLUEPRINT.fasteners) {
+      const [a, b] = f.joins.map((id) => Number(id.split("-")[1]));
+      assert.strictEqual(Math.min((a - b + 6) % 6, (b - a + 6) % 6), 1);
+    }
+    // …and lands near its hexagon vertex, inside the frame
+    const cx = 12;
+    const cy = HEX_FRAME_BLUEPRINT.heightIn / 2;
+    for (const f of HEX_FRAME_BLUEPRINT.fasteners) {
+      const r = Math.hypot(f.xIn - cx, f.yIn - cy);
+      assert.ok(r > 9 && r < 12, `corner brad at radius ${r}`);
+    }
+  });
+
+  it("assembles a frame from six mirrored 30° rails", () => {
+    const rail = () =>
+      makeMaterial({
+        ...board("walnut", 12, 1, 1, "sanded"),
+        ends: {
+          left: { kind: "mitered", angle: -30 },
+          right: { kind: "mitered", angle: 30 },
+        },
+      } as never);
+    const frame = assembleFromBlueprint(
+      HEX_FRAME_BLUEPRINT,
+      array(6).map(rail),
+    );
+    assert.strictEqual(frame.type, "hexFrame");
+    assert.strictEqual(frame.species, "walnut");
+    assert.strictEqual(frame.parts?.length, 6);
   });
 });

@@ -14,11 +14,7 @@ const TOOL_ITEM_ASSETS = (Object.keys(TOOL_TYPES) as ToolId[])
  * Pixel art, as opposed to the smooth machine art: these have to sample
  * nearest-neighbor or the shop's fit-to-column upscale blurs them.
  */
-const PIXEL_ART_ASSETS = [
-  "/images/shelf.png",
-  "/images/side-table.png",
-  ...TOOL_ITEM_ASSETS,
-];
+const PIXEL_ART_ASSETS = [...TOOL_ITEM_ASSETS];
 
 // List of all texture assets used in the game
 export const TEXTURE_ASSETS = [

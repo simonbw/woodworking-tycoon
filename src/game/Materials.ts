@@ -322,9 +322,15 @@ export type FinishedProductType = (typeof FINISHED_PRODUCT_TYPES)[number];
 export type AssembledPart = {
   readonly slot: string;
   readonly species: Species;
-  readonly width: BoardDimension;
+  /** Total width in inches — a board's catalog width, or a panel part's
+   * derived strip sum (which outgrows the board catalog). */
+  readonly width: number;
   readonly length: number;
   readonly thickness: BoardDimension;
+  /** Present when the part is a glued-up panel (a tray's bottom): the
+   * very strips that went in, so the finished piece shows the glue-up's
+   * stripes. Absent means the part is a plain board. */
+  readonly strips?: ReadonlyArray<PanelStrip>;
   /** The board's surface as it went in — sanded stock draws sanded in
    * the finished piece. Absent (older saves) means rough. */
   readonly surface?: SurfaceCondition;

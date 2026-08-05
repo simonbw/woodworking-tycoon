@@ -195,9 +195,10 @@ describe("buildHexFrame", () => {
 describe("buildServingTray", () => {
   const op = benchOp("buildServingTray");
 
-  const bottom = (species: "maple" | "pallet" = "maple"): Panel =>
+  // The wrap only closes on a six-strip bottom: exactly 12" wide
+  const bottom = (species: "maple" | "pallet" = "maple", strips = 6): Panel =>
     panel(
-      Array.from({ length: 4 }, () => ({
+      Array.from({ length: strips }, () => ({
         species,
         width: 2 as const,
       })),
@@ -206,21 +207,34 @@ describe("buildServingTray", () => {
       "sanded",
     );
 
-  it("wants a sanded real-wood panel bottom and 45° rails", () => {
-    const [panelReq, railReq] = op.getInputMaterials({});
+  it("wants a sanded six-strip real-wood bottom and 45° rails, long and short", () => {
+    const [panelReq, railReq, endReq] = op.getInputMaterials({});
     assert.ok(materialMeetsInput(bottom(), panelReq));
     assert.ok(!materialMeetsInput(bottom("pallet"), panelReq));
+    // A cutting-board panel is too narrow for the rails to close around
+    assert.ok(!materialMeetsInput(bottom("maple", 5), panelReq));
     assert.ok(materialMeetsInput(rail("maple", 24, 45), railReq));
+    assert.ok(materialMeetsInput(rail("maple", 12, 45), endReq));
+    assert.ok(!materialMeetsInput(rail("maple", 24, 45), endReq));
   });
 
-  it("produces a tray named for the panel's dominant wood", () => {
+  it("produces a tray carrying its panel bottom, stripes and all", () => {
     const { outputs } = op.output(
-      [bottom(), ...Array.from({ length: 4 }, () => rail("maple", 24, 45))],
+      [
+        bottom(),
+        rail("maple", 24, 45),
+        rail("maple", 24, 45),
+        rail("maple", 12, 45),
+        rail("maple", 12, 45),
+      ],
       {},
     );
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "servingTray");
     assert.strictEqual(outputs[0].species, "maple");
+    const bottomPart = outputs[0].parts?.find((p) => p.strips);
+    assert.strictEqual(bottomPart?.strips?.length, 6);
+    assert.strictEqual(bottomPart?.width, 12);
   });
 });
 

@@ -30,6 +30,10 @@ export interface BenchPlacement {
    * absent means lying flat (older saves never carry it).
    */
   readonly onEdge?: boolean;
+  /** The piece stands on its end — a table leg waiting under a top — so
+   * its footprint is its cross-section: width across, thickness deep.
+   * Boards only; F cycles flat → on edge → on end → flat. */
+  readonly onEnd?: boolean;
 }
 
 /** The bench top's physical span: the footprint's bounding box in inches. */

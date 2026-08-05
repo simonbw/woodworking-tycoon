@@ -70,6 +70,10 @@ const machineStateSchema = z.object({
         yIn: z.number(),
         angleDeg: z.number(),
         flipped: z.boolean(),
+        // The orientation half of the arrangement: without these a
+        // board tipped on edge (or stood on end) lay back flat on load
+        onEdge: z.boolean().optional(),
+        onEnd: z.boolean().optional(),
       }),
     )
     .optional(),

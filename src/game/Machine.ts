@@ -302,16 +302,14 @@ export type OperationInteraction =
       readonly kind: "glue";
     }
   | {
-      /** Snap components onto their ghost outlines, then drive one
-       * fastener per requiredConsumables unit. With a blueprint named,
-       * the work happens on the bench scene itself: lay each part on
-       * its ghost slot, then hammer a nail at every crossing (see
-       * bench-work/blueprint.ts — resolved via productBlueprintFor,
-       * referenced by id to keep this module import-light; equipment
-       * builds — worktables, jigs, the rack — have blueprints too).
-       * Without one, the legacy row layout stands in. */
+      /** Lay each part on its ghost slot on the bench scene, then
+       * drive a fastener at every derived point — the blueprint (see
+       * bench-work/blueprint.ts, resolved via productBlueprintFor,
+       * referenced by id to keep this module import-light) is the
+       * whole script: slots, orientations, fasteners. Product and
+       * equipment builds alike; every assembly has one. */
       readonly kind: "assembly";
-      readonly blueprint?: BlueprintId;
+      readonly blueprint: BlueprintId;
     };
 
 export interface Operation<TParams extends ParameterValues = ParameterValues> {

@@ -47,25 +47,35 @@ describe("buildShelf", () => {
 });
 
 describe("buildJewelryBox", () => {
-  it("requires thin sanded stock — the planer era", () => {
-    const requirement = buildJewelryBox.getInputMaterials({})[0];
-    assert.ok(
-      materialMeetsInput(board("walnut", 24, 4, 2, "sanded"), requirement),
-    );
+  const boxParts = () => [
+    board("walnut", 12, 3, 2, "sanded"),
+    board("walnut", 12, 3, 2, "sanded"),
+    board("walnut", 12, 2, 2, "sanded"),
+    board("walnut", 12, 2, 2, "sanded"),
+    board("walnut", 6, 2, 2, "sanded"),
+    board("walnut", 6, 2, 2, "sanded"),
+    board("walnut", 6, 2, 2, "sanded"),
+  ];
+
+  it("requires thin sanded stock in three cuts — the planer era", () => {
+    const [slats, walls, ends] = buildJewelryBox.getInputMaterials({});
+    assert.ok(materialMeetsInput(board("walnut", 12, 3, 2, "sanded"), slats));
     // Full-thickness stock won't do
-    assert.ok(
-      !materialMeetsInput(board("walnut", 24, 4, 4, "sanded"), requirement),
+    assert.ok(!materialMeetsInput(board("walnut", 12, 3, 4, "sanded"), slats));
+    assert.ok(materialMeetsInput(board("walnut", 12, 2, 2, "sanded"), walls));
+    assert.ok(materialMeetsInput(board("walnut", 6, 2, 2, "sanded"), ends));
+    assert.deepStrictEqual(
+      [slats.quantity, walls.quantity, ends.quantity],
+      [2, 2, 3],
     );
   });
 
-  it("produces a jewelry box of the input species", () => {
-    const inputs = Array.from({ length: 4 }, () =>
-      board("walnut", 24, 4, 2, "sanded"),
-    );
-    const { outputs } = buildJewelryBox.output(inputs, {});
+  it("produces a jewelry-sized box carrying all seven parts", () => {
+    const { outputs } = buildJewelryBox.output(boxParts(), {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "jewelryBox");
     assert.strictEqual(outputs[0].species, "walnut");
+    assert.strictEqual(outputs[0].parts?.length, 7);
   });
 });
 

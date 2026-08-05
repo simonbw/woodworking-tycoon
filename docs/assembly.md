@@ -182,12 +182,42 @@ makeshift top) leans the scene back to hold it (the frame maxes in the
 active blueprint's size). Jigs bill screws now — two per jig, derived —
 where the legacy recipes charged nothing.
 
-## What stays for later phases
+## The legacy conversions — **Now**
 
-- **Phase 2, the last one**: the serving tray — the picture frame plus
-  a panel bottom, waiting on a panel-shaped `AssembledPart`. It keeps
-  the legacy row surface (`AssemblySurface`), along with the hex
-  frame, side table, jewelry box, and shelf.
+The row-surface tail is nearly gone; each fell to one small extension:
+
+- **The seam rule.** `deriveFasteners` spaces fasteners along long
+  overlaps (`FASTENER_SPACING_IN`, 16″): crossings keep their single
+  pallet-style nail, a cleat seam takes a row, a laminated double top
+  takes a grid. The **shelf** rode it (plank face-down, cleat on edge,
+  three screws down the seam), and the equipment bills recounted
+  honestly — the small worktables landed back on their original
+  hand-set numbers.
+- **Panel parts.** `AssembledPart.strips` records a glued-up part, and
+  such parts draw through `PanelSprite`. The **serving tray** rode it:
+  a six-strip bottom (exactly 12″ — the width its mitered wrap
+  genuinely closes around) under two long rails and two 12″ ends.
+  A build with a panel part reads its species off that face.
+- **On-end placement.** `BenchPlacement.onEnd` / `BlueprintSlot.onEnd`:
+  a standing board covers only its cross-section; F cycles flat →
+  on edge → on end. The **side table** rode it, assembling upside
+  down — top face-down, legs stood on end at its corners.
+- **Rotated slots.** Slot angles left the square grid; a lap with a
+  turned member derives its fastener by clipping the two rects
+  (Sutherland–Hodgman) and bradding the centroid. The **hex frame**
+  rode it: six rails at 60° steps on alternating layers, six brads at
+  the skewed corner laps.
+
+- **The jewelry box**, last of the row-surface tenants, landed
+  jewelry-sized: 12″×6″×2″, seven parts of thin 2/4 stock in three
+  cuts — two bottom slats, four lapped walls on edge, an off-center
+  divider parting a ring well — eight derived brads. One 4′ board
+  mills a whole box, walking the crosscut and rip offcuts down the cut
+  list (the playthrough does exactly that). With it, `AssemblySurface`
+  is retired and `interaction.blueprint` is required: every assembly
+  is a blueprint.
+
+## What stays for later phases
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of
