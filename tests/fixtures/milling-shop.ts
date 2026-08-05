@@ -11,11 +11,12 @@ function idleMachine(
   selectedOperationId: string,
   selectedParameters?: MachineState["selectedParameters"],
   tools: MachineState["tools"] = [],
+  rotation: MachineState["rotation"] = 0,
 ): MachineState {
   return {
     machineTypeId,
     position,
-    rotation: 0,
+    rotation,
     inputMaterials: [],
     processingMaterials: [],
     outputMaterials: [],
@@ -86,7 +87,10 @@ export const millingShop: GameState = {
     idleMachine("jobsiteTableSaw", [8, 8], "ripBoard", { targetWidth: 4 }, [
       "straightLineSled",
     ]),
-    idleMachine("workspace", [10, 2], "glueUpPanel"),
+    // Turned side-on against the right wall: a 4×3-ft bench laid square
+    // would reach into column 8, and the table saw needs that whole
+    // column for an 8' board's lane (op cell [7,3]).
+    idleMachine("workspace", [9, 3], "glueUpPanel", undefined, [], 3),
     // In the same corner the starter shop keeps it — the cleaning chain
     // ends at the curb (the jointer's lane runs down column 2, clear of it)
     idleMachine("garbageCan", [0, 13], "empty"),

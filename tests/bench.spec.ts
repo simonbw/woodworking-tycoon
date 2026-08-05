@@ -659,17 +659,17 @@ test.describe("Bench view", () => {
                     ticksRemaining: 0,
                   },
                   benchLayout: {
-                    "bp-r1": { xIn: 33, yIn: 4, angleDeg: 96, flipped: false },
+                    "bp-r1": { xIn: 35, yIn: 7, angleDeg: 96, flipped: false },
                     "bp-r2": {
-                      xIn: 18,
-                      yIn: 24,
+                      xIn: 20,
+                      yIn: 27,
                       angleDeg: 90,
                       flipped: false,
                       onEdge: true,
                     },
-                    "bp-s1": { xIn: 2, yIn: 12, angleDeg: 0, flipped: false },
-                    "bp-s2": { xIn: 18, yIn: 12, angleDeg: 0, flipped: false },
-                    "bp-s3": { xIn: 34, yIn: 12, angleDeg: 0, flipped: false },
+                    "bp-s1": { xIn: 4, yIn: 15, angleDeg: 0, flipped: false },
+                    "bp-s2": { xIn: 20, yIn: 15, angleDeg: 0, flipped: false },
+                    "bp-s3": { xIn: 36, yIn: 15, angleDeg: 0, flipped: false },
                   },
                 }
               : m,
@@ -682,9 +682,9 @@ test.describe("Bench view", () => {
       await expect(stage).toHaveAttribute("data-seated", "4");
 
       // A bare hand over the empty rail outline reads its requirement —
-      // bench (-4, 0) sits on rail-0's thin strip out on the overhang,
+      // bench (-2, 3) sits on rail-0's thin strip out on the overhang,
       // clear of every piece (the parked rail crosses the strip's middle)
-      const overGhost = await inchPoint(page, -4, 0);
+      const overGhost = await inchPoint(page, -2, 3);
       await page.mouse.move(overGhost.x, overGhost.y);
       await expect(page.getByTestId("slot-tip")).toBeVisible();
       await expect(page.getByTestId("slot-tip")).toContainText("rail");
@@ -696,7 +696,7 @@ test.describe("Bench view", () => {
       // one flip verb — boards tip on edge, the pallet turns over). The
       // park spot overlaps a seated shelf on purpose — a free piece lies
       // on top and the hover must prefer it.
-      const from = await inchPoint(page, 33, 4);
+      const from = await inchPoint(page, 35, 7);
       await page.mouse.move(from.x, from.y);
       await expect(page.getByTestId("slot-tip")).toBeHidden();
       // Wait for the hover to land before the keypress — the key handler
@@ -715,8 +715,8 @@ test.describe("Bench view", () => {
         .toBe(true);
 
       // The one real snap-drag: the tipped rail onto rail-0's outline
-      // (product (24,6) → bench (18,0)).
-      const seat = await inchPoint(page, 18, 0);
+      // (product (24,6) → bench (20,3)).
+      const seat = await inchPoint(page, 20, 3);
       await page.mouse.move(from.x, from.y);
       await page.mouse.down();
       await page.mouse.move(seat.x + 4, seat.y - 3, { steps: 12 });
@@ -761,8 +761,8 @@ test.describe("Bench view", () => {
     await test.step("screwed assembly: the drill drives the planter box's screws", async () => {
       // The planter's five 2' slats staged on their outlines (walls on
       // edge), drill on the rail, screws in the cabinet. The 24×24 ghost
-      // frame centers on the 36×24 bench at (18,12) — product top-left
-      // lands at (6, 0).
+      // frame centers on the 40×30 bench at (20,15) — product top-left
+      // lands at (8, 3).
       await page.evaluate(() => {
         const board = (id: string, l: number) => ({
           id,
@@ -799,31 +799,31 @@ test.describe("Bench view", () => {
                     ticksRemaining: 0,
                   },
                   benchLayout: {
-                    "pb-slat": { xIn: 18, yIn: 12, angleDeg: 0, flipped: false },
+                    "pb-slat": { xIn: 20, yIn: 15, angleDeg: 0, flipped: false },
                     "pb-n": {
-                      xIn: 18,
-                      yIn: 2,
+                      xIn: 20,
+                      yIn: 5,
                       angleDeg: 90,
                       flipped: false,
                       onEdge: true,
                     },
                     "pb-s": {
-                      xIn: 18,
-                      yIn: 22,
+                      xIn: 20,
+                      yIn: 25,
                       angleDeg: 90,
                       flipped: false,
                       onEdge: true,
                     },
                     "pb-w": {
-                      xIn: 8,
-                      yIn: 12,
+                      xIn: 10,
+                      yIn: 15,
                       angleDeg: 0,
                       flipped: false,
                       onEdge: true,
                     },
                     "pb-e": {
-                      xIn: 28,
-                      yIn: 12,
+                      xIn: 30,
+                      yIn: 15,
                       angleDeg: 0,
                       flipped: false,
                       onEdge: true,

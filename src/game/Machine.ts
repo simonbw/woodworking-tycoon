@@ -78,6 +78,14 @@ export interface MachineType {
    * procedurally drawn ones. Omitted: the full cellsOccupied tiles block.
    */
   readonly collisionShapes?: ReadonlyArray<CollisionShape>;
+  /**
+   * The working surface of a bench, in inches, when it isn't simply the
+   * footprint's bounding box — the makeshift bench's plywood top is
+   * smaller than the paint buckets holding it up. Centered on the
+   * footprint, and it's what stock is laid out on and clamped to (see
+   * bench-work/bench-layout.ts). Worktables omit it: they're all top.
+   */
+  readonly benchTopIn?: { readonly widthIn: number; readonly heightIn: number };
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
   readonly operationPosition?: Vector;
   /**

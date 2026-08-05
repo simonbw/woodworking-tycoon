@@ -82,6 +82,21 @@ vocabulary, and per-operation scripts that compose it.
    (written by the pry commit and by `arrangeBenchMaterialAction`), and
    both the bench view and the shop-floor sprite render from it. Only
    the in-flight gesture (the drag under the button) is view state.
+
+   The bench top is the working area, and `seatOnBenchTop`
+   (`bench-work/bench-layout.ts`) is what makes that true: every free
+   arrangement — the live drag, the R turn, the F flip, the seed a piece
+   gets before anyone has touched it — comes back through it, so a piece
+   slides to the edge of the wood and stops there however much further
+   the hand travels. It reads the footprint the piece actually presents
+   (turned, on edge, on end), so a rail stood up reaches further than it
+   could lying flat. Stock longer than the bench has to hang off — a 4-ft
+   rail never fits a 40" top in any orientation — so for those the rule
+   softens to the physical one: the middle stays over the wood. A
+   blueprint slot is the deliberate exception. A plan bigger than the
+   bench (a worktable top built on the makeshift bench) puts its
+   outlines past the edges on purpose, and a part snapped onto one goes
+   where the slot says.
 4. **Work that grants resources commits incrementally; work that only
    transforms the workpiece commits atomically.** Each nail pried out of a
    pallet lands in `GameState.consumables` immediately — so the pallet must

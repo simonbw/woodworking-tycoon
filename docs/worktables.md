@@ -14,6 +14,19 @@ start on, and the sprite shows it. It knows every bench recipe, has 2
 tool slots, no shelf, and baseline work speed. It is never sold; it's
 simply in the garage when you arrive.
 
+It is the one bench whose top isn't its footprint. The buckets stick out
+past the plywood on every side, so the footprint is the 4×3 ft of floor
+the whole thing stands on, and `MachineType.benchTopIn` states the sheet
+itself: 40" × 30", measured off the art. Everything else derives its top
+from `cellsOccupied` (`benchTopSizeIn`), which for a table is the same
+rectangle.
+
+That makes the starting top roomier than the small worktable's 2×2 and a
+hair over the full-size 4×2 — deliberately. Room was never what a
+worktable sells; see the three advantages below. What the bigger tables
+buy is _shape_: a 6-ft run to lay long stock along, or the 4×4 island
+that takes a whole ghost frame without it hanging off the ends.
+
 ## Worktables (Now)
 
 Shop-built benches in four sizes — 1×1, 1×2, 1×3, and 2×2 — built at any

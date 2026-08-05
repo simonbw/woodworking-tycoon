@@ -15,17 +15,25 @@ export const workspace: MachineType = {
   name: "Makeshift Workbench",
   description:
     "A plywood offcut over a few paint buckets. It wobbles, but it works.",
-  // Plywood over paint buckets: about 31" × 21", so a 3×2-ft footprint
-  // with the front edge overhanging toward whoever's working at it (see
-  // the measured collision box).
+  // A 40" × 30" sheet of plywood over three paint buckets that stick out
+  // past it on every side — call the whole thing 4×3 ft of floor, which
+  // is what the art measures and what the collision box is cut from.
   cellsOccupied: [
+    [-1, -2],
+    [0, -2],
+    [1, -2],
+    [2, -2],
     [-1, -1],
     [0, -1],
     [1, -1],
+    [2, -1],
     [-1, 0],
     [0, 0],
     [1, 0],
+    [2, 0],
   ],
+  // Only the plywood takes stock; the buckets underneath are not bench
+  benchTopIn: { widthIn: 40, heightIn: 30 },
   collisionShapes: GENERATED_COLLISION_SHAPES.workspace,
   freeCellsNeeded: [
     [0, 1],

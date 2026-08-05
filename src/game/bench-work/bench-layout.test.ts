@@ -10,6 +10,7 @@ import {
   berthPlacementOnBench,
   defaultBenchPlacement,
   palletPointOnBench,
+  seatOnBenchTop,
 } from "./bench-layout";
 import { PALLET_WIDTH_IN } from "./pallet-geometry";
 
@@ -34,28 +35,105 @@ function benchWith(overrides: Partial<MachineState>): Machine {
 }
 
 describe("bench layout", () => {
-  it("measures the bench top from the footprint", () => {
-    assert.deepStrictEqual(benchTopSizeIn(MACHINE_TYPES.workspace), {
-      widthIn: 36,
-      heightIn: 24,
-    });
+  it("measures a worktable's top from its footprint", () => {
     assert.deepStrictEqual(benchTopSizeIn(MACHINE_TYPES.worktable1x2), {
       widthIn: 48,
       heightIn: 24,
     });
   });
 
+  it("takes the makeshift bench's plywood over its bucket footprint", () => {
+    // The 4×3-ft footprint covers the buckets; only the sheet is bench
+    assert.deepStrictEqual(benchTopSizeIn(MACHINE_TYPES.workspace), {
+      widthIn: 40,
+      heightIn: 30,
+    });
+  });
+
   it("seats an unplaced pallet squarely centered, overhang and all", () => {
     const pallet = makePallet();
     const seat = defaultBenchPlacement(MACHINE_TYPES.workspace, pallet);
-    // A 46" pallet centered on a 36" bench hangs 5" past each end
+    // A 46" pallet centered on a 40" top hangs 3" past each end
     assert.deepStrictEqual(seat, {
-      xIn: 18,
-      yIn: 12,
+      xIn: 20,
+      yIn: 15,
       angleDeg: 0,
       flipped: false,
     });
     assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 < 0);
+  });
+
+  describe("seating stock on the bench top", () => {
+    const bench = MACHINE_TYPES.workspace;
+
+    it("leaves a piece already fully on the bench alone", () => {
+      const piece = board("pallet", 24, 6, 4);
+      const placement = { xIn: 20, yIn: 15, angleDeg: 0, flipped: false };
+      assert.deepStrictEqual(
+        seatOnBenchTop(bench, piece, placement),
+        placement,
+      );
+    });
+
+    it("slides a piece dragged off the edge back on", () => {
+      const piece = board("pallet", 24, 6, 4);
+      // Shoved past the right edge and off the front of a 40×30 top
+      const seated = seatOnBenchTop(bench, piece, {
+        xIn: 60,
+        yIn: 40,
+        angleDeg: 0,
+        flipped: false,
+      });
+      // 6" wide, 24" long: 3" and 12" of clearance to keep
+      assert.strictEqual(seated.xIn, 37);
+      assert.strictEqual(seated.yIn, 18);
+    });
+
+    it("measures the piece as it lies, turned", () => {
+      const piece = board("pallet", 24, 6, 4);
+      // Turned across the bench, the 24" length is what has to fit
+      const seated = seatOnBenchTop(bench, piece, {
+        xIn: 60,
+        yIn: 40,
+        angleDeg: 90,
+        flipped: false,
+      });
+      assert.ok(Math.abs(seated.xIn - 28) < 1e-9);
+      assert.ok(Math.abs(seated.yIn - 27) < 1e-9);
+    });
+
+    it("gives a board stood on edge the edge its thickness reaches", () => {
+      const piece = board("pallet", 24, 6, 4);
+      const flat = seatOnBenchTop(bench, piece, {
+        xIn: 60,
+        yIn: 15,
+        angleDeg: 0,
+        flipped: false,
+      });
+      const onEdge = seatOnBenchTop(bench, piece, {
+        xIn: 60,
+        yIn: 15,
+        angleDeg: 0,
+        flipped: false,
+        onEdge: true,
+      });
+      // A 4/4 board on edge is 1" across, not 6": it gets 2.5" closer
+      assert.strictEqual(onEdge.xIn - flat.xIn, 2.5);
+    });
+
+    it("lets stock too big for the bench hang off, middle still on", () => {
+      // A 46 × 34 pallet outsizes the 40 × 30 top on both axes, so all
+      // that's asked is that its middle stays over the wood
+      const onTop = { xIn: 12, yIn: 8, angleDeg: 0, flipped: false };
+      assert.deepStrictEqual(seatOnBenchTop(bench, makePallet(), onTop), onTop);
+      const shoved = seatOnBenchTop(bench, makePallet(), {
+        ...onTop,
+        xIn: 90,
+        yIn: -20,
+      });
+      assert.strictEqual(shoved.xIn, 40);
+      assert.strictEqual(shoved.yIn, 0);
+    });
   });
 
   it("carries pallet points through the placement, there and back", () => {
@@ -93,8 +171,8 @@ describe("bench layout", () => {
     const again = defaultBenchPlacement(MACHINE_TYPES.workspace, piece);
     assert.deepStrictEqual(first, again);
     // On the bench, not off in space
-    assert.ok(first.xIn > 0 && first.xIn < 36);
-    assert.ok(first.yIn > 0 && first.yIn < 24);
+    assert.ok(first.xIn > 0 && first.xIn < 40);
+    assert.ok(first.yIn > 0 && first.yIn < 30);
   });
 
   it("prefers the stored placement over the seed", () => {
