@@ -63,6 +63,11 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    // The specs drive surfaces, not choreography: with reduced motion
+    // emulated, presentation-only transitions (the bench view's camera
+    // lean-in honors it) resolve instantly instead of making every spec
+    // wait out — or worse, race — an animation.
+    contextOptions: { reducedMotion: 'reduce' },
     // Escape hatch for environments with a preinstalled browser instead of
     // the exact build this Playwright version would download.
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE

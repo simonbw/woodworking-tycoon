@@ -165,7 +165,13 @@ const SIDE_CHROME_PX = 24;
 export const BenchWorkSurface: React.FC<{
   machine: Machine;
   onClose: () => void;
-}> = ({ machine, onClose }) => {
+  /** The sheet has closed and the camera is pulling back out; the view
+   * stays mounted as pure theater until the zoom lands (StationSheet
+   * holds it). Input is off the whole way. */
+  closing?: boolean;
+  /** The zoom-out has landed — safe to unmount. */
+  onExited?: () => void;
+}> = ({ machine, onClose, closing = false, onExited }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const script = benchScriptFor(machine, gameState.progression);
@@ -173,6 +179,40 @@ export const BenchWorkSurface: React.FC<{
   const [progress, setProgress] = useState(0);
   const lastDust = useRef(0);
   const { active, poke } = useActivityFlag();
+
+  // ------------------------------------------------------------ the zoom
+  // Opening a bench leans the camera in rather than cutting (benchZoom):
+  // the scene starts drawn exactly over the bench's on-screen footprint
+  // in the shop view and eases up to the full framing; closing rolls it
+  // back. `settled` is the rig having landed on the bench framing — the
+  // hands only work once the lean-in is done, and never on the way out.
+  const reduceMotion = useMemo(
+    () =>
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+    [],
+  );
+  const [settled, setSettled] = useState(false);
+  // Two-frame flip so the backdrop's CSS fades run from their start
+  // values instead of mounting at the end state. A surface somehow
+  // mounted already-closing skips it — the fades are mid-story there.
+  const [entered, setEntered] = useState(reduceMotion || closing);
+  useEffect(() => {
+    if (entered) return;
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, [entered]);
+  const onZoomRest = useCallback(
+    (at: 0 | 1) => {
+      if (at === 1) setSettled(true);
+      else onExited?.();
+    },
+    [onExited],
+  );
+  const interactive = settled && !closing;
+  // Re-opening mid-close re-leans in: not settled again until it lands
+  useEffect(() => {
+    if (closing) setSettled(false);
+  }, [closing]);
 
   // ---------------------------------------------------------- the stage
   // The canvas takes the whole window, measured for real — rendering at
@@ -1206,7 +1246,7 @@ export const BenchWorkSurface: React.FC<{
   // the sheet is deliberately not a modal, so the floor's R (settings)
   // and F (put down) stay live whenever the hands aren't on a piece.
   useEffect(() => {
-    if (!sceneActive) return;
+    if (!sceneActive || !interactive) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if ((holdingClamp || holdingGlue) && event.code === "Escape") {
@@ -1320,6 +1360,7 @@ export const BenchWorkSurface: React.FC<{
     return () => window.removeEventListener("keydown", onKey, true);
   }, [
     sceneActive,
+    interactive,
     heldTool,
     heldToolIsSaw,
     holdingClamp,
@@ -1338,6 +1379,19 @@ export const BenchWorkSurface: React.FC<{
   useEffect(() => {
     if (!sceneActive && heldTool) setHeldTool(null);
   }, [sceneActive, heldTool]);
+
+  // Stepping back hangs everything up on the way out — the tool to its
+  // hook, the clamps to the rack, the hover chrome cleared.
+  useEffect(() => {
+    if (!closing) return;
+    setHeldTool(null);
+    setHoldingClamp(false);
+    setHoldingGlue(false);
+    setClampCursor(null);
+    setHoveredNail(null);
+    setHoveredId(null);
+    setHoveredSlot(null);
+  }, [closing]);
 
   const foleyClip =
     script && (script.kind === "stroke" || script.kind === "saw")
@@ -1605,6 +1659,9 @@ export const BenchWorkSurface: React.FC<{
   const handlePointer =
     (type: "down" | "move" | "up" | "leave") =>
     (event: React.PointerEvent<HTMLDivElement>) => {
+      // Mid-zoom the stage transform and the fit disagree about where
+      // the wood is — the hands wait until the lean-in lands.
+      if (!interactive) return;
       const rect = event.currentTarget.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
@@ -1716,15 +1773,25 @@ export const BenchWorkSurface: React.FC<{
       data-testid="bench-work"
       data-script={scriptName}
       data-progress={progress}
+      data-zoom={closing ? "out" : settled ? "open" : "in"}
     >
+      {/* The room dims as the camera leans in — the shop view stays
+          visible underneath until the black settles over it */}
+      <div
+        className={`absolute inset-0 bg-ink-black transition-opacity duration-500 ${
+          entered && !closing ? "opacity-100" : "opacity-0"
+        }`}
+      />
       <div
         ref={wrapRef}
-        className={`absolute inset-0 select-none touch-none overflow-hidden bg-ink-black ${
-          heldTool || holdingClamp
-            ? "cursor-none"
-            : sceneActive
-              ? "cursor-default"
-              : "cursor-crosshair"
+        className={`absolute inset-0 select-none touch-none overflow-hidden ${
+          !interactive
+            ? "cursor-default"
+            : heldTool || holdingClamp
+              ? "cursor-none"
+              : sceneActive
+                ? "cursor-default"
+                : "cursor-crosshair"
         }`}
         data-testid="bench-stage"
         data-px-per-in={surface ? surface.fit.pxPerIn.toFixed(4) : undefined}
@@ -1785,22 +1852,40 @@ export const BenchWorkSurface: React.FC<{
         }}
       >
         {stageSize && frameFit && (
-          <Application
-            width={stageSize.width}
-            height={stageSize.height}
-            backgroundAlpha={0}
-            antialias={true}
-            autoDensity={true}
-            resolution={Math.min(window.devicePixelRatio || 1, 2)}
+          // The scene's own fade softens the one seam the zoom can't
+          // close: the floor patch around the bench tiles from a
+          // different origin than the shop's floor. In it fades up as
+          // the lean starts; out it lingers until the pull-back is
+          // nearly home, then lets the shop through.
+          <div
+            className={`absolute inset-0 transition-opacity duration-200 ${
+              entered && !closing ? "opacity-100" : "opacity-0"
+            } ${closing ? "delay-[350ms]" : ""}`}
           >
-            <BenchSceneBackdrop
-              machine={machine}
-              fit={frameFit}
-              stageWidth={stageSize.width}
-              stageHeight={stageSize.height}
-            />
-            {surface?.node}
-          </Application>
+            <Application
+              width={stageSize.width}
+              height={stageSize.height}
+              backgroundAlpha={0}
+              antialias={true}
+              autoDensity={true}
+              resolution={Math.min(window.devicePixelRatio || 1, 2)}
+            >
+              <BenchZoomRig
+                anchor={benchZoomAnchor(machine, frameFit)}
+                target={closing ? 0 : 1}
+                instant={reduceMotion}
+                onRest={onZoomRest}
+              >
+                <BenchSceneBackdrop
+                  machine={machine}
+                  fit={frameFit}
+                  stageWidth={stageSize.width}
+                  stageHeight={stageSize.height}
+                />
+                {surface?.node}
+              </BenchZoomRig>
+            </Application>
+          </div>
         )}
         {hoveredSlot && !heldTool && !draggingId && (
           // The outline's tag, trailing the pointer: what stock this
@@ -1854,129 +1939,142 @@ export const BenchWorkSurface: React.FC<{
         )}
       </div>
 
-      {/* The station's nameplate, floating over the scene */}
-      <div className="pointer-events-auto absolute left-4 top-4 z-10 flex items-center gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">
-        <h3 className="font-condensed font-bold uppercase tracking-wide text-paper-manila">
-          {machine.type.name}
-        </h3>
-        <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-paper-manila/60">
-          <StatusText machine={machine} />
-        </span>
-        <button
-          className="rounded border border-paper-manila/40 px-1.5 text-xs leading-relaxed text-paper-manila/80 hover:bg-paper-manila/10"
-          onClick={onClose}
-          aria-label="Close station sheet"
-        >
-          ✕
-        </button>
-      </div>
-
-      {rail && (
-        <BenchToolRail
-          machine={machine}
-          heldTool={heldTool}
-          interactive={sceneActive}
-          onToggle={(toolId) => {
-            setHoldingClamp(false);
-            setHoldingGlue(false);
-            setClampCursor(null);
-            setHeldTool((current) => (current === toolId ? null : toolId));
-          }}
-        />
-      )}
-
-      {/* The glue-up's own supplies, off to the side of the rail: bar
-          clamps off the rack and the glue bottle. No plan — set the
-          clamps out, lay stock across them, glue, tighten. */}
-      {isBench && glueOps.length > 0 && (
-        <div className="pointer-events-auto absolute right-4 top-16 z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
-          <span className="mr-1 flex flex-col items-start font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
-            <span>Glue-up</span>
-            <span className="tabular-nums text-paper-manila/40">
-              {clampsAvailable} clamps free
-            </span>
+      {/* The floating chrome settles in only once the lean-in lands, and
+          lifts away the moment the camera starts back out. `inert` keeps
+          every button in it out of reach while it's ghosted — opacity
+          alone would leave them clickable. */}
+      <div
+        inert={!interactive}
+        className={`transition-opacity ${
+          interactive ? "opacity-100 duration-300" : "opacity-0 duration-150"
+        }`}
+      >
+        {/* The station's nameplate, floating over the scene */}
+        <div className="pointer-events-auto absolute left-4 top-4 z-10 flex items-center gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">
+          <h3 className="font-condensed font-bold uppercase tracking-wide text-paper-manila">
+            {machine.type.name}
+          </h3>
+          <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-paper-manila/60">
+            <StatusText machine={machine} />
           </span>
           <button
-            type="button"
-            data-testid="bench-clamp-supply"
-            aria-label={
-              holdingClamp ? "Put the clamps back" : "Take a bar clamp"
-            }
-            title={`Bar clamps — ${clampsAvailable} free on the rack`}
-            disabled={!sceneActive || (clampsAvailable === 0 && !holdingClamp)}
-            onClick={(event) => {
-              event.stopPropagation();
-              setHeldTool(null);
+            className="rounded border border-paper-manila/40 px-1.5 text-xs leading-relaxed text-paper-manila/80 hover:bg-paper-manila/10"
+            onClick={onClose}
+            aria-label="Close station sheet"
+          >
+            ✕
+          </button>
+        </div>
+
+        {rail && (
+          <BenchToolRail
+            machine={machine}
+            heldTool={heldTool}
+            interactive={sceneActive}
+            onToggle={(toolId) => {
+              setHoldingClamp(false);
               setHoldingGlue(false);
               setClampCursor(null);
-              setHoldingClamp((current) => !current);
+              setHeldTool((current) => (current === toolId ? null : toolId));
             }}
-            className={`rounded border px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] transition-colors disabled:opacity-40 ${
-              holdingClamp
-                ? "border-gold-light text-gold-light"
-                : "border-paper-manila/40 text-paper-manila hover:bg-paper-manila/10"
-            }`}
-          >
-            Clamp
-          </button>
-          <button
-            type="button"
-            data-testid="bench-glue-bottle"
-            aria-label={
-              holdingGlue ? "Put the glue away" : "Take the glue bottle"
-            }
-            title="Wood glue — run a bead down each open seam"
-            disabled={!sceneActive}
-            onClick={(event) => {
-              event.stopPropagation();
-              setHeldTool(null);
-              setHoldingClamp(false);
-              setClampCursor(null);
-              setHoldingGlue((current) => !current);
-            }}
-            className={`rounded border px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] transition-colors disabled:opacity-40 ${
-              holdingGlue
-                ? "border-gold-light text-gold-light"
-                : "border-paper-manila/40 text-paper-manila hover:bg-paper-manila/10"
-            }`}
-          >
-            Glue
-          </button>
-        </div>
-      )}
+          />
+        )}
 
-      {/* The plans pile in the corner and whatever the bench keeps
-          underneath — the whole of the old paperwork card that survived */}
-      {isBench && <BlueprintCorner machine={machine} />}
-      {isBench && <UnderBenchPanel machine={machine} />}
-
-      {/* Instruction and key hints, floating below the bench */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-2">
-        <div className="flex items-baseline gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">
-          <p className="font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-paper-manila">
-            {surface?.instruction ?? ""}
-          </p>
-          {surface?.progressLine && (
-            <span className="shrink-0 whitespace-nowrap font-condensed text-[0.7rem] text-paper-manila/70 tabular-nums">
-              {surface.progressLine}
-            </span>
-          )}
-        </div>
-        {sceneActive && (
-          <div className="flex gap-2">
-            {keyHints.map(([key, label]) => (
-              <span
-                key={`${key}-${label}`}
-                className="flex items-baseline gap-1.5 rounded bg-ink-black/60 px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] text-paper-manila/70"
-              >
-                <kbd className="rounded border border-paper-manila/35 px-1 font-sans text-[0.6rem] normal-case text-paper-manila">
-                  {key}
-                </kbd>
-                {label}
+        {/* The glue-up's own supplies, off to the side of the rail: bar
+          clamps off the rack and the glue bottle. No plan — set the
+          clamps out, lay stock across them, glue, tighten. */}
+        {isBench && glueOps.length > 0 && (
+          <div className="pointer-events-auto absolute right-4 top-16 z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
+            <span className="mr-1 flex flex-col items-start font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
+              <span>Glue-up</span>
+              <span className="tabular-nums text-paper-manila/40">
+                {clampsAvailable} clamps free
               </span>
-            ))}
+            </span>
+            <button
+              type="button"
+              data-testid="bench-clamp-supply"
+              aria-label={
+                holdingClamp ? "Put the clamps back" : "Take a bar clamp"
+              }
+              title={`Bar clamps — ${clampsAvailable} free on the rack`}
+              disabled={
+                !sceneActive || (clampsAvailable === 0 && !holdingClamp)
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+                setHeldTool(null);
+                setHoldingGlue(false);
+                setClampCursor(null);
+                setHoldingClamp((current) => !current);
+              }}
+              className={`rounded border px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] transition-colors disabled:opacity-40 ${
+                holdingClamp
+                  ? "border-gold-light text-gold-light"
+                  : "border-paper-manila/40 text-paper-manila hover:bg-paper-manila/10"
+              }`}
+            >
+              Clamp
+            </button>
+            <button
+              type="button"
+              data-testid="bench-glue-bottle"
+              aria-label={
+                holdingGlue ? "Put the glue away" : "Take the glue bottle"
+              }
+              title="Wood glue — run a bead down each open seam"
+              disabled={!sceneActive}
+              onClick={(event) => {
+                event.stopPropagation();
+                setHeldTool(null);
+                setHoldingClamp(false);
+                setClampCursor(null);
+                setHoldingGlue((current) => !current);
+              }}
+              className={`rounded border px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] transition-colors disabled:opacity-40 ${
+                holdingGlue
+                  ? "border-gold-light text-gold-light"
+                  : "border-paper-manila/40 text-paper-manila hover:bg-paper-manila/10"
+              }`}
+            >
+              Glue
+            </button>
           </div>
         )}
+
+        {/* The plans pile in the corner and whatever the bench keeps
+          underneath — the whole of the old paperwork card that survived */}
+        {isBench && <BlueprintCorner machine={machine} />}
+        {isBench && <UnderBenchPanel machine={machine} />}
+
+        {/* Instruction and key hints, floating below the bench */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-2">
+          <div className="flex items-baseline gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">
+            <p className="font-condensed uppercase tracking-[0.15em] text-[0.7rem] text-paper-manila">
+              {surface?.instruction ?? ""}
+            </p>
+            {surface?.progressLine && (
+              <span className="shrink-0 whitespace-nowrap font-condensed text-[0.7rem] text-paper-manila/70 tabular-nums">
+                {surface.progressLine}
+              </span>
+            )}
+          </div>
+          {sceneActive && (
+            <div className="flex gap-2">
+              {keyHints.map(([key, label]) => (
+                <span
+                  key={`${key}-${label}`}
+                  className="flex items-baseline gap-1.5 rounded bg-ink-black/60 px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] text-paper-manila/70"
+                >
+                  <kbd className="rounded border border-paper-manila/35 px-1 font-sans text-[0.6rem] normal-case text-paper-manila">
+                    {key}
+                  </kbd>
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

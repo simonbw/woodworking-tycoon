@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { isBenchType, Machine } from "../../game/Machine";
+import { isBenchType, Machine, machineKey } from "../../game/Machine";
 import { ProgressionState } from "../../game/GameState";
 import { availableOperations } from "../../game/skill-helpers";
 import { Tooltip } from "../Tooltip";
 import { useTargetedMachine } from "../TargetedMachineContext";
-import { useGameState } from "../useGameState";
+import { useGameState, useMachines } from "../useGameState";
 import { BenchWorkSurface } from "../bench-view/BenchWorkSurface";
 import { ContentsSheet } from "./ContentsSheet";
 import { ToolSheet } from "./ToolSheet";
@@ -46,48 +46,99 @@ export function sheetIsBenchView(
 export const StationSheet: React.FC = () => {
   const { sheetMachine, closeSheet } = useTargetedMachine();
   const gameState = useGameState();
+  const machines = useMachines();
 
-  if (
-    !sheetMachine ||
-    gameState.player.away ||
-    gameState.player.carriedMachine != null
-  ) {
+  // The bench view zooms out rather than cutting away, so a closed
+  // bench sheet lingers here as pure theater: the departing machine
+  // keeps the surface mounted (input off, chrome fading) until the
+  // camera lands back at shop framing and the surface says it's done.
+  // Re-opening the same bench mid-pull-back hands the very same mounted
+  // surface its target back, and the camera just leans in again.
+  const activeBench =
+    sheetMachine && sheetIsBenchView(sheetMachine, gameState.progression)
+      ? sheetMachine
+      : null;
+  const [departing, setDeparting] = useState<Machine | null>(null);
+  const lastBench = useRef<Machine | null>(null);
+  // Derived during render, not in an effect: an effect runs after the
+  // commit, and that commit would have already unmounted the surface —
+  // the shop would pop back and the pull-back would play invisibly.
+  // Setting state mid-render re-renders before anything commits, so the
+  // mounted surface flows straight from open to closing.
+  if (activeBench) {
+    lastBench.current = activeBench;
+    if (departing) setDeparting(null);
+  } else if (lastBench.current) {
+    setDeparting(lastBench.current);
+    lastBench.current = null;
+  } else if (departing && sheetMachine) {
+    // Another station's sheet went up mid-pull-back: the card wins, the
+    // rest of the theater is dropped.
+    setDeparting(null);
+  }
+
+  if (gameState.player.away || gameState.player.carriedMachine != null) {
     return null;
   }
 
-  const bench = sheetIsBenchView(sheetMachine, gameState.progression);
+  const bench = activeBench ?? departing;
 
   // Portaled to the body: the shop-overlay layer this renders from is
   // pinned to the shop floor's box (and rides the camera transform), but
   // the sheet wants the whole window. Still deliberately not a modal —
   // below the top bar (z-40) on purpose, so the phone, journal, and menu
   // stay clickable over it.
-  return createPortal(
-    bench ? (
-      // A bench IS the whole window: the bench view fills it edge to
-      // edge, with the tool rail on top and the blueprint pile in the
-      // corner — no paperwork card at all. A <section> so the test
-      // helpers' heading-anchored card locator still works.
+  if (bench) {
+    // The departing machine object is a snapshot; the world keeps
+    // ticking through the pull-back, so draw the live machine while it
+    // still exists (it always does — feet were pinned at it).
+    const live =
+      machines.find((m) => machineKey(m.state) === machineKey(bench.state)) ??
+      bench;
+    // A bench IS the whole window: the bench view fills it edge to
+    // edge, with the tool rail on top and the blueprint pile in the
+    // corner — no paperwork card at all. A <section> so the test
+    // helpers' heading-anchored card locator still works.
+    return createPortal(
+      // A pulling-back sheet is closed as far as anything else is
+      // concerned — no station-sheet testid, no pointer targets — so
+      // walking straight to another station and opening ITS sheet never
+      // sees a phantom one still open.
       <section
-        className="fixed inset-0 z-[35] pointer-events-auto"
-        data-testid="station-sheet"
+        className={`fixed inset-0 z-[35] ${
+          activeBench ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        data-testid={activeBench ? "station-sheet" : undefined}
       >
-        <BenchWorkSurface machine={sheetMachine} onClose={closeSheet} />
-      </section>
-    ) : (
+        <BenchWorkSurface
+          key={machineKey(live.state)}
+          machine={live}
+          onClose={closeSheet}
+          closing={!activeBench}
+          onExited={() => setDeparting(null)}
+        />
+      </section>,
+      document.body,
+    );
+  }
+
+  if (!sheetMachine) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[35] flex items-center justify-center bg-ink-black/30 p-3 pt-24 pointer-events-auto"
+      onClick={closeSheet}
+      data-testid="station-sheet"
+    >
       <div
-        className="fixed inset-0 z-[35] flex items-center justify-center bg-ink-black/30 p-3 pt-24 pointer-events-auto"
-        onClick={closeSheet}
-        data-testid="station-sheet"
+        className="max-h-full w-full max-w-md overflow-y-auto"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div
-          className="max-h-full w-full max-w-md overflow-y-auto"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <StationSheetBody machine={sheetMachine} onClose={closeSheet} />
-        </div>
+        <StationSheetBody machine={sheetMachine} onClose={closeSheet} />
       </div>
-    ),
+    </div>,
     document.body,
   );
 };

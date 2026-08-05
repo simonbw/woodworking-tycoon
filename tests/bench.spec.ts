@@ -126,6 +126,11 @@ test.describe("Bench view", () => {
       // it, and the plan pile holds only builds — no sanding sheet
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "idle");
+      // The camera lean-in (benchZoom) must have landed before any hand
+      // work: input is gated on it. The suite runs with reduced motion
+      // emulated, so the zoom resolves immediately — every gesture in
+      // this spec would stall against a mid-flight stage otherwise.
+      await expect(work).toHaveAttribute("data-zoom", "open");
       await expect(page.getByTestId("bench-stage")).toBeVisible();
       const corner = page.getByTestId("blueprint-corner");
       await expect(corner).toBeVisible();
