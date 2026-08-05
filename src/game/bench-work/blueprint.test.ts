@@ -18,6 +18,13 @@ import {
   productBlueprintFor,
   RUSTIC_SHELF_BLUEPRINT,
   STEP_STOOL_BLUEPRINT,
+  CROSSCUT_SLED_BLUEPRINT,
+  MATERIAL_SHELF_BLUEPRINT,
+  RESAW_FENCE_BLUEPRINT,
+  STORAGE_RACK_BLUEPRINT,
+  STRAIGHT_LINE_SLED_BLUEPRINT,
+  TOOL_DRAWERS_BLUEPRINT,
+  WORKTABLE_BLUEPRINTS,
 } from "./blueprint";
 import {
   armedFasteners,
@@ -725,5 +732,57 @@ describe("the picture frame blueprint", () => {
       assert.deepStrictEqual(part.ends, NOMINAL_ENDS);
       assert.strictEqual(part.surface, "sanded");
     }
+  });
+});
+
+describe("equipment blueprints", () => {
+  it("derives each build's inputs in the legacy recipe's shape", () => {
+    const rows = blueprintInputs(WORKTABLE_BLUEPRINTS.worktable1x2);
+    assert.strictEqual(rows.length, 2);
+    assert.deepStrictEqual(rows[0].type, ["plywood"]);
+    assert.strictEqual(rows[0].quantity, 1);
+    assert.deepStrictEqual(rows[1].type, ["board"]);
+    assert.strictEqual(rows[1].quantity, 4);
+    assert.deepStrictEqual(rows[1].thickness, [6, 8]);
+  });
+
+  it("nails every sheet–rail seam and rail–stretcher crossing", () => {
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 4);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 6);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 8);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 11);
+    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 6);
+    assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 2);
+  });
+
+  it("the material shelf has no fasteners at all — laying on is the build", () => {
+    assert.strictEqual(MATERIAL_SHELF_BLUEPRINT.fasteners.length, 0);
+    assert.deepStrictEqual(blueprintFastenerCost(MATERIAL_SHELF_BLUEPRINT), []);
+  });
+
+  it("the jigs are screwed, two seams each", () => {
+    for (const jig of [
+      CROSSCUT_SLED_BLUEPRINT,
+      STRAIGHT_LINE_SLED_BLUEPRINT,
+      RESAW_FENCE_BLUEPRINT,
+    ]) {
+      assert.strictEqual(jig.fastenerConsumable, "screws");
+      assert.strictEqual(jig.fasteners.length, 2);
+    }
+  });
+
+  it("is registered under its equipment id and never becomes a product", () => {
+    assert.strictEqual(
+      productBlueprintFor("worktable1x1"),
+      WORKTABLE_BLUEPRINTS.worktable1x1,
+    );
+    assert.strictEqual(
+      WORKTABLE_BLUEPRINTS.worktable1x1.productType,
+      undefined,
+    );
+    assert.throws(
+      () => assembleFromBlueprint(STORAGE_RACK_BLUEPRINT, []),
+      /builds equipment, not a product/,
+    );
   });
 });

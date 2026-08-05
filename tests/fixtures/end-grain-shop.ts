@@ -70,7 +70,8 @@ export const endGrainShop: GameState = {
   tick: 0,
   money: 100,
   reputation: 20,
-  consumables: NO_CONSUMABLES,
+  // The sled build reads its screw bill off its blueprint now
+  consumables: { ...NO_CONSUMABLES, screws: 8 },
   // Enough clamps for the end-grain glue-up (4) plus a pair to spare.
   clamps: 6,
   materialPiles: [],
@@ -88,6 +89,7 @@ export const endGrainShop: GameState = {
     {
       ...idleMachine("workspace", [1, 2], "dismantlePallet", [
         "randomOrbitSander",
+        "finishingKit",
       ]),
       inputMaterials: [
         palletBoard("test-runner-1"),

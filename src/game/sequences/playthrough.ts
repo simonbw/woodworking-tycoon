@@ -258,6 +258,11 @@ function dismantleAPallet(shop: ShopDriver): ShopDriver {
 
 /** Build one rustic shelf: two stringers as the shelves, three boards behind. */
 function buildRusticShelf(shop: ShopDriver): ShopDriver {
+  // The shelf is the hammer's recipe: the grind runs between rungs whose
+  // rails hold other tools, so make sure the hammer is back on the bench
+  if (!shop.machine(WORKBENCH).state.tools.includes("hammer")) {
+    shop.fitOut(WORKBENCH, ["hammer"]);
+  }
   return shop
     .standAtOperatorCell(WORKBENCH)
     .select(WORKBENCH, "buildRusticPalletShelf")
@@ -471,6 +476,8 @@ function commission3(shop: ShopDriver): ShopDriver {
     .operations.find((op) => op.id === "glueUpPanel")!;
   shop.buyClamps(Math.max(0, clampsFor(glueUp) - shop.shop.clamps));
   shop.buySupplies("mineralOil");
+  // Finishing is the kit's work now — the cheapest tool on the wall
+  shop.buyTool("finishingKit");
   // The glue-up wants 2' × 2" strips, five to a panel. The big-box rack sells
   // 4' × 4" maple, so each board crosscuts into two and rips into four.
   shop.buyBoards(
@@ -480,7 +487,9 @@ function commission3(shop: ShopDriver): ShopDriver {
     3,
   );
   shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
+  // Two slots: the hammer has no job this rung, so the block and the
+  // new finishing kit take the rail
+  shop.fitOut(WORKBENCH, ["sandingBlock", "finishingKit"]);
 
   makeMapleStrips(shop);
 
@@ -530,7 +539,7 @@ function commission4(shop: ShopDriver): ShopDriver {
     2,
   );
   shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
+  shop.fitOut(WORKBENCH, ["sandingBlock", "finishingKit"]);
 
   // The shelves: four oak boards taken to sanded, two to a shelf.
   const oakStock: BoardSize = {
@@ -668,7 +677,7 @@ function commission6(shop: ShopDriver): ShopDriver {
     3,
   );
   shop.comeHome();
-  shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
+  shop.fitOut(WORKBENCH, ["sandingBlock", "finishingKit"]);
 
   // The sled's runners are pallet scrap — the first thing this shop ever had.
   fetchAPallet(shop);

@@ -319,7 +319,10 @@ test.describe("Stations", () => {
       await expect(
         page.getByRole("button", { name: "Attach the Random Orbit Sander" }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "Attach" }).click();
+      // Two tools ride in hand (sander and finishing kit) — name the one
+      await page
+        .getByRole("button", { name: "Attach the Random Orbit Sander" })
+        .click();
       await page.waitForTimeout(30);
       await expect(page.getByText("1/2 slots")).toBeVisible();
       // The sander's work is offered by the tool itself on the bench
@@ -496,9 +499,7 @@ test.describe("Stations", () => {
     await test.step("both tools mount at the workbench and add their trades", async () => {
       // Tools hang on the bench view's top rail, one empty hook each
       await openStationSheet(page);
-      await page
-        .getByRole("button", { name: "Attach the Hand Saw" })
-        .click();
+      await page.getByRole("button", { name: "Attach the Hand Saw" }).click();
       await page.waitForTimeout(30);
       await page.getByRole("button", { name: "Attach the Drill" }).click();
       await page.waitForTimeout(30);
@@ -531,9 +532,7 @@ test.describe("Stations", () => {
       // Every plan carries a duration, and each one reads as minutes or
       // hours — the simulation's tick never reaches the player.
       const row = card.locator("li", { hasText: "Build Rustic Planter Box" });
-      await expect(
-        row.getByText(/^(\d+ min|\d+h( \d{2}m)?)$/),
-      ).toBeVisible();
+      await expect(row.getByText(/^(\d+ min|\d+h( \d{2}m)?)$/)).toBeVisible();
       await expect(card.getByText(/\bticks?\b/)).toHaveCount(0);
     });
   });

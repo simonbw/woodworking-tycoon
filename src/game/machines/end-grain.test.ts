@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { TOOL_TYPES } from "../Tool";
 import { board } from "../board-helpers";
 import { GameState } from "../GameState";
 import { getMachines, Operation, MachineState } from "../Machine";
@@ -27,7 +28,7 @@ const buildSled = workspace.operations.find(
 const glueEndGrain = workspace.operations.find(
   (op) => op.id === "glueUpEndGrain",
 ) as Operation;
-const finishEndGrain = workspace.operations.find(
+const finishEndGrain = TOOL_TYPES.finishingKit.operations.find(
   (op) => op.id === "finishEndGrainBoard",
 ) as Operation;
 

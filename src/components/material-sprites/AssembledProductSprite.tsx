@@ -83,9 +83,12 @@ const BlueprintPartsSprite: React.FC<{
           ({
             slot: slot.id,
             species: "pallet",
-            width: slot.part.widthIn,
+            // Nominal part dims are board-catalog sizes on every product
+            // blueprint (only equipment blueprints use sheet-size parts,
+            // and equipment never renders as a product)
+            width: slot.part.widthIn as AssembledPart["width"],
             length: slot.part.lengthIn,
-            thickness: slot.part.thicknessQ,
+            thickness: slot.part.thicknessQ as AssembledPart["thickness"],
             ...(slot.part.ends ? { ends: slot.part.ends } : {}),
             seed: slot.id,
           } satisfies AssembledPart);

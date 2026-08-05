@@ -231,3 +231,74 @@ describe("toolForOperation", () => {
     assert.strictEqual(toolForOperation(machine, bench), null);
   });
 });
+
+describe("the finishing kit, tool-first", () => {
+  const stripedPanel = () =>
+    makeMaterial<Panel>({
+      type: "panel",
+      strips: [
+        { species: "walnut", width: 2 },
+        { species: "maple", width: 2 },
+        { species: "walnut", width: 2 },
+        { species: "maple", width: 2 },
+        { species: "walnut", width: 2 },
+      ],
+      length: 24,
+      thickness: 4,
+      surface: "sanded",
+    });
+
+  it("offers the pickiest finish the panel satisfies — stripes beat two-tone", () => {
+    const machine = workspaceWith({ tools: ["finishingKit"] });
+    const op = toolOperationFor(
+      machine,
+      progressionWith("panelWork", "twoToneBoards", "stripedBoards"),
+      "finishingKit",
+      stripedPanel(),
+      flat,
+    );
+    assert.strictEqual(op?.id, "finishStripedBoard");
+  });
+
+  it("falls back to the finish the skills actually cover", () => {
+    const machine = workspaceWith({ tools: ["finishingKit"] });
+    const op = toolOperationFor(
+      machine,
+      progressionWith("panelWork", "twoToneBoards"),
+      "finishingKit",
+      stripedPanel(),
+      flat,
+    );
+    assert.strictEqual(op?.id, "finishTwoToneBoard");
+  });
+
+  it("the rag over a raw cutting board offers the oil wipe", () => {
+    const machine = workspaceWith({ tools: ["finishingKit"] });
+    const op = toolOperationFor(
+      machine,
+      progressionWith("panelWork"),
+      "finishingKit",
+      makeMaterial({ type: "simpleCuttingBoard", species: "maple" } as never),
+      flat,
+    );
+    assert.strictEqual(op?.id, "oilCuttingBoard");
+  });
+
+  it("an oiled board offers nothing — boards oil once", () => {
+    const machine = workspaceWith({ tools: ["finishingKit"] });
+    assert.strictEqual(
+      toolOperationFor(
+        machine,
+        progressionWith("panelWork"),
+        "finishingKit",
+        makeMaterial({
+          type: "simpleCuttingBoard",
+          species: "maple",
+          finish: "mineralOil",
+        } as never),
+        flat,
+      ),
+      null,
+    );
+  });
+});

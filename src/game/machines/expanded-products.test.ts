@@ -260,7 +260,7 @@ describe("buildSideTable", () => {
 });
 
 describe("finishCheckerboardBoard", () => {
-  const op = benchOp("finishCheckerboardBoard");
+  const op = toolOp("finishingKit", "finishCheckerboardBoard");
   const requirement = op.getInputMaterials({})[0];
 
   const blank = (
@@ -312,7 +312,7 @@ describe("finishCheckerboardBoard", () => {
   });
 
   it("is oilable like every other cutting board", () => {
-    const oil = benchOp("oilCuttingBoard");
+    const oil = toolOp("finishingKit", "oilCuttingBoard");
     const { outputs } = op.output([blank(alternating)], {});
     assert.ok(materialMeetsInput(outputs[0], oil.getInputMaterials({})[0]));
   });

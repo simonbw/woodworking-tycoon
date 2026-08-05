@@ -1,10 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import { BASE_WALK_SPEED } from "../src/game/player-motion";
-import {
-  openStationSheet,
-  selectMode,
-  takeAllHere,
-} from "./machine-panel";
+import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
 import {
   advanceTicks,
   movePlayerToCab,
@@ -539,7 +535,10 @@ test.describe("Keyboard", () => {
     await test.step("sanding ignores Space — the bench view owns hand work", async () => {
       // The tool rack lives on the station sheet
       await openStationSheet(page);
-      await page.getByRole("button", { name: "Attach" }).click();
+      // Two tools ride in hand (sander and finishing kit) — name the one
+      await page
+        .getByRole("button", { name: "Attach the Random Orbit Sander" })
+        .click();
       await page.waitForTimeout(30);
       // F stages the first strip
       await page.evaluate(() =>

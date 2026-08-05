@@ -56,9 +56,9 @@ export function strokeSurfaceSize(
       heightIn: panel.length,
     };
   }
-  // Anything else strokes over its bounding cell — shouldn't happen for
-  // the declared recipes, but a sane fallback beats a throw in a renderer.
-  return { widthIn: 12, heightIn: 12 };
+  // Anything else — a finished cutting board under the oil rag — strokes
+  // over the face it shows lying on the bench.
+  return pieceSize(material);
 }
 
 /** A saw cut's cross-section (width × thickness), in in². */
@@ -295,6 +295,17 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
       return {
         widthIn: material.width,
         heightIn: material.length,
+      };
+    case "simpleCuttingBoard":
+    case "stripedCuttingBoard":
+    case "sunriseCuttingBoard":
+    case "endGrainCuttingBoard":
+    case "checkerboardCuttingBoard":
+      // The face CuttingBoardSprite draws, so the oil wipe covers
+      // exactly the board on the bench
+      return {
+        widthIn: material.type === "sunriseCuttingBoard" ? 12 : 10,
+        heightIn: 16,
       };
     default:
       return { widthIn: 10, heightIn: 10 };

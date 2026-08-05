@@ -19,6 +19,17 @@ export const FinishingArticle: React.FC = () => (
       surface — it doesn't flatten, straighten, or thin the stock.
     </P>
 
+    <H>The Finishing Kit</H>
+    <P>
+      Finishing is hand work, done with the <Term>finishing kit</Term> — rags,
+      applicator pads, and a card scraper, sold on the store's Tool Wall and
+      mounted at a bench like any other tool. Take the kit down off the rail and
+      hold it over a fully sanded blank: the kit offers the finish the panel
+      qualifies for, and rubbing the piece down where it lies turns it into the
+      finished board. The wood decides the product — a single hardwood makes a
+      plain cutting board, strict alternation makes a striped one.
+    </P>
+
     <H>Buying and Using Finishes</H>
     <P>
       Finishes are shop supplies, like nails: they're kept in the{" "}
@@ -28,8 +39,9 @@ export const FinishingArticle: React.FC = () => (
     </P>
     <P>
       The first finish you'll need is <Term>mineral oil</Term> — food-safe, and
-      the standard finish for cutting boards. Finishing happens at a bench: a
-      sanded panel plus oil from the cabinet becomes a finished piece.
+      the standard finish for cutting boards. Hold the kit over a finished
+      cutting board and wipe the oil on; it draws from the cabinet as the wipe
+      starts, then soaks in on its own time.
     </P>
 
     <Note>Finish is the last step — sand before you oil.</Note>

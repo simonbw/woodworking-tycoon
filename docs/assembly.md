@@ -72,7 +72,7 @@ each crossing. Not a new engine — the pallet generalized.
 ## The first commission, grounded — **Now**
 
 The rustic shelf was never nonsense — 2 stringers + 3 deck boards is a
-classic pallet-wood slatted shelf — it just never *showed* it. Its
+classic pallet-wood slatted shelf — it just never _showed_ it. Its
 blueprint: two stringers stand on edge as rails, the joists the piece
 hangs on (layer 0, `onEdge`), three deck boards lie flat across their
 top edges as slats (layer 1), six derived nails at the crossings (down
@@ -117,7 +117,7 @@ dissolved into two ideas that cost no model extensions:
   tall boards with a 1″ entrance slit between them, side walls and a
   perch floor on edge at the flanks, no back wall (it hangs on a post).
 - **The roof lies flat on the slope.** A single-slope roof is a board
-  you *lay onto* the leaning walls — which in the lying-down assembly
+  you _lay onto_ the leaning walls — which in the lying-down assembly
   is simply a flat piece on the top layer, overhanging both sides. The
   slope itself lives in the stock: the front walls' top ends are
   **mitered at the 45° stop** so the roof seats flush, expressed as a
@@ -130,7 +130,7 @@ Six nails, all derived: front→side, front→floor, roof→front. The roof
 never touches the sides — those gaps are the ventilation, and the
 adjacent-layer rule derives exactly that. (The birdhouse's own miters
 hide under the roof in every view; the picture frame is the blueprint
-that finally *shows* its mitered ends, and it's what made parts record
+that finally _shows_ its mitered ends, and it's what made parts record
 them — see below.)
 
 The picture frame is a blueprint, and it's the one that put mitered
@@ -152,19 +152,48 @@ a trapezoid — inverted from `SignedMiterAngle`'s convention. Loose
 mitered stock on the floor draws right now too.) The hex frame stays on
 its flat art until fastener derivation learns rotated slots.
 
+## Equipment blueprints — **Now**
+
+Phase 2's rest landed: the four worktable builds, the storage rack,
+the tool drawers and material shelf, and the three saw jigs are
+blueprints (`EquipmentBlueprintId`, registered beside the products but
+keyed by what they grant). A `ProductBlueprint` now carries an `id`
+and an optional `productType` — equipment has no product type, and
+`assembleFromBlueprint` refuses it; the operation's `output()` keeps
+granting `machineOutputs`/`upgradeOutputs`/tool items exactly as
+before, so the commit path never changed. Two ideas carried the
+conversions with no model extensions:
+
+- **A table assembles upside down.** The blueprint is the build as a
+  woodworker stages it: the top sheet face-down on layer 0, two rails
+  on edge across its underside, the remaining leg boards as
+  stretchers crossing the rails — one nail per sheet–rail seam and
+  rail–stretcher crossing, all derived. The rack is the same shape in
+  rack-grade sheets; the sleds sandwich runner–base–fence.
+- **A blueprint may have no fasteners.** The material shelf is two
+  planks laid side by side; nothing overlaps, so `deriveFasteners`
+  yields none and the build commits the moment the last part seats
+  (`BenchWorkSurface`'s all-seated effect). Laying on _is_ the build.
+
+Slot requirements widened to sheet goods (typed as board stock with a
+contained cast — every consumer that reads board fields only runs on
+product blueprints), and a plan larger than the bench (48×48 on the
+makeshift top) leans the scene back to hold it (the frame maxes in the
+active blueprint's size). Jigs bill screws now — two per jig, derived —
+where the legacy recipes charged nothing.
+
 ## What stays for later phases
 
-- **Phase 2, the rest**: blueprints for the storage rack and the
-  worktable builds (their commit already differs only in granting
-  machines), and the serving tray — the picture frame plus a panel
-  bottom, waiting on a panel-shaped `AssembledPart`. Until then those
-  keep the legacy row surface (`AssemblySurface`).
+- **Phase 2, the last one**: the serving tray — the picture frame plus
+  a panel bottom, waiting on a panel-shaped `AssembledPart`. It keeps
+  the legacy row surface (`AssemblySurface`), along with the hex
+  frame, side table, jewelry box, and shelf.
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of
   the BOM ("at least 3 shelves", "oak rails"), pricing from parts.
 - **North star**: a product that carries parts and fasteners can be
-  *dismantled* — `Pallet` stops being special, and prying nails out of
+  _dismantled_ — `Pallet` stops being special, and prying nails out of
   your own crate returns boards and nails. The data model points there;
   the migration is deliberately not scheduled.
 

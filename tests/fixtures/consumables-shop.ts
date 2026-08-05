@@ -63,7 +63,7 @@ export const consumablesShop: GameState = {
       ],
       processingMaterials: [],
       outputMaterials: [],
-      tools: ["hammer"],
+      tools: ["hammer", "finishingKit"],
       selectedOperationId: "dismantlePallet",
       operationProgress: {
         status: "notStarted",

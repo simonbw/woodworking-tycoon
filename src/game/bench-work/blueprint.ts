@@ -1,3 +1,4 @@
+import { array } from "../../utils/arrayUtils";
 import { InputMaterialWithQuantity } from "../Machine";
 import { ConsumableAmount, ConsumableId } from "../Consumable";
 import type { ToolId } from "../Tool";
@@ -9,8 +10,11 @@ import {
   BoardEnds,
   FinishedProduct,
   FinishedProductType,
+  JIG_GRADE_KINDS,
   MaterialInstance,
+  RACK_GRADE_KINDS,
   REAL_WOOD_SPECIES,
+  SHOP_FURNITURE_KINDS,
   SignedMiterAngle,
   Species,
 } from "../Materials";
@@ -43,14 +47,17 @@ export interface BlueprintSlot {
   readonly id: string;
   /** What the part is in prose: "rail", "shelf". */
   readonly role: string;
-  /** What stock fills the slot — the same matcher recipes already use. */
+  /** What stock fills the slot — the same matcher recipes already use.
+   * Usually a board; a jig's base or a worktable's top is a sheet good
+   * (typed as board stock for the consumers that read board fields —
+   * matching goes through materialMeetsInput either way). */
   readonly requirement: InputMaterialWithQuantity<Board>;
   /** The part's nominal dims, for ghosts, overlap math, and stand-in
    * parts on products from older saves (Board units). */
   readonly part: {
-    readonly widthIn: BoardDimension;
+    readonly widthIn: number;
     readonly lengthIn: number;
-    readonly thicknessQ: BoardDimension;
+    readonly thicknessQ: number;
     /** The end treatments the part shows lying in this slot, signed the
      * way the finished piece needs them — a frame rail's long edge must
      * face the frame's outside for the corners to close. A consumed
@@ -82,8 +89,32 @@ export interface BlueprintFastener {
   readonly joins: readonly [string, string];
 }
 
+/**
+ * Blueprints for shop equipment — builds whose commit grants a machine,
+ * an upgrade, or a jig (OperationOutput.machineOutputs and friends)
+ * instead of leaving a product on the bench. They assemble on the scene
+ * exactly like product blueprints; they just never become a material.
+ */
+export type EquipmentBlueprintId =
+  | "worktable1x1"
+  | "worktable1x2"
+  | "worktable1x3"
+  | "worktable2x2"
+  | "storageRack"
+  | "toolDrawers"
+  | "materialShelf"
+  | "crosscutSled"
+  | "straightLineSled"
+  | "resawFence";
+
+export type BlueprintId = FinishedProductType | EquipmentBlueprintId;
+
 export interface ProductBlueprint {
-  readonly productType: FinishedProductType;
+  /** Registry key; for product blueprints it equals the product type. */
+  readonly id: BlueprintId;
+  /** The material the build becomes — absent for shop equipment, whose
+   * commit grants machines or upgrades instead. */
+  readonly productType?: FinishedProductType;
   /** Product footprint, in inches (drawn lying flat, like on the bench). */
   readonly widthIn: number;
   readonly heightIn: number;
@@ -159,12 +190,17 @@ function deriveFasteners(
 }
 
 function makeBlueprint(spec: {
-  productType: FinishedProductType;
+  id?: BlueprintId;
+  productType?: FinishedProductType;
   widthIn: number;
   heightIn: number;
   fastenerConsumable: ConsumableId;
   slots: ReadonlyArray<Omit<BlueprintSlot, "id">>;
 }): ProductBlueprint {
+  const id = spec.id ?? spec.productType;
+  if (!id) {
+    throw new Error("A blueprint needs an id or a product type");
+  }
   const counts = new Map<string, number>();
   const slots = spec.slots.map((slot) => {
     if (slot.angleDeg % 90 !== 0) {
@@ -175,7 +211,8 @@ function makeBlueprint(spec: {
     return { ...slot, id: `${slot.role}-${index}` };
   });
   return {
-    productType: spec.productType,
+    id,
+    ...(spec.productType ? { productType: spec.productType } : {}),
     widthIn: spec.widthIn,
     heightIn: spec.heightIn,
     fastenerConsumable: spec.fastenerConsumable,
@@ -599,7 +636,316 @@ export const PICTURE_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
-const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
+// ---------------------------------------------------------------------
+// Shop equipment blueprints. Every one is drawn the way a woodworker
+// actually builds it: upside down. The top (or base sheet) lies
+// face-down on the bench, and the understructure is laid onto its
+// underside — so layer 0 is the show face against the bench, and the
+// last layer is what faces up while you work.
+
+/** Leg-grade stock, straight out of the legacy recipes: stringers and
+ * 2×4s qualify; deck boards are too thin. */
+const LEG_STOCK: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  thickness: [6, 8],
+  length: [36, 48],
+  quantity: 1,
+};
+
+const LEG_PART = { widthIn: 4, lengthIn: 48, thicknessQ: 6 } as const;
+
+/** A full worktable/rack sheet, 48×48. */
+function sheetRequirement(
+  kinds: ReadonlyArray<string>,
+): InputMaterialWithQuantity<Board> {
+  return {
+    type: ["plywood"],
+    kind: [...kinds],
+    length: [48],
+    width: [48],
+    quantity: 1,
+  } as unknown as InputMaterialWithQuantity<Board>;
+}
+
+const SHEET_PART = { widthIn: 48, lengthIn: 48, thicknessQ: 3 } as const;
+
+/**
+ * The frame every table-shaped build shares, drawn upside down: the
+ * sheet(s) face-down on the bottom layers, two long rails stood on edge
+ * across the underside, and the remaining leg boards as stretchers on
+ * edge crossing the rails. One fastener per sheet–rail seam and one at
+ * every rail–stretcher crossing, all derived.
+ */
+function tableSlots(spec: {
+  sheetRequirement: InputMaterialWithQuantity<Board>;
+  sheets: number;
+  legBoards: number;
+}): ReadonlyArray<Omit<BlueprintSlot, "id">> {
+  const { sheets, legBoards } = spec;
+  const stretchers = legBoards - 2;
+  return [
+    ...array(sheets).map((_, i) => ({
+      role: "top",
+      requirement: spec.sheetRequirement,
+      part: SHEET_PART,
+      xIn: 24,
+      yIn: 24,
+      angleDeg: 0,
+      layer: i,
+    })),
+    ...[8, 40].map((yIn) => ({
+      role: "rail",
+      requirement: LEG_STOCK,
+      part: LEG_PART,
+      xIn: 24,
+      yIn,
+      angleDeg: 90,
+      layer: sheets,
+      onEdge: true,
+    })),
+    ...array(stretchers).map((_, i) => ({
+      role: "stretcher",
+      requirement: LEG_STOCK,
+      part: LEG_PART,
+      xIn: ((i + 1) * 48) / (stretchers + 1),
+      yIn: 24,
+      angleDeg: 0,
+      layer: sheets + 1,
+      onEdge: true,
+    })),
+  ];
+}
+
+function worktableBlueprint(
+  id: EquipmentBlueprintId,
+  sheets: number,
+  legBoards: number,
+): ProductBlueprint {
+  return makeBlueprint({
+    id,
+    widthIn: 48,
+    heightIn: 48,
+    fastenerConsumable: "nails",
+    slots: tableSlots({
+      sheetRequirement: sheetRequirement(SHOP_FURNITURE_KINDS),
+      sheets,
+      legBoards,
+    }),
+  });
+}
+
+export const WORKTABLE_BLUEPRINTS = {
+  worktable1x1: worktableBlueprint("worktable1x1", 1, 3),
+  worktable1x2: worktableBlueprint("worktable1x2", 1, 4),
+  worktable1x3: worktableBlueprint("worktable1x3", 1, 5),
+  worktable2x2: worktableBlueprint("worktable2x2", 2, 6),
+} as const;
+
+/** The storage rack: the worktable's shape in the cheap sheets — a deck
+ * face-down, stout rails and bearers nailed across its underside. */
+export const STORAGE_RACK_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  id: "storageRack",
+  widthIn: 48,
+  heightIn: 48,
+  fastenerConsumable: "nails",
+  slots: tableSlots({
+    sheetRequirement: sheetRequirement(RACK_GRADE_KINDS),
+    sheets: 1,
+    legBoards: 4,
+  }),
+});
+
+/**
+ * The tool drawers: a sheet carcass face-down with two thin drawer
+ * fronts laid across it — the whole upgrade in two seams.
+ */
+export const TOOL_DRAWERS_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  id: "toolDrawers",
+  widthIn: 48,
+  heightIn: 48,
+  fastenerConsumable: "nails",
+  slots: [
+    {
+      role: "carcass",
+      requirement: sheetRequirement(SHOP_FURNITURE_KINDS),
+      part: SHEET_PART,
+      xIn: 24,
+      yIn: 24,
+      angleDeg: 0,
+      layer: 0,
+    },
+    ...[16, 32].map((yIn) => ({
+      role: "front",
+      requirement: {
+        type: ["board"],
+        thickness: [1, 2],
+        length: [24, 36],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 4, lengthIn: 24, thicknessQ: 2 } as const,
+      xIn: 24,
+      yIn,
+      angleDeg: 90,
+      layer: 1,
+    })),
+  ],
+});
+
+/**
+ * The material shelf: two planks laid side by side — they span the
+ * worktable's own stretchers when installed, so there is nothing to
+ * fasten here at all. Laying the second plank on is the whole build.
+ */
+export const MATERIAL_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  id: "materialShelf",
+  widthIn: 48,
+  heightIn: 24,
+  fastenerConsumable: "nails",
+  slots: [8, 16].map((yIn) => ({
+    role: "plank",
+    requirement: {
+      type: ["board"],
+      thickness: [1, 2],
+      length: [36, 48],
+      quantity: 1,
+    } as InputMaterialWithQuantity<Board>,
+    part: { widthIn: 4, lengthIn: 48, thicknessQ: 2 } as const,
+    xIn: 24,
+    yIn,
+    angleDeg: 90,
+    layer: 0,
+  })),
+});
+
+/** The jigs' shared stock: a flat jig-grade base and scrap boards. */
+const JIG_BASE_REQUIREMENT = {
+  ...sheetRequirement(JIG_GRADE_KINDS),
+};
+const JIG_BOARD_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  width: [4],
+  length: [36],
+  thickness: [2],
+  quantity: 1,
+};
+const JIG_BOARD_PART = { widthIn: 4, lengthIn: 36, thicknessQ: 2 } as const;
+
+/**
+ * The crosscut sled, face-down: the miter-slot runner against the bench,
+ * the base over it, and the fence screwed across the top of the base.
+ */
+export const CROSSCUT_SLED_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  id: "crosscutSled",
+  widthIn: 48,
+  heightIn: 48,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "base",
+      requirement: JIG_BASE_REQUIREMENT,
+      part: SHEET_PART,
+      xIn: 24,
+      yIn: 24,
+      angleDeg: 0,
+      layer: 1,
+    },
+    {
+      role: "runner",
+      requirement: JIG_BOARD_REQUIREMENT,
+      part: JIG_BOARD_PART,
+      xIn: 24,
+      yIn: 24,
+      angleDeg: 0,
+      layer: 0,
+    },
+    {
+      role: "fence",
+      requirement: JIG_BOARD_REQUIREMENT,
+      part: JIG_BOARD_PART,
+      xIn: 24,
+      yIn: 6,
+      angleDeg: 90,
+      layer: 2,
+    },
+  ],
+});
+
+/**
+ * The straight-line sled: a long base with a reference rail and the
+ * clamp carrier screwed along it — nothing rides underneath.
+ */
+export const STRAIGHT_LINE_SLED_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  id: "straightLineSled",
+  widthIn: 48,
+  heightIn: 48,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "base",
+      requirement: JIG_BASE_REQUIREMENT,
+      part: SHEET_PART,
+      xIn: 24,
+      yIn: 24,
+      angleDeg: 0,
+      layer: 0,
+    },
+    ...[10, 26].map((yIn) => ({
+      role: "rail",
+      requirement: JIG_BOARD_REQUIREMENT,
+      part: JIG_BOARD_PART,
+      xIn: 24,
+      yIn,
+      angleDeg: 90,
+      layer: 1,
+    })),
+  ],
+});
+
+/**
+ * The tall resaw fence, on its back: the face sheet down, two triangular
+ * braces stood on edge where they keep it square to the table.
+ */
+export const RESAW_FENCE_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  id: "resawFence",
+  widthIn: 36,
+  heightIn: 24,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "face",
+      requirement: {
+        type: ["plywood"],
+        kind: [...JIG_GRADE_KINDS],
+        length: [36],
+        width: [24],
+        quantity: 1,
+      } as unknown as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 24, lengthIn: 36, thicknessQ: 3 } as const,
+      xIn: 18,
+      yIn: 12,
+      angleDeg: 90,
+      layer: 0,
+    },
+    ...[12, 24].map((xIn) => ({
+      role: "brace",
+      requirement: {
+        type: ["board"],
+        width: [4],
+        length: [12],
+        thickness: [2],
+        quantity: 1,
+      } as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn,
+      yIn: 12,
+      angleDeg: 0,
+      layer: 1,
+      onEdge: true,
+    })),
+  ],
+});
+
+const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
   planterBox: PLANTER_BOX_BLUEPRINT,
@@ -607,13 +953,23 @@ const BLUEPRINTS: Partial<Record<FinishedProductType, ProductBlueprint>> = {
   bookshelf: BOOKSHELF_BLUEPRINT,
   birdhouse: BIRDHOUSE_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
+  worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
+  worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
+  worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,
+  worktable2x2: WORKTABLE_BLUEPRINTS.worktable2x2,
+  storageRack: STORAGE_RACK_BLUEPRINT,
+  toolDrawers: TOOL_DRAWERS_BLUEPRINT,
+  materialShelf: MATERIAL_SHELF_BLUEPRINT,
+  crosscutSled: CROSSCUT_SLED_BLUEPRINT,
+  straightLineSled: STRAIGHT_LINE_SLED_BLUEPRINT,
+  resawFence: RESAW_FENCE_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */
 export function productBlueprintFor(
   type: string | undefined,
 ): ProductBlueprint | null {
-  return (type && BLUEPRINTS[type as FinishedProductType]) || null;
+  return (type && BLUEPRINTS[type as BlueprintId]) || null;
 }
 
 /**
@@ -670,7 +1026,7 @@ export function matchPartsToSlots(
     );
     if (index === -1) {
       throw new Error(
-        `No staged piece fits the ${slot.role} slot of ${blueprint.productType}`,
+        `No staged piece fits the ${slot.role} slot of ${blueprint.id}`,
       );
     }
     const material = pool[index] as Board;
@@ -740,6 +1096,12 @@ export function assembleFromBlueprint(
   blueprint: ProductBlueprint,
   materials: ReadonlyArray<MaterialInstance>,
 ): FinishedProduct {
+  const productType = blueprint.productType;
+  if (!productType) {
+    throw new Error(
+      `The ${blueprint.id} blueprint builds equipment, not a product`,
+    );
+  }
   const matched = matchPartsToSlots(blueprint, materials);
   const parts: AssembledPart[] = matched.map(({ slot, material }) => {
     const ends = orientEndsToSlot(slot, material);
@@ -759,7 +1121,7 @@ export function assembleFromBlueprint(
     };
   });
   return makeMaterial<FinishedProduct>({
-    type: blueprint.productType,
+    type: productType,
     species: dominantSpecies(parts),
     parts,
   });
@@ -777,9 +1139,9 @@ export function defaultPartsFor(
   return blueprint.slots.map((slot) => ({
     slot: slot.id,
     species: product.species,
-    width: slot.part.widthIn,
+    width: slot.part.widthIn as BoardDimension,
     length: slot.part.lengthIn,
-    thickness: slot.part.thicknessQ,
+    thickness: slot.part.thicknessQ as BoardDimension,
     ...(slot.requirement.surface?.[0]
       ? { surface: slot.requirement.surface[0] }
       : {}),

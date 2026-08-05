@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { TOOL_TYPES } from "../Tool";
 import { board } from "../board-helpers";
 import { Operation } from "../Machine";
 import { isFinishedProduct, materialMeetsInput } from "../material-helpers";
@@ -10,7 +11,7 @@ import { workspace } from "./workspace";
 const buildShelf = workspace.operations.find(
   (op) => op.id === "buildShelf",
 ) as Operation;
-const finishTwoTone = workspace.operations.find(
+const finishTwoTone = TOOL_TYPES.finishingKit.operations.find(
   (op) => op.id === "finishTwoToneBoard",
 ) as Operation;
 // The jewelry box moved to the shared bench list when the makeshift bench

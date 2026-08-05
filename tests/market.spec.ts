@@ -1,6 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import { DEV_SCAVENGE_DURATION_TICKS } from "../src/game/game-actions/scavenge-actions";
-import { selectMode } from "./machine-panel";
+import { modesOf, selectMode } from "./machine-panel";
 import {
   advanceTicks,
   answerPhoneCall,
@@ -451,9 +451,11 @@ test.describe("Market, supplies, and sound", () => {
       await leaveStore(page, returnTo);
     });
 
-    await test.step("the oil recipe reads its cost against the bottle", async () => {
-      await selectMode(page, "Makeshift Workbench", "Oil Cutting Board");
-      await expect(page.getByText("4 oz Mineral Oil (have 16)")).toBeVisible();
+    await test.step("the oil wipe is the finishing kit's work, not a plan", async () => {
+      // Its 4 oz bill is spent at the claim (covered in the sequence
+      // tier); the plan pile only holds builds
+      const modes = await modesOf(page, "Makeshift Workbench");
+      expect(modes).not.toContain("Oil Cutting Board");
     });
 
     await test.step("start a clean game for the sound half", async () => {

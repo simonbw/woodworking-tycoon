@@ -349,17 +349,23 @@ export const BenchWorkSurface: React.FC<{
 
   // ---------------------------------------------------------- the scene
   // The scene frame: the bench top plus enough floor around it to hold a
-  // staged pallet's overhang. Constant per bench type, so the zoom never
-  // jumps as boards come and go.
+  // staged pallet's overhang. Constant per bench type — so the zoom never
+  // jumps as boards come and go — except when a plan bigger than the
+  // bench is pulled (a worktable builds a 48×48 frame on the makeshift
+  // bench): the scene leans back far enough to hold the whole build.
   const benchSize = benchTopSizeIn(machine.type);
+  const planWidthIn = assemblyBlueprint?.widthIn ?? 0;
+  const planHeightIn = assemblyBlueprint?.heightIn ?? 0;
   const frame = useMemo(
     () => ({
       widthIn:
-        Math.max(benchSize.widthIn, PALLET_WIDTH_IN) + FRAME_MARGIN_IN * 2,
+        Math.max(benchSize.widthIn, PALLET_WIDTH_IN, planWidthIn) +
+        FRAME_MARGIN_IN * 2,
       heightIn:
-        Math.max(benchSize.heightIn, PALLET_HEIGHT_IN) + FRAME_MARGIN_IN * 2,
+        Math.max(benchSize.heightIn, PALLET_HEIGHT_IN, planHeightIn) +
+        FRAME_MARGIN_IN * 2,
     }),
-    [benchSize.widthIn, benchSize.heightIn],
+    [benchSize.widthIn, benchSize.heightIn, planWidthIn, planHeightIn],
   );
   const benchOriginIn = {
     xIn: (frame.widthIn - benchSize.widthIn) / 2,
@@ -594,6 +600,24 @@ export const BenchWorkSurface: React.FC<{
     },
     [assemblyBlueprint, commitWhole, driven],
   );
+
+  // A build with no fasteners at all (the material shelf: two planks
+  // laid side by side) has nothing to drive — laying the last part on
+  // IS the whole build, so seating the final slot fires the commit.
+  const allSeated =
+    assemblyBlueprint !== null &&
+    assemblyBlueprint.slots.length > 0 &&
+    seated.size === assemblyBlueprint.slots.length;
+  useEffect(() => {
+    if (
+      assemblyBlueprint &&
+      assemblyBlueprint.fasteners.length === 0 &&
+      allSeated &&
+      machine.operationProgress.status !== "inProgress"
+    ) {
+      commitWhole();
+    }
+  }, [assemblyBlueprint, allSeated, commitWhole, machine]);
 
   /** Point-in-piece test in bench inches, honoring the piece's turn and
    * whether it stands on edge. Finished work lies on top of loose stock;
