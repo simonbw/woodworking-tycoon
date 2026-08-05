@@ -52,6 +52,7 @@ import { ShopVacSprite } from "./ShopVacSprite";
 import { EnvironmentLayer } from "./EnvironmentLayer";
 import { CameraLayer } from "./CameraLayer";
 import { camera } from "./cameraStore";
+import { shopFrame } from "./shopFrameStore";
 import { useTruckStage } from "./truckStageStore";
 import { atTruckBed, lotSize } from "../../game/lot";
 import { TruckHighlight } from "./TruckSprite";
@@ -252,6 +253,24 @@ export const ShopView: React.FC = () => {
     observer.observe(container);
     return () => observer.disconnect();
   }, [width, height]);
+
+  // Publish where the world sits on screen, for the bench view's zoom
+  // transition to anchor against (see shopFrameStore).
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!view || !container) return;
+    const rect = container.getBoundingClientRect();
+    shopFrame.left = rect.left;
+    shopFrame.top = rect.top;
+    shopFrame.offsetX = Math.round(
+      (view.width - Math.round(width * view.scale)) / 2,
+    );
+    shopFrame.offsetY = Math.round(
+      (view.height - Math.round(height * view.scale)) / 2,
+    );
+    shopFrame.scale = view.scale;
+    shopFrame.ready = true;
+  }, [view, width, height]);
 
   if (view === null) {
     return <div ref={containerRef} className="h-full w-full min-h-0 min-w-0" />;

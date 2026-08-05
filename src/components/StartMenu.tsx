@@ -44,18 +44,13 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 select-none bg-workshop-bg">
       <div className="w-full max-w-md flex flex-col items-center gap-12">
         {/* Hand-painted shop sign */}
-        <div className="flex flex-col items-center">
-          <span className="font-condensed uppercase tracking-[0.4em] text-paper-manila/50 text-xs mb-3">
-            Established 2026
-          </span>
-          <h1>
-            <img
-              src={MAIN_TITLE_LOGO}
-              alt="Woodworking Tycoon"
-              className="w-full max-w-sm drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]"
-            />
-          </h1>
-        </div>
+        <h1 className="w-full">
+          <img
+            src={MAIN_TITLE_LOGO}
+            alt="Woodworking Tycoon"
+            className="w-full"
+          />
+        </h1>
 
         {/* Menu actions styled as work-order tabs */}
         <div className="w-full flex flex-col gap-3">

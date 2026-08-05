@@ -96,6 +96,7 @@ import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
+import { benchZoomAnchor, BenchZoomRig, BENCH_ZOOM_MS } from "./benchZoom";
 import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
 import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
 import { BenchToolRail } from "./BenchToolRail";
