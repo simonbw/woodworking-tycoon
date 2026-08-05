@@ -12,6 +12,8 @@ import {
   FinishedProductType,
   JIG_GRADE_KINDS,
   MaterialInstance,
+  Panel,
+  panelWidth,
   RACK_GRADE_KINDS,
   REAL_WOOD_SPECIES,
   SHOP_FURNITURE_KINDS,
@@ -24,6 +26,7 @@ import {
   isMiteredFrameRail,
 } from "../board-helpers";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
+import { isPanel } from "../panel-helpers";
 
 /**
  * Product blueprints: the single authored artifact behind an assembled
@@ -963,6 +966,86 @@ export const RESAW_FENCE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/** A short frame rail for the tray's ends: the same 1×1 mirrored-miter
+ * stock as every frame, crosscut at the 12" detent. */
+const SHORT_FRAME_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
+  ...FRAME_RAIL_REQUIREMENT,
+  length: [12],
+};
+
+/**
+ * The serving tray: a glued-up panel bottom with the picture frame's
+ * rail wrap around its rim — the first blueprint with a panel part. The
+ * bottom is exactly six 2" strips (12" wide), so the four mitered rails
+ * genuinely close around it: two long rails lap the panel's long edges
+ * and screw down their seams, and the two short rails lap over the long
+ * ones at the corners, brad at each 1×1 lap. Eight nails, all derived —
+ * the legacy recipe's hand-set bill, now earned.
+ */
+export const SERVING_TRAY_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "servingTray",
+  widthIn: 12,
+  heightIn: 24,
+  fastenerConsumable: "nails",
+  slots: [
+    {
+      role: "bottom",
+      requirement: {
+        type: ["panel"],
+        length: [24],
+        thickness: [3, 4],
+        surface: ["sanded"],
+        quantity: 1,
+        // Six real-wood strips: the one width the mitered wrap closes on
+        matches: (material: MaterialInstance) =>
+          isPanel(material) &&
+          panelWidth(material) === 12 &&
+          material.strips.every((strip) => strip.species !== "pallet"),
+        matchesNote: '12" wide, real wood',
+      } as unknown as InputMaterialWithQuantity<Board>,
+      part: { widthIn: 12, lengthIn: 24, thicknessQ: 4 } as const,
+      xIn: 6,
+      yIn: 12,
+      angleDeg: 0,
+      layer: 0,
+    },
+    ...[
+      { xIn: 0.5, angleDeg: 0 },
+      { xIn: 11.5, angleDeg: 180 },
+    ].map(({ xIn, angleDeg }) => ({
+      role: "rail",
+      requirement: FRAME_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: 24,
+        thicknessQ: 1,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn,
+      yIn: 12,
+      angleDeg,
+      layer: 1,
+    })),
+    ...[
+      { yIn: 0.5, angleDeg: 90 },
+      { yIn: 23.5, angleDeg: 270 },
+    ].map(({ yIn, angleDeg }) => ({
+      role: "end",
+      requirement: SHORT_FRAME_RAIL_REQUIREMENT,
+      part: {
+        widthIn: 1,
+        lengthIn: 12,
+        thicknessQ: 1,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn: 6,
+      yIn,
+      angleDeg,
+      layer: 2,
+    })),
+  ],
+});
+
 /**
  * The fine hardwood shelf, face-down: the plank lies on the bench show
  * face down, and the cleat — the same stock stood on its long edge —
@@ -1017,6 +1100,7 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   birdhouse: BIRDHOUSE_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
   shelf: SHELF_BLUEPRINT,
+  servingTray: SERVING_TRAY_BLUEPRINT,
   worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
   worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
   worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,
@@ -1082,7 +1166,7 @@ export function blueprintFastenerCost(
 export function matchPartsToSlots(
   blueprint: ProductBlueprint,
   materials: ReadonlyArray<MaterialInstance>,
-): ReadonlyArray<{ slot: BlueprintSlot; material: Board }> {
+): ReadonlyArray<{ slot: BlueprintSlot; material: Board | Panel }> {
   const pool = [...materials];
   return blueprint.slots.map((slot) => {
     const index = pool.findIndex((material) =>
@@ -1093,7 +1177,7 @@ export function matchPartsToSlots(
         `No staged piece fits the ${slot.role} slot of ${blueprint.id}`,
       );
     }
-    const material = pool[index] as Board;
+    const material = pool[index] as Board | Panel;
     pool.splice(index, 1);
     return { slot, material };
   });
@@ -1168,6 +1252,20 @@ export function assembleFromBlueprint(
   }
   const matched = matchPartsToSlots(blueprint, materials);
   const parts: AssembledPart[] = matched.map(({ slot, material }) => {
+    // A glued-up part keeps its strips — the tray's bottom shows the
+    // very stripes the player glued
+    if (isPanel(material)) {
+      return {
+        slot: slot.id,
+        species: dominantSpecies(material.strips),
+        width: panelWidth(material),
+        length: material.length,
+        thickness: material.thickness,
+        surface: material.surface,
+        strips: material.strips,
+        seed: material.id,
+      };
+    }
     const ends = orientEndsToSlot(slot, material);
     return {
       slot: slot.id,

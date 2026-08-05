@@ -21,6 +21,7 @@ import {
   CROSSCUT_SLED_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
   RESAW_FENCE_BLUEPRINT,
+  SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
@@ -819,5 +820,53 @@ describe("the shelf blueprint", () => {
     assert.strictEqual(product.species, "oak");
     assert.strictEqual(product.parts?.length, 2);
     assert.ok(productBlueprintFor("shelf"));
+  });
+});
+
+describe("the serving tray blueprint", () => {
+  const strips = Array.from({ length: 6 }, () => ({
+    species: "maple" as const,
+    width: 2 as const,
+  }));
+
+  it("screws the long seams twice each and brads the four corner laps", () => {
+    assert.strictEqual(SERVING_TRAY_BLUEPRINT.fasteners.length, 8);
+    const corners = SERVING_TRAY_BLUEPRINT.fasteners.filter((f) =>
+      f.joins.every(
+        (slot) => slot.startsWith("rail") || slot.startsWith("end"),
+      ),
+    );
+    assert.strictEqual(corners.length, 4);
+  });
+
+  it("assembles a tray whose bottom part keeps its strips", () => {
+    const bottom = makeMaterial({
+      type: "panel",
+      strips,
+      length: 24,
+      thickness: 4,
+      surface: "sanded",
+    } as never);
+    const rail = (length: number) =>
+      makeMaterial({
+        ...board("maple", length, 1, 1, "sanded"),
+        ends: {
+          left: { kind: "mitered", angle: -45 },
+          right: { kind: "mitered", angle: 45 },
+        },
+      } as never);
+    const tray = assembleFromBlueprint(SERVING_TRAY_BLUEPRINT, [
+      bottom,
+      rail(24),
+      rail(24),
+      rail(12),
+      rail(12),
+    ]);
+    assert.strictEqual(tray.type, "servingTray");
+    const bottomPart = tray.parts?.find((p) => p.strips);
+    assert.deepStrictEqual(bottomPart?.strips, strips);
+    assert.strictEqual(bottomPart?.width, 12);
+    // The panel part seeds off the very panel that went in
+    assert.strictEqual(bottomPart?.seed, bottom.id);
   });
 });

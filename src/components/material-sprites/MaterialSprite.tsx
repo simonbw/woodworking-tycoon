@@ -87,6 +87,7 @@ export const MaterialSprite: React.FC<{
     case "birdhouse":
     case "pictureFrame":
     case "shelf":
+    case "servingTray":
       return (
         <AssembledProductSprite
           material={material as FinishedProduct}
@@ -115,7 +116,6 @@ export const MaterialSprite: React.FC<{
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
     case "checkerboardCuttingBoard":
-    case "servingTray":
       return (
         <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
       );

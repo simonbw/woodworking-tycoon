@@ -8,6 +8,7 @@ import {
   PICTURE_FRAME_BLUEPRINT,
   ProductBlueprint,
   RESAW_FENCE_BLUEPRINT,
+  SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
@@ -469,50 +470,17 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildServingTray",
     requiredSkill: "trayWork",
     duration: 35,
-    interaction: { kind: "assembly" },
-    requiredConsumables: [{ id: "nails", amount: 8 }],
-    getInputMaterials: () => [
-      {
-        type: ["panel"],
-        length: [24],
-        thickness: [3, 4],
-        surface: ["sanded"],
-        quantity: 1,
-        // A real-wood panel bottom at least 8" wide
-        matches: (material) =>
-          isPanel(material) &&
-          panelWidth(material) >= 8 &&
-          material.strips.every((strip) => strip.species !== "pallet"),
-      },
-      {
-        // Four frame rails wrap the panel — the picture frame's stock
-        type: ["board"],
-        species: REAL_WOOD_SPECIES,
-        length: [24],
-        width: [1],
-        thickness: [1],
-        surface: ["sanded"],
-        quantity: 4,
-        matches: (material) =>
-          isBoard(material) && isMiteredFrameRail(material, 45),
-        matchesNote: "45° both ends, mirrored",
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const base = materials.find(isPanel);
-      if (!base) {
-        throw new Error("Serving tray needs a panel bottom");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "servingTray",
-            species: dominantSpecies(base.strips),
-          }),
-        ],
-      };
-    },
+    // A six-strip panel bottom inside the picture frame's rail wrap:
+    // two long rails screwed down the panel's edges, two short ends
+    // bradded over the corners — the whole recipe reads off the
+    // blueprint, panel part and all
+    interaction: { kind: "assembly", blueprint: "servingTray" },
+    requiredConsumables: blueprintFastenerCost(SERVING_TRAY_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(SERVING_TRAY_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(SERVING_TRAY_BLUEPRINT, materials)],
+    }),
   },
   {
     name: "Build Side Table",

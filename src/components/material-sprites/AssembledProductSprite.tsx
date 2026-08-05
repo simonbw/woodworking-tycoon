@@ -5,11 +5,12 @@ import {
   ProductBlueprint,
   productBlueprintFor,
 } from "../../game/bench-work/blueprint";
-import { AssembledPart, FinishedProduct } from "../../game/Materials";
+import { AssembledPart, Board, FinishedProduct } from "../../game/Materials";
 import { omitUndefined } from "../../utils/objectUtils";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import { BoardOnEdgeSprite } from "./BoardOnEdgeSprite";
 import { BoardSprite } from "./BoardSprite";
+import { PanelSprite } from "./PanelSprite";
 import { drawFastenerHead } from "./fastenerHead";
 
 /**
@@ -94,7 +95,9 @@ const BlueprintPartsSprite: React.FC<{
           } satisfies AssembledPart);
         const board = {
           species: part.species,
-          width: part.width,
+          // Panel parts keep their own derived width; board parts are
+          // catalog stock, so the widened number narrows back safely
+          width: part.width as Board["width"],
           length: part.length,
           thickness: part.thickness,
           surface: part.surface ?? ("rough" as const),
@@ -111,7 +114,18 @@ const BlueprintPartsSprite: React.FC<{
             y={slot.yIn * PIXELS_PER_INCH}
             angle={slot.angleDeg}
           >
-            {slot.onEdge ? (
+            {part.strips ? (
+              // A glued-up part (a tray's bottom) draws as the panel it
+              // is — the very stripes the player glued
+              <PanelSprite
+                panel={{
+                  strips: part.strips,
+                  length: part.length,
+                  thickness: part.thickness,
+                  surface: part.surface ?? "sanded",
+                }}
+              />
+            ) : slot.onEdge ? (
               // A rail stands on edge in the finished piece exactly as
               // it stood while the slats were nailed across it
               <BoardOnEdgeSprite board={board} seed={part.seed} tint={tint} />
