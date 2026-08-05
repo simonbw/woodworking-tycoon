@@ -82,7 +82,6 @@ import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
-import { AssemblySurface, ASSEMBLY_GAP_IN } from "./AssemblySurface";
 import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
 import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
 import { BenchToolRail } from "./BenchToolRail";
@@ -297,16 +296,11 @@ export const BenchWorkSurface: React.FC<{
     : null;
 
   const started = machine.operationProgress.status === "inProgress";
-  // Stroke and saw work happens ON the scene (in place, tool in hand);
-  // only glue-ups and legacy row assemblies still mount a takeover
-  // surface. Blueprint assembly happens on the scene itself too.
+  // Stroke and saw work happens ON the scene (in place, tool in hand)
+  // and assembly is the scene's ghost slots; only glue-ups still mount
+  // a takeover surface, until they join the scene too.
   const surfaceScript =
-    script &&
-    (script.kind === "glue" ||
-      (script.kind === "assembly" && !script.blueprint)) &&
-    (canOperate || started)
-      ? script
-      : null;
+    script && script.kind === "glue" && (canOperate || started) ? script : null;
   // The in-progress hand work drawn in place over the scene
   const inPlaceWork =
     script && (script.kind === "stroke" || script.kind === "saw")
@@ -341,9 +335,7 @@ export const BenchWorkSurface: React.FC<{
     setProgress(0);
   }, [workpieceId]);
   const assemblyScript =
-    sceneActive && script?.kind === "assembly" && script.blueprint
-      ? script
-      : null;
+    sceneActive && script?.kind === "assembly" ? script : null;
   const assemblyBlueprint: ProductBlueprint | null =
     assemblyScript?.blueprint ?? null;
 
@@ -1053,35 +1045,6 @@ export const BenchWorkSurface: React.FC<{
                       : stage === "butt"
                         ? `Press each piece to butt the joint closed (${done}/${total}).`
                         : `Set the clamps (${done}/${total}). The last one starts the cure.`,
-                  )
-                }
-              />
-            ),
-          };
-        }
-        case "assembly": {
-          const s = surfaceScript as Extract<BenchScript, { kind: "assembly" }>;
-          const layout = rowLayout(s.pieces, ASSEMBLY_GAP_IN);
-          const fit = fitToStage(layout.size, workRect);
-          return {
-            fit,
-            instruction:
-              stageLine ?? "Press each outline to set its piece in place.",
-            progressLine: null,
-            node: (
-              <AssemblySurface
-                pieces={s.pieces}
-                fasteners={s.operation.requiredConsumables ?? []}
-                fit={fit}
-                bus={bus}
-                onCommit={commitWhole}
-                onStage={(snapped, driven, fastenerTotal) =>
-                  setStageLine(
-                    snapped < s.pieces.length
-                      ? `Press each outline to set its piece in place (${snapped}/${s.pieces.length}).`
-                      : fastenerTotal > 0
-                        ? `Drive the fasteners (${driven}/${fastenerTotal}).`
-                        : "Fit the last piece.",
                   )
                 }
               />

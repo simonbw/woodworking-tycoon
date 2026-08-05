@@ -113,7 +113,9 @@ describe("the rustic shelf blueprint", () => {
       productBlueprintFor("rusticShelf"),
       RUSTIC_SHELF_BLUEPRINT,
     );
-    assert.strictEqual(productBlueprintFor("jewelryBox"), null);
+    // Every product carries a blueprint now — the registry has no holes
+    assert.ok(productBlueprintFor("jewelryBox"));
+    assert.strictEqual(productBlueprintFor("nonsense"), null);
   });
 
   it("slot part dims agree with slot requirements", () => {

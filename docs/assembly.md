@@ -208,13 +208,16 @@ The row-surface tail is nearly gone; each fell to one small extension:
   rode it: six rails at 60° steps on alternating layers, six brads at
   the skewed corner laps.
 
-## What stays for later phases
+- **The jewelry box**, last of the row-surface tenants, landed
+  jewelry-sized: 12″×6″×2″, seven parts of thin 2/4 stock in three
+  cuts — two bottom slats, four lapped walls on edge, an off-center
+  divider parting a ring well — eight derived brads. One 4′ board
+  mills a whole box, walking the crosscut and rip offcuts down the cut
+  list (the playthrough does exactly that). With it, `AssemblySurface`
+  is retired and `interaction.blueprint` is required: every assembly
+  is a blueprint.
 
-- **The jewelry box** is the one legacy row assembly left
-  (`AssemblySurface`). Geometrically it's the planter box's pattern,
-  but its recipe wants an honesty pass first — four 24″ boards make a
-  two-foot "jewelry box" with no bottom — and that ripples into
-  commission 5's milling chain, so it waits on a design decision.
+## What stays for later phases
 - **Phase 3**: parametric slot groups (a shelf unit 2–5 shelves tall,
   placement as a function of index and count — the shape
   `deckBoardXIn` already has), commissions that require attributes of

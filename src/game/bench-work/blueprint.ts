@@ -1325,6 +1325,83 @@ export const HEX_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
   }),
 });
 
+/**
+ * The jewelry box, finally jewelry-sized: 12"×6" and two inches tall,
+ * all thin 2/4 stock the planer earns. The fanciest small build in the
+ * shop — seven parts in three cuts of the same milled hardwood: two
+ * bottom slats laid side by side, four walls stood on edge in lapped
+ * log-cabin corners, and a divider splitting the well in half. Eight
+ * brads, all derived: one down through each slat into a long wall, one
+ * at each corner lap, one at each end of the divider.
+ */
+const BOX_STOCK = (
+  lengthIn: number,
+  widthIn: 2 | 3,
+): InputMaterialWithQuantity<Board> => ({
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [lengthIn],
+  width: [widthIn],
+  // Thin stock: you'll be planing for this
+  thickness: [2],
+  surface: ["sanded"],
+  quantity: 1,
+});
+
+export const JEWELRY_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "jewelryBox",
+  widthIn: 12,
+  heightIn: 6,
+  fastenerConsumable: "nails",
+  slots: [
+    // The bottom: two slats side by side, each riding a long wall's seam
+    ...[1.5, 4.5].map((yIn) => ({
+      role: "slat",
+      requirement: BOX_STOCK(12, 3),
+      part: { widthIn: 3, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn: 6,
+      yIn,
+      angleDeg: 90,
+      layer: 0,
+    })),
+    // Long walls on edge along the slats' outer edges
+    ...[0.5, 5.5].map((yIn) => ({
+      role: "wall",
+      requirement: BOX_STOCK(12, 2),
+      part: { widthIn: 2, lengthIn: 12, thicknessQ: 2 } as const,
+      xIn: 6,
+      yIn,
+      angleDeg: 90,
+      layer: 1,
+      onEdge: true,
+    })),
+    // End walls lap the long walls at the four corners…
+    ...[0.5, 11.5].map((xIn) => ({
+      role: "end",
+      requirement: BOX_STOCK(6, 2),
+      part: { widthIn: 2, lengthIn: 6, thicknessQ: 2 } as const,
+      xIn,
+      yIn: 3,
+      angleDeg: 0,
+      layer: 2,
+      onEdge: true,
+    })),
+    // …and the divider parts a ring well off the main one, bradded into
+    // both long walls (off-center, so its brads never stack on the
+    // slat seams' center brads)
+    {
+      role: "divider",
+      requirement: BOX_STOCK(6, 2),
+      part: { widthIn: 2, lengthIn: 6, thicknessQ: 2 } as const,
+      xIn: 4,
+      yIn: 3,
+      angleDeg: 0,
+      layer: 2,
+      onEdge: true,
+    },
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
@@ -1334,6 +1411,7 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   birdhouse: BIRDHOUSE_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
   hexFrame: HEX_FRAME_BLUEPRINT,
+  jewelryBox: JEWELRY_BOX_BLUEPRINT,
   shelf: SHELF_BLUEPRINT,
   servingTray: SERVING_TRAY_BLUEPRINT,
   sideTable: SIDE_TABLE_BLUEPRINT,

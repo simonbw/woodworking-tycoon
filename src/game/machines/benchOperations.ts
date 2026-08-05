@@ -5,6 +5,7 @@ import {
   blueprintInputs,
   CROSSCUT_SLED_BLUEPRINT,
   HEX_FRAME_BLUEPRINT,
+  JEWELRY_BOX_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
   PICTURE_FRAME_BLUEPRINT,
   ProductBlueprint,
@@ -482,34 +483,17 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildJewelryBox",
     requiredSkill: "boxJoinery",
     duration: 45,
-    interaction: { kind: "assembly" },
-    getInputMaterials: () => [
-      {
-        type: ["board"],
-        species: REAL_WOOD_SPECIES,
-        length: [24],
-        width: [4],
-        // Thin stock: you'll be planing for this
-        thickness: [2],
-        surface: ["sanded"],
-        quantity: 4,
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const boards = materials.filter(isBoard);
-      if (boards.length !== 4) {
-        throw new Error("Need exactly 4 boards to build a jewelry box");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "jewelryBox",
-            species: boards[0].species,
-          }),
-        ],
-      };
-    },
+    // Jewelry-sized at last: seven parts of thin milled hardwood — two
+    // bottom slats, four lapped walls on edge, an off-center divider —
+    // bradded at eight derived points. The whole recipe reads off the
+    // blueprint.
+    interaction: { kind: "assembly", blueprint: "jewelryBox" },
+    requiredConsumables: blueprintFastenerCost(JEWELRY_BOX_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(JEWELRY_BOX_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(JEWELRY_BOX_BLUEPRINT, materials)],
+    }),
   },
   // Shop furniture: worktables are built, never bought. Like the jigs,
   // the output is equipment — the table comes off the bench crated, to

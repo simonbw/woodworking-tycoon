@@ -299,10 +299,12 @@ last part is laid on its outline. The one attended-tick hold left at a
 bench is the garbage can's Empty; every recipe at a real bench is your
 hands. The legacy row assemblies followed batch by batch — the shelf
 (seam-spaced fasteners), the serving tray (panel parts), the side
-table (boards standing on end; F cycles flat → edge → end), and the
-hex frame (rotated slots, laps clipped as polygons) — leaving the
-jewelry box as the last `AssemblySurface` tenant, parked on a recipe
-honesty question.
+table (boards standing on end; F cycles flat → edge → end), the hex
+frame (rotated slots, laps clipped as polygons), and finally the
+jewelry box, re-cut to jewelry size (12"×6", seven thin parts). With
+that, `AssemblySurface` and the row layout for assembly are retired:
+`interaction.blueprint` is required, and the only takeover surface
+left is the glue-up's.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a

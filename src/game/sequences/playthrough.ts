@@ -611,11 +611,13 @@ function commission5(shop: ShopDriver): ShopDriver {
     [4, 9],
   );
   shop.buySupplies("nails");
+  // One 4' cherry board yields a whole box's seven thin parts — the
+  // crosscuts, rips, and rip offcuts all get used
   shop.buyBoards(
     "bigBoxRack",
     "cherry",
     { length: 48, width: 4, thickness: 4 },
-    8,
+    2,
   );
   // One walnut board per frame rail: rip 1" strips off 4" stock.
   shop.buyBoards(
@@ -627,24 +629,31 @@ function commission5(shop: ShopDriver): ShopDriver {
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 
-  // The boxes: eight thin sanded panels, four to a box.
-  const cherryStock: BoardSize = {
-    species: "cherry",
-    length: 48,
-    width: 4,
-    thickness: 4,
-  };
-  const boxPanel: BoardSize = { ...cherryStock, length: 24, thickness: 2 };
-  for (let i = 0; i < 8; i++) {
-    millOneBoard(shop, cherryStock, { ...boxPanel, surface: "sanded" });
-  }
+  // The boxes: seven thin parts each — two 12×3 bottom slats, two 12×2
+  // walls, three 6×2 ends — all milled out of ONE cherry board per box,
+  // walking the offcuts down: the crosscut leftovers become the next
+  // pieces, and each rip's offcut is the very next blank.
+  const cherry = (
+    length: number,
+    width: number,
+    thickness: number,
+  ): BoardSize => ({ species: "cherry", length, width, thickness });
+  const thinCherry = (m: MaterialInstance) =>
+    isBoard(m) &&
+    m.species === "cherry" &&
+    m.thickness === 2 &&
+    m.surface === "sanded";
   for (let box = 0; box < 2; box++) {
-    shop.make(
-      WORKBENCH,
-      "buildJewelryBox",
-      sized({ ...boxPanel, surface: "sanded" }),
-      { count: 4 },
-    );
+    const sanded = { surface: "sanded" as const };
+    millOneBoard(shop, cherry(48, 4, 4), { ...cherry(12, 3, 2), ...sanded });
+    millOneBoard(shop, cherry(36, 4, 4), { ...cherry(12, 3, 2), ...sanded });
+    millOneBoard(shop, cherry(24, 4, 4), { ...cherry(12, 2, 2), ...sanded });
+    // The rip's twin: targeting 2" out of 4" leaves an identical blank
+    millOneBoard(shop, cherry(12, 2, 4), { ...cherry(12, 2, 2), ...sanded });
+    millOneBoard(shop, cherry(12, 4, 4), { ...cherry(6, 2, 2), ...sanded });
+    millOneBoard(shop, cherry(6, 2, 4), { ...cherry(6, 2, 2), ...sanded });
+    millOneBoard(shop, cherry(6, 4, 4), { ...cherry(6, 2, 2), ...sanded });
+    shop.make(WORKBENCH, "buildJewelryBox", thinCherry, { count: 7 });
   }
 
   // The frames: eight mirrored rails, four to a frame.

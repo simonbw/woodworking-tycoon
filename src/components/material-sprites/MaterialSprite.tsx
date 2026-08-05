@@ -7,7 +7,6 @@ import { BoardSprite } from "./BoardSprite";
 import { CuttingBoardSprite } from "./CuttingBoardSprite";
 import { DefaultMaterialPileSprite } from "./DefaultMaterialPileSprite";
 import { EndGrainSliceSprite } from "./EndGrainSliceSprite";
-import { FinishedBoxSprite } from "./FinishedBoxSprite";
 import { PalletSprite } from "./PalletSprite";
 import { PanelSprite } from "./PanelSprite";
 import { SheetGoodSprite } from "./SheetGoodSprite";
@@ -62,15 +61,6 @@ export const MaterialSprite: React.FC<{
         />
       );
 
-    case "jewelryBox":
-      return (
-        <FinishedBoxSprite
-          material={material as FinishedProduct}
-          alpha={alpha}
-          tint={tint}
-        />
-      );
-
     case "panel":
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
@@ -85,6 +75,7 @@ export const MaterialSprite: React.FC<{
     case "birdhouse":
     case "pictureFrame":
     case "hexFrame":
+    case "jewelryBox":
     case "shelf":
     case "servingTray":
     case "sideTable":
