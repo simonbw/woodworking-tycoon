@@ -150,9 +150,27 @@ export function slotExtent(slot: BlueprintSlot): {
   };
 }
 
-/** Two overlapping rects on adjacent layers get one fastener at the
- * overlap's center — enough bite to matter, so grazing corners don't. */
+/** Two overlapping rects on adjacent layers get fasteners at the
+ * overlap — enough bite to matter, so grazing corners don't. */
 const MIN_OVERLAP_IN = 1;
+
+/**
+ * How far apart fasteners sit along a long joint. A crossing (a slat
+ * over a rail) is smaller than this in both directions and gets exactly
+ * one fastener at its center, the way a pallet does; a long parallel
+ * seam — a cleat under a shelf, an apron along a table top — takes a
+ * row of them, because one screw in a four-foot joint holds nothing.
+ * A big two-dimensional lap (a doubled sheet top) takes a grid.
+ */
+const FASTENER_SPACING_IN = 16;
+
+/** Fastener positions along one axis of an overlap: evenly spaced,
+ * centered, one per FASTENER_SPACING_IN (rounded), never fewer than 1. */
+function fastenerRun(from: number, to: number): ReadonlyArray<number> {
+  const span = to - from;
+  const count = Math.max(1, Math.round(span / FASTENER_SPACING_IN));
+  return array(count).map((_, i) => from + (span * (i + 0.5)) / count);
+}
 
 function deriveFasteners(
   slots: ReadonlyArray<BlueprintSlot>,
@@ -179,11 +197,11 @@ function deriveFasteners(
         0.75 * Math.min(a.y1 - a.y0, b.y1 - b.y0),
       );
       if (x1 - x0 < needX || y1 - y0 < needY) continue;
-      fasteners.push({
-        xIn: (x0 + x1) / 2,
-        yIn: (y0 + y1) / 2,
-        joins: [lower.id, upper.id],
-      });
+      for (const xIn of fastenerRun(x0, x1)) {
+        for (const yIn of fastenerRun(y0, y1)) {
+          fasteners.push({ xIn, yIn, joins: [lower.id, upper.id] });
+        }
+      }
     }
   }
   return fasteners;
@@ -945,6 +963,51 @@ export const RESAW_FENCE_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
+/**
+ * The fine hardwood shelf, face-down: the plank lies on the bench show
+ * face down, and the cleat — the same stock stood on its long edge —
+ * runs along the back edge of its underside, screwed down its length
+ * (the seam rule: one screw in a four-foot joint holds nothing). On the
+ * wall the cleat is what carries it.
+ */
+const SHELF_STOCK: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: REAL_WOOD_SPECIES,
+  length: [48],
+  width: [6],
+  thickness: [4],
+  surface: ["sanded"],
+  quantity: 1,
+};
+
+export const SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "shelf",
+  widthIn: 48,
+  heightIn: 8,
+  fastenerConsumable: "screws",
+  slots: [
+    {
+      role: "plank",
+      requirement: SHELF_STOCK,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 4 } as const,
+      xIn: 24,
+      yIn: 4,
+      angleDeg: 90,
+      layer: 0,
+    },
+    {
+      role: "cleat",
+      requirement: SHELF_STOCK,
+      part: { widthIn: 6, lengthIn: 48, thicknessQ: 4 } as const,
+      xIn: 24,
+      yIn: 1.5,
+      angleDeg: 90,
+      layer: 1,
+      onEdge: true,
+    },
+  ],
+});
+
 const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   rusticShelf: RUSTIC_SHELF_BLUEPRINT,
   crate: CRATE_BLUEPRINT,
@@ -953,6 +1016,7 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   bookshelf: BOOKSHELF_BLUEPRINT,
   birdhouse: BIRDHOUSE_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
+  shelf: SHELF_BLUEPRINT,
   worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
   worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
   worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,

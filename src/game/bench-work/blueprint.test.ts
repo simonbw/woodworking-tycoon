@@ -21,6 +21,7 @@ import {
   CROSSCUT_SLED_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
   RESAW_FENCE_BLUEPRINT,
+  SHELF_BLUEPRINT,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
   TOOL_DRAWERS_BLUEPRINT,
@@ -107,7 +108,7 @@ describe("the rustic shelf blueprint", () => {
       productBlueprintFor("rusticShelf"),
       RUSTIC_SHELF_BLUEPRINT,
     );
-    assert.strictEqual(productBlueprintFor("shelf"), null);
+    assert.strictEqual(productBlueprintFor("jewelryBox"), null);
   });
 
   it("slot part dims agree with slot requirements", () => {
@@ -746,13 +747,14 @@ describe("equipment blueprints", () => {
     assert.deepStrictEqual(rows[1].thickness, [6, 8]);
   });
 
-  it("nails every sheet–rail seam and rail–stretcher crossing", () => {
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 4);
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 6);
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 8);
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 11);
-    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 6);
-    assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 2);
+  it("nails every seam by the spacing rule — a row per long joint", () => {
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 8);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 10);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 12);
+    // The doubled top is a lamination: a 3×3 grid holds the sheets flat
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 23);
+    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 10);
+    assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 4);
   });
 
   it("the material shelf has no fasteners at all — laying on is the build", () => {
@@ -760,15 +762,19 @@ describe("equipment blueprints", () => {
     assert.deepStrictEqual(blueprintFastenerCost(MATERIAL_SHELF_BLUEPRINT), []);
   });
 
-  it("the jigs are screwed, two seams each", () => {
+  it("the jigs are screwed", () => {
     for (const jig of [
       CROSSCUT_SLED_BLUEPRINT,
       STRAIGHT_LINE_SLED_BLUEPRINT,
       RESAW_FENCE_BLUEPRINT,
     ]) {
       assert.strictEqual(jig.fastenerConsumable, "screws");
-      assert.strictEqual(jig.fasteners.length, 2);
     }
+    // The sleds' 3-foot runner and fence seams take two screws each;
+    // the resaw fence's short braces take one
+    assert.strictEqual(CROSSCUT_SLED_BLUEPRINT.fasteners.length, 4);
+    assert.strictEqual(STRAIGHT_LINE_SLED_BLUEPRINT.fasteners.length, 4);
+    assert.strictEqual(RESAW_FENCE_BLUEPRINT.fasteners.length, 2);
   });
 
   it("is registered under its equipment id and never becomes a product", () => {
@@ -784,5 +790,34 @@ describe("equipment blueprints", () => {
       () => assembleFromBlueprint(STORAGE_RACK_BLUEPRINT, []),
       /builds equipment, not a product/,
     );
+  });
+});
+
+describe("the shelf blueprint", () => {
+  it("screws the cleat down the length of the seam, not once at its middle", () => {
+    assert.strictEqual(SHELF_BLUEPRINT.fasteners.length, 3);
+    assert.deepStrictEqual(
+      SHELF_BLUEPRINT.fasteners.map((f) => f.xIn),
+      [8, 24, 40],
+    );
+    assert.deepStrictEqual(blueprintFastenerCost(SHELF_BLUEPRINT), [
+      { id: "screws", amount: 3 },
+    ]);
+  });
+
+  it("derives the legacy recipe's two-board bill", () => {
+    const rows = blueprintInputs(SHELF_BLUEPRINT);
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].quantity, 2);
+    assert.deepStrictEqual(rows[0].surface, ["sanded"]);
+  });
+
+  it("builds a shelf carrying the very boards that went in", () => {
+    const oak = () => board("oak", 48, 6, 4, "sanded");
+    const product = assembleFromBlueprint(SHELF_BLUEPRINT, [oak(), oak()]);
+    assert.strictEqual(product.type, "shelf");
+    assert.strictEqual(product.species, "oak");
+    assert.strictEqual(product.parts?.length, 2);
+    assert.ok(productBlueprintFor("shelf"));
   });
 });

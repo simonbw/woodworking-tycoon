@@ -8,6 +8,7 @@ import {
   PICTURE_FRAME_BLUEPRINT,
   ProductBlueprint,
   RESAW_FENCE_BLUEPRINT,
+  SHELF_BLUEPRINT,
   STORAGE_RACK_BLUEPRINT,
   STRAIGHT_LINE_SLED_BLUEPRINT,
   TOOL_DRAWERS_BLUEPRINT,
@@ -398,33 +399,15 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     id: "buildShelf",
     requiredSkill: "fineShelving",
     duration: 35,
-    interaction: { kind: "assembly" },
-    getInputMaterials: () => [
-      {
-        type: ["board"],
-        species: REAL_WOOD_SPECIES,
-        length: [48],
-        width: [6],
-        thickness: [4],
-        surface: ["sanded"],
-        quantity: 2,
-      },
-    ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const boards = materials.filter(isBoard);
-      if (boards.length !== 2) {
-        throw new Error("Need exactly 2 boards to build a shelf");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          makeMaterial<FinishedProduct>({
-            type: "shelf",
-            species: boards[0].species,
-          }),
-        ],
-      };
-    },
+    // Plank face-down, cleat on edge along its back, screwed down the
+    // length of the seam — the whole recipe reads off the blueprint
+    interaction: { kind: "assembly", blueprint: "shelf" },
+    requiredConsumables: blueprintFastenerCost(SHELF_BLUEPRINT),
+    getInputMaterials: () => blueprintInputs(SHELF_BLUEPRINT),
+    output: (materials: ReadonlyArray<MaterialInstance>) => ({
+      inputs: [],
+      outputs: [assembleFromBlueprint(SHELF_BLUEPRINT, materials)],
+    }),
   },
   {
     name: "Build Picture Frame",
