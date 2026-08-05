@@ -42,10 +42,14 @@ not spent**. `GameState.clamps` is how many the shop owns, bought one bar at
 a time from the supplies aisle (`CLAMP_COST`, `buyClampAction`) — no pack
 size, because you buy each clamp once.
 
-An operation declares `Operation.requiredClamps`; every glue-up does
-(2 for a pair, 3 to add a strip, 4 for a panel or an end-grain blank, 6 to
-join two panels). The count is checked against the **free** clamps before
-the operation can start, and released when it finishes.
+How many a glue-up ties up is **derived from the stock**: one clamp per
+foot of the length being glued, never fewer than two
+(`clampsForGlueSpan` in `bench-work/glue-up.ts`) — the boards lie across
+the clamp bars, so longer stock is hungrier for clamps. The count is
+checked against the **free** clamps before the operation can start, and
+released when it finishes. In the bench view the same bars are physical:
+set out on the scene first, stock laid across them, tightened to commit
+(see `docs/bench-minigames.md`).
 
 Nothing is deducted at checkout. The number in use is **derived** from the
 machines currently mid-operation (`clampsInUse`), so:

@@ -23,7 +23,7 @@ import {
   getMachines,
 } from "../Machine";
 import { GameAction, GameState } from "../GameState";
-import { MaterialInstance } from "../Materials";
+import { MaterialInstance, panelWidth } from "../Materials";
 import { HAND_CAPACITY, handSpaceLeft } from "../Person";
 import { consumeRequiredMaterials } from "../delivery";
 import { availableOperations } from "../skill-helpers";
@@ -58,10 +58,13 @@ import {
   putDownCarriedMachineAction,
 } from "../game-actions/machine-actions";
 import {
+  arrangeBenchMaterialAction,
   finishAttendedWorkAction,
   palletPryTargetsLeft,
   pryPalletNailAction,
+  startGlueUpAction,
 } from "../game-actions/operation-actions";
+import { benchTopSizeIn } from "../bench-work/bench-layout";
 import {
   loadTruckBedAction,
   takeCrateFromTruckAction,
@@ -741,6 +744,77 @@ export class ShopDriver {
     return this.load(machineTypeId, stock, 1)
       .run(machineTypeId)
       .collect(machineTypeId);
+  }
+
+  /**
+   * One whole clamps-first glue-up — no plan, exactly like the bench
+   * view: the matching staged stock is laid edge to edge across the
+   * bench (real arrange commits, so the run detection sees what a
+   * player's drags would leave), the tighten claims it through
+   * startGlueUpAction — the composition decides which recipe is
+   * credited — and the cure runs out on the clock. Pieces glue in
+   * staged order; there is no count because the run takes whatever
+   * matches, two or more.
+   */
+  glueUp(
+    machineTypeId: MachineState["machineTypeId"],
+    stock?: MaterialPredicate,
+  ): this {
+    this.standAtOperatorCell(machineTypeId);
+    const machine = this.machine(machineTypeId);
+    const pieces = machine.inputMaterials.filter(
+      stock ??
+        ((m) =>
+          m.type === "board" ||
+          m.type === "panel" ||
+          m.type === "endGrainSlice"),
+    );
+    if (pieces.length < 2) {
+      throw new Error(
+        `A glue-up at the ${machineTypeId} needs at least two staged pieces, ` +
+          `found ${pieces.length}`,
+      );
+    }
+    // Lay the run edge to edge across the bench center, first piece
+    // leftmost — widths across, lengths down, nothing on edge.
+    const widthOf = (m: MaterialInstance): number =>
+      m.type === "board"
+        ? m.width
+        : m.type === "panel"
+          ? panelWidth(m)
+          : m.type === "endGrainSlice"
+            ? m.thickness / 4
+            : 0;
+    const bench = benchTopSizeIn(machine.type);
+    const span = pieces.reduce((sum, piece) => sum + widthOf(piece), 0);
+    let across = -span / 2;
+    for (const piece of pieces) {
+      this.apply(
+        arrangeBenchMaterialAction(this.machine(machineTypeId), piece.id, {
+          xIn: bench.widthIn / 2 + across + widthOf(piece) / 2,
+          yIn: bench.heightIn / 2,
+          angleDeg: 0,
+          flipped: false,
+        }),
+      );
+      across += widthOf(piece);
+    }
+    this.apply(
+      startGlueUpAction(
+        this.machine(machineTypeId),
+        pieces.map((piece) => piece.id),
+      ),
+    );
+    if (
+      this.machine(machineTypeId).state.operationProgress.status !==
+      "inProgress"
+    ) {
+      throw new Error(
+        `The glue-up at the ${machineTypeId} would not start. Unprepped ` +
+          `stock, a locked skill, or short of clamps.`,
+      );
+    }
+    return this.performWork(machineTypeId).collect(machineTypeId);
   }
 
   /**

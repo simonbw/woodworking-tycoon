@@ -400,9 +400,11 @@ test.describe("Bench view", () => {
         jointedFaces: 2,
         jointedEdges: 2,
       });
+      // Glue is plan-free: the script mounts when a butted run LIES on
+      // the bench, whatever plan is (or isn't) selected
       expect(
         await scriptFor({
-          selectedOperationId: "glueUpPanel",
+          selectedOperationId: "dismantlePallet",
           inputMaterials: [
             strip("g1"),
             strip("g2"),
@@ -410,6 +412,12 @@ test.describe("Bench view", () => {
             strip("g4"),
             strip("g5"),
           ],
+          benchLayout: Object.fromEntries(
+            ["g1", "g2", "g3", "g4", "g5"].map((id, i) => [
+              id,
+              { xIn: 14 + i * 2, yIn: 12, angleDeg: 0, flipped: false },
+            ]),
+          ),
         }),
       ).toBe("glue");
 
@@ -484,6 +492,124 @@ test.describe("Bench view", () => {
         }),
       ).toBe("curing");
       await expect(page.getByText("the glue cures on its own")).toBeVisible();
+    });
+
+    await test.step("clamps-first glue-up: set the bars, spread the bead, tighten into the cure", async () => {
+      // Three butted strips mid-bench, a full rack, and no plan — the
+      // run itself is the operation (bench-work/glue-up.ts)
+      await page.evaluate(() => {
+        const strip = (id: string) => ({
+          id,
+          type: "board",
+          species: "maple",
+          length: 24,
+          width: 2,
+          thickness: 4,
+          surface: "smooth",
+          jointedFaces: 2,
+          jointedEdges: 2,
+        });
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          clamps: 6,
+          machines: state.machines.map((m: any, i: number) =>
+            i === 0
+              ? {
+                  ...m,
+                  selectedOperationId: "dismantlePallet",
+                  inputMaterials: [strip("r1"), strip("r2"), strip("r3")],
+                  processingMaterials: [],
+                  outputMaterials: [],
+                  operationProgress: {
+                    status: "notStarted",
+                    phaseIndex: 0,
+                    ticksRemaining: 0,
+                  },
+                  benchLayout: {
+                    r1: { xIn: 16, yIn: 12, angleDeg: 0, flipped: false },
+                    r2: { xIn: 18, yIn: 12, angleDeg: 0, flipped: false },
+                    r3: { xIn: 20, yIn: 12, angleDeg: 0, flipped: false },
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+      const stage = page.getByTestId("bench-stage");
+      await expect(stage).toHaveAttribute("data-glue-run", "3");
+      await expect(stage).toHaveAttribute("data-glue-op", "glueUpPanel");
+      await expect(stage).toHaveAttribute("data-glue-clamps", "0/2");
+
+      // Clamps out first: two bars, snapped onto the run's ghosts
+      await page.getByTestId("bench-clamp-supply").click();
+      for (const yIn of [6.5, 17.5]) {
+        const at = await inchPoint(page, 18, yIn);
+        await page.mouse.click(at.x, at.y);
+      }
+      await expect(stage).toHaveAttribute("data-glue-clamps", "2/2");
+      await page.keyboard.press("Escape");
+
+      // Then the bottle: one real bead stroke per seam, repeated until
+      // the seam reads glued — the coverage engine paces like sanding
+      await page.getByTestId("bench-glue-bottle").click();
+      for (const [index, xSeam] of [17, 19].entries()) {
+        for (let pass = 0; pass < 40; pass++) {
+          // Over-run the seam ends: coverage needs the full 24 inches
+          const top = await inchPoint(page, xSeam, -1);
+          const bottom = await inchPoint(page, xSeam, 25);
+          await page.mouse.move(top.x, top.y);
+          await page.mouse.down();
+          await page.mouse.move(bottom.x, bottom.y, { steps: 30 });
+          await page.mouse.move(top.x, top.y, { steps: 30 });
+          await page.mouse.up();
+          const seams = await stage.getAttribute("data-glue-seams");
+          if (seams === `${index + 1}/2`) break;
+        }
+        await expect(stage).toHaveAttribute("data-glue-seams", `${index + 1}/2`);
+      }
+      await page.keyboard.press("Escape");
+
+      // Tighten each bar at its jaw (overhanging bare bench) — the
+      // last one commits straight into the hands-free cure
+      for (const yIn of [6.5, 17.5]) {
+        const jaw = await inchPoint(page, 12, yIn);
+        await page.mouse.click(jaw.x, jaw.y);
+      }
+      await expect(page.getByTestId("bench-work")).toHaveAttribute(
+        "data-script",
+        "curing",
+      );
+      const cure = await page.evaluate(() => {
+        const m = (window as any)
+          .__GET_GAME_STATE__()
+          .machines.find((x: any) => x.machineTypeId === "workspace");
+        return {
+          op: m.selectedOperationId,
+          phase: m.operationProgress.phaseIndex,
+          pieces: m.processingMaterials.length,
+        };
+      });
+      expect(cure).toEqual({ op: "glueUpPanel", phase: 1, pieces: 3 });
+
+      // Stand the bench down for the next step
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any, i: number) =>
+            i === 0
+              ? {
+                  ...m,
+                  processingMaterials: [],
+                  operationProgress: {
+                    status: "notStarted",
+                    phaseIndex: 0,
+                    ticksRemaining: 0,
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
     });
 
     await test.step("blueprint assembly: tip the rail on edge, one drag seats it, the hammer nails the crossings", async () => {

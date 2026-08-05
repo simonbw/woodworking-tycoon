@@ -5,37 +5,48 @@ export const GlueUpsArticle: React.FC = () => (
   <>
     <P>
       Gluing boards edge to edge makes a panel wider than any board you can buy.
-      Every glue-up runs in two stretches: you spread glue and pull the joints
-      closed with clamps, then the glue cures on its own. The curing half needs
-      nobody at the bench — start it, walk away, and do other work while it
-      sets.
+      There is no plan to pick for it. Lean over the bench, set your clamps out
+      on the top, and lay the boards across them edge to edge — whatever run of
+      stock is sitting in the clamps is the glue-up.
+    </P>
+
+    <H>The Order of Work</H>
+    <P>
+      Clamps first: take a <Term>bar clamp</Term> from the rack (the Glue-up
+      chip beside the tool rail) and lay it on the bench. One clamp per foot of
+      board length, and never fewer than two — the bench shows faint outlines
+      where they belong once the boards are down. Then the boards, edge to edge
+      across the bars: both edges jointed, faces planed smooth, one thickness,
+      one length. Then the glue — take the bottle and run a bead down each open
+      seam. Last, press each clamp to wind it tight. The final clamp starts the
+      cure.
+    </P>
+    <P>
+      The curing half needs nobody at the bench — the work sits in its clamps
+      right where you built it. Walk away and do other work while it sets.
     </P>
 
     <H>Clamps</H>
     <P>
-      A glue-up holds a few <Term>clamps</Term> from the moment you start it
-      until the glue is cured, and hands them back when it's done. The wider the
-      joint, the more it takes: two for a pair of boards, four for a five-strip
-      panel, six to marry two panels together.
+      A glue-up holds its clamps from the last tighten until the glue is cured,
+      and hands them back when it's done. Longer stock takes more bars: a
+      two-foot run wants two, a four-foot run wants four.
     </P>
     <P>
       Clamps aren't used up — you buy each one once, and it comes back off every
       glue-up. What they limit is how much can be curing at the same time. With
-      four clamps, one panel ties up the whole rack until it cures. With a
-      dozen, three benches can be curing at once while you work on something
-      else.
-    </P>
-    <P>
-      The bench's plan sheet lists how many clamps the selected glue-up needs
-      and how many are free right now. Buy more from the supplies aisle at the
-      store.
+      two clamps, one panel ties up the whole rack until it cures. With more,
+      several benches can be curing at once while you work on something else.
+      Buy them from the supplies aisle at the store.
     </P>
 
     <H>What Comes Out</H>
     <P>
       A panel comes off the clamps <Term>rough</Term>: squeeze-out and slight
       ridges where the strips meet. Sand it after it's out of the clamps, not
-      before.
+      before. It takes as many boards as you lay in — three strips make a narrow
+      shelf blank, seven make a wide one — and a finished panel can go straight
+      back between the clamps to be made wider still.
     </P>
 
     <Note>Glue dries faster than a bench frees up. Buy clamps in pairs.</Note>

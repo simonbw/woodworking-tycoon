@@ -53,9 +53,11 @@ export const BlueprintCorner: React.FC<{ machine: Machine }> = ({
 
   // Tool work isn't a plan: a staged pallet offers its nails, a held
   // tool offers its strokes and cuts, all on the bench top itself
-  // (bench-work/tool-work.ts) — so the pile lists only builds, and never
-  // honors a stale selection of tool work (old saves may carry one).
-  const toolWorkKinds = ["pry", "stroke", "saw"];
+  // (bench-work/tool-work.ts), and glue-ups are clamps-first — the run
+  // lying in the clamps decides the composition (bench-work/glue-up.ts).
+  // So the pile lists only assembly builds, and never honors a stale
+  // selection of the plan-free kinds (old saves may carry one).
+  const toolWorkKinds = ["pry", "stroke", "saw", "glue"];
   const operations = availableOperations(machine, gameState.progression).filter(
     (op) => !toolWorkKinds.includes(op.interaction?.kind ?? ""),
   );

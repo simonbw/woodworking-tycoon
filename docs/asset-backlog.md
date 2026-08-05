@@ -204,9 +204,9 @@ Decided — don't re-open these without a reason.
 - **Collision debug overlay** — `CollisionDebugLayer`. Dev-only, `?collision`.
 - **Bench-view overlays** — the nail markers, pry-bar lever, glue beads,
   clamp bars, ghost outlines, fastener heads, and cut/kerf lines in
-  `src/components/bench-view/` (`PrySurface`, `GlueSurface`,
-  `AssemblySurface`, `SawSurface`). Interaction UI drawn over the real
-  material sprites at zoom — markers and state readouts, not art. The
+  `src/components/bench-view/` (`BenchScene`, `GlueUpLayer`,
+  `SawSurface`). Interaction UI drawn over the real material sprites at
+  zoom — markers and state readouts, not art. The
   scratch-off brush in `StrokeSurface` is a mask stamped into a
   `RenderTexture` and never renders directly.
 - **Edge band** — `bench-view/EdgeBandSprite`. The block plane's edge-on

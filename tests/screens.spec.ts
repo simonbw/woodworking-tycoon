@@ -345,7 +345,8 @@ test.describe("Screens", () => {
           .locator("li", { hasText: "Sunrise Boards" })
           .getByText("Requires Striped Boards, Freeform Lamination"),
       ).toBeVisible();
-      // Freeform glue ops are hidden at the bench until learned
+      // Glue-ups are clamps-first on the bench scene, never plans in
+      // the pile — locked or learned (bench-work/glue-up.ts)
       await closeJournal(page);
       const modes = await workspaceModes(page);
       expect(modes).not.toContain("Glue Up Pair");
@@ -366,9 +367,11 @@ test.describe("Screens", () => {
       }
       await expect(page.getByText("Certified")).toHaveCount(8);
       await closeJournal(page);
+      // Learned skills widen what the clamps accept, not the plan pile:
+      // the glue recipes still never show as sheets
       const modes = await workspaceModes(page);
-      expect(modes).toContain("Glue Up Pair");
-      expect(modes).toContain("Glue On Strip");
+      expect(modes).not.toContain("Glue Up Pair");
+      expect(modes).not.toContain("Glue On Strip");
     });
     await test.step("shut the station sheet so Escape reaches the pause menu", async () => {
       // Reading the recipe list spreads the sheet open, and Escape closes the

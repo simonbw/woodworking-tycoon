@@ -11,6 +11,7 @@ import { saveGame } from "../game/saveLoad";
 import {
   finishAttendedWorkAction,
   pryPalletNailAction,
+  startGlueUpAction,
 } from "../game/game-actions/operation-actions";
 import { operateMachineAction } from "../game/game-actions/player-actions";
 import { getMachines, Machine } from "../game/Machine";
@@ -69,6 +70,16 @@ export const GameStateProvider: React.FC<{
         setGameState((state) =>
           pryPalletNailAction(getMachines(state.machines)[machineIndex])(state),
         );
+      (window as any).__START_GLUE_UP__ = (
+        machineIndex: number,
+        pieceIds: ReadonlyArray<string>,
+      ) =>
+        setGameState((state) =>
+          startGlueUpAction(
+            getMachines(state.machines)[machineIndex],
+            pieceIds,
+          )(state),
+        );
     }
     return () => {
       if (typeof window !== "undefined") {
@@ -78,6 +89,7 @@ export const GameStateProvider: React.FC<{
         delete (window as any).__START_OPERATION__;
         delete (window as any).__FINISH_ATTENDED_WORK__;
         delete (window as any).__PRY_PALLET_NAIL__;
+        delete (window as any).__START_GLUE_UP__;
       }
     };
   }, [gameState]);

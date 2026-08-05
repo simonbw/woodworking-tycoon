@@ -1,4 +1,11 @@
-import { Machine, MachineState } from "./Machine";
+import {
+  defaultParametersFor,
+  Machine,
+  MachineState,
+  Operation,
+} from "./Machine";
+import { MaterialInstance } from "./Materials";
+import { CLAMP_SPACING_IN, clampsForGlueSpan } from "./bench-work/glue-up";
 
 /**
  * Clamps: the shop's returnable pool. Unlike consumables (nails, oil), a
@@ -11,9 +18,14 @@ import { Machine, MachineState } from "./Machine";
  * releases the clamps automatically when the operation finishes — even if
  * the player was away when the cure ended.
  *
- * `GameState.clamps` is therefore the number OWNED, and owning more is what
+ * How many a glue-up ties up is derived too: one clamp per foot of the
+ * length being glued, never fewer than two (bench-work/glue-up.ts) — the
+ * boards lie ACROSS the clamp bars, so it's their length that sets the
+ * count. Longer stock is hungrier for clamps, and owning more is what
  * buys parallel glue-ups: one bench's panel can cure while another bench
  * starts the next one. See docs/consumables.md.
+ *
+ * `GameState.clamps` is therefore the number OWNED.
  */
 
 export const CLAMP_NAME = "Bar Clamp";
@@ -24,15 +36,54 @@ export const CLAMP_DESCRIPTION =
 /** Bought one at a time from the store's supplies aisle. */
 export const CLAMP_COST = 22;
 
-/** How many clamps an operation ties up while it runs (0 for most work). */
-export function clampsFor(operation: { requiredClamps?: number }): number {
-  return operation.requiredClamps ?? 0;
+/** The clamp span a piece asks for, along its glued length. */
+function glueSpanIn(material: MaterialInstance): number | null {
+  switch (material.type) {
+    case "board":
+    case "panel":
+      return material.length;
+    case "endGrainSlice":
+      return material.strips.reduce((sum, strip) => sum + strip.width, 0);
+    default:
+      return null;
+  }
+}
+
+/**
+ * How many clamps an operation ties up while it runs (0 for anything but
+ * a glue-up). With the very materials in hand — a running operation's
+ * processing bay, the scene's detected run — the count follows their
+ * length; without, it follows the recipe's declared stock (previews and
+ * the legacy recipe path, which pins its lengths anyway).
+ */
+export function clampsFor(
+  operation: Operation,
+  materials?: ReadonlyArray<MaterialInstance>,
+): number {
+  if (operation.interaction?.kind !== "glue") {
+    return 0;
+  }
+  if (materials && materials.length > 0) {
+    const spans = materials
+      .map(glueSpanIn)
+      .filter((span): span is number => span !== null);
+    if (spans.length > 0) {
+      return clampsForGlueSpan(Math.max(...spans));
+    }
+  }
+  const declared = operation.getInputMaterials(
+    defaultParametersFor(operation),
+  )[0];
+  const declaredLength =
+    declared && "length" in declared ? declared.length?.[0] : undefined;
+  return clampsForGlueSpan(declaredLength ?? CLAMP_SPACING_IN * 2);
 }
 
 /**
  * Clamps currently tied up in glue-ups. An operation holds its clamps for
  * its whole run — the attended Glue & Clamp phase AND the long hands-free
- * cure — so any machine mid-operation counts.
+ * cure — so any machine mid-operation counts, at the count its own
+ * processing stock derives.
  */
 export function clampsInUse(machines: ReadonlyArray<MachineState>): number {
   return machines.reduce((sum, machineState) => {
@@ -43,7 +94,10 @@ export function clampsInUse(machines: ReadonlyArray<MachineState>): number {
     const operation = new Machine(machineState).operations.find(
       (op) => op.id === machineState.selectedOperationId,
     );
-    return sum + (operation ? clampsFor(operation) : 0);
+    return (
+      sum +
+      (operation ? clampsFor(operation, machineState.processingMaterials) : 0)
+    );
   }, 0);
 }
 

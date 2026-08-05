@@ -11,7 +11,6 @@ import {
   BenchScript,
   benchScriptFor,
   placedPieceSize,
-  rowLayout,
 } from "../../game/bench-work/workpiece";
 import {
   nearestSawMark,
@@ -39,6 +38,7 @@ import {
   emitBenchDustAction,
   finishAttendedWorkAction,
   pryPalletNailAction,
+  startGlueUpAction,
 } from "../../game/game-actions/operation-actions";
 import {
   operateMachineAction,
@@ -74,7 +74,21 @@ import {
   PalletNail,
 } from "../../game/Materials";
 import { machineCanOperate, shopSupply } from "../../game/machine-helpers";
-import { clampsFor } from "../../game/Clamp";
+import { clampsFree } from "../../game/Clamp";
+import {
+  ClampPlacement,
+  clampGhosts,
+  clampsForGlueSpan,
+  clampsOnRun,
+  CLAMP_SNAP_IN,
+  detectGlueRun,
+} from "../../game/bench-work/glue-up";
+import {
+  coverageFraction,
+  makeCoverageGrid,
+  stampStroke,
+} from "../../game/bench-work/coverage";
+import { availableOperations } from "../../game/skill-helpers";
 import { CONSUMABLE_TYPES } from "../../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { playSound } from "../../utils/sfx";
@@ -88,7 +102,14 @@ import { BenchToolRail } from "./BenchToolRail";
 import { BlueprintCorner } from "./BlueprintCorner";
 import { UnderBenchPanel } from "./UnderBenchPanel";
 import { flyToSupply } from "./flyToSupply";
-import { GlueSurface, GLUE_GAP_IN } from "./GlueSurface";
+import {
+  BEAD_RADIUS_IN,
+  CLAMP_HIT_IN,
+  GlueCuringLayer,
+  GlueUpLayer,
+  SPREAD_COMPLETE,
+  SPREAD_PER_SECOND,
+} from "./GlueUpLayer";
 import { SawSurface } from "./SawSurface";
 import { StrokeSurface } from "./StrokeSurface";
 import { fitToStage, pointerToInches, StageFit, StageRect } from "./stageMath";
@@ -132,8 +153,10 @@ const SIDE_CHROME_PX = 24;
  * shows on the shop floor too. Single-piece tool work is tool-first and
  * in place: the held tool over a piece it can work IS the operation
  * (bench-work/tool-work.ts), and the strokes, kerf, and finished piece
- * all land through the piece's own placement. Only glue-ups and the
- * legacy row assemblies still mount a takeover surface over the scene.
+ * all land through the piece's own placement. Glue-ups are clamps-first
+ * on the scene too: bar clamps set out on the bench top, stock laid
+ * across them edge to edge, glue down the seams, tighten — nothing
+ * mounts over the scene anymore.
  * See docs/bench-minigames.md. The world does not stop while it's open,
  * but the body does: leaning over the bench pins the feet (ShopView
  * disables held movement via sheetIsBenchView) until Tab steps back.
@@ -147,7 +170,6 @@ export const BenchWorkSurface: React.FC<{
   const script = benchScriptFor(machine, gameState.progression);
   const bus = useMemo(makeBenchPointerBus, []);
   const [progress, setProgress] = useState(0);
-  const [stageLine, setStageLine] = useState<string | null>(null);
   const lastDust = useRef(0);
   const { active, poke } = useActivityFlag();
 
@@ -182,6 +204,26 @@ export const BenchWorkSurface: React.FC<{
 
   // ---------------------------------------------------------- the hands
   const [heldTool, setHeldTool] = useState<ToolId | null>(null);
+  // Clamps-first glue-up (bench-work/glue-up.ts): the bars set out on
+  // the scene, how many are wound tight, what's in the hand (a clamp
+  // off the rack, or the glue bottle), and the bead laid per seam. All
+  // ephemeral until the last tighten commits — walk away mid-setup and
+  // the clamps go back on the rack, the glue dries; the boards stay
+  // exactly where they lie (their arrangement is real state).
+  const [placedClamps, setPlacedClamps] = useState<
+    ReadonlyArray<ClampPlacement>
+  >([]);
+  const [tightenedCount, setTightenedCount] = useState(0);
+  const [holdingClamp, setHoldingClamp] = useState(false);
+  const [holdingGlue, setHoldingGlue] = useState(false);
+  const [clampCursor, setClampCursor] = useState<ClampPlacement | null>(null);
+  const seamGrids = useRef<Map<string, ReturnType<typeof makeCoverageGrid>>>(
+    new Map(),
+  );
+  const [seamCoverage, setSeamCoverage] = useState<
+    Readonly<Record<string, number>>
+  >({});
+  const lastBead = useRef<{ key: string; t: number; at: number } | null>(null);
   const [prying, setPrying] = useState<PalletNail | null>(null);
   const [hoveredNail, setHoveredNail] = useState<PalletNail | null>(null);
   // Blueprint assembly: which fasteners this build has driven (ephemeral
@@ -296,11 +338,9 @@ export const BenchWorkSurface: React.FC<{
     : null;
 
   const started = machine.operationProgress.status === "inProgress";
-  // Stroke and saw work happens ON the scene (in place, tool in hand)
-  // and assembly is the scene's ghost slots; only glue-ups still mount
-  // a takeover surface, until they join the scene too.
-  const surfaceScript =
-    script && script.kind === "glue" && (canOperate || started) ? script : null;
+  // Everything happens ON the scene now: stroke and saw work in place
+  // (tool in hand), assembly on its ghost slots, and glue-ups in the
+  // clamps set out on the bench top. Nothing mounts over it anymore.
   // The in-progress hand work drawn in place over the scene
   const inPlaceWork =
     script && (script.kind === "stroke" || script.kind === "saw")
@@ -308,7 +348,7 @@ export const BenchWorkSurface: React.FC<{
       : null;
   const curing = script?.kind === "curing";
   const isBench = isBenchType(machine.type);
-  const sceneActive = isBench && !surfaceScript && !curing;
+  const sceneActive = isBench && !curing;
   // The mounted tool the running work needs back in hand to continue
   const workTool = inPlaceWork
     ? toolForOperation(machine, inPlaceWork.operation)
@@ -421,6 +461,104 @@ export const BenchWorkSurface: React.FC<{
     ...loosePieces,
     ...outputPieces,
   ];
+
+  // ------------------------------------------------- clamps-first glue-up
+  // No plan, ever: the contiguous edge-to-edge run lying on the bench IS
+  // the glue-up, gated by whichever glue recipe the composition amounts
+  // to being known (a locked composition simply never forms a run — no
+  // grayed-out tease). See bench-work/glue-up.ts.
+  const glueOps = isBench
+    ? availableOperations(machine, gameState.progression).filter(
+        (op) => op.interaction?.kind === "glue",
+      )
+    : [];
+  const glueContext =
+    sceneActive && glueOps.length > 0 && !scenePallet && !assemblyBlueprint;
+  const glueDetection = glueContext
+    ? detectGlueRun(scenePieces)
+    : { run: null, reason: null };
+  const glueRun =
+    glueDetection.run &&
+    glueOps.some((op) => op.id === glueDetection.run!.operationId)
+      ? glueDetection.run
+      : null;
+  const freeClamps = clampsFree(gameState.clamps, gameState.machines);
+  const clampsAvailable = Math.max(0, freeClamps - placedClamps.length);
+  const clampsNeeded = glueRun ? clampsForGlueSpan(glueRun.lengthIn) : 0;
+  const runClamps = glueRun ? clampsOnRun(glueRun, placedClamps) : [];
+  const ghostPositions = glueRun
+    ? clampGhosts(glueRun).filter(
+        (ghost) =>
+          !placedClamps.some(
+            (clamp) =>
+              Math.hypot(clamp.xIn - ghost.xIn, clamp.yIn - ghost.yIn) <=
+              CLAMP_SNAP_IN,
+          ),
+      )
+    : [];
+  const seamsGluedCount = glueRun
+    ? glueRun.seams.filter(
+        (seam) => (seamCoverage[seam.key] ?? 0) >= SPREAD_COMPLETE,
+      ).length
+    : 0;
+  const glueReady =
+    glueRun !== null &&
+    runClamps.length >= clampsNeeded &&
+    seamsGluedCount === glueRun.seams.length;
+  const runKey = glueRun ? glueRun.pieces.map((p) => p.id).join("|") : "";
+  // A different run is a different glue-up: fresh beads, nothing tight
+  useEffect(() => {
+    seamGrids.current.clear();
+    setSeamCoverage({});
+    setTightenedCount(0);
+  }, [runKey]);
+  useEffect(() => {
+    if (tightenedCount > 0 && !glueReady) setTightenedCount(0);
+  }, [glueReady, tightenedCount]);
+  // Leaving the glue context puts the hand's clamp and bottle back
+  useEffect(() => {
+    if (!glueContext) {
+      setHoldingClamp(false);
+      setHoldingGlue(false);
+      setClampCursor(null);
+      if (placedClamps.length > 0) setPlacedClamps([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glueContext]);
+
+  const glueRunRef = useRef(glueRun);
+  glueRunRef.current = glueRun;
+  const commitGlueUp = useCallback(() => {
+    const run = glueRunRef.current;
+    if (!run) return;
+    // The tighten is the single commit: claim the very pieces in the
+    // clamps (in across order), then resolve the attended phase — the
+    // hand work was it — so the cure begins right here on the scene.
+    applyAction(
+      startGlueUpAction(
+        machine,
+        run.pieces.map((piece) => piece.id),
+      ),
+    );
+    applyAction(finishAttendedWorkAction(machine));
+    setPlacedClamps([]);
+    setTightenedCount(0);
+    seamGrids.current.clear();
+    setSeamCoverage({});
+  }, [applyAction, machine]);
+
+  // The cure drawn where it was tightened: the run re-derived from the
+  // processing pieces' own persistent placements
+  const curingGlue =
+    curing && script?.operation.interaction?.kind === "glue" ? script : null;
+  const curingRun = curingGlue
+    ? detectGlueRun(
+        machine.processingMaterials.map((material) => ({
+          material,
+          placement: benchPlacementFor(machine, material),
+        })),
+      ).run
+    : null;
 
   // ------------------------------------------------- blueprint assembly
   // The ghost frame's centered seat — shared with the claim in
@@ -695,6 +833,132 @@ export const BenchWorkSurface: React.FC<{
     setDraggingId(null);
   }, [applyAction, draggingId, machine]);
 
+  const placedClampsRef = useRef(placedClamps);
+  placedClampsRef.current = placedClamps;
+
+  /** Where a held clamp would land: the nearest open ghost, or free. */
+  const snapClampTo = useCallback(
+    (xIn: number, yIn: number): ClampPlacement => {
+      const run = glueRunRef.current;
+      const ghosts = run ? clampGhosts(run) : [];
+      let best: ClampPlacement | null = null;
+      let bestDistance = CLAMP_SNAP_IN;
+      for (const ghost of ghosts) {
+        if (
+          placedClampsRef.current.some(
+            (clamp) =>
+              Math.hypot(clamp.xIn - ghost.xIn, clamp.yIn - ghost.yIn) <=
+              CLAMP_SNAP_IN,
+          )
+        ) {
+          continue;
+        }
+        const distance = Math.hypot(ghost.xIn - xIn, ghost.yIn - yIn);
+        if (distance <= bestDistance) {
+          best = ghost;
+          bestDistance = distance;
+        }
+      }
+      return best ?? { xIn, yIn, angleDeg: run?.angleDeg ?? 0 };
+    },
+    [],
+  );
+
+  /** The placed clamp whose bar is under the hand, if any. */
+  const clampIndexAt = useCallback(
+    (xIn: number, yIn: number): number | null => {
+      const run = glueRunRef.current;
+      const halfBar = run ? run.spanIn / 2 + 3 : 12;
+      let bestIndex: number | null = null;
+      let bestDistance = CLAMP_HIT_IN;
+      placedClampsRef.current.forEach((clamp, index) => {
+        const rad = (clamp.angleDeg * Math.PI) / 180;
+        const dirX = Math.cos(rad);
+        const dirY = Math.sin(rad);
+        const along = Math.max(
+          -halfBar,
+          Math.min(
+            halfBar,
+            (xIn - clamp.xIn) * dirX + (yIn - clamp.yIn) * dirY,
+          ),
+        );
+        const distance = Math.hypot(
+          xIn - (clamp.xIn + dirX * along),
+          yIn - (clamp.yIn + dirY * along),
+        );
+        if (distance <= bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      return bestIndex;
+    },
+    [],
+  );
+
+  /** One drag of the bottle: the bead lands on whichever seam the hand
+   * is riding, paced like every other stroke tool. */
+  const spreadAt = useCallback(
+    (xIn: number, yIn: number) => {
+      const run = glueRunRef.current;
+      if (!run) return;
+      let bestSeam: (typeof run.seams)[number] | null = null;
+      let bestT = 0;
+      let bestDistance = BEAD_RADIUS_IN * 1.5;
+      for (const seam of run.seams) {
+        const vx = (seam.x1In - seam.x0In) / seam.lengthIn;
+        const vy = (seam.y1In - seam.y0In) / seam.lengthIn;
+        const t = Math.max(
+          0,
+          Math.min(
+            seam.lengthIn,
+            (xIn - seam.x0In) * vx + (yIn - seam.y0In) * vy,
+          ),
+        );
+        const distance = Math.hypot(
+          xIn - (seam.x0In + vx * t),
+          yIn - (seam.y0In + vy * t),
+        );
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestSeam = seam;
+          bestT = t;
+        }
+      }
+      if (!bestSeam) {
+        lastBead.current = null;
+        return;
+      }
+      let grid = seamGrids.current.get(bestSeam.key);
+      if (!grid) {
+        grid = makeCoverageGrid(1, bestSeam.lengthIn);
+        seamGrids.current.set(bestSeam.key, grid);
+      }
+      const now = performance.now();
+      const last = lastBead.current;
+      lastBead.current = { key: bestSeam.key, t: bestT, at: now };
+      if (!last || last.key !== bestSeam.key) return;
+      const distance = Math.abs(bestT - last.t);
+      if (distance < 0.05) return;
+      poke();
+      const gain = Math.min(
+        1,
+        (SPREAD_PER_SECOND * Math.min(now - last.at, 100)) /
+          1000 /
+          Math.max(distance, 0.1),
+      );
+      stampStroke(grid, 0.5, last.t, 0.5, bestT, BEAD_RADIUS_IN, gain / 4);
+      const key = bestSeam.key;
+      const covered = coverageFraction(grid);
+      setSeamCoverage((previous) =>
+        Math.round((previous[key] ?? 0) * 100) === Math.round(covered * 100)
+          ? previous
+          : { ...previous, [key]: covered },
+      );
+    },
+    [poke],
+  );
+
   const sceneHandler = useCallback(
     (event: BenchPointerEvent) => {
       if (event.type === "leave") {
@@ -728,6 +992,23 @@ export const BenchWorkSurface: React.FC<{
             yIn,
           );
           if (hit) beginDrive(hit);
+          return;
+        }
+        if (holdingClamp) {
+          // The bar lands where the hand is — snapped onto the nearest
+          // open ghost when a run is inviting them
+          setPlacedClamps((previous) => [...previous, snapClampTo(xIn, yIn)]);
+          playSound("material-drop", 0.4);
+          if (clampsAvailable <= 1) {
+            setHoldingClamp(false);
+            setClampCursor(null);
+          }
+          return;
+        }
+        if (holdingGlue) {
+          // The press starts a fresh bead; the drag lays it
+          lastBead.current = null;
+          spreadAt(xIn, yIn);
           return;
         }
         if (heldTool) {
@@ -770,6 +1051,25 @@ export const BenchWorkSurface: React.FC<{
           }
           return;
         }
+        // A bare hand on a clamp's bar (the jaws overhang the stock):
+        // wind it tight when the glue-up is ready, or pick it back up
+        const clampHit = clampIndexAt(xIn, yIn);
+        if (clampHit !== null && !pieceAt(xIn, yIn)) {
+          if (glueReady) {
+            playSound("glue-clamp", 0.5);
+            const next = tightenedCount + 1;
+            if (next >= runClamps.length) {
+              commitGlueUp();
+            } else {
+              setTightenedCount(next);
+            }
+          } else {
+            setPlacedClamps((previous) =>
+              previous.filter((_, index) => index !== clampHit),
+            );
+          }
+          return;
+        }
         const hit = pieceAt(xIn, yIn);
         // Nailed-on parts don't drag — they're part of the build now
         if (hit && fastenedRef.current.has(hit.material.id)) return;
@@ -784,6 +1084,18 @@ export const BenchWorkSurface: React.FC<{
         return;
       }
       if (event.type === "move") {
+        if (holdingClamp) {
+          setClampCursor(snapClampTo(xIn, yIn));
+          return;
+        }
+        if (holdingGlue) {
+          if (event.held) {
+            spreadAt(xIn, yIn);
+          } else {
+            lastBead.current = null;
+          }
+          return;
+        }
         if (draggingId && event.held && dragPlacement.current) {
           // The stage edge is the wall — the whole visible frame is
           // droppable, bench overhang included.
@@ -839,7 +1151,10 @@ export const BenchWorkSurface: React.FC<{
         );
         return;
       }
-      if (event.type === "up") commitDrag();
+      if (event.type === "up") {
+        lastBead.current = null;
+        commitDrag();
+      }
     },
     [
       applyAction,
@@ -850,25 +1165,35 @@ export const BenchWorkSurface: React.FC<{
       benchOriginIn.xIn,
       benchOriginIn.yIn,
       canOperate,
+      clampIndexAt,
+      clampsAvailable,
       commitDrag,
+      commitGlueUp,
       draggingId,
       driveToolHeld,
       driving,
       frame.widthIn,
       frame.heightIn,
       gameState.progression,
+      glueReady,
       hammerHeld,
       heldTool,
+      holdingClamp,
+      holdingGlue,
       machine,
       nailAt,
       pieceAt,
       productPlacement,
       prying,
+      runClamps.length,
       sawAngle,
       scenePallet,
       setHoveredId,
       setHoveredWork,
       slotAt,
+      snapClampTo,
+      spreadAt,
+      tightenedCount,
     ],
   );
   useEffect(() => {
@@ -883,6 +1208,14 @@ export const BenchWorkSurface: React.FC<{
     if (!sceneActive) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if ((holdingClamp || holdingGlue) && event.code === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setHoldingClamp(false);
+        setHoldingGlue(false);
+        setClampCursor(null);
+        return;
+      }
       if (heldTool && event.code === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -988,6 +1321,8 @@ export const BenchWorkSurface: React.FC<{
     sceneActive,
     heldTool,
     heldToolIsSaw,
+    holdingClamp,
+    holdingGlue,
     sawAngle,
     draggingId,
     hoveredId,
@@ -1018,41 +1353,6 @@ export const BenchWorkSurface: React.FC<{
     progressLine: string | null;
   } | null {
     if (!workRect) return null;
-    if (surfaceScript) {
-      switch (surfaceScript.kind) {
-        case "glue": {
-          const s = surfaceScript as Extract<BenchScript, { kind: "glue" }>;
-          const layout = rowLayout(s.pieces, GLUE_GAP_IN);
-          const fit = fitToStage(layout.size, workRect);
-          const clampsNeeded = clampsFor(s.operation);
-          return {
-            fit,
-            instruction:
-              stageLine ?? "Spread glue down each open joint, edge to edge.",
-            progressLine: null,
-            node: (
-              <GlueSurface
-                pieces={s.pieces}
-                requiredClamps={clampsNeeded}
-                fit={fit}
-                bus={bus}
-                onCommit={commitWhole}
-                onWork={onWork}
-                onStage={(stage, done, total) =>
-                  setStageLine(
-                    stage === "spread"
-                      ? `Spread glue down each open joint (${done}/${total}).`
-                      : stage === "butt"
-                        ? `Press each piece to butt the joint closed (${done}/${total}).`
-                        : `Set the clamps (${done}/${total}). The last one starts the cure.`,
-                  )
-                }
-              />
-            ),
-          };
-        }
-      }
-    }
     if (!sceneFit) return null;
     const slotsTotal = assemblyBlueprint?.slots.length ?? 0;
     // An empty on-edge (or on-end) slot with a fitting piece still in
@@ -1126,6 +1426,32 @@ export const BenchWorkSurface: React.FC<{
       }
       return `Move the ${TOOL_TYPES[heldWorkTool].name.toLowerCase()} over a piece it can work.`;
     };
+    // The clamps-first glue-up walks itself: clamps out, stock across
+    // them, glue down the seams, tighten. Each line names the next move.
+    const glueInstruction = (): string | null => {
+      if (!glueContext) return null;
+      if (glueRun) {
+        if (runClamps.length < clampsNeeded) {
+          return holdingClamp
+            ? `Lay the bar across the boards (${runClamps.length}/${clampsNeeded} set).`
+            : `The run wants ${clampsNeeded} clamps — one per foot of length (${runClamps.length}/${clampsNeeded} set).`;
+        }
+        if (seamsGluedCount < glueRun.seams.length) {
+          return holdingGlue
+            ? `Run the bead down each open seam (${seamsGluedCount}/${glueRun.seams.length}).`
+            : "Take the glue and run a bead down each seam.";
+        }
+        return `Tighten each clamp — the last one starts the cure (${tightenedCount}/${runClamps.length}).`;
+      }
+      if (glueDetection.reason) return glueDetection.reason;
+      if (holdingClamp) {
+        return "Lay the bar down where the glue-up will sit.";
+      }
+      if (placedClamps.length > 0) {
+        return "Clamps are set. Lay glue-ready stock across them, edge to edge.";
+      }
+      return null;
+    };
     return {
       fit: sceneFit,
       instruction: curing
@@ -1141,7 +1467,8 @@ export const BenchWorkSurface: React.FC<{
                   : "Take the hammer down off the rail."
             : assemblyScript
               ? assemblyInstruction()
-              : (heldWorkInstruction() ??
+              : (glueInstruction() ??
+                heldWorkInstruction() ??
                 (sceneOutputs.length > 0
                   ? "Finished work on the bench. Press E over a piece to take it."
                   : loosePieces.length > 0
@@ -1154,7 +1481,9 @@ export const BenchWorkSurface: React.FC<{
           : assemblyScript &&
               !(sceneOutputs.length > 0 && loosePieces.length === 0)
             ? `${seated.size}/${slotsTotal} placed · ${driven.length}/${assemblyBlueprint?.fasteners.length ?? 0} ${fastenerId === "screws" ? "screwed" : "nailed"}`
-            : null,
+            : glueRun
+              ? `${seamsGluedCount}/${glueRun.seams.length} glued · ${runClamps.length}/${clampsNeeded} clamps`
+              : null,
       node: sceneActive ? (
         <>
           <BenchScene
@@ -1229,7 +1558,29 @@ export const BenchWorkSurface: React.FC<{
               onWork={onWork}
             />
           )}
+          {/* Seams, clamps, and ghosts over the run in the making */}
+          {glueContext &&
+            (glueRun || placedClamps.length > 0 || clampCursor) && (
+              <GlueUpLayer
+                run={glueRun}
+                seamCoverage={seamCoverage}
+                clamps={placedClamps}
+                tightened={tightenedCount}
+                ghosts={ghostPositions}
+                cursor={holdingClamp ? clampCursor : null}
+                fit={sceneFit}
+              />
+            )}
         </>
+      ) : curingGlue ? (
+        // The glue-up curing where it was tightened: the run's own
+        // pieces on their persistent placements, every bar wound home
+        <GlueCuringLayer
+          pieces={machine.processingMaterials}
+          placementFor={(material) => benchPlacementFor(machine, material)}
+          run={curingRun}
+          fit={sceneFit}
+        />
       ) : null,
     };
   }
@@ -1290,10 +1641,10 @@ export const BenchWorkSurface: React.FC<{
     ? "curing"
     : inPlaceWork
       ? inPlaceWork.kind
-      : surfaceScript
-        ? surfaceScript.kind
-        : assemblyScript
-          ? "assembly"
+      : assemblyScript
+        ? "assembly"
+        : glueRun
+          ? "glue"
           : scenePallet
             ? "pry"
             : "idle";
@@ -1302,49 +1653,61 @@ export const BenchWorkSurface: React.FC<{
     return null;
   }
 
-  const keyHints: Array<[string, string]> = heldTool
+  const keyHints: Array<[string, string]> = holdingClamp
     ? [
-        ...(heldWorkTool
-          ? ([
-              [
-                "Drag",
-                hoveredWork?.kind === "saw" || inPlaceWork?.kind === "saw"
-                  ? "saw the line"
-                  : "work the piece",
-              ],
-              ...(heldToolIsSaw && !inPlaceWork
-                ? ([["R", "swing the angle"]] as Array<[string, string]>)
-                : []),
-            ] as Array<[string, string]>)
-          : ([
-              [
-                "Click",
-                assemblyScript
-                  ? fastenerId === "screws"
-                    ? "drive a screw"
-                    : "drive a nail"
-                  : "pry a nail",
-              ],
-              ...(scenePallet
-                ? ([["F", "flip the pallet"]] as Array<[string, string]>)
-                : []),
-            ] as Array<[string, string]>)),
-        ["Esc", `hang the ${TOOL_TYPES[heldTool].name.toLowerCase()} up`],
+        ["Click", "lay the clamp down"],
+        ["Esc", "put the clamp back"],
         ["Tab", "step back"],
       ]
-    : [
-        ...(loosePieces.length > 0 || scenePallet
-          ? ([
-              ["Drag", "move a piece"],
-              ["R", "turn"],
-              // The one flip verb: boards tip up on edge, the pallet
-              // turns over
-              ["F", "flip"],
-            ] as Array<[string, string]>)
-          : []),
-        ["E", "take back"],
-        ["Tab", "step back"],
-      ];
+    : holdingGlue
+      ? [
+          ["Drag", "spread glue on a seam"],
+          ["Esc", "put the glue away"],
+          ["Tab", "step back"],
+        ]
+      : heldTool
+        ? [
+            ...(heldWorkTool
+              ? ([
+                  [
+                    "Drag",
+                    hoveredWork?.kind === "saw" || inPlaceWork?.kind === "saw"
+                      ? "saw the line"
+                      : "work the piece",
+                  ],
+                  ...(heldToolIsSaw && !inPlaceWork
+                    ? ([["R", "swing the angle"]] as Array<[string, string]>)
+                    : []),
+                ] as Array<[string, string]>)
+              : ([
+                  [
+                    "Click",
+                    assemblyScript
+                      ? fastenerId === "screws"
+                        ? "drive a screw"
+                        : "drive a nail"
+                      : "pry a nail",
+                  ],
+                  ...(scenePallet
+                    ? ([["F", "flip the pallet"]] as Array<[string, string]>)
+                    : []),
+                ] as Array<[string, string]>)),
+            ["Esc", `hang the ${TOOL_TYPES[heldTool].name.toLowerCase()} up`],
+            ["Tab", "step back"],
+          ]
+        : [
+            ...(loosePieces.length > 0 || scenePallet
+              ? ([
+                  ["Drag", "move a piece"],
+                  ["R", "turn"],
+                  // The one flip verb: boards tip up on edge, the pallet
+                  // turns over
+                  ["F", "flip"],
+                ] as Array<[string, string]>)
+              : []),
+            ["E", "take back"],
+            ["Tab", "step back"],
+          ];
 
   return (
     <div
@@ -1356,7 +1719,7 @@ export const BenchWorkSurface: React.FC<{
       <div
         ref={wrapRef}
         className={`absolute inset-0 select-none touch-none overflow-hidden bg-ink-black ${
-          heldTool
+          heldTool || holdingClamp
             ? "cursor-none"
             : sceneActive
               ? "cursor-default"
@@ -1394,6 +1757,15 @@ export const BenchWorkSurface: React.FC<{
             ? (hoveredWork?.operationId ?? "")
             : undefined
         }
+        data-glue-run={glueContext ? (glueRun?.pieces.length ?? 0) : undefined}
+        data-glue-op={glueRun ? glueRun.operationId : undefined}
+        data-glue-seams={
+          glueRun ? `${seamsGluedCount}/${glueRun.seams.length}` : undefined
+        }
+        data-glue-clamps={
+          glueRun ? `${runClamps.length}/${clampsNeeded}` : undefined
+        }
+        data-clamps-placed={glueContext ? placedClamps.length : undefined}
         data-work-x={workPlacement ? workPlacement.xIn.toFixed(2) : undefined}
         data-work-y={workPlacement ? workPlacement.yIn.toFixed(2) : undefined}
         onPointerDown={handlePointer("down")}
@@ -1401,10 +1773,13 @@ export const BenchWorkSurface: React.FC<{
         onPointerUp={handlePointer("up")}
         onPointerLeave={handlePointer("leave")}
         onContextMenu={(event) => {
-          if (heldTool) {
+          if (heldTool || holdingClamp || holdingGlue) {
             event.preventDefault();
             setHeldTool(null);
             setHoveredNail(null);
+            setHoldingClamp(false);
+            setHoldingGlue(false);
+            setClampCursor(null);
           }
         }}
       >
@@ -1500,10 +1875,73 @@ export const BenchWorkSurface: React.FC<{
           machine={machine}
           heldTool={heldTool}
           interactive={sceneActive}
-          onToggle={(toolId) =>
-            setHeldTool((current) => (current === toolId ? null : toolId))
-          }
+          onToggle={(toolId) => {
+            setHoldingClamp(false);
+            setHoldingGlue(false);
+            setClampCursor(null);
+            setHeldTool((current) => (current === toolId ? null : toolId));
+          }}
         />
+      )}
+
+      {/* The glue-up's own supplies, off to the side of the rail: bar
+          clamps off the rack and the glue bottle. No plan — set the
+          clamps out, lay stock across them, glue, tighten. */}
+      {isBench && glueOps.length > 0 && (
+        <div className="pointer-events-auto absolute right-4 top-16 z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
+          <span className="mr-1 flex flex-col items-start font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
+            <span>Glue-up</span>
+            <span className="tabular-nums text-paper-manila/40">
+              {clampsAvailable} clamps free
+            </span>
+          </span>
+          <button
+            type="button"
+            data-testid="bench-clamp-supply"
+            aria-label={
+              holdingClamp ? "Put the clamps back" : "Take a bar clamp"
+            }
+            title={`Bar clamps — ${clampsAvailable} free on the rack`}
+            disabled={!sceneActive || (clampsAvailable === 0 && !holdingClamp)}
+            onClick={(event) => {
+              event.stopPropagation();
+              setHeldTool(null);
+              setHoldingGlue(false);
+              setClampCursor(null);
+              setHoldingClamp((current) => !current);
+            }}
+            className={`rounded border px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] transition-colors disabled:opacity-40 ${
+              holdingClamp
+                ? "border-gold-light text-gold-light"
+                : "border-paper-manila/40 text-paper-manila hover:bg-paper-manila/10"
+            }`}
+          >
+            Clamp
+          </button>
+          <button
+            type="button"
+            data-testid="bench-glue-bottle"
+            aria-label={
+              holdingGlue ? "Put the glue away" : "Take the glue bottle"
+            }
+            title="Wood glue — run a bead down each open seam"
+            disabled={!sceneActive}
+            onClick={(event) => {
+              event.stopPropagation();
+              setHeldTool(null);
+              setHoldingClamp(false);
+              setClampCursor(null);
+              setHoldingGlue((current) => !current);
+            }}
+            className={`rounded border px-2 py-1 font-condensed uppercase tracking-[0.12em] text-[0.62rem] transition-colors disabled:opacity-40 ${
+              holdingGlue
+                ? "border-gold-light text-gold-light"
+                : "border-paper-manila/40 text-paper-manila hover:bg-paper-manila/10"
+            }`}
+          >
+            Glue
+          </button>
+        </div>
       )}
 
       {/* The plans pile in the corner and whatever the bench keeps

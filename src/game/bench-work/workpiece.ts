@@ -107,14 +107,6 @@ export interface PryScript {
   readonly pallet: Pallet;
 }
 
-export interface GlueScript {
-  /** Spread, butt, clamp: the staged pieces matched to the plan's
-   * slots; the last clamp fires the single commit. */
-  readonly kind: "glue";
-  readonly operation: Operation;
-  readonly pieces: ReadonlyArray<MaterialInstance>;
-}
-
 export interface AssemblyScript {
   /** Assembly on the bench scene itself: the ghosts are the
    * blueprint's slots, the pieces are whatever is staged (complete or
@@ -133,12 +125,7 @@ export interface CuringScript {
 }
 
 export type BenchScript =
-  | StrokeScript
-  | SawScript
-  | PryScript
-  | GlueScript
-  | AssemblyScript
-  | CuringScript;
+  StrokeScript | SawScript | PryScript | AssemblyScript | CuringScript;
 
 /**
  * The first staged material meeting each of the operation's input slots,
@@ -206,15 +193,11 @@ export function benchScriptFor(
           }
         : null;
     }
-    // A glue/assembly op mid-attended-phase shouldn't happen through the
-    // bench view (its commit skips straight past), but a driver-path
-    // start could get here; let the hands finish it.
+    // A glue-up mid-attended-phase can't happen through the bench view
+    // (the tighten commits start and finish back to back); anything in
+    // progress here is as good as in the clamps already.
     if (interaction.kind === "glue") {
-      return {
-        kind: "glue",
-        operation: selected,
-        pieces: machine.processingMaterials,
-      };
+      return { kind: "curing", operation: selected };
     }
     if (interaction.kind === "assembly") {
       const blueprint = productBlueprintFor(interaction.blueprint);
@@ -264,16 +247,10 @@ export function benchScriptFor(
         }
       : null;
   }
-  // Stroke and saw work is tool-first (bench-work/tool-work.ts): the
-  // held tool over a staged piece offers it — no plan, so an idle bench
-  // never mounts those scripts from a selection. Only builds are plans.
-  const pieces = stagedPieces(machine, selected);
-  if (!pieces || pieces.length === 0) {
-    return null;
-  }
-  if (interaction.kind === "glue") {
-    return { kind: "glue", operation: selected, pieces };
-  }
+  // Everything else is plan-free: stroke and saw work is tool-first
+  // (bench-work/tool-work.ts), and glue-ups are clamps-first — the run
+  // lying in the clamps decides (bench-work/glue-up.ts). No selection
+  // mounts a script; only assembly builds are plans.
   return null;
 }
 

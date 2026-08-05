@@ -53,24 +53,41 @@ export {
  */
 export const GLUE_CURE_TICKS = 60;
 
-/**
- * Clamps each glue-up ties up until it's cured (see Clamp.ts). The wider
- * the joint, the more bars it takes to pull it closed: a two-board pair
- * needs a clamp at each end, a five-strip panel wants one every few
- * inches, and marrying two finished panels is the widest joint the shop
- * makes. They're returned when the glue is cured, so this number is what
- * decides how many glue-ups can be curing at once — not what they cost.
- */
-const PAIR_CLAMPS = 2;
-const STRIP_CLAMPS = 3;
-const PANEL_CLAMPS = 4;
-const WIDE_PANEL_CLAMPS = 6;
-
 function gluePhases(clampTicks: number): ReadonlyArray<OperationPhase> {
   return [
     { name: "Glue & Clamp", duration: clampTicks, attended: true },
     { name: "Curing", duration: GLUE_CURE_TICKS, attended: false },
   ];
+}
+
+/**
+ * A glue-up's output: the strips of everything in the run, concatenated
+ * in the order it lay — boards contribute one strip, panels all of
+ * theirs. The recipes declare fixed shapes (five strips, a panel and a
+ * board) as their canonical previews, but the scene's clamps-first path
+ * commits whatever contiguous run was tightened, so the outputs take
+ * any composition of two or more (see bench-work/glue-up.ts). Squeeze-out
+ * and alignment ridges mean the panel always comes out rough.
+ */
+function glueUpOutput(materials: ReadonlyArray<MaterialInstance>): {
+  inputs: ReadonlyArray<MaterialInstance>;
+  outputs: ReadonlyArray<MaterialInstance>;
+} {
+  const pieces = materials.filter(
+    (m): m is Board | Panel => isBoard(m) || isPanel(m),
+  );
+  if (pieces.length < 2) {
+    throw new Error("A glue-up takes at least two pieces");
+  }
+  const strips = pieces.flatMap((piece) =>
+    isPanel(piece)
+      ? piece.strips
+      : [{ species: piece.species, width: piece.width }],
+  );
+  return {
+    inputs: [],
+    outputs: [panel(strips, pieces[0].length, pieces[0].thickness, "rough")],
+  };
 }
 
 /** The most common strip species in a panel (ties go to first appearance). */
@@ -165,7 +182,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
     interaction: { kind: "glue" },
-    requiredClamps: PANEL_CLAMPS,
     getInputMaterials: () => [
       {
         type: ["board"],
@@ -179,29 +195,9 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         quantity: 5,
       },
     ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const strips = materials.filter(isBoard);
-      if (strips.length !== 5) {
-        throw new Error("Need exactly 5 strips to glue up a panel");
-      }
-      // Strip order is preserved, so multi-species glue-ups keep their
-      // pattern — the recipe doesn't care, but future two-tone boards do.
-      // Squeeze-out and alignment ridges mean the panel comes out rough.
-      return {
-        inputs: [],
-        outputs: [
-          panel(
-            strips.map((strip) => ({
-              species: strip.species,
-              width: strip.width,
-            })),
-            strips[0].length,
-            strips[0].thickness,
-            "rough",
-          ),
-        ],
-      };
-    },
+    // Strip order is preserved, so multi-species glue-ups keep their
+    // pattern — the recipe doesn't care, but future two-tone boards do.
+    output: glueUpOutput,
   },
   {
     name: "Glue Up Pair",
@@ -210,7 +206,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
     interaction: { kind: "glue" },
-    requiredClamps: PAIR_CLAMPS,
     getInputMaterials: () => [
       {
         type: ["board"],
@@ -221,26 +216,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         quantity: 2,
       },
     ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const strips = materials.filter(isBoard);
-      if (strips.length !== 2) {
-        throw new Error("Need exactly 2 strips to glue up a pair");
-      }
-      return {
-        inputs: [],
-        outputs: [
-          panel(
-            strips.map((strip) => ({
-              species: strip.species,
-              width: strip.width,
-            })),
-            strips[0].length,
-            strips[0].thickness,
-            "rough",
-          ),
-        ],
-      };
-    },
+    output: glueUpOutput,
   },
   {
     name: "Glue On Strip",
@@ -249,7 +225,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     duration: 5 + GLUE_CURE_TICKS,
     phases: gluePhases(5),
     interaction: { kind: "glue" },
-    requiredClamps: STRIP_CLAMPS,
     getInputMaterials: () => [
       { type: ["panel"], length: [24], thickness: [4], quantity: 1 },
       {
@@ -261,25 +236,8 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         quantity: 1,
       },
     ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const base = materials.find(isPanel);
-      const strip = materials.find(isBoard);
-      if (!base || !strip) {
-        throw new Error("Glue On Strip needs a panel and a board");
-      }
-      // Fresh squeeze-out re-roughs the whole panel, so sand last
-      return {
-        inputs: [],
-        outputs: [
-          panel(
-            [...base.strips, { species: strip.species, width: strip.width }],
-            base.length,
-            base.thickness,
-            "rough",
-          ),
-        ],
-      };
-    },
+    // Fresh squeeze-out re-roughs the whole panel, so sand last
+    output: glueUpOutput,
   },
   {
     name: "Join Panels",
@@ -288,29 +246,12 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
     interaction: { kind: "glue" },
-    requiredClamps: WIDE_PANEL_CLAMPS,
     getInputMaterials: () => [
       { type: ["panel"], length: [24], thickness: [4], quantity: 2 },
     ],
-    output: (materials: ReadonlyArray<MaterialInstance>) => {
-      const panels = materials.filter(isPanel);
-      if (panels.length !== 2) {
-        throw new Error("Need exactly 2 panels to join");
-      }
-      // How a real shop stages a wide glue-up: sub-panels first, then one
-      // joint to marry them. Strip order: first panel, then the second.
-      return {
-        inputs: [],
-        outputs: [
-          panel(
-            [...panels[0].strips, ...panels[1].strips],
-            panels[0].length,
-            panels[0].thickness,
-            "rough",
-          ),
-        ],
-      };
-    },
+    // How a real shop stages a wide glue-up: sub-panels first, then one
+    // joint to marry them. Strip order: the order they lay.
+    output: glueUpOutput,
   },
   {
     name: "Build Crosscut Sled",
@@ -372,7 +313,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     duration: 8 + GLUE_CURE_TICKS,
     phases: gluePhases(8),
     interaction: { kind: "glue" },
-    requiredClamps: PANEL_CLAMPS,
     getInputMaterials: () => [{ type: ["endGrainSlice"], quantity: 4 }],
     output: (materials: ReadonlyArray<MaterialInstance>) => {
       const slices = materials.filter(

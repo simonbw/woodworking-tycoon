@@ -296,9 +296,13 @@ export type OperationInteraction =
       readonly kind: "pry";
     }
   | {
-      /** Spread glue along the joints, butt the boards, place the clamps
-       * (one per requiredClamps). Everything before the last clamp is
-       * ephemeral; that clamp commits start + cure in one stroke. */
+      /** A glue-up on the bench scene, clamps first: no plan is ever
+       * selected — the contiguous edge-to-edge run lying in the clamps
+       * decides the composition (bench-work/glue-up.ts), the glue is
+       * spread along the open seams, and tightening the last clamp
+       * commits start + cure in one stroke. The recipes declaring this
+       * kind are the credited shapes (previews, the manual, the legacy
+       * driver path), not pickable plans. */
       readonly kind: "glue";
     }
   | {
@@ -360,13 +364,6 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
    * starts (no refunds — the glue is already out of the bottle).
    */
   readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
-  /**
-   * Clamps this operation ties up while it runs — checked against the free
-   * ones before it can start, and released when it finishes. Unlike
-   * supplies these are borrowed, not spent, so a wide glue-up doesn't cost
-   * money, it costs the rack (see Clamp.ts).
-   */
-  readonly requiredClamps?: number;
   /**
    * Sawdust thrown per attended tick while this runs, landed around the
    * machine (see Dust.ts). Omitted: no appreciable mess (assembly, glue).

@@ -33,6 +33,8 @@ import {
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust } from "../Dust";
 import { materialSpecies } from "../material-helpers";
+import { clampsFor, clampsFree } from "../Clamp";
+import { gluePrepShortfall, inferGlueOperationId } from "../bench-work/glue-up";
 
 /**
  * The commit-action split (see docs/bench-minigames.md): the bench view
@@ -151,6 +153,29 @@ function inheritedBenchLayout(
   outputs: ReadonlyArray<MaterialInstance>,
 ): MachineState["benchLayout"] {
   const kind = operation.interaction?.kind;
+  // A cured glue-up comes out of the clamps one panel, lying where the
+  // run lay: its seat is the run's centroid, at the run's angle.
+  if (kind === "glue" && outputs.length === 1) {
+    const seats = machineState.processingMaterials
+      .map((piece) => machineState.benchLayout?.[piece.id])
+      .filter((seat): seat is BenchPlacement => seat != null);
+    if (seats.length === 0) {
+      return machineState.benchLayout;
+    }
+    const layout: Record<string, BenchPlacement> = {
+      ...machineState.benchLayout,
+    };
+    for (const piece of machineState.processingMaterials) {
+      delete layout[piece.id];
+    }
+    layout[outputs[0].id] = {
+      xIn: seats.reduce((sum, seat) => sum + seat.xIn, 0) / seats.length,
+      yIn: seats.reduce((sum, seat) => sum + seat.yIn, 0) / seats.length,
+      angleDeg: seats[0].angleDeg,
+      flipped: false,
+    };
+    return layout;
+  }
   const workpiece = machineState.processingMaterials[0];
   if (
     (kind !== "stroke" && kind !== "saw") ||
@@ -494,6 +519,132 @@ export function pryPalletNailAction(
         ...(gameState.pendingSounds ?? []),
         { kind: "nail-pry" as const },
       ],
+    };
+  };
+}
+
+/**
+ * The tighten-the-last-clamp commit: a clamps-first glue-up claims the
+ * very pieces lying in the clamps, in the across order they lie (see
+ * bench-work/glue-up.ts — the bench view detects the run; this action
+ * trusts the given order the same way a blueprint claim trusts slot
+ * order for the driver's unseated path). The composition decides which
+ * recipe is credited, exactly as the stock on a direct-feed machine
+ * decides the cut. The view follows this with finishAttendedWorkAction —
+ * the hand work IS the attended phase — which rolls it into the cure.
+ */
+export function startGlueUpAction(
+  machine: Machine,
+  pieceIds: ReadonlyArray<string>,
+): GameAction {
+  return (gameState) => {
+    const machineState = findMachineState(gameState, machine);
+    if (!machineState) {
+      console.warn("No such bench to glue at");
+      return gameState;
+    }
+    if (machineState.operationProgress.status === "inProgress") {
+      console.warn("The bench is mid-operation — no room for a glue-up");
+      return gameState;
+    }
+    if (!attends(gameState, machineState)) {
+      console.warn("Can't tighten clamps from across the shop");
+      return gameState;
+    }
+    // The run may include finished work still lying on the bench (a
+    // fresh panel going straight into a wider one), same as tool claims
+    const bays = [
+      ...machineState.inputMaterials,
+      ...machineState.outputMaterials,
+    ];
+    const pieces = pieceIds.map(
+      (id) => bays.find((material) => material.id === id) ?? null,
+    );
+    if (pieces.some((piece) => piece === null) || pieces.length < 2) {
+      console.warn("The glue-up names pieces that aren't on the bench");
+      return gameState;
+    }
+    const run = pieces as ReadonlyArray<MaterialInstance>;
+    for (const piece of run) {
+      const shortfall = gluePrepShortfall(piece);
+      if (shortfall) {
+        console.warn(`Not glueable: ${shortfall}`);
+        return gameState;
+      }
+    }
+    // One thickness, one length — the same bar the recipes always set
+    const spanOf = (m: MaterialInstance) =>
+      m.type === "board" || m.type === "panel" ? m.length : null;
+    const thicknessOf = (m: MaterialInstance) =>
+      m.type === "board" || m.type === "panel" || m.type === "endGrainSlice"
+        ? m.thickness
+        : null;
+    const firstSpan = spanOf(run[0]);
+    if (
+      !run.every((m) => thicknessOf(m) === thicknessOf(run[0])) ||
+      !run.every((m) => {
+        const span = spanOf(m);
+        return (
+          span === null ||
+          firstSpan === null ||
+          Math.abs(span - firstSpan) <= 0.5
+        );
+      })
+    ) {
+      console.warn("A glue-up takes one thickness and one length of stock");
+      return gameState;
+    }
+    const operationId = inferGlueOperationId(run);
+    if (!operationId) {
+      console.warn("Those pieces don't add up to any glue-up");
+      return gameState;
+    }
+    const live = new Machine(machineState);
+    const operation = availableOperations(live, gameState.progression).find(
+      (op) => op.id === operationId,
+    );
+    if (!operation) {
+      console.warn("That glue-up isn't known at this station yet");
+      return gameState;
+    }
+    // Clamps are borrowed, not spent: this operation starting IS the
+    // checkout (the count in use is derived — see Clamp.ts), and the
+    // cure finishing is the return.
+    if (
+      clampsFor(operation, run) >
+      clampsFree(gameState.clamps, gameState.machines)
+    ) {
+      console.warn("Not enough free clamps for a run this long");
+      return gameState;
+    }
+    const [firstPhase] = getOperationPhases(
+      operation,
+      gameState.progression,
+      machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
+      live.workSpeed,
+    );
+    return {
+      ...gameState,
+      machines: gameState.machines.map((m) =>
+        isSameMachine(m, machineState)
+          ? {
+              ...m,
+              selectedOperationId: operationId,
+              inputMaterials: m.inputMaterials.filter(
+                (material) => !pieceIds.includes(material.id),
+              ),
+              outputMaterials: m.outputMaterials.filter(
+                (material) => !pieceIds.includes(material.id),
+              ),
+              processingMaterials: [...run],
+              operationProgress: {
+                status: "inProgress" as const,
+                phaseIndex: 0,
+                ticksRemaining: firstPhase.duration,
+              },
+            }
+          : m,
+      ),
     };
   };
 }

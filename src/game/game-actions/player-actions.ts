@@ -756,7 +756,7 @@ export function operateMachineAction(
     // machines running (see Clamp.ts), so this operation starting IS the
     // checkout, and finishing is the return.
     if (
-      clampsFor(selectedOperation) >
+      clampsFor(selectedOperation, materialsToConsume) >
       clampsFree(gameState.clamps, gameState.machines)
     ) {
       console.warn("Tried to perform operation without enough free clamps");

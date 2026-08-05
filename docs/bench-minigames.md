@@ -48,8 +48,8 @@ vocabulary, and per-operation scripts that compose it.
    and the finish commit hands the workpiece's spot to its outputs — a
    sanded board doesn't move, a sawn board parts into two pieces lying
    end to end at the mark (`inheritedBenchLayout`). Plans survive only
-   where they genuinely choose between products: builds (glue-ups,
-   assemblies). Finishing converted with the finishing kit
+   where they genuinely choose between products: assembly builds.
+   Glue-ups are plan-free too — clamps-first, below. Finishing converted with the finishing kit
    (`src/game/tools/finishingKit.ts`): the `finish*` recipes and the
    oil wipe are the kit's stroke operations, tool-first like sanding —
    the rag over a sanded blank offers the pickiest finish the panel
@@ -87,9 +87,10 @@ vocabulary, and per-operation scripts that compose it.
    pallet lands in `GameState.consumables` immediately — so the pallet must
    remember its remaining nails, or a refresh would re-arm it and become a
    nail mine. Sanding grants nothing until it's done, so abandoning it
-   costs only the strokes. Glue-up resolves in between: spreading and
-   clamping are ephemeral, and the single commit (spend glue, tie up
-   clamps, start the cure) fires when the last clamp goes on.
+   costs only the strokes. Glue-up resolves in between: the set-out
+   clamps and the beads are ephemeral, and the single commit (claim the
+   run, tie up the clamps, start the cure) fires when the last clamp is
+   wound tight.
 5. **Direct-feed machines are out of scope.** The planer, jointer, table
    saw, band saw, and miter saw already have their physical interface —
    settings, stock, held `Space`. They keep it. The bench is where the
@@ -171,7 +172,8 @@ The bench view decides _when_; actions decide _what_. Every interactive
 operation gets two commit points in `game-actions/`:
 
 - **Start**: claims inputs, spends `requiredConsumables`, ties up
-  `requiredClamps` — everything operation start already does today.
+  the clamps the stock's length derives (`clampsFor`) — everything
+  operation start already does today.
 - **Finish**: the completion block currently at the bottom of
   `machineTickPass` — `op.output(materials, resolvedParameters)`, XP,
   sound events, granted machines/upgrades — extracted into an action the
@@ -250,12 +252,12 @@ modeled as the pallet instance transforming nail by nail:
 | Sanding     | strokes to 98% coverage                                                                                                        | `surface` rough→smooth→sanded; tool tiers = brush feel; dust per stroke                                                                                                                                                                                                                                                     |
 | Hand saw    | mark the line, then push–pull strokes deepen the kerf                                                                          | shares the miter saw's parameterized crosscut operation — same outputs, zoomed presentation                                                                                                                                                                                                                                 |
 | Block plane | strokes along a face or edge                                                                                                   | `jointedFaces`/`jointedEdges` axes and their prerequisites, unchanged                                                                                                                                                                                                                                                       |
-| Glue-up     | spread glue (stroke) → butt boards (point/snap) → clamps (point, one per `requiredClamps`) → commit starts the hands-free cure | the existing phase system fits 1:1                                                                                                                                                                                                                                                                                          |
+| Glue-up     | clamps set out on the scene → stock laid across them edge to edge (the run decides the recipe, like direct-feed stock) → glue stroked down each seam → tightening the last clamp commits into the hands-free cure | `bench-work/glue-up.ts` (run detection, credited-recipe inference, clamps = one per foot of length, min two)                                                                                                                                                                                                                |
 | Assembly    | snap components onto ghost outlines → drive fasteners, one per `requiredConsumables`                                           | ghost rendering precedent from the miter saw; drill vs hammer picks the animation. _Superseded for blueprint products:_ recipes with a `ProductBlueprint` assemble on the bench scene itself — real parts laid on ghost slots, one nail per crossing — see `docs/assembly.md`; the generic row surface remains for the rest |
 
-Note how many target counts already live in the data (`requiredClamps`,
-`requiredConsumables`, pallet nail yields): the scripts mostly reveal
-numbers the simulation already has.
+Note how many target counts already live in — or derive from — the data
+(clamps from the stock's length, `requiredConsumables`, pallet nail
+yields): the scripts mostly reveal numbers the simulation already has.
 
 ## The bench view itself — **Now**
 
@@ -272,8 +274,8 @@ asset at two zooms. The bench's contents lie on it exactly where
 a board flipped up on edge with F narrows to its thickness,
 `BoardOnEdgeSprite`), stroke and saw work runs on those very pieces in
 place (`StrokeSurface` / `SawSurface` mount over the scene at the
-piece's placement; only glue-ups and the legacy row assemblies still
-take the surface over), the mounted tools hang on a floating rail
+piece's placement; nothing takes the surface over anymore), the
+mounted tools hang on a floating rail
 (`BenchToolRail` — which is also where tools mount and unmount: empty
 hooks take a compatible carried tool), and the chrome floats: nameplate
 top-left, instruction + key hints bottom-center, the plan picker as a
@@ -302,9 +304,22 @@ hands. The legacy row assemblies followed batch by batch — the shelf
 table (boards standing on end; F cycles flat → edge → end), the hex
 frame (rotated slots, laps clipped as polygons), and finally the
 jewelry box, re-cut to jewelry size (12"×6", seven thin parts). With
-that, `AssemblySurface` and the row layout for assembly are retired:
-`interaction.blueprint` is required, and the only takeover surface
-left is the glue-up's.
+that, `AssemblySurface` and the row layout for assembly are retired and
+`interaction.blueprint` is required. Glue-ups then joined the scene as
+the last conversion (`bench-work/glue-up.ts`, `GlueUpLayer`): no plan is
+ever selected — bar clamps are set out on the bench top (one per foot of
+the stock's length, minimum two, `clampsForGlueSpan`), glue-ready stock
+is laid across them edge to edge, and the contiguous run that forms is
+the operation, exactly as the stock on a direct-feed machine decides the
+cut. The composition picks the credited recipe (`inferGlueOperationId`:
+boards are a panel, a bare pair/panel-extend/panel-join is freeform
+lamination's, four slices are the end-grain blank — a locked composition
+simply never forms a run), the bottle strokes a bead down each open
+seam, and winding the last clamp tight is the single commit
+(`startGlueUpAction` claims the very pieces in the clamps, in across
+order) straight into the hands-free cure, drawn in place with the bars
+wound home (`GlueCuringLayer`). `GlueSurface` is deleted; no takeover
+surface remains.
 
 `src/components/bench-view/` — an overlay in the Phone/Journal/Clipboard
 family; diegetically, leaning over the bench. Entered with `Tab` at a
@@ -345,7 +360,8 @@ nothing in the design forecloses them: they're per-script constants.
    state change; the game's opening minutes get the biggest win. **Now**
 3. **Hand saw + block plane** — reuse the mask engine. **Now**
 4. **Glue-up** — pilots ephemeral-until-last-clamp and the hands-free
-   handoff. **Now**
+   handoff. **Now** — and re-landed clamps-first on the scene itself,
+   plan-free (see above); the takeover surface it piloted is gone.
 5. **Assembly** — last; per-recipe component layouts are the long-tail
    authoring cost. Mitigation: a generic derived layout (components in a
    row, fasteners at the joints), hand-authored art only for hero

@@ -188,8 +188,10 @@ describe("benchScriptFor", () => {
     assert.strictEqual(script?.kind, "curing");
   });
 
-  it("locked skills hide the script entirely — no grayed-out teasers", () => {
-    // Glue Up Pair sits behind freeformLamination, which nobody starts with
+  it("a glue selection never mounts a script — glue-ups are clamps-first", () => {
+    // No plan is ever selected for a glue-up: the run lying in the
+    // clamps decides (bench-work/glue-up.ts), so even a stale selection
+    // with the skill known mounts nothing over the scene.
     const machine = workspaceWith({
       selectedOperationId: "glueUpPair",
       inputMaterials: [
@@ -199,8 +201,28 @@ describe("benchScriptFor", () => {
     });
     assert.strictEqual(benchScriptFor(machine, progressionWith()), null);
     assert.strictEqual(
-      benchScriptFor(machine, progressionWith("freeformLamination"))?.kind,
-      "glue",
+      benchScriptFor(machine, progressionWith("freeformLamination")),
+      null,
+    );
+  });
+
+  it("a glue-up in progress reads as curing, whatever the phase", () => {
+    // The tighten commits start and finish back to back, so anything in
+    // progress is as good as in the clamps already.
+    const machine = workspaceWith({
+      selectedOperationId: "glueUpPanel",
+      processingMaterials: Array.from({ length: 5 }, () =>
+        board("maple", 24, 2, 4, "smooth", { faces: 2, edges: 2 }),
+      ),
+      operationProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 4,
+      },
+    });
+    assert.strictEqual(
+      benchScriptFor(machine, progressionWith())?.kind,
+      "curing",
     );
   });
 });

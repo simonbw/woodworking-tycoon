@@ -47,8 +47,21 @@ describe("clampsInUse", () => {
     assert.strictEqual(clampsInUse(initialGameState.machines), 0);
   });
 
-  it("counts the clamps a running glue-up holds", () => {
-    assert.strictEqual(clampsInUse([gluingWorkspace()]), 4);
+  it("counts the clamps a running glue-up holds — one per foot, min two", () => {
+    // Five 24" strips: two feet of glue-up, two clamps
+    assert.strictEqual(clampsInUse([gluingWorkspace()]), 2);
+  });
+
+  it("longer stock ties up more of the rack", () => {
+    // 48" boards lie across four feet of clamp bed
+    const long = gluingWorkspace({
+      processingMaterials: [
+        board("maple", 48, 2, 4, "smooth", { faces: 2, edges: 2 }),
+        board("maple", 48, 2, 4, "smooth", { faces: 2, edges: 2 }),
+      ],
+      selectedOperationId: "glueUpPair",
+    });
+    assert.strictEqual(clampsInUse([long]), 4);
   });
 
   it("ignores machines running an operation that needs no clamps", () => {
@@ -65,13 +78,13 @@ describe("clampsInUse", () => {
 
   it("adds up across benches", () => {
     const second = gluingWorkspace({ position: [6, 6] });
-    assert.strictEqual(clampsInUse([gluingWorkspace(), second]), 8);
+    assert.strictEqual(clampsInUse([gluingWorkspace(), second]), 4);
   });
 });
 
 describe("clampsFree", () => {
   it("is what's left on the rack after the glue-ups take theirs", () => {
-    assert.strictEqual(clampsFree(6, [gluingWorkspace()]), 2);
+    assert.strictEqual(clampsFree(6, [gluingWorkspace()]), 4);
   });
 });
 
@@ -91,10 +104,10 @@ describe("starting a glue-up", () => {
   });
 
   it("refuses when the other bench is holding them all", () => {
-    // Six clamps owned, four already curing a panel: not enough left for
-    // a second four-clamp glue-up.
+    // Three clamps owned, two already curing a panel: not enough left
+    // for a second two-clamp glue-up.
     const state = stateWith({
-      clamps: 6,
+      clamps: 3,
       machines: [
         workspaceMachine({
           position: [6, 6],
@@ -110,7 +123,7 @@ describe("starting a glue-up", () => {
 
   it("starts when enough clamps are free, without spending them", () => {
     const state = stateWith({
-      clamps: 4,
+      clamps: 2,
       machines: [
         workspaceMachine({
           selectedOperationId: "glueUpPanel",
@@ -125,7 +138,7 @@ describe("starting a glue-up", () => {
     );
     // Borrowed, not spent: the rack count never moves, but they're all
     // tied up until the glue cures.
-    assert.strictEqual(result.clamps, 4);
+    assert.strictEqual(result.clamps, 2);
     assert.strictEqual(clampsFree(result.clamps, result.machines), 0);
   });
 });
@@ -134,7 +147,7 @@ describe("finishing a glue-up", () => {
   it("gives the clamps back", () => {
     // One tick from the end of the hands-free cure.
     const state = stateWith({
-      clamps: 4,
+      clamps: 2,
       player: {
         ...initialGameState.player,
         position: WORKSPACE_OPERATION_CELL,
@@ -157,7 +170,7 @@ describe("finishing a glue-up", () => {
       "notStarted",
     );
     assert.strictEqual(result.machines[0].outputMaterials.length, 1);
-    assert.strictEqual(clampsFree(result.clamps, result.machines), 4);
+    assert.strictEqual(clampsFree(result.clamps, result.machines), 2);
   });
 });
 

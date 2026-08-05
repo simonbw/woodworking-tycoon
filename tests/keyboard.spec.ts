@@ -1,6 +1,6 @@
 import { expect, Page, test } from "@playwright/test";
 import { BASE_WALK_SPEED } from "../src/game/player-motion";
-import { openStationSheet, selectMode, takeAllHere } from "./machine-panel";
+import { openStationSheet, takeAllHere } from "./machine-panel";
 import {
   advanceTicks,
   movePlayerToCab,
@@ -643,23 +643,31 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("glue-up: clamping needs you, curing runs without you", async () => {
-      await selectMode(page, "Makeshift Workbench", "Glue Up Panel");
-      // Shift+F stages everything the plan will take in one press:
-      // the 4 smooth strips and the sanded one
+      // No plan for a glue-up: the run of stock lying on the bench IS
+      // the operation (bench-work/glue-up.ts). Shift+F stages the
+      // strips — the 4 smooth ones and the sanded one — in one press.
+      await teleportPlayer(page, [1, 4]);
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );
       await page.keyboard.press("Shift+f");
       await page.waitForTimeout(30);
 
-      // The last clamp is the single commit: start (spend the glue, tie
-      // up the clamps) and the handoff into the hands-free cure resolve
-      // back to back through the same actions the bench view dispatches
+      // Tightening the last clamp is the single commit: the claim of
+      // the very pieces in the clamps (startGlueUpAction) and the
+      // handoff into the hands-free cure resolve back to back through
+      // the same actions the bench view dispatches
       await page.evaluate(() => {
         const i = (window as any)
           .__GET_GAME_STATE__()
           .machines.findIndex((m: any) => m.machineTypeId === "workspace");
-        (window as any).__START_OPERATION__(i);
+        const bench = (window as any).__GET_GAME_STATE__().machines[i];
+        (window as any).__START_GLUE_UP__(
+          i,
+          bench.inputMaterials
+            .filter((mat: any) => mat.type === "board")
+            .map((mat: any) => mat.id),
+        );
         (window as any).__FINISH_ATTENDED_WORK__(i);
       });
       await page.waitForFunction(
