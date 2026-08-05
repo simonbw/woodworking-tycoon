@@ -53,6 +53,8 @@ import { EnvironmentLayer } from "./EnvironmentLayer";
 import { CameraLayer } from "./CameraLayer";
 import { camera } from "./cameraStore";
 import { shopFrame } from "./shopFrameStore";
+import { BenchZoomCameraLayer } from "./BenchZoomCameraLayer";
+import { useBenchZoomActive } from "../bench-view/benchZoom";
 import { useTruckStage } from "./truckStageStore";
 import { atTruckBed, lotSize } from "../../game/lot";
 import { TruckHighlight } from "./TruckSprite";
@@ -138,6 +140,10 @@ export const ShopView: React.FC = () => {
   // While the truck is rolling in, the player is still in it: input
   // holds and the sprite waits until the stage is parked again.
   const truckStage = useTruckStage();
+  // While a bench view is mounted the camera is diving into (or back
+  // out of) the bench; the floor's DOM chips fade so they don't hang
+  // untransformed over a swelling world.
+  const benchDive = useBenchZoomActive();
   const {
     machine: targetedMachine,
     machines: operableHere,
@@ -227,6 +233,10 @@ export const ShopView: React.FC = () => {
   // overlay that rides along. Imperative on purpose — see CameraLayer.
   const cameraContainerRef = useRef<Container>(null);
   const overlayScrollRef = useRef<HTMLDivElement>(null);
+  // The bench dive's hand: a wrapper the whole world (camera included)
+  // renders through, swelled about the bench while a bench view is
+  // mounted. Imperative for the same reason — see BenchZoomCameraLayer.
+  const benchZoomContainerRef = useRef<Container>(null);
   const [view, setView] = useState<{
     scale: number;
     width: number;
@@ -380,8 +390,15 @@ export const ShopView: React.FC = () => {
             viewHeight={view.height}
             scale={scale}
           />
+          <BenchZoomCameraLayer
+            worldRef={benchZoomContainerRef}
+            offsetX={offsetX}
+            offsetY={offsetY}
+            scale={scale}
+          />
           <pixiContainer x={offsetX} y={offsetY} scale={scale}>
-            <pixiContainer ref={cameraContainerRef}>
+            <pixiContainer ref={benchZoomContainerRef}>
+              <pixiContainer ref={cameraContainerRef}>
               <EnvironmentLayer
                 width={width}
                 height={height}
@@ -463,6 +480,7 @@ export const ShopView: React.FC = () => {
               {/* Dust in flight rides above the tools taking it */}
               <DustMotionLayer />
               <CarriedMachineLayer />
+              </pixiContainer>
             </pixiContainer>
           </pixiContainer>
         </gameStateContext.Provider>
@@ -473,7 +491,10 @@ export const ShopView: React.FC = () => {
             imperatively; React never writes that style, so they can't
             fight). */}
       <div
-        className="absolute z-30 pointer-events-none"
+        inert={benchDive}
+        className={`absolute z-30 pointer-events-none transition-opacity duration-150 ${
+          benchDive ? "opacity-0" : "opacity-100"
+        }`}
         style={{
           left: offsetX,
           top: offsetY,

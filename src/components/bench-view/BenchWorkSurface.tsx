@@ -96,7 +96,12 @@ import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
-import { benchZoomAnchor, BenchZoomRig, BENCH_ZOOM_MS } from "./benchZoom";
+import {
+  benchZoomAnchor,
+  benchZoomProgress,
+  BenchZoomRig,
+  easeInOutCubic,
+} from "./benchZoom";
 import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
 import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
 import { BenchToolRail } from "./BenchToolRail";
@@ -192,15 +197,24 @@ export const BenchWorkSurface: React.FC<{
     [],
   );
   const [settled, setSettled] = useState(false);
-  // Two-frame flip so the backdrop's CSS fades run from their start
-  // values instead of mounting at the end state. A surface somehow
-  // mounted already-closing skips it — the fades are mid-story there.
-  const [entered, setEntered] = useState(reduceMotion || closing);
+  // The scene canvas crossfades over the diving shop with its opacity
+  // driven straight off the shared ramp clock — imperative on a rAF
+  // loop, not a CSS transition, because a transition on a freshly
+  // inserted subtree has no painted start state to run from (and this
+  // way the fade tracks the dive exactly, reversals included).
+  const canvasFadeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (entered) return;
-    const id = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(id);
-  }, [entered]);
+    let raf = 0;
+    const step = () => {
+      const el = canvasFadeRef.current;
+      if (el) {
+        el.style.opacity = String(easeInOutCubic(benchZoomProgress()));
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, []);
   const onZoomRest = useCallback(
     (at: 0 | 1) => {
       if (at === 1) setSettled(true);
@@ -1775,11 +1789,14 @@ export const BenchWorkSurface: React.FC<{
       data-progress={progress}
       data-zoom={closing ? "out" : settled ? "open" : "in"}
     >
-      {/* The room dims as the camera leans in — the shop view stays
-          visible underneath until the black settles over it */}
+      {/* The black backstop behind the scene. It must never show during
+          the dive — the swelling shop IS the transition — so it only
+          comes up once the camera has landed and the scene canvas
+          already covers the window, and it drops the instant the
+          pull-back starts so the zoomed shop shows behind the scene. */}
       <div
-        className={`absolute inset-0 bg-ink-black transition-opacity duration-500 ${
-          entered && !closing ? "opacity-100" : "opacity-0"
+        className={`absolute inset-0 bg-ink-black transition-opacity duration-150 ${
+          settled && !closing ? "opacity-100" : "opacity-0"
         }`}
       />
       <div
@@ -1852,15 +1869,18 @@ export const BenchWorkSurface: React.FC<{
         }}
       >
         {stageSize && frameFit && (
-          // The scene's own fade softens the one seam the zoom can't
-          // close: the floor patch around the bench tiles from a
-          // different origin than the shop's floor. In it fades up as
-          // the lean starts; out it lingers until the pull-back is
-          // nearly home, then lets the shop through.
+          // The scene crossfades over the diving shop across the whole
+          // ramp (opacity written per frame from the shared clock — see
+          // canvasFadeRef): the shop draws the same bench underneath, so
+          // the early frames are carried by the world swelling — no
+          // patch popping over it — and by the time the scene is opaque
+          // its edges are past the window. The pull-back runs the same
+          // fade backwards, handing the picture back to the zoomed shop
+          // as it recedes.
           <div
-            className={`absolute inset-0 transition-opacity duration-200 ${
-              entered && !closing ? "opacity-100" : "opacity-0"
-            } ${closing ? "delay-[350ms]" : ""}`}
+            ref={canvasFadeRef}
+            className="absolute inset-0"
+            style={{ opacity: 0 }}
           >
             <Application
               width={stageSize.width}

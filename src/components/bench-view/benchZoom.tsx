@@ -1,5 +1,5 @@
 import { useTick } from "@pixi/react";
-import { Container, Ticker } from "pixi.js";
+import { Container } from "pixi.js";
 import React, { useCallback, useRef } from "react";
 import { footprintCenter, Machine } from "../../game/Machine";
 import { camera } from "../shop-view/cameraStore";
@@ -9,18 +9,27 @@ import { StageFit } from "./stageMath";
 
 /**
  * The lean-in: opening a bench doesn't cut to the bench view, the camera
- * zooms into it. Both views draw the same bench — same art, same floor,
- * same stock lying where the bench layout says — so the transition is a
- * single similarity transform on the bench view's whole stage: at the
- * start it maps the scene exactly onto the bench's on-screen footprint
- * in the shop view (position, shop scale, and the machine's floor
- * rotation), and it eases to identity as you lean in. Closing runs the
- * same ramp backwards. Pure presentation, the truck's departure roll for
- * benches: no game state, and the world keeps ticking underneath.
+ * dives into it — the whole shop swells around the bench while the bench
+ * scene rides the very same motion, pixel-locked, until it fills the
+ * frame. Both views draw the same bench from the same state, so the
+ * entire transition is one similarity ramp evaluated twice: the shop's
+ * world container applies it forward (BenchZoomCameraLayer scales the
+ * world up about the bench, panning it to center and un-turning the
+ * machine's floor rotation), and the bench view's stage applies what's
+ * left of it (BenchZoomRig maps the finished scene onto wherever the
+ * shop's bench footprint is that frame). Closing runs the same ramp
+ * backwards. Pure presentation, the truck's departure roll for benches:
+ * no game state, and the world keeps ticking underneath.
+ *
+ * The two canvases render on separate tickers, so the progress is a
+ * clock, not an integration: both sides evaluate `benchZoomProgress()`
+ * from the same start mark and can never drift apart. The shared stage
+ * lives in a mutable store (`benchZoomStage`) in the truckStageStore
+ * family — written by the bench view, read per-frame by the shop.
  */
 
 /** How long the lean in (or back out) takes. */
-export const BENCH_ZOOM_MS = 550;
+export const BENCH_ZOOM_MS = 650;
 
 /**
  * Where the bench sits on screen at shop framing, expressed as the
@@ -28,7 +37,9 @@ export const BENCH_ZOOM_MS = 550;
  * (well under 1), the machine's floor angle, and the screen point its
  * center starts from. `pivot` is the bench center in stage px — the
  * frame is centered on the bench, so it's the frame's center — which
- * the transform swings and scales about.
+ * the transform swings and scales about. The shop side reads the same
+ * anchor the other way around: its world dives from `xPx/yPx` toward
+ * `pivot` at scale `1/scale`, un-turning `angleDeg`.
  */
 export interface BenchZoomAnchor {
   readonly xPx: number;
@@ -47,7 +58,7 @@ export function benchZoomAnchor(
   // The machine container's rotation on the shop floor, normalized to
   // the short way around so the un-turning never unwinds 270°.
   const rawAngle = machine.rotation * -90;
-  const angleDeg = (((rawAngle % 360) + 540) % 360) - 180 || 0;
+  const angleDeg = ((((rawAngle % 360) + 540) % 360) - 180) || 0;
   const rad = (rawAngle * Math.PI) / 180;
   // The bench top's center in the machine container's own coordinates
   // (cell centers at integer multiples of PIXELS_PER_CELL — see
@@ -77,17 +88,82 @@ export function benchZoomAnchor(
   };
 }
 
-function easeInOutCubic(t: number): number {
+/** The shared ramp: progress 0 is shop framing, 1 is bench framing. */
+export const benchZoomStage = {
+  /** Null whenever no bench view is mounted — the shop draws plain. */
+  anchor: null as BenchZoomAnchor | null,
+  /** Reduced motion: both sides snap to the target, no ramp. */
+  instant: false,
+  target: 1 as 0 | 1,
+  /** The mark the clock runs from (performance.now()). */
+  startedAt: 0,
+  startProgress: 0,
+};
+
+const listeners = new Set<() => void>();
+
+function notify(): void {
+  for (const listener of [...listeners]) listener();
+}
+
+/** Where the ramp is right now, on the shared clock. */
+export function benchZoomProgress(now = performance.now()): number {
+  const s = benchZoomStage;
+  if (!s.anchor || s.instant) return s.target;
+  const dt = (now - s.startedAt) / BENCH_ZOOM_MS;
+  return s.target === 1
+    ? Math.min(1, s.startProgress + dt)
+    : Math.max(0, s.startProgress - dt);
+}
+
+/** Retarget the ramp; reversible mid-flight — the clock restarts from
+ * wherever progress is this instant, so a Tab-Tab just rolls back. */
+export function setBenchZoomTarget(target: 0 | 1): void {
+  const s = benchZoomStage;
+  if (s.target === target) return;
+  s.startProgress = benchZoomProgress();
+  s.startedAt = performance.now();
+  s.target = target;
+}
+
+/** The bench view is (un)mounted: the shop's camera layer engages or
+ * stands down. Engaging starts the clock from the far end of the ramp;
+ * React surfaces watching activity get poked on the flip. */
+export function setBenchZoomAnchor(anchor: BenchZoomAnchor | null): void {
+  const wasActive = benchZoomStage.anchor !== null;
+  benchZoomStage.anchor = anchor;
+  if (!wasActive && anchor) {
+    benchZoomStage.startProgress = benchZoomStage.target === 1 ? 0 : 1;
+    benchZoomStage.startedAt = performance.now();
+  }
+  if (wasActive !== (anchor !== null)) notify();
+}
+
+export function subscribeBenchZoom(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** Whether the dive is on (bench view mounted), as React state. */
+export function useBenchZoomActive(): boolean {
+  return React.useSyncExternalStore(
+    subscribeBenchZoom,
+    () => benchZoomStage.anchor !== null,
+  );
+}
+
+export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /**
  * The container the whole bench scene renders through, its transform
- * tweened between the shop framing (progress 0) and identity (progress
- * 1). Progress moves toward `target` and is reversible mid-flight — Tab
- * pressed again during the lean-in just rolls it back out from wherever
- * it is. Imperative through the ref, the CameraLayer way: the transform
- * moves every frame and React shouldn't re-render the scene for it.
+ * riding the shared ramp between the shop framing (progress 0) and
+ * identity (progress 1). This is the half of the dive the bench canvas
+ * performs; BenchZoomCameraLayer performs the shop's half from the same
+ * clock, so the scene stays glued to the swelling shop bench under it.
+ * Imperative through the ref, the CameraLayer way: the transform moves
+ * every frame and React shouldn't re-render the scene for it.
  */
 export const BenchZoomRig: React.FC<{
   anchor: BenchZoomAnchor | null;
@@ -100,19 +176,35 @@ export const BenchZoomRig: React.FC<{
   children: React.ReactNode;
 }> = ({ anchor, target, instant, onRest, children }) => {
   const nodeRef = useRef<Container | null>(null);
-  const progress = useRef(instant || !anchor ? target : 1 - target);
   const restedAt = useRef<0 | 1 | null>(null);
 
+  // The store carries this surface's ramp while it's mounted: anchor
+  // and instant refresh every commit (the anchor recomputes with the
+  // fit), the target retargets the clock only when it actually flips.
+  React.useEffect(() => {
+    benchZoomStage.instant = instant;
+    setBenchZoomTarget(target);
+    setBenchZoomAnchor(anchor);
+  });
+  React.useEffect(
+    () => () => {
+      setBenchZoomAnchor(null);
+      // The next surface opens fresh
+      benchZoomStage.target = 1;
+    },
+    [],
+  );
+
   const apply = useCallback(
-    (node: Container) => {
-      if (!anchor || progress.current === 1) {
+    (node: Container, progress: number) => {
+      if (!anchor || progress === 1) {
         node.position.set(0, 0);
         node.pivot.set(0, 0);
         node.scale.set(1);
         node.angle = 0;
         return;
       }
-      const eased = easeInOutCubic(progress.current);
+      const eased = easeInOutCubic(progress);
       node.pivot.set(anchor.pivotX, anchor.pivotY);
       node.position.set(
         anchor.xPx + (anchor.pivotX - anchor.xPx) * eased,
@@ -125,21 +217,21 @@ export const BenchZoomRig: React.FC<{
     [anchor],
   );
 
-  useTick((ticker: Ticker) => {
+  useTick(() => {
     const node = nodeRef.current;
     if (!node) return;
-    const step =
-      instant || !anchor ? 1 : Math.min(ticker.deltaMS, 100) / BENCH_ZOOM_MS;
-    progress.current =
-      target === 1
-        ? Math.min(1, progress.current + step)
-        : Math.max(0, progress.current - step);
-    apply(node);
-    if (progress.current === target && restedAt.current !== target) {
+    // The clock only runs once the store knows this surface exists —
+    // before the first commit, hold the starting frame.
+    const progress =
+      benchZoomStage.anchor === null && !instant
+        ? 1 - target
+        : benchZoomProgress();
+    apply(node, progress);
+    if (progress === target && restedAt.current !== target) {
       restedAt.current = target;
       onRest(target);
     }
-    if (progress.current !== target) {
+    if (progress !== target) {
       restedAt.current = null;
     }
   });
@@ -149,9 +241,16 @@ export const BenchZoomRig: React.FC<{
   const attach = useCallback(
     (node: Container | null) => {
       nodeRef.current = node;
-      if (node) apply(node);
+      if (node) {
+        apply(
+          node,
+          benchZoomStage.anchor === null && !instant
+            ? 1 - target
+            : benchZoomProgress(),
+        );
+      }
     },
-    [apply],
+    [apply, instant, target],
   );
 
   return <pixiContainer ref={attach}>{children}</pixiContainer>;
