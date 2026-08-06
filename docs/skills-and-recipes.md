@@ -45,8 +45,12 @@ Resaw on the table saw: the band saw's trick performed on a machine that
 wasn't built for it; R turns the stock between resawing on edge and
 ripping flat while the jig is bolted on)
 
-**Joinery** — `rustic-carpentry`★ (rustic shelf) and `panel-work`★ (glue-up,
-cutting board). `rustic-carpentry` → `rustic-projects` (Birdhouse + Crate:
+**Joinery** — `rustic-carpentry`★ (rustic shelf, rustic frame) and
+`panel-work`★ (glue-up, cutting board). The rustic frame carries no skill
+of its own on purpose: it is gated by the *shop* (miter saw for the 45s,
+table saw for the 2" rip, something to sand with), which is what makes it
+commission 2's graduation piece.
+`rustic-carpentry` → `rustic-projects` (Birdhouse + Crate:
 the other things pallet wood is good for). That node is the guided
 opening's spend — see `docs/tutorial.md`. It is deliberately the cheapest
 useful point in the tree and it pays off immediately, because the job

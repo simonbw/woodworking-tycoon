@@ -717,6 +717,86 @@ const FRAME_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
 };
 
 /**
+ * The rustic frame's rails: pallet stock ripped to 2" and mitered, the
+ * same mirrored 45s the fine frame wants. Two long, two short — a
+ * rectangle rather than the picture frame's square, so the cut list is
+ * two lengths off the saw instead of four of one.
+ */
+const RUSTIC_FRAME_LONG_RAIL: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: ["pallet"],
+  length: [24],
+  width: [2],
+  thickness: [2],
+  surface: ["sanded"],
+  quantity: 1,
+  matches: (material: MaterialInstance) =>
+    isBoard(material) && isMiteredFrameRail(material, 45),
+  matchesNote: "45° both ends, mirrored",
+};
+
+const RUSTIC_FRAME_SHORT_RAIL: InputMaterialWithQuantity<Board> = {
+  ...RUSTIC_FRAME_LONG_RAIL,
+  length: [12],
+};
+
+/**
+ * The rustic frame: the shop's first mitered work, and the build that
+ * makes the starter shop hang together — the miter saw swings the 45s,
+ * the table saw rips the deck board to 2", and the sanding block takes
+ * it the last grade. Four rails around an open middle at 12" × 24",
+ * long pair down the sides on layer 0 and short pair lapping over them,
+ * so each 2" × 2" corner earns one nail.
+ *
+ * Pallet stock and mirrored miters, which is the whole joke: reclaimed
+ * wood cut to a tolerance it has never been held to before.
+ */
+export const RUSTIC_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
+  productType: "rusticFrame",
+  widthIn: 12,
+  heightIn: 24,
+  fastenerConsumable: "nails",
+  slots: [
+    // The long rails run down the sides on layer 0…
+    ...[
+      { xIn: 1, angleDeg: 0 },
+      { xIn: 11, angleDeg: 180 },
+    ].map(({ xIn, angleDeg }) => ({
+      role: "rail",
+      requirement: RUSTIC_FRAME_LONG_RAIL,
+      part: {
+        widthIn: 2,
+        lengthIn: 24,
+        thicknessQ: 2,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn,
+      yIn: 12,
+      angleDeg,
+      layer: 0,
+    })),
+    // …and the short rails lap across them at top and bottom.
+    ...[
+      { yIn: 1, angleDeg: 90 },
+      { yIn: 23, angleDeg: 270 },
+    ].map(({ yIn, angleDeg }) => ({
+      role: "rail",
+      requirement: RUSTIC_FRAME_SHORT_RAIL,
+      part: {
+        widthIn: 2,
+        lengthIn: 12,
+        thicknessQ: 2,
+        ends: FRAME_RAIL_ENDS,
+      } as const,
+      xIn: 6,
+      yIn,
+      angleDeg,
+      layer: 1,
+    })),
+  ],
+});
+
+/**
  * The picture frame: four mitered rails around an open middle, drawn at
  * the 24" square their 2' rails actually make. The horizontal pair lies
  * on the lower layer, the vertical pair laps over it, and each 1"×1"
@@ -1409,6 +1489,7 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   stepStool: STEP_STOOL_BLUEPRINT,
   bookshelf: BOOKSHELF_BLUEPRINT,
   birdhouse: BIRDHOUSE_BLUEPRINT,
+  rusticFrame: RUSTIC_FRAME_BLUEPRINT,
   pictureFrame: PICTURE_FRAME_BLUEPRINT,
   hexFrame: HEX_FRAME_BLUEPRINT,
   jewelryBox: JEWELRY_BOX_BLUEPRINT,

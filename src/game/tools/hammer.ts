@@ -6,6 +6,7 @@ import {
   blueprintFastenerCost,
   blueprintInputs,
   CRATE_BLUEPRINT,
+  RUSTIC_FRAME_BLUEPRINT,
   RUSTIC_SHELF_BLUEPRINT,
 } from "../bench-work/blueprint";
 
@@ -45,6 +46,23 @@ export const hammer: ToolType = {
       output: (materials: ReadonlyArray<MaterialInstance>) => ({
         inputs: [],
         outputs: [assembleFromBlueprint(RUSTIC_SHELF_BLUEPRINT, materials)],
+      }),
+    },
+    {
+      name: "Build Rustic Frame",
+      id: "buildRusticFrame",
+      requiredSkill: "rusticCarpentry",
+      duration: 25,
+      // No skill of its own to buy: the gate is the shop. Mirrored 45s
+      // need the miter saw's angle stops, 2"-wide rails need the table
+      // saw's fence, and the sanded requirement needs something to sand
+      // with — the first build that asks for all three at once.
+      interaction: { kind: "assembly", blueprint: "rusticFrame" },
+      requiredConsumables: blueprintFastenerCost(RUSTIC_FRAME_BLUEPRINT),
+      getInputMaterials: () => blueprintInputs(RUSTIC_FRAME_BLUEPRINT),
+      output: (materials: ReadonlyArray<MaterialInstance>) => ({
+        inputs: [],
+        outputs: [assembleFromBlueprint(RUSTIC_FRAME_BLUEPRINT, materials)],
       }),
     },
     {

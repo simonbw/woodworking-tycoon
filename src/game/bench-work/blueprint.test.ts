@@ -17,6 +17,7 @@ import {
   PICTURE_FRAME_BLUEPRINT,
   PLANTER_BOX_BLUEPRINT,
   productBlueprintFor,
+  RUSTIC_FRAME_BLUEPRINT,
   RUSTIC_SHELF_BLUEPRINT,
   STEP_STOOL_BLUEPRINT,
   CROSSCUT_SLED_BLUEPRINT,
@@ -740,6 +741,65 @@ describe("the picture frame blueprint", () => {
       assert.deepStrictEqual(part.ends, NOMINAL_ENDS);
       assert.strictEqual(part.surface, "sanded");
     }
+  });
+});
+
+describe("the rustic frame blueprint", () => {
+  const NOMINAL_ENDS = {
+    left: { kind: "mitered", angle: -45 },
+    right: { kind: "mitered", angle: 45 },
+  } as const;
+  const rail = (length: number) =>
+    makeMaterial<Board>({
+      ...board("pallet", length, 2, 2, "sanded"),
+      ends: NOMINAL_ENDS,
+    });
+
+  it("derives four nails, one at each 2×2 corner lap", () => {
+    assert.deepStrictEqual(blueprintFastenerCost(RUSTIC_FRAME_BLUEPRINT), [
+      { id: "nails", amount: 4 },
+    ]);
+    const spots = RUSTIC_FRAME_BLUEPRINT.fasteners
+      .map((f) => `${f.xIn},${f.yIn}`)
+      .sort();
+    assert.deepStrictEqual(spots, ["1,1", "11,1", "1,23", "11,23"].sort());
+  });
+
+  it("folds the sheet to two rows: two long rails, two short", () => {
+    const inputs = blueprintInputs(RUSTIC_FRAME_BLUEPRINT);
+    assert.strictEqual(inputs.length, 2);
+    assert.strictEqual(inputs[0].quantity, 2);
+    assert.deepStrictEqual(inputs[0].length, [24]);
+    assert.strictEqual(inputs[1].quantity, 2);
+    assert.deepStrictEqual(inputs[1].length, [12]);
+    for (const row of inputs) {
+      assert.deepStrictEqual(row.species, ["pallet"]);
+      assert.deepStrictEqual(row.width, [2]);
+      assert.deepStrictEqual(row.surface, ["sanded"]);
+      assert.strictEqual(row.matchesNote, "45° both ends, mirrored");
+      // Square-ended stock is not a rail, however well milled
+      assert.ok(!row.matches!(board("pallet", 24, 2, 2, "sanded")));
+    }
+  });
+
+  it("is registered and assembles two lengths into one frame", () => {
+    assert.strictEqual(
+      productBlueprintFor("rusticFrame"),
+      RUSTIC_FRAME_BLUEPRINT,
+    );
+    const frame = assembleFromBlueprint(RUSTIC_FRAME_BLUEPRINT, [
+      rail(24),
+      rail(24),
+      rail(12),
+      rail(12),
+    ]);
+    assert.strictEqual(frame.type, "rusticFrame");
+    assert.strictEqual(frame.species, "pallet");
+    assert.strictEqual(frame.parts?.length, 4);
+    assert.deepStrictEqual(
+      frame.parts!.map((p) => p.length).sort((a, b) => a - b),
+      [12, 12, 24, 24],
+    );
   });
 });
 

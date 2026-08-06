@@ -107,6 +107,11 @@ export const MillingArticle: React.FC = () => (
       produces a sanded one. Glued-up panels always come out of the clamps
       rough, so plan on re-surfacing after every glue-up.
     </P>
+    <P>
+      Surface decides what a piece can become, not what it fetches. Rustic work
+      takes wood in any condition; frames, shelves, boxes, and cutting boards
+      all call for sanded stock and won't go together without it.
+    </P>
 
     <Note>
       Never feed end grain through the planer — it will tear the panel apart.

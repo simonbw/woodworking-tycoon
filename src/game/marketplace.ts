@@ -1,6 +1,6 @@
 import { AcceptedJob, MarketListing } from "./GameState";
 import { MaterialInstance } from "./Materials";
-import { getMaterialFullName, isFinishedProduct } from "./material-helpers";
+import { getMaterialFullName } from "./material-helpers";
 import { getSellValue } from "./material-values";
 import { TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY } from "./time";
 
@@ -70,15 +70,15 @@ export function demandFactor(demand: number): number {
 }
 
 /**
- * What SawdustList will take: finished pieces, plus the odd secondhand
- * tool. Raw stock never goes up — a stack of offcuts is something to
- * build with or throw in the garbage can, and pricing it by the board
- * foot would make scavenging an income stream instead of a supply run.
- * Jobs are the channel that still asks for boards, and those are
- * somebody else's order, not a shelf you put out.
+ * What SawdustList will take: anything that has a price. Since wood has
+ * no sale value at all (see material-values.ts), that comes out as
+ * finished pieces plus the odd secondhand tool, and a stack of offcuts is
+ * something to build with or throw in the garbage can. The rule needs no
+ * separate list of exceptions — an unsellable thing is one nobody pays
+ * for, which is the same statement.
  */
 export function isListable(material: MaterialInstance): boolean {
-  return isFinishedProduct(material) || material.type === "tool";
+  return getSellValue(material) > 0;
 }
 
 /**

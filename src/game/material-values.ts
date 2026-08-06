@@ -6,21 +6,27 @@ import {
   SheetGood,
   SheetGoodKind,
   Species,
-  SurfaceCondition,
 } from "./Materials";
 import { isFinishedProduct } from "./material-helpers";
 import { TOOL_TYPES } from "./Tool";
 
 /**
- * Free-sell prices. Value comes from processing depth: raw stock is priced
- * by real board-foot volume at per-species rates, finished products at
- * realistic craft-fair prices — worth more than the wood that went into
- * them, but margins are thin from expensive lumber channels and fat from
- * cheap ones, so every channel unlock reprices the shop's work. Commissions
- * pay ~1.5-2x these prices — jobs and listings are the living, commissions
- * are the milestones.
+ * What things are worth, in the shop's two directions.
+ *
+ * **Wood has a price you pay and no price you receive.** Lumber and sheet
+ * goods are priced for the store shelf (`SPECIES_LUMBER_PRICE`,
+ * `SHEET_KIND_PRICE`) and are worth exactly nothing on the way out — a
+ * board is what you work, not what you sell. Only finished products, and
+ * the odd secondhand tool, have a sell value at all.
+ *
+ * That asymmetry is the whole economy. Value comes from work, never from
+ * holding wood, so there is no board-foot arbitrage to find and no reason
+ * to treat a scavenging run as income. Products are priced at realistic
+ * craft-fair prices — worth more than the wood in them, with margins thin
+ * from expensive lumber channels and fat from cheap ones, so every channel
+ * unlock reprices the shop's work. Commissions and jobs pay above these
+ * prices; listings are the living, commissions are the milestones.
  */
-const WHOLE_PALLET_VALUE = 5;
 
 /**
  * Real lumber volume: one board foot is 12" × 12" × 1". Board dimensions
@@ -43,12 +49,6 @@ function sheetBoardFeet(sheet: SheetGood): number {
   return (sheet.length / 12) * (sheet.width / 12) * (sheet.thickness / 4);
 }
 
-/**
- * A crosscut slice's share of the 2' panel it came from (SLICES_PER_PANEL
- * cuts): 6" of panel length.
- */
-const SLICE_LENGTH_IN = 6;
-
 const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   rusticShelf: 12,
   // Screwed joinery and bought fasteners edge it past the nailed shelf
@@ -61,6 +61,9 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
   // Two glue-ups, two flattenings, and a jig you built yourself
   endGrainCuttingBoard: 30,
   jewelryBox: 18,
+  // Four miters that have to close, off free pallet stock — the first
+  // build that needs the saw, the rip fence, and the sander all at once
+  rusticFrame: 12,
   // Eight miters that all have to close up — precision money
   pictureFrame: 11,
   // The rustic tier below the shelf: quick nailed builds from scrap
@@ -83,8 +86,8 @@ const PRODUCT_VALUES: Record<FinishedProduct["type"], number> = {
 
 /**
  * The wood tier ladder (issue #6), used to scale FINISHED PRODUCT values:
- * better species multiply the profit on everything you build. Raw lumber
- * is priced separately by SPECIES_LUMBER_RATE below — real hardwood price
+ * better species multiply the profit on everything you build. Lumber is
+ * priced separately by SPECIES_LUMBER_PRICE below — real hardwood price
  * gaps (walnut is ~16x construction pine per board foot) would be absurd
  * multipliers on product prices.
  */
@@ -101,53 +104,42 @@ export const SPECIES_VALUE_MULTIPLIER: Record<Species, number> = {
 };
 
 /**
- * Raw lumber sell rates in dollars per board foot, tuned so store shelves
- * (sell rate × BUY_MARKUP × channel multiplier) land near real-world
- * retail: a $4 stud, $5/bf big-box poplar, $12/bf lumberyard walnut.
+ * Shelf price of lumber in dollars per board foot, before a channel's own
+ * multiplier (see lumberStock.ts). These are real-world retail: a 2×4×8
+ * stud lands at $4, big-box poplar near $5/bf, lumberyard walnut at
+ * $12/bf.
  *
- * Pallet wood is the exception: reclaimed craft stock, never on a store
- * shelf. Its rate is what neighbors pay per board (about 40¢ a deck
- * board), not commodity volume — high enough that board jobs pay for the
- * prying, low enough that building something always beats selling the
- * boards it's made of. (When the deck boards fattened from 1/4" to a
- * true 1/2", this rate halved so a board still fetches the same 40¢ —
- * the realism lives in the wood, not the wallet.)
+ * This is a *purchase* rate and has no sell-side twin — wood costs money
+ * to bring in and returns none going out.
  */
-export const SPECIES_LUMBER_RATE: Record<Species, number> = {
-  pallet: 0.75,
-  pine: 0.25,
-  poplar: 1.0,
-  oak: 1.5,
-  maple: 1.75,
-  cherry: 2.5,
-  walnut: 4.0,
-  mahogany: 4.5,
-  purpleHeart: 5.5,
+export const SPECIES_LUMBER_PRICE: Record<Species, number> = {
+  // Never on a shelf: pallet wood comes off the curb, free. The entry
+  // keeps the Record exhaustive, and a $0 board would be an obvious bug
+  // if some future channel ever tried to stock it.
+  pallet: 0,
+  pine: 0.75,
+  poplar: 3.0,
+  oak: 4.5,
+  maple: 5.25,
+  cherry: 7.5,
+  walnut: 12.0,
+  mahogany: 13.5,
+  purpleHeart: 16.5,
 };
 
 /**
- * Sheet-good sell rates in dollars per board foot, same ladder ordering as
- * before (particle board cheapest, cabinet ply dearest). At BUY_MARKUP
- * these put a 4'×4' half-inch particle sheet near $10 and a 4'×8'
- * three-quarter cabinet-ply sheet near $80 — big-box reality.
+ * Shelf price of sheet goods per board foot, same ladder ordering as the
+ * species table (particle board cheapest, cabinet ply dearest): a 4'×4'
+ * half-inch particle sheet near $10, a 4'×8' three-quarter cabinet-ply
+ * sheet near $80 — big-box reality.
  */
-export const SHEET_KIND_RATE: Record<SheetGoodKind, number> = {
-  particleBoard: 0.4,
-  osb: 0.5,
-  mdf: 0.55,
-  plywoodC: 0.75,
-  plywoodB: 1.0,
-  plywoodA: 1.1,
-};
-
-/**
- * Surface prep adds a little value to raw stock — enough to reward sanding
- * scavenged boards, not enough to beat turning them into products.
- */
-export const SURFACE_VALUE_MULTIPLIER: Record<SurfaceCondition, number> = {
-  rough: 1,
-  smooth: 1.15,
-  sanded: 1.3,
+export const SHEET_KIND_PRICE: Record<SheetGoodKind, number> = {
+  particleBoard: 1.2,
+  osb: 1.5,
+  mdf: 1.65,
+  plywoodC: 2.25,
+  plywoodB: 3.0,
+  plywoodA: 3.3,
 };
 
 /**
@@ -179,71 +171,40 @@ export function getSellValue(material: MaterialInstance): number {
     );
   }
 
-  switch (material.type) {
-    case "board":
-      return roundToCents(
-        boardFeet(material.length, material.width, material.thickness) *
-          SPECIES_LUMBER_RATE[material.species] *
-          SURFACE_VALUE_MULTIPLIER[material.surface],
-      );
-    case "plywood":
-      return roundToCents(
-        sheetBoardFeet(material) * SHEET_KIND_RATE[material.kind],
-      );
-    case "panel":
-      // Valued strip by strip, so multi-species panels price themselves
-      return roundToCents(
-        material.strips.reduce(
-          (sum, strip) =>
-            sum +
-            boardFeet(material.length, strip.width, material.thickness) *
-              SPECIES_LUMBER_RATE[strip.species],
-          0,
-        ) * SURFACE_VALUE_MULTIPLIER[material.surface],
-      );
-    case "endGrainSlice":
-      // A slice is its share of the panel it was crosscut from
-      return roundToCents(
-        material.strips.reduce(
-          (sum, strip) =>
-            sum +
-            boardFeet(SLICE_LENGTH_IN, strip.width, material.thickness) *
-              SPECIES_LUMBER_RATE[strip.species],
-          0,
-        ),
-      );
-    case "pallet":
-      return WHOLE_PALLET_VALUE;
-    case "tool":
-      // A used tool moves at half retail — nobody pays full price secondhand
-      return roundToCents(TOOL_TYPES[material.toolId].cost * 0.5);
-    case "unknown":
-      return 0;
+  // A used tool moves at half retail — nobody pays full price secondhand
+  if (material.type === "tool") {
+    return roundToCents(TOOL_TYPES[material.toolId].cost * 0.5);
   }
+
+  // Everything else is stock — boards, sheets, panels, slices, whole
+  // pallets — and stock does not sell. Build something out of it or throw
+  // it away. A new raw material type lands here by default, which is the
+  // rule rather than an oversight.
+  return 0;
 }
 
 /**
- * Store prices for buying lumber. Kept well above sell value so buying and
- * flipping always loses money. Each lumber channel scales the base price by
+ * Store price for a board. Each lumber channel scales the shelf rate by
  * its own multiplier (see lumberStock.ts): big-box S4S charges a premium
- * for milling you didn't do; rough stock is discounted because your jointer
- * and planer are about to do it.
+ * for milling you didn't do; rough stock is discounted because your
+ * jointer and planer are about to do it.
+ *
+ * Surface doesn't enter into it — a channel's milled state is priced by
+ * its multiplier, not by the board's condition.
  */
-const BUY_MARKUP = 3;
-
 export function getBoardBuyPrice(
   board: Board,
   channelPriceMultiplier: number = 1,
 ): number {
-  // Priced from raw wood volume (rough sell value), so the small surface
-  // sell-bonus doesn't inflate store prices.
-  const basePrice = getSellValue({ ...board, surface: "rough" }) * BUY_MARKUP;
+  const basePrice =
+    boardFeet(board.length, board.width, board.thickness) *
+    SPECIES_LUMBER_PRICE[board.species];
   return roundToCents(basePrice * channelPriceMultiplier);
 }
 
-/** Store price for a sheet good — same markup rule as lumber. */
+/** Store price for a sheet good — the same shelf-rate rule as lumber. */
 export function getSheetBuyPrice(sheet: SheetGood): number {
-  return roundToCents(getSellValue(sheet) * BUY_MARKUP);
+  return roundToCents(sheetBoardFeet(sheet) * SHEET_KIND_PRICE[sheet.kind]);
 }
 
 function roundToCents(value: number): number {

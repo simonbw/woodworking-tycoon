@@ -28,7 +28,7 @@ phone and browsing Craigslist / Facebook Marketplace / Etsy:
 - **Listings**: put an item up for sale at a price *you choose*, and get paid
   only when a buyer bites. Sale chance is simulated from price, reputation,
   and demand.
-- **Jobs**: generated one-off requests ("4 sanded oak boards, 3×4×1") you
+- **Jobs**: generated one-off requests ("two reclaimed-wood frames") you
   accept and fulfill for guaranteed money. They give guidance and steady
   income without advancing the story.
 
@@ -102,32 +102,43 @@ freely is what funds the second commission's gear).
 
 ## Selling: listings
 
-### What the marketplace takes
+### Wood is not a commodity
 
-Finished work only, plus the odd secondhand tool — `isListable` in
-`marketplace.ts`, enforced in `listItemsAction` and in the phone's pick
-list. **Raw stock never goes up**: boards, sheet goods, panels, end-grain
-slices, whole pallets.
+**You never sell a board — not on a listing, not to a job, not on a
+commission.** This is structural rather than a policy: `getSellValue`
+prices finished products and secondhand tools, and returns 0 for
+everything else. Lumber has its own shelf price (`SPECIES_LUMBER_PRICE`,
+`SHEET_KIND_PRICE` in `material-values.ts`), so wood costs money coming in
+and returns none going out.
 
-This is a rule about what scavenging is for. Pallet wood is free and
-unlimited, so pricing it by the board foot makes the scavenging trip an
-income stream and the bench optional — you could play the whole early game
-without building anything. Making the boards unsellable puts the money
-back where the work is: spare stock is something to build with, or
-something to throw in the garbage can, and neither of those is a faucet.
+The reason is what scavenging is for. Pallet wood is free and unlimited,
+so pricing it by the board foot makes the scavenging trip an income stream
+and the bench optional — you could play the whole early game without
+building anything. With stock worth nothing, the money is only ever where
+the work is: spare boards are something to build with, or something to
+throw in the garbage can, and neither is a faucet.
 
-Boards still leave the shop two ways, both of which are somebody else
-asking: a **job** that names them (`"4 sanded oak boards, 3×4×1"`) and a
-**commission** whose work order calls for them. Both are orders, not
-inventory clearance.
+Consequences, all of which fall out rather than being enforced separately:
 
-`getSellValue` is unchanged and still prices raw stock — it is the
-fair-value anchor for job payouts and (via `BUY_MARKUP`) for store
-shelves, not a claim that a thing is sellable.
+- `isListable` is just `getSellValue(material) > 0`. An unsellable thing is
+  one nobody pays for; there is no second list of exceptions to maintain.
+- **Every job and every commission asks for something you built.** The six
+  raw-stock job templates are gone; new gear still brings new work, but as
+  the product it makes (buy the saws and the sander, and rustic frames
+  appear on the board — see `job-generation.ts`).
+- Surface condition is a **gate, never a price**. There is no
+  `SURFACE_VALUE_MULTIPLIER`; sanded stock is worth the same as rough,
+  which is nothing. What sanding buys is access to recipes that demand it
+  (see `docs/tools-and-surfaces.md`).
+- `demandCategory` is just the material type: each product floods its own
+  market, and there is no shared "lumber" commodity bucket to flood.
+- Store prices lost their `BUY_MARKUP` bridge. The rate tables *are* retail
+  per board foot, so a channel's `priceMultiplier` is the only thing on top
+  of them.
 
-Because only products and tools reach a listing, `demandCategory` is just
-the material type: each product floods its own market, and there is no
-shared "lumber" commodity bucket to flood.
+The one asymmetry left is deliberate: a **used tool** still sells at half
+retail. A tool isn't stock, and buying the wrong sander shouldn't be
+unrecoverable.
 
 ### Flow
 
@@ -234,13 +245,17 @@ actually build right now, derived from owned machines and mounted tools
 marker. Rules:
 
 - Never generate a job the player cannot physically produce.
-- **Bias toward the newest capability**: just bought a planer? The board
-  fills with planing work. This is the "guidance" role — jobs teach the tool
-  you just acquired, emergently rather than through authored content.
-- **Always keep at least one zero-material-cost job on the board** — pallet
-  wood work, fulfillable from scavenged materials — so a broke player always
-  has a path back to solvency. (Together with the listing pity timer, this
-  is the income floor.)
+- **Bias toward the newest capability**: just bought the saws and a sanding
+  block? Frame work appears. This is the "guidance" role — jobs teach the
+  gear you just acquired, emergently rather than through authored content.
+  Note the indirection: a template is gated on the machines but asks for the
+  **product** they enable, because nobody orders loose boards.
+- **Always keep at least one zero-material-cost job on the board** — work
+  buildable from scavenged pallet wood — so a broke player always has a path
+  back to solvency. That floor is `rustic-shelves`: tier 0,
+  `available: () => true`, and buildable from the first morning, since a new
+  shop opens with a hammer already mounted. (Together with the listing pity
+  timer, this is the income floor.)
 - Higher reputation skews generation toward bigger, better-paying requests.
 
 ## Reputation economy after this change

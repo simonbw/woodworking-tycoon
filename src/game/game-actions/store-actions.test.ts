@@ -167,12 +167,22 @@ describe("completeCommissionAction", () => {
   });
 
   it("delivers the frame shop order from the bed", () => {
-    // Commission 2 requires 4 sanded pallet boards at 2'x2"x2/4
-    const boards = Array.from({ length: 4 }, () =>
+    // Commission 2 requires one assembled rustic frame — the loose rails
+    // it's built from are worth nothing to a client on their own
+    const frame = makeMaterial<FinishedProduct>({
+      type: "rusticFrame",
+      species: "pallet",
+    });
+    const result = completeCommissionAction()(stateAtCommission(1, [frame]));
+    assert.strictEqual(result.progression.commissionsCompleted, 2);
+  });
+
+  it("refuses the frame shop order when only the rails are in the bed", () => {
+    const rails = Array.from({ length: 4 }, () =>
       board("pallet", 24, 2, 2, "sanded"),
     );
-    const result = completeCommissionAction()(stateAtCommission(1, boards));
-    assert.strictEqual(result.progression.commissionsCompleted, 2);
+    const state = stateAtCommission(1, rails);
+    assert.strictEqual(completeCommissionAction()(state), state);
   });
 
   it("does nothing, including progression, when materials are missing", () => {

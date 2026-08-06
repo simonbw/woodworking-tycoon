@@ -89,9 +89,9 @@ describe("generateJobBoard", () => {
       seenAll(stateWith({ reputation: 60 })),
       zeroRng,
     );
-    // With a zero rng both boards lead with the pallet-boards income floor
-    assert.strictEqual(humble[0].requiredMaterials[0].quantity, 3);
-    assert.strictEqual(famous[0].requiredMaterials[0].quantity, 3 + 5);
+    // With a zero rng both boards lead with the rustic-shelves income floor
+    assert.strictEqual(humble[0].requiredMaterials[0].quantity, 1);
+    assert.strictEqual(famous[0].requiredMaterials[0].quantity, 1 + 2);
   });
 
   it("pays more for an oiled ask than a raw one", () => {

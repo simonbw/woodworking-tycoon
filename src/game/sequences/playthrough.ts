@@ -204,6 +204,52 @@ function millOneBoard(shop: ShopDriver, from: BoardSize, to: BoardSize): void {
 const isFrameRail = (m: MaterialInstance) =>
   isBoard(m) && isMiteredFrameRail(m as unknown as Board, 45);
 
+/** A finished rustic frame rail at one of the frame's two lengths. */
+const rusticFrameRail = (length: number) => (m: MaterialInstance) =>
+  isFrameRail(m) &&
+  (m as unknown as Board).species === "pallet" &&
+  (m as unknown as Board).length === length &&
+  (m as unknown as Board).width === 2 &&
+  (m as unknown as Board).surface === "sanded";
+
+/**
+ * Make one rustic frame rail out of a ripped 2"-wide pallet blank: sand it
+ * up from rough, then miter both ends.
+ *
+ * The two cuts mirror the same way the walnut rail's do — every pass puts
+ * its fresh mitered face on the right of the kept piece and the left of
+ * the offcut, so cutting once and then re-cutting the *offcut* with the
+ * head swung the other way is what leans the two ends toward each other.
+ */
+function makeRusticFrameRail(shop: ShopDriver, length: number): void {
+  const rough: BoardSize = {
+    species: "pallet",
+    length: 36,
+    width: 2,
+    thickness: 2,
+    surface: "rough",
+  };
+  // Scavenged stock starts rough, so it climbs two grades to sanded.
+  shop.make(WORKBENCH, "blockSandBoard", sized(rough), { count: 1 });
+  shop.make(
+    WORKBENCH,
+    "blockSandBoard",
+    sized({ ...rough, surface: "smooth" }),
+    {
+      count: 1,
+    },
+  );
+
+  const sanded = { ...rough, surface: "sanded" };
+  // Nick 6" off the left at +45; the 30" offcut carries that miter.
+  shop.feed("miterSaw", sized(sanded), { angle: 45, cutPosition: 6 });
+  // Swing to -45 and take the offcut to length; its left end keeps the +45.
+  shop.feed("miterSaw", sized({ ...sanded, length: 30 }), {
+    angle: -45,
+    cutPosition: length,
+  });
+}
+
 /**
  * Make one 2' × 1" × 1/4 sanded walnut rail with mirrored miters, out of one
  * 4' × 4" board off the big-box rack.
@@ -322,11 +368,16 @@ function sellRound(shop: ShopDriver): ShopDriver {
 
 /**
  * One reputation job: seed the board (rng 0 always leads with the
- * pallet-boards income-floor offer), pry pallets until the ask is covered,
- * and drive it off. Delivered fresh, a job pays double reputation — the
- * tip hasn't decayed — so each cycle is worth about +2.
+ * rustic-shelves income-floor offer), build shelves until the ask is
+ * covered, and drive it off. Delivered fresh, a job pays double
+ * reputation — the tip hasn't decayed — so each cycle is worth about +2.
+ *
+ * Shelves rather than loose boards because the board only ever asks for
+ * things the shop built (see job-generation.ts). The income floor is
+ * still free: pallets are free, and the starter hammer is mounted from
+ * the first morning.
  */
-function grindPalletJob(shop: ShopDriver): ShopDriver {
+function grindShelfJob(shop: ShopDriver): ShopDriver {
   shop.putEverythingDown();
   shop.seedJobBoard();
   const offer = shop.shop.jobBoard.find(
@@ -335,11 +386,11 @@ function grindPalletJob(shop: ShopDriver): ShopDriver {
       candidate.requiredMaterials.length === 1 &&
       (
         candidate.requiredMaterials[0].type as ReadonlyArray<string> | undefined
-      )?.includes("board"),
+      )?.includes("rusticShelf"),
   );
   if (!offer) {
     throw new Error(
-      `No pallet-board job on the seeded board — it offers ` +
+      `No rustic-shelf job on the seeded board — it offers ` +
         `[${shop.shop.jobBoard.map((o) => o.description).join("; ")}]`,
     );
   }
@@ -352,11 +403,17 @@ function grindPalletJob(shop: ShopDriver): ShopDriver {
       offer.requiredMaterials,
     ) !== null;
   while (!satisfied()) {
-    if (shop.stock(isPallet).length === 0) {
-      shop.scavenge();
+    // A pallet carries three stringers and a shelf wants two, so it's one
+    // shelf per pallet however many deck boards pile up.
+    if (shop.stock(stringer).length < 2 || shop.stock(deckBoard).length < 3) {
+      if (shop.stock(isPallet).length === 0) {
+        shop.scavenge();
+      }
+      shop.takeFromFloor(isPallet, 1);
+      dismantleAPallet(shop);
+      shop.putEverythingDown();
     }
-    shop.takeFromFloor(isPallet, 1);
-    dismantleAPallet(shop);
+    buildRusticShelf(shop);
     shop.putEverythingDown();
   }
   return shop.acceptJob(offer.id).deliverJob(offer.id);
@@ -378,7 +435,7 @@ function grindUntil(
     sellRound(shop);
   }
   while (shop.shop.reputation < minReputation) {
-    grindPalletJob(shop);
+    grindShelfJob(shop);
   }
   while (shop.money < minMoney) {
     sellRound(shop);
@@ -412,10 +469,11 @@ function commission1(shop: ShopDriver): ShopDriver {
 }
 
 /**
- * 2. The Frame Shop Order — four deck boards cut to 2', ripped to 2", and
- *    sanded. The whole starter shop in one buy: a miter saw, a table saw,
- *    and a sanding block, all funded off the job board — the first real
- *    stretch of living between commissions.
+ * 2. The Frame Shop Order — a rustic frame: two 2' rails and two 1' rails,
+ *    ripped to 2", sanded, mitered at every end, and nailed up square. The
+ *    whole starter shop in one buy: a miter saw for the angles, a table saw
+ *    for the rip, and a sanding block for the last grade — all funded off
+ *    the job board, the first real stretch of living between commissions.
  */
 function commission2(shop: ShopDriver): ShopDriver {
   grindUntil(shop, COMMISSION_SEQUENCE[1].minReputation, 480);
@@ -432,31 +490,46 @@ function commission2(shop: ShopDriver): ShopDriver {
     [8, 10],
   );
   shop.buyTool("sandingBlock");
+  // Salvaged nails come back a pallet at a time and the shelf grind eats
+  // them; a frame's four corners shouldn't wait on a lucky teardown.
+  shop.buySupplies("nails");
   shop.comeHome();
+  // Both slots earn their keep this rung: the block sands the rails and
+  // the hammer nails the corners.
   shop.fitOut(WORKBENCH, ["hammer", "sandingBlock"]);
 
   fetchAPallet(shop);
   shop.takeFromFloor(isPallet, 1);
   dismantleAPallet(shop);
-  for (let i = 0; i < 4; i++) {
-    millOneBoard(
-      shop,
-      {
+  shop.putEverythingDown();
+
+  // Two deck boards rip into the four 2"-wide blanks the frame wants.
+  for (let i = 0; i < 2; i++) {
+    shop.feed(
+      "jobsiteTableSaw",
+      sized({
         species: "pallet",
         length: 36,
         width: 4,
         thickness: 2,
         surface: "rough",
-      },
-      {
-        species: "pallet",
-        length: 24,
-        width: 2,
-        thickness: 2,
-        surface: "sanded",
-      },
+      }),
+      { targetWidth: 2 },
     );
   }
+  makeRusticFrameRail(shop, 24);
+  makeRusticFrameRail(shop, 24);
+  makeRusticFrameRail(shop, 12);
+  makeRusticFrameRail(shop, 12);
+
+  shop
+    .standAtOperatorCell(WORKBENCH)
+    .select(WORKBENCH, "buildRusticFrame")
+    .load(WORKBENCH, rusticFrameRail(24), 2)
+    .load(WORKBENCH, rusticFrameRail(12), 2)
+    .run(WORKBENCH)
+    .collect(WORKBENCH);
+
   return shop.handOverCommission();
 }
 
@@ -598,7 +671,7 @@ function commission4(shop: ShopDriver): ShopDriver {
  *    what it learns.
  */
 function commission5(shop: ShopDriver): ShopDriver {
-  grindUntil(shop, COMMISSION_SEQUENCE[4].minReputation, 820);
+  grindUntil(shop, COMMISSION_SEQUENCE[4].minReputation, 920);
   shop.putEverythingDown();
   shop.learn("boxJoinery");
   shop.learn("miteredFrames");

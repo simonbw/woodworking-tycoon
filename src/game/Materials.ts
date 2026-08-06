@@ -295,6 +295,7 @@ export const FINISHED_PRODUCT_TYPES = [
   "rusticShelf",
   "planterBox",
   "jewelryBox",
+  "rusticFrame",
   "pictureFrame",
   "simpleCuttingBoard",
   "stripedCuttingBoard",

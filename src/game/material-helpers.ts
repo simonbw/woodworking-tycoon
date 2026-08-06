@@ -274,6 +274,7 @@ const PRODUCT_INVENTORY_SIZES: Record<FinishedProductType, number> = {
   rusticShelf: 10,
   planterBox: 20,
   jewelryBox: 10,
+  rusticFrame: 10,
   pictureFrame: 10,
   simpleCuttingBoard: 10,
   stripedCuttingBoard: 10,
@@ -455,6 +456,7 @@ export function createMockMaterial(
     case "rusticShelf":
     case "shelf":
     case "planterBox":
+    case "rusticFrame":
     case "pictureFrame":
     case "simpleCuttingBoard":
     case "stripedCuttingBoard":

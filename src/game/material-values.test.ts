@@ -13,59 +13,42 @@ import {
 import { panel, uniformPanel } from "./panel-helpers";
 
 describe("getSellValue", () => {
-  it("prices boards by board-foot volume", () => {
-    // 4' x 6" x 6/4 stringer: 3 bf at pallet wood's $0.75/bf craft rate
-    assert.strictEqual(getSellValue(board("pallet", 48, 6, 6)), 2.25);
-    // 3' x 4" x 2/4 deck board: 0.5 bf — the same 40¢ it always fetched
-    assert.strictEqual(getSellValue(board("pallet", 36, 4, 2)), 0.38);
-    // A 2x4 stud is 8' x 4" x 8/4 = 5.33 bf of pine at $0.25/bf
-    assert.strictEqual(getSellValue(board("pine", 96, 4, 8)), 1.33);
+  it("gives wood no sale price at all", () => {
+    // The whole rule in one place: stock is what you work, not what you
+    // sell. Every one of these is worth real money on the way IN.
+    assert.strictEqual(getSellValue(board("pallet", 48, 6, 6)), 0);
+    assert.strictEqual(getSellValue(board("walnut", 96, 8, 8)), 0);
+    assert.strictEqual(getSellValue(makePallet()), 0);
+    assert.strictEqual(getSellValue(uniformPanel("maple", 5, 3, 48, 4)), 0);
+    assert.strictEqual(
+      getSellValue(
+        panel(
+          [
+            { species: "walnut", width: 4 },
+            { species: "pine", width: 4 },
+          ],
+          36,
+          4,
+        ),
+      ),
+      0,
+    );
   });
 
-  it("prices a whole pallet below its dismantled boards", () => {
-    const pallet = makePallet();
-    const dismantledValue =
-      3 * getSellValue(board("pallet", 48, 6, 6)) +
-      11 * getSellValue(board("pallet", 36, 4, 2));
-    assert.ok(getSellValue(pallet) < dismantledValue);
+  it("does not pay more for a sanded board than a rough one", () => {
+    // Surface is a gate on what you can build, never a price bump —
+    // see docs/tools-and-surfaces.md.
+    for (const surface of ["rough", "smooth", "sanded"] as const) {
+      assert.strictEqual(getSellValue(board("pallet", 48, 6, 3, surface)), 0);
+    }
   });
 
-  it("prices finished products well above their input wood", () => {
+  it("prices finished products from the product table", () => {
     const shelf = makeMaterial<FinishedProduct>({
       type: "rusticShelf",
       species: "pallet",
     });
-    const inputWood =
-      2 * getSellValue(board("pallet", 48, 6, 6)) +
-      3 * getSellValue(board("pallet", 36, 4, 2));
     assert.strictEqual(getSellValue(shelf), 12);
-    assert.ok(getSellValue(shelf) > 2 * inputWood);
-  });
-
-  it("scales board value by species rate", () => {
-    // 3' x 4" x 4/4 is exactly one board foot
-    assert.strictEqual(getSellValue(board("pine", 36, 4, 4)), 0.25);
-    assert.strictEqual(getSellValue(board("maple", 36, 4, 4)), 1.75);
-    assert.strictEqual(getSellValue(board("walnut", 36, 4, 4)), 4);
-  });
-
-  it("prices panels strip by strip", () => {
-    // 5 maple strips at 3' x 4" x 4/4: one board foot each at $1.75/bf
-    assert.strictEqual(getSellValue(uniformPanel("maple", 5, 3, 48, 4)), 8.75);
-  });
-
-  it("prices multi-species panels by each strip's own species", () => {
-    const striped = panel(
-      [
-        { species: "walnut", width: 4 },
-        { species: "pine", width: 4 },
-      ],
-      36,
-      4,
-    );
-    const walnutStrip = getSellValue(board("walnut", 36, 4, 4));
-    const pineStrip = getSellValue(board("pine", 36, 4, 4));
-    assert.strictEqual(getSellValue(striped), walnutStrip + pineStrip);
   });
 
   it("scales finished product value by species", () => {
@@ -81,19 +64,13 @@ describe("getSellValue", () => {
 });
 
 describe("getBoardBuyPrice", () => {
-  it("keeps buy-and-flip unprofitable for every species", () => {
-    for (const species of [
-      "pallet",
-      "pine",
-      "oak",
-      "walnut",
-      "purpleHeart",
-    ] as const) {
+  it("charges real money for wood that sells for nothing", () => {
+    // There is no buy-and-flip to guard against any more — the flip side
+    // is zero — so the assertion worth keeping is that lumber isn't free.
+    for (const species of ["pine", "oak", "walnut", "purpleHeart"] as const) {
       const b = board(species, 8, 8, 8);
-      assert.ok(
-        getBoardBuyPrice(b) > getSellValue(b),
-        `${species} board should cost more than it sells for`,
-      );
+      assert.ok(getBoardBuyPrice(b) > 0, `${species} board should cost money`);
+      assert.strictEqual(getSellValue(b), 0);
     }
   });
 
@@ -104,7 +81,7 @@ describe("getBoardBuyPrice", () => {
     );
   });
 
-  it("keeps buy-and-flip unprofitable for every channel, species, and SKU", () => {
+  it("prices every channel, species, and SKU above zero", () => {
     for (const channel of LUMBER_CHANNELS) {
       for (const species of channel.species) {
         for (const sku of channel.skus) {
@@ -117,8 +94,8 @@ describe("getBoardBuyPrice", () => {
             { faces: channel.jointedFaces, edges: channel.jointedEdges },
           );
           assert.ok(
-            getBoardBuyPrice(b, channel.priceMultiplier) > getSellValue(b),
-            `${channel.id}: ${species} ${sku.length}x${sku.width}x${sku.thickness} should cost more than it sells for`,
+            getBoardBuyPrice(b, channel.priceMultiplier) > 0,
+            `${channel.id}: ${species} ${sku.length}x${sku.width}x${sku.thickness} should have a shelf price`,
           );
         }
       }
@@ -136,29 +113,12 @@ describe("getBoardBuyPrice", () => {
     assert.ok(bigBoxPrice > s2sPrice && s2sPrice > roughPrice);
   });
 
-  it("keeps mill-and-flip unprofitable even from the rough rack", () => {
-    // Buy rough at the deepest discount, mill it to S4S (a skim pass keeps
-    // the nominal thickness), sell smooth
-    const roughRack = LUMBER_CHANNELS.find((c) => c.id === "roughRack")!;
-    const roughCost = getBoardBuyPrice(
-      board("maple", 96, 4, 4, "rough", { faces: 0, edges: 0 }),
-      roughRack.priceMultiplier,
-    );
-    const milledValue = getSellValue(
-      board("maple", 96, 4, 4, "smooth", { faces: 2, edges: 2 }),
-    );
-    assert.ok(roughCost > milledValue);
-  });
-});
-
-describe("surface value", () => {
-  it("rewards sanding raw stock a little", () => {
-    const rough = getSellValue(board("pallet", 48, 6, 3, "rough"));
-    const smooth = getSellValue(board("pallet", 48, 6, 3, "smooth"));
-    const sanded = getSellValue(board("pallet", 48, 6, 3, "sanded"));
-    assert.ok(rough < smooth && smooth < sanded);
-    // ...but not product-level money: still less than double
-    assert.ok(sanded < rough * 2);
+  it("charges the same for a board however milled it arrives", () => {
+    // A channel's milled state is priced by its multiplier, not by the
+    // board's own condition — so the two never double-count.
+    const b = (surface: "rough" | "smooth") =>
+      getBoardBuyPrice(board("maple", 96, 4, 4, surface));
+    assert.strictEqual(b("rough"), b("smooth"));
   });
 });
 
@@ -217,9 +177,9 @@ describe("sheet good pricing", () => {
 
   it("prices sheets by board footage times the kind rate", () => {
     // A 4' x 4' half-inch sheet is 8 board feet
-    assert.strictEqual(getSellValue(sheet("plywoodB")), 8);
-    assert.strictEqual(getSellValue(sheet("particleBoard")), 3.2);
-    assert.strictEqual(getSellValue(sheet("plywoodA")), 8.8);
+    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 24);
+    assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 9.6);
+    assert.strictEqual(getSheetBuyPrice(sheet("plywoodA")), 26.4);
   });
 
   it("orders every kind by the quality ladder", () => {
@@ -233,19 +193,18 @@ describe("sheet good pricing", () => {
     ];
     for (let i = 1; i < rack.length; i++) {
       assert.ok(
-        getSellValue(sheet(rack[i])) > getSellValue(sheet(rack[i - 1])),
+        getSheetBuyPrice(sheet(rack[i])) > getSheetBuyPrice(sheet(rack[i - 1])),
       );
     }
   });
 
-  it("marks up sheet buy prices like lumber, so flipping loses money", () => {
-    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 24);
-    assert.ok(getSheetBuyPrice(sheet("osb")) > getSellValue(sheet("osb")));
+  it("gives a sheet no more sale value than a board", () => {
+    assert.strictEqual(getSellValue(sheet("plywoodA")), 0);
   });
 
   it("puts store shelves near real-world prices", () => {
-    // The classic 2x4x8 stud: ~$4 at the big box
-    assert.strictEqual(getBoardBuyPrice(board("pine", 96, 4, 8)), 3.99);
+    // The classic 2x4x8 stud: $4 at the big box
+    assert.strictEqual(getBoardBuyPrice(board("pine", 96, 4, 8)), 4);
     // 4' x 4' half-inch particle board: ~$10
     assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 9.6);
   });

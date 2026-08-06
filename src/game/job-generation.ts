@@ -7,8 +7,7 @@ import { roundToCents } from "./marketplace";
 import { ownsMachine, ownsTool } from "./progression-helpers";
 import { hasSkill } from "./skill-helpers";
 import { unlockedLumberChannels } from "./lumberStock";
-import { formatLength } from "../utils/formatNumber";
-import { BoardDimension, REAL_WOOD_SPECIES, Species } from "./Materials";
+import { REAL_WOOD_SPECIES, Species } from "./Materials";
 import { humanizeString } from "../utils/humanizeString";
 import { idMaker } from "../utils/idMaker";
 
@@ -19,6 +18,13 @@ const makeJobId = idMaker();
  * player's capability envelope — what they can actually build right now —
  * so the board never asks for the impossible, and it skews toward the most
  * advanced capability so new equipment immediately brings matching work.
+ *
+ * **Every template asks for something the shop built.** Wood has no sale
+ * price (see material-values.ts), so a job for loose boards would be a job
+ * for nothing — a client who wants lumber goes to a lumberyard. New
+ * equipment still brings its own work, but as the *product* it makes: the
+ * table saw and the miter saw earn their keep through rustic frames, not
+ * through crosscutting errands.
  *
  * Requirements here must stay DECLARATIVE (no `matches` predicates):
  * offers live in GameState and round-trip through JSON save/load, which
@@ -159,30 +165,10 @@ function speciesRequest(
  */
 const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
   {
-    // The guaranteed path back to solvency: free wood, starter tools.
-    id: "pallet-boards",
-    tier: 0,
-    zeroMaterialCost: true,
-    available: () => true,
-    generate: (rng, gameState) => {
-      const quantity = intBetween(rng, 3, 6) + repBatchBonus(gameState);
-      return {
-        description: `Needs ${quantity} reclaimed pallet boards for a weekend project. Any condition.`,
-        requiredMaterials: [
-          {
-            type: ["board"],
-            species: ["pallet"],
-            length: [36],
-            width: [4],
-            thickness: [2],
-            quantity,
-          },
-        ],
-        baseReputation: 1,
-      };
-    },
-  },
-  {
+    // The guaranteed path back to solvency: free wood, starter tools, and
+    // a build the shop can do from the first morning (the workspace ships
+    // with a hammer mounted). Every job asks for something you made —
+    // nobody buys loose boards.
     id: "rustic-shelves",
     tier: 0,
     zeroMaterialCost: true,
@@ -238,72 +224,27 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     },
   },
   {
-    id: "miter-crosscuts",
-    tier: 1,
-    zeroMaterialCost: true,
-    available: (gameState) => ownsMachine(gameState, "miterSaw"),
-    generate: (rng, gameState) => {
-      const length = pick(rng, [12, 24] as const);
-      const quantity = intBetween(rng, 3, 6) + repBatchBonus(gameState);
-      return {
-        description: `Needs ${quantity} pallet boards crosscut to ${formatLength(length)} exactly. Bring your miter saw game.`,
-        requiredMaterials: [
-          {
-            type: ["board"],
-            species: ["pallet"],
-            length: [length],
-            width: [4],
-            thickness: [2],
-            quantity,
-          },
-        ],
-        baseReputation: 1,
-      };
-    },
-  },
-  {
-    id: "ripped-slats",
-    tier: 1,
-    zeroMaterialCost: true,
-    available: (gameState) => ownsMachine(gameState, "jobsiteTableSaw"),
-    generate: (rng, gameState) => {
-      const width = pick(rng, [1, 2] as const) satisfies BoardDimension;
-      const quantity = intBetween(rng, 3, 6) + repBatchBonus(gameState);
-      return {
-        description: `Needs ${quantity} slats ripped to ${width}" wide from pallet stock.`,
-        requiredMaterials: [
-          {
-            type: ["board"],
-            species: ["pallet"],
-            length: [36],
-            width: [width],
-            thickness: [2],
-            quantity,
-          },
-        ],
-        baseReputation: 1,
-      };
-    },
-  },
-  {
-    id: "sanded-boards",
+    // The starter shop's repeat business, and the one job that exercises
+    // all three of its machines: mitered ends off the saw, 2" rails off
+    // the rip fence, sanded before it goes together. Free pallet stock,
+    // so it can anchor the board.
+    id: "rustic-frames",
     tier: 2,
     zeroMaterialCost: true,
-    available: hasAnySander,
+    available: (gameState) =>
+      hasAnySaw(gameState) &&
+      ownsMachine(gameState, "jobsiteTableSaw") &&
+      hasAnySander(gameState),
     generate: (rng, gameState) => {
-      const quantity = intBetween(rng, 2, 4) + repBatchBonus(gameState);
+      const quantity =
+        intBetween(rng, 1, 2) + Math.min(3, repBatchBonus(gameState));
       return {
-        description: `Needs ${quantity} pallet boards sanded baby-smooth for a craft project.`,
+        description:
+          quantity === 1
+            ? "Wants a reclaimed-wood frame for a print. Mitered corners, sanded smooth."
+            : `The craft fair stall needs ${quantity} reclaimed-wood frames. Mitered corners, sanded smooth.`,
         requiredMaterials: [
-          {
-            type: ["board"],
-            species: ["pallet"],
-            length: [36],
-            width: [4],
-            thickness: [2],
-            surface: ["sanded"],
-            quantity,
-          },
+          { type: ["rusticFrame"], species: ["pallet"], quantity },
         ],
         baseReputation: 2,
       };
@@ -346,31 +287,6 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
             ? "Wants a step stool sturdy enough for the top shelf and the grandkids both."
             : "The preschool needs two step stools for the sinks.",
         requiredMaterials: [{ type: ["stepStool"], quantity }],
-        baseReputation: 2,
-      };
-    },
-  },
-  {
-    id: "planed-stringers",
-    tier: 3,
-    zeroMaterialCost: true,
-    available: (gameState) => ownsMachine(gameState, "lunchboxPlaner"),
-    generate: (rng, gameState) => {
-      const quantity =
-        intBetween(rng, 2, 3) + Math.min(3, repBatchBonus(gameState));
-      return {
-        description: `Needs ${quantity} pallet stringers planed down to 2/4 thickness. Smooth faces, please.`,
-        requiredMaterials: [
-          {
-            type: ["board"],
-            species: ["pallet"],
-            length: [48],
-            width: [6],
-            thickness: [2],
-            surface: ["smooth", "sanded"],
-            quantity,
-          },
-        ],
         baseReputation: 2,
       };
     },
@@ -540,31 +456,6 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
           { type: ["hexFrame"], species: request.species, quantity },
         ],
         baseReputation: 4 + request.repBonus,
-      };
-    },
-  },
-  {
-    // Sells lamination itself: a raw glued blank, no product type needed.
-    id: "panel-blank",
-    tier: 6,
-    zeroMaterialCost: false,
-    available: (gameState) =>
-      hasSkill(gameState.progression, "freeformLamination"),
-    generate: (rng) => {
-      const minWidth = pick(rng, [12, 14, 16] as const);
-      return {
-        description: `A furniture maker wants a glued table-top blank, at least ${minWidth}" wide, faces dressed. They'll do the rest.`,
-        requiredMaterials: [
-          {
-            type: ["panel"],
-            length: [24],
-            thickness: [4],
-            surface: ["smooth", "sanded"],
-            minPanelWidth: minWidth,
-            quantity: 1,
-          },
-        ],
-        baseReputation: 4,
       };
     },
   },

@@ -22,9 +22,14 @@ import { REAL_WOOD_SPECIES } from "./Materials";
  * cuts length, the table saw rips width; sanding tools (mounted at
  * workstations) step surface rough → smooth → sanded; the planer reduces
  * thickness and leaves surfaces smooth; the workspace builds rustic
- * shelves from 2 stringers + 3 deck boards, glues five smooth 2x2x4
- * strips into a (rough) panel, and finishes a sanded single-species
- * hardwood panel into a cutting board.
+ * shelves from 2 stringers + 3 deck boards, rustic frames from four
+ * mitered 2"-wide rails, glues five smooth 2x2x4 strips into a (rough)
+ * panel, and finishes a sanded single-species hardwood panel into a
+ * cutting board.
+ *
+ * Every commission asks for something the shop *built*. Wood has no sale
+ * price (see material-values.ts), so an order for loose boards would be
+ * an order for nothing — the work is the product.
  *
  * Skills are bought with points the player earns from XP levels (see
  * Skill.ts), so commissions can't grant them — instead each description
@@ -56,29 +61,21 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "frame-shop-order",
     name: "The Frame Shop Order",
     description:
-      "A picture framer needs short boards cut precisely to length, ripped to a consistent width, and sanded baby-smooth. That's a miter saw, a table saw, and something to sand with — the whole starter shop.",
+      "A framer wants a reclaimed-wood frame, a foot by two foot. Pallet stock ripped to two inches, mitered 45° at every end, sanded baby-smooth, and nailed up square. That's a miter saw, a table saw, and something to sand with — the whole starter shop.",
     requiredMaterials: [
-      {
-        type: ["board"],
-        species: ["pallet"],
-        length: [24],
-        width: [2],
-        thickness: [2],
-        surface: ["sanded"],
-        quantity: 4,
-      },
+      { type: ["rusticFrame"], species: ["pallet"], quantity: 1 },
     ],
     rewardMoney: 30,
     rewardReputation: 2,
     minReputation: 6,
     call: [
       "Hello — Ellis, of Ellis Frame & Glass. Marguerite showed me your shelf.",
-      "I need frame stock: four short boards, two foot even, two inches wide, sanded smooth enough to swear by.",
-      "Every supplier I've tried cuts crooked. Prove me wrong?",
+      "I want a reclaimed-wood frame for my shop window. A foot by two foot, mitered corners, sanded smooth enough to swear by.",
+      "Every joiner I've tried leaves gaps at the corners. Prove me wrong?",
     ],
     client: "Ellis, of Ellis Frame & Glass",
     thanks:
-      "Every one the same length, the same width, and no snags anywhere. You would not believe how rarely that happens. I'll send people your way.",
+      "Four corners and not a gap in any of them. You would not believe how rarely that happens. I'll send people your way.",
   },
   {
     id: "proper-cutting-board",

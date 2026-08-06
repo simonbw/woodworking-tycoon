@@ -132,9 +132,14 @@ lives on the milling axes below, and the two never substitute for each other.
   AND fully ripped edges (`jointedEdges: 2`) — edge joints need straight,
   clean edges.
 - Cutting boards require a **sanded** panel. Rustic products accept anything
-  (rough is the point of rustic).
-- Value: sell multiplier rough ×1 / smooth ×1.15 / sanded ×1.3 on boards and
-  panels.
+  (rough is the point of rustic) — except the rustic frame, whose sanded
+  rails are what make it the starter shop's graduation piece.
+- **Surface is a gate, never a price.** A sanded board is worth exactly what
+  a rough one is: nothing (wood has no sell value at all — see
+  `material-values.ts` and `docs/marketplace-and-jobs.md`). Sanding buys
+  access to the work that demands it, and that is the whole reward. There
+  is no surface value multiplier, and adding one would re-open the
+  board-foot arbitrage the value model exists to close.
 
 ## Milling: jointed faces and edges (Now — issue #6)
 

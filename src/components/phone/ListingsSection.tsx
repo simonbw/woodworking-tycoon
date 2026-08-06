@@ -73,7 +73,7 @@ function groupSellable(
 ): MaterialInstance[][] {
   const groups = new Map<string, MaterialInstance[]>();
   for (const material of inventory) {
-    if (!isListable(material) || getSellValue(material) <= 0) {
+    if (!isListable(material)) {
       continue;
     }
     const key = listingGroupKey(material);

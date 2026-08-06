@@ -381,31 +381,65 @@ describe("generateJobBoard", () => {
     }
   });
 
-  it("adds tool-gated work once the machine is owned", () => {
-    const state = stateWith({
+  it("adds machine-gated work once the shop can build it", () => {
+    // New gear brings work as the product it makes, not as an errand:
+    // the saw, the rip fence, and a sanding block together are what the
+    // rustic frame needs, so the frame job appears with the third one.
+    const starterShop = stateWith({
       machineCrates: [
         {
           machine: freshMachineState("miterSaw", initialGameState.progression),
           position: [2, 5],
         },
+        {
+          machine: freshMachineState(
+            "jobsiteTableSaw",
+            initialGameState.progression,
+          ),
+          position: [4, 5],
+        },
       ],
     });
-    // Sample many boards: miter-saw jobs must show up somewhere
-    let sawJobs = 0;
     let calls = 0;
     const rng = () => {
       // Cheap deterministic pseudo-rng
       calls++;
       return (calls * 0.6180339887) % 1;
     };
-    for (let i = 0; i < 30; i++) {
-      for (const offer of generateJobBoard(state, rng)) {
-        if (offer.description.includes("crosscut")) {
-          sawJobs++;
+    const countFrameJobs = (state: GameState) => {
+      let found = 0;
+      for (let i = 0; i < 30; i++) {
+        for (const offer of generateJobBoard(state, rng)) {
+          if (
+            offer.requiredMaterials.some((r) =>
+              r.type?.includes("rusticFrame" as never),
+            )
+          ) {
+            found++;
+          }
         }
       }
-    }
-    assert.ok(sawJobs > 0, "expected some miter saw jobs");
+      return found;
+    };
+
+    // Saws but nothing to sand with: the frame is still out of reach
+    assert.strictEqual(
+      countFrameJobs(starterShop),
+      0,
+      "no frame work before the shop can sand",
+    );
+
+    const withSander: GameState = {
+      ...starterShop,
+      player: {
+        ...starterShop.player,
+        inventory: [
+          ...starterShop.player.inventory,
+          { id: "block-1", type: "tool", toolId: "sandingBlock" },
+        ],
+      },
+    };
+    assert.ok(countFrameJobs(withSander) > 0, "expected some frame jobs");
   });
 });
 

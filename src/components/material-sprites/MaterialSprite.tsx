@@ -73,6 +73,7 @@ export const MaterialSprite: React.FC<{
     case "stepStool":
     case "bookshelf":
     case "birdhouse":
+    case "rusticFrame":
     case "pictureFrame":
     case "hexFrame":
     case "jewelryBox":
