@@ -22,19 +22,17 @@ export const SkillsArticle: React.FC = () => (
 
     <H>The Skill Tree</H>
     <P>
-      Every recipe belongs to a skill; the ones available from the start belong
-      to your starter skills. Recipes for skills you haven't learned yet don't
-      show up at the bench, but you can preview them in the tree. Some nodes
-      unlock new recipes; others speed up work you already do, like faster
-      sanding or quicker glue cures.
+      Every recipe belongs to a skill. The bench offers only the recipes you've
+      learned; the rest can be previewed in the tree. Some nodes unlock new
+      recipes; others speed up work you already do, like faster sanding or
+      quicker glue cures.
     </P>
 
     <H>Reputation</H>
     <P>
       Reputation comes from completed commissions and marketplace sales. It
-      unlocks better lumber channels at the store — first the S2S rack, then
-      cheap rough-sawn stock — and lets you price listings above fair value and
-      still sell.
+      opens the lumberyard's racks in turn, first S2S and later cheap rough-sawn
+      stock, and lets you price listings above fair value and still sell.
     </P>
 
     <Note>

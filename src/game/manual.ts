@@ -81,34 +81,18 @@ const defs = [
       ownsTool(gameState, "handPlane"),
   },
   {
-    id: "glue-ups",
-    tab: "Glue-Ups",
-    title: "Glue-Ups & Clamps",
+    id: "workbenches",
+    tab: "Benches",
+    title: "Workbenches",
     category: "The Craft",
-    // The first clamp bought, or the moment the cutting-board commission
-    // starts asking for a glued panel — the same pair of triggers
-    // Finishing uses.
+    // The bench starts teaching when its first extra gear arrives: a bought
+    // tool, a clamp, a bottle of finish, or the cutting-board commission
+    // asking for sanded-and-oiled work.
     unlocked: (gameState: GameState) =>
+      ownsBoughtTool(gameState) ||
       gameState.clamps > 0 ||
-      hasBeenOfferedCommission(gameState.progression, "proper-cutting-board"),
-  },
-  {
-    id: "finishing",
-    tab: "Finishing",
-    title: "Finishing",
-    category: "The Craft",
-    // First bottle of finish, or the moment the cutting-board commission
-    // starts demanding a finished piece.
-    unlocked: (gameState: GameState) =>
       gameState.consumables.mineralOil > 0 ||
       hasBeenOfferedCommission(gameState.progression, "proper-cutting-board"),
-  },
-  {
-    id: "tools",
-    tab: "Tools",
-    title: "Tools & Tool Slots",
-    category: "The Craft",
-    unlocked: ownsBoughtTool,
   },
   {
     id: "shop-layout",

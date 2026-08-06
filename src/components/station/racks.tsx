@@ -65,7 +65,7 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
         <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
           Tools · {machine.state.tools.length}/{machine.toolSlots} slots
         </div>
-        <ManualLink article="tools" />
+        <ManualLink article="workbenches" />
       </div>
       <ul className="divide-y divide-ink-black/15 text-sm">
         {machine.state.tools.map((toolId, index) => (

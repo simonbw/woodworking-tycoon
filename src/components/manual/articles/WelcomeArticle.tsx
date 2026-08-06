@@ -21,15 +21,14 @@ export const WelcomeArticle: React.FC = () => (
       <ShortcutKeys shortcut="move-down" />{" "}
       <ShortcutKeys shortcut="move-right" />. Walk up to anything and small
       hints appear on it, naming the keys that work there.{" "}
-      <ShortcutKeys shortcut="pick-up" /> does the natural thing — pick up,
-      take, switch a machine on — and <ShortcutKeys shortcut="put-down" /> sets
+      <ShortcutKeys shortcut="pick-up" /> picks up, takes, or switches on
+      whatever is in front of you, and <ShortcutKeys shortcut="put-down" /> sets
       down what you're holding, on a machine if you're standing at one. Hold{" "}
-      <ShortcutKeys shortcut="operate-machine" /> to run a power machine, for as
-      long as the cut takes. <ShortcutKeys shortcut="open-station-sheet" />{" "}
-      leans you over a bench, filling the screen with its top — hand work
-      happens right there, with the mouse, and the wood stays where you leave
-      it. <ShortcutKeys shortcut="pause-menu" /> stops the clock and opens the
-      pause menu.
+      <ShortcutKeys shortcut="operate-machine" /> to run a power machine.{" "}
+      <ShortcutKeys shortcut="open-station-sheet" /> leans you over a bench,
+      where hand work happens with the mouse.{" "}
+      <ShortcutKeys shortcut="pause-menu" /> stops the clock and opens the pause
+      menu.
     </P>
 
     <H>Your First Commission</H>
@@ -44,8 +43,9 @@ export const WelcomeArticle: React.FC = () => (
       <li>
         Walk out to the truck's cab and press{" "}
         <ShortcutKeys shortcut="pick-up" />, then pick{" "}
-        <Term>Scavenge for pallets</Term>. A couple of hours poking around
-        loading docks brings home 1-2 pallets in the bed.
+        <Term>Scavenge for pallets</Term>. The trip takes a couple of hours and
+        brings home one or two pallets in the bed; the shop keeps running while
+        you're away.
       </li>
       <li>
         Lift a pallet out of the bed with <ShortcutKeys shortcut="pick-up" /> at
@@ -58,11 +58,10 @@ export const WelcomeArticle: React.FC = () => (
       <li>
         Open the bench with <ShortcutKeys shortcut="open-station-sheet" />, take
         the hammer down off the rail, and pry the nails with it. A board comes
-        free when its last nail is out and stays lying on the bench; the bottom
-        boards are nailed from the other side, so flip the pallet over with{" "}
-        <ShortcutKeys shortcut="put-down" /> to get at them. Stop whenever you
-        like — the pallet remembers where you left off — and each nail goes back
-        in your tin.
+        free when its last nail is out; the bottom boards are nailed from the
+        other side, so flip the pallet over with{" "}
+        <ShortcutKeys shortcut="put-down" /> to get at them. Each nail you pull
+        goes back in your tin.
       </li>
       <li>
         With the wood already on the bench, switch its plan with{" "}
@@ -83,18 +82,16 @@ export const WelcomeArticle: React.FC = () => (
       </li>
     </UL>
     <P>
-      Every finished job leaves the shop this way — commissions and job-board
-      work alike. The goods have to be loaded in the bed and you have to be at
-      the cab, so build first, then load up.
+      Every finished job leaves the shop this way, commissions and job-board
+      work alike.
     </P>
     <P>
-      Delivering a commission pays money and builds reputation, and it opens two
-      doors: the hardware store — the trip starts at the same cab — and the
-      phone in the top bar, where work gets listed for sale and one-off jobs get
-      taken. Jobs and sales are how the shop earns between commissions; when
-      your reputation grows enough, the phone rings with the next big order.
-      What you buy rides home in the bed; unload it at the tailgate with{" "}
-      <ShortcutKeys shortcut="pick-up" />.
+      Delivering a commission pays money, builds reputation, and unlocks the
+      hardware store (a trip from the same cab) and the phone in the top bar,
+      where work gets listed for sale and one-off jobs get taken. Jobs and sales
+      are how the shop earns between commissions; new commissions arrive by
+      phone as your reputation grows. What you buy rides home in the bed; unload
+      it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

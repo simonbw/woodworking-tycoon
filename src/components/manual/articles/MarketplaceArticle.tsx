@@ -5,17 +5,16 @@ import { H, Note, P, Term, UL } from "./elements";
 export const MarketplaceArticle: React.FC = () => (
   <>
     <P>
-      SawdustList — the local makers&rsquo; marketplace — lives on your phone (
-      <ShortcutKeys shortcut="open-phone" /> or the Phone button up top). It's
-      where the shop sells outside of commissions: list finished pieces at your
-      own price, or take fixed-price jobs from the job board. Time keeps passing
-      while you scroll, and sales keep rolling in while you work.
+      SawdustList, the local makers&rsquo; marketplace, lives on your phone (
+      <ShortcutKeys shortcut="open-phone" /> or the Phone button up top). List
+      finished pieces there at your own price, or take fixed-price jobs from the
+      job board.
     </P>
 
     <H>Listings</H>
     <P>
       Carry a finished piece to list it, and set your price against the{" "}
-      <Term>fair value</Term> estimate. Buyers want work, not wood — lumber,
+      <Term>fair value</Term> estimate. Buyers want finished work; lumber,
       panels, and pallets don't go up, so spare stock is yours to build with or
       toss in the garbage can. Listings sell on their own over time, and two
       things drive the odds:
@@ -26,31 +25,18 @@ export const MarketplaceArticle: React.FC = () => (
         your reputation grows, buyers accept higher prices.
       </li>
       <li>
-        <Term>Demand</Term> — each product category has a limited appetite.
-        Selling many cutting boards in a row softens the market for cutting
-        boards; variety keeps everything moving.
+        <Term>Demand</Term> — buyers only want so many of one product. Selling
+        many cutting boards in a row softens that market; variety keeps
+        everything moving.
       </li>
     </UL>
-    <P>
-      A listing costs nothing to keep up, and you can reprice or delist at any
-      time. Delisting returns the item.
-    </P>
+    <P>You can reprice or delist at any time; delisting returns the item.</P>
 
     <H>The Job Board</H>
     <P>
-      Jobs are one-off requests — "four sanded oak boards, 3×4×1" — at a
-      guaranteed price above fair value, with a tip for fast delivery. Accept,
-      build, deliver. The board refreshes daily. A job is the one way boards
-      leave the shop as boards: somebody asked for them by name.
-    </P>
-
-    <H>Scavenging</H>
-    <P>
-      Walk out to the truck's cab and it lists places to go, each with a number
-      key — including a scavenging run: drive off and come back with free
-      pallets riding in the bed, ready to unload at the tailgate. The shop keeps
-      running while you're out — glue keeps curing and machines finish their
-      passes — but you can't do anything else until you're back.
+      Jobs are one-off requests ("four sanded oak boards, 3×4×1") at a
+      guaranteed price above fair value, with a tip for fast delivery. A job is
+      the one way to sell boards as boards. The board refreshes daily.
     </P>
 
     <Note>
