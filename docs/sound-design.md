@@ -309,9 +309,11 @@ music playing means the day is burning for nothing. The fade is slow in
 rewinding, so a run of short waits sounds like one piece heard in
 installments rather than the same eight bars over and over.
 
-Long tracks obey the no-MP3 rule below like everything else: the source
-arrived as MP3 and was transcoded to Opus (`-c:a libopus -b:a 112k`), which
-both loops gaplessly and ships at half the size.
+Music is exempt from the no-MP3 rule below — that rule is about clips whose
+start position has to be exact, and a track that fades in over 2.5 seconds
+never has to hit a mark. MP3 is fine here. `hold-music.ogg` is Opus only
+because transcoding it was free (`-c:a libopus -b:a 112k`) and halved the
+file; a track that arrives as MP3 can ship as MP3.
 
 ---
 
@@ -319,20 +321,30 @@ both loops gaplessly and ships at half the size.
 
 ### File formats — the one hard rule
 
-**No MP3, and loops especially must never be MP3.** MP3 cannot loop
-seamlessly: the encoder pads the start/end of every file (codec delay) with
-no way for the decoder to trim it, so a perfectly edited loop gets an audible
-gap or click after encoding. Ogg Vorbis/Opus fixed exactly this — the
-container records the encoder delay and conformant decoders trim it
-sample-accurately — so Ogg files *can* loop gaplessly. WAV has no codec delay
-at all and is the bulletproof baseline.
+**No MP3 for sound effects, and loops especially must never be MP3.** The
+problem is that an MP3's playback start position isn't quite reliable: the
+encoder pads the start and end of every file (codec delay) with no way for
+the decoder to trim it. A clip therefore doesn't begin exactly where it was
+cut — which smears the attack on a one-shot that has to land on a keypress,
+and puts an audible gap or click at the wrap of a perfectly edited loop. Ogg
+Vorbis/Opus fixed exactly this: the container records the encoder delay and
+conformant decoders trim it sample-accurately, so Ogg clips start where they
+say they do and loop gaplessly. WAV has no codec delay at all and is the
+bulletproof baseline.
 
-**Everything ships as Ogg** (Opus preferred, Vorbis fine), one-shots and
-loops alike, named `.ogg` — `sfx.ts` loads only `.ogg`. The game targets
+**Every sound effect ships as Ogg** (Opus preferred, Vorbis fine), one-shots
+and loops alike, named `.ogg` — `sfx.ts` loads only `.ogg`. The game targets
 Electron, i.e. Chromium's decoder everywhere, so Safari's patchy Ogg support
 is irrelevant. If a loop's seam ever proves audible after Ogg encoding,
 fall back to WAV (no codec delay at all) for that clip and teach the loader
 the exception — but Opus's gapless metadata should make this unnecessary.
+
+**Music is exempt.** The rule is about clips whose start position has to be
+exact; a streamed track (see "Music tracks" in Part 2) is faded in and out
+over seconds and never has to hit a mark, so a few milliseconds of codec
+padding is inaudible. MP3 is fine for music. Ogg is still the better default
+where it's free — it's smaller at the same quality, and it keeps a long track
+loopable if one ever needs to wrap seamlessly rather than fade.
 
 Handy: ElevenLabs' `opus_48000_128` output format arrives already
 Ogg-encapsulated — placeholder clips save straight to `.ogg` with no
