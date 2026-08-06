@@ -76,6 +76,8 @@ export const ShopManualModal: React.FC<{
                   onClick={() => onSelect(article.id)}
                   // Turning to the page you're already on makes no sound
                   data-sfx={isActive ? "none" : "ui-page-turn"}
+                  // Fingering the tab, in place of the generic hover tick
+                  data-sfx-hover="ui-page-touch"
                   aria-label={article.title}
                   aria-current={isActive ? "page" : undefined}
                   className={classNames(

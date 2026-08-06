@@ -2,11 +2,13 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { markArticlesReadAction } from "../../game/game-actions/progression-actions";
 import { ManualArticleId } from "../../game/manual";
+import { playUiSound } from "../../utils/sfx";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ShopManualModal } from "./ShopManualModal";
@@ -38,6 +40,16 @@ export const ManualProvider: React.FC<{ children: React.ReactNode }> = ({
   const visible = uiOpen || autoWelcome;
   // When only the auto-open is holding the manual up, it shows welcome.
   const activeId = uiOpen ? active : "welcome";
+
+  // The binder opening is the sound of the manual appearing, however it was
+  // summoned — the ? key, the NavBar button, a ManualLink, the auto-welcome.
+  // (Openers that are buttons carry `data-sfx="none"` so the generic click
+  // doesn't stack on top.) On the auto-welcome this fires before any user
+  // gesture, where the still-locked AudioContext swallows it — fine, a brand
+  // new game shouldn't open with a noise anyway.
+  useEffect(() => {
+    if (visible) playUiSound("ui-book-open");
+  }, [visible]);
 
   const open = useCallback(
     (articleId?: ManualArticleId) => {

@@ -7,7 +7,9 @@ import { playUiSound, preloadUiSounds, UiSoundName } from "../utils/sfx";
  * the pointer goes down and `ui-click-end` on release. Buttons that want a
  * different press sound declare `data-sfx="ui-purchase"` (etc.); those keep
  * their single sound on click (no down/up split), and `data-sfx="none"` opts a
- * button out of the click sound entirely. Hover is uniform.
+ * button out of the click sound entirely. Hover is uniform unless a button
+ * declares `data-sfx-hover` — the shop manual's index tabs use it for a
+ * fingertip-on-paper touch in place of the generic tick.
  * `<select>` changes (operation mode, target length/width/…) get a tick too,
  * since they're the one common control that isn't a button.
  *
@@ -27,7 +29,10 @@ export const UiSoundLayer: React.FC = () => {
       const button = target?.closest("button:not([disabled])") ?? null;
       if (button === hovered) return;
       hovered = button;
-      if (button) playUiSound("ui-hover");
+      if (!button) return;
+      const override = (button as HTMLElement).dataset.sfxHover;
+      if (override === "none") return;
+      playUiSound((override as UiSoundName) ?? "ui-hover");
     };
 
     // First half of the default press. Buttons with a custom `data-sfx` keep

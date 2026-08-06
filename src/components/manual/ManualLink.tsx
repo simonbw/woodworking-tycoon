@@ -22,7 +22,11 @@ export const ManualLink: React.FC<{ article: ManualArticleId }> = ({
   return (
     <button
       onClick={() => manual.open(article)}
-      data-sfx="ui-page-turn"
+      // A ManualLink only renders outside the manual, so clicking one always
+      // opens the closed binder — the book-open sound (ManualProvider) is the
+      // click; anything here would stack on top of it.
+      data-sfx="none"
+      data-sfx-hover="ui-page-touch"
       className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade underline decoration-ink-black/30 underline-offset-2 hover:text-ink-black"
     >
       Shop Manual → {getArticle(article).title}

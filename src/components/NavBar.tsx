@@ -85,6 +85,9 @@ export const NavBar: React.FC = () => {
               className="button-ghost relative text-lg leading-none"
               onClick={() => manual.open()}
               aria-label="Shop manual"
+              // The manual's own book-open sound plays as it appears
+              // (ManualProvider); the generic click would stack on top.
+              data-sfx="none"
             >
               ?
               {manualHasNews && (

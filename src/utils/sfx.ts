@@ -33,7 +33,9 @@ export type UiSoundName =
   | "ui-tab"
   | "ui-purchase"
   | "ui-back"
-  | "ui-page-turn";
+  | "ui-page-turn"
+  | "ui-book-open"
+  | "ui-page-touch";
 
 // Per-sound gain. Hover is deliberately subtle so it doesn't fatigue.
 // The page-turn clip is recorded ~14 dB hotter than the click set, so its
@@ -49,6 +51,10 @@ const SOUND_GAIN: Record<UiSoundName, number> = {
   "ui-purchase": 0.8,
   "ui-back": 0.6,
   "ui-page-turn": 0.3,
+  // The manual's own paper set: the binder opening, and a fingertip
+  // brushing a tab on hover (subtle for the same reason "ui-hover" is).
+  "ui-book-open": 0.4,
+  "ui-page-touch": 0.4,
 };
 
 /**
