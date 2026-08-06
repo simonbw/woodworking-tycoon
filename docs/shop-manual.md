@@ -48,9 +48,7 @@ directly to it. The standalone overlay component retires.
 | Welcome to the Shop          | always (auto-opens once on a brand-new game)    |
 | Controls                     | always                                          |
 | Milling & Surfaces           | the lumberyard opens, or a milling machine/tool |
-| Glue-Ups & Clamps            | the cutting-board commission's call, or a clamp |
-| Finishing                    | the cutting-board commission's call, or oil     |
-| Tools & Tool Slots           | first mountable tool owned                      |
+| Workbenches                  | first bought tool, clamp, or finish — or the cutting-board commission's call |
 | Shop Layout: Moving Machines | `shopLayoutUnlocked`                            |
 | Marketplace & Jobs           | `marketplaceUnlocked`                           |
 | Sawdust & Cleaning           | `sweepingUnlocked`                              |
@@ -62,12 +60,11 @@ Notes:
 - **Milling & Surfaces** covers rough → smooth → sanded, the machines
   that get you there, and the planer's direct-feed behavior — the planer
   does not get its own article; this is where the player meets it.
-- **Glue-Ups & Clamps** covers the two-stretch shape of a glue-up and the
-  clamp rack — the one supply that comes back, and the reason a second
-  bench is worth having.
-- **Supplies (consumables)** folds into Finishing for now (finish oil is
-  the consumable players will actually wonder about; nails explain
-  themselves). Break it out into its own article if the system grows.
+- **Workbenches** merges what were separate Tools, Glue-Ups, and
+  Finishing articles into one page on the bench: tool slots and tiers,
+  sanding and finishing, glue-ups and the clamp pool, jigs. Supplies
+  (finish oil, clamps) are covered here rather than in their own
+  article; break them out only if the system grows.
 - Per the progressive-disclosure rule, locked articles are **absent**
   from the tab list — never grayed-out teasers.
 
@@ -111,20 +108,48 @@ way in the first copy pass:
    planer has no menus", "there is no blueprint mode", "there's no
    meter to watch" — a first-time player never expected those things,
    so mentioning them only plants doubt. Describe what _is_.
-2. **No internal design vocabulary or invariants.** Words like "verb",
-   or axioms like "dust is a substance that moves; only containers
-   destroy it", belong in design docs. The articles teach the same
-   facts through concrete actions ("hold Space to sweep the dust into
-   the dustpan").
+2. **No internal design vocabulary, invariants, or units.** Words like
+   "verb", axioms like "dust is a substance that moves; only containers
+   destroy it", and internal units like "tiles" belong in design docs.
+   The articles teach the same facts through concrete actions ("hold
+   Space to sweep the dust into the dustpan") and fiction-level
+   quantities ("when the dustpan fills up"; "the canister holds far
+   more than the pan").
 3. **Don't spell out what players will assume anyway** ("everything in
    the shop takes time"). Drawing attention to the intuitive reads as
    if there's a catch.
 4. **State facts, not theses.** Openers give information ("Skills
    determine what you know how to build"), not metaphors ("two ledgers
    track this shop's rise") or sales copy ("where the money hides").
-5. **Personality lives only in the handwritten margin `Note`s** — and
-   even those are practical tips ("Never feed end grain through the
-   planer"), not aphorisms ("Nobody's born knowing end grain").
+5. **Personality lives only in the handwritten margin `Note`s — and
+   there it's wanted.** A Note is the binder's previous owner scribbling
+   a practical tip in their own voice ("Say 'eight-quarter', not 'two
+   inches thick'"); a Note with no flavor should just be body text.
+   Shop vernacular ("the blade eats a quarter inch", "an 8' rip wants
+   7' clear") belongs in Notes or nowhere — body text stays plain.
+6. **State the positive fact by itself.** Not "A worktable doesn't
+   block the lane — stock slides over it" but "Stock slides right over
+   a bare worktable." The negative-then-positive pivot ("that's not X;
+   that's Y") reads as generated copy.
+7. **Ration em dashes.** One appositive per paragraph is plenty, and
+   parentheses or commas usually do the same job more quietly. Where a
+   dash splices two clauses, a colon, semicolon, or full stop serves
+   better.
+8. **Say each thing once, in one register.** Not a pithy sentence and
+   then its detailed restatement ("That work is milling", "It's where
+   the shop sells outside of commissions: …") — write the informative
+   sentence and delete the setup. Punchy fragment runs ("Accept, build,
+   deliver.") get cut the same way; the steps are already in the prose.
+9. **End the sentence at the fact.** Trailing clauses that add mood
+   instead of information ("for as long as the cut takes", "soaks in on
+   its own time") come off.
+10. **Instruct, don't reassure.** Say what to do and what happens
+    ("Keeping a clean shop keeps work moving at full speed"), not how
+    the player should feel about it ("A little mess is harmless").
+11. **A new section beats a new article.** When a system is small or
+    lives at an existing station, add a section to the article already
+    covering that place and cut against what the binder teaches
+    elsewhere — a fact stated in two articles will drift apart.
 
 ## Content format
 
@@ -142,7 +167,7 @@ category, unlock predicate (for migration), and component.
   renders nothing while the article is locked. Used by the dust card,
   the station sheets (`MACHINE_ARTICLES` in
   `src/game/manual.ts` maps machine → article), and every tool rack
-  (→ Tools & Tool Slots).
+  (→ Workbenches).
 - Articles carry photo prints (`Photo` / `FigureRow` in the article
   elements): the machine PNGs from `static/images/` presented as tilted
   white-bordered prints with handwritten captions.

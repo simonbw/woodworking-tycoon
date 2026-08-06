@@ -46,6 +46,49 @@ const carried = async (page: any) =>
   (await page.evaluate(() => (window as any).__GET_GAME_STATE__().player))
     .carriedMachine ?? null;
 
+/**
+ * Where a world marker actually is once the world has stopped moving.
+ *
+ * The camera eases toward the player rather than cutting, so the box read
+ * straight after a teleport names a point the shop is still sliding out
+ * from under: aim at it and the cursor lands on whatever drifts into that
+ * spot instead. Read the box until two reads agree — that's the camera
+ * settled — and aim at the answer.
+ */
+async function settledBox(locator: any) {
+  let previous: { x: number; y: number; width: number; height: number } | null =
+    null;
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox();
+      const still =
+        box !== null &&
+        previous !== null &&
+        Math.abs(box.x - previous.x) < 0.5 &&
+        Math.abs(box.y - previous.y) < 0.5;
+      previous = box;
+      return still;
+    })
+    .toBe(true);
+  return previous!;
+}
+
+/**
+ * Right-click a world marker until the thing it should open is open. The
+ * press itself is a hit test against the canvas, so a click thrown while
+ * the camera still moves finds nothing at all and there is no press to
+ * retry — hence aiming afresh each time.
+ */
+async function rightClickUntilVisible(page: any, locator: any, target: any) {
+  await expect
+    .poll(async () => {
+      const box = await settledBox(locator);
+      await page.mouse.click(box.x, box.y, { button: "right" });
+      return target.isVisible();
+    })
+    .toBe(true);
+}
+
 async function teleportPlayer(page: any, position: [number, number]) {
   await page.evaluate((pos: [number, number]) => {
     (window as any).__UPDATE_GAME_STATE__((state: any) => ({
@@ -129,7 +172,7 @@ test.describe("Shop floor", () => {
 
     await test.step("the guided opening puts up its first instruction", async () => {
       // The step itself is proven in the sequence tier (sequences/
-      // tutorial.test.ts walks all ten); what the browser is for is that
+      // tutorial.test.ts walks all eleven); what the browser is for is that
       // the card is mounted, reads off game state, and can be retired.
       const card = page.getByTestId("tutorial-card");
       await expect(card).toBeVisible();
@@ -657,6 +700,92 @@ test.describe("Shop floor", () => {
       await expect(page.getByTestId("balance")).toHaveText("$20.00");
       await expect(page.getByTestId("reputation")).toHaveText("2.0");
       await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
+    });
+
+    await test.step("the cursor picks which piece the keys act on", async () => {
+      // Two boards lying within reach on either side of the player.
+      // Which one E takes is the rummage cursor's business (R steps it);
+      // this checks the mouse can set it by pointing instead, and that
+      // right-clicking spreads everything in reach out on a card.
+      //
+      // They lie apart rather than stacked on one spot: the cursor picks
+      // the topmost sprite under it, so two pieces at the same point are
+      // one target as far as pointing goes — that's what R is still for.
+      await page.evaluate(() => {
+        const pile = (id: string, species: string, y: number) => ({
+          material: {
+            id,
+            type: "board",
+            species,
+            length: 12,
+            width: 6,
+            thickness: 1,
+            surface: "rough",
+            jointedFaces: 1,
+            jointedEdges: 2,
+          },
+          position: [5.5, y],
+          rotation: 0,
+        });
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, position: [5, 5], inventory: [] },
+          materialPiles: [
+            pile("test-oak", "oak", 4.7),
+            pile("test-pine", "pine", 6.3),
+          ],
+        }));
+      });
+      await page.waitForTimeout(50);
+
+      // Newest-dropped is the top of the stack, so E starts on the pine
+      const chip = page.getByTestId("pickup-chip");
+      await expect(chip).toContainText("Pine");
+
+      // Point at the oak underneath it — the keys follow the cursor
+      const oakAnchor = page.locator('[data-material-id="test-oak"]');
+      // Hover is pointer state computed on mousemove, so wiggle until the
+      // chip reports the piece — the same pattern the bench specs use.
+      let wiggle = 0;
+      await expect
+        .poll(async () => {
+          const box = await settledBox(oakAnchor);
+          await page.mouse.move(box.x + (wiggle++ % 2), box.y);
+          return chip.textContent();
+        })
+        .toContain("Oak");
+
+      // Right-click it: every piece within reach, on one card
+      const sheet = page.getByTestId("floor-sheet");
+      await rightClickUntilVisible(page, oakAnchor, sheet);
+      await expect(sheet).toBeVisible();
+      await expect(sheet.getByTestId("floor-sheet-row")).toHaveCount(2);
+
+      // ...and any of them can be taken straight from it
+      await sheet
+        .getByTestId("floor-sheet-row")
+        .filter({ hasText: "Oak" })
+        .getByRole("button", { name: "Take" })
+        .click();
+      const held = await page.evaluate(() =>
+        (window as any)
+          .__GET_GAME_STATE__()
+          .player.inventory.map((m: any) => m.id),
+      );
+      expect(held).toContain("test-oak");
+
+      // The card folds up once nothing is left in reach
+      await page.keyboard.press("Escape");
+      await expect(sheet).toBeHidden();
+
+      // A machine answers the same gesture, and goes straight to its sheet
+      await teleportPlayer(page, [1, 4]);
+      const bench = page.locator('[data-machine-type="workspace"]');
+      const stationSheet = page.getByTestId("station-sheet");
+      await rightClickUntilVisible(page, bench, stationSheet);
+      await expect(stationSheet).toBeVisible();
+      await page.keyboard.press("Escape");
+
     });
 
     await test.step("starting over asks first, then clears the shop", async () => {

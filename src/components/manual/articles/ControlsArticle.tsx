@@ -21,8 +21,17 @@ export const ControlsArticle: React.FC = () => {
   return (
     <>
       <P>
-        A reference for every keyboard control. Walk up to something and its
-        hints show the keys that work right there.
+        A reference for every control. Walk up to something and its hints show
+        the keys that work right there.
+      </P>
+
+      <P>
+        The mouse points; the keyboard does the work. Hovering a machine or a
+        piece of stock you're standing at aims the keys at it, so you never have
+        to cycle through a stack to reach the one you want. Right-click opens
+        what's under the cursor — a station's sheet, or a card listing every
+        piece within reach. At a bench, where the pointer is doing the work
+        instead, right-click puts down whatever is in your hand.
       </P>
 
       <div className="mt-4 grid grid-cols-1 xs:grid-cols-2 gap-x-8 gap-y-5">

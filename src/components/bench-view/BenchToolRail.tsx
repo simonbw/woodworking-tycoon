@@ -8,6 +8,7 @@ import { ToolItem } from "../../game/Materials";
 import { handSpaceLeft } from "../../game/Person";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { toolIconSrc } from "../../utils/uiImages";
+import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -151,6 +152,20 @@ export const BenchToolRail: React.FC<{
           </span>
         );
       })}
+      {/* With a tool in hand the rail says how to let go of it — the hook
+          it came off is right there, but the button and the key are
+          quicker and neither is guessable */}
+      {heldTool && (
+        <HintSurfaceContext.Provider value="chrome">
+          <span
+            data-testid="bench-put-back-hint"
+            className="ml-1 flex items-center gap-1.5 border-l border-paper-manila/20 pl-3 font-condensed text-[0.65rem] text-paper-manila/70"
+          >
+            <ShortcutKeys shortcut="put-back-tool" />
+            put it back
+          </span>
+        </HintSurfaceContext.Provider>
+      )}
     </div>
   );
 };

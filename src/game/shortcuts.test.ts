@@ -4,6 +4,8 @@ import {
   SHORTCUT_GROUPS,
   SHORTCUTS,
   getShortcut,
+  shortcutChords,
+  shortcutsForButton,
   shortcutsForEvent,
 } from "./shortcuts";
 
@@ -56,7 +58,10 @@ describe("shortcut registry", () => {
 
   it("gives every shortcut a label and a known group", () => {
     for (const def of SHORTCUTS) {
-      assert.ok(def.keys.length > 0, `${def.id} has no key caps`);
+      assert.ok(
+        shortcutChords(def).length > 0,
+        `${def.id} has no key caps and no mouse button`,
+      );
       assert.ok(def.description.length > 0, `${def.id} has no description`);
       assert.ok(
         SHORTCUT_GROUPS.includes(def.group),
@@ -137,13 +142,47 @@ describe("shortcutsForEvent", () => {
   });
 
   it("lets an open station sheet claim Escape before the pause menu", () => {
-    // Registry order is dispatch priority for a shared key: with a sheet
-    // open that binding is enabled and wins; with nothing to back out of
-    // it's disabled and Escape falls through to the pause menu.
+    // Registry order is dispatch priority for a shared key: a tool held at
+    // a bench goes back first, then an open sheet folds, and with nothing
+    // to back out of Escape falls through to the pause menu.
     assert.deepEqual(
       shortcutsForEvent(keyEvent("Escape")).map((d) => d.id),
-      ["close-sheet", "pause-menu", "close-modal"],
+      ["put-back-tool", "close-sheet", "pause-menu", "close-modal"],
     );
+  });
+});
+
+describe("mouse bindings", () => {
+  it("routes the right button only to bindings the provider owns", () => {
+    // The world-target bindings are dispatched by the sprite the cursor
+    // hit. Routing them here as well would fire them on the *facing*
+    // target from a press anywhere on screen — a right-click over empty
+    // floor would open the sheet of whatever machine you happened to be
+    // pointed at.
+    assert.deepEqual(
+      shortcutsForButton("right").map((d) => d.id),
+      ["put-back-tool"],
+    );
+    for (const id of ["inspect-floor", "open-station-sheet"] as const) {
+      assert.equal(getShortcut(id).worldTarget, true);
+      assert.ok(getShortcut(id).buttons?.includes("right"));
+    }
+  });
+
+  it("shows a mouse button as its own chip, after the keys", () => {
+    assert.deepEqual(shortcutChords(getShortcut("put-back-tool")), [
+      ["Esc"],
+      ["Right-click"],
+    ]);
+  });
+
+  it("gives a mouse-only shortcut a chip even with no keys", () => {
+    // inspect-floor is dispatched by the sprite the cursor hit, so it has
+    // no `codes` at all — but it still has to teach itself.
+    assert.deepEqual(getShortcut("inspect-floor").codes, []);
+    assert.deepEqual(shortcutChords(getShortcut("inspect-floor")), [
+      ["Right-click"],
+    ]);
   });
 });
 

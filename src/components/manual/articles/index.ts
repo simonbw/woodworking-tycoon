@@ -2,15 +2,13 @@ import React from "react";
 import { ManualArticleId } from "../../../game/manual";
 import { ControlsArticle } from "./ControlsArticle";
 import { DustArticle } from "./DustArticle";
-import { FinishingArticle } from "./FinishingArticle";
-import { GlueUpsArticle } from "./GlueUpsArticle";
 import { LumberArticle } from "./LumberArticle";
 import { MarketplaceArticle } from "./MarketplaceArticle";
 import { MillingArticle } from "./MillingArticle";
 import { ShopLayoutArticle } from "./ShopLayoutArticle";
 import { SkillsArticle } from "./SkillsArticle";
-import { ToolsArticle } from "./ToolsArticle";
 import { WelcomeArticle } from "./WelcomeArticle";
+import { WorkbenchesArticle } from "./WorkbenchesArticle";
 
 /**
  * Article metadata lives in src/game/manual.ts; the bodies live here.
@@ -22,9 +20,7 @@ export const ARTICLE_BODIES: Record<ManualArticleId, React.ComponentType> = {
   controls: ControlsArticle,
   lumber: LumberArticle,
   milling: MillingArticle,
-  "glue-ups": GlueUpsArticle,
-  finishing: FinishingArticle,
-  tools: ToolsArticle,
+  workbenches: WorkbenchesArticle,
   "shop-layout": ShopLayoutArticle,
   dust: DustArticle,
   marketplace: MarketplaceArticle,
