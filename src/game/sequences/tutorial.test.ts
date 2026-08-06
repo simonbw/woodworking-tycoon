@@ -28,8 +28,6 @@ const palletBoard = (width: number) => (m: MaterialInstance) =>
   (m as { width: number }).width === width;
 const stringer = palletBoard(6);
 const deckBoard = palletBoard(4);
-const anyPalletBoard = (m: MaterialInstance) =>
-  m.type === "board" && (m as { species: string }).species === "pallet";
 
 /** What the card is telling the player to do right now. */
 function step(shop: ShopDriver): TutorialStepId | undefined {
@@ -79,13 +77,24 @@ describe("the guided opening", () => {
     );
 
     shop.handOverCommission();
-    assert.strictEqual(step(shop), "listStock", "Marguerite has her shelf");
+    assert.strictEqual(
+      step(shop),
+      "buildSecondShelf",
+      "Marguerite has her shelf",
+    );
     // The two unlocks the marketplace half of the tutorial depends on
     assert.ok(shop.shop.progression.marketplaceUnlocked, "the phone arrived");
     assert.ok(shop.shop.progression.storeUnlocked, "the store opened");
 
-    shop.putEverythingDown().list(anyPalletBoard).awaitListingSales();
-    assert.strictEqual(step(shop), "acceptJob", "spare wood is sold");
+    // One pallet leaves a lone stringer behind, so the second shelf is a
+    // second lap of the loop — exactly what the card asks for.
+    shop.putEverythingDown().scavenge().takeFromFloor(isPallet, 1);
+    dismantleAPallet(shop);
+    buildRusticShelf(shop);
+    assert.strictEqual(step(shop), "listShelf", "a shelf to sell exists");
+
+    shop.list(isRusticShelf).awaitListingSales();
+    assert.strictEqual(step(shop), "acceptJob", "the shelf is sold");
 
     shop.seedJobBoard();
     const offer = shop.shop.jobBoard.find(

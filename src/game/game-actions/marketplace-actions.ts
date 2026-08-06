@@ -9,6 +9,7 @@ import {
   JOB_OFFER_LIFETIME_TICKS,
   categoryDemandFor,
   demandCategory,
+  isListable,
   jobPayout,
   listingGroupKey,
   listingItem,
@@ -31,10 +32,12 @@ const makeListingId = idMaker();
 // ------------------------------------------------------------------ Listings
 
 /**
- * Puts inventory items up for sale at the player's chosen price. Pieces
- * that belong to the same offer — same group key, same price — go up as
- * one stacked listing rather than a row apiece, whether they're listed
- * together or added to an offer that's already standing.
+ * Puts inventory items up for sale at the player's chosen price. Only
+ * what `isListable` accepts goes up — raw stock is for building with,
+ * not for selling by the board foot. Pieces that belong to the same
+ * offer — same group key, same price — go up as one stacked listing
+ * rather than a row apiece, whether they're listed together or added to
+ * an offer that's already standing.
  */
 export function listItemsAction(
   materials: ReadonlyArray<MaterialInstance>,
@@ -55,6 +58,10 @@ export function listItemsAction(
       )
     ) {
       console.warn("Tried to list material not in inventory");
+      return gameState;
+    }
+    if (!materials.every(isListable)) {
+      console.warn("Tried to list something the marketplace won't take");
       return gameState;
     }
     const key = listingGroupKey(materials[0]);

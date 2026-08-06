@@ -147,9 +147,27 @@ describe("listItemsAction", () => {
 
   it("refuses to stack pieces that aren't the same offer", () => {
     const shelf = makeShelf();
+    const birdhouse = makeMaterial<FinishedProduct>({
+      type: "birdhouse",
+      species: "pallet",
+    });
+    const state = stateWith({}, [shelf, birdhouse]);
+    assert.strictEqual(listItemsAction([shelf, birdhouse], 20)(state), state);
+  });
+
+  it("refuses raw stock — build something out of it or bin it", () => {
+    const plank = board("pallet", 36);
+    const state = stateWith({}, [plank]);
+    assert.strictEqual(listItemsAction([plank], 5)(state), state);
+  });
+
+  it("refuses raw stock riding along with a product", () => {
+    const shelf = makeShelf();
     const plank = board("pallet", 36);
     const state = stateWith({}, [shelf, plank]);
     assert.strictEqual(listItemsAction([shelf, plank], 20)(state), state);
+    // ...and the product on its own still goes up
+    assert.strictEqual(listItemsAction([shelf], 20)(state).listings.length, 1);
   });
 });
 

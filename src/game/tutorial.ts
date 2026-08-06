@@ -32,7 +32,8 @@ export const TUTORIAL_STEP_IDS = [
   "buildShelf",
   "loadShelf",
   "deliverShelf",
-  "listStock",
+  "buildSecondShelf",
+  "listShelf",
   "acceptJob",
   "buySandingBlock",
   "mountSandingBlock",
@@ -189,8 +190,22 @@ export const TUTORIAL_STEPS: ReadonlyArray<TutorialStep> = [
     satisfied: deliveredFirstShelf,
   },
   {
-    id: "listStock",
-    title: "Put your spare wood up for sale",
+    // The shop's own work, made to sell rather than to order. A pallet
+    // only carries three stringers and a shelf wants two, so this step
+    // is also the second lap of the scavenge-and-pry loop — hence the
+    // cab lighting up alongside the bench.
+    id: "buildSecondShelf",
+    title: "Build another shelf to sell",
+    targets: [
+      { kind: "truck", part: "cab" },
+      { kind: "machine", machineTypeId: "workspace" },
+    ],
+    satisfied: (gameState) =>
+      hasShelf(gameState) || gameState.listings.length > 0,
+  },
+  {
+    id: "listShelf",
+    title: "Put the shelf up for sale",
     targets: [
       { kind: "dom", id: "navbar-phone" },
       { kind: "dom", id: "phone-tab-sell" },

@@ -152,7 +152,7 @@ describe("completeCommissionAction", () => {
     assert.strictEqual(result.progression.storeUnlocked, true);
     // The handoff is the tutorial's fifth step; the coach moves on to the
     // marketplace half in the same pass
-    assert.strictEqual(currentTutorialStep(result)?.id, "listStock");
+    assert.strictEqual(currentTutorialStep(result)?.id, "buildSecondShelf");
   });
 
   it("unlocks the marketplace with the first commission too", () => {

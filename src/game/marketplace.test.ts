@@ -5,6 +5,7 @@ import {
   JOB_TIP_DECAY_TICKS,
   JOB_TIP_FRACTION,
   LISTING_PITY_TICKS,
+  isListable,
   jobPayout,
   listingPitySale,
   listingSaleChance,
@@ -13,7 +14,8 @@ import {
   priceFactor,
   reviewReputationGain,
 } from "./marketplace";
-import { makeMaterial } from "./material-helpers";
+import { board } from "./board-helpers";
+import { makeMaterial, makePallet } from "./material-helpers";
 import { getSellValue } from "./material-values";
 import { FinishedProduct } from "./Materials";
 
@@ -27,6 +29,25 @@ function shelf(): FinishedProduct {
 function listingAt(askingPrice: number, listedAtTick = 0): MarketListing {
   return { id: "l-1", materials: [shelf()], askingPrice, listedAtTick };
 }
+
+describe("isListable", () => {
+  it("takes finished pieces", () => {
+    assert.strictEqual(isListable(shelf()), true);
+  });
+
+  it("takes a secondhand tool", () => {
+    assert.strictEqual(
+      isListable({ id: "t-1", type: "tool", toolId: "sandingBlock" }),
+      true,
+    );
+  });
+
+  it("refuses raw stock, whatever it's worth", () => {
+    assert.strictEqual(isListable(board("pallet", 36)), false);
+    assert.strictEqual(isListable(board("walnut", 48)), false);
+    assert.strictEqual(isListable(makePallet()), false);
+  });
+});
 
 describe("priceFactor", () => {
   it("is exactly 1 at the curve center", () => {

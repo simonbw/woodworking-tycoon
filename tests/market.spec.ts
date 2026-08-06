@@ -133,6 +133,11 @@ test.describe("Market, supplies, and sound", () => {
       // at fair value ($12 each), and go up together
       const shelfRow = page.locator("li", { hasText: /Rustic/i });
       await expect(shelfRow).toHaveCount(1);
+      // The pallet board riding along in the same inventory gets no row at
+      // all — the marketplace only takes finished work
+      await expect(
+        page.locator("li", { hasText: /Pallet Wood/i }),
+      ).toHaveCount(0);
       await shelfRow.getByRole("button", { name: "List ×2" }).click();
       // A fairly priced listing can legitimately sell within a tick or two,
       // so accept either "listed" or "already sold" here

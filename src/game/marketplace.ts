@@ -1,6 +1,6 @@
 import { AcceptedJob, MarketListing } from "./GameState";
 import { MaterialInstance } from "./Materials";
-import { getMaterialFullName } from "./material-helpers";
+import { getMaterialFullName, isFinishedProduct } from "./material-helpers";
 import { getSellValue } from "./material-values";
 import { TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY } from "./time";
 
@@ -70,21 +70,24 @@ export function demandFactor(demand: number): number {
 }
 
 /**
+ * What SawdustList will take: finished pieces, plus the odd secondhand
+ * tool. Raw stock never goes up — a stack of offcuts is something to
+ * build with or throw in the garbage can, and pricing it by the board
+ * foot would make scavenging an income stream instead of a supply run.
+ * Jobs are the channel that still asks for boards, and those are
+ * somebody else's order, not a shelf you put out.
+ */
+export function isListable(material: MaterialInstance): boolean {
+  return isFinishedProduct(material) || material.type === "tool";
+}
+
+/**
  * The saturation bucket a material sells into. Product types are distinct
- * markets (cutting boards don't flood the shelf market); all raw stock
- * shares one commodity bucket.
+ * markets — cutting boards don't flood the shelf market — so the type is
+ * the bucket.
  */
 export function demandCategory(material: MaterialInstance): string {
-  switch (material.type) {
-    case "board":
-    case "plywood":
-    case "panel":
-    case "endGrainSlice":
-    case "pallet":
-      return "lumber";
-    default:
-      return material.type;
-  }
+  return material.type;
 }
 
 /** Current demand for a category — a missing meter means full demand. */
