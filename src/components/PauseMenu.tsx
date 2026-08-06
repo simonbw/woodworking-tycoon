@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { AudioSettingsSection } from "./AudioSettingsSection";
+import { FeedbackLink } from "./FeedbackLink";
 import { Modal } from "./Modal";
 import { usePaused } from "./PauseContext";
 import { useQuitToMenu } from "./useGameState";
@@ -43,6 +44,13 @@ export const PauseMenu: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       </div>
 
       <AudioSettingsSection />
+
+      <div className="flex flex-col gap-2 border-t-2 border-ink-black/20 pt-4">
+        <FeedbackLink variant="paper" />
+        <p className="font-typewriter text-xs text-ink-fade">
+          Tell me what's working and what isn't. Opens a form in a new tab.
+        </p>
+      </div>
 
       <div className="flex items-center justify-between gap-3 border-t-2 border-ink-black/20 pt-4">
         <button className="button-paper" onClick={onClose} data-sfx="ui-back">

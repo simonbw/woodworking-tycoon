@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FeedbackLink } from "./FeedbackLink";
 import { GameState } from "../game/GameState";
 import { initialGameState } from "../game/initialGameState";
 import { deleteSave, getSaveStatus, loadGame } from "../game/saveLoad";
@@ -80,6 +81,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStart }) => {
           >
             New Game
           </button>
+          <FeedbackLink className="text-base py-3 tracking-[0.2em]" />
         </div>
       </div>
 
