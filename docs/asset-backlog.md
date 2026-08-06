@@ -112,13 +112,15 @@ wiring: same path, same size, same component.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
       filling the artboard**: 192×192, 384×192, 384×384, and 576×192 for
-      the 6-ft table (8 px/inch; ×4 for the close-ups). `workbench-2x2-top`
-      is exactly this and is the model. The other two sit on a
-      fraction-of-a-pixel offset — `-4x4-top` is a 383px drawing on a 385px
-      artboard, leaving edge columns at alpha 99 and 157 — and a
-      half-transparent edge over the dark shadow beneath reads as a
-      hairline down every seam. Nothing else about the art needs to be
-      exact; this does.
+      the 6-ft table (8 px/inch; ×4 for the close-ups). All three drawn
+      tops now measure exactly that. It matters because a half-transparent
+      edge sitting over the black shadow beneath reads as a hairline down
+      every seam where two tables butt — which is the one place this art
+      has to be precise, and the only place. (`-2x4-top` still carries a
+      1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
+      on one side, versus the 39–62% that was drawing a visible line. Not
+      worth another export on its own; worth squaring up if that artboard
+      is touched again.)
 
       Legs want to sit in from the corners so butted tables don't collide
       visually; a top texture that tiles horizontally reads best across a
