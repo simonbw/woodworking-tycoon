@@ -1,14 +1,22 @@
-import { personCanWork } from "../Person";
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { truckCabSideCell } from "../lot";
+import { personCanWork, ScavengingTrip } from "../Person";
+import { TICKS_PER_DAY } from "../time";
 import {
-  generateScavengeLoot,
-  SCAVENGE_DURATION_TICKS,
+  continueScavengingAction,
+  headHomeFromScavengingAction,
+  keepScavengingBlock,
+  rollScavengeStops,
+  scavengeLoot,
+  SCAVENGE_RETURN_TICKS,
+  SCAVENGE_STOP_NAMES,
+  SCAVENGE_STOP_TICKS,
   startScavengingAction,
 } from "./scavenge-actions";
+import { tickAction } from "./tickAction";
 
 /** rng stub cycling through the given values */
 function fakeRng(values: number[]): () => number {
@@ -28,28 +36,58 @@ function stateWithFreeSelling(): GameState {
   };
 }
 
-describe("generateScavengeLoot", () => {
-  it("yields one pallet on a low roll and two on a high roll", () => {
-    assert.strictEqual(generateScavengeLoot(fakeRng([0.1])).length, 1);
-    assert.strictEqual(generateScavengeLoot(fakeRng([0.9])).length, 2);
+/** A trip mid-decision, one stop searched (a find, on the cycling 0.1s). */
+function tripWith(overrides: Partial<ScavengingTrip>): ScavengingTrip {
+  return {
+    kind: "scavenging",
+    startTick: 0,
+    stops: rollScavengeStops(fakeRng([0.1])),
+    stopsSearched: 1,
+    phase: { kind: "deciding" },
+    ...overrides,
+  };
+}
+
+function stateWithTrip(
+  trip: ScavengingTrip,
+  overrides: Partial<GameState> = {},
+): GameState {
+  return {
+    ...initialGameState,
+    ...overrides,
+    player: { ...initialGameState.player, away: trip },
+  };
+}
+
+describe("rollScavengeStops", () => {
+  it("rolls a result for every stop on the circuit", () => {
+    const stops = rollScavengeStops(fakeRng([0.1]));
+    assert.strictEqual(stops.length, SCAVENGE_STOP_NAMES.length);
+    assert.deepStrictEqual(
+      stops.map((stop) => stop.stopName),
+      [...SCAVENGE_STOP_NAMES],
+    );
   });
 
   it("produces pallets with 6-11 deck boards and 2-3 stringers", () => {
     for (const roll of [0, 0.25, 0.5, 0.75, 0.999]) {
-      const [pallet] = generateScavengeLoot(fakeRng([0.1, roll]));
-      assert.strictEqual(pallet.type, "pallet");
-      if (pallet.type === "pallet") {
-        const deckCount = pallet.deckBoards.filter(Boolean).length;
-        assert.ok(deckCount >= 6 && deckCount <= 11, `deck=${deckCount}`);
-        const stringerCount = pallet.stringers.filter(Boolean).length;
-        assert.ok(stringerCount >= 2 && stringerCount <= 3);
-      }
+      const [first] = rollScavengeStops(fakeRng([0.1, roll]));
+      assert.ok(first.pallet, "a 0.1 find roll should find a pallet");
+      const deckCount = first.pallet.deckBoards.filter(Boolean).length;
+      assert.ok(deckCount >= 6 && deckCount <= 11, `deck=${deckCount}`);
+      const stringerCount = first.pallet.stringers.filter(Boolean).length;
+      assert.ok(stringerCount >= 2 && stringerCount <= 3);
     }
+  });
+
+  it("plants one find on an all-empty roll — no trip can strike out completely", () => {
+    const stops = rollScavengeStops(fakeRng([0.9]));
+    assert.strictEqual(stops.filter((stop) => stop.pallet !== null).length, 1);
   });
 });
 
 describe("startScavengingAction", () => {
-  it("sends the player away with pre-rolled loot", () => {
+  it("sends the player into the first stop's search", () => {
     const result = startScavengingAction(fakeRng([0.1]))(
       stateWithFreeSelling(),
     );
@@ -57,11 +95,15 @@ describe("startScavengingAction", () => {
     assert.ok(away);
     assert.strictEqual(away?.kind, "scavenging");
     if (away?.kind === "scavenging") {
-      assert.strictEqual(
-        away.returnTick,
-        result.tick + SCAVENGE_DURATION_TICKS,
-      );
-      assert.strictEqual(away.loot.length, 1);
+      assert.strictEqual(away.startTick, result.tick);
+      assert.strictEqual(away.stops.length, SCAVENGE_STOP_NAMES.length);
+      assert.strictEqual(away.stopsSearched, 0);
+      assert.deepStrictEqual(away.phase, {
+        kind: "searching",
+        doneTick: result.tick + SCAVENGE_STOP_TICKS,
+      });
+      // Nothing is loaded until a search actually finishes
+      assert.strictEqual(scavengeLoot(away).length, 0);
     }
     assert.strictEqual(personCanWork(result.player), false);
   });
@@ -87,5 +129,176 @@ describe("startScavengingAction", () => {
       startScavengingAction(fakeRng([0.1]))(awayState),
       awayState,
     );
+  });
+
+  it("does nothing at night", () => {
+    const state: GameState = {
+      ...stateWithFreeSelling(),
+      tick: TICKS_PER_DAY,
+    };
+    assert.strictEqual(startScavengingAction(fakeRng([0.1]))(state), state);
+  });
+});
+
+describe("the search tick", () => {
+  it("reveals the stop, loads the find, and parks at a decision", () => {
+    const started = startScavengingAction(fakeRng([0.1]))(
+      stateWithFreeSelling(),
+    );
+    const trip = started.player.away as ScavengingTrip;
+    assert.strictEqual(trip.phase.kind, "searching");
+    const doneTick =
+      trip.phase.kind === "searching" ? trip.phase.doneTick : NaN;
+
+    const result = tickAction({ ...started, tick: doneTick });
+    const away = result.player.away;
+    assert.strictEqual(away?.kind, "scavenging");
+    if (away?.kind === "scavenging") {
+      assert.strictEqual(away.stopsSearched, 1);
+      assert.deepStrictEqual(away.phase, { kind: "deciding" });
+      // The cycling 0.1s find a pallet at every stop, so the first
+      // search loaded one — with the thud to prove it
+      assert.strictEqual(scavengeLoot(away).length, 1);
+      assert.ok(
+        result.pendingSounds?.some((sound) => sound.kind === "pallet-load"),
+        "a find should queue the pallet-load sound",
+      );
+    }
+  });
+
+  it("stays quiet over an empty-handed stop", () => {
+    // All-0.9 rolls leave every stop empty except the planted find at
+    // the last stop, so the first stop reveals nothing
+    const started = startScavengingAction(fakeRng([0.9]))(
+      stateWithFreeSelling(),
+    );
+    const trip = started.player.away as ScavengingTrip;
+    const doneTick =
+      trip.phase.kind === "searching" ? trip.phase.doneTick : NaN;
+
+    const result = tickAction({ ...started, tick: doneTick });
+    const away = result.player.away;
+    if (away?.kind === "scavenging") {
+      assert.strictEqual(scavengeLoot(away).length, 0);
+    }
+    assert.ok(
+      !result.pendingSounds?.some((sound) => sound.kind === "pallet-load"),
+    );
+  });
+});
+
+describe("keepScavengingBlock", () => {
+  it("allows another stop with daylight and circuit to spare", () => {
+    assert.strictEqual(keepScavengingBlock(stateWithTrip(tripWith({}))), null);
+  });
+
+  it("refuses outside a decision", () => {
+    const searching = tripWith({
+      phase: { kind: "searching", doneTick: 100 },
+    });
+    assert.strictEqual(
+      keepScavengingBlock(stateWithTrip(searching)),
+      "notDeciding",
+    );
+  });
+
+  it("refuses once the circuit is used up", () => {
+    const usedUp = tripWith({
+      stopsSearched: SCAVENGE_STOP_NAMES.length,
+    });
+    assert.strictEqual(
+      keepScavengingBlock(stateWithTrip(usedUp)),
+      "outOfStops",
+    );
+  });
+
+  it("refuses when the search plus the drive home would run past close", () => {
+    const lateTick =
+      TICKS_PER_DAY - SCAVENGE_STOP_TICKS - SCAVENGE_RETURN_TICKS + 1;
+    assert.strictEqual(
+      keepScavengingBlock(stateWithTrip(tripWith({}), { tick: lateTick })),
+      "outOfDaylight",
+    );
+    // One tick earlier still fits
+    assert.strictEqual(
+      keepScavengingBlock(stateWithTrip(tripWith({}), { tick: lateTick - 1 })),
+      null,
+    );
+  });
+});
+
+describe("continueScavengingAction", () => {
+  it("heads for the next stop, another search on the clock", () => {
+    const state = stateWithTrip(tripWith({}), { tick: 100 });
+    const result = continueScavengingAction()(state);
+    const away = result.player.away;
+    assert.strictEqual(away?.kind, "scavenging");
+    if (away?.kind === "scavenging") {
+      assert.deepStrictEqual(away.phase, {
+        kind: "searching",
+        doneTick: 100 + SCAVENGE_STOP_TICKS,
+      });
+      assert.strictEqual(away.stopsSearched, 1);
+    }
+  });
+
+  it("does nothing when blocked", () => {
+    const usedUp = stateWithTrip(
+      tripWith({ stopsSearched: SCAVENGE_STOP_NAMES.length }),
+    );
+    assert.strictEqual(continueScavengingAction()(usedUp), usedUp);
+  });
+});
+
+describe("headHomeFromScavengingAction", () => {
+  it("turns for home from a decision", () => {
+    const state = stateWithTrip(tripWith({}), { tick: 100 });
+    const result = headHomeFromScavengingAction()(state);
+    const away = result.player.away;
+    assert.strictEqual(away?.kind, "scavenging");
+    if (away?.kind === "scavenging") {
+      assert.deepStrictEqual(away.phase, {
+        kind: "drivingHome",
+        returnTick: 100 + SCAVENGE_RETURN_TICKS,
+      });
+    }
+  });
+
+  it("still works after close — overtime to get home is allowed", () => {
+    const state = stateWithTrip(tripWith({}), { tick: TICKS_PER_DAY + 5 });
+    const result = headHomeFromScavengingAction()(state);
+    const away = result.player.away;
+    assert.strictEqual(
+      away?.kind === "scavenging" ? away.phase.kind : "missing",
+      "drivingHome",
+    );
+  });
+
+  it("does nothing mid-search", () => {
+    const state = stateWithTrip(
+      tripWith({ phase: { kind: "searching", doneTick: 100 } }),
+    );
+    assert.strictEqual(headHomeFromScavengingAction()(state), state);
+  });
+});
+
+describe("the drive home", () => {
+  it("delivers the searched stops' finds to the truck's bed", () => {
+    const trip = tripWith({
+      stopsSearched: 2,
+      phase: { kind: "drivingHome", returnTick: 20 },
+    });
+    const state = stateWithTrip(trip, { tick: 20 });
+    const result = tickAction(state);
+    assert.strictEqual(result.player.away, null);
+    assert.deepStrictEqual(result.truck.bed, [...scavengeLoot(trip)]);
+    // The find at the un-searched stops stays out there
+    assert.strictEqual(result.truck.bed.length, 2);
+    assert.deepStrictEqual(
+      result.player.position,
+      truckCabSideCell(result.shopInfo),
+    );
+    // Nothing appears on the shop floor — the haul waits at the tailgate
+    assert.strictEqual(result.materialPiles.length, 0);
   });
 });

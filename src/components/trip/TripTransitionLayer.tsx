@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { SCAVENGE_DURATION_TICKS } from "../../game/game-actions/scavenge-actions";
+import { SCAVENGE_RETURN_TICKS } from "../../game/game-actions/scavenge-actions";
 import { playSound, preloadSound } from "../../utils/sfx";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
@@ -96,17 +96,18 @@ export const TripTransitionLayer: React.FC<{
     }, FADE_MS);
   };
 
-  // The scavenging trip comes home on a timer, not a button — start the
-  // dip as the return tick closes in so the swap happens under black.
+  // The scavenging trip's drive home ends on a timer, not a button —
+  // start the dip as the return tick closes in so the swap happens under
+  // black. (Head Home from the cab starts the drive; this ends it.)
+  const scavengeAway = gameState.player.away;
   const scavengeReturnSoon =
     !TRANSITIONS_DISABLED &&
-    gameState.player.away?.kind === "scavenging" &&
-    gameState.player.away.returnTick - gameState.tick <=
-      SCAVENGE_PREFADE_TICKS &&
-    // A trip just started is not a trip about to end (fixture edits can
+    scavengeAway?.kind === "scavenging" &&
+    scavengeAway.phase.kind === "drivingHome" &&
+    scavengeAway.phase.returnTick - gameState.tick <= SCAVENGE_PREFADE_TICKS &&
+    // A drive just started is not a drive about to end (fixture edits can
     // put the tick anywhere).
-    gameState.player.away.returnTick - gameState.tick >
-      -SCAVENGE_DURATION_TICKS;
+    scavengeAway.phase.returnTick - gameState.tick > -SCAVENGE_RETURN_TICKS;
   useEffect(() => {
     if (scavengeReturnSoon) setFaded(true);
   }, [scavengeReturnSoon]);

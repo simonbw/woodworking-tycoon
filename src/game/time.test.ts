@@ -1,6 +1,9 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { SCAVENGE_DURATION_TICKS } from "./game-actions/scavenge-actions";
+import {
+  SCAVENGE_RETURN_TICKS,
+  SCAVENGE_STOP_TICKS,
+} from "./game-actions/scavenge-actions";
 import { GLUE_CURE_TICKS } from "./machines/benchOperations";
 import {
   dayPhase,
@@ -43,8 +46,9 @@ describe("formatDuration", () => {
     assert.equal(formatDuration(GLUE_CURE_TICKS), "1h");
   });
 
-  it("puts a scavenging trip at two and a half hours", () => {
-    assert.equal(formatDuration(SCAVENGE_DURATION_TICKS), "2h 30m");
+  it("puts a scavenging stop at an hour and the drive home at half of one", () => {
+    assert.equal(formatDuration(SCAVENGE_STOP_TICKS), "1h");
+    assert.equal(formatDuration(SCAVENGE_RETURN_TICKS), "30 min");
   });
 });
 

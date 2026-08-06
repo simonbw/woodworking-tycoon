@@ -1,44 +1,81 @@
 import { initialPalletNails } from "../bench-work/pallet-geometry";
-import { GameAction } from "../GameState";
+import { GameAction, GameState } from "../GameState";
 import { makeMaterial } from "../material-helpers";
-import { MaterialInstance, Pallet } from "../Materials";
+import { Pallet } from "../Materials";
+import { ScavengeStopResult, ScavengingTrip } from "../Person";
 import { Tuple } from "../../utils/typeUtils";
-import { isNight } from "../time-flow";
+import { TICKS_PER_DAY } from "../time";
+import { dayTicksSpent, isNight } from "../time-flow";
 import { canLeaveShop } from "./door-actions";
 
-/** How long a scavenging trip takes — about a quarter of a 600-tick day. */
-const FULL_SCAVENGE_DURATION_TICKS = 150;
+/**
+ * The circuit, in driving order: every place in the neighborhood worth
+ * checking for cast-off pallets. A trip works through these front to
+ * back, one per search, and ends early whenever the player calls it.
+ */
+export const SCAVENGE_STOP_NAMES: ReadonlyArray<string> = [
+  "Orange Box",
+  "Grocery dock",
+  "Tile warehouse",
+  "Print shop",
+  "Furniture factory",
+];
+
+/** Odds any one stop has a pallet worth taking. */
+const FIND_CHANCE = 0.5;
+
+/** Driving to the next spot and digging through it: an hour. */
+const FULL_STOP_TICKS = 60;
+/** The drive home from wherever the circuit left off: half an hour. */
+const FULL_RETURN_TICKS = 30;
 
 /**
- * What a dev build shortens the drive to: a couple of seconds instead of
- * thirty, so working on anything downstream of a pallet doesn't mean
- * waiting out the travel log every time.
+ * What a dev build shortens the legs to: a couple of seconds instead of
+ * twelve, so working on anything downstream of a pallet doesn't mean
+ * waiting out the circuit every time.
  */
-export const DEV_SCAVENGE_DURATION_TICKS = 10;
+export const DEV_STOP_TICKS = 10;
+export const DEV_RETURN_TICKS = 5;
+
+const IS_DEV = process.env.NODE_ENV === "development";
 
 /**
- * The trip length the shop actually runs at. Only the dev bundle shortens
- * it — esbuild defines NODE_ENV, so a production build and the test runners
- * (where it is unset) both keep the real quarter-day.
+ * The leg lengths the shop actually runs at. Only the dev bundle shortens
+ * them — esbuild defines NODE_ENV, so a production build and the test
+ * runners (where it is unset) both keep the real hour and half-hour.
  */
-export const SCAVENGE_DURATION_TICKS =
-  process.env.NODE_ENV === "development"
-    ? DEV_SCAVENGE_DURATION_TICKS
-    : FULL_SCAVENGE_DURATION_TICKS;
+export const SCAVENGE_STOP_TICKS = IS_DEV ? DEV_STOP_TICKS : FULL_STOP_TICKS;
+export const SCAVENGE_RETURN_TICKS = IS_DEV
+  ? DEV_RETURN_TICKS
+  : FULL_RETURN_TICKS;
 
 /**
- * What a scavenging trip brings home: 1-2 pallets in randomly rough shape.
- * Takes the rng as a parameter so tests can make it deterministic.
+ * Roll the whole circuit's results up front. Invisible to the player —
+ * a stop's result is only revealed when the search there finishes — but
+ * it keeps the rng injectable at the trip's one entry point, so tests
+ * stay deterministic. Roll order per stop: the find roll, then (on a
+ * find) the deck boards and the stringers.
+ *
+ * The circuit always turns up at least one pallet: an all-empty trip
+ * would strand a brand-new shop with no wood and no way to get any (the
+ * first commission starts from a scavenged pallet), so a washed-out roll
+ * plants a find at one stop.
  */
-export function generateScavengeLoot(
+export function rollScavengeStops(
   rng: () => number = Math.random,
-): MaterialInstance[] {
-  const palletCount = rng() < 0.5 ? 1 : 2;
-  const pallets: MaterialInstance[] = [];
-  for (let i = 0; i < palletCount; i++) {
-    pallets.push(makeDamagedPallet(rng));
+): ScavengeStopResult[] {
+  const stops: ScavengeStopResult[] = SCAVENGE_STOP_NAMES.map((stopName) => ({
+    stopName,
+    pallet: rng() < FIND_CHANCE ? makeDamagedPallet(rng) : null,
+  }));
+  if (stops.every((stop) => stop.pallet === null)) {
+    const index = Math.min(stops.length - 1, Math.floor(rng() * stops.length));
+    stops[index] = {
+      ...stops[index],
+      pallet: makeDamagedPallet(rng),
+    };
   }
-  return pallets;
+  return stops;
 }
 
 function makeDamagedPallet(rng: () => number): Pallet {
@@ -67,11 +104,45 @@ function makeDamagedPallet(rng: () => number): Pallet {
   });
 }
 
+/** Everything the trip has loaded so far — what the bed gets on return. */
+export function scavengeLoot(trip: ScavengingTrip): ReadonlyArray<Pallet> {
+  return trip.stops
+    .slice(0, trip.stopsSearched)
+    .flatMap((stop) => (stop.pallet ? [stop.pallet] : []));
+}
+
+/**
+ * Why "keep searching" is off the table right now, or null when it's on:
+ * the trip isn't sitting at a decision, the circuit is used up, or the
+ * next search plus the drive home wouldn't fit before the 5 PM close.
+ */
+export type KeepScavengingBlock =
+  "notDeciding" | "outOfStops" | "outOfDaylight";
+
+export function keepScavengingBlock(
+  gameState: GameState,
+): KeepScavengingBlock | null {
+  const away = gameState.player.away;
+  if (away?.kind !== "scavenging" || away.phase.kind !== "deciding") {
+    return "notDeciding";
+  }
+  if (away.stopsSearched >= away.stops.length) {
+    return "outOfStops";
+  }
+  if (
+    dayTicksSpent(gameState) + SCAVENGE_STOP_TICKS + SCAVENGE_RETURN_TICKS >
+    TICKS_PER_DAY
+  ) {
+    return "outOfDaylight";
+  }
+  return null;
+}
+
 /**
  * Drive out to hunt for free pallets. Starts at the truck's cab like any
- * trip out of the shop. The player is gone for SCAVENGE_DURATION_TICKS;
- * the haul is rolled up front and rides home in the truck's bed
- * (tickAction) when they get back.
+ * trip out of the shop, and heads straight into the first stop's search;
+ * from there the trip runs on the player's calls (keep searching / head
+ * home) until the drive home lands the haul in the truck's bed.
  */
 export function startScavengingAction(
   rng: () => number = Math.random,
@@ -91,8 +162,71 @@ export function startScavengingAction(
         ...gameState.player,
         away: {
           kind: "scavenging",
-          returnTick: gameState.tick + SCAVENGE_DURATION_TICKS,
-          loot: generateScavengeLoot(rng),
+          startTick: gameState.tick,
+          stops: rollScavengeStops(rng),
+          stopsSearched: 0,
+          phase: {
+            kind: "searching",
+            doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
+          },
+        },
+      },
+    };
+  };
+}
+
+/**
+ * Push on to the next stop — another hour spent. Refused (with a console
+ * note, mirroring the other guarded verbs) when keepScavengingBlock says
+ * why; the UI shows the same reason on the disabled button.
+ */
+export function continueScavengingAction(): GameAction {
+  return (gameState) => {
+    const block = keepScavengingBlock(gameState);
+    if (block !== null) {
+      console.warn(`Can't keep scavenging: ${block}`);
+      return gameState;
+    }
+    const away = gameState.player.away as ScavengingTrip;
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        away: {
+          ...away,
+          phase: {
+            kind: "searching",
+            doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
+          },
+        },
+      },
+    };
+  };
+}
+
+/**
+ * Call it and turn for home — always on offer at a decision, day or
+ * night (working overtime to get home is allowed; starting another
+ * search is not). The haul is delivered by tickAction when the drive
+ * ends.
+ */
+export function headHomeFromScavengingAction(): GameAction {
+  return (gameState) => {
+    const away = gameState.player.away;
+    if (away?.kind !== "scavenging" || away.phase.kind !== "deciding") {
+      console.warn("Not at a scavenging decision — nothing to call");
+      return gameState;
+    }
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        away: {
+          ...away,
+          phase: {
+            kind: "drivingHome",
+            returnTick: gameState.tick + SCAVENGE_RETURN_TICKS,
+          },
         },
       },
     };

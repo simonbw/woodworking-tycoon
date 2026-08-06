@@ -25,14 +25,51 @@ describe("timeSpeed", () => {
     assert.equal(timeSpeed(withPlayer({ busyTicks: 3 })), "working");
   });
 
-  it("spends time through a scavenging run's timer", () => {
+  it("spends time through a scavenging run's searches and drives", () => {
     assert.equal(
       timeSpeed(
         withPlayer({
-          away: { kind: "scavenging", returnTick: 100, loot: [] },
+          away: {
+            kind: "scavenging",
+            startTick: 0,
+            stops: [],
+            stopsSearched: 0,
+            phase: { kind: "searching", doneTick: 100 },
+          },
         }),
       ),
       "working",
+    );
+    assert.equal(
+      timeSpeed(
+        withPlayer({
+          away: {
+            kind: "scavenging",
+            startTick: 0,
+            stops: [],
+            stopsSearched: 0,
+            phase: { kind: "drivingHome", returnTick: 100 },
+          },
+        }),
+      ),
+      "working",
+    );
+  });
+
+  it("idles at a scavenging decision — weighing another stop is thinking", () => {
+    assert.equal(
+      timeSpeed(
+        withPlayer({
+          away: {
+            kind: "scavenging",
+            startTick: 0,
+            stops: [],
+            stopsSearched: 1,
+            phase: { kind: "deciding" },
+          },
+        }),
+      ),
+      "idle",
     );
   });
 

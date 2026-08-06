@@ -43,6 +43,7 @@ const GAME_SOUND_CLIPS = [
   "nail-pry",
   "orbital-sander",
   "pallet-dismantle",
+  "pallet-load",
   "truck-arrive",
   "truck-start",
   "ui-notification",

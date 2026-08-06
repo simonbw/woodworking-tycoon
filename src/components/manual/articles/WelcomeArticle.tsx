@@ -44,8 +44,8 @@ export const WelcomeArticle: React.FC = () => (
       <li>
         Walk out to the truck's cab and press{" "}
         <ShortcutKeys shortcut="pick-up" />, then pick{" "}
-        <Term>Scavenge for pallets</Term>. A couple of hours poking around
-        loading docks brings home 1-2 pallets in the bed.
+        <Term>Scavenge for pallets</Term>. Each stop takes an hour; keep
+        searching or head home with what's in the bed.
       </li>
       <li>
         Lift a pallet out of the bed with <ShortcutKeys shortcut="pick-up" /> at

@@ -387,8 +387,10 @@ test.describe("Keyboard", () => {
             ...s.player,
             away: {
               kind: "scavenging",
-              returnTick: s.tick + 100000,
-              loot: [],
+              startTick: s.tick,
+              stops: [{ stopName: "Grocery dock", pallet: null }],
+              stopsSearched: 0,
+              phase: { kind: "searching", doneTick: s.tick + 100000 },
             },
           },
         }));

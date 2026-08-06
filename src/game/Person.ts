@@ -1,6 +1,6 @@
 import { StoreId } from "./lumberStock";
 import { MachineState } from "./Machine";
-import { MaterialInstance } from "./Materials";
+import { MaterialInstance, Pallet } from "./Materials";
 import { Direction, Vector } from "./Vectors";
 
 /**
@@ -65,18 +65,48 @@ export interface Person {
 }
 
 /**
- * A trip out through the garage door. Scavenging runs on a timer and comes
- * home on its own; a shopping trip lasts as long as the store overlay is
- * open and ends when the player heads home. Either way the shop keeps
- * running — hands-free work continues, attended work waits.
+ * A trip out through the garage door. Scavenging is a stop-by-stop circuit
+ * the player steers from the cab (keep searching, or call it and head
+ * home); a shopping trip lasts as long as the store overlay is open and
+ * ends when the player heads home. Either way the shop keeps running —
+ * hands-free work continues, attended work waits.
  */
 export type AwayTrip = ScavengingTrip | ShoppingTrip | HomeTrip;
 
+/**
+ * One stop on the scavenging circuit, rolled when the trip starts and
+ * revealed when the search there finishes. A found pallet is loaded on
+ * the spot — it rides along until the drive home lands it in the
+ * truck's bed (see tickAction's playerTickPass).
+ */
+export type ScavengeStopResult = {
+  readonly stopName: string;
+  /** What turned up — null is an empty-handed stop. */
+  readonly pallet: Pallet | null;
+};
+
+/**
+ * Where a scavenging trip stands: an hour digging through the next spot,
+ * sitting in the cab weighing whether it's worth another (searching and
+ * driving spend the day; deciding is thinking, and thinking is nearly
+ * free), or on the drive home.
+ */
+export type ScavengePhase =
+  | { readonly kind: "searching"; readonly doneTick: number }
+  | { readonly kind: "deciding" }
+  | { readonly kind: "drivingHome"; readonly returnTick: number };
+
 export type ScavengingTrip = {
   readonly kind: "scavenging";
-  readonly returnTick: number;
-  /** Determined when the trip starts; delivered as floor piles on return. */
-  readonly loot: ReadonlyArray<MaterialInstance>;
+  /** When the trip left the shop; seeds the travel log's flavor. */
+  readonly startTick: number;
+  /**
+   * The whole circuit, rolled up front so tests can inject the rng; only
+   * the first `stopsSearched` results have actually been seen.
+   */
+  readonly stops: ReadonlyArray<ScavengeStopResult>;
+  readonly stopsSearched: number;
+  readonly phase: ScavengePhase;
 };
 
 /** Out at a store. No timer — browsing the aisles is what takes the time. */

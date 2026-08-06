@@ -8,6 +8,7 @@ import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
 import { FinishedProduct, Pallet } from "../Materials";
+import { ScavengingTrip } from "../Person";
 import { GLUE_CURE_TICKS } from "../machines/workspace";
 import { panel } from "../panel-helpers";
 import { tickAction } from "./tickAction";
@@ -38,6 +39,18 @@ function workspaceMachine(overrides: Partial<MachineState>): MachineState {
 
 function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
+}
+
+/** An away trip on the scavenging circuit, empty-handed unless told otherwise. */
+function scavengingTrip(overrides: Partial<ScavengingTrip>): ScavengingTrip {
+  return {
+    kind: "scavenging",
+    startTick: 0,
+    stops: [],
+    stopsSearched: 0,
+    phase: { kind: "searching", doneTick: 999 },
+    ...overrides,
+  };
 }
 
 /** A miter saw at [1,1]; its operation cell lands at [1,3]. Hand-fed and
@@ -200,7 +213,7 @@ describe("tickAction", () => {
         ...initialGameState.player,
         // Standing at the cell doesn't count while away
         position: WORKSPACE_OPERATION_CELL,
-        away: { kind: "scavenging", returnTick: 20, loot: [] },
+        away: scavengingTrip({ phase: { kind: "searching", doneTick: 999 } }),
       },
     });
     const result = tickAction(state);
@@ -208,18 +221,22 @@ describe("tickAction", () => {
   });
 
   it("brings scavenged loot home in the truck's bed", () => {
-    const loot = [makeMaterial<Pallet>({ ...nearlyDismantledPallet() })];
+    const pallet = makeMaterial<Pallet>({ ...nearlyDismantledPallet() });
     const state = stateWith({
       tick: 20,
       materialPiles: [],
       player: {
         ...initialGameState.player,
-        away: { kind: "scavenging", returnTick: 20, loot },
+        away: scavengingTrip({
+          stops: [{ stopName: "Grocery dock", pallet }],
+          stopsSearched: 1,
+          phase: { kind: "drivingHome", returnTick: 20 },
+        }),
       },
     });
     const result = tickAction(state);
     assert.strictEqual(result.player.away, null);
-    assert.deepStrictEqual(result.truck.bed, loot);
+    assert.deepStrictEqual(result.truck.bed, [pallet]);
     // Nothing appears on the shop floor — the haul waits at the tailgate
     assert.strictEqual(result.materialPiles.length, 0);
   });
@@ -332,7 +349,7 @@ describe("tickAction operation phases", () => {
       machines: [machine],
       player: {
         ...initialGameState.player,
-        away: { kind: "scavenging", returnTick: 20, loot: [] },
+        away: scavengingTrip({ phase: { kind: "searching", doneTick: 999 } }),
       },
     });
     const result = tickAction(state);

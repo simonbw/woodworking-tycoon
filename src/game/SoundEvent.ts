@@ -15,6 +15,7 @@ export type SoundEventKind =
   | "material-pickup"
   | "material-drop"
   | "nail-pry"
+  | "pallet-load"
   | "sale"
   | "phone-ring";
 

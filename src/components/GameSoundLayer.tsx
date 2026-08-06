@@ -66,6 +66,7 @@ const CLIP_GAIN: Record<string, number> = {
   "cash-register": 0.6,
   "material-pickup": 0.45,
   "material-drop": 0.45,
+  "pallet-load": 0.7,
   "ui-notification": 0.8,
 };
 
@@ -88,6 +89,9 @@ const NON_DIEGETIC_CLIPS = new Set([
   "commission-complete",
   "cash-register",
   "ui-notification",
+  // Happens out on the scavenging circuit, not in the garage — the shop's
+  // acoustics don't apply to a loading dock across town.
+  "pallet-load",
 ]);
 
 const lastPlayedAt = new Map<string, number>();
@@ -110,6 +114,8 @@ function clipFor(event: SoundEvent): string | null {
       return "material-drop";
     case "nail-pry":
       return "nail-pry";
+    case "pallet-load":
+      return "pallet-load";
     case "phone-ring":
       return "ui-notification";
   }

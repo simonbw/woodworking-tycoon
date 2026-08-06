@@ -80,9 +80,14 @@ import {
   storeUnlocked,
   wakeUpAction,
 } from "../game-actions/door-actions";
+import { TICKS_PER_DAY } from "../time";
 import { isNight } from "../time-flow";
 import {
-  SCAVENGE_DURATION_TICKS,
+  continueScavengingAction,
+  headHomeFromScavengingAction,
+  SCAVENGE_RETURN_TICKS,
+  SCAVENGE_STOP_NAMES,
+  SCAVENGE_STOP_TICKS,
   startScavengingAction,
 } from "../game-actions/scavenge-actions";
 import { clearPendingPayoutsAction } from "../game-actions/payout-actions";
@@ -862,14 +867,18 @@ export class ShopDriver {
   }
 
   /**
-   * Sleep off the night if the shop has closed, putting the body back
+   * Sleep off the night if the shop has closed — or, given a budget, if
+   * fewer than `ticksNeeded` of today are left — putting the body back
    * where it stood. Every verb that *starts* something time-shaped runs
    * through this, so a long sequence rolls through its days the way a
    * player does — nothing new starts at night, but nobody wants a test
    * to fail over it either.
    */
-  private ensureDaylight(): this {
-    if (!isNight(this.state)) {
+  private ensureDaylight(ticksNeeded = 0): this {
+    if (
+      !isNight(this.state) &&
+      this.state.tick - this.state.dayStartTick + ticksNeeded <= TICKS_PER_DAY
+    ) {
       return this;
     }
     const [x, y] = this.state.player.position;
@@ -878,21 +887,48 @@ export class ShopDriver {
   }
 
   /**
-   * Take the truck out scavenging and sit through the trip, coming home
-   * with the haul ferried out of the bed onto the dropoff spot. The loot
-   * is rolled up front from the rng; the default always finds two pallets
-   * with all eleven deck boards, so sequences can count on the wood.
+   * Take the truck out scavenging, work the given number of stops, and
+   * drive home with the haul ferried out of the bed onto the dropoff
+   * spot. The circuit is rolled up front from the rng; the default finds
+   * a pallet with all eleven deck boards and solid stringers at each
+   * stop searched, so sequences can count on the wood — two stops means
+   * two pristine pallets, and the whole errand costs about the same
+   * quarter-day the old fixed trip did.
    */
-  scavenge(rng: () => number = () => 0.9): this {
-    this.ensureDaylight();
+  scavenge({
+    stops = 2,
+    rng,
+  }: { stops?: number; rng?: () => number } = {}): this {
+    if (stops < 1 || stops > SCAVENGE_STOP_NAMES.length) {
+      throw new Error(`A trip searches 1-${SCAVENGE_STOP_NAMES.length} stops`);
+    }
+    // The whole trip has to fit inside one day: "keep searching" is
+    // refused once the next search plus the drive home would run past
+    // close, and a sequence shouldn't trip over the daylight rule.
+    this.ensureDaylight(
+      stops * (SCAVENGE_STOP_TICKS + 1) + SCAVENGE_RETURN_TICKS + 1,
+    );
     this.standAtCab();
-    this.apply(startScavengingAction(rng));
+    this.apply(startScavengingAction(rng ?? pristineFindsRng(stops)));
     if (!this.state.player.away) {
       throw new Error(
         "The scavenging trip would not start — hands full, or mid-trip already",
       );
     }
-    this.tick(SCAVENGE_DURATION_TICKS + 1);
+    for (let searched = 1; searched <= stops; searched++) {
+      this.tick(SCAVENGE_STOP_TICKS + 1);
+      const away = this.state.player.away;
+      if (away?.kind !== "scavenging" || away.phase.kind !== "deciding") {
+        throw new Error(
+          `The search should have parked at a decision after stop ${searched}`,
+        );
+      }
+      if (searched < stops) {
+        this.apply(continueScavengingAction());
+      }
+    }
+    this.apply(headHomeFromScavengingAction());
+    this.tick(SCAVENGE_RETURN_TICKS + 1);
     if (this.state.player.away) {
       throw new Error("Still out scavenging after the trip should have ended");
     }
@@ -1437,6 +1473,27 @@ export class ShopDriver {
     }
     return this;
   }
+}
+
+/**
+ * The default scavenging rng: a scripted roll tape that finds a pallet
+ * with all eleven deck boards and solid stringers at each of the first
+ * `finds` stops and nothing after. Written against the roll order in
+ * rollScavengeStops — per stop, one find roll, then (on a find) the deck
+ * count, ten shuffle rolls, and the stringers.
+ */
+function pristineFindsRng(finds: number): () => number {
+  const tape: number[] = [];
+  for (let stop = 0; stop < SCAVENGE_STOP_NAMES.length; stop++) {
+    if (stop < finds) {
+      // find, deck count (6 + floor(0.99 * 6) = 11), shuffle, stringers
+      tape.push(0, 0.99, ...Array<number>(10).fill(0.5), 0.9);
+    } else {
+      tape.push(0.9);
+    }
+  }
+  let i = 0;
+  return () => tape[Math.min(i++, tape.length - 1)];
 }
 
 /** Open a shop from a fixture (or any GameState) and start working it. */

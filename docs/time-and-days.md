@@ -118,8 +118,11 @@ Sleeping early just leaves the rest of the day unspent.
 Store and lumberyard runs charge `DRIVE_TICKS_ONE_WAY` (15) minutes each
 way, run through the pipeline at the moment of departure and return — so
 a cure gains the same minutes the drive spends. Browsing the aisles is
-thinking, and thinking is nearly free. Scavenging keeps its own
-all-inclusive timer instead.
+thinking, and thinking is nearly free. A scavenging run charges the same
+way it plays: each stop's search and the drive home are working time,
+while sitting at the cab deciding whether another stop is worth it is
+thinking — and once a search plus the drive home would run past close,
+"keep searching" is off the table and home is the only way.
 
 ### Days are calendar days now
 

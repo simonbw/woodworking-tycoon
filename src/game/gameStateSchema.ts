@@ -82,8 +82,19 @@ const machineStateSchema = z.object({
 const awayTripSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("scavenging"),
-    returnTick: z.number(),
-    loot: z.array(materialSchema),
+    startTick: z.number(),
+    stops: z.array(
+      z.object({
+        stopName: z.string(),
+        pallet: materialSchema.nullable(),
+      }),
+    ),
+    stopsSearched: z.number(),
+    phase: z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("searching"), doneTick: z.number() }),
+      z.object({ kind: z.literal("deciding") }),
+      z.object({ kind: z.literal("drivingHome"), returnTick: z.number() }),
+    ]),
   }),
   z.object({
     kind: z.literal("shopping"),

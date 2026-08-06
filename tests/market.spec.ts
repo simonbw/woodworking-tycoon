@@ -1,5 +1,4 @@
 import { expect, Page, test } from "@playwright/test";
-import { DEV_SCAVENGE_DURATION_TICKS } from "../src/game/game-actions/scavenge-actions";
 import { modesOf, selectMode } from "./machine-panel";
 import {
   advanceTicks,
@@ -329,42 +328,100 @@ test.describe("Market, supplies, and sound", () => {
       await movePlayerToCab(page);
       await openTruckMenu(page);
       await pressTruckRow(page, "Scavenge for pallets");
+      // Freeze the clock: a dev build's search legs are seconds long,
+      // and each phase change below should happen on the spec's cue
+      await page.evaluate(() => (window as any).__SET_PAUSED__(true));
 
-      // The trip covers the screen with a travel log: a route map and
-      // field notes that fill in as the trip progresses
+      // The trip covers the screen with field notes, the truck's bed
+      // (empty so far), and the first stop's search already underway
       await expect(page.getByTestId("scavenge-trip")).toBeVisible();
       await expect(page.getByText(/Out scavenging/)).toBeVisible();
       await expect(page.getByTestId("scavenge-log")).toContainText(
         /Headed out/,
+      );
+      await expect(page.getByTestId("scavenge-bed-count")).toContainText(
+        /Nothing in the bed yet/,
       );
 
       const bedBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().truck.bed.length,
       );
 
-      // Fast-forward past the last stop — every stop has been visited, so
-      // the log now records the haul (always at least one pallet). The clock
-      // is stopped first: a dev build's trip is only a couple of seconds
-      // long, so the last stretch would otherwise tick past mid-assertion.
-      await page.evaluate((duration) => {
-        (window as any).__SET_PAUSED__(true);
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          tick:
-            state.player.away.returnTick -
-            Math.max(1, Math.floor(duration * 0.12)),
-        }));
-      }, DEV_SCAVENGE_DURATION_TICKS);
-      await expect(page.getByTestId("scavenge-log")).toContainText(/score!/);
-      await expect(page.getByTestId("scavenge-log")).toContainText(
-        /heading home/,
-      );
+      // Every trip's roll holds at least one find; move a found stop to
+      // the front so the first search scores deterministically, then
+      // jump the clock to the end of that search and let it run.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => {
+          const trip = state.player.away;
+          const found = trip.stops.filter((s: any) => s.pallet !== null);
+          const empty = trip.stops.filter((s: any) => s.pallet === null);
+          return {
+            ...state,
+            tick: trip.phase.doneTick,
+            player: {
+              ...state.player,
+              away: { ...trip, stops: [...found, ...empty] },
+            },
+          };
+        });
+        (window as any).__SET_PAUSED__(false);
+      });
 
-      // Jump to the return tick and let the clock run again
+      // The next tick reveals the stop: a find in the log, a pallet in
+      // the bed, and the trip parked at a decision
+      await expect(page.getByTestId("scavenge-log")).toContainText(/score!/);
+      await expect(page.getByTestId("scavenge-bed-count")).toContainText(
+        /1 pallet in the bed/,
+      );
+      await expect(page.getByTestId("scavenge-decision")).toBeVisible();
+      const keepSearching = page.getByTestId("scavenge-keep-searching");
+      await expect(keepSearching).toBeEnabled();
+
+      // With too little daylight left for another stop plus the drive
+      // home, the option goes dead with the reason written under it
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          tick: state.player.away.returnTick,
+          dayStartTick: state.tick - 599,
+        }));
+      });
+      await expect(keepSearching).toBeDisabled();
+      await expect(page.getByText(/Not enough daylight/)).toBeVisible();
+
+      // Fresh morning restored, another search goes ahead
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          dayStartTick: state.tick,
+        }));
+      });
+      await expect(keepSearching).toBeEnabled();
+      // Frozen again so the second search ends on cue, not on the clock
+      await page.evaluate(() => (window as any).__SET_PAUSED__(true));
+      await keepSearching.click();
+      await expect(page.getByTestId("scavenge-log")).toContainText(
+        /Digging through pallets/,
+      );
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          tick: state.player.away.phase.doneTick,
+        }));
+        (window as any).__SET_PAUSED__(false);
+      });
+      await expect(page.getByTestId("scavenge-decision")).toBeVisible();
+
+      // Good enough: the drive home plays out on the clock
+      await page.evaluate(() => (window as any).__SET_PAUSED__(true));
+      await page.getByTestId("scavenge-head-home").click();
+      await expect(page.getByTestId("scavenge-log")).toContainText(
+        /heading home/,
+      );
+      await expect(page.getByText("Back in")).toBeVisible();
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          tick: state.player.away.phase.returnTick,
         }));
         (window as any).__SET_PAUSED__(false);
       });
@@ -573,6 +630,11 @@ test.describe("Market, supplies, and sound", () => {
     await test.step("material handling cues play", async () => {
       await queueCue(page, { kind: "material-pickup" });
       await expect.poll(() => requested).toContain("material-pickup.ogg");
+    });
+
+    await test.step("a scavenged find thuds into the truck's bed", async () => {
+      await queueCue(page, { kind: "pallet-load" });
+      await expect.poll(() => requested).toContain("pallet-load.ogg");
     });
 
     await test.step("no console errors from audio", async () => {

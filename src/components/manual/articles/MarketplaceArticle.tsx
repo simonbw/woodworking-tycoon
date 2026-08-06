@@ -44,10 +44,12 @@ export const MarketplaceArticle: React.FC = () => (
     <H>Scavenging</H>
     <P>
       Walk out to the truck's cab and it lists places to go, each with a number
-      key — including a scavenging run: drive off and come back with free
-      pallets riding in the bed, ready to unload at the tailgate. The shop keeps
-      running while you're out — glue keeps curing and machines finish their
-      passes — but you can't do anything else until you're back.
+      key — including a scavenging run. Each stop on the circuit takes an hour
+      to search; after each one, keep searching or call it good enough and drive
+      home with whatever's in the bed, ready to unload at the tailgate. Once
+      there isn't daylight left for another stop, home is the only way. The shop
+      keeps running while you're out — glue keeps curing and machines finish
+      their passes — but you can't do anything else until you're back.
     </P>
 
     <Note>

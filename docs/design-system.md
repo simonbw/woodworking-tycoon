@@ -121,8 +121,8 @@ stack of equal-weight cards:
   world: the marketplace is the phone overlay, skills are the journal
   overlay, and errands are trips out the garage door, each a full-screen
   overlay (`StoreTripOverlay`, `LumberyardTripOverlay`,
-  `ScavengeTripOverlay` — the last a hand-drawn route map plus a
-  handwritten travel log).
+  `ScavengeTripOverlay` — the last a handwritten travel log beside the
+  sketched truck, its bed stacking up with the haul).
 - **Commission tracker** (`CommissionTracker`, top-left) — the
   objectives readout: a `hud-chip` with the order's name, its checklist,
   and what it pays (or "carry it to the garage door" once complete).
