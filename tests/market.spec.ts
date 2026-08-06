@@ -50,6 +50,16 @@ async function bootShopCountingAudio(page: Page) {
       (window as any).__SOURCES_STARTED__++;
       return (start as any).apply(this, args);
     };
+    // Music streams through an <audio> element that never enters the DOM
+    // (see `musicTrack.ts`), so catch them as they're constructed.
+    (window as any).__MUSIC_ELEMENTS__ = [];
+    const RealAudio = window.Audio;
+    (window as any).Audio = function (src?: string) {
+      const el = new RealAudio(src);
+      (window as any).__MUSIC_ELEMENTS__.push(el);
+      return el;
+    };
+    (window as any).Audio.prototype = RealAudio.prototype;
   });
   await page.goto("/");
   await page.waitForLoadState("domcontentloaded");
@@ -640,6 +650,41 @@ test.describe("Market, supplies, and sound", () => {
     await test.step("a scavenged find thuds into the truck's bed", async () => {
       await queueCue(page, { kind: "pallet-load" });
       await expect.poll(() => requested).toContain("pallet-load.ogg");
+    });
+
+    // Hold music is the only sound that isn't a decoded clip: a streamed
+    // <audio> element on the music bus, driven by the wait verb rather than
+    // by a cue. What the browser tier is for here is the real key hold and
+    // the media element actually playing — the fade shape is `MusicTrack`'s
+    // business.
+    const holdMusic = () =>
+      page.evaluate(() => {
+        const el = ((window as any).__MUSIC_ELEMENTS__ as HTMLAudioElement[])
+          .filter((e) => e.src.includes("hold-music"))
+          .at(0);
+        return el ? { paused: el.paused, at: el.currentTime } : null;
+      });
+
+    await test.step("a tap of the wait key doesn't start the music", async () => {
+      await page.keyboard.press("t");
+      await page.waitForTimeout(600);
+      expect(await holdMusic()).toBeNull();
+    });
+
+    await test.step("holding the wait key plays hold music", async () => {
+      await page.keyboard.down("t");
+      await expect.poll(() => requested).toContain("hold-music.ogg");
+      await expect.poll(holdMusic).toMatchObject({ paused: false });
+      // Playing, not merely started: the position has to move.
+      const { at } = (await holdMusic())!;
+      await expect.poll(async () => (await holdMusic())!.at).toBeGreaterThan(at);
+    });
+
+    await test.step("letting go stops it where it stands", async () => {
+      await page.keyboard.up("t");
+      await expect.poll(async () => (await holdMusic())!.paused).toBe(true);
+      // Paused, not rewound — the next wait picks the track back up.
+      expect((await holdMusic())!.at).toBeGreaterThan(0);
     });
 
     await test.step("no console errors from audio", async () => {

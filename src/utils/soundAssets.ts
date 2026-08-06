@@ -1,4 +1,5 @@
 import { getRoomBus, IMPULSE_RESPONSE_URL } from "./audioBus";
+import { HOLD_MUSIC } from "./musicTrack";
 import { clipUrl, preloadSound, UI_SOUND_NAMES } from "./sfx";
 
 /**
@@ -55,13 +56,16 @@ export const SOUND_CLIPS: readonly string[] = Array.from(
 );
 
 /**
- * Every file under `/sounds/` the game fetches, for the completeness test:
- * the playable clips plus the room reverb's impulse response, which is not
- * a clip (nothing plays it — the convolver wears it).
+ * Every file under `/sounds/` the game fetches, for the completeness test.
+ * Three kinds: the playable clips, the room reverb's impulse response
+ * (which is not a clip — nothing plays it, the convolver wears it), and the
+ * music tracks, which stream through an `<audio>` element rather than the
+ * decode cache (see `musicTrack.ts`) and so are never preloaded here.
  */
 export const SOUND_ASSET_FILES: readonly string[] = [
   ...SOUND_CLIPS.map(clipUrl),
   IMPULSE_RESPONSE_URL,
+  HOLD_MUSIC.url,
 ];
 
 /**

@@ -67,8 +67,10 @@ with real props: pencil tick (click), paper slide (tab), page flip (back),
   do "fanfare" well; a stamp + coin combo could work)
 - Cash register (have one; re-record if a real one is available)
 
-### Ambience (later, music bus / #33)
+### Ambience and music (music bus)
 
+- **Hold music** (`hold-music.ogg`) — playing, on the wait verb. See
+  "Music tracks" in Part 2.
 - Shop room tone (a minute of "silence" in the space — also useful in editing)
 - Compressor kicking on occasionally, exterior birds/rain
 
@@ -284,6 +286,32 @@ style was tried first and cut; a whole vehicle performance wants real
 texture in a way a single-scalar motor model doesn't.) Both are routed
 **dry through the SFX bus**: the driveway is outdoors, and the room bus
 wears the garage's impulse response.
+
+### Music tracks (`musicTrack.ts`, `HoldMusicLayer`)
+
+Music is the one thing that does **not** go through `sfx.ts`. Every clip
+there is fetched and held as a decoded `AudioBuffer` forever, which is right
+for a 200ms click and wrong for a two-and-a-half-minute track: decoded, it
+would be tens of megabytes of PCM resident for a sound the player may never
+trigger. A `MusicTrack` is instead an `<audio>` element the browser streams,
+routed into the same graph through a `MediaElementAudioSourceNode` so it
+still lands on the music bus and still answers the Music slider and the
+master mute. The element is built on first play, so a session that never
+waits never downloads the file.
+
+The one track today is **hold music**, on the wait verb. Holding the wait key
+is the only thing the player does that is explicitly *not* work, so it gets
+the sound of being put on hold: it fades in after the key has been held
+~0.9s (a tap shouldn't be scored) and fades out as soon as time is being
+spent on something else. That makes it a second reading of the clock —
+music playing means the day is burning for nothing. The fade is slow in
+(2.5s) and quicker out (1.2s), and stopping pauses the element without
+rewinding, so a run of short waits sounds like one piece heard in
+installments rather than the same eight bars over and over.
+
+Long tracks obey the no-MP3 rule below like everything else: the source
+arrived as MP3 and was transcoded to Opus (`-c:a libopus -b:a 112k`), which
+both loops gaplessly and ships at half the size.
 
 ---
 

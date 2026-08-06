@@ -4,6 +4,7 @@ import { saveGame } from "../game/saveLoad";
 import { DebugView } from "./DebugView";
 import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
+import { HoldMusicLayer } from "./HoldMusicLayer";
 import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
 import { CommissionCallLayer } from "./phone/CommissionCallLayer";
@@ -59,6 +60,7 @@ export const Main: React.FC = () => {
                   <TutorialSpotlightLayer />
                   <GameSoundLayer />
                   <MachineSoundLayer />
+                  <HoldMusicLayer />
                   <DebugView />
                   <FixtureLoader />
                 </ClipboardProvider>

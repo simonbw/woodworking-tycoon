@@ -13,7 +13,7 @@ export interface AudioSettings {
   master: number;
   /** Sound-effects bus level, 0..1. */
   sfx: number;
-  /** Music bus level, 0..1. (No tracks yet — see #33.) */
+  /** Music bus level, 0..1. Carries the streamed tracks in `musicTrack.ts`. */
   music: number;
   /** When true the master output is silenced without losing the levels above. */
   muted: boolean;

@@ -25,7 +25,8 @@ import { getAudioContext } from "./getAudioContext";
  * IR loads (or if it fails), the wet path is silent and the room bus
  * behaves exactly like the sfx bus.
  *
- * The `music` bus exists today but is unused — background music lands in #33.
+ * The `music` bus carries the streamed background tracks in `musicTrack.ts`
+ * — today, the wait verb's hold music.
  */
 
 /** Wet level of the garage convolution under the dry signal. */
