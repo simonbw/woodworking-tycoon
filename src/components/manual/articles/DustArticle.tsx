@@ -5,10 +5,10 @@ import { H, Note, P, Term } from "./elements";
 export const DustArticle: React.FC = () => (
   <>
     <P>
-      Machines throw sawdust, and it builds up on the floor. Too much slows the
-      shop down: work at a dust-covered machine takes longer, and walking
-      through deep dust costs extra steps. A little mess is harmless; the
-      penalties start once it piles up.
+      Woodworking creates chips and sawdust, which pile up on the floor and slow
+      down everything you do: work at a dust-covered machine takes longer, and
+      walking through deep dust costs extra steps. Keeping a clean shop keeps
+      work moving at full speed.
     </P>
 
     <H>The Broom</H>
@@ -21,9 +21,8 @@ export const DustArticle: React.FC = () => (
       it, slowly.
     </P>
     <P>
-      The pan holds a few tiles' worth. When it's full the strokes stop doing
-      anything; stand at the garbage can and hold{" "}
-      <ShortcutKeys shortcut="operate-machine" /> to pour it out. The broom
+      When the dustpan fills up, empty it into the garbage can: stand there and
+      hold <ShortcutKeys shortcut="operate-machine" /> to pour it out. The broom
       takes both hands: set it down with <ShortcutKeys shortcut="put-down" />{" "}
       before picking anything else up.
     </P>
@@ -37,9 +36,9 @@ export const DustArticle: React.FC = () => (
       ahead of you, machines' undersides included.
     </P>
     <P>
-      Dust collects in the canister, which holds about five tiles' worth. When
-      it fills, the suction stops. Wheel it to the garbage can and hold{" "}
-      <ShortcutKeys shortcut="operate-machine" /> to empty it.
+      Dust collects in the canister, which holds far more than the broom's
+      dustpan. When it fills, the suction stops. Wheel it to the garbage can and
+      hold <ShortcutKeys shortcut="operate-machine" /> to empty it.
     </P>
 
     <Note>

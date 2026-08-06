@@ -13,10 +13,7 @@ export const FinishingArticle: React.FC = () => (
     <P>
       Sanding raises a board or panel's surface one grade per pass: rough →
       smooth → sanded. Mount a sanding block or a random orbit sander at any
-      bench to sand there: lean over the bench, take the tool down off the rail,
-      and rub the piece down right where it lies. The two produce identical
-      results; the sander is simply much faster. Sanding refines the surface
-      only; flattening, straightening, and thinning stock are milling work.
+      bench, take it down off the rail, and rub the piece down where it lies.
     </P>
 
     <H>The Finishing Kit</H>
