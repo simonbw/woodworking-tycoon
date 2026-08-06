@@ -10,7 +10,6 @@ import {
   berthPlacementOnBench,
   defaultBenchPlacement,
   palletPointOnBench,
-  seatOnBenchTop,
 } from "./bench-layout";
 import { PALLET_WIDTH_IN } from "./pallet-geometry";
 
@@ -61,50 +60,6 @@ describe("bench layout", () => {
       flipped: false,
     });
     assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 < 0);
-  });
-
-  describe("seating stock on the bench top", () => {
-    const bench = MACHINE_TYPES.workspace;
-
-    it("leaves a piece whose middle is over the wood alone", () => {
-      // Hanging well off the front edge is fine — it's still on the bench
-      const overhanging = { xIn: 20, yIn: 29, angleDeg: 90, flipped: false };
-      assert.deepStrictEqual(seatOnBenchTop(bench, overhanging), overhanging);
-    });
-
-    it("stops a piece dragged past the edge at the edge", () => {
-      // Shoved way off the right and off the front of a 40 × 30 top
-      const seated = seatOnBenchTop(bench, {
-        xIn: 60,
-        yIn: 40,
-        angleDeg: 0,
-        flipped: false,
-      });
-      assert.strictEqual(seated.xIn, 40);
-      assert.strictEqual(seated.yIn, 30);
-    });
-
-    it("catches a piece dragged off the back or the left", () => {
-      const seated = seatOnBenchTop(bench, {
-        xIn: -18,
-        yIn: -4,
-        angleDeg: 0,
-        flipped: false,
-      });
-      assert.strictEqual(seated.xIn, 0);
-      assert.strictEqual(seated.yIn, 0);
-    });
-
-    it("holds stock too big for the bench to the same rule", () => {
-      // A 46 × 34 pallet outsizes the 40 × 30 top on both axes; nothing
-      // about that changes where it may be balanced
-      const pallet = makePallet();
-      const seat = defaultBenchPlacement(bench, pallet);
-      assert.deepStrictEqual(seatOnBenchTop(bench, seat), seat);
-      const shoved = seatOnBenchTop(bench, { ...seat, xIn: 90, yIn: -20 });
-      assert.strictEqual(shoved.xIn, 40);
-      assert.strictEqual(shoved.yIn, 0);
-    });
   });
 
   it("carries pallet points through the placement, there and back", () => {

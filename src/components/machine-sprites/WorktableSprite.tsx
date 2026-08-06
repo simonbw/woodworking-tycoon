@@ -25,15 +25,17 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
       const minY = Math.min(...ys);
       const maxY = Math.max(...ys);
 
-      // The top overhangs the legs but stays inside the cell bounds
-      const inset = PIXELS_PER_CELL * 0.06;
-      const left = (minX - 0.5) * PIXELS_PER_CELL + inset;
-      const top = (minY - 0.5) * PIXELS_PER_CELL + inset;
-      const width = (maxX - minX + 1) * PIXELS_PER_CELL - inset * 2;
-      const height = (maxY - minY + 1) * PIXELS_PER_CELL - inset * 2;
+      // The top fills the footprint edge to edge, square-cornered: tables
+      // pushed together are one bench (bench-work/bench-group.ts), and an
+      // inset or a rounded corner would draw a gap down a seam that isn't
+      // there. The legs sit under it instead of the top shrinking to them.
+      const left = (minX - 0.5) * PIXELS_PER_CELL;
+      const top = (minY - 0.5) * PIXELS_PER_CELL;
+      const width = (maxX - minX + 1) * PIXELS_PER_CELL;
+      const height = (maxY - minY + 1) * PIXELS_PER_CELL;
 
       // Drop shadow toward the lower right
-      g.roundRect(left + 4, top + 5, width, height, 6);
+      g.rect(left + 4, top + 5, width, height);
       g.fill({ color: 0x000000, alpha: 0.18 });
 
       // Leg posts at the corners, sticking out from under the top
@@ -49,9 +51,9 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
       }
 
       // The laminated top
-      g.roundRect(left, top, width, height, 5);
+      g.rect(left, top, width, height);
       g.fill({ color: 0xb08850 });
-      g.roundRect(left, top, width, height, 5);
+      g.rect(left, top, width, height);
       g.stroke({ width: 2.5, color: 0x6b4a26 });
 
       // Lamination lines run along the long axis

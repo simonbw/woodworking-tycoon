@@ -25,7 +25,52 @@ That makes the starting top roomier than the small worktable's 2×2 and a
 hair over the full-size 4×2 — deliberately. Room was never what a
 worktable sells; see the three advantages below. What the bigger tables
 buy is _shape_: a 6-ft run to lay long stock along, or the 4×4 island
-that takes a whole ghost frame without it hanging off the ends.
+that takes a whole ghost frame without it hanging off the ends. And room
+is the one thing a table can buy for itself, by being pushed against
+another one — see below.
+
+## Tables pushed together are one bench (Now)
+
+Shove two tables edge to edge in a real shop and you stop thinking of
+them as two tables: you lay a long board across the seam and get on with
+it. Worktables do the same (`bench-work/bench-group.ts`). The run is
+found from the floor layout — every table sharing an edge with the one
+you opened, and every table sharing an edge with those — and the bench
+view spans the lot: one frame, one working surface, stock on any of them
+in reach of the hands.
+
+Three properties keep this from spreading through the codebase:
+
+- **A lone bench is a run of one.** Its frame is exactly its own top and
+  every conversion is the identity, so nothing branches on "is this
+  bench joined". The makeshift workbench, which never joins — plywood on
+  paint buckets, at its own height — goes down the path it always did.
+- **Placements never move house.** `MachineState.benchLayout` still
+  stores bench-top inches in the owning table's own frame, so there's no
+  save migration and the shop view keeps drawing each table's stock from
+  its own state. Only the view converts, and only while it's open.
+- **The frame faces the bench you walked up to** (`BenchGroup.alignment`).
+  You lean over a bench square to _it_, not to the shop, so a table
+  turned sideways on the floor still reads the way it always has; a
+  table pushed on at an angle (back to back, into a deep island) has its
+  placements turned into that frame.
+
+Seating generalizes for free. "Keep the piece's middle over the wood"
+widens from one rectangle to several by running the same test down a
+list — which is why the L-shaped run works too, notch and all. Asking
+whether a whole piece _fits inside_ an L would have been a genuinely
+awkward clamp; asking where its middle is, isn't.
+
+An operation still belongs to one table — the one whose bays hold the
+stock — so a run whose pieces sit on two tables slides them onto one
+first (`gatherBenchPiecesAction`), which is what you'd do before winding
+the clamps anyway. Every commit action downstream is untouched. Which
+table is working is picked by `benchGroupWork`: whoever is mid-operation,
+else whoever has something to offer, else the table you walked up to.
+
+Not pooled yet: **tool racks**. A hammer mounted on the next table over
+is not in reach — mount it on the table the work is on. Worth doing, and
+the natural shape is the same slide-it-over move the pieces make.
 
 ## Worktables (Now)
 

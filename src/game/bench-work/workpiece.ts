@@ -254,6 +254,46 @@ export function benchScriptFor(
   return null;
 }
 
+/**
+ * Which table in a run of pushed-together tables is the one actually
+ * working, and what it's working on.
+ *
+ * Tables share a surface, but an operation still belongs to one of them —
+ * the one whose bays hold the stock. So the run offers whatever any
+ * member offers, and the commit goes back to that member. In order:
+ *
+ * 1. A member mid-operation wins. There is only ever one — a curing panel
+ *    or a half-sanded board is the run's business until it's done.
+ * 2. Otherwise a member with something to offer: a staged pallet to pry,
+ *    a plan pulled and parts on the bench. The table the player walked up
+ *    to gets first refusal, so a plan picked here doesn't jump next door.
+ * 3. Otherwise the table the player walked up to, idle.
+ */
+export function benchGroupWork(
+  members: ReadonlyArray<{ machine: Machine }>,
+  opened: Machine,
+  progression: ProgressionState,
+): { machine: Machine; script: BenchScript | null } {
+  const ordered = [
+    ...members.filter((member) => member.machine.state === opened.state),
+    ...members.filter((member) => member.machine.state !== opened.state),
+  ].map((member) => member.machine);
+
+  const busy = ordered.find(
+    (machine) => machine.operationProgress.status === "inProgress",
+  );
+  if (busy) {
+    return { machine: busy, script: benchScriptFor(busy, progression) };
+  }
+  for (const machine of ordered) {
+    const script = benchScriptFor(machine, progression);
+    if (script) {
+      return { machine, script };
+    }
+  }
+  return { machine: opened, script: null };
+}
+
 /** A piece's footprint on the bench, in inches (sprite-drawing axes:
  * width across, length down). */
 export function pieceSize(material: MaterialInstance): WorkSurfaceSize {

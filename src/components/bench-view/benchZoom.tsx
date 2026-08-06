@@ -1,9 +1,9 @@
 import { useTick } from "@pixi/react";
 import { Container } from "pixi.js";
 import React, { useCallback, useRef } from "react";
-import { footprintCenter, Machine } from "../../game/Machine";
+import { BenchGroup } from "../../game/bench-work/bench-group";
 import { camera } from "../shop-view/cameraStore";
-import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import { shopFrame } from "../shop-view/shopFrameStore";
 import { StageFit } from "./stageMath";
 
@@ -51,30 +51,19 @@ export interface BenchZoomAnchor {
 }
 
 export function benchZoomAnchor(
-  machine: Machine,
+  group: BenchGroup,
   frameFit: StageFit,
 ): BenchZoomAnchor | null {
   if (!shopFrame.ready) return null;
-  // The machine container's rotation on the shop floor, normalized to
-  // the short way around so the un-turning never unwinds 270°.
-  const rawAngle = machine.rotation * -90;
+  // The frame's rotation on the shop floor, normalized to the short way
+  // around so the un-turning never unwinds 270°. A run of tables faces
+  // the way the bench the player walked up to faces (BenchGroup.alignment).
+  const rawAngle = group.alignment * -90;
   const angleDeg = (((rawAngle % 360) + 540) % 360) - 180 || 0;
-  const rad = (rawAngle * Math.PI) / 180;
-  // The bench top's center in the machine container's own coordinates
-  // (cell centers at integer multiples of PIXELS_PER_CELL — see
-  // MachineSprite's FootprintArt), carried through the container's
-  // rotation and its seat at the origin cell's center.
-  const [fcx, fcy] = footprintCenter(machine.type.cellsOccupied);
-  const lx = fcx * PIXELS_PER_CELL;
-  const ly = fcy * PIXELS_PER_CELL;
-  const wx =
-    lx * Math.cos(rad) -
-    ly * Math.sin(rad) +
-    (machine.position[0] + 0.5) * PIXELS_PER_CELL;
-  const wy =
-    lx * Math.sin(rad) +
-    ly * Math.cos(rad) +
-    (machine.position[1] + 0.5) * PIXELS_PER_CELL;
+  // The middle of the whole run's tops, in shop pixels — so a pair of
+  // tables dives to the middle of the pair, not the middle of one of them.
+  const wx = group.centerInShopIn.xIn * PIXELS_PER_INCH;
+  const wy = group.centerInShopIn.yIn * PIXELS_PER_INCH;
   return {
     xPx: shopFrame.left + shopFrame.offsetX + wx * shopFrame.scale,
     yPx:

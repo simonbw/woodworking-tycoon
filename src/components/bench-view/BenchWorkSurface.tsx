@@ -9,9 +9,18 @@ import React, {
 } from "react";
 import {
   BenchScript,
-  benchScriptFor,
+  benchGroupWork,
   placedPieceSize,
 } from "../../game/bench-work/workpiece";
+import {
+  benchGroupAt,
+  BenchGroupMember,
+  groupPieces,
+  memberFor,
+  placementInFrame,
+  placementOnMember,
+  seatInGroup,
+} from "../../game/bench-work/bench-group";
 import {
   nearestSawMark,
   sawMarkParameters,
@@ -26,7 +35,6 @@ import {
   benchPointOnPallet,
   benchTopSizeIn,
   palletPointOnBench,
-  seatOnBenchTop,
 } from "../../game/bench-work/bench-layout";
 import {
   faceNails,
@@ -38,6 +46,7 @@ import {
   arrangeBenchMaterialAction,
   emitBenchDustAction,
   finishAttendedWorkAction,
+  gatherBenchPiecesAction,
   pryPalletNailAction,
   startGlueUpAction,
 } from "../../game/game-actions/operation-actions";
@@ -99,7 +108,7 @@ import { CONSUMABLE_TYPES } from "../../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { playSound } from "../../utils/sfx";
 import { toolIconSrc } from "../../utils/uiImages";
-import { useApplyGameAction, useGameState } from "../useGameState";
+import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
 import {
@@ -197,10 +206,30 @@ export const BenchWorkSurface: React.FC<{
   closing?: boolean;
   /** The zoom-out has landed — safe to unmount. */
   onExited?: () => void;
-}> = ({ machine, onClose, closing = false, onExited }) => {
+}> = ({ machine: openedBench, onClose, closing = false, onExited }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const script = benchScriptFor(machine, gameState.progression);
+  const machines = useMachines();
+
+  // ----------------------------------------------------------- the group
+  // Tables pushed together are one bench (bench-work/bench-group.ts): the
+  // whole run's tops make one surface, so stock on the next table over is
+  // in reach and a board can lie across the seam. A bench standing on its
+  // own — always, for the makeshift one — is a run of one, and every
+  // conversion below is the identity, so there is nothing to branch on.
+  const group = useMemo(
+    () => benchGroupAt(machines, openedBench),
+    [machines, openedBench],
+  );
+  // An operation still belongs to one table: the one holding the stock.
+  // `machine` from here down means whichever member is doing the work —
+  // the commits, the plan, the tool rail, and the status all follow it.
+  const { machine, script } = benchGroupWork(
+    group.members,
+    openedBench,
+    gameState.progression,
+  );
+  const workMember = memberFor(group, machine) ?? group.members[0];
   const bus = useMemo(makeBenchPointerBus, []);
   const [progress, setProgress] = useState(0);
   const lastDust = useRef(0);
@@ -388,6 +417,14 @@ export const BenchWorkSurface: React.FC<{
     [applyAction, machine],
   );
   const commitWhole = useCallback(() => {
+    // A build's parts may have been laid on from either table of a run;
+    // the operation claims from one, so gather them onto it first.
+    applyAction(
+      gatherBenchPiecesAction(
+        machine,
+        piecesRef.current.map((piece) => piece.material.id),
+      ),
+    );
     // Glue and assembly resolve start and finish back to back: spend the
     // supplies, tie up the clamps, and either the product appears or the
     // cure begins — the single principled commit (decision 4's middle).
@@ -432,7 +469,11 @@ export const BenchWorkSurface: React.FC<{
   const workActive =
     inPlaceWork !== null && heldTool !== null && heldTool === workTool;
   const workPlacement = inPlaceWork
-    ? benchPlacementFor(machine, inPlaceWork.workpiece)
+    ? placementInFrame(
+        group,
+        workMember,
+        benchPlacementFor(machine, inPlaceWork.workpiece),
+      )
     : null;
   // A held saw's ghost line wants the hovered board even before the mark
   const heldToolSawHover =
@@ -461,7 +502,11 @@ export const BenchWorkSurface: React.FC<{
   // jumps as boards come and go — except when a plan bigger than the
   // bench is pulled (a worktable builds a 48×48 frame on the makeshift
   // bench): the scene leans back far enough to hold the whole build.
-  const benchSize = benchTopSizeIn(machine.type);
+  // The whole run's tops, not one table's: two 4-ft tables pushed
+  // together frame as 8 ft of bench, and an L-shaped run frames as its
+  // bounding box (the corner that isn't bench is empty scene — the seating
+  // rule, not the frame, is what keeps stock off it).
+  const benchSize = { widthIn: group.widthIn, heightIn: group.heightIn };
   const planWidthIn = assemblyBlueprint?.widthIn ?? 0;
   const planHeightIn = assemblyBlueprint?.heightIn ?? 0;
   const frame = useMemo(
@@ -481,13 +526,29 @@ export const BenchWorkSurface: React.FC<{
   };
   const scenePallet: Pallet | null =
     sceneActive && script?.kind === "pry" ? script.pallet : null;
-  const loose: ReadonlyArray<MaterialInstance> = sceneActive
-    ? machine.inputMaterials.filter((m) => m !== scenePallet)
-    : [];
+  // Everything lying anywhere on the run, each piece remembering which
+  // table bookkeeps it — that's where its arrangement is committed and
+  // where E takes it back from.
+  const pieces = useMemo(
+    () => (sceneActive ? groupPieces(group) : []),
+    [sceneActive, group],
+  );
+  const ownerOf = useCallback(
+    (materialId: string): BenchGroupMember | null =>
+      pieces.find((piece) => piece.material.id === materialId)?.member ?? null,
+    [pieces],
+  );
+  // The key handler is bound once per script, not per piece — it reads
+  // the run's contents through a ref, like the snap and clamp state
+  const piecesRef = useRef(pieces);
+  piecesRef.current = pieces;
+  const loose: ReadonlyArray<MaterialInstance> = pieces
+    .filter((piece) => piece.bay === "input" && piece.material !== scenePallet)
+    .map((piece) => piece.material);
   // Finished work lies on the bench too — hover it, nudge it, E takes it
-  const sceneOutputs: ReadonlyArray<MaterialInstance> = sceneActive
-    ? machine.outputMaterials
-    : [];
+  const sceneOutputs: ReadonlyArray<MaterialInstance> = pieces
+    .filter((piece) => piece.bay === "output")
+    .map((piece) => piece.material);
 
   // The whole-frame fit paints the backdrop; the scene works in
   // bench-top inches (origin at the bench's top-left), which is also the
@@ -505,12 +566,25 @@ export const BenchWorkSurface: React.FC<{
     };
   }
 
+  // Placements are stored per table in that table's own inches; the scene
+  // works in the run's frame, so everything drawn or hit-tested here goes
+  // through the group's measure. A lone bench makes this the identity.
   const placementOf = useCallback(
-    (material: MaterialInstance): BenchPlacement =>
-      draggingId === material.id && dragPlacement.current
-        ? dragPlacement.current
-        : benchPlacementFor(machine, material),
-    [draggingId, machine],
+    (material: MaterialInstance): BenchPlacement => {
+      if (draggingId === material.id && dragPlacement.current) {
+        return dragPlacement.current;
+      }
+      const piece = pieces.find((p) => p.material.id === material.id);
+      return (
+        piece?.placement ??
+        placementInFrame(
+          group,
+          workMember,
+          benchPlacementFor(machine, material),
+        )
+      );
+    },
+    [draggingId, machine, pieces, workMember],
   );
   const loosePieces: ReadonlyArray<LoosePiece> = loose.map((material) => ({
     material,
@@ -607,15 +681,14 @@ export const BenchWorkSurface: React.FC<{
   const commitGlueUp = useCallback(() => {
     const run = glueRunRef.current;
     if (!run) return;
+    // A run laid across a seam is glued on one table: slide the strips
+    // together first, exactly as you would before winding the clamps.
+    const ids = run.pieces.map((piece) => piece.id);
+    applyAction(gatherBenchPiecesAction(machine, ids));
     // The tighten is the single commit: claim the very pieces in the
     // clamps (in across order), then resolve the attended phase — the
     // hand work was it — so the cure begins right here on the scene.
-    applyAction(
-      startGlueUpAction(
-        machine,
-        run.pieces.map((piece) => piece.id),
-      ),
-    );
+    applyAction(startGlueUpAction(machine, ids));
     applyAction(finishAttendedWorkAction(machine));
     setPlacedClamps([]);
     setTightenedCount(0);
@@ -631,7 +704,11 @@ export const BenchWorkSurface: React.FC<{
     ? detectGlueRun(
         machine.processingMaterials.map((material) => ({
           material,
-          placement: benchPlacementFor(machine, material),
+          placement: placementInFrame(
+            group,
+            workMember,
+            benchPlacementFor(machine, material),
+          ),
         })),
       ).run
     : null;
@@ -899,20 +976,32 @@ export const BenchWorkSurface: React.FC<{
       // plan bigger than the top (a worktable built on the makeshift
       // bench) reaches past the edges on purpose.
       const snapped = snapRef.current;
+      // Free drops land wherever the run's tops allow; a slot's own
+      // placement is taken as given, and the build belongs to the table
+      // running it.
+      const landing = snapped
+        ? { placement: snapped.placement, member: workMember }
+        : seatInGroup(group, dragPlacement.current);
+      // Dragged across a seam: the table it came to rest on bookkeeps it
+      // now, and its arrangement is measured in that table's inches.
+      const from = ownerOf(draggingId);
+      if (from && from.key !== landing.member.key) {
+        applyAction(
+          gatherBenchPiecesAction(landing.member.machine, [draggingId]),
+        );
+      }
       applyAction(
         arrangeBenchMaterialAction(
-          machine,
+          landing.member.machine,
           draggingId,
-          snapped
-            ? snapped.placement
-            : seatOnBenchTop(machine.type, dragPlacement.current),
+          placementOnMember(group, landing.member, landing.placement),
         ),
       );
       if (snapped) playSound("material-drop", 0.4);
     }
     dragPlacement.current = null;
     setDraggingId(null);
-  }, [applyAction, draggingId, machine]);
+  }, [applyAction, draggingId, group, ownerOf, workMember]);
 
   const placedClampsRef = useRef(placedClamps);
   placedClampsRef.current = placedClamps;
@@ -1108,6 +1197,14 @@ export const BenchWorkSurface: React.FC<{
               )
             : null;
           if (target && offer) {
+            // The wood may be lying on the next table over; the tool and
+            // the operation are this one's, so slide it across first.
+            const holder = ownerOf(target.material.id);
+            if (holder && holder.key !== workMember.key) {
+              applyAction(
+                gatherBenchPiecesAction(machine, [target.material.id]),
+              );
+            }
             if (offer.interaction?.kind === "saw") {
               const size = placedPieceSize(target.material, target.placement);
               const local = benchPointInFrame(target.placement, size, xIn, yIn);
@@ -1178,13 +1275,14 @@ export const BenchWorkSurface: React.FC<{
           return;
         }
         if (draggingId && event.held && dragPlacement.current) {
-          // The bench top is the working area: a piece follows the hand
-          // until its middle reaches the edge, and hangs there.
-          dragPlacement.current = seatOnBenchTop(machine.type, {
+          // The run's tops are the working area: a piece follows the hand
+          // until its middle reaches the edge of the wood, and hangs
+          // there — over a seam it just keeps going onto the next table.
+          dragPlacement.current = seatInGroup(group, {
             ...dragPlacement.current,
             xIn: xIn + dragOffset.current.dxIn,
             yIn: yIn + dragOffset.current.dyIn,
-          });
+          }).placement;
           setHoveredSlot(null);
           bump();
           return;
@@ -1327,11 +1425,16 @@ export const BenchWorkSurface: React.FC<{
           event.preventDefault();
           event.stopPropagation();
           setHoveredNail(null);
+          const holder = ownerOf(scenePallet.id) ?? workMember;
           applyAction(
-            arrangeBenchMaterialAction(machine, scenePallet.id, {
-              ...palletPlacement,
-              flipped: !palletPlacement.flipped,
-            }),
+            arrangeBenchMaterialAction(
+              holder.machine,
+              scenePallet.id,
+              placementOnMember(group, holder, {
+                ...palletPlacement,
+                flipped: !palletPlacement.flipped,
+              }),
+            ),
           );
         }
         return;
@@ -1340,11 +1443,12 @@ export const BenchWorkSurface: React.FC<{
       if (!id) return;
       // A nailed-on part is part of the build: no taking, no turning
       if (fastenedRef.current.has(id)) return;
-      const material =
-        machine.inputMaterials.find((m) => m.id === id) ??
-        machine.outputMaterials.find((m) => m.id === id);
-      if (!material) return;
-      const isOutput = machine.outputMaterials.some((m) => m.id === id);
+      // Anywhere on the run — the piece under the hand may be lying on
+      // the next table over, and it's taken back off that one.
+      const piece = piecesRef.current.find((p) => p.material.id === id);
+      if (!piece) return;
+      const { material, member: holder, bay } = piece;
+      const isOutput = bay === "output";
       // E takes the piece under the hand — the one being dragged or
       // moused over, never just the first in the bay.
       if (event.code === "KeyE" && !event.shiftKey) {
@@ -1355,8 +1459,8 @@ export const BenchWorkSurface: React.FC<{
         setHoveredId(null);
         applyAction(
           isOutput
-            ? takeOutputsFromMachineAction([material], machine)
-            : takeInputsFromMachineAction([material], machine),
+            ? takeOutputsFromMachineAction([material], holder.machine)
+            : takeInputsFromMachineAction([material], holder.machine),
         );
         return;
       }
@@ -1368,7 +1472,7 @@ export const BenchWorkSurface: React.FC<{
       const current =
         draggingId === id && dragPlacement.current
           ? dragPlacement.current
-          : benchPlacementFor(machine, material);
+          : piece.placement;
       // One flip verb: a board cycles flat → up on its long edge → up
       // on its end → flat again; anything else — the pallet — turns
       // over. Mirroring a board face-for-face never showed anyway.
@@ -1389,7 +1493,13 @@ export const BenchWorkSurface: React.FC<{
         dragPlacement.current = turned;
         bump();
       } else {
-        applyAction(arrangeBenchMaterialAction(machine, id, turned));
+        applyAction(
+          arrangeBenchMaterialAction(
+            holder.machine,
+            id,
+            placementOnMember(group, holder, turned),
+          ),
+        );
       }
     };
     window.addEventListener("keydown", onKey, true);
@@ -1684,7 +1794,13 @@ export const BenchWorkSurface: React.FC<{
         // pieces on their persistent placements, every bar wound home
         <GlueCuringLayer
           pieces={machine.processingMaterials}
-          placementFor={(material) => benchPlacementFor(machine, material)}
+          placementFor={(material) =>
+            placementInFrame(
+              group,
+              workMember,
+              benchPlacementFor(machine, material),
+            )
+          }
           run={curingRun}
           fit={sceneFit}
         />
@@ -1922,12 +2038,14 @@ export const BenchWorkSurface: React.FC<{
               resolution={Math.min(window.devicePixelRatio || 1, 2)}
             >
               <BenchZoomRig
-                anchor={benchZoomAnchor(machine, frameFit)}
+                anchor={benchZoomAnchor(group, frameFit)}
                 target={closing ? 0 : 1}
                 instant={reduceMotion}
                 onRest={onZoomRest}
               >
-                <BenchSceneBackdrop machine={machine} fit={frameFit} />
+                {sceneFit && (
+                  <BenchSceneBackdrop group={group} fit={sceneFit} />
+                )}
                 {surface?.node}
               </BenchZoomRig>
             </Application>
