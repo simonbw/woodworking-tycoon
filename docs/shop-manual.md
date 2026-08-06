@@ -108,11 +108,13 @@ way in the first copy pass:
    planer has no menus", "there is no blueprint mode", "there's no
    meter to watch" — a first-time player never expected those things,
    so mentioning them only plants doubt. Describe what _is_.
-2. **No internal design vocabulary or invariants.** Words like "verb",
-   or axioms like "dust is a substance that moves; only containers
-   destroy it", belong in design docs. The articles teach the same
-   facts through concrete actions ("hold Space to sweep the dust into
-   the dustpan").
+2. **No internal design vocabulary, invariants, or units.** Words like
+   "verb", axioms like "dust is a substance that moves; only containers
+   destroy it", and internal units like "tiles" belong in design docs.
+   The articles teach the same facts through concrete actions ("hold
+   Space to sweep the dust into the dustpan") and fiction-level
+   quantities ("when the dustpan fills up"; "the canister holds far
+   more than the pan").
 3. **Don't spell out what players will assume anyway** ("everything in
    the shop takes time"). Drawing attention to the intuitive reads as
    if there's a catch.
@@ -129,9 +131,25 @@ way in the first copy pass:
    block the lane — stock slides over it" but "Stock slides right over
    a bare worktable." The negative-then-positive pivot ("that's not X;
    that's Y") reads as generated copy.
-7. **Ration em dashes.** One appositive per paragraph is plenty. Where
-   a dash splices two clauses, a colon, semicolon, or full stop usually
-   serves better.
+7. **Ration em dashes.** One appositive per paragraph is plenty, and
+   parentheses or commas usually do the same job more quietly. Where a
+   dash splices two clauses, a colon, semicolon, or full stop serves
+   better.
+8. **Say each thing once, in one register.** Not a pithy sentence and
+   then its detailed restatement ("That work is milling", "It's where
+   the shop sells outside of commissions: …") — write the informative
+   sentence and delete the setup. Punchy fragment runs ("Accept, build,
+   deliver.") get cut the same way; the steps are already in the prose.
+9. **End the sentence at the fact.** Trailing clauses that add mood
+   instead of information ("for as long as the cut takes", "soaks in on
+   its own time") come off.
+10. **Instruct, don't reassure.** Say what to do and what happens
+    ("Keeping a clean shop keeps work moving at full speed"), not how
+    the player should feel about it ("A little mess is harmless").
+11. **A new section beats a new article.** When a system is small or
+    lives at an existing station, add a section to the article already
+    covering that place and cut against what the binder teaches
+    elsewhere — a fact stated in two articles will drift apart.
 
 ## Content format
 
