@@ -37,7 +37,14 @@ import {
   cellToPixelCenter,
 } from "./shop-scale";
 
-const IMAGE_PIXELS_PER_INCH = 8;
+/**
+ * The density every machine export is drawn at. It is the *only* one:
+ * an `@4x` close-up is the same drawing at four times the pixels, and
+ * PIXI's asset resolver reads that suffix as a resolution, handing back
+ * a texture that already measures itself in these same inches. So this
+ * is the divisor for both copies — see BenchSceneBackdrop.
+ */
+export const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 
 /**
