@@ -27,11 +27,16 @@ import { MachineId } from "../../game/Machine";
  * is what the shop floor drew for every table until now — so art can land
  * one table at a time. `worktable1x3` (the 6-ft run) has none yet.
  *
- * These are deliberately NOT in `scripts/trim-images.ts`. Trimming crops
- * to the opaque bounds, which would eat exactly the shadow bleed that
- * makes the shadow layer a separate layer, and would shrink each layer by
- * a different amount — the top and its shadow have to stay registered to
- * each other, so both keep the canvas they were drawn on.
+ * These are deliberately NOT in `scripts/trim-images.ts`, and they don't
+ * need to be. The tops have no margin to trim at all — they're opaque
+ * corner to corner, which is the whole point of them. The shadows and the
+ * completes do carry a transparent margin, and trimming them would in
+ * fact be safe (the script keeps every pixel with any alpha at all, so
+ * the soft halo survives, and it crops symmetrically about the canvas
+ * centre, which is exactly the registration these rely on) — it would
+ * just save a couple of kilobytes and make the layers' shared geometry
+ * harder to see. Left untrimmed so a top and its shadow can be compared
+ * by their canvases.
  */
 const WORKTABLE_ART: Partial<Record<MachineId, string>> = {
   worktable1x1: "workbench-2x2",

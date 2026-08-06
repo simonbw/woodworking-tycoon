@@ -118,19 +118,26 @@ wiring: same path, same size, same component.
       every seam where two tables butt — which is the one place this art
       has to be precise, and the only place. (`-2x4-top` still carries a
       1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
-      on one side, versus the 39–62% that was drawing a visible line. Not
-      worth another export on its own; worth squaring up if that artboard
-      is touched again.)
+      on one side, versus the 39–62% that was drawing a visible line —
+      invisible in play. Not worth an export on its own; worth squaring up
+      if that artboard is opened again.)
+
+      Shadows and completes are centred on even canvases so no shadow core
+      peeks out from under its own top.
 
       Legs want to sit in from the corners so butted tables don't collide
       visually; a top texture that tiles horizontally reads best across a
       run. Vise and tool-drawer upgrades stay procedural overlays drawn on
       the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
 
-      These are deliberately **not** in `scripts/trim-images.ts`: trimming
-      crops to opaque bounds, which would eat the shadow bleed that makes
-      the shadow a separate layer, and would shrink each layer by a
-      different amount when the two have to stay registered.
+      These are deliberately **not** in `scripts/trim-images.ts`, and don't
+      need to be: the tops are opaque corner to corner so there is nothing
+      to trim, and while the shadows and completes do carry a transparent
+      margin, trimming them would be harmless rather than helpful — the
+      script keeps every pixel with any alpha (soft halos survive) and
+      crops symmetrically about the canvas centre, which is the
+      registration these rely on. It would save a couple of kilobytes and
+      cost the ability to compare a top and its shadow by their canvases.
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
 - [x] Garbage can — `garbage-can.png`. A top-down lid view centered on the
