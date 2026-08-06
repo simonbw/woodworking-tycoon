@@ -9,6 +9,7 @@ import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
 import { TruckBedPrompt, TruckPrompt } from "./TruckPrompt";
 import { PlayerPrompt } from "./PlayerPrompt";
+import { FloorSheet } from "./FloorSheet";
 
 /**
  * How many screen pixels one world pixel occupies — the canvas scales to
@@ -34,6 +35,7 @@ export const ShopOverlayLayer: React.FC<{
   const cellMap = useCellMap();
   const {
     machine: targetedMachine,
+    machines: reachableMachines,
     isTargeted,
     sheetMachine,
   } = useTargetedMachine();
@@ -81,8 +83,19 @@ export const ShopOverlayLayer: React.FC<{
 
         <TruckPrompt canvasWidth={width} canvasHeight={height} />
         <TruckBedPrompt canvasWidth={width} />
+        {/* A handle on each machine the body can reach, for the same
+            reason the floor's pieces have one — see PointMarker */}
+        {!carrying &&
+          reachableMachines.map((machine) => (
+            <MachineMarker
+              key={`anchor-${machineKey(machine.state)}`}
+              machine={machine}
+            />
+          ))}
+
         <PlayerPrompt />
         <StationSheet />
+        <FloorSheet />
       </div>
     </OverlayScaleContext.Provider>
   );
@@ -181,6 +194,47 @@ export const CellAnchored: React.FC<{
   );
 };
 
+/** PointMarker's machine twin: a 1px handle at the machine's center. */
+const MachineMarker: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const scale = useContext(OverlayScaleContext);
+  const bbox = machineBBoxPx(machine, scale);
+  return (
+    <span
+      data-testid="machine-anchor"
+      data-machine-type={machine.type.id}
+      className="absolute block size-px"
+      style={{
+        left: bbox.left + bbox.width / 2,
+        top: bbox.top + bbox.height / 2,
+      }}
+    />
+  );
+};
+
+/**
+ * A 1px handle sitting exactly on a world point, rather than clear of it
+ * like the anchors above. Nothing to look at — it exists so a spec can
+ * find where a specific piece is on screen. The canvas is a single
+ * element with no per-piece handles of its own, and this rides the same
+ * camera transform the world does, so its box is the real point.
+ */
+export const PointMarker: React.FC<{
+  point: Vector;
+  testId: string;
+  materialId: string;
+}> = ({ point, testId, materialId }) => {
+  const scale = useContext(OverlayScaleContext);
+  const cellPx = PIXELS_PER_CELL * scale;
+  return (
+    <span
+      data-testid={testId}
+      data-material-id={materialId}
+      className="absolute block size-px"
+      style={{ left: point[0] * cellPx, top: point[1] * cellPx }}
+    />
+  );
+};
+
 /**
  * CellAnchored's free-floating twin: positions a hint cluster against a
  * continuous world point (a pile's resting spot), half a cell above or
@@ -191,12 +245,14 @@ export const PointAnchored: React.FC<{
   children: React.ReactNode;
   className?: string;
   placement?: "above" | "below";
-}> = ({ point, children, className, placement = "below" }) => {
+  testId?: string;
+}> = ({ point, children, className, placement = "below", testId }) => {
   const scale = useContext(OverlayScaleContext);
   const cellPx = PIXELS_PER_CELL * scale;
   const above = placement === "above" && (point[1] - 0.5) * cellPx >= 64;
   return (
     <div
+      data-testid={testId}
       className={"absolute z-10 " + (className ?? "")}
       style={{
         left: point[0] * cellPx,

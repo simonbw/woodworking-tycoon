@@ -22,7 +22,9 @@ type PixiProps<T> = Partial<T> & {
   pivot?: number | { x: number; y: number };
   visible?: boolean;
   interactive?: boolean;
+  hitArea?: any;
   onClick?: (event: any) => void;
+  onRightClick?: (event: any) => void;
   onPointerDown?: (event: any) => void;
   onPointerUp?: (event: any) => void;
   onPointerMove?: (event: any) => void;

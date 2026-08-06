@@ -20,7 +20,7 @@ import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
-import { CellAnchored, PointAnchored } from "./ShopOverlayLayer";
+import { CellAnchored, PointAnchored, PointMarker } from "./ShopOverlayLayer";
 
 /**
  * The small cluster of key hints that follows the player: verbs aimed at
@@ -196,6 +196,16 @@ export const PlayerPrompt: React.FC = () => {
 
   return (
     <>
+      {/* One handle per in-reach piece, sitting on it — see PointMarker */}
+      {interact?.kind === "pick-up-floor" &&
+        interact.piles.map((pile) => (
+          <PointMarker
+            key={`anchor-${pile.material.id}`}
+            point={pile.position}
+            testId="pile-anchor"
+            materialId={pile.material.id}
+          />
+        ))}
       {interact?.kind === "pick-up-floor" && (
         <PickupChip
           piles={interact.piles}
@@ -234,7 +244,11 @@ const PickupChip: React.FC<{
       ? ` · ${piles.indexOf(target) + 1} of ${piles.length}`
       : "";
   return (
-    <PointAnchored point={target.position} placement="above">
+    <PointAnchored
+      point={target.position}
+      placement="above"
+      testId="pickup-chip"
+    >
       <HintList>
         <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
           pick up · {getMaterialFullName(target.material)}
@@ -243,6 +257,11 @@ const PickupChip: React.FC<{
         {sourceCount > 1 && !rotateSettingLive && (
           <HintRow keys={<ShortcutKeys shortcut="cycle-pile" />}>
             next piece
+          </HintRow>
+        )}
+        {piles.length > 1 && (
+          <HintRow keys={<ShortcutKeys shortcut="inspect-floor" />}>
+            see all {piles.length}
           </HintRow>
         )}
       </HintList>

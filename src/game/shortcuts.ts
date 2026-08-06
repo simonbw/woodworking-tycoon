@@ -1,5 +1,5 @@
 /**
- * The single source of truth for every keyboard shortcut in the game.
+ * The single source of truth for every shortcut in the game.
  *
  * Handlers (via `useShortcut`), the on-screen hint chips, and the `?` cheat
  * sheet all read from this table, so a binding and its label can't drift apart.
@@ -7,6 +7,14 @@
  * Matching is done on `KeyboardEvent.code` rather than `.key` so bindings are
  * layout-independent and unaffected by the shift key — `codes` is what fires,
  * `keys` is what the player is shown.
+ *
+ * A shortcut can also answer to a mouse button (`buttons`). Those dispatch
+ * through the same provider and render as their own chip, so the mouse is
+ * taught in the same places the keys are. Bindings that need to know *what*
+ * the cursor is over — right-clicking a machine, a piece on the floor — are
+ * dispatched by the sprite that was hit rather than here; their entry in this
+ * table carries no `codes` and exists so the verb still gets a chip and a row
+ * in the cheat sheet.
  */
 
 /**
@@ -19,6 +27,19 @@ export type ShortcutScope = "global" | "home" | "modal";
 
 /** Cheat-sheet section. Order here is the order rendered. */
 export type ShortcutGroup = "Movement" | "Materials" | "Machines" | "General";
+
+/**
+ * A mouse button a shortcut answers to. Only the right button so far: the
+ * left one belongs to the thing under it (aiming the keyboard at a machine,
+ * pulling a blueprint off the pile), which is object-scoped rather than a
+ * shortcut.
+ */
+export type MouseButton = "right";
+
+/** What each button is called on its chip. */
+export const MOUSE_BUTTON_LABELS: Record<MouseButton, string> = {
+  right: "Right-click",
+};
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Movement",
@@ -36,6 +57,18 @@ export interface ShortcutDef {
    * `[["W"], ["↑"]]` renders as `W / ↑`, and `[["Shift", "E"]]` as `Shift+E`.
    */
   readonly keys: readonly (readonly string[])[];
+  /**
+   * Mouse buttons that also trigger it, shown as their own chip after the
+   * keys. A shortcut may have buttons and no `codes` at all.
+   */
+  readonly buttons?: readonly MouseButton[];
+  /**
+   * This binding acts on whatever the cursor is over, so the sprite that
+   * was hit dispatches it and the provider must not: a press anywhere else
+   * on screen isn't the same gesture, and routing it centrally would fire
+   * the verb on the *facing* target from across the room.
+   */
+  readonly worldTarget?: boolean;
   readonly description: string;
   readonly scope: ShortcutScope;
   readonly group: ShortcutGroup;
@@ -89,9 +122,24 @@ const defs = [
     group: "Movement",
   },
   {
-    // Escape backs out of one layer at a time: an open station sheet or
-    // door card claims it first, and only when there's nothing to back out
-    // of does it reach the pause menu. Both bindings live on the same key
+    // The innermost thing Escape backs out of: a tool (or a clamp, or the
+    // glue) picked up in the bench view goes back where it came from
+    // before the sheet holding it would fold. The right button does the
+    // same thing without reaching for the keyboard — the one mouse verb
+    // at a bench, where the pointer is already the hand.
+    id: "put-back-tool",
+    codes: ["Escape"],
+    keys: [["Esc"]],
+    buttons: ["right"],
+    description: "Put back the tool in your hand",
+    scope: "home",
+    group: "Machines",
+    sharesKey: true,
+  },
+  {
+    // Escape backs out of one layer at a time: a held tool first, then an
+    // open station sheet or door card, and only when there's nothing to back
+    // out of does it reach the pause menu. The bindings live on the same key
     // and take turns via their `enabled` conditions — a disabled binding
     // steps aside in ShortcutProvider — so registry order is what puts the
     // sheet ahead of the menu. Same trick as carry-rotate on R.
@@ -187,6 +235,20 @@ const defs = [
     shiftHint: "go backwards",
   },
   {
+    // What's in a stack is otherwise invisible — R steps the outline
+    // through it a piece at a time. Right-clicking a piece lays the whole
+    // armful out on a card instead, and any of it can be taken from there.
+    // Dispatched by the sprite that was hit (see ShopView), so no `codes`.
+    id: "inspect-floor",
+    codes: [],
+    keys: [],
+    buttons: ["right"],
+    worldTarget: true,
+    description: "Look through the pieces within reach",
+    scope: "home",
+    group: "Materials",
+  },
+  {
     // Contextual like sweep: grab the parked shop vac, or set it down.
     id: "vac-toggle",
     codes: ["KeyV"],
@@ -268,6 +330,12 @@ const defs = [
     id: "open-station-sheet",
     codes: ["Tab"],
     keys: [["Tab"]],
+    // Right-clicking a machine you're standing at opens the same sheet,
+    // aimed at the one under the cursor rather than the one you're facing.
+    // Dispatched by the sprite that was hit (see ShopView), not by the
+    // provider — the hit test is the whole point.
+    buttons: ["right"],
+    worldTarget: true,
     description: "Open the station's sheet — plans, tools, contents",
     scope: "home",
     group: "Machines",
@@ -510,4 +578,30 @@ export function shortcutsForEvent(event: {
       def.codes.includes(event.code) &&
       (def.requiresShift ? event.shiftKey : true),
   );
+}
+
+/**
+ * Every shortcut a mouse button could fire, in registry order — the button's
+ * half of `shortcutsForEvent`. Narrowed by the caller the same way.
+ */
+export function shortcutsForButton(
+  button: MouseButton,
+): readonly ShortcutDef[] {
+  return SHORTCUTS.filter(
+    (def) => def.buttons?.includes(button) && !def.worldTarget,
+  );
+}
+
+/**
+ * Everything a shortcut is shown as: its key alternatives, then a chip per
+ * mouse button. One list so a chip renders the whole binding — `Tab` on its
+ * own, `Esc / Right-click` where both work.
+ */
+export function shortcutChords(
+  def: ShortcutDef,
+): readonly (readonly string[])[] {
+  const buttons = (def.buttons ?? []).map((button) => [
+    MOUSE_BUTTON_LABELS[button],
+  ]);
+  return [...def.keys, ...buttons];
 }
