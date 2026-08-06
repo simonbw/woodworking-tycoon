@@ -145,6 +145,31 @@ test.describe("Bench view", () => {
       await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
     });
 
+    await test.step("right-click hangs the held tool back up", async () => {
+      // At a bench the pointer is the hand, so letting go of a tool
+      // shouldn't mean reaching for the keyboard. The binding is
+      // registered (put-back-tool), so the rail teaches it too.
+      const block = page.getByTestId("bench-tool-sandingBlock");
+      await block.click();
+      await expect(block).toHaveAttribute(
+        "aria-label",
+        "Hang up the Sanding Block",
+      );
+      await expect(page.getByTestId("bench-put-back-hint")).toBeVisible();
+
+      const stage = page.getByTestId("bench-stage");
+      const box = await stage.boundingBox();
+      await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, {
+        button: "right",
+      });
+
+      await expect(block).toHaveAttribute(
+        "aria-label",
+        "Pick up the Sanding Block",
+      );
+      await expect(page.getByTestId("bench-put-back-hint")).toBeHidden();
+    });
+
     await test.step("the sanding block strokes the board where it lies", async () => {
       // The fixture pins the 4"×24" board flat at bench (12,12) — it
       // spans x 10..14, y 0..24. Take the block off the rail; over the

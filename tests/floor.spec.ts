@@ -659,6 +659,94 @@ test.describe("Shop floor", () => {
       await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
     });
 
+    await test.step("the cursor picks which piece the keys act on", async () => {
+      // Two boards lying within reach on either side of the player.
+      // Which one E takes is the rummage cursor's business (R steps it);
+      // this checks the mouse can set it by pointing instead, and that
+      // right-clicking spreads everything in reach out on a card.
+      //
+      // They lie apart rather than stacked on one spot: the cursor picks
+      // the topmost sprite under it, so two pieces at the same point are
+      // one target as far as pointing goes — that's what R is still for.
+      await page.evaluate(() => {
+        const pile = (id: string, species: string, y: number) => ({
+          material: {
+            id,
+            type: "board",
+            species,
+            length: 12,
+            width: 6,
+            thickness: 1,
+            surface: "rough",
+            jointedFaces: 1,
+            jointedEdges: 2,
+          },
+          position: [5.5, y],
+          rotation: 0,
+        });
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, position: [5, 5], inventory: [] },
+          materialPiles: [
+            pile("test-oak", "oak", 4.7),
+            pile("test-pine", "pine", 6.3),
+          ],
+        }));
+      });
+      await page.waitForTimeout(50);
+
+      // Newest-dropped is the top of the stack, so E starts on the pine
+      const chip = page.getByTestId("pickup-chip");
+      await expect(chip).toContainText("Pine");
+
+      // Point at the oak underneath it — the keys follow the cursor
+      const oakAnchor = page.locator('[data-material-id="test-oak"]');
+      const box = await oakAnchor.boundingBox();
+      expect(box).not.toBeNull();
+      // Hover is pointer state computed on mousemove, so wiggle until the
+      // chip reports the piece — the same pattern the bench specs use.
+      let wiggle = 0;
+      await expect
+        .poll(async () => {
+          await page.mouse.move(box!.x + (wiggle++ % 2), box!.y);
+          return chip.textContent();
+        })
+        .toContain("Oak");
+
+      // Right-click it: every piece within reach, on one card
+      await page.mouse.click(box!.x, box!.y, { button: "right" });
+      const sheet = page.getByTestId("floor-sheet");
+      await expect(sheet).toBeVisible();
+      await expect(sheet.getByTestId("floor-sheet-row")).toHaveCount(2);
+
+      // ...and any of them can be taken straight from it
+      await sheet
+        .getByTestId("floor-sheet-row")
+        .filter({ hasText: "Oak" })
+        .getByRole("button", { name: "Take" })
+        .click();
+      const held = await page.evaluate(() =>
+        (window as any)
+          .__GET_GAME_STATE__()
+          .player.inventory.map((m: any) => m.id),
+      );
+      expect(held).toContain("test-oak");
+
+      // The card folds up once nothing is left in reach
+      await page.keyboard.press("Escape");
+      await expect(sheet).toBeHidden();
+
+      // A machine answers the same gesture, and goes straight to its sheet
+      await teleportPlayer(page, [1, 4]);
+      const bench = page.locator('[data-machine-type="workspace"]');
+      const benchBox = await bench.boundingBox();
+      expect(benchBox).not.toBeNull();
+      await page.mouse.click(benchBox!.x, benchBox!.y, { button: "right" });
+      await expect(page.getByTestId("station-sheet")).toBeVisible();
+      await page.keyboard.press("Escape");
+
+    });
+
     await test.step("starting over asks first, then clears the shop", async () => {
       await page.reload();
       await page.waitForSelector("main");

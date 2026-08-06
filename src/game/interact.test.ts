@@ -4,7 +4,7 @@ import { board } from "./board-helpers";
 import { GameState, MaterialPile } from "./GameState";
 import { getMachines, Machine, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
-import { interactLabel, resolveInteract } from "./interact";
+import { interactLabel, offsetForSource, resolveInteract } from "./interact";
 import { Board } from "./Materials";
 import { HAND_CAPACITY } from "./Person";
 
@@ -178,6 +178,61 @@ describe("interactLabel", () => {
         } as never,
       }),
       "pick up Pallet",
+    );
+  });
+});
+
+describe("offsetForSource", () => {
+  /** Point at a piece, then ask the resolver what E would now grab. */
+  function aimAt(
+    gameState: GameState,
+    machine: Machine | undefined,
+    pile: MaterialPile,
+  ) {
+    const offset = offsetForSource(gameState, machine, {
+      kind: "floor-pile",
+      pile,
+    });
+    assert.notStrictEqual(offset, null, "expected the piece to be in reach");
+    const action = resolveInteract(gameState, machine, offset!);
+    assert.strictEqual(action?.kind, "pick-up-floor");
+    return action.target;
+  }
+
+  it("aims the interact key at any piece in the stack", () => {
+    // What R reaches by stepping, the cursor reaches by pointing: every
+    // piece in the stack is addressable, not just the top one.
+    const bottom = pileAt([5.5, 5.5]);
+    const middle = pileAt([5.5, 5.5]);
+    const top = pileAt([5.5, 5.5]);
+    const state = shopWithPiles(bottom, middle, top);
+    for (const pile of [bottom, middle, top]) {
+      assert.strictEqual(aimAt(state, undefined, pile), pile);
+    }
+  });
+
+  it("indexes the whole ring when a loaded machine is in reach", () => {
+    // The resolver counts the bench's stock as the first entry of the ring
+    // and the floor's pieces after it, so a floor offset has to be shifted
+    // past the machine sources — the bug this helper exists to avoid.
+    const onTheFloor = pileAt([4.5, 6.5]);
+    const state = shopWithLoadedBench(onTheFloor);
+    const bench = theBench(state);
+    // The bench's own stock goes first, so a plain press takes that
+    assert.strictEqual(resolveInteract(state, bench, 0)?.kind, "take-inputs");
+    // ...and pointing at the floor piece still lands on it
+    assert.strictEqual(aimAt(state, bench, onTheFloor), onTheFloor);
+  });
+
+  it("refuses a piece that isn't within reach", () => {
+    const near = pileAt([5.5, 5.5]);
+    const across = pileAt([12.5, 12.5]);
+    assert.strictEqual(
+      offsetForSource(shopWithPiles(near, across), undefined, {
+        kind: "floor-pile",
+        pile: across,
+      }),
+      null,
     );
   });
 });

@@ -23,13 +23,27 @@ export const MaterialPileSprite: React.FC<{
   highlighted?: boolean;
   /** Whether the guided opening is pointing the player at this piece. */
   tutorialTarget?: boolean;
-}> = ({ pile, highlighted, tutorialTarget }) => {
+  /**
+   * Pointing at a piece within reach aims the interact key at it — the
+   * cursor's version of rummaging with R. Absent for pieces out of reach:
+   * the mouse chooses among what the body can already touch, it doesn't
+   * extend the body's reach.
+   */
+  onHover?: () => void;
+  /** Right-click: spread out everything within reach on a card. */
+  onRightClick?: () => void;
+}> = ({ pile, highlighted, tutorialTarget, onHover, onRightClick }) => {
   const [x, y] = cellToPixelVec(pile.position);
+  const inReach = onHover != null || onRightClick != null;
   return (
     <pixiContainer
       x={x}
       y={y}
       rotation={pile.rotation}
+      eventMode={inReach ? "static" : "auto"}
+      cursor={inReach ? "pointer" : "default"}
+      onPointerOver={onHover}
+      onRightClick={onRightClick}
       filters={
         highlighted
           ? TARGET_HIGHLIGHT_FILTERS
