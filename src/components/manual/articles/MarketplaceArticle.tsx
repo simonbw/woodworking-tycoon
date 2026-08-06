@@ -8,8 +8,7 @@ export const MarketplaceArticle: React.FC = () => (
       SawdustList — the local makers&rsquo; marketplace — lives on your phone (
       <ShortcutKeys shortcut="open-phone" /> or the Phone button up top). It's
       where the shop sells outside of commissions: list finished pieces at your
-      own price, or take fixed-price jobs from the job board. Time keeps passing
-      while you scroll, and sales keep rolling in while you work.
+      own price, or take fixed-price jobs from the job board.
     </P>
 
     <H>Listings</H>
@@ -29,25 +28,13 @@ export const MarketplaceArticle: React.FC = () => (
         boards; variety keeps everything moving.
       </li>
     </UL>
-    <P>
-      A listing costs nothing to keep up, and you can reprice or delist at any
-      time. Delisting returns the item.
-    </P>
+    <P>You can reprice or delist at any time; delisting returns the item.</P>
 
     <H>The Job Board</H>
     <P>
       Jobs are one-off requests — "four sanded oak boards, 3×4×1" — at a
       guaranteed price above fair value, with a tip for fast delivery. Accept,
       build, deliver. The board refreshes daily.
-    </P>
-
-    <H>Scavenging</H>
-    <P>
-      Walk out to the truck's cab and it lists places to go, each with a number
-      key — including a scavenging run: drive off and come back with free
-      pallets riding in the bed, ready to unload at the tailgate. The shop keeps
-      running while you're out — glue keeps curing and machines finish their
-      passes — but you can't do anything else until you're back.
     </P>
 
     <Note>

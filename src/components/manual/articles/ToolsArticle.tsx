@@ -5,7 +5,7 @@ export const ToolsArticle: React.FC = () => (
   <>
     <P>
       Workstations have <Term>tool slots</Term>. Mounting a handheld tool adds
-      that tool's operations to the station — a bench with a sanding block
+      that tool's operations to the station: a bench with a sanding block
       mounted can sand; unmount the block and it can't.
     </P>
 
@@ -14,7 +14,7 @@ export const ToolsArticle: React.FC = () => (
       Tools are sold on the store's <Term>Tool Wall</Term>. A bought tool rides
       home in the truck's bed like any other purchase: lift it out at the
       tailgate, carry it to the station, and mount it from the station's card
-      while standing there. Unmounting puts the tool back in your hands — set it
+      while standing there. Unmounting puts the tool back in your hands: set it
       down, shelve it, or carry it to another station. The makeshift workbench
       has two slots. Built worktables have three to six, depending on size.
     </P>
@@ -42,8 +42,8 @@ export const ToolsArticle: React.FC = () => (
     </P>
 
     <Note>
-      Jigs are built from plywood and offcuts, held with screws — keep some
-      scrap and a box of screws around.
+      Keep your offcuts and a box of screws around — that's most of a jig right
+      there.
     </Note>
   </>
 );

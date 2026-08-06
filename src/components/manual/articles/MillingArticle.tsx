@@ -40,9 +40,9 @@ export const MillingArticle: React.FC = () => (
       </li>
       <li>
         <Term>Rip to width</Term> — the table saw, once one edge is straight
-        enough to run against the fence. The band saw rips too, and takes a
-        rough edge against its fence without complaint — but its blade leaves
-        the fresh edge rough, so plan on jointing it.
+        enough to run against the fence. The band saw rips too, and its fence
+        takes a rough edge; the blade leaves the fresh edge rough, so plan on
+        jointing it.
       </li>
     </UL>
     <P>
@@ -55,16 +55,16 @@ export const MillingArticle: React.FC = () => (
       A board travels its whole length through a machine: it starts entirely on
       the infeed side and ends entirely past the cutter. The jointer, planer,
       table saw, and band saw all need clear floor at both ends of the cut,
-      scaled to the stock — an 8' rip wants about 7' clear on each side of the
+      scaled to the stock: an 8' rip needs about 7' clear on each side of the
       table saw, which in a one-car garage means the middle of the long wall
-      with nothing parked in the lane. When the floor says no, the machine will
-      tell you which side is short. Stock too long for the room it's in gets
-      crosscut to length at the miter saw first; a chop saw holds the board
-      still and never needs a runway.
+      with nothing parked in the lane. If there isn't room, the machine shows
+      which side is short. Stock too long for the room it's in gets crosscut to
+      length at the miter saw first; a chop saw holds the board still, so it
+      works anywhere.
     </P>
     <Note>
-      A bare worktable doesn't block the lane — stock slides right over its top.
-      Parked at a saw's outfeed, that's not in the way; that's an outfeed table.
+      Stock slides right over a bare worktable. Park one past the saw and you've
+      got yourself an outfeed table.
     </Note>
 
     <H>Running the Planer</H>
@@ -80,25 +80,24 @@ export const MillingArticle: React.FC = () => (
 
     <H>Resawing</H>
     <P>
-      <Term>Resawing</Term> splits a board through its thickness, so an 8/4
-      blank becomes two 4/4 boards instead of one 4/4 board and a bin of
-      shavings. The saw's fence is set in <Term>quarters</Term> — the distance
-      from the blade is the thickness of the piece it takes off. Where a saw
-      both rips and resaws, press <Term>R</Term> at it to turn the stock between
-      lying flat and standing on edge.
+      <Term>Resawing</Term> splits a board through its thickness: one 8/4 blank
+      yields two 4/4 boards. The saw's fence is set in <Term>quarters</Term> —
+      the distance from the blade is the thickness of the piece it takes off.
+      Where a saw both rips and resaws, press <Term>R</Term> at it to turn the
+      stock between lying flat and standing on edge.
     </P>
     <UL>
       <li>
         <Term>Band saw</Term> — any width the shop stocks, and the blade is thin
         enough to cost nothing: the two halves add up to the board you started
-        with. No flat face required — the fence rides whatever the board has,
-        and the pieces come away no better referenced than the board went in.
-        Both fresh faces come off rough, so plan on planing or sanding them.
+        with. The fence rides whatever the board has, rough stock included, and
+        the pieces come away referenced the same as the board went in. Both
+        fresh faces come off rough, so plan on planing or sanding them.
       </li>
       <li>
         <Term>Table saw</Term>, with the tall resaw fence bolted on — up to 6"
         wide, since the cut is two passes that have to meet in the middle. The
-        blade eats a quarter inch, but leaves cleaner faces. The board needs a
+        blade takes a quarter inch, but leaves cleaner faces. The board needs a
         straight edge as well as a flat face to stand up square. Press R to lay
         the stock back down and rip with the fence still mounted.
       </li>

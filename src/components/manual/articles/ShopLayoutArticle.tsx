@@ -28,8 +28,9 @@ export const ShopLayoutArticle: React.FC = () => (
       A machine you buy rides home crated in the truck's bed. Walk out to the
       tailgate and lift it out with <ShortcutKeys shortcut="carry-machine" />,
       then carry it in through the garage door. Worktables you build come off
-      the bench crated onto the floor beside it. Crates don't block walking —
-      stand on one and lift it whenever you're ready to place the machine.
+      the bench crated onto the floor beside it. You can walk right over a
+      crate; stand on it and lift the machine out whenever you're ready to place
+      it.
     </P>
 
     <H>Placement</H>
@@ -41,8 +42,8 @@ export const ShopLayoutArticle: React.FC = () => (
     </P>
 
     <Note>
-      Nothing is permanent — machines can be picked up and rearranged at any
-      time.
+      Give the table saw the middle of the long wall — long rips need room on
+      both ends.
     </Note>
   </>
 );

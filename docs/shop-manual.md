@@ -122,9 +122,19 @@ way in the first copy pass:
 4. **State facts, not theses.** Openers give information ("Skills
    determine what you know how to build"), not metaphors ("two ledgers
    track this shop's rise") or sales copy ("where the money hides").
-5. **Personality lives only in the handwritten margin `Note`s** — and
-   even those are practical tips ("Never feed end grain through the
-   planer"), not aphorisms ("Nobody's born knowing end grain").
+5. **Personality lives only in the handwritten margin `Note`s — and
+   there it's wanted.** A Note is the binder's previous owner scribbling
+   a practical tip in their own voice ("Say 'eight-quarter', not 'two
+   inches thick'"); a Note with no flavor should just be body text.
+   Shop vernacular ("the blade eats a quarter inch", "an 8' rip wants
+   7' clear") belongs in Notes or nowhere — body text stays plain.
+6. **State the positive fact by itself.** Not "A worktable doesn't
+   block the lane — stock slides over it" but "Stock slides right over
+   a bare worktable." The negative-then-positive pivot ("that's not X;
+   that's Y") reads as generated copy.
+7. **Ration em dashes.** One appositive per paragraph is plenty. Where
+   a dash splices two clauses, a colon, semicolon, or full stop usually
+   serves better.
 
 ## Content format
 
