@@ -146,11 +146,25 @@ export const DRIVE_MS = 240;
 /** Dust lands about twice a second while the tool is moving. */
 const DUST_THROTTLE_MS = 500;
 
-/** Open floor kept around the bench in the scene frame, in inches. */
-const FRAME_MARGIN_IN = 9;
+/**
+ * Air kept around the bench in the scene frame, in inches. Small on
+ * purpose: this used to hold the apron of floor the scene painted for
+ * itself, and the scene stopped painting floor when the live shop
+ * became the backdrop. All it buys now is that the top's edges aren't
+ * jammed against the chrome — every inch of it is an inch the bench
+ * doesn't get, and leaning over a bench should fill the window.
+ */
+const FRAME_MARGIN_IN = 3;
 
-/** Canvas kept clear for the floating chrome, in px. */
-const TOP_CHROME_PX = 96;
+/**
+ * Canvas kept clear for the floating chrome, in px — measured off the
+ * chrome rather than guessed, because the frame centers in what's left
+ * and anything the band is short by is bench hidden under a panel. The
+ * tool rail hangs 148px down from the top at any viewport (it grows
+ * sideways with the slot count, never down); the hint cluster and the
+ * blueprint corner reach 91px up from the bottom.
+ */
+const TOP_CHROME_PX = 152;
 const BOTTOM_CHROME_PX = 96;
 const SIDE_CHROME_PX = 24;
 

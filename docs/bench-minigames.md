@@ -289,7 +289,15 @@ zoomed bench and the floor bench are one drawing at two zooms. Both
 exports anchor on their canvas center and `trim:images` crops them
 symmetrically about it, so the close-up lands exactly over the shop's
 copy — and until it decodes, the shop's copy is already underneath,
-zoomed and in register, so there is nothing to fall back to. The bench's contents lie on it exactly where
+zoomed and in register, so there is nothing to fall back to. Leaning
+over a bench should fill the window with bench, so the frame is sized
+tight: the top (plus a staged pallet's overhang) and three inches of
+air, fitted into what's left after the bands the floating chrome
+occupies — bands measured off the chrome, since the frame centers in
+the remainder and whatever a band is short by is bench hidden under a
+panel. The old nine inches of margin came from the days when the scene
+painted its own apron of floor; the live shop took that job over, and
+the inches went back to the bench. The bench's contents lie on it exactly where
 `MachineState.benchLayout` says (`BenchScene`, turns and flips tweened;
 a board flipped up on edge with F narrows to its thickness,
 `BoardOnEdgeSprite`), stroke and saw work runs on those very pieces in

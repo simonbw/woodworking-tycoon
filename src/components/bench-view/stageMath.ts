@@ -19,8 +19,13 @@ export interface StageRect {
   readonly height: number;
 }
 
-/** Padding kept around the workpiece so edges stay strokable. */
-const STAGE_MARGIN = 36;
+/**
+ * Padding kept around the frame so its edges stay strokable. Slim,
+ * because the caller has already reserved the bands its chrome floats
+ * in and the frame carries its own margin in inches — this is the last
+ * few pixels of grab room, not the breathing space.
+ */
+const STAGE_MARGIN = 16;
 
 /** Leaning in only goes so far — cap the zoom for tiny pieces. */
 const MAX_PX_PER_IN = 40;
