@@ -46,6 +46,49 @@ const carried = async (page: any) =>
   (await page.evaluate(() => (window as any).__GET_GAME_STATE__().player))
     .carriedMachine ?? null;
 
+/**
+ * Where a world marker actually is once the world has stopped moving.
+ *
+ * The camera eases toward the player rather than cutting, so the box read
+ * straight after a teleport names a point the shop is still sliding out
+ * from under: aim at it and the cursor lands on whatever drifts into that
+ * spot instead. Read the box until two reads agree — that's the camera
+ * settled — and aim at the answer.
+ */
+async function settledBox(locator: any) {
+  let previous: { x: number; y: number; width: number; height: number } | null =
+    null;
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox();
+      const still =
+        box !== null &&
+        previous !== null &&
+        Math.abs(box.x - previous.x) < 0.5 &&
+        Math.abs(box.y - previous.y) < 0.5;
+      previous = box;
+      return still;
+    })
+    .toBe(true);
+  return previous!;
+}
+
+/**
+ * Right-click a world marker until the thing it should open is open. The
+ * press itself is a hit test against the canvas, so a click thrown while
+ * the camera still moves finds nothing at all and there is no press to
+ * retry — hence aiming afresh each time.
+ */
+async function rightClickUntilVisible(page: any, locator: any, target: any) {
+  await expect
+    .poll(async () => {
+      const box = await settledBox(locator);
+      await page.mouse.click(box.x, box.y, { button: "right" });
+      return target.isVisible();
+    })
+    .toBe(true);
+}
+
 async function teleportPlayer(page: any, position: [number, number]) {
   await page.evaluate((pos: [number, number]) => {
     (window as any).__UPDATE_GAME_STATE__((state: any) => ({
@@ -701,21 +744,20 @@ test.describe("Shop floor", () => {
 
       // Point at the oak underneath it — the keys follow the cursor
       const oakAnchor = page.locator('[data-material-id="test-oak"]');
-      const box = await oakAnchor.boundingBox();
-      expect(box).not.toBeNull();
       // Hover is pointer state computed on mousemove, so wiggle until the
       // chip reports the piece — the same pattern the bench specs use.
       let wiggle = 0;
       await expect
         .poll(async () => {
-          await page.mouse.move(box!.x + (wiggle++ % 2), box!.y);
+          const box = await settledBox(oakAnchor);
+          await page.mouse.move(box.x + (wiggle++ % 2), box.y);
           return chip.textContent();
         })
         .toContain("Oak");
 
       // Right-click it: every piece within reach, on one card
-      await page.mouse.click(box!.x, box!.y, { button: "right" });
       const sheet = page.getByTestId("floor-sheet");
+      await rightClickUntilVisible(page, oakAnchor, sheet);
       await expect(sheet).toBeVisible();
       await expect(sheet.getByTestId("floor-sheet-row")).toHaveCount(2);
 
@@ -739,10 +781,9 @@ test.describe("Shop floor", () => {
       // A machine answers the same gesture, and goes straight to its sheet
       await teleportPlayer(page, [1, 4]);
       const bench = page.locator('[data-machine-type="workspace"]');
-      const benchBox = await bench.boundingBox();
-      expect(benchBox).not.toBeNull();
-      await page.mouse.click(benchBox!.x, benchBox!.y, { button: "right" });
-      await expect(page.getByTestId("station-sheet")).toBeVisible();
+      const stationSheet = page.getByTestId("station-sheet");
+      await rightClickUntilVisible(page, bench, stationSheet);
+      await expect(stationSheet).toBeVisible();
       await page.keyboard.press("Escape");
 
     });
