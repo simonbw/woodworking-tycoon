@@ -137,6 +137,28 @@ export function materialSources(
   return sources;
 }
 
+/**
+ * The rummage offset that makes `resolveInteract` land on `source` — what
+ * the cursor sets when it points at a specific piece, instead of stepping R
+ * around the ring until the outline lands on it.
+ *
+ * Mirrors the resolver's own two cases: with a loaded machine in reach the
+ * offset indexes the whole ring, and without one it indexes the floor's
+ * pieces alone. `null` when that source isn't in reach at all.
+ */
+export function offsetForSource(
+  gameState: GameState,
+  targetedMachine: Machine | undefined,
+  source: MaterialSource,
+): number | null {
+  const sources = materialSources(gameState, targetedMachine);
+  const piles = sources.filter((entry) => entry.kind === "floor-pile");
+  const ring = sources.length > piles.length ? sources : piles;
+  const key = materialSourceKey(source);
+  const index = ring.findIndex((entry) => materialSourceKey(entry) === key);
+  return index === -1 ? null : index;
+}
+
 function dedupeMachines(machines: ReadonlyArray<Machine>): Machine[] {
   const seen = new Set<string>();
   return machines.filter((machine) => {

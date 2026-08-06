@@ -10,8 +10,8 @@ alongside the authored commission sequence.
 `src/game/job-generation.ts`, and the UI in `src/components/phone/`.
 Notable deltas from the design below: job offers carry a
 `materialCostFree` flag so the board refresh can enforce the income-floor
-guarantee, and raw stock shares one "lumber" demand bucket instead of
-per-type buckets. The "Marketplace tab" described below was later made
+guarantee, and **listings only take finished work** — see "What the
+marketplace takes" below. The "Marketplace tab" described below was later made
 diegetic: SawdustList now renders inside a phone overlay (`PhoneModal`)
 opened from the top bar, the sim keeps ticking while you browse, and
 scavenging errands start at the garage door (`DoorPrompt`) instead of a
@@ -102,10 +102,37 @@ freely is what funds the second commission's gear).
 
 ## Selling: listings
 
+### What the marketplace takes
+
+Finished work only, plus the odd secondhand tool — `isListable` in
+`marketplace.ts`, enforced in `listItemsAction` and in the phone's pick
+list. **Raw stock never goes up**: boards, sheet goods, panels, end-grain
+slices, whole pallets.
+
+This is a rule about what scavenging is for. Pallet wood is free and
+unlimited, so pricing it by the board foot makes the scavenging trip an
+income stream and the bench optional — you could play the whole early game
+without building anything. Making the boards unsellable puts the money
+back where the work is: spare stock is something to build with, or
+something to throw in the garbage can, and neither of those is a faucet.
+
+Boards still leave the shop two ways, both of which are somebody else
+asking: a **job** that names them (`"4 sanded oak boards, 3×4×1"`) and a
+**commission** whose work order calls for them. Both are orders, not
+inventory clearance.
+
+`getSellValue` is unchanged and still prices raw stock — it is the
+fair-value anchor for job payouts and (via `BUY_MARKUP`) for store
+shelves, not a claim that a thing is sellable.
+
+Because only products and tools reach a listing, `demandCategory` is just
+the material type: each product floods its own market, and there is no
+shared "lumber" commodity bucket to flood.
+
 ### Flow
 
-1. Player carries an item (in `player.inventory`) and opens the Marketplace
-   tab.
+1. Player carries a finished piece (in `player.inventory`) and opens the
+   Marketplace tab.
 2. They pick the item, see its fair value hint, and choose an asking price.
 3. Listing the item removes it from inventory — it's boxed up awaiting
    pickup and no longer exists in the shop world. (v1 keeps this abstract;

@@ -8,7 +8,12 @@ import React, {
 } from "react";
 import { useCellMap } from "./useCellMap";
 import { Machine, machineKey as machineStateKey } from "../game/Machine";
-import { materialSourceKey, materialSources } from "../game/interact";
+import {
+  materialSourceKey,
+  materialSources,
+  offsetForSource,
+} from "../game/interact";
+import { MaterialPile } from "../game/GameState";
 import { atTruckCab } from "../game/lot";
 import {
   Direction,
@@ -37,6 +42,20 @@ interface TargetedMachineValue {
    */
   pileOffset: number;
   cyclePile: (step: 1 | -1) => void;
+  /**
+   * Aim the rummage cursor at one specific piece on the floor (mouse path)
+   * — the pointing equivalent of stepping R around the ring until the
+   * outline lands on it. Ignored for a piece that isn't in reach.
+   */
+  setPileTarget: (pile: MaterialPile) => void;
+  /**
+   * Whether the card listing every piece within reach is spread open
+   * (right-clicking a piece on the floor). Closes itself when there's
+   * nothing left in reach to list.
+   */
+  floorSheetOpen: boolean;
+  openFloorSheet: () => void;
+  closeFloorSheet: () => void;
   /**
    * The station whose full sheet is spread open (benches and other
    * recipe-driven stations). Cleared automatically when the player walks
@@ -112,9 +131,12 @@ function facingIndex(
  *
  * The default target follows the player's facing — turning toward a
  * machine is selecting it, and the in-world highlight shows the choice.
- * X (`cycleTarget`) still steps through the square's machines for the
- * stacked cases facing can't split (a benchtop machine on its table);
- * the manual choice lasts until the player moves or turns.
+ * G (`cycleTarget`) still steps through the square's machines for the
+ * stacked cases facing can't split (a benchtop machine on its table), and
+ * the cursor picks one outright by pointing at it (`setTarget`, and
+ * `setPileTarget` for the floor's pieces). Any of those manual choices
+ * lasts until the player moves or turns, which hands the pick back to
+ * facing.
  */
 export const TargetedMachineProvider: React.FC<{
   children: React.ReactNode;
@@ -125,6 +147,7 @@ export const TargetedMachineProvider: React.FC<{
   const [pileOffset, setPileOffset] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | undefined>(undefined);
   const [truckMenuOpenRaw, setTruckMenuOpen] = useState(false);
+  const [floorSheetOpen, setFloorSheetOpen] = useState(false);
 
   const machines =
     cellMap.at(gameState.player.position)?.operableMachines ?? [];
@@ -164,10 +187,29 @@ export const TargetedMachineProvider: React.FC<{
   // themselves rather than the player's cell: reach is continuous, so
   // crossing a cell line with the same pieces at hand keeps the cursor,
   // and so does turning in place at the same bench.
-  const sourcesKey = materialSources(gameState, machine)
-    .map(materialSourceKey)
-    .join("|");
+  const sources = materialSources(gameState, machine);
+  const sourcesKey = sources.map(materialSourceKey).join("|");
   useEffect(() => setPileOffset(0), [sourcesKey]);
+
+  const setPileTarget = useCallback(
+    (pile: MaterialPile) => {
+      const offset = offsetForSource(gameState, machine, {
+        kind: "floor-pile",
+        pile,
+      });
+      if (offset !== null) setPileOffset(offset);
+    },
+    [gameState, machine],
+  );
+
+  // The floor card belongs to what's in reach: step away from the last
+  // piece (or fill your arms, which empties the ring) and it folds up.
+  const nothingInReach = !sources.some(
+    (source) => source.kind === "floor-pile",
+  );
+  useEffect(() => {
+    if (nothingInReach) setFloorSheetOpen(false);
+  }, [nothingInReach]);
 
   // The sheet stays open only while its station is still at hand; walking
   // away (or carrying the station off) folds it up.
@@ -184,6 +226,9 @@ export const TargetedMachineProvider: React.FC<{
   useEffect(() => {
     if (sheetOutOfReach) setSheetKey(undefined);
   }, [sheetOutOfReach]);
+
+  const openFloorSheet = useCallback(() => setFloorSheetOpen(true), []);
+  const closeFloorSheet = useCallback(() => setFloorSheetOpen(false), []);
 
   const openSheet = useCallback(
     (target: Machine) => setSheetKey(machineKey(target)),
@@ -217,6 +262,10 @@ export const TargetedMachineProvider: React.FC<{
         machine != null && machineKey(candidate) === machineKey(machine),
       pileOffset,
       cyclePile,
+      setPileTarget,
+      floorSheetOpen,
+      openFloorSheet,
+      closeFloorSheet,
       sheetMachine,
       openSheet,
       closeSheet,
@@ -238,6 +287,10 @@ export const TargetedMachineProvider: React.FC<{
       cycleTarget,
       pileOffset,
       cyclePile,
+      setPileTarget,
+      floorSheetOpen,
+      openFloorSheet,
+      closeFloorSheet,
       sheetMachine,
       openSheet,
       closeSheet,

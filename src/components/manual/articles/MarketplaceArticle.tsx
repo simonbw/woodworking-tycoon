@@ -13,9 +13,11 @@ export const MarketplaceArticle: React.FC = () => (
 
     <H>Listings</H>
     <P>
-      Carry an item to list it, and set your price against the{" "}
-      <Term>fair value</Term> estimate. Listings sell on their own over time,
-      and two things drive the odds:
+      Carry a finished piece to list it, and set your price against the{" "}
+      <Term>fair value</Term> estimate. Buyers want finished work; lumber,
+      panels, and pallets don't go up, so spare stock is yours to build with or
+      toss in the garbage can. Listings sell on their own over time, and two
+      things drive the odds:
     </P>
     <UL>
       <li>
@@ -33,8 +35,8 @@ export const MarketplaceArticle: React.FC = () => (
     <H>The Job Board</H>
     <P>
       Jobs are one-off requests ("four sanded oak boards, 3×4×1") at a
-      guaranteed price above fair value, with a tip for fast delivery. The board
-      refreshes daily.
+      guaranteed price above fair value, with a tip for fast delivery. A job is
+      the one way to sell boards as boards. The board refreshes daily.
     </P>
 
     <Note>

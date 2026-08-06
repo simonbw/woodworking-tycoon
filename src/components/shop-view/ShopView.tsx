@@ -2,7 +2,7 @@ import { Application, useApplication } from "@pixi/react";
 import type { Application as PixiApplication, Container } from "pixi.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../useCellMap";
-import { isSameMachine, MachineId, machineKey } from "../../game/Machine";
+import { MachineId, machineKey } from "../../game/Machine";
 import { tutorialTargets } from "../tutorial/tutorialTargets";
 import { vectorKey } from "../../game/Vectors";
 import { useTexture } from "../../utils/useTexture";
@@ -39,6 +39,7 @@ import { HeldMovementListener } from "./heldMovementInput";
 import { HeldKeyListener } from "./heldOperateInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
+import { MachineHitTargets } from "./MachineHitTargets";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { sheetIsBenchView } from "../station/StationSheet";
 import { ShopOverlayLayer } from "../shop-overlay/ShopOverlayLayer";
@@ -74,9 +75,11 @@ const LOT_APRON = PIXELS_PER_CELL * 3;
  * nothing reads back a colour — but headless Chromium has no GPU, so every
  * frame is a software raster of the full canvas, and that is the largest
  * single cost in the suite. A tenth in each axis leaves a hundredth of the
- * fill work. Only the backing store shrinks: CSS size, hit testing, and
- * the ticker's deltas are all in logical pixels, so nothing a spec drives
- * can tell the difference.
+ * fill work. Only the backing store shrinks: the ticker's deltas are in
+ * logical pixels already, and RendererSize pins the element's CSS size
+ * back to them — without that, dropping the resolution shrinks the canvas
+ * box too, which puts the world in a corner and scales its hit testing to
+ * match, and a spec pointing at anything would miss.
  */
 const E2E_RENDER_SCALE = 0.1;
 
@@ -125,6 +128,17 @@ const RendererSize: React.FC<{ width: number; height: number }> = ({
       app.renderer.resize(width, height);
     }
   }, [app, width, height]);
+  // Pin the element to logical pixels. Dropping the resolution (the E2E
+  // build, see capRenderRate) shrinks the backing store *and* the CSS box
+  // PIXI writes, which would leave the world drawn in a small patch of the
+  // corner with its hit testing scaled to match. Only the backing store is
+  // meant to shrink — so the canvas keeps its full size here and just
+  // rasterizes fewer pixels into it.
+  useEffect(() => {
+    if (!app?.canvas) return;
+    app.canvas.style.width = `${width}px`;
+    app.canvas.style.height = `${height}px`;
+  }, [app, width, height]);
   return null;
 };
 
@@ -151,8 +165,11 @@ export const ShopView: React.FC = () => {
     isTargeted,
     setTarget,
     toggleSheet,
+    openSheet,
     sheetMachine,
     pileOffset,
+    setPileTarget,
+    openFloorSheet,
     truckMenuOpen,
   } = useTargetedMachine();
 
@@ -198,22 +215,16 @@ export const ShopView: React.FC = () => {
   // tutorial is done, so this costs nothing for the rest of the game.
   const coach = tutorialTargets(gameState);
 
-  // Clicking a machine you're standing at aims the keyboard at it; a
-  // second click on a recipe-driven station spreads its sheet open. The
-  // mouse can't reach machines you're not at — walk over first.
-  const machineClickHandler = (machine: (typeof machines)[number]) => {
-    const reachable = operableHere.some((candidate) =>
-      isSameMachine(candidate.state, machine.state),
-    );
-    if (!reachable) return undefined;
-    return () => {
-      if (!isTargeted(machine)) {
-        setTarget(machine);
-      } else {
-        toggleSheet();
-      }
-    };
-  };
+  // Which of the floor's pieces answer to the cursor: pointing at one aims
+  // E at it (the rummage key's job, done by hand), and right-clicking
+  // spreads every piece in reach out on a card. Only the pieces the
+  // interact resolver is actually offering are live — out of reach, or
+  // hands too full to take anything, and they're scenery.
+  const reachablePiles = new Set(
+    interact?.kind === "pick-up-floor"
+      ? interact.piles.map((pile) => pile.material.id)
+      : [],
+  );
 
   const width = cellToPixel(cellMap.getWidth());
   const height = cellToPixel(cellMap.getHeight());
@@ -436,16 +447,46 @@ export const ShopView: React.FC = () => {
                   />
                 ))}
 
+                {/* The machines' hit shapes, under the loose stock on
+                  purpose — a board lying across a machine is what you're
+                  pointing at, not the machine under it */}
+                <MachineHitTargets
+                  machines={operableHere}
+                  onHover={setTarget}
+                  onClick={(machine) =>
+                    isTargeted(machine) ? toggleSheet() : setTarget(machine)
+                  }
+                  onRightClick={(machine) => {
+                    setTarget(machine);
+                    openSheet(machine);
+                  }}
+                />
+
                 {/* Piles draw in drop order, so the last piece set down on a
                   spot is on top — matching the pickup order E offers */}
-                {gameState.materialPiles.map((pile) => (
-                  <MaterialPileSprite
-                    key={`pile-${pile.material.id}`}
-                    pile={pile}
-                    highlighted={pile === pickupTarget && !benchDive}
-                    tutorialTarget={coach.matchesPile?.(pile.material) ?? false}
-                  />
-                ))}
+                {gameState.materialPiles.map((pile) => {
+                  const live =
+                    reachablePiles.has(pile.material.id) && !benchDive;
+                  return (
+                    <MaterialPileSprite
+                      key={`pile-${pile.material.id}`}
+                      pile={pile}
+                      highlighted={pile === pickupTarget && !benchDive}
+                      tutorialTarget={
+                        coach.matchesPile?.(pile.material) ?? false
+                      }
+                      onHover={live ? () => setPileTarget(pile) : undefined}
+                      onRightClick={
+                        live
+                          ? () => {
+                              setPileTarget(pile);
+                              openFloorSheet();
+                            }
+                          : undefined
+                      }
+                    />
+                  );
+                })}
                 {/* Every worktable's cast shadow, in one pass beneath all
                   of them: tables pushed together are one bench, and a
                   neighbour's shadow falling across the top butted against
@@ -484,7 +525,6 @@ export const ShopView: React.FC = () => {
                       tutorialTarget={coach.machineTypeIds.has(
                         machinePlacement.type.id as MachineId,
                       )}
-                      onClick={machineClickHandler(machinePlacement)}
                     />
                   ))}
                 {/* Painted over the machines: a blocked lane cell is usually

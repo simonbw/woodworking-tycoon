@@ -106,13 +106,22 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
           over.
         </p>
       );
-    case "listStock":
+    case "buildSecondShelf":
       return (
         <p>
-          Marguerite paid, and word is getting around: you have a phone now.
-          Open it with <ShortcutKeys shortcut="open-phone" /> and list your
-          leftover pallet wood for sale. Priced fair, anything sells eventually
-          — this is how the shop pays for itself between clients.
+          Marguerite paid, and word is getting around. Build another rustic
+          shelf — this one is for sale, not for a client. A pallet only carries
+          three stringers and a shelf wants two, so take the truck out for
+          another one first.
+        </p>
+      );
+    case "listShelf":
+      return (
+        <p>
+          You have a phone now. Open it with{" "}
+          <ShortcutKeys shortcut="open-phone" /> and put the shelf up for sale
+          at whatever you think it's worth. Priced fair, anything sells
+          eventually — this is how the shop pays for itself between clients.
         </p>
       );
     case "acceptJob":

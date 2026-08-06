@@ -7,6 +7,7 @@ import {
 } from "../../game/game-actions/marketplace-actions";
 import {
   ListingInterest,
+  isListable,
   listingCount,
   listingGroupKey,
   listingInterest,
@@ -64,14 +65,15 @@ export const ListingsSection: React.FC = () => {
 /**
  * Sellable inventory collapsed into offers: identical pieces share one row
  * so they can be priced once and listed together, rather than repeating a
- * row per piece.
+ * row per piece. Raw stock never appears — the marketplace only takes
+ * what `isListable` accepts.
  */
 function groupSellable(
   inventory: ReadonlyArray<MaterialInstance>,
 ): MaterialInstance[][] {
   const groups = new Map<string, MaterialInstance[]>();
   for (const material of inventory) {
-    if (getSellValue(material) <= 0) {
+    if (!isListable(material) || getSellValue(material) <= 0) {
       continue;
     }
     const key = listingGroupKey(material);

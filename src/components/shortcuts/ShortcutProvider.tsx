@@ -10,10 +10,11 @@ import React, {
 import {
   ShortcutId,
   ShortcutScope,
+  shortcutsForButton,
   shortcutsForEvent,
 } from "../../game/shortcuts";
 
-type Handler = (event: KeyboardEvent) => void;
+type Handler = (event: KeyboardEvent | MouseEvent) => void;
 
 interface Registration {
   handler: Handler;
@@ -117,6 +118,50 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
+  // The shop floor is the only screen (everything else is an overlay that
+  // claims the modal scope), so outside a modal both scopes live.
+  const allowedScopes = (): readonly ShortcutScope[] =>
+    modalDepthRef.current > 0 ? ["modal"] : ["global", "home"];
+
+  // Route one event to at most one handler: first def in registry order
+  // whose scope is live and whose innermost enabled registration answers.
+  // A disabled binding steps aside rather than swallowing the event, so
+  // another def can still take it.
+  const dispatch = (
+    defs: readonly { id: ShortcutId; scope: ShortcutScope }[],
+    event: KeyboardEvent | MouseEvent,
+  ): boolean => {
+    const allowed = allowedScopes();
+    for (const def of defs) {
+      if (!allowed.includes(def.scope)) continue;
+      const stack = handlers.current.get(def.id) ?? [];
+      const registration = [...stack]
+        .reverse()
+        .find((candidate) => candidate.isEnabled());
+      if (!registration) continue;
+      event.preventDefault();
+      registration.handler(event);
+      return true;
+    }
+    return false;
+  };
+
+  const dispatchRef = useRef(dispatch);
+  dispatchRef.current = dispatch;
+
+  // The right button, routed exactly like a key. Only surface-wide verbs
+  // come through here (hanging up the held tool at a bench); a right-click
+  // that has to know what it landed on is dispatched by the sprite that was
+  // hit. The native menu is suppressed either way — see BrowserDefaultsGuard.
+  useEffect(() => {
+    const onContextMenu = (event: MouseEvent) => {
+      if (isEditable(event.target)) return;
+      dispatchRef.current(shortcutsForButton("right"), event);
+    };
+    document.addEventListener("contextmenu", onContextMenu);
+    return () => document.removeEventListener("contextmenu", onContextMenu);
+  }, []);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       // Let the browser's own editing shortcuts through untouched.
@@ -127,24 +172,7 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
       if (isEditable(event.target) && event.code !== "Escape") return;
       if (activatesFocusedControl(event)) return;
 
-      // The shop floor is the only screen (everything else is an overlay
-      // that claims the modal scope), so outside a modal both scopes live.
-      const allowed: readonly ShortcutScope[] =
-        modalDepthRef.current > 0 ? ["modal"] : ["global", "home"];
-
-      for (const def of shortcutsForEvent(event)) {
-        if (!allowed.includes(def.scope)) continue;
-        // Innermost registration first. A disabled binding steps aside rather
-        // than swallowing the key, so another scope can still answer for it.
-        const stack = handlers.current.get(def.id) ?? [];
-        const registration = [...stack]
-          .reverse()
-          .find((candidate) => candidate.isEnabled());
-        if (!registration) continue;
-        event.preventDefault();
-        registration.handler(event);
-        return;
-      }
+      dispatchRef.current(shortcutsForEvent(event), event);
     };
 
     document.addEventListener("keydown", onKeyDown);

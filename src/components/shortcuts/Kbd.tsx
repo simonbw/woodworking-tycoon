@@ -1,6 +1,6 @@
 import React, { Fragment, useContext } from "react";
 import { classNames } from "../../utils/classNames";
-import { getShortcut, ShortcutId } from "../../game/shortcuts";
+import { getShortcut, shortcutChords, ShortcutId } from "../../game/shortcuts";
 
 /**
  * Which surface the hint chrome sits on: "paper" (ink on a light card) or
@@ -65,12 +65,18 @@ export const KeyChips: React.FC<{
   );
 };
 
-/** The chips for a registered shortcut, looked up by id. */
+/**
+ * The chips for a registered shortcut, looked up by id — its keys plus any
+ * mouse button it answers to.
+ */
 export const ShortcutKeys: React.FC<{
   shortcut: ShortcutId;
   className?: string;
 }> = ({ shortcut, className }) => (
-  <KeyChips keys={getShortcut(shortcut).keys} className={className} />
+  <KeyChips
+    keys={shortcutChords(getShortcut(shortcut))}
+    className={className}
+  />
 );
 
 /**
@@ -104,7 +110,7 @@ export const Hint: React.FC<{
 }> = ({ shortcut, keys, showShift = true, children }) => {
   const muted = mutedText[useContext(HintSurfaceContext)];
   const def = shortcut ? getShortcut(shortcut) : null;
-  const chords = keys ?? def?.keys ?? [];
+  const chords = keys ?? (def ? shortcutChords(def) : []);
   return (
     <li className="flex items-baseline gap-2">
       <KeyChips keys={chords} />

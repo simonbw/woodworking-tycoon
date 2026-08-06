@@ -11,9 +11,17 @@ out of the way:
 1. **Commission 1**, start to finish — scavenge a pallet, pry it apart,
    build the shelf, load the bed, drive it over. Five steps, because these
    five verbs are the whole game and none of them are guessable.
-2. **The marketplace** — list spare wood, take a job off the board. This
-   is where the shop actually lives between commissions, so it is the
-   thing a new player most needs pointed at.
+2. **The marketplace** — build a second shelf and list it, take a job off
+   the board. This is where the shop actually lives between commissions,
+   so it is the thing a new player most needs pointed at.
+
+   The second shelf is two steps rather than one, and both are load-
+   bearing. Listings only take finished work (see
+   `docs/marketplace-and-jobs.md`), so "sell something" has to mean "make
+   something first" — and a pallet carries three stringers where a shelf
+   wants two, which sends the player around the scavenge-and-pry loop a
+   second time under their own steam. That second lap is the loop the
+   coach retires into.
 3. **A tool** — buy a sanding block, mount it on the bench. Mounting is
    the non-obvious half: a hand tool does nothing until it is in a rack.
 4. **A skill point** — spend it on Rustic Projects.
@@ -103,5 +111,5 @@ the design claim the last card rests on — that a skill point has arrived
 by the time the card asks the player to spend one.
 
 The browser tier only checks that the card is mounted, reads off game
-state, and can be retired (`tests/floor.spec.ts`). Ten steps are a
+state, and can be retired (`tests/floor.spec.ts`). Eleven steps are a
 sequence-test job.

@@ -109,6 +109,7 @@ import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { playSound } from "../../utils/sfx";
 import { toolIconSrc } from "../../utils/uiImages";
 import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
+import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
 import {
@@ -1373,29 +1374,36 @@ export const BenchWorkSurface: React.FC<{
     if (sceneActive) return bus.register(sceneHandler);
   }, [bus, sceneActive, sceneHandler]);
 
-  // R turns and F flips the piece under the pointer; Escape hangs the
-  // held tool back up. Captured ahead of the floor's own key routing —
-  // the sheet is deliberately not a modal, so the floor's R (settings)
-  // and F (put down) stay live whenever the hands aren't on a piece.
+  // Whatever the hands picked up off the rail — a tool, a clamp, the glue
+  // bottle — goes back where it came from. Escape and the right button both
+  // do it: at a bench the pointer *is* the hand, so putting something down
+  // shouldn't mean reaching for the keyboard.
+  //
+  // Registered rather than handled inline so it takes its turn against the
+  // floor's own Escape (which folds the sheet) by registry order, and so
+  // the binding can teach itself on the rail.
+  const holdingSomething = heldTool !== null || holdingClamp || holdingGlue;
+  const putBackHeld = useCallback(() => {
+    setHeldTool(null);
+    setHoveredNail(null);
+    setHoldingClamp(false);
+    setHoldingGlue(false);
+    setClampCursor(null);
+  }, []);
+  useShortcut(
+    "put-back-tool",
+    putBackHeld,
+    sceneActive && interactive && holdingSomething,
+  );
+
+  // R turns and F flips the piece under the pointer. Captured ahead of the
+  // floor's own key routing — the sheet is deliberately not a modal, so the
+  // floor's R (settings) and F (put down) stay live whenever the hands
+  // aren't on a piece.
   useEffect(() => {
     if (!sceneActive || !interactive) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if ((holdingClamp || holdingGlue) && event.code === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        setHoldingClamp(false);
-        setHoldingGlue(false);
-        setClampCursor(null);
-        return;
-      }
-      if (heldTool && event.code === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        setHeldTool(null);
-        setHoveredNail(null);
-        return;
-      }
       // With the hammer in hand, F turns the pallet over without putting
       // the hammer down — the rest of the nails are on the other side.
       if (heldTool) {
@@ -2004,16 +2012,6 @@ export const BenchWorkSurface: React.FC<{
         onPointerMove={handlePointer("move")}
         onPointerUp={handlePointer("up")}
         onPointerLeave={handlePointer("leave")}
-        onContextMenu={(event) => {
-          if (heldTool || holdingClamp || holdingGlue) {
-            event.preventDefault();
-            setHeldTool(null);
-            setHoveredNail(null);
-            setHoldingClamp(false);
-            setHoldingGlue(false);
-            setClampCursor(null);
-          }
-        }}
       >
         {stageSize && frameFit && (
           // The scene crossfades over the diving shop across the whole

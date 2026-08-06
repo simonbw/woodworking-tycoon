@@ -11,8 +11,9 @@
  * Commissions are rep-gated events now (see commissionSequence.ts), so the
  * ledger lives the way a player does: pallet-board jobs for reputation,
  * rustic shelves listed at fair value for money (the two-day pity timer
- * makes fair-priced listings deterministic income), and a commission only
- * when the reputation gate lets the phone ring.
+ * makes fair-priced listings deterministic income — and shelves are the
+ * money, because the marketplace won't take the boards they're made of),
+ * and a commission only when the reputation gate lets the phone ring.
  *
  * Two things follow from that. Every checkpoint is a shop a player could
  * actually own — which is more than the hand-written fixtures could claim.
@@ -61,9 +62,6 @@ const stringer = palletBoard(6);
 const deckBoard = palletBoard(4);
 const deckBoardOfLength = (length: number) => palletBoard(4, length);
 
-/** Any loose pallet stock — what a sell round puts up on the phone. */
-const anyPalletBoard = (m: MaterialInstance) =>
-  isBoard(m) && (m as { species: string }).species === "pallet";
 const isRusticShelf = (m: MaterialInstance) => m.type === "rusticShelf";
 
 /** Maple stock at an exact length and width — the hardwood era's material. */
@@ -302,10 +300,12 @@ function machinePrice(machineTypeId: keyof typeof MACHINE_TYPES): number {
 
 /**
  * One selling round: scavenge a truckload, pry it apart, build two rustic
- * shelves, and put everything — shelves, spare boards, stringers — up on
- * the phone at fair value. Fair-priced listings are guaranteed out by the
- * two-day pity timer, so a round is deterministic money (about $35) plus
- * the review-reputation trickle and the shelves' craft XP.
+ * shelves, and put them up on the phone at fair value. Only the shelves
+ * go up — the marketplace doesn't take raw stock (see `isListable`), so
+ * the leftover deck boards stay on the floor for the jobs to eat.
+ * Fair-priced listings are guaranteed out by the two-day pity timer, so a
+ * round is deterministic money plus the review-reputation trickle and the
+ * shelves' craft XP.
  */
 function sellRound(shop: ShopDriver): ShopDriver {
   shop.putEverythingDown();
@@ -316,7 +316,7 @@ function sellRound(shop: ShopDriver): ShopDriver {
     buildRusticShelf(shop);
     shop.putEverythingDown();
   }
-  shop.list((m) => isRusticShelf(m) || anyPalletBoard(m));
+  shop.list(isRusticShelf);
   return shop.awaitListingSales();
 }
 
