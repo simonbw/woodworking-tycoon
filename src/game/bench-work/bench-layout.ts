@@ -59,27 +59,6 @@ export function benchTopSizeIn(type: MachineType): {
 }
 
 /**
- * The nearest spot to `placement` where the piece is really on the
- * bench: its middle over the wood. Overhang is not the problem — stock
- * hangs off a real bench all the time, and plenty of it couldn't sit on
- * this one otherwise (a 46" pallet outsizes the 40" top on both axes, a
- * 4-ft rail fits no orientation). What a bench can't do is hold
- * something balanced past its own edge, so that's the whole rule, and
- * it's the same rule for a pallet as for an offcut.
- */
-export function seatOnBenchTop(
-  type: MachineType,
-  placement: BenchPlacement,
-): BenchPlacement {
-  const top = benchTopSizeIn(type);
-  return {
-    ...placement,
-    xIn: Math.min(Math.max(placement.xIn, 0), top.widthIn),
-    yIn: Math.min(Math.max(placement.yIn, 0), top.heightIn),
-  };
-}
-
-/**
  * The deterministic seat for a piece nobody has placed yet: a staged
  * pallet lands squarely centered (it covers the bench, overhanging
  * symmetrically when it outsizes the top); anything else scatters a
@@ -100,7 +79,7 @@ export function defaultBenchPlacement(
   }
   const rng = seededRandom(`bench-seat-${material.id}`);
   // Scattered across the front half — always well inside the top, so
-  // there's nothing for seatOnBenchTop to correct here.
+  // there's nothing for seatInGroup to correct here.
   return {
     xIn: widthIn * (0.22 + rng() * 0.56),
     yIn: heightIn * (0.5 + rng() * 0.4),

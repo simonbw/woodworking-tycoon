@@ -2,8 +2,10 @@ import { addConsumables, ConsumableAmount } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
 import { GameAction, GameState } from "../GameState";
 import {
+  getMachines,
   isSameMachine,
   Machine,
+  machineKey,
   MachineId,
   MachineState,
   Operation,
@@ -21,9 +23,16 @@ import { withXp } from "./skill-actions";
 import { MaterialInstance, PalletNail } from "../Materials";
 import {
   BenchPlacement,
+  benchPlacementFor,
   berthPlacementOnBench,
   defaultBenchPlacement,
 } from "../bench-work/bench-layout";
+import {
+  benchGroupAt,
+  memberFor,
+  placementInFrame,
+  placementOnMember,
+} from "../bench-work/bench-group";
 import {
   isSameNail,
   palletBoardSlot,
@@ -705,6 +714,118 @@ export function arrangeBenchMaterialAction(
             }
           : m,
       ),
+    };
+  };
+}
+
+/**
+ * Slide pieces off the neighbouring tables onto this one, keeping every
+ * one exactly where it physically lies.
+ *
+ * Tables pushed together work as one bench (bench-work/bench-group.ts),
+ * but an operation still consumes from a single machine's bays — so a
+ * glue-up whose run straddles a seam, or a build whose parts came off two
+ * tables, needs its pieces on one table before it can commit. That's not
+ * a workaround, it's what you'd do: slide the parts together, then clamp
+ * up. Every commit action downstream is left untouched.
+ *
+ * Placements are re-measured through the group frame, so nothing appears
+ * to move: a board lying across the seam is at the same spot on the floor
+ * before and after, it's just bookkept by the other table now.
+ */
+export function gatherBenchPiecesAction(
+  target: Machine,
+  pieceIds: ReadonlyArray<string>,
+): GameAction {
+  return (gameState) => {
+    const targetState = findMachineState(gameState, target);
+    if (!targetState) {
+      console.warn("No such bench to gather onto");
+      return gameState;
+    }
+    const targetMachine = new Machine(targetState);
+    const group = benchGroupAt(getMachines(gameState.machines), targetMachine);
+    const onto = memberFor(group, targetMachine);
+    if (!onto || group.members.length < 2) {
+      return gameState;
+    }
+
+    const wanted = new Set(pieceIds);
+    const takenInputs: MaterialInstance[] = [];
+    const takenOutputs: MaterialInstance[] = [];
+    const arrivals: Record<string, BenchPlacement> = {};
+    const strippedFrom = new Set<string>();
+
+    for (const member of group.members) {
+      if (member.key === onto.key) {
+        continue;
+      }
+      const claim = (material: MaterialInstance, bay: MaterialInstance[]) => {
+        if (!wanted.has(material.id)) {
+          return;
+        }
+        bay.push(material);
+        strippedFrom.add(member.key);
+        // The same spot on the floor, measured into its new owner's frame
+        arrivals[material.id] = placementOnMember(
+          group,
+          onto,
+          placementInFrame(
+            group,
+            member,
+            benchPlacementFor(member.machine, material),
+          ),
+        );
+      };
+      member.machine.inputMaterials.forEach((m) => claim(m, takenInputs));
+      member.machine.outputMaterials.forEach((m) => claim(m, takenOutputs));
+    }
+
+    if (takenInputs.length === 0 && takenOutputs.length === 0) {
+      return gameState;
+    }
+
+    const moved = new Set(
+      [...takenInputs, ...takenOutputs].map((material) => material.id),
+    );
+    return {
+      ...gameState,
+      machines: gameState.machines.map((m) => {
+        if (isSameMachine(m, targetState)) {
+          const inputMaterials = [...m.inputMaterials, ...takenInputs];
+          const outputMaterials = [...m.outputMaterials, ...takenOutputs];
+          return {
+            ...m,
+            inputMaterials,
+            outputMaterials,
+            benchLayout: {
+              ...prunedBenchLayout(m.benchLayout, [
+                ...inputMaterials,
+                ...outputMaterials,
+              ]),
+              ...arrivals,
+            },
+          };
+        }
+        if (!strippedFrom.has(machineKey(m))) {
+          return m;
+        }
+        const inputMaterials = m.inputMaterials.filter(
+          (material) => !moved.has(material.id),
+        );
+        const outputMaterials = m.outputMaterials.filter(
+          (material) => !moved.has(material.id),
+        );
+        return {
+          ...m,
+          inputMaterials,
+          outputMaterials,
+          benchLayout: prunedBenchLayout(m.benchLayout, [
+            ...inputMaterials,
+            ...outputMaterials,
+          ]),
+        };
+      }),
     };
   };
 }

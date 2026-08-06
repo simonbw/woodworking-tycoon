@@ -9,6 +9,7 @@ import { NO_CONSUMABLES } from "../Consumable";
 import {
   arrangeBenchMaterialAction,
   finishAttendedWorkAction,
+  gatherBenchPiecesAction,
   pryPalletNailAction,
 } from "./operation-actions";
 import {
@@ -573,5 +574,97 @@ describe("finished tool work lies where the workpiece lay", () => {
     assert.ok(placement);
     assert.ok(Math.abs(placement.xIn - 39) < 1e-9);
     assert.ok(Math.abs(placement.yIn - 18) < 1e-9);
+  });
+});
+
+describe("gatherBenchPiecesAction", () => {
+  function table(
+    position: [number, number],
+    overrides: Partial<MachineState> = {},
+  ): MachineState {
+    return {
+      machineTypeId: "worktable1x2",
+      position,
+      rotation: 0,
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      selectedOperationId: "",
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      tools: [],
+      ...overrides,
+    };
+  }
+
+  it("slides a neighbour's piece over without moving it an inch", () => {
+    const piece = board("maple", 24, 4, 4, "smooth");
+    // Two 4-ft tables shoulder to shoulder: the seam is at 48"
+    const left = table([0, 0], {
+      inputMaterials: [piece],
+      benchLayout: {
+        [piece.id]: { xIn: 40, yIn: 12, angleDeg: 0, flipped: false },
+      },
+    });
+    const right = table([4, 0]);
+    const state = stateWith({ machines: [left, right] });
+
+    const gathered = gatherBenchPiecesAction(getMachines(state.machines)[1], [
+      piece.id,
+    ])(state);
+
+    const [leftAfter, rightAfter] = gathered.machines;
+    assert.deepStrictEqual(leftAfter.inputMaterials, []);
+    assert.deepStrictEqual(leftAfter.benchLayout, {});
+    assert.strictEqual(rightAfter.inputMaterials.length, 1);
+    assert.strictEqual(rightAfter.inputMaterials[0].id, piece.id);
+    // 40" along the left table is 8" back from the right table's own edge
+    assert.deepStrictEqual(rightAfter.benchLayout?.[piece.id], {
+      xIn: -8,
+      yIn: 12,
+      angleDeg: 0,
+      flipped: false,
+    });
+  });
+
+  it("keeps finished work in the output bay when it moves", () => {
+    const done = board("maple", 24, 4, 4, "sanded");
+    const left = table([0, 0], { outputMaterials: [done] });
+    const state = stateWith({ machines: [left, table([4, 0])] });
+
+    const gathered = gatherBenchPiecesAction(getMachines(state.machines)[1], [
+      done.id,
+    ])(state);
+
+    assert.deepStrictEqual(gathered.machines[0].outputMaterials, []);
+    assert.strictEqual(gathered.machines[1].outputMaterials.length, 1);
+    assert.deepStrictEqual(gathered.machines[1].inputMaterials, []);
+  });
+
+  it("leaves a lone bench and its neighbours' other stock alone", () => {
+    const mine = board("maple", 24, 4, 4, "smooth");
+    const theirs = board("pine", 24, 4, 4, "rough");
+    const left = table([0, 0], { inputMaterials: [mine, theirs] });
+    const state = stateWith({ machines: [left, table([4, 0])] });
+
+    const gathered = gatherBenchPiecesAction(getMachines(state.machines)[1], [
+      mine.id,
+    ])(state);
+    assert.deepStrictEqual(
+      gathered.machines[0].inputMaterials.map((m) => m.id),
+      [theirs.id],
+    );
+
+    // A table with nobody pushed against it has nothing to gather
+    const alone = stateWith({
+      machines: [table([0, 0], { inputMaterials: [mine] })],
+    });
+    assert.strictEqual(
+      gatherBenchPiecesAction(getMachines(alone.machines)[0], [mine.id])(alone),
+      alone,
+    );
   });
 });
