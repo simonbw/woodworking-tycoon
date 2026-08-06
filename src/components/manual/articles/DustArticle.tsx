@@ -21,9 +21,9 @@ export const DustArticle: React.FC = () => (
       it, slowly.
     </P>
     <P>
-      When the dustpan fills up, empty it into the garbage can: stand there and
-      hold <ShortcutKeys shortcut="operate-machine" /> to pour it out. The broom
-      takes both hands: set it down with <ShortcutKeys shortcut="put-down" />{" "}
+      When the dustpan fills up, stand at the garbage can and hold{" "}
+      <ShortcutKeys shortcut="operate-machine" /> to pour it out. The broom
+      takes both hands; set it down with <ShortcutKeys shortcut="put-down" />{" "}
       before picking anything else up.
     </P>
 

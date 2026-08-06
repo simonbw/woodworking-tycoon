@@ -4,13 +4,12 @@ import { FigureRow, H, Note, P, Photo, Term, UL } from "./elements";
 export const MillingArticle: React.FC = () => (
   <>
     <P>
-      Lumber comes in three states of readiness. <Term>S4S</Term> — surfaced
-      four sides — is flat, straight, and ready to use. <Term>S2S</Term> has
-      surfaced faces but rough edges. <Term>Rough sawn</Term> lumber is neither
-      flat nor straight. The rougher the stock, the cheaper it is, because the
-      surfacing work is left to you. That work is milling. The hardware store
-      only sells surfaced wood; S2S and rough stock hang in the racks at the
-      lumberyard.
+      Lumber comes in three states of readiness. <Term>S4S</Term> (surfaced four
+      sides) is flat, straight, and ready to use. <Term>S2S</Term> has surfaced
+      faces but rough edges. <Term>Rough sawn</Term> lumber is neither flat nor
+      straight. Rough stock is cheaper because the surfacing work, called{" "}
+      <Term>milling</Term>, is left to you. The hardware store only sells
+      surfaced wood; S2S and rough stock hang in the racks at the lumberyard.
     </P>
     <FigureRow>
       <Photo src="/images/benchtop-jointer.png" caption="jointer — flattens" />
@@ -35,8 +34,8 @@ export const MillingArticle: React.FC = () => (
       <li>
         <Term>Straighten an edge</Term> — the jointer (after flattening a face,
         since the fence registers against it), the straight-line sled on the
-        table saw (which handles rough stock — the board rides the sled, not the
-        fence), or the hand plane.
+        table saw (the board rides the sled, so a rough edge is fine), or the
+        hand plane.
       </li>
       <li>
         <Term>Rip to width</Term> — the table saw, once one edge is straight
@@ -52,15 +51,13 @@ export const MillingArticle: React.FC = () => (
 
     <H>Room to Run Stock</H>
     <P>
-      A board travels its whole length through a machine: it starts entirely on
-      the infeed side and ends entirely past the cutter. The jointer, planer,
-      table saw, and band saw all need clear floor at both ends of the cut,
-      scaled to the stock: an 8' rip needs about 7' clear on each side of the
-      table saw, which in a one-car garage means the middle of the long wall
-      with nothing parked in the lane. If there isn't room, the machine shows
-      which side is short. Stock too long for the room it's in gets crosscut to
-      length at the miter saw first; a chop saw holds the board still, so it
-      works anywhere.
+      A board starts entirely on the infeed side of a machine and ends entirely
+      past the cutter. The jointer, planer, table saw, and band saw all need
+      clear floor at both ends of the cut, scaled to the stock: an 8' rip needs
+      about 7' clear on each side of the table saw. If there isn't room, the
+      machine shows which side is short. Stock too long for the room it's in
+      gets crosscut to length at the miter saw first; a chop saw holds the board
+      still, so it works anywhere.
     </P>
     <Note>
       Stock slides right over a bare worktable. Park one past the saw and you've
@@ -81,23 +78,23 @@ export const MillingArticle: React.FC = () => (
     <H>Resawing</H>
     <P>
       <Term>Resawing</Term> splits a board through its thickness: one 8/4 blank
-      yields two 4/4 boards. The saw's fence is set in <Term>quarters</Term> —
+      yields two 4/4 boards. The saw's fence is set in <Term>quarters</Term>;
       the distance from the blade is the thickness of the piece it takes off.
       Where a saw both rips and resaws, press <Term>R</Term> at it to turn the
       stock between lying flat and standing on edge.
     </P>
     <UL>
       <li>
-        <Term>Band saw</Term> — any width the shop stocks, and the blade is thin
-        enough to cost nothing: the two halves add up to the board you started
-        with. The fence rides whatever the board has, rough stock included, and
-        the pieces come away referenced the same as the board went in. Both
-        fresh faces come off rough, so plan on planing or sanding them.
+        <Term>Band saw</Term> — any width the shop stocks. The blade is thin
+        enough that the two halves add up to the board you started with. The
+        fence rides whatever the board has, rough stock included, and the pieces
+        come away referenced the same as the board went in. Both fresh faces
+        come off rough, so plan on planing or sanding them.
       </li>
       <li>
-        <Term>Table saw</Term>, with the tall resaw fence bolted on — up to 6"
-        wide, since the cut is two passes that have to meet in the middle. The
-        blade takes a quarter inch, but leaves cleaner faces. The board needs a
+        <Term>Table saw</Term>, with the tall resaw fence bolted on: up to 6"
+        wide, since the cut is two passes that meet in the middle. The blade
+        takes a quarter inch, but leaves cleaner faces. The board needs a
         straight edge as well as a flat face to stand up square. Press R to lay
         the stock back down and rip with the fence still mounted.
       </li>

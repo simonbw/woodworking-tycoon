@@ -48,9 +48,7 @@ directly to it. The standalone overlay component retires.
 | Welcome to the Shop          | always (auto-opens once on a brand-new game)    |
 | Controls                     | always                                          |
 | Milling & Surfaces           | the lumberyard opens, or a milling machine/tool |
-| Glue-Ups & Clamps            | the cutting-board commission's call, or a clamp |
-| Finishing                    | the cutting-board commission's call, or oil     |
-| Tools & Tool Slots           | first mountable tool owned                      |
+| Workbenches                  | first bought tool, clamp, or finish — or the cutting-board commission's call |
 | Shop Layout: Moving Machines | `shopLayoutUnlocked`                            |
 | Marketplace & Jobs           | `marketplaceUnlocked`                           |
 | Sawdust & Cleaning           | `sweepingUnlocked`                              |
@@ -62,12 +60,11 @@ Notes:
 - **Milling & Surfaces** covers rough → smooth → sanded, the machines
   that get you there, and the planer's direct-feed behavior — the planer
   does not get its own article; this is where the player meets it.
-- **Glue-Ups & Clamps** covers the two-stretch shape of a glue-up and the
-  clamp rack — the one supply that comes back, and the reason a second
-  bench is worth having.
-- **Supplies (consumables)** folds into Finishing for now (finish oil is
-  the consumable players will actually wonder about; nails explain
-  themselves). Break it out into its own article if the system grows.
+- **Workbenches** merges what were separate Tools, Glue-Ups, and
+  Finishing articles into one page on the bench: tool slots and tiers,
+  sanding and finishing, glue-ups and the clamp pool, jigs. Supplies
+  (finish oil, clamps) are covered here rather than in their own
+  article; break them out only if the system grows.
 - Per the progressive-disclosure rule, locked articles are **absent**
   from the tab list — never grayed-out teasers.
 
@@ -152,7 +149,7 @@ category, unlock predicate (for migration), and component.
   renders nothing while the article is locked. Used by the dust card,
   the station sheets (`MACHINE_ARTICLES` in
   `src/game/manual.ts` maps machine → article), and every tool rack
-  (→ Tools & Tool Slots).
+  (→ Workbenches).
 - Articles carry photo prints (`Photo` / `FigureRow` in the article
   elements): the machine PNGs from `static/images/` presented as tilted
   white-bordered prints with handwritten captions.

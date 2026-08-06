@@ -24,10 +24,9 @@ export const WelcomeArticle: React.FC = () => (
       <ShortcutKeys shortcut="pick-up" /> picks up, takes, or switches on
       whatever is in front of you, and <ShortcutKeys shortcut="put-down" /> sets
       down what you're holding, on a machine if you're standing at one. Hold{" "}
-      <ShortcutKeys shortcut="operate-machine" /> to run a power machine, for as
-      long as the cut takes. <ShortcutKeys shortcut="open-station-sheet" />{" "}
-      leans you over a bench, filling the screen with its top. Hand work happens
-      right there, with the mouse, and the wood stays where you leave it.{" "}
+      <ShortcutKeys shortcut="operate-machine" /> to run a power machine.{" "}
+      <ShortcutKeys shortcut="open-station-sheet" /> leans you over a bench,
+      where hand work happens with the mouse.{" "}
       <ShortcutKeys shortcut="pause-menu" /> stops the clock and opens the pause
       menu.
     </P>
@@ -59,8 +58,8 @@ export const WelcomeArticle: React.FC = () => (
       <li>
         Open the bench with <ShortcutKeys shortcut="open-station-sheet" />, take
         the hammer down off the rail, and pry the nails with it. A board comes
-        free when its last nail is out and stays lying on the bench; the bottom
-        boards are nailed from the other side, so flip the pallet over with{" "}
+        free when its last nail is out; the bottom boards are nailed from the
+        other side, so flip the pallet over with{" "}
         <ShortcutKeys shortcut="put-down" /> to get at them. Each nail you pull
         goes back in your tin.
       </li>

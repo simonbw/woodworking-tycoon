@@ -5,10 +5,10 @@ import { H, Note, P, Term, UL } from "./elements";
 export const MarketplaceArticle: React.FC = () => (
   <>
     <P>
-      SawdustList — the local makers&rsquo; marketplace — lives on your phone (
-      <ShortcutKeys shortcut="open-phone" /> or the Phone button up top). It's
-      where the shop sells outside of commissions: list finished pieces at your
-      own price, or take fixed-price jobs from the job board.
+      SawdustList, the local makers&rsquo; marketplace, lives on your phone (
+      <ShortcutKeys shortcut="open-phone" /> or the Phone button up top). List
+      finished pieces there at your own price, or take fixed-price jobs from the
+      job board.
     </P>
 
     <H>Listings</H>
@@ -23,18 +23,18 @@ export const MarketplaceArticle: React.FC = () => (
         your reputation grows, buyers accept higher prices.
       </li>
       <li>
-        <Term>Demand</Term> — each product category has a limited appetite.
-        Selling many cutting boards in a row softens the market for cutting
-        boards; variety keeps everything moving.
+        <Term>Demand</Term> — buyers only want so many of one product. Selling
+        many cutting boards in a row softens that market; variety keeps
+        everything moving.
       </li>
     </UL>
     <P>You can reprice or delist at any time; delisting returns the item.</P>
 
     <H>The Job Board</H>
     <P>
-      Jobs are one-off requests — "four sanded oak boards, 3×4×1" — at a
-      guaranteed price above fair value, with a tip for fast delivery. Accept,
-      build, deliver. The board refreshes daily.
+      Jobs are one-off requests ("four sanded oak boards, 3×4×1") at a
+      guaranteed price above fair value, with a tip for fast delivery. The board
+      refreshes daily.
     </P>
 
     <Note>

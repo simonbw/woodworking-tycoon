@@ -20,9 +20,7 @@ describe("manual article unlock conditions", () => {
     assert.ok(unlocked("lumber", initialGameState));
     for (const id of [
       "milling",
-      "glue-ups",
-      "finishing",
-      "tools",
+      "workbenches",
       "shop-layout",
       "dust",
       "marketplace",
@@ -39,7 +37,7 @@ describe("manual article unlock conditions", () => {
 
   it("ignores the starter hammer but counts a bought tool", () => {
     // The hammer is mounted on the workspace from minute one.
-    assert.ok(!unlocked("tools", initialGameState));
+    assert.ok(!unlocked("workbenches", initialGameState));
     const withSander: GameState = {
       ...initialGameState,
       player: {
@@ -50,7 +48,7 @@ describe("manual article unlock conditions", () => {
         ],
       },
     };
-    assert.ok(unlocked("tools", withSander));
+    assert.ok(unlocked("workbenches", withSander));
   });
 
   it("unlocks milling with the lumberyard or a milling machine", () => {
@@ -74,17 +72,17 @@ describe("manual article unlock conditions", () => {
     assert.ok(unlocked("milling", withJointer));
   });
 
-  it("unlocks finishing on owning finish or reaching the cutting-board commission", () => {
+  it("unlocks workbenches on owning finish or reaching the cutting-board commission", () => {
     assert.ok(
-      unlocked("finishing", {
+      unlocked("workbenches", {
         ...initialGameState,
         consumables: { ...initialGameState.consumables, mineralOil: 1 },
       }),
     );
     // The cutting-board commission being *offered* is enough — the manual
-    // teaches finishing the moment a client starts asking for it
+    // starts teaching the moment a client asks for finished work
     assert.ok(
-      unlocked("finishing", {
+      unlocked("workbenches", {
         ...initialGameState,
         progression: {
           ...initialGameState.progression,
@@ -93,7 +91,7 @@ describe("manual article unlock conditions", () => {
         },
       }),
     );
-    assert.ok(!unlocked("finishing", initialGameState));
+    assert.ok(!unlocked("workbenches", initialGameState));
   });
 
   it("unlocks skills at the first skill point (level 2)", () => {
@@ -113,14 +111,14 @@ describe("checkProgressionMilestonesAction manual unlocks", () => {
       consumables: { ...initialGameState.consumables, mineralOil: 16 },
     };
     const after = checkProgressionMilestonesAction()(withOil);
-    assert.ok(after.progression.unlockedArticles.includes("finishing"));
+    assert.ok(after.progression.unlockedArticles.includes("workbenches"));
 
     // Condition gone (oil used up), unlock stays.
     const oilGone = checkProgressionMilestonesAction()({
       ...after,
       consumables: { ...after.consumables, mineralOil: 0 },
     });
-    assert.ok(oilGone.progression.unlockedArticles.includes("finishing"));
+    assert.ok(oilGone.progression.unlockedArticles.includes("workbenches"));
   });
 
   it("never duplicates an already-unlocked article", () => {

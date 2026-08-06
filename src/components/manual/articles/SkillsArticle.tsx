@@ -22,11 +22,10 @@ export const SkillsArticle: React.FC = () => (
 
     <H>The Skill Tree</H>
     <P>
-      Every recipe belongs to a skill; the ones available from the start belong
-      to your starter skills. The bench offers only the recipes you've learned;
-      the rest can be previewed in the tree. Some nodes unlock new recipes;
-      others speed up work you already do, like faster sanding or quicker glue
-      cures.
+      Every recipe belongs to a skill. The bench offers only the recipes you've
+      learned; the rest can be previewed in the tree. Some nodes unlock new
+      recipes; others speed up work you already do, like faster sanding or
+      quicker glue cures.
     </P>
 
     <H>Reputation</H>

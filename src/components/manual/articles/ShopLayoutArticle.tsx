@@ -5,8 +5,8 @@ import { FigureRow, H, Note, P, Photo, Term } from "./elements";
 export const ShopLayoutArticle: React.FC = () => (
   <>
     <P>
-      Machines are moved by carrying them: pick one up, walk it to its new spot,
-      and set it down.
+      Move a machine by picking it up, walking it to its new spot, and setting
+      it down.
     </P>
     <FigureRow>
       <Photo src="/images/miter-saw.png" caption="the miter saw" />
@@ -19,7 +19,7 @@ export const ShopLayoutArticle: React.FC = () => (
       arms; at a placed machine's operator cell, it picks the machine up; and
       while you're carrying one, it sets it down wherever there's room. Rotate
       what you're carrying with <ShortcutKeys shortcut="carry-rotate" />. When
-      two machines share a square — a benchtop saw sitting on a table —{" "}
+      two machines share a square (a benchtop saw sitting on a table),{" "}
       <ShortcutKeys shortcut="cycle-machine" /> selects which one you mean.
     </P>
 
@@ -35,8 +35,8 @@ export const ShopLayoutArticle: React.FC = () => (
 
     <H>Placement</H>
     <P>
-      Every machine has an <Term>operator cell</Term> — the square you stand on
-      to run it — so leave that square reachable. Feed-through machines like the
+      Every machine has an <Term>operator cell</Term>, the square you stand on
+      to run it; leave that square reachable. Feed-through machines like the
       planer take stock on one side and deliver it to the outfeed cell on the
       other; keep the outfeed clear too.
     </P>
