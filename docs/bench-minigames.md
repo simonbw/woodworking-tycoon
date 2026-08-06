@@ -84,19 +84,19 @@ vocabulary, and per-operation scripts that compose it.
    the in-flight gesture (the drag under the button) is view state.
 
    The bench top is the working area, and `seatOnBenchTop`
-   (`bench-work/bench-layout.ts`) is what makes that true: every free
-   arrangement — the live drag, the R turn, the F flip, the seed a piece
-   gets before anyone has touched it — comes back through it, so a piece
-   slides to the edge of the wood and stops there however much further
-   the hand travels. It reads the footprint the piece actually presents
-   (turned, on edge, on end), so a rail stood up reaches further than it
-   could lying flat. Stock longer than the bench has to hang off — a 4-ft
-   rail never fits a 40" top in any orientation — so for those the rule
-   softens to the physical one: the middle stays over the wood. A
-   blueprint slot is the deliberate exception. A plan bigger than the
-   bench (a worktable top built on the makeshift bench) puts its
-   outlines past the edges on purpose, and a part snapped onto one goes
-   where the slot says.
+   (`bench-work/bench-layout.ts`) is what makes that true: a piece
+   follows the hand until its **middle** reaches the edge of the wood,
+   and hangs there. Overhang was never the problem — stock hangs off a
+   real bench constantly, and plenty of it couldn't sit on this one
+   otherwise (a 46" pallet outsizes the 40" top on both axes; a 4-ft
+   rail fits no orientation). What a bench can't do is hold something
+   balanced past its own edge. One rule, pallet and offcut alike, and it
+   needs to know nothing about the piece — which is why turning and
+   flipping don't re-seat anything: they pivot about the middle, the one
+   point being held. A blueprint slot is the deliberate exception. A
+   plan bigger than the bench (a worktable top built on the makeshift
+   bench) puts its outlines past the edges on purpose, and a part
+   snapped onto one goes where the slot says.
 4. **Work that grants resources commits incrementally; work that only
    transforms the workpiece commits atomically.** Each nail pried out of a
    pallet lands in `GameState.consumables` immediately — so the pallet must

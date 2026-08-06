@@ -4,7 +4,6 @@ import { MaterialInstance } from "../Materials";
 import { INCHES_PER_CELL } from "../shop-scale";
 import { productBlueprintFor } from "./blueprint";
 import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
-import { placedPieceSize } from "./workpiece";
 
 /**
  * Where the bench's loose stock lies on the bench top — real, persistent
@@ -59,47 +58,24 @@ export function benchTopSizeIn(type: MachineType): {
   };
 }
 
-/** Clamp one axis so a piece of `span` stays on a top of `topSpan`. */
-function seatOnAxis(center: number, span: number, topSpan: number): number {
-  // Stock longer than the bench has to hang off it — a 4-ft rail on a
-  // 40" top always does — so all that's asked of it is that its middle
-  // stays over the wood, the way anything balanced on a bench must.
-  return span >= topSpan
-    ? Math.min(Math.max(center, 0), topSpan)
-    : Math.min(Math.max(center, span / 2), topSpan - span / 2);
-}
-
 /**
- * The nearest spot to `placement` where the piece is actually on the
- * bench. The bench top is the working area: a piece that fits slides to
- * the very edge and stops there, however much further the hand goes,
- * and one too big to fit hangs off but keeps its middle over the top.
- * Read as the piece lies — turned, on edge, on end — so a rail stood up
- * on edge reaches the edge its narrow footprint reaches, not where it
- * would have had to stop lying flat.
+ * The nearest spot to `placement` where the piece is really on the
+ * bench: its middle over the wood. Overhang is not the problem — stock
+ * hangs off a real bench all the time, and plenty of it couldn't sit on
+ * this one otherwise (a 46" pallet outsizes the 40" top on both axes, a
+ * 4-ft rail fits no orientation). What a bench can't do is hold
+ * something balanced past its own edge, so that's the whole rule, and
+ * it's the same rule for a pallet as for an offcut.
  */
 export function seatOnBenchTop(
   type: MachineType,
-  material: MaterialInstance,
   placement: BenchPlacement,
 ): BenchPlacement {
   const top = benchTopSizeIn(type);
-  const piece = placedPieceSize(material, placement);
-  const radians = (placement.angleDeg * Math.PI) / 180;
-  const across = Math.abs(Math.cos(radians));
-  const along = Math.abs(Math.sin(radians));
   return {
     ...placement,
-    xIn: seatOnAxis(
-      placement.xIn,
-      piece.widthIn * across + piece.heightIn * along,
-      top.widthIn,
-    ),
-    yIn: seatOnAxis(
-      placement.yIn,
-      piece.widthIn * along + piece.heightIn * across,
-      top.heightIn,
-    ),
+    xIn: Math.min(Math.max(placement.xIn, 0), top.widthIn),
+    yIn: Math.min(Math.max(placement.yIn, 0), top.heightIn),
   };
 }
 
@@ -123,15 +99,15 @@ export function defaultBenchPlacement(
     return { xIn: widthIn / 2, yIn: heightIn / 2, angleDeg: 0, flipped: false };
   }
   const rng = seededRandom(`bench-seat-${material.id}`);
-  // Seated like everything else — on the bench, not past it: a board
-  // scattered too near the front slides back until it's on the wood.
-  return seatOnBenchTop(type, material, {
+  // Scattered across the front half — always well inside the top, so
+  // there's nothing for seatOnBenchTop to correct here.
+  return {
     xIn: widthIn * (0.22 + rng() * 0.56),
     yIn: heightIn * (0.5 + rng() * 0.4),
     // Lying across the bench, a few degrees off true
     angleDeg: 90 + Math.round((rng() * 2 - 1) * 7),
     flipped: false,
-  });
+  };
 }
 
 /** A framed piece's span in its own local inches — a pallet, a

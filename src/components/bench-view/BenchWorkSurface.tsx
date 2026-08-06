@@ -338,9 +338,6 @@ export const BenchWorkSurface: React.FC<{
   /** The dragged piece's live placement, committed on release — the one
    * sliver of layout that is view state, and only mid-gesture. */
   const dragPlacement = useRef<BenchPlacement | null>(null);
-  /** The piece under the hand, so the drag can measure what it's
-   * sliding around without waiting for a render to look it up. */
-  const draggedPiece = useRef<MaterialInstance | null>(null);
   const [, bump] = useReducer((c: number) => c + 1, 0);
   const pryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -881,37 +878,27 @@ export const BenchWorkSurface: React.FC<{
     [assemblyBlueprint, productPlacement, seated],
   );
 
-  /**
-   * Where the piece in hand may actually lie. A blueprint slot is
-   * exempt — a plan bigger than the bench (a worktable top on the
-   * makeshift bench) reaches past the edges on purpose, and the slot
-   * says exactly where its part goes.
-   */
-  const seatDragged = useCallback(
-    (placement: BenchPlacement): BenchPlacement =>
-      draggedPiece.current
-        ? seatOnBenchTop(machine.type, draggedPiece.current, placement)
-        : placement,
-    [machine.type],
-  );
-
   const commitDrag = useCallback(() => {
     if (draggingId && dragPlacement.current) {
-      // A release near an open, fitting slot settles the piece onto it
+      // A release near an open, fitting slot settles the piece onto it.
+      // Slots are the one thing that may seat a piece off the bench: a
+      // plan bigger than the top (a worktable built on the makeshift
+      // bench) reaches past the edges on purpose.
       const snapped = snapRef.current;
       applyAction(
         arrangeBenchMaterialAction(
           machine,
           draggingId,
-          snapped ? snapped.placement : seatDragged(dragPlacement.current),
+          snapped
+            ? snapped.placement
+            : seatOnBenchTop(machine.type, dragPlacement.current),
         ),
       );
       if (snapped) playSound("material-drop", 0.4);
     }
     dragPlacement.current = null;
-    draggedPiece.current = null;
     setDraggingId(null);
-  }, [applyAction, draggingId, machine, seatDragged]);
+  }, [applyAction, draggingId, machine]);
 
   const placedClampsRef = useRef(placedClamps);
   placedClampsRef.current = placedClamps;
@@ -1156,7 +1143,6 @@ export const BenchWorkSurface: React.FC<{
         if (hit) {
           setDraggingId(hit.material.id);
           dragPlacement.current = hit.placement;
-          draggedPiece.current = hit.material;
           dragOffset.current = {
             dxIn: hit.placement.xIn - xIn,
             dyIn: hit.placement.yIn - yIn,
@@ -1178,9 +1164,9 @@ export const BenchWorkSurface: React.FC<{
           return;
         }
         if (draggingId && event.held && dragPlacement.current) {
-          // The bench top is the working area: a piece slides to the
-          // edge and stops there, however far past it the hand goes.
-          dragPlacement.current = seatDragged({
+          // The bench top is the working area: a piece follows the hand
+          // until its middle reaches the edge, and hangs there.
+          dragPlacement.current = seatOnBenchTop(machine.type, {
             ...dragPlacement.current,
             xIn: xIn + dragOffset.current.dxIn,
             yIn: yIn + dragOffset.current.dyIn,
@@ -1328,14 +1314,10 @@ export const BenchWorkSurface: React.FC<{
           event.stopPropagation();
           setHoveredNail(null);
           applyAction(
-            arrangeBenchMaterialAction(
-              machine,
-              scenePallet.id,
-              seatOnBenchTop(machine.type, scenePallet, {
-                ...palletPlacement,
-                flipped: !palletPlacement.flipped,
-              }),
-            ),
+            arrangeBenchMaterialAction(machine, scenePallet.id, {
+              ...palletPlacement,
+              flipped: !palletPlacement.flipped,
+            }),
           );
         }
         return;
@@ -1386,20 +1368,14 @@ export const BenchWorkSurface: React.FC<{
                 ? { ...current, onEdge: false, onEnd: true }
                 : { ...current, onEdge: true, onEnd: false }
             : { ...current, flipped: !current.flipped };
-      // Turning swings the piece's footprint around, so a board already
-      // at the edge shuffles back onto the bench as it comes about
+      // Turning and flipping pivot a piece about its middle, which is
+      // the only thing the bench top holds it to — nothing to re-seat
       if (draggingId === id) {
         // Mid-drag the turn rides the drag; the release commits both
-        dragPlacement.current = seatDragged(turned);
+        dragPlacement.current = turned;
         bump();
       } else {
-        applyAction(
-          arrangeBenchMaterialAction(
-            machine,
-            id,
-            seatOnBenchTop(machine.type, material, turned),
-          ),
-        );
+        applyAction(arrangeBenchMaterialAction(machine, id, turned));
       }
     };
     window.addEventListener("keydown", onKey, true);
