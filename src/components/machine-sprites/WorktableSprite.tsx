@@ -1,13 +1,25 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import { Machine } from "../../game/Machine";
+import { footprintCenter, Machine } from "../../game/Machine";
+import { useTexture } from "../../utils/useTexture";
+import { IMAGE_SCALE } from "../shop-view/MachineSprite";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
+import { worktableArtSrc } from "./worktable-art";
 
 /**
- * A shop-built worktable: a laminated wood top spanning the table's
- * footprint, breadboard-framed, with the leg posts peeking out at the
- * corners. One sprite draws every size — the top is the bounding box of
- * cellsOccupied (worktables are always solid rectangles).
+ * A shop-built worktable: its top, plus whatever upgrades are bolted to
+ * it. The top comes from art where a table has some (`worktable-art.ts`)
+ * and is drawn procedurally where it doesn't — a laminated top spanning
+ * the footprint, with leg posts peeking out at the corners. Either way
+ * the top is the bounding box of cellsOccupied (worktables are always
+ * solid rectangles), edge to edge, so tables butted together read as one
+ * bench.
+ *
+ * The cast shadow is NOT here. It draws in a pass of its own beneath
+ * every table's top (`WorktableShadowLayer`), because a neighbour's
+ * shadow falling across the top you just pushed against it would draw the
+ * very seam the flush top is avoiding. The procedural fallback keeps its
+ * own little drop shadow, since it has no separate layer to hand off to.
  */
 export const WorktableSprite: React.FC<{ machine: Machine }> = ({
   machine,
@@ -15,7 +27,7 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
   const cells = machine.type.cellsOccupied;
   const upgrades = machine.upgrades;
 
-  const draw = useCallback(
+  const drawTop = useCallback(
     (g: Graphics) => {
       g.clear();
       const xs = cells.map(([x]) => x);
@@ -77,6 +89,19 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
       g.lineTo(left + 3, top + 3);
       g.lineTo(left + width * 0.35, top + 3);
       g.stroke({ width: 1.5, color: 0xd8b478, alpha: 0.8 });
+    },
+    [cells],
+  );
+
+  const drawUpgrades = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      const xs = cells.map(([x]) => x);
+      const ys = cells.map(([, y]) => y);
+      const left = (Math.min(...xs) - 0.5) * PIXELS_PER_CELL;
+      const top = (Math.min(...ys) - 0.5) * PIXELS_PER_CELL;
+      const width = (Math.max(...xs) - Math.min(...xs) + 1) * PIXELS_PER_CELL;
+      const height = (Math.max(...ys) - Math.min(...ys) + 1) * PIXELS_PER_CELL;
 
       // Installed upgrades read at a glance. The front edge (toward the
       // operator cell) is +y in machine-local coordinates.
@@ -112,5 +137,47 @@ export const WorktableSprite: React.FC<{ machine: Machine }> = ({
     [cells, upgrades],
   );
 
-  return <pixiGraphics draw={draw} />;
+  const [footX, footY] = footprintCenter(machine.type.cellsOccupied);
+  const topTexture = useTexture(worktableArtSrc(machine.type.id, "top") ?? "");
+
+  return (
+    <>
+      {topTexture ? (
+        <pixiSprite
+          texture={topTexture}
+          anchor={{ x: 0.5, y: 0.5 }}
+          scale={IMAGE_SCALE}
+          x={footX * PIXELS_PER_CELL}
+          y={footY * PIXELS_PER_CELL}
+        />
+      ) : (
+        <pixiGraphics draw={drawTop} />
+      )}
+      <pixiGraphics draw={drawUpgrades} />
+    </>
+  );
+};
+
+/**
+ * One table's cast shadow, drawn in the pass that goes under every
+ * table's top. Nothing at all for a table whose art hasn't been drawn —
+ * its procedural top carries its own drop shadow instead.
+ */
+export const WorktableShadowSprite: React.FC<{ machine: Machine }> = ({
+  machine,
+}) => {
+  const texture = useTexture(worktableArtSrc(machine.type.id, "shadow") ?? "");
+  if (!texture) {
+    return null;
+  }
+  const [footX, footY] = footprintCenter(machine.type.cellsOccupied);
+  return (
+    <pixiSprite
+      texture={texture}
+      anchor={{ x: 0.5, y: 0.5 }}
+      scale={IMAGE_SCALE}
+      x={footX * PIXELS_PER_CELL}
+      y={footY * PIXELS_PER_CELL}
+    />
+  );
 };

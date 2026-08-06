@@ -4,6 +4,7 @@ import {
   BenchGroupMember,
 } from "../../game/bench-work/bench-group";
 import { footprintCenter } from "../../game/Machine";
+import { worktableArtSrc } from "../machine-sprites/worktable-art";
 import { useTexture } from "../../utils/useTexture";
 import { WorktableSprite } from "../machine-sprites/WorktableSprite";
 import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
@@ -22,7 +23,7 @@ import { StageFit } from "./stageMath";
  * time, and a missing file costs nothing but sharpness.
  */
 const ZOOMED_ART: Readonly<Record<string, string>> = {
-  workspace: "/images/makeshift-bench-zoomed.png",
+  workspace: "/images/makeshift-bench@4x.png",
 };
 
 const ZOOMED_PX_PER_IN = 32;
@@ -49,11 +50,59 @@ export const BenchSceneBackdrop: React.FC<{
   fit: StageFit;
 }> = ({ group, fit }) => (
   <>
+    {/* Every shadow first, under every top: a neighbour's shadow falling
+        across the table butted against it would draw a seam that isn't
+        there, which is the whole reason the art ships as two layers. */}
+    {group.members.map((member) => (
+      <MemberShadow
+        key={`s-${member.key}`}
+        group={group}
+        member={member}
+        fit={fit}
+      />
+    ))}
     {group.members.map((member) => (
       <MemberArt key={member.key} group={group} member={member} fit={fit} />
     ))}
   </>
 );
+
+/** How far a member is turned from the way the frame faces. */
+function memberAngle(group: BenchGroup, member: BenchGroupMember): number {
+  return -90 * ((member.machine.rotation - group.alignment + 4) % 4);
+}
+
+/** Where a member's top is centred on the stage, in px. */
+function memberCentre(member: BenchGroupMember, fit: StageFit) {
+  return {
+    x: fit.originX + (member.rect.xIn + member.rect.widthIn / 2) * fit.pxPerIn,
+    y: fit.originY + (member.rect.yIn + member.rect.heightIn / 2) * fit.pxPerIn,
+  };
+}
+
+const MemberShadow: React.FC<{
+  group: BenchGroup;
+  member: BenchGroupMember;
+  fit: StageFit;
+}> = ({ group, member, fit }) => {
+  const texture = useTexture(
+    worktableArtSrc(member.machine.type.id, "shadow", true) ?? "",
+  );
+  if (!texture) {
+    return null;
+  }
+  const { x, y } = memberCentre(member, fit);
+  return (
+    <pixiSprite
+      texture={texture}
+      anchor={{ x: 0.5, y: 0.5 }}
+      x={x}
+      y={y}
+      angle={memberAngle(group, member)}
+      scale={fit.pxPerIn / ZOOMED_PX_PER_IN}
+    />
+  );
+};
 
 const MemberArt: React.FC<{
   group: BenchGroup;

@@ -1,3 +1,4 @@
+import { worktableArtPaths } from "../components/machine-sprites/worktable-art";
 import { Assets } from "pixi.js";
 import { TOOL_TYPES, ToolId } from "../game/Tool";
 import { IDS_WITHOUT_ICON_ART, toolIconSrc } from "./uiImages";
@@ -39,8 +40,11 @@ export const TEXTURE_ASSETS = [
   "/images/workspace.png",
   "/images/makeshift-bench.png",
   // The bench view's close-up copy of the same art (see BenchSceneBackdrop)
-  "/images/makeshift-bench-zoomed.png",
+  "/images/makeshift-bench@4x.png",
   "/images/person.png",
+  // Worktable tops, shadows, and their close-up copies — three layers per
+  // table, and only for the tables that have art (see worktable-art.ts)
+  ...worktableArtPaths(),
   ...PIXEL_ART_ASSETS,
 ];
 

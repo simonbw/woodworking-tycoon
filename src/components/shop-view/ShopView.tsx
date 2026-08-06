@@ -58,7 +58,8 @@ import { useBenchZoomActive } from "../bench-view/benchZoom";
 import { useTruckStage } from "./truckStageStore";
 import { atTruckBed, lotSize } from "../../game/lot";
 import { TruckHighlight } from "./TruckSprite";
-import { PIXELS_PER_CELL, cellToPixel } from "./shop-scale";
+import { PIXELS_PER_CELL, cellToPixel, cellToPixelCenter } from "./shop-scale";
+import { WorktableShadowSprite } from "../machine-sprites/WorktableSprite";
 
 /**
  * Grass and driveway kept visible around the building when fitting the
@@ -445,6 +446,22 @@ export const ShopView: React.FC = () => {
                     tutorialTarget={coach.matchesPile?.(pile.material) ?? false}
                   />
                 ))}
+                {/* Every worktable's cast shadow, in one pass beneath all
+                  of them: tables pushed together are one bench, and a
+                  neighbour's shadow falling across the top butted against
+                  it would draw a seam that isn't there. */}
+                {machines
+                  .filter((m) => m.type.worktable)
+                  .map((worktable) => (
+                    <pixiContainer
+                      key={`shadow-${machineKey(worktable.state)}`}
+                      x={cellToPixelCenter(worktable.position)[0]}
+                      y={cellToPixelCenter(worktable.position)[1]}
+                      angle={worktable.rotation * -90}
+                    >
+                      <WorktableShadowSprite machine={worktable} />
+                    </pixiContainer>
+                  ))}
                 {[...machines]
                   // Worktables draw first so mounted benchtop machines sit on top
                   .sort(

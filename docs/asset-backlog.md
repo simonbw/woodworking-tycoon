@@ -96,21 +96,39 @@ wiring: same path, same size, same component.
 
 ### Machines
 
-- [ ] Worktable — `machine-sprites/WorktableSprite.tsx`. There are exactly
-      four (2×2, 4×2, 6×2, 4×4 ft), so this is a size set of four, not a
-      9-slice problem: 192×192, 384×192, 576×192, 384×384 px at the
-      pipeline's 8 px/inch. **The top must fill those dimensions exactly,
-      flush and square-cornered** — tables pushed together are one bench
-      (`docs/worktables.md`), and any inset, rounded corner, or overhang
-      draws a gap down a seam that isn't there. That's why the procedural
-      sprite lost its inset. Legs want to sit in from the corners so
-      butted tables don't collide visually; a top texture that tiles
-      horizontally reads best across a run. Vise and tool-drawer upgrades
-      are drawn on the front edge and could stay procedural overlays.
-      Close-ups: `<id>-zoomed.png` at 32 px/inch, registered in
-      `bench-view/BenchSceneBackdrop.tsx`'s `ZOOMED_ART` — a table with no
-      entry falls back to the procedural sprite, so art can land one
-      table at a time.
+- [~] Worktable — three of four drawn (`workbench-2x2`, `-2x4`, `-4x4`;
+      the 6-ft `worktable1x3` still falls back to the procedural sprite,
+      which is what the fallback is for). Registered in
+      `machine-sprites/worktable-art.ts`. Each table ships three layers off
+      one drawing, plus an `@4x` close-up of each at 32 px/inch:
+      - `-top` — the laminated top, filling the footprint edge to edge.
+      - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
+        Drawn in a pass of its own *under every table's top*
+        (`WorktableShadowLayer` in ShopView, and both passes in
+        `BenchSceneBackdrop`), because tables get pushed together and a
+        neighbour's shadow falling across the top butted against it would
+        draw the very seam a flush top is avoiding.
+      - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
+
+      **The top must be a hard-edged rect on exact integer pixel bounds,
+      filling the artboard**: 192×192, 384×192, 384×384, and 576×192 for
+      the 6-ft table (8 px/inch; ×4 for the close-ups). `workbench-2x2-top`
+      is exactly this and is the model. The other two sit on a
+      fraction-of-a-pixel offset — `-4x4-top` is a 383px drawing on a 385px
+      artboard, leaving edge columns at alpha 99 and 157 — and a
+      half-transparent edge over the dark shadow beneath reads as a
+      hairline down every seam. Nothing else about the art needs to be
+      exact; this does.
+
+      Legs want to sit in from the corners so butted tables don't collide
+      visually; a top texture that tiles horizontally reads best across a
+      run. Vise and tool-drawer upgrades stay procedural overlays drawn on
+      the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
+
+      These are deliberately **not** in `scripts/trim-images.ts`: trimming
+      crops to opaque bounds, which would eat the shadow bleed that makes
+      the shadow a separate layer, and would shrink each layer by a
+      different amount when the two have to stay registered.
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
 - [x] Garbage can — `garbage-can.png`. A top-down lid view centered on the

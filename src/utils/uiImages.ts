@@ -51,6 +51,12 @@ export const MACHINE_ICON_SRC: Partial<Record<MachineId, string>> = {
   jointer: "/images/benchtop-jointer.png",
   bandSaw: "/images/bandsaw-14.png",
   garbageCan: "/images/garbage-can.png",
+  // Worktables are never sold, but they're built from plans and shown in
+  // the blueprint corner — the flattened export is the one to show when a
+  // table stands on its own, shadow and all.
+  worktable1x1: "/images/workbench-2x2-complete.png",
+  worktable1x2: "/images/workbench-2x4-complete.png",
+  worktable2x2: "/images/workbench-4x4-complete.png",
 };
 
 /**
