@@ -16,18 +16,27 @@ export const Modal: React.FC<{
   label: string;
   /** The panel itself — each modal's object has its own shape. */
   panelClassName: string;
+  /**
+   * Handles on the two surfaces, for a modal that arrives as a motion
+   * rather than an appearance (the clipboard grows out of its tracker).
+   * Presentation only — the shell itself never animates anything.
+   */
+  panelRef?: React.Ref<HTMLDivElement>;
+  backdropRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
-}> = ({ onClose, label, panelClassName, children }) => {
+}> = ({ onClose, label, panelClassName, panelRef, backdropRef, children }) => {
   useModalScope();
   useShortcut("close-modal", onClose);
 
   return (
     <div
+      ref={backdropRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink-black/60 p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
+        ref={panelRef}
         className={panelClassName}
         role="dialog"
         aria-modal="true"

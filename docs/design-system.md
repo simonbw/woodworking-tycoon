@@ -124,13 +124,16 @@ stack of equal-weight cards:
   `ScavengeTripOverlay` — the last a handwritten travel log beside the
   sketched truck, its bed stacking up with the haul).
 - **Commission tracker** (`CommissionTracker`, top-left) — the
-  objectives readout: a `hud-chip` with the order's name, its checklist,
-  and what it pays (or "carry it to the garage door" once complete).
-  Clicking it, or C, holds up the **clipboard** (`ClipboardModal`): the
-  full work order as paperwork — legal sheet under a clip, client note,
-  pay and reputation. A new commission opens the clipboard by itself
-  once the previous one's reward flight has landed. Glance = chrome,
-  read = document.
+  objectives readout, and the one HUD corner that is paper rather than
+  chrome: the work order's own legal sheet, cropped to the order's name,
+  its checklist, and what it pays (or where to carry it once complete).
+  Clicking it, or C, holds up the **clipboard** (`ClipboardModal`) — the
+  same sheet at full length, with the client note, pay and reputation —
+  and it gets there by growing out of the corner it was just sitting in,
+  shrinking back on the way down. One `WorkOrder` component prints both,
+  `compact` deciding which lines show, so the two can never disagree. A
+  new commission opens the clipboard by itself once the previous one's
+  reward flight has landed.
 - **Hands strip** (`HandsStrip`, bottom-center) — a `hud-chip` of slots,
   one per kind of thing carried; clicking a slot sets one down,
   shift-click the group, and F speaks the same verb from the keyboard.

@@ -168,9 +168,20 @@ test.describe("Screens", () => {
       // The always-on corner: the current order's name and checklist
       await expect(tracker).toBeVisible();
       await expect(tracker).toContainText("First Shelf");
+      // Tracker and clipboard are the same sheet of paper — both print
+      // the work order on paper-legal, not on HUD chrome
+      const PAPER_LEGAL = "rgb(232, 217, 156)";
+      await expect(tracker.locator("article")).toHaveCSS(
+        "background-color",
+        PAPER_LEGAL,
+      );
       // C holds the full clipboard up, and C puts it back down
       await page.keyboard.press("c");
       await expect(clipboard).toBeVisible();
+      await expect(clipboard.locator("article")).toHaveCSS(
+        "background-color",
+        PAPER_LEGAL,
+      );
       await expect(
         clipboard.getByTestId("commission-delivery-note"),
       ).toContainText("truck");
