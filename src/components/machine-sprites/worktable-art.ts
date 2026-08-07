@@ -7,7 +7,7 @@ import { MachineId } from "../../game/Machine";
  *
  * - `-top` — the laminated top, filling the footprint edge to edge. This
  *   is the layer that must measure exactly: tables pushed together are
- *   one bench (`docs/worktables.md`), so any inset, rounded corner, or
+ *   one bench (`src/game/bench-work/bench-group.ts`), so any inset, rounded corner, or
  *   overhang draws a gap down a seam that isn't there.
  * - `-shadow` — the cast shadow, on a canvas wider than the top so it can
  *   bleed. Drawn in a pass of its own *under every table's top*

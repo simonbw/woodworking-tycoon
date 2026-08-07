@@ -23,7 +23,7 @@ import {
  * (MachineState.benchLayout) — seating is never stored, so a refresh
  * mid-assembly finds every part exactly as seated as it was left. Only
  * driven-but-uncommitted fasteners are ephemeral (decision 4 in
- * docs/bench-minigames.md: assembly only spends, so it commits whole).
+ * docs/bench-work.md: assembly only spends, so it commits whole).
  */
 
 /** A piece lying on the bench, placement and all (BenchScene's shape). */

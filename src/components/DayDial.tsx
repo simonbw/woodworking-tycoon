@@ -16,7 +16,7 @@ import { DayPhase } from "../game/time";
  * disc's hub — which, with the bottom half cut away, is the bottom
  * center of the dial.
  *
- * There is still deliberately no wall clock (see `docs/time-and-days.md`)
+ * There is still deliberately no wall clock (see `src/game/time-flow.ts`)
  * — nothing here reads out an hour. What it shows is where the sun stands,
  * which is how the shop tells time everywhere else: high and the day is
  * young, low on the right and you should be thinking about the drive home,

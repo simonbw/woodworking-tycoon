@@ -23,7 +23,8 @@ import { CLAMP_SPACING_IN, clampsForGlueSpan } from "./bench-work/glue-up";
  * boards lie ACROSS the clamp bars, so it's their length that sets the
  * count. Longer stock is hungrier for clamps, and owning more is what
  * buys parallel glue-ups: one bench's panel can cure while another bench
- * starts the next one. See docs/consumables.md.
+ * starts the next one. (Clamps are deliberately not a Consumable — see
+ * Consumable.ts — a pool that returns, not a stock that depletes.)
  *
  * `GameState.clamps` is therefore the number OWNED.
  */

@@ -19,7 +19,7 @@ import {
  * a board someone would buy — corners rounded, edges eased, the whole
  * face rubbed down — and the oil wiped on after. All of it is stroke work
  * in the bench view: the pad in hand over the piece where it lies IS the
- * operation, like every other tool (see docs/bench-minigames.md).
+ * operation, like every other tool (see docs/bench-work.md).
  *
  * Order matters: tool-first selection (bench-work/tool-work.ts) walks
  * this list and offers the first operation the piece satisfies, so the

@@ -30,7 +30,7 @@ export type MaterialPile = {
  * Shop-built stations (worktables) land crated at the bench that produced
  * them; purchased machines ride home in the truck's bed instead (see
  * TruckState). Crates don't block walking — stand on one and pick it up.
- * See docs/carrying-machines.md.
+ * See game-actions/machine-actions.ts.
  */
 export type MachineCrate = {
   readonly machine: MachineState;
@@ -42,7 +42,7 @@ export type GameAction = (gameState: GameState) => GameState;
 /**
  * What's riding in the truck's bed. Purchases and scavenged loot come
  * home here instead of materializing on the shop floor, and finished
- * work will leave from here (see docs/handing-work-over.md). Loaded and
+ * work will leave from here (see delivery.ts). Loaded and
  * unloaded standing at the bed — the tailgate end, backed up near the
  * garage door. The bed is unbounded — hauling is what a truck is for;
  * the player's hands (HAND_CAPACITY) are what meter the trips to it.
@@ -102,7 +102,7 @@ export interface GameState {
   /**
    * Which calendar day the shop is on, counting from 1. Advances only by
    * sleeping — driving home at the end of the day — never by the tick
-   * counter rolling over (see docs/time-and-days.md).
+   * counter rolling over (see time-flow.ts).
    */
   readonly day: number;
   /**

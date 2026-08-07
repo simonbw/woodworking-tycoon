@@ -194,7 +194,7 @@ const SIDE_CHROME_PX = 24;
  * on the scene too: bar clamps set out on the bench top, stock laid
  * across them edge to edge, glue down the seams, tighten — nothing
  * mounts over the scene anymore.
- * See docs/bench-minigames.md. The world does not stop while it's open,
+ * See docs/bench-work.md. The world does not stop while it's open,
  * but the body does: leaning over the bench pins the feet (ShopView
  * disables held movement via sheetIsBenchView) until Tab steps back.
  */

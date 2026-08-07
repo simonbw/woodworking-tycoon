@@ -109,7 +109,7 @@ export function buyMachineAction(
     }
 
     // The purchase rides home crated in the truck's bed, to be carried
-    // into place from there (see docs/carrying-machines.md)
+    // into place from there (see machine-actions.ts)
     const updatedState = {
       ...gameState,
       money: gameState.money - price,
@@ -122,7 +122,7 @@ export function buyMachineAction(
       },
     };
 
-    // Owning a miter saw unlocks machine carrying (see UNLOCK_CONDITIONS)
+    // A first purchase can trip progression milestones (see UNLOCK_CONDITIONS)
     return checkProgressionMilestonesAction()(updatedState);
   };
 }

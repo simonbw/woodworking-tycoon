@@ -228,6 +228,16 @@ function handsFree(gameState: GameState): boolean {
   );
 }
 
+/*
+ * Carrying machines IS shop-layout management — there is no separate
+ * layout editor. One contextual key (B) three-way toggles: put down what
+ * you're carrying, unpack a crate underfoot (or at the truck's bed), or
+ * hoist the machine you're standing at. Available from the start of a
+ * new game — carrying was never gated. A carried machine costs no walk
+ * speed, deliberately: rearranging the shop is meant to feel free, not
+ * be a logistics minigame.
+ */
+
 /**
  * Whether the player could hoist this machine right now: hands free, the
  * machine idle and emptied of work materials (shelf stock, mounted tools,

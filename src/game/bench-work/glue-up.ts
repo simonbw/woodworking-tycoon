@@ -9,7 +9,7 @@ import {
 import { BenchPlacement } from "./bench-layout";
 
 /**
- * Plan-free glue-ups on the bench scene (docs/bench-minigames.md): there
+ * Plan-free glue-ups on the bench scene (docs/bench-work.md): there
  * is no "Glue Up Panel" sheet to pull. The player sets bar clamps out on
  * the bench, lays stock across them edge to edge, spreads glue down each
  * open seam, and tightens the clamps — and whatever contiguous run of

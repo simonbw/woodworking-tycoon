@@ -6,7 +6,7 @@ import { PIXELS_PER_CELL, cellToPixelCenter } from "./shop-scale";
 /**
  * A machine delivery still in its crate: a stenciled pine box sitting on
  * the floor. Crates don't block walking — the player stands on one and
- * unpacks it straight into their arms (see docs/carrying-machines.md).
+ * unpacks it straight into their arms (see game-actions/machine-actions.ts).
  */
 export const MachineCrateSprite: React.FC<{ crate: MachineCrate }> = ({
   crate,

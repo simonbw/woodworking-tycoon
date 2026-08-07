@@ -6,7 +6,13 @@ import { loadSoundBuffer } from "./sfx";
 
 /**
  * Continuous multi-phase machine sound: spin-up one-shot → idle/cutting
- * loops → wind-down one-shot (see `docs/sound-design.md`).
+ * loops → wind-down one-shot.
+ *
+ * Currently dormant on purpose: every machine voice in MACHINE_VOICES is
+ * a synth (`machineSynth.ts`), and this sample-based player waits for
+ * real recordings (issue #114, which carries the shot list and the
+ * editing/export spec). When those land, swapping a machine from synth
+ * to samples is a def here — no logic changes.
  *
  * The trick that keeps transitions click-free: when the machine turns on,
  * BOTH loops start simultaneously (the cutting loop at zero gain), so
