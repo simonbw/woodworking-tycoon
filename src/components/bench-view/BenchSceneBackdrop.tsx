@@ -7,16 +7,24 @@ import { footprintCenter } from "../../game/Machine";
 import { worktableArtSrc } from "../machine-sprites/worktable-art";
 import { useTexture } from "../../utils/useTexture";
 import { WorktableSprite } from "../machine-sprites/WorktableSprite";
-import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import {
+  IMAGE_PIXELS_PER_INCH,
+  PIXELS_PER_CELL,
+  PIXELS_PER_INCH,
+} from "../shop-view/shop-scale";
 import { StageFit } from "./stageMath";
 
 /**
  * The close-up exports, by machine type. Leaning over a bench puts it on
  * screen at roughly its native size instead of an eighth of it, so these
- * are drawn at 32 px per inch against the pipeline's 8 — same drawing,
- * four times the pixels, anchored on the same canvas center and trimmed
- * symmetrically about it, so swapping one for the other lands the art in
- * exactly the same place (see scripts/trim-images.ts).
+ * ship with four times the pixels of the shop's copy — same drawing,
+ * anchored on the same canvas center and trimmed symmetrically about it,
+ * so swapping one for the other lands the art in exactly the same place
+ * (see scripts/trim-images.ts).
+ *
+ * They are still IMAGE_PIXELS_PER_INCH art: the `@4x` in the filename is
+ * a resolution PIXI reads off the name, not a size, so these measure the
+ * same inches as their 1x twins and scale by the same divisor.
  *
  * A bench with no entry here falls back to its procedural sprite, which
  * is what the shop floor draws anyway — so art can land one table at a
@@ -25,8 +33,6 @@ import { StageFit } from "./stageMath";
 const ZOOMED_ART: Readonly<Record<string, string>> = {
   workspace: "/images/makeshift-bench@4x.png",
 };
-
-const ZOOMED_PX_PER_IN = 32;
 
 /**
  * The bench view's backdrop is the shop itself, leaned into — literally:
@@ -99,7 +105,7 @@ const MemberShadow: React.FC<{
       x={x}
       y={y}
       angle={memberAngle(group, member)}
-      scale={fit.pxPerIn / ZOOMED_PX_PER_IN}
+      scale={fit.pxPerIn / IMAGE_PIXELS_PER_INCH}
     />
   );
 };
@@ -127,7 +133,7 @@ const MemberArt: React.FC<{
         x={x}
         y={y}
         angle={angle}
-        scale={fit.pxPerIn / ZOOMED_PX_PER_IN}
+        scale={fit.pxPerIn / IMAGE_PIXELS_PER_INCH}
       />
     );
   }

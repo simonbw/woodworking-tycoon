@@ -17,11 +17,13 @@ import { MachineId } from "../../game/Machine";
  * - `-complete` — the two flattened together, for icons and anywhere a
  *   table is shown on its own.
  *
- * `@4x` is the close-up export at 32 px/inch against the pipeline's 8,
- * used by the bench view (leaning over a bench puts it on screen at
- * roughly native size instead of an eighth of it). Same drawing, same
- * canvas centre, so swapping one for the other lands the art in the same
- * place.
+ * `@4x` is the close-up export used by the bench view, where a bench is
+ * on screen at roughly native size instead of an eighth of it: the same
+ * drawing off the same canvas centre with four times the pixels, so
+ * swapping one for the other lands the art in the same place. PIXI reads
+ * the suffix as a resolution, so it still measures the pipeline's 8 px
+ * to the inch and scales by the same divisor as the 1x file — it is
+ * sharper, not bigger.
  *
  * A table with no entry here falls back to the procedural sprite, which
  * is what the shop floor drew for every table until now — so art can land

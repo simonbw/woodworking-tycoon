@@ -32,12 +32,12 @@ import { WorktableSprite } from "../machine-sprites/WorktableSprite";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PalletSprite } from "../material-sprites/PalletSprite";
 import {
+  IMAGE_PIXELS_PER_INCH,
   PIXELS_PER_CELL,
   PIXELS_PER_INCH,
   cellToPixelCenter,
 } from "./shop-scale";
 
-const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 
 /**
