@@ -3,7 +3,7 @@ import { startNewGame } from "./navigation";
 
 /**
  * The bench view: the zoomed work surface where hand work is performed
- * with the pointer (see docs/bench-minigames.md). A genuinely new kind
+ * with the pointer (see docs/bench-work.md). A genuinely new kind
  * of interface — pointer-primary over a canvas — which is the bar for a
  * seventh spec file.
  *

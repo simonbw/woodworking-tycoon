@@ -1,6 +1,6 @@
 /**
  * The day loop itself: the spend-to-advance clock's big promises, run
- * through the driver the way a player lives them (docs/time-and-days.md).
+ * through the driver the way a player lives them (see time-flow.ts).
  * The unit tests pin the mechanics (door-actions, time-flow, the phase
  * names); what belongs here is the rhythm — glue up in the evening and
  * it's dry in the morning, the board rotates while you sleep, and a

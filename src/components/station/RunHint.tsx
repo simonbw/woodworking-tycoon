@@ -23,7 +23,7 @@ export const RunHint: React.FC<{
   const runLabel =
     machine.selectedOperationOrNull?.name.toLowerCase() ?? `${verb} it`;
   // Interactive plans are performed by hand on the work surface above —
-  // there is no held-Space path to point at (docs/bench-minigames.md)
+  // there is no held-Space path to point at (docs/bench-work.md)
   if (machine.selectedOperationOrNull?.interaction) {
     const working = machine.operationProgress.status === "inProgress";
     return canOperate || working ? null : (

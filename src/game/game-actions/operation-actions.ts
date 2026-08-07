@@ -46,7 +46,7 @@ import { clampsFor, clampsFree } from "../Clamp";
 import { gluePrepShortfall, inferGlueOperationId } from "../bench-work/glue-up";
 
 /**
- * The commit-action split (see docs/bench-minigames.md): the bench view
+ * The commit-action split (see docs/bench-work.md): the bench view
  * decides *when*, these actions decide *what*. Starting an operation is
  * still `operateMachineAction` — it claims inputs, spends supplies, and
  * checks the clamp rack exactly as before. Finishing is here: the

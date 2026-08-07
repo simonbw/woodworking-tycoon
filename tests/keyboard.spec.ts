@@ -563,7 +563,7 @@ test.describe("Keyboard", () => {
       });
 
       // Space is not a path into hand work: held at the bench, nothing
-      // starts (docs/bench-minigames.md decision 1)
+      // starts (docs/bench-work.md decision 1)
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );

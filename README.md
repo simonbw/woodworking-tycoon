@@ -16,9 +16,20 @@ npm run tsc        # type checking
 npm run test       # unit tests + Playwright E2E
 ```
 
+## Design vision
+
+The long arc runs from amateur woodworker with a scavenged pallet to master craftsman building a sailboat for retirement. The principles that shape it:
+
+- More active than typical idle games, but with incremental progression satisfaction
+- Most of play is non-commission work: the job board and marketplace listings are the day-to-day living, where money, reputation, and XP come from
+- Commissions are rare "bosses" — reputation-gated milestone events that arrive as a phone call, each demanding a cluster of capabilities (machines, tools, skills) the shop doesn't have yet
+- Manual operations, no automation
+- Reputation is the pacing metric (it decides when the next commission calls); money is the capability metric (it buys the gear each commission demands)
+
+Designs for unbuilt features live in the GitHub issue tracker, not in this repo.
+
 ## More
 
 - `CLAUDE.md` — architecture overview and development guidelines
-- `GAMEPLAY_ROADMAP.md` — design vision and progression plan
-- `docs/woodworking-features-brainstorm.md` — feature idea pool
+- `docs/` — system documentation and content-creation guidance
 - `docs/asset-backlog.md` — which shop-view objects still want real art

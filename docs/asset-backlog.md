@@ -8,9 +8,9 @@ hand-drawn asset carries wear, grain, and shadow that a stack of rounded
 rects never will.
 
 A second category wants replacing for a different reason: the AI-generated
-pixel art standing in for furniture products and for the tool and consumable
-icons. That art is real enough to ship and far better than the black square
-it replaced, but it is placeholder — nobody drew it on purpose.
+pixel art standing in for the tool and consumable icons. That art is real
+enough to ship and far better than the black square it replaced, but it is
+placeholder — nobody drew it on purpose.
 
 This file is the standing list of what still wants real art, so the work is
 tracked without minting a GitHub issue per sprite. Tick a box in the same
@@ -33,31 +33,28 @@ commit that lands the asset.
 5. Tick the box below.
 
 Objects whose contents vary (a rack of stock, a can of scrap) generally want
-the *fixture* as art with the contents still drawn on top — the asset
+the _fixture_ as art with the contents still drawn on top — the asset
 replaces the furniture, not what's sitting in it.
 
 ## The pixel-art exception
 
-The furniture products (shelf, side table) break
-the rules above: they are pixel art rather than the smooth flat-shaded style
-the machines use, generated through the PixelLab MCP. They are placeholders
-— see "Generated placeholders" below — but until they're replaced they
+The tool icons are pixel art rather than the smooth flat-shaded style the
+machines use, generated through the PixelLab MCP. They are placeholders —
+see "Generated placeholders" below — but until they're replaced they
 follow a different pipeline:
 
-- Exported at **`PIXELS_PER_INCH`** (4 px/inch), not 8, and drawn at scale 1
-  so texture pixels land on world pixels. A 400×400 export downscaled by
-  `IMAGE_SCALE` would blur the pixels away.
-- **Trimmed to the content bounding box** before landing in `static/images/`,
-  because the sprites anchor at 0.5 and PixelLab centers loosely inside a
-  padded canvas.
+- **Trimmed to the content bounding box** before landing in
+  `static/images/icons/`, because the sprites anchor at 0.5 and PixelLab
+  centers loosely inside a padded canvas.
 - Listed in `PIXEL_ART_ASSETS` in `loadAssets.ts`, which sets their
-  `scaleMode` to `nearest` — the shop's fit-to-column upscale would
-  otherwise smooth them.
-- Drawn in a neutral wood and **tinted by species** at render time, so one
-  asset serves all nine species. See `material-sprites/FurnitureSprite.tsx`.
+  `scaleMode` to `nearest` — a smooth upscale would otherwise blur the
+  pixels away.
 
 Mixing the two styles was a deliberate call, not an accident. Anything new
-that isn't furniture should still use the smooth 400×400 pipeline above.
+that isn't an icon should use the smooth 400×400 pipeline above. (The
+furniture products that once shared this pipeline are gone for good:
+blueprint-assembled products draw themselves from their parts —
+`AssembledProductSprite` — and never get flat art.)
 
 ## Needs art
 
@@ -68,47 +65,37 @@ PixelLab MCP, committed as a stopgap. It renders, it reads, and it is not
 what the game should ship with. Replacing one of these is a swap, not new
 wiring: same path, same size, same component.
 
-- [ ] Furniture products: shelf, side table —
-      `static/images/{shelf,side-table}.png`, drawn by
-      `material-sprites/FurnitureSprite.tsx`. Pixel art against the smooth
-      machines, so the shop floor is currently mixed-style. A replacement
-      wants the neutral-wood treatment kept so the species tint still works,
-      and should be trimmed to its content box. Sizes today: 79×15,
-      49×51 at 4 px/inch. Update `FURNITURE_ICON_FIT` in
-      `FurnitureSprite.tsx` if the dimensions change. (The rustic shelf and
-      the bookshelf left this list on purpose: blueprint-assembled products
-      draw themselves from their parts — `AssembledProductSprite` — and
-      should never get flat art.)
 - [ ] Tool icons — `static/images/icons/tool-<id>.png`, 64×64, rendered by
-      `ToolIcon` in `components/ItemIcon.tsx`. Nine of them: hammer, hand
-      saw, drill, sanding block, random orbit sander, hand plane, crosscut
-      sled, straight-line sled, dust bag. The same files double as the
-      shop-floor sprite for a loose tool (`ToolItemSprite` in
+      `ToolIcon` in `components/ItemIcon.tsx`. Ten of them: hammer, hand
+      saw, drill, sanding block, random orbit sander, hand plane, finishing
+      kit, crosscut sled, straight-line sled, dust bag. The same files
+      double as the shop-floor sprite for a loose tool (`ToolItemSprite` in
       `material-sprites/`), so a tool without icon art (the resaw fence)
       falls back to the default pile square on the floor too.
 - [ ] Consumable icons — `static/images/icons/consumable-<id>.png`, 64×64,
       rendered by `ConsumableIcon`. Three: nails, screws, mineral oil.
 - [ ] Store-shelf icons for the things that aren't tools or consumables —
-      `upgrade-vise`, `misc-barClamp`, and `misc-shopVac`. Same 64×64 icons
-      directory, rendered by `UpgradeIcon` / `ClampIcon` / `ShopVacIcon` in
-      `components/ItemIcon.tsx`. Machines want no icon of their own: every
-      one on the shelf shows its shop-floor art through `MACHINE_ICON_SRC`.
+      `upgrade-vise`, `misc-barClamp`, `misc-broom`, and `misc-shopVac`.
+      Same 64×64 icons directory, rendered by `UpgradeIcon` / `ClampIcon` /
+      `BroomIcon` / `ShopVacIcon` in `components/ItemIcon.tsx`. Two
+      upgrades have **no icon art at all** and fall back to a drawn
+      placeholder: `toolDrawers` and `materialShelf` (listed in
+      `uiImages.ts`'s no-art set) — a harder gap than the generated ones.
+      Machines want no icon of their own: every one on the shelf shows its
+      shop-floor art through `MACHINE_ICON_SRC`.
 
 ### Machines
 
 - [~] Worktable — three of four drawn (`workbench-2x2`, `-2x4`, `-4x4`;
-      the 6-ft `worktable1x3` still falls back to the procedural sprite,
-      which is what the fallback is for). Registered in
-      `machine-sprites/worktable-art.ts`. Each table ships three layers off
-      one drawing, plus an `@4x` close-up of each at 32 px/inch:
-      - `-top` — the laminated top, filling the footprint edge to edge.
-      - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
-        Drawn in a pass of its own *under every table's top*
-        (`WorktableShadowLayer` in ShopView, and both passes in
-        `BenchSceneBackdrop`), because tables get pushed together and a
-        neighbour's shadow falling across the top butted against it would
-        draw the very seam a flush top is avoiding.
-      - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
+  the 6-ft `worktable1x3` still falls back to the procedural sprite,
+  which is what the fallback is for). Registered in
+  `machine-sprites/worktable-art.ts`. Each table ships three layers off
+  one drawing, plus an `@4x` close-up of each at 32 px/inch: - `-top` — the laminated top, filling the footprint edge to edge. - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
+  Drawn in a pass of its own _under every table's top_
+  (`WorktableShadowLayer` in ShopView, and both passes in
+  `BenchSceneBackdrop`), because tables get pushed together and a
+  neighbour's shadow falling across the top butted against it would
+  draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
       filling the artboard**: 192×192, 384×192, 384×384, and 576×192 for
@@ -138,6 +125,7 @@ wiring: same path, same size, same component.
       crops symmetrically about the canvas centre, which is the
       registration these rely on. It would save a couple of kilobytes and
       cost the ability to compare a top and its shadow by their canvases.
+
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
 - [x] Garbage can — `garbage-can.png`. A top-down lid view centered on the
@@ -168,10 +156,11 @@ wiring: same path, same size, same component.
 - [ ] Shop vac — `shop-view/ShopVacSprite.tsx`. Drum and casters as art; the
       hose stretches to the player's hand every frame and stays drawn.
 - [ ] Pallet — `material-sprites/PalletSprite.tsx`. Currently composed out of
-      `BoardSprite`s. There is already an unused `static/images/pallet.png`.
-      Boards get pulled off one at a time, so the art has to survive a
-      partially dismantled pallet — probably per-board art rather than one
-      whole-pallet sprite.
+      `BoardSprite`s. (`static/images/pallet.png` exists but serves the
+      HTML UI's material widgets via `LOOSE_UI_IMAGES`, not the shop-view
+      sprite.) Boards get pulled off one at a time, so the art has to
+      survive a partially dismantled pallet — probably per-board art rather
+      than one whole-pallet sprite.
 - [ ] Floor tiles — `shop-view/FloorTileSprite.tsx`. Flat zinc rects under
       the concrete floor texture; likely folds into the floor art rather than
       becoming its own asset.
@@ -188,40 +177,18 @@ wiring: same path, same size, same component.
       and not art at all: one offscreen light mask, painted from the sun in
       `game/daylight.ts` and multiplied over the scene once. The building's
       shadow is a hard-edged slab subtracted from it; the lamp pool and the
-      door spill are gradient fills added into it, the spill softened by a
-      blur filter. Nothing here could be a PNG — the shapes follow an
-      arbitrary shop footprint and a moving sun. If the shadow ever wants
-      soft edges, that's another blur, not an asset.
-
-### Finished products
-
-Fixed-form objects that happen to be tinted by species — good candidates for
-one asset plus a tint, the way `MaterialSprite` already passes `tint` down.
-
-- [ ] Jewelry box — `material-sprites/FinishedBoxSprite.tsx` (the last
-      product it serves; the crate, planter box, step stool, bookshelf,
-      birdhouse, and picture frame now draw from their bills of materials
-      via `AssembledProductSprite`, procedural on purpose).
-- [ ] Hex frame — `material-sprites/PictureFrameSprite.tsx` (the last
-      frame it serves; a hex blueprint waits on rotated-slot fastener
-      derivation).
-- [ ] Serving tray — `material-sprites/CuttingBoardSprite.tsx`.
+      door spill are gradient fills added into it, soft-edged by their own
+      gradients rather than by a filter. Nothing here could be a PNG — the
+      shapes follow an arbitrary shop footprint and a moving sun.
 
 ## Needs a call
 
-Form is fixed but the surface is generated from game data, so an asset only
-works with an overlay or a mask. Decide per item when we get there.
-
-- Cutting boards: simple, striped, sunrise, end-grain, checkerboard —
-  `material-sprites/CuttingBoardSprite.tsx`. The glue-up pattern *is* the
-  product, and it comes from the species the player laminated. Possibly art
-  for the silhouette, edge, and finish sheen with the pattern drawn inside.
-- End-grain slice — `material-sprites/EndGrainSliceSprite.tsx`. Same tension:
-  the ring pattern is the point.
-- Default machine fallback — `DefaultMachineSprite` in
-  `shop-view/MachineSprite.tsx`. A brown square standing in for any machine
-  with no sprite. Better art makes missing art harder to notice, which may be
-  the wrong incentive.
+Open design questions — cutting-board glue-up patterns, end-grain slice
+rings, and whether `DefaultMachineSprite` should be improved at all — live
+in issue #125 now, where they can be discussed. (Every assembled product —
+shelf, bookshelf, side table, hex frame, serving tray, jewelry box, and
+friends — draws from its bill of materials via `AssembledProductSprite`
+and needs no flat art; the flat sprites they once used are deleted.)
 
 ## Stays procedural
 
@@ -270,5 +237,5 @@ For reference, so this doesn't get re-surveyed: benchtop jointer, lunchbox
 planer, jobsite table saw (table and fence), miter saw (all three parts),
 makeshift bench, the player, the concrete floor, and the door warning paint.
 
-Hand-drawn art only. The generated pixel art is *not* done — it's listed
+Hand-drawn art only. The generated pixel art is _not_ done — it's listed
 under "Generated placeholders" above.

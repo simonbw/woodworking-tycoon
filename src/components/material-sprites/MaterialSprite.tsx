@@ -64,7 +64,6 @@ export const MaterialSprite: React.FC<{
     case "panel":
       return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
 
-    // The hex frame still draws flat art; its blueprint waits on
     // Blueprint-assembled products draw from their bill of materials —
     // the same slots the bench view assembled them on
     case "rusticShelf":
