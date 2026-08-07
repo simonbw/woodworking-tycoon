@@ -102,7 +102,7 @@ export interface GameState {
   /**
    * Which calendar day the shop is on, counting from 1. Advances only by
    * sleeping — driving home at the end of the day — never by the tick
-   * counter rolling over (see docs/time-and-days.md).
+   * counter rolling over (see time-flow.ts).
    */
   readonly day: number;
   /**

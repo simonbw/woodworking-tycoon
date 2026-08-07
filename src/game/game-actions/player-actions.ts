@@ -518,7 +518,7 @@ export function operateMachineAction(
     }
 
     // After 5 PM nothing new starts — what's already running may finish,
-    // but the next cut belongs to tomorrow (see docs/time-and-days.md)
+    // but the next cut belongs to tomorrow (see time-flow.ts)
     if (isNight(gameState)) {
       console.warn("Shop's closed for the night");
       return gameState;

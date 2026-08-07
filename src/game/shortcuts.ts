@@ -302,7 +302,7 @@ const defs = [
     // the clock instead: hold it and time passes fast, release and it
     // stops. Needs no target and works anywhere in the shop; the easy
     // answer to a glue cure, against which filling the wait with other
-    // work is the skilled play (docs/time-and-days.md). Stands down at
+    // work is the skilled play (see time-flow.ts). Stands down at
     // night, when there's nothing left to spend.
     id: "wait",
     codes: ["KeyT"],

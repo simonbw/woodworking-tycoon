@@ -2,7 +2,7 @@
  * How many ticks make a working day — the budget of minutes between the
  * 7 AM open and the 5 PM close. Spending them is the game: work, trips,
  * and waiting all draw the day down; walking and thinking barely do
- * (see docs/time-and-days.md). When they're gone the shop is closed for
+ * (see time-flow.ts). When they're gone the shop is closed for
  * the night and the only way forward is driving home.
  */
 export const TICKS_PER_DAY = 600;
