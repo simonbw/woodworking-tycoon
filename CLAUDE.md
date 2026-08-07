@@ -159,4 +159,4 @@ The game implements a time-based simulation where players queue actions and the 
 - **Shop Layout**: Physical space management affects workflow efficiency
 - **Economic Progression**: Purchase better machines and expand workshop space
 
-See `GAMEPLAY_ROADMAP.md` for the full design vision (commission progression, tutorial sequence, late-game goals) and `docs/woodworking-features-brainstorm.md` for the broader feature pool.
+See the "Design vision" section of `README.md` for the game's guiding principles; designs for unbuilt features live in GitHub issues.
