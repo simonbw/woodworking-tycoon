@@ -30,11 +30,15 @@ import { isPanel } from "../panel-helpers";
 
 /**
  * Product blueprints: the single authored artifact behind an assembled
- * product (see docs/assembly.md). A blueprint is a set of part slots —
- * where each board lies in the finished piece — and the fastener points
- * that hold them together, derived (never hand-set) as one nail per
- * overlap of two parts on adjacent layers, exactly the way a pallet
- * carries one nail per deck-board × stringer crossing.
+ * product. Pallet dismantling proved the pattern — a product visibly
+ * made of its parts, one nail per crossing, one sprite composing real
+ * board sprites at every zoom — and assembly is that machinery run
+ * forward: a blueprint says where every part lies and where every
+ * fastener goes, the player lays real staged parts onto ghost slots and
+ * drives one fastener per crossing. Every assembly in the game is a
+ * blueprint build (`interaction.blueprint` is required), products and
+ * shop equipment alike — an equipment blueprint's commit grants the
+ * machine/upgrade/jig instead of leaving a product.
  *
  * One blueprint is four things that previously could drift apart:
  * the recipe's input list (blueprintInputs), its fastener cost
@@ -42,6 +46,31 @@ import { isPanel } from "../panel-helpers";
  * (AssembledProductSprite draws the slots' actual parts, grain and all),
  * and the bench view's assembly script (ghost outlines at the slots,
  * nails driven at the fasteners).
+ *
+ * The settled rules, for anyone authoring a new blueprint:
+ *
+ *  - Fasteners are derived (deriveFasteners), never hand-set: one per
+ *    overlap of two parts on adjacent layers, each joining exactly two
+ *    parts. (A hand-override escape hatch can come when a real
+ *    product's pattern isn't "every crossing".)
+ *  - Products carry their bill of materials: FinishedProduct.parts
+ *    records the very boards that went in — the grain the player laid
+ *    on the bench is the grain in the finished piece everywhere it
+ *    draws. Older saves render the blueprint's nominal stock
+ *    (defaultPartsFor). Blueprint-assembled products never get flat
+ *    art.
+ *  - Seating is derived, not stored: a part is "seated" when its
+ *    persistent bench placement lies on its slot, so a refresh
+ *    mid-assembly finds every part as placed. Only driven-but-
+ *    uncommitted fasteners are ephemeral — assembly only spends, so it
+ *    commits whole; the last fastener resolves start + finish back to
+ *    back. A part a driven fastener holds won't drag, turn, or leave
+ *    the bench until the build commits.
+ *  - The ghost frame is the product's default seat: the assembled
+ *    sprite appears exactly where the parts were lying — nothing moves
+ *    at the moment the boards become one piece.
+ *  - A fastener-less blueprint (the material shelf) commits when its
+ *    last part is laid on.
  */
 
 /** One part's place in the finished product. */
