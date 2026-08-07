@@ -3,10 +3,17 @@ import { refillEmptyJobBoardAction } from "../game/game-actions/marketplace-acti
 import { checkProgressionMilestonesAction } from "../game/game-actions/progression-actions";
 import { combineActions } from "../game/game-actions/misc-actions";
 import { tickAction } from "../game/game-actions/tickAction";
-import { currentDayPhase, dayTicksSpent, timeSpeed } from "../game/time-flow";
+import {
+  currentDayPhase,
+  dayTicksSpent,
+  isNight,
+  timeSpeed,
+} from "../game/time-flow";
 import { TICKS_PER_DAY } from "../game/time";
 import { formatCount } from "../utils/formatNumber";
+import { DayDial } from "./DayDial";
 import { TICKS_PER_SECOND, usePaused } from "./PauseContext";
+import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 /**
@@ -130,40 +137,24 @@ export const Ticker: React.FC = () => {
   }, []);
 
   const phase = currentDayPhase(gameState);
-  const dayPercent = Math.min(
-    100,
-    (dayTicksSpent(gameState) / TICKS_PER_DAY) * 100,
-  );
 
+  // Where the day stands, told by the sun rather than by a clock face or
+  // the name of a phase. The dial carries the day's progress in its
+  // daylight arc, which is what the gold hairline under this group used to
+  // do; the day number moved into the tooltip, since the date is the more
+  // useful thing to have on screen and both won't fit inside the orbit.
   return (
-    <section className="relative flex items-baseline gap-3 pb-1.5">
-      {/* Where the day stands — deliberately no wall clock, just the
-          light through the garage door. "Night" means the shop is closed
-          and the truck is the way to bed. */}
-      <span
-        data-testid="day-phase"
-        className="font-condensed font-bold text-base uppercase leading-none text-paper-manila"
-      >
-        {phase}
-      </span>
-      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] leading-none text-paper-manila/60">
-        Day{" "}
-        <span className="font-bold text-base tracking-normal text-paper-manila tabular-nums">
-          {formatCount(gameState.day)}
-        </span>
-      </span>
-      {/* How far through the day's working minutes the shop is, drawn as
-          a hairline along the bottom of the group — the same idiom as
-          the XP meter under the Skills button. */}
-      <span
-        className="absolute inset-x-0 bottom-0 block h-0.5 overflow-hidden rounded-full bg-paper-manila/25"
-        aria-hidden
-      >
-        <span
-          style={{ width: dayPercent + "%" }}
-          className="block h-full rounded-full bg-gold transition-[width] ease-linear"
-        />
-      </span>
-    </section>
+    <Tooltip
+      content={`${capitalize(phase)} of day ${formatCount(gameState.day)}`}
+    >
+      <DayDial
+        dayProgress={dayTicksSpent(gameState) / TICKS_PER_DAY}
+        night={isNight(gameState)}
+        phase={phase}
+        day={gameState.day}
+      />
+    </Tooltip>
   );
 };
+
+const capitalize = (text: string) => text[0].toUpperCase() + text.slice(1);
