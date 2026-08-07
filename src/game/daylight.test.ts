@@ -9,6 +9,9 @@ import {
   SUNSET_ALTITUDE,
 } from "./daylight";
 
+/** One channel of a packed color: shift 16 = red, 8 = green, 0 = blue. */
+const channel = (color: number, shift: number) => (color >> shift) & 0xff;
+
 describe("the sun's position", () => {
   it("rises on the left and sets on the right", () => {
     assert.equal(sunAltitude(0, false), SUNRISE_ALTITUDE);
@@ -44,11 +47,33 @@ describe("the shadow the building throws", () => {
     const morning = daylightAt(0, false).shadow;
     const reach = (s: { dx: number; dy: number }) => Math.hypot(s.dx, s.dy);
     assert.ok(reach(morning) > reach(noon) * 2);
-    assert.ok(noon.alpha > morning.alpha);
+    // Darker tint = harder shadow. A high sun is blocked more completely.
+    assert.ok(channel(noon.tint, 16) < channel(morning.tint, 16));
   });
 
   it("goes away entirely at night", () => {
-    assert.equal(daylightAt(1, true).shadow.alpha, 0);
+    assert.equal(daylightAt(1, true).shadow.tint, 0xffffff);
+  });
+
+  it("never takes the ground below what the sky alone gives it", () => {
+    // The thing a shadow must not do is approach black: blocking the sun
+    // leaves the sky, and the sky is not nothing. Whatever the hour, the
+    // multiplier stays well clear of zero and stays *blue* — cool shadow
+    // against warm sun is the whole reason the floor is a color and not
+    // an alpha.
+    for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
+      const tint = daylightAt(progress, false).shadow.tint;
+      for (const shift of [0, 8, 16]) {
+        assert.ok(
+          channel(tint, shift) >= 0x8c,
+          `shadow too dark at ${progress}: ${tint.toString(16)}`,
+        );
+      }
+      assert.ok(
+        channel(tint, 0) > channel(tint, 16),
+        `shadow should stay cool at ${progress}: ${tint.toString(16)}`,
+      );
+    }
   });
 });
 
@@ -73,7 +98,6 @@ describe("the light it makes", () => {
   });
 
   it("comes up cool, warms through the afternoon, goes blue at night", () => {
-    const channel = (color: number, shift: number) => (color >> shift) & 0xff;
     const dawn = daylightAt(0, false).outdoorTint;
     const evening = daylightAt(1, false).outdoorTint;
     const night = daylightAt(1, true).outdoorTint;

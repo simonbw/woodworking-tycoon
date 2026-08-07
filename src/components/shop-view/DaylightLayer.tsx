@@ -1,6 +1,5 @@
 import { useApplication, useTick } from "@pixi/react";
 import {
-  BlurFilter,
   Container,
   FillGradient,
   Graphics,
@@ -53,17 +52,31 @@ import { useGameState } from "../useGameState";
  * (`daylight-tween.ts`).
  */
 
-/** Warm bulb-colored light on the driveway, and how far out it throws. */
-const SPILL_REACH = WALL_THICKNESS * 12;
-const SPILL_SPREAD = WALL_THICKNESS * 3.5;
+/**
+ * The pool of light the door throws onto the driveway: an ellipse
+ * straddling the threshold, reaching further down the drive than across
+ * it.
+ *
+ * An ellipse with a radial gradient rather than a wedge with a blur,
+ * deliberately. A `BlurFilter` renders its target to a temporary texture
+ * and composites *that*, which silently loses the object's own blend
+ * mode — so a blurred, additive shape stops adding and starts painting,
+ * and a gradient that fades to black paints black. That bug was visible:
+ * the far end of the old spill measured darker in every channel than the
+ * bare lawn beside it. A gradient shape needs no filter, so its blend
+ * mode survives, and an ellipse is soft on every edge for free.
+ */
+const SPILL_REACH = WALL_THICKNESS * 13;
+const SPILL_SPREAD = WALL_THICKNESS * 5;
 
 /**
- * How hard the spill's edges are softened, in world pixels. Light out of a
- * doorway has an edge but not a drawn one: the gradient handles falloff
- * along the throw, and this handles the two diagonal sides and the far
- * end, which a gradient down the wedge can't reach.
+ * How far past the threshold the pool's bright core sits. Centering the
+ * ellipse *on* the doorway puts its core exactly on the line where the
+ * interior fill clips it away, which throws away the brightest part and
+ * leaves a wash so faint it reads as nothing. Dropping the core onto the
+ * concrete is what makes it look like light coming out of a door.
  */
-const SPILL_BLUR = 14;
+const SPILL_CORE_DROP = WALL_THICKNESS * 4;
 
 /** How far the lamp pool reaches across the slab, as a share of it. */
 const LAMP_POOL_INNER_RADIUS = 0.08;
@@ -94,11 +107,11 @@ export const DaylightLayer: React.FC<{
 
   const outdoor = useRef(easedColor(light.outdoorTint));
   const interior = useRef(easedColor(light.interiorTint));
+  const shadowColor = useRef(easedColor(light.shadow.tint));
   const eased = useRef({
     lamps: light.lamps,
     shadowDx: light.shadow.dx,
     shadowDy: light.shadow.dy,
-    shadowAlpha: light.shadow.alpha,
   });
 
   const door = doorSpan(gameState.shopInfo.entrancePosition[0]);
@@ -125,13 +138,17 @@ export const DaylightLayer: React.FC<{
     const indoors = new Graphics();
     const pool = new Graphics();
     const spill = new Graphics();
-    spill.filters = [new BlurFilter({ strength: SPILL_BLUR, quality: 3 })];
     // A blend mode on the *root* of a renderer.render() is ignored —
     // blending happens as a child composites into its parent (the same
     // gotcha DustLayer's eraser hit), so every stamp lives under a
     // wrapper and the wrapper is what gets rendered.
+    // Order is load-bearing. The spill is an ellipse straddling the
+    // threshold, and it goes in *before* the interior fill so the opaque
+    // slab clips its inner half away: the doorway pool belongs on the
+    // driveway, and adding it on top of an already-lit shop would clamp
+    // to a flat white patch just inside the door.
     const wrapper = new Container();
-    wrapper.addChild(ambient, shadow, indoors, pool, spill);
+    wrapper.addChild(ambient, shadow, spill, indoors, pool);
     return { wrapper, ambient, shadow, indoors, pool, spill };
   }, []);
   useEffect(
@@ -160,16 +177,24 @@ export const DaylightLayer: React.FC<{
   const spillFill = useMemo(
     () =>
       new FillGradient({
-        type: "linear",
-        start: { x: 0, y: 0 },
-        end: { x: 0, y: 1 },
+        type: "radial",
+        center: { x: 0.5, y: 0.5 },
+        innerRadius: 0,
+        outerCenter: { x: 0.5, y: 0.5 },
+        outerRadius: 0.5,
         colorStops: [
           { offset: 0, color: LAMP_LIGHT },
-          // Carries most of the way down the drive before giving out;
-          // dropping off early reads as a bar at the threshold rather
-          // than as light thrown across the concrete.
-          { offset: 0.6, color: 0x6d5a40 },
-          { offset: 1, color: 0x000000 },
+          // Holds most of its strength across the near half of the throw
+          // before giving out, so the drive is lit rather than merely
+          // tinged at one spot.
+          { offset: 0.4, color: "rgba(150, 124, 88, 0.9)" },
+          { offset: 0.7, color: "rgba(96, 79, 56, 0.45)" },
+          // Fades out in *alpha* as well as toward black. Adding black
+          // already contributes nothing, but a stop that is also fully
+          // transparent can't paint the ground dark even if something
+          // downstream drops the additive blend — which is exactly the
+          // failure the blurred version shipped with.
+          { offset: 1, color: "rgba(0, 0, 0, 0)" },
         ],
         textureSpace: "local",
       }),
@@ -189,17 +214,20 @@ export const DaylightLayer: React.FC<{
     ambient.rect(0, 0, texWidth, texHeight);
     ambient.fill(packed(outdoor.current));
 
-    // 2. The building's shadow, taken out of the sky — inside the mask,
-    //    so it darkens the hour's own color rather than a neutral black.
+    // 2. The building's shadow: the sun taken off the ground, with the
+    //    sky left behind. A flat multiply by a color that is floored at
+    //    SHADOW_SKY, not black at an alpha — blocking the sun cannot take
+    //    a surface below what the sky alone gives it.
     shadow.clear();
-    if (now.shadowAlpha > 0.002) {
+    const shadowTint = packed(shadowColor.current);
+    if (shadowTint !== 0xffffff) {
       shadow.rect(
         slabX - WALL_THICKNESS + now.shadowDx * SHADOW_UNIT,
         slabY - WALL_THICKNESS + now.shadowDy * SHADOW_UNIT,
         width + WALL_THICKNESS * 2,
         height + WALL_THICKNESS * 2,
       );
-      shadow.fill({ color: 0x000000, alpha: now.shadowAlpha });
+      shadow.fill(shadowTint);
     }
 
     // 3. Indoors: its own ambient, replacing the sky over the slab. The
@@ -222,16 +250,15 @@ export const DaylightLayer: React.FC<{
     spill.alpha = now.lamps;
     spill.renderable = pool.renderable;
     if (spill.renderable) {
-      spill.poly([
-        slabX + door.left,
-        slabY + height,
-        slabX + door.right,
-        slabY + height,
-        slabX + door.right + SPILL_SPREAD,
-        slabY + height + SPILL_REACH,
-        slabX + door.left - SPILL_SPREAD,
-        slabY + height + SPILL_REACH,
-      ]);
+      // Straddling the threshold, so the pool starts inside the doorway
+      // and reaches out onto the drive rather than beginning at a line.
+      const doorMid = slabX + (door.left + door.right) / 2;
+      spill.ellipse(
+        doorMid,
+        slabY + height + SPILL_CORE_DROP,
+        (door.right - door.left) / 2 + SPILL_SPREAD,
+        SPILL_REACH,
+      );
       spill.fill(spillFill);
     }
 
@@ -259,22 +286,24 @@ export const DaylightLayer: React.FC<{
 
     const beforeOutdoor = packed(outdoor.current);
     const beforeInterior = packed(interior.current);
+    const beforeShadowTint = packed(shadowColor.current);
     const nextOutdoor = stepColor(outdoor.current, want.outdoorTint, t);
     const nextInterior = stepColor(interior.current, want.interiorTint, t);
+    const nextShadowTint = stepColor(shadowColor.current, want.shadow.tint, t);
     const beforeLamps = now.lamps;
-    const beforeShadow = now.shadowDx;
+    const beforeShadowX = now.shadowDx;
     now.lamps += (want.lamps - now.lamps) * t;
     now.shadowDx += (want.shadow.dx - now.shadowDx) * t;
     now.shadowDy += (want.shadow.dy - now.shadowDy) * t;
-    now.shadowAlpha += (want.shadow.alpha - now.shadowAlpha) * t;
 
     // Repainting a settled mask every frame is a full-screen redraw for
     // nothing, and the light is settled the vast majority of the time.
     const moved =
       nextOutdoor !== beforeOutdoor ||
       nextInterior !== beforeInterior ||
+      nextShadowTint !== beforeShadowTint ||
       Math.abs(now.lamps - beforeLamps) > 0.001 ||
-      Math.abs(now.shadowDx - beforeShadow) * SHADOW_UNIT > SETTLED;
+      Math.abs(now.shadowDx - beforeShadowX) * SHADOW_UNIT > SETTLED;
     if (moved) paint();
   });
 

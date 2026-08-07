@@ -122,8 +122,25 @@ replaced, and it looked wrong:
   under a lamp comes out concrete-colored and brighter, never white.
 - **Shadow belongs in the same currency as light.** Painted as its own
   black shape it was neutral, sitting under the day's color instead of
-  inside it. Subtracted from the mask, a shadow at golden hour is a
+  inside it. Taken out of the mask, a shadow at golden hour is a
   golden-hour shadow.
+- **A shadow has a floor, and the floor is the sky.** Blocking the sun
+  cannot take a surface below what the sky alone gives it, so the shadow
+  is a *multiply color* bottoming out at `SHADOW_SKY` rather than black
+  at an alpha. Black-at-an-alpha has no floor: turn the strength up and
+  the lawn goes to nothing, which isn't a shadow, it's a hole. The floor
+  is blue for the same reason real shadows read cool — what's still
+  lighting the grass is a blue sky.
+
+**Beware filters.** A `BlurFilter` renders its target to a temporary
+texture and composites *that*, which silently drops the object's own
+blend mode. A blurred additive shape therefore stops adding and starts
+painting — and if its gradient fades to black, it paints black. That
+shipped once: the far end of the door spill measured darker in every
+channel than the bare lawn beside it. Soft edges here come from gradient
+shapes (which need no filter, so their blend mode survives), and light
+gradients fade out in **alpha** as well as toward black, so nothing can
+darken the ground even if a blend mode is lost downstream.
 
 The tradeoff is that nothing can exceed full daylight — no blown
 highlights, no glow brighter than the art. That ceiling is the feature.

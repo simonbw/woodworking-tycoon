@@ -96,8 +96,23 @@ export interface DaylightShadow {
    */
   dx: number;
   dy: number;
-  /** 0 at night, when there is no sun to cast one. */
-  alpha: number;
+  /**
+   * What to multiply the mask by inside the shadow. `0xffffff` is no
+   * shadow at all (night, when there's no sun to block).
+   *
+   * This is a *color*, not a strength, and that is the whole point. A
+   * shadow is not "the light, but less" — it is the ground with the sun
+   * taken away and **the sky left behind**. Blocking the sun can never
+   * take a surface below what the sky alone gives it, so this tint is
+   * floored at {@link SHADOW_SKY} and cannot approach black no matter how
+   * hard the sun is. It's blue for the same reason a real shadow is: what
+   * remains lighting it is the sky.
+   *
+   * The earlier version multiplied by black at an alpha, which had no
+   * floor — crank the strength and the lawn went to nothing, which is not
+   * a shadow, it's a hole.
+   */
+  tint: number;
 }
 
 /**
@@ -169,14 +184,29 @@ const LOW_SUN_STRETCH = 2.2;
 const DOWNWARD = 0.42;
 
 /**
- * Shadow strength: hard and dark under a high sun, weaker as it drops.
- * Both are well up from what looks reasonable in the abstract, because the
- * lawn this falls on is already dark — a tenth of black over it is a
- * change of three values out of 255, which is invisible next to the grass
- * texture's own noise.
+ * What a surface keeps when the building takes the sun off it: the sky's
+ * own contribution, and nothing else. Multiplying by this is the darkest
+ * a shadow can ever get — there is no strength setting that walks it to
+ * black, because a shadowed lawn is still a lawn under an open sky.
+ *
+ * Blue on purpose, and by a wide margin: with the sun gone, what's left
+ * lighting the grass is a blue sky, which is why real shadows read cool
+ * against warm sunlight.
  */
-const SHADOW_ALPHA_MAX = 0.45;
-const SHADOW_ALPHA_MIN = 0.25;
+const SHADOW_SKY = 0x8c94b8;
+
+/** A mask multiplier that changes nothing — no shadow here. */
+const NO_SHADOW = 0xffffff;
+
+/**
+ * How completely the building blocks the sun, against how high it is.
+ * A high sun is blocked hard and cleanly; a low one rakes in and the
+ * contrast washes out, so the shadow only reaches part way toward
+ * {@link SHADOW_SKY}. Never 1 at the ends of the day, never 0 in the
+ * middle of it.
+ */
+const SHADOW_STRENGTH_MAX = 1;
+const SHADOW_STRENGTH_MIN = 0.55;
 
 /**
  * Where in the day the shop's own lights start to matter — the point the
@@ -196,7 +226,11 @@ export function daylightAt(dayProgress: number, night: boolean): Daylight {
       interiorTint: INTERIOR_NIGHT,
       // No sun, no shadow. The offset still points somewhere sensible so
       // that a tween into or out of night has somewhere to travel.
-      shadow: { dx: 0, dy: DOWNWARD * (1 + LOW_SUN_STRETCH), alpha: 0 },
+      shadow: {
+        dx: 0,
+        dy: DOWNWARD * (1 + LOW_SUN_STRETCH),
+        tint: NO_SHADOW,
+      },
       lamps: 1,
     };
   }
@@ -216,7 +250,12 @@ export function daylightAt(dayProgress: number, night: boolean): Daylight {
       // Away from the sun: a sun on the left throws the shadow right.
       dx: -cos * length,
       dy: DOWNWARD * length,
-      alpha: SHADOW_ALPHA_MIN + sin * (SHADOW_ALPHA_MAX - SHADOW_ALPHA_MIN),
+      // Part of the way from "full sun" toward "sky only", never past it.
+      tint: mixColors(
+        NO_SHADOW,
+        SHADOW_SKY,
+        SHADOW_STRENGTH_MIN + sin * (SHADOW_STRENGTH_MAX - SHADOW_STRENGTH_MIN),
+      ),
     },
     lamps: clamp((t - LAMPS_START) / (1 - LAMPS_START)),
   };
