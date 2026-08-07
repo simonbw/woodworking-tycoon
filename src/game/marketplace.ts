@@ -5,7 +5,22 @@ import { getSellValue } from "./material-values";
 import { TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY } from "./time";
 
 /**
- * The marketplace sale model (see docs/marketplace-and-jobs.md).
+ * The marketplace sale model — SawdustList's listings and job board.
+ *
+ * The economy has three income tracks, each with its own texture:
+ *
+ *  - Commissions are rare reputation-gated milestones ("bosses") — the
+ *    phone call that demands capabilities the shop doesn't have yet.
+ *  - Jobs (job-generation.ts) are commitments: accept a specific ask,
+ *    deliver it, collect guaranteed above-fair pay plus a decaying tip.
+ *    Cancelling costs reputation.
+ *  - Listings are the pricing game: put a finished piece up at an asking
+ *    price and let the market decide. Underprice to move it, overprice
+ *    and wait. This is the day-to-day living between commissions.
+ *
+ * Only finished work sells. Wood is not a commodity here — stock has no
+ * sale value (material-values.ts), so there is no "sell boards" escape
+ * hatch from actually making things.
  *
  * Every listing rolls once per tick:
  *
@@ -13,6 +28,9 @@ import { TICKS_PER_CALENDAR_DAY, TICKS_PER_DAY } from "./time";
  *
  * where r = askingPrice / fairValue. getSellValue is the fair-value anchor:
  * no longer "what you get", but what the market thinks an item is worth.
+ * Reputation buys pricing power (priceCurveCenter); sales trickle
+ * reputation back through reviews; demand decays per category so
+ * flooding one product type dries it up until it recovers.
  */
 
 /**
