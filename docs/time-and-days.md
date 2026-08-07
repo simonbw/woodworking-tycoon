@@ -95,6 +95,41 @@ Early summer is a deliberate pick — long evenings for the daylight the
 shop is lit by — and a Monday start means the save's first day is also a
 week's first day, for whenever deadlines want one.
 
+### The lot is lit by the same sun
+
+`src/game/daylight.ts` owns where the sun is, and **both** the dial and
+the world read it (`sunAltitude`). That sharing is the point: a shadow on
+the lot pointing the wrong way against a sun the player can see on the
+dial is exactly the kind of thing that reads as broken.
+
+Three pieces, all pure functions of the hour, all eased per frame rather
+than per tick (`daylight-tween.ts` — a tick lands every twelve seconds at
+the idle creep and ten a second under the wait key; neither is a rate to
+drive a color at):
+
+- **The sky**, `DaylightLayer`. A multiply tint over everything outdoors,
+  drawn last so it catches the lawn, the driveway, the truck, the
+  building, and the player when they walk out. Bright and slightly cool at
+  the open — 7 AM in June is hours after sunrise, and the ramp says so —
+  neutral through the middle, warming through gold, and deep blue after
+  close. Multiply means `0xffffff` is a no-op, so midday is simply the art
+  showing its own colors.
+- **The building's shadow**, `EnvironmentLayer`'s `BuildingShadow`. A slab
+  that slides with the sun: long to the right first thing, short and
+  straight down at noon, long to the left before close, gone after dark.
+  Its alphas are much higher than they look like they should be, because
+  the lawn it falls on is already tinted well down — a tenth of black over
+  it moves three values out of 255, which is invisible against the grass
+  texture's own noise.
+- **The bulbs**, also `DaylightLayer`. The slab is cut out of the sky wash
+  and carries its own nearly-neutral tint, so **the shop stays workable at
+  every hour** — a woodworker doesn't lose the afternoon because the sun
+  moved; they turn the lights on. Indoors only ever warms toward
+  incandescent. The hard edge at the wall is the wall. What sells it is
+  the third piece: after dark the shop's light spills out through the door
+  opening onto the driveway, which is what makes the lit interior read as
+  *lit* rather than as a hole the evening failed to reach.
+
 ### 5 PM and the night
 
 When the day's budget is spent the shop is closed:

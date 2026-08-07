@@ -50,6 +50,7 @@ import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { PowerCordLayer } from "./PowerCordLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
+import { DaylightLayer } from "./DaylightLayer";
 import { EnvironmentLayer } from "./EnvironmentLayer";
 import { CameraLayer } from "./CameraLayer";
 import { camera } from "./cameraStore";
@@ -540,6 +541,15 @@ export const ShopView: React.FC = () => {
                 {/* Dust in flight rides above the tools taking it */}
                 <DustMotionLayer />
                 <CarriedMachineLayer />
+                {/* The hour of the day, over the whole world — the sky
+                    outdoors, the bulbs on the slab. Last, so it lights
+                    everything the camera holds rather than sitting under
+                    half of it. */}
+                <DaylightLayer
+                  width={width}
+                  height={height}
+                  viewport={worldViewport}
+                />
               </pixiContainer>
             </pixiContainer>
           </pixiContainer>

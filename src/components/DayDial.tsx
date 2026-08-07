@@ -1,5 +1,10 @@
 import React from "react";
 import { formatShopDate, shopDateParts } from "../game/calendar";
+import {
+  sunAltitude,
+  SUNRISE_ALTITUDE,
+  SUNSET_ALTITUDE,
+} from "../game/daylight";
 import { DayPhase } from "../game/time";
 
 /**
@@ -32,24 +37,6 @@ const CENTER = BOX / 2;
 // when it's overhead, and nothing relies on the SVG overflowing.
 const ORBIT_RADIUS = 29;
 
-/**
- * Where the sun sits at the open and at the close, as compass-style angles
- * measured up from the horizon (0° = due horizon, 90° = overhead). It rises
- * and sets a little way *above* the horizon rather than exactly on it, so
- * the first and last hours of the day still show a whole sun instead of one
- * sliced by the edge of the dial.
- */
-const SUNRISE_ALTITUDE = 165;
-const SUNSET_ALTITUDE = 15;
-
-/**
- * Where the sun parks once the shop is closed: below the horizon, which
- * puts the moon the same distance above it. Night doesn't pass in live
- * ticks (it goes by in one batch when the player drives home), so the dial
- * holds this pose for the whole evening — moon up means closed, go home.
- */
-const NIGHT_ALTITUDE = -20;
-
 /** Local coordinates of a body on the orbit, before the group is rotated. */
 const SUN_LOCAL = { x: CENTER, y: CENTER - ORBIT_RADIUS };
 const MOON_LOCAL = { x: CENTER, y: CENTER + ORBIT_RADIUS };
@@ -75,9 +62,9 @@ export const DayDial: React.FC<DayDialProps> = ({
   day,
 }) => {
   const progress = Math.min(1, Math.max(0, dayProgress));
-  const altitude = night
-    ? NIGHT_ALTITUDE
-    : SUNRISE_ALTITUDE + progress * (SUNSET_ALTITUDE - SUNRISE_ALTITUDE);
+  // The same sun the shop floor is lit by (`daylight.ts`), so the shadow
+  // on the lot can never disagree with the sun drawn up here.
+  const altitude = sunAltitude(progress, night);
 
   // The whole orbit is one rotated group, so the browser tweens the sun
   // between ticks instead of stepping it. At the idle creep a tick lands
