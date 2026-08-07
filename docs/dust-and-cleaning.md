@@ -16,8 +16,12 @@ _is_ the indicator.
   keyed `"x,y"` (same convention as `categoryDemand`), keys dropped at
   zero. Per-species amounts so the floor's color mix is reconstructable:
   plane a pile of walnut, reload, and the shavings are still walnut-dark,
-  not generic pine. Sheet goods emit their own pseudo-species (`plywood`,
-  `mdf`) with suitably nasty colors.
+  not generic pine. Sheet goods have no species, so they emit
+  pseudo-species of their own — `plywood` (all three grades make the same
+  mess), `mdf`, `osb`, `particleBoard` — in suitably nasty colors,
+  dingier than the sheets themselves. The union of the two is
+  `DustSpecies` (`src/game/Materials.ts`); `materialDustSpecies` maps any
+  material onto it, and `dustColorBySpecies` paints it.
 - Each tile caps at `DUST_MAX` (nominal 100 units); deposition beyond the
   cap on a tile spills to its least-dusty neighbor.
 - Surfaced onto `CellInfo` in `CellMap.fromGameState` for rendering and

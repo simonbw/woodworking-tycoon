@@ -41,7 +41,7 @@ import {
 } from "../bench-work/pallet-geometry";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust } from "../Dust";
-import { materialSpecies } from "../material-helpers";
+import { materialDustSpecies } from "../material-helpers";
 import { clampsFor, clampsFree } from "../Clamp";
 import { gluePrepShortfall, inferGlueOperationId } from "../bench-work/glue-up";
 
@@ -884,7 +884,7 @@ export function emitBenchDustAction(machine: Machine): GameAction {
       machineState.processingMaterials.length > 0
         ? machineState.processingMaterials
         : machineState.inputMaterials;
-    const species = [...new Set(materials.flatMap(materialSpecies))];
+    const species = [...new Set(materials.flatMap(materialDustSpecies))];
     if (species.length === 0) {
       return gameState;
     }

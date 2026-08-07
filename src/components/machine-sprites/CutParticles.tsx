@@ -3,12 +3,12 @@ import { Graphics, Ticker } from "pixi.js";
 import React, { useRef } from "react";
 import { deriveMachineCutLoad } from "../../game/cut-load";
 import { Machine } from "../../game/Machine";
-import { Species } from "../../game/Materials";
+import { DustSpecies } from "../../game/Materials";
 import { DUST_BAG_CAPTURE } from "../../game/tools/dustBag";
 import { mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { rBool, rUniform } from "../../utils/randUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
+import { dustColorBySpecies } from "../shop-view/colorBySpecies";
 import { emitDustStamp } from "../shop-view/dustStampBus";
 
 /**
@@ -78,7 +78,7 @@ const DUST_SETTLE_FRACTION = 0.3;
  */
 export const CutParticles: React.FC<{
   kind: "dust" | "shavings";
-  species: Species;
+  species: DustSpecies;
   active: boolean;
   x?: number;
   y?: number;
@@ -129,7 +129,7 @@ export const CutParticles: React.FC<{
 
     if (active) {
       spawnDebt.current += rate * dt;
-      const base = colorBySpecies[species].primary;
+      const base = dustColorBySpecies[species].primary;
       while (spawnDebt.current >= 1 && pool.length < MAX_PARTICLES) {
         spawnDebt.current -= 1;
         const heading = direction + rUniform(-arc / 2, arc / 2);

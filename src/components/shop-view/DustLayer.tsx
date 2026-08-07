@@ -7,11 +7,11 @@ import {
   dustKeyToVec,
   dustTotal,
 } from "../../game/Dust";
-import { Species } from "../../game/Materials";
+import { DustSpecies } from "../../game/Materials";
 import { mixColors } from "../../utils/colorUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { useGameState } from "../useGameState";
-import { colorBySpecies } from "./colorBySpecies";
+import { dustColorBySpecies } from "./colorBySpecies";
 import { DustStamp, onDustStamp } from "./dustStampBus";
 import { PIXELS_PER_CELL } from "./shop-scale";
 
@@ -81,7 +81,7 @@ function drawRebuiltCell(
     let washColor: number | null = null;
     let weight = 0;
     for (const [species, amount] of Object.entries(amounts)) {
-      const color = colorBySpecies[species as Species].primary;
+      const color = dustColorBySpecies[species as DustSpecies].primary;
       weight += amount ?? 0;
       washColor =
         washColor === null
@@ -109,7 +109,7 @@ function drawRebuiltCell(
   }
 
   for (const [species, amount] of Object.entries(amounts)) {
-    const base = colorBySpecies[species as Species].primary;
+    const base = dustColorBySpecies[species as DustSpecies].primary;
     const count = Math.round((amount ?? 0) * REBUILD_STAMPS_PER_UNIT);
     for (let i = 0; i < count; i++) {
       const shaving = rng() < REBUILD_SHAVING_CHANCE;

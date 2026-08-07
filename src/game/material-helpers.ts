@@ -7,6 +7,7 @@ import {
   Board,
   BOARD_DIMENSIONS,
   BoardDimension,
+  DustSpecies,
   EndGrainSlice,
   endsLabel,
   FinishedProduct,
@@ -17,6 +18,7 @@ import {
   panelSpecies,
   panelWidth,
   SheetGood,
+  sheetDustSpecies,
   SheetGoodKind,
   Species,
   ToolItem,
@@ -66,14 +68,17 @@ export function makePallet() {
 /**
  * The distinct species a material sheds when machined — what color its
  * sawdust is. Strip-built materials (panels, end-grain slices) report
- * every species they contain; sheet goods report none (their dust will
- * get pseudo-species of its own when they matter).
+ * every species they contain; sheet goods report their family's
+ * pseudo-species (see docs/dust-and-cleaning.md).
  */
-export function materialSpecies(
+export function materialDustSpecies(
   material: MaterialInstance,
-): ReadonlyArray<Species> {
+): ReadonlyArray<DustSpecies> {
   if ("strips" in material) {
     return [...new Set(material.strips.map((strip) => strip.species))];
+  }
+  if (material.type === "plywood") {
+    return [sheetDustSpecies(material.kind)];
   }
   if ("species" in material) {
     const species: Species[] = [material.species];

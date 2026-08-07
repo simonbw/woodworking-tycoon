@@ -3,14 +3,14 @@ import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
 import { truckCabSideCell } from "../lot";
-import { Species } from "../Materials";
+import { DustSpecies } from "../Materials";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { scavengeLoot } from "./scavenge-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { sweepTickPass } from "./dust-actions";
 import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { combineActions } from "./misc-actions";
-import { materialSpecies } from "../material-helpers";
+import { materialDustSpecies } from "../material-helpers";
 import { operationAttendanceSatisfied } from "../machine-helpers";
 import { Machine } from "../Machine";
 import { getOperationPhases } from "../skill-helpers";
@@ -132,7 +132,7 @@ export function machineTickPass(): GameAction {
     const completions: OperationCompletion[] = [];
     const dustEmissions: Array<{
       machine: Machine;
-      species: ReadonlyArray<Species>;
+      species: ReadonlyArray<DustSpecies>;
       amount: number;
     }> = [];
     const updatedMachines = gameState.machines.map((machineState) => {
@@ -205,7 +205,9 @@ export function machineTickPass(): GameAction {
       const dustOutput = selectedOperation.dustOutput ?? 0;
       if (dustOutput > 0 && currentPhase.attended) {
         const species = [
-          ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
+          ...new Set(
+            machineState.processingMaterials.flatMap(materialDustSpecies),
+          ),
         ];
         const bagFactor = machineState.tools.includes("dustBag")
           ? 1 - DUST_BAG_CAPTURE
