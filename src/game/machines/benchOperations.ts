@@ -507,7 +507,10 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
  */
 function worktableBuildOperation(
   worktableId:
-    "worktable1x1" | "worktable1x2" | "worktable1x3" | "worktable2x2",
+    | "worktable1x1"
+    | "worktable1x2"
+    | "worktable1x3"
+    | "worktable2x2",
   name: string,
   duration: number,
 ): [Operation] {

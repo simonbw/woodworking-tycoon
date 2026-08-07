@@ -194,7 +194,8 @@ export const bandSaw: MachineType = {
                   makeMaterial<Board>({
                     ...offcut,
                     jointedEdges: (inputBoard.jointedEdges === 2 ? 1 : 0) as
-                      0 | 1,
+                      | 0
+                      | 1,
                   }),
                 ]
               : []),
