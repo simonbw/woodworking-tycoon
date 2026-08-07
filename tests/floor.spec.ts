@@ -213,9 +213,18 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("the top bar tells the day by its light, not a clock", async () => {
-      // Deliberately no wall clock — the day reads as morning through
-      // night, and a fresh save opens in the morning.
-      await expect(page.getByTestId("day-phase")).toHaveText(/^morning$/i);
+      // Deliberately no wall clock — the dial shows where the sun stands,
+      // and a fresh save opens in the morning of day one.
+      const dial = page.getByTestId("day-dial");
+      await expect(dial).toHaveAttribute("data-day-phase", "morning");
+      await expect(page.getByTestId("day-date")).toHaveText(/JUN\s*9/);
+      // Sunrise: the daylight arc has nothing filled in yet.
+      await expect(page.getByTestId("day-dial-arc")).toHaveAttribute(
+        "stroke-dashoffset",
+        "100",
+      );
+      // No hour anywhere in the chip.
+      await expect(page.locator("nav")).not.toContainText(/\d\d?:\d\d/);
     });
 
     await test.step("day job button is not present", async () => {
@@ -229,7 +238,7 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("no layout tab — no tabs at all, just the readout chip", async () => {
-      await expect(page.getByTestId("day-phase")).toBeVisible();
+      await expect(page.getByTestId("day-dial")).toBeVisible();
       await expect(page.getByText("Shop Layout")).toHaveCount(0);
     });
 
@@ -661,7 +670,10 @@ test.describe("Shop floor", () => {
           tick: state.dayStartTick + 600,
         }));
       });
-      await expect(page.getByTestId("day-phase")).toHaveText(/night/i);
+      await expect(page.getByTestId("day-dial")).toHaveAttribute(
+        "data-day-phase",
+        "night",
+      );
 
       // Nowhere left to go but home — the errands step off the card
       const panel = page.getByTestId("truck-panel");
@@ -672,6 +684,7 @@ test.describe("Shop floor", () => {
       const dayBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().day,
       );
+      const dateBefore = await page.getByTestId("day-date").textContent();
       await pressTruckRow(page, "Home");
       // The overnight runs as one batch; morning is a new day with a
       // fresh budget, the player back beside the cab
@@ -681,7 +694,12 @@ test.describe("Shop floor", () => {
           (window as any).__GET_GAME_STATE__().player.away === null,
         dayBefore,
       );
-      await expect(page.getByTestId("day-phase")).toHaveText(/morning/i);
+      await expect(page.getByTestId("day-dial")).toHaveAttribute(
+        "data-day-phase",
+        "morning",
+      );
+      // Sleeping is what turns the calendar over, so the dial's date moved.
+      await expect(page.getByTestId("day-date")).not.toHaveText(dateBefore!);
     });
 
     await test.step("a refresh keeps the shop, without anyone saving it", async () => {

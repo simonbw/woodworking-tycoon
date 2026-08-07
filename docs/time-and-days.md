@@ -73,11 +73,27 @@ economy by being the baseline against which efficiency is measured.
 ### The day, told by its light
 
 A working day is `TICKS_PER_DAY` (600) minutes, 7 AM to 5 PM — but there
-is deliberately **no wall clock**. The top bar's strip reads
-morning / midday / afternoon / evening / night (`dayPhase`, quarters of
-the budget) over the same progress hairline, plus the day number.
+is deliberately **no wall clock**. The top bar carries a dial
+(`DayDial`): the date in the middle, with the sun and the moon opposite
+each other on one orbit going around it. Where the sun stands is the
+whole readout — high and the day is young, low on the right and it's
+time to think about the drive home, gone and the shop is closed. The
+daylight arc it travels doubles as the day's progress meter, which is
+what the gold hairline under the old strip did on its own.
+
 Durations are still quoted in minutes and hours (`formatDuration`);
-moments are only ever told as broadly as the phase.
+moments are only ever told as broadly as `dayPhase`, which no longer
+appears as a word on screen but still names the dial for screen readers
+and carries the tooltip's "Afternoon of day 8".
+
+The date is presentation only (`src/game/calendar.ts`): `GameState.day`
+counts mornings, as every rule is written against, and the calendar is
+derived from it — day 1 is Monday, 9 June 2025. Nothing is stored, so
+there is no calendar in the save and nothing to migrate. The year is
+never shown; it exists so month lengths and leap years come out right.
+Early summer is a deliberate pick — long evenings for the daylight the
+shop is lit by — and a Monday start means the save's first day is also a
+week's first day, for whenever deadlines want one.
 
 ### 5 PM and the night
 

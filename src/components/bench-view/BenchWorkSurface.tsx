@@ -2144,9 +2144,13 @@ export const BenchWorkSurface: React.FC<{
 
         {/* The glue-up's own supplies, off to the side of the rail: bar
           clamps off the rack and the glue bottle. No plan — set the
-          clamps out, lay stock across them, glue, tighten. */}
+          clamps out, lay stock across them, glue, tighten.
+
+          This sits directly under the top-bar chip, which draws above the
+          bench view, so it takes the shared below-top-bar offset like the
+          tool rail does. */}
         {isBench && glueOps.length > 0 && (
-          <div className="pointer-events-auto absolute right-4 top-16 z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
+          <div className="pointer-events-auto absolute right-4 below-top-bar z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
             <span className="mr-1 flex flex-col items-start font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
               <span>Glue-up</span>
               <span className="tabular-nums text-paper-manila/40">
