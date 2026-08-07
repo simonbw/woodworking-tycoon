@@ -135,14 +135,24 @@ export interface MachineType {
    */
   readonly corded?: boolean;
   /**
-   * Stock feeds straight from the player's hands into the machine — there
-   * is no staged input bay (`inputSpaces` should be 0) and no mode to
-   * pick. Operating a direct-feed machine runs the first operation that
-   * accepts something the player is carrying (see findFeedableOperation);
-   * on a machine with several operations their input specs are disjoint,
-   * so the stock itself decides — feed a rough board to the jointer and
-   * it's a face pass, feed a face-jointed one and it's the edge. A real
-   * machine has no "load" step separate from presenting the work.
+   * The interface is the machine: no mode picker and no control panel.
+   * A direct-feed machine is persistent settings plus one piece of
+   * stock set down on it (F), run by holding Space — which operation
+   * runs is inferred from what's on the machine (findFeedableOperation).
+   * On a machine with several operations their input specs are
+   * disjoint, so the stock itself decides — feed a rough board to the
+   * jointer and it's a face pass, feed a face-jointed one and it's the
+   * edge; where one board could honestly take two cuts,
+   * `Operation.stockOrientation` splits them by how the stock is
+   * presented. A real machine has no "load" step separate from
+   * presenting the work, so the bay is the machine's table
+   * (`inputSpaces: 1`).
+   *
+   * The settings are one bag shared across the machine's operations
+   * (resolvedParameters fills per-op defaults), locked while a cut is
+   * running, and read again at finish — the output reflects the dial,
+   * not a snapshot at start. When a piece won't run, the machine
+   * teaches its refusal (explainFeedRefusal) instead of graying out.
    */
   readonly directFeed?: boolean;
   /**
@@ -508,8 +518,7 @@ export interface OperationParameter<T = number | string> {
    *
    * Everything else is a plain linear scale. Linear settings (slide
    * included) answer to Z/X; a "rotate" setting answers to R, which is
-   * why a machine can usefully carry one of each. See
-   * docs/direct-feed-machines.md.
+   * why a machine can usefully carry one of each.
    */
   readonly presentation?: "slide" | "rotate";
 }
