@@ -143,6 +143,13 @@ tests/
 - Player-facing numbers go through `src/utils/formatNumber.ts` (`formatMoney` / `formatCount` / `formatDecimal`), not `toFixed`, and carry `tabular-nums` unless they sit in prose or in the handwriting face — see the numbers section of `docs/design-system.md`
 - Performance considerations: The game renders many objects, so prefer PIXI components for game entities and React for UI overlays
 
+## GitHub Issues
+
+Designs for unbuilt work live in GitHub issues, not in `docs/` — the docs describe systems that exist (or provide guidance for creating more content). Labels to know when reading the issue tracker:
+
+- **`brainstorm`**: an idea kept alive for future design discussion — it needs thinking, not implementing. Don't pick these up as build tasks.
+- **`humans-only`**: work that requires a human (recording real audio, creating art assets) and cannot be done by an agent.
+
 ## Game Design Notes
 
 The game implements a time-based simulation where players queue actions and the game processes them over time. Key gameplay elements include:
