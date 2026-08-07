@@ -184,14 +184,14 @@ wiring: same path, same size, same component.
       walls, jambs, and threshold are flat bands. Art could carry siding,
       corner trim, and door tracks — but it has to follow an arbitrary shop
       footprint, so tiling strips rather than one sprite.
-- [x] The light — `shop-view/DaylightLayer.tsx` and `EnvironmentLayer`'s
-      `BuildingShadow`. Procedural on purpose, and not really art: tinted
-      rects over the world, driven by the sun in `game/daylight.ts`. The
-      building's shadow is a hard-edged slab that slides with the hour, and
-      the shop's after-dark light-spill is three nested wedges faking a
-      falloff. If any of this ever wants softening, the answer is a blur
-      filter or a gradient fill rather than a PNG — the shapes have to
-      follow an arbitrary shop footprint and a moving sun.
+- [x] The light — `shop-view/DaylightLayer.tsx`. Procedural on purpose,
+      and not art at all: one offscreen light mask, painted from the sun in
+      `game/daylight.ts` and multiplied over the scene once. The building's
+      shadow is a hard-edged slab subtracted from it; the lamp pool and the
+      door spill are gradient fills added into it, the spill softened by a
+      blur filter. Nothing here could be a PNG — the shapes follow an
+      arbitrary shop footprint and a moving sun. If the shadow ever wants
+      soft edges, that's another blur, not an asset.
 
 ### Finished products
 

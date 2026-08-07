@@ -102,33 +102,57 @@ the world read it (`sunAltitude`). That sharing is the point: a shadow on
 the lot pointing the wrong way against a sun the player can see on the
 dial is exactly the kind of thing that reads as broken.
 
-Three pieces, all pure functions of the hour, all eased per frame rather
-than per tick (`daylight-tween.ts` — a tick lands every twelve seconds at
-the idle creep and ten a second under the wait key; neither is a rate to
-drive a color at):
+**One buffer, one composite.** `DaylightLayer` paints every light in the
+shop into a single offscreen texture and multiplies that finished mask
+over the scene exactly once, as the last thing the camera container
+draws. Into the mask go: the sky's ambient over everything, the shop's
+own ambient over the slab, the building's shadow subtracted, and the
+ceiling fixtures and door spill added.
 
-- **The sky**, `DaylightLayer`. A multiply tint over everything outdoors,
-  drawn last so it catches the lawn, the driveway, the truck, the
-  building, and the player when they walk out. Bright and slightly cool at
-  the open — 7 AM in June is hours after sunrise, and the ramp says so —
-  neutral through the middle, warming through gold, and deep blue after
-  close. Multiply means `0xffffff` is a no-op, so midday is simply the art
-  showing its own colors.
-- **The building's shadow**, `EnvironmentLayer`'s `BuildingShadow`. A slab
-  that slides with the sun: long to the right first thing, short and
-  straight down at noon, long to the left before close, gone after dark.
-  Its alphas are much higher than they look like they should be, because
-  the lawn it falls on is already tinted well down — a tenth of black over
-  it moves three values out of 255, which is invisible against the grass
-  texture's own noise.
-- **The bulbs**, also `DaylightLayer`. The slab is cut out of the sky wash
-  and carries its own nearly-neutral tint, so **the shop stays workable at
-  every hour** — a woodworker doesn't lose the afternoon because the sun
-  moved; they turn the lights on. Indoors only ever warms toward
-  incandescent. The hard edge at the wall is the wall. What sells it is
-  the third piece: after dark the shop's light spills out through the door
-  opening onto the driveway, which is what makes the lit interior read as
-  *lit* rather than as a hole the evening failed to reach.
+That structure is the design, and the reason is worth keeping written
+down, because the obvious alternative — a stack of tinted shapes with
+their own blend modes drawn straight onto the scene — is what this
+replaced, and it looked wrong:
+
+- **Light added to the screen has no ceiling.** An additive glow drives
+  every channel toward white, so the door spill on a blue-grey driveway
+  washed out into a pale shape sitting on top of the world. Light added
+  *into the mask* is bounded by the multiply that follows: it can walk a
+  surface back up toward its own unlit color and no further. Concrete
+  under a lamp comes out concrete-colored and brighter, never white.
+- **Shadow belongs in the same currency as light.** Painted as its own
+  black shape it was neutral, sitting under the day's color instead of
+  inside it. Subtracted from the mask, a shadow at golden hour is a
+  golden-hour shadow.
+
+The tradeoff is that nothing can exceed full daylight — no blown
+highlights, no glow brighter than the art. That ceiling is the feature.
+
+What goes in, all pure functions of the hour (`daylight.ts`) and all
+eased per frame rather than per tick (`daylight-tween.ts` — a tick lands
+every twelve seconds at the idle creep and ten a second under the wait
+key; neither is a rate to drive a color at):
+
+- **The sky.** Bright and slightly cool at the open — 7 AM in June is
+  hours after sunrise, and the ramp says so — neutral through the middle,
+  warming through gold, deep blue after close. `0xffffff` is a no-op, so
+  midday is simply the art showing its own colors.
+- **The building's shadow**, sliding with the sun: long to the right first
+  thing, short and straight down at noon, long to the left before close,
+  gone after dark. Its alphas are much higher than they look like they
+  should be, because the lawn it falls on is already tinted well down — a
+  tenth of black over it moves three values out of 255, which is
+  invisible against the grass texture's own noise.
+- **The bulbs.** Indoors is a second ambient in the same mask, and the
+  seam between them is the garage wall. It goes *genuinely dark* at night,
+  like any unlit garage — **the shop stays workable because the fixtures
+  add their pool back**, not because the slab is exempt from the night.
+  That distinction is load-bearing: `interiorUnderLamps` is what the
+  "well lit shop" test asserts on, because asserting on the bare ambient
+  would forbid the very dimness the lamps exist to answer. The same
+  `lamps` value throws the wedge of light out the door onto the driveway,
+  so inside and outside can never disagree about whether the lights are
+  on.
 
 ### 5 PM and the night
 

@@ -1,15 +1,9 @@
-import { useTick } from "@pixi/react";
-import { Graphics, Ticker } from "pixi.js";
-import React, { useCallback, useRef } from "react";
-import { daylightAt } from "../../game/daylight";
+import { Graphics } from "pixi.js";
+import React, { useCallback } from "react";
 import { MaterialInstance } from "../../game/Materials";
 import { DOOR_HALF_WIDTH } from "../../game/ShopInfo";
-import { TICKS_PER_DAY } from "../../game/time";
-import { dayTicksSpent, isNight } from "../../game/time-flow";
-import { lerp } from "../../utils/mathUtils";
 import { useTexture } from "../../utils/useTexture";
 import { useGameState } from "../useGameState";
-import { easeFraction } from "./daylight-tween";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
 import { TruckHighlight, TruckSprite } from "./TruckSprite";
 
@@ -32,15 +26,6 @@ const WALL = 0x332e27;
 const WALL_CAP = 0x4d453a;
 const JAMB = 0xa8935f;
 const THRESHOLD = 0x1a1712;
-const SHADOW = 0x000000;
-
-/**
- * The length of the building's shadow at noon, in world pixels — the unit
- * `daylight.ts` measures the rest of the day against. Roughly a foot and a
- * half of lot at the shop's 4px-per-inch scale, which stretches to about
- * four feet when the sun is near the horizon.
- */
-const SHADOW_UNIT = 21;
 
 /**
  * Both ground textures are 512² photographs. The scales below set how much
@@ -193,77 +178,7 @@ export const EnvironmentLayer: React.FC<{
         highlightedCargo={truckCargoHighlight}
         tutorialHighlight={truckTutorialHighlight}
       />
-      <BuildingShadow width={width} height={height} />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>
   );
-};
-
-/**
- * The building's shadow on the lot. Drawn once as a plain slab at the
- * origin and then *moved* every frame, because its offset is the sun's
- * position: long to the right first thing, short and straight down at
- * noon, long to the left before close, gone after dark
- * (`daylight.ts`).
- *
- * Per-frame rather than per-render for the same reason the dial tweens:
- * at the idle creep a tick lands every twelve seconds, and a shadow that
- * jumped a foot at a time would read as a glitch rather than as the
- * afternoon going by.
- */
-const BuildingShadow: React.FC<{ width: number; height: number }> = ({
-  width,
-  height,
-}) => {
-  const shadowRef = useRef<Graphics>(null);
-  const gameState = useGameState();
-
-  const target = daylightAt(
-    dayTicksSpent(gameState) / TICKS_PER_DAY,
-    isNight(gameState),
-  ).shadow;
-  const targetRef = useRef(target);
-  targetRef.current = target;
-  const current = useRef({ ...target });
-
-  const apply = (g: Graphics) => {
-    const now = current.current;
-    g.x = now.dx * SHADOW_UNIT;
-    g.y = now.dy * SHADOW_UNIT;
-    g.alpha = now.alpha;
-  };
-
-  // Position and alpha are deliberately NOT React props: they're written
-  // every frame by the tick below, and a prop would re-snap them to the
-  // target on every re-render — which is every game tick, i.e. exactly the
-  // stepping the easing exists to remove. `draw` runs on mount and on any
-  // geometry change, so seeding the values here covers the first frame.
-  const draw = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      g.rect(
-        -WALL_THICKNESS,
-        -WALL_THICKNESS,
-        width + WALL_THICKNESS * 2,
-        height + WALL_THICKNESS * 2,
-      );
-      g.fill(SHADOW);
-      apply(g);
-    },
-    [width, height],
-  );
-
-  useTick((ticker: Ticker) => {
-    const g = shadowRef.current;
-    if (!g) return;
-    const t = easeFraction(ticker.deltaMS);
-    const now = current.current;
-    const want = targetRef.current;
-    now.dx = lerp(now.dx, want.dx, t);
-    now.dy = lerp(now.dy, want.dy, t);
-    now.alpha = lerp(now.alpha, want.alpha, t);
-    apply(g);
-  });
-
-  return <pixiGraphics ref={shadowRef} draw={draw} />;
 };

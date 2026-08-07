@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import {
+  interiorUnderLamps,
   daylightAt,
   NIGHT_ALTITUDE,
   sunAltitude,
@@ -83,27 +84,43 @@ describe("the light it makes", () => {
   });
 
   it("keeps the shop workable at every hour — the lights are on", () => {
-    // The interior never darkens the way outdoors does: every channel
-    // stays high, so nothing indoors is ever hard to see.
+    // Deliberately measured *under the lamps*, not on the bare ambient:
+    // the ambient is supposed to go dark at night, and the promise the
+    // shop makes is that where you work you can see. Asserting on the
+    // ambient would forbid the very dimness the fixtures exist to answer.
     for (const [progress, night] of [
       [0, false],
       [0.5, false],
       [1, false],
       [1, true],
     ] as const) {
-      const tint = daylightAt(progress, night).interiorTint;
+      const lit = interiorUnderLamps(daylightAt(progress, night));
       for (const shift of [0, 8, 16]) {
         assert.ok(
-          ((tint >> shift) & 0xff) >= 0xb0,
-          `interior channel too dark at ${progress}/${night}: ${tint.toString(16)}`,
+          ((lit >> shift) & 0xff) >= 0xb0,
+          `shop too dark to work in at ${progress}/${night}: ${lit.toString(16)}`,
         );
       }
     }
   });
 
-  it("only spills light out the door once the sky is going", () => {
-    assert.equal(daylightAt(0.5, false).spill, 0);
-    assert.ok(daylightAt(0.9, false).spill > 0);
-    assert.equal(daylightAt(1, true).spill, 1);
+  it("goes genuinely dark indoors once the lamps are taken away", () => {
+    // The counterpart to the test above, and the thing that makes it
+    // mean something: an unlit garage at midnight is dark. If this ever
+    // passes trivially, the interior has been exempted from the night
+    // again and the lamps are decoration.
+    const ambient = daylightAt(1, true).interiorTint;
+    assert.ok(
+      ((ambient >> 16) & 0xff) < 0x90,
+      `unlit interior should be dark, got ${ambient.toString(16)}`,
+    );
+  });
+
+  it("only leans on the shop's own lamps once the sky is going", () => {
+    // The same number shapes the pool inside and the spill outside, so
+    // the two can never disagree about whether the lights are on.
+    assert.equal(daylightAt(0.5, false).lamps, 0);
+    assert.ok(daylightAt(0.9, false).lamps > 0);
+    assert.equal(daylightAt(1, true).lamps, 1);
   });
 });

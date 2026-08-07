@@ -46,26 +46,46 @@ export function sunAltitude(dayProgress: number, night: boolean): number {
 }
 
 /**
- * The light at a given moment. Both tints are **multiplied** into what is
- * already on screen, so `0xffffff` means "leave it alone" — midday is the
- * neutral case and every other hour tints down from it.
+ * The light at a given moment, as ingredients for one full-screen light
+ * mask (see `DaylightLayer`).
+ *
+ * The mask is built up in light's own terms and composited **once**, by
+ * multiplying it over the finished scene. Two consequences worth holding
+ * onto, because they're why this shape and not another:
+ *
+ * - `0xffffff` in the mask means "leave it alone", so **midday is the
+ *   neutral case** and every other hour modulates down from it.
+ * - Lamps are *added into the mask*, not onto the screen. Multiplying by
+ *   a brighter-but-still-capped mask walks a surface back toward its own
+ *   unlit color and can never push past it — so a lit driveway is
+ *   concrete-colored and brighter, never washed toward white. Adding
+ *   light straight to the screen has no such ceiling, which is exactly
+ *   what made an earlier additive version of the door spill look like a
+ *   pale shape laid on top of the world.
  */
 export interface Daylight {
-  /** Multiply tint for everything outdoors: lawn, driveway, truck, walls. */
+  /** Ambient for everything outdoors: lawn, driveway, truck, walls. */
   outdoorTint: number;
   /**
-   * Multiply tint for the shop floor. Barely moves: the lights are on in
-   * there, so the shop stays workable at every hour and only picks up the
-   * warmth of bulbs instead of sun.
+   * Ambient on the shop floor *before* the lamps. Full daylight while the
+   * sun is carrying the room, and genuinely dim after dark — an unlit
+   * garage at midnight is dark, and the whole reason the shop stays
+   * workable is `lamps`, not an exemption from the night.
    */
   interiorTint: number;
   /** Where the building throws its shadow, and how hard. */
   shadow: DaylightShadow;
   /**
-   * How much warm light spills out the garage door onto the driveway,
-   * 0 (broad daylight, invisible) to 1 (night, the only light out there).
+   * How much of the shop's light is coming from its own fixtures rather
+   * than through the door: 0 in broad daylight, 1 after close.
+   *
+   * Two things read this, and they're the same fact seen from either side
+   * of the wall. Inside, it's how strongly the room falls off toward its
+   * corners — bulbs light a pool, the sun lights everything evenly, so a
+   * shop with no falloff at midnight looks like a lightbox. Outside, it's
+   * how much of that light escapes through the door onto the driveway.
    */
-  spill: number;
+  lamps: number;
 }
 
 export interface DaylightShadow {
@@ -112,13 +132,27 @@ const OUTDOOR_RAMP: ReadonlyArray<readonly [number, number]> = [
 const NIGHT_OUTDOOR = 0x6b7fbe;
 
 /**
- * Indoors barely moves, and what movement there is reads as bulbs rather
- * than sun: a touch warm and a touch down from white once the daylight
- * through the door stops carrying the room.
+ * The shop's ambient before its own lights: daylight while the sun is
+ * carrying the room, dropping to a cool unlit dimness after dark. It only
+ * ever falls this far because {@link LAMP_LIGHT} is about to be added back
+ * on top — see {@link interiorUnderLamps}, which is what actually has to
+ * stay workable.
  */
 const INTERIOR_DAY = 0xffffff;
 const INTERIOR_EVENING = 0xfff6e4;
-const INTERIOR_NIGHT = 0xfbeed3;
+const INTERIOR_NIGHT = 0x6a6f80;
+
+/**
+ * What a ceiling fixture adds to the mask at the middle of its pool,
+ * falling to nothing at the edge of the throw. Warm, because bulbs are —
+ * against the cool unlit ambient, that contrast is most of what makes a
+ * shop at night read as *lit* rather than as merely bright.
+ *
+ * The layer paints the actual gradient; this is the peak, and it lives
+ * here so {@link interiorUnderLamps} can hold the renderer to the promise
+ * that the shop stays workable.
+ */
+export const LAMP_LIGHT = 0xb4956a;
 
 /**
  * How much longer a low sun's shadow gets. At noon the shadow is one unit;
@@ -144,8 +178,11 @@ const DOWNWARD = 0.42;
 const SHADOW_ALPHA_MAX = 0.45;
 const SHADOW_ALPHA_MIN = 0.25;
 
-/** Where in the day the door's spill starts to show against the sky. */
-const SPILL_STARTS = 0.75;
+/**
+ * Where in the day the shop's own lights start to matter — the point the
+ * daylight through the door stops carrying the room on its own.
+ */
+const LAMPS_START = 0.75;
 
 /** The light at this moment of this day. */
 export function daylightAt(dayProgress: number, night: boolean): Daylight {
@@ -160,7 +197,7 @@ export function daylightAt(dayProgress: number, night: boolean): Daylight {
       // No sun, no shadow. The offset still points somewhere sensible so
       // that a tween into or out of night has somewhere to travel.
       shadow: { dx: 0, dy: DOWNWARD * (1 + LOW_SUN_STRETCH), alpha: 0 },
-      spill: 1,
+      lamps: 1,
     };
   }
 
@@ -173,7 +210,7 @@ export function daylightAt(dayProgress: number, night: boolean): Daylight {
     interiorTint: mixColors(
       INTERIOR_DAY,
       INTERIOR_EVENING,
-      clamp((t - SPILL_STARTS) / (1 - SPILL_STARTS)),
+      clamp((t - LAMPS_START) / (1 - LAMPS_START)),
     ),
     shadow: {
       // Away from the sun: a sun on the left throws the shadow right.
@@ -181,8 +218,40 @@ export function daylightAt(dayProgress: number, night: boolean): Daylight {
       dy: DOWNWARD * length,
       alpha: SHADOW_ALPHA_MIN + sin * (SHADOW_ALPHA_MAX - SHADOW_ALPHA_MIN),
     },
-    spill: clamp((t - SPILL_STARTS) / (1 - SPILL_STARTS)),
+    lamps: clamp((t - LAMPS_START) / (1 - LAMPS_START)),
   };
+}
+
+/**
+ * The shop floor's light in the middle of the lamp pool: the ambient with
+ * the fixtures added back, the way the mask composites them.
+ *
+ * This is the number the "well lit shop" promise is actually about. The
+ * ambient alone goes dark at night on purpose, so asserting on it would
+ * check the wrong thing — what has to hold is that where the player
+ * works, they can see.
+ */
+export function interiorUnderLamps(light: Daylight): number {
+  return addColors(light.interiorTint, scaleColor(LAMP_LIGHT, light.lamps));
+}
+
+/** Per-channel add, clamped — the mask's own ceiling, in one place. */
+function addColors(a: number, b: number): number {
+  let out = 0;
+  for (const shift of [16, 8, 0]) {
+    const sum = Math.min(255, ((a >> shift) & 0xff) + ((b >> shift) & 0xff));
+    out |= sum << shift;
+  }
+  return out;
+}
+
+/** Dim a color toward black. */
+function scaleColor(color: number, factor: number): number {
+  let out = 0;
+  for (const shift of [16, 8, 0]) {
+    out |= Math.round(((color >> shift) & 0xff) * clamp(factor)) << shift;
+  }
+  return out;
 }
 
 /** Read a color off a sorted list of (position, color) stops. */
