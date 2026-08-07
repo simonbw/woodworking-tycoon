@@ -7,7 +7,7 @@ import { getAudioContext } from "./getAudioContext";
  * Sounds live under `static/sounds/` and are served at `/sounds/<name>.<ext>`.
  * Most clips are Ogg — an MP3's start position isn't reliable (codec padding
  * smears an attack and puts a gap at a loop's wrap) and the Electron target means
- * Chromium's decoder everywhere (see `docs/sound-design.md`). A few are FLAC
+ * Chromium's decoder everywhere. A few are FLAC
  * (lossless source the author prefers); Chromium decodes both. The extension
  * defaults to `ogg`, with per-name overrides in `SOUND_EXTENSION`. Each clip is
  * fetched and decoded on first use, then cached so subsequent plays are
