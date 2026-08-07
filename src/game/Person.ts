@@ -29,7 +29,7 @@ export interface Person {
    * The machine hoisted over the person's shoulders, mid-rearrangement.
    * Mounted tools, installed upgrades, and shelf stock ride along; its
    * position/rotation are stale until it's set back down. Optional so
-   * pre-carry saves load untouched. See docs/carrying-machines.md.
+   * pre-carry saves load untouched. See game-actions/machine-actions.ts.
    */
   carriedMachine?: MachineState | null;
   /**

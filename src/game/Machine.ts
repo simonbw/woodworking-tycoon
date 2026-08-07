@@ -94,7 +94,7 @@ export interface MachineType {
    * an apron in front of one operation cell. A garbage can is the case —
    * you toss things in from wherever you're standing. Such a machine still
    * has no `operationPosition`, so it drops anywhere it fits (see
-   * docs/carrying-machines.md).
+   * game-actions/machine-actions.ts).
    */
   readonly operableFromAnySide?: boolean;
   /**

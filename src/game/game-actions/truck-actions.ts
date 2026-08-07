@@ -92,7 +92,7 @@ export function takeFromTruckBedAction(
 
 /**
  * Hoist a crated machine out of the bed onto the shoulders — the same
- * carry the shop-floor crates use (see docs/carrying-machines.md), so
+ * carry the shop-floor crates use (see machine-actions.ts), so
  * from here it walks in the door and sets down like any other machine.
  */
 export function takeCrateFromTruckAction(machineTypeId?: string): GameAction {

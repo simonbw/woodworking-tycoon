@@ -261,9 +261,9 @@ const defs = [
 
   // ---------------------------------------------------------------- Machines
   {
-    // Contextual like sweep (ActionBar offers it standing at a machine or on
-    // a crate once carrying is unlocked); hidden from the static cheat sheet
-    // so the verb doesn't leak before its reveal.
+    // Contextual like sweep (ActionBar offers it standing at a machine or
+    // on a crate); hidden from the static cheat sheet — the chip at the
+    // machine teaches it in place.
     id: "carry-machine",
     codes: ["KeyB"],
     keys: [["B"]],

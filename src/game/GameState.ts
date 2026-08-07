@@ -30,7 +30,7 @@ export type MaterialPile = {
  * Shop-built stations (worktables) land crated at the bench that produced
  * them; purchased machines ride home in the truck's bed instead (see
  * TruckState). Crates don't block walking — stand on one and pick it up.
- * See docs/carrying-machines.md.
+ * See game-actions/machine-actions.ts.
  */
 export type MachineCrate = {
   readonly machine: MachineState;
