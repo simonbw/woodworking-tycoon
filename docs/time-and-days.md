@@ -42,7 +42,7 @@ and the Ticker feeds ticks accordingly:
   machine, holding the operate key, power on — or a power-feed operation
   pulling stock through on its own), the broom or vac working under the
   same hold, a busy body (trudging dust, mid-sweep), or a scavenging
-  run's timer burning down.
+  run's search burning down.
 - **waiting** — the wait verb: hold <kbd>T</kbd> and the clock winds up
   from a gentle spin to twice working pace over a few seconds (the
   Ticker's `waitTicksPerSecond` ramp) — a tap costs only minutes, a
@@ -119,10 +119,13 @@ Store and lumberyard runs charge `DRIVE_TICKS_ONE_WAY` (15) minutes each
 way, run through the pipeline at the moment of departure and return — so
 a cure gains the same minutes the drive spends. Browsing the aisles is
 thinking, and thinking is nearly free. A scavenging run charges the same
-way it plays: each stop's search and the drive home are working time,
-while sitting at the cab deciding whether another stop is worth it is
-thinking — and once a search plus the drive home would run past close,
-"keep searching" is off the table and home is the only way.
+way it plays: each stop's search is working time — half an hour of
+driving there and digging through the pile — while sitting at the cab
+deciding whether another stop is worth it is thinking. Pulling back into
+the shop is free: the circuit runs out from the shop and back, so the
+drive is already paid for in the stops. Once one more search would run
+past close, "keep searching" is off the table and the shop is the only
+way.
 
 ### Days are calendar days now
 

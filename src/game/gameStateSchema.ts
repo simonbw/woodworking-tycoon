@@ -93,7 +93,6 @@ const awayTripSchema = z.discriminatedUnion("kind", [
     phase: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("searching"), doneTick: z.number() }),
       z.object({ kind: z.literal("deciding") }),
-      z.object({ kind: z.literal("drivingHome"), returnTick: z.number() }),
     ]),
   }),
   z.object({

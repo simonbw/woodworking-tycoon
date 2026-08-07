@@ -1,4 +1,4 @@
-import { getMusicBus } from "./audioBus";
+import { getMusicBus, getSfxBus } from "./audioBus";
 import { getAudioContext } from "./getAudioContext";
 
 /**
@@ -25,8 +25,15 @@ import { getAudioContext } from "./getAudioContext";
 export interface MusicTrackDef {
   /** Absolute URL under `/sounds/`. */
   readonly url: string;
-  /** Overall trim for this track, applied under the music bus. */
+  /** Overall trim for this track, applied under its bus. */
   readonly gain: number;
+  /**
+   * Which slider owns it. Music by default; a long ambience that is a
+   * *sound* rather than a score — the truck's engine on the scavenging
+   * circuit — rides the sfx bus, because someone who turns the music off
+   * still expects to hear the truck.
+   */
+  readonly bus?: "music" | "sfx";
   /** Fade length coming in. Long: music should arrive, not cut in. */
   readonly fadeInMs: number;
   /** Fade length going out. */
@@ -46,6 +53,21 @@ export const HOLD_MUSIC: MusicTrackDef = {
   // let go promptly the moment the player picks the work back up.
   fadeInMs: 2500,
   fadeOutMs: 1200,
+};
+
+/**
+ * The truck out on the scavenging circuit: engine and road noise under
+ * the searching leg, the only thing that says the half-hour between
+ * stops is being driven rather than waited out. Streamed like the hold
+ * music (it is minutes long) but on the sfx bus, and faded in so the
+ * engine arrives with the road rather than snapping on.
+ */
+export const TRUCK_DRIVING_LOOP: MusicTrackDef = {
+  url: "/sounds/truck-driving-loop.mp3",
+  gain: 0.45,
+  bus: "sfx",
+  fadeInMs: 1400,
+  fadeOutMs: 900,
 };
 
 export class MusicTrack {
@@ -110,7 +132,7 @@ export class MusicTrack {
     const gain = ctx.createGain();
     gain.gain.value = 0;
     ctx.createMediaElementSource(element).connect(gain);
-    gain.connect(getMusicBus());
+    gain.connect(this.def.bus === "sfx" ? getSfxBus() : getMusicBus());
     this.element = element;
     this.gain = gain;
     return element;

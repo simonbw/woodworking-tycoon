@@ -2,10 +2,8 @@ import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
-import { truckCabSideCell } from "../lot";
 import { Species } from "../Materials";
 import { marketplaceTickPass } from "./marketplace-actions";
-import { scavengeLoot } from "./scavenge-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { sweepTickPass } from "./dust-actions";
 import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
@@ -44,8 +42,9 @@ export const tickAction: GameAction = combineActions(
 
 /**
  * The player's slice of the tick: advance a scavenging trip's legs (a
- * finished search reveals its stop and waits on the player's call; a
- * finished drive home delivers the haul) and burn a busy tick.
+ * finished search reveals its stop and waits on the player's call) and
+ * burn a busy tick. Ending the trip is the player's call, not the
+ * clock's — see headHomeFromScavengingAction.
  */
 function playerTickPass(): GameAction {
   return (gameState) => {
@@ -55,7 +54,7 @@ function playerTickPass(): GameAction {
       away.phase.kind === "searching" &&
       gameState.tick >= away.phase.doneTick
     ) {
-      // The hour's up: reveal what this stop held. A find was loaded on
+      // The half-hour's up: reveal what this stop held. A find was loaded on
       // the spot — the thud is worth hearing — and either way the trip
       // parks at a decision until the player calls the next leg.
       const stop = away.stops[away.stopsSearched];
@@ -72,26 +71,6 @@ function playerTickPass(): GameAction {
         pendingSounds: stop?.pallet
           ? [...(gameState.pendingSounds ?? []), { kind: "pallet-load" }]
           : gameState.pendingSounds,
-      };
-    } else if (
-      away?.kind === "scavenging" &&
-      away.phase.kind === "drivingHome" &&
-      gameState.tick >= away.phase.returnTick
-    ) {
-      // Welcome home: the haul rides in the truck's bed, to be unloaded
-      // at the tailgate, and the player steps out beside the cab.
-      // (Shopping trips end via returnFromStoreAction, not a timer.)
-      gameState = {
-        ...gameState,
-        truck: {
-          ...gameState.truck,
-          bed: [...gameState.truck.bed, ...scavengeLoot(away)],
-        },
-        player: {
-          ...gameState.player,
-          away: null,
-          position: truckCabSideCell(gameState.shopInfo),
-        },
       };
     }
 

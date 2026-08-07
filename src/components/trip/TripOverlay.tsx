@@ -5,7 +5,8 @@ import { useModalScope, useShortcut } from "../shortcuts/ShortcutProvider";
 /**
  * Binding the trip keys is a separate (null-rendering) component so the
  * hooks only exist when a trip offers a way home — the scavenging trip
- * has no Head Home, only the clock, so it claims nothing.
+ * offers one only while it's parked at a decision, and claims nothing
+ * while a search is running.
  */
 const TripKeyScope: React.FC<{ onHeadHome: () => void }> = ({ onHeadHome }) => {
   useModalScope();

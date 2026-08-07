@@ -204,7 +204,7 @@ export const TruckPrompt: React.FC<{
       group: "go",
       name: "Scavenge for pallets",
       description:
-        "The loading-dock circuit, an hour a stop. Head home whenever the bed looks good enough.",
+        "The loading-dock circuit, half an hour a stop. Head back whenever the bed looks good enough.",
       verb: "Go",
       action: () => startScavengingAction(),
     });

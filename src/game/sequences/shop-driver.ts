@@ -85,7 +85,6 @@ import { isNight } from "../time-flow";
 import {
   continueScavengingAction,
   headHomeFromScavengingAction,
-  SCAVENGE_RETURN_TICKS,
   SCAVENGE_STOP_NAMES,
   SCAVENGE_STOP_TICKS,
   startScavengingAction,
@@ -888,12 +887,12 @@ export class ShopDriver {
 
   /**
    * Take the truck out scavenging, work the given number of stops, and
-   * drive home with the haul ferried out of the bed onto the dropoff
-   * spot. The circuit is rolled up front from the rng; the default finds
-   * a pallet with all eleven deck boards and solid stringers at each
-   * stop searched, so sequences can count on the wood — two stops means
-   * two pristine pallets, and the whole errand costs about the same
-   * quarter-day the old fixed trip did.
+   * pull back into the shop with the haul ferried out of the bed onto
+   * the dropoff spot. The circuit is rolled up front from the rng; the
+   * default finds a pallet with all eleven deck boards and solid
+   * stringers at each stop searched, so sequences can count on the wood
+   * — two stops means two pristine pallets, and the errand costs only
+   * the searching: half an hour a stop, nothing for the drive back.
    */
   scavenge({
     stops = 2,
@@ -903,11 +902,9 @@ export class ShopDriver {
       throw new Error(`A trip searches 1-${SCAVENGE_STOP_NAMES.length} stops`);
     }
     // The whole trip has to fit inside one day: "keep searching" is
-    // refused once the next search plus the drive home would run past
-    // close, and a sequence shouldn't trip over the daylight rule.
-    this.ensureDaylight(
-      stops * (SCAVENGE_STOP_TICKS + 1) + SCAVENGE_RETURN_TICKS + 1,
-    );
+    // refused once the next search would run past close, and a sequence
+    // shouldn't trip over the daylight rule.
+    this.ensureDaylight(stops * (SCAVENGE_STOP_TICKS + 1));
     this.standAtCab();
     this.apply(startScavengingAction(rng ?? pristineFindsRng(stops)));
     if (!this.state.player.away) {
@@ -927,8 +924,9 @@ export class ShopDriver {
         this.apply(continueScavengingAction());
       }
     }
+    // Calling it good enough is instant — the truck is back at the shop
+    // with the haul in its bed the same tick.
     this.apply(headHomeFromScavengingAction());
-    this.tick(SCAVENGE_RETURN_TICKS + 1);
     if (this.state.player.away) {
       throw new Error("Still out scavenging after the trip should have ended");
     }

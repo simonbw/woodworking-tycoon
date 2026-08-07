@@ -92,11 +92,12 @@ export function timeSpeed(gameState: GameState): TimeSpeed {
   if (away?.kind === "home") {
     return "stopped";
   }
-  // A scavenging run's searches and drives are spent time; sitting in
-  // the cab deciding whether another stop is worth it is thinking, and
-  // thinking is nearly free — same as browsing a store's aisles, so the
-  // decision falls through to the idle creep (or the night stop).
-  if (away?.kind === "scavenging" && away.phase.kind !== "deciding") {
+  // A scavenging run's searches are spent time — the half-hour is spent
+  // driving to the stop and digging through it. Sitting in the cab
+  // deciding whether another is worth it is thinking, and thinking is
+  // nearly free — same as browsing a store's aisles, so the decision
+  // falls through to the idle creep (or the night stop).
+  if (away?.kind === "scavenging" && away.phase.kind === "searching") {
     return "working";
   }
   if (gameState.player.busyTicks > 0 && away === null) {

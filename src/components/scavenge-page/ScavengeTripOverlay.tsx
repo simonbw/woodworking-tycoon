@@ -4,7 +4,6 @@ import {
   continueScavengingAction,
   keepScavengingBlock,
   scavengeLoot,
-  SCAVENGE_RETURN_TICKS,
   SCAVENGE_STOP_TICKS,
 } from "../../game/game-actions/scavenge-actions";
 import { Pallet } from "../../game/Materials";
@@ -13,18 +12,26 @@ import { formatDuration } from "../../game/time";
 import { classNames } from "../../utils/classNames";
 import { formatCount } from "../../utils/formatNumber";
 import { seededRandom } from "../../utils/randUtils";
+import { DayClock } from "../DayClock";
 import { TripOverlay } from "../trip/TripOverlay";
+import { useHeadHome } from "../trip/TripTransitionLayer";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { ScavengeDrivingSound } from "./ScavengeDrivingSound";
 
 /**
  * The scavenging trip, shown while the player's away trip is a
  * scavenging one (see TruckPrompt / startScavengingAction). The trip is
- * a stop-by-stop circuit the player steers from the cab: an hour's
- * search reveals what the stop held, then the trip parks at a decision —
- * keep searching (another hour) or call it good enough and drive home.
- * The field notes record the circuit so far, and the truck alongside
- * shows the haul stacking up in the bed. The shop keeps ticking back
- * home.
+ * a stop-by-stop circuit the player steers from the cab: half an hour's
+ * driving and digging reveals what a stop held, then the trip parks at a
+ * decision — keep searching (another half-hour) or call it good enough
+ * and pull back into the shop, which is free. The shop keeps ticking
+ * back home, which is why the day's clock is up here too: the daylight
+ * left is the whole cost being weighed.
+ *
+ * One picture, one line of what just happened, two buttons — the layout
+ * is the same size in every phase, so nothing moves when the player
+ * presses anything. The only thing that changes is whether the truck is
+ * driving.
  */
 export const ScavengeTripOverlay: React.FC = () => {
   const gameState = useGameState();
@@ -38,12 +45,16 @@ export const ScavengeTripOverlay: React.FC = () => {
 const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const headHome = () => applyAction(headHomeFromScavengingAction());
+  const fadeThen = useHeadHome();
+  // Ending the trip is instant in game time, so it gets the same
+  // fade-to-black-then-arrive performance a store's Head Home does.
+  const backToShop = () =>
+    fadeThen(() => applyAction(headHomeFromScavengingAction()));
   const keepSearching = () => applyAction(continueScavengingAction());
 
+  const searching = trip.phase.kind === "searching";
   const deciding = trip.phase.kind === "deciding";
   const block = keepScavengingBlock(gameState);
-  const lines = buildLogLines(trip);
   const loot = scavengeLoot(trip);
 
   return (
@@ -52,42 +63,24 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
       className="gap-6"
       testId="scavenge-trip"
       // Escape means "good enough" only while the trip is actually
-      // waiting on the call — searching and the drive home have no keys.
-      onHeadHome={deciding ? headHome : undefined}
+      // waiting on the call — a search in progress has no keys.
+      onHeadHome={deciding ? backToShop : undefined}
     >
+      <ScavengeDrivingSound driving={searching} />
       <header className="flex items-baseline justify-between">
         <h1 className="section-heading">Out scavenging for pallets</h1>
-        <div className="flex items-baseline gap-3">
-          {trip.phase.kind === "drivingHome" ? (
-            <>
-              <span className="subsection-heading">Back in</span>
-              <span className="font-bold tabular-nums text-paper-manila">
-                {formatDuration(
-                  Math.max(0, trip.phase.returnTick - gameState.tick),
-                )}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="subsection-heading">Time out</span>
-              <span className="font-bold tabular-nums text-paper-manila">
-                {formatDuration(gameState.tick - trip.startTick)}
-              </span>
-            </>
-          )}
-        </div>
+        <DayClock />
       </header>
-      <div className="flex min-h-0 grow items-stretch justify-center gap-8">
-        <LogSheet lines={lines} />
-        <div className="flex w-[26rem] shrink-0 flex-col justify-center gap-6">
-          <TruckCard palletCount={loot.length} />
-          {deciding && (
-            <DecisionPanel
-              block={block}
-              onKeepSearching={keepSearching}
-              onHeadHome={headHome}
-            />
-          )}
+      <div className="flex min-h-0 grow items-center justify-center">
+        <div className="flex w-[30rem] flex-col gap-5">
+          <TruckDrawing palletCount={loot.length} driving={searching} />
+          <StopLine trip={trip} />
+          <DecisionPanel
+            block={block}
+            canDecide={deciding}
+            onKeepSearching={keepSearching}
+            onBackToShop={backToShop}
+          />
         </div>
       </div>
     </TripOverlay>
@@ -95,7 +88,7 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
 };
 
 // ---------------------------------------------------------------------------
-// The field notes
+// What just happened
 // ---------------------------------------------------------------------------
 
 const EMPTY_HANDED_NOTES = [
@@ -107,57 +100,53 @@ const EMPTY_HANDED_NOTES = [
   "nothing. typical.",
 ];
 
-type LogLine = {
-  readonly text: string;
-  /** A find — written heavier, the way a good day gets underlined. */
-  readonly emphasis?: boolean;
-  /** Still happening — the pen hasn't finished the line. */
-  readonly pending?: boolean;
-};
-
 /**
- * The trip's travel log, one line per event so far. Derived fresh from
- * the trip every render; the empty-handed flavor is seeded by the trip's
- * start so a given trip always reads the same.
+ * One line: where the truck is now, or what the last stop turned up. The
+ * empty-handed flavor is seeded by the trip's start, so a given stop on
+ * a given trip always reads the same however often it re-renders.
+ *
+ * Two lines' worth of height is reserved whatever it says — this sits
+ * between the picture and the buttons, and the buttons must not move.
  */
-function buildLogLines(trip: ScavengingTrip): LogLine[] {
+const StopLine: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
   const rng = seededRandom(`scavenge:${trip.startTick}`);
   const notes = shuffle([...EMPTY_HANDED_NOTES], rng);
 
-  const lines: LogLine[] = [{ text: "Headed out with the hand truck." }];
-  let emptyStops = 0;
-  for (const stop of trip.stops.slice(0, trip.stopsSearched)) {
-    lines.push(
-      stop.pallet
-        ? {
-            text: `${stop.stopName} — score! ${describePalletFind(stop.pallet)}`,
-            emphasis: true,
-          }
-        : {
-            text: `${stop.stopName} — ${notes[emptyStops++ % notes.length]}`,
-          },
-    );
-  }
+  let text: string;
+  let found = false;
   if (trip.phase.kind === "searching") {
     const nextStop = trip.stops[trip.stopsSearched];
-    lines.push({
-      text: `Digging through pallets at ${nextStop.stopName}…`,
-      pending: true,
-    });
+    text = `Digging through the pallets at ${nextStop.stopName}…`;
+  } else {
+    const stop = trip.stops[trip.stopsSearched - 1];
+    if (!stop) {
+      text = "Headed out with the hand truck.";
+    } else if (stop.pallet) {
+      found = true;
+      text = `${stop.stopName} — score! ${describePalletFind(stop.pallet)}`;
+    } else {
+      // Which flavor line: the count of empty stops so far, so a second
+      // strikeout doesn't repeat the first one's excuse.
+      const emptyStops = trip.stops
+        .slice(0, trip.stopsSearched)
+        .filter((s) => !s.pallet).length;
+      text = `${stop.stopName} — ${notes[(emptyStops - 1) % notes.length]}`;
+    }
   }
-  if (trip.phase.kind === "drivingHome") {
-    const palletCount = scavengeLoot(trip).length;
-    lines.push({
-      text:
-        palletCount === 0
-          ? "Struck out. Heading home empty-handed."
-          : palletCount === 1
-            ? "Calling it — heading home with the pallet."
-            : `Calling it — heading home with ${palletCount} pallets.`,
-    });
-  }
-  return lines;
-}
+
+  return (
+    <p
+      className={classNames(
+        "flex h-14 items-center justify-center px-4 text-center font-ink text-lg leading-snug",
+        found ? "font-bold text-gold" : "text-paper-manila",
+        trip.phase.kind === "searching" && "text-paper-manila/60",
+      )}
+      data-testid="scavenge-stop-line"
+    >
+      {text}
+    </p>
+  );
+};
 
 function describePalletFind(pallet: Pallet): string {
   const deckCount = pallet.deckBoards.filter(Boolean).length;
@@ -175,33 +164,6 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
   return items;
 }
 
-const LogSheet: React.FC<{ lines: LogLine[] }> = ({ lines }) => (
-  <section className="flex w-80 shrink-0 rotate-[0.5deg] flex-col">
-    <div
-      className="lined-sheet min-h-0 grow overflow-y-auto"
-      data-testid="scavenge-log"
-    >
-      <ul>
-        <li className="font-condensed text-xs uppercase leading-[2rem] tracking-[0.15em] text-ink-fade">
-          Pallet run — field notes
-        </li>
-        {lines.map((line, i) => (
-          <li
-            key={i}
-            className={classNames(
-              "font-ink text-lg leading-[2rem] text-ink-blue",
-              line.emphasis && "font-bold",
-              line.pending && "text-ink-blue/60",
-            )}
-          >
-            {line.text}
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
-);
-
 // ---------------------------------------------------------------------------
 // The truck
 // ---------------------------------------------------------------------------
@@ -217,32 +179,45 @@ const TRUCK_W = 260;
 const TRUCK_H = 150;
 /** Top of the bed rail — pallets stack upward from here. */
 const BED_RAIL_Y = 98;
+/** The wheels' centers, shared by the art and the spin's pivot. */
+const FRONT_AXLE_X = 64;
+const REAR_AXLE_X = 204;
+const AXLE_Y = 120;
+const ROAD_Y = 136;
 
 /**
  * The pickup, sketched side-on in the same hand as the rest of the
  * paperwork, with the haul stacked in the bed one pallet per find — the
- * running tally the player is really deciding with.
+ * running tally the player is really deciding with. While a search is
+ * running it is drawn *driving*: the road streams past under it and the
+ * wheels turn. Parked at a decision, everything holds still.
  */
-const TruckCard: React.FC<{ palletCount: number }> = ({ palletCount }) => (
+const TruckDrawing: React.FC<{ palletCount: number; driving: boolean }> = ({
+  palletCount,
+  driving,
+}) => (
   <section className="paper-card -rotate-[0.4deg] flex flex-col gap-1">
-    <div className="font-ink text-xl leading-none text-ink-blue">The haul</div>
     <svg
       viewBox={`0 0 ${TRUCK_W} ${TRUCK_H}`}
       preserveAspectRatio="xMidYMid meet"
       className="w-full"
       role="img"
       aria-label={`The truck, ${formatCount(palletCount)} pallets in the bed`}
+      data-testid="scavenge-truck"
+      data-driving={driving ? "true" : "false"}
     >
-      {/* Ground */}
+      {/* The road, drawn as its dashes — they stream backwards under the
+          truck while it drives (see .scavenge-road). */}
       <line
-        x1={8}
-        y1={136}
-        x2={TRUCK_W - 8}
-        y2={136}
+        x1={-40}
+        y1={ROAD_Y}
+        x2={TRUCK_W + 40}
+        y2={ROAD_Y}
         stroke={INK_FADE}
         strokeWidth={2}
-        strokeDasharray="6 5"
+        strokeDasharray="18 15"
         opacity={0.5}
+        className={driving ? "scavenge-road" : undefined}
       />
 
       {/* Pallets, oldest at the bottom of the stack */}
@@ -286,8 +261,8 @@ const TruckCard: React.FC<{ palletCount: number }> = ({ palletCount }) => (
       />
 
       {/* Wheels over the body line — comic style, no wheel arches */}
-      <Wheel cx={64} />
-      <Wheel cx={204} />
+      <Wheel cx={FRONT_AXLE_X} spinning={driving} />
+      <Wheel cx={REAR_AXLE_X} spinning={driving} />
     </svg>
     <div
       className="font-condensed text-sm uppercase tracking-[0.15em] text-ink-fade text-center"
@@ -302,24 +277,54 @@ const TruckCard: React.FC<{ palletCount: number }> = ({ palletCount }) => (
   </section>
 );
 
-const Wheel: React.FC<{ cx: number }> = ({ cx }) => (
+/**
+ * A wheel, with two spokes across the hub so the spin has something to
+ * read on — a bare rim turning is invisible.
+ */
+const Wheel: React.FC<{ cx: number; spinning: boolean }> = ({
+  cx,
+  spinning,
+}) => (
   <g>
     <circle
       cx={cx}
-      cy={120}
+      cy={AXLE_Y}
       r={15}
       fill="#e8dcc0"
       stroke={INK_BLACK}
       strokeWidth={3}
     />
-    <circle
-      cx={cx}
-      cy={120}
-      r={5}
-      fill="none"
-      stroke={INK_BLACK}
-      strokeWidth={2}
-    />
+    <g
+      className={spinning ? "scavenge-wheel" : undefined}
+      style={{ transformOrigin: `${cx}px ${AXLE_Y}px` }}
+    >
+      <line
+        x1={cx - 11}
+        y1={AXLE_Y}
+        x2={cx + 11}
+        y2={AXLE_Y}
+        stroke={INK_BLACK}
+        strokeWidth={2}
+        opacity={0.6}
+      />
+      <line
+        x1={cx}
+        y1={AXLE_Y - 11}
+        x2={cx}
+        y2={AXLE_Y + 11}
+        stroke={INK_BLACK}
+        strokeWidth={2}
+        opacity={0.6}
+      />
+      <circle
+        cx={cx}
+        cy={AXLE_Y}
+        r={5}
+        fill="#e8dcc0"
+        stroke={INK_BLACK}
+        strokeWidth={2}
+      />
+    </g>
   </g>
 );
 
@@ -369,17 +374,22 @@ const PalletSideView: React.FC<{ y: number }> = ({ y }) => (
 
 /**
  * The call the whole trip is built around, made from the cab: another
- * hour of searching, or good enough. Both buttons carry their cost in
- * time — that's the price being weighed. When another stop can't happen
- * (the circuit's used up, or the search plus the drive home wouldn't
- * fit before close) the button stays visible but dead, with the reason
- * written under it, and home is the only way left.
+ * half-hour of searching, or good enough. Only the search costs time —
+ * the circuit runs past the shop, so pulling back in is free, and the
+ * button says so.
+ *
+ * Both buttons are always here, dead while a search is running and when
+ * another stop can't happen (the circuit's used up, or the search
+ * wouldn't fit before close). Nothing is ever added or taken away, so
+ * the panel never moves under the player's cursor; the reason a search
+ * is refused writes into a line that is always reserved.
  */
 const DecisionPanel: React.FC<{
   block: ReturnType<typeof keepScavengingBlock>;
+  canDecide: boolean;
   onKeepSearching: () => void;
-  onHeadHome: () => void;
-}> = ({ block, onKeepSearching, onHeadHome }) => (
+  onBackToShop: () => void;
+}> = ({ block, canDecide, onKeepSearching, onBackToShop }) => (
   <section className="flex flex-col gap-2" data-testid="scavenge-decision">
     <button
       className="button py-2 text-base"
@@ -389,22 +399,17 @@ const DecisionPanel: React.FC<{
     >
       Keep searching · {formatDuration(SCAVENGE_STOP_TICKS)}
     </button>
-    {block === "outOfDaylight" && (
-      <div className="text-center font-condensed text-sm uppercase tracking-wider text-paper-manila/60">
-        Not enough daylight left for another stop
-      </div>
-    )}
-    {block === "outOfStops" && (
-      <div className="text-center font-condensed text-sm uppercase tracking-wider text-paper-manila/60">
-        That&apos;s every spot on the circuit
-      </div>
-    )}
+    <div className="flex h-5 items-center justify-center text-center font-condensed text-sm uppercase tracking-wider text-paper-manila/60">
+      {block === "outOfDaylight" && "Not enough daylight left for another stop"}
+      {block === "outOfStops" && "That's every spot on the circuit"}
+    </div>
     <button
       className="button py-2 text-base"
-      onClick={onHeadHome}
+      disabled={!canDecide}
+      onClick={onBackToShop}
       data-testid="scavenge-head-home"
     >
-      Good enough — head home · {formatDuration(SCAVENGE_RETURN_TICKS)}
+      Good enough — back to the shop
     </button>
   </section>
 );

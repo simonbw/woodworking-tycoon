@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { SCAVENGE_RETURN_TICKS } from "../../game/game-actions/scavenge-actions";
 import { playSound, preloadSound } from "../../utils/sfx";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
@@ -21,8 +20,7 @@ import { useGameState } from "../useGameState";
  * the lot, the screen dips to black, and the destination is there when
  * it comes back. Heading home fades to black *over the destination*
  * (`useHeadHome` delays the actual return action until the screen is
- * dark, and the scavenging timer pre-fades as its return tick closes
- * in), then reveals the shop with the truck backing up the driveway —
+ * dark), then reveals the shop with the truck backing up the driveway —
  * the player stays inside it, hidden, until it parks.
  *
  * GameState semantics are untouched — `away` still flips before any
@@ -44,10 +42,6 @@ export const TRUCK_ARRIVE_MS = 2900;
  * the parking brake and the door. */
 export const TRUCK_ROLL_IN_MS = 1700;
 const FADE_MS = 400;
-
-/** How close the scavenging return tick gets (at 5 ticks/s) before the
- * screen starts dipping — the swap home then happens under black. */
-const SCAVENGE_PREFADE_TICKS = 3;
 
 const TRANSITIONS_DISABLED = Number(process.env.E2E_RENDER_FPS) > 0;
 
@@ -95,22 +89,6 @@ export const TripTransitionLayer: React.FC<{
       apply();
     }, FADE_MS);
   };
-
-  // The scavenging trip's drive home ends on a timer, not a button —
-  // start the dip as the return tick closes in so the swap happens under
-  // black. (Head Home from the cab starts the drive; this ends it.)
-  const scavengeAway = gameState.player.away;
-  const scavengeReturnSoon =
-    !TRANSITIONS_DISABLED &&
-    scavengeAway?.kind === "scavenging" &&
-    scavengeAway.phase.kind === "drivingHome" &&
-    scavengeAway.phase.returnTick - gameState.tick <= SCAVENGE_PREFADE_TICKS &&
-    // A drive just started is not a drive about to end (fixture edits can
-    // put the tick anywhere).
-    scavengeAway.phase.returnTick - gameState.tick > -SCAVENGE_RETURN_TICKS;
-  useEffect(() => {
-    if (scavengeReturnSoon) setFaded(true);
-  }, [scavengeReturnSoon]);
 
   useEffect(() => {
     // First mount (a fresh boot, a save loaded mid-trip): take the state

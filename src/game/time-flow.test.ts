@@ -25,7 +25,7 @@ describe("timeSpeed", () => {
     assert.equal(timeSpeed(withPlayer({ busyTicks: 3 })), "working");
   });
 
-  it("spends time through a scavenging run's searches and drives", () => {
+  it("spends time through a scavenging run's searches", () => {
     assert.equal(
       timeSpeed(
         withPlayer({
@@ -35,20 +35,6 @@ describe("timeSpeed", () => {
             stops: [],
             stopsSearched: 0,
             phase: { kind: "searching", doneTick: 100 },
-          },
-        }),
-      ),
-      "working",
-    );
-    assert.equal(
-      timeSpeed(
-        withPlayer({
-          away: {
-            kind: "scavenging",
-            startTick: 0,
-            stops: [],
-            stopsSearched: 0,
-            phase: { kind: "drivingHome", returnTick: 100 },
           },
         }),
       ),

@@ -11,7 +11,6 @@ import {
   keepScavengingBlock,
   rollScavengeStops,
   scavengeLoot,
-  SCAVENGE_RETURN_TICKS,
   SCAVENGE_STOP_NAMES,
   SCAVENGE_STOP_TICKS,
   startScavengingAction,
@@ -212,9 +211,8 @@ describe("keepScavengingBlock", () => {
     );
   });
 
-  it("refuses when the search plus the drive home would run past close", () => {
-    const lateTick =
-      TICKS_PER_DAY - SCAVENGE_STOP_TICKS - SCAVENGE_RETURN_TICKS + 1;
+  it("refuses when the search would run past close", () => {
+    const lateTick = TICKS_PER_DAY - SCAVENGE_STOP_TICKS + 1;
     assert.strictEqual(
       keepScavengingBlock(stateWithTrip(tripWith({}), { tick: lateTick })),
       "outOfDaylight",
@@ -251,48 +249,15 @@ describe("continueScavengingAction", () => {
 });
 
 describe("headHomeFromScavengingAction", () => {
-  it("turns for home from a decision", () => {
-    const state = stateWithTrip(tripWith({}), { tick: 100 });
+  it("pulls back into the shop with the haul, no time spent", () => {
+    const trip = tripWith({ stopsSearched: 2 });
+    const state = stateWithTrip(trip, { tick: 100 });
     const result = headHomeFromScavengingAction()(state);
-    const away = result.player.away;
-    assert.strictEqual(away?.kind, "scavenging");
-    if (away?.kind === "scavenging") {
-      assert.deepStrictEqual(away.phase, {
-        kind: "drivingHome",
-        returnTick: 100 + SCAVENGE_RETURN_TICKS,
-      });
-    }
-  });
-
-  it("still works after close — overtime to get home is allowed", () => {
-    const state = stateWithTrip(tripWith({}), { tick: TICKS_PER_DAY + 5 });
-    const result = headHomeFromScavengingAction()(state);
-    const away = result.player.away;
-    assert.strictEqual(
-      away?.kind === "scavenging" ? away.phase.kind : "missing",
-      "drivingHome",
-    );
-  });
-
-  it("does nothing mid-search", () => {
-    const state = stateWithTrip(
-      tripWith({ phase: { kind: "searching", doneTick: 100 } }),
-    );
-    assert.strictEqual(headHomeFromScavengingAction()(state), state);
-  });
-});
-
-describe("the drive home", () => {
-  it("delivers the searched stops' finds to the truck's bed", () => {
-    const trip = tripWith({
-      stopsSearched: 2,
-      phase: { kind: "drivingHome", returnTick: 20 },
-    });
-    const state = stateWithTrip(trip, { tick: 20 });
-    const result = tickAction(state);
     assert.strictEqual(result.player.away, null);
+    // The drive back is free — the tick hasn't moved
+    assert.strictEqual(result.tick, 100);
     assert.deepStrictEqual(result.truck.bed, [...scavengeLoot(trip)]);
-    // The find at the un-searched stops stays out there
+    // The finds at the un-searched stops stay out there
     assert.strictEqual(result.truck.bed.length, 2);
     assert.deepStrictEqual(
       result.player.position,
@@ -300,5 +265,18 @@ describe("the drive home", () => {
     );
     // Nothing appears on the shop floor — the haul waits at the tailgate
     assert.strictEqual(result.materialPiles.length, 0);
+  });
+
+  it("still works after close — driving back after hours is allowed", () => {
+    const state = stateWithTrip(tripWith({}), { tick: TICKS_PER_DAY + 5 });
+    const result = headHomeFromScavengingAction()(state);
+    assert.strictEqual(result.player.away, null);
+  });
+
+  it("does nothing mid-search", () => {
+    const state = stateWithTrip(
+      tripWith({ phase: { kind: "searching", doneTick: 100 } }),
+    );
+    assert.strictEqual(headHomeFromScavengingAction()(state), state);
   });
 });

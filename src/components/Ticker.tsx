@@ -3,9 +3,8 @@ import { refillEmptyJobBoardAction } from "../game/game-actions/marketplace-acti
 import { checkProgressionMilestonesAction } from "../game/game-actions/progression-actions";
 import { combineActions } from "../game/game-actions/misc-actions";
 import { tickAction } from "../game/game-actions/tickAction";
-import { currentDayPhase, dayTicksSpent, timeSpeed } from "../game/time-flow";
-import { TICKS_PER_DAY } from "../game/time";
-import { formatCount } from "../utils/formatNumber";
+import { timeSpeed } from "../game/time-flow";
+import { DayClock } from "./DayClock";
 import { TICKS_PER_SECOND, usePaused } from "./PauseContext";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
@@ -129,41 +128,7 @@ export const Ticker: React.FC = () => {
     };
   }, []);
 
-  const phase = currentDayPhase(gameState);
-  const dayPercent = Math.min(
-    100,
-    (dayTicksSpent(gameState) / TICKS_PER_DAY) * 100,
-  );
-
-  return (
-    <section className="relative flex items-baseline gap-3 pb-1.5">
-      {/* Where the day stands — deliberately no wall clock, just the
-          light through the garage door. "Night" means the shop is closed
-          and the truck is the way to bed. */}
-      <span
-        data-testid="day-phase"
-        className="font-condensed font-bold text-base uppercase leading-none text-paper-manila"
-      >
-        {phase}
-      </span>
-      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] leading-none text-paper-manila/60">
-        Day{" "}
-        <span className="font-bold text-base tracking-normal text-paper-manila tabular-nums">
-          {formatCount(gameState.day)}
-        </span>
-      </span>
-      {/* How far through the day's working minutes the shop is, drawn as
-          a hairline along the bottom of the group — the same idiom as
-          the XP meter under the Skills button. */}
-      <span
-        className="absolute inset-x-0 bottom-0 block h-0.5 overflow-hidden rounded-full bg-paper-manila/25"
-        aria-hidden
-      >
-        <span
-          style={{ width: dayPercent + "%" }}
-          className="block h-full rounded-full bg-gold transition-[width] ease-linear"
-        />
-      </span>
-    </section>
-  );
+  // The readout itself is DayClock's — the trip pages show the same one
+  // over their own chrome.
+  return <DayClock />;
 };

@@ -2,6 +2,7 @@ import { initialPalletNails } from "../bench-work/pallet-geometry";
 import { GameAction, GameState } from "../GameState";
 import { makeMaterial } from "../material-helpers";
 import { Pallet } from "../Materials";
+import { truckCabSideCell } from "../lot";
 import { ScavengeStopResult, ScavengingTrip } from "../Person";
 import { Tuple } from "../../utils/typeUtils";
 import { TICKS_PER_DAY } from "../time";
@@ -24,30 +25,29 @@ export const SCAVENGE_STOP_NAMES: ReadonlyArray<string> = [
 /** Odds any one stop has a pallet worth taking. */
 const FIND_CHANCE = 0.5;
 
-/** Driving to the next spot and digging through it: an hour. */
-const FULL_STOP_TICKS = 60;
-/** The drive home from wherever the circuit left off: half an hour. */
-const FULL_RETURN_TICKS = 30;
+/** Driving to the next spot and digging through it: half an hour. */
+const FULL_STOP_TICKS = 30;
 
 /**
- * What a dev build shortens the legs to: a couple of seconds instead of
- * twelve, so working on anything downstream of a pallet doesn't mean
+ * What a dev build shortens a stop to: a couple of seconds instead of
+ * six, so working on anything downstream of a pallet doesn't mean
  * waiting out the circuit every time.
  */
 export const DEV_STOP_TICKS = 10;
-export const DEV_RETURN_TICKS = 5;
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
 /**
- * The leg lengths the shop actually runs at. Only the dev bundle shortens
- * them — esbuild defines NODE_ENV, so a production build and the test
- * runners (where it is unset) both keep the real hour and half-hour.
+ * The leg length the shop actually runs at. Only the dev bundle shortens
+ * it — esbuild defines NODE_ENV, so a production build and the test
+ * runners (where it is unset) both keep the real half-hour.
+ *
+ * There is no matching drive home: calling it good enough drops the
+ * player back at the shop for free (see headHomeFromScavengingAction) —
+ * the circuit runs out from the shop and back, so the drive is already
+ * paid for in each stop.
  */
 export const SCAVENGE_STOP_TICKS = IS_DEV ? DEV_STOP_TICKS : FULL_STOP_TICKS;
-export const SCAVENGE_RETURN_TICKS = IS_DEV
-  ? DEV_RETURN_TICKS
-  : FULL_RETURN_TICKS;
 
 /**
  * Roll the whole circuit's results up front. Invisible to the player —
@@ -114,7 +114,7 @@ export function scavengeLoot(trip: ScavengingTrip): ReadonlyArray<Pallet> {
 /**
  * Why "keep searching" is off the table right now, or null when it's on:
  * the trip isn't sitting at a decision, the circuit is used up, or the
- * next search plus the drive home wouldn't fit before the 5 PM close.
+ * next search wouldn't fit before the 5 PM close.
  */
 export type KeepScavengingBlock =
   "notDeciding" | "outOfStops" | "outOfDaylight";
@@ -129,10 +129,7 @@ export function keepScavengingBlock(
   if (away.stopsSearched >= away.stops.length) {
     return "outOfStops";
   }
-  if (
-    dayTicksSpent(gameState) + SCAVENGE_STOP_TICKS + SCAVENGE_RETURN_TICKS >
-    TICKS_PER_DAY
-  ) {
+  if (dayTicksSpent(gameState) + SCAVENGE_STOP_TICKS > TICKS_PER_DAY) {
     return "outOfDaylight";
   }
   return null;
@@ -205,10 +202,12 @@ export function continueScavengingAction(): GameAction {
 }
 
 /**
- * Call it and turn for home — always on offer at a decision, day or
- * night (working overtime to get home is allowed; starting another
- * search is not). The haul is delivered by tickAction when the drive
- * ends.
+ * Call it and pull back into the shop — always on offer at a decision,
+ * day or night (driving back after close is allowed; starting another
+ * search is not), and free: the circuit loops back past the shop, so the
+ * drive is already paid for in the stops. The haul lands in the truck's
+ * bed to be unloaded at the tailgate, and the player steps out beside
+ * the cab — the same arrival a shopping trip ends with.
  */
 export function headHomeFromScavengingAction(): GameAction {
   return (gameState) => {
@@ -219,15 +218,14 @@ export function headHomeFromScavengingAction(): GameAction {
     }
     return {
       ...gameState,
+      truck: {
+        ...gameState.truck,
+        bed: [...gameState.truck.bed, ...scavengeLoot(away)],
+      },
       player: {
         ...gameState.player,
-        away: {
-          ...away,
-          phase: {
-            kind: "drivingHome",
-            returnTick: gameState.tick + SCAVENGE_RETURN_TICKS,
-          },
-        },
+        away: null,
+        position: truckCabSideCell(gameState.shopInfo),
       },
     };
   };

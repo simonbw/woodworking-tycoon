@@ -76,8 +76,8 @@ export type AwayTrip = ScavengingTrip | ShoppingTrip | HomeTrip;
 /**
  * One stop on the scavenging circuit, rolled when the trip starts and
  * revealed when the search there finishes. A found pallet is loaded on
- * the spot — it rides along until the drive home lands it in the
- * truck's bed (see tickAction's playerTickPass).
+ * the spot — it rides along until the trip ends and lands it in the
+ * truck's bed (see headHomeFromScavengingAction).
  */
 export type ScavengeStopResult = {
   readonly stopName: string;
@@ -86,15 +86,15 @@ export type ScavengeStopResult = {
 };
 
 /**
- * Where a scavenging trip stands: an hour digging through the next spot,
- * sitting in the cab weighing whether it's worth another (searching and
- * driving spend the day; deciding is thinking, and thinking is nearly
- * free), or on the drive home.
+ * Where a scavenging trip stands: half an hour driving to the next spot
+ * and digging through it, or sitting in the cab weighing whether it's
+ * worth another (searching spends the day; deciding is thinking, and
+ * thinking is nearly free). There is no third phase for the way back —
+ * calling it good enough puts the truck back at the shop that instant.
  */
 export type ScavengePhase =
   | { readonly kind: "searching"; readonly doneTick: number }
-  | { readonly kind: "deciding" }
-  | { readonly kind: "drivingHome"; readonly returnTick: number };
+  | { readonly kind: "deciding" };
 
 export type ScavengingTrip = {
   readonly kind: "scavenging";

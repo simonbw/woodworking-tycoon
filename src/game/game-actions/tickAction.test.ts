@@ -220,27 +220,6 @@ describe("tickAction", () => {
     assert.strictEqual(result.machines[0].operationProgress.ticksRemaining, 5);
   });
 
-  it("brings scavenged loot home in the truck's bed", () => {
-    const pallet = makeMaterial<Pallet>({ ...nearlyDismantledPallet() });
-    const state = stateWith({
-      tick: 20,
-      materialPiles: [],
-      player: {
-        ...initialGameState.player,
-        away: scavengingTrip({
-          stops: [{ stopName: "Grocery dock", pallet }],
-          stopsSearched: 1,
-          phase: { kind: "drivingHome", returnTick: 20 },
-        }),
-      },
-    });
-    const result = tickAction(state);
-    assert.strictEqual(result.player.away, null);
-    assert.deepStrictEqual(result.truck.bed, [pallet]);
-    // Nothing appears on the shop floor — the haul waits at the tailgate
-    assert.strictEqual(result.materialPiles.length, 0);
-  });
-
   it("applies the operation output when the countdown finishes", () => {
     const machine = sawMachine({
       operationProgress: {

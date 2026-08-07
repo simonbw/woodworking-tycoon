@@ -1,5 +1,5 @@
 import { getRoomBus, IMPULSE_RESPONSE_URL } from "./audioBus";
-import { HOLD_MUSIC } from "./musicTrack";
+import { HOLD_MUSIC, TRUCK_DRIVING_LOOP } from "./musicTrack";
 import { clipUrl, preloadSound, UI_SOUND_NAMES } from "./sfx";
 
 /**
@@ -66,6 +66,7 @@ export const SOUND_ASSET_FILES: readonly string[] = [
   ...SOUND_CLIPS.map(clipUrl),
   IMPULSE_RESPONSE_URL,
   HOLD_MUSIC.url,
+  TRUCK_DRIVING_LOOP.url,
 ];
 
 /**

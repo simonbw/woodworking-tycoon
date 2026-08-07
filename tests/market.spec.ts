@@ -347,13 +347,21 @@ test.describe("Market, supplies, and sound", () => {
       // and each phase change below should happen on the spec's cue
       await page.evaluate(() => (window as any).__SET_PAUSED__(true));
 
-      // The trip covers the screen with field notes, the truck's bed
-      // (empty so far), and the first stop's search already underway
+      // The trip covers the screen with the truck (bed empty so far),
+      // the day's clock, and the first stop's search already underway —
+      // the drawing marked as driving while it runs
       await expect(page.getByTestId("scavenge-trip")).toBeVisible();
       await expect(page.getByText(/Out scavenging/)).toBeVisible();
-      await expect(page.getByTestId("scavenge-log")).toContainText(
-        /Headed out/,
+      await expect(page.getByTestId("scavenge-stop-line")).toContainText(
+        /Digging through/,
       );
+      await expect(page.getByTestId("scavenge-truck")).toHaveAttribute(
+        "data-driving",
+        "true",
+      );
+      await expect(
+        page.getByTestId("scavenge-trip").getByTestId("day-phase"),
+      ).toBeVisible();
       await expect(page.getByTestId("scavenge-bed-count")).toContainText(
         /Nothing in the bed yet/,
       );
@@ -382,9 +390,15 @@ test.describe("Market, supplies, and sound", () => {
         (window as any).__SET_PAUSED__(false);
       });
 
-      // The next tick reveals the stop: a find in the log, a pallet in
-      // the bed, and the trip parked at a decision
-      await expect(page.getByTestId("scavenge-log")).toContainText(/score!/);
+      // The next tick reveals the stop: the find on the line, a pallet
+      // in the bed, the truck parked, and a decision to make
+      await expect(page.getByTestId("scavenge-stop-line")).toContainText(
+        /score!/,
+      );
+      await expect(page.getByTestId("scavenge-truck")).toHaveAttribute(
+        "data-driving",
+        "false",
+      );
       await expect(page.getByTestId("scavenge-bed-count")).toContainText(
         /1 pallet in the bed/,
       );
@@ -392,8 +406,8 @@ test.describe("Market, supplies, and sound", () => {
       const keepSearching = page.getByTestId("scavenge-keep-searching");
       await expect(keepSearching).toBeEnabled();
 
-      // With too little daylight left for another stop plus the drive
-      // home, the option goes dead with the reason written under it
+      // With too little daylight left for another stop, the option goes
+      // dead with the reason written under it
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -414,8 +428,8 @@ test.describe("Market, supplies, and sound", () => {
       // Frozen again so the second search ends on cue, not on the clock
       await page.evaluate(() => (window as any).__SET_PAUSED__(true));
       await keepSearching.click();
-      await expect(page.getByTestId("scavenge-log")).toContainText(
-        /Digging through pallets/,
+      await expect(page.getByTestId("scavenge-stop-line")).toContainText(
+        /Digging through/,
       );
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
@@ -424,29 +438,26 @@ test.describe("Market, supplies, and sound", () => {
         }));
         (window as any).__SET_PAUSED__(false);
       });
-      await expect(page.getByTestId("scavenge-decision")).toBeVisible();
+      // The panel is always on screen; its buttons coming alive is what
+      // says the search finished and the truck is parked at a decision.
+      const backToShop = page.getByTestId("scavenge-head-home");
+      await expect(backToShop).toBeEnabled();
 
-      // Good enough: the drive home plays out on the clock
-      await page.evaluate(() => (window as any).__SET_PAUSED__(true));
-      await page.getByTestId("scavenge-head-home").click();
-      await expect(page.getByTestId("scavenge-log")).toContainText(
-        /heading home/,
+      // Good enough: back at the shop that instant, no time spent
+      const tickBefore = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().tick,
       );
-      await expect(page.getByText("Back in")).toBeVisible();
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          tick: state.player.away.phase.returnTick,
-        }));
-        (window as any).__SET_PAUSED__(false);
-      });
-
-      // Next real tick resolves the trip
+      await page.evaluate(() => (window as any).__SET_PAUSED__(true));
+      await backToShop.click();
       await page.waitForFunction(
         () => (window as any).__GET_GAME_STATE__().player.away === null,
         undefined,
         { timeout: 5000 },
       );
+      expect(
+        await page.evaluate(() => (window as any).__GET_GAME_STATE__().tick),
+      ).toBe(tickBefore);
+      await page.evaluate(() => (window as any).__SET_PAUSED__(false));
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
       );
