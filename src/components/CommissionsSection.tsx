@@ -89,31 +89,19 @@ export const WorkOrder: React.FC<{
           compact ? "pb-1 mb-1.5" : "pb-1.5 mb-2"
         }`}
       >
-        <h3
-          className={`font-typewriter font-bold uppercase tracking-widest ${
-            compact ? "text-sm" : "text-base"
-          }`}
-        >
+        <h3 className={`font-ink font-bold ${compact ? "text-lg" : "text-xl"}`}>
           {commission.name}
         </h3>
-        <span className="font-typewriter text-xs tabular-nums text-ink-fade">
-          #{orderNumber}
-        </span>
+        <span className="font-ink text-base text-ink-fade">#{orderNumber}</span>
       </header>
 
       <div
-        className={`font-typewriter text-sm ${compact ? "space-y-1.5" : "space-y-2"}`}
+        className={`font-ink text-lg leading-snug ${compact ? "space-y-1.5" : "space-y-2"}`}
       >
-        {!compact && (
-          <p className="font-ink text-base leading-snug text-ink-blue">
-            {commission.description}
-          </p>
-        )}
+        {!compact && <p className="text-ink-blue">{commission.description}</p>}
         <div>
           {!compact && (
-            <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-              Required
-            </div>
+            <div className="font-ink text-base text-ink-fade">Required</div>
           )}
           <ul className={compact ? "space-y-0.5" : "mt-1 space-y-0.5"}>
             {lineItems.map((item, i) => (
@@ -121,7 +109,7 @@ export const WorkOrder: React.FC<{
                 <span className="text-base leading-none">
                   {item.have >= item.need ? "☑" : "☐"}
                 </span>
-                <span className="tabular-nums">
+                <span>
                   {item.have}/{item.need}
                 </span>
                 <span className="leading-tight">
@@ -135,9 +123,9 @@ export const WorkOrder: React.FC<{
         {compact ? (
           // One line at the foot: what it pays until it's done, then
           // where to carry it.
-          <div className="border-t border-ink-black/20 pt-1.5 font-condensed text-xs">
+          <div className="border-t border-ink-black/20 pt-1.5 font-ink text-base leading-snug">
             {canComplete ? (
-              <span className="uppercase tracking-[0.15em] text-ink-red">
+              <span className="text-ink-red">
                 {bedReady
                   ? "Ready — deliver from the truck's cab"
                   : "Ready — load it into the truck's bed"}
@@ -145,7 +133,7 @@ export const WorkOrder: React.FC<{
             ) : (
               <span className="text-ink-fade">
                 Pays{" "}
-                <span className="font-typewriter text-sm tabular-nums text-ink-black">
+                <span className="text-ink-black">
                   {formatMoney(commission.rewardMoney)}
                 </span>
               </span>
@@ -155,17 +143,11 @@ export const WorkOrder: React.FC<{
           <div className="border-t border-ink-black/20 pt-2 space-y-1.5">
             <div className="flex gap-4">
               <div>
-                <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-                  Pays
-                </span>{" "}
-                <span className="tabular-nums">
-                  {formatMoney(commission.rewardMoney)}
-                </span>
+                <span className="text-ink-fade">Pays</span>{" "}
+                <span>{formatMoney(commission.rewardMoney)}</span>
               </div>
               <div>
-                <span className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-                  Rep
-                </span>{" "}
+                <span className="text-ink-fade">Rep</span>{" "}
                 <span
                   className="inline-flex gap-0.5 text-gold-dark"
                   role="img"
@@ -182,10 +164,7 @@ export const WorkOrder: React.FC<{
             </div>
             {/* Delivery is a drive — the order slip only says who it's for
                 and where it goes. */}
-            <p
-              className="font-ink text-base leading-snug text-ink-blue"
-              data-testid="commission-delivery-note"
-            >
+            <p className="text-ink-blue" data-testid="commission-delivery-note">
               {bedReady
                 ? `Ready for ${commission.client}. Deliver it from the truck's cab.`
                 : canComplete
