@@ -7,7 +7,7 @@ import { Direction, Vector } from "./Vectors";
  * How many pieces of stock fit in the arms at once. Tools commit the
  * hands entirely and a machine takes the shoulders; this is the cap on
  * loose materials. Kept low on purpose: moving a big job's worth of wood
- * is meant to take trips (see docs/handing-work-over.md).
+ * is meant to take trips (see delivery.ts).
  */
 export const HAND_CAPACITY = 4;
 

@@ -11,6 +11,12 @@ import { materialMeetsInput } from "./material-helpers";
  * drive them off from the cab — so the check and the consume live here
  * rather than being copied into `store-actions` and
  * `marketplace-actions`, where they drifted apart once already.
+ *
+ * This is the only way finished work leaves the shop: there is
+ * deliberately no "mark complete" button. Handing work over is a
+ * physical act with a payoff moment (the client card and reward flight,
+ * src/components/payout/), and one matcher serves both tracks so a
+ * piece that satisfies a commission satisfies the same-shaped job.
  */
 
 /** Whether a pool of materials covers everything a work order asks for. */

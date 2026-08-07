@@ -42,7 +42,7 @@ export type GameAction = (gameState: GameState) => GameState;
 /**
  * What's riding in the truck's bed. Purchases and scavenged loot come
  * home here instead of materializing on the shop floor, and finished
- * work will leave from here (see docs/handing-work-over.md). Loaded and
+ * work will leave from here (see delivery.ts). Loaded and
  * unloaded standing at the bed — the tailgate end, backed up near the
  * garage door. The bed is unbounded — hauling is what a truck is for;
  * the player's hands (HAND_CAPACITY) are what meter the trips to it.
