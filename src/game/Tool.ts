@@ -18,7 +18,7 @@ import { straightLineSled } from "./tools/straightLineSled";
  * a MaterialInstance of kind "tool" (see Materials.ts) — carried in the
  * arms, set down in piles, and hauled home in the truck's bed.
  *
- * See docs/tools-and-surfaces.md for where this system is headed.
+ * See docs/tools-and-surfaces.md for the system's design rules.
  */
 export interface ToolType {
   readonly id: string;
