@@ -52,7 +52,7 @@ export const GameStateProvider: React.FC<{
       (window as any).__GET_GAME_STATE__ = () => gameState;
       // The bench view's commit actions, for tests and debug tooling:
       // interactive hand work completes through the SAME actions the
-      // mini-game dispatches (docs/bench-minigames.md, decision 1). This
+      // mini-game dispatches (docs/bench-work.md, decision 1). This
       // hook is never exposed as UI.
       (window as any).__START_OPERATION__ = (machineIndex: number) =>
         setGameState((state) =>

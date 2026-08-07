@@ -319,7 +319,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const machine = targeted.current;
       if (!machine) return;
       // Interactive bench plans have no held-Space path — the work is
-      // performed by hand in the bench view (docs/bench-minigames.md)
+      // performed by hand in the bench view (docs/bench-work.md)
       if (
         !machine.type.directFeed &&
         machine.selectedOperationOrNull?.interaction != null

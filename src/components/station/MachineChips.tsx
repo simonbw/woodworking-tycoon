@@ -168,7 +168,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
         </HintRow>
       )}
       {/* Hand work has no chip of its own: the bench view owns it
-          (docs/bench-minigames.md), and the single "use workbench" chip
+          (docs/bench-work.md), and the single "use workbench" chip
           below is the door to all of it — prying, plans, arranging. */}
       {canOperate && !runOperation?.interaction && (
         <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>

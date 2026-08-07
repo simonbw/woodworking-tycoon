@@ -272,7 +272,7 @@ export function stockOrientationParameter(
 
 /**
  * How the player performs an operation's attended work with their own
- * hands in the bench view (see docs/bench-minigames.md). Declaring this
+ * hands in the bench view (see docs/bench-work.md). Declaring this
  * converts the operation: it no longer advances on held Space — the bench
  * view runs the script and commits through the actions in
  * `game-actions/operation-actions.ts`. Omitted, the operation keeps the

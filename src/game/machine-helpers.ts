@@ -168,7 +168,7 @@ export function playerAttendsMachine(
  * whereabouts nor their grip matters, but the switch still does.
  * Interactive operations never tick their attended work at all — the
  * bench view performs it and commits through finishAttendedWorkAction
- * (see docs/bench-minigames.md).
+ * (see docs/bench-work.md).
  *
  * Shared between the tick pipeline (which advances the work) and the
  * time-flow model (which decides that this is the player spending time),
