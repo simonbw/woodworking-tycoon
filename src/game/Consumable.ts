@@ -1,9 +1,20 @@
 /**
- * Shop supplies: glue, fasteners, finishes — things recipes use up. Unlike
+ * Shop supplies: fasteners, finishes — things recipes use up. Unlike
  * materials, consumables aren't physical objects you carry around the shop;
  * they live in one shop-wide stock (GameState.consumables) and operations
  * draw from it directly. Bought by the pack in the store's supplies aisle;
  * some come back as salvage (nails from dismantled pallets).
+ *
+ * How they flow: an operation's requiredConsumables are checked and
+ * deducted when the work starts — no refunds on abandonment — and
+ * consumableOutputs are added when it completes, which is how salvage
+ * pays out (a pried pallet nail comes back as a nail). Fastened builds
+ * never hand-tag a cost: they bill blueprintFastenerCost, one fastener
+ * per derived crossing, so the bill can't drift from the blueprint.
+ *
+ * Clamps are deliberately NOT a consumable: a glue-up borrows them and
+ * the cure gives them back — a returnable pool, not a stock that
+ * depletes. See Clamp.ts.
  */
 export interface ConsumableType {
   readonly id: string;
