@@ -143,9 +143,11 @@ tests/
 - Player-facing numbers go through `src/utils/formatNumber.ts` (`formatMoney` / `formatCount` / `formatDecimal`), not `toFixed`, and carry `tabular-nums` unless they sit in prose or in the handwriting face — see the numbers section of `docs/design-system.md`
 - Performance considerations: The game renders many objects, so prefer PIXI components for game entities and React for UI overlays
 
-## GitHub Issues
+## GitHub Issues and the docs/ boundary
 
-Designs for unbuilt work live in GitHub issues, not in `docs/` — the docs describe systems that exist (or provide guidance for creating more content). Labels to know when reading the issue tracker:
+Designs for unbuilt work live in GitHub issues, not in `docs/` — the docs describe systems that exist, or provide guidance for creating more content. Within that: **docs describe systems, never content.** A doc may explain what a tool is, how the milling axes work, and the rules for adding a machine — it must not enumerate the tools, quote prices, or restate quantities the registries declare, because those inventories rot (the code is their single source of truth). A system with one owning module doesn't get a doc at all: its explanation belongs in that module's header comment (see `time-flow.ts`, `blueprint.ts`, `material-helpers.ts`); a doc earns its place only when a system spans many files with no single home. Deliberate design decisions ("stays procedural", "out of scope on purpose") stay in docs/code comments, not issues — they're there to stop relitigation.
+
+Labels to know when reading the issue tracker:
 
 - **`brainstorm`**: an idea kept alive for future design discussion — it needs thinking, not implementing. Don't pick these up as build tasks.
 - **`humans-only`**: work that requires a human (recording real audio, creating art assets) and cannot be done by an agent.

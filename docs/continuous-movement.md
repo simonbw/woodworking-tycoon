@@ -37,7 +37,7 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 | Body store | `src/components/shop-view/playerMotionStore.ts` | the mutable singleton sprites read |
 | Input | `src/components/shop-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
 | Integrator | `src/components/shop-view/PlayerMotionLayer.tsx` | per-frame `useTick` loop, cell sync, teleport snap |
-| Footsteps | `src/game/footsteps.ts` + `src/components/shop-view/FootstepSoundLayer.tsx` | a step every stride of floor covered (see `docs/sound-design.md`) |
+| Footsteps | `src/game/footsteps.ts` + `src/components/shop-view/FootstepSoundLayer.tsx` | a step every stride of floor covered |
 
 ## Collision
 
@@ -136,18 +136,24 @@ The old walk charged extra *ticks* per step: deep sawdust
 (`moveDustPenalty`, now deleted), dragging the shop vac. Those same
 penalties now divide walking speed
 (`playerWalkSpeed`): each tick-equivalent of penalty divides
-`BASE_WALK_SPEED` by one more. `busyTicks` survives only for genuinely
-occupying work (sweeping, vacuuming) — while it's positive, movement
-input is ignored.
+`BASE_WALK_SPEED` by one more. Three penalties exist today — deep
+sawdust underfoot, dragging the shop vac, and sweeping while walking
+(`SWEEPING_PENALTY`). `busyTicks` survives only for genuinely
+occupying work — while it's positive, movement input is ignored.
 
 ## Input rules (heldMovementInput.ts)
 
 - Key **state**, not key presses, so it bypasses `ShortcutProvider`
   (which is keydown-only) — but the registry still owns the `move-*`
   labels for the cheat sheet and legend.
-- Key-downs are ignored while a modal is open (`useModalOpen`), while
-  typing in a field, or while the player is away; key-ups always clear,
-  so a modal opening mid-stride never leaves the player marching.
+- Held keys don't drive the body while a modal is open (`useModalOpen`),
+  while typing in a field, or while the player is away — the keys are
+  still recorded, the gate is at read time (`readHeldMovement`) — and
+  key-ups always clear, so a modal opening mid-stride never leaves the
+  player marching.
+- An open card can claim the vertical axis (`captureVertical`): W/S walk
+  the card's rows (`panel-up`/`panel-down`) while A/D keep driving the
+  body.
 - Window blur clears all held keys.
 - Pause (`PauseContext`) freezes the body: pausing stops the world,
   woodworker included. The pause menu is the only thing that pauses —
