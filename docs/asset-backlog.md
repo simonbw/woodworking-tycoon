@@ -33,7 +33,7 @@ commit that lands the asset.
 5. Tick the box below.
 
 Objects whose contents vary (a rack of stock, a can of scrap) generally want
-the *fixture* as art with the contents still drawn on top — the asset
+the _fixture_ as art with the contents still drawn on top — the asset
 replaces the furniture, not what's sitting in it.
 
 ## The pixel-art exception
@@ -87,18 +87,15 @@ wiring: same path, same size, same component.
 ### Machines
 
 - [~] Worktable — three of four drawn (`workbench-2x2`, `-2x4`, `-4x4`;
-      the 6-ft `worktable1x3` still falls back to the procedural sprite,
-      which is what the fallback is for). Registered in
-      `machine-sprites/worktable-art.ts`. Each table ships three layers off
-      one drawing, plus an `@4x` close-up of each at 32 px/inch:
-      - `-top` — the laminated top, filling the footprint edge to edge.
-      - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
-        Drawn in a pass of its own *under every table's top*
-        (`WorktableShadowLayer` in ShopView, and both passes in
-        `BenchSceneBackdrop`), because tables get pushed together and a
-        neighbour's shadow falling across the top butted against it would
-        draw the very seam a flush top is avoiding.
-      - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
+  the 6-ft `worktable1x3` still falls back to the procedural sprite,
+  which is what the fallback is for). Registered in
+  `machine-sprites/worktable-art.ts`. Each table ships three layers off
+  one drawing, plus an `@4x` close-up of each at 32 px/inch: - `-top` — the laminated top, filling the footprint edge to edge. - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
+  Drawn in a pass of its own _under every table's top_
+  (`WorktableShadowLayer` in ShopView, and both passes in
+  `BenchSceneBackdrop`), because tables get pushed together and a
+  neighbour's shadow falling across the top butted against it would
+  draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
       filling the artboard**: 192×192, 384×192, 384×384, and 576×192 for
@@ -128,6 +125,7 @@ wiring: same path, same size, same component.
       crops symmetrically about the canvas centre, which is the
       registration these rely on. It would save a couple of kilobytes and
       cost the ability to compare a top and its shadow by their canvases.
+
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
 - [x] Garbage can — `garbage-can.png`. A top-down lid view centered on the
@@ -175,6 +173,13 @@ wiring: same path, same size, same component.
       walls, jambs, and threshold are flat bands. Art could carry siding,
       corner trim, and door tracks — but it has to follow an arbitrary shop
       footprint, so tiling strips rather than one sprite.
+- [x] The light — `shop-view/DaylightLayer.tsx`. Procedural on purpose,
+      and not art at all: one offscreen light mask, painted from the sun in
+      `game/daylight.ts` and multiplied over the scene once. The building's
+      shadow is a hard-edged slab subtracted from it; the lamp pool and the
+      door spill are gradient fills added into it, soft-edged by their own
+      gradients rather than by a filter. Nothing here could be a PNG — the
+      shapes follow an arbitrary shop footprint and a moving sun.
 
 ## Needs a call
 
@@ -232,5 +237,5 @@ For reference, so this doesn't get re-surveyed: benchtop jointer, lunchbox
 planer, jobsite table saw (table and fence), miter saw (all three parts),
 makeshift bench, the player, the concrete floor, and the door warning paint.
 
-Hand-drawn art only. The generated pixel art is *not* done — it's listed
+Hand-drawn art only. The generated pixel art is _not_ done — it's listed
 under "Generated placeholders" above.

@@ -58,6 +58,8 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  *  - src/game/calendar.ts — the derived, presentation-only date.
  *  - src/components/DayDial.tsx — the day told by its light; there is
  *    deliberately no wall clock.
+ *  - src/game/daylight.ts — where the sun is, which the dial and the lit
+ *    lot both read so they can never disagree.
  *  - src/game/sequences/day-loop.test.ts — the day loop's promises.
  */
 export type TimeSpeed = "waiting" | "working" | "idle" | "stopped";
