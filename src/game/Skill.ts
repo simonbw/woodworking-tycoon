@@ -1,8 +1,16 @@
 /**
- * The skill tree (see docs/skills-and-recipes.md). Every recipe in the game
- * belongs to a skill; skills the player can use from the start are
- * `startsUnlocked` — shown in the journal as already-earned
+ * The skill tree. Every recipe in the game belongs to a skill
+ * (`Operation.requiredSkill`); skills the player can use from the start
+ * are `startsUnlocked` — shown in the journal as already-earned
  * certificates so the system explains itself.
+ *
+ * The two progression axes stay separate on purpose: skills (bought
+ * with points from XP levels, see skill-helpers.ts) gate what the shop
+ * can MAKE; reputation gates who calls — commissions, job slots, lumber
+ * channels, pricing power. Reputation never gates recipes. Locked
+ * recipes hide at the station and list in the journal under the skill
+ * that grants them, so the tree is browsed as "what could I make next".
+ * There is no respec; points only accumulate.
  *
  * Unlike the other registries (MACHINE_TYPES et al., which derive their id
  * union via `keyof typeof`), the id list here is a separate `as const`
