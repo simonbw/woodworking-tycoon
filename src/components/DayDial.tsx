@@ -8,16 +8,19 @@ import {
 import { DayPhase } from "../game/time";
 
 /**
- * The clock in the top bar: the date, with the sun and the moon going
- * around it.
+ * The clock in the top bar: a spinning disc with the sun on one side and
+ * the moon on the other, clipped at the horizon so only the top half
+ * shows. The disc turns as the day is spent, carrying the sun up and
+ * over and finally down through the horizon's edge, where the clip
+ * swallows it and lifts the moon in its place. The date sits at the
+ * disc's hub — which, with the bottom half cut away, is the bottom
+ * center of the dial.
  *
  * There is still deliberately no wall clock (see `docs/time-and-days.md`)
  * — nothing here reads out an hour. What it shows is where the sun stands,
  * which is how the shop tells time everywhere else: high and the day is
  * young, low on the right and you should be thinking about the drive home,
- * gone and the shop is closed. The sun and moon sit opposite each other on
- * one orbit, so the one below the horizon is always the ghost of the one
- * above.
+ * gone and the shop is closed.
  *
  * The daylight arc doubles as the day's progress meter — it fills from
  * sunrise to wherever the sun has got to — which is what the top bar's
@@ -25,24 +28,29 @@ import { DayPhase } from "../game/time";
  */
 
 /**
- * SVG user units, and the size the dial renders at in CSS pixels. The
- * orbit has to clear the date sitting inside it: the month and the day
- * number are stacked like a desk calendar's page precisely so the ring can
- * stay small enough to belong in a top bar.
+ * SVG user units. The box is a half-disc: full width, half height, with
+ * the disc's center on the middle of the bottom edge. Everything below
+ * that edge is clipped by the SVG viewport itself — that clip is what
+ * hides whichever body is below the horizon.
  */
-const BOX = 80;
-const SIZE = 68;
-const CENTER = BOX / 2;
-// 29 rather than 30 so the sun's outermost ray still lands inside the box
-// when it's overhead, and nothing relies on the SVG overflowing.
+const BOX_W = 80;
+const BOX_H = 40;
+const CENTER = { x: BOX_W / 2, y: BOX_H };
+/** The disc's face, kept just inside the box. */
+const DISC_RADIUS = 38;
+/**
+ * The track the bodies ride: near the rim, and far enough out that a
+ * rising or setting body sits in the disc's low corners clear of the
+ * date at the hub.
+ */
 const ORBIT_RADIUS = 29;
+/** The size the dial renders at in CSS pixels. */
+const SIZE_W = 72;
+const SIZE_H = (SIZE_W * BOX_H) / BOX_W;
 
 /** Local coordinates of a body on the orbit, before the group is rotated. */
-const SUN_LOCAL = { x: CENTER, y: CENTER - ORBIT_RADIUS };
-const MOON_LOCAL = { x: CENTER, y: CENTER + ORBIT_RADIUS };
-
-/** How visible the body currently below the horizon is. */
-const BELOW_HORIZON_OPACITY = 0.18;
+const SUN_LOCAL = { x: CENTER.x, y: CENTER.y - ORBIT_RADIUS };
+const MOON_LOCAL = { x: CENTER.x, y: CENTER.y + ORBIT_RADIUS };
 
 interface DayDialProps {
   /** How much of the working day has been spent, 0..1 and beyond on overtime. */
@@ -66,7 +74,7 @@ export const DayDial: React.FC<DayDialProps> = ({
   // on the lot can never disagree with the sun drawn up here.
   const altitude = sunAltitude(progress, night);
 
-  // The whole orbit is one rotated group, so the browser tweens the sun
+  // The whole disc is one rotated group, so the browser tweens the sun
   // between ticks instead of stepping it. At the idle creep a tick lands
   // only every twelve seconds, and a jumping sun would read as a bug.
   const rotation = 90 - altitude;
@@ -76,15 +84,17 @@ export const DayDial: React.FC<DayDialProps> = ({
   return (
     <div
       className="relative"
-      style={{ width: SIZE, height: SIZE }}
+      style={{ width: SIZE_W, height: SIZE_H }}
       role="img"
       aria-label={`${phase}, ${date}`}
       data-testid="day-dial"
       data-day-phase={phase}
     >
+      {/* No overflow-visible here on purpose: the viewport IS the horizon,
+          and whatever the disc turns below it is gone. */}
       <svg
-        viewBox={`0 0 ${BOX} ${BOX}`}
-        className="absolute inset-0 h-full w-full overflow-visible"
+        viewBox={`0 0 ${BOX_W} ${BOX_H}`}
+        className="absolute inset-0 h-full w-full"
         aria-hidden
       >
         <defs>
@@ -100,6 +110,14 @@ export const DayDial: React.FC<DayDialProps> = ({
             />
           </mask>
         </defs>
+
+        {/* The disc's visible face: a faint half-moon of surface for the
+            bodies to ride across, flat edge on the horizon. */}
+        <path
+          d={discFace()}
+          fill="currentColor"
+          className="text-paper-manila/10"
+        />
 
         {/* The daylight arc: the track the sun covers between the open and
             the close, and the meter for how much of it is spent. */}
@@ -129,19 +147,20 @@ export const DayDial: React.FC<DayDialProps> = ({
         <g
           style={{
             transform: `rotate(${rotation}deg)`,
-            transformOrigin: `${CENTER}px ${CENTER}px`,
+            transformOrigin: `${CENTER.x}px ${CENTER.y}px`,
             transition: "transform 500ms linear",
           }}
         >
-          {/* Both bodies ride the rotating orbit but are turned back
-              upright, so the crescent doesn't tumble as the night comes on. */}
+          {/* Both bodies ride the spinning disc but are turned back
+              upright, so the crescent doesn't tumble as the night comes on.
+              Neither fades: the horizon clip is what hides the one whose
+              side of the disc is down. */}
           <g
             style={{
               transform: `rotate(${-rotation}deg)`,
               transformOrigin: `${SUN_LOCAL.x}px ${SUN_LOCAL.y}px`,
             }}
-            opacity={night ? BELOW_HORIZON_OPACITY : 1}
-            className="text-gold-light transition-opacity duration-500"
+            className="text-gold-light"
             data-testid="day-dial-sun"
           >
             <circle
@@ -172,8 +191,7 @@ export const DayDial: React.FC<DayDialProps> = ({
               transform: `rotate(${-rotation}deg)`,
               transformOrigin: `${MOON_LOCAL.x}px ${MOON_LOCAL.y}px`,
             }}
-            opacity={night ? 1 : BELOW_HORIZON_OPACITY}
-            className="text-paper-manila transition-opacity duration-500"
+            className="text-paper-manila"
             data-testid="day-dial-moon"
           >
             <circle
@@ -189,15 +207,15 @@ export const DayDial: React.FC<DayDialProps> = ({
 
       {/* The date sits in HTML rather than SVG <text> so it takes the same
           condensed face and tabular figures as the rest of the top bar.
-          Stacked like a calendar page: the month small over the day. */}
+          One line at the disc's hub, on the horizon. */}
       <span
-        className="absolute inset-0 flex flex-col items-center justify-center font-condensed uppercase leading-none text-paper-manila"
+        className="absolute inset-x-0 bottom-0 flex items-baseline justify-center gap-0.5 font-condensed uppercase leading-none text-paper-manila"
         data-testid="day-date"
       >
-        <span className="text-[0.55rem] font-semibold tracking-[0.12em] text-paper-manila/70">
+        <span className="text-[0.55rem] font-semibold tracking-[0.08em] text-paper-manila/70">
           {month}
         </span>
-        <span className="text-[1rem] font-bold leading-none tabular-nums">
+        <span className="text-[0.8rem] font-bold leading-none tabular-nums">
           {dayOfMonth}
         </span>
       </span>
@@ -207,6 +225,15 @@ export const DayDial: React.FC<DayDialProps> = ({
 
 /** Eight rays, evenly spaced. */
 const SUN_RAYS = [0, 45, 90, 135, 180, 225, 270, 315];
+
+/** The disc's visible half: a semicircle sitting flat on the horizon. */
+function discFace(): string {
+  return [
+    `M ${CENTER.x - DISC_RADIUS} ${CENTER.y}`,
+    `A ${DISC_RADIUS} ${DISC_RADIUS} 0 0 1 ${CENTER.x + DISC_RADIUS} ${CENTER.y}`,
+    "Z",
+  ].join(" ");
+}
 
 /** The sun's path from the open to the close, swept over the top of the dial. */
 function daylightArc(): string {
@@ -221,8 +248,8 @@ function daylightArc(): string {
 function orbitPoint(altitudeDegrees: number): { x: number; y: number } {
   const radians = (altitudeDegrees * Math.PI) / 180;
   return {
-    x: round(CENTER + ORBIT_RADIUS * Math.cos(radians)),
-    y: round(CENTER - ORBIT_RADIUS * Math.sin(radians)),
+    x: round(CENTER.x + ORBIT_RADIUS * Math.cos(radians)),
+    y: round(CENTER.y - ORBIT_RADIUS * Math.sin(radians)),
   };
 }
 
