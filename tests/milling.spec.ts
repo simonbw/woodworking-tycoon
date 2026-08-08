@@ -306,11 +306,12 @@ test.describe("Milling", () => {
         page.getByText(/On the floor: work here takes twice as long/),
       ).toBeVisible();
       // Switched off it takes nothing: no chip offering to place the board
-      await expect(page.getByText(/place Walnut 4\/4/)).toHaveCount(0);
+      await expect(page.getByTestId("machine-chips")).not.toContainText("place");
       await switchOn(page);
       await expect(page.getByText("Jointer · on")).toBeVisible();
-      // On, the chip names the very board it would take out of our hands
-      await expect(page.getByText(/place Walnut 4\/4/)).toBeVisible();
+      // On, it offers to take the board out of our hands — the hands
+      // strip has already named it, so the chip is just the verb
+      await expect(page.getByTestId("machine-chips")).toContainText("place");
     });
 
     await test.step("jointer: the stock decides — face pass, then edge pass", async () => {

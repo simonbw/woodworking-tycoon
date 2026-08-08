@@ -250,8 +250,8 @@ test.describe("Shop floor", () => {
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.machineCrates).toHaveLength(0);
       expect(state.player.carriedMachine.machineTypeId).toBe("miterSaw");
-      await expect(page.getByText("Put down Miter Saw")).toBeVisible();
-      await expect(page.getByText("Rotate")).toBeVisible();
+      await expect(page.getByTestId("player-hints")).toContainText("put down");
+      await expect(page.getByTestId("player-hints")).toContainText("rotate");
     });
 
     await test.step("rotate the carried machine", async () => {
@@ -280,7 +280,9 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("lift the placed machine back up from the same spot", async () => {
-      await expect(page.getByText("Pick up Miter Saw")).toBeVisible();
+      // The chip is headed by the machine's name, so the key row is
+      // just the verb
+      await expect(page.getByTestId("machine-chips")).toContainText("carry");
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect((await carried(page)).machineTypeId).toBe("miterSaw");
@@ -295,7 +297,7 @@ test.describe("Shop floor", () => {
       // The fixture's miter saw at [6,3] holds a board; stand at its
       // operator cell and try
       await teleportPlayer(page, [6, 5]);
-      await expect(page.getByText("Pick up Miter Saw")).toHaveCount(0);
+      await expect(page.getByTestId("machine-chips")).not.toContainText("carry");
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect(await carried(page)).toBeNull();
@@ -304,8 +306,8 @@ test.describe("Shop floor", () => {
     await test.step("carry a worktable to a new spot", async () => {
       // The fixture's small worktable at [9,2] operates from [9,4]
       await teleportPlayer(page, [9, 4]);
-      const machineHint = page.getByText(/use workbench/i);
-      await expect(machineHint.first()).toBeVisible();
+      const machineHint = page.getByTestId("machine-chips");
+      await expect(machineHint.first()).toContainText(/use/i);
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect((await carried(page)).machineTypeId).toBe("worktable1x1");
@@ -322,7 +324,9 @@ test.describe("Shop floor", () => {
       );
       expect(table.position).toEqual([5, 8]);
       // Standing at the freshly placed table's operator cell brings it back
-      await expect(page.getByText(/use workbench/i).first()).toBeVisible();
+      await expect(page.getByTestId("machine-chips").first()).toContainText(
+        /use/i,
+      );
     });
 
     await test.step("buying a machine crates it into the truck's bed", async () => {
@@ -361,7 +365,7 @@ test.describe("Shop floor", () => {
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.truck.crates).toHaveLength(0);
       // The lot is walkable, not usable: no setting a machine down out here
-      await expect(page.getByText("no room to set it down here")).toBeVisible();
+      await expect(page.getByText("no room here")).toBeVisible();
       // Carry it in and stand it on open floor
       await teleportPlayer(page, [2, 10]);
       await page.keyboard.press("b");
@@ -419,8 +423,8 @@ test.describe("Shop floor", () => {
       });
       await teleportPlayer(page, [10, 6]);
       // The chip names the piece it would grab
-      const chip = page.getByText(/^pick up · Pine/i).first();
-      await expect(chip).toBeVisible();
+      const chip = page.getByTestId("pickup-chip").first();
+      await expect(chip).toContainText(/Pine/i);
       // The camera may still be easing back indoors from the tailgate a
       // few steps ago — the overlay rides it, so wait for the chip to
       // hold still before treating its position as meaningful.
@@ -565,7 +569,7 @@ test.describe("Shop floor", () => {
       ).toBe(true);
       // Standing at the rail, the chip names the piece E would lift back
       // out rather than the furniture it's lying in
-      await expect(page.getByText("pick up Rustic Shelf")).toBeVisible();
+      await expect(page.getByText("take Rustic Shelf")).toBeVisible();
       await movePlayerToCab(page);
       await openTruckMenu(page);
 

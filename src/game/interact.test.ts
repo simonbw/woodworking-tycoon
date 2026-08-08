@@ -167,7 +167,7 @@ describe("interactLabel", () => {
     const pallet = { type: "pallet" } as never;
     assert.strictEqual(
       interactLabel({ kind: "truck-bed", count: 3, material: pallet }),
-      "pick up Pallet",
+      "take Pallet",
     );
     assert.strictEqual(
       interactLabel({
@@ -177,7 +177,7 @@ describe("interactLabel", () => {
           inputMaterials: [pallet],
         } as never,
       }),
-      "pick up Pallet",
+      "take Pallet",
     );
   });
 });
