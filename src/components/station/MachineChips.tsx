@@ -150,7 +150,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   ) : null;
 
   return (
-    <HintList>
+    <HintList testId="machine-chips">
       <HintRow className="text-paper-manila/60">
         {machine.type.name}
         {status && <> · {status}</>}
@@ -173,17 +173,20 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           next piece
         </HintRow>
       )}
+      {/* Just the verb: what's in hand is already drawn in the hands
+          strip, so naming it here would say it twice. With an armful the
+          verb can't say *which* piece goes on, so that one names it. */}
       {stageable.length > 0 && (
         <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
-          {machine.type.stageVerb ?? "place"} {getMaterialName(stageable[0])}
+          {machine.type.stageVerb ?? "place"}
+          {stageable.length > 1 && ` ${getMaterialName(stageable[0])}`}
         </HintRow>
       )}
       {/* Hand work has no chip of its own: the bench view owns it
-          (docs/bench-work.md), and the single "use workbench" chip
-          below is the door to all of it — prying, plans, arranging. */}
+          (docs/bench-work.md), and the single "[Tab] use" chip below is
+          the door to all of it — prying, plans, arranging. */}
       {canOperate && !runOperation?.interaction && (
-        <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
-          hold to{" "}
+        <HintRow keys={<ShortcutKeys shortcut="operate-machine" />} hold>
           {(runOperation?.name ?? machine.type.feedVerb ?? "run").toLowerCase()}
         </HintRow>
       )}
@@ -235,7 +238,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
             ? "accessories"
             : machine.type.container
               ? "contents"
-              : "use workbench"}
+              : "use"}
         </HintRow>
       )}
       {machines.length > 1 && (
@@ -243,15 +246,17 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           className="text-paper-manila/70"
           keys={<ShortcutKeys shortcut="cycle-machine" />}
         >
-          next machine ({machines.length} here)
+          next machine · {machines.length}
         </HintRow>
       )}
+      {/* "carry", not "pick up": E on the same cluster is already the
+          pick-up key, and the title has said which machine this is. */}
       {liftable && (
         <HintRow
           className="text-paper-manila/70"
           keys={<ShortcutKeys shortcut="carry-machine" />}
         >
-          pick up {machine.type.name}
+          carry
         </HintRow>
       )}
     </HintList>

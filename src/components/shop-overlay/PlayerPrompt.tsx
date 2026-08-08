@@ -73,7 +73,8 @@ export const PlayerPrompt: React.FC = () => {
         key="put-down-machine"
         keys={<ShortcutKeys shortcut="carry-machine" />}
       >
-        put down {MACHINE_TYPES[carried.machineTypeId].name}
+        {/* No name: the machine is on your shoulders, drawn there. */}
+        put down
       </HintRow>,
       <HintRow key="rotate" keys={<ShortcutKeys shortcut="carry-rotate" />}>
         rotate
@@ -82,7 +83,7 @@ export const PlayerPrompt: React.FC = () => {
     if (!canPutDownCarriedMachine(gameState)) {
       rows.push(
         <HintRow key="no-room" className="text-store-orange/90">
-          no room to set it down here
+          no room here
         </HintRow>,
       );
     }
@@ -114,14 +115,15 @@ export const PlayerPrompt: React.FC = () => {
           <HintRow
             key="empty-pan"
             keys={<ShortcutKeys shortcut="operate-machine" />}
+            hold
           >
-            hold to empty
+            empty
           </HintRow>,
         );
       } else if (panFill >= 1) {
         rows.push(
           <HintRow key="pan-full" className="text-store-orange/90">
-            dustpan full — empty it at the garbage can
+            dustpan full — empty at the can
           </HintRow>,
         );
       } else if (canSweepAt(gameState)) {
@@ -129,8 +131,9 @@ export const PlayerPrompt: React.FC = () => {
           <HintRow
             key="sweep"
             keys={<ShortcutKeys shortcut="operate-machine" />}
+            hold
           >
-            hold to sweep
+            sweep
           </HintRow>,
         );
       }
@@ -143,14 +146,15 @@ export const PlayerPrompt: React.FC = () => {
           <HintRow
             key="empty-vac"
             keys={<ShortcutKeys shortcut="operate-machine" />}
+            hold
           >
-            hold to empty
+            empty
           </HintRow>,
         );
       } else if (fill >= 1) {
         rows.push(
           <HintRow key="vac-full" className="text-store-orange/90">
-            canister full — empty it at the garbage can
+            canister full — empty at the can
           </HintRow>,
         );
       } else if (canVacuumAt(gameState)) {
@@ -158,21 +162,22 @@ export const PlayerPrompt: React.FC = () => {
           <HintRow
             key="vacuum"
             keys={<ShortcutKeys shortcut="operate-machine" />}
+            hold
           >
-            hold to vacuum
+            vacuum
           </HintRow>,
         );
       }
       rows.push(
         <HintRow key="set-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
-          set down vac · {Math.round(fill * 100)}%
+          set down · {Math.round(fill * 100)}%
         </HintRow>,
       );
     }
     if (standingOnVac && !draggingVac) {
       rows.push(
         <HintRow key="grab-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
-          grab shop vac
+          grab vac
         </HintRow>,
       );
     }
@@ -187,8 +192,8 @@ export const PlayerPrompt: React.FC = () => {
       )
     ) {
       rows.push(
-        <HintRow key="wait" keys={<ShortcutKeys shortcut="wait" />}>
-          hold to pass time
+        <HintRow key="wait" keys={<ShortcutKeys shortcut="wait" />} hold>
+          pass time
         </HintRow>,
       );
     }
@@ -216,7 +221,7 @@ export const PlayerPrompt: React.FC = () => {
       )}
       {rows.length > 0 && (
         <CellAnchored cell={gameState.player.position}>
-          <HintList>{rows}</HintList>
+          <HintList testId="player-hints">{rows}</HintList>
         </CellAnchored>
       )}
     </>
@@ -227,9 +232,10 @@ export const PlayerPrompt: React.FC = () => {
  * The pickup chip sits on the pile it would grab — the same piece wearing
  * the targeting outline on the canvas, wherever it lies (long stock is
  * grabbable along its whole length; the piece underfoot may rest well off
- * to the side). It names the piece, and with more of them within reach
- * offers R to rummage — unless a machine's rotate setting claims the key
- * (the binding steps aside the same way).
+ * to the side). The piece's name titles the chip the way a machine's name
+ * titles its own (see MachineChips), leaving the key rows to be verbs; with
+ * more pieces within reach it offers R to rummage — unless a machine's
+ * rotate setting claims the key (the binding steps aside the same way).
  */
 const PickupChip: React.FC<{
   piles: ReadonlyArray<MaterialPile>;
@@ -250,10 +256,11 @@ const PickupChip: React.FC<{
       testId="pickup-chip"
     >
       <HintList>
-        <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-          pick up · {getMaterialFullName(target.material)}
+        <HintRow className="text-paper-manila/60">
+          {getMaterialFullName(target.material)}
           {place}
         </HintRow>
+        <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>pick up</HintRow>
         {sourceCount > 1 && !rotateSettingLive && (
           <HintRow keys={<ShortcutKeys shortcut="cycle-pile" />}>
             next piece

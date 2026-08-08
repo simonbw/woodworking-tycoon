@@ -27,7 +27,6 @@ import {
 } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
 import { jobPayout } from "../../game/marketplace";
-import { getMaterialName } from "../../game/material-helpers";
 import { formatMoney } from "../../utils/formatNumber";
 import { interactLabel, resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
@@ -103,14 +102,16 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
       // in the bed always agree about what E lifts out.
       <HintRow key="take" keys={<ShortcutKeys shortcut="pick-up" />}>
         {interactLabel(interact)}
-        {interact.count > 1 && ` · ${interact.count} in bed`}
+        {interact.count > 1 && ` (${interact.count})`}
       </HintRow>,
     );
   }
   if (holding) {
     rows.push(
+      // Just the verb: the hands strip already names what's in hand, and
+      // the chip's own title says where it's going.
       <HintRow key="place" keys={<ShortcutKeys shortcut="put-down" />}>
-        place {getMaterialName(gameState.player.inventory[0])}
+        load
       </HintRow>,
     );
   }
@@ -137,7 +138,7 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
         transform: "translate(-50%, -100%)",
       }}
     >
-      <HintList>
+      <HintList testId="truck-bed-chips">
         <HintRow className="text-paper-manila/60">Truck Bed</HintRow>
         {rows}
       </HintList>
@@ -375,10 +376,10 @@ export const TruckPrompt: React.FC<{
           transform: "translate(-50%, -100%)",
         }}
       >
-        <HintList>
+        <HintList testId="truck-cab-chips">
           <HintRow className="text-paper-manila/60">The truck</HintRow>
           <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-            {handoffCount > 0 ? "deliver work" : "head out"}
+            {handoffCount > 0 ? "deliver" : "head out"}
           </HintRow>
         </HintList>
       </div>

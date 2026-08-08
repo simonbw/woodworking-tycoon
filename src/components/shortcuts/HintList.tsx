@@ -12,11 +12,17 @@ import { HintSurfaceContext } from "./Kbd";
  * surface so key caps and muted text stay readable on the dark background
  * (see Kbd.tsx).
  */
-export const HintList: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
+export const HintList: React.FC<{
+  children: React.ReactNode;
+  /** Names the cluster for the specs — the labels inside are single verbs
+   * now, too generic to locate a chip by. */
+  testId?: string;
+}> = ({ children, testId }) => (
   <HintSurfaceContext.Provider value="chrome">
-    <ul className="grid grid-cols-[auto_1fr] items-baseline gap-x-1.5 gap-y-0.5 rounded bg-ink-black/70 px-2 py-1 text-left font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap">
+    <ul
+      data-testid={testId}
+      className="grid grid-cols-[auto_1fr] items-baseline gap-x-1.5 gap-y-0.5 rounded bg-ink-black/70 px-2 py-1 text-left font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap"
+    >
       {children}
     </ul>
   </HintSurfaceContext.Provider>
@@ -27,17 +33,28 @@ export const HintList: React.FC<{ children: React.ReactNode }> = ({
  * in the right. The `<li>` is `display: contents` so both cells sit
  * directly in the list's grid and line up with every other row's;
  * `className` still styles both, since colour inherits through it.
+ *
+ * `hold` marks a key that has to be held down rather than tapped. It rides
+ * the key column, not the label — "hold" describes the press, so the label
+ * column stays a plain list of verbs ("sweep", "rip") instead of every
+ * held key spending three words on "hold to ..." before saying anything.
  */
 export const HintRow: React.FC<{
   keys?: React.ReactNode;
+  hold?: boolean;
   className?: string;
   children: React.ReactNode;
-}> = ({ keys, className, children }) =>
+}> = ({ keys, hold, className, children }) =>
   keys == null ? (
     <li className={classNames("col-span-2", className)}>{children}</li>
   ) : (
     <li className={classNames("contents", className)}>
-      <span className="justify-self-end">{keys}</span>
+      <span className="justify-self-end whitespace-nowrap">
+        {hold && (
+          <span className="mr-1 text-[0.6rem] text-paper-manila/50">hold</span>
+        )}
+        {keys}
+      </span>
       <span>{children}</span>
     </li>
   );
