@@ -2,10 +2,11 @@ import React from "react";
 import { OperationParameter } from "../../game/Machine";
 import { Board } from "../../game/Materials";
 import { classNames } from "../../utils/classNames";
+import { formatLength } from "../../utils/formatNumber";
 import { Tooltip } from "../Tooltip";
 
-/** The longest board in the game — the widget's full width, in feet. */
-const FULL_LENGTH = 8;
+/** The longest board in the game — the widget's full width, in inches. */
+const FULL_LENGTH = 96;
 
 /**
  * The miter saw's cut input, drawn as the thing you'd actually do: the
@@ -28,9 +29,15 @@ export const CutLineScale: React.FC<{
   /** The station is working: the cut line reads out but won't slide. */
   locked?: boolean;
 }> = ({ param, value, onSelect, satisfiable, board, angle, locked }) => {
-  const pct = (feet: number) => `${(feet / FULL_LENGTH) * 100}%`;
+  const pct = (inches: number) => `${(inches / FULL_LENGTH) * 100}%`;
   const position = typeof value === "number" ? value : Number(value) || 0;
   const length = board?.length;
+  // How far apart the marks sit, so each one's hit target is exactly its
+  // own share of the rule and clicking anywhere lands on the nearest.
+  const markSpacing =
+    param.values.length > 1
+      ? Math.abs(Number(param.values[1]) - Number(param.values[0]))
+      : FULL_LENGTH;
 
   return (
     <div
@@ -51,13 +58,13 @@ export const CutLineScale: React.FC<{
       >
         {/* Foot marks scribed on the stock itself */}
         {Array.from(
-          { length: (length ?? FULL_LENGTH) - 1 },
-          (_, i) => i + 1,
-        ).map((foot) => (
+          { length: Math.ceil((length ?? FULL_LENGTH) / 12) - 1 },
+          (_, i) => (i + 1) * 12,
+        ).map((inches) => (
           <span
-            key={foot}
+            key={inches}
             className="absolute top-0 h-full w-px bg-ink-black/15"
-            style={{ left: `${(foot / (length ?? FULL_LENGTH)) * 100}%` }}
+            style={{ left: `${(inches / (length ?? FULL_LENGTH)) * 100}%` }}
           />
         ))}
       </div>
@@ -69,13 +76,13 @@ export const CutLineScale: React.FC<{
             className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-condensed text-[0.65rem] font-bold tabular-nums text-ink-black/80"
             style={{ left: pct(position / 2) }}
           >
-            {position}&#8242;
+            {formatLength(position)}
           </span>
           <span
             className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-condensed text-[0.65rem] font-bold tabular-nums text-ink-black/80"
             style={{ left: pct(position + (length - position) / 2) }}
           >
-            {length - position}&#8242;
+            {formatLength(length - position)}
           </span>
         </>
       )}
@@ -85,47 +92,54 @@ export const CutLineScale: React.FC<{
           className="absolute top-[0.7rem] flex h-4 -translate-x-1/2 items-center font-condensed text-[0.65rem] tabular-nums text-ink-fade"
           style={{ left: pct(length / 2) }}
         >
-          {length}&#8242;
+          {formatLength(length)}
         </span>
       )}
 
-      {/* Foot marks below the table, one per allowed cut line */}
+      {/* One hit target per allowed cut line, each as wide as the gap to
+          the next mark. On an inch rule that's a hair each, so only the
+          foot marks (and whichever line is set) print a number — the rest
+          are unlabeled ticks, the way a tape reads. */}
       {param.values.map((v) => {
         const selected = v === value;
         const reachable = satisfiable?.(v) ?? true;
-        const feet = typeof v === "number" ? v : Number(v);
+        const inches = typeof v === "number" ? v : Number(v);
+        const labeled = selected || inches % 12 === 0;
+        const mark = formatLength(inches);
         return (
           <Tooltip
             key={v}
             content={
               locked
-                ? `Cut line at ${feet}' — the station is working`
+                ? `Cut line at ${mark} — the station is working`
                 : reachable
-                  ? length !== undefined && feet < length
-                    ? `Cut at ${feet}': a ${feet}' and a ${length - feet}' piece`
-                    : `Cut line at ${feet}'`
-                  : `${feet}' — the carried board doesn't reach`
+                  ? length !== undefined && inches < length
+                    ? `Cut at ${mark}: a ${mark} and a ${formatLength(length - inches)} piece`
+                    : `Cut line at ${mark}`
+                  : `${mark} — the carried board doesn't reach`
             }
           >
             <button
               role="radio"
               aria-checked={selected}
-              aria-label={`${feet}'`}
+              aria-label={mark}
               disabled={locked}
               onClick={() => onSelect(v)}
               className={classNames(
-                "group absolute top-0 bottom-0 flex w-4 -translate-x-1/2 flex-col items-center justify-end outline-none",
+                "group absolute top-0 bottom-0 flex min-w-[3px] -translate-x-1/2 flex-col items-center justify-end outline-none",
                 !reachable && "opacity-35",
                 locked && "cursor-not-allowed",
               )}
-              style={{ left: pct(feet) }}
+              style={{ left: pct(inches), width: pct(markSpacing) }}
             >
               <span
                 className={classNames(
                   "w-px",
                   selected
                     ? "h-[0.5rem] w-0.5 bg-ink-blue"
-                    : "h-[0.35rem] bg-ink-black/50",
+                    : labeled
+                      ? "h-[0.35rem] bg-ink-black/50"
+                      : "h-[0.2rem] bg-ink-black/30",
                   !selected && !locked && "group-hover:bg-ink-black",
                 )}
               />
@@ -134,9 +148,10 @@ export const CutLineScale: React.FC<{
                   "font-condensed text-[0.65rem] leading-tight tabular-nums",
                   selected ? "font-bold text-ink-blue" : "text-ink-black/70",
                   !selected && !locked && "group-hover:text-ink-black",
+                  !labeled && "invisible",
                 )}
               >
-                {feet}
+                {mark}
               </span>
             </button>
           </Tooltip>

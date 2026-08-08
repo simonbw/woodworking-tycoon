@@ -31,6 +31,36 @@ const withEnds = (base: Board, ends: Board["ends"]): Board => ({
 const MITERED_45 = { kind: "mitered", angle: 45 } as const;
 const SQUARE = { kind: "square" } as const;
 
+describe("miter saw cut line", () => {
+  const cutLine = cutBoardOp.parameters?.find((p) => p.id === "cutPosition")!;
+
+  it("marks the stock every inch, stopping short of the longest board", () => {
+    assert.deepStrictEqual(
+      cutLine.values.slice(0, 3),
+      [1, 2, 3],
+      "the rule starts at the first inch",
+    );
+    assert.strictEqual(cutLine.values.at(-1), 95);
+    assert.strictEqual(cutLine.values.length, 95);
+  });
+
+  it("jumps a foot on a shifted press", () => {
+    // Z/X walk the marks one at a time; shift moves coarseStep of them
+    assert.strictEqual(cutLine.coarseStep, 12);
+  });
+
+  it("cuts at the inch the line is set to", () => {
+    const { outputs } = cutBoardOp.output([board("oak", 96, 4, 4)], {
+      angle: 0,
+      cutPosition: 25,
+    });
+    assert.deepStrictEqual(
+      outputs.map((piece) => (piece as Board).length),
+      [25, 71],
+    );
+  });
+});
+
 describe("miter saw angle stops", () => {
   it("a 45° cut at the 5' mark miters both fresh faces at the cut line", () => {
     const { outputs } = cutBoardOp.output([board("oak", 96, 4, 4)], {

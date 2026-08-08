@@ -361,6 +361,9 @@ const defs = [
     description: "Machine setting down / in / left",
     scope: "home",
     group: "Machines",
+    // On a fine scale — the miter saw's inch marks — shift moves a foot
+    // at a time. Scales without a coarse step just move one mark.
+    shiftHint: "move a foot at a time",
   },
   {
     id: "setting-up",
@@ -369,6 +372,7 @@ const defs = [
     description: "Machine setting up / out / right",
     scope: "home",
     group: "Machines",
+    shiftHint: "move a foot at a time",
   },
   {
     id: "cycle-machine",
