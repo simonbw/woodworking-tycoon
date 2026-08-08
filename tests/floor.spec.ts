@@ -577,8 +577,9 @@ test.describe("Shop floor", () => {
       await expect(panel).toContainText("Marguerite");
       // Delivering is a drive, and the row says what the drive costs
       await expect(panel).toContainText("30 min there and back");
+      // The row itself is the button — no separate "Deliver" control
       await expect(
-        panel.getByRole("button", { name: "Deliver" }),
+        panel.getByRole("button", { name: /^Deliver:/ }),
       ).toBeVisible();
     });
 
@@ -662,10 +663,32 @@ test.describe("Shop floor", () => {
       const panel = page.getByTestId("truck-panel");
       await expect(panel).toContainText("Places to go");
       await expect(
-        panel.getByRole("button", { name: "Deliver" }),
+        panel.getByRole("button", { name: /^Deliver:/ }),
       ).toHaveCount(0);
       // The store trip it unlocked is there instead
       await expect(panel).toContainText("Orange Box");
+    });
+
+    await test.step("walking away from the cab folds the card for good", async () => {
+      const panel = page.getByTestId("truck-panel");
+      const cell = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().player.position,
+      );
+      // Walk down the lot past the truck's nose: the card belongs to the
+      // cab, and out of reach of it there is no card
+      await page.evaluate((position: number[]) => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, position },
+        }));
+      }, [cell[0], cell[1] + 4]);
+      await expect(panel).toHaveCount(0);
+      // ...and coming back leaves it closed rather than spreading it
+      // open again under the player
+      await movePlayerToCab(page);
+      await expect(panel).toHaveCount(0);
+      await openTruckMenu(page);
+      await expect(panel).toBeVisible();
     });
 
     await test.step("night closes the card down to Home, and sleeping brings the morning", async () => {
