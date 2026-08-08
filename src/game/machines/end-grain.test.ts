@@ -40,12 +40,14 @@ function slice(species: "maple" | "walnut" = "maple"): EndGrainSlice {
   });
 }
 
+/** A sled base, cut to size — the sled takes a piece off a sheet now,
+ * not a whole sheet (see docs/sheet-goods.md). */
 function plywood(): SheetGood {
   return makeMaterial<SheetGood>({
     type: "plywood",
     kind: "plywoodB",
-    length: 48,
-    width: 48,
+    length: 24,
+    width: 20,
     thickness: 2,
   });
 }

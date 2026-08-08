@@ -7,6 +7,7 @@ import { classNames } from "../utils/classNames";
 import {
   BAR_CLAMP_ICON,
   BROOM_ICON,
+  IDS_WITHOUT_ICON_ART,
   consumableIconSrc,
   MACHINE_ICON_SRC,
   SHOP_VAC_ICON,
@@ -57,10 +58,19 @@ const Icon: React.FC<{ src: string; className?: string }> = ({
   />
 );
 
+/**
+ * A tool whose icon hasn't been drawn yet renders nothing rather than a
+ * broken image, the same way a machine without art does — the gap is
+ * tracked in `docs/asset-backlog.md`, and a 404 per shelf tag isn't a
+ * better reminder than the list is.
+ */
 export const ToolIcon: React.FC<{ toolId: ToolId; className?: string }> = ({
   toolId,
   className,
-}) => <Icon src={toolIconSrc(toolId)} className={className} />;
+}) =>
+  IDS_WITHOUT_ICON_ART.tools.includes(toolId) ? null : (
+    <Icon src={toolIconSrc(toolId)} className={className} />
+  );
 
 export const ConsumableIcon: React.FC<{
   consumableId: ConsumableId;

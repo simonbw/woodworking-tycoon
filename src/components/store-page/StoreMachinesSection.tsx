@@ -21,6 +21,9 @@ export const StoreMachinesSection: React.FC<{ className?: string }> = ({
     MACHINE_TYPES.lunchboxPlaner,
     MACHINE_TYPES.jointer,
     MACHINE_TYPES.bandSaw,
+    // Last on the shelf: the cheapest thing here and the least like a
+    // machine, but it's where a full sheet gets broken down
+    MACHINE_TYPES.sawhorses,
   ];
   return (
     // Three to a row whatever the window. The photo is capped by its

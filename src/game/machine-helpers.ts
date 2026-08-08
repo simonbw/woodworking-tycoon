@@ -12,6 +12,7 @@ import {
 } from "./feed-clearance";
 import { GameState, ProgressionState } from "./GameState";
 import {
+  defaultParametersFor,
   InputMaterialWithQuantity,
   isBenchType,
   Machine,
@@ -650,6 +651,40 @@ export function machineCanOperate(
 }
 
 /**
+ * The operations that could take the stock sitting on the machine,
+ * judged on material kind alone — settings are what we're picking here,
+ * so the stock's dimensions can't be part of the test (a fence dialed
+ * past the board is exactly when you need to reach the fence).
+ *
+ * An empty table leaves every operation on the list: there's nothing to
+ * narrow by, and the settings still have to be dialable before the stock
+ * goes down.
+ */
+function operationsForStagedStock(
+  machine: Machine,
+  operations: ReadonlyArray<Operation>,
+): ReadonlyArray<Operation> {
+  const staged = machine.inputMaterials;
+  if (staged.length === 0) {
+    return operations;
+  }
+  const narrowed = operations.filter((operation) => {
+    const requirements = operation.getInputMaterials(
+      defaultParametersFor(operation),
+    );
+    return staged.every((material) =>
+      requirements.some(
+        (requirement) =>
+          requirement.type === undefined ||
+          // The union of per-material type arrays narrows to never
+          (requirement.type as ReadonlyArray<string>).includes(material.type),
+      ),
+    );
+  });
+  return narrowed.length > 0 ? narrowed : operations;
+}
+
+/**
  * The machine's live setting of the given kind — the one Z/X ("linear")
  * or R ("rotate") steps. On direct-feed machines the setting can belong
  * to any available operation (what's in hand decides which one runs); on
@@ -670,9 +705,15 @@ export function liveSettingParameter(
   // Only the operations the stock's orientation presents count: a band
   // saw set up to resaw offers its resaw fence to Z/X, not the rip's —
   // while the orientation itself (a rotate setting on both) stays live
-  // either way.
+  // either way. And of those, only the ones that could take what's
+  // actually on the table: the table saw's fence reads in board detents
+  // for a board and in inches for a sheet, and the scale you turn is the
+  // one for the stock in front of you.
   const candidates = machine.type.directFeed
-    ? orientedOperations(machine, availableOperations(machine, progression))
+    ? operationsForStagedStock(
+        machine,
+        orientedOperations(machine, availableOperations(machine, progression)),
+      )
     : [machine.selectedOperationOrNull].filter((op) => op != null);
   return candidates
     .flatMap((operation) =>

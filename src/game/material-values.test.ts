@@ -166,20 +166,50 @@ describe("cutting board economics", () => {
 });
 
 describe("sheet good pricing", () => {
+  /** A full 4'×8' sheet — the size the shelf rate is quoted for. */
   const sheet = (kind: SheetGood["kind"]) =>
     makeMaterial<SheetGood>({
       type: "plywood",
       kind,
-      length: 48,
+      length: 96,
       width: 48,
       thickness: 2,
     });
 
-  it("prices sheets by board footage times the kind rate", () => {
-    // A 4' x 4' half-inch sheet is 8 board feet
-    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 24);
-    assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 9.6);
-    assert.strictEqual(getSheetBuyPrice(sheet("plywoodA")), 26.4);
+  const cutTo = (kind: SheetGood["kind"], length: number, width: number) =>
+    makeMaterial<SheetGood>({
+      type: "plywood",
+      kind,
+      length,
+      width,
+      thickness: 2,
+    });
+
+  it("prices a full sheet by board footage times the kind rate", () => {
+    // A 4' x 8' half-inch sheet is 16 board feet
+    assert.strictEqual(getSheetBuyPrice(sheet("plywoodB")), 48);
+    assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 19.2);
+  });
+
+  it("surcharges the small panels — nearly double per square foot", () => {
+    const perSqFt = (s: SheetGood) =>
+      getSheetBuyPrice(s) / ((s.length / 12) * (s.width / 12));
+    const full = perSqFt(sheet("plywoodB"));
+    const handy = perSqFt(cutTo("plywoodB", 48, 24));
+    const project = perSqFt(cutTo("plywoodB", 24, 24));
+    assert.ok(handy / full > 1.45 && handy / full < 1.6, `2×4 at ${handy}`);
+    assert.ok(project / full > 1.8 && project / full < 2, `2×2 at ${project}`);
+  });
+
+  it("still costs less in total to buy the smaller piece", () => {
+    assert.ok(
+      getSheetBuyPrice(cutTo("plywoodB", 24, 24)) <
+        getSheetBuyPrice(cutTo("plywoodB", 48, 24)),
+    );
+    assert.ok(
+      getSheetBuyPrice(cutTo("plywoodB", 48, 24)) <
+        getSheetBuyPrice(sheet("plywoodB")),
+    );
   });
 
   it("orders every kind by the quality ladder", () => {
@@ -205,7 +235,7 @@ describe("sheet good pricing", () => {
   it("puts store shelves near real-world prices", () => {
     // The classic 2x4x8 stud: $4 at the big box
     assert.strictEqual(getBoardBuyPrice(board("pine", 96, 4, 8)), 4);
-    // 4' x 4' half-inch particle board: ~$10
-    assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 9.6);
+    // 4' x 8' half-inch particle board: ~$20
+    assert.strictEqual(getSheetBuyPrice(sheet("particleBoard")), 19.2);
   });
 });

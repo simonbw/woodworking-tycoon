@@ -2,6 +2,22 @@ import { MachineType } from "../Machine";
 import { BOARD_DIMENSIONS, BoardDimension } from "../Materials";
 import { cutBoard, isBoard } from "../board-helpers";
 import { GENERATED_COLLISION_SHAPES } from "../machine-collision-boxes.generated";
+import { cutSheet, isSheetGood } from "../sheet-helpers";
+
+/**
+ * How far the rip fence travels from the blade, in inches. A jobsite
+ * saw's fence is short — everything past this is what a cabinet saw is
+ * for. The cap only ever limits the piece against the fence; whatever
+ * falls off the far side can be any width, which is why breaking a
+ * sheet down is a series of cuts that each keep the small side.
+ */
+export const RIP_FENCE_CAPACITY_IN = 24;
+
+/** The fence's detents for sheet work: every inch out to its capacity. */
+const SHEET_FENCE_WIDTHS = Array.from(
+  { length: RIP_FENCE_CAPACITY_IN - 1 },
+  (_, index) => index + 2,
+);
 
 export const jobsiteTableSaw: MachineType = {
   id: "jobsiteTableSaw",
@@ -103,6 +119,56 @@ export const jobsiteTableSaw: MachineType = {
           ...result,
           outputs: [{ ...kept, jointedEdges: 2 as const }, ...offcuts],
         };
+      },
+    },
+    {
+      id: "ripSheet",
+      requiredSkill: "basicMilling",
+      name: "Rip Sheet",
+      // Flat on the table, same as a board rip — a sheet has no edge to
+      // stand on. The two stay disjoint because their stock does.
+      stockOrientation: "flat",
+      duration: 18,
+      // Sheet goods are dustier than lumber: no grain, all binder.
+      dustOutput: 2.2,
+      parameters: [
+        {
+          id: "sheetRipWidth",
+          name: "Fence",
+          values: SHEET_FENCE_WIDTHS,
+          defaultValue: 24,
+        },
+      ],
+      getInputMaterials: (params) => {
+        const fence = params.sheetRipWidth as number;
+        return [
+          {
+            type: ["plywood"],
+            quantity: 1,
+            // Sheet widths are plain inches off a saw, not detents, so
+            // there's no allowed-value list to write here.
+            matches: (material) =>
+              isSheetGood(material) && material.width > fence,
+            matchesNote: `wider than the ${fence}" fence`,
+          },
+        ];
+      },
+      explainRejection: (material, params) => {
+        if (!isSheetGood(material)) {
+          return null;
+        }
+        const fence = params?.sheetRipWidth as number;
+        if (material.width <= fence) {
+          return `The fence is set to ${fence}" and the sheet is no wider. Move the fence in, or turn the sheet and rip its length.`;
+        }
+        return null;
+      },
+      output: (materials, params) => {
+        const sheet = materials[0];
+        if (!isSheetGood(sheet)) {
+          throw new Error("Input material is not a sheet good");
+        }
+        return cutSheet(sheet, params.sheetRipWidth as number, "width");
       },
     },
   ],

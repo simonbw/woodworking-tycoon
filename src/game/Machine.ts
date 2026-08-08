@@ -20,6 +20,7 @@ import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { miterSaw } from "./machines/miterSaw";
+import { sawhorses } from "./machines/sawhorses";
 import { storageRack } from "./machines/storageRack";
 import { workspace } from "./machines/workspace";
 import {
@@ -221,6 +222,7 @@ export const MACHINE_TYPES = {
   bandSaw,
   garbageCan,
   storageRack,
+  sawhorses,
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;
 
@@ -382,6 +384,13 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
    * starts (no refunds — the glue is already out of the bottle).
    */
   readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
+  /**
+   * Clamps tied up for the operation's run, returned when it finishes
+   * (see Clamp.ts). Declared only for work that pins something down and
+   * isn't a glue-up — a glue-up derives its count from the stock's
+   * length instead, and doesn't set this.
+   */
+  readonly clampsHeld?: number;
   /**
    * Sawdust thrown per attended tick while this runs, landed around the
    * machine (see Dust.ts). Omitted: no appreciable mess (assembly, glue).

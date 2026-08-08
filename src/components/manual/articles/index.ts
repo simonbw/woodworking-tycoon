@@ -5,6 +5,7 @@ import { DustArticle } from "./DustArticle";
 import { LumberArticle } from "./LumberArticle";
 import { MarketplaceArticle } from "./MarketplaceArticle";
 import { MillingArticle } from "./MillingArticle";
+import { SheetGoodsArticle } from "./SheetGoodsArticle";
 import { ShopLayoutArticle } from "./ShopLayoutArticle";
 import { SkillsArticle } from "./SkillsArticle";
 import { WelcomeArticle } from "./WelcomeArticle";
@@ -20,6 +21,7 @@ export const ARTICLE_BODIES: Record<ManualArticleId, React.ComponentType> = {
   controls: ControlsArticle,
   lumber: LumberArticle,
   milling: MillingArticle,
+  "sheet-goods": SheetGoodsArticle,
   workbenches: WorkbenchesArticle,
   "shop-layout": ShopLayoutArticle,
   dust: DustArticle,

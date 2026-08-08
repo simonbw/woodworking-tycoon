@@ -70,8 +70,11 @@ wiring: same path, same size, same component.
       saw, drill, sanding block, random orbit sander, hand plane, finishing
       kit, crosscut sled, straight-line sled, dust bag. The same files
       double as the shop-floor sprite for a loose tool (`ToolItemSprite` in
-      `material-sprites/`), so a tool without icon art (the resaw fence)
-      falls back to the default pile square on the floor too.
+      `material-sprites/`), so a tool without icon art (the resaw fence,
+      the circular saw) falls back to the default pile square on the floor
+      too, and its store tile draws no picture at all — see
+      `IDS_WITHOUT_ICON_ART` in `utils/uiImages.ts`, which is the list of
+      what's missing.
 - [ ] Consumable icons — `static/images/icons/consumable-<id>.png`, 64×64,
       rendered by `ConsumableIcon`. Three: nails, screws, mineral oil.
 - [ ] Store-shelf icons for the things that aren't tools or consumables —
@@ -128,6 +131,14 @@ wiring: same path, same size, same component.
 
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
+- [ ] Sawhorses — `machine-sprites/SawhorsesSprite.tsx`. Two folding horses
+      seen from above, a couple of feet apart across a 3×2-ft span. The
+      sheet lying across them is staged stock and keeps rendering through
+      `MaterialSprite`, so the art is the bare pair — which is also why
+      the horses have to read as empty when nothing is on them.
+- [ ] Circular saw on the horses — the saw itself is a mounted tool and
+      currently draws nothing at the station at all; it wants the same
+      treatment as the table saw's jigs below.
 - [x] Garbage can — `garbage-can.png`. A top-down lid view centered on the
       2×2-ft footprint; the collision circle in `garbageCan.ts` is hand-set
       to the can's measured 26.5" diameter. Contents still render through

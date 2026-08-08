@@ -61,6 +61,13 @@ export function clampsFor(
   operation: Operation,
   materials?: ReadonlyArray<MaterialInstance>,
 ): number {
+  // A flat count, for work that pins something down rather than gluing
+  // it: the circular saw's straightedge has to be clamped to the sheet
+  // for the length of the cut, so a shop mid-glue-up can't also be
+  // breaking sheets down.
+  if (operation.clampsHeld !== undefined) {
+    return operation.clampsHeld;
+  }
   if (operation.interaction?.kind !== "glue") {
     return 0;
   }

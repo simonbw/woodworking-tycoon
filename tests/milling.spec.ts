@@ -673,5 +673,64 @@ test.describe("Milling", () => {
       // kerf, gone as dust
       expect(thicknesses).toEqual([3, 4]);
     });
+
+    await test.step("a sheet on the table reads the fence in inches", async () => {
+      await dropEverything(page);
+      // Hand the shop a 2×2 panel — the cut chain itself is covered in
+      // sheet-breakdown-chain.test.ts; what's browser-shaped is that the
+      // saw swaps scales for what's on it.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: {
+            ...state.player,
+            inventory: [
+              {
+                id: "spec-sheet",
+                type: "plywood",
+                kind: "plywoodB",
+                length: 24,
+                width: 24,
+                thickness: 2,
+              },
+            ],
+          },
+          // The fence dialed in at 20" — stepping a sheet-scale setting
+          // there one detent at a time is the settings scale's own test
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "jobsiteTableSaw"
+              ? {
+                  ...m,
+                  selectedParameters: {
+                    ...(m.selectedParameters ?? {}),
+                    sheetRipWidth: 20,
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+      await movePlayerTo(page, [8, 9]);
+      // The resaw fence left the saw standing its work on edge; a sheet
+      // lies flat, so R turns the table back over first
+      await pressKey(page, "r");
+      await setStockDown(page);
+      // The fence scale is the sheet's now — inches, not quarters
+      await expect(page.getByText("fence:")).toBeVisible();
+      await runUntilOutput(
+        page,
+        "(m) => m.type === 'plywood' && m.width !== 24",
+      );
+      await movePlayerTo(page, [8, 5]);
+      await takeAllHere(page);
+      const pieces = await page.evaluate(() =>
+        (window as any)
+          .__GET_GAME_STATE__()
+          .player.inventory.filter((m: any) => m.type === "plywood")
+          .map((m: any) => [m.length, m.width]),
+      );
+      // One cut, two pieces: the sheet keeps its offcut
+      expect(pieces.length).toBe(2);
+    });
   });
 });

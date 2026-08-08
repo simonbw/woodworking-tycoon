@@ -107,7 +107,8 @@ import {
   getSellValue,
   getSheetBuyPrice,
 } from "../material-values";
-import { SHEET_SKUS } from "../sheetStock";
+import { SHEET_SKUS, SheetSize, sheetSize } from "../sheetStock";
+import { machineCanOperate, shopSupply } from "../machine-helpers";
 import { makeMaterial } from "../material-helpers";
 import { Board, SheetGood, ToolItem } from "../Materials";
 import { ConsumableId } from "../Consumable";
@@ -145,6 +146,20 @@ export class ShopDriver {
 
   get money(): number {
     return this.state.money;
+  }
+
+  /**
+   * Whether holding the trigger would start anything right now — the
+   * same question `run` asks before it throws. Sequence tests use it to
+   * assert a machine *refuses*: no lane for an 8-foot sheet, no clamps
+   * free for a straightedge.
+   */
+  canOperate(machineTypeId: MachineState["machineTypeId"]): boolean {
+    return machineCanOperate(
+      this.machine(machineTypeId),
+      shopSupply(this.state),
+      this.state.progression,
+    );
   }
 
   /** Everything in hand that the predicate matches. */
@@ -1060,7 +1075,7 @@ export class ShopDriver {
   }
 
   /** Buy a sheet off the Sheet Goods aisle, at what the aisle charges. */
-  buySheet(kind: SheetGood["kind"]): this {
+  buySheet(kind: SheetGood["kind"], size: SheetSize["id"] = "full"): this {
     const sku = SHEET_SKUS.find((candidate) => candidate.kind === kind);
     if (!sku) {
       throw new Error(`The aisle doesn't stock ${kind}`);
@@ -1071,11 +1086,12 @@ export class ShopDriver {
           `${this.state.reputation}`,
       );
     }
+    const racked = sheetSize(size);
     const sheet = makeMaterial<SheetGood>({
       type: "plywood",
       kind,
-      length: sku.length,
-      width: sku.width,
+      length: racked.length,
+      width: racked.width,
       thickness: sku.thickness,
     });
     return this.buy(sheet, getSheetBuyPrice(sheet));

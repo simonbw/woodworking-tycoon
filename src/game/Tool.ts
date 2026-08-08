@@ -1,4 +1,5 @@
 import type { MachineId, Operation } from "./Machine";
+import { circularSaw } from "./tools/circularSaw";
 import { crosscutSled } from "./tools/crosscutSled";
 import { drill } from "./tools/drill";
 import { dustBag } from "./tools/dustBag";
@@ -46,6 +47,7 @@ export const TOOL_TYPES = {
   randomOrbitSander,
   finishingKit,
   handPlane,
+  circularSaw,
   crosscutSled,
   straightLineSled,
   resawFence,

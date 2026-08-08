@@ -32,13 +32,15 @@ const isEndGrainPanel = (m: MaterialInstance) =>
   isPanel(m) && m.grain === "end";
 const isBoard = (m: MaterialInstance) => m.type === "endGrainCuttingBoard";
 
-/** The jig-grade sheet the spec buys off the Sheet Goods aisle. */
+/** A sled base already cut to size. Getting a piece this size out of a
+ * bought sheet is `sheet-breakdown-chain.test.ts`'s business, not this
+ * one's. */
 function shopPlywood(): SheetGood {
   return makeMaterial<SheetGood>({
     type: "plywood",
     kind: "plywoodB",
-    length: 48,
-    width: 48,
+    length: 24,
+    width: 20,
     thickness: 2,
   });
 }

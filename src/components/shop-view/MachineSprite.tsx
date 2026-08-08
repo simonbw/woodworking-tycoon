@@ -23,6 +23,7 @@ import {
 } from "./targetHighlight";
 import { BandSawSprite } from "../machine-sprites/BandSawSprite";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
+import { SawhorsesSprite } from "../machine-sprites/SawhorsesSprite";
 import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { JointerSprite } from "../machine-sprites/JointerSprite";
@@ -312,6 +313,15 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
       case MACHINE_TYPES.bandSaw.id:
         return <BandSawSprite machine={machine} />;
+
+      // The horses draw bare; the sheet across them is staged stock
+      case MACHINE_TYPES.sawhorses.id:
+        return (
+          <pixiContainer>
+            <SawhorsesSprite machine={machine} />
+            <MachineMaterials machine={machine} />
+          </pixiContainer>
+        );
 
       // The makeshift workbench: the plywood-on-buckets art (this was the
       // makeshift bench's sprite; the bench identity moved to the starting
