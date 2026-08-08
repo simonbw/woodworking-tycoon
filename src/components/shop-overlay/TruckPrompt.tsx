@@ -5,11 +5,14 @@ import {
   goToStoreAction,
 } from "../../game/game-actions/door-actions";
 import { isNight } from "../../game/time-flow";
-import { completeCommissionAction } from "../../game/game-actions/store-actions";
-import { deliverJobAction } from "../../game/game-actions/marketplace-actions";
+import {
+  DELIVERY_ROUND_TRIP_TICKS,
+  startDeliveryAction,
+} from "../../game/game-actions/delivery-actions";
 import { startScavengingAction } from "../../game/game-actions/scavenge-actions";
 import { readyHandoffs } from "../../game/delivery";
 import { GameAction } from "../../game/GameState";
+import { formatDuration } from "../../game/time";
 import {
   atTruckBed,
   atTruckCab,
@@ -223,6 +226,10 @@ export const TruckPrompt: React.FC<{
     action: () => goHomeAction(),
   });
 
+  // A delivery is a drive like any other, so it comes off the card at
+  // close along with the rest of the day's errands (readyHandoffs is
+  // what empties at night, so the closed chip agrees with the card).
+  const roundTrip = formatDuration(DELIVERY_ROUND_TRIP_TICKS);
   for (const handoff of readyHandoffs(gameState)) {
     if (handoff.kind === "commission") {
       const { commission } = handoff;
@@ -233,9 +240,11 @@ export const TruckPrompt: React.FC<{
         // "For <client>." rather than "<client> is waiting": the client
         // strings are appositives ("Marguerite, two doors down") and read
         // badly with a verb hung straight off them.
-        description: `For ${commission.client}. Pays ${formatMoney(commission.rewardMoney)}.`,
+        description:
+          `For ${commission.client}. Pays ${formatMoney(commission.rewardMoney)}. ` +
+          `${roundTrip} there and back.`,
         verb: "Deliver",
-        action: () => completeCommissionAction(),
+        action: () => startDeliveryAction(handoff),
       });
     } else {
       const { job } = handoff;
@@ -244,9 +253,11 @@ export const TruckPrompt: React.FC<{
         key: `job-${job.id}`,
         group: "handoff",
         name: job.name,
-        description: `Pays ${formatMoney(payout.money)}, tip included.`,
+        description:
+          `Pays ${formatMoney(payout.money)}, tip included. ` +
+          `${roundTrip} there and back.`,
         verb: "Deliver",
-        action: () => deliverJobAction(job.id),
+        action: () => startDeliveryAction(handoff),
       });
     }
   }

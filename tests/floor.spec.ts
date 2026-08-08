@@ -575,6 +575,8 @@ test.describe("Shop floor", () => {
       await expect(panel).toContainText("Your First Shelf");
       // The client is named on the row — you know who you're meeting
       await expect(panel).toContainText("Marguerite");
+      // Delivering is a drive, and the row says what the drive costs
+      await expect(panel).toContainText("30 min there and back");
       await expect(
         panel.getByRole("button", { name: "Deliver" }),
       ).toBeVisible();
@@ -602,6 +604,10 @@ test.describe("Shop floor", () => {
       expect(state.money).toBe(before.money + 20);
       expect(state.reputation).toBe(before.reputation + 2);
       expect(state.progression.commissionsCompleted).toBe(1);
+      // The truck went somewhere: both legs charged their minutes, and
+      // the player is back beside the cab rather than never having left
+      expect(state.tick).toBeGreaterThanOrEqual(before.tick + 30);
+      expect(state.player.away).toBe(null);
       expect(
         state.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
       ).toBe(false);

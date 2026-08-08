@@ -77,13 +77,15 @@ export const WelcomeArticle: React.FC = () => (
       </li>
       <li>
         Walk down to the cab and press <ShortcutKeys shortcut="pick-up" />. The
-        truck lists the work riding in the bed; the number beside a row delivers
-        it.
+        truck lists the work riding in the bed; the number beside a row drives
+        it over.
       </li>
     </UL>
     <P>
       Every finished job leaves the shop this way, commissions and job-board
-      work alike.
+      work alike. A delivery is a real drive — it costs the same minutes off the
+      day a run to the store does, and the shop keeps running while you&apos;re
+      out.
     </P>
     <P>
       Delivering a commission pays money, builds reputation, and unlocks the

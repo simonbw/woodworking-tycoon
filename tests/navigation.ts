@@ -106,17 +106,31 @@ export async function loadTruckBed(page: any) {
 /**
  * Deliver finished work from the truck — the only way work leaves the
  * shop. Loads what's in hand into the bed, walks to the cab, opens the
- * card, and clicks the "Deliver" button on the row matching `name` (a
- * commission title or a job client).
+ * card, and takes the row matching `name` (a commission title or a job
+ * client).
  *
- * A commission delivery then shows the client's card, which has to be
- * dismissed before the rewards fly; `dismissClientCard` does that.
+ * That row starts a delivery run: the truck drives out, the slip shows
+ * at the customer's, and it comes back on its own (the E2E build skips
+ * the beat, so this only has to wait for the trip to end). The payout
+ * lands on the way in — for a commission that's the client's card, which
+ * `dismissClientCard` clears before the rewards fly.
  */
 export async function deliverFromTruck(page: any, name: string | RegExp) {
   await loadTruckBed(page);
   await movePlayerToCab(page);
   await openTruckMenu(page);
   await pressTruckRow(page, name);
+  await waitForDeliveryRun(page);
+}
+
+/** Wait for a delivery run to pull back into the driveway. */
+export async function waitForDeliveryRun(page: any) {
+  await page.waitForFunction(
+    () => (window as any).__GET_GAME_STATE__().player.away === null,
+    undefined,
+    { timeout: 15000 },
+  );
+  await page.waitForTimeout(30);
 }
 
 /** Dismiss the client's card shown after a commission handoff. */

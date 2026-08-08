@@ -1,6 +1,7 @@
 import { StoreId } from "./lumberStock";
 import { MachineState } from "./Machine";
 import { MaterialInstance, Pallet } from "./Materials";
+import { PayoutEvent } from "./PayoutEvent";
 import { Direction, Vector } from "./Vectors";
 
 /**
@@ -68,10 +69,11 @@ export interface Person {
  * A trip out through the garage door. Scavenging is a stop-by-stop circuit
  * the player steers from the cab (keep searching, or call it and head
  * home); a shopping trip lasts as long as the store overlay is open and
- * ends when the player heads home. Either way the shop keeps running —
- * hands-free work continues, attended work waits.
+ * ends when the player heads home; a delivery run is out and straight
+ * back. Either way the shop keeps running — hands-free work continues,
+ * attended work waits.
  */
-export type AwayTrip = ScavengingTrip | ShoppingTrip | HomeTrip;
+export type AwayTrip = ScavengingTrip | ShoppingTrip | DeliveryTrip | HomeTrip;
 
 /**
  * One stop on the scavenging circuit, rolled when the trip starts and
@@ -114,6 +116,35 @@ export type ShoppingTrip = {
   readonly kind: "shopping";
   /** Which store the trip is to; each is its own overlay. */
   readonly store: StoreId;
+};
+
+/**
+ * Out delivering finished work. The goods came out of the bed at the
+ * customer's door; what they're worth settles when the truck pulls back
+ * in (see game-actions/delivery-actions.ts). Both legs are charged up
+ * front the way a store run's are, so there is no timer here — standing
+ * on a doorstep is a beat, not an errand.
+ */
+export type DeliveryTrip = {
+  readonly kind: "delivering";
+  readonly order: DeliveryOrder;
+};
+
+/** One work order riding out in the bed, and what it's worth. */
+export type DeliveryOrder = {
+  /**
+   * The accepted job to strike off on the way in. Commissions have none —
+   * their ledger is `progression.commissionsCompleted`.
+   */
+  readonly jobId?: string;
+  /** The pieces that left the bed, for the slip at the far end. */
+  readonly cargo: ReadonlyArray<MaterialInstance>;
+  /**
+   * Struck when the truck pulled out, so a job's tip can't decay over
+   * the very drive that delivers it — the cab's card quoted this number
+   * and this is the number that lands.
+   */
+  readonly payout: Omit<PayoutEvent, "id">;
 };
 
 /**

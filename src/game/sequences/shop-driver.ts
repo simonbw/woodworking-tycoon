@@ -25,7 +25,7 @@ import {
 import { GameAction, GameState } from "../GameState";
 import { MaterialInstance, panelWidth } from "../Materials";
 import { HAND_CAPACITY, handSpaceLeft } from "../Person";
-import { consumeRequiredMaterials } from "../delivery";
+import { consumeRequiredMaterials, ReadyHandoff } from "../delivery";
 import { availableOperations } from "../skill-helpers";
 import { tickAction } from "../game-actions/tickAction";
 import {
@@ -51,8 +51,11 @@ import {
   buyConsumablePackAction,
   buyMachineAction,
   buyMaterialAction,
-  completeCommissionAction,
 } from "../game-actions/store-actions";
+import {
+  returnFromDeliveryAction,
+  startDeliveryAction,
+} from "../game-actions/delivery-actions";
 import {
   canPutDownCarriedMachine,
   putDownCarriedMachineAction,
@@ -94,7 +97,6 @@ import { clearPendingPayoutsAction } from "../game-actions/payout-actions";
 import { spendSkillPointAction } from "../game-actions/skill-actions";
 import {
   acceptJobAction,
-  deliverJobAction,
   listItemsAction,
 } from "../game-actions/marketplace-actions";
 import { generateJobBoard } from "../job-generation";
@@ -1328,8 +1330,23 @@ export class ShopDriver {
   }
 
   /**
+   * Drive a loaded order out and back, the way the trip overlay does:
+   * the far end has no decision, so the return follows the departure
+   * with nothing in between (see delivery-actions.ts).
+   */
+  private runDelivery(handoff: ReadyHandoff): this {
+    // Nothing goes out after close, and both legs charge their minutes.
+    this.ensureDaylight();
+    this.standAtCab().apply(startDeliveryAction(handoff));
+    if (this.state.player.away?.kind === "delivering") {
+      this.apply(returnFromDeliveryAction());
+    }
+    return this;
+  }
+
+  /**
    * Deliver the active commission: gather what the order requires, ferry
-   * it into the bed, walk to the cab, and drive it off. Fails loudly
+   * it into the bed, walk to the cab, and drive it over. Fails loudly
    * rather than quietly doing nothing, because "the commission silently
    * didn't complete" is the exact bug a playthrough exists to catch.
    */
@@ -1344,7 +1361,7 @@ export class ShopDriver {
     }
     const before = this.state.progression.commissionsCompleted;
     this.loadBedFor(commission.requiredMaterials);
-    this.standAtCab().apply(completeCommissionAction());
+    this.runDelivery({ kind: "commission", commission });
     if (this.state.progression.commissionsCompleted !== before + 1) {
       throw new Error(
         `"${commission.name}" would not deliver. The bed holds ` +
@@ -1403,7 +1420,7 @@ export class ShopDriver {
     }
     const before = this.state.acceptedJobs.length;
     this.loadBedFor(job.requiredMaterials);
-    this.standAtCab().apply(deliverJobAction(jobId));
+    this.runDelivery({ kind: "job", job });
     if (this.state.acceptedJobs.length !== before - 1) {
       throw new Error(
         `Job "${job.description}" would not deliver. The bed holds ` +

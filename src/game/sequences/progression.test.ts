@@ -50,10 +50,10 @@ describe("progression", () => {
           "the previous checkpoint is one rung back",
         );
         assert.equal(after.progression.commissionsCompleted, number);
-        // That the goods actually changed hands is `completeCommissionAction`'s
-        // own rule — it refuses to advance without them, so the count above is
-        // the assertion. Counting leftovers by type can't tell a delivered
-        // slat from the offcut that made it.
+        // That the goods actually changed hands is the delivery run's own
+        // rule — the truck won't pull out without them, so the count above
+        // is the assertion. Counting leftovers by type can't tell a
+        // delivered slat from the offcut that made it.
       });
 
       it("pays out, and never runs the shop into the red", () => {

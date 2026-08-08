@@ -27,14 +27,18 @@ export function storeUnlocked(gameState: GameState, store: StoreId): boolean {
 
 /**
  * What a drive out (or back) costs in shop minutes. Errands aren't free:
- * each leg of a store run charges this many ticks through the ordinary
- * pipeline, so a curing glue-up gains the same minutes the drive spends.
- * Scavenging carries its own, longer timer instead.
+ * each leg of a store run — or of a delivery run, which is the same
+ * drive with the bed loaded — charges this many ticks through the
+ * ordinary pipeline, so a curing glue-up gains the same minutes the
+ * drive spends. Scavenging carries its own, longer timer instead.
  */
 export const DRIVE_TICKS_ONE_WAY = 15;
 
-/** The drive itself: a batch of ordinary ticks, run while `away` is set. */
-function driveTicks(gameState: GameState): GameState {
+/**
+ * The drive itself: a batch of ordinary ticks, run while `away` is set.
+ * Exported for delivery-actions.ts, whose run is the same two legs.
+ */
+export function driveTicks(gameState: GameState): GameState {
   for (let i = 0; i < DRIVE_TICKS_ONE_WAY; i++) {
     gameState = tickAction(gameState);
   }
