@@ -24,6 +24,25 @@ Create each issue with the `gh` CLI in this repo:
 gh issue create --title "<concise title>" --body "<body>"
 ```
 
-- Do not add labels, assignees, or milestones unless the user asks.
+- Do not add labels, assignees, or milestones unless the user asks. The one label in active use is `humans-only` (work an agent can't do — recording audio, making art); apply it when that's clearly the case.
 
-After creating them, report back the titles and the URLs `gh` printed, one line each, so the user can click through.
+## File it into the project
+
+Every issue also goes on the **Woodworking Tycoon** project board (project 2, owner `simonbw`) with its **Stage** set:
+
+- **Bug** — a defect; fixing it needs no design decisions
+- **Idea** — kept alive for future consideration; not yet decided it should happen
+- **Needs design** — direction is committed, but shape decisions remain before anyone can build
+- **Ready** — scoped and decided; could be picked up today
+
+Pick the stage from what the user said and how the body reads. When torn between Idea and Needs design, ask yourself whether the user has committed to wanting it; between Needs design and Ready, whether an agent could start without making judgment calls the user would want to weigh in on.
+
+```sh
+item=$(gh project item-add 2 --owner simonbw --url "<issue url>" --format json --jq .id)
+gh project item-edit --id "$item" --project-id PVT_kwHOAFakNs4Bfydi \
+  --field-id PVTSSF_lAHOAFakNs4BfydizhaC1lQ --single-select-option-id "<option id>"
+```
+
+Stage option ids: Bug `fa97231c`, Idea `ddeeef5f`, Needs design `9a9af2ff`, Ready `94ce2a91`, In progress `f12f8756`, Done `453e6fc8`.
+
+After creating them, report back the titles, the URLs `gh` printed, and the stage each was filed under, one line each, so the user can click through.
