@@ -30,17 +30,27 @@ import {
  *   read the post-advance tick);
  * - milestones run last so unlocks that hinge on tick-driven state (a
  *   dusty floor) fire on their own.
+ *
+ * The marketplace pass rolls dice, so the clock takes an optional
+ * generator the way the explicitly random actions do. The parameter is
+ * optional, which keeps this a `GameAction` — the real game ticks with
+ * `Math.random` and never passes one; sequence tests pin it so a long
+ * run lands the same way every time.
  */
-export const tickAction: GameAction = combineActions(
-  playerTickPass(),
-  sweepTickPass(),
-  vacuumTickPass(),
-  shopVacTickPass(),
-  machineTickPass(),
-  advanceTickPass(),
-  marketplaceTickPass(),
-  checkProgressionMilestonesAction(),
-);
+export const tickAction = (
+  gameState: GameState,
+  rng: () => number = Math.random,
+): GameState =>
+  combineActions(
+    playerTickPass(),
+    sweepTickPass(),
+    vacuumTickPass(),
+    shopVacTickPass(),
+    machineTickPass(),
+    advanceTickPass(),
+    marketplaceTickPass(rng),
+    checkProgressionMilestonesAction(),
+  )(gameState);
 
 /**
  * The player's slice of the tick: advance a scavenging trip's legs (a

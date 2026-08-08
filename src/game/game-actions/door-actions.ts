@@ -33,10 +33,14 @@ export function storeUnlocked(gameState: GameState, store: StoreId): boolean {
  */
 export const DRIVE_TICKS_ONE_WAY = 15;
 
-/** The drive itself: a batch of ordinary ticks, run while `away` is set. */
-function driveTicks(gameState: GameState): GameState {
+/**
+ * The drive itself: a batch of ordinary ticks, run while `away` is set.
+ * Ticks roll the marketplace, so the generator rides along — see the
+ * header of `tickAction`.
+ */
+function driveTicks(gameState: GameState, rng: () => number): GameState {
   for (let i = 0; i < DRIVE_TICKS_ONE_WAY; i++) {
-    gameState = tickAction(gameState);
+    gameState = tickAction(gameState, rng);
   }
   return gameState;
 }
@@ -47,7 +51,10 @@ function driveTicks(gameState: GameState): GameState {
  * are thinking time, nearly free — and comes home via
  * returnFromStoreAction, which charges the drive back.
  */
-export function goToStoreAction(store: StoreId): GameAction {
+export function goToStoreAction(
+  store: StoreId,
+  rng: () => number = Math.random,
+): GameAction {
   return (gameState) => {
     if (!storeUnlocked(gameState, store)) {
       console.warn("That store is not unlocked yet");
@@ -61,13 +68,16 @@ export function goToStoreAction(store: StoreId): GameAction {
       console.warn("Shop's closed for the night — nowhere to go but home");
       return gameState;
     }
-    return driveTicks({
-      ...gameState,
-      player: {
-        ...gameState.player,
-        away: { kind: "shopping", store },
+    return driveTicks(
+      {
+        ...gameState,
+        player: {
+          ...gameState.player,
+          away: { kind: "shopping", store },
+        },
       },
-    });
+      rng,
+    );
   };
 }
 
@@ -76,13 +86,15 @@ export function goToStoreAction(store: StoreId): GameAction {
  * truck pulls in and the player steps out beside the cab, purchases
  * riding in the bed.
  */
-export function returnFromStoreAction(): GameAction {
+export function returnFromStoreAction(
+  rng: () => number = Math.random,
+): GameAction {
   return (gameState) => {
     if (gameState.player.away?.kind !== "shopping") {
       console.warn("Player is not out shopping");
       return gameState;
     }
-    gameState = driveTicks(gameState);
+    gameState = driveTicks(gameState, rng);
     return {
       ...gameState,
       player: {
@@ -123,7 +135,7 @@ export function goHomeAction(): GameAction {
  * starts. Attended work holds where it was left (the player is away for
  * every overnight tick), same as stepping away from a cut does.
  */
-export function wakeUpAction(): GameAction {
+export function wakeUpAction(rng: () => number = Math.random): GameAction {
   return (gameState) => {
     if (gameState.player.away?.kind !== "home") {
       console.warn("Player is not home in bed");
@@ -133,7 +145,7 @@ export function wakeUpAction(): GameAction {
     // tick is the one that rotates the job board (see refreshJobBoard).
     gameState = { ...gameState, day: gameState.day + 1 };
     for (let i = 0; i < NIGHT_TICKS; i++) {
-      gameState = tickAction(gameState);
+      gameState = tickAction(gameState, rng);
     }
     return {
       ...gameState,

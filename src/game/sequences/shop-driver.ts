@@ -117,6 +117,7 @@ import { SkillId } from "../Skill";
 import { StoreId } from "../lumberStock";
 import { ToolId } from "../Tool";
 import { Vector } from "../Vectors";
+import { seededRandom } from "../../utils/randUtils";
 
 /** Matches the stock a job wants out of wherever it's being taken from. */
 type MaterialPredicate = (material: MaterialInstance) => boolean;
@@ -130,9 +131,19 @@ const TICK_CEILING = 20_000;
 
 export class ShopDriver {
   private state: GameState;
+  /**
+   * The clock's own dice. `tickAction` rolls the marketplace every tick —
+   * which listing finds a buyer, what the morning's job board holds — and
+   * a sequence that ticks thousands of times would otherwise wander. One
+   * generator per driver, seeded, so a run lands the same way every time;
+   * pass a different `seed` to play the same sequence against different
+   * luck.
+   */
+  private readonly rng: () => number;
 
-  constructor(initial: GameState) {
+  constructor(initial: GameState, seed: string | number = "shop-driver") {
     this.state = initial;
+    this.rng = seededRandom(seed);
   }
 
   /** The shop as it stands. */
@@ -217,7 +228,7 @@ export class ShopDriver {
   /** Let the clock run with nobody working. */
   tick(count = 1): this {
     for (let i = 0; i < count; i++) {
-      this.state = tickAction(this.state);
+      this.state = tickAction(this.state, this.rng);
     }
     return this;
   }
@@ -874,7 +885,7 @@ export class ShopDriver {
       );
     }
     const before = this.state.day;
-    this.apply(wakeUpAction());
+    this.apply(wakeUpAction(this.rng));
     if (this.state.player.away || this.state.day !== before + 1) {
       throw new Error("Morning never came — this is a driver bug");
     }
@@ -959,7 +970,7 @@ export class ShopDriver {
     }
     this.ensureDaylight();
     this.standAtCab();
-    this.apply(goToStoreAction(store));
+    this.apply(goToStoreAction(store, this.rng));
     if (this.state.player.away?.kind !== "shopping") {
       throw new Error(
         `The trip to ${store} would not start — hands full, or mid-trip already`,
@@ -975,7 +986,7 @@ export class ShopDriver {
    * machines stay in the bed until buyAndPlaceMachine lifts them.
    */
   comeHome(): this {
-    this.apply(returnFromStoreAction());
+    this.apply(returnFromStoreAction(this.rng));
     return this.unloadBed();
   }
 
