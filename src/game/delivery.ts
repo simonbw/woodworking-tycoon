@@ -4,19 +4,24 @@ import { atTruckCab } from "./lot";
 import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { materialMeetsInput } from "./material-helpers";
+import { isNight } from "./time-flow";
 
 /**
  * The matching rules shared by both outbound tracks. Commissions and jobs
  * are paid the same way — you load the goods into the truck's bed and
- * drive them off from the cab — so the check and the consume live here
- * rather than being copied into `store-actions` and
- * `marketplace-actions`, where they drifted apart once already.
+ * drive them out from the cab — so the check and the consume live here
+ * rather than being copied into each track's actions, where they drifted
+ * apart once already.
  *
  * This is the only way finished work leaves the shop: there is
  * deliberately no "mark complete" button. Handing work over is a
  * physical act with a payoff moment (the client card and reward flight,
  * src/components/payout/), and one matcher serves both tracks so a
  * piece that satisfies a commission satisfies the same-shaped job.
+ *
+ * What matches is here; the drive itself is in
+ * `game-actions/delivery-actions.ts` — a delivery costs the same minutes
+ * out and back that a store run does.
  */
 
 /** Whether a pool of materials covers everything a work order asks for. */
@@ -73,11 +78,14 @@ export function canHandOff(gameState: GameState): boolean {
 }
 
 /**
- * Everything in the truck's bed that somebody is waiting on: the active
- * commission and any accepted job whose deliverables are all loaded. The
- * cab's card lists these, and `resolveInteract` consults the count so
- * the cab still answers for the very first commission — which is
+ * Everything in the truck's bed that somebody is waiting on right now:
+ * the active commission and any accepted job whose deliverables are all
+ * loaded. The cab's card lists these, and `resolveInteract` consults the
+ * count so the cab still answers for the very first commission — which is
  * delivered before any destination is unlocked.
+ *
+ * Empty after close, the way the other destinations leave the card:
+ * delivering is a drive, and nobody is taking delivery at night.
  */
 export type ReadyHandoff =
   | { readonly kind: "commission"; readonly commission: Commission }
@@ -86,7 +94,7 @@ export type ReadyHandoff =
 export function readyHandoffs(
   gameState: GameState,
 ): ReadonlyArray<ReadyHandoff> {
-  if (!canHandOff(gameState)) {
+  if (!canHandOff(gameState) || isNight(gameState)) {
     return [];
   }
   const { bed } = gameState.truck;

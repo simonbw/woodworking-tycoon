@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { SCAVENGE_RETURN_TICKS } from "../../game/game-actions/scavenge-actions";
 import { playSound, preloadSound } from "../../utils/sfx";
+import { DeliveryTripOverlay } from "./DeliveryTripOverlay";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
 import { StoreTripOverlay } from "../store-page/StoreTripOverlay";
@@ -192,6 +193,7 @@ export const TripOverlays: React.FC = () => {
       <StoreTripOverlay />
       <LumberyardTripOverlay />
       <ScavengeTripOverlay />
+      <DeliveryTripOverlay />
       <SleepOverlay />
     </div>
   );

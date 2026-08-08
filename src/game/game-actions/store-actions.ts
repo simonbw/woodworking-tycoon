@@ -1,19 +1,10 @@
 import { GameAction } from "../GameState";
 import { CLAMP_COST } from "../Clamp";
 import { addConsumables, CONSUMABLE_TYPES, ConsumableId } from "../Consumable";
-import { getActiveCommission } from "../commissionSequence";
-import { canHandOff, consumeRequiredMaterials } from "../delivery";
 import { MachineId } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { freshMachineState } from "./machine-actions";
-import { emitPayout } from "./payout-actions";
-import {
-  incrementCommissionsCompletedAction,
-  checkProgressionMilestonesAction,
-} from "./progression-actions";
-import { combineActions } from "./misc-actions";
-import { withXp } from "./skill-actions";
-import { emitSound } from "./sound-actions";
+import { checkProgressionMilestonesAction } from "./progression-actions";
 
 export function buyMaterialAction(
   material: MaterialInstance,
@@ -124,66 +115,5 @@ export function buyMachineAction(
 
     // A first purchase can trip progression milestones (see UNLOCK_CONDITIONS)
     return checkProgressionMilestonesAction()(updatedState);
-  };
-}
-
-/**
- * Delivers the active commission to its client. Called from the truck's
- * cab (see `TruckPrompt`) — the goods have to be loaded in the bed and
- * the player standing at the cab, because a commission leaving the shop
- * is a thing that happens somewhere.
- */
-export function completeCommissionAction(): GameAction {
-  return (gameState) => {
-    const commission = getActiveCommission(gameState.progression);
-    if (!commission) {
-      console.warn("No active commission to complete");
-      return gameState;
-    }
-    if (!canHandOff(gameState)) {
-      console.warn("Can't deliver work right now");
-      return gameState;
-    }
-
-    const updatedBed = consumeRequiredMaterials(
-      gameState.truck.bed,
-      commission.requiredMaterials,
-    );
-    if (updatedBed === null) {
-      console.warn("The bed doesn't hold what the commission requires");
-      return gameState;
-    }
-
-    // Commissions teach: chunky XP alongside the payout
-    const xp = Math.round(commission.rewardMoney / 5);
-    const completedState = withXp(
-      emitPayout(
-        emitSound(
-          {
-            ...gameState,
-            money: gameState.money + commission.rewardMoney,
-            reputation: gameState.reputation + commission.rewardReputation,
-            truck: { ...gameState.truck, bed: updatedBed },
-          },
-          { kind: "commission-complete" },
-        ),
-        {
-          kind: "commission",
-          title: commission.name,
-          money: commission.rewardMoney,
-          reputation: commission.rewardReputation,
-          xp,
-          client: commission.client,
-          dialogue: commission.thanks,
-        },
-      ),
-      xp,
-    );
-
-    // Progression must only advance when the commission actually completes
-    return combineActions(
-      incrementCommissionsCompletedAction(),
-      checkProgressionMilestonesAction(),
-    )(completedState);
   };
 }
