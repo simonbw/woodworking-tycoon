@@ -64,9 +64,10 @@ const GLUE_OPERATION_IDS = [
 /**
  * The operation's phase list with passive skills applied per phase, then
  * the dust slowdown (see Dust.ts machineDustMultiplier) and the station's
- * work speed (MachineType.workSpeed — a solid worktable beats the wobbly
- * makeshift bench) applied to the attended phases — a buried machine or a
- * bad bench slows your handwork, not the glue's cure. Ops that declare no
+ * work speed (bench-mounting.ts stationWorkSpeed — a solid worktable beats
+ * the wobbly makeshift bench, and a benchtop machine left on the floor is
+ * worse than either) applied to the attended phases — a buried machine or
+ * a bad bench slows your handwork, not the glue's cure. Ops that declare no
  * phases are one attended stretch of hand work. Phase durations are read
  * as each phase is entered, so a skill bought (or a floor swept)
  * mid-operation affects the remaining phases but not the current one.

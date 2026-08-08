@@ -1,4 +1,5 @@
 import { materialMeetsInput } from "../material-helpers";
+import { stationWorkSpeed } from "../bench-mounting";
 import { seatedAssemblyPieces } from "../bench-work/assembly";
 import { productBlueprintFor } from "../bench-work/blueprint";
 import { CellMap } from "../CellMap";
@@ -579,7 +580,7 @@ export function operateMachineAction(
         operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        stationWorkSpeed(machine, gameState),
       );
       return {
         ...gameState,
@@ -653,7 +654,7 @@ export function operateMachineAction(
         match.operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        stationWorkSpeed(machine, gameState),
       );
       return {
         ...gameState,
@@ -768,7 +769,7 @@ export function operateMachineAction(
       selectedOperation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-      machine.workSpeed,
+      stationWorkSpeed(machine, gameState),
     );
     return {
       ...gameState,

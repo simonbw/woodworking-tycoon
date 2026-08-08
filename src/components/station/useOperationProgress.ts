@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "../../game/bench-mounting";
 import { machineDustMultiplier } from "../../game/Dust";
 import { Machine } from "../../game/Machine";
 import { getOperationPhases } from "../../game/skill-helpers";
@@ -33,7 +34,7 @@ export function useOperationProgress(machine: Machine): OperationProgressView {
         operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        stationWorkSpeed(machine, gameState),
       )
     : [];
 

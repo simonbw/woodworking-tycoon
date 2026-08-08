@@ -41,6 +41,21 @@ export const ShopLayoutArticle: React.FC = () => (
       other; keep the outfeed clear too.
     </P>
 
+    <H>Benchtop Machines</H>
+    <P>
+      Some machines are built to sit on a bench rather than on the ground: the
+      planer, the jointer, the jobsite table saw, and the miter saw. Set one on
+      a worktable and it runs at full speed. Left on the floor, its table sits
+      at your knees and every cut takes twice as long. Carry it up onto a
+      worktable as soon as you've built one.
+    </P>
+    <P>
+      The machine has to fit entirely on the table's top — a machine with one
+      foot still on the ground is a machine on the ground. The shelf below
+      doubles as its stand storage, and whatever top is left over is still yours
+      to work on.
+    </P>
+
     <Note>
       Give the table saw the middle of the long wall — long rips need room on
       both ends.

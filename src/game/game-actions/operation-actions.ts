@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "../bench-mounting";
 import { addConsumables, ConsumableAmount } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
 import { GameAction, GameState } from "../GameState";
@@ -347,7 +348,7 @@ export function finishAttendedWorkAction(machine: Machine): GameAction {
       operation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-      live.workSpeed,
+      stationWorkSpeed(live, gameState),
     );
     const { phaseIndex } = machineState.operationProgress;
     if (phases[Math.min(phaseIndex, phases.length - 1)].attended === false) {
@@ -630,7 +631,7 @@ export function startGlueUpAction(
       operation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-      live.workSpeed,
+      stationWorkSpeed(live, gameState),
     );
     return {
       ...gameState,
