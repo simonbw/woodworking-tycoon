@@ -221,7 +221,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           keys={<ShortcutKeys shortcut="open-station-sheet" />}
         >
           {machine.type.directFeed
-            ? "tool rack"
+            ? "accessories"
             : machine.type.container
               ? "contents"
               : "use workbench"}

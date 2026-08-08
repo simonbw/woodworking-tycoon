@@ -9,8 +9,10 @@
  * `keys` is what the player is shown.
  *
  * A shortcut can also answer to a mouse button (`buttons`). Those dispatch
- * through the same provider and render as their own chip, so the mouse is
- * taught in the same places the keys are. Bindings that need to know *what*
+ * through the same provider and get their own chip in the `?` cheat sheet —
+ * but not in the floating hint clusters, which stay the keyboard's: a
+ * spelled-out "Right-click" cap is wider than the machine it hovers over.
+ * Bindings that need to know *what*
  * the cursor is over — right-clicking a machine, a piece on the floor — are
  * dispatched by the sprite that was hit rather than here; their entry in this
  * table carries no `codes` and exists so the verb still gets a chip and a row
@@ -594,8 +596,9 @@ export function shortcutsForButton(
 
 /**
  * Everything a shortcut is shown as: its key alternatives, then a chip per
- * mouse button. One list so a chip renders the whole binding — `Tab` on its
- * own, `Esc / Right-click` where both work.
+ * mouse button — `Tab` on its own, `Esc / Right-click` where both work. The
+ * full reference (the `?` sheet) shows these; the in-world hint chips show
+ * `keys` alone (see ShortcutKeys).
  */
 export function shortcutChords(
   def: ShortcutDef,

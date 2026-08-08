@@ -8,7 +8,7 @@ import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState, useMachines } from "../useGameState";
 import { BenchWorkSurface } from "../bench-view/BenchWorkSurface";
 import { ContentsSheet } from "./ContentsSheet";
-import { ToolSheet } from "./ToolSheet";
+import { AccessorySheet } from "./AccessorySheet";
 import { StatusText } from "./StatusText";
 
 /**
@@ -18,7 +18,7 @@ import { StatusText } from "./StatusText";
  * ticking, the home-screen keys keep working on the station, and walking
  * away folds the sheet back up.
  *
- * A direct-feed machine keeps only its tool rack (ToolSheet): a jointer,
+ * A direct-feed machine keeps only its accessory rack (AccessorySheet): a jointer,
  * planer, table saw or miter saw is a switch, a scale or two, and stock
  * you set down, and every one of those is a key on the floor. Fitting a
  * jig is the one thing left that needs a page. Benches have no card at
@@ -178,7 +178,7 @@ const StationSheetBody: React.FC<{
 }> = ({ machine, onClose }) => (
   <SheetFrame machine={machine} onClose={onClose}>
     {machine.type.directFeed ? (
-      <ToolSheet machine={machine} />
+      <AccessorySheet machine={machine} />
     ) : (
       <ContentsSheet machine={machine} />
     )}

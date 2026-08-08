@@ -128,7 +128,7 @@ const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
       name={tool.name}
       icon={<ToolIcon toolId={tool.id as ToolId} />}
       price={tool.cost}
-      info={`${tool.description} Rides home in the truck's bed; carry it to a workstation and mount it in a tool slot.`}
+      info={`${tool.description} Rides home in the truck's bed; carry it to a workstation and hang it on a bench's rail, or fit it in a machine's accessory slot.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       canAfford={gameState.money >= tool.cost}
       onBuy={() => applyAction(buyToolAction(tool.id as ToolId))}

@@ -10,7 +10,7 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 import {
   MachineManualLink,
   MaterialShelf,
-  ToolRack,
+  AccessoryRack,
   UpgradeRack,
 } from "./racks";
 import { RunHint } from "./RunHint";
@@ -85,7 +85,7 @@ export const ContentsSheet: React.FC<{ machine: Machine }> = ({ machine }) => {
           canOperate={machineCanOperate(machine, shopSupply(gameState))}
         />
       )}
-      <ToolRack machine={machine} />
+      <AccessoryRack machine={machine} />
       <UpgradeRack machine={machine} />
       <MaterialShelf machine={machine} />
       <MachineManualLink machine={machine} />

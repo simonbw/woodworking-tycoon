@@ -32,12 +32,17 @@ export const MachineManualLink: React.FC<{ machine: Machine }> = ({
 };
 
 /**
- * Tool slots on a workstation: mounted tools come off into the player's
- * arms, and a carried tool can be mounted while slots are free — tools
- * are physical things, so the rack trades with the hands, not a storage
- * list. Mounting a tool adds its operations to the station's Plan list.
+ * A machine's accessories — the jigs, bags and blades fitted to it: mounted
+ * ones come off into the player's arms, and a carried tool can be fitted
+ * while slots are free, since they're physical things and the rack trades
+ * with the hands rather than a storage list. Fitting one adds its operations
+ * to the station's Plan list.
+ *
+ * The word is "accessories" here because this card belongs to machines and
+ * containers; a bench's mounted tools are hand tools, and hang on the bench
+ * view's own rail under that name (BenchToolRail).
  */
-export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
+export const AccessoryRack: React.FC<{ machine: Machine }> = ({ machine }) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
@@ -63,7 +68,7 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
     <div className="space-y-1">
       <div className="flex items-baseline justify-between">
         <div className="font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-ink-fade">
-          Tools · {machine.state.tools.length}/{machine.toolSlots} slots
+          Accessories · {machine.state.tools.length}/{machine.toolSlots} slots
         </div>
         <ManualLink article="workbenches" />
       </div>
@@ -112,8 +117,8 @@ export const ToolRack: React.FC<{ machine: Machine }> = ({ machine }) => {
           ))}
         {machine.state.tools.length === 0 && mountableTools.length === 0 && (
           <li className="py-1 italic text-ink-fade text-xs">
-            Empty — carry a tool here to mount it. Tools are sold on the store's
-            tool wall.
+            Empty — carry an accessory here to fit it. They're sold on the
+            store's tool wall.
           </li>
         )}
       </ul>

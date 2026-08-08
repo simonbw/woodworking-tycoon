@@ -535,7 +535,7 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("sanding ignores Space — the bench view owns hand work", async () => {
-      // The tool rack lives on the station sheet
+      // The accessory rack lives on the station sheet
       await openStationSheet(page);
       // Two tools ride in hand (sander and finishing kit) — name the one
       await page

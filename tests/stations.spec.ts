@@ -21,7 +21,7 @@ import {
  * Stations you fit out, and the aisles you fit them out from.
  *
  * A bench picks a plan off its station sheet and takes stock from the
- * manifest's transfer buttons; a tool rack adds a mounted tool's trades to
+ * manifest's transfer buttons; an accessory rack adds a mounted tool's trades to
  * whatever station holds it — including a jig that unlocks a cut on a
  * direct-feed machine that had no plan to pick. Plus the two lumber channels
  * and the reputation tiers that decide what's on their racks.
@@ -437,10 +437,10 @@ test.describe("Stations", () => {
       await takeAllHere(page);
       // ...and carry it across the floor to the saw
       await movePlayerTo(page, SAW_CELL);
-      // A direct-feed machine's sheet is nothing but its tool rack now
+      // A direct-feed machine's sheet is nothing but its accessory rack now
       await openStationSheet(page);
       const sawCard = machineCard(page, "Jobsite Table Saw");
-      await expect(sawCard.getByText(/Tools ·/)).toBeVisible();
+      await expect(sawCard.getByText(/Accessories ·/)).toBeVisible();
       await sawCard.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
       // Jig on the table: the panel this spec carries can be crosscut now

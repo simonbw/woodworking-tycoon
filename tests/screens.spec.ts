@@ -265,7 +265,7 @@ test.describe("Screens", () => {
           player: {
             ...state.player,
             // Fresh strips, plus the fixture's sander kept in hand — the
-            // tool rack mounts from the arms, so dropping it would leave
+            // accessory rack mounts from the arms, so dropping it would leave
             // the Attach step nothing to attach
             inventory: [
               ...["walnut", "maple", "walnut", "maple", "walnut"].map(
@@ -328,7 +328,7 @@ test.describe("Screens", () => {
     });
 
     await test.step("learning it puts the recipe on the bench", async () => {
-      // The tool rack lives on the station sheet
+      // The accessory rack lives on the station sheet
       await openStationSheet(page);
       await page
         .getByRole("button", { name: "Attach the Random Orbit Sander" })
