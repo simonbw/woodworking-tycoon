@@ -4,6 +4,8 @@
  * card that appears when the player stands at the cab).
  */
 
+import { truckCabSideCell } from "../src/game/lot";
+
 /**
  * Start a fresh shop from the title screen.
  *
@@ -24,18 +26,19 @@ export async function startNewGame(page: any) {
 
 /** Teleport the player beside the truck's cab so its prompt appears. */
 export async function movePlayerToCab(page: any) {
-  await page.evaluate(() => {
+  // Where the driver's door is comes from the same geometry the game
+  // uses, so moving the trigger zone never leaves the specs standing in
+  // the wrong patch of grass.
+  const shopInfo = await page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().shopInfo,
+  );
+  const cell = truckCabSideCell(shopInfo);
+  await page.evaluate((position: number[]) => {
     (window as any).__UPDATE_GAME_STATE__((state: any) => ({
       ...state,
-      player: {
-        ...state.player,
-        // The driver's-door cell on the default 12x16 shop (see
-        // truckCabSideCell): grass beside the cab, a walk down the
-        // driveway from the garage door.
-        position: [state.shopInfo.entrancePosition[0] - 4, state.shopInfo.size[1] + 17],
-      },
+      player: { ...state.player, position },
     }));
-  });
+  }, cell);
   await page.waitForTimeout(30);
 }
 
