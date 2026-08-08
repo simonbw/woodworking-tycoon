@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   canLeaveShop,
   goHomeAction,
@@ -48,6 +54,9 @@ const TRUCK_OPTION_SHORTCUTS: readonly ShortcutId[] = [
   "door-option-8",
   "door-option-9",
 ];
+
+/** How much air the trip card keeps between itself and the window edge. */
+const CARD_MARGIN = 8;
 
 /** One numbered row on the cab's card. */
 interface TruckRow {
@@ -151,7 +160,7 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
 export const TruckPrompt: React.FC<{
   canvasWidth: number;
   canvasHeight: number;
-}> = ({ canvasWidth }) => {
+}> = ({ canvasWidth, canvasHeight }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const {
@@ -274,6 +283,39 @@ export const TruckPrompt: React.FC<{
     );
   }
 
+  // The card hangs above the cab, and with every destination unlocked
+  // it's taller than the room the camera leaves above the truck — so it
+  // slides down off its anchor by however much of it is off-screen.
+  // Measured against the window rather than the overlay: the overlay
+  // rides the camera's scroll, which is exactly what the card has to be
+  // clamped against. Written straight to the node (React styles the
+  // anchor, this wrapper is only ever the nudge) and re-checked each
+  // frame, since the camera keeps moving under an open card.
+  const nudgeRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!truckMenuOpen) return;
+    let nudge = 0;
+    let frame = 0;
+    const clamp = () => {
+      const card = nudgeRef.current;
+      if (card) {
+        // The measured top already includes the current nudge, so the
+        // correction is exact and settles in a single frame.
+        const next = Math.max(
+          0,
+          nudge + (CARD_MARGIN - card.getBoundingClientRect().top),
+        );
+        if (next !== nudge) {
+          nudge = next;
+          card.style.transform = `translateY(${nudge}px)`;
+        }
+      }
+      frame = requestAnimationFrame(clamp);
+    };
+    clamp();
+    return () => cancelAnimationFrame(frame);
+  }, [truckMenuOpen]);
+
   // The card's row cursor: W/S walk it, E takes the row it's on. The raw
   // index is unbounded and `mod` folds it onto whatever rows the card
   // currently shows, so the cursor survives the list changing under it
@@ -356,88 +398,112 @@ export const TruckPrompt: React.FC<{
         left,
         // The cab sits at the bottom of the scrolled view, so the card
         // always hangs above it
-        top: cabTop - 8,
+        top: cabTop - CARD_MARGIN,
         transform: "translate(-50%, -100%)",
       }}
     >
-      <section className="paper-card space-y-2" data-testid="truck-panel">
-        <header className="flex items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
-          <h3 className="font-condensed font-bold text-lg uppercase tracking-wide">
-            The Truck
-          </h3>
-          <span className="flex items-center gap-3">
-            <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
-              {handoffCount > 0 ? "Someone's waiting" : "Places to go"}
+      <div ref={nudgeRef}>
+        <section
+          className="paper-card flex flex-col gap-2 overflow-hidden"
+          style={{ maxHeight: canvasHeight - CARD_MARGIN * 2 }}
+          data-testid="truck-panel"
+        >
+          <header className="flex shrink-0 items-baseline justify-between border-b-2 border-ink-black/40 pb-1">
+            <h3 className="font-condensed font-bold text-lg uppercase tracking-wide">
+              The Truck
+            </h3>
+            <span className="flex items-center gap-3">
+              <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
+                {handoffCount > 0 ? "Someone's waiting" : "Places to go"}
+              </span>
+              <Tooltip content="Stay in the shop" shortcut="close-sheet">
+                <button
+                  className="button-paper text-xs leading-none"
+                  onClick={closeTruckMenu}
+                  aria-label="Close truck card"
+                >
+                  ✕
+                </button>
+              </Tooltip>
             </span>
-            <Tooltip content="Stay in the shop" shortcut="close-sheet">
-              <button
-                className="button-paper text-xs leading-none"
-                onClick={closeTruckMenu}
-                aria-label="Close truck card"
-              >
-                ✕
-              </button>
-            </Tooltip>
-          </span>
-        </header>
-        <ul className="divide-y divide-ink-black/15">
-          {rows.map((row, index) => (
-            <React.Fragment key={row.key}>
-              {/* Subheadings only earn their space when the card is
+          </header>
+          {/* The whole row is the button — a row you can walk a cursor onto
+            and press E on is already a control, so a second "Go" button
+            beside it was only ever restating the row. */}
+          <ul className="min-h-0 space-y-0.5 overflow-y-auto">
+            {rows.map((row, index) => (
+              <React.Fragment key={row.key}>
+                {/* Subheadings only earn their space when the card is
                   actually mixed — with one kind of row the card header
                   has already said what these are. */}
-              {mixed &&
-                (index === 0 || rows[index - 1].group !== row.group) && (
-                  <li className="pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
-                    {row.group === "go" ? "Places to go" : "Work to deliver"}
-                  </li>
-                )}
-              <li
-                className={classNames(
-                  "flex items-center gap-3 py-2 pl-1.5 border-l-2",
-                  index === selectedIndex
-                    ? "border-ink-blue bg-ink-blue/10"
-                    : "border-transparent",
-                )}
-                data-selected={index === selectedIndex || undefined}
-                onMouseEnter={() => setCursor(index)}
-              >
-                <Kbd>{index + 1}</Kbd>
-                <div className="grow">
-                  <div className="font-condensed font-semibold text-sm uppercase tracking-wide">
-                    {row.name}
-                  </div>
-                  <div className="text-xs text-ink-fade">{row.description}</div>
-                </div>
-                <Tooltip
-                  content={`${row.verb}: ${row.name}`}
-                  shortcut={TRUCK_OPTION_SHORTCUTS[index]}
+                {mixed &&
+                  (index === 0 || rows[index - 1].group !== row.group) && (
+                    <li className="px-2 pt-2 pb-0.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
+                      {row.group === "go" ? "Places to go" : "Work to deliver"}
+                    </li>
+                  )}
+                <li
+                  data-selected={index === selectedIndex || undefined}
+                  // Pointing at a row selects it even when the button under
+                  // the cursor is dead (hands full), so the card still
+                  // answers the mouse while it can't act on it.
+                  onMouseEnter={() => setCursor(index)}
                 >
                   <button
-                    className="button-paper text-xs whitespace-nowrap"
+                    type="button"
+                    className={classNames(
+                      "flex w-full items-start gap-2.5 rounded-sm py-2 pl-2 pr-2.5 text-left",
+                      "border-l-2 transition-colors",
+                      index === selectedIndex
+                        ? "border-ink-blue bg-ink-blue/10"
+                        : "border-transparent hover:bg-ink-black/[0.06]",
+                      !handsFree && "opacity-50",
+                    )}
+                    aria-label={`${row.verb}: ${row.name}`}
                     disabled={!handsFree}
                     onClick={() => applyAction(row.action())}
                   >
-                    {row.verb}
+                    <Kbd className="mt-px shrink-0">{index + 1}</Kbd>
+                    <span className="grow">
+                      <span className="block font-condensed font-semibold text-sm uppercase tracking-wide">
+                        {row.name}
+                      </span>
+                      <span className="block text-xs text-ink-fade">
+                        {row.description}
+                      </span>
+                    </span>
+                    {/* The affordance the button used to spell out: a
+                      quiet chevron that lights up on the selected row. */}
+                    <span
+                      aria-hidden
+                      className={classNames(
+                        "shrink-0 self-center text-base leading-none",
+                        index === selectedIndex
+                          ? "text-ink-blue"
+                          : "text-ink-fade/50",
+                      )}
+                    >
+                      ›
+                    </span>
                   </button>
-                </Tooltip>
-              </li>
-            </React.Fragment>
-          ))}
-        </ul>
-        <p className="flex items-center gap-1.5 border-t border-ink-black/15 pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
-          <Kbd>W</Kbd>
-          <Kbd>S</Kbd> choose
-          <span className="px-0.5">·</span>
-          <Kbd>E</Kbd> {rows[selectedIndex].verb.toLowerCase()}
-        </p>
-        {carried && (
-          <p className="font-condensed text-xs text-ink-fade">
-            Set the {MACHINE_TYPES[carried.machineTypeId].name} down before
-            heading out.
+                </li>
+              </React.Fragment>
+            ))}
+          </ul>
+          <p className="flex shrink-0 items-center gap-1.5 border-t border-ink-black/15 pt-1.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
+            <Kbd>W</Kbd>
+            <Kbd>S</Kbd> choose
+            <span className="px-0.5">·</span>
+            <Kbd>E</Kbd> {rows[selectedIndex].verb.toLowerCase()}
           </p>
-        )}
-      </section>
+          {carried && (
+            <p className="font-condensed text-xs text-ink-fade">
+              Set the {MACHINE_TYPES[carried.machineTypeId].name} down before
+              heading out.
+            </p>
+          )}
+        </section>
+      </div>
     </div>
   );
 };
