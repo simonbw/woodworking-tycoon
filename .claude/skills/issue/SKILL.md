@@ -28,7 +28,7 @@ gh issue create --title "<concise title>" --body "<body>"
 
 ## File it into the project
 
-Every issue also goes on the **Woodworking Tycoon** project board (project 2, owner `simonbw`) with its **Stage** set:
+Every issue also goes on the **Woodworking Tycoon** project board (project 2, owner `simonbw`) with its **Status** set (the built-in Status field carries the stage taxonomy):
 
 - **Bug** — a defect; fixing it needs no design decisions
 - **Idea** — kept alive for future consideration; not yet decided it should happen
@@ -40,9 +40,9 @@ Pick the stage from what the user said and how the body reads. When torn between
 ```sh
 item=$(gh project item-add 2 --owner simonbw --url "<issue url>" --format json --jq .id)
 gh project item-edit --id "$item" --project-id PVT_kwHOAFakNs4Bfydi \
-  --field-id PVTSSF_lAHOAFakNs4BfydizhaC1lQ --single-select-option-id "<option id>"
+  --field-id PVTSSF_lAHOAFakNs4BfydizhaC1jo --single-select-option-id "<option id>"
 ```
 
-Stage option ids: Bug `fa97231c`, Idea `ddeeef5f`, Needs design `9a9af2ff`, Ready `94ce2a91`, In progress `f12f8756`, Done `453e6fc8`.
+Status option ids: Bug `c6feaf57`, Idea `cb0c2031`, Needs design `d9f253d1`, Ready `3051b1c8`, In progress `22801f07`, Done `ad9526a2`.
 
 After creating them, report back the titles, the URLs `gh` printed, and the stage each was filed under, one line each, so the user can click through.
