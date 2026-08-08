@@ -530,6 +530,13 @@ export interface OperationParameter<T = number | string> {
    * why a machine can usefully carry one of each.
    */
   readonly presentation?: "slide" | "rotate";
+  /**
+   * How many detents a shifted press jumps. Declare it on a scale whose
+   * marks are fine enough that walking them one at a time is a chore —
+   * the miter saw's inch marks, where shift moves a whole foot. Left off,
+   * shift steps one detent like a bare press.
+   */
+  readonly coarseStep?: number;
 }
 
 export type ParameterValues = Record<string, number | string>;

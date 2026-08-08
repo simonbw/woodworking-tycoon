@@ -12,17 +12,28 @@ import { formatLength } from "../../utils/formatNumber";
 export const SAW_ANGLE_STOPS = [-45, -30, -22.5, 0, 22.5, 30, 45] as const;
 
 /**
- * Where along the stock the blade can land, in inches from the board's
- * left end — you slide the board under the blade to a mark, you don't
- * dial in "how long the kept piece is". The detents sit every half foot:
- * fine enough for short work (a birdhouse's 6" sides come off one 12"
- * crosscut, halved), coarse enough that the scale still reads at a
- * glance. A cut needs wood on both sides of the line, so the marks stop
- * short of the longest board.
+ * The half-foot marks of the miter box the hand saw stands in — coarse
+ * enough that a dragged pointer snaps to one cleanly (see
+ * bench-work/tool-work.ts). The powered saw reads a finer rule; see
+ * MITER_CUT_POSITIONS.
  */
 export const CUT_POSITIONS = Array.from(
   { length: 15 },
   (_, i) => (i + 1) * 6,
+) as ReadonlyArray<number>;
+
+/**
+ * Where along the stock the powered saw's blade can land, in inches from
+ * the board's left end — you slide the board under the blade to a mark,
+ * you don't dial in "how long the kept piece is". The marks are an inch
+ * apart, the way a tape reads: Z and X walk them one inch at a time, and
+ * shift jumps a whole foot (the parameter's coarseStep). A cut needs
+ * wood on both sides of the line, so the marks stop an inch short of the
+ * longest board.
+ */
+export const MITER_CUT_POSITIONS = Array.from(
+  { length: 95 },
+  (_, i) => i + 1,
 ) as ReadonlyArray<number>;
 
 export const miterSaw: MachineType = {
@@ -73,11 +84,14 @@ export const miterSaw: MachineType = {
         {
           id: "cutPosition",
           name: "Cut Line",
-          values: CUT_POSITIONS,
+          values: MITER_CUT_POSITIONS,
           // Fresh out of the crate the stock sits mid-table
           defaultValue: 48,
           unit: '"',
           presentation: "slide",
+          // Shift slides the board a foot at a time — 95 inch marks are
+          // too many to walk one press at a time.
+          coarseStep: 12,
         },
         {
           id: "angle",

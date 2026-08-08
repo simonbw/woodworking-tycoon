@@ -95,12 +95,17 @@ async function setAngle(page: any, target: number) {
   throw new Error(`could not swing the head to ${target}`);
 }
 
-/** Z/X — slide the miter saw's cut line to a mark. */
+/**
+ * Z/X — slide the miter saw's cut line to a mark: the marks are an inch
+ * apart, so shift (a foot a press) covers the distance and bare presses
+ * close the last few inches.
+ */
 async function setCutLine(page: any, target: number) {
-  for (let i = 0; i < 16; i++) {
-    const current = await sawSetting(page, "cutPosition");
+  for (let i = 0; i < 32; i++) {
+    const current = Number(await sawSetting(page, "cutPosition"));
     if (current === target) return;
-    await pressKey(page, Number(current) > target ? "z" : "x");
+    const key = current > target ? "z" : "x";
+    await pressKey(page, Math.abs(current - target) >= 12 ? `Shift+${key}` : key);
   }
   throw new Error(`could not slide the cut line to ${target}`);
 }
@@ -470,10 +475,24 @@ test.describe("Milling", () => {
       await expect(sheet).toHaveCount(0);
     });
 
-    await test.step("first cut: 45° at the 5' mark makes a 5' and a 3' piece", async () => {
-      // Board on the table first — the settings move the board that's on
-      // the saw, not a ghost of one you're holding
+    await test.step("the cut line steps an inch, or a foot with shift", async () => {
+      // Board on the table first: the keys slide what's on the saw, and
+      // the marks they stop at are the ones that board can reach.
       await setStockDown(page);
+      await setCutLine(page, 24);
+      await pressKey(page, "x");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(25);
+      await pressKey(page, "z");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(24);
+      await pressKey(page, "Shift+x");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(36);
+      await pressKey(page, "Shift+z");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(24);
+    });
+
+    await test.step("first cut: 45° at the 5' mark makes a 5' and a 3' piece", async () => {
+      // The board is already on the table from the step above — the
+      // settings move what's on the saw, not a ghost of what's in hand
       await setAngle(page, 45);
       await setCutLine(page, 60);
       await runWhileHolding(
