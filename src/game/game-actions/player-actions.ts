@@ -708,17 +708,50 @@ export function operateMachineAction(
         : null;
     if (blueprint) {
       const seatedBySlot = seatedAssemblyPieces(machine, blueprint);
+      // Every seated board is claimed before any unseated slot goes
+      // looking, in two passes: one pass in slot order would let an
+      // unseated slot's first match take the very board a *later* slot
+      // has seated, and that slot then finds nothing and the build
+      // refuses with stock lying right there on its outline.
+      const picked = new Map<string, MaterialInstance>();
+      const take = (slotId: string, index: number): boolean => {
+        if (index === -1) {
+          return false;
+        }
+        picked.set(slotId, inventory[index]);
+        inventory.splice(index, 1);
+        return true;
+      };
       for (const slot of blueprint.slots) {
         const seatedId = seatedBySlot.get(slot.id)?.id;
-        const index = seatedId
-          ? inventory.findIndex((m) => m.id === seatedId)
-          : inventory.findIndex((m) => materialMeetsInput(m, slot.requirement));
-        if (index === -1) {
+        if (seatedId === undefined) {
+          continue;
+        }
+        if (
+          !take(
+            slot.id,
+            inventory.findIndex((m) => m.id === seatedId),
+          )
+        ) {
           console.warn("Tried to perform operation without required materials");
           return gameState;
         }
-        materialsToConsume.push(inventory[index]);
-        inventory.splice(index, 1);
+      }
+      for (const slot of blueprint.slots) {
+        if (picked.has(slot.id)) {
+          continue;
+        }
+        const index = inventory.findIndex((m) =>
+          materialMeetsInput(m, slot.requirement),
+        );
+        if (!take(slot.id, index)) {
+          console.warn("Tried to perform operation without required materials");
+          return gameState;
+        }
+      }
+      // Slot order, so the bill of materials lines up with the blueprint.
+      for (const slot of blueprint.slots) {
+        materialsToConsume.push(picked.get(slot.id)!);
       }
     } else {
       // Validate that we have all required materials
