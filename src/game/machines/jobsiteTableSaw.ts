@@ -45,7 +45,8 @@ export const jobsiteTableSaw: MachineType = {
   outputPosition: [0, -2],
   cost: 300,
   materialStorage: 0,
-  // One jig at a time — the crosscut sled is the first
+  // Room for two of the shop-built jigs at once — there are more sleds and
+  // fences to build than the saw can wear, so which two are mounted matters
   toolSlots: 2,
   // One board on the table at a time. What's on it decides the cut — an
   // edge-jointed board rips against the fence, a rough one rides the

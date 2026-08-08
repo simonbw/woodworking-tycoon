@@ -36,7 +36,7 @@ import { useMachineActivity } from "../shop-view/useMachineActivity";
  * state on one line, then a key chip per verb that applies right now —
  * the same weight as the player's own "[F] put down" hint, nothing
  * card-like. Buttons, scales, and racks live on the station sheet
- * (Enter); the in-world sprite already shows settings physically (the
+ * (Tab); the in-world sprite already shows settings physically (the
  * fence rides its rail, the miter head swings).
  */
 export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
