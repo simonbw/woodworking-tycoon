@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "./bench-mounting";
 import { machineDustMultiplier } from "./Dust";
 import { GameState } from "./GameState";
 import { heldTool } from "./HeldTool";
@@ -109,7 +110,7 @@ function machineSpendsTime(gameState: GameState, machine: Machine): boolean {
     operation,
     gameState.progression,
     machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-    machine.workSpeed,
+    stationWorkSpeed(machine, gameState),
   );
   const { phaseIndex, ticksRemaining } = machineState.operationProgress;
   const phase =

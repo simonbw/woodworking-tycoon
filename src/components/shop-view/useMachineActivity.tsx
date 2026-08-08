@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "../../game/bench-mounting";
 import { machineDustMultiplier } from "../../game/Dust";
 import { Machine, machineKey } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
@@ -27,7 +28,7 @@ export function useMachineActivity(machine: Machine) {
         operation,
         gameState.progression,
         machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        machine.workSpeed,
+        stationWorkSpeed(machine, gameState),
       )
     : [];
   // Same rule the tick uses: standing there isn't enough, you have to be

@@ -296,6 +296,10 @@ test.describe("Milling", () => {
       await page.waitForTimeout(30);
       // The machine wears its state and its keys — there is no panel
       await expect(page.getByText("Jointer · off")).toBeVisible();
+      // A benchtop machine on the shop floor says why its cuts are slow
+      await expect(
+        page.getByText(/On the floor: work here takes twice as long/),
+      ).toBeVisible();
       // Switched off it takes nothing: no chip offering to place the board
       await expect(page.getByText(/place Walnut 4\/4/)).toHaveCount(0);
       await switchOn(page);

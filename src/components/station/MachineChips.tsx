@@ -11,6 +11,7 @@ import {
   OperationParameter,
   operationParameters,
 } from "../../game/Machine";
+import { isBenchtopOnFloor } from "../../game/bench-mounting";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import { heldTool } from "../../game/HeldTool";
 import {
@@ -126,6 +127,11 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     gameState.player.carriedMachine == null &&
     canPickUpMachine(gameState, machine.state);
 
+  // A benchtop machine sitting on the ground works, badly — say why the
+  // cut is slow right where the player is standing to make it (see
+  // bench-mounting.ts).
+  const onFloor = isBenchtopOnFloor(machine, gameState);
+
   // What the station says it's doing: its own word for the job when it has
   // one ("emptying" at the garbage can), the generic motor otherwise.
   const workingWord =
@@ -149,6 +155,11 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
         {machine.type.name}
         {status && <> · {status}</>}
       </HintRow>
+      {onFloor && (
+        <HintRow className="max-w-56 whitespace-normal normal-case italic tracking-normal text-store-orange/90">
+          On the floor: work here takes twice as long. Set it on a worktable.
+        </HintRow>
+      )}
       {interactHere && (
         <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
           {interactLabel(interactHere)}

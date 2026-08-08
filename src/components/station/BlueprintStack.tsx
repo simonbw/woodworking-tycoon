@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { stationWorkSpeed } from "../../game/bench-mounting";
 import { clampsFor, clampsFree } from "../../game/Clamp";
 import { consumableLabel } from "../../game/Consumable";
 import {
@@ -96,7 +97,7 @@ export const BlueprintSheet: React.FC<{
                     operation,
                     gameState.progression,
                     dustMultiplier,
-                    machine.workSpeed,
+                    stationWorkSpeed(machine, gameState),
                   ),
                 )}
               </span>

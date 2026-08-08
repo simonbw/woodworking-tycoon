@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "../bench-mounting";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
@@ -161,7 +162,7 @@ export function machineTickPass(): GameAction {
         selectedOperation,
         gameState.progression,
         dustMultiplier,
-        machine.workSpeed,
+        stationWorkSpeed(machine, gameState),
       );
       // What "attended" takes — presence, grip, power — lives in
       // operationAttendanceSatisfied, shared with the time-flow model so
