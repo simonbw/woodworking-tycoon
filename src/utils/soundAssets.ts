@@ -77,6 +77,8 @@ export const SOUND_ASSET_FILES: readonly string[] = [
  *   reference material for the planned real-recording comparison
  *   (issue #114).
  * - Clips recorded for UI cues that haven't been wired to anything yet.
+ * - Long beds generated ahead of the systems that would play them, plus
+ *   the alternate encode of a track that ships in another format.
  *
  * Wire one up and the test will insist it move into the manifest.
  */
@@ -91,6 +93,15 @@ export const SOUND_FILES_NOT_PRELOADED: readonly string[] = [
   "/sounds/table-saw-rip.ogg",
   // Recorded but not yet wired to a cue
   "/sounds/ui-error.flac",
+  // Generated ahead of the system that would play them: an ambient bed for
+  // the garage, and a rolling loop for the truck's driving legs. Neither has
+  // a player yet — these are streamed-length files, so whatever plays them
+  // wants `musicTrack.ts`'s <audio> path, not the decode cache in `sfx.ts`.
+  "/sounds/garage-ambient.mp3",
+  "/sounds/truck-driving-loop.mp3",
+  // The hold music's mp3 encode. `HOLD_MUSIC` streams the .ogg; this is the
+  // same recording kept for browsers that would want the other container.
+  "/sounds/hold-music.mp3",
 ];
 
 /**
