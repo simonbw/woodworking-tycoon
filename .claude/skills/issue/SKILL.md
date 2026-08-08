@@ -24,16 +24,15 @@ Create each issue with the `gh` CLI in this repo:
 gh issue create --title "<concise title>" --body "<body>"
 ```
 
-- Do not add labels, assignees, or milestones unless the user asks. The one label in active use is `humans-only` (work an agent can't do — recording audio, making art); apply it when that's clearly the case.
+- Do not add labels, assignees, or milestones unless the user asks. Two labels are in active use and should be applied when they clearly fit: `bug` (a defect) and `humans-only` (work an agent can't do — recording audio, making art).
 
 ## File it into the project
 
 Every issue also goes on the **Woodworking Tycoon** project board (project 2, owner `simonbw`) with its **Status** set (the built-in Status field carries the stage taxonomy):
 
-- **Bug** — a defect; fixing it needs no design decisions
 - **Idea** — kept alive for future consideration; not yet decided it should happen
 - **Needs design** — direction is committed, but shape decisions remain before anyone can build
-- **Ready** — scoped and decided; could be picked up today
+- **Ready** — scoped and decided; could be picked up today (bugs go here, with the `bug` label)
 
 Pick the stage from what the user said and how the body reads. When torn between Idea and Needs design, ask yourself whether the user has committed to wanting it; between Needs design and Ready, whether an agent could start without making judgment calls the user would want to weigh in on.
 
@@ -43,6 +42,6 @@ gh project item-edit --id "$item" --project-id PVT_kwHOAFakNs4Bfydi \
   --field-id PVTSSF_lAHOAFakNs4BfydizhaC1jo --single-select-option-id "<option id>"
 ```
 
-Status option ids: Bug `c6feaf57`, Idea `cb0c2031`, Needs design `d9f253d1`, Ready `3051b1c8`, In progress `22801f07`, Done `ad9526a2`.
+Status option ids: Idea `d13c8298`, Needs design `8b96ddb8`, Ready `d0cb56e7`, In progress `69e6bab1`, Done `79163d63`.
 
 After creating them, report back the titles, the URLs `gh` printed, and the stage each was filed under, one line each, so the user can click through.

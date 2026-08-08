@@ -147,10 +147,11 @@ tests/
 
 Designs for unbuilt work live in GitHub issues, not in `docs/` — the docs describe systems that exist, or provide guidance for creating more content. Within that: **docs describe systems, never content.** A doc may explain what a tool is, how the milling axes work, and the rules for adding a machine — it must not enumerate the tools, quote prices, or restate quantities the registries declare, because those inventories rot (the code is their single source of truth). A system with one owning module doesn't get a doc at all: its explanation belongs in that module's header comment (see `time-flow.ts`, `blueprint.ts`, `material-helpers.ts`); a doc earns its place only when a system spans many files with no single home. Deliberate design decisions ("stays procedural", "out of scope on purpose") stay in docs/code comments, not issues — they're there to stop relitigation.
 
-Every open issue lives on the **Woodworking Tycoon** project board (`gh project item-list 2 --owner simonbw`) with its built-in **Status** field carrying the stage taxonomy: **Bug** (a defect, no design decisions needed), **Idea** (kept alive for future consideration — needs thinking, not implementing; don't pick these up as build tasks), **Needs design** (direction committed, shape decisions remain), **Ready** (scoped and decided, could be picked up today), plus In progress/Done. The `/issue` skill files new issues onto the board with a stage.
+Every open issue lives on the **Woodworking Tycoon** project board (`gh project item-list 2 --owner simonbw`) with its built-in **Status** field carrying the stage taxonomy: **Idea** (kept alive for future consideration — needs thinking, not implementing; don't pick these up as build tasks), **Needs design** (direction committed, shape decisions remain), **Ready** (scoped and decided, could be picked up today), plus In progress/Done. The `/issue` skill files new issues onto the board with a stage.
 
-One label to know when reading the issue tracker:
+Labels to know when reading the issue tracker:
 
+- **`bug`**: a defect; these sit in Ready, since fixing needs no design decisions.
 - **`humans-only`**: work that requires a human (recording real audio, creating art assets) and cannot be done by an agent.
 
 ## Game Design Notes
