@@ -1,6 +1,7 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { Board } from "../../game/Materials";
+import { clipArcToRect } from "../../utils/arcClipping";
 import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
@@ -13,6 +14,10 @@ import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
  * waits under a face-down top. Drawn darker than the face (end grain
  * drinks light) with a few growth arcs seeded off the piece's id, so
  * standing a board up doesn't reroll its character.
+ *
+ * The arcs are rings around a pith sitting off the face, the way a flatsawn
+ * board's end reads, and they are clipped to the cut face — a ring only
+ * exists where the saw exposed it.
  */
 export const BoardOnEndSprite: React.FC<
   {
@@ -32,6 +37,7 @@ export const BoardOnEndSprite: React.FC<
       const face = colorBySpecies[species].primary;
       const endGrain = colorToNumber(mixColors(face, 0x000000, 0.25));
       const ring = colorToNumber(mixColors(face, 0x000000, 0.45));
+      const cut = { x: -w / 2, y: -h / 2, width: w, height: h };
 
       // shadow: the standing piece throws a slightly wider foot
       for (const spread of [1, 2]) {
@@ -47,13 +53,31 @@ export const BoardOnEndSprite: React.FC<
       g.rect(-w / 2, -h / 2, w, h);
       g.fill(endGrain);
 
-      // growth arcs sweeping in from one corner, like a real end cut
-      const cx = -w / 2 + rand() * w;
-      const cy = h / 2 + rand() * h * 0.5;
-      for (let i = 1; i <= 3; i++) {
-        const radius = (Math.max(w, h) * i) / 3 + rand() * 2;
-        g.arc(cx, cy, radius, Math.PI, Math.PI * 2);
-        g.stroke({ color: ring, width: 1, alpha: 0.5 });
+      // Growth rings around a pith below the face, spaced so each one actually
+      // crosses the cut, then trimmed to the piece.
+      const pithX = (rand() - 0.5) * w * 2;
+      const pithY = h / 2 + w * (0.6 + rand() * 1.0);
+      const ringCount = Math.max(2, Math.min(5, Math.round(w / 6)));
+      for (let i = 0; i < ringCount; i++) {
+        const t = (i + 0.5 + (rand() - 0.5) * 0.5) / ringCount;
+        const crossingX = -w / 2 + t * w;
+        const radius = Math.hypot(crossingX - pithX, pithY);
+        const spans = clipArcToRect(
+          pithX,
+          pithY,
+          radius,
+          Math.PI,
+          Math.PI * 2,
+          cut,
+        );
+        for (const [from, to] of spans) {
+          g.moveTo(
+            pithX + radius * Math.cos(from),
+            pithY + radius * Math.sin(from),
+          );
+          g.arc(pithX, pithY, radius, from, to);
+          g.stroke({ color: ring, width: 1, alpha: 0.5 });
+        }
       }
 
       // a hairline rim so the block reads as a cut face, not a fill
