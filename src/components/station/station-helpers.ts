@@ -29,7 +29,7 @@ export function loadedStockDimension(
 
 /**
  * Whether this station has a sheet worth opening. Benches and containers
- * always do; a direct-feed machine only does if there's a tool slot to fit
+ * always do; a direct-feed machine only does if there is an accessory slot to fit
  * something into, since everything else about running it lives on the
  * floor. Machines with no sheet leave the key unbound rather than opening
  * an empty page.

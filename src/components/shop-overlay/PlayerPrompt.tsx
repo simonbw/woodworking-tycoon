@@ -259,11 +259,9 @@ const PickupChip: React.FC<{
             next piece
           </HintRow>
         )}
-        {piles.length > 1 && (
-          <HintRow keys={<ShortcutKeys shortcut="inspect-floor" />}>
-            see all {piles.length}
-          </HintRow>
-        )}
+        {/* Right-clicking the pile lays all of it out on a card, but this
+            cluster is the keyboard's hints — the mouse verb is taught in
+            the `?` sheet, not on a cap floating over the floor. */}
       </HintList>
     </PointAnchored>
   );

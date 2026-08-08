@@ -1,6 +1,6 @@
 import React from "react";
 import { Machine } from "../../game/Machine";
-import { MachineManualLink, ToolRack } from "./racks";
+import { MachineManualLink, AccessoryRack } from "./racks";
 
 /**
  * All that's left of a direct-feed machine's paperwork: the rack you fit a
@@ -12,11 +12,11 @@ import { MachineManualLink, ToolRack } from "./racks";
  * naming each one. Only fitting tooling is left, and that's a thing you do
  * once and forget, so it's fine behind a key.
  *
- * Machines with no tool slots get no sheet at all.
+ * Machines with no accessory slots get no sheet at all.
  */
-export const ToolSheet: React.FC<{ machine: Machine }> = ({ machine }) => (
+export const AccessorySheet: React.FC<{ machine: Machine }> = ({ machine }) => (
   <>
-    <ToolRack machine={machine} />
+    <AccessoryRack machine={machine} />
     <p className="text-xs italic text-ink-fade">{machine.type.description}</p>
     <MachineManualLink machine={machine} />
   </>

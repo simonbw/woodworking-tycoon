@@ -446,7 +446,7 @@ test.describe("Milling", () => {
       // it: the cut line slides on Z/X, the head swings on R
       await expect(page.getByText(/cut line:/)).toBeVisible();
       await expect(page.getByText(/angle:/)).toBeVisible();
-      // The saw's sheet is nothing but a tool rack now — no scales, no
+      // The saw's sheet is nothing but an accessory rack now — no scales, no
       // verb button, no mode picker. Everything to run it is a key.
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
@@ -454,7 +454,7 @@ test.describe("Milling", () => {
       await page.keyboard.press("Tab");
       const sheet = page.getByTestId("station-sheet");
       await sheet.waitFor({ state: "visible" });
-      await expect(sheet.getByText(/Tools ·/)).toBeVisible();
+      await expect(sheet.getByText(/Accessories ·/)).toBeVisible();
       await expect(sheet.getByRole("button", { name: "Cut" })).toHaveCount(0);
       await expect(
         sheet.getByRole("radiogroup", { name: "Angle" }),

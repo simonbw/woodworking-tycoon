@@ -41,7 +41,10 @@ mounting.
   store's Tool Wall it comes home in the truck's bed, is carried in the
   arms (one hand slot), set down as a floor pile, or parked on a station
   shelf. There is no abstract tool storage. At a bench, mounting and
-  unmounting happen on the tool rail in the bench view.
+  unmounting happen on the tool rail in the bench view; on a machine or a
+  container they happen on the station sheet's **Accessories** rack — the
+  player-facing name for tool slots everywhere except a bench, where what
+  hangs on the rail is a hand tool.
 - A tool that does interactive hand work declares the script on its
   operations (`Operation.interaction` — see `docs/bench-work.md`). Tool
   tiers differ by interaction feel, not output: the sanding block and
