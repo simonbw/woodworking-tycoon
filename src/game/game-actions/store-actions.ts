@@ -122,7 +122,8 @@ export function buyMachineAction(
       },
     };
 
-    // A first purchase can trip progression milestones (see UNLOCK_CONDITIONS)
+    // Buying gear can reveal manual articles that key on what the shop owns
+    // (see MANUAL_ARTICLES) — the milestone check is where that lands.
     return checkProgressionMilestonesAction()(updatedState);
   };
 }

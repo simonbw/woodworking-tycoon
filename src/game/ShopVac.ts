@@ -19,7 +19,7 @@ export interface ShopVacState {
 }
 
 export const SHOP_VAC_COST = 350;
-/** ~5 full cells' worth before a trip to the garbage. */
+/** Dozens of cells filled to DUST_MAX_PER_CELL before a trip to the garbage. */
 export const SHOP_VAC_CANISTER_CAPACITY = 500;
 /** Dragging it over dust cleans a trickle underfoot, every tick. */
 export const SHOP_VAC_PASSIVE_RATE = 6;
