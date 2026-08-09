@@ -13,7 +13,7 @@ import { useApplyGameAction, useGameState } from "./useGameState";
  * floor, reading, browsing a store's aisles. About five times real
  * life, so a full day of pure idling takes around two hours: thinking
  * is nearly free, and deliberately passing time is what the wait key
- * is for (see docs/time-and-days.md).
+ * is for (see src/game/time-flow.ts).
  */
 const IDLE_TICKS_PER_SECOND = 5 / 60;
 

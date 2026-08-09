@@ -5,7 +5,7 @@ import { ownsTool } from "./progression-helpers";
 import { hasSkill } from "./skill-helpers";
 
 /**
- * The guided opening (see docs/tutorial.md). One instruction at a time,
+ * The guided opening. One instruction at a time,
  * derived from the shop rather than scripted: the current step is the
  * first one whose `satisfied` predicate is still false, and
  * `advanceTutorialStep` walks the index forward inside the milestone pass.
@@ -24,6 +24,10 @@ import { hasSkill } from "./skill-helpers";
  * The prose lives in TutorialCard, not here, so instructions can name
  * their keys through the shortcut registry instead of hard-coding glyphs.
  * This file owns only ids, targets, and predicates.
+ *
+ * It stops deliberately at the first learned skill — it does not walk
+ * the player to commission 2; the reputation gates pace that. Skip is
+ * one flag (`tutorialDismissed`), always offered, never punished.
  */
 
 export const TUTORIAL_STEP_IDS = [

@@ -4,11 +4,11 @@ import { animated, useSpring } from "react-spring";
 import { Machine, operationParameters } from "../../game/Machine";
 import {
   BOARD_DIMENSIONS,
+  DustSpecies,
   MaterialInstance,
-  panelSpecies,
   panelWidth,
-  Species,
 } from "../../game/Materials";
+import { materialDustSpecies } from "../../game/material-helpers";
 import { isBoard } from "../../game/board-helpers";
 import { stockOrientation } from "../../game/machine-helpers";
 import { isPanel } from "../../game/panel-helpers";
@@ -40,10 +40,10 @@ function stockWidth(material: MaterialInstance): number {
   return 8;
 }
 
-function stockSpecies(material: MaterialInstance): Species {
-  if (isBoard(material)) return material.species;
-  if (isPanel(material)) return panelSpecies(material)[0];
-  return "pine";
+/** What the spray off this stock is colored by — a sheet's chips are the
+ * sheet's own pseudo-species, not a wood. */
+function stockSpecies(material: MaterialInstance): DustSpecies {
+  return materialDustSpecies(material)[0] ?? "pine";
 }
 
 // Sled plywood and hardware, in the sprites' brown palette

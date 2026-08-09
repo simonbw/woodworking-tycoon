@@ -1,4 +1,4 @@
-import { SheetGoodKind, Species } from "../../game/Materials";
+import { DustSpecies, SheetGoodKind, Species } from "../../game/Materials";
 import { colors } from "../../utils/colors";
 
 export const colorBySpecies: Record<
@@ -14,6 +14,24 @@ export const colorBySpecies: Record<
   poplar: { primary: "#E5DFAE", secondary: "#C3BD85" },
   walnut: { primary: "#5F4530", secondary: "#483622" },
   purpleHeart: { primary: "#885368", secondary: "#6D4354" },
+};
+
+/**
+ * Dust colors, species and sheet pseudo-species alike (see
+ * docs/dust-and-cleaning.md). The sheet entries are deliberately nastier
+ * than the sheets themselves: plywood sheds a gray-tan gluey chip, MDF a
+ * dull beige powder that gets everywhere, the chip boards a dirty
+ * resinous grit.
+ */
+export const dustColorBySpecies: Record<
+  DustSpecies,
+  { primary: string; secondary: string }
+> = {
+  ...colorBySpecies,
+  plywood: { primary: "#C3B69A", secondary: "#9C8F74" },
+  mdf: { primary: "#C6B49B", secondary: "#9B8A72" },
+  osb: { primary: "#B79C6C", secondary: "#8C7449" },
+  particleBoard: { primary: "#BFB4A6", secondary: "#958B7E" },
 };
 
 export const colorBySheetGoodKind: Record<

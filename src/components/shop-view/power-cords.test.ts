@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { Machine, MACHINE_TYPES, MachineState } from "../../game/Machine";
-import { DOOR_HALF_WIDTH, ShopInfo } from "../../game/ShopInfo";
+import { doorCenterX, DOOR_WIDTH, ShopInfo } from "../../game/ShopInfo";
 import {
   cordAnchor,
   cordSlack,
@@ -60,12 +60,12 @@ describe("outletPositions", () => {
   });
 
   it("keeps the garage door strip clear", () => {
-    const doorCenter = shop.entrancePosition[0] + 0.5;
+    const doorCenter = doorCenterX(shop);
     for (const outlet of outletPositions(shop)) {
       if (outlet.side !== "bottom") continue;
-      // The opening spans doorCenter ± (DOOR_HALF_WIDTH + 0.5)
+      // The opening spans doorCenter ± (DOOR_WIDTH / 2 + a half-cell jamb)
       assert.ok(
-        Math.abs(outlet.position[0] - doorCenter) > DOOR_HALF_WIDTH + 0.5,
+        Math.abs(outlet.position[0] - doorCenter) > DOOR_WIDTH / 2 + 0.5,
         `outlet at x=${outlet.position[0]} is inside the door opening`,
       );
     }

@@ -8,6 +8,7 @@ import {
   getMaterialName,
   getMaterialState,
   makeMaterial,
+  materialDustSpecies,
   materialMeetsInput,
 } from "./material-helpers";
 import { FinishedProduct, REAL_WOOD_SPECIES, SheetGood } from "./Materials";
@@ -363,5 +364,48 @@ describe("describeMaterialRequirement for sheets", () => {
       }),
       "Plywood (Shop Plywood or MDF, any thickness, width 4', length 4')",
     );
+  });
+});
+
+describe("materialDustSpecies", () => {
+  const sheet = (kind: SheetGood["kind"]) =>
+    makeMaterial<SheetGood>({
+      type: "plywood",
+      kind,
+      length: 48,
+      width: 48,
+      thickness: 2,
+    });
+
+  it("reports a board's own species", () => {
+    assert.deepStrictEqual(materialDustSpecies(board("walnut", 24, 2, 4)), [
+      "walnut",
+    ]);
+  });
+
+  it("reports every species in a glued-up panel, once each", () => {
+    const twoTone = panel(
+      [
+        { species: "maple", width: 2 },
+        { species: "walnut", width: 2 },
+        { species: "maple", width: 2 },
+      ],
+      24,
+      4,
+    );
+    assert.deepStrictEqual(materialDustSpecies(twoTone), ["maple", "walnut"]);
+  });
+
+  it("gives the three plywood grades one shared pseudo-species", () => {
+    assert.deepStrictEqual(materialDustSpecies(sheet("plywoodA")), ["plywood"]);
+    assert.deepStrictEqual(materialDustSpecies(sheet("plywoodC")), ["plywood"]);
+  });
+
+  it("gives each chip-board kind its own pseudo-species", () => {
+    assert.deepStrictEqual(materialDustSpecies(sheet("mdf")), ["mdf"]);
+    assert.deepStrictEqual(materialDustSpecies(sheet("osb")), ["osb"]);
+    assert.deepStrictEqual(materialDustSpecies(sheet("particleBoard")), [
+      "particleBoard",
+    ]);
   });
 });

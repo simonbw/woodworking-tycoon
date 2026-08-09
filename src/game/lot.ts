@@ -1,5 +1,5 @@
 import { SolidBox } from "./player-motion";
-import { DOOR_HALF_WIDTH, ShopInfo } from "./ShopInfo";
+import { doorCenterX, DOOR_WIDTH, ShopInfo } from "./ShopInfo";
 import { Vector } from "./Vectors";
 
 /**
@@ -32,7 +32,7 @@ export const TRUCK_LENGTH = 202 / 12;
 /**
  * Gap between the outer wall face and the tailgate, in cells. Two cells
  * on purpose: the truck's body is wider than the corner clearances the
- * 7-ft door leaves, so this strip is the only way from the door to the
+ * 8-ft door leaves, so this strip is the only way from the door to the
  * grass beside the truck — and a 2-cell gap is exactly what counts as a
  * walkable aisle between machines (see PLAYER_RADIUS).
  */
@@ -48,7 +48,7 @@ export function truckParkedRect(shopInfo: ShopInfo): {
   min: Vector;
   max: Vector;
 } {
-  const centerX = shopInfo.entrancePosition[0] + 0.5;
+  const centerX = doorCenterX(shopInfo);
   const tailgateY = shopInfo.size[1] + WALL_THICKNESS_CELLS + TRUCK_PARK_GAP;
   return {
     min: [centerX - TRUCK_BODY_WIDTH / 2, tailgateY],
@@ -100,13 +100,25 @@ export function atTruckBed(shopInfo: ShopInfo, position: Vector): boolean {
   );
 }
 
-/** The cab is the far (street) end of the parked truck. */
-export const TRUCK_CAB_LENGTH = 4.5;
+/**
+ * Where the doors are, measured back from the front bumper in inches —
+ * the stretch of the truck you'd stand beside to climb in, not the hood.
+ * Taken off the art (see TruckSprite): 160 to 320 source pixels behind
+ * the nose, at the 0.36"/px the 600-px canvas maps to.
+ */
+export const TRUCK_DOOR_FRONT_OFFSET = 160 * 0.36;
+export const TRUCK_DOOR_BACK_OFFSET = 320 * 0.36;
 
-/** The cab's footprint: the nose end, a walk down the driveway. */
+/** The cab's footprint: the door band, a walk down the driveway. This is
+ * the zone standing "at the cab" is measured against, so it stops short
+ * of the hood at one end and the bed wall at the other. */
 export function truckCabRect(shopInfo: ShopInfo): { min: Vector; max: Vector } {
   const { min, max } = truckParkedRect(shopInfo);
-  return { min: [min[0], max[1] - TRUCK_CAB_LENGTH], max };
+  const nose = max[1];
+  return {
+    min: [min[0], nose - TRUCK_DOOR_BACK_OFFSET / 12],
+    max: [max[0], nose - TRUCK_DOOR_FRONT_OFFSET / 12],
+  };
 }
 
 /** Whether the player's cell is at the cab — close enough to climb in.
@@ -155,8 +167,8 @@ export function isOutdoors(shopInfo: ShopInfo, position: Vector): boolean {
 export function wallSolids(shopInfo: ShopInfo): SolidBox[] {
   const [w, h] = shopInfo.size;
   const t = WALL_THICKNESS_CELLS;
-  const doorLeft = shopInfo.entrancePosition[0] - DOOR_HALF_WIDTH;
-  const doorRight = shopInfo.entrancePosition[0] + DOOR_HALF_WIDTH + 1;
+  const doorLeft = doorCenterX(shopInfo) - DOOR_WIDTH / 2;
+  const doorRight = doorCenterX(shopInfo) + DOOR_WIDTH / 2;
   const box = (min: Vector, max: Vector): SolidBox => ({
     kind: "box",
     min,

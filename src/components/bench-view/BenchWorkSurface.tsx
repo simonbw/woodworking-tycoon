@@ -1,7 +1,7 @@
-import { Application } from "@pixi/react";
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -112,13 +112,7 @@ import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { StatusText } from "../station/StatusText";
 import { BenchPointerEvent, makeBenchPointerBus } from "./benchPointer";
-import {
-  benchZoomAnchor,
-  benchZoomProgress,
-  BenchZoomRig,
-  easeInOutCubic,
-  setLeanedBench,
-} from "./benchZoom";
+import { publishBenchScene, setLeanedBench } from "./benchSceneSlot";
 import { BenchScene, LoosePiece, NAIL_HIT_RADIUS_IN } from "./BenchScene";
 import { BenchSceneBackdrop } from "./BenchSceneBackdrop";
 import { BenchToolRail } from "./BenchToolRail";
@@ -149,6 +143,9 @@ function foleyClipFor(operationId: string): string | null {
 
 /** How long one pry takes, press to commit — the animation IS the pacing. */
 export const PRY_MS = 280;
+
+/** Mount counter feeding each surface's unique dive key. */
+let diveSequence = 0;
 
 /** One nail driven per strike, same clocking as the pry. */
 export const DRIVE_MS = 240;
@@ -194,7 +191,7 @@ const SIDE_CHROME_PX = 24;
  * on the scene too: bar clamps set out on the bench top, stock laid
  * across them edge to edge, glue down the seams, tighten — nothing
  * mounts over the scene anymore.
- * See docs/bench-minigames.md. The world does not stop while it's open,
+ * See docs/bench-work.md. The world does not stop while it's open,
  * but the body does: leaning over the bench pins the feet (ShopView
  * disables held movement via sheetIsBenchView) until Tab steps back.
  */
@@ -237,35 +234,19 @@ export const BenchWorkSurface: React.FC<{
   const { active, poke } = useActivityFlag();
 
   // ------------------------------------------------------------ the zoom
-  // Opening a bench leans the camera in rather than cutting (benchZoom):
-  // the scene starts drawn exactly over the bench's on-screen footprint
-  // in the shop view and eases up to the full framing; closing rolls it
-  // back. `settled` is the rig having landed on the bench framing — the
-  // hands only work once the lean-in is done, and never on the way out.
+  // Opening a bench leans the camera in rather than cutting: the scene
+  // starts drawn exactly over the bench's on-screen footprint in the
+  // shop view and eases up to the full framing; closing rolls it back.
+  // The dive itself runs in the shop's stage (BenchDiveLayer), fed
+  // through the slot published below. `settled` is the dive having
+  // landed on the bench framing — the hands only work once the lean-in
+  // is done, and never on the way out.
   const reduceMotion = useMemo(
     () =>
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
     [],
   );
   const [settled, setSettled] = useState(false);
-  // The scene canvas crossfades over the diving shop with its opacity
-  // driven straight off the shared ramp clock — imperative on a rAF
-  // loop, not a CSS transition, because a transition on a freshly
-  // inserted subtree has no painted start state to run from (and this
-  // way the fade tracks the dive exactly, reversals included).
-  const canvasFadeRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    let raf = 0;
-    const step = () => {
-      const el = canvasFadeRef.current;
-      if (el) {
-        el.style.opacity = String(easeInOutCubic(benchZoomProgress()));
-      }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, []);
   const onZoomRest = useCallback(
     (at: 0 | 1) => {
       if (at === 1) setSettled(true);
@@ -1143,10 +1124,14 @@ export const BenchWorkSurface: React.FC<{
       }
       const { xIn, yIn } = event;
       if (event.type === "down") {
-        // One pull per swing — clocked, not gated on the animation state,
-        // so a throttled timer can never eat a press
-        if (performance.now() - lastPryAt.current < PRY_MS) return;
+        // One pull (or one driven nail) per swing — clocked, not gated
+        // on the animation state, so a throttled timer can never eat a
+        // press. Guarded inside the swing branches only: a press that
+        // isn't a swing (a clamp set down right after the last pull)
+        // must never be eaten by the previous swing's clock.
+        const midSwing = performance.now() - lastPryAt.current < PRY_MS;
         if (hammerHeld && scenePallet) {
+          if (midSwing) return;
           const hit = nailAt(xIn, yIn);
           if (hit) beginPry(hit);
           return;
@@ -1154,7 +1139,7 @@ export const BenchWorkSurface: React.FC<{
         if (driveToolHeld && assemblyBlueprint) {
           // Driving only starts when the plan could actually run — the
           // last fastener spends the supplies and claims the stock
-          if (!canOperate) return;
+          if (!canOperate || midSwing) return;
           const hit = fastenerAt(
             assemblyBlueprint,
             productPlacement,
@@ -1562,6 +1547,12 @@ export const BenchWorkSurface: React.FC<{
     setLeanedBench(benchKey);
     return () => setLeanedBench(null);
   }, [interactive, benchKey]);
+  // This surface's dive identity, fixed at mount (the machine prop's
+  // object identity churns with game state; the mount doesn't) — see
+  // the publish below
+  const [diveKey] = useState(
+    () => `${++diveSequence}:${machineKey(openedBench.state)}`,
+  );
 
   const foleyClip =
     script && (script.kind === "stroke" || script.kind === "saw")
@@ -1570,6 +1561,40 @@ export const BenchWorkSurface: React.FC<{
   useWorkFoley(foleyClip, active);
 
   const surface = buildSurface();
+
+  // The scene's pixels render in the shop's one canvas: publish the
+  // subtree and the dive parameters every commit (closures carry all of
+  // this component's state and handlers), and clear the slot on unmount
+  // — which covers the abrupt path too, where StationSheet drops the
+  // surface without a pull-back (driving off, carrying the bench away).
+  // Invariant this leans on: pointerToInches maps client px through the
+  // wrapper's rect while the scene draws in canvas px of the shop
+  // canvas filling <main> — the same box only while both stay
+  // full-window.
+  const sceneElement = (
+    <>
+      {sceneFit && <BenchSceneBackdrop group={group} fit={sceneFit} />}
+      {surface?.node}
+    </>
+  );
+  useLayoutEffect(() => {
+    if (!stageSize || !frameFit) return;
+    publishBenchScene({
+      // Unique per mount, not just per bench: a new key is a new dive
+      // and a fresh scene container, and a surface remounted on the
+      // same bench between two ticks must still get its own dive (the
+      // clock would otherwise think it already landed and never fire
+      // onRest again).
+      benchKey: diveKey,
+      sceneElement,
+      frameFit,
+      group,
+      target: closing ? 0 : 1,
+      instant: reduceMotion,
+      onRest: onZoomRest,
+    });
+  });
+  useLayoutEffect(() => () => publishBenchScene(null), []);
 
   function buildSurface(): {
     fit: StageFit;
@@ -2013,42 +2038,9 @@ export const BenchWorkSurface: React.FC<{
         onPointerUp={handlePointer("up")}
         onPointerLeave={handlePointer("leave")}
       >
-        {stageSize && frameFit && (
-          // The scene crossfades over the diving shop across the whole
-          // ramp (opacity written per frame from the shared clock — see
-          // canvasFadeRef): the shop draws the same bench underneath, so
-          // the early frames are carried by the world swelling — no
-          // patch popping over it — and by the time the scene is opaque
-          // its edges are past the window. The pull-back runs the same
-          // fade backwards, handing the picture back to the zoomed shop
-          // as it recedes.
-          <div
-            ref={canvasFadeRef}
-            className="absolute inset-0"
-            style={{ opacity: 0 }}
-          >
-            <Application
-              width={stageSize.width}
-              height={stageSize.height}
-              backgroundAlpha={0}
-              antialias={true}
-              autoDensity={true}
-              resolution={Math.min(window.devicePixelRatio || 1, 2)}
-            >
-              <BenchZoomRig
-                anchor={benchZoomAnchor(group, frameFit)}
-                target={closing ? 0 : 1}
-                instant={reduceMotion}
-                onRest={onZoomRest}
-              >
-                {sceneFit && (
-                  <BenchSceneBackdrop group={group} fit={sceneFit} />
-                )}
-                {surface?.node}
-              </BenchZoomRig>
-            </Application>
-          </div>
-        )}
+        {/* The scene itself draws in the shop's canvas (published above,
+            rendered by BenchDiveLayer); this wrapper only measures the
+            stage and owns the pointer. */}
         {hoveredSlot && !heldTool && !draggingId && (
           // The outline's tag, trailing the pointer: what stock this
           // slot calls for, read before anything is picked up
@@ -2144,9 +2136,13 @@ export const BenchWorkSurface: React.FC<{
 
         {/* The glue-up's own supplies, off to the side of the rail: bar
           clamps off the rack and the glue bottle. No plan — set the
-          clamps out, lay stock across them, glue, tighten. */}
+          clamps out, lay stock across them, glue, tighten.
+
+          This sits directly under the top-bar chip, which draws above the
+          bench view, so it takes the shared below-top-bar offset like the
+          tool rail does. */}
         {isBench && glueOps.length > 0 && (
-          <div className="pointer-events-auto absolute right-4 top-16 z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
+          <div className="pointer-events-auto absolute right-4 below-top-bar z-10 flex items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg">
             <span className="mr-1 flex flex-col items-start font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
               <span>Glue-up</span>
               <span className="tabular-nums text-paper-manila/40">

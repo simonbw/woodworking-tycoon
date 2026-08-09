@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { playSound, preloadSound } from "../../utils/sfx";
+import { DeliveryTripOverlay } from "./DeliveryTripOverlay";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
 import { StoreTripOverlay } from "../store-page/StoreTripOverlay";
@@ -170,6 +171,7 @@ export const TripOverlays: React.FC = () => {
       <StoreTripOverlay />
       <LumberyardTripOverlay />
       <ScavengeTripOverlay />
+      <DeliveryTripOverlay />
       <SleepOverlay />
     </div>
   );

@@ -4,10 +4,11 @@ import { getAudioContext } from "./getAudioContext";
 import { MachineVoice, PHASE_RANK } from "./machineVoice";
 
 /**
- * Fully synthesized machine voices, no samples (see `docs/sound-design.md`,
- * "Pure-synth experiment"). One model, four machines: every powered machine
- * in the shop is a motor spinning a cutter, so they share three modules —
- * each a physical noise source, all driven by a single `rpm` scalar:
+ * Fully synthesized machine voices, no samples. One model, every powered
+ * machine: each is a motor spinning a cutter, so they share three
+ * modules — each a physical noise source, all driven by a single `rpm`
+ * scalar. (Real recordings are planned — issue #114 — at which point a
+ * machine can move to the sample player in `loopingSound.ts`.)
  *
  *  MOTOR — a universal motor at the machine's rotation speed. The low growl
  *    is a sawtooth at rotation frequency through a lowpass; the signature

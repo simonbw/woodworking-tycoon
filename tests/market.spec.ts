@@ -10,7 +10,6 @@ import {
   movePlayerToCab,
   openTruckMenu,
   openPhone,
-  pressTruckRow,
   startNewGame,
 } from "./navigation";
 
@@ -342,7 +341,12 @@ test.describe("Market, supplies, and sound", () => {
     await test.step("scavenging trip starts at the truck's cab", async () => {
       await movePlayerToCab(page);
       await openTruckMenu(page);
-      await pressTruckRow(page, "Scavenge for pallets");
+      // The whole row is the control — no "Go" button beside it — so the
+      // mouse takes the trip by clicking the row itself
+      await page
+        .getByTestId("truck-panel")
+        .getByRole("button", { name: "Go: Scavenge for pallets" })
+        .click();
       // Freeze the clock: a dev build's search legs are seconds long,
       // and each phase change below should happen on the spec's cue
       await page.evaluate(() => (window as any).__SET_PAUSED__(true));
@@ -360,7 +364,7 @@ test.describe("Market, supplies, and sound", () => {
         "true",
       );
       await expect(
-        page.getByTestId("scavenge-trip").getByTestId("day-phase"),
+        page.getByTestId("scavenge-trip").getByTestId("day-dial"),
       ).toBeVisible();
       await expect(page.getByTestId("scavenge-bed-count")).toContainText(
         /Nothing in the bed yet/,

@@ -129,9 +129,10 @@ export const SPECIES_LUMBER_PRICE: Record<Species, number> = {
 
 /**
  * Shelf price of sheet goods per board foot, same ladder ordering as the
- * species table (particle board cheapest, cabinet ply dearest): a 4'×4'
- * half-inch particle sheet near $10, a 4'×8' three-quarter cabinet-ply
- * sheet near $80 — big-box reality.
+ * species table (particle board cheapest, cabinet ply dearest): a 4'×8'
+ * half-inch particle sheet near $20, a 4'×8' three-quarter cabinet-ply
+ * sheet near $80 — big-box reality. This is full-sheet rate; smaller
+ * pieces pay `sheetSizePremium` on top.
  */
 export const SHEET_KIND_PRICE: Record<SheetGoodKind, number> = {
   particleBoard: 1.2,
@@ -202,9 +203,46 @@ export function getBoardBuyPrice(
   return roundToCents(basePrice * channelPriceMultiplier);
 }
 
-/** Store price for a sheet good — the same shelf-rate rule as lumber. */
+/** Face area of a full 4'×8' sheet, in square feet. */
+const FULL_SHEET_SQ_FT = 32;
+
+/**
+ * How steeply small pieces are surcharged. Cutting a sheet down is
+ * labor, and a store that has already done it charges for that: the
+ * shelf rate is quoted for a full sheet, and every smaller piece pays a
+ * premium on the ratio of its area to that.
+ *
+ * The exponent is picked so the rack's three sizes land on a ladder
+ * worth deciding between: the full 4×8 sheet at the base rate, the 2×4
+ * panel about 1.5× per square foot, the 2×2 project panel very nearly
+ * double. That gap is the circular saw's whole business case (see
+ * docs/sheet-goods.md).
+ *
+ * Total price still rises with size — a small piece is cheaper to buy
+ * and dearer per foot, which is exactly the trap.
+ */
+const SMALL_PIECE_PREMIUM_EXPONENT = 0.3;
+
+/**
+ * The per-board-foot premium a piece of this size pays over full-sheet
+ * rate. 1 for a full sheet or anything larger.
+ */
+export function sheetSizePremium(sheet: SheetGood): number {
+  const areaSqFt = (sheet.length / 12) * (sheet.width / 12);
+  if (areaSqFt <= 0 || areaSqFt >= FULL_SHEET_SQ_FT) {
+    return 1;
+  }
+  return (FULL_SHEET_SQ_FT / areaSqFt) ** SMALL_PIECE_PREMIUM_EXPONENT;
+}
+
+/** Store price for a sheet good — the lumber shelf rule, plus the
+ * small-piece premium. */
 export function getSheetBuyPrice(sheet: SheetGood): number {
-  return roundToCents(sheetBoardFeet(sheet) * SHEET_KIND_PRICE[sheet.kind]);
+  return roundToCents(
+    sheetBoardFeet(sheet) *
+      SHEET_KIND_PRICE[sheet.kind] *
+      sheetSizePremium(sheet),
+  );
 }
 
 function roundToCents(value: number): number {

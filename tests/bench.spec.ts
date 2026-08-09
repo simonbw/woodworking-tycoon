@@ -3,7 +3,7 @@ import { startNewGame } from "./navigation";
 
 /**
  * The bench view: the zoomed work surface where hand work is performed
- * with the pointer (see docs/bench-minigames.md). A genuinely new kind
+ * with the pointer (see docs/bench-work.md). A genuinely new kind
  * of interface — pointer-primary over a canvas — which is the bar for a
  * seventh spec file.
  *
@@ -106,10 +106,10 @@ test.describe("Bench view", () => {
       page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
 
     await test.step("Space won't run hand work — the chips send it to the bench", async () => {
-      // The chip row offers exactly one door — "use workbench" at the
-      // sheet key — and the operate key does nothing: the bench view is
-      // the only player path to hand work.
-      await expect(page.getByText("use workbench")).toBeVisible();
+      // The chip row offers exactly one door — "[Tab] use" at the sheet
+      // key — and the operate key does nothing: the bench view is the
+      // only player path to hand work.
+      await expect(page.getByTestId("machine-chips")).toContainText("use");
       await blur();
       await page.keyboard.down("Space");
       await page.waitForTimeout(400);

@@ -7,7 +7,7 @@
  * ever starts quietly demanding a thickness only a planer reaches, this is
  * what fails.
  *
- * `cutting-board.spec.ts` keeps the store, the lumberyard, and the tool rack;
+ * `cutting-board.spec.ts` keeps the store, the lumberyard, and the accessory rack;
  * the glue-sand-finish run that used to follow them lives here.
  */
 

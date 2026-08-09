@@ -17,6 +17,7 @@ import {
   PICTURE_FRAME_BLUEPRINT,
   PLANTER_BOX_BLUEPRINT,
   productBlueprintFor,
+  ProductBlueprint,
   RUSTIC_FRAME_BLUEPRINT,
   RUSTIC_SHELF_BLUEPRINT,
   STEP_STOOL_BLUEPRINT,
@@ -815,13 +816,35 @@ describe("equipment blueprints", () => {
   });
 
   it("nails every seam by the spacing rule — a row per long joint", () => {
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 8);
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x1.fasteners.length, 6);
     assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x2.fasteners.length, 10);
     assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable1x3.fasteners.length, 12);
-    // The doubled top is a lamination: a 3×3 grid holds the sheets flat
-    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 23);
-    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 10);
+    // The deep table decks in two panels side by side, not a lamination
+    assert.strictEqual(WORKTABLE_BLUEPRINTS.worktable2x2.fasteners.length, 12);
+    assert.strictEqual(STORAGE_RACK_BLUEPRINT.fasteners.length, 8);
     assert.strictEqual(TOOL_DRAWERS_BLUEPRINT.fasteners.length, 4);
+  });
+
+  it("decks each table in panels the store actually sells", () => {
+    // The tops are the machine's own footprint, so a bigger bench is a
+    // bigger buy — and the 4×4 island takes two panels, not one wide one
+    const topOf = (blueprint: ProductBlueprint) =>
+      blueprint.slots
+        .filter((slot) => slot.role === "top")
+        .map((slot) => [slot.part.lengthIn, slot.part.widthIn]);
+    assert.deepStrictEqual(topOf(WORKTABLE_BLUEPRINTS.worktable1x1), [
+      [24, 24],
+    ]);
+    assert.deepStrictEqual(topOf(WORKTABLE_BLUEPRINTS.worktable1x2), [
+      [24, 48],
+    ]);
+    assert.deepStrictEqual(topOf(WORKTABLE_BLUEPRINTS.worktable1x3), [
+      [24, 72],
+    ]);
+    assert.deepStrictEqual(topOf(WORKTABLE_BLUEPRINTS.worktable2x2), [
+      [48, 24],
+      [48, 24],
+    ]);
   });
 
   it("the material shelf has no fasteners at all — laying on is the build", () => {
@@ -837,9 +860,9 @@ describe("equipment blueprints", () => {
     ]) {
       assert.strictEqual(jig.fastenerConsumable, "screws");
     }
-    // The sleds' 3-foot runner and fence seams take two screws each;
+    // The sleds' runner and fence seams take a screw or two each;
     // the resaw fence's short braces take one
-    assert.strictEqual(CROSSCUT_SLED_BLUEPRINT.fasteners.length, 4);
+    assert.strictEqual(CROSSCUT_SLED_BLUEPRINT.fasteners.length, 3);
     assert.strictEqual(STRAIGHT_LINE_SLED_BLUEPRINT.fasteners.length, 4);
     assert.strictEqual(RESAW_FENCE_BLUEPRINT.fasteners.length, 2);
   });

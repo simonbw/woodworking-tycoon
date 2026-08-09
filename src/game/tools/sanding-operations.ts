@@ -9,7 +9,7 @@ import { makeMaterial } from "../material-helpers";
  * sanded) and never changes dimensions. Every sanding tool shares these
  * operations — only the brush differs, because better tools buy time,
  * not capability: sanding is stroke work in the bench view (see
- * docs/bench-minigames.md), and a better sander is a wider, faster brush,
+ * docs/bench-work.md), and a better sander is a wider, faster brush,
  * not a multiplier on a bar. `duration` survives as the legacy tick
  * budget (the ShopDriver's hands-free ceiling and old balance numbers).
  */

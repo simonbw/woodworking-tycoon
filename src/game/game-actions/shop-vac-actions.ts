@@ -5,6 +5,7 @@ import {
   DustMap,
   dustTotal,
   inBounds,
+  MutableSpeciesAmounts,
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
@@ -18,7 +19,7 @@ import {
   SHOP_VAC_PASSIVE_RATE,
 } from "../ShopVac";
 import { personCanWork } from "../Person";
-import { Species } from "../Materials";
+import { DustSpecies } from "../Materials";
 import { nextToGarbageCan, sweepSwath } from "./dust-actions";
 import { chebyshevDistance, Vector, vectorEquals } from "../Vectors";
 import { withXp } from "./skill-actions";
@@ -143,10 +144,10 @@ export function vacuumTickPass(): GameAction {
       const rate = vectorEquals(cell, gameState.player.position)
         ? VACUUM_UNDERFOOT_RATE
         : VACUUM_CONE_RATE;
-      const taken: Partial<Record<Species, number>> = {};
+      const taken: MutableSpeciesAmounts = {};
       for (const [species, amount] of Object.entries(amounts)) {
         if ((amount ?? 0) > 0) {
-          taken[species as Species] = (amount ?? 0) * rate;
+          taken[species as DustSpecies] = (amount ?? 0) * rate;
         }
       }
       if (dustTotal(taken) > 0) {
@@ -226,21 +227,21 @@ function moveDustToCanister(
   keepFraction: number,
 ): { dust: DustMap; moved: SpeciesAmounts } {
   const CLEAN_EPSILON = 0.05;
-  const dust: Record<string, Partial<Record<Species, number>>> = {
+  const dust: Record<string, MutableSpeciesAmounts> = {
     ...dustMap,
   };
-  const contents: Partial<Record<Species, number>> = { ...canister };
+  const contents: MutableSpeciesAmounts = { ...canister };
   for (const { key, amounts } of gathered) {
-    const cell: Partial<Record<Species, number>> = { ...dust[key] };
+    const cell: MutableSpeciesAmounts = { ...dust[key] };
     for (const [species, amount] of Object.entries(amounts)) {
       const moved = (amount ?? 0) * keepFraction;
-      contents[species as Species] =
-        (contents[species as Species] ?? 0) + moved;
-      const left = (cell[species as Species] ?? 0) - moved;
+      contents[species as DustSpecies] =
+        (contents[species as DustSpecies] ?? 0) + moved;
+      const left = (cell[species as DustSpecies] ?? 0) - moved;
       if (left > CLEAN_EPSILON) {
-        cell[species as Species] = left;
+        cell[species as DustSpecies] = left;
       } else {
-        delete cell[species as Species];
+        delete cell[species as DustSpecies];
       }
     }
     if (dustTotal(cell)) {

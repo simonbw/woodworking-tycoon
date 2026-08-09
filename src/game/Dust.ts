@@ -1,5 +1,5 @@
 import { Machine } from "./Machine";
-import { Species } from "./Materials";
+import { DustSpecies } from "./Materials";
 import { Vector, translateVec, vectorEquals } from "./Vectors";
 
 /**
@@ -7,7 +7,11 @@ import { Vector, translateVec, vectorEquals } from "./Vectors";
  * tracked per species so the floor's color mix survives a save/load —
  * planing walnut leaves walnut-dark shavings, not generic dust.
  */
-export type SpeciesAmounts = Readonly<Partial<Record<Species, number>>>;
+export type SpeciesAmounts = Readonly<Partial<Record<DustSpecies, number>>>;
+
+/** A SpeciesAmounts under construction — the shape every pass that adds
+ * to or drains a tally builds up before freezing it. */
+export type MutableSpeciesAmounts = Partial<Record<DustSpecies, number>>;
 
 /** Per-cell sawdust, keyed "x,y". Sparse: a missing key is a clean cell. */
 export type DustMap = Readonly<Record<string, SpeciesAmounts>>;
@@ -68,11 +72,11 @@ export function drainAmounts(
     return {};
   }
   const keep = 1 - amount / total;
-  const drained: Partial<Record<Species, number>> = {};
+  const drained: MutableSpeciesAmounts = {};
   for (const [species, value] of Object.entries(amounts)) {
     const left = (value ?? 0) * keep;
     if (left > 0.05) {
-      drained[species as Species] = left;
+      drained[species as DustSpecies] = left;
     }
   }
   return drained;
@@ -80,7 +84,7 @@ export function drainAmounts(
 
 export interface DustDeposit {
   readonly position: Vector;
-  readonly species: Species;
+  readonly species: DustSpecies;
   readonly amount: number;
 }
 
@@ -128,7 +132,7 @@ export function machineDustMultiplier(
   return 1 + dustSlowdown(average);
 }
 
-type MutableDustMap = Record<string, Partial<Record<Species, number>>>;
+type MutableDustMap = Record<string, MutableSpeciesAmounts>;
 
 /**
  * Apply deposits to the map, immutably. Cells clamp at DUST_MAX_PER_CELL;
@@ -148,7 +152,7 @@ export function depositDust(
   // Cells cloned for writing this pass, so shared cells are never mutated
   const cloned = new Set<string>();
 
-  const cellAt = (key: string): Partial<Record<Species, number>> => {
+  const cellAt = (key: string): MutableSpeciesAmounts => {
     if (!cloned.has(key)) {
       work[key] = { ...work[key] };
       cloned.add(key);
@@ -158,7 +162,7 @@ export function depositDust(
 
   const add = (
     position: Vector,
-    species: Species,
+    species: DustSpecies,
     amount: number,
     spill: boolean,
   ): void => {
@@ -234,7 +238,7 @@ export function machineDustCells(machine: Machine): {
 export function emitMachineDust(
   dust: DustMap,
   machine: Machine,
-  species: ReadonlyArray<Species>,
+  species: ReadonlyArray<DustSpecies>,
   amount: number,
   shopSize: Vector,
 ): DustMap {

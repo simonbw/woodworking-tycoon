@@ -5,6 +5,7 @@ import {
   DustMap,
   dustTotal,
   inBounds,
+  MutableSpeciesAmounts,
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
@@ -13,7 +14,7 @@ import { isOutdoors } from "../lot";
 import { getMachines } from "../Machine";
 import { personCanWork } from "../Person";
 import { carryingShopVac } from "../ShopVac";
-import { Species } from "../Materials";
+import { DustSpecies } from "../Materials";
 import {
   chebyshevDistance,
   Direction,
@@ -268,8 +269,8 @@ export function sweepTickPass(): GameAction {
     }
     const factor = Math.min(1, Math.min(room, SWEEP_TICK_CAP) / wanted);
 
-    const pan: Partial<Record<Species, number>> = { ...gameState.dustpan };
-    const dust: Record<string, Partial<Record<Species, number>>> = {
+    const pan: MutableSpeciesAmounts = { ...gameState.dustpan };
+    const dust: Record<string, MutableSpeciesAmounts> = {
       ...gameState.dust,
     };
     let gatheredTotal = 0;
@@ -280,15 +281,16 @@ export function sweepTickPass(): GameAction {
         continue;
       }
       const takenFraction = cellRate(cell) * factor;
-      const remaining: Partial<Record<Species, number>> = {};
+      const remaining: MutableSpeciesAmounts = {};
       for (const [species, amount] of Object.entries(amounts)) {
         const moved = (amount ?? 0) * takenFraction;
         if (moved > 0) {
-          pan[species as Species] = (pan[species as Species] ?? 0) + moved;
+          pan[species as DustSpecies] =
+            (pan[species as DustSpecies] ?? 0) + moved;
         }
         const left = (amount ?? 0) - moved;
         if (left > CLEAN_EPSILON) {
-          remaining[species as Species] = left;
+          remaining[species as DustSpecies] = left;
         }
       }
       gatheredTotal += dustTotal(amounts) * takenFraction;

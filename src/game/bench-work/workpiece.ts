@@ -20,7 +20,7 @@ import { availableOperations } from "../skill-helpers";
 
 /**
  * Pure geometry and script selection for the bench view (see
- * docs/bench-minigames.md): which interactive script a station should be
+ * docs/bench-work.md): which interactive script a station should be
  * running right now, and how big the workpiece under the tool is. Kept
  * out of the components so the numbers are unit-testable and the panel
  * and the driver can never disagree about what work is on offer.

@@ -1,6 +1,6 @@
 /**
  * The coverage mask behind all stroke work in the bench view (see
- * docs/bench-minigames.md): sanding, planing, and the hand saw's kerf.
+ * docs/bench-work.md): sanding, planing, and the hand saw's kerf.
  *
  * Two layers share one source of stamps. The VISUAL layer is a PIXI
  * RenderTexture the surface component stamps a soft brush into — standard

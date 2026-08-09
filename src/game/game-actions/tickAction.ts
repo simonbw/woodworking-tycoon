@@ -1,14 +1,15 @@
+import { stationWorkSpeed } from "../bench-mounting";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
-import { Species } from "../Materials";
+import { DustSpecies } from "../Materials";
 import { marketplaceTickPass } from "./marketplace-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { sweepTickPass } from "./dust-actions";
 import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { combineActions } from "./misc-actions";
-import { materialSpecies } from "../material-helpers";
+import { materialDustSpecies } from "../material-helpers";
 import { operationAttendanceSatisfied } from "../machine-helpers";
 import { Machine } from "../Machine";
 import { getOperationPhases } from "../skill-helpers";
@@ -28,17 +29,26 @@ import {
  *   read the post-advance tick);
  * - milestones run last so unlocks that hinge on tick-driven state (a
  *   dusty floor) fire on their own.
+ *
+ * The marketplace rolls dice every tick, so the tick takes an rng: the
+ * real game leaves the default, and the sequence tier pins a seeded one
+ * (ShopDriver) so a playthrough lands the same sales every run.
  */
-export const tickAction: GameAction = combineActions(
-  playerTickPass(),
-  sweepTickPass(),
-  vacuumTickPass(),
-  shopVacTickPass(),
-  machineTickPass(),
-  advanceTickPass(),
-  marketplaceTickPass(),
-  checkProgressionMilestonesAction(),
-);
+export function tickAction(
+  gameState: GameState,
+  rng: () => number = Math.random,
+): GameState {
+  return combineActions(
+    playerTickPass(),
+    sweepTickPass(),
+    vacuumTickPass(),
+    shopVacTickPass(),
+    machineTickPass(),
+    advanceTickPass(),
+    marketplaceTickPass(rng),
+    checkProgressionMilestonesAction(),
+  )(gameState);
+}
 
 /**
  * The player's slice of the tick: advance a scavenging trip's legs (a
@@ -111,7 +121,7 @@ export function machineTickPass(): GameAction {
     const completions: OperationCompletion[] = [];
     const dustEmissions: Array<{
       machine: Machine;
-      species: ReadonlyArray<Species>;
+      species: ReadonlyArray<DustSpecies>;
       amount: number;
     }> = [];
     const updatedMachines = gameState.machines.map((machineState) => {
@@ -140,7 +150,7 @@ export function machineTickPass(): GameAction {
         selectedOperation,
         gameState.progression,
         dustMultiplier,
-        machine.workSpeed,
+        stationWorkSpeed(machine, gameState),
       );
       // What "attended" takes — presence, grip, power — lives in
       // operationAttendanceSatisfied, shared with the time-flow model so
@@ -184,7 +194,9 @@ export function machineTickPass(): GameAction {
       const dustOutput = selectedOperation.dustOutput ?? 0;
       if (dustOutput > 0 && currentPhase.attended) {
         const species = [
-          ...new Set(machineState.processingMaterials.flatMap(materialSpecies)),
+          ...new Set(
+            machineState.processingMaterials.flatMap(materialDustSpecies),
+          ),
         ];
         const bagFactor = machineState.tools.includes("dustBag")
           ? 1 - DUST_BAG_CAPTURE

@@ -8,7 +8,7 @@ import {
   isBenchType,
   machineKey,
 } from "../../game/Machine";
-import { useLeanedBenchKey } from "../bench-view/benchZoom";
+import { useLeanedBenchKey } from "../bench-view/benchSceneSlot";
 import {
   benchPlacementFor,
   benchTopSizeIn,
@@ -23,6 +23,7 @@ import {
 } from "./targetHighlight";
 import { BandSawSprite } from "../machine-sprites/BandSawSprite";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
+import { SawhorsesSprite } from "../machine-sprites/SawhorsesSprite";
 import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { JointerSprite } from "../machine-sprites/JointerSprite";
@@ -32,12 +33,12 @@ import { WorktableSprite } from "../machine-sprites/WorktableSprite";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { PalletSprite } from "../material-sprites/PalletSprite";
 import {
+  IMAGE_PIXELS_PER_INCH,
   PIXELS_PER_CELL,
   PIXELS_PER_INCH,
   cellToPixelCenter,
 } from "./shop-scale";
 
-const IMAGE_PIXELS_PER_INCH = 8;
 export const IMAGE_SCALE = PIXELS_PER_INCH / IMAGE_PIXELS_PER_INCH;
 
 /**
@@ -312,6 +313,15 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
 
       case MACHINE_TYPES.bandSaw.id:
         return <BandSawSprite machine={machine} />;
+
+      // The horses draw bare; the sheet across them is staged stock
+      case MACHINE_TYPES.sawhorses.id:
+        return (
+          <pixiContainer>
+            <SawhorsesSprite machine={machine} />
+            <MachineMaterials machine={machine} />
+          </pixiContainer>
+        );
 
       // The makeshift workbench: the plywood-on-buckets art (this was the
       // makeshift bench's sprite; the bench identity moved to the starting

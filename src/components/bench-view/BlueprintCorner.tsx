@@ -5,6 +5,7 @@ import {
   Operation,
   operationParameters,
 } from "../../game/Machine";
+import { stationWorkSpeed } from "../../game/bench-mounting";
 import { machineDustMultiplier } from "../../game/Dust";
 import { MACHINE_ARTICLES } from "../../game/manual";
 import { setMachineOperationAction } from "../../game/game-actions/player-actions";
@@ -200,7 +201,7 @@ export const BlueprintCorner: React.FC<{ machine: Machine }> = ({
                           operation,
                           gameState.progression,
                           dustMultiplier,
-                          machine.workSpeed,
+                          stationWorkSpeed(machine, gameState),
                         ),
                       )}
                     </span>

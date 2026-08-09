@@ -1,7 +1,7 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { MaterialInstance } from "../../game/Materials";
-import { DOOR_HALF_WIDTH } from "../../game/ShopInfo";
+import { doorCenterX, DOOR_WIDTH, ShopInfo } from "../../game/ShopInfo";
 import { useTexture } from "../../utils/useTexture";
 import { useGameState } from "../useGameState";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
@@ -26,7 +26,6 @@ const WALL = 0x332e27;
 const WALL_CAP = 0x4d453a;
 const JAMB = 0xa8935f;
 const THRESHOLD = 0x1a1712;
-const SHADOW = 0x000000;
 
 /**
  * Both ground textures are 512² photographs. The scales below set how much
@@ -47,6 +46,16 @@ const DRIVEWAY_TILE_SCALE = 0.6;
  */
 const LAWN_TINT = 0x6b7a66;
 const DRIVEWAY_TINT = 0x8f8f8f;
+
+/**
+ * The garage door's opening in world pixels. Shared with `DaylightLayer`,
+ * which puts the shop's light-spill through the same gap after dark.
+ */
+export function doorSpan(shopInfo: ShopInfo): { left: number; right: number } {
+  const center = cellToPixel(doorCenterX(shopInfo));
+  const half = cellToPixel(DOOR_WIDTH / 2);
+  return { left: center - half, right: center + half };
+}
 
 /**
  * The lot the garage sits on: a tiling lawn out to the edge of the
@@ -75,25 +84,17 @@ export const EnvironmentLayer: React.FC<{
   const grassTexture = useTexture("/images/grass.png");
   const asphaltTexture = useTexture("/images/asphalt.png");
 
-  const doorCenter = cellToPixel(gameState.shopInfo.entrancePosition[0] + 0.5);
-  const doorLeft = doorCenter - cellToPixel(DOOR_HALF_WIDTH + 0.5);
-  const doorRight = doorCenter + cellToPixel(DOOR_HALF_WIDTH + 0.5);
+  const { left: doorLeft, right: doorRight } = doorSpan(gameState.shopInfo);
   const drivewayLeft = doorLeft - WALL_THICKNESS;
   const drivewayRight = doorRight + WALL_THICKNESS;
-  const drivewayTop = height + WALL_THICKNESS;
+  // The asphalt runs all the way to the slab's edge so no grass peeks
+  // through the doorway; the building draws over it, so the wall bands
+  // and jambs cover its corners outside the opening.
+  const drivewayTop = height;
 
   const drawBuilding = useCallback(
     (g: Graphics) => {
       g.clear();
-
-      // The building's shadow on the lot, thrown down and to the right
-      g.rect(
-        -WALL_THICKNESS + 7,
-        -WALL_THICKNESS + 9,
-        width + WALL_THICKNESS * 2,
-        height + WALL_THICKNESS * 2,
-      );
-      g.fill({ color: SHADOW, alpha: 0.22 });
 
       // Walls: full bands on three sides, the bottom split by the door
       g.rect(

@@ -21,7 +21,7 @@ import {
  * Stations you fit out, and the aisles you fit them out from.
  *
  * A bench picks a plan off its station sheet and takes stock from the
- * manifest's transfer buttons; a tool rack adds a mounted tool's trades to
+ * manifest's transfer buttons; an accessory rack adds a mounted tool's trades to
  * whatever station holds it — including a jig that unlocks a cut on a
  * direct-feed machine that had no plan to pick. Plus the two lumber channels
  * and the reputation tiers that decide what's on their racks.
@@ -349,21 +349,41 @@ test.describe("Stations", () => {
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
       // The whole rack is out: cheap chip boards through cabinet ply
       // (reputation 20 clears the rep-12 shelf)
-      await expect(page.getByText("OSB")).toBeVisible();
-      await expect(page.getByText("Cabinet Plywood")).toBeVisible();
+      await expect(page.getByText("OSB").first()).toBeVisible();
+      await expect(page.getByText("Cabinet Plywood").first()).toBeVisible();
+      // Every kind racks in three sizes, named on the line under the tag
+      await expect(page.getByText("2×2 Panel").first()).toBeVisible();
       await page
         .locator("li", { hasText: "Shop Plywood" })
+        .filter({ hasText: "2×2 Panel" })
         .getByRole("button", { name: "Buy" })
         .click();
       await page.waitForTimeout(30);
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      expect(money).toBe(76); // $24 of shop-grade plywood
+      // $11.20: 2 board feet of shop-grade ply, at the small-piece premium
+      expect(money).toBe(88.8);
     });
 
     await test.step("learn Jigs & Fixtures and End-Grain Boards", async () => {
       await leaveStore(page, afterStore);
+      // The panel goes across the saw before it's a sled base — that rip
+      // is milling.spec's and sheet-breakdown-chain's business, so stage
+      // its result here rather than walking the whole cut again.
+      await page.evaluate(() => {
+        const ripped = (m: any) =>
+          m.type === "plywood" ? { ...m, width: 20 } : m;
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, inventory: state.player.inventory.map(ripped) },
+          truck: { ...state.truck, bed: state.truck.bed.map(ripped) },
+          materialPiles: state.materialPiles.map((pile: any) => ({
+            ...pile,
+            materials: pile.materials.map(ripped),
+          })),
+        }));
+      });
       await openJournal(page);
       for (const skill of ["Jigs & Fixtures", "End-Grain Boards"]) {
         await page
@@ -417,10 +437,10 @@ test.describe("Stations", () => {
       await takeAllHere(page);
       // ...and carry it across the floor to the saw
       await movePlayerTo(page, SAW_CELL);
-      // A direct-feed machine's sheet is nothing but its tool rack now
+      // A direct-feed machine's sheet is nothing but its accessory rack now
       await openStationSheet(page);
       const sawCard = machineCard(page, "Jobsite Table Saw");
-      await expect(sawCard.getByText(/Tools ·/)).toBeVisible();
+      await expect(sawCard.getByText(/Accessories ·/)).toBeVisible();
       await sawCard.getByRole("button", { name: "Attach" }).click();
       await page.waitForTimeout(30);
       // Jig on the table: the panel this spec carries can be crosscut now

@@ -81,6 +81,18 @@ const defs = [
       ownsTool(gameState, "handPlane"),
   },
   {
+    id: "sheet-goods",
+    tab: "Sheets",
+    title: "Sheet Goods",
+    category: "The Craft",
+    // Arrives with the first sheet in the shop, or with the horses that
+    // break one down — either way, when there's something to cut.
+    unlocked: (gameState: GameState) =>
+      ownsMachine(gameState, "sawhorses") ||
+      gameState.player.inventory.some((m) => m.type === "plywood") ||
+      gameState.materialPiles.some((pile) => pile.material.type === "plywood"),
+  },
+  {
     id: "workbenches",
     tab: "Benches",
     title: "Workbenches",

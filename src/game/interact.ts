@@ -256,17 +256,20 @@ export function resolveInteract(
 }
 
 /**
- * The short verb the hint chip shows for an interact action. A chip names
- * the *thing* the key moves, not the furniture it comes off: "pick up
- * pallet", never "take from makeshift workbench" — you can already see
- * which bench you're standing at.
+ * The short verb the hint chip shows for an interact action — a verb and
+ * nothing more wherever the chip's own title already names what the key
+ * acts on (the machine's chips are headed by the machine, the bed's by
+ * the bed). It never names the furniture something comes off: "take", not
+ * "take from makeshift workbench" — you can see which bench you're at. The
+ * piece a loaded machine or the bed would hand back does get named, since
+ * that's the one thing the title can't say.
  */
 export function interactLabel(action: InteractAction): string {
   switch (action.kind) {
     case "take-outputs":
       return `take (${action.machine.outputMaterials.length})`;
     case "take-inputs":
-      return `pick up ${getMaterialName(action.machine.inputMaterials[0])}`;
+      return `take ${getMaterialName(action.machine.inputMaterials[0])}`;
     case "switch-on":
       return "switch on";
     case "switch-off":
@@ -276,8 +279,8 @@ export function interactLabel(action: InteractAction): string {
     case "pick-up-broom":
       return "pick up broom";
     case "truck-bed":
-      return `pick up ${getMaterialName(action.material)}`;
+      return `take ${getMaterialName(action.material)}`;
     case "truck-cab":
-      return action.handoffCount > 0 ? "deliver work" : "head out";
+      return action.handoffCount > 0 ? "deliver" : "head out";
   }
 }

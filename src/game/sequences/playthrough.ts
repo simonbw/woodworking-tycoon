@@ -64,6 +64,10 @@ const deckBoardOfLength = (length: number) => palletBoard(4, length);
 
 const isRusticShelf = (m: MaterialInstance) => m.type === "rusticShelf";
 
+/** The sled base, once the project panel has been ripped to width. */
+const sledBase = (m: MaterialInstance) =>
+  m.type === "plywood" && m.width === 20;
+
 /** Maple stock at an exact length and width — the hardwood era's material. */
 const mapleBoard = (length: number, width: number) => (m: MaterialInstance) =>
   isBoard(m) &&
@@ -750,7 +754,9 @@ function commission6(shop: ShopDriver): ShopDriver {
   shop.learn("jigsAndFixtures");
   shop.learn("endGrainBoards");
   shop.goShopping("orangeBox");
-  shop.buySheet("plywoodB");
+  // A 2×2 project panel: the smallest piece the rack sells, and the
+  // cheapest way to a sled base for a shop with no circular saw.
+  shop.buySheet("plywoodB", "project");
   shop.buySupplies("mineralOil");
   shop.buyBoards(
     "bigBoxRack",
@@ -761,6 +767,14 @@ function commission6(shop: ShopDriver): ShopDriver {
   shop.comeHome();
   shop.fitOut(WORKBENCH, ["sandingBlock", "finishingKit"]);
 
+  // The panel is 2" wider than the sled base wants, so it goes across
+  // the saw first — the shop's first sheet cut.
+  shop.feed("jobsiteTableSaw", (m) => m.type === "plywood", {
+    sheetRipWidth: 20,
+  });
+  shop.putEverythingDown();
+  shop.takeFromFloor(sledBase, 1);
+
   // The sled's runners are pallet scrap — the first thing this shop ever had.
   fetchAPallet(shop);
   shop.takeFromFloor(isPallet, 1);
@@ -768,7 +782,7 @@ function commission6(shop: ShopDriver): ShopDriver {
   shop
     .standAtOperatorCell(WORKBENCH)
     .select(WORKBENCH, "buildCrosscutSled")
-    .load(WORKBENCH, (m) => m.type === "plywood", 1)
+    .load(WORKBENCH, sledBase, 1)
     .load(WORKBENCH, deckBoardOfLength(36), 2)
     .run(WORKBENCH)
     // The finished sled is a physical thing in the bench's output bay:

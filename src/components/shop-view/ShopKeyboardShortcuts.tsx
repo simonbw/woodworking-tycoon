@@ -319,7 +319,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       const machine = targeted.current;
       if (!machine) return;
       // Interactive bench plans have no held-Space path — the work is
-      // performed by hand in the bench view (docs/bench-minigames.md)
+      // performed by hand in the bench view (docs/bench-work.md)
       if (
         !machine.type.directFeed &&
         machine.selectedOperationOrNull?.interaction != null
@@ -386,7 +386,15 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // On direct-feed machines the setting can belong to any available
   // operation (what's in hand decides which one runs); on benches only the
   // selected operation's settings are live.
-  const stepSetting = (kind: "linear" | "rotate", step: 1 | -1) => {
+  //
+  // `coarse` is the shift modifier: it jumps the parameter's declared
+  // coarseStep detents at once (a foot along the miter saw's inch marks)
+  // instead of one, landing on the same marks a bare press walks through.
+  const stepSetting = (
+    kind: "linear" | "rotate",
+    step: 1 | -1,
+    coarse = false,
+  ) => {
     const machine = targeted.current;
     if (!machine) return;
 
@@ -406,7 +414,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       machine.selectedParameters?.[param.id] ?? param.defaultValue;
     const currentIndex =
       current === undefined ? -1 : param.values.indexOf(current);
-    let next = param.values[mod(currentIndex + step, param.values.length)];
+    const detents = coarse ? (param.coarseStep ?? 1) : 1;
+    let next =
+      param.values[mod(currentIndex + step * detents, param.values.length)];
 
     // A slide param moves the stock itself, so the key steps between the
     // marks the stock can actually reach — a 4' board slides among its own
@@ -446,12 +456,12 @@ export const ShopKeyboardShortcuts: React.FC = () => {
 
   useShortcut(
     "setting-down",
-    () => stepSetting("linear", -1),
+    (event) => stepSetting("linear", -1, event.shiftKey),
     present && !stationWorking,
   );
   useShortcut(
     "setting-up",
-    () => stepSetting("linear", 1),
+    (event) => stepSetting("linear", 1, event.shiftKey),
     present && !stationWorking,
   );
   // R is claimed by whichever of its three bindings applies: the carried

@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { stationWorkSpeed } from "../../game/bench-mounting";
 import { clampsFor, clampsFree } from "../../game/Clamp";
 import { consumableLabel } from "../../game/Consumable";
 import {
@@ -77,7 +78,7 @@ export const BlueprintSheet: React.FC<{
         {/* Title block, the way real drawings carry one */}
         <div className="mt-2 border border-white/40 bg-black/10">
           <div className="flex items-baseline justify-between gap-2 border-b border-white/25 px-2 py-0.5">
-            <figcaption className="truncate font-stencil text-[0.8rem] uppercase tracking-wide text-white">
+            <figcaption className="truncate font-condensed text-[0.8rem] font-bold uppercase tracking-wide text-white">
               {operation.name}
             </figcaption>
             <span className="shrink-0 font-condensed text-[0.6rem] uppercase tracking-[0.15em] text-white/70">
@@ -96,7 +97,7 @@ export const BlueprintSheet: React.FC<{
                     operation,
                     gameState.progression,
                     dustMultiplier,
-                    machine.workSpeed,
+                    stationWorkSpeed(machine, gameState),
                   ),
                 )}
               </span>

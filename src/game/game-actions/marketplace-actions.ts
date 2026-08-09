@@ -10,7 +10,6 @@ import {
   categoryDemandFor,
   demandCategory,
   isListable,
-  jobPayout,
   listingGroupKey,
   listingItem,
   listingPitySale,
@@ -21,11 +20,8 @@ import {
   roundToHundredth,
 } from "../marketplace";
 import { getSellValue } from "../material-values";
-import { canHandOff, consumeRequiredMaterials } from "../delivery";
 import { idMaker } from "../../utils/idMaker";
-import { emitPayout } from "./payout-actions";
 import { emitSound } from "./sound-actions";
-import { withXp } from "./skill-actions";
 
 const makeListingId = idMaker();
 
@@ -245,59 +241,8 @@ export function cancelJobAction(jobId: string): GameAction {
   };
 }
 
-/**
- * Hands an accepted job over to its customer at the garage door: same
- * matching and same body state as a commission, paying base plus whatever
- * is left of the tip.
- */
-export function deliverJobAction(jobId: string): GameAction {
-  return (gameState) => {
-    const job = gameState.acceptedJobs.find((j) => j.id === jobId);
-    if (!job) {
-      console.warn("Tried to deliver an unknown job");
-      return gameState;
-    }
-    if (!canHandOff(gameState)) {
-      console.warn("Can't deliver work right now");
-      return gameState;
-    }
-
-    const updatedBed = consumeRequiredMaterials(
-      gameState.truck.bed,
-      job.requiredMaterials,
-    );
-    if (updatedBed === null) {
-      console.warn("The bed doesn't hold what the job requires");
-      return gameState;
-    }
-
-    const payout = jobPayout(job, gameState.tick);
-    const xp = Math.round(payout.money / 5);
-    // No stinger here: a job is routine work, not a boss. Its whole audio
-    // is the cha-ching the reward flight plays when the money lands.
-    return withXp(
-      emitPayout(
-        {
-          ...gameState,
-          money: roundToCents(gameState.money + payout.money),
-          reputation: roundToHundredth(
-            gameState.reputation + payout.reputation,
-          ),
-          acceptedJobs: gameState.acceptedJobs.filter((j) => j !== job),
-          truck: { ...gameState.truck, bed: updatedBed },
-        },
-        {
-          kind: "job",
-          title: job.name,
-          money: payout.money,
-          reputation: payout.reputation,
-          xp,
-        },
-      ),
-      xp,
-    );
-  };
-}
+// An accepted job goes out the same way a commission does — loaded into
+// the bed and driven over. See delivery-actions.ts.
 
 // ---------------------------------------------------------------- Tick passes
 

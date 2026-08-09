@@ -8,7 +8,12 @@ import {
 } from "../../game/material-helpers";
 import { getSheetBuyPrice } from "../../game/material-values";
 import { SheetGood } from "../../game/Materials";
-import { SheetSku, unlockedSheetSkus } from "../../game/sheetStock";
+import {
+  SHEET_SIZES,
+  SheetSize,
+  SheetSku,
+  unlockedSheetSkus,
+} from "../../game/sheetStock";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
@@ -33,14 +38,19 @@ export const StoreSheetGoodsSection: React.FC<{ className?: string }> = ({
       template="repeat(3, minmax(0, 1fr))"
       className={className}
     >
-      {skus.map((sku) => (
-        <SheetSkuTile key={sku.kind} sku={sku} />
-      ))}
+      {skus.flatMap((sku) =>
+        SHEET_SIZES.map((size) => (
+          <SheetSkuTile key={`${sku.kind}-${size.id}`} sku={sku} size={size} />
+        )),
+      )}
     </AisleSection>
   );
 };
 
-const SheetSkuTile: React.FC<{ sku: SheetSku }> = ({ sku }) => {
+const SheetSkuTile: React.FC<{ sku: SheetSku; size: SheetSize }> = ({
+  sku,
+  size,
+}) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
@@ -48,33 +58,36 @@ const SheetSkuTile: React.FC<{ sku: SheetSku }> = ({ sku }) => {
     makeMaterial<SheetGood>({
       type: "plywood",
       kind: sku.kind,
-      length: sku.length,
-      width: sku.width,
+      length: size.length,
+      width: size.width,
       thickness: sku.thickness,
     });
 
-  const material = useMemo(makeSheet, [sku]);
+  const material = useMemo(makeSheet, [sku, size]);
   const price = getSheetBuyPrice(material);
 
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
       type: ["plywood"],
       kind: [sku.kind],
-      length: [sku.length],
-      width: [sku.width],
+      length: [size.length],
+      width: [size.width],
       thickness: [sku.thickness],
     }),
   ).length;
 
   return (
     <ProductTile
-      // The kind alone on the shelf tag — every SKU of a kind is one
-      // size, so the dimensions only have to be in the hover copy
+      // The kind is the product; the size goes on the line below with
+      // the count, so a rack of three sizes doesn't set every tile in
+      // the store as wide as its longest tag
       name={sheetKindLabel(sku.kind)}
       icon={<SheetFaceSvg kind={sku.kind} className="size-9" />}
       price={price}
       info={`${sku.tagline} ${describeStockDimensionsPlain(material)}.`}
-      owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      owned={
+        numberOwned > 0 ? `${size.label} · ${numberOwned} owned` : size.label
+      }
       canAfford={gameState.money >= price}
       sfx="ui-purchase"
       onBuy={() => applyAction(buyMaterialAction(makeSheet(), price))}

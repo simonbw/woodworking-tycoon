@@ -22,7 +22,7 @@ drawing is tracked in `docs/asset-backlog.md`.
 | Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — commission sheets, the calendar page, receipt fine print — and the figures typed onto them (order numbers, payouts, receipt digits). Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
 | Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | One logo. Adding a second needs a new venue. |
 | Caveat | `font-ink` | **Handwriting.** Human margin notes: a client's note on a work order, a scribbled errand, a tally next to a quantity, a "nothing here" note pinned to the board. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else. |
-| Lumberjack | `font-lumberjack` | **The shop's own sign.** The game's name on the title screen and the Sawyer & Sons sign. Nothing else. | Two signs. It is not a heading face. |
+| Lumberjack | `font-lumberjack` | **Reserved for the shop's own signage.** Currently has no call sites — the title screen and the Sawyer & Sons sign both became artwork — but the family is kept declared and loaded for the next sign that needs live type. It is not a heading face. | Signs only. Nothing today. |
 
 ## Where the fonts come from
 
@@ -61,7 +61,8 @@ reputation star and the XP spark are `StarIcon` / `SparkIcon`
 ## Numbers
 
 Player-facing numbers go through `src/utils/formatNumber.ts` — `formatMoney`,
-`formatCount`, `formatDecimal` — never `toFixed`. All three are `en-US`
+`formatCount`, `formatDecimal`, and `formatLength` for lumber lengths —
+never `toFixed`. The first three are `en-US`
 `Intl` formatters, so a four-figure balance reads `$1,024.00`. Both
 thresholds are reachable in a normal run: late-game money, and a level's XP
 cost once craft level hits 10.
@@ -97,6 +98,7 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 | HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
 | Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
+| Lumberyard | `mill-*` | The Sawyer & Sons trip (`LumberyardTripOverlay`) only: painted-sign green over stickered stacks and gravel. Same rule as the store tokens — a location's palette stays at that location. |
 
 ## HUD hierarchy (Home screen)
 
@@ -106,11 +108,11 @@ remaining UI floats over it as a small number of HUD objects, not a
 stack of equal-weight cards:
 
 - **Top row** (`NavBar`) — one floating `hud-chip` in the top-right, no
-  tabs, split by hairline dividers into three segments: the clock and
-  day (`Ticker`, which also drives the game loop — time always advances
-  unless the pause menu is open, and which draws the day's progress as a
-  hairline meter under the group, the same idiom as the XP meter under
-  the Skills button), the balances (cash and reputation, set exactly
+  tabs, split by hairline dividers into three segments: the date and
+  light (`Ticker`, which also drives the game loop — time always
+  advances unless the pause menu is open — rendering the sun-and-moon
+  dial `DayDial`, whose daylight arc carries the day's progress; there
+  is deliberately no wall clock), the balances (cash and reputation, set exactly
   like the clock — bold condensed, tabular figures — in the one gold
   accent, the star flowing inline with the digits), and the pocket
   items (Phone, Skills, the `?` manual, and Menu, which opens the pause
@@ -123,13 +125,16 @@ stack of equal-weight cards:
   `ScavengeTripOverlay` — the last a handwritten travel log beside the
   sketched truck, its bed stacking up with the haul).
 - **Commission tracker** (`CommissionTracker`, top-left) — the
-  objectives readout: a `hud-chip` with the order's name, its checklist,
-  and what it pays (or "carry it to the garage door" once complete).
-  Clicking it, or C, holds up the **clipboard** (`ClipboardModal`): the
-  full work order as paperwork — legal sheet under a clip, client note,
-  pay and reputation. A new commission opens the clipboard by itself
-  once the previous one's reward flight has landed. Glance = chrome,
-  read = document.
+  objectives readout, and the one HUD corner that is paper rather than
+  chrome: the work order's own legal sheet, cropped to the order's name,
+  its checklist, and what it pays (or where to carry it once complete).
+  Clicking it, or C, holds up the **clipboard** (`ClipboardModal`) — the
+  same sheet at full length, with the client note, pay and reputation —
+  and it gets there by growing out of the corner it was just sitting in,
+  shrinking back on the way down. One `WorkOrder` component prints both,
+  `compact` deciding which lines show, so the two can never disagree. A
+  new commission opens the clipboard by itself once the previous one's
+  reward flight has landed.
 - **Hands strip** (`HandsStrip`, bottom-center) — a `hud-chip` of slots,
   one per kind of thing carried; clicking a slot sets one down,
   shift-click the group, and F speaks the same verb from the keyboard.
@@ -141,9 +146,9 @@ stack of equal-weight cards:
   (`ShopOverlayLayer`): dark chrome clusters in the "[F] put down"
   idiom, pinned to the thing they belong to — the targeted machine's
   verbs, settings, and refusal notes (`MachineChips`), outfeed stock at
-  the machine it came off of, the door's "[E] head out" (`DoorPrompt` —
-  the keypress opens the full destination card), and floor verbs beside
-  the player (`PlayerPrompt`). Chip chrome wraps in
+  the machine it came off of, the truck cab's "[E] head out"
+  (`TruckPrompt` — the keypress opens the full destination card), and
+  floor verbs beside the player (`PlayerPrompt`). Chip chrome wraps in
   `HintSurfaceContext.Provider value="chrome"`. A bench's plans and
   racks live on the centered **station sheet** (`StationSheet`, Tab) —
   paperwork, spread out over a dimmed shop that keeps ticking; walking
@@ -167,7 +172,8 @@ and give it exactly one `.section-heading`.
 
 ## Rules of thumb
 
-- Headings: one stencil `.section-heading` per top-level object, small
+- Headings: one `.section-heading` (bold condensed uppercase — stencil
+  is reserved for retail signage) per top-level object, small
   `font-condensed` uppercase labels (`.subsection-heading` scale) for
   everything inside it.
 - Buttons: `.button` / `.button-ghost` on dark chrome, `.button-paper` on

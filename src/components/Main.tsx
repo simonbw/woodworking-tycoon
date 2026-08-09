@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { GameState } from "../game/GameState";
 import { saveGame } from "../game/saveLoad";
-import { DebugView } from "./DebugView";
 import { FixtureLoader } from "./FixtureLoader";
 import { GameSoundLayer } from "./GameSoundLayer";
 import { HoldMusicLayer } from "./HoldMusicLayer";
@@ -61,7 +60,6 @@ export const Main: React.FC = () => {
                   <GameSoundLayer />
                   <MachineSoundLayer />
                   <HoldMusicLayer />
-                  <DebugView />
                   <FixtureLoader />
                 </ClipboardProvider>
               </ManualProvider>

@@ -100,6 +100,24 @@ const awayTripSchema = z.discriminatedUnion("kind", [
     store: z.string(),
   }),
   z.object({
+    kind: z.literal("delivering"),
+    order: z.object({
+      jobId: z.string().optional(),
+      cargo: z.array(materialSchema),
+      // The payout was struck when the truck pulled out — a save reloaded
+      // mid-run still owes exactly what the cab's card quoted.
+      payout: z.object({
+        kind: z.enum(["commission", "job"]),
+        title: z.string(),
+        money: z.number(),
+        reputation: z.number(),
+        xp: z.number(),
+        client: z.string().optional(),
+        dialogue: z.string().optional(),
+      }),
+    }),
+  }),
+  z.object({
     kind: z.literal("home"),
   }),
 ]);

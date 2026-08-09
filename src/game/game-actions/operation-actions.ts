@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "../bench-mounting";
 import { addConsumables, ConsumableAmount } from "../Consumable";
 import { machineDustMultiplier } from "../Dust";
 import { GameAction, GameState } from "../GameState";
@@ -41,12 +42,12 @@ import {
 } from "../bench-work/pallet-geometry";
 import { deriveMachineCutLoad } from "../cut-load";
 import { emitMachineDust } from "../Dust";
-import { materialSpecies } from "../material-helpers";
+import { materialDustSpecies } from "../material-helpers";
 import { clampsFor, clampsFree } from "../Clamp";
 import { gluePrepShortfall, inferGlueOperationId } from "../bench-work/glue-up";
 
 /**
- * The commit-action split (see docs/bench-minigames.md): the bench view
+ * The commit-action split (see docs/bench-work.md): the bench view
  * decides *when*, these actions decide *what*. Starting an operation is
  * still `operateMachineAction` — it claims inputs, spends supplies, and
  * checks the clamp rack exactly as before. Finishing is here: the
@@ -347,7 +348,7 @@ export function finishAttendedWorkAction(machine: Machine): GameAction {
       operation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-      live.workSpeed,
+      stationWorkSpeed(live, gameState),
     );
     const { phaseIndex } = machineState.operationProgress;
     if (phases[Math.min(phaseIndex, phases.length - 1)].attended === false) {
@@ -630,7 +631,7 @@ export function startGlueUpAction(
       operation,
       gameState.progression,
       machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-      live.workSpeed,
+      stationWorkSpeed(live, gameState),
     );
     return {
       ...gameState,
@@ -884,7 +885,7 @@ export function emitBenchDustAction(machine: Machine): GameAction {
       machineState.processingMaterials.length > 0
         ? machineState.processingMaterials
         : machineState.inputMaterials;
-    const species = [...new Set(materials.flatMap(materialSpecies))];
+    const species = [...new Set(materials.flatMap(materialDustSpecies))];
     if (species.length === 0) {
       return gameState;
     }

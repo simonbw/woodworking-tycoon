@@ -1,3 +1,4 @@
+import { stationWorkSpeed } from "./bench-mounting";
 import { machineDustMultiplier } from "./Dust";
 import { GameState } from "./GameState";
 import { heldTool } from "./HeldTool";
@@ -8,10 +9,19 @@ import { getOperationPhases } from "./skill-helpers";
 import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
 
 /**
- * The spend-to-advance clock (see docs/time-and-days.md): the day is a
- * budget of working minutes, and the clock's pace depends on what the
- * player is doing. The Ticker asks this model how fast to feed ticks;
- * the tick pipeline itself never changes.
+ * The spend-to-advance clock: the day is a budget of working minutes,
+ * and the clock's pace depends on what the player is doing. The Ticker
+ * asks this model how fast to feed ticks; the tick pipeline itself
+ * never changes.
+ *
+ * Why: in a real-time game with no speed controls, "actions cost time"
+ * can never be an economy — the resource spent is the player's
+ * real-world patience, and the moments the game is most interesting
+ * (planning, reading, arranging) get penalized because the clock runs
+ * while you think. Two things fix both problems at once: the clock's
+ * pace follows what the player is doing (thinking is nearly free, work
+ * costs minutes), and the day ends with the drive home (a budget with a
+ * deliberate close, not a metronome).
  *
  *  waiting — the wait key is held: time deliberately spent on nothing.
  *            The rate ramps up the longer the hold (see the Ticker's
@@ -19,13 +29,39 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  *            easy answer to a cure; every hour waited is an hour not
  *            worked.
  *  working — time is being spent: attended machine work, a busy body
- *            (trudging, sweeping), or a scavenging run's timer. Full
+ *            (trudging, sweeping), or a scavenging run's search. Full
  *            pace, the familiar five minutes a second.
  *  idle    — nobody is spending time. The clock still creeps at about
  *            five times real life (a couple of real hours to idle away
  *            a whole day): thinking is nearly free.
  *  stopped — the shop is closed for the night (or the player is home in
  *            bed). Nothing moves until work finishes it or morning does.
+ *
+ * Machines consume time, they never generate it: hands-free phases
+ * (glue curing) advance whenever ticks flow but cause none themselves —
+ * a cure finishes on the minutes something else spends. Wait is the
+ * easy answer to a cure and the game never punishes it, but every hour
+ * waited is an hour not worked, so the skilled play that emerges is
+ * filling cures with other work, or gluing up at day's end and letting
+ * the overnight do it. The verb teaches the economy by being the
+ * baseline efficiency is measured against.
+ *
+ * The rest of the system, where it lives:
+ *  - src/game/time.ts — the day's units (600 working minutes, 840
+ *    overnight, 1440 to a calendar day) and phases. Everything the
+ *    marketplace quotes "in days" is denominated in calendar days, so
+ *    "three days" means three mornings from now.
+ *  - src/components/Ticker.tsx — the variable-rate loop, the wait
+ *    ramp, and the action-answering cadence (milestones, board refill)
+ *    that runs regardless of clock pace.
+ *  - src/game/game-actions/door-actions.ts — trips charging for the
+ *    drive, and the overnight running as one batch of ordinary ticks.
+ *  - src/game/calendar.ts — the derived, presentation-only date.
+ *  - src/components/DayDial.tsx — the day told by its light; there is
+ *    deliberately no wall clock.
+ *  - src/game/daylight.ts — where the sun is, which the dial and the lit
+ *    lot both read so they can never disagree.
+ *  - src/game/sequences/day-loop.test.ts — the day loop's promises.
  */
 export type TimeSpeed = "waiting" | "working" | "idle" | "stopped";
 
@@ -74,7 +110,7 @@ function machineSpendsTime(gameState: GameState, machine: Machine): boolean {
     operation,
     gameState.progression,
     machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-    machine.workSpeed,
+    stationWorkSpeed(machine, gameState),
   );
   const { phaseIndex, ticksRemaining } = machineState.operationProgress;
   const phase =

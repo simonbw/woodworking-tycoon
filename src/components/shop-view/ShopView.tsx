@@ -50,12 +50,12 @@ import { PlayerMotionLayer } from "./PlayerMotionLayer";
 import { PowerCordLayer } from "./PowerCordLayer";
 import { ShopKeyboardShortcuts } from "./ShopKeyboardShortcuts";
 import { ShopVacSprite } from "./ShopVacSprite";
+import { DaylightLayer } from "./DaylightLayer";
 import { EnvironmentLayer } from "./EnvironmentLayer";
 import { CameraLayer } from "./CameraLayer";
 import { camera } from "./cameraStore";
-import { shopFrame } from "./shopFrameStore";
-import { BenchZoomCameraLayer } from "./BenchZoomCameraLayer";
-import { useBenchZoomActive } from "../bench-view/benchZoom";
+import { BenchDiveLayer } from "./BenchDiveLayer";
+import { useBenchDiveActive } from "../bench-view/benchSceneSlot";
 import { useTruckStage } from "./truckStageStore";
 import { atTruckBed, lotSize } from "../../game/lot";
 import { TruckHighlight } from "./TruckSprite";
@@ -158,7 +158,7 @@ export const ShopView: React.FC = () => {
   // While a bench view is mounted the camera is diving into (or back
   // out of) the bench; the floor's DOM chips fade so they don't hang
   // untransformed over a swelling world.
-  const benchDive = useBenchZoomActive();
+  const benchDive = useBenchDiveActive();
   const {
     machine: targetedMachine,
     machines: operableHere,
@@ -247,8 +247,8 @@ export const ShopView: React.FC = () => {
   const overlayScrollRef = useRef<HTMLDivElement>(null);
   // The bench dive's hand: a wrapper the whole world (camera included)
   // renders through, swelled about the bench while a bench view is
-  // mounted. Imperative for the same reason — see BenchZoomCameraLayer.
-  const benchZoomContainerRef = useRef<Container>(null);
+  // mounted. Imperative for the same reason — see BenchDiveLayer.
+  const benchDiveContainerRef = useRef<Container>(null);
   const [view, setView] = useState<{
     scale: number;
     width: number;
@@ -275,24 +275,6 @@ export const ShopView: React.FC = () => {
     observer.observe(container);
     return () => observer.disconnect();
   }, [width, height]);
-
-  // Publish where the world sits on screen, for the bench view's zoom
-  // transition to anchor against (see shopFrameStore).
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    if (!view || !container) return;
-    const rect = container.getBoundingClientRect();
-    shopFrame.left = rect.left;
-    shopFrame.top = rect.top;
-    shopFrame.offsetX = Math.round(
-      (view.width - Math.round(width * view.scale)) / 2,
-    );
-    shopFrame.offsetY = Math.round(
-      (view.height - Math.round(height * view.scale)) / 2,
-    );
-    shopFrame.scale = view.scale;
-    shopFrame.ready = true;
-  }, [view, width, height]);
 
   if (view === null) {
     return <div ref={containerRef} className="h-full w-full min-h-0 min-w-0" />;
@@ -387,6 +369,11 @@ export const ShopView: React.FC = () => {
         height={view.height}
         backgroundAlpha={0}
         antialias={true}
+        // Device pixels, so the bench view's close-up art is sharp when
+        // the camera leans in (capped: past 2× nothing reads sharper).
+        // The E2E build's onInit override still lands after this.
+        autoDensity={true}
+        resolution={Math.min(window.devicePixelRatio || 1, 2)}
         onInit={capRenderRate}
       >
         <gameStateContext.Provider
@@ -402,14 +389,8 @@ export const ShopView: React.FC = () => {
             viewHeight={view.height}
             scale={scale}
           />
-          <BenchZoomCameraLayer
-            worldRef={benchZoomContainerRef}
-            offsetX={offsetX}
-            offsetY={offsetY}
-            scale={scale}
-          />
           <pixiContainer x={offsetX} y={offsetY} scale={scale}>
-            <pixiContainer ref={benchZoomContainerRef}>
+            <pixiContainer ref={benchDiveContainerRef}>
               <pixiContainer ref={cameraContainerRef}>
                 <EnvironmentLayer
                   width={width}
@@ -540,9 +521,29 @@ export const ShopView: React.FC = () => {
                 {/* Dust in flight rides above the tools taking it */}
                 <DustMotionLayer />
                 <CarriedMachineLayer />
+                {/* The hour of the day, over the whole world — the sky
+                    outdoors, the bulbs on the slab. Last, so it lights
+                    everything the camera holds rather than sitting under
+                    half of it. */}
+                <DaylightLayer
+                  width={width}
+                  height={height}
+                  viewport={worldViewport}
+                />
               </pixiContainer>
             </pixiContainer>
           </pixiContainer>
+          {/* The bench scene, published by BenchWorkSurface, drawn in
+              screen space above the world — outside the camera so the
+              daylight pass can't darken the top under your hands. The
+              dive layer swells the world about the bench and lands the
+              scene on its footprint, one transform per frame. */}
+          <BenchDiveLayer
+            worldRef={benchDiveContainerRef}
+            offsetX={offsetX}
+            offsetY={offsetY}
+            scale={scale}
+          />
         </gameStateContext.Provider>
       </Application>
       {/* The DOM overlay sits exactly on the shop floor's box, so every

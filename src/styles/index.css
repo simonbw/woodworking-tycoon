@@ -56,6 +56,17 @@
     @apply rounded border border-workshop-edge bg-workshop-bg/85 shadow-lg backdrop-blur-sm;
   }
 
+  /* Clears the top-bar chip. The bench view draws *below* the top bar on
+     purpose (z-35 against the bar's z-40) so the phone, journal, and menu
+     stay reachable while a bench is open — which means anything the bench
+     floats near the top of the window has to start below the chip or it
+     can't be clicked. The chip is as tall as the day dial makes it
+     (DayDial's SIZE, plus the strip's pt-6 and the chip's own padding),
+     so this is the one place that number lives. */
+  .below-top-bar {
+    top: 8rem;
+  }
+
   /* Section heading — quiet uppercase label for a top-level object.
      Stencil is reserved for the store's retail signage. */
   .section-heading {

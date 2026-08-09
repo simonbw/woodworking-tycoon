@@ -161,13 +161,7 @@ export const TargetedMachineProvider: React.FC<{
     [],
   );
 
-  // Climbing in folds the trip card for good — otherwise the stale open
-  // flag would spread it again the moment the player steps back out
-  // beside the cab after the trip.
   const away = gameState.player.away != null;
-  useEffect(() => {
-    if (away) setTruckMenuOpen(false);
-  }, [away]);
 
   const defaultIndex = facingIndex(
     machines,
@@ -237,11 +231,17 @@ export const TargetedMachineProvider: React.FC<{
   const closeSheet = useCallback(() => setSheetKey(undefined), []);
 
   // The trip card belongs to the cab: walking away from the truck (or
-  // leaving the shop) folds it up.
+  // climbing in and driving off) folds it up. Folding it is for good —
+  // clearing the flag rather than just masking it, so stepping back
+  // beside the cab leaves the card closed until E asks for it again,
+  // the same way a station's sheet stays shut.
   const atCab =
     !gameState.player.away &&
     atTruckCab(gameState.shopInfo, gameState.player.position);
   const truckMenuOpen = truckMenuOpenRaw && atCab;
+  useEffect(() => {
+    if (!atCab) setTruckMenuOpen(false);
+  }, [atCab]);
   const openTruckMenu = useCallback(() => setTruckMenuOpen(true), []);
   const closeTruckMenu = useCallback(() => setTruckMenuOpen(false), []);
 

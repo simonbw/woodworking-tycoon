@@ -1,147 +1,134 @@
-# Tools & Surface Conditions — Design
+# Tools & Surface Conditions
 
-This doc captures the agreed end-state vision for handheld tools and material
-surface state, so future work builds toward it instead of colliding with it.
-The **Now** sections are implemented; the **Later** sections are direction,
-not commitments.
+What a handheld tool is, how material surface state works, and the
+design rules for adding more of either. Rosters, prices, and per-recipe
+numbers are deliberately absent — the registries state them
+(`src/game/Tool.ts`, `src/game/tools/`, `src/game/lumberStock.ts`), and
+docs that repeat them drift.
 
 ## Guiding principle: machines buy time, they don't gate products
 
-Every processing step should have a slow cheap path and progressively faster
-paid paths. Players spend money to convert it into throughput, not to unlock
-recipes. (Example: sanding block → random orbit sander → wide-belt sander all
-perform "sanding"; each tier is just faster.)
+Every processing step should have a slow cheap path and progressively
+faster paid paths. Players spend money to convert it into throughput,
+not to unlock recipes. The milling steps are the canonical case: every
+jointing step has a machine path and a budget path (face jointing is the
+jointer or a hand plane; edge jointing is the jointer or a shop-built
+sled on the table saw). The machines earn their price by being fast, and
+by making the cheap rough-lumber channels economical at volume.
 
-The milling steps are the canonical case: every jointing step has a machine
-path and a budget path. Face jointing is the jointer or a $35 hand plane;
-edge jointing is the jointer or a shop-built straight-line sled on the table
-saw. The machines earn their price by being fast, and by making the cheap
-rough-lumber channels economical at volume (see Lumber channels).
+Two standing corrections to older framings:
 
-One correction to an older framing: sanding is NOT a slow substitute for
-milling. Sanding never flattens or straightens anything — it only refines
-surface quality. The slow-cheap paths into rough lumber are hand tools and
-jigs, not abrasives.
+- Sanding is NOT a slow substitute for milling. Sanding never flattens
+  or straightens anything — it only refines surface quality. The
+  slow-cheap paths into rough lumber are hand tools and jigs, not
+  abrasives.
+- Hand interaction is the slow path's *texture*, not a penalty — see
+  "machines buy attention" in `docs/bench-work.md`.
 
-## Attended vs hands-free operation phases (Now: v1)
+## What a tool is
 
-Operations run as a list of **phases**, each `{ name, duration, attended }`.
-An op that declares no phases is one attended stretch of hand work — the
-default and the common case.
+`ToolType` (registry in `src/game/Tool.ts`, one definition file per tool
+in `src/game/tools/`): id, name, description, cost, `operations`, plus
+`craftedOnly` for shop-built jigs and `compatibleMachines` to restrict
+mounting.
 
-The rules (all in `tickAction`):
+- Workstations have **tool slots** (`MachineType.toolSlots`). Mounting a
+  tool at a station adds that tool's operations to the station's
+  operation list; a station's operation list is always its own
+  operations plus its mounted tools'.
+- An unmounted tool is a **physical object** — a `MaterialInstance` of
+  kind `tool` — so it rides every system loose stock does: bought at the
+  store's Tool Wall it comes home in the truck's bed, is carried in the
+  arms (one hand slot), set down as a floor pile, or parked on a station
+  shelf. There is no abstract tool storage. At a bench, mounting and
+  unmounting happen on the tool rail in the bench view; on a machine or a
+  container they happen on the station sheet's **Accessories** rack — the
+  player-facing name for tool slots everywhere except a bench, where what
+  hangs on the rail is a hand tool.
+- A tool that does interactive hand work declares the script on its
+  operations (`Operation.interaction` — see `docs/bench-work.md`). Tool
+  tiers differ by interaction feel, not output: the sanding block and
+  the random orbit sander perform the same operations with different
+  brush geometry and speed.
 
-1. An **attended** phase only ticks while the player stands at the machine's
-   operation cell (and isn't on an away trip). Otherwise it pauses — never
-   cancels — and resumes on return.
-2. A **hands-free** phase (`attended: false`) always ticks, including during
-   away trips.
-3. An operation cannot _enter_ an attended phase without the player there:
-   it finishes the prior phase and sits "ready — needs you" until they show
-   up. (No current op has an attended phase after a hands-free one; kilns or
-   a finishing room will.)
+**Adding a tool**: a definition file in `src/game/tools/`, a row in
+`TOOL_TYPES`, an icon (`static/images/icons/tool-<id>.png`, tracked in
+`docs/asset-backlog.md` if missing), and operations that follow the
+gates below. If it's a jig, `craftedOnly` plus a build blueprint
+(`bench-work/blueprint.ts`) instead of a store price.
 
-Today's only hands-free phases are glue **curing**: every glue-up is a short
-attended Glue & Clamp followed by the same long unattended cure
-(`GLUE_CURE_TICKS`, uniform across batch/pair/extend/join — glue doesn't
-care how many strips you fed it). Quick-Dry Glue multiplies only the cure.
+## Shop-made jigs
 
-The intended economy: attended work serializes through the player (your
-hands are the bottleneck), hands-free work parallelizes across stations —
-so staged glue-ups (Glue Up Pair / Join Panels) plus extra benches convert
-money into throughput, which is this doc's guiding principle applied to
-time. Clamps are the second dial on that conversion: a glue-up ties up
-some number of them for its whole run, so a bench with nothing to clamp
-can't start one (see docs/consumables.md). Shop-view feedback: amber progress bar = attended work underway,
-green = hands-free, amber pause marker = attended work waiting for you.
-
-Later candidates for hands-free phases: oil/varnish curing, kiln drying,
-CNC-style machines that run a whole job unattended.
-
-## Shop-made jigs (Now: v1)
-
-Some tools are never sold — you build them (`ToolType.craftedOnly`, granted
-via `OperationOutput.toolOutputs`). The crosscut sled came first: plywood
-base plus scrap runners, built at the workspace under `jigs-and-fixtures`,
-mounts only on the table saw (`ToolType.compatibleMachines`) and unlocks
-wide panel crosscuts — the doorway to end-grain boards. The straight-line
-sled is its milling sibling: same ingredients, same station, and it turns
-the table saw into a no-prerequisites edge jointer (see Milling). Later
-jigs live here too: tapering jigs, box-joint jigs, router sleds.
+Some tools are never sold — you build them (`ToolType.craftedOnly`,
+granted via the build's `toolOutputs`). The pattern: cheap sheet-good
+ingredients, built at a bench under a skill, mounted only on the machine
+they fit (`compatibleMachines`), and unlocking a capability the bare
+machine lacks — the crosscut sled opens wide panel crosscuts, the
+straight-line sled turns the table saw into a no-prerequisites edge
+jointer, the resaw fence stands the band saw's cut on edge.
 
 Related hard rule: **end grain never meets the planer** (`Panel.grain`).
-Planing an end-grain panel tears it apart in real life, so the planer's
-`plane` operation rejects them and sanding is the only way to flatten one —
-which keeps sanders relevant deep into the planer era and sets up a future
-drum sander.
+Planing an end-grain panel tears it apart in real life, so the planer
+rejects them and sanding is the only way to flatten one — which keeps
+sanders relevant deep into the planer era.
 
-## Handheld tools (Now: v1)
+## Attended vs hands-free operation phases
 
-- `ToolType { id, name, description, cost, operations }` — registry in
-  `src/game/Tool.ts`, definitions in `src/game/tools/`.
-- Workstations have **tool slots** (`MachineType.toolSlots`). Mounting a tool
-  at a station adds that tool's operations to the station's operation list.
-  - Makeshift workbench (id `workspace`): 2 slots. Worktables: 3–6 slots by
-    size (see `docs/worktables.md` — the old store-bought makeshift bench
-    retired in favor of shop-built worktables).
-- An unmounted tool is a **physical object** — a `MaterialInstance` of kind
-  `tool` — so it rides every system loose stock does: bought at the store's
-  Tool Wall it comes home in the truck's bed, is lifted out at the tailgate,
-  carried in the arms (one hand slot), set down as a floor pile, or parked
-  on a station shelf. Mounting happens from the station's card and takes the
-  tool out of the hands; unmounting puts it back in them. There is no
-  abstract tool storage.
-- First tools: **sanding block** ($10, slow) and **random orbit sander**
-  ($120, fast). Same operations, different durations.
-- The **hand plane** ($35) is the budget mill: flattens a face or
-  straightens an edge at any bench, slowly — the jointer's cheap rival.
-- The **hand saw** ($18) is the budget crosscut: a backsaw and miter box
-  with the miter saw's exact operation (same angle stops, same
-  parameters — it's a `ParameterizedOperation` on a tool) at roughly
-  triple the duration.
-- The **drill** ($70) is the hammer's screw-driving sibling: screwed
-  assembly recipes are drill operations. Its first recipe is the Rustic
-  Planter Box (5 pallet slats crosscut to 2', 8 screws) — screws come only
-  from the store, never salvage (see `docs/consumables.md`).
+Operations run as a list of **phases**, each `{ name, duration,
+attended }`. An op that declares no phases is one attended stretch of
+hand work — the default.
 
-### Later
+The rules (in `tickAction`):
 
-- More tools from the brainstorm doc: chisels (hand-cut joinery), router
-  (edge profiles).
-- More screw-assembly recipes on the drill (the furniture arc).
-- **Tool scarcity → logistics**: once you own more tools than slots, you're
-  choosing loadouts per station and physically ferrying them. Dedicated
-  tool storage furniture (wall racks, chests) would give loose tools a
-  tidier home than floor piles and station shelves.
-- Tool quality tiers / consumables (sandpaper grits from issue #7) — only if
-  the game needs another sink.
+1. An **attended** phase only ticks while the player stands at the
+   machine's operation cell (and isn't away). Otherwise it pauses —
+   never cancels — and resumes on return. The bench view amends this:
+   an operation with a declared interaction never advances by tick at
+   all; the player's gestures are the progress (`docs/bench-work.md`).
+2. A **hands-free** phase (`attended: false`) always ticks, including
+   during away trips.
+3. An operation cannot _enter_ an attended phase without the player
+   there: it finishes the prior phase and sits "ready — needs you".
 
-## Surface conditions (Now: v1)
+Hands-free phases today are glue **curing** (every glue-up is a short
+attended phase then the same long cure, `GLUE_CURE_TICKS`) and the oil
+finish's **soak**. The intended economy: attended work serializes
+through the player (your hands are the bottleneck), hands-free work
+parallelizes across stations — so staged glue-ups plus extra benches
+convert money into throughput. Clamps are the second dial on that
+conversion: a glue-up ties up clamps for its whole run (`Clamp.ts`).
+Shop-view feedback: amber progress = attended work underway, green =
+hands-free, amber pause marker = attended work waiting for you.
 
-`surface: "rough" | "smooth" | "sanded"` on **Board** and **Panel** (scalar —
-the whole piece has one state). Finished products don't carry it; recipes
-bake it in. Surface is **finish quality only** — geometry (flat, straight)
-lives on the milling axes below, and the two never substitute for each other.
+## Surface conditions
 
-- **Sanding** (tool op) bumps surface one step: rough → smooth → sanded.
-  Never changes thickness, never flattens, never joints.
-- **Planing** leaves the surface **smooth**. It cannot produce "sanded" —
-  only sanding reaches the top state.
-- **Glue-ups always output rough** panels (squeeze-out, alignment ridges),
-  regardless of strip surfaces. Gluing requires smooth-or-better strips
-  AND fully ripped edges (`jointedEdges: 2`) — edge joints need straight,
-  clean edges.
-- Cutting boards require a **sanded** panel. Rustic products accept anything
-  (rough is the point of rustic) — except the rustic frame, whose sanded
-  rails are what make it the starter shop's graduation piece.
-- **Surface is a gate, never a price.** A sanded board is worth exactly what
-  a rough one is: nothing (wood has no sell value at all — see
-  `material-values.ts` and `docs/marketplace-and-jobs.md`). Sanding buys
-  access to the work that demands it, and that is the whole reward. There
-  is no surface value multiplier, and adding one would re-open the
-  board-foot arbitrage the value model exists to close.
+`surface: "rough" | "smooth" | "sanded"` on **Board** and **Panel**
+(scalar — the whole piece has one state). Finished products don't carry
+it; recipes bake it in. Surface is **finish quality only** — geometry
+(flat, straight) lives on the milling axes below, and the two never
+substitute for each other.
 
-## Milling: jointed faces and edges (Now — issue #6)
+- **Sanding** bumps surface one step: rough → smooth → sanded. Never
+  changes thickness, never flattens, never joints.
+- **Planing** leaves the surface **smooth**. Only sanding reaches the
+  top state.
+- **Glue-ups always output rough** panels (squeeze-out, alignment
+  ridges), regardless of strip surfaces. Gluing requires smooth-or-better
+  strips AND fully ripped edges (`jointedEdges: 2`).
+- Fine products require a **sanded** blank; rustic products accept
+  anything — rough is the point of rustic.
+- **Surface is a gate, never a price.** A sanded board is worth exactly
+  what a rough one is: nothing (wood has no sell value — see
+  `material-values.ts`). Sanding buys access to the work that demands
+  it, and that is the whole reward. Adding a surface value multiplier
+  would re-open the board-foot arbitrage the value model exists to
+  close.
+- **Finish** is orthogonal to surface: `FinishedProduct.finish` is
+  applied by the finishing kit's stroke work after the product exists
+  (`src/game/tools/finishing-operations.ts`), and food-contact products
+  only accept food-safe finishes.
+
+## Milling: jointed faces and edges
 
 Boards carry two independent axes, not a ladder:
 
@@ -150,80 +137,52 @@ Boards carry two independent axes, not a ladder:
 - `jointedEdges: 0 | 1 | 2` — 0 = wavy, 1 = one straight edge,
   2 = edges parallel ("ripped to width")
 
-Two axes because milling order genuinely varies: after a reference face and
-edge exist, `plane → rip` and `rip → plane` are both correct. Ends are never
-tracked — crosscuts have no prerequisites. **Milling never consumes nominal
-dimension**: rough stock carries sacrificial material beyond its listed
-size, so a 4/4 rough board skim-planes to a finished 4/4 board (the planer
-accepts a target equal to the current thickness).
+Two axes because milling order genuinely varies: after a reference face
+and edge exist, `plane → rip` and `rip → plane` are both correct. Ends
+are never tracked for milling — crosscuts have no prerequisites.
+**Milling never consumes nominal dimension**: rough stock carries
+sacrificial material beyond its listed size, so a 4/4 rough board
+skim-planes to a finished 4/4 board.
 
-Operation prerequisites and providers:
+The prerequisite logic, which any new milling provider must respect:
+planing needs a reference face (faces ≥ 1); the jointer's edge pass
+needs a reference face against the fence, while a sled carries the board
+so it needs none; ripping against the fence needs a straight edge
+(edges ≥ 1 — never rip a wavy edge against a fence); crosscuts need
+nothing.
 
-| Step         | Effect                                                              | Providers                                                                                                                                                     |
-| ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Joint face   | faces 0→1                                                           | jointer; hand plane (slow)                                                                                                                                    |
-| Plane        | faces →2, surface→smooth; needs faces ≥ 1                           | planer; later router sled/CNC                                                                                                                                 |
-| Joint edge   | edges 0→1                                                           | jointer (needs faces ≥ 1 — fence reference); straight-line sled on the table saw (**no prerequisites** — the board rides the sled, not the fence); hand plane |
-| Rip to width | edges →2; needs edges ≥ 1 (never rip a wavy edge against the fence) | table saw                                                                                                                                                     |
-| Crosscut     | length only, rewrites board ends (see Board ends), no prerequisites | miter saw, crosscut sled, hand saw (slow)                                                                                                                     |
+Pallet boards scavenge as `{ jointedFaces: 1, jointedEdges: 2 }` — they
+were factory-milled once, weathered rough — which keeps the whole early
+game (rip, crosscut, sand, glue) running without any milling equipment.
+`millingLabel()` names the classic states (S4S / S3S / S2S / rough
+sawn); the pallet-ish default state gets no label.
 
-Pallet boards scavenge as `{ jointedFaces: 1, jointedEdges: 2 }` — they were
-factory-milled once, weathered rough — which keeps the whole early game
-(rip, crosscut, sand, glue) running without any milling equipment.
-`millingLabel()` names the classic states (S4S / S3S / S2S / rough sawn) in
-material names; the pallet-ish default state gets no label.
+## Board ends & miter cuts
 
-## Board ends & miter cuts (Now)
+Boards carry per-end state: `Board.ends = { left, right }`, each
+`{ kind: "square" }` or `{ kind: "mitered", angle }` with angles from
+`MITER_ANGLES`. Absent means both ends square (the `Panel.grain`
+precedent — untouched stock needs no migration). Per-end rather than a
+count because advanced work cares WHICH end carries a treatment; tenons
+and dowel holes can join the union as new kinds later.
 
-Boards carry per-end state: `Board.ends = { left, right }`, each a
-`BoardEnd` — `{ kind: "square" }` or `{ kind: "mitered", angle }` with
-angles from `MITER_ANGLES` (22.5 / 30 / 45). Absent means both ends square
-(the `Panel.grain` precedent — old saves and untouched stock need no
-migration). Per-end rather than a count because advanced work cares WHICH
-end carries a treatment; tenons and dowel holes join the union as new
-kinds later.
+The miter saw models a real saw setup instead of a recipe list: Angle
+(a crosscut is just the 0° stop), Cut End (which end faces the blade),
+and Target Length (the kept piece, measured from the stop). The blade
+leaves a fresh face on both pieces; rips and resaws run along the board,
+so both pieces inherit the input's ends; any square crosscut squares the
+end it re-cuts. `endsLabel()` names mitered ends in material names, and
+the board sprite draws them as diagonal ends.
 
-The miter saw's one operation models a real saw setup instead of a recipe
-list: **Angle** (detents 0° / 22.5° / 30° / 45° — a crosscut is just the 0°
-stop), **Cut End** (which end of the stock faces the blade), and **Target
-Length** (the kept piece, measured from the stop). The blade leaves a fresh
-face on both pieces: the kept piece keeps its stop-side end untouched, the
-offcut keeps its far end. A frame rail is therefore two cuts — miter the
-left end, then flip and cut to length mitering the right. Rips and resaws
-run along the board, so both pieces inherit the input's ends; any square
-crosscut squares the end it re-cuts.
-
-`endsLabel()` names mitered ends in material names ("45° both ends"), and
-the board sprite draws them as diagonal ends. First consumer: the Picture
-Frame (`mitered-frames` skill, joinery branch) — four sanded real-wood
-rails, 45° both ends, joined with brads from the nail stock. 30° and 22.5°
-are seeded for future hexagonal/octagonal frames.
-
-## Lumber channels (Now — issue #6)
+## Lumber channels
 
 Lumber is sold as purchase channels modeled on the real woodworker's
 journey, split across two stores: Orange Box carries only ready-to-use
-wood, and Sawyer & Sons (the lumberyard, its own trip out the garage door)
-carries everything milled short of S4S. Channels are **reputation-gated and
-completely hidden until unlocked** — no grayed-out teasers; sections
-appearing is the reward, and the lumberyard itself appearing at the door is
-the 12-reputation reward. See `lumberStock.ts` for the data.
-
-| Channel             | Store         | Species                    | State                    | Price factor              | Unlock        |
-| ------------------- | ------------- | -------------------------- | ------------------------ | ------------------------- | ------------- |
-| The curb            | —             | pallet                     | faces 1 / edges 2, rough | free                      | start         |
-| Construction Lumber | Orange Box    | pine                       | S4S                      | ×1                        | with store    |
-| S4S Hardwood Rack   | Orange Box    | poplar, oak, maple         | S4S                      | ×1.6 (the big-box markup) | with store    |
-| S2S Rack            | Sawyer & Sons | maple, oak, cherry, walnut | faces 2 / edges 0        | ×1                        | 12 reputation |
-| Rough Rack          | Sawyer & Sons | maple, oak, cherry, walnut | faces 0 / edges 0        | ×0.55                     | 22 reputation |
-
-Exotics (mahogany, purple heart) are not sold anywhere yet — a future
-"specialty dealer" brings them back as the channel past the rough rack.
-
-### Later
-
-- Router sled / CNC: whole-ladder unattended milling (pairs with the
-  hands-free phase system).
-- True per-face state (which face is jointed, S1S) — only if a feature ever
-  needs to distinguish orientation; the two-count model covers everything
-  current gameplay cares about.
+wood, and Sawyer & Sons (the lumberyard, its own trip out the garage
+door) carries everything milled short of S4S — the less milled the rack,
+the cheaper the board-foot, which is what makes the milling machines
+earn their price. Channels are **reputation-gated and completely hidden
+until unlocked** — no grayed-out teasers; sections appearing is the
+reward, and the lumberyard itself appearing at the truck is a reputation
+reward. The channel data — species, milled state, price factors, gates —
+lives in `src/game/lumberStock.ts`.

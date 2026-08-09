@@ -11,6 +11,7 @@ import {
   OperationParameter,
   operationParameters,
 } from "../../game/Machine";
+import { isBenchtopOnFloor } from "../../game/bench-mounting";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import { heldTool } from "../../game/HeldTool";
 import {
@@ -36,7 +37,7 @@ import { useMachineActivity } from "../shop-view/useMachineActivity";
  * state on one line, then a key chip per verb that applies right now —
  * the same weight as the player's own "[F] put down" hint, nothing
  * card-like. Buttons, scales, and racks live on the station sheet
- * (Enter); the in-world sprite already shows settings physically (the
+ * (Tab); the in-world sprite already shows settings physically (the
  * fence rides its rail, the miter head swings).
  */
 export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
@@ -126,6 +127,11 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     gameState.player.carriedMachine == null &&
     canPickUpMachine(gameState, machine.state);
 
+  // A benchtop machine sitting on the ground works, badly — say why the
+  // cut is slow right where the player is standing to make it (see
+  // bench-mounting.ts).
+  const onFloor = isBenchtopOnFloor(machine, gameState);
+
   // What the station says it's doing: its own word for the job when it has
   // one ("emptying" at the garbage can), the generic motor otherwise.
   const workingWord =
@@ -144,11 +150,16 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   ) : null;
 
   return (
-    <HintList>
+    <HintList testId="machine-chips">
       <HintRow className="text-paper-manila/60">
         {machine.type.name}
         {status && <> · {status}</>}
       </HintRow>
+      {onFloor && (
+        <HintRow className="max-w-56 whitespace-normal normal-case italic tracking-normal text-store-orange/90">
+          On the floor: work here takes twice as long. Set it on a worktable.
+        </HintRow>
+      )}
       {interactHere && (
         <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
           {interactLabel(interactHere)}
@@ -162,17 +173,20 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           next piece
         </HintRow>
       )}
+      {/* Just the verb: what's in hand is already drawn in the hands
+          strip, so naming it here would say it twice. With an armful the
+          verb can't say *which* piece goes on, so that one names it. */}
       {stageable.length > 0 && (
         <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
-          {machine.type.stageVerb ?? "place"} {getMaterialName(stageable[0])}
+          {machine.type.stageVerb ?? "place"}
+          {stageable.length > 1 && ` ${getMaterialName(stageable[0])}`}
         </HintRow>
       )}
       {/* Hand work has no chip of its own: the bench view owns it
-          (docs/bench-minigames.md), and the single "use workbench" chip
-          below is the door to all of it — prying, plans, arranging. */}
+          (docs/bench-work.md), and the single "[Tab] use" chip below is
+          the door to all of it — prying, plans, arranging. */}
       {canOperate && !runOperation?.interaction && (
-        <HintRow keys={<ShortcutKeys shortcut="operate-machine" />}>
-          hold to{" "}
+        <HintRow keys={<ShortcutKeys shortcut="operate-machine" />} hold>
           {(runOperation?.name ?? machine.type.feedVerb ?? "run").toLowerCase()}
         </HintRow>
       )}
@@ -221,10 +235,10 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           keys={<ShortcutKeys shortcut="open-station-sheet" />}
         >
           {machine.type.directFeed
-            ? "tool rack"
+            ? "accessories"
             : machine.type.container
               ? "contents"
-              : "use workbench"}
+              : "use"}
         </HintRow>
       )}
       {machines.length > 1 && (
@@ -232,15 +246,17 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           className="text-paper-manila/70"
           keys={<ShortcutKeys shortcut="cycle-machine" />}
         >
-          next machine ({machines.length} here)
+          next machine · {machines.length}
         </HintRow>
       )}
+      {/* "carry", not "pick up": E on the same cluster is already the
+          pick-up key, and the title has said which machine this is. */}
       {liftable && (
         <HintRow
           className="text-paper-manila/70"
           keys={<ShortcutKeys shortcut="carry-machine" />}
         >
-          pick up {machine.type.name}
+          carry
         </HintRow>
       )}
     </HintList>

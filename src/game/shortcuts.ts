@@ -9,8 +9,10 @@
  * `keys` is what the player is shown.
  *
  * A shortcut can also answer to a mouse button (`buttons`). Those dispatch
- * through the same provider and render as their own chip, so the mouse is
- * taught in the same places the keys are. Bindings that need to know *what*
+ * through the same provider and get their own chip in the `?` cheat sheet —
+ * but not in the floating hint clusters, which stay the keyboard's: a
+ * spelled-out "Right-click" cap is wider than the machine it hovers over.
+ * Bindings that need to know *what*
  * the cursor is over — right-clicking a machine, a piece on the floor — are
  * dispatched by the sprite that was hit rather than here; their entry in this
  * table carries no `codes` and exists so the verb still gets a chip and a row
@@ -261,9 +263,9 @@ const defs = [
 
   // ---------------------------------------------------------------- Machines
   {
-    // Contextual like sweep (ActionBar offers it standing at a machine or on
-    // a crate once carrying is unlocked); hidden from the static cheat sheet
-    // so the verb doesn't leak before its reveal.
+    // Contextual like sweep (ActionBar offers it standing at a machine or
+    // on a crate); hidden from the static cheat sheet — the chip at the
+    // machine teaches it in place.
     id: "carry-machine",
     codes: ["KeyB"],
     keys: [["B"]],
@@ -302,7 +304,7 @@ const defs = [
     // the clock instead: hold it and time passes fast, release and it
     // stops. Needs no target and works anywhere in the shop; the easy
     // answer to a glue cure, against which filling the wait with other
-    // work is the skilled play (docs/time-and-days.md). Stands down at
+    // work is the skilled play (see time-flow.ts). Stands down at
     // night, when there's nothing left to spend.
     id: "wait",
     codes: ["KeyT"],
@@ -359,6 +361,9 @@ const defs = [
     description: "Machine setting down / in / left",
     scope: "home",
     group: "Machines",
+    // On a fine scale — the miter saw's inch marks — shift moves a foot
+    // at a time. Scales without a coarse step just move one mark.
+    shiftHint: "move a foot at a time",
   },
   {
     id: "setting-up",
@@ -367,6 +372,7 @@ const defs = [
     description: "Machine setting up / out / right",
     scope: "home",
     group: "Machines",
+    shiftHint: "move a foot at a time",
   },
   {
     id: "cycle-machine",
@@ -594,8 +600,9 @@ export function shortcutsForButton(
 
 /**
  * Everything a shortcut is shown as: its key alternatives, then a chip per
- * mouse button. One list so a chip renders the whole binding — `Tab` on its
- * own, `Esc / Right-click` where both work.
+ * mouse button — `Tab` on its own, `Esc / Right-click` where both work. The
+ * full reference (the `?` sheet) shows these; the in-world hint chips show
+ * `keys` alone (see ShortcutKeys).
  */
 export function shortcutChords(
   def: ShortcutDef,

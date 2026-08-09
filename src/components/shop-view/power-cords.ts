@@ -1,5 +1,5 @@
 import { footprintCenter, Machine } from "../../game/Machine";
-import { DOOR_HALF_WIDTH, ShopInfo } from "../../game/ShopInfo";
+import { doorCenterX, DOOR_WIDTH, ShopInfo } from "../../game/ShopInfo";
 import { localToGlobal, Vector } from "../../game/Vectors";
 
 /**
@@ -23,8 +23,10 @@ export interface Outlet {
  */
 const OUTLET_SPACING = 5;
 
-/** A stretch of wall shorter than this goes without a receptacle. */
-const MIN_SEGMENT = 2;
+/** A stretch of wall shorter than this goes without a receptacle — just
+ * enough to rule out slivers while keeping the 1.5-ft stretches beside
+ * the 8-ft garage door powered. */
+const MIN_SEGMENT = 1;
 
 /**
  * Evenly spaced outlet spots within one unbroken stretch of wall — as
@@ -58,8 +60,8 @@ export function outletPositions(shopInfo: ShopInfo): Outlet[] {
   }
   // The bottom wall is two solid segments flanking the door opening —
   // the strip plus half a cell of jamb on each side stays clear.
-  const doorCenter = shopInfo.entrancePosition[0] + 0.5;
-  const doorHalfSpan = DOOR_HALF_WIDTH + 1;
+  const doorCenter = doorCenterX(shopInfo);
+  const doorHalfSpan = DOOR_WIDTH / 2 + 0.5;
   for (const t of [
     ...spotsAlong(0, doorCenter - doorHalfSpan),
     ...spotsAlong(doorCenter + doorHalfSpan, width),

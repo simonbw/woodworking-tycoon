@@ -17,7 +17,6 @@ import {
   acceptJobAction,
   cancelJobAction,
   delistItemAction,
-  deliverJobAction,
   listItemsAction,
   marketplaceTickPass,
   repriceListingAction,
@@ -492,26 +491,8 @@ describe("accept / cancel / deliver job", () => {
     assert.strictEqual(cancelJobAction("job-test")(broke).reputation, 0);
   });
 
-  it("delivering consumes the bed's materials and pays base + tip", () => {
-    const shelf = makeShelf();
-    const accepted = { ...shelfOffer, acceptedAtTick: 0 };
-    const base = stateWith({ tick: 0, acceptedJobs: [accepted] });
-    const state = { ...base, truck: { ...base.truck, bed: [shelf] } };
-    const result = deliverJobAction("job-test")(state);
-    assert.deepStrictEqual(result.acceptedJobs, []);
-    assert.deepStrictEqual(result.truck.bed, []);
-    // Full tip at instant delivery: 100 * 1.4
-    assert.strictEqual(result.money, state.money + 140);
-    assert.strictEqual(result.reputation, state.reputation + 4);
-    assert.ok(result.progression.xp > 0);
-  });
-
-  it("does nothing when the bed is empty", () => {
-    const accepted = { ...shelfOffer, acceptedAtTick: 0 };
-    const state = stateWith({ acceptedJobs: [accepted] }, []);
-    const result = deliverJobAction("job-test")(state);
-    assert.strictEqual(result, state);
-  });
+  // What delivering an accepted job pays, and the drive it takes, live
+  // in delivery-actions.test.ts — one round trip serves both tracks.
 
   it("generated pallet jobs are satisfiable by pallet deck boards", () => {
     // The zero-cost guarantee is only real if scavenged deck boards

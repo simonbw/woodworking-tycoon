@@ -213,9 +213,18 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("the top bar tells the day by its light, not a clock", async () => {
-      // Deliberately no wall clock — the day reads as morning through
-      // night, and a fresh save opens in the morning.
-      await expect(page.getByTestId("day-phase")).toHaveText(/^morning$/i);
+      // Deliberately no wall clock — the dial shows where the sun stands,
+      // and a fresh save opens in the morning of day one.
+      const dial = page.getByTestId("day-dial");
+      await expect(dial).toHaveAttribute("data-day-phase", "morning");
+      await expect(page.getByTestId("day-date")).toHaveText(/JUN\s*9/);
+      // Sunrise: the daylight arc has nothing filled in yet.
+      await expect(page.getByTestId("day-dial-arc")).toHaveAttribute(
+        "stroke-dashoffset",
+        "100",
+      );
+      // No hour anywhere in the chip.
+      await expect(page.locator("nav")).not.toContainText(/\d\d?:\d\d/);
     });
 
     await test.step("day job button is not present", async () => {
@@ -229,7 +238,7 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("no layout tab — no tabs at all, just the readout chip", async () => {
-      await expect(page.getByTestId("day-phase")).toBeVisible();
+      await expect(page.getByTestId("day-dial")).toBeVisible();
       await expect(page.getByText("Shop Layout")).toHaveCount(0);
     });
 
@@ -241,8 +250,8 @@ test.describe("Shop floor", () => {
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.machineCrates).toHaveLength(0);
       expect(state.player.carriedMachine.machineTypeId).toBe("miterSaw");
-      await expect(page.getByText("Put down Miter Saw")).toBeVisible();
-      await expect(page.getByText("Rotate")).toBeVisible();
+      await expect(page.getByTestId("player-hints")).toContainText("put down");
+      await expect(page.getByTestId("player-hints")).toContainText("rotate");
     });
 
     await test.step("rotate the carried machine", async () => {
@@ -271,7 +280,9 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("lift the placed machine back up from the same spot", async () => {
-      await expect(page.getByText("Pick up Miter Saw")).toBeVisible();
+      // The chip is headed by the machine's name, so the key row is
+      // just the verb
+      await expect(page.getByTestId("machine-chips")).toContainText("carry");
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect((await carried(page)).machineTypeId).toBe("miterSaw");
@@ -286,7 +297,7 @@ test.describe("Shop floor", () => {
       // The fixture's miter saw at [6,3] holds a board; stand at its
       // operator cell and try
       await teleportPlayer(page, [6, 5]);
-      await expect(page.getByText("Pick up Miter Saw")).toHaveCount(0);
+      await expect(page.getByTestId("machine-chips")).not.toContainText("carry");
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect(await carried(page)).toBeNull();
@@ -295,8 +306,8 @@ test.describe("Shop floor", () => {
     await test.step("carry a worktable to a new spot", async () => {
       // The fixture's small worktable at [9,2] operates from [9,4]
       await teleportPlayer(page, [9, 4]);
-      const machineHint = page.getByText(/use workbench/i);
-      await expect(machineHint.first()).toBeVisible();
+      const machineHint = page.getByTestId("machine-chips");
+      await expect(machineHint.first()).toContainText(/use/i);
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect((await carried(page)).machineTypeId).toBe("worktable1x1");
@@ -313,7 +324,9 @@ test.describe("Shop floor", () => {
       );
       expect(table.position).toEqual([5, 8]);
       // Standing at the freshly placed table's operator cell brings it back
-      await expect(page.getByText(/use workbench/i).first()).toBeVisible();
+      await expect(page.getByTestId("machine-chips").first()).toContainText(
+        /use/i,
+      );
     });
 
     await test.step("buying a machine crates it into the truck's bed", async () => {
@@ -352,7 +365,7 @@ test.describe("Shop floor", () => {
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.truck.crates).toHaveLength(0);
       // The lot is walkable, not usable: no setting a machine down out here
-      await expect(page.getByText("no room to set it down here")).toBeVisible();
+      await expect(page.getByText("no room here")).toBeVisible();
       // Carry it in and stand it on open floor
       await teleportPlayer(page, [2, 10]);
       await page.keyboard.press("b");
@@ -410,8 +423,8 @@ test.describe("Shop floor", () => {
       });
       await teleportPlayer(page, [10, 6]);
       // The chip names the piece it would grab
-      const chip = page.getByText(/^pick up · Pine/i).first();
-      await expect(chip).toBeVisible();
+      const chip = page.getByTestId("pickup-chip").first();
+      await expect(chip).toContainText(/Pine/i);
       // The camera may still be easing back indoors from the tailgate a
       // few steps ago — the overlay rides it, so wait for the chip to
       // hold still before treating its position as meaningful.
@@ -556,7 +569,7 @@ test.describe("Shop floor", () => {
       ).toBe(true);
       // Standing at the rail, the chip names the piece E would lift back
       // out rather than the furniture it's lying in
-      await expect(page.getByText("pick up Rustic Shelf")).toBeVisible();
+      await expect(page.getByText("take Rustic Shelf")).toBeVisible();
       await movePlayerToCab(page);
       await openTruckMenu(page);
 
@@ -566,8 +579,11 @@ test.describe("Shop floor", () => {
       await expect(panel).toContainText("Your First Shelf");
       // The client is named on the row — you know who you're meeting
       await expect(panel).toContainText("Marguerite");
+      // Delivering is a drive, and the row says what the drive costs
+      await expect(panel).toContainText("30 min there and back");
+      // The row itself is the button — no separate "Deliver" control
       await expect(
-        panel.getByRole("button", { name: "Deliver" }),
+        panel.getByRole("button", { name: /^Deliver:/ }),
       ).toBeVisible();
     });
 
@@ -593,6 +609,10 @@ test.describe("Shop floor", () => {
       expect(state.money).toBe(before.money + 20);
       expect(state.reputation).toBe(before.reputation + 2);
       expect(state.progression.commissionsCompleted).toBe(1);
+      // The truck went somewhere: both legs charged their minutes, and
+      // the player is back beside the cab rather than never having left
+      expect(state.tick).toBeGreaterThanOrEqual(before.tick + 30);
+      expect(state.player.away).toBe(null);
       expect(
         state.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
       ).toBe(false);
@@ -647,10 +667,32 @@ test.describe("Shop floor", () => {
       const panel = page.getByTestId("truck-panel");
       await expect(panel).toContainText("Places to go");
       await expect(
-        panel.getByRole("button", { name: "Deliver" }),
+        panel.getByRole("button", { name: /^Deliver:/ }),
       ).toHaveCount(0);
       // The store trip it unlocked is there instead
       await expect(panel).toContainText("Orange Box");
+    });
+
+    await test.step("walking away from the cab folds the card for good", async () => {
+      const panel = page.getByTestId("truck-panel");
+      const cell = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().player.position,
+      );
+      // Walk down the lot past the truck's nose: the card belongs to the
+      // cab, and out of reach of it there is no card
+      await page.evaluate((position: number[]) => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, position },
+        }));
+      }, [cell[0], cell[1] + 4]);
+      await expect(panel).toHaveCount(0);
+      // ...and coming back leaves it closed rather than spreading it
+      // open again under the player
+      await movePlayerToCab(page);
+      await expect(panel).toHaveCount(0);
+      await openTruckMenu(page);
+      await expect(panel).toBeVisible();
     });
 
     await test.step("night closes the card down to Home, and sleeping brings the morning", async () => {
@@ -661,7 +703,10 @@ test.describe("Shop floor", () => {
           tick: state.dayStartTick + 600,
         }));
       });
-      await expect(page.getByTestId("day-phase")).toHaveText(/night/i);
+      await expect(page.getByTestId("day-dial")).toHaveAttribute(
+        "data-day-phase",
+        "night",
+      );
 
       // Nowhere left to go but home — the errands step off the card
       const panel = page.getByTestId("truck-panel");
@@ -672,6 +717,7 @@ test.describe("Shop floor", () => {
       const dayBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().day,
       );
+      const dateBefore = await page.getByTestId("day-date").textContent();
       await pressTruckRow(page, "Home");
       // The overnight runs as one batch; morning is a new day with a
       // fresh budget, the player back beside the cab
@@ -681,7 +727,12 @@ test.describe("Shop floor", () => {
           (window as any).__GET_GAME_STATE__().player.away === null,
         dayBefore,
       );
-      await expect(page.getByTestId("day-phase")).toHaveText(/morning/i);
+      await expect(page.getByTestId("day-dial")).toHaveAttribute(
+        "data-day-phase",
+        "morning",
+      );
+      // Sleeping is what turns the calendar over, so the dial's date moved.
+      await expect(page.getByTestId("day-date")).not.toHaveText(dateBefore!);
     });
 
     await test.step("a refresh keeps the shop, without anyone saving it", async () => {

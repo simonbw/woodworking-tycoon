@@ -1,15 +1,17 @@
 import React from "react";
 import { TICKS_PER_DAY } from "../game/time";
-import { currentDayPhase, dayTicksSpent } from "../game/time-flow";
+import { currentDayPhase, dayTicksSpent, isNight } from "../game/time-flow";
 import { formatCount } from "../utils/formatNumber";
+import { DayDial } from "./DayDial";
+import { Tooltip } from "./Tooltip";
 import { useGameState } from "./useGameState";
 
 /**
- * Where the day stands: the light through the garage door, the day
- * number, and a hairline of how far through the working minutes the shop
- * is — the same idiom as the XP meter under the Skills button.
- * Deliberately no wall clock. "Night" means the shop is closed and the
- * truck is the way to bed.
+ * Where the day stands, told by the sun rather than by a clock face or the
+ * name of a phase (`DayDial`): the dial carries the day's progress in its
+ * daylight arc, and the day number lives in the tooltip, since the date is
+ * the more useful thing to have on screen and both won't fit inside the
+ * orbit.
  *
  * Lives on its own because it isn't only the top bar's: an away trip
  * covers the HUD, and the player still has to weigh another stop against
@@ -20,34 +22,19 @@ import { useGameState } from "./useGameState";
 export const DayClock: React.FC = () => {
   const gameState = useGameState();
   const phase = currentDayPhase(gameState);
-  const dayPercent = Math.min(
-    100,
-    (dayTicksSpent(gameState) / TICKS_PER_DAY) * 100,
-  );
 
   return (
-    <section className="relative flex items-baseline gap-3 pb-1.5">
-      <span
-        data-testid="day-phase"
-        className="font-condensed font-bold text-base uppercase leading-none text-paper-manila"
-      >
-        {phase}
-      </span>
-      <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] leading-none text-paper-manila/60">
-        Day{" "}
-        <span className="font-bold text-base tracking-normal text-paper-manila tabular-nums">
-          {formatCount(gameState.day)}
-        </span>
-      </span>
-      <span
-        className="absolute inset-x-0 bottom-0 block h-0.5 overflow-hidden rounded-full bg-paper-manila/25"
-        aria-hidden
-      >
-        <span
-          style={{ width: dayPercent + "%" }}
-          className="block h-full rounded-full bg-gold transition-[width] ease-linear"
-        />
-      </span>
-    </section>
+    <Tooltip
+      content={`${capitalize(phase)} of day ${formatCount(gameState.day)}`}
+    >
+      <DayDial
+        dayProgress={dayTicksSpent(gameState) / TICKS_PER_DAY}
+        night={isNight(gameState)}
+        phase={phase}
+        day={gameState.day}
+      />
+    </Tooltip>
   );
 };
+
+const capitalize = (text: string) => text[0].toUpperCase() + text.slice(1);

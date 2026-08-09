@@ -14,7 +14,8 @@ import { idMaker } from "../utils/idMaker";
 const makeJobId = idMaker();
 
 /**
- * Job generation (see docs/marketplace-and-jobs.md). Offers come from the
+ * Job generation (the board half of the marketplace — see the header of
+ * marketplace.ts for the three-track economy). Offers come from the
  * player's capability envelope — what they can actually build right now —
  * so the board never asks for the impossible, and it skews toward the most
  * advanced capability so new equipment immediately brings matching work.

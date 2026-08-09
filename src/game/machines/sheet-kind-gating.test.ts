@@ -10,12 +10,14 @@ import {
 } from "./benchOperations";
 import { workspace } from "./workspace";
 
-function sheet(kind: SheetGoodKind): SheetGood {
+/** A piece cut to whatever size the recipe under test asks for — this
+ * suite is about which KINDS pass, so the size is never the reason. */
+function sheet(kind: SheetGoodKind, lengthIn: number, widthIn: number) {
   return makeMaterial<SheetGood>({
     type: "plywood",
     kind,
-    length: 48,
-    width: 48,
+    length: lengthIn,
+    width: widthIn,
     thickness: 2,
   });
 }
@@ -36,8 +38,14 @@ function sheetRequirementOf(operationId: string) {
 
 function acceptedKinds(operationId: string): ReadonlyArray<SheetGoodKind> {
   const requirement = sheetRequirementOf(operationId);
+  const lengthIn = (requirement as { length?: number[] }).length?.[0];
+  const widthIn = (requirement as { width?: number[] }).width?.[0];
+  assert.ok(
+    lengthIn !== undefined && widthIn !== undefined,
+    `${operationId} should ask for a sheet cut to a size`,
+  );
   return SHEET_GOOD_KINDS.filter((kind) =>
-    materialMeetsInput(sheet(kind), requirement),
+    materialMeetsInput(sheet(kind, lengthIn, widthIn), requirement),
   );
 }
 

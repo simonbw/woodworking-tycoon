@@ -1,108 +1,76 @@
-# The Shop Manual — Tutorials & Reference — Design
+# The Shop Manual — writing and wiring articles
 
-A dismissible reference modal: categories on the left, an article on the
-right, opened from the `?` button in the top bar. Articles unlock as the
-features they explain unlock.
+The in-game reference binder: a dismissible modal opened from the `?`
+button in the top bar, one article at a time with index tabs sticking
+out the right edge. Articles unlock as the features they explain unlock.
+The registry and unlock predicates live in `src/game/manual.ts`, the
+modal and provider in `src/components/manual/`, and the article bodies
+in `src/components/manual/articles/`. This doc is the guidance for
+adding an article and the voice rules its prose must follow — the
+article list itself lives in the registry.
 
-**Status: implemented.** The article registry and unlock predicates live
-in `src/game/manual.ts`, the modal and provider in
-`src/components/manual/`, and the article bodies in
-`src/components/manual/articles/`. Sidebar categories: Basics / The
-Craft / The Shop / Business. One delta from the design below: the
-welcome auto-open is state-driven (the manual shows itself while
-`welcome` is unlocked-but-unread and closing acknowledges it) rather
-than a mount-time effect, so a migrated or fixture-loaded save dissolves
-it automatically.
+## What the manual is
 
-## Why
+The game has enough interlocking systems (surfaces, tool slots,
+marketplace demand, dust physics) that a player can't hold them all from
+contextual hints alone. The manual is the durable place to re-read how
+something works. It is deliberately **not** an interactive step-by-step
+tutorial — it's the binder on the shelf. One-shot in-world notes like
+`DustTutorialCard` stay: they're the moment-of-need nudge, the manual is
+the re-readable reference. New systems can ship both; the card may end
+with "see the shop manual".
 
-The game has accumulated enough interlocking systems (surfaces, tool
-slots, marketplace demand, dust physics) that a player can't be expected
-to hold them all from contextual hints alone. The manual is the durable
-place to re-read how something works. It is deliberately **not** an
-interactive step-by-step tutorial — it's the binder on the shelf.
+The paperwork design system carries the fiction: an in-fiction
+**spiral-bound shop notebook** — one ivory page at a time, a wire coil
+punched through the left edge, the page stack peeking out underneath,
+manila index tabs clustered by category (Basics / The Craft / The Shop /
+Business), the open article's tab pulled forward in page-ivory.
+Typewriter-set article text per `docs/design-system.md`.
 
-## Fiction & presentation
+## Unlocking and signaling
 
-The paperwork design system carries this: the manual is an in-fiction
-**spiral-bound shop notebook**. One ivory page at a time, a wire coil
-punched through the left edge, a faint red margin rule, the rest of the
-page stack peeking out underneath, and physical index tabs sticking out
-the right edge — manila tabs clustered by category, the open article's
-tab pulled forward in page-ivory. Tab labels are the registry's short
-`tab` names; typewriter-set article text per `docs/design-system.md`.
+- Locked articles are **absent** from the tab list — never grayed-out
+  teasers (the same progressive-disclosure rule the lumber channels
+  follow).
+- A new unlock puts a small badge on the `?` button and a "NEW" marker
+  on the article's tab; opening the article clears both. No toasts and
+  no auto-opens — the one exception is Welcome, which shows itself while
+  it is unlocked-but-unread (state-driven, so a fixture-loaded save
+  dissolves it automatically).
+- State is two persistent `ProgressionState` lists: `unlockedArticles`
+  (appended by the same milestone checks that flip the underlying
+  features — no parallel boolean flags) and `readArticles` (drives the
+  markers; badge = any unlocked-but-unread). Whether the manual is open,
+  and to which article, is UI state, not `GameState`.
 
-## Entry point: the `?` button
+## Adding an article
 
-The NavBar `?` currently opens `ShortcutHelpOverlay` (keyboard
-shortcuts). The manual **takes over the button**: `?` (and the
-`toggle-help` shortcut) opens the manual instead. The shortcut list
-becomes the always-unlocked **Controls** article, rendered from the same
-shortcut registry so it can never drift; `toggle-help` opens the manual
-directly to it. The standalone overlay component retires.
+1. A component in `src/components/manual/articles/`, built from the
+   article elements (`elements.tsx`: `P`/`H`/`UL`/`Term`/`Note`/
+   `FigureRow`/`Photo`). Articles are **TSX content**, not markdown —
+   key-cap chips (`ShortcutKeys`) and inline sprites mean shortcut
+   references and icons can never drift from the game. `Photo` presents
+   the machine PNGs as tilted white-bordered prints with handwritten
+   captions.
+2. A registry row in `src/game/manual.ts`: title, short `tab` label,
+   category, unlock predicate, component.
+3. Deep links where the player will want them: `ManualLink` renders a
+   "Shop Manual → article" pointer that hides while the article is
+   locked; station sheets get theirs via `MACHINE_ARTICLES`.
 
-## Articles
-
-| Article                      | Unlocks on                                      |
-| ---------------------------- | ----------------------------------------------- |
-| Welcome to the Shop          | always (auto-opens once on a brand-new game)    |
-| Controls                     | always                                          |
-| Milling & Surfaces           | the lumberyard opens, or a milling machine/tool |
-| Workbenches                  | first bought tool, clamp, or finish — or the cutting-board commission's call |
-| Shop Layout: Moving Machines | `shopLayoutUnlocked`                            |
-| Marketplace & Jobs           | `marketplaceUnlocked`                           |
-| Sawdust & Cleaning           | `sweepingUnlocked`                              |
-| Skills & XP                  | first skill point earned                        |
-
-Notes:
-
-- **Welcome** walks the very basics through completing the rustic shelf.
-- **Milling & Surfaces** covers rough → smooth → sanded, the machines
-  that get you there, and the planer's direct-feed behavior — the planer
-  does not get its own article; this is where the player meets it.
-- **Workbenches** merges what were separate Tools, Glue-Ups, and
-  Finishing articles into one page on the bench: tool slots and tiers,
-  sanding and finishing, glue-ups and the clamp pool, jigs. Supplies
-  (finish oil, clamps) are covered here rather than in their own
-  article; break them out only if the system grows.
-- Per the progressive-disclosure rule, locked articles are **absent**
-  from the tab list — never grayed-out teasers.
-
-## Unlock signaling
-
-- A new unlock puts a small badge on the `?` button and a "NEW" marker on
-  the article's tab; opening the article clears both. No toasts, no
-  auto-opens — the one exception is Welcome, which opens the manual once
-  on a fresh game (no save present).
-- One-shot in-world notes like `DustTutorialCard` stay: they're the
-  moment-of-need nudge, the manual is the re-readable reference. New
-  systems can ship both; the card may end with "see the shop manual".
-
-## State model
-
-New `ProgressionState` fields (persistent, saved):
-
-- `unlockedArticles: ReadonlyArray<ArticleId>` — appended by the same
-  game actions / tick checks that flip the underlying features. Event
-  triggers with no existing flag (rough lumber, finishing, first tool,
-  first skill point) are detected where the relevant state changes and
-  recorded here; no parallel boolean flags.
-- `readArticles: ReadonlyArray<ArticleId>` — drives the NEW markers and
-  the `?` badge (badge = any unlocked-but-unread).
-
-Requires a `SAVE_VERSION` bump. Migration evaluates each article's
-unlock predicate against the loaded state and marks everything already
-unlocked as **read** — an established save must not get badge-spammed
-with nine "NEW" tabs on load.
-
-Whether the manual is open (and which article) is UI state, not
-`GameState`.
+**A new section beats a new article.** When a system is small or lives
+at an existing station, add a section to the article already covering
+that place, and cut against what the binder teaches elsewhere — a fact
+stated in two articles will drift apart. (This is why Workbenches covers
+tools, glue-ups, finishing, and supplies in one page, and why the planer
+has no article of its own — Milling & Surfaces is where the player meets
+it.)
 
 ## Voice & copy rules
 
 Article prose is written for a player seeing the game for the first
-time, in plain instruction-manual style. The rules, learned the hard
-way in the first copy pass:
+time, in plain instruction-manual style. The rules, learned the hard way
+in the first copy pass:
 
 1. **Never explain what the game isn't, lacks, or used to be.** "The
    planer has no menus", "there is no blueprint mode", "there's no
@@ -146,33 +114,6 @@ way in the first copy pass:
 10. **Instruct, don't reassure.** Say what to do and what happens
     ("Keeping a clean shop keeps work moving at full speed"), not how
     the player should feel about it ("A little mess is harmless").
-11. **A new section beats a new article.** When a system is small or
-    lives at an existing station, add a section to the article already
-    covering that place and cut against what the binder teaches
-    elsewhere — a fact stated in two articles will drift apart.
-
-## Content format
-
-Articles are **TSX content**, not markdown strings — headings, key-cap
-chips (`ShortcutKeys`), and inline machine/material sprites, so the
-Welcome article can show the actual icons it references and shortcut
-references never go stale. Article components and the registry live in
-`src/components/manual/`; the registry maps `ArticleId` → title,
-category, unlock predicate (for migration), and component.
-
-## Deep links & illustrations (implemented)
-
-- `ManualLink` (`src/components/manual/ManualLink.tsx`) is the
-  moment-of-need pointer: a small "Shop Manual → <article>" link that
-  renders nothing while the article is locked. Used by the dust card,
-  the station sheets (`MACHINE_ARTICLES` in
-  `src/game/manual.ts` maps machine → article), and every tool rack
-  (→ Workbenches).
-- Articles carry photo prints (`Photo` / `FigureRow` in the article
-  elements): the machine PNGs from `static/images/` presented as tilted
-  white-bordered prints with handwritten captions.
-
-## Later
-
-- Articles for systems as they land (worktable building, offcut
-  recovery, dust collection tiers).
+11. **A new section beats a new article** — see above; it's a voice rule
+    too, because the binder speaking twice about one fact is how the
+    two tellings drift.

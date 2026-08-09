@@ -66,17 +66,16 @@ export const KeyChips: React.FC<{
 };
 
 /**
- * The chips for a registered shortcut, looked up by id — its keys plus any
- * mouse button it answers to.
+ * The key chips for a registered shortcut, looked up by id. Keys only: the
+ * hint chips this feeds are the *keyboard's* hints, and a spelled-out
+ * "Right-click" cap crowds them off the machine it's floating over. Where
+ * the mouse needs teaching, the `?` sheet's Hint rows carry it.
  */
 export const ShortcutKeys: React.FC<{
   shortcut: ShortcutId;
   className?: string;
 }> = ({ shortcut, className }) => (
-  <KeyChips
-    keys={shortcutChords(getShortcut(shortcut))}
-    className={className}
-  />
+  <KeyChips keys={getShortcut(shortcut).keys} className={className} />
 );
 
 /**

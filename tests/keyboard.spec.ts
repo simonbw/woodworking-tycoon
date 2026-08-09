@@ -499,7 +499,7 @@ test.describe("Keyboard", () => {
       );
 
       // Pine went down last, so it's on top and the chip offers it first
-      const chip = page.getByText(/pick up · /);
+      const chip = page.getByTestId("pickup-chip");
       await expect(chip).toContainText(/Pine/);
       await expect(chip).toContainText("1 of 2");
 
@@ -535,7 +535,7 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("sanding ignores Space — the bench view owns hand work", async () => {
-      // The tool rack lives on the station sheet
+      // The accessory rack lives on the station sheet
       await openStationSheet(page);
       // Two tools ride in hand (sander and finishing kit) — name the one
       await page
@@ -563,7 +563,7 @@ test.describe("Keyboard", () => {
       });
 
       // Space is not a path into hand work: held at the bench, nothing
-      // starts (docs/bench-minigames.md decision 1)
+      // starts (docs/bench-work.md decision 1)
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
       );
@@ -699,7 +699,7 @@ test.describe("Keyboard", () => {
       // With a cure running and nobody working, the player's cluster
       // offers the wait key — and holding it spins the clock much
       // faster than the idle creep ever would
-      await expect(page.getByText("hold to pass time")).toBeVisible();
+      await expect(page.getByTestId("player-hints")).toContainText("pass time");
       const tickBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().tick,
       );

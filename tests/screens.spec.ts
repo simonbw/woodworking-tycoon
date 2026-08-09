@@ -168,9 +168,20 @@ test.describe("Screens", () => {
       // The always-on corner: the current order's name and checklist
       await expect(tracker).toBeVisible();
       await expect(tracker).toContainText("First Shelf");
+      // Tracker and clipboard are the same sheet of paper — both print
+      // the work order on paper-legal, not on HUD chrome
+      const PAPER_LEGAL = "rgb(232, 217, 156)";
+      await expect(tracker.locator("article")).toHaveCSS(
+        "background-color",
+        PAPER_LEGAL,
+      );
       // C holds the full clipboard up, and C puts it back down
       await page.keyboard.press("c");
       await expect(clipboard).toBeVisible();
+      await expect(clipboard.locator("article")).toHaveCSS(
+        "background-color",
+        PAPER_LEGAL,
+      );
       await expect(
         clipboard.getByTestId("commission-delivery-note"),
       ).toContainText("truck");
@@ -254,7 +265,7 @@ test.describe("Screens", () => {
           player: {
             ...state.player,
             // Fresh strips, plus the fixture's sander kept in hand — the
-            // tool rack mounts from the arms, so dropping it would leave
+            // accessory rack mounts from the arms, so dropping it would leave
             // the Attach step nothing to attach
             inventory: [
               ...["walnut", "maple", "walnut", "maple", "walnut"].map(
@@ -317,7 +328,7 @@ test.describe("Screens", () => {
     });
 
     await test.step("learning it puts the recipe on the bench", async () => {
-      // The tool rack lives on the station sheet
+      // The accessory rack lives on the station sheet
       await openStationSheet(page);
       await page
         .getByRole("button", { name: "Attach the Random Orbit Sander" })

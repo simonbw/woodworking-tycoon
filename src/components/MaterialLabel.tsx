@@ -10,8 +10,8 @@ import { Tooltip } from "./Tooltip";
 /**
  * The two-line material row label: the name (identity) with the state
  * line — surface, milling, ends — faded underneath. Hovering the name of
- * dimensioned stock spells its size out in plain inches (see
- * docs/lumber-naming.md).
+ * dimensioned stock spells its size out in plain inches (the naming
+ * grammar is documented atop material-helpers.ts).
  */
 export const MaterialLabel: React.FC<{ material: MaterialInstance }> = ({
   material,

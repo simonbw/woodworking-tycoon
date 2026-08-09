@@ -6,9 +6,28 @@ import { initialGameState } from "../initialGameState";
 import { truckCabSideCell } from "../lot";
 import { FinishedProduct, MaterialInstance } from "../Materials";
 import { makeMaterial } from "../material-helpers";
-import { deliverJobAction } from "./marketplace-actions";
+import { readyHandoffs } from "../delivery";
+import {
+  returnFromDeliveryAction,
+  startDeliveryAction,
+} from "./delivery-actions";
 import { clearPendingPayoutsAction } from "./payout-actions";
-import { completeCommissionAction } from "./store-actions";
+
+/**
+ * Drive a ready handoff out and back. The announcement is made on the
+ * way in, not at the cab — the reward flight aims at readouts that are
+ * only on screen once the truck is home.
+ */
+function deliver(
+  state: GameState,
+  kind: "commission" | "job" = "commission",
+): GameState {
+  const handoff = readyHandoffs(state).find((ready) => ready.kind === kind);
+  if (!handoff) {
+    return state;
+  }
+  return returnFromDeliveryAction()(startDeliveryAction(handoff)(state));
+}
 
 function shelf(): FinishedProduct {
   return makeMaterial<FinishedProduct>({
@@ -49,7 +68,7 @@ const shelfJob: AcceptedJob = {
 describe("payout announcements", () => {
   it("a commission handoff announces its rewards and the client's line", () => {
     const commission = COMMISSION_SEQUENCE[0];
-    const result = completeCommissionAction()(atCab([shelf()]));
+    const result = deliver(atCab([shelf()]));
     const payouts = result.pendingPayouts ?? [];
 
     assert.strictEqual(payouts.length, 1);
@@ -65,7 +84,7 @@ describe("payout announcements", () => {
   it("announces what the player was actually paid, not the base rate", () => {
     // Delivered fresh, so the whole tip is still on the table.
     const state = atCab([shelf()], { tick: 0, acceptedJobs: [shelfJob] });
-    const result = deliverJobAction(shelfJob.id)(state);
+    const result = deliver(state, "job");
     const payout = (result.pendingPayouts ?? [])[0];
 
     assert.strictEqual(payout.kind, "job");
@@ -78,7 +97,7 @@ describe("payout announcements", () => {
 
   it("announces nothing when the handoff is refused", () => {
     // Empty-handed: the commission can't be delivered, so nothing to show.
-    const result = completeCommissionAction()(atCab([]));
+    const result = deliver(atCab([]));
     assert.deepStrictEqual(result.pendingPayouts ?? [], []);
   });
 
@@ -88,13 +107,13 @@ describe("payout announcements", () => {
       ...state,
       player: { ...state.player, position: [1, 1] },
     };
-    const result = completeCommissionAction()(inTheMiddle);
+    const result = deliver(inTheMiddle);
     assert.deepStrictEqual(result.pendingPayouts ?? [], []);
     assert.strictEqual(result.money, state.money);
   });
 
   it("clears the queue once the flight layer has picked it up", () => {
-    const delivered = completeCommissionAction()(atCab([shelf()]));
+    const delivered = deliver(atCab([shelf()]));
     const drained = clearPendingPayoutsAction(delivered);
     assert.deepStrictEqual(drained.pendingPayouts, []);
   });

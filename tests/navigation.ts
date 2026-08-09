@@ -4,6 +4,8 @@
  * card that appears when the player stands at the cab).
  */
 
+import { truckCabSideCell } from "../src/game/lot";
+
 /**
  * Start a fresh shop from the title screen.
  *
@@ -24,18 +26,19 @@ export async function startNewGame(page: any) {
 
 /** Teleport the player beside the truck's cab so its prompt appears. */
 export async function movePlayerToCab(page: any) {
-  await page.evaluate(() => {
+  // Where the driver's door is comes from the same geometry the game
+  // uses, so moving the trigger zone never leaves the specs standing in
+  // the wrong patch of grass.
+  const shopInfo = await page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().shopInfo,
+  );
+  const cell = truckCabSideCell(shopInfo);
+  await page.evaluate((position: number[]) => {
     (window as any).__UPDATE_GAME_STATE__((state: any) => ({
       ...state,
-      player: {
-        ...state.player,
-        // The driver's-door cell on the default 12x16 shop (see
-        // truckCabSideCell): grass beside the cab, a walk down the
-        // driveway from the garage door.
-        position: [state.shopInfo.entrancePosition[0] - 4, state.shopInfo.size[1] + 17],
-      },
+      player: { ...state.player, position },
     }));
-  });
+  }, cell);
   await page.waitForTimeout(30);
 }
 
@@ -103,17 +106,31 @@ export async function loadTruckBed(page: any) {
 /**
  * Deliver finished work from the truck — the only way work leaves the
  * shop. Loads what's in hand into the bed, walks to the cab, opens the
- * card, and clicks the "Deliver" button on the row matching `name` (a
- * commission title or a job client).
+ * card, and takes the row matching `name` (a commission title or a job
+ * client).
  *
- * A commission delivery then shows the client's card, which has to be
- * dismissed before the rewards fly; `dismissClientCard` does that.
+ * That row starts a delivery run: the truck drives out, the slip shows
+ * at the customer's, and it comes back on its own (the E2E build skips
+ * the beat, so this only has to wait for the trip to end). The payout
+ * lands on the way in — for a commission that's the client's card, which
+ * `dismissClientCard` clears before the rewards fly.
  */
 export async function deliverFromTruck(page: any, name: string | RegExp) {
   await loadTruckBed(page);
   await movePlayerToCab(page);
   await openTruckMenu(page);
   await pressTruckRow(page, name);
+  await waitForDeliveryRun(page);
+}
+
+/** Wait for a delivery run to pull back into the driveway. */
+export async function waitForDeliveryRun(page: any) {
+  await page.waitForFunction(
+    () => (window as any).__GET_GAME_STATE__().player.away === null,
+    undefined,
+    { timeout: 15000 },
+  );
+  await page.waitForTimeout(30);
 }
 
 /** Dismiss the client's card shown after a commission handoff. */

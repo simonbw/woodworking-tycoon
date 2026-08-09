@@ -74,7 +74,7 @@ export const IDS_WITHOUT_ICON_ART: {
   consumables: ConsumableId[];
   upgrades: UpgradeId[];
 } = {
-  tools: ["resawFence"],
+  tools: ["circularSaw", "resawFence"],
   consumables: [],
   upgrades: ["toolDrawers", "materialShelf"],
 };

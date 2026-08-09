@@ -1,3 +1,44 @@
+/**
+ * Naming wood: the grammar behind every lumber label in the game — store
+ * shelves, floor piles, machine bays, marketplace rows, recipe text.
+ *
+ * The old name (`Pine Board (8'x4"x8/4, smooth, S4S)`) failed both
+ * audiences at once: jargon-dense for a newcomer, wrong-shaped for a
+ * woodworker (nobody lists dimensions length-first, and nobody calls a
+ * 2x4 by its quarters). The two goals stop conflicting once the name
+ * stops trying to carry everything:
+ *
+ * - The name says what a woodworker would say, keyed to what the wood
+ *   *is*: nominal callouts for construction pine (`nominalSizeLabel`),
+ *   quarters for everything else, both cross dimensions in feet for
+ *   sheet goods (the tell that you're holding a sheet, not a board).
+ *   Dimension order is cut-list order everywhere — thickness × width ×
+ *   length — and lengths read as shop talk via `formatLength`
+ *   (`4'` / `7"` / `3'6"`).
+ * - The UI teaches what the name means, one layer down: the plain-inch
+ *   tooltip (`describeStockDimensionsPlain`) and the manual's "Reading
+ *   Lumber Sizes" article. Learning that 8/4 means two inches is a
+ *   reward the game hands the player, not a prerequisite.
+ *
+ * Identity vs. state: a material's name (`getMaterialName`) carries
+ * identity — species, notation, dimensions. What's been *done* to it —
+ * surface, milling, end treatments — is state (`getMaterialState`),
+ * rendered as a separate faded line under the name, never inside it.
+ * Contexts that need one string use `getMaterialFullName` =
+ * "name (state)", and grouping always keys on the full name: a smooth
+ * board and a sanded board are different materials and must never
+ * collapse into one row.
+ *
+ * Requirements keep their own voice (`describeMaterialRequirement`): a
+ * machine bay or recipe input describes *constraints*, in cut-list
+ * order, quarters always — a requirement for "any 2"-thick board" can't
+ * be a 2x4, so nominal callouts never appear there.
+ *
+ * Out of scope, deliberately: real-world nominal shrinkage (a store 2x4
+ * measuring 1.5" × 3.5"). The sim treats nominal as actual — milling
+ * never consumes nominal dimension — so the labels follow the sim and
+ * the callout stays honest.
+ */
 import { formatLength } from "../utils/formatNumber";
 import { humanizeString } from "../utils/humanizeString";
 import { initialPalletNails } from "./bench-work/pallet-geometry";
@@ -7,6 +48,7 @@ import {
   Board,
   BOARD_DIMENSIONS,
   BoardDimension,
+  DustSpecies,
   EndGrainSlice,
   endsLabel,
   FinishedProduct,
@@ -17,6 +59,7 @@ import {
   panelSpecies,
   panelWidth,
   SheetGood,
+  sheetDustSpecies,
   SheetGoodKind,
   Species,
   ToolItem,
@@ -66,14 +109,17 @@ export function makePallet() {
 /**
  * The distinct species a material sheds when machined — what color its
  * sawdust is. Strip-built materials (panels, end-grain slices) report
- * every species they contain; sheet goods report none (their dust will
- * get pseudo-species of its own when they matter).
+ * every species they contain; sheet goods report their family's
+ * pseudo-species (see docs/dust-and-cleaning.md).
  */
-export function materialSpecies(
+export function materialDustSpecies(
   material: MaterialInstance,
-): ReadonlyArray<Species> {
+): ReadonlyArray<DustSpecies> {
   if ("strips" in material) {
     return [...new Set(material.strips.map((strip) => strip.species))];
+  }
+  if (material.type === "plywood") {
+    return [sheetDustSpecies(material.kind)];
   }
   if ("species" in material) {
     const species: Species[] = [material.species];
@@ -129,7 +175,7 @@ export function sheetKindLabel(kind: SheetGoodKind): string {
  * size, or null. Softwood only — hardwood always reads in quarters, no
  * matter its size — and only at a full 1" or 2" thickness. Crosscuts keep
  * the callout (a 4' 2x4 is still a 2x4); ripping or planing off the
- * nominal size dissolves it. See docs/lumber-naming.md.
+ * nominal size dissolves it. See the module header.
  */
 export function nominalSizeLabel(board: Board): string | null {
   if (board.species !== "pine") {
@@ -164,7 +210,7 @@ export function getMaterialName(material: MaterialInstance): string {
       )}" × ${formatLength(material.length)}`;
     }
     case "plywood": {
-      // Sheet grammar: both cross dimensions read in feet (lumber-naming.md)
+      // Sheet grammar: both cross dimensions read in feet (module header)
       const { kind, thickness, width, length } = material;
       return `${sheetKindLabel(kind)} ${thickness}/4 — ${formatLength(width)} × ${formatLength(length)}`;
     }
@@ -196,7 +242,7 @@ export function getMaterialName(material: MaterialInstance): string {
 /**
  * What's been done to a piece of stock — surface, milling, end
  * treatments — rendered as the faded line under its name, never inside
- * it (see docs/lumber-naming.md). Null for materials whose state never
+ * it (see the module header). Null for materials whose state never
  * varies.
  */
 export function getMaterialState(material: MaterialInstance): string | null {
@@ -543,7 +589,7 @@ const DIMENSION_UNITS = {
   thickness: "/4",
 } as const;
 type DimensionKey = keyof typeof DIMENSION_UNITS;
-// Cut-list order: thickness × width × length (see docs/lumber-naming.md).
+// Cut-list order: thickness × width × length (see the module header).
 const DIMENSION_KEYS: ReadonlyArray<DimensionKey> = [
   "thickness",
   "width",

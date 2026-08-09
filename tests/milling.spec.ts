@@ -95,12 +95,17 @@ async function setAngle(page: any, target: number) {
   throw new Error(`could not swing the head to ${target}`);
 }
 
-/** Z/X — slide the miter saw's cut line to a mark. */
+/**
+ * Z/X — slide the miter saw's cut line to a mark: the marks are an inch
+ * apart, so shift (a foot a press) covers the distance and bare presses
+ * close the last few inches.
+ */
 async function setCutLine(page: any, target: number) {
-  for (let i = 0; i < 16; i++) {
-    const current = await sawSetting(page, "cutPosition");
+  for (let i = 0; i < 32; i++) {
+    const current = Number(await sawSetting(page, "cutPosition"));
     if (current === target) return;
-    await pressKey(page, Number(current) > target ? "z" : "x");
+    const key = current > target ? "z" : "x";
+    await pressKey(page, Math.abs(current - target) >= 12 ? `Shift+${key}` : key);
   }
   throw new Error(`could not slide the cut line to ${target}`);
 }
@@ -296,12 +301,17 @@ test.describe("Milling", () => {
       await page.waitForTimeout(30);
       // The machine wears its state and its keys — there is no panel
       await expect(page.getByText("Jointer · off")).toBeVisible();
+      // A benchtop machine on the shop floor says why its cuts are slow
+      await expect(
+        page.getByText(/On the floor: work here takes twice as long/),
+      ).toBeVisible();
       // Switched off it takes nothing: no chip offering to place the board
-      await expect(page.getByText(/place Walnut 4\/4/)).toHaveCount(0);
+      await expect(page.getByTestId("machine-chips")).not.toContainText("place");
       await switchOn(page);
       await expect(page.getByText("Jointer · on")).toBeVisible();
-      // On, the chip names the very board it would take out of our hands
-      await expect(page.getByText(/place Walnut 4\/4/)).toBeVisible();
+      // On, it offers to take the board out of our hands — the hands
+      // strip has already named it, so the chip is just the verb
+      await expect(page.getByTestId("machine-chips")).toContainText("place");
     });
 
     await test.step("jointer: the stock decides — face pass, then edge pass", async () => {
@@ -446,7 +456,7 @@ test.describe("Milling", () => {
       // it: the cut line slides on Z/X, the head swings on R
       await expect(page.getByText(/cut line:/)).toBeVisible();
       await expect(page.getByText(/angle:/)).toBeVisible();
-      // The saw's sheet is nothing but a tool rack now — no scales, no
+      // The saw's sheet is nothing but an accessory rack now — no scales, no
       // verb button, no mode picker. Everything to run it is a key.
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
@@ -454,7 +464,7 @@ test.describe("Milling", () => {
       await page.keyboard.press("Tab");
       const sheet = page.getByTestId("station-sheet");
       await sheet.waitFor({ state: "visible" });
-      await expect(sheet.getByText(/Tools ·/)).toBeVisible();
+      await expect(sheet.getByText(/Accessories ·/)).toBeVisible();
       await expect(sheet.getByRole("button", { name: "Cut" })).toHaveCount(0);
       await expect(
         sheet.getByRole("radiogroup", { name: "Angle" }),
@@ -466,10 +476,24 @@ test.describe("Milling", () => {
       await expect(sheet).toHaveCount(0);
     });
 
-    await test.step("first cut: 45° at the 5' mark makes a 5' and a 3' piece", async () => {
-      // Board on the table first — the settings move the board that's on
-      // the saw, not a ghost of one you're holding
+    await test.step("the cut line steps an inch, or a foot with shift", async () => {
+      // Board on the table first: the keys slide what's on the saw, and
+      // the marks they stop at are the ones that board can reach.
       await setStockDown(page);
+      await setCutLine(page, 24);
+      await pressKey(page, "x");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(25);
+      await pressKey(page, "z");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(24);
+      await pressKey(page, "Shift+x");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(36);
+      await pressKey(page, "Shift+z");
+      expect(Number(await sawSetting(page, "cutPosition"))).toBe(24);
+    });
+
+    await test.step("first cut: 45° at the 5' mark makes a 5' and a 3' piece", async () => {
+      // The board is already on the table from the step above — the
+      // settings move what's on the saw, not a ghost of what's in hand
       await setAngle(page, 45);
       await setCutLine(page, 60);
       await runWhileHolding(
@@ -672,6 +696,65 @@ test.describe("Milling", () => {
       // 4/4 and left only a 3/4 offcut — the missing quarter inch is the
       // kerf, gone as dust
       expect(thicknesses).toEqual([3, 4]);
+    });
+
+    await test.step("a sheet on the table reads the fence in inches", async () => {
+      await dropEverything(page);
+      // Hand the shop a 2×2 panel — the cut chain itself is covered in
+      // sheet-breakdown-chain.test.ts; what's browser-shaped is that the
+      // saw swaps scales for what's on it.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: {
+            ...state.player,
+            inventory: [
+              {
+                id: "spec-sheet",
+                type: "plywood",
+                kind: "plywoodB",
+                length: 24,
+                width: 24,
+                thickness: 2,
+              },
+            ],
+          },
+          // The fence dialed in at 20" — stepping a sheet-scale setting
+          // there one detent at a time is the settings scale's own test
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "jobsiteTableSaw"
+              ? {
+                  ...m,
+                  selectedParameters: {
+                    ...(m.selectedParameters ?? {}),
+                    sheetRipWidth: 20,
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+      await movePlayerTo(page, [8, 9]);
+      // The resaw fence left the saw standing its work on edge; a sheet
+      // lies flat, so R turns the table back over first
+      await pressKey(page, "r");
+      await setStockDown(page);
+      // The fence scale is the sheet's now — inches, not quarters
+      await expect(page.getByText("fence:")).toBeVisible();
+      await runUntilOutput(
+        page,
+        "(m) => m.type === 'plywood' && m.width !== 24",
+      );
+      await movePlayerTo(page, [8, 5]);
+      await takeAllHere(page);
+      const pieces = await page.evaluate(() =>
+        (window as any)
+          .__GET_GAME_STATE__()
+          .player.inventory.filter((m: any) => m.type === "plywood")
+          .map((m: any) => [m.length, m.width]),
+      );
+      // One cut, two pieces: the sheet keeps its offcut
+      expect(pieces.length).toBe(2);
     });
   });
 });

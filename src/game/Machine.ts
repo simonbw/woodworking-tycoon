@@ -20,6 +20,7 @@ import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { miterSaw } from "./machines/miterSaw";
+import { sawhorses } from "./machines/sawhorses";
 import { storageRack } from "./machines/storageRack";
 import { workspace } from "./machines/workspace";
 import {
@@ -94,7 +95,7 @@ export interface MachineType {
    * an apron in front of one operation cell. A garbage can is the case —
    * you toss things in from wherever you're standing. Such a machine still
    * has no `operationPosition`, so it drops anywhere it fits (see
-   * docs/carrying-machines.md).
+   * game-actions/machine-actions.ts).
    */
   readonly operableFromAnySide?: boolean;
   /**
@@ -135,14 +136,24 @@ export interface MachineType {
    */
   readonly corded?: boolean;
   /**
-   * Stock feeds straight from the player's hands into the machine — there
-   * is no staged input bay (`inputSpaces` should be 0) and no mode to
-   * pick. Operating a direct-feed machine runs the first operation that
-   * accepts something the player is carrying (see findFeedableOperation);
-   * on a machine with several operations their input specs are disjoint,
-   * so the stock itself decides — feed a rough board to the jointer and
-   * it's a face pass, feed a face-jointed one and it's the edge. A real
-   * machine has no "load" step separate from presenting the work.
+   * The interface is the machine: no mode picker and no control panel.
+   * A direct-feed machine is persistent settings plus one piece of
+   * stock set down on it (F), run by holding Space — which operation
+   * runs is inferred from what's on the machine (findFeedableOperation).
+   * On a machine with several operations their input specs are
+   * disjoint, so the stock itself decides — feed a rough board to the
+   * jointer and it's a face pass, feed a face-jointed one and it's the
+   * edge; where one board could honestly take two cuts,
+   * `Operation.stockOrientation` splits them by how the stock is
+   * presented. A real machine has no "load" step separate from
+   * presenting the work, so the bay is the machine's table
+   * (`inputSpaces: 1`).
+   *
+   * The settings are one bag shared across the machine's operations
+   * (resolvedParameters fills per-op defaults), locked while a cut is
+   * running, and read again at finish — the output reflects the dial,
+   * not a snapshot at start. When a piece won't run, the machine
+   * teaches its refusal (explainFeedRefusal) instead of graying out.
    */
   readonly directFeed?: boolean;
   /**
@@ -211,6 +222,7 @@ export const MACHINE_TYPES = {
   bandSaw,
   garbageCan,
   storageRack,
+  sawhorses,
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;
 
@@ -262,7 +274,7 @@ export function stockOrientationParameter(
 
 /**
  * How the player performs an operation's attended work with their own
- * hands in the bench view (see docs/bench-minigames.md). Declaring this
+ * hands in the bench view (see docs/bench-work.md). Declaring this
  * converts the operation: it no longer advances on held Space — the bench
  * view runs the script and commits through the actions in
  * `game-actions/operation-actions.ts`. Omitted, the operation keeps the
@@ -372,6 +384,13 @@ export interface Operation<TParams extends ParameterValues = ParameterValues> {
    * starts (no refunds — the glue is already out of the bottle).
    */
   readonly requiredConsumables?: ReadonlyArray<ConsumableAmount>;
+  /**
+   * Clamps tied up for the operation's run, returned when it finishes
+   * (see Clamp.ts). Declared only for work that pins something down and
+   * isn't a glue-up — a glue-up derives its count from the stock's
+   * length instead, and doesn't set this.
+   */
+  readonly clampsHeld?: number;
   /**
    * Sawdust thrown per attended tick while this runs, landed around the
    * machine (see Dust.ts). Omitted: no appreciable mess (assembly, glue).
@@ -508,10 +527,16 @@ export interface OperationParameter<T = number | string> {
    *
    * Everything else is a plain linear scale. Linear settings (slide
    * included) answer to Z/X; a "rotate" setting answers to R, which is
-   * why a machine can usefully carry one of each. See
-   * docs/direct-feed-machines.md.
+   * why a machine can usefully carry one of each.
    */
   readonly presentation?: "slide" | "rotate";
+  /**
+   * How many detents a shifted press jumps. Declare it on a scale whose
+   * marks are fine enough that walking them one at a time is a chore —
+   * the miter saw's inch marks, where shift moves a whole foot. Left off,
+   * shift steps one detent like a bare press.
+   */
+  readonly coarseStep?: number;
 }
 
 export type ParameterValues = Record<string, number | string>;

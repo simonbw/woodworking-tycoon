@@ -189,6 +189,44 @@ export const SHEET_GOOD_KINDS = [
 export type SheetGoodKind = (typeof SHEET_GOOD_KINDS)[number];
 
 /**
+ * Pseudo-species for the sheet goods, so their dust has somewhere to go
+ * (see docs/dust-and-cleaning.md). Sheets have no wood species — a
+ * plywood sheet is a stack of whatever the mill had — so what they shed
+ * is tracked by the sheet family instead: gluey plywood chips, choking
+ * MDF powder, the resinous grit off a chip board.
+ */
+export const SHEET_DUST_SPECIES = [
+  "plywood",
+  "mdf",
+  "osb",
+  "particleBoard",
+] as const;
+
+export type SheetDustSpecies = (typeof SHEET_DUST_SPECIES)[number];
+
+/**
+ * Everything that can land on the floor as dust: the real woods plus the
+ * sheet pseudo-species. `GameState.dust`, the dustpan, and the vac
+ * canister are all keyed by this.
+ */
+export const DUST_SPECIES = [...SPECIES, ...SHEET_DUST_SPECIES] as const;
+
+export type DustSpecies = (typeof DUST_SPECIES)[number];
+
+/** Which pseudo-species a sheet sheds — the three plywood grades all
+ * make the same mess. */
+export function sheetDustSpecies(kind: SheetGoodKind): SheetDustSpecies {
+  switch (kind) {
+    case "mdf":
+    case "osb":
+    case "particleBoard":
+      return kind;
+    default:
+      return "plywood";
+  }
+}
+
+/**
  * Which sheet kinds a recipe accepts is a statement about the work, not
  * the wood budget. A jig base must be flat and hold runner screws — any
  * plywood or MDF, never the chip boards, which sag and crumble around
