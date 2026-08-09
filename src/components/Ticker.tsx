@@ -6,6 +6,7 @@ import { tickAction } from "../game/game-actions/tickAction";
 import { timeSpeed } from "../game/time-flow";
 import { DayClock } from "./DayClock";
 import { TICKS_PER_SECOND, usePaused } from "./PauseContext";
+import { useTruckStage } from "./shop-view/truckStageStore";
 import { useApplyGameAction, useGameState } from "./useGameState";
 
 /**
@@ -74,8 +75,17 @@ export const Ticker: React.FC = () => {
   // already earned.
   const owed = useRef(0);
 
+  // No time passes behind a trip's curtain. The departure and arrival
+  // rolls stretch one instant of `player.away` into a few seconds of
+  // theater (TripTransitionLayer), and the clock used to run through
+  // them — charging the drive a second time on top of the minutes
+  // door-actions already books, and burning the first leg of a
+  // scavenging trip before its overlay was even on screen.
+  const stage = useTruckStage();
+  const behindCurtain = stage === "departing" || stage === "arriving";
+
   useEffect(() => {
-    if (paused || steadyRate === 0) return;
+    if (paused || behindCurtain || steadyRate === 0) return;
     // The effect re-runs when the speed changes, so this marks the
     // moment the wait key's hold began — the ramp winds up from here.
     const heldSince = performance.now();
@@ -91,7 +101,7 @@ export const Ticker: React.FC = () => {
       }
     }, LOOP_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [paused, steadyRate, speed]);
+  }, [paused, behindCurtain, steadyRate, speed]);
 
   // Bookkeeping that answers the player's actions rather than the
   // clock: milestone unlocks, the coach's next card, and the empty-board

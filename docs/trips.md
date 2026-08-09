@@ -48,3 +48,9 @@ Trips open and close with a pure-presentation departure/arrival
 performance: `truckStageStore` + `shop-view/TripTransitionLayer`, scored
 by the `truck-start`/`truck-arrive` clips. Nothing about the trip's
 state lives in the staging — it is a curtain, not a phase.
+
+Because it is a curtain, no game time passes behind it: the `Ticker`
+holds the clock while one is playing. What a trip costs is booked
+explicitly by its actions, so a curtain that also spent minutes would
+charge the drive twice — and a leg timed from the moment `away` flips
+would be half over before its overlay reached the screen.

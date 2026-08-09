@@ -309,34 +309,6 @@
     }
   }
 
-  /* The scavenging truck, drawn driving (see ScavengeTripOverlay): the
-     road's dashes stream backwards under it and the wheels turn. Both
-     are applied only while a search is running, so the picture stops
-     dead the moment the trip parks at a decision — the animation IS the
-     readout that the half-hour is being driven. */
-  .scavenge-road {
-    animation: scavenge-road 700ms linear infinite;
-  }
-
-  @keyframes scavenge-road {
-    to {
-      /* One full dash + gap of the road's stroke pattern. */
-      stroke-dashoffset: -33;
-    }
-  }
-
-  .scavenge-wheel {
-    /* The wheel's own center in the SVG's user units, set per wheel. */
-    transform-box: view-box;
-    animation: scavenge-wheel 700ms linear infinite;
-  }
-
-  @keyframes scavenge-wheel {
-    to {
-      rotate: 360deg;
-    }
-  }
-
   /* The guided opening's ring around a button (see TutorialSpotlightLayer).
      Same orange as the in-world tutorial outline, breathing so the eye
      finds it among chrome that is otherwise all the same weight. */
@@ -370,14 +342,10 @@
 
   /* Not shortened but stopped: a ring that blinks once and holds is still
      a ring, and an infinite animation is the thing being opted out of.
-     Same for the driving truck — a parked drawing still reads. */
+     (The scavenging truck opts itself out in useDrivingMotion, which
+     never starts its loop under this preference.) */
   .tutorial-ring {
     animation: none !important;
     opacity: 1;
-  }
-
-  .scavenge-road,
-  .scavenge-wheel {
-    animation: none !important;
   }
 }
