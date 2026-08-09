@@ -135,6 +135,7 @@ export const DaylightLayer: React.FC<{
   const parts = useMemo(() => {
     const ambient = new Graphics();
     const shadow = new Graphics();
+    const doorway = new Graphics();
     const indoors = new Graphics();
     const pool = new Graphics();
     const spill = new Graphics();
@@ -142,14 +143,18 @@ export const DaylightLayer: React.FC<{
     // blending happens as a child composites into its parent (the same
     // gotcha DustLayer's eraser hit), so every stamp lives under a
     // wrapper and the wrapper is what gets rendered.
-    // Order is load-bearing. The spill is an ellipse straddling the
-    // threshold, and it goes in *before* the interior fill so the opaque
-    // slab clips its inner half away: the doorway pool belongs on the
-    // driveway, and adding it on top of an already-lit shop would clamp
-    // to a flat white patch just inside the door.
+    // Order is load-bearing. The doorway corridor repaints plain ambient
+    // over the shadow (a multiply stamp can't erase, only darken), so it
+    // must sit after the shadow and before the spill, which adds lamp
+    // light on top of it in the evening overlap. The spill is an ellipse
+    // straddling the threshold, and it goes in *before* the interior
+    // fill so the opaque slab clips its inner half away: the doorway
+    // pool belongs on the driveway, and adding it on top of an
+    // already-lit shop would clamp to a flat white patch just inside the
+    // door.
     const wrapper = new Container();
-    wrapper.addChild(ambient, shadow, spill, indoors, pool);
-    return { wrapper, ambient, shadow, indoors, pool, spill };
+    wrapper.addChild(ambient, shadow, doorway, spill, indoors, pool);
+    return { wrapper, ambient, shadow, doorway, indoors, pool, spill };
   }, []);
   useEffect(
     () => () => parts.wrapper.destroy({ children: true }),
@@ -204,7 +209,7 @@ export const DaylightLayer: React.FC<{
   /** Paint the mask from the current eased values and composite it. */
   const paint = () => {
     if (!app?.renderer) return;
-    const { wrapper, ambient, shadow, indoors, pool, spill } = parts;
+    const { wrapper, ambient, shadow, doorway, indoors, pool, spill } = parts;
     const now = eased.current;
     const slabX = -originX;
     const slabY = -originY;
@@ -219,14 +224,15 @@ export const DaylightLayer: React.FC<{
     //    SHADOW_SKY, not black at an alpha — blocking the sun cannot take
     //    a surface below what the sky alone gives it.
     shadow.clear();
+    doorway.clear();
     const shadowTint = packed(shadowColor.current);
+    const ox = now.shadowDx * SHADOW_UNIT;
+    const oy = now.shadowDy * SHADOW_UNIT;
     if (shadowTint !== 0xffffff) {
       const x0 = slabX - WALL_THICKNESS;
       const y0 = slabY - WALL_THICKNESS;
       const w = width + WALL_THICKNESS * 2;
       const h = height + WALL_THICKNESS * 2;
-      const ox = now.shadowDx * SHADOW_UNIT;
-      const oy = now.shadowDy * SHADOW_UNIT;
       // The swept hull of the footprint and its offset copy, not the
       // offset copy alone: a cast shadow stays attached to the walls it
       // falls from. The plain offset rect floated free of the building,
@@ -240,6 +246,32 @@ export const DaylightLayer: React.FC<{
           : [x0+ox,y0+oy, x0+w+ox,y0+oy, x0+w,y0, x0+w,y0+h, x0+w+ox,y0+h+oy, x0+ox,y0+h+oy];
       shadow.poly(points);
       shadow.fill(shadowTint);
+
+      // 2b. Sun through the open garage door. The doorway is a gap in
+      //     the bottom wall, so no wall-shadow belongs across it — yet
+      //     the hull above shades the whole wall band, opening included.
+      //     Repaint the plain outdoor ambient over the corridor the sun
+      //     reaches through the gap: the opening's own strip, then a
+      //     band sheared along the sun's direction down the driveway.
+      //     Its leading edge rays from the opening's outer corner and
+      //     its trailing edge from the inner one, which is exactly the
+      //     patch of driveway a doorway lights.
+      const doorL = slabX + door.left;
+      const doorR = slabX + door.right;
+      const doorTopY = slabY + height;
+      const doorBotY = doorTopY + WALL_THICKNESS;
+      const yEnd = doorBotY + oy;
+      const lead = ox >= 0 ? doorR : doorL;
+      const trail = ox >= 0 ? doorL : doorR;
+      // prettier-ignore
+      doorway.poly([
+        trail, doorTopY,
+        lead, doorTopY,
+        lead, doorBotY,
+        lead + ox, yEnd,
+        trail + (ox * (WALL_THICKNESS + oy)) / oy, yEnd,
+      ]);
+      doorway.fill(packed(outdoor.current));
     }
 
     // 3. Indoors: its own ambient, replacing the sky over the slab. The
