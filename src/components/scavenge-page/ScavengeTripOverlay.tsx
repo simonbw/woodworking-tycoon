@@ -174,6 +174,8 @@ const INK_BLACK = "#1a1a1a";
 const INK_FADE = "#5a5550";
 const INK_BROWN = "#5c3d2e";
 const GOLD_DARK = "#9c7e3f";
+/** The card's own paper — what the hubcaps are filled with. */
+const PAPER_MANILA = "#e6d5a8";
 
 const TRUCK_W = 260;
 const TRUCK_H = 150;
@@ -184,6 +186,26 @@ const FRONT_AXLE_X = 64;
 const REAR_AXLE_X = 204;
 const AXLE_Y = 120;
 const ROAD_Y = 136;
+/** The sill, level end to end on an empty truck. */
+const BODY_BOTTOM_Y = 115;
+/** The bottom of the door glass, level like the sill above it. */
+const WINDOW_SILL_Y = 75;
+
+/**
+ * How far the springs give under each pallet, as the rear-axle drop it
+ * would cause in user units. Taken about the middle of the wheelbase, so
+ * the load drops the tail and lifts the nose — the way an overloaded
+ * pickup actually sits, and a running readout of the haul that costs no
+ * extra ink.
+ */
+const SAG_PER_PALLET = 1.1;
+
+function sagDegrees(palletCount: number): number {
+  const halfWheelbase = (REAR_AXLE_X - FRONT_AXLE_X) / 2;
+  return (
+    (Math.atan((SAG_PER_PALLET * palletCount) / halfWheelbase) * 180) / Math.PI
+  );
+}
 
 /**
  * The road's stripe, in SVG user units: one dash plus one gap is the
@@ -201,6 +223,11 @@ const ROAD_PATTERN = ROAD_DASH + ROAD_GAP;
 const WHEEL_RADIUS = 15;
 const WHEEL_STROKE = 3;
 const TIRE_CIRCUMFERENCE = 2 * Math.PI * (WHEEL_RADIUS + WHEEL_STROKE / 2);
+
+/** Five lugs on a small circle — enough to read a turn, few enough to
+ *  stay dots rather than a texture. */
+const LUG_ANGLES = [0, 72, 144, 216, 288];
+const LUG_ORBIT = 7;
 
 /**
  * How fast the ground goes by, in user units per millisecond. This is
@@ -326,45 +353,69 @@ const TruckDrawing: React.FC<{ palletCount: number; driving: boolean }> = ({
           opacity={0.5}
         />
 
-        {/* Pallets, oldest at the bottom of the stack */}
-        {Array.from({ length: palletCount }, (_, i) => (
-          <PalletSideView key={i} y={BED_RAIL_Y - 11 * (i + 1)} />
-        ))}
+        {/* Everything the springs carry rides in one group, so the load's
+            sag tilts the body, its glass, and the stack together. The
+            wheels stay outside it: they're on the road either way. */}
+        <g
+          style={{
+            transformBox: "view-box",
+            transformOrigin: `${(FRONT_AXLE_X + REAR_AXLE_X) / 2}px ${AXLE_Y}px`,
+            transform: `rotate(${sagDegrees(palletCount)}deg)`,
+          }}
+        >
+          {/* Pallets, oldest at the bottom of the stack */}
+          {Array.from({ length: palletCount }, (_, i) => (
+            <PalletSideView key={i} y={BED_RAIL_Y - 11 * (i + 1)} />
+          ))}
 
-        {/* Body: nose left, low-walled bed so the load shows */}
-        <path
-          d={`M 22 112 L 22 88 L 38 80 L 68 78 L 84 56 L 114 54 L 118 78
-            L 118 ${BED_RAIL_Y} L 246 ${BED_RAIL_Y} L 246 118 L 22 112 Z`}
-          fill="none"
-          stroke={INK_BLACK}
-          strokeWidth={2.5}
-          strokeLinejoin="round"
-        />
-        {/* Cab window */}
-        <path
-          d="M 88 60 L 110 58 L 112 74 L 86 76 Z"
-          fill="none"
-          stroke={INK_BLACK}
-          strokeWidth={2}
-          strokeLinejoin="round"
-        />
-        {/* Door seam + handle */}
-        <line
-          x1={118}
-          y1={BED_RAIL_Y}
-          x2={118}
-          y2={114}
-          stroke={INK_BLACK}
-          strokeWidth={2}
-        />
-        <line
-          x1={96}
-          y1={82}
-          x2={106}
-          y2={82}
-          stroke={INK_BLACK}
-          strokeWidth={2}
-        />
+          {/* Body: nose left, low-walled bed so the load shows. The sill
+              runs level — the truck is only ever nose-up because it's
+              loaded, never because it was drawn that way. */}
+          <path
+            d={`M 22 ${BODY_BOTTOM_Y} L 22 88 L 38 80 L 68 78 L 84 56
+              L 114 54 L 118 78 L 118 ${BED_RAIL_Y} L 246 ${BED_RAIL_Y}
+              L 246 ${BODY_BOTTOM_Y} Z`}
+            fill="none"
+            stroke={INK_BLACK}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+          />
+          {/* Cab window: raked at the top, level along the sill */}
+          <path
+            d={`M 88 60 L 110 58 L 112 ${WINDOW_SILL_Y} L 86 ${WINDOW_SILL_Y} Z`}
+            fill="none"
+            stroke={INK_BLACK}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+          {/* The door, front edge to back: the front one drops from the
+              cowl, under the A-pillar, and the front wheel covers where it
+              runs out. */}
+          <line
+            x1={68}
+            y1={78}
+            x2={68}
+            y2={BODY_BOTTOM_Y - 1}
+            stroke={INK_BLACK}
+            strokeWidth={2}
+          />
+          <line
+            x1={118}
+            y1={BED_RAIL_Y}
+            x2={118}
+            y2={BODY_BOTTOM_Y - 1}
+            stroke={INK_BLACK}
+            strokeWidth={2}
+          />
+          <line
+            x1={96}
+            y1={82}
+            x2={106}
+            y2={82}
+            stroke={INK_BLACK}
+            strokeWidth={2}
+          />
+        </g>
 
         {/* Wheels over the body line — comic style, no wheel arches */}
         <Wheel cx={FRONT_AXLE_X} hubRef={frontWheel} />
@@ -385,10 +436,11 @@ const TruckDrawing: React.FC<{ palletCount: number; driving: boolean }> = ({
 };
 
 /**
- * A wheel, with two spokes across the hub so the spin has something to
- * read on — a bare rim turning is invisible. Drawn unfilled, like every
- * other line on the page: the road and the body line show through it.
- * The spinning group is handed up to `useDrivingMotion`, which turns it.
+ * A wheel: the heavy stroke is the tire, and everything inside it is the
+ * hubcap — filled with the page's own paper so the road and the sill
+ * pass behind it rather than through it. The spin reads on the lugnuts,
+ * the only thing on the wheel that isn't rotationally symmetric; the
+ * group carrying them is handed up to `useDrivingMotion`, which turns it.
  */
 const Wheel: React.FC<{
   cx: number;
@@ -399,7 +451,7 @@ const Wheel: React.FC<{
       cx={cx}
       cy={AXLE_Y}
       r={WHEEL_RADIUS}
-      fill="none"
+      fill={PAPER_MANILA}
       stroke={INK_BLACK}
       strokeWidth={WHEEL_STROKE}
     />
@@ -410,32 +462,18 @@ const Wheel: React.FC<{
         transformOrigin: `${cx}px ${AXLE_Y}px`,
       }}
     >
-      <line
-        x1={cx - 11}
-        y1={AXLE_Y}
-        x2={cx + 11}
-        y2={AXLE_Y}
-        stroke={INK_BLACK}
-        strokeWidth={2}
-        opacity={0.6}
-      />
-      <line
-        x1={cx}
-        y1={AXLE_Y - 11}
-        x2={cx}
-        y2={AXLE_Y + 11}
-        stroke={INK_BLACK}
-        strokeWidth={2}
-        opacity={0.6}
-      />
-      <circle
-        cx={cx}
-        cy={AXLE_Y}
-        r={5}
-        fill="none"
-        stroke={INK_BLACK}
-        strokeWidth={2}
-      />
+      {LUG_ANGLES.map((angle) => {
+        const radians = (angle * Math.PI) / 180;
+        return (
+          <circle
+            key={angle}
+            cx={cx + LUG_ORBIT * Math.cos(radians)}
+            cy={AXLE_Y + LUG_ORBIT * Math.sin(radians)}
+            r={1.7}
+            fill={INK_BLACK}
+          />
+        );
+      })}
     </g>
   </g>
 );
