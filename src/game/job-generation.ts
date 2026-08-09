@@ -73,6 +73,10 @@ interface JobTemplate {
 }
 
 interface GeneratedJob {
+  /**
+   * The listing body as the poster typed it into SawdustList — always in
+   * the client's first-person voice, never a third-person summary.
+   */
   readonly description: string;
   readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly baseReputation: number;
@@ -181,8 +185,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? "Wants a rustic pallet-wood shelf for the garage. Rougher the better."
-            : `Wants ${quantity} rustic pallet-wood shelves. Rougher the better.`,
+            ? "Looking for a rustic pallet-wood shelf for the garage. Rougher the better."
+            : `Looking for ${quantity} rustic pallet-wood shelves. Rougher the better.`,
         requiredMaterials: [
           { type: ["rusticShelf"], species: ["pallet"], quantity },
         ],
@@ -201,7 +205,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: (rng, gameState) => {
       const quantity = intBetween(rng, 2, 4) + repBatchBonus(gameState);
       return {
-        description: `The garden club wants ${quantity} birdhouses for the spring fair. Pallet wood is fine — the birds don't mind.`,
+        description: `Garden club here — we need ${quantity} birdhouses for the spring fair. Pallet wood is fine, the birds don't mind.`,
         requiredMaterials: [{ type: ["birdhouse"], quantity }],
         baseReputation: 1,
       };
@@ -218,7 +222,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       const quantity =
         intBetween(rng, 2, 3) + Math.min(3, repBatchBonus(gameState));
       return {
-        description: `Needs ${quantity} slatted crates for market-stall storage. Sturdy beats pretty.`,
+        description: `Need ${quantity} slatted crates for market-stall storage. Sturdy beats pretty.`,
         requiredMaterials: [{ type: ["crate"], quantity }],
         baseReputation: 1,
       };
@@ -242,8 +246,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? "Wants a reclaimed-wood frame for a print. Mitered corners, sanded smooth."
-            : `The craft fair stall needs ${quantity} reclaimed-wood frames. Mitered corners, sanded smooth.`,
+            ? "Looking for a reclaimed-wood frame for a print. Mitered corners, sanded smooth."
+            : `Need ${quantity} reclaimed-wood frames for my craft fair stall. Mitered corners, sanded smooth.`,
         requiredMaterials: [
           { type: ["rusticFrame"], species: ["pallet"], quantity },
         ],
@@ -265,8 +269,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? "Wants a pallet-wood planter box for the balcony herbs. Screwed together, please — it'll live outside."
-            : "Wants two matching pallet-wood planter boxes for the front steps.",
+            ? "Want a pallet-wood planter box for my balcony herbs. Screwed together, please — it'll live outside."
+            : "Looking for two matching pallet-wood planter boxes for the front steps.",
         requiredMaterials: [
           { type: ["planterBox"], species: ["pallet"], quantity },
         ],
@@ -285,8 +289,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? "Wants a step stool sturdy enough for the top shelf and the grandkids both."
-            : "The preschool needs two step stools for the sinks.",
+            ? "Need a step stool sturdy enough for the top shelf and the grandkids both."
+            : "Need two step stools for the preschool sinks. Kid height, no splinters.",
         requiredMaterials: [{ type: ["stepStool"], quantity }],
         baseReputation: 2,
       };
@@ -306,8 +310,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? `Wants a real ${request.clause} cutting board as a housewarming gift.`
-            : `Wants two ${request.clause} cutting boards — wedding season.`,
+            ? `Looking for a real ${request.clause} cutting board as a housewarming gift.`
+            : `Need two ${request.clause} cutting boards — wedding season.`,
         requiredMaterials: [
           {
             type: ["simpleCuttingBoard"],
@@ -331,8 +335,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? `Wants a ${request.clause} picture frame for a wedding photo. Tight miters, please.`
-            : `The gallery around the corner needs two matching ${request.clause} picture frames.`,
+            ? `Want a ${request.clause} picture frame for our wedding photo. Tight miters, please.`
+            : `Gallery around the corner — we need two matching ${request.clause} picture frames.`,
         requiredMaterials: [
           { type: ["pictureFrame"], species: request.species, quantity },
         ],
@@ -352,7 +356,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       const quantity = intBetween(rng, 1, 2);
       const request = speciesRequest(rng, gameState);
       return {
-        description: `The kitchen shop wants ${quantity === 1 ? "a" : quantity} ${request.clause} cutting board${quantity === 1 ? "" : "s"}, oiled and ready to sell.`,
+        description: `Kitchen shop restocking: ${quantity === 1 ? "one" : quantity} ${request.clause} cutting board${quantity === 1 ? "" : "s"}, oiled and ready to sell.`,
         requiredMaterials: [
           {
             type: ["simpleCuttingBoard"],
@@ -376,8 +380,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? `Wants a clean-lined ${request.clause} shelf for the living room.`
-            : `A boutique is fitting out — two matching ${request.clause} shelves.`,
+            ? `After a clean-lined ${request.clause} shelf for the living room.`
+            : `Fitting out a boutique — need two matching ${request.clause} shelves.`,
         requiredMaterials: [
           { type: ["shelf"], species: request.species, quantity },
         ],
@@ -396,8 +400,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? `Wants a ${request.clause} jewelry box — an anniversary is coming.`
-            : `Wants two ${request.clause} jewelry boxes for the graduating twins.`,
+            ? `Looking for a ${request.clause} jewelry box — anniversary coming up.`
+            : `Need two ${request.clause} jewelry boxes for our graduating twins.`,
         requiredMaterials: [
           { type: ["jewelryBox"], species: request.species, quantity },
         ],
@@ -415,7 +419,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: (rng, gameState) => {
       const request = speciesRequest(rng, gameState);
       return {
-        description: `A book collector wants a proper ${request.clause} bookshelf. No wobble, no veneer.`,
+        description: `Book collector in need of a proper ${request.clause} bookshelf. No wobble, no veneer.`,
         requiredMaterials: [
           { type: ["bookshelf"], species: request.species, quantity: 1 },
         ],
@@ -432,7 +436,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       const quantity = intBetween(rng, 3, 4);
       const request = speciesRequest(rng, gameState);
       return {
-        description: `The gallery is hanging a new show: ${quantity} matching ${request.clause} frames, all corners tight.`,
+        description: `Hanging a new show at the gallery: need ${quantity} matching ${request.clause} frames, all corners tight.`,
         requiredMaterials: [
           { type: ["pictureFrame"], species: request.species, quantity },
         ],
@@ -451,8 +455,8 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       return {
         description:
           quantity === 1
-            ? `Wants a hexagonal ${request.clause} frame for a macramé mirror. Six corners, no gaps.`
-            : `The plant café wants two hexagonal ${request.clause} frames for the wall.`,
+            ? `Want a hexagonal ${request.clause} frame for a macramé mirror. Six corners, no gaps.`
+            : `Need two hexagonal ${request.clause} frames for the plant café wall.`,
         requiredMaterials: [
           { type: ["hexFrame"], species: request.species, quantity },
         ],
@@ -474,7 +478,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
           buyable.filter((species) => species !== first),
         );
         return {
-          description: `Wants a striped cutting board — ${speciesLabel(first)} and ${speciesLabel(second)}, strict alternation.`,
+          description: `Want a striped cutting board — ${speciesLabel(first)} and ${speciesLabel(second)}, strict alternation.`,
           requiredMaterials: [
             {
               type: ["stripedCuttingBoard"],
@@ -488,7 +492,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
       }
       return {
         description:
-          "Wants a striped two-wood cutting board. Dealer's choice on the woods — make them argue.",
+          "Want a striped two-wood cutting board. Dealer's choice on the woods — make them argue.",
         requiredMaterials: [{ type: ["stripedCuttingBoard"], quantity: 1 }],
         baseReputation: 4,
       };
@@ -502,7 +506,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: (rng, gameState) => {
       const request = speciesRequest(rng, gameState);
       return {
-        description: `The bed-and-breakfast wants a ${request.clause} serving tray — panel bottom, mitered rails, no rattles.`,
+        description: `Run a bed-and-breakfast, need a ${request.clause} serving tray — panel bottom, mitered rails, no rattles.`,
         requiredMaterials: [
           { type: ["servingTray"], species: request.species, quantity: 1 },
         ],
@@ -518,7 +522,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: () => {
       return {
         description:
-          "Saw your sunrise board at the market. Wants one — the fade, the whole thing.",
+          "Saw your sunrise board at the market. I want one — the fade, the whole thing.",
         requiredMaterials: [{ type: ["sunriseCuttingBoard"], quantity: 1 }],
         baseReputation: 5,
       };
@@ -532,7 +536,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: (rng, gameState) => {
       const request = speciesRequest(rng, gameState);
       return {
-        description: `A chef wants a true end-grain ${request.clause} block. Knife-friendly, heavy, forever.`,
+        description: `Chef looking for a true end-grain ${request.clause} block. Knife-friendly, heavy, forever.`,
         requiredMaterials: [
           {
             type: ["endGrainCuttingBoard"],
@@ -553,7 +557,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: (rng, gameState) => {
       const request = speciesRequest(rng, gameState);
       return {
-        description: `Wants a ${request.clause} side table — a wide glued top on square legs. Real furniture, from your shop.`,
+        description: `Want a ${request.clause} side table — a wide glued top on square legs. Real furniture, none of that flat-pack.`,
         requiredMaterials: [
           { type: ["sideTable"], species: request.species, quantity: 1 },
         ],
@@ -569,7 +573,7 @@ const JOB_TEMPLATES: ReadonlyArray<JobTemplate> = [
     generate: () => {
       return {
         description:
-          "Wants a checkerboard end-grain board — two woods, every other block flipped. The showpiece.",
+          "Want a checkerboard end-grain board — two woods, every other block flipped. Go ahead and show off.",
         requiredMaterials: [
           { type: ["checkerboardCuttingBoard"], quantity: 1 },
         ],

@@ -110,9 +110,8 @@ const JobOfferRow: React.FC<{ offer: JobOffer; slotsFree: number }> = ({
           <span className="text-gold-dark"> +tip</span>
         </span>
       </div>
-      <p className="font-ink text-base leading-snug text-ink-blue">
-        {offer.description}
-      </p>
+      {/* The poster's own typing — screen text, not handwriting. */}
+      <p className="text-sm leading-snug">{offer.description}</p>
       <div className="flex items-end justify-between gap-2">
         <JobRequirements job={offer} />
         <button
@@ -154,9 +153,7 @@ const AcceptedJobRow: React.FC<{ job: AcceptedJob }> = ({ job }) => {
           {formatMoney(payout.money)}
         </span>
       </div>
-      <p className="font-ink text-base leading-snug text-ink-blue">
-        {job.description}
-      </p>
+      <p className="text-sm leading-snug">{job.description}</p>
       <JobRequirements job={job} />
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-ink-fade">

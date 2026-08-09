@@ -32,17 +32,24 @@ import { REAL_WOOD_SPECIES } from "./Materials";
  * an order for nothing — the work is the product.
  *
  * Skills are bought with points the player earns from XP levels (see
- * Skill.ts), so commissions can't grant them — instead each description
- * points at the journal, and the ordering respects every prerequisite
- * chain (boxJoinery needs fineShelving, end-grain needs jigs). Job and
- * operation XP between commissions funds the points each cluster asks for.
+ * Skill.ts), so commissions can't grant them — instead each commission's
+ * `plan` scrawl points at the journal, and the ordering respects every
+ * prerequisite chain (boxJoinery needs fineShelving, end-grain needs
+ * jigs). Job and operation XP between commissions funds the points each
+ * cluster asks for.
+ *
+ * Voice: the work order is the player's own clipboard, so `description`
+ * is written in their hand — a terse note jotted during the call, knowing
+ * only what the call said — and `plan` is the to-do they scribbled under
+ * it after hanging up. The client speaks only in `call` and `thanks`.
  */
 export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
   {
     id: "first-shelf",
     name: "Your First Shelf",
     description:
-      "A neighbor wants a rustic shelf. Take the truck out to scavenge a pallet, break it down at the workspace, and build one.",
+      "Marguerite, two doors down — one shelf. Rustic is fine, sturdy is the thing.",
+    plan: "No wood yet. Take the truck out, find a pallet, knock it down at the workspace.",
     requiredMaterials: [
       { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
     ],
@@ -61,7 +68,8 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "frame-shop-order",
     name: "The Frame Shop Order",
     description:
-      "A framer wants a reclaimed-wood frame, a foot by two foot. Pallet stock ripped to two inches, mitered 45° at every end, sanded baby-smooth, and nailed up square. That's a miter saw, a table saw, and something to sand with — the whole starter shop.",
+      "Ellis, Ellis Frame & Glass — reclaimed frame for the shop window, 1' × 2'. Mitered corners, sanded smooth. Every joiner he's tried leaves gaps. Don't.",
+    plan: 'Rip pallet stock to 2", miter 45° at every end. That takes a miter saw, a table saw, and something to sand with — the whole starter shop.',
     requiredMaterials: [
       { type: ["rusticFrame"], species: ["pallet"], quantity: 1 },
     ],
@@ -81,7 +89,8 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "proper-cutting-board",
     name: "A Proper Cutting Board",
     description:
-      'A chef wants real hardwood cutting boards, oiled and food-ready. Buy lumber, rip it into 2" strips, glue up a panel, sand it silky, finish it at the workspace, and wipe on mineral oil.',
+      "Chef Reyes — 2 hardwood cutting boards for his line. Glued up proper, sanded silky, oiled and food-ready. “Not the bamboo junk.”",
+    plan: 'Real lumber, bought. Rip 2" strips, glue up a panel, sand it, finish at the workspace, wipe on mineral oil.',
     requiredMaterials: [
       {
         type: ["simpleCuttingBoard"],
@@ -106,7 +115,8 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "cafe-fitout",
     name: "The Cafe Fit-Out",
     description:
-      "The cafe is renovating, and they want the whole works: real hardwood shelves, sanded clean — the journal calls it Fine Shelving — planter boxes for the patio, screwed together so the weather can't work them loose, and a striped walnut-and-maple board for the counter. Work up through Two-Tone and Striped Boards for that one.",
+      "Priya at The Second Cup — the whole works. 2 hardwood shelves, 2 planter boxes for the patio (screws — they live outside), and a striped walnut + maple board for the counter. She's already painted.",
+    plan: "Journal: Fine Shelving for the shelves, then Two-Tone and Striped Boards for the counter piece.",
     requiredMaterials: [
       { type: ["shelf"], species: REAL_WOOD_SPECIES, quantity: 2 },
       { type: ["planterBox"], species: ["pallet"], quantity: 2 },
@@ -133,7 +143,8 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "small-treasures",
     name: "Small Treasures",
     description:
-      "A jeweler is refitting the shop: boxes worthy of what goes inside, and frames with corners that close tight for the wall behind the counter. Box Joinery takes thin stock — this is what you buy a planer for — and Mitered Frames takes the saw's 45° stops.",
+      "Idris Farouk, jewelry shop on Fifth — 2 boxes “worthy of what goes inside them,” 2 frames for behind the counter. Corners that interlock, miters that disappear.",
+    plan: "Thin stock — this is what the planer is for. Journal: Box Joinery, and Mitered Frames for the saw's 45° stops.",
     requiredMaterials: [
       { type: ["jewelryBox"], species: REAL_WOOD_SPECIES, quantity: 2 },
       { type: ["pictureFrame"], species: REAL_WOOD_SPECIES, quantity: 2 },
@@ -154,7 +165,8 @@ export const COMMISSION_SEQUENCE: ReadonlyArray<Commission> = [
     id: "the-butchers-block",
     name: "The Butcher's Block",
     description:
-      "The restaurant wants a true end-grain block, oiled and food-ready. Build a crosscut sled, slice a panel, stand the grain on end, and glue it all again. Everything you know, in one board.",
+      "Anton again — a true end-grain block for the line. Oiled, heavy, flat as glass. “The kind of board that outlives the restaurant.”",
+    plan: "Build the crosscut sled, slice a panel, stand the grain on end, glue it all again. Everything I know, in one board.",
     requiredMaterials: [
       {
         type: ["endGrainCuttingBoard"],
