@@ -119,6 +119,7 @@ import { SkillId } from "../Skill";
 import { StoreId } from "../lumberStock";
 import { ToolId } from "../Tool";
 import { Vector } from "../Vectors";
+import { seededRandom } from "../../utils/randUtils";
 
 /** Matches the stock a job wants out of wherever it's being taken from. */
 type MaterialPredicate = (material: MaterialInstance) => boolean;
@@ -132,6 +133,15 @@ const TICK_CEILING = 20_000;
 
 export class ShopDriver {
   private state: GameState;
+
+  /**
+   * The dice every tick rolls (listing sales, the job board's daily
+   * refresh). Seeded so a sequence is deterministic by construction — the
+   * pity timer guarantees fair-priced listings sell *eventually*, but
+   * which tick a sale lands on decides how much money a long playthrough
+   * has in hand, and that must not drift between runs.
+   */
+  private readonly rng = seededRandom("shop-driver");
 
   constructor(initial: GameState) {
     this.state = initial;
@@ -219,7 +229,7 @@ export class ShopDriver {
   /** Let the clock run with nobody working. */
   tick(count = 1): this {
     for (let i = 0; i < count; i++) {
-      this.state = tickAction(this.state);
+      this.state = tickAction(this.state, this.rng);
     }
     return this;
   }
@@ -876,7 +886,7 @@ export class ShopDriver {
       );
     }
     const before = this.state.day;
-    this.apply(wakeUpAction());
+    this.apply(wakeUpAction(this.rng));
     if (this.state.player.away || this.state.day !== before + 1) {
       throw new Error("Morning never came — this is a driver bug");
     }
@@ -961,7 +971,7 @@ export class ShopDriver {
     }
     this.ensureDaylight();
     this.standAtCab();
-    this.apply(goToStoreAction(store));
+    this.apply(goToStoreAction(store, this.rng));
     if (this.state.player.away?.kind !== "shopping") {
       throw new Error(
         `The trip to ${store} would not start — hands full, or mid-trip already`,
@@ -977,7 +987,7 @@ export class ShopDriver {
    * machines stay in the bed until buyAndPlaceMachine lifts them.
    */
   comeHome(): this {
-    this.apply(returnFromStoreAction());
+    this.apply(returnFromStoreAction(this.rng));
     return this.unloadBed();
   }
 
@@ -1337,9 +1347,9 @@ export class ShopDriver {
   private runDelivery(handoff: ReadyHandoff): this {
     // Nothing goes out after close, and both legs charge their minutes.
     this.ensureDaylight();
-    this.standAtCab().apply(startDeliveryAction(handoff));
+    this.standAtCab().apply(startDeliveryAction(handoff, this.rng));
     if (this.state.player.away?.kind === "delivering") {
-      this.apply(returnFromDeliveryAction());
+      this.apply(returnFromDeliveryAction(this.rng));
     }
     return this;
   }

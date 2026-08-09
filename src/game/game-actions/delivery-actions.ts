@@ -116,7 +116,10 @@ function orderFor(
  * thing that happens somewhere. Nothing goes out after close: a delivery
  * is a trip, and the only place left to drive at night is home.
  */
-export function startDeliveryAction(handoff: ReadyHandoff): GameAction {
+export function startDeliveryAction(
+  handoff: ReadyHandoff,
+  rng: () => number = Math.random,
+): GameAction {
   return (gameState) => {
     if (!canHandOff(gameState)) {
       console.warn("Can't deliver work right now");
@@ -147,14 +150,17 @@ export function startDeliveryAction(handoff: ReadyHandoff): GameAction {
       return gameState;
     }
 
-    return driveTicks({
-      ...gameState,
-      truck: { ...gameState.truck, bed: loaded.bed },
-      player: {
-        ...gameState.player,
-        away: { kind: "delivering", order: loaded.order },
+    return driveTicks(
+      {
+        ...gameState,
+        truck: { ...gameState.truck, bed: loaded.bed },
+        player: {
+          ...gameState.player,
+          away: { kind: "delivering", order: loaded.order },
+        },
       },
-    });
+      rng,
+    );
   };
 }
 
@@ -163,7 +169,9 @@ export function startDeliveryAction(handoff: ReadyHandoff): GameAction {
  * charges its minutes, the payout lands, and the player steps out beside
  * the cab.
  */
-export function returnFromDeliveryAction(): GameAction {
+export function returnFromDeliveryAction(
+  rng: () => number = Math.random,
+): GameAction {
   return (gameState) => {
     const away = gameState.player.away;
     if (away?.kind !== "delivering") {
@@ -172,7 +180,7 @@ export function returnFromDeliveryAction(): GameAction {
     }
     const { payout, jobId } = away.order;
 
-    gameState = driveTicks(gameState);
+    gameState = driveTicks(gameState, rng);
     gameState = {
       ...gameState,
       money: roundToCents(gameState.money + payout.money),
