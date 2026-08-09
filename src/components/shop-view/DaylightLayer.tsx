@@ -221,12 +221,24 @@ export const DaylightLayer: React.FC<{
     shadow.clear();
     const shadowTint = packed(shadowColor.current);
     if (shadowTint !== 0xffffff) {
-      shadow.rect(
-        slabX - WALL_THICKNESS + now.shadowDx * SHADOW_UNIT,
-        slabY - WALL_THICKNESS + now.shadowDy * SHADOW_UNIT,
-        width + WALL_THICKNESS * 2,
-        height + WALL_THICKNESS * 2,
-      );
+      const x0 = slabX - WALL_THICKNESS;
+      const y0 = slabY - WALL_THICKNESS;
+      const w = width + WALL_THICKNESS * 2;
+      const h = height + WALL_THICKNESS * 2;
+      const ox = now.shadowDx * SHADOW_UNIT;
+      const oy = now.shadowDy * SHADOW_UNIT;
+      // The swept hull of the footprint and its offset copy, not the
+      // offset copy alone: a cast shadow stays attached to the walls it
+      // falls from. The plain offset rect floated free of the building,
+      // leaving a sunlit sliver between the wall's base and its own
+      // shadow on the up-sun side and a detached dark corner drifting
+      // across the driveway.
+      // prettier-ignore
+      const points =
+        ox >= 0
+          ? [x0,y0, x0+w,y0, x0+w+ox,y0+oy, x0+w+ox,y0+h+oy, x0+ox,y0+h+oy, x0,y0+h]
+          : [x0+ox,y0+oy, x0+w+ox,y0+oy, x0+w,y0, x0+w,y0+h, x0+w+ox,y0+h+oy, x0+ox,y0+h+oy];
+      shadow.poly(points);
       shadow.fill(shadowTint);
     }
 
