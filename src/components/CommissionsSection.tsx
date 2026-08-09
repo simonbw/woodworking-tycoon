@@ -98,7 +98,18 @@ export const WorkOrder: React.FC<{
       <div
         className={`font-ink text-lg leading-snug ${compact ? "space-y-1.5" : "space-y-2"}`}
       >
-        {!compact && <p className="text-ink-blue">{commission.description}</p>}
+        {!compact && (
+          <>
+            <p className="text-ink-blue">{commission.description}</p>
+            {/* The plan, scribbled under the note after hanging up —
+                smaller, fainter, a little crooked: added later. */}
+            {commission.plan && (
+              <p className="text-base text-ink-fade -rotate-[0.4deg]">
+                {commission.plan}
+              </p>
+            )}
+          </>
+        )}
         <div>
           {!compact && (
             <div className="font-ink text-base text-ink-fade">Required</div>
@@ -127,8 +138,8 @@ export const WorkOrder: React.FC<{
             {canComplete ? (
               <span className="text-ink-red">
                 {bedReady
-                  ? "Ready — deliver from the truck's cab"
-                  : "Ready — load it into the truck's bed"}
+                  ? "Loaded — drive it over from the cab"
+                  : "All built — into the truck's bed"}
               </span>
             ) : (
               <span className="text-ink-fade">
@@ -166,10 +177,10 @@ export const WorkOrder: React.FC<{
                 and where it goes. */}
             <p className="text-ink-blue" data-testid="commission-delivery-note">
               {bedReady
-                ? `Ready for ${commission.client}. Deliver it from the truck's cab.`
+                ? `Loaded up for ${commission.client} — drive it over from the truck's cab.`
                 : canComplete
-                  ? `Ready for ${commission.client}. Load it into the truck's bed.`
-                  : `For ${commission.client}. Deliver it with the truck.`}
+                  ? `All built. Into the truck's bed, then over to ${commission.client}.`
+                  : `For ${commission.client}. Goes out on the truck.`}
             </p>
           </div>
         )}

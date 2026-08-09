@@ -236,6 +236,7 @@ export interface JobOffer {
   readonly id: string;
   /** Who's asking — generated flavor. */
   readonly name: string;
+  /** The listing as the poster typed it, in their own voice. */
   readonly description: string;
   readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   /** Guaranteed payout. Never decays. */
@@ -265,7 +266,20 @@ export interface AcceptedJob extends JobOffer {
 export interface Commission {
   readonly id: string;
   readonly name: string;
+  /**
+   * The note on the work order, in the player's own hand: their shorthand
+   * of the phone call — who asked, what they asked for, what they were
+   * weird about. It must only know things the `call` actually said.
+   */
   readonly description: string;
+  /**
+   * A second scrawl under the note: the player planning the job — what
+   * gear or journal skill this order is going to take. This is the voice
+   * of a woodworker chewing a pencil, not the game hinting; it carries
+   * the commission's tutorial breadcrumb (which machines/skills to go
+   * get) diegetically.
+   */
+  readonly plan?: string;
   readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
   readonly rewardMoney: number;
   readonly rewardReputation: number;
@@ -277,8 +291,8 @@ export interface Commission {
   /**
    * The text messages the client sends when the commission arrives, in
    * their own voice — played out as the phone-call moment (see
-   * CommissionCallLayer). The description stays the work order's
-   * manual-voice summary.
+   * CommissionCallLayer). The description is the player's jotted
+   * compression of these lines.
    */
   readonly call: ReadonlyArray<string>;
   /** Who takes delivery at the garage door. */
