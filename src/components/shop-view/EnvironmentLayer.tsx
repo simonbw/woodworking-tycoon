@@ -87,7 +87,10 @@ export const EnvironmentLayer: React.FC<{
   const { left: doorLeft, right: doorRight } = doorSpan(gameState.shopInfo);
   const drivewayLeft = doorLeft - WALL_THICKNESS;
   const drivewayRight = doorRight + WALL_THICKNESS;
-  const drivewayTop = height + WALL_THICKNESS;
+  // The asphalt runs all the way to the slab's edge so no grass peeks
+  // through the doorway; the building draws over it, so the wall bands
+  // and jambs cover its corners outside the opening.
+  const drivewayTop = height;
 
   const drawBuilding = useCallback(
     (g: Graphics) => {
