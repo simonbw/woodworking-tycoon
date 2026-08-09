@@ -1,4 +1,5 @@
 import React from "react";
+import { useBenchDiveActive } from "./bench-view/benchSceneSlot";
 import { CommissionTracker } from "./CommissionTracker";
 import { DustTutorialCard } from "./DustTutorialCard";
 import { HandsStrip } from "./HandsStrip";
@@ -30,6 +31,14 @@ export const HomePage: React.FC = () => {
  * its panel and the page itself never grows a scrollbar.
  */
 const HomePageContent: React.FC = () => {
+  // Leaned over a bench, the corner chips fade: the bench scene draws
+  // in the shop's canvas underneath them, and they were unreachable
+  // behind the bench view's pointer surface anyway. The top bar stays —
+  // it deliberately rides above the bench view.
+  const benchDive = useBenchDiveActive();
+  const chipClass = `transition-opacity duration-150 ${
+    benchDive ? "opacity-0" : "opacity-100"
+  }`;
   return (
     <main className="relative h-screen overflow-hidden">
       <div className="absolute inset-0">
@@ -42,18 +51,27 @@ const HomePageContent: React.FC = () => {
         <NavBar />
       </div>
 
-      <div className="absolute left-6 top-6 z-20 w-80 space-y-3">
+      <div
+        inert={benchDive}
+        className={`absolute left-6 top-6 z-20 w-80 space-y-3 ${chipClass}`}
+      >
         <CommissionTracker />
         <TutorialCard />
         <DustTutorialCard />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6">
+      <div
+        inert={benchDive}
+        className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6 ${chipClass}`}
+      >
         <div className="pointer-events-auto">
           <HandsStrip />
         </div>
       </div>
-      <div className="absolute bottom-6 right-6 z-20">
+      <div
+        inert={benchDive}
+        className={`absolute bottom-6 right-6 z-20 ${chipClass}`}
+      >
         <SuppliesSection />
       </div>
     </main>

@@ -8,7 +8,7 @@ import {
   isBenchType,
   machineKey,
 } from "../../game/Machine";
-import { useLeanedBenchKey } from "../bench-view/benchZoom";
+import { useLeanedBenchKey } from "../bench-view/benchSceneSlot";
 import {
   benchPlacementFor,
   benchTopSizeIn,

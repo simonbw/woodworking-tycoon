@@ -243,19 +243,22 @@ belongs to one table (`gatherBenchPiecesAction` slides a spanning job
 onto one; `benchGroupWork` says which). Tool racks don't pool yet.
 
 Opening and closing are performed by a camera dive
-(`bench-view/benchZoom.tsx` + `shop-view/BenchZoomCameraLayer.tsx`),
-pure presentation: the shop's world container swells about the bench,
-and the zoomed live shop remains the backdrop the whole time the view is
-open — the scene canvas paints no floor of its own and no vignette. Once
-the dive lands, the shop hides its own copies of that bench's stock
+(`shop-view/BenchDiveLayer.tsx`), pure presentation: the shop's world
+container swells about the bench while the scene lands on its
+footprint, one similarity ramp applied to both halves in one tick —
+everything draws in the shop's single canvas, the scene as a
+screen-space container above the world (`BenchWorkSurface` publishes
+the subtree through `bench-view/benchSceneSlot.ts`; the DOM chrome and
+pointer handling stay in the portaled sheet). The zoomed live shop
+remains the backdrop the whole time the view is open — the scene paints
+no floor of its own and no vignette. Once the dive lands, the shop
+hides its own copies of that bench's stock
 (`setLeanedBench`/`useLeanedBenchKey`) so the scene's live versions
-don't ghost against static ones. The two canvases share a clock, not an
-integration (`benchZoomStage` + `benchZoomProgress()`, anchored by
-`shop-view/shopFrameStore.ts`), so they can never drift; Tab-Tab
-mid-flight rolls the ramp back. `prefers-reduced-motion` snaps both
-canvases straight to the end states — which is also how the E2E suite
-runs (`reducedMotion: "reduce"` in the Playwright config); `bench.spec`
-pins the landed stage via `data-zoom="open"`.
+don't ghost against static ones. Tab-Tab mid-flight rolls the ramp
+back. `prefers-reduced-motion` snaps straight to the end states — which
+is also how the E2E suite runs (`reducedMotion: "reduce"` in the
+Playwright config); `bench.spec` pins the landed stage via
+`data-zoom="open"`.
 
 In this view the pointer is the hand (right-click puts back whatever
 it's holding); assist options — bigger brush, lower threshold — are

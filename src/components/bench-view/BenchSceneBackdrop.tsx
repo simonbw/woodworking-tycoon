@@ -36,8 +36,8 @@ const ZOOMED_ART: Readonly<Record<string, string>> = {
 
 /**
  * The bench view's backdrop is the shop itself, leaned into — literally:
- * the live shop canvas stays underneath, zoomed onto the bench by
- * BenchZoomCameraLayer, so everything around the bench is whatever is
+ * the live shop stays underneath in the same canvas, zoomed onto the
+ * bench by BenchDiveLayer, so everything around the bench is whatever is
  * actually there (the wall behind it, the neighboring pile, the rest of
  * the floor), undimmed and unstyled — being zoomed in with the bench
  * chrome up is signal enough that these are workbench hands. All this
