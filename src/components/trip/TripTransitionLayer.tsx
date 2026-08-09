@@ -44,7 +44,12 @@ export const TRUCK_ARRIVE_MS = 2900;
 export const TRUCK_ROLL_IN_MS = 1700;
 const FADE_MS = 400;
 
-const TRANSITIONS_DISABLED = Number(process.env.E2E_RENDER_FPS) > 0;
+/**
+ * The E2E build skips the staging entirely (specs click "Go" and expect
+ * the destination that frame), so anything else that stretches a trip's
+ * instant into a performance has to skip itself the same way.
+ */
+export const TRIP_TRANSITIONS_DISABLED = Number(process.env.E2E_RENDER_FPS) > 0;
 
 /** Runs `apply` once the screen has faded to black (immediately in the
  * E2E build). Handed to the overlays' Head Home buttons. */
@@ -79,7 +84,7 @@ export const TripTransitionLayer: React.FC<{
   // Head Home: dip to black first, then apply the return action — the
   // destination page is what fades out, not the shop.
   const headHome = (apply: () => void) => {
-    if (TRANSITIONS_DISABLED) {
+    if (TRIP_TRANSITIONS_DISABLED) {
       apply();
       return;
     }
@@ -101,7 +106,7 @@ export const TripTransitionLayer: React.FC<{
     }
 
     if (away) {
-      if (TRANSITIONS_DISABLED) {
+      if (TRIP_TRANSITIONS_DISABLED) {
         setTruckStage("away");
         return;
       }
@@ -123,7 +128,7 @@ export const TripTransitionLayer: React.FC<{
       };
     }
 
-    if (TRANSITIONS_DISABLED) {
+    if (TRIP_TRANSITIONS_DISABLED) {
       setTruckStage("parked");
       return;
     }

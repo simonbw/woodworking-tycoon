@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   headHomeFromScavengingAction,
   continueScavengingAction,
@@ -13,8 +13,12 @@ import { classNames } from "../../utils/classNames";
 import { formatCount } from "../../utils/formatNumber";
 import { seededRandom } from "../../utils/randUtils";
 import { DayClock } from "../DayClock";
+import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { TripOverlay } from "../trip/TripOverlay";
-import { useHeadHome } from "../trip/TripTransitionLayer";
+import {
+  TRIP_TRANSITIONS_DISABLED,
+  useHeadHome,
+} from "../trip/TripTransitionLayer";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ScavengeDrivingSound } from "./ScavengeDrivingSound";
 
@@ -42,18 +46,47 @@ export const ScavengeTripOverlay: React.FC = () => {
   return <ScavengeTrip trip={away} />;
 };
 
+/**
+ * How long the truck is under way before the screen starts to dip. The
+ * fade then plays over a truck that is already rolling, so the trip ends
+ * on the same picture it ran on rather than cutting away from a parked
+ * drawing.
+ */
+const PULL_AWAY_MS = 500;
+
 const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const fadeThen = useHeadHome();
+  // Set the moment the player calls it, and never cleared: this
+  // component is unmounted by the return it sets in motion.
+  const [leaving, setLeaving] = useState(false);
+  const pullAway = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (pullAway.current) clearTimeout(pullAway.current);
+    },
+    [],
+  );
+
   // Ending the trip is instant in game time, so it gets the same
-  // fade-to-black-then-arrive performance a store's Head Home does.
-  const backToShop = () =>
-    fadeThen(() => applyAction(headHomeFromScavengingAction()));
+  // fade-to-black-then-arrive performance a store's Head Home does —
+  // with the truck pulling away first.
+  const backToShop = () => {
+    if (leaving) return;
+    const goHome = () =>
+      fadeThen(() => applyAction(headHomeFromScavengingAction()));
+    if (TRIP_TRANSITIONS_DISABLED) {
+      goHome();
+      return;
+    }
+    setLeaving(true);
+    pullAway.current = setTimeout(goHome, PULL_AWAY_MS);
+  };
   const keepSearching = () => applyAction(continueScavengingAction());
 
   const searching = trip.phase.kind === "searching";
-  const deciding = trip.phase.kind === "deciding";
+  const deciding = trip.phase.kind === "deciding" && !leaving;
   const block = keepScavengingBlock(gameState);
   const loot = scavengeLoot(trip);
 
@@ -66,14 +99,17 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
       // waiting on the call — a search in progress has no keys.
       onHeadHome={deciding ? backToShop : undefined}
     >
-      <ScavengeDrivingSound driving={searching} />
+      <ScavengeDrivingSound driving={searching || leaving} />
       <header className="flex items-baseline justify-between">
         <h1 className="section-heading">Out scavenging for pallets</h1>
         <DayClock />
       </header>
       <div className="flex min-h-0 grow items-center justify-center">
         <div className="flex w-[30rem] flex-col gap-5">
-          <TruckDrawing palletCount={loot.length} driving={searching} />
+          <TruckDrawing
+            palletCount={loot.length}
+            driving={searching || leaving}
+          />
           <StopLine trip={trip} />
           <DecisionPanel
             block={block}
@@ -173,9 +209,15 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
 const INK_BLACK = "#1a1a1a";
 const INK_FADE = "#5a5550";
 const INK_BROWN = "#5c3d2e";
-const GOLD_DARK = "#9c7e3f";
 /** The card's own paper — what the hubcaps are filled with. */
 const PAPER_MANILA = "#e6d5a8";
+/**
+ * The wood in the bed, taken from the species map the shop floor and the
+ * bench draw pallets with — a haul should be the same yellow here as it
+ * is when it lands. The ink outline stays: this is a sketch on manila,
+ * and the fill alone is too close to the paper to hold a shape.
+ */
+const PALLET_WOOD = colorBySpecies.pallet.primary;
 
 const TRUCK_W = 260;
 const TRUCK_H = 150;
@@ -216,18 +258,25 @@ const ROAD_GAP = 15;
 const ROAD_PATTERN = ROAD_DASH + ROAD_GAP;
 
 /**
- * The wheel. Its stroke is centered on the radius, so the rubber that
- * actually meets the road sits half a stroke outside it — that outer
- * circle is the one that has to roll without slipping.
+ * The wheel, sized from the outside in. `TIRE_OUTER_RADIUS` is the
+ * rubber that meets the road — the circle that has to roll without
+ * slipping, and the one thing here that must not move: the tire can be
+ * drawn as fat as it likes without changing how far a turn carries the
+ * truck. The stroke is centered on the drawn radius, so that radius
+ * backs off by half the stroke to keep the outside where it is.
  */
-const WHEEL_RADIUS = 15;
-const WHEEL_STROKE = 3;
-const TIRE_CIRCUMFERENCE = 2 * Math.PI * (WHEEL_RADIUS + WHEEL_STROKE / 2);
+const TIRE_OUTER_RADIUS = 16.5;
+const WHEEL_STROKE = 8;
+const WHEEL_RADIUS = TIRE_OUTER_RADIUS - WHEEL_STROKE / 2;
+const TIRE_CIRCUMFERENCE = 2 * Math.PI * TIRE_OUTER_RADIUS;
+/** The hubcap: everything the tire's inner edge encloses. */
+const HUBCAP_RADIUS = TIRE_OUTER_RADIUS - WHEEL_STROKE;
 
-/** Five lugs on a small circle — enough to read a turn, few enough to
- *  stay dots rather than a texture. */
+/** Five lugs, set well inside the hubcap — enough to read a turn, few
+ *  enough to stay dots rather than a texture. */
 const LUG_ANGLES = [0, 72, 144, 216, 288];
-const LUG_ORBIT = 7;
+const LUG_ORBIT = HUBCAP_RADIUS * 0.55;
+const LUG_RADIUS = 1.5;
 
 /**
  * How fast the ground goes by, in user units per millisecond. This is
@@ -357,6 +406,7 @@ const TruckDrawing: React.FC<{ palletCount: number; driving: boolean }> = ({
             sag tilts the body, its glass, and the stack together. The
             wheels stay outside it: they're on the road either way. */}
         <g
+          className="truck-sag"
           style={{
             transformBox: "view-box",
             transformOrigin: `${(FRONT_AXLE_X + REAR_AXLE_X) / 2}px ${AXLE_Y}px`,
@@ -469,7 +519,7 @@ const Wheel: React.FC<{
             key={angle}
             cx={cx + LUG_ORBIT * Math.cos(radians)}
             cy={AXLE_Y + LUG_ORBIT * Math.sin(radians)}
-            r={1.7}
+            r={LUG_RADIUS}
             fill={INK_BLACK}
           />
         );
@@ -481,14 +531,7 @@ const Wheel: React.FC<{
 /** One pallet lying flat in the bed, seen edge-on: deck, gap, deck. */
 const PalletSideView: React.FC<{ y: number }> = ({ y }) => (
   <g data-testid="scavenge-bed-pallet">
-    <rect
-      x={126}
-      y={y}
-      width={112}
-      height={9}
-      fill={GOLD_DARK}
-      opacity={0.35}
-    />
+    <rect x={126} y={y} width={112} height={9} fill={PALLET_WOOD} />
     <rect
       x={126}
       y={y}

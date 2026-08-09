@@ -329,6 +329,15 @@
       opacity: 1;
     }
   }
+
+  /* The scavenging truck's springs (see ScavengeTripOverlay). The angle
+     itself is set inline per pallet; this is only how it gets there —
+     the curve overshoots past the new sag and comes back, so a pallet
+     landing in the bed drops the tail and lets it rebound instead of
+     stepping to the new pose. */
+  .truck-sag {
+    transition: transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -347,5 +356,11 @@
   .tutorial-ring {
     animation: none !important;
     opacity: 1;
+  }
+
+  /* The truck still sits lower under a load — that's the readout, not
+     the motion. It just gets there without the bounce. */
+  .truck-sag {
+    transition: none !important;
   }
 }
