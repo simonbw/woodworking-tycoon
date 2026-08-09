@@ -32,8 +32,8 @@ function walk(
 describe("lot geometry", () => {
   it("parks the truck centered on the door, backed to a 2-cell aisle", () => {
     const { min, max } = truckParkedRect(initialGameState.shopInfo);
-    // Door center is x = 6.5 on the default 12-wide shop
-    assert.strictEqual((min[0] + max[0]) / 2, 6.5);
+    // Door center is the wall midline, x = 6, on the default 12-wide shop
+    assert.strictEqual((min[0] + max[0]) / 2, 6);
     assert.ok(Math.abs(max[0] - min[0] - TRUCK_BODY_WIDTH) < 1e-9);
     assert.ok(Math.abs(max[1] - min[1] - TRUCK_LENGTH) < 1e-9);
     // Wall's outer face is y = 16.5; the tailgate sits 2 cells off it
@@ -57,8 +57,8 @@ describe("lot geometry", () => {
     const bottom = solids.filter((s) => s.min[1] === 16);
     assert.strictEqual(bottom.length, 2);
     const [left, right] = [...bottom].sort((a, b) => a.min[0] - b.min[0]);
-    // The gap matches the 7-ft door strip isAtShopDoor describes
-    assert.strictEqual(left.max[0], 3);
+    // The gap is the 8-ft door, centered on the 12-ft wall
+    assert.strictEqual(left.max[0], 2);
     assert.strictEqual(right.min[0], 10);
   });
 });
@@ -73,16 +73,20 @@ describe("walking the lot", () => {
   it("rounds the tailgate and walks the grass past the truck's nose", () => {
     const atTailgate = walk([6.5, 15], [0, 1], 1);
     const besideTruck = walk(atTailgate, [-1, 0], 1);
-    assert.ok(besideTruck[0] < 3.75 - PLAYER_RADIUS, "cleared the body line");
+    assert.ok(besideTruck[0] < 3.25 - PLAYER_RADIUS, "cleared the body line");
     const belowTruck = walk(besideTruck, [0, 1], 2);
     const nose = truckParkedRect(initialGameState.shopInfo).max[1];
     assert.ok(belowTruck[1] > nose, "walked the strip past the nose");
   });
 
   it("is stopped by the wall everywhere but the door", () => {
-    const atLeftWall = walk([1.5, 15], [0, 1], 1);
+    // An empty shop: the starter garbage can parks in the bottom-left
+    // corner, and its collision circle would pinch a body probing the
+    // short wall stub beside the 8-ft door.
+    const world = collisionWorld({ ...initialGameState, machines: [] });
+    const atLeftWall = walk([1, 15], [0, 1], 1, world);
     assert.ok(atLeftWall[1] <= 16 - PLAYER_RADIUS + 1e-3);
-    const atRightWall = walk([11, 15], [0, 1], 1);
+    const atRightWall = walk([11, 15], [0, 1], 1, world);
     assert.ok(atRightWall[1] <= 16 - PLAYER_RADIUS + 1e-3);
   });
 

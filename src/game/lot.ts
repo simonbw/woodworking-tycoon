@@ -1,5 +1,5 @@
 import { SolidBox } from "./player-motion";
-import { DOOR_HALF_WIDTH, ShopInfo } from "./ShopInfo";
+import { doorCenterX, DOOR_WIDTH, ShopInfo } from "./ShopInfo";
 import { Vector } from "./Vectors";
 
 /**
@@ -32,7 +32,7 @@ export const TRUCK_LENGTH = 202 / 12;
 /**
  * Gap between the outer wall face and the tailgate, in cells. Two cells
  * on purpose: the truck's body is wider than the corner clearances the
- * 7-ft door leaves, so this strip is the only way from the door to the
+ * 8-ft door leaves, so this strip is the only way from the door to the
  * grass beside the truck — and a 2-cell gap is exactly what counts as a
  * walkable aisle between machines (see PLAYER_RADIUS).
  */
@@ -48,7 +48,7 @@ export function truckParkedRect(shopInfo: ShopInfo): {
   min: Vector;
   max: Vector;
 } {
-  const centerX = shopInfo.entrancePosition[0] + 0.5;
+  const centerX = doorCenterX(shopInfo);
   const tailgateY = shopInfo.size[1] + WALL_THICKNESS_CELLS + TRUCK_PARK_GAP;
   return {
     min: [centerX - TRUCK_BODY_WIDTH / 2, tailgateY],
@@ -167,8 +167,8 @@ export function isOutdoors(shopInfo: ShopInfo, position: Vector): boolean {
 export function wallSolids(shopInfo: ShopInfo): SolidBox[] {
   const [w, h] = shopInfo.size;
   const t = WALL_THICKNESS_CELLS;
-  const doorLeft = shopInfo.entrancePosition[0] - DOOR_HALF_WIDTH;
-  const doorRight = shopInfo.entrancePosition[0] + DOOR_HALF_WIDTH + 1;
+  const doorLeft = doorCenterX(shopInfo) - DOOR_WIDTH / 2;
+  const doorRight = doorCenterX(shopInfo) + DOOR_WIDTH / 2;
   const box = (min: Vector, max: Vector): SolidBox => ({
     kind: "box",
     min,

@@ -114,7 +114,7 @@ export const DaylightLayer: React.FC<{
     shadowDy: light.shadow.dy,
   });
 
-  const door = doorSpan(gameState.shopInfo.entrancePosition[0]);
+  const door = doorSpan(gameState.shopInfo);
 
   // The viewport is everything the camera can *ever* see, not what it
   // sees right now (see ShopView), so this is stable while the player

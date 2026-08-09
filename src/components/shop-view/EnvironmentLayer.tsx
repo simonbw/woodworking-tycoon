@@ -1,7 +1,7 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { MaterialInstance } from "../../game/Materials";
-import { DOOR_HALF_WIDTH } from "../../game/ShopInfo";
+import { doorCenterX, DOOR_WIDTH, ShopInfo } from "../../game/ShopInfo";
 import { useTexture } from "../../utils/useTexture";
 import { useGameState } from "../useGameState";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
@@ -51,9 +51,9 @@ const DRIVEWAY_TINT = 0x8f8f8f;
  * The garage door's opening in world pixels. Shared with `DaylightLayer`,
  * which puts the shop's light-spill through the same gap after dark.
  */
-export function doorSpan(entranceX: number): { left: number; right: number } {
-  const center = cellToPixel(entranceX + 0.5);
-  const half = cellToPixel(DOOR_HALF_WIDTH + 0.5);
+export function doorSpan(shopInfo: ShopInfo): { left: number; right: number } {
+  const center = cellToPixel(doorCenterX(shopInfo));
+  const half = cellToPixel(DOOR_WIDTH / 2);
   return { left: center - half, right: center + half };
 }
 
@@ -84,9 +84,7 @@ export const EnvironmentLayer: React.FC<{
   const grassTexture = useTexture("/images/grass.png");
   const asphaltTexture = useTexture("/images/asphalt.png");
 
-  const { left: doorLeft, right: doorRight } = doorSpan(
-    gameState.shopInfo.entrancePosition[0],
-  );
+  const { left: doorLeft, right: doorRight } = doorSpan(gameState.shopInfo);
   const drivewayLeft = doorLeft - WALL_THICKNESS;
   const drivewayRight = doorRight + WALL_THICKNESS;
   const drivewayTop = height + WALL_THICKNESS;
