@@ -1,6 +1,7 @@
 import { useTick } from "@pixi/react";
 import { Container, Graphics } from "pixi.js";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { lerp } from "../../utils/mathUtils";
 import {
   faceNails,
   isSameNail,
@@ -86,6 +87,26 @@ function stepSpring(
     : [next, nextVelocity];
 }
 
+/** How long a freed board takes to travel from its berth to the pile,
+ * and how far it lifts off the bench on the way — a board swept aside
+ * by hand, not a board teleporting. */
+const TOSS_MS = 280;
+const TOSS_LIFT = 0.08;
+
+/** Fast off the mark, settling onto the pile: the hand lets go early. */
+function easeOutToss(t: number): number {
+  return 1 - (1 - t) ** 3;
+}
+
+/** Entrances are motion for its own sake — the piece is already where
+ * the game state says it is, so a reader who asked for stillness gets
+ * it there directly. */
+function prefersReducedMotion(): boolean {
+  return (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
+  );
+}
+
 /**
  * A container whose turn and flip tween on the PIXI ticker — R and F
  * read as the piece being turned by hand, not teleported. Position
@@ -93,22 +114,47 @@ function stepSpring(
  * NOT react-spring's animated("pixiContainer"): its web-targeted prop
  * applier doesn't drive the PIXI reconciler, and the container silently
  * renders nothing.
+ *
+ * `enterFrom` is the one exception to position tracking the drag: a
+ * piece that appears mid-scene can be walked in from somewhere else
+ * (a board pried off a pallet starts at its berth and is tossed onto
+ * the pile). It's read once, at mount — a one-shot entrance, never a
+ * target the piece keeps chasing.
  */
 const TweenedTransform: React.FC<{
   placement: BenchPlacement;
   fit: StageFit;
   alpha?: number;
+  enterFrom?: BenchPlacement;
   children: React.ReactNode;
-}> = ({ placement, fit, alpha, children }) => {
+}> = ({ placement, fit, alpha, enterFrom, children }) => {
   const targetAngle = placement.angleDeg;
   const targetFlip = placement.flipped ? -1 : 1;
   const nodeRef = useRef<Container | null>(null);
+  // Captured at mount: later renders never restart an entrance.
+  const entrance = useRef(
+    enterFrom && !prefersReducedMotion() ? enterFrom : null,
+  );
   const anim = useRef({
-    angle: targetAngle,
+    angle: entrance.current?.angleDeg ?? targetAngle,
     flip: targetFlip,
     angleVelocity: 0,
     flipVelocity: 0,
+    /** Seconds into the entrance, or null once it has landed. */
+    enteringFor: entrance.current ? 0 : (null as number | null),
   });
+
+  // The entrance has to be on the node before PIXI's next render, or
+  // the piece shows for a frame at the far end of its own toss.
+  useLayoutEffect(() => {
+    const node = nodeRef.current;
+    const from = entrance.current;
+    if (!node || !from) return;
+    node.x = fit.originX + from.xIn * fit.pxPerIn;
+    node.y = fit.originY + from.yIn * fit.pxPerIn;
+    node.angle = from.angleDeg;
+    // Only ever at mount — fit is deliberately not a dependency
+  }, []);
 
   useTick((ticker) => {
     const node = nodeRef.current;
@@ -128,7 +174,32 @@ const TweenedTransform: React.FC<{
       dt,
     );
     node.angle = a.angle;
-    node.scale.set(a.flip * fit.spriteScale, fit.spriteScale);
+    let lift = 1;
+    if (a.enteringFor !== null && entrance.current) {
+      a.enteringFor += dt;
+      const t = Math.min(a.enteringFor / (TOSS_MS / 1000), 1);
+      const eased = easeOutToss(t);
+      const from = entrance.current;
+      // The target is recomputed every tick, so a resize (or the piece
+      // being nudged) mid-flight still lands it in the right place.
+      node.x = lerp(
+        fit.originX + from.xIn * fit.pxPerIn,
+        fit.originX + placement.xIn * fit.pxPerIn,
+        eased,
+      );
+      node.y = lerp(
+        fit.originY + from.yIn * fit.pxPerIn,
+        fit.originY + placement.yIn * fit.pxPerIn,
+        eased,
+      );
+      // Off the bench and back down: the board is in the air, briefly
+      lift = 1 + TOSS_LIFT * Math.sin(Math.PI * t);
+      if (t >= 1) {
+        a.enteringFor = null;
+        entrance.current = null;
+      }
+    }
+    node.scale.set(a.flip * fit.spriteScale * lift, fit.spriteScale * lift);
   });
 
   return (
@@ -187,11 +258,14 @@ const TweenedPiece: React.FC<{
   fit: StageFit;
   hovered: boolean;
   dragging: boolean;
-}> = ({ piece, fit, hovered, dragging }) => (
+  /** Where this piece came from, if it just appeared on the bench. */
+  enterFrom?: BenchPlacement;
+}> = ({ piece, fit, hovered, dragging, enterFrom }) => (
   <TweenedTransform
     placement={piece.placement}
     fit={fit}
     alpha={dragging ? 0.9 : 1}
+    enterFrom={enterFrom}
   >
     <MaterialSprite
       material={piece.material}
@@ -209,10 +283,11 @@ const TweenedPiece: React.FC<{
 );
 
 /**
- * Which of the pallet's layers a freed board still visually belongs to:
- * a board lying untouched on its berth keeps its place in the stack (a
- * stringer slid out of the sandwich stays under the deck), and a board
- * that's been moved — or whose pallet has — is just loose stock on top.
+ * Which of the pallet's layers a board lying on its berth belongs to.
+ * Freed boards are tossed onto the pile, so ordinarily nothing matches —
+ * but a board dragged back onto its berth re-enters the sandwich (a
+ * stringer slid home lies under the deck again), and anything short of
+ * that exact fit is just loose stock on top.
  */
 function berthLayerOf(
   piece: LoosePiece,
@@ -262,6 +337,51 @@ export const BenchScene: React.FC<{
   draggingId,
   assembly,
 }) => {
+  // A pried board is committed straight onto the pile in the bench's
+  // back-left corner (palletStackPlacement), which would have it appear
+  // there out of nowhere — so the scene walks it over from the berth it
+  // was nailed in. Two things have to be remembered to draw that:
+  //
+  // - Which pieces are *new since the last commit*. A piece that merely
+  //   moves house between the scene's layers (a board seated onto a
+  //   blueprint slot changes parent, so React remounts it) has been on
+  //   the bench all along and must not fly anywhere.
+  // - The pallet's last known placement, because the final pry frees two
+  //   boards and takes the pallet away in the same commit — by the time
+  //   they need a berth, there's no pallet left to ask.
+  //
+  // Both refs are written after commit and only read during render, so
+  // a double-invoked render sees the same answer.
+  const seenIds = useRef<ReadonlySet<string> | null>(null);
+  const lastPallet = useRef<{ id: string; placement: BenchPlacement } | null>(
+    null,
+  );
+  const knownIds = seenIds.current;
+  const palletSource =
+    pallet && palletPlacement
+      ? { id: pallet.id, placement: palletPlacement }
+      : lastPallet.current;
+  useEffect(() => {
+    seenIds.current = new Set(pieces.map((piece) => piece.material.id));
+    if (pallet && palletPlacement) {
+      lastPallet.current = { id: pallet.id, placement: palletPlacement };
+    }
+  });
+
+  /** The berth a board just freed should be tossed from — nothing for a
+   * piece that was already lying here, or that never came off a pallet.
+   * The first render seeds the roster instead of tossing everything on
+   * it: opening the bench view is not a pry. */
+  const tossFrom = (piece: LoosePiece): BenchPlacement | undefined => {
+    if (!knownIds || knownIds.has(piece.material.id) || !palletSource) {
+      return undefined;
+    }
+    const ref = palletSlotRefFromId(palletSource.id, piece.material.id);
+    return ref
+      ? berthPlacementOnBench(palletSource.placement, palletBoardSlot(ref))
+      : undefined;
+  };
+
   // The nail heads themselves are part of the pallet (PalletSprite draws
   // them in both views); this layer is only the pry chrome around them,
   // carried through the pallet's placement like everything else.
@@ -455,6 +575,7 @@ export const BenchScene: React.FC<{
       fit={fit}
       hovered={hoveredId === piece.material.id}
       dragging={draggingId === piece.material.id}
+      enterFrom={tossFrom(piece)}
     />
   );
 

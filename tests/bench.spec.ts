@@ -159,9 +159,13 @@ test.describe("Bench view", () => {
 
       const stage = page.getByTestId("bench-stage");
       const box = await stage.boundingBox();
-      await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, {
-        button: "right",
-      });
+      await page.mouse.click(
+        box!.x + box!.width / 2,
+        box!.y + box!.height / 2,
+        {
+          button: "right",
+        },
+      );
 
       await expect(block).toHaveAttribute(
         "aria-label",
@@ -323,20 +327,20 @@ test.describe("Bench view", () => {
       expect((await palletState()).deckBoards[7]).toBe(false);
       expect((await palletState()).stringers).toEqual([true, true, true]);
 
-      // E takes the piece under the pointer — the freed board lying on
-      // its berth, not whatever sits first in the bay. Hover is pointer
-      // state computed on mousemove, so under load the first move can
-      // land before the freed board reaches the scene — wiggle until
+      // E takes the piece under the pointer — the freed board, which the
+      // pry tossed onto the pile in the bench's back-left corner instead
+      // of leaving it lying over nails still to pull. On the 40×30
+      // makeshift top a 36" deck board rides 18" in and 2" down. Hover is
+      // pointer state computed on mousemove, so under load the first move
+      // can land before the freed board reaches the scene — wiggle until
       // the stage reports the board under the hand, then take it.
       await page.keyboard.press("Escape"); // hang the hammer up
-      const berth = await palletPoint(page, 23, 17);
+      const pile = await inchPoint(page, 18, 2);
       let wiggle = 0;
       await expect
         .poll(async () => {
-          await page.mouse.move(berth.x + (wiggle++ % 2), berth.y);
-          return page
-            .getByTestId("bench-stage")
-            .getAttribute("data-hovered");
+          await page.mouse.move(pile.x + (wiggle++ % 2), pile.y);
+          return page.getByTestId("bench-stage").getAttribute("data-hovered");
         })
         .toBe("fx-bench-pallet:deck-7");
       await page.keyboard.press("e");
@@ -350,8 +354,10 @@ test.describe("Bench view", () => {
 
       // F over the pallet turns it over — the bottom face's own nails
       // come on offer (they're driven from that side). Hover is pointer
-      // state: nudge the mouse so the pallet is what's under the hand.
-      await page.mouse.move(berth.x + 6, berth.y + 6);
+      // state: nudge the mouse so the pallet is what's under the hand —
+      // its middle, well clear of the pile up in the corner.
+      const palletMiddle = await palletPoint(page, 23, 17);
+      await page.mouse.move(palletMiddle.x + 6, palletMiddle.y + 6);
       await page.waitForTimeout(150);
       await page.keyboard.press("f");
       await expect
@@ -595,7 +601,10 @@ test.describe("Bench view", () => {
           const seams = await stage.getAttribute("data-glue-seams");
           if (seams === `${index + 1}/2`) break;
         }
-        await expect(stage).toHaveAttribute("data-glue-seams", `${index + 1}/2`);
+        await expect(stage).toHaveAttribute(
+          "data-glue-seams",
+          `${index + 1}/2`,
+        );
       }
       await page.keyboard.press("Escape");
 
@@ -713,9 +722,7 @@ test.describe("Bench view", () => {
       await page.mouse.move(overGhost.x, overGhost.y);
       await expect(page.getByTestId("slot-tip")).toBeVisible();
       await expect(page.getByTestId("slot-tip")).toContainText("rail");
-      await expect(page.getByTestId("slot-tip")).toContainText(
-        "stood on edge",
-      );
+      await expect(page.getByTestId("slot-tip")).toContainText("stood on edge");
 
       // The parked rail lies flat: F flips it up on its long edge (the
       // one flip verb — boards tip on edge, the pallet turns over). The
@@ -824,7 +831,12 @@ test.describe("Bench view", () => {
                     ticksRemaining: 0,
                   },
                   benchLayout: {
-                    "pb-slat": { xIn: 20, yIn: 15, angleDeg: 0, flipped: false },
+                    "pb-slat": {
+                      xIn: 20,
+                      yIn: 15,
+                      angleDeg: 0,
+                      flipped: false,
+                    },
                     "pb-n": {
                       xIn: 20,
                       yIn: 5,
