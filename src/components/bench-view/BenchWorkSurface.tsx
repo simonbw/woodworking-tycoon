@@ -37,6 +37,13 @@ import {
   palletPointOnBench,
 } from "../../game/bench-work/bench-layout";
 import {
+  atFlipStop,
+  FLIP_STOP_HINTS,
+  flipStopOf,
+  nextFlipStop,
+  tumbles,
+} from "../../game/bench-work/flip-cycle";
+import {
   faceNails,
   PALLET_HEIGHT_IN,
   PALLET_WIDTH_IN,
@@ -1467,18 +1474,20 @@ export const BenchWorkSurface: React.FC<{
           ? dragPlacement.current
           : piece.placement;
       // One flip verb: a board cycles flat → up on its long edge → up
-      // on its end → flat again; anything else — the pallet — turns
-      // over. Mirroring a board face-for-face never showed anyway.
+      // on its end → flat again (bench-work/flip-cycle, which the scene
+      // also tumbles the piece through); anything else — the pallet —
+      // turns over. Mirroring a board face-for-face never showed anyway.
       const turned: BenchPlacement =
         event.code === "KeyR"
           ? { ...current, angleDeg: current.angleDeg + 90 }
-          : material.type === "board"
-            ? current.onEnd
-              ? { ...current, onEdge: false, onEnd: false }
-              : current.onEdge
-                ? { ...current, onEdge: false, onEnd: true }
-                : { ...current, onEdge: true, onEnd: false }
+          : tumbles(material)
+            ? atFlipStop(current, nextFlipStop(flipStopOf(current)))
             : { ...current, flipped: !current.flipped };
+      if (event.code === "KeyF" && tumbles(material)) {
+        // The knock of the piece coming down on its new face: three
+        // stops are easier to count by ear than by eye
+        playSound("material-drop", 0.3);
+      }
       // Turning and flipping pivot a piece about its middle, which is
       // the only thing the bench top holds it to — nothing to re-seat
       if (draggingId === id) {
@@ -1912,6 +1921,18 @@ export const BenchWorkSurface: React.FC<{
     return null;
   }
 
+  // What F would do to the piece in hand or under the pointer — the same
+  // one the key handler acts on.
+  const flipPiece = (() => {
+    const id = draggingId ?? hoveredId;
+    return id ? scenePieces.find((p) => p.material.id === id) : undefined;
+  })();
+  const flipHint =
+    flipPiece && tumbles(flipPiece.material)
+      ? (FLIP_STOP_HINTS[nextFlipStop(flipStopOf(flipPiece.placement))] ??
+        "flip")
+      : "flip";
+
   const keyHints: Array<[string, string]> = holdingClamp
     ? [
         ["Click", "lay the clamp down"],
@@ -1960,8 +1981,10 @@ export const BenchWorkSurface: React.FC<{
                   ["Drag", "move a piece"],
                   ["R", "turn"],
                   // The one flip verb: boards tip up on edge, the pallet
-                  // turns over
-                  ["F", "flip"],
+                  // turns over. With a board in reach the chip names the
+                  // stop F is about to reach, so the three-stop cycle
+                  // stops being a thing you discover by surprise.
+                  ["F", flipHint],
                 ] as Array<[string, string]>)
               : []),
             ["E", "take back"],
@@ -2218,7 +2241,7 @@ export const BenchWorkSurface: React.FC<{
             )}
           </div>
           {sceneActive && (
-            <div className="flex gap-2">
+            <div className="flex gap-2" data-testid="bench-key-hints">
               {keyHints.map(([key, label]) => (
                 <span
                   key={`${key}-${label}`}

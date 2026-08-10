@@ -24,6 +24,15 @@ import {
   ProductBlueprint,
   slotFootprintIn,
 } from "../../game/bench-work/blueprint";
+import {
+  advanceFlipPhase,
+  FLIP_LEG_SECONDS,
+  FLIP_STOPS,
+  flipStopOf,
+  flipStopSize,
+  tumbleFrame,
+  tumbles,
+} from "../../game/bench-work/flip-cycle";
 import { placedPieceSize } from "../../game/bench-work/workpiece";
 import { MaterialInstance, Pallet, PalletNail } from "../../game/Materials";
 import { drawFastenerHead } from "../material-sprites/fastenerHead";
@@ -148,8 +157,30 @@ const TweenedTransform: React.FC<{
   );
 };
 
-/** The white attention ring, drawn in sprite pixels inside the tweened
- * container so it hugs the piece through the turn. */
+/** The white attention ring around a piece of a given footprint, drawn
+ * in sprite pixels inside the tweened container so it hugs the piece
+ * through the turn. */
+function drawPieceRing(
+  g: Graphics,
+  sizeIn: { widthIn: number; heightIn: number },
+  fit: StageFit,
+  hovered: boolean,
+  dragging: boolean,
+): void {
+  g.clear();
+  if (!hovered && !dragging) return;
+  const w = (sizeIn.widthIn * fit.pxPerIn) / fit.spriteScale;
+  const h = (sizeIn.heightIn * fit.pxPerIn) / fit.spriteScale;
+  const pad = 4 / fit.spriteScale;
+  g.roundRect(-w / 2 - pad, -h / 2 - pad, w + pad * 2, h + pad * 2, pad).stroke(
+    {
+      width: 2 / fit.spriteScale,
+      color: 0xf5efe3,
+      alpha: dragging ? 0.9 : 0.55,
+    },
+  );
+}
+
 const PieceRing: React.FC<{
   material: MaterialInstance;
   placement: BenchPlacement;
@@ -159,27 +190,132 @@ const PieceRing: React.FC<{
 }> = ({ material, placement, fit, hovered, dragging }) => {
   const drawRing = useCallback(
     (g: Graphics) => {
-      g.clear();
-      if (!hovered && !dragging) return;
-      const size = placedPieceSize(material, placement);
-      const w = (size.widthIn * fit.pxPerIn) / fit.spriteScale;
-      const h = (size.heightIn * fit.pxPerIn) / fit.spriteScale;
-      const pad = 4 / fit.spriteScale;
-      g.roundRect(
-        -w / 2 - pad,
-        -h / 2 - pad,
-        w + pad * 2,
-        h + pad * 2,
-        pad,
-      ).stroke({
-        width: 2 / fit.spriteScale,
-        color: 0xf5efe3,
-        alpha: dragging ? 0.9 : 0.55,
-      });
+      drawPieceRing(
+        g,
+        placedPieceSize(material, placement),
+        fit,
+        hovered,
+        dragging,
+      );
     },
     [hovered, dragging, material, placement, fit],
   );
   return <pixiGraphics draw={drawRing} />;
+};
+
+/** Read once: the tumble snaps straight to its end states under
+ * `prefers-reduced-motion`, the way the rest of the view's motion does
+ * — which is also how the E2E suite runs. */
+let reducedMotion: boolean | null = null;
+function prefersReducedMotion(): boolean {
+  if (reducedMotion === null) {
+    reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  }
+  return reducedMotion;
+}
+
+/**
+ * A board going over: the stop it is leaving and the stop it is arriving
+ * at, both drawn at the footprint the tumble is passing through and
+ * cross-fading as one turns into the other, so F reads as the piece
+ * being tipped by hand instead of swapping sprites. The cycle, the
+ * footprints, and the easing all come from `bench-work/flip-cycle`; this
+ * only ticks it and pushes the result at PIXI.
+ *
+ * All three stops are mounted at once and hidden by the tick rather than
+ * by a prop: React must not get a say in which sprite shows, or the
+ * re-render that lands the new placement would pop the destination up at
+ * full size a frame before the tumble starts.
+ */
+const FlipTumble: React.FC<{
+  piece: LoosePiece;
+  fit: StageFit;
+  hovered: boolean;
+  dragging: boolean;
+}> = ({ piece, fit, hovered, dragging }) => {
+  const { material, placement } = piece;
+  const stop = flipStopOf(placement);
+  const groupRef = useRef<Container | null>(null);
+  const ringRef = useRef<Graphics | null>(null);
+  const targetPhase = useRef(stop);
+  const phase = useRef(stop);
+  // The stop the containers were mounted showing — a constant prop, so
+  // React applies it once and never touches `visible` again.
+  const mountedStop = useRef(stop).current;
+  // Advancing onto a stop already reached is a no-op, so re-rendering
+  // never double-steps the cycle.
+  targetPhase.current = advanceFlipPhase(targetPhase.current, stop);
+  if (prefersReducedMotion()) {
+    phase.current = targetPhase.current;
+  }
+  // Redrawing the ring is only worth it when something moved — and only
+  // the piece under the hand draws one at all.
+  const lastRing = useRef("");
+  // The ring is the tick's to draw (it has to follow the tumble); this
+  // only hands the Graphics over empty, and never re-runs.
+  const initRing = useCallback((g: Graphics) => {
+    g.clear();
+  }, []);
+
+  useTick((ticker) => {
+    if (phase.current !== targetPhase.current) {
+      const dt = Math.min(ticker.deltaMS, 50) / 1000;
+      phase.current = Math.min(
+        targetPhase.current,
+        phase.current + dt / FLIP_LEG_SECONDS,
+      );
+    }
+    const frame = tumbleFrame(material, phase.current);
+    const children = groupRef.current?.children ?? [];
+    for (let i = 0; i < children.length; i++) {
+      const node = children[i];
+      if (!node) continue;
+      const showing =
+        i === frame.fromStop
+          ? 1 - frame.fade
+          : i === frame.toStop
+            ? frame.fade
+            : 0;
+      node.visible = showing > 0.001;
+      if (!node.visible) continue;
+      node.alpha = showing;
+      // Each stop's sprite draws its own footprint, so matching the
+      // apparent one is a plain ratio of inches.
+      const own = flipStopSize(material, i);
+      node.scale.set(
+        (frame.widthIn / own.widthIn) * frame.lift,
+        (frame.heightIn / own.heightIn) * frame.lift,
+      );
+    }
+    const ring = ringRef.current;
+    if (!ring) return;
+    const sizeIn = {
+      widthIn: frame.widthIn * frame.lift,
+      heightIn: frame.heightIn * frame.lift,
+    };
+    const key = `${hovered}|${dragging}|${sizeIn.widthIn.toFixed(3)}|${sizeIn.heightIn.toFixed(3)}|${fit.pxPerIn}|${fit.spriteScale}`;
+    if (key === lastRing.current) return;
+    lastRing.current = key;
+    drawPieceRing(ring, sizeIn, fit, hovered, dragging);
+  });
+
+  return (
+    <>
+      <pixiContainer ref={groupRef}>
+        {FLIP_STOPS.map((flipStop, i) => (
+          <pixiContainer key={i} visible={i === mountedStop}>
+            <MaterialSprite
+              material={material}
+              onEdge={flipStop.onEdge}
+              onEnd={flipStop.onEnd}
+            />
+          </pixiContainer>
+        ))}
+      </pixiContainer>
+      <pixiGraphics ref={ringRef} draw={initRing} />
+    </>
+  );
 };
 
 const TweenedPiece: React.FC<{
@@ -193,18 +329,29 @@ const TweenedPiece: React.FC<{
     fit={fit}
     alpha={dragging ? 0.9 : 1}
   >
-    <MaterialSprite
-      material={piece.material}
-      onEdge={piece.placement.onEdge}
-      onEnd={piece.placement.onEnd}
-    />
-    <PieceRing
-      material={piece.material}
-      placement={piece.placement}
-      fit={fit}
-      hovered={hovered}
-      dragging={dragging}
-    />
+    {tumbles(piece.material) ? (
+      <FlipTumble
+        piece={piece}
+        fit={fit}
+        hovered={hovered}
+        dragging={dragging}
+      />
+    ) : (
+      <>
+        <MaterialSprite
+          material={piece.material}
+          onEdge={piece.placement.onEdge}
+          onEnd={piece.placement.onEnd}
+        />
+        <PieceRing
+          material={piece.material}
+          placement={piece.placement}
+          fit={fit}
+          hovered={hovered}
+          dragging={dragging}
+        />
+      </>
+    )}
   </TweenedTransform>
 );
 
