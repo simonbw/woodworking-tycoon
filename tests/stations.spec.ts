@@ -543,6 +543,36 @@ test.describe("Stations", () => {
         "3 items",
       );
 
+      // The shelf hands over anything — only the register checks the
+      // wallet. Broke, the Add buttons still work and Check Out doesn't.
+      const wallet = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().money,
+      );
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          money: 1,
+        }));
+      });
+      await expect(page.getByTestId("store-check-out")).toBeDisabled();
+      const handSaw = page
+        .locator("li", { hasText: "Hand Saw" })
+        .getByRole("button", { name: "Add Hand Saw to cart" });
+      await expect(handSaw).toBeEnabled();
+      await handSaw.click();
+      await expect(page.getByTestId("store-cart-total")).toContainText(
+        "4 items",
+      );
+      // Put it back and pay with the money that was actually there
+      await page.getByTestId("store-cart-total").hover();
+      await cartPanel.getByRole("button", { name: "Remove one Hand Saw" }).click();
+      await page.evaluate((money: number) => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          money,
+        }));
+      }, wallet);
+
       await checkOutAndLeaveStore(page, returnTo);
       // The register is where everything lands at once: the two tools in
       // the bed (unloaded on the way in) and the screws in shop supply

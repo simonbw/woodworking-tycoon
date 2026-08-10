@@ -16,7 +16,6 @@ import { useCartCount } from "./useStoreTrip";
 export const StoreToolsSection: React.FC<{ className?: string }> = ({
   className,
 }) => {
-  const gameState = useGameState();
   return (
     <AisleSection title="Tools" className={className}>
       {Object.values(TOOL_TYPES)
@@ -60,7 +59,6 @@ const BroomProductTile: React.FC = () => {
       price={BROOM_COST}
       info="A push broom with a dustpan. Sweeps sawdust off the floor; empty the pan at the garbage can."
       inCart={inCart}
-      canAfford={gameState.money >= BROOM_COST}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );
@@ -94,7 +92,6 @@ const UpgradeProductTile: React.FC<{ upgrade: UpgradeType }> = ({
       info={`${upgrade.description} Installs into a worktable's upgrade slot.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       inCart={inCart}
-      canAfford={gameState.money >= upgrade.cost}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );
@@ -122,7 +119,6 @@ const ShopVacProductTile: React.FC = () => {
       price={SHOP_VAC_COST}
       info="A canister vacuum on casters. Clears sawdust from the floor, including under machines. Drag it with you and empty it at the garbage can."
       inCart={inCart}
-      canAfford={gameState.money >= SHOP_VAC_COST}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );
@@ -152,7 +148,6 @@ const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
       info={`${tool.description} Rides home in the truck's bed; carry it to a workstation and hang it on a bench's rail, or fit it in a machine's accessory slot.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       inCart={inCart}
-      canAfford={gameState.money >= tool.cost}
       onAdd={() => applyAction(addToCartAction(line))}
       tutorialTarget={`store-tool-${tool.id}`}
     />

@@ -20,8 +20,11 @@ export const ProductTile: React.FC<{
   info: React.ReactNode;
   /** One short line under the name — what the shop already has of this. */
   owned?: React.ReactNode;
-  canAfford: boolean;
-  /** Put one in the cart. Nothing is paid for until the register. */
+  /**
+   * Put one in the cart. Never refused for want of money: a shelf hands
+   * over anything, and the register is the only thing that checks the
+   * wallet (see StoreCart.tsx).
+   */
   onAdd: () => void;
   /** How many of this are already in the cart, called out under the name. */
   inCart?: number;
@@ -37,7 +40,6 @@ export const ProductTile: React.FC<{
   price,
   info,
   owned,
-  canAfford,
   onAdd,
   inCart = 0,
   tutorialTarget,
@@ -79,7 +81,6 @@ export const ProductTile: React.FC<{
       <PriceTag price={price} />
       <BuyButton
         size="compact"
-        disabled={!canAfford}
         onClick={onAdd}
         aria-label={`Add ${name} to cart`}
         className="flex grow items-center justify-center gap-1 whitespace-nowrap"
