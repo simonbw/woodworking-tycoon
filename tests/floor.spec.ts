@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { machineCard, takeAllHere } from "./machine-panel";
 import {
+  checkOutAndLeaveStore,
   dismissClientCard,
   goToStore,
   deliverFromTruck,
-  leaveStore,
   loadTruckBed,
   movePlayerToCab,
   openTruckMenu,
@@ -342,18 +342,27 @@ test.describe("Shop floor", () => {
       // stability check can starve on slow machines
       await page
         .locator("li", { hasText: "Jobsite Table Saw" })
-        .getByRole("button", { name: "Buy" })
+        .getByRole("button", { name: "Add Jobsite Table Saw to cart" })
         .click({ force: true });
       await page.waitForTimeout(30);
+      // A shelf tag is not a receipt: the saw is in the cart and the bed
+      // is still empty until the register
+      const shopping = await page.evaluate(() => window.__GET_GAME_STATE__());
+      expect(shopping.truck.crates).toHaveLength(0);
+      expect(shopping.money).toBe(500);
+      await expect(page.getByTestId("store-cart-total")).toContainText("1 item");
+
+      // One press pays for the cart and drives home
+      await checkOutAndLeaveStore(page);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(state.truck.crates).toHaveLength(1);
       expect(state.truck.crates[0].machineTypeId).toBe("jobsiteTableSaw");
+      expect(state.money).toBeLessThan(500);
       // Nothing lands on the shop floor until it's carried in
       expect(state.machineCrates).toHaveLength(0);
     });
 
     await test.step("the crate lifts out of the bed at the tailgate", async () => {
-      await leaveStore(page);
       // Stand in the tailgate aisle, one step out the garage door
       await teleportPlayer(page, [6, 17]);
       // The cargo box names itself, and its verbs name the thing they move

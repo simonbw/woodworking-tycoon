@@ -1,17 +1,17 @@
 import React from "react";
-import { buyBroomAction } from "../../game/game-actions/dust-actions";
-import { buyShopVacAction } from "../../game/game-actions/shop-vac-actions";
-import { buyToolAction } from "../../game/game-actions/tool-actions";
-import { buyUpgradeAction } from "../../game/game-actions/upgrade-actions";
-import { BROOM_COST } from "../../game/HeldTool";
+import { CartLine } from "../../game/cart";
+import { addToCartAction } from "../../game/game-actions/cart-actions";
+import { BROOM_COST, BROOM_NAME } from "../../game/HeldTool";
+import { makeToolItem } from "../../game/material-helpers";
 import { ownedToolIds } from "../../game/progression-helpers";
-import { SHOP_VAC_COST } from "../../game/ShopVac";
+import { SHOP_VAC_COST, SHOP_VAC_NAME } from "../../game/ShopVac";
 import { TOOL_TYPES, ToolId, ToolType } from "../../game/Tool";
 import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
 import { BroomIcon, ShopVacIcon, ToolIcon, UpgradeIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
+import { useCartCount } from "./useStoreTrip";
 
 export const StoreToolsSection: React.FC<{ className?: string }> = ({
   className,
@@ -46,6 +46,8 @@ export const StoreToolsSection: React.FC<{ className?: string }> = ({
 const BroomProductTile: React.FC = () => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
+  const line: CartLine = { kind: "broom", price: BROOM_COST };
+  const inCart = useCartCount(line);
 
   if (gameState.broomOwned) {
     return null;
@@ -53,12 +55,13 @@ const BroomProductTile: React.FC = () => {
 
   return (
     <ProductTile
-      name="Shop Broom"
+      name={BROOM_NAME}
       icon={<BroomIcon />}
       price={BROOM_COST}
       info="A push broom with a dustpan. Sweeps sawdust off the floor; empty the pan at the garbage can."
+      inCart={inCart}
       canAfford={gameState.money >= BROOM_COST}
-      onBuy={() => applyAction(buyBroomAction())}
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };
@@ -76,6 +79,12 @@ const UpgradeProductTile: React.FC<{ upgrade: UpgradeType }> = ({
         sum + (machine.upgrades ?? []).filter((id) => id === upgrade.id).length,
       0,
     );
+  const line: CartLine = {
+    kind: "upgrade",
+    upgradeId: upgrade.id as UpgradeId,
+    price: upgrade.cost,
+  };
+  const inCart = useCartCount(line);
 
   return (
     <ProductTile
@@ -84,8 +93,9 @@ const UpgradeProductTile: React.FC<{ upgrade: UpgradeType }> = ({
       price={upgrade.cost}
       info={`${upgrade.description} Installs into a worktable's upgrade slot.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      inCart={inCart}
       canAfford={gameState.money >= upgrade.cost}
-      onBuy={() => applyAction(buyUpgradeAction(upgrade.id as UpgradeId))}
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };
@@ -98,6 +108,8 @@ const UpgradeProductTile: React.FC<{ upgrade: UpgradeType }> = ({
 const ShopVacProductTile: React.FC = () => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
+  const line: CartLine = { kind: "shopVac", price: SHOP_VAC_COST };
+  const inCart = useCartCount(line);
 
   if (gameState.shopVac !== null) {
     return null;
@@ -105,12 +117,13 @@ const ShopVacProductTile: React.FC = () => {
 
   return (
     <ProductTile
-      name="Shop Vac"
+      name={SHOP_VAC_NAME}
       icon={<ShopVacIcon />}
       price={SHOP_VAC_COST}
       info="A canister vacuum on casters. Clears sawdust from the floor, including under machines. Drag it with you and empty it at the garbage can."
+      inCart={inCart}
       canAfford={gameState.money >= SHOP_VAC_COST}
-      onBuy={() => applyAction(buyShopVacAction())}
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };
@@ -122,6 +135,14 @@ const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
   const numberOwned = ownedToolIds(gameState).filter(
     (id) => id === tool.id,
   ).length;
+  // A tool is bought as the object it is, same as a board — the cart
+  // stamps each one its own id on the way in (see addToCartAction).
+  const line: CartLine = {
+    kind: "material",
+    material: makeToolItem(tool.id as ToolId),
+    price: tool.cost,
+  };
+  const inCart = useCartCount(line);
 
   return (
     <ProductTile
@@ -130,8 +151,9 @@ const ToolProductTile: React.FC<{ tool: ToolType }> = ({ tool }) => {
       price={tool.cost}
       info={`${tool.description} Rides home in the truck's bed; carry it to a workstation and hang it on a bench's rail, or fit it in a machine's accessory slot.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      inCart={inCart}
       canAfford={gameState.money >= tool.cost}
-      onBuy={() => applyAction(buyToolAction(tool.id as ToolId))}
+      onAdd={() => applyAction(addToCartAction(line))}
       tutorialTarget={`store-tool-${tool.id}`}
     />
   );

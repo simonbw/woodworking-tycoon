@@ -1,7 +1,8 @@
 import React, { useMemo } from "react";
 import { Species } from "../../game/Materials";
 import { board } from "../../game/board-helpers";
-import { buyMaterialAction } from "../../game/game-actions/store-actions";
+import { CartLine } from "../../game/cart";
+import { addToCartAction } from "../../game/game-actions/cart-actions";
 import { getBoardBuyPrice } from "../../game/material-values";
 import { formatLength, formatMoney } from "../../utils/formatNumber";
 import {
@@ -19,8 +20,10 @@ import {
   unlockedLumberChannels,
 } from "../../game/lumberStock";
 import { BoardFaceSvg } from "./BoardFaceSvg";
+import { CartIcon } from "../CartIcon";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
+import { useCartCount } from "./useStoreTrip";
 
 /**
  * Every rack in town shares one pixels-per-foot, so lengths compare at a
@@ -49,7 +52,8 @@ const CHAIN_BG = `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg
  * The racks mimic a real hardwood aisle: one bay per species, boards
  * standing on end and packed shoulder to shoulder, wooden posts between
  * bays, a safety chain across the front, and a paper tag stapled to each
- * board with its dims and price. The board itself is the buy button.
+ * board with its dims and price. The board itself is what you pick up —
+ * clicking one puts it in the cart, and its tag counts what's in there.
  * Everything reads right to left. The milled state and the channel's
  * flavor line wait in the channel-name tooltip; the surrounding overlay
  * owns the section heading, so each store keeps its own signage.
@@ -182,6 +186,8 @@ const BoardForSale: React.FC<{
   );
   const price = getBoardBuyPrice(material, channel.priceMultiplier);
   const fullName = getMaterialFullName(material);
+  const line: CartLine = { kind: "material", material, price };
+  const inCart = useCartCount(line);
 
   // The tag distinguishes the boards of a bay — species is on the floor
   const nominal = nominalSizeLabel(material);
@@ -210,13 +216,8 @@ const BoardForSale: React.FC<{
         className="relative block shrink-0 transition-[filter] enabled:cursor-pointer enabled:hover:brightness-110 disabled:opacity-60"
         style={{ height: (sku.length / 12) * PX_PER_FOOT }}
         disabled={gameState.money < price}
-        data-sfx="ui-purchase"
-        aria-label={`Buy ${fullName}`}
-        onClick={() =>
-          applyAction(
-            buyMaterialAction(channelBoard(channel, sku, species), price),
-          )
-        }
+        aria-label={`Add ${fullName} to cart`}
+        onClick={() => applyAction(addToCartAction(line))}
       >
         <BoardFaceSvg
           vertical
@@ -243,6 +244,14 @@ const BoardForSale: React.FC<{
               }`}
             >
               ×{numberOwned}
+            </span>
+          )}
+          {/* What's on the cart already, on the tag beside the count of
+              what the shop owns — the two numbers a shopper compares */}
+          {inCart > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-ink-blue">
+              <CartIcon />
+              {inCart}
             </span>
           )}
         </span>

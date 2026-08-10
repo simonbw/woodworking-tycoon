@@ -229,9 +229,29 @@ export async function unloadTruckBed(page: any) {
  * on coming home with it in hand.
  */
 export async function leaveStore(page: any, returnTo?: [number, number]) {
+  // exact: the register's button also ends in "Head Home", and a
+  // substring match would find both once there's a cart
   await page
-    .getByRole("button", { name: "Head Home" })
+    .getByRole("button", { name: "Head Home", exact: true })
     .click({ force: true });
+  await driveHome(page, returnTo);
+}
+
+/**
+ * Pay for the cart and drive home in one press — the register's button.
+ * Nothing in a store is bought until this happens (see cart.ts), so any
+ * spec that shops has to end its trip this way rather than with
+ * `leaveStore`, which walks out on the cart.
+ */
+export async function checkOutAndLeaveStore(
+  page: any,
+  returnTo?: [number, number],
+) {
+  await page.getByTestId("store-check-out").click({ force: true });
+  await driveHome(page, returnTo);
+}
+
+async function driveHome(page: any, returnTo?: [number, number]) {
   // The click starts the arrival performance; returnFromStoreAction (which
   // also PARKS THE PLAYER AT THE CAB) only lands when it finishes. Wait it
   // out, or that late position write clobbers the returnTo teleport below.

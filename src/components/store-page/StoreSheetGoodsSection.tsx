@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { buyMaterialAction } from "../../game/game-actions/store-actions";
+import { CartLine } from "../../game/cart";
+import { addToCartAction } from "../../game/game-actions/cart-actions";
 import {
   describeStockDimensionsPlain,
   makeMaterial,
@@ -18,6 +19,7 @@ import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
 import { SheetFaceSvg } from "./SheetFaceSvg";
+import { useCartCount } from "./useStoreTrip";
 
 /**
  * The sheet-good rack (see sheetStock.ts). One tile per SKU, cheapest
@@ -65,6 +67,8 @@ const SheetSkuTile: React.FC<{ sku: SheetSku; size: SheetSize }> = ({
 
   const material = useMemo(makeSheet, [sku, size]);
   const price = getSheetBuyPrice(material);
+  const line: CartLine = { kind: "material", material, price };
+  const inCart = useCartCount(line);
 
   const numberOwned = gameState.player.inventory.filter((m) =>
     materialMeetsInput(m, {
@@ -88,9 +92,9 @@ const SheetSkuTile: React.FC<{ sku: SheetSku; size: SheetSize }> = ({
       owned={
         numberOwned > 0 ? `${size.label} · ${numberOwned} owned` : size.label
       }
+      inCart={inCart}
       canAfford={gameState.money >= price}
-      sfx="ui-purchase"
-      onBuy={() => applyAction(buyMaterialAction(makeSheet(), price))}
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };

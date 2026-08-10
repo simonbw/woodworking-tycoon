@@ -9,6 +9,7 @@ import {
   takeAllHere,
 } from "./machine-panel";
 import {
+  checkOutAndLeaveStore,
   closeJournal,
   goToLumberyard,
   goToStore,
@@ -356,18 +357,24 @@ test.describe("Stations", () => {
       await page
         .locator("li", { hasText: "Shop Plywood" })
         .filter({ hasText: "2×2 Panel" })
-        .getByRole("button", { name: "Buy" })
+        .getByRole("button", { name: /Add Shop Plywood to cart/ })
         .click();
       await page.waitForTimeout(30);
+      // $11.20: 2 board feet of shop-grade ply, at the small-piece
+      // premium — quoted on the cart before a cent leaves the wallet
+      await expect(page.getByTestId("store-cart-total")).toContainText("$11.20");
+      expect(
+        await page.evaluate(() => (window as any).__GET_GAME_STATE__().money),
+      ).toBe(100);
+
+      await checkOutAndLeaveStore(page, afterStore);
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
-      // $11.20: 2 board feet of shop-grade ply, at the small-piece premium
       expect(money).toBe(88.8);
     });
 
     await test.step("learn Jigs & Fixtures and End-Grain Boards", async () => {
-      await leaveStore(page, afterStore);
       // The panel goes across the saw before it's a sled base — that rip
       // is milling.spec's and sheet-breakdown-chain's business, so stage
       // its result here rather than walking the whole cut again.
@@ -496,24 +503,53 @@ test.describe("Stations", () => {
 
       await page
         .locator("li", { hasText: "Hand Saw" })
-        .getByRole("button", { name: "Buy" })
+        .getByRole("button", { name: "Add Hand Saw to cart" })
         .click();
       await page.waitForTimeout(30);
       await page
         .locator("li", { hasText: "Drill" })
-        .getByRole("button", { name: "Buy" })
+        .getByRole("button", { name: "Add Drill to cart" })
         .click();
       await page.waitForTimeout(30);
 
       await expect(page.getByText("Box of Screws")).toBeVisible();
       await page
         .locator("li", { hasText: "Box of Screws" })
-        .getByRole("button", { name: "Buy" })
+        .getByRole("button", { name: "Add Box of Screws to cart" })
         .click();
       await page.waitForTimeout(30);
-      await expect(page.getByText("50 screws in shop")).toBeVisible();
 
-      await leaveStore(page, returnTo);
+      // A whole trip's shopping sits on one cart, and nothing has been
+      // paid for yet — the supply cabinet is still empty of screws
+      await expect(page.getByTestId("store-cart-total")).toContainText(
+        "3 items",
+      );
+      await expect(page.getByText("50 screws in shop")).toHaveCount(0);
+
+      // The cart itemizes on hover, and a quantity is changed there
+      await page.getByTestId("store-cart-total").hover();
+      const cartPanel = page.getByTestId("store-cart-panel");
+      await expect(cartPanel).toBeVisible();
+      await expect(cartPanel.getByText("Hand Saw")).toBeVisible();
+      await cartPanel
+        .getByRole("button", { name: "Add another Drill" })
+        .click();
+      await expect(page.getByTestId("store-cart-total")).toContainText(
+        "4 items",
+      );
+      // ...and put back: one drill too many goes back on the wall
+      await cartPanel.getByRole("button", { name: "Remove one Drill" }).click();
+      await expect(page.getByTestId("store-cart-total")).toContainText(
+        "3 items",
+      );
+
+      await checkOutAndLeaveStore(page, returnTo);
+      // The register is where everything lands at once: the two tools in
+      // the bed (unloaded on the way in) and the screws in shop supply
+      const shop = await page.evaluate(() =>
+        (window as any).__GET_GAME_STATE__(),
+      );
+      expect(shop.consumables.screws).toBe(50);
     });
 
     await test.step("both tools mount at the workbench and add their trades", async () => {

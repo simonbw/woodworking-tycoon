@@ -19,6 +19,8 @@ export interface ShopVacState {
 }
 
 export const SHOP_VAC_COST = 350;
+/** What it's called on the shelf tag, and on the cart's receipt. */
+export const SHOP_VAC_NAME = "Shop Vac";
 /** Dozens of cells filled to DUST_MAX_PER_CELL before a trip to the garbage. */
 export const SHOP_VAC_CANISTER_CAPACITY = 500;
 /** Dragging it over dust cleans a trickle underfoot, every tick. */

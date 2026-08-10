@@ -76,7 +76,7 @@ export function goToStoreAction(
         ...gameState,
         player: {
           ...gameState.player,
-          away: { kind: "shopping", store },
+          away: { kind: "shopping", store, cart: [] },
         },
       },
       rng,

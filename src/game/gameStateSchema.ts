@@ -79,6 +79,37 @@ const machineStateSchema = z.object({
     .optional(),
 });
 
+/**
+ * A shopping cart's lines (see cart.ts). Every line carries the price it
+ * was shelved at, so a reloaded trip rings up exactly what the aisle
+ * quoted.
+ */
+const cartLineSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("material"),
+    material: materialSchema,
+    price: z.number(),
+  }),
+  z.object({
+    kind: z.literal("machine"),
+    machineTypeId: machineIdSchema,
+    price: z.number(),
+  }),
+  z.object({
+    kind: z.literal("consumablePack"),
+    consumableId: consumableIdSchema,
+    price: z.number(),
+  }),
+  z.object({
+    kind: z.literal("upgrade"),
+    upgradeId: upgradeIdSchema,
+    price: z.number(),
+  }),
+  z.object({ kind: z.literal("clamp"), price: z.number() }),
+  z.object({ kind: z.literal("broom"), price: z.number() }),
+  z.object({ kind: z.literal("shopVac"), price: z.number() }),
+]);
+
 const awayTripSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("scavenging"),
@@ -98,6 +129,7 @@ const awayTripSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("shopping"),
     store: z.string(),
+    cart: z.array(cartLineSchema),
   }),
   z.object({
     kind: z.literal("delivering"),
