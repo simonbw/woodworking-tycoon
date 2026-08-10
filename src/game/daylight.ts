@@ -19,20 +19,36 @@ import { clamp, degToRad } from "../utils/mathUtils";
 
 /**
  * Where the sun sits at the open and at the close, as degrees above the
- * horizon: 0° is due horizon, 90° overhead. It rises and sets a little way
- * above the horizon rather than exactly on it, so the first and last hours
- * of the day still read as daylight.
+ * horizon, measured counterclockwise from the right: 0° is the right-hand
+ * horizon, 90° overhead, 180° the left-hand one. It rises and sets a little
+ * way above the horizon rather than exactly on it, so the first and last
+ * hours of the day still read as daylight.
+ *
+ * The sun comes up on the *right* and goes down on the left, because the
+ * lot is drawn map-wise with north up — east is to the right, so that is
+ * where the sun has to rise. On the dial that reads as a counterclockwise
+ * turn.
  */
-export const SUNRISE_ALTITUDE = 165;
-export const SUNSET_ALTITUDE = 15;
+export const SUNRISE_ALTITUDE = 15;
+export const SUNSET_ALTITUDE = 165;
 
 /**
- * Where the sun parks once the shop is closed: below the horizon, which on
- * the dial puts the moon the same distance above it. Night doesn't pass in
- * live ticks — it goes by in one batch when the player drives home — so
- * this is a held pose, not a position the sun travels through.
+ * Where the sun parks once the shop is closed: a little past the western
+ * horizon, which on the dial puts the moon the same distance above the
+ * eastern one. Night doesn't pass in live ticks — it goes by in one batch
+ * when the player drives home — so this is a held pose, not a position the
+ * sun travels through.
+ *
+ * It sits *past* {@link SUNSET_ALTITUDE} rather than short of sunrise so
+ * that closing up carries the sun on the way it was already going. Park it
+ * on the other side of the sky and the dial spins half a turn backwards at
+ * the exact moment the player drives home.
+ *
+ * How far past matters too: the sun is drawn with rays, so it has to be
+ * under by more than their reach or a stray ray tip stays lit on the
+ * horizon all night.
  */
-export const NIGHT_ALTITUDE = -20;
+export const NIGHT_ALTITUDE = 210;
 
 /**
  * The sun's altitude right now, in degrees. `dayProgress` is the share of
@@ -247,7 +263,8 @@ export function daylightAt(dayProgress: number, night: boolean): Daylight {
       clamp((t - LAMPS_START) / (1 - LAMPS_START)),
     ),
     shadow: {
-      // Away from the sun: a sun on the left throws the shadow right.
+      // Away from the sun: the morning sun on the right throws the shadow
+      // left, and the evening sun on the left throws it right.
       dx: -cos * length,
       dy: DOWNWARD * length,
       // Part of the way from "full sun" toward "sky only", never past it.
