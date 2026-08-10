@@ -8,7 +8,11 @@ import { HintSurfaceContext } from "./Kbd";
  * Two columns: key caps right-aligned against a single left edge that
  * every label starts from, so a stack of hints reads as a list of verbs
  * rather than a ragged pile. Rows go in as `<HintRow>`; a row with no
- * keys (a title, a note) spans both columns. Wraps its rows in the chrome
+ * keys (a title, a note) spans both columns — and both columns size to
+ * their content rather than the label column taking a `1fr`, because a
+ * flexible track swallows a spanning row's width contribution and a long
+ * title (a machine's name) would then hang out past the pill's edge.
+ * Wraps its rows in the chrome
  * surface so key caps and muted text stay readable on the dark background
  * (see Kbd.tsx).
  */
@@ -21,7 +25,7 @@ export const HintList: React.FC<{
   <HintSurfaceContext.Provider value="chrome">
     <ul
       data-testid={testId}
-      className="grid grid-cols-[auto_1fr] items-baseline gap-x-1.5 gap-y-0.5 rounded bg-ink-black/70 px-2 py-1 text-left font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap"
+      className="grid grid-cols-[auto_auto] justify-start items-baseline gap-x-1.5 gap-y-0.5 rounded bg-ink-black/70 px-2 py-1 text-left font-condensed text-[0.65rem] uppercase tracking-[0.1em] text-paper-manila/90 whitespace-nowrap"
     >
       {children}
     </ul>
