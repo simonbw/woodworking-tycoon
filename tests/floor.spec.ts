@@ -600,6 +600,16 @@ test.describe("Shop floor", () => {
       await expect(card).toContainText("Marguerite");
       // The payout is itemized on the card: money, reputation, craft XP
       await expect(card).toContainText("$20.00");
+      // One handoff deals one card, not a stack of them
+      await expect(card).toHaveCount(1);
+    });
+
+    await test.step("the card holds the screen until the money is taken", async () => {
+      // A click aimed at the floor behind it is not a dismissal — the card
+      // waits for "Take the money" (or Escape)
+      await page.mouse.click(40, 760);
+      await page.waitForTimeout(100);
+      await expect(page.getByTestId("client-card")).toBeVisible();
     });
 
     await test.step("the payout has already landed behind the card", async () => {

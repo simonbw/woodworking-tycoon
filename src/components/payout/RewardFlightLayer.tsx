@@ -3,6 +3,7 @@ import { clearPendingPayoutsAction } from "../../game/game-actions/payout-action
 import { PayoutEvent } from "../../game/PayoutEvent";
 import { playSound } from "../../utils/sfx";
 import { SparkIcon, StarIcon } from "../StarIcon";
+import { useTruckStage } from "../shop-view/truckStageStore";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { ClientCard } from "./ClientCard";
 import { REWARD_TARGET_ATTRIBUTE, RewardTarget } from "./rewardTargets";
@@ -24,6 +25,13 @@ import { REWARD_TARGET_ATTRIBUTE, RewardTarget } from "./rewardTargets";
  *
  * The underlying numbers changed the instant the action ran — the flight is
  * decoration over an already-settled state, so nothing here can desync it.
+ *
+ * Both steps wait for the truck to be parked. A delivery settles on the
+ * drive in (delivery-actions.ts), which is a couple of seconds of arrival
+ * before the shop is back: staged the moment it was queued, the card dealt
+ * itself over the trip's backdrop and the chips flew at readouts that
+ * weren't on screen yet. Nothing is dropped by waiting — the queue simply
+ * keeps until the shop is there to celebrate in.
  */
 
 /** How many coins one payout throws. Bigger paydays throw more. */
@@ -108,10 +116,20 @@ export const RewardFlightLayer: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const pending = gameState.pendingPayouts;
+  // Home and interactive: the shop is on screen, the truck is in the
+  // driveway, and the readouts the chips aim at are where they'll land.
+  const home = useTruckStage() === "parked" && !gameState.player.away;
 
   /** Commission cards waiting to be dismissed, oldest first. */
   const [cards, setCards] = useState<ReadonlyArray<PayoutEvent>>([]);
   const [flights, setFlights] = useState<ReadonlyArray<Flight>>([]);
+  /**
+   * Every payout this session has already been staged from. A handoff can
+   * reach the queue twice — actions run as updaters React is free to
+   * re-invoke — and the second copy is the same announcement, not a second
+   * payday, so it must not deal a second card (#159).
+   */
+  const staged = useRef(new Set<string>());
 
   const launch = useCallback((payout: PayoutEvent) => {
     const chips = chipsFor(payout);
@@ -129,20 +147,24 @@ export const RewardFlightLayer: React.FC = () => {
     ]);
   }, []);
 
-  // Drain the queue: commissions become a card to dismiss, jobs fly at once.
+  // Drain the queue once the truck is home: commissions become a card to
+  // dismiss, jobs fly at once. Announcements already staged are dropped
+  // rather than celebrated again.
   useEffect(() => {
-    if (!pending || pending.length === 0) return;
-    const commissions = pending.filter(
-      (payout) => payout.kind === "commission",
-    );
+    if (!pending || pending.length === 0 || !home) return;
+    const fresh = pending.filter((payout) => !staged.current.has(payout.id));
+    for (const payout of fresh) {
+      staged.current.add(payout.id);
+    }
+    const commissions = fresh.filter((payout) => payout.kind === "commission");
     if (commissions.length > 0) {
       setCards((current) => [...current, ...commissions]);
     }
-    for (const payout of pending) {
+    for (const payout of fresh) {
       if (payout.kind !== "commission") launch(payout);
     }
     applyAction(clearPendingPayoutsAction);
-  }, [pending, applyAction, launch]);
+  }, [pending, home, applyAction, launch]);
 
   // No next-order reveal here: the next commission arrives later, by
   // phone, once reputation reaches its threshold (see CommissionCallLayer)
