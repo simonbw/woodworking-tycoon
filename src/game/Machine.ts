@@ -88,6 +88,15 @@ export interface MachineType {
    */
   readonly benchTopIn?: { readonly widthIn: number; readonly heightIn: number };
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
+  /**
+   * The cell the operator stands in to work this machine. It must touch
+   * the footprint and be one of `freeCellsNeeded` (asserted in
+   * machine-collision.test.ts): `operationZone` is this cell plus its
+   * neighbors, so a cell set one row back doesn't just misplace the
+   * operator, it hands out "standing at the machine" from beyond arm's
+   * reach. A machine that needs more standing room than one cell says so
+   * in `freeCellsNeeded`; the operator is still at the near one.
+   */
   readonly operationPosition?: Vector;
   /**
    * The station has no front: it's worked from any cell touching its
@@ -103,6 +112,7 @@ export interface MachineType {
    * table saw): the cell opposite the operation cell. Outputs are collected
    * standing there, not at the infeed. Omitted for single-point stations
    * like the miter saw and benches, where outputs stay at the machine.
+   * Held to the same reach rule as `operationPosition`.
    */
   readonly outputPosition?: Vector;
   readonly cost: number;

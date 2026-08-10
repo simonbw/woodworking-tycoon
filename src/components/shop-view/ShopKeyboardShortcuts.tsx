@@ -384,8 +384,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // neither key ever has to disambiguate.
   //
   // On direct-feed machines the setting can belong to any available
-  // operation (what's in hand decides which one runs); on benches only the
-  // selected operation's settings are live.
+  // operation (what's in hand decides which one runs); at a bench only a
+  // pulled plan's settings are live, and they read out on the drawing in
+  // the bench view rather than on a chip out here (liveSettingParameter).
   //
   // `coarse` is the shift modifier: it jumps the parameter's declared
   // coarseStep detents at once (a foot along the miter saw's inch marks)

@@ -80,7 +80,7 @@ export const endGrainShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 4], // the workspace's operation cell
+    position: [1, 4], // standing at the workspace (its operation cell is [1, 3])
     direction: 0,
     // The sled's runners wait in the bench's bay — the arms only hold so
     // much, and the spec's hands are for the panel and the plywood.

@@ -18,6 +18,19 @@ to run a power machine, Z/X and R for its settings). The pile E would
 pick up wears the same outline with its own `[E] pick up` chip. A hint
 cluster follows the player for the remaining floor verbs.
 
+"Standing at" is `Machine.operationZone`: the machine's operation cell
+plus its neighbors, because a body is wider than a 1-ft cell. That cell
+is the near one — it touches the footprint (`MachineType.operationPosition`,
+asserted in `machine-collision.test.ts`), so the apron never reaches
+past where the work is actually in hand. A machine that wants more room
+than that to stand and swing asks for it in `freeCellsNeeded`, which is
+a placement rule and not a targeting one.
+
+Settings chips are a direct-feed machine's, since the floor is that
+machine's whole interface. A bench wears none: its work is chosen and
+dialed inside the bench view, where the mark measures the cut and a
+plan's settings ride the pulled drawing (see `docs/bench-work.md`).
+
 Benches and containers open a centered station sheet (Tab) holding
 plans, racks, and contents; direct-feed machines have no sheet beyond
 their accessories rack.

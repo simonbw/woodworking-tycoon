@@ -35,11 +35,13 @@ export const workspace: MachineType = {
   // Only the plywood takes stock; the buckets underneath are not bench
   benchTopIn: { widthIn: 40, heightIn: 30 },
   collisionShapes: GENERATED_COLLISION_SHAPES.workspace,
+  // Two feet of room to stand and work, and the operator stands at the
+  // near one — right up against the plywood, where hands reach it.
   freeCellsNeeded: [
     [0, 1],
     [0, 2],
   ],
-  operationPosition: [0, 2],
+  operationPosition: [0, 1],
   cost: 0,
   materialStorage: 0,
   // Two slots: the starter hammer plus room for a sander

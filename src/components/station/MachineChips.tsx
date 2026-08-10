@@ -264,19 +264,26 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 };
 
 /**
- * The settings the keys drive on this machine, each listed once. A
- * direct-feed machine's settings can belong to any of its operations the
- * stock's orientation presents (a band saw set up to resaw offers the
- * resaw's fence, not the rip's); a bench only offers the selected plan's.
- * At most one is a "rotate" setting, so R never has to choose.
+ * The settings the keys drive on this machine out here on the floor,
+ * each listed once — a direct-feed machine's, since the floor is that
+ * machine's whole interface. They can belong to any of its operations
+ * the stock's orientation presents (a band saw set up to resaw offers
+ * the resaw's fence, not the rip's), and at most one is a "rotate"
+ * setting, so R never has to choose.
+ *
+ * A bench has none: hand work is chosen and dialed inside the bench view
+ * (the mark measures the cut, R swings the miter box, a plan's settings
+ * ride the pulled drawing), so a scale out here would be a control for
+ * something the floor doesn't even show.
  */
 function machineSettings(
   machine: Machine,
   operations: ReadonlyArray<Operation>,
 ): ReadonlyArray<OperationParameter> {
-  const source = machine.type.directFeed
-    ? orientedOperations(machine, operations)
-    : [machine.selectedOperationOrNull].filter((op) => op != null);
+  if (!machine.type.directFeed) {
+    return [];
+  }
+  const source = orientedOperations(machine, operations);
   const settings: OperationParameter[] = [];
   for (const op of source) {
     for (const param of operationParameters(op)) {

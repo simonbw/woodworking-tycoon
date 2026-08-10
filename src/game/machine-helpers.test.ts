@@ -12,8 +12,10 @@ import {
   ParameterValues,
   operationParameters,
 } from "./Machine";
+import { initialGameState } from "./initialGameState";
 import {
   findFeedableOperation,
+  liveSettingParameter,
   matchMaterialsToSlots,
   parameterValueSatisfiable,
   stageableMaterials,
@@ -545,5 +547,55 @@ describe("stageableMaterials on a bench", () => {
       ),
     });
     assert.deepStrictEqual(stageableMaterials(full, [fullPallet]), []);
+  });
+});
+
+describe("liveSettingParameter at a bench", () => {
+  function bench(overrides: Partial<MachineState>): Machine {
+    return getMachines([
+      {
+        machineTypeId: "workspace",
+        position: [1, 2],
+        rotation: 0,
+        inputMaterials: [],
+        processingMaterials: [],
+        outputMaterials: [],
+        selectedOperationId: "none",
+        operationProgress: {
+          status: "notStarted",
+          phaseIndex: 0,
+          ticksRemaining: 0,
+        },
+        tools: [],
+        ...overrides,
+      },
+    ])[0];
+  }
+
+  const progression = initialGameState.progression;
+
+  it("leaves the hand saw's dials to the bench view", () => {
+    // The saw carries angle/cutEnd/targetLength, but the mark measures
+    // the cut and R swings the miter box inside the bench view — a scale
+    // out on the floor would be a stale second copy (docs/bench-work.md).
+    const sawing = bench({
+      tools: ["handSaw"],
+      selectedOperationId: "handSawCut",
+    });
+    assert.strictEqual(
+      liveSettingParameter(sawing, progression, "linear"),
+      undefined,
+    );
+    assert.strictEqual(
+      liveSettingParameter(sawing, progression, "rotate"),
+      undefined,
+    );
+  });
+
+  it("has nothing to step with no plan pulled", () => {
+    assert.strictEqual(
+      liveSettingParameter(bench({}), progression, "linear"),
+      undefined,
+    );
   });
 });

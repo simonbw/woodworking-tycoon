@@ -53,11 +53,13 @@ export const miterSaw: MachineType = {
     [1, 0],
   ],
   collisionShapes: GENERATED_COLLISION_SHAPES.miterSaw,
+  // Two feet of room to stand and swing the handle, and the operator
+  // stands at the near one — up against the table, hand on the trigger.
   freeCellsNeeded: [
     [0, 1],
     [0, 2],
   ],
-  operationPosition: [0, 2],
+  operationPosition: [0, 1],
   cost: 150,
   materialStorage: 0,
   toolSlots: 1,

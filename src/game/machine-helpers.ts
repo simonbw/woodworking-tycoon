@@ -23,6 +23,7 @@ import {
   StockOrientation,
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
+import { selectedBenchPlan } from "./bench-work/tool-work";
 import { isBoard } from "./board-helpers";
 import {
   createMockMaterial,
@@ -687,10 +688,15 @@ function operationsForStagedStock(
 /**
  * The machine's live setting of the given kind — the one Z/X ("linear")
  * or R ("rotate") steps. On direct-feed machines the setting can belong
- * to any available operation (what's in hand decides which one runs); on
- * benches only the selected operation's settings are live. `undefined`
- * when the key would have nothing to step, which is also how R decides
- * whether it swings a head or rummages the pile underfoot.
+ * to any available operation (what's in hand decides which one runs); at
+ * a bench only the plan pulled off the blueprint pile has settings, and
+ * they read out on the drawing itself (BlueprintCorner). Tool work never
+ * does: the gesture carries its own parameters — the hand saw's mark
+ * measures the kept length and R swings the miter box inside the bench
+ * view — so a dial out on the shop floor would be a second, stale copy
+ * of a setting the bench view re-decides. `undefined` when the key would
+ * have nothing to step, which is also how R decides whether it swings a
+ * head or rummages the pile underfoot.
  */
 export function liveSettingParameter(
   machine: Machine,
@@ -714,7 +720,7 @@ export function liveSettingParameter(
         machine,
         orientedOperations(machine, availableOperations(machine, progression)),
       )
-    : [machine.selectedOperationOrNull].filter((op) => op != null);
+    : [selectedBenchPlan(machine)].filter((op) => op != null);
   return candidates
     .flatMap((operation) =>
       operationParameters(operation).map((parameter) => ({

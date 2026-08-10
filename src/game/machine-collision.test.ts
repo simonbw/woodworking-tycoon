@@ -193,17 +193,43 @@ describe("real machine footprints", () => {
     }
   });
 
-  it("every machine with an operation position keeps it outside the footprint", () => {
-    for (const type of Object.values(MACHINE_TYPES)) {
-      if (!type.operationPosition) continue;
-      assert.ok(
-        !type.cellsOccupied.some(
-          ([x, y]) =>
-            x === type.operationPosition![0] &&
-            y === type.operationPosition![1],
-        ),
-        `${type.id}: operation position sits on the machine itself`,
+  it("every machine stands its operator and its outfeed against the footprint", () => {
+    // The cell is where the body goes to work the machine, and
+    // Machine.operationZone is that cell plus its eight neighbors — so a
+    // cell set one row too far out doesn't just misplace the operator,
+    // it hands out "standing at the machine" a foot past arm's reach
+    // (issue #160: the workbench wearing its chips from 3 ft away). The
+    // honest cell touches the footprint and is one the machine already
+    // demands be kept clear.
+    const touchesFootprint = (cells: ReadonlyArray<Vector>, cell: Vector) =>
+      cells.some(
+        ([x, y]) =>
+          Math.abs(x - cell[0]) + Math.abs(y - cell[1]) === 1 ||
+          (x === cell[0] && y === cell[1]),
       );
+    const isFree =
+      (type: (typeof MACHINE_TYPES)[keyof typeof MACHINE_TYPES]) =>
+      (cell: Vector) =>
+        type.freeCellsNeeded.some(([x, y]) => x === cell[0] && y === cell[1]);
+    for (const type of Object.values(MACHINE_TYPES)) {
+      for (const [label, cell] of [
+        ["operation position", type.operationPosition],
+        ["output position", type.outputPosition],
+      ] as const) {
+        if (!cell) continue;
+        assert.ok(
+          !type.cellsOccupied.some(([x, y]) => x === cell[0] && y === cell[1]),
+          `${type.id}: ${label} sits on the machine itself`,
+        );
+        assert.ok(
+          touchesFootprint(type.cellsOccupied, cell),
+          `${type.id}: ${label} doesn't touch the footprint — too far out to reach`,
+        );
+        assert.ok(
+          isFree(type)(cell),
+          `${type.id}: ${label} isn't among the cells the machine keeps clear`,
+        );
+      }
     }
   });
 });

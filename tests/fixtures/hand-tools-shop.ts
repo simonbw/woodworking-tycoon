@@ -44,7 +44,7 @@ export const handToolsShop: GameState = {
   clamps: 0,
   player: {
     name: "Player",
-    position: [1, 4], // the workspace's operation cell
+    position: [1, 4], // standing at the workspace (its operation cell is [1, 3])
     direction: 0,
     inventory: [],
     busyTicks: 0,

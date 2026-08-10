@@ -14,7 +14,7 @@ import { panel } from "../panel-helpers";
 import { tickAction } from "./tickAction";
 
 /** The fixture workspace sits at [1,2] rotation 0 — its operation cell. */
-const WORKSPACE_OPERATION_CELL: [number, number] = [1, 4];
+const WORKSPACE_OPERATION_CELL: [number, number] = [1, 3];
 
 function workspaceMachine(overrides: Partial<MachineState>): MachineState {
   return {

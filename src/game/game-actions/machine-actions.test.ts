@@ -127,14 +127,14 @@ describe("putting the carried machine down", () => {
     });
 
   it("anchors the machine so the player stands at its operator cell", () => {
-    // The miter saw's operator cell is [0, 2] machine-local; at rotation 0
-    // the anchor lands two cells above the player (y - 2).
+    // The miter saw's operator cell is [0, 1] machine-local; at rotation 0
+    // the anchor lands one cell above the player (y - 1).
     const result = putDownCarriedMachineAction()(
       carryingState(machineAt("miterSaw", [0, 0])),
     );
     assert.strictEqual(result.player.carriedMachine, null);
     assert.strictEqual(result.machines.length, 1);
-    assert.deepStrictEqual(result.machines[0].position, [5, 3]);
+    assert.deepStrictEqual(result.machines[0].position, [5, 4]);
   });
 
   it("rotating spins the landing spot around the player", () => {
@@ -143,8 +143,8 @@ describe("putting the carried machine down", () => {
     );
     assert.strictEqual(rotated.player.carriedMachine?.rotation, 1);
     const placement = carriedMachinePlacement(rotated);
-    // Operator offset [0,2] rotated once becomes [2,0]: anchor sits left
-    assert.deepStrictEqual(placement?.position, [3, 5]);
+    // Operator offset [0,1] rotated once becomes [1,0]: anchor sits left
+    assert.deepStrictEqual(placement?.position, [4, 5]);
   });
 
   it("machines without an operator cell land on the faced cell", () => {
@@ -166,11 +166,12 @@ describe("putting the carried machine down", () => {
   });
 
   it("sets a benchtop machine down onto free worktable cells", () => {
-    // A long worktable spanning [1..6, 2..3]: the saw's whole 3×2
-    // footprint lands on the tabletop with the player at its operator cell
+    // A long worktable spanning [1..6, 2..3], with the player standing at
+    // its front row: the saw's whole 3×2 footprint lands on the tabletop,
+    // its operator cell under the player's feet.
     const table = machineAt("worktable1x3", [1, 2]);
     const state = {
-      ...carryingState(machineAt("miterSaw", [0, 0])),
+      ...carryingState(machineAt("miterSaw", [0, 0]), { position: [5, 4] }),
       machines: [table],
     };
     const result = putDownCarriedMachineAction()(state);

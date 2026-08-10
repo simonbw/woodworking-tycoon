@@ -52,9 +52,13 @@ per-operation scripts that compose it.
    bead stroked down each seam, and winding the last clamp tight is the
    single commit straight into the hands-free cure.
 1. **The bench view is the only player path.** There is no player-facing
-   "hold Space instead". Tests and debug tooling complete work through
-   the same commit actions the view dispatches — that hook is never
-   exposed as UI.
+   "hold Space instead", and no dial for it out on the shop floor: hand
+   work carries its parameters in the gesture (the saw's mark measures
+   the kept length, R swings the miter box), and a plan's settings ride
+   the drawing pulled off the pile. The floor's chip cluster names a
+   bench's verbs, never its settings (`docs/floor-interaction.md`).
+   Tests and debug tooling complete work through the same commit actions
+   the view dispatches — that hook is never exposed as UI.
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,

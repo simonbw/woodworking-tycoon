@@ -113,7 +113,7 @@ describe("worktable build recipes", () => {
       // The workspace operation cell for position [1,2] rotation 0
       player: {
         ...initialGameState.player,
-        position: [1, 4],
+        position: [1, 3],
         operating: true,
       },
     });
@@ -128,7 +128,7 @@ describe("worktable build recipes", () => {
       result.machineCrates[0].machine.machineTypeId,
       "worktable1x1",
     );
-    assert.deepStrictEqual(result.machineCrates[0].position, [1, 4]);
+    assert.deepStrictEqual(result.machineCrates[0].position, [1, 3]);
     assert.strictEqual(
       result.machines[0].operationProgress.status,
       "notStarted",
