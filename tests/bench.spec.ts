@@ -728,6 +728,46 @@ test.describe("Bench view", () => {
       // reads the hovered piece, and a busy renderer commits it a beat
       // after the pointer arrives
       await expect(stage).toHaveAttribute("data-hovered", "bp-r1");
+      // The chip names the stop F reaches next, so the three-stop cycle
+      // is readable before it's pressed rather than after
+      const hints = page.getByTestId("bench-key-hints");
+      await expect(hints).toContainText("stand on edge");
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+                .onEdge ?? false,
+          ),
+        )
+        .toBe(true);
+      await expect(hints).toContainText("stand on end");
+
+      // Round the cycle: on end, then back to lying flat where it started
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+                .onEnd ?? false,
+          ),
+        )
+        .toBe(true);
+      await expect(hints).toContainText("lay flat");
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(() => {
+            const at =
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"];
+            return [at.onEdge ?? false, at.onEnd ?? false];
+          }),
+        )
+        .toEqual([false, false]);
+
+      // Back on edge for the snap-drag below
       await page.keyboard.press("KeyF");
       await expect
         .poll(async () =>

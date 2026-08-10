@@ -220,7 +220,16 @@ exactly over the shop's copy.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchScene`; a board flipped up on edge narrows to its thickness,
-`BoardOnEdgeSprite`). Stroke and saw work runs on those very pieces in
+`BoardOnEdgeSprite`). F is one verb with three stops on a board — flat,
+up on its long edge, up on its end — and the scene tumbles it between
+them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
+cycle and interpolates the very footprints `placedPieceSize` declares,
+so the outgoing and incoming sprites cross-fade at a shared apparent
+size. Its header covers the one wrinkle worth knowing (the three stops
+can't be reached by three honest single-axis tips, and why the leftover
+quarter turn is spent inside the leg instead of on `angleDeg`). The key
+hint names the stop F reaches next, so the cycle isn't something a
+player has to discover by surprise. Stroke and saw work runs on those very pieces in
 place (`StrokeSurface` / `SawSurface` mount over the scene at the
 piece's placement — no takeover surface exists). The chrome floats:
 nameplate top-left, instruction + key hints bottom-center, the plan
