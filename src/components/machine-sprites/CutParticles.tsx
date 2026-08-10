@@ -1,6 +1,6 @@
 import { useTick } from "@pixi/react";
 import { Graphics, Ticker } from "pixi.js";
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { deriveMachineCutLoad } from "../../game/cut-load";
 import { Machine } from "../../game/Machine";
 import { DustSpecies } from "../../game/Materials";
@@ -9,6 +9,7 @@ import { mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { rBool, rUniform } from "../../utils/randUtils";
 import { dustColorBySpecies } from "../shop-view/colorBySpecies";
+import { useCutSprayLayer } from "../shop-view/cutSprayLayer";
 import { emitDustStamp } from "../shop-view/dustStampBus";
 
 /**
@@ -115,6 +116,21 @@ export const CutParticles: React.FC<{
   const graphicsRef = useRef<Graphics>(null);
   const particles = useRef<Particle[]>([]);
   const spawnDebt = useRef(0);
+
+  // The spray renders through ShopView's cut-spray RenderLayer instead of
+  // in place: this graphics sits inside the machine's sprite, whose
+  // subtree wears the white targeting OutlineFilter exactly while the
+  // machine is spraying, and the filter rims every airborne fleck — see
+  // cutSprayLayer.ts. The transform still comes from the machine.
+  const sprayLayer = useCutSprayLayer();
+  useEffect(() => {
+    const g = graphicsRef.current;
+    if (!sprayLayer || !g) return;
+    sprayLayer.attach(g);
+    return () => {
+      sprayLayer.detach(g);
+    };
+  }, [sprayLayer]);
 
   const dust = kind === "dust";
   const rate = (ambient ? 55 : dust ? 140 : 45) * intensity * density;

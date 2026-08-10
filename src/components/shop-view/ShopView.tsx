@@ -1,5 +1,9 @@
 import { Application, useApplication } from "@pixi/react";
-import type { Application as PixiApplication, Container } from "pixi.js";
+import type {
+  Application as PixiApplication,
+  Container,
+  RenderLayer,
+} from "pixi.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCellMap } from "../useCellMap";
 import { MachineId, machineKey } from "../../game/Machine";
@@ -31,6 +35,7 @@ import {
   CollisionDebugLayer,
   collisionDebugRequested,
 } from "./CollisionDebugLayer";
+import { cutSprayLayerContext } from "./cutSprayLayer";
 import { DustLayer } from "./DustLayer";
 import { DustMotionLayer } from "./DustMotionLayer";
 import { FeedLaneLayer } from "./FeedLaneLayer";
@@ -249,6 +254,10 @@ export const ShopView: React.FC = () => {
   // renders through, swelled about the bench while a bench view is
   // mounted. Imperative for the same reason — see BenchDiveLayer.
   const benchDiveContainerRef = useRef<Container>(null);
+  // The layer the machines' cut spray renders through, held in state so
+  // the provider re-renders the consumers once the pixi element exists —
+  // see cutSprayLayer.ts for why the spray can't render in place.
+  const [cutSprayLayer, setCutSprayLayer] = useState<RenderLayer | null>(null);
   const [view, setView] = useState<{
     scale: number;
     width: number;
@@ -389,150 +398,157 @@ export const ShopView: React.FC = () => {
             viewHeight={view.height}
             scale={scale}
           />
-          <pixiContainer x={offsetX} y={offsetY} scale={scale}>
-            <pixiContainer ref={benchDiveContainerRef}>
-              <pixiContainer ref={cameraContainerRef}>
-                <EnvironmentLayer
-                  width={width}
-                  height={height}
-                  viewport={worldViewport}
-                  truckHighlight={truckHighlight}
-                  truckCargoHighlight={truckCargoHighlight}
-                  truckTutorialHighlight={coach.truck}
-                />
-                <pixiTilingSprite
-                  eventMode="static"
-                  texture={floorTexture}
-                  tilePosition={{ x: 0, y: 0 }}
-                  tileScale={{ x: 0.25, y: 0.25 }}
-                  width={width}
-                  height={height}
-                />
-                {cellMap.getCells().map((cell) => (
-                  <FloorTileSprite
-                    cell={cell}
-                    key={`cell-${vectorKey(cell.position)}`}
+          <cutSprayLayerContext.Provider value={cutSprayLayer}>
+            <pixiContainer x={offsetX} y={offsetY} scale={scale}>
+              <pixiContainer ref={benchDiveContainerRef}>
+                <pixiContainer ref={cameraContainerRef}>
+                  <EnvironmentLayer
+                    width={width}
+                    height={height}
+                    viewport={worldViewport}
+                    truckHighlight={truckHighlight}
+                    truckCargoHighlight={truckCargoHighlight}
+                    truckTutorialHighlight={coach.truck}
                   />
-                ))}
-                {/* Settled sawdust sits on the floor, under everything that moves */}
-                <DustLayer width={width} height={height} />
-                {/* Cords run along the slab from the electric machines to
+                  <pixiTilingSprite
+                    eventMode="static"
+                    texture={floorTexture}
+                    tilePosition={{ x: 0, y: 0 }}
+                    tileScale={{ x: 0.25, y: 0.25 }}
+                    width={width}
+                    height={height}
+                  />
+                  {cellMap.getCells().map((cell) => (
+                    <FloorTileSprite
+                      cell={cell}
+                      key={`cell-${vectorKey(cell.position)}`}
+                    />
+                  ))}
+                  {/* Settled sawdust sits on the floor, under everything that moves */}
+                  <DustLayer width={width} height={height} />
+                  {/* Cords run along the slab from the electric machines to
                   the wall outlets, under everything that sits on it */}
-                <PowerCordLayer />
-                <BroomSprite />
+                  <PowerCordLayer />
+                  <BroomSprite />
 
-                {gameState.machineCrates.map((crate, index) => (
-                  <MachineCrateSprite
-                    crate={crate}
-                    key={`crate-${index}-${vectorKey(crate.position)}`}
-                  />
-                ))}
+                  {gameState.machineCrates.map((crate, index) => (
+                    <MachineCrateSprite
+                      crate={crate}
+                      key={`crate-${index}-${vectorKey(crate.position)}`}
+                    />
+                  ))}
 
-                {/* The machines' hit shapes, under the loose stock on
+                  {/* The machines' hit shapes, under the loose stock on
                   purpose — a board lying across a machine is what you're
                   pointing at, not the machine under it */}
-                <MachineHitTargets
-                  machines={operableHere}
-                  onHover={setTarget}
-                  onClick={(machine) =>
-                    isTargeted(machine) ? toggleSheet() : setTarget(machine)
-                  }
-                  onRightClick={(machine) => {
-                    setTarget(machine);
-                    openSheet(machine);
-                  }}
-                />
+                  <MachineHitTargets
+                    machines={operableHere}
+                    onHover={setTarget}
+                    onClick={(machine) =>
+                      isTargeted(machine) ? toggleSheet() : setTarget(machine)
+                    }
+                    onRightClick={(machine) => {
+                      setTarget(machine);
+                      openSheet(machine);
+                    }}
+                  />
 
-                {/* Piles draw in drop order, so the last piece set down on a
+                  {/* Piles draw in drop order, so the last piece set down on a
                   spot is on top — matching the pickup order E offers */}
-                {gameState.materialPiles.map((pile) => {
-                  const live =
-                    reachablePiles.has(pile.material.id) && !benchDive;
-                  return (
-                    <MaterialPileSprite
-                      key={`pile-${pile.material.id}`}
-                      pile={pile}
-                      highlighted={pile === pickupTarget && !benchDive}
-                      tutorialTarget={
-                        coach.matchesPile?.(pile.material) ?? false
-                      }
-                      onHover={live ? () => setPileTarget(pile) : undefined}
-                      onRightClick={
-                        live
-                          ? () => {
-                              setPileTarget(pile);
-                              openFloorSheet();
-                            }
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-                {/* Every worktable's cast shadow, in one pass beneath all
+                  {gameState.materialPiles.map((pile) => {
+                    const live =
+                      reachablePiles.has(pile.material.id) && !benchDive;
+                    return (
+                      <MaterialPileSprite
+                        key={`pile-${pile.material.id}`}
+                        pile={pile}
+                        highlighted={pile === pickupTarget && !benchDive}
+                        tutorialTarget={
+                          coach.matchesPile?.(pile.material) ?? false
+                        }
+                        onHover={live ? () => setPileTarget(pile) : undefined}
+                        onRightClick={
+                          live
+                            ? () => {
+                                setPileTarget(pile);
+                                openFloorSheet();
+                              }
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
+                  {/* Every worktable's cast shadow, in one pass beneath all
                   of them: tables pushed together are one bench, and a
                   neighbour's shadow falling across the top butted against
                   it would draw a seam that isn't there. */}
-                {machines
-                  .filter((m) => m.type.worktable)
-                  .map((worktable) => (
-                    <pixiContainer
-                      key={`shadow-${machineKey(worktable.state)}`}
-                      x={cellToPixelCenter(worktable.position)[0]}
-                      y={cellToPixelCenter(worktable.position)[1]}
-                      angle={worktable.rotation * -90}
-                    >
-                      <WorktableShadowSprite machine={worktable} />
-                    </pixiContainer>
-                  ))}
-                {[...machines]
-                  // Worktables draw first so mounted benchtop machines sit on top
-                  .sort(
-                    (a, b) =>
-                      Number(b.type.worktable ?? false) -
-                      Number(a.type.worktable ?? false),
-                  )
-                  .map((machinePlacement) => (
-                    <MachineSprite
-                      key={machineKey(machinePlacement.state)}
-                      machine={machinePlacement}
-                      isSelected={
-                        !gameState.player.away &&
-                        gameState.player.carriedMachine == null &&
-                        // Diving into a bench, the giant outline rim
-                        // would only clutter the close-up
-                        !benchDive &&
-                        isTargeted(machinePlacement)
-                      }
-                      tutorialTarget={coach.machineTypeIds.has(
-                        machinePlacement.type.id as MachineId,
-                      )}
-                    />
-                  ))}
-                {/* Painted over the machines: a blocked lane cell is usually
-                 *under* the machine that's blocking it */}
-                <FeedLaneLayer />
-                {collisionDebugRequested() && <CollisionDebugLayer />}
-                <PlayerMotionLayer paused={paused} />
-                <FootstepSoundLayer />
-                <ShopVacSprite />
-                {!gameState.player.away && truckStage === "parked" && (
-                  <PersonSprite person={gameState.player} />
-                )}
-                {/* Dust in flight rides above the tools taking it */}
-                <DustMotionLayer />
-                <CarriedMachineLayer />
-                {/* The hour of the day, over the whole world — the sky
+                  {machines
+                    .filter((m) => m.type.worktable)
+                    .map((worktable) => (
+                      <pixiContainer
+                        key={`shadow-${machineKey(worktable.state)}`}
+                        x={cellToPixelCenter(worktable.position)[0]}
+                        y={cellToPixelCenter(worktable.position)[1]}
+                        angle={worktable.rotation * -90}
+                      >
+                        <WorktableShadowSprite machine={worktable} />
+                      </pixiContainer>
+                    ))}
+                  {[...machines]
+                    // Worktables draw first so mounted benchtop machines sit on top
+                    .sort(
+                      (a, b) =>
+                        Number(b.type.worktable ?? false) -
+                        Number(a.type.worktable ?? false),
+                    )
+                    .map((machinePlacement) => (
+                      <MachineSprite
+                        key={machineKey(machinePlacement.state)}
+                        machine={machinePlacement}
+                        isSelected={
+                          !gameState.player.away &&
+                          gameState.player.carriedMachine == null &&
+                          // Diving into a bench, the giant outline rim
+                          // would only clutter the close-up
+                          !benchDive &&
+                          isTargeted(machinePlacement)
+                        }
+                        tutorialTarget={coach.machineTypeIds.has(
+                          machinePlacement.type.id as MachineId,
+                        )}
+                      />
+                    ))}
+                  {/* Where the machines' cut spray renders: over them all,
+                  outside any one machine's outline filter — see
+                  cutSprayLayer.ts. Childless on purpose; particles are
+                  attach()ed, and RenderLayer's addChild throws. */}
+                  <pixiRenderLayer ref={setCutSprayLayer} />
+                  {/* Painted over the machines: a blocked lane cell is usually
+                   *under* the machine that's blocking it */}
+                  <FeedLaneLayer />
+                  {collisionDebugRequested() && <CollisionDebugLayer />}
+                  <PlayerMotionLayer paused={paused} />
+                  <FootstepSoundLayer />
+                  <ShopVacSprite />
+                  {!gameState.player.away && truckStage === "parked" && (
+                    <PersonSprite person={gameState.player} />
+                  )}
+                  {/* Dust in flight rides above the tools taking it */}
+                  <DustMotionLayer />
+                  <CarriedMachineLayer />
+                  {/* The hour of the day, over the whole world — the sky
                     outdoors, the bulbs on the slab. Last, so it lights
                     everything the camera holds rather than sitting under
                     half of it. */}
-                <DaylightLayer
-                  width={width}
-                  height={height}
-                  viewport={worldViewport}
-                />
+                  <DaylightLayer
+                    width={width}
+                    height={height}
+                    viewport={worldViewport}
+                  />
+                </pixiContainer>
               </pixiContainer>
             </pixiContainer>
-          </pixiContainer>
+          </cutSprayLayerContext.Provider>
           {/* The bench scene, published by BenchWorkSurface, drawn in
               screen space above the world — outside the camera so the
               daylight pass can't darken the top under your hands. The
