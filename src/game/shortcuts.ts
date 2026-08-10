@@ -343,10 +343,13 @@ const defs = [
     group: "Machines",
   },
   {
+    // The bench view's key: it thumbs the blueprint pile in the corner,
+    // and only answers with the drawing in front of you. Out on the floor
+    // a bench is a table, not a machine with a mode dial.
     id: "cycle-operation",
     codes: ["KeyQ"],
     keys: [["Q"]],
-    description: "Next machine operation",
+    description: "Next plan on the bench",
     scope: "home",
     group: "Machines",
     shiftHint: "go backwards",

@@ -18,6 +18,16 @@ to run a power machine, Z/X and R for its settings). The pile E would
 pick up wears the same outline with its own `[E] pick up` chip. A hint
 cluster follows the player for the remaining floor verbs.
 
+Which of those a station actually wears depends on whether it's worked
+from the floor at all (`Machine.hasFloorControls`). A direct-feed machine
+is — the floor is its entire interface, so it carries its settings, its
+refusals, and the Space hold. So does the garbage can: Space empties it
+where it stands. A **bench doesn't**: since the bench view took hand work
+over (`docs/bench-work.md`), a bench out here is a table. It wears its
+name, the verbs that move stock on and off it, `[B] carry`, and
+`[Tab] use` — no plan, no scales, no trigger — and the keys behind those
+missing chips are unbound rather than silently live.
+
 Benches and containers open a centered station sheet (Tab) holding
 plans, racks, and contents; direct-feed machines have no sheet beyond
 their accessories rack.

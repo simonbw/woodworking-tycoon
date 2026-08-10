@@ -10,6 +10,7 @@ import {
   nearestSawMark,
   sawMarkParameters,
   sawMarkPositions,
+  selectedBenchPlan,
   toolForOperation,
   toolOperationFor,
 } from "./tool-work";
@@ -298,6 +299,44 @@ describe("the finishing kit, tool-first", () => {
         } as never),
         flat,
       ),
+      null,
+    );
+  });
+});
+
+describe("selectedBenchPlan", () => {
+  it("is null for tool work — the last cut isn't a drawing off the pile", () => {
+    // operateMachineAction records the tool operation it claimed in
+    // selectedOperationId, so the id names the last pass, not a plan.
+    assert.strictEqual(
+      selectedBenchPlan(
+        workspaceWith({
+          tools: ["handSaw"],
+          selectedOperationId: "handSawCut",
+        }),
+      ),
+      null,
+    );
+  });
+
+  it("is null for a glue-up — the clamps decide those, not a plan", () => {
+    assert.strictEqual(
+      selectedBenchPlan(workspaceWith({ selectedOperationId: "glueUpPanel" })),
+      null,
+    );
+  });
+
+  it("is the assembly build pulled off the pile", () => {
+    assert.strictEqual(
+      selectedBenchPlan(workspaceWith({ selectedOperationId: "buildShelf" }))
+        ?.id,
+      "buildShelf",
+    );
+  });
+
+  it("is null when the id resolves to nothing", () => {
+    assert.strictEqual(
+      selectedBenchPlan(workspaceWith({ selectedOperationId: "none" })),
       null,
     );
   });

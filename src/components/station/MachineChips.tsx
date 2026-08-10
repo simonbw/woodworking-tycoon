@@ -5,6 +5,7 @@ import {
   resolveInteract,
 } from "../../game/interact";
 import {
+  hasFloorControls,
   isSameMachine,
   Machine,
   Operation,
@@ -86,12 +87,18 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       ? []
       : stageableMaterials(machine, carried, gameState.progression);
 
-  const settings = machineSettings(machine, operations);
+  // A bench is a table out here, not a machine: no plan, no scales, no
+  // trigger. Everything about its work is behind Tab, over the bench top
+  // (see Machine.hasFloorControls and docs/bench-work.md).
+  const floorControls = hasFloorControls(machine.type);
+  const settings = floorControls ? machineSettings(machine, operations) : [];
 
   // The Space chip: whether there's something on the machine to run — the
   // shop's supplies and its clamp rack included. A tool in hand owns the
-  // Space hold, so the chip stands down rather than lie.
+  // Space hold, so the chip stands down rather than lie. A bench never
+  // offers it: nothing about a bench's work is run from out here.
   const canOperate =
+    floorControls &&
     !isOperating &&
     !switchedOff &&
     heldTool(gameState) === null &&
@@ -99,7 +106,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 
   // The chip names the very work Space would do, resolved the same way
   // the action resolves it: the stock on a direct-feed machine picks its
-  // operation, a bench runs its selected plan.
+  // operation, a container runs the one job it has.
   const runOperation = !canOperate
     ? null
     : machine.type.directFeed
@@ -184,8 +191,9 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
       )}
       {/* Hand work has no chip of its own: the bench view owns it
           (docs/bench-work.md), and the single "[Tab] use" chip below is
-          the door to all of it — prying, plans, arranging. */}
-      {canOperate && !runOperation?.interaction && (
+          the door to all of it — prying, plans, arranging. `canOperate`
+          is what keeps this off a bench, so the row can stay plain. */}
+      {canOperate && (
         <HintRow keys={<ShortcutKeys shortcut="operate-machine" />} hold>
           {(runOperation?.name ?? machine.type.feedVerb ?? "run").toLowerCase()}
         </HintRow>
@@ -264,11 +272,12 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
 };
 
 /**
- * The settings the keys drive on this machine, each listed once. A
- * direct-feed machine's settings can belong to any of its operations the
- * stock's orientation presents (a band saw set up to resaw offers the
- * resaw's fence, not the rip's); a bench only offers the selected plan's.
- * At most one is a "rotate" setting, so R never has to choose.
+ * The settings the keys drive on this machine, each listed once — only
+ * ever a station that's worked from the floor at all. A direct-feed
+ * machine's can belong to any of its operations the stock's orientation
+ * presents (a band saw set up to resaw offers the resaw's fence, not the
+ * rip's); a container has only the one job's. At most one is a "rotate"
+ * setting, so R never has to choose.
  */
 function machineSettings(
   machine: Machine,
