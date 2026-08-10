@@ -25,8 +25,8 @@ import { MaterialInstance, PalletNail } from "../Materials";
 import {
   BenchPlacement,
   benchPlacementFor,
-  berthPlacementOnBench,
   defaultBenchPlacement,
+  palletStackPlacement,
 } from "../bench-work/bench-layout";
 import {
   benchGroupAt,
@@ -36,7 +36,6 @@ import {
 } from "../bench-work/bench-group";
 import {
   isSameNail,
-  palletBoardSlot,
   palletSlotId,
   PalletBoardRef,
 } from "../bench-work/pallet-geometry";
@@ -472,19 +471,12 @@ export function pryPalletNailAction(
 
     // A freed board's id doubles as its sprite seed and matches the seed
     // the pallet drew it with (see PalletSprite), so the very same grain
-    // keeps lying there — the pull frees the board, it doesn't swap it
-    // for a different one. And it keeps lying on its berth: the
-    // placement lands in the bench layout in the same commit, so nothing
-    // pops or reshuffles.
+    // comes off the pallet — the pull frees the board, it doesn't swap
+    // it for a different one.
     const freedBoards = freedRefs.map((ref) => ({
       ...palletBoard(),
       id: palletSlotId(pallet, ref),
     }));
-    // The berth rides the pallet's own arrangement: dragged aside,
-    // turned, or flipped, the freed board lies where the slot really is
-    const palletPlacement =
-      machineState.benchLayout?.[pallet.id] ??
-      defaultBenchPlacement(live.type, pallet);
 
     return {
       ...gameState,
@@ -496,7 +488,11 @@ export function pryPalletNailAction(
           return m;
         }
         // Freed boards stay right on the bench: loose stock the next
-        // plan can claim, or E takes back into the arms.
+        // plan can claim, or E takes back into the arms — tossed onto
+        // the pile in the back-left corner rather than left lying in
+        // the pallet's footprint, where they'd bury the nails still to
+        // pull. The bench view walks each one over from its berth
+        // (BenchScene's toss); the placement below is where it lands.
         const inputMaterials = [
           ...m.inputMaterials.filter((material) => material !== pallet),
           ...(remainingPallet ? [remainingPallet] : []),
@@ -513,10 +509,7 @@ export function pryPalletNailAction(
             ...Object.fromEntries(
               freedBoards.map((freedBoard, i) => [
                 freedBoard.id,
-                berthPlacementOnBench(
-                  palletPlacement,
-                  palletBoardSlot(freedRefs[i]),
-                ),
+                palletStackPlacement(live.type, freedRefs[i], freedBoard.id),
               ]),
             ),
           },

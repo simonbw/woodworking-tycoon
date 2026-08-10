@@ -10,8 +10,12 @@ import {
   berthPlacementOnBench,
   defaultBenchPlacement,
   palletPointOnBench,
+  palletStackPlacement,
 } from "./bench-layout";
 import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
+
+/** The hand-stacked slop palletStackPlacement allows, plus a hair. */
+const PILE_SLOP = 0.8;
 
 function benchWith(overrides: Partial<MachineState>): Machine {
   return new Machine({
@@ -101,6 +105,76 @@ describe("bench layout", () => {
     // On the bench, not off in space
     assert.ok(first.xIn > 0 && first.xIn < 40);
     assert.ok(first.yIn > 0 && first.yIn < 30);
+  });
+
+  it("piles freed pallet boards in the bench's back-left corner", () => {
+    const deck = palletStackPlacement(
+      MACHINE_TYPES.workspace,
+      { kind: "deck", index: 6 },
+      "p:deck-6",
+    );
+    // Lying across the bench, back edge and left edge: a 36" deck board
+    // on a 40" top rides 18" in from the left, 2" down from the back
+    assert.ok(Math.abs(deck.xIn - 18) <= PILE_SLOP, `x was ${deck.xIn}`);
+    assert.ok(Math.abs(deck.yIn - 2) <= PILE_SLOP, `y was ${deck.yIn}`);
+    assert.ok(Math.abs(deck.angleDeg - 90) <= 5);
+    // Its middle is on the top, so the bench can actually hold it
+    assert.ok(deck.xIn > 0 && deck.xIn < 40);
+    assert.ok(deck.yIn > 0 && deck.yIn < 30);
+  });
+
+  it("gives the stringers their own lane in front of the deck boards", () => {
+    const deck = palletStackPlacement(
+      MACHINE_TYPES.workspace,
+      { kind: "deck", index: 0 },
+      "p:deck-0",
+    );
+    const stringer = palletStackPlacement(
+      MACHINE_TYPES.workspace,
+      { kind: "stringer", index: 0 },
+      "p:stringer-0",
+    );
+    // Stripping a pallet sorts as it goes: the two piles don't overlap.
+    // One board builds the whole pallet, so the lanes are both a board
+    // wide and sit edge to edge — 4" between their centers.
+    assert.ok(stringer.yIn > deck.yIn);
+    assert.ok(stringer.yIn - deck.yIn >= 4 - PILE_SLOP);
+    // Same board, same length: the stringer lane goes flush left where
+    // the deck lane does, rather than centering the way a longer one did
+    assert.ok(Math.abs(stringer.xIn - 18) <= PILE_SLOP);
+  });
+
+  it("seats a freed board deterministically by its id", () => {
+    const target = { kind: "deck", index: 3 } as const;
+    const first = palletStackPlacement(MACHINE_TYPES.workspace, target, "p:d3");
+    const again = palletStackPlacement(MACHINE_TYPES.workspace, target, "p:d3");
+    assert.deepStrictEqual(first, again);
+    // Neighbors land on the same pile without landing identically
+    const sibling = palletStackPlacement(
+      MACHINE_TYPES.workspace,
+      { kind: "deck", index: 4 },
+      "p:d4",
+    );
+    assert.notDeepStrictEqual(first, sibling);
+    assert.ok(
+      Math.hypot(first.xIn - sibling.xIn, first.yIn - sibling.yIn) < 2.5,
+    );
+  });
+
+  it("keeps the pile on the top of the smallest bench there is", () => {
+    // A 2'×2' worktable: 24" square, narrower than either board is long
+    for (const target of [
+      { kind: "deck", index: 0 } as const,
+      { kind: "stringer", index: 0 } as const,
+    ]) {
+      const seat = palletStackPlacement(
+        MACHINE_TYPES.worktable1x1,
+        target,
+        `small:${target.kind}`,
+      );
+      assert.ok(seat.xIn > 0 && seat.xIn < 24, `x was ${seat.xIn}`);
+      assert.ok(seat.yIn > 0 && seat.yIn < 24, `y was ${seat.yIn}`);
+    }
   });
 
   it("prefers the stored placement over the seed", () => {

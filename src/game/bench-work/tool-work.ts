@@ -20,6 +20,31 @@ import { BenchPlacement } from "./bench-layout";
  */
 
 /**
+ * The interaction kinds that are tool work rather than a plan: the piece
+ * and the gesture pick them, and they carry their own parameters out of
+ * the gesture (the saw's mark measures the kept length, R swings the
+ * miter box). Only assembly builds are pulled off the blueprint pile.
+ */
+const TOOL_WORK_KINDS = ["pry", "stroke", "saw", "glue"];
+
+/** Whether this operation is tool work rather than a plan off the pile. */
+export function isToolWork(operation: Operation): boolean {
+  return TOOL_WORK_KINDS.includes(operation.interaction?.kind ?? "");
+}
+
+/**
+ * The plan a bench has pulled off its blueprint pile, or null.
+ * `selectedOperationId` doubles as the record of the last tool work
+ * claimed (operateMachineAction writes it), so it only names a plan when
+ * it names an assembly build — a bench that just crosscut a board has no
+ * drawing out, whatever the id says. Old saves may carry a stale one.
+ */
+export function selectedBenchPlan(machine: Machine): Operation | null {
+  const selected = machine.selectedOperationOrNull;
+  return selected && !isToolWork(selected) ? selected : null;
+}
+
+/**
  * The operation this held tool offers on this piece as it lies, or null.
  * Order follows the tool's own operation list, so a tool with a ladder
  * of jobs (sanding rough → smooth → sanded) offers the piece's next rung

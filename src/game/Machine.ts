@@ -209,6 +209,24 @@ export function isBenchType(type: MachineType): boolean {
   return type.worktable === true || type.id === "workspace";
 }
 
+/**
+ * Whether this station is worked from the shop floor: a plan to pick, a
+ * setting to dial, a hold to run it.
+ *
+ * Direct-feed machines are — the floor is their whole interface, which is
+ * the point of them. So is the garbage can: Space empties it where it
+ * stands. A bench is not. Since the bench view took hand work over
+ * (docs/bench-work.md), a bench out on the floor is a table and nothing
+ * more — you set stock on it, take stock off it, carry it, and lean into
+ * it. Choosing the work, dialing it, and doing it all happen in there,
+ * over the bench top, with the drawing and the tool rail in front of
+ * you. So out here the bench wears no operation chips and answers no
+ * operation keys: it has no control panel to offer.
+ */
+export function hasFloorControls(type: MachineType): boolean {
+  return !isBenchType(type);
+}
+
 export const MACHINE_TYPES = {
   workspace,
   worktable1x1,

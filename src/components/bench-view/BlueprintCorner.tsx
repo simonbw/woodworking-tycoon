@@ -6,6 +6,7 @@ import {
   operationParameters,
 } from "../../game/Machine";
 import { stationWorkSpeed } from "../../game/bench-mounting";
+import { isToolWork, selectedBenchPlan } from "../../game/bench-work/tool-work";
 import { machineDustMultiplier } from "../../game/Dust";
 import { MACHINE_ARTICLES } from "../../game/manual";
 import { setMachineOperationAction } from "../../game/game-actions/player-actions";
@@ -58,15 +59,10 @@ export const BlueprintCorner: React.FC<{ machine: Machine }> = ({
   // lying in the clamps decides the composition (bench-work/glue-up.ts).
   // So the pile lists only assembly builds, and never honors a stale
   // selection of the plan-free kinds (old saves may carry one).
-  const toolWorkKinds = ["pry", "stroke", "saw", "glue"];
   const operations = availableOperations(machine, gameState.progression).filter(
-    (op) => !toolWorkKinds.includes(op.interaction?.kind ?? ""),
+    (op) => !isToolWork(op),
   );
-  const rawSelection = machine.selectedOperationOrNull;
-  const selected =
-    rawSelection && toolWorkKinds.includes(rawSelection.interaction?.kind ?? "")
-      ? null
-      : rawSelection;
+  const selected = selectedBenchPlan(machine);
   // A running job resolves against the plan and settings it finds when
   // it finishes, so both hold still until the work comes off.
   const working = machine.operationProgress.status === "inProgress";

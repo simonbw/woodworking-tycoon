@@ -15,6 +15,10 @@ import { Modal } from "../Modal";
  * Dismissing it is what releases the reward flight (see
  * `RewardFlightLayer`), so the payout reads as a consequence of the handoff
  * rather than a number that moved while the player was looking elsewhere.
+ *
+ * It holds the screen until the player takes the money (or presses Escape):
+ * a click aimed at the shop floor behind it used to sweep the card away
+ * before it had been read, which is the one dismissal nobody meant.
  */
 export const ClientCard: React.FC<{
   payout: PayoutEvent;
@@ -22,6 +26,7 @@ export const ClientCard: React.FC<{
 }> = ({ payout, onDismiss }) => (
   <Modal
     onClose={onDismiss}
+    backdropCloses={false}
     label={`${payout.title} — delivered`}
     panelClassName="payout-card-in relative w-[30rem] max-w-full bg-paper-legal text-ink-black p-6 rounded-sm shadow-2xl"
   >

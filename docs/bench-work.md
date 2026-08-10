@@ -55,6 +55,17 @@ per-operation scripts that compose it.
    "hold Space instead". Tests and debug tooling complete work through
    the same commit actions the view dispatches — that hook is never
    exposed as UI.
+
+   The corollary, and the one that keeps getting re-broken: **out on the
+   shop floor a bench has no controls at all** (`Machine.hasFloorControls`).
+   The floor's machine vocabulary — pick the operation (Q), dial it
+   (Z/X/R), hold to run it (Space) — predates this view, when the bench
+   really was a machine with a control panel. It belongs to direct-feed
+   machines, whose whole interface is the floor, and to the garbage can,
+   which empties where it stands. A bench answers none of it: out there
+   it is a table you set stock on, take stock off, and carry, plus the
+   one door in. Q survives as the bench view's own key, thumbing the
+   blueprint pile with the drawing in front of you.
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,
@@ -195,14 +206,24 @@ is the pallet instance transforming nail by nail:
 - Each face only presents its own side's nail heads. The pallet is a
   piece like any other — it drags, R turns it, F flips it — and flipping
   it over is how the bottom boards' nails come on offer.
-- Z-order is physical: a freed board lying untouched on its berth keeps
-  its place inside the pallet's layer stack, and only moved pieces ride
-  on top. E takes the piece under the pointer, not the first in the bay.
+- Z-order is physical: freed boards are loose stock riding on top of
+  the pallet, and a board dragged back onto its berth re-enters the
+  pallet's layer sandwich (`berthLayerOf` — a stringer slid home lies
+  under the deck again). E takes the piece under the pointer, not the
+  first in the bay.
 - Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
   consumables (flying to the supplies tally — `flyToSupply`).
 - A board comes free the moment its _last_ nail comes out — never
-  before — and stays lying on the bench where it was nailed. Mid-job you
-  hold a genuinely half-stripped pallet plus loose boards, all real
+  before — and is tossed onto the pile in the bench's back-left corner
+  (`palletStackPlacement`), deck boards at the very back with the
+  stringers in a lane in front: stripping sorts as it goes, the pile is
+  clear of the hands, and the pallet visibly empties instead of its
+  freed boards burying the nails still to pull. The pile is anchored to
+  the _bench_, never the pallet — the anchor holds still when the
+  pallet is dragged or turned mid-dismantle. The commit writes the
+  landing spot; the walk from the berth is the bench view's entrance
+  tween (`BenchScene`), skipped under reduced motion. Mid-job you hold
+  a genuinely half-stripped pallet plus a pile of boards, all real
   state: refresh mid-dismantle and you resume at the exact nail you
   left, not because mini-game state was saved, but because every pull
   _was_ game state.
@@ -221,7 +242,16 @@ exactly over the shop's copy.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchScene`; a board flipped up on edge narrows to its thickness,
-`BoardOnEdgeSprite`). Stroke and saw work runs on those very pieces in
+`BoardOnEdgeSprite`). F is one verb with three stops on a board — flat,
+up on its long edge, up on its end — and the scene tumbles it between
+them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
+cycle and interpolates the very footprints `placedPieceSize` declares,
+so the outgoing and incoming sprites cross-fade at a shared apparent
+size. Its header covers the one wrinkle worth knowing (the three stops
+can't be reached by three honest single-axis tips, and why the leftover
+quarter turn is spent inside the leg instead of on `angleDeg`). The key
+hint names the stop F reaches next, so the cycle isn't something a
+player has to discover by surprise. Stroke and saw work runs on those very pieces in
 place (`StrokeSurface` / `SawSurface` mount over the scene at the
 piece's placement — no takeover surface exists). The chrome floats:
 nameplate top-left, instruction + key hints bottom-center, the plan

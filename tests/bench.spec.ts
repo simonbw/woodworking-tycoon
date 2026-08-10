@@ -117,6 +117,77 @@ test.describe("Bench view", () => {
       expect((await machineState()).status).toBe("notStarted");
     });
 
+    await test.step("out on the floor the bench has no controls to wear", async () => {
+      // Mount a hand saw and leave its last cut named in
+      // selectedOperationId with its dials set — the state any tool work
+      // leaves behind. None of it is the floor's business: a bench out
+      // here is a table, so the chips name only what moves stock on and
+      // off it, and the operation keys stand down.
+      const bench = () =>
+        page.evaluate(() => {
+          const m = window
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "workspace");
+          return {
+            selectedOperationId: m.selectedOperationId,
+            targetLength: m.selectedParameters?.targetLength,
+          };
+        });
+      const before = await page.evaluate(() =>
+        JSON.stringify(
+          window
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "workspace"),
+        ),
+      );
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace"
+              ? {
+                  ...m,
+                  tools: ["sandingBlock", "handSaw"],
+                  selectedOperationId: "handSawCut",
+                  selectedParameters: {
+                    angle: 0,
+                    cutEnd: "right",
+                    targetLength: 24,
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+
+      const chips = page.getByTestId("machine-chips");
+      await expect(chips).toContainText("use");
+      for (const control of ["angle", "cut end", "target length"]) {
+        await expect(chips).not.toContainText(control);
+      }
+
+      // And the keys those chips would have named are unbound out here:
+      // Z leaves the saw's mark alone, Q leaves the pile unthumbed.
+      await blur();
+      await page.keyboard.press("z");
+      await page.keyboard.press("q");
+      await page.waitForTimeout(50);
+      expect(await bench()).toEqual({
+        selectedOperationId: "handSawCut",
+        targetLength: 24,
+      });
+
+      await page.evaluate((snapshot) => {
+        const restored = JSON.parse(snapshot);
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace" ? restored : m,
+          ),
+        }));
+      }, before);
+    });
+
     await test.step("Tab spreads the bench open onto the scene — no plan for tool work", async () => {
       await blur();
       await page.keyboard.press("Tab");
@@ -143,6 +214,33 @@ test.describe("Bench view", () => {
       await corner.click();
       // The sanding block hangs on the rail, waiting for a hand
       await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
+
+      // Leaned in, Q is the pile's key: it thumbs to the next drawing
+      // with that drawing right there to see. (Out on the floor the same
+      // press does nothing — the step above.)
+      const planId = () =>
+        page.evaluate(
+          () =>
+            window
+              .__GET_GAME_STATE__()
+              .machines.find((m: any) => m.machineTypeId === "workspace")
+              .selectedOperationId,
+        );
+      const stale = await planId();
+      await blur();
+      await page.keyboard.press("q");
+      await expect.poll(planId).not.toBe(stale);
+      await expect(corner).toContainText("Build");
+      await page.evaluate((id) => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace"
+              ? { ...m, selectedOperationId: id }
+              : m,
+          ),
+        }));
+      }, stale);
     });
 
     await test.step("right-click hangs the held tool back up", async () => {
@@ -159,9 +257,13 @@ test.describe("Bench view", () => {
 
       const stage = page.getByTestId("bench-stage");
       const box = await stage.boundingBox();
-      await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, {
-        button: "right",
-      });
+      await page.mouse.click(
+        box!.x + box!.width / 2,
+        box!.y + box!.height / 2,
+        {
+          button: "right",
+        },
+      );
 
       await expect(block).toHaveAttribute(
         "aria-label",
@@ -323,20 +425,20 @@ test.describe("Bench view", () => {
       expect((await palletState()).deckBoards[5]).toBe(false);
       expect((await palletState()).stringers).toEqual([true, true, true]);
 
-      // E takes the piece under the pointer — the freed board lying on
-      // its berth, not whatever sits first in the bay. Hover is pointer
-      // state computed on mousemove, so under load the first move can
-      // land before the freed board reaches the scene — wiggle until
+      // E takes the piece under the pointer — the freed board, which the
+      // pry tossed onto the pile in the bench's back-left corner instead
+      // of leaving it lying over nails still to pull. On the 40×30
+      // makeshift top a 36" deck board rides 18" in and 2" down. Hover is
+      // pointer state computed on mousemove, so under load the first move
+      // can land before the freed board reaches the scene — wiggle until
       // the stage reports the board under the hand, then take it.
       await page.keyboard.press("Escape"); // hang the hammer up
-      const berth = await palletPoint(page, 17, 17);
+      const pile = await inchPoint(page, 18, 2);
       let wiggle = 0;
       await expect
         .poll(async () => {
-          await page.mouse.move(berth.x + (wiggle++ % 2), berth.y);
-          return page
-            .getByTestId("bench-stage")
-            .getAttribute("data-hovered");
+          await page.mouse.move(pile.x + (wiggle++ % 2), pile.y);
+          return page.getByTestId("bench-stage").getAttribute("data-hovered");
         })
         .toBe("fx-bench-pallet:deck-5");
       await page.keyboard.press("e");
@@ -350,8 +452,10 @@ test.describe("Bench view", () => {
 
       // F over the pallet turns it over — the bottom face's own nails
       // come on offer (they're driven from that side). Hover is pointer
-      // state: nudge the mouse so the pallet is what's under the hand.
-      await page.mouse.move(berth.x + 6, berth.y + 6);
+      // state: nudge the mouse so the pallet is what's under the hand —
+      // its middle, well clear of the pile up in the corner.
+      const palletMiddle = await palletPoint(page, 23, 17);
+      await page.mouse.move(palletMiddle.x + 6, palletMiddle.y + 6);
       await page.waitForTimeout(150);
       await page.keyboard.press("f");
       await expect
@@ -595,7 +699,10 @@ test.describe("Bench view", () => {
           const seams = await stage.getAttribute("data-glue-seams");
           if (seams === `${index + 1}/2`) break;
         }
-        await expect(stage).toHaveAttribute("data-glue-seams", `${index + 1}/2`);
+        await expect(stage).toHaveAttribute(
+          "data-glue-seams",
+          `${index + 1}/2`,
+        );
       }
       await page.keyboard.press("Escape");
 
@@ -743,9 +850,7 @@ test.describe("Bench view", () => {
       await page.mouse.move(overGhost.x, overGhost.y);
       await expect(page.getByTestId("slot-tip")).toBeVisible();
       await expect(page.getByTestId("slot-tip")).toContainText("shelf");
-      await expect(page.getByTestId("slot-tip")).toContainText(
-        "stood on edge",
-      );
+      await expect(page.getByTestId("slot-tip")).toContainText("stood on edge");
 
       // The parked shelf board lies flat: F flips it up on its long edge
       // (the one flip verb — boards tip on edge, the pallet turns over).
@@ -758,6 +863,46 @@ test.describe("Bench view", () => {
       // reads the hovered piece, and a busy renderer commits it a beat
       // after the pointer arrives
       await expect(stage).toHaveAttribute("data-hovered", "bp-shelf2");
+      // The chip names the stop F reaches next, so the three-stop cycle
+      // is readable before it's pressed rather than after
+      const hints = page.getByTestId("bench-key-hints");
+      await expect(hints).toContainText("stand on edge");
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"]
+                .onEdge ?? false,
+          ),
+        )
+        .toBe(true);
+      await expect(hints).toContainText("stand on end");
+
+      // Round the cycle: on end, then back to lying flat where it started
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"]
+                .onEnd ?? false,
+          ),
+        )
+        .toBe(true);
+      await expect(hints).toContainText("lay flat");
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(() => {
+            const at =
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"];
+            return [at.onEdge ?? false, at.onEnd ?? false];
+          }),
+        )
+        .toEqual([false, false]);
+
+      // Back on edge for the snap-drag below
       await page.keyboard.press("KeyF");
       await expect
         .poll(async () =>
@@ -858,7 +1003,12 @@ test.describe("Bench view", () => {
                     ticksRemaining: 0,
                   },
                   benchLayout: {
-                    "pb-slat": { xIn: 20, yIn: 15, angleDeg: 0, flipped: false },
+                    "pb-slat": {
+                      xIn: 20,
+                      yIn: 15,
+                      angleDeg: 0,
+                      flipped: false,
+                    },
                     "pb-n": {
                       xIn: 20,
                       yIn: 5,
