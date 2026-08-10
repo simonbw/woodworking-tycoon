@@ -22,9 +22,9 @@ const roughBoard: Board = {
 export const benchWorkPallet: Pallet = {
   id: "fx-bench-pallet",
   type: "pallet",
-  deckBoards: Array(11).fill(true) as Tuple<boolean, 11>,
+  deckBoards: Array(8).fill(true) as Tuple<boolean, 8>,
   stringers: [true, true, true],
-  nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
+  nails: initialPalletNails(Array(8).fill(true), [true, true, true]),
 };
 
 /**

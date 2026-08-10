@@ -67,9 +67,9 @@ export const WelcomeArticle: React.FC = () => (
       <li>
         With the wood already on the bench, switch its plan with{" "}
         <ShortcutKeys shortcut="cycle-operation" /> to{" "}
-        <Term>Build Rustic Shelf</Term>: two stringers, three deck boards, and
-        six of the salvaged nails. Set each piece on its outline, then drive the
-        nails home.
+        <Term>Build Rustic Shelf</Term>: six pallet boards and eight of the
+        salvaged nails. Set each piece on its outline, then drive the nails
+        home.
       </li>
       <li>
         Pick up the finished shelf, carry it out the garage door, and load it

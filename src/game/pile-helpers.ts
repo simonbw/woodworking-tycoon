@@ -13,8 +13,8 @@ import { Vector } from "./Vectors";
  */
 const PILE_REACH_CELLS = 0.75;
 
-/** A pallet is 4' of stringer across by 3' of deck board along (PalletSprite). */
-const PALLET_ACROSS_FEET = 4;
+/** A pallet is one board square — 3' by 3' (PalletSprite). */
+const PALLET_ACROSS_FEET = 3;
 const PALLET_ALONG_FEET = 3;
 
 /**

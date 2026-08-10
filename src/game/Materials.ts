@@ -407,7 +407,11 @@ export type PalletNail = {
 export type Pallet = {
   readonly id: string;
   readonly type: "pallet";
-  readonly deckBoards: Tuple<boolean, 11>;
+  /** Which deck boards still hold on, left to right — three bottom then
+   * five top (see bench-work/pallet-geometry). Every one of them is the
+   * same board as every stringer; the two names are directions, not
+   * sizes. */
+  readonly deckBoards: Tuple<boolean, 8>;
   /** Which stringers still hold on, top to bottom — per board, like the
    * deck. A board comes free when its last nail is pried. */
   readonly stringers: Tuple<boolean, 3>;

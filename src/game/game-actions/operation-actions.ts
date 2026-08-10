@@ -11,7 +11,7 @@ import {
   MachineState,
   Operation,
 } from "../Machine";
-import { board } from "../board-helpers";
+import { palletBoard } from "../board-helpers";
 import { isFinishedProduct } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { playerAttendsMachine } from "../machine-helpers";
@@ -477,9 +477,7 @@ export function pryPalletNailAction(
     // placement lands in the bench layout in the same commit, so nothing
     // pops or reshuffles.
     const freedBoards = freedRefs.map((ref) => ({
-      ...(ref.kind === "deck"
-        ? board("pallet", 36, 4, 2)
-        : board("pallet", 48, 6, 6)),
+      ...palletBoard(),
       id: palletSlotId(pallet, ref),
     }));
     // The berth rides the pallet's own arrangement: dragged aside,

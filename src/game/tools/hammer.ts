@@ -35,9 +35,9 @@ export const hammer: ToolType = {
       id: "buildRusticPalletShelf",
       requiredSkill: "rusticCarpentry",
       duration: 30,
-      // The whole recipe reads off the blueprint — inputs (two stringers
-      // as rails, three deck boards as shelves), the nail bill (one per
-      // rail × shelf crossing), and the bench-view build itself. The
+      // The whole recipe reads off the blueprint — inputs (six whole
+      // pallet boards: two sides, two shelves, two supports), the nail
+      // bill, and the bench-view build itself. The
       // wood is free if you pried it off a pallet — and so are the
       // nails, which come back out with the boards (see dismantlePallet).
       interaction: { kind: "assembly", blueprint: "rusticShelf" },
@@ -72,8 +72,9 @@ export const hammer: ToolType = {
       duration: 25,
       // A lean-to wren house, all off the blueprint: two tall front
       // boards with mitered tops (the first recipe that sends the player
-      // to the saw's angle stops), short sides, a perch floor, and a
-      // stringer crosscut laid flat over the slope as the roof.
+      // to the saw's angle stops), short sides, a perch floor, and one
+      // more crosscut laid flat over the slope as the roof — every part
+      // off the same pallet board.
       interaction: { kind: "assembly", blueprint: "birdhouse" },
       requiredConsumables: blueprintFastenerCost(BIRDHOUSE_BLUEPRINT),
       getInputMaterials: () => blueprintInputs(BIRDHOUSE_BLUEPRINT),
@@ -87,8 +88,8 @@ export const hammer: ToolType = {
       id: "buildCrate",
       requiredSkill: "rusticProjects",
       duration: 25,
-      // The whole recipe reads off the blueprint, like the shelf: six
-      // whole deck boards — two bottom slats, four walls stood on edge —
+      // The whole recipe reads off the blueprint, like the shelf: ten
+      // whole pallet boards — six bottom slats, four walls stood on edge —
       // nailed at the lapped corners and the slat crossings.
       interaction: { kind: "assembly", blueprint: "crate" },
       requiredConsumables: blueprintFastenerCost(CRATE_BLUEPRINT),

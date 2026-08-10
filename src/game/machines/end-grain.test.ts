@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { TOOL_TYPES } from "../Tool";
-import { board } from "../board-helpers";
+import { board, palletBoard } from "../board-helpers";
 import { GameState } from "../GameState";
 import { getMachines, Operation, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
@@ -56,13 +56,13 @@ describe("buildCrosscutSled", () => {
   it("takes a plywood base and two scrap boards", () => {
     const [baseReq, runnerReq] = buildSled.getInputMaterials({});
     assert.ok(materialMeetsInput(plywood(), baseReq));
-    assert.ok(materialMeetsInput(board("pallet", 36, 4, 2), runnerReq));
+    assert.ok(materialMeetsInput(palletBoard(), runnerReq));
     assert.strictEqual(runnerReq.quantity, 2);
   });
 
   it("produces tooling, not product", () => {
     const result = buildSled.output(
-      [plywood(), board("pallet", 36, 4, 2), board("pallet", 36, 4, 2)],
+      [plywood(), palletBoard(), palletBoard()],
       {},
     );
     assert.strictEqual(result.outputs.length, 1);
@@ -232,11 +232,7 @@ describe("shop-made tooling", () => {
     const machine: MachineState = {
       ...initialGameState.machines[0],
       selectedOperationId: "buildCrosscutSled",
-      processingMaterials: [
-        plywood(),
-        board("pallet", 36, 4, 2),
-        board("pallet", 36, 4, 2),
-      ],
+      processingMaterials: [plywood(), palletBoard(), palletBoard()],
       operationProgress: {
         status: "inProgress",
         phaseIndex: 0,

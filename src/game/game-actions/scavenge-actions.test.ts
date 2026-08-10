@@ -68,12 +68,12 @@ describe("rollScavengeStops", () => {
     );
   });
 
-  it("produces pallets with 6-11 deck boards and 2-3 stringers", () => {
+  it("produces pallets with 5-8 deck boards and 2-3 stringers", () => {
     for (const roll of [0, 0.25, 0.5, 0.75, 0.999]) {
       const [first] = rollScavengeStops(fakeRng([0.1, roll]));
       assert.ok(first.pallet, "a 0.1 find roll should find a pallet");
       const deckCount = first.pallet.deckBoards.filter(Boolean).length;
-      assert.ok(deckCount >= 6 && deckCount <= 11, `deck=${deckCount}`);
+      assert.ok(deckCount >= 5 && deckCount <= 8, `deck=${deckCount}`);
       const stringerCount = first.pallet.stringers.filter(Boolean).length;
       assert.ok(stringerCount >= 2 && stringerCount <= 3);
     }

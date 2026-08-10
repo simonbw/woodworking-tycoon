@@ -22,12 +22,8 @@ const WORKBENCH = "workspace";
 
 const isPallet = (m: MaterialInstance) => m.type === "pallet";
 const isRusticShelf = (m: MaterialInstance) => m.type === "rusticShelf";
-const palletBoard = (width: number) => (m: MaterialInstance) =>
-  m.type === "board" &&
-  (m as { species: string }).species === "pallet" &&
-  (m as { width: number }).width === width;
-const stringer = palletBoard(6);
-const deckBoard = palletBoard(4);
+const isPalletBoard = (m: MaterialInstance) =>
+  m.type === "board" && (m as { species: string }).species === "pallet";
 
 /** What the card is telling the player to do right now. */
 function step(shop: ShopDriver): TutorialStepId | undefined {
@@ -48,8 +44,7 @@ function dismantleAPallet(shop: ShopDriver): ShopDriver {
 function buildRusticShelf(shop: ShopDriver): ShopDriver {
   return shop
     .select(WORKBENCH, "buildRusticPalletShelf")
-    .load(WORKBENCH, stringer, 2)
-    .load(WORKBENCH, deckBoard, 3)
+    .load(WORKBENCH, isPalletBoard, 6)
     .run(WORKBENCH)
     .collect(WORKBENCH);
 }
@@ -86,8 +81,8 @@ describe("the guided opening", () => {
     assert.ok(shop.shop.progression.marketplaceUnlocked, "the phone arrived");
     assert.ok(shop.shop.progression.storeUnlocked, "the store opened");
 
-    // One pallet leaves a lone stringer behind, so the second shelf is a
-    // second lap of the loop — exactly what the card asks for.
+    // Eleven boards to a pallet and six to a shelf, so the second shelf
+    // is a second lap of the loop — exactly what the card asks for.
     shop.putEverythingDown().scavenge().takeFromFloor(isPallet, 1);
     dismantleAPallet(shop);
     buildRusticShelf(shop);

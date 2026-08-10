@@ -4,8 +4,8 @@
  * `game-actions/consumables.test.ts` covers the accounting one operation at a
  * time. The loop is the point here — a part-stripped pallet (five deck
  * boards on three stringers) holds fifteen nails, one per crossing, and
- * a rustic shelf costs six of them (one per rail × shelf crossing of its
- * blueprint): the pallet pays for its own shelf with nails to spare. If
+ * a rustic shelf costs eight of them (one per fastener its blueprint
+ * derives): the pallet pays for its own shelf with nails to spare. If
  * either number drifts, the fixture's premise breaks and the shelf stops
  * being free, which is the whole idea of salvage.
  *
@@ -25,8 +25,6 @@ const WORKBENCH = "workspace";
 
 const isPalletBoard = (m: MaterialInstance) =>
   m.type === "board" && (m as { species: string }).species === "pallet";
-const byWidth = (width: number) => (m: MaterialInstance) =>
-  isPalletBoard(m) && (m as { width: number }).width === width;
 const isShelf = (m: MaterialInstance) => m.type === "rusticShelf";
 const isCuttingBoard = (m: MaterialInstance) => m.type === "simpleCuttingBoard";
 
@@ -55,21 +53,20 @@ describe("consumables loop", () => {
     assert.equal(shop.shop.consumables.nails, 15);
   });
 
-  it("one shelf costs six of the nails the pallet returned", () => {
+  it("one shelf costs eight of the nails the pallet returned", () => {
     const shop = openShop(consumablesShop);
     dismantleThePallet(shop);
 
     shop
       .select(WORKBENCH, "buildRusticPalletShelf")
-      // Two stringers as the rails, three deck boards as the shelves. The
-      // bay only holds five, so the counts have to be exact.
-      .load(WORKBENCH, byWidth(6), 2)
-      .load(WORKBENCH, byWidth(4), 3)
+      // Six whole pallet boards: two sides, two shelves, two supports —
+      // any six of the eight the pallet gave back will do.
+      .load(WORKBENCH, isPalletBoard, 6)
       .run(WORKBENCH)
       .collect(WORKBENCH);
 
     assert.equal(shop.holding(isShelf).length, 1);
-    assert.equal(shop.shop.consumables.nails, 15 - 6);
+    assert.equal(shop.shop.consumables.nails, 15 - 8);
   });
 
   it("the shelf won't start without the nails", () => {
@@ -77,13 +74,12 @@ describe("consumables loop", () => {
     dismantleThePallet(shop);
     shop.arrange((state: GameState) => ({
       ...state,
-      consumables: { ...state.consumables, nails: 5 },
+      consumables: { ...state.consumables, nails: 7 },
     }));
 
     shop
       .select(WORKBENCH, "buildRusticPalletShelf")
-      .load(WORKBENCH, byWidth(6), 2)
-      .load(WORKBENCH, byWidth(4), 3);
+      .load(WORKBENCH, isPalletBoard, 6);
     assert.throws(() => shop.run(WORKBENCH), /would not start/);
   });
 

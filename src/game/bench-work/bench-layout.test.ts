@@ -11,7 +11,7 @@ import {
   defaultBenchPlacement,
   palletPointOnBench,
 } from "./bench-layout";
-import { PALLET_WIDTH_IN } from "./pallet-geometry";
+import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
 
 function benchWith(overrides: Partial<MachineState>): Machine {
   return new Machine({
@@ -52,14 +52,16 @@ describe("bench layout", () => {
   it("seats an unplaced pallet squarely centered, overhang and all", () => {
     const pallet = makePallet();
     const seat = defaultBenchPlacement(MACHINE_TYPES.workspace, pallet);
-    // A 46" pallet centered on a 40" top hangs 3" past each end
+    // A 34" square pallet on a 40 × 30 top: room to spare across the
+    // bench, and 2" hanging past each end of the short way
     assert.deepStrictEqual(seat, {
       xIn: 20,
       yIn: 15,
       angleDeg: 0,
       flipped: false,
     });
-    assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 < 0);
+    assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 > 0);
+    assert.ok(seat.yIn - PALLET_HEIGHT_IN / 2 < 0);
   });
 
   it("carries pallet points through the placement, there and back", () => {

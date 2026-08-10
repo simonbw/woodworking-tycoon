@@ -9,31 +9,34 @@ import { lerp } from "../../utils/mathUtils";
  * player clicks, the board that pops free, and the spot it stays lying
  * in can never disagree about where anything is.
  *
- * The layout mirrors a real stringer pallet flattened to top-down view:
- * four bottom deck boards and seven top deck boards running the short
- * way, three stringers running the long way between them. Every crossing
- * of two present boards carries one nail (Pallet.nails), and a board
- * only comes free when its last nail is pried — every nail is in two
- * boards, and pulling it loosens both (see pryPalletNailAction).
+ * The layout mirrors a square pallet flattened to top-down view: three
+ * bottom deck boards and five top deck boards running one way, three
+ * stringers running the other way between them. Every board is the same
+ * piece of stock — a pallet is one board, repeated eleven times — so
+ * "deck" and "stringer" name only which way a board runs, never a
+ * different size. Every crossing of two present boards carries one nail
+ * (Pallet.nails), and a board only comes free when its last nail is
+ * pried — every nail is in two boards, and pulling it loosens both (see
+ * pryPalletNailAction).
  */
 
 export const MAX_STRINGERS = 3;
-export const MAX_TOP_DECK = 7;
-export const MAX_BOTTOM_DECK = 4;
+export const MAX_TOP_DECK = 5;
+export const MAX_BOTTOM_DECK = 3;
 
-/** The pallet's span: 4' × 3' minus a hair so it reads inside its cells. */
-export const PALLET_WIDTH_IN = 4 * INCHES_PER_FOOT - 2;
+/** The pallet's span: 3' square minus a hair so it reads inside its cells. */
+export const PALLET_WIDTH_IN = 3 * INCHES_PER_FOOT - 2;
 export const PALLET_HEIGHT_IN = 3 * INCHES_PER_FOOT - 2;
 
-/** The boards' real dims — the very stock prying frees (deck boards
- * 3' × 4", stringers 4' × 6"). The assembled pallet is exactly one
- * stringer long by one deck board tall (48" × 36"), centered on the
- * slightly smaller nominal span above: it overhangs the frame by an
- * inch all around instead of reading oversized in its floor cells. */
-export const DECK_BOARD_LENGTH_IN = 3 * INCHES_PER_FOOT;
-export const DECK_BOARD_WIDTH_IN = 4;
-export const STRINGER_LENGTH_IN = 4 * INCHES_PER_FOOT;
-export const STRINGER_WIDTH_IN = 6;
+/** The board's real dims — the one piece of stock prying frees, and the
+ * only thing a pallet is made of. The assembled pallet is exactly one
+ * board square (36" × 36"), centered on the slightly smaller nominal
+ * span above: it overhangs the frame by an inch all around instead of
+ * reading oversized in its floor cells. */
+export const PALLET_BOARD_LENGTH_IN = 3 * INCHES_PER_FOOT;
+export const PALLET_BOARD_WIDTH_IN = 4;
+/** Thickness in quarters — 4/4, one nominal inch. */
+export const PALLET_BOARD_THICKNESS_Q = 4;
 
 /** One of the pallet's boards, by which row it's nailed into. */
 export type PalletBoardRef =
@@ -95,20 +98,24 @@ export function palletBoardSlots(
  * outer stringers' outer faces sit flush with the deck boards' ends —
  * spreading them across the frame instead left them proud of the deck. */
 export function stringerYIn(index: number): number {
-  const y0 = (PALLET_HEIGHT_IN - DECK_BOARD_LENGTH_IN + STRINGER_WIDTH_IN) / 2;
-  const y1 = (PALLET_HEIGHT_IN + DECK_BOARD_LENGTH_IN - STRINGER_WIDTH_IN) / 2;
+  const y0 =
+    (PALLET_HEIGHT_IN - PALLET_BOARD_LENGTH_IN + PALLET_BOARD_WIDTH_IN) / 2;
+  const y1 =
+    (PALLET_HEIGHT_IN + PALLET_BOARD_LENGTH_IN - PALLET_BOARD_WIDTH_IN) / 2;
   return lerp(y0, y1, index / (MAX_STRINGERS - 1));
 }
 
 /** A deck board's centerline, in pallet inches from the left edge. Top
- * boards (4..10) spread by sevens, the outer two flush with the
- * stringers' ends; bottom boards (0..3) sit on the gaps between them —
- * offset half a bay, so in the flattened top-down view they peek
- * through instead of hiding underneath, and no bottom-board crossing
- * ever lands on a top board's nail. */
+ * boards (3..7) spread by fives, the outer two flush with the stringers'
+ * ends; bottom boards (0..2) spread by thirds, so the outer two straddle
+ * the top row's bays and peek through in the flattened top-down view.
+ * The middle one lands under the middle top board — where a real
+ * pallet's bottom board goes, under the load. */
 export function deckBoardXIn(index: number): number {
-  const x0 = (PALLET_WIDTH_IN - STRINGER_LENGTH_IN + DECK_BOARD_WIDTH_IN) / 2;
-  const x1 = (PALLET_WIDTH_IN + STRINGER_LENGTH_IN - DECK_BOARD_WIDTH_IN) / 2;
+  const x0 =
+    (PALLET_WIDTH_IN - PALLET_BOARD_LENGTH_IN + PALLET_BOARD_WIDTH_IN) / 2;
+  const x1 =
+    (PALLET_WIDTH_IN + PALLET_BOARD_LENGTH_IN - PALLET_BOARD_WIDTH_IN) / 2;
   return index < MAX_BOTTOM_DECK
     ? lerp(x0, x1, (index + 0.5) / MAX_BOTTOM_DECK)
     : lerp(x0, x1, (index - MAX_BOTTOM_DECK) / (MAX_TOP_DECK - 1));

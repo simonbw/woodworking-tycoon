@@ -23,11 +23,11 @@ import { MaterialInstance } from "./Materials";
 describe("matchMaterialsToSlots", () => {
   it("should match all materials when placed in correct order", () => {
     const materials = [
-      board("pallet", 48, 6, 6), // stringer
-      board("pallet", 48, 6, 6), // stringer
-      board("pallet", 36, 4, 2), // deck
-      board("pallet", 36, 4, 2), // deck
-      board("pallet", 36, 4, 2), // deck
+      board("pallet", 48, 6, 6), // wide
+      board("pallet", 48, 6, 6), // wide
+      board("pallet", 36, 4, 2), // narrow
+      board("pallet", 36, 4, 2), // narrow
+      board("pallet", 36, 4, 2), // narrow
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -63,13 +63,13 @@ describe("matchMaterialsToSlots", () => {
   });
 
   it("should match materials even when placed in wrong order", () => {
-    // Place deck boards first, then stringers - opposite of requirement order
+    // Place narrow boards first, then wide boards - opposite of requirement order
     const materials = [
-      board("pallet", 36, 4, 2), // deck
-      board("pallet", 36, 4, 2), // deck
-      board("pallet", 36, 4, 2), // deck
-      board("pallet", 48, 6, 6), // stringer
-      board("pallet", 48, 6, 6), // stringer
+      board("pallet", 36, 4, 2), // narrow
+      board("pallet", 36, 4, 2), // narrow
+      board("pallet", 36, 4, 2), // narrow
+      board("pallet", 48, 6, 6), // wide
+      board("pallet", 48, 6, 6), // wide
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -79,14 +79,14 @@ describe("matchMaterialsToSlots", () => {
         width: [6],
         length: [48],
         quantity: 2,
-      }, // stringers first
+      }, // wide boards first
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
         length: [36],
         quantity: 3,
-      }, // decks second
+      }, // narrow second
     ];
 
     const slots = matchMaterialsToSlots(materials, requirements);
@@ -104,7 +104,7 @@ describe("matchMaterialsToSlots", () => {
 
   it("should handle partial materials with placeholders", () => {
     const materials = [
-      board("pallet", 48, 6, 6), // only 1 stringer
+      board("pallet", 48, 6, 6), // only 1 wide
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -168,13 +168,13 @@ describe("matchMaterialsToSlots", () => {
   });
 
   it("should handle mix of valid and invalid materials", () => {
-    // User places 3 wrong boards, then 2 correct stringers
+    // User places 3 wrong boards, then 2 correct wide boards
     const materials = [
       board("pine", 96, 4, 1), // wrong species
       board("pine", 96, 4, 1), // wrong species
       board("pine", 96, 4, 1), // wrong species
-      board("pallet", 48, 6, 6), // correct stringer
-      board("pallet", 48, 6, 6), // correct stringer
+      board("pallet", 48, 6, 6), // correct wide
+      board("pallet", 48, 6, 6), // correct wide
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -184,14 +184,14 @@ describe("matchMaterialsToSlots", () => {
         width: [6],
         length: [48],
         quantity: 2,
-      }, // stringers
+      }, // wide boards
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
         length: [36],
         quantity: 3,
-      }, // decks
+      }, // narrow
     ];
 
     const slots = matchMaterialsToSlots(materials, requirements);
@@ -199,12 +199,12 @@ describe("matchMaterialsToSlots", () => {
     assert.strictEqual(slots.length, 5);
 
     // With current implementation:
-    // - Slots 0-1 should have the valid stringers (isValid: true)
+    // - Slots 0-1 should have the valid wide boards (isValid: true)
     // - Slots 2-4 should have the pine boards (isValid: false)
     const validSlots = slots.filter(
       (slot) => slot.isValid && !slot.isPlaceholder,
     );
-    assert.strictEqual(validSlots.length, 2, "Should have 2 valid stringers");
+    assert.strictEqual(validSlots.length, 2, "Should have 2 valid wide boards");
 
     const invalidSlots = slots.filter(
       (slot) => !slot.isValid && !slot.isPlaceholder,
@@ -218,10 +218,10 @@ describe("matchMaterialsToSlots", () => {
 
   it("should handle partial materials in wrong placement order (THE BUG)", () => {
     // This is the actual issue the user experiences:
-    // User places deck boards first, then adds stringers one at a time
+    // User places narrow boards first, then adds wide boards one at a time
     const materials = [
-      board("pallet", 36, 4, 2), // deck board placed first
-      board("pallet", 48, 6, 6), // stringer placed second
+      board("pallet", 36, 4, 2), // narrow board placed first
+      board("pallet", 48, 6, 6), // wide placed second
     ];
 
     const requirements: ReadonlyArray<InputMaterialWithQuantity> = [
@@ -231,14 +231,14 @@ describe("matchMaterialsToSlots", () => {
         width: [6],
         length: [48],
         quantity: 2,
-      }, // stringers required first
+      }, // wide boards required first
       {
         type: ["board"],
         species: ["pallet"],
         width: [4],
         length: [36],
         quantity: 3,
-      }, // decks required second
+      }, // narrow required second
     ];
 
     const slots = matchMaterialsToSlots(materials, requirements);
@@ -253,14 +253,14 @@ describe("matchMaterialsToSlots", () => {
     assert.strictEqual(
       validSlots.length,
       2,
-      "Both materials should be valid (1 stringer, 1 deck)",
+      "Both materials should be valid (1 wide, 1 narrow)",
     );
 
     // CURRENT BEHAVIOR (will fail):
-    // Slot 0 (stringer): gets the stringer ✓
-    // Slot 1 (stringer): gets the deck board ✗ (shows red/invalid)
-    // Slots 2-4 (decks): placeholders
-    // The deck board shows as INVALID even though it's a correct material!
+    // Slot 0 (wide board): gets the wide board ✓
+    // Slot 1 (wide board): gets a narrow board ✗ (shows red/invalid)
+    // Slots 2-4 (narrow): placeholders
+    // The narrow board shows as INVALID even though it's a correct material!
   });
 });
 
@@ -519,9 +519,9 @@ describe("stageableMaterials on a bench", () => {
   const fullPallet: MaterialInstance = {
     id: "test-pallet",
     type: "pallet",
-    deckBoards: Array(11).fill(true) as never,
+    deckBoards: Array(8).fill(true) as never,
     stringers: [true, true, true],
-    nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
+    nails: initialPalletNails(Array(8).fill(true), [true, true, true]),
   };
 
   it("takes a pallet with no plan selected — a bench is a table", () => {

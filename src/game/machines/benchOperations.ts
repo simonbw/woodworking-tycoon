@@ -18,7 +18,7 @@ import {
   TOOL_DRAWERS_BLUEPRINT,
   WORKTABLE_BLUEPRINTS,
 } from "../bench-work/blueprint";
-import { board, isBoard, isMiteredFrameRail } from "../board-helpers";
+import { isBoard, isMiteredFrameRail, palletBoard } from "../board-helpers";
 import { Operation, OperationPhase } from "../Machine";
 import { makeMaterial, makeToolItem } from "../material-helpers";
 import {
@@ -132,15 +132,12 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
         const stringerCount = inputPallet.stringers.filter(
           (present: boolean) => present,
         ).length;
-        const stringers = array(stringerCount).map(() =>
-          board("pallet", 48, 6, 6),
-        );
-        const deckBoards = array(deckBoardsCount).map(() =>
-          board("pallet", 36, 4, 2),
+        const boardsLeft = array(stringerCount + deckBoardsCount).map(() =>
+          palletBoard(),
         );
         return {
           inputs: [],
-          outputs: [...stringers, ...deckBoards],
+          outputs: boardsLeft,
           consumableOutputs: [
             { id: "nails" as const, amount: inputPallet.nails.length },
           ],
@@ -164,7 +161,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
               nails: nailsLeft,
             }),
           ],
-          outputs: [board("pallet", 36, 4, 2)],
+          outputs: [palletBoard()],
           consumableOutputs: [
             {
               id: "nails" as const,
@@ -437,8 +434,9 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   },
   // Shop furniture: worktables are built, never bought. Like the jigs,
   // the output is equipment — the table comes off the bench crated, to
-  // be carried into place. Legs are chunky stock (pallet stringers or
-  // 2×4s); the top is plywood. No skill gate: building a real bench is
+  // be carried into place. Legs are chunky stock — 2×4s, not pallet
+  // wood, the way a real bench is built; the top is plywood. No skill
+  // gate: building a real bench is
   // every woodworker's first project.
   ...worktableBuildOperation("worktable1x1", "Build Small Worktable", 35),
   ...worktableBuildOperation("worktable1x2", "Build Worktable", 45),
@@ -468,7 +466,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     name: "Build Tool Drawers",
     id: "buildToolDrawers",
     duration: 30,
-    // A sheet carcass with thin drawer stock — deck boards qualify
+    // A sheet carcass with thin drawer stock — pallet boards qualify
     interaction: { kind: "assembly", blueprint: "toolDrawers" },
     requiredConsumables: blueprintFastenerCost(TOOL_DRAWERS_BLUEPRINT),
     getInputMaterials: () => blueprintInputs(TOOL_DRAWERS_BLUEPRINT),
