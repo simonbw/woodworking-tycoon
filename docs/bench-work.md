@@ -55,6 +55,17 @@ per-operation scripts that compose it.
    "hold Space instead". Tests and debug tooling complete work through
    the same commit actions the view dispatches — that hook is never
    exposed as UI.
+
+   The corollary, and the one that keeps getting re-broken: **out on the
+   shop floor a bench has no controls at all** (`Machine.hasFloorControls`).
+   The floor's machine vocabulary — pick the operation (Q), dial it
+   (Z/X/R), hold to run it (Space) — predates this view, when the bench
+   really was a machine with a control panel. It belongs to direct-feed
+   machines, whose whole interface is the floor, and to the garbage can,
+   which empties where it stands. A bench answers none of it: out there
+   it is a table you set stock on, take stock off, and carry, plus the
+   one door in. Q survives as the bench view's own key, thumbing the
+   blueprint pile with the drawing in front of you.
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,
@@ -230,7 +241,16 @@ exactly over the shop's copy.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchScene`; a board flipped up on edge narrows to its thickness,
-`BoardOnEdgeSprite`). Stroke and saw work runs on those very pieces in
+`BoardOnEdgeSprite`). F is one verb with three stops on a board — flat,
+up on its long edge, up on its end — and the scene tumbles it between
+them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
+cycle and interpolates the very footprints `placedPieceSize` declares,
+so the outgoing and incoming sprites cross-fade at a shared apparent
+size. Its header covers the one wrinkle worth knowing (the three stops
+can't be reached by three honest single-axis tips, and why the leftover
+quarter turn is spent inside the leg instead of on `angleDeg`). The key
+hint names the stop F reaches next, so the cycle isn't something a
+player has to discover by surprise. Stroke and saw work runs on those very pieces in
 place (`StrokeSurface` / `SawSurface` mount over the scene at the
 piece's placement — no takeover surface exists). The chrome floats:
 nameplate top-left, instruction + key hints bottom-center, the plan

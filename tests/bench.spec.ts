@@ -117,6 +117,77 @@ test.describe("Bench view", () => {
       expect((await machineState()).status).toBe("notStarted");
     });
 
+    await test.step("out on the floor the bench has no controls to wear", async () => {
+      // Mount a hand saw and leave its last cut named in
+      // selectedOperationId with its dials set — the state any tool work
+      // leaves behind. None of it is the floor's business: a bench out
+      // here is a table, so the chips name only what moves stock on and
+      // off it, and the operation keys stand down.
+      const bench = () =>
+        page.evaluate(() => {
+          const m = window
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "workspace");
+          return {
+            selectedOperationId: m.selectedOperationId,
+            targetLength: m.selectedParameters?.targetLength,
+          };
+        });
+      const before = await page.evaluate(() =>
+        JSON.stringify(
+          window
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "workspace"),
+        ),
+      );
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace"
+              ? {
+                  ...m,
+                  tools: ["sandingBlock", "handSaw"],
+                  selectedOperationId: "handSawCut",
+                  selectedParameters: {
+                    angle: 0,
+                    cutEnd: "right",
+                    targetLength: 24,
+                  },
+                }
+              : m,
+          ),
+        }));
+      });
+
+      const chips = page.getByTestId("machine-chips");
+      await expect(chips).toContainText("use");
+      for (const control of ["angle", "cut end", "target length"]) {
+        await expect(chips).not.toContainText(control);
+      }
+
+      // And the keys those chips would have named are unbound out here:
+      // Z leaves the saw's mark alone, Q leaves the pile unthumbed.
+      await blur();
+      await page.keyboard.press("z");
+      await page.keyboard.press("q");
+      await page.waitForTimeout(50);
+      expect(await bench()).toEqual({
+        selectedOperationId: "handSawCut",
+        targetLength: 24,
+      });
+
+      await page.evaluate((snapshot) => {
+        const restored = JSON.parse(snapshot);
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace" ? restored : m,
+          ),
+        }));
+      }, before);
+    });
+
     await test.step("Tab spreads the bench open onto the scene — no plan for tool work", async () => {
       await blur();
       await page.keyboard.press("Tab");
@@ -143,6 +214,33 @@ test.describe("Bench view", () => {
       await corner.click();
       // The sanding block hangs on the rail, waiting for a hand
       await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
+
+      // Leaned in, Q is the pile's key: it thumbs to the next drawing
+      // with that drawing right there to see. (Out on the floor the same
+      // press does nothing — the step above.)
+      const planId = () =>
+        page.evaluate(
+          () =>
+            window
+              .__GET_GAME_STATE__()
+              .machines.find((m: any) => m.machineTypeId === "workspace")
+              .selectedOperationId,
+        );
+      const stale = await planId();
+      await blur();
+      await page.keyboard.press("q");
+      await expect.poll(planId).not.toBe(stale);
+      await expect(corner).toContainText("Build");
+      await page.evaluate((id) => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: state.machines.map((m: any) =>
+            m.machineTypeId === "workspace"
+              ? { ...m, selectedOperationId: id }
+              : m,
+          ),
+        }));
+      }, stale);
     });
 
     await test.step("right-click hangs the held tool back up", async () => {
@@ -735,6 +833,46 @@ test.describe("Bench view", () => {
       // reads the hovered piece, and a busy renderer commits it a beat
       // after the pointer arrives
       await expect(stage).toHaveAttribute("data-hovered", "bp-r1");
+      // The chip names the stop F reaches next, so the three-stop cycle
+      // is readable before it's pressed rather than after
+      const hints = page.getByTestId("bench-key-hints");
+      await expect(hints).toContainText("stand on edge");
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+                .onEdge ?? false,
+          ),
+        )
+        .toBe(true);
+      await expect(hints).toContainText("stand on end");
+
+      // Round the cycle: on end, then back to lying flat where it started
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+                .onEnd ?? false,
+          ),
+        )
+        .toBe(true);
+      await expect(hints).toContainText("lay flat");
+      await page.keyboard.press("KeyF");
+      await expect
+        .poll(async () =>
+          page.evaluate(() => {
+            const at =
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"];
+            return [at.onEdge ?? false, at.onEnd ?? false];
+          }),
+        )
+        .toEqual([false, false]);
+
+      // Back on edge for the snap-drag below
       await page.keyboard.press("KeyF");
       await expect
         .poll(async () =>
