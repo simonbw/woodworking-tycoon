@@ -82,7 +82,6 @@ const MachineProductTile: React.FC<{ machine: MachineType }> = ({
       info={`${machine.description} Rides home crated in the truck's bed.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
       inCart={inCart}
-      canAfford={gameState.money >= price}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );

@@ -93,7 +93,6 @@ const SheetSkuTile: React.FC<{ sku: SheetSku; size: SheetSize }> = ({
         numberOwned > 0 ? `${size.label} · ${numberOwned} owned` : size.label
       }
       inCart={inCart}
-      canAfford={gameState.money >= price}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );

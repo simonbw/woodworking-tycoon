@@ -49,7 +49,6 @@ const ClampTile: React.FC = () => {
           : undefined
       }
       inCart={inCart}
-      canAfford={gameState.money >= CLAMP_COST}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );
@@ -81,7 +80,6 @@ const ConsumablePackTile: React.FC<{ consumableId: ConsumableId }> = ({
       info={`${type.description} ${type.packSize} ${type.unit} per pack.`}
       owned={owned > 0 ? `${owned} ${type.unit} in shop` : undefined}
       inCart={inCart}
-      canAfford={gameState.money >= type.packPrice}
       onAdd={() => applyAction(addToCartAction(line))}
     />
   );

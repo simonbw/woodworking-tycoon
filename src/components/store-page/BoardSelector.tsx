@@ -213,9 +213,8 @@ const BoardForSale: React.FC<{
   return (
     <Tooltip content={tooltip}>
       <button
-        className="relative block shrink-0 transition-[filter] enabled:cursor-pointer enabled:hover:brightness-110 disabled:opacity-60"
+        className="relative block shrink-0 cursor-pointer transition-[filter] hover:brightness-110"
         style={{ height: (sku.length / 12) * PX_PER_FOOT }}
-        disabled={gameState.money < price}
         aria-label={`Add ${fullName} to cart`}
         onClick={() => applyAction(addToCartAction(line))}
       >
