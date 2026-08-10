@@ -88,15 +88,6 @@ export interface MachineType {
    */
   readonly benchTopIn?: { readonly widthIn: number; readonly heightIn: number };
   readonly freeCellsNeeded: ReadonlyArray<Vector>;
-  /**
-   * The cell the operator stands in to work this machine. It must touch
-   * the footprint and be one of `freeCellsNeeded` (asserted in
-   * machine-collision.test.ts): `operationZone` is this cell plus its
-   * neighbors, so a cell set one row back doesn't just misplace the
-   * operator, it hands out "standing at the machine" from beyond arm's
-   * reach. A machine that needs more standing room than one cell says so
-   * in `freeCellsNeeded`; the operator is still at the near one.
-   */
   readonly operationPosition?: Vector;
   /**
    * The station has no front: it's worked from any cell touching its
@@ -112,7 +103,6 @@ export interface MachineType {
    * table saw): the cell opposite the operation cell. Outputs are collected
    * standing there, not at the infeed. Omitted for single-point stations
    * like the miter saw and benches, where outputs stay at the machine.
-   * Held to the same reach rule as `operationPosition`.
    */
   readonly outputPosition?: Vector;
   readonly cost: number;
@@ -217,6 +207,24 @@ export interface MachineType {
  */
 export function isBenchType(type: MachineType): boolean {
   return type.worktable === true || type.id === "workspace";
+}
+
+/**
+ * Whether this station is worked from the shop floor: a plan to pick, a
+ * setting to dial, a hold to run it.
+ *
+ * Direct-feed machines are — the floor is their whole interface, which is
+ * the point of them. So is the garbage can: Space empties it where it
+ * stands. A bench is not. Since the bench view took hand work over
+ * (docs/bench-work.md), a bench out on the floor is a table and nothing
+ * more — you set stock on it, take stock off it, carry it, and lean into
+ * it. Choosing the work, dialing it, and doing it all happen in there,
+ * over the bench top, with the drawing and the tool rail in front of
+ * you. So out here the bench wears no operation chips and answers no
+ * operation keys: it has no control panel to offer.
+ */
+export function hasFloorControls(type: MachineType): boolean {
+  return !isBenchType(type);
 }
 
 export const MACHINE_TYPES = {

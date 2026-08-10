@@ -52,13 +52,20 @@ per-operation scripts that compose it.
    bead stroked down each seam, and winding the last clamp tight is the
    single commit straight into the hands-free cure.
 1. **The bench view is the only player path.** There is no player-facing
-   "hold Space instead", and no dial for it out on the shop floor: hand
-   work carries its parameters in the gesture (the saw's mark measures
-   the kept length, R swings the miter box), and a plan's settings ride
-   the drawing pulled off the pile. The floor's chip cluster names a
-   bench's verbs, never its settings (`docs/floor-interaction.md`).
-   Tests and debug tooling complete work through the same commit actions
-   the view dispatches — that hook is never exposed as UI.
+   "hold Space instead". Tests and debug tooling complete work through
+   the same commit actions the view dispatches — that hook is never
+   exposed as UI.
+
+   The corollary, and the one that keeps getting re-broken: **out on the
+   shop floor a bench has no controls at all** (`Machine.hasFloorControls`).
+   The floor's machine vocabulary — pick the operation (Q), dial it
+   (Z/X/R), hold to run it (Space) — predates this view, when the bench
+   really was a machine with a control panel. It belongs to direct-feed
+   machines, whose whole interface is the floor, and to the garbage can,
+   which empties where it stands. A bench answers none of it: out there
+   it is a table you set stock on, take stock off, and carry, plus the
+   one door in. Q survives as the bench view's own key, thumbing the
+   blueprint pile with the drawing in front of you.
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,

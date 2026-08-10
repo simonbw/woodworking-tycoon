@@ -319,6 +319,13 @@ describe("selectedBenchPlan", () => {
     );
   });
 
+  it("is null for a glue-up — the clamps decide those, not a plan", () => {
+    assert.strictEqual(
+      selectedBenchPlan(workspaceWith({ selectedOperationId: "glueUpPanel" })),
+      null,
+    );
+  });
+
   it("is the assembly build pulled off the pile", () => {
     assert.strictEqual(
       selectedBenchPlan(workspaceWith({ selectedOperationId: "buildShelf" }))

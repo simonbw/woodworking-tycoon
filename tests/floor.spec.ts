@@ -275,8 +275,8 @@ test.describe("Shop floor", () => {
       const saw = state.machines.find(
         (m: any) => m.machineTypeId === "miterSaw",
       );
-      // Anchored one cell in front: the player's cell is the operator cell
-      expect(saw.position).toEqual([6, 7]);
+      // Anchored two cells in front: the player's cell is the operator cell
+      expect(saw.position).toEqual([6, 6]);
     });
 
     await test.step("lift the placed machine back up from the same spot", async () => {

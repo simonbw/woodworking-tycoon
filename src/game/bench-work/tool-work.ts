@@ -23,7 +23,7 @@ import { BenchPlacement } from "./bench-layout";
  * The interaction kinds that are tool work rather than a plan: the piece
  * and the gesture pick them, and they carry their own parameters out of
  * the gesture (the saw's mark measures the kept length, R swings the
- * miter box). Only assembly builds are chosen from the blueprint pile.
+ * miter box). Only assembly builds are pulled off the blueprint pile.
  */
 const TOOL_WORK_KINDS = ["pry", "stroke", "saw", "glue"];
 
@@ -33,11 +33,11 @@ export function isToolWork(operation: Operation): boolean {
 }
 
 /**
- * The plan a bench currently has pulled off its blueprint pile, or null.
+ * The plan a bench has pulled off its blueprint pile, or null.
  * `selectedOperationId` doubles as the record of the last tool work
  * claimed (operateMachineAction writes it), so it only names a plan when
  * it names an assembly build — a bench that just crosscut a board has no
- * plan out, whatever the id says. Old saves may carry a stale one.
+ * drawing out, whatever the id says. Old saves may carry a stale one.
  */
 export function selectedBenchPlan(machine: Machine): Operation | null {
   const selected = machine.selectedOperationOrNull;

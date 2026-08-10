@@ -2,8 +2,10 @@ import React, { useRef } from "react";
 import {
   defaultParametersFor,
   getMachines,
+  hasFloorControls,
   isSameMachine,
 } from "../../game/Machine";
+import { isToolWork, selectedBenchPlan } from "../../game/bench-work/tool-work";
 import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
@@ -92,6 +94,22 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // until the work is off the machine.
   const stationWorking =
     targetedMachine?.operationProgress.status === "inProgress";
+
+  // The work keys — pick the plan (Q), dial it (Z/X/R), run it (Space).
+  // A station worked from the floor answers them where it stands. A bench
+  // doesn't: its work lives behind Tab, so out here the keys stand down
+  // and only come back once the player has leaned in and the drawing and
+  // the bench top are actually in front of them. Q and Z/X are the bench
+  // view's own keys while it's open (BlueprintCorner draws their chips);
+  // Space never returns at all — there is no held-Space path for hand
+  // work, in the view or out of it (docs/bench-work.md).
+  const leanedIn =
+    sheetMachine != null &&
+    targetedMachine != null &&
+    isSameMachine(sheetMachine.state, targetedMachine.state);
+  const floorControls =
+    targetedMachine != null && hasFloorControls(targetedMachine.type);
+  const settingKeysLive = floorControls || leanedIn;
 
   // Movement is deliberately absent here: walking is continuous (held
   // keys, not presses) and lives in HeldMovementListener + PlayerMotionLayer.
@@ -318,47 +336,38 @@ export const ShopKeyboardShortcuts: React.FC = () => {
       if (heldTool(gameState.current) !== null) return;
       const machine = targeted.current;
       if (!machine) return;
-      // Interactive bench plans have no held-Space path — the work is
-      // performed by hand in the bench view (docs/bench-work.md)
-      if (
-        !machine.type.directFeed &&
-        machine.selectedOperationOrNull?.interaction != null
-      ) {
-        return;
-      }
       applyAction(operateMachineAction(machine));
     },
-    present && !carrying,
+    // A bench has no trigger: hand work is performed in the bench view
+    // and commits through its own actions, never through a held key.
+    present && !carrying && floorControls,
   );
 
+  // Q thumbs through the blueprint pile — the keyboard's version of
+  // pulling a drawing off the stack in the corner of the bench view,
+  // which is where its chip is drawn (BlueprintCorner) and the only
+  // place it fires. Direct-feed machines have no mode to cycle: the
+  // stock in hand decides what a feed does.
   useShortcut(
     "cycle-operation",
     (event) => {
       const machine = targeted.current;
-      if (!machine) return;
+      if (!machine || machine.type.directFeed) return;
 
-      // Direct-feed machines have no mode to cycle — the stock in hand
-      // decides what a feed does.
-      if (machine.type.directFeed) return;
-
-      // Cycle only what the spec sheet offers — skill-locked recipes are
-      // hidden there and shouldn't be reachable from the keyboard either,
-      // and tool work isn't a plan (the staged pallet offers its nails,
-      // the held tool its strokes and cuts, on the bench top itself).
+      // The same list the pile shows: skill-locked recipes are hidden
+      // there and shouldn't be reachable from the keyboard either, and
+      // tool work isn't a plan at all (the staged pallet offers its
+      // nails, the held tool its strokes, cuts, and glue beads).
       const operations = availableOperations(
         machine,
         gameState.current.progression,
-      ).filter(
-        (operation) =>
-          !["pry", "stroke", "saw"].includes(operation.interaction?.kind ?? ""),
-      );
+      ).filter((operation) => !isToolWork(operation));
       if (operations.length === 0) return;
 
       // An unset (or no-longer-available) selection cycles in from either
       // end of the list rather than crashing or skipping an entry.
-      const operationIndex = machine.selectedOperationOrNull
-        ? operations.indexOf(machine.selectedOperationOrNull)
-        : -1;
+      const selected = selectedBenchPlan(machine);
+      const operationIndex = selected ? operations.indexOf(selected) : -1;
       const nextOperation =
         operationIndex === -1
           ? operations[event.shiftKey ? operations.length - 1 : 0]
@@ -374,7 +383,7 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         ),
       );
     },
-    present && !stationWorking,
+    present && !stationWorking && settingKeysLive,
   );
 
   // Step one of the machine's settings — the keyboard equivalent of the
@@ -384,9 +393,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   // neither key ever has to disambiguate.
   //
   // On direct-feed machines the setting can belong to any available
-  // operation (what's in hand decides which one runs); at a bench only a
-  // pulled plan's settings are live, and they read out on the drawing in
-  // the bench view rather than on a chip out here (liveSettingParameter).
+  // operation (what's in hand decides which one runs); at a bench only
+  // the pulled plan's, and only with the drawing in front of you — the
+  // scales are printed on it (BlueprintCorner), never on a floor chip.
   //
   // `coarse` is the shift modifier: it jumps the parameter's declared
   // coarseStep detents at once (a foot along the miter saw's inch marks)
@@ -458,19 +467,22 @@ export const ShopKeyboardShortcuts: React.FC = () => {
   useShortcut(
     "setting-down",
     (event) => stepSetting("linear", -1, event.shiftKey),
-    present && !stationWorking,
+    present && !stationWorking && settingKeysLive,
   );
   useShortcut(
     "setting-up",
     (event) => stepSetting("linear", 1, event.shiftKey),
-    present && !stationWorking,
+    present && !stationWorking && settingKeysLive,
   );
   // R is claimed by whichever of its three bindings applies: the carried
   // machine while one rides the shoulders, the head of a machine with a
   // rotate setting to swing, and otherwise rummaging the pile underfoot.
-  // The enabled conditions keep the three mutually exclusive.
+  // The enabled conditions keep the three mutually exclusive — and since
+  // a bench's head is never live out on the floor, R there is always the
+  // pile.
   const rotateSettingLive =
     targetedMachine != null &&
+    settingKeysLive &&
     liveSettingParameter(targetedMachine, _gameState.progression, "rotate") !=
       null;
   const interactNow =

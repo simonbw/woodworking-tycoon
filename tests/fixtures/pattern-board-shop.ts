@@ -82,7 +82,7 @@ export const patternBoardShop: GameState = {
   materialPiles: [],
   player: {
     name: "Player",
-    position: [1, 4], // standing at the workspace (its operation cell is [1, 3])
+    position: [1, 4], // the workspace's operation cell
     direction: 0,
     inventory: [
       stripedBlank,

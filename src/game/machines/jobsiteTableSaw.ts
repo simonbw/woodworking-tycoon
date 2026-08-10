@@ -36,14 +36,12 @@ export const jobsiteTableSaw: MachineType = {
     [1, 0],
   ],
   collisionShapes: GENERATED_COLLISION_SHAPES.jobsiteTableSaw,
-  // Two feet of room to feed from, and the operator stands at the near
-  // one — hands on the stock, against the table's edge.
   freeCellsNeeded: [
     [0, 1],
     [0, 2],
     [0, -2],
   ],
-  operationPosition: [0, 1],
+  operationPosition: [0, 2],
   outputPosition: [0, -2],
   cost: 300,
   materialStorage: 0,

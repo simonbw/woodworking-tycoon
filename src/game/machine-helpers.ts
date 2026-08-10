@@ -689,14 +689,15 @@ function operationsForStagedStock(
  * The machine's live setting of the given kind — the one Z/X ("linear")
  * or R ("rotate") steps. On direct-feed machines the setting can belong
  * to any available operation (what's in hand decides which one runs); at
- * a bench only the plan pulled off the blueprint pile has settings, and
- * they read out on the drawing itself (BlueprintCorner). Tool work never
- * does: the gesture carries its own parameters — the hand saw's mark
- * measures the kept length and R swings the miter box inside the bench
- * view — so a dial out on the shop floor would be a second, stale copy
- * of a setting the bench view re-decides. `undefined` when the key would
- * have nothing to step, which is also how R decides whether it swings a
- * head or rummages the pile underfoot.
+ * a bench only the plan pulled off the blueprint pile, whose scales are
+ * drawn on the drawing itself (BlueprintCorner) — and only from inside
+ * the bench view, since a bench has no controls out on the floor at all
+ * (Machine.hasFloorControls). Tool work never has a live setting: the
+ * gesture carries its own parameters, so the hand saw's kept length is
+ * the mark you make, not a dial you leave set.
+ *
+ * `undefined` when the key would have nothing to step, which is also how
+ * R decides whether it swings a head or rummages the pile underfoot.
  */
 export function liveSettingParameter(
   machine: Machine,

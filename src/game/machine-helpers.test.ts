@@ -576,8 +576,8 @@ describe("liveSettingParameter at a bench", () => {
 
   it("leaves the hand saw's dials to the bench view", () => {
     // The saw carries angle/cutEnd/targetLength, but the mark measures
-    // the cut and R swings the miter box inside the bench view — a scale
-    // out on the floor would be a stale second copy (docs/bench-work.md).
+    // the cut and R swings the miter box inside the view — a dial for
+    // them anywhere else is a stale second copy (docs/bench-work.md).
     const sawing = bench({
       tools: ["handSaw"],
       selectedOperationId: "handSawCut",
@@ -592,7 +592,7 @@ describe("liveSettingParameter at a bench", () => {
     );
   });
 
-  it("has nothing to step with no plan pulled", () => {
+  it("has nothing to step with no drawing pulled", () => {
     assert.strictEqual(
       liveSettingParameter(bench({}), progression, "linear"),
       undefined,
