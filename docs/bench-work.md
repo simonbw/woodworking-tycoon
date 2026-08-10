@@ -205,14 +205,24 @@ is the pallet instance transforming nail by nail:
 - Each face only presents its own side's nail heads. The pallet is a
   piece like any other — it drags, R turns it, F flips it — and flipping
   it over is how the bottom boards' nails come on offer.
-- Z-order is physical: a freed board lying untouched on its berth keeps
-  its place inside the pallet's layer stack, and only moved pieces ride
-  on top. E takes the piece under the pointer, not the first in the bay.
+- Z-order is physical: freed boards are loose stock riding on top of
+  the pallet, and a board dragged back onto its berth re-enters the
+  pallet's layer sandwich (`berthLayerOf` — a stringer slid home lies
+  under the deck again). E takes the piece under the pointer, not the
+  first in the bay.
 - Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
   consumables (flying to the supplies tally — `flyToSupply`).
 - A board comes free the moment its _last_ nail comes out — never
-  before — and stays lying on the bench where it was nailed. Mid-job you
-  hold a genuinely half-stripped pallet plus loose boards, all real
+  before — and is tossed onto the pile in the bench's back-left corner
+  (`palletStackPlacement`), deck boards at the very back with the
+  stringers in a lane in front: stripping sorts as it goes, the pile is
+  clear of the hands, and the pallet visibly empties instead of its
+  freed boards burying the nails still to pull. The pile is anchored to
+  the _bench_, never the pallet — the anchor holds still when the
+  pallet is dragged or turned mid-dismantle. The commit writes the
+  landing spot; the walk from the berth is the bench view's entrance
+  tween (`BenchScene`), skipped under reduced motion. Mid-job you hold
+  a genuinely half-stripped pallet plus a pile of boards, all real
   state: refresh mid-dismantle and you resume at the exact nail you
   left, not because mini-game state was saved, but because every pull
   _was_ game state.

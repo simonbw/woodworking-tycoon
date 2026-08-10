@@ -15,6 +15,7 @@ import {
 import {
   berthPlacementOnBench,
   defaultBenchPlacement,
+  palletStackPlacement,
 } from "../bench-work/bench-layout";
 import {
   initialPalletNails,
@@ -316,46 +317,77 @@ describe("pryPalletNailAction targeting", () => {
     assert.strictEqual(state.consumables.nails, 33);
   });
 
-  it("seats the freed board on its berth in the bench layout", () => {
-    let state = stateWith({ machines: [palletOnBench()] });
+  /** Pull every nail holding one deck board, freeing it. */
+  function freeDeckBoard(state: GameState, deck: number): GameState {
     for (const stringer of [0, 1, 2]) {
       state = pryPalletNailAction(getMachines(state.machines)[0], {
-        deck: 6,
+        deck,
         stringer,
       })(state);
     }
+    return state;
+  }
+
+  it("tosses the freed board onto the pile in the back-left corner", () => {
+    let state = stateWith({ machines: [palletOnBench()] });
+    state = freeDeckBoard(state, 6);
     const freed = state.machines[0].inputMaterials.at(-1)!;
     // The id is the slot's — the very board the pallet was drawing
     assert.strictEqual(freed.id, "test-pallet:deck-6");
     const placement = state.machines[0].benchLayout?.[freed.id];
     assert.ok(placement);
-    const pallet = state.machines[0].inputMaterials[0];
-    const expected = berthPlacementOnBench(
-      defaultBenchPlacement(MACHINE_TYPES.workspace, pallet as never),
+    assert.deepStrictEqual(
+      placement,
+      palletStackPlacement(
+        MACHINE_TYPES.workspace,
+        { kind: "deck", index: 6 },
+        freed.id,
+      ),
+    );
+    // Not left lying in the pallet's footprint, which is where it was
+    // nailed: the pallet is centered on the 40×30 top, the pile isn't
+    const berth = berthPlacementOnBench(
+      defaultBenchPlacement(
+        MACHINE_TYPES.workspace,
+        state.machines[0].inputMaterials[0] as never,
+      ),
       palletBoardSlot({ kind: "deck", index: 6 }),
     );
-    assert.deepStrictEqual(placement, expected);
+    assert.ok(
+      Math.hypot(placement.xIn - berth.xIn, placement.yIn - berth.yIn) > 8,
+    );
   });
 
-  it("the berth rides the pallet's own arrangement", () => {
-    // The player dragged and quarter-turned the pallet before prying
+  it("piles every board of a kind in the same corner", () => {
+    let state = stateWith({ machines: [palletOnBench()] });
+    state = freeDeckBoard(state, 5);
+    state = freeDeckBoard(state, 6);
+    const layout = state.machines[0].benchLayout!;
+    const first = layout["test-pallet:deck-5"];
+    const second = layout["test-pallet:deck-6"];
+    // Both on the pile — a hand's width apart at most, never stacked
+    // pixel-perfect
+    const apart = Math.hypot(first.xIn - second.xIn, first.yIn - second.yIn);
+    assert.ok(apart > 0, "boards land with their own slop, not identically");
+    assert.ok(apart < 2.5, `boards land on the same pile (${apart}" apart)`);
+  });
+
+  it("the pile stays put when the pallet is dragged aside", () => {
+    // The player dragged and quarter-turned the pallet before prying.
+    // The berth moves with it; the pile is the bench's corner, not the
+    // pallet's — or a dismantle interrupted by a shove would scatter.
     const moved = { xIn: 30, yIn: 20, angleDeg: 90, flipped: false };
     let state = stateWith({
       machines: [{ ...palletOnBench(), benchLayout: { "test-pallet": moved } }],
     });
-    for (const stringer of [0, 1, 2]) {
-      state = pryPalletNailAction(getMachines(state.machines)[0], {
-        deck: 6,
-        stringer,
-      })(state);
-    }
+    state = freeDeckBoard(state, 6);
     const placement = state.machines[0].benchLayout?.["test-pallet:deck-6"];
-    assert.ok(placement);
+    let untouched = stateWith({ machines: [palletOnBench()] });
+    untouched = freeDeckBoard(untouched, 6);
     assert.deepStrictEqual(
       placement,
-      berthPlacementOnBench(moved, palletBoardSlot({ kind: "deck", index: 6 })),
+      untouched.machines[0].benchLayout?.["test-pallet:deck-6"],
     );
-    assert.strictEqual(placement.angleDeg, 90);
   });
 });
 

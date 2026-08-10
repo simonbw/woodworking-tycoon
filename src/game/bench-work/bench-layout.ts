@@ -3,7 +3,15 @@ import type { Machine, MachineType } from "../Machine";
 import { MaterialInstance } from "../Materials";
 import { INCHES_PER_CELL } from "../shop-scale";
 import { productBlueprintFor } from "./blueprint";
-import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
+import {
+  DECK_BOARD_LENGTH_IN,
+  DECK_BOARD_WIDTH_IN,
+  PalletBoardRef,
+  PALLET_HEIGHT_IN,
+  PALLET_WIDTH_IN,
+  STRINGER_LENGTH_IN,
+  STRINGER_WIDTH_IN,
+} from "./pallet-geometry";
 
 /**
  * Where the bench's loose stock lies on the bench top — real, persistent
@@ -85,6 +93,51 @@ export function defaultBenchPlacement(
     yIn: heightIn * (0.5 + rng() * 0.4),
     // Lying across the bench, a few degrees off true
     angleDeg: 90 + Math.round((rng() * 2 - 1) * 7),
+    flipped: false,
+  };
+}
+
+/** How far a tossed board lands off the pile's true line — a stack
+ * built by hand, an inch either way, never a filing cabinet. */
+const PILE_SLOP_IN = 0.75;
+
+/**
+ * Where a board freed from a pallet is tossed: the pile in the bench's
+ * back-left corner, out of the way of the hands. Boards lie across the
+ * bench, shoved as far back and as far left as the top allows — flush
+ * with the left edge while they fit, centered once they outrun the top
+ * (a 48" stringer on a 40" bench is as far left as it can go already;
+ * pushing further only hangs it in space). Deck boards ride at the very
+ * back with the stringers piled a lane in front, because stripping a
+ * pallet sorts as it goes.
+ *
+ * The pile is anchored to the *bench*, never to the pallet. The anchor
+ * has to hold still across a whole dismantle — drag or turn the pallet
+ * halfway through and a pallet-relative pile would scatter behind it.
+ *
+ * The slop is seeded by the board's id like every other unplaced seat
+ * here, so a board lands in the same spot on every render, every tick,
+ * and both views.
+ */
+export function palletStackPlacement(
+  type: MachineType,
+  target: PalletBoardRef,
+  boardId: string,
+): BenchPlacement {
+  const { widthIn, heightIn } = benchTopSizeIn(type);
+  const stringer = target.kind === "stringer";
+  const lengthIn = stringer ? STRINGER_LENGTH_IN : DECK_BOARD_LENGTH_IN;
+  const laneYIn = stringer
+    ? DECK_BOARD_WIDTH_IN + STRINGER_WIDTH_IN / 2
+    : DECK_BOARD_WIDTH_IN / 2;
+  const rng = seededRandom(`bench-pile-${boardId}`);
+  return {
+    // Half the board in from the left — or the middle of the top, once
+    // the board is longer than the bench is wide
+    xIn: Math.min(lengthIn / 2, widthIn / 2) + (rng() * 2 - 1) * PILE_SLOP_IN,
+    yIn: Math.min(laneYIn, heightIn / 2) + ((rng() * 2 - 1) * PILE_SLOP_IN) / 2,
+    // Lying across the bench, a few degrees off true
+    angleDeg: 90 + Math.round((rng() * 2 - 1) * 4),
     flipped: false,
   };
 }
@@ -182,8 +235,10 @@ export function benchPointOnPallet(
 }
 
 /**
- * Where a board freed from the pallet lies: its berth, carried through
- * the pallet's placement.
+ * Where a board nailed into the pallet lies: its berth, carried through
+ * the pallet's placement. A freed board is tossed onto the pile
+ * (`palletStackPlacement`), so this is the toss's *starting* point —
+ * and the seat a board dragged back onto the pallet re-layers at.
  */
 export function berthPlacementOnBench(
   placement: BenchPlacement,
