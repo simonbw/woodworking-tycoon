@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
+import { array } from "../../utils/arrayUtils";
+import { board, palletBoard } from "../board-helpers";
 import {
   addConsumables,
   hasConsumables,
@@ -38,22 +39,16 @@ function workspaceMachine(overrides: Partial<MachineState>): MachineState {
   };
 }
 
-/** Boards for one rustic shelf: 2 stringers and 3 deck boards. */
+/** Boards for one rustic shelf: six whole pallet boards. */
 function shelfBoards() {
-  return [
-    board("pallet", 48, 6, 6),
-    board("pallet", 48, 6, 6),
-    board("pallet", 36, 4, 2),
-    board("pallet", 36, 4, 2),
-    board("pallet", 36, 4, 2),
-  ];
+  return array(6).map(palletBoard);
 }
 
 /** A pallet with a single deck board left, so dismantling finishes it. */
 function nearlyDismantledPallet(): Pallet {
   const deckBoards = [
     true,
-    ...(Array(10).fill(false) as boolean[]),
+    ...(Array(7).fill(false) as boolean[]),
   ] as Pallet["deckBoards"];
   return makeMaterial<Pallet>({
     type: "pallet",
@@ -164,7 +159,7 @@ describe("operations that consume supplies", () => {
       machineCanOperate(getMachines(state.machines)[0], shopSupply(state)),
     );
     const result = operateMachineAction(getMachines(state.machines)[0])(state);
-    assert.strictEqual(result.consumables.nails, 4);
+    assert.strictEqual(result.consumables.nails, 2);
     assert.strictEqual(
       result.machines[0].operationProgress.status,
       "inProgress",

@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
+import { board, palletBoard } from "../board-helpers";
 import { assemblyFramePlacement, slotOnBench } from "../bench-work/assembly";
 import { benchTopSizeIn } from "../bench-work/bench-layout";
 import { RUSTIC_SHELF_BLUEPRINT } from "../bench-work/blueprint";
@@ -441,18 +441,10 @@ describe("dropMaterialAction", () => {
 
 describe("the blueprint assembly's claim", () => {
   it("consumes the seated boards, leaving spare matching stock on the bench", () => {
-    const stringer = () => board("pallet", 48, 6, 6);
-    const deckBoard = () => board("pallet", 36, 4, 2);
     // The spares come first in the bay: a first-match claim would take
     // them and leave the seated boards lying under the finished shelf
-    const spares = [stringer(), deckBoard()];
-    const seatedPieces = [
-      stringer(),
-      stringer(),
-      deckBoard(),
-      deckBoard(),
-      deckBoard(),
-    ];
+    const spares = [palletBoard(), palletBoard()];
+    const seatedPieces = RUSTIC_SHELF_BLUEPRINT.slots.map(palletBoard);
     const base: MachineState = {
       machineTypeId: "workspace",
       position: [4, 2],
@@ -487,7 +479,7 @@ describe("the blueprint assembly's claim", () => {
     const state: GameState = {
       ...initialGameState,
       machines: [bench],
-      consumables: { ...initialGameState.consumables, nails: 6 },
+      consumables: { ...initialGameState.consumables, nails: 8 },
     };
     const result = operateMachineAction(new Machine(bench))(state);
     assert.strictEqual(
@@ -505,13 +497,18 @@ describe("the blueprint assembly's claim", () => {
   });
 
   it("builds with a half-seated frame — an empty slot can't take a seated board", () => {
-    // Only the second stringer slot is seated, and its board sits first
+    // Only the second support slot is seated, and its board sits first
     // in the bay. Filling the slots in one pass would hand that board to
     // the empty first slot, leaving the seated slot with nothing.
-    const stringer = () => board("pallet", 48, 6, 6);
-    const deckBoard = () => board("pallet", 36, 4, 2);
-    const seatedStringer = stringer();
-    const loose = [stringer(), deckBoard(), deckBoard(), deckBoard()];
+    // Six whole pallet boards build the shelf — one seated, five loose.
+    const seatedSupport = palletBoard();
+    const loose = [
+      palletBoard(),
+      palletBoard(),
+      palletBoard(),
+      palletBoard(),
+      palletBoard(),
+    ];
     const base: MachineState = {
       machineTypeId: "workspace",
       position: [4, 2],
@@ -523,7 +520,7 @@ describe("the blueprint assembly's claim", () => {
         phaseIndex: 0,
         ticksRemaining: 0,
       },
-      inputMaterials: [seatedStringer, ...loose],
+      inputMaterials: [seatedSupport, ...loose],
       processingMaterials: [],
       outputMaterials: [],
       tools: ["hammer"],
@@ -535,7 +532,7 @@ describe("the blueprint assembly's claim", () => {
     const bench: MachineState = {
       ...base,
       benchLayout: {
-        [seatedStringer.id]: {
+        [seatedSupport.id]: {
           ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, frame, secondSlot),
           onEdge: secondSlot.onEdge,
         },
@@ -544,7 +541,7 @@ describe("the blueprint assembly's claim", () => {
     const state: GameState = {
       ...initialGameState,
       machines: [bench],
-      consumables: { ...initialGameState.consumables, nails: 6 },
+      consumables: { ...initialGameState.consumables, nails: 8 },
     };
     const result = operateMachineAction(new Machine(bench))(state);
     assert.strictEqual(
@@ -553,7 +550,7 @@ describe("the blueprint assembly's claim", () => {
     );
     assert.deepStrictEqual(
       result.machines[0].processingMaterials.map((m) => m.id).sort(),
-      [seatedStringer, ...loose].map((m) => m.id).sort(),
+      [seatedSupport, ...loose].map((m) => m.id).sort(),
     );
   });
 });

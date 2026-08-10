@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
+import { array } from "../../utils/arrayUtils";
+import { board, palletBoard } from "../board-helpers";
 import { GameState } from "../GameState";
 import { getMachines, MachineState } from "../Machine";
 import { GLUE_CURE_TICKS } from "../machines/workspace";
@@ -201,13 +202,7 @@ describe("finishAttendedWorkAction", () => {
   });
 
   it("assembly's paired commit spends the fasteners and yields the build", () => {
-    const shelfBoards = [
-      board("pallet", 48, 6, 6),
-      board("pallet", 48, 6, 6),
-      board("pallet", 36, 4, 2),
-      board("pallet", 36, 4, 2),
-      board("pallet", 36, 4, 2),
-    ];
+    const shelfBoards = array(6).map(palletBoard);
     const machine = workspaceMachine({
       tools: ["hammer"],
       selectedOperationId: "buildRusticPalletShelf",
@@ -225,7 +220,7 @@ describe("finishAttendedWorkAction", () => {
       },
     });
     state = operateMachineAction(getMachines(state.machines)[0])(state);
-    assert.strictEqual(state.consumables.nails, 4);
+    assert.strictEqual(state.consumables.nails, 2);
     state = finishAttendedWorkAction(getMachines(state.machines)[0])(state);
     assert.strictEqual(state.machines[0].outputMaterials.length, 1);
     const product = state.machines[0].outputMaterials[0];
@@ -234,7 +229,7 @@ describe("finishAttendedWorkAction", () => {
     // in, their ids as grain seeds (see bench-work/blueprint.ts)
     assert.strictEqual(
       (product as { parts?: readonly { seed: string }[] }).parts?.length,
-      5,
+      6,
     );
     assert.strictEqual(
       (product as { parts: readonly { seed: string }[] }).parts[0].seed,
@@ -252,9 +247,9 @@ describe("pryPalletNailAction targeting", () => {
         {
           id: "test-pallet",
           type: "pallet" as const,
-          deckBoards: Array(11).fill(true) as never,
+          deckBoards: Array(8).fill(true) as never,
           stringers: [true, true, true] as never,
-          nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
+          nails: initialPalletNails(Array(8).fill(true), [true, true, true]),
         },
       ],
     });
@@ -268,7 +263,7 @@ describe("pryPalletNailAction targeting", () => {
     })(state);
     const pallet = result.machines[0].inputMaterials[0];
     assert.ok(pallet.type === "pallet");
-    assert.strictEqual(pallet.nails.length, 32);
+    assert.strictEqual(pallet.nails.length, 23);
     assert.ok(!pallet.nails.some((n) => n.deck === 2 && n.stringer === 1));
     // Two nails still hold deck board 2; nothing came free
     assert.strictEqual(pallet.deckBoards[2], true);
@@ -288,7 +283,7 @@ describe("pryPalletNailAction targeting", () => {
     const pallet = state.machines[0].inputMaterials[0];
     assert.ok(pallet.type === "pallet");
     assert.strictEqual(pallet.deckBoards[6], false);
-    assert.strictEqual(pallet.deckBoards[10], true);
+    assert.strictEqual(pallet.deckBoards[7], true);
     // The freed board stays lying on the bench, not in an output bay
     const freed = state.machines[0].inputMaterials.at(-1)!;
     assert.ok(freed.type === "board" && freed.width === 4);
@@ -308,13 +303,13 @@ describe("pryPalletNailAction targeting", () => {
         break;
       state = pryPalletNailAction(machine(), pallet.nails[0])(state);
     }
-    // 33 pulls: the pallet is gone, all 14 boards lie on the bench
+    // 24 pulls: the pallet is gone, all 11 boards lie on the bench
     assert.ok(!machine().inputMaterials.some((m) => m.type === "pallet"));
     assert.strictEqual(
       machine().inputMaterials.filter((m) => m.type === "board").length,
-      14,
+      11,
     );
-    assert.strictEqual(state.consumables.nails, 33);
+    assert.strictEqual(state.consumables.nails, 24);
   });
 
   /** Pull every nail holding one deck board, freeing it. */

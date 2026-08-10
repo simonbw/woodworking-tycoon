@@ -162,9 +162,9 @@ function speciesRequest(
 
 /**
  * Everything here must stay producible from the capabilities its
- * `available` predicate checks — the pallet chain yields 3×4×1 deck boards
- * and 4×6×3 stringers, the miter saw cuts length, the table saw rips
- * width, sanders raise surface, the planer reduces thickness, and the
+ * `available` predicate checks — the pallet chain yields one board and
+ * one only (36" × 4" × 4/4, rough), the miter saw cuts length, the table
+ * saw rips width, sanders raise surface, the planer reduces thickness, and the
  * bench recipes assemble the products (see benchOperations.ts and the
  * hammer/drill tool recipes).
  */

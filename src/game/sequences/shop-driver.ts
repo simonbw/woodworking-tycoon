@@ -916,7 +916,7 @@ export class ShopDriver {
    * Take the truck out scavenging, work the given number of stops, and
    * pull back into the shop with the haul ferried out of the bed onto
    * the dropoff spot. The circuit is rolled up front from the rng; the
-   * default finds a pallet with all eleven deck boards and solid
+   * default finds a pallet with all eight deck boards and solid
    * stringers at each stop searched, so sequences can count on the wood
    * — two stops means two pristine pallets, and the errand costs only
    * the searching: half an hour a stop, nothing for the drive back.
@@ -1518,17 +1518,17 @@ export class ShopDriver {
 
 /**
  * The default scavenging rng: a scripted roll tape that finds a pallet
- * with all eleven deck boards and solid stringers at each of the first
+ * with all eight deck boards and solid stringers at each of the first
  * `finds` stops and nothing after. Written against the roll order in
  * rollScavengeStops — per stop, one find roll, then (on a find) the deck
- * count, ten shuffle rolls, and the stringers.
+ * count, seven shuffle rolls, and the stringers.
  */
 function pristineFindsRng(finds: number): () => number {
   const tape: number[] = [];
   for (let stop = 0; stop < SCAVENGE_STOP_NAMES.length; stop++) {
     if (stop < finds) {
-      // find, deck count (6 + floor(0.99 * 6) = 11), shuffle, stringers
-      tape.push(0, 0.99, ...Array<number>(10).fill(0.5), 0.9);
+      // find, deck count (5 + floor(0.99 * 4) = 8), shuffle, stringers
+      tape.push(0, 0.99, ...Array<number>(7).fill(0.5), 0.9);
     } else {
       tape.push(0.9);
     }

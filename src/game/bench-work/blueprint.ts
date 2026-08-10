@@ -27,6 +27,11 @@ import {
 } from "../board-helpers";
 import { makeMaterial, materialMeetsInput } from "../material-helpers";
 import { isPanel } from "../panel-helpers";
+import {
+  PALLET_BOARD_LENGTH_IN,
+  PALLET_BOARD_THICKNESS_Q,
+  PALLET_BOARD_WIDTH_IN,
+} from "./pallet-geometry";
 
 /**
  * Product blueprints: the single authored artifact behind an assembled
@@ -334,7 +339,7 @@ function deriveFasteners(
       const y0 = Math.max(a.y0, b.y0);
       const x1 = Math.min(a.x1, b.x1);
       const y1 = Math.min(a.y1, b.y1);
-      // The bite required per axis relaxes for thin parts: a deck board
+      // The bite required per axis relaxes for thin parts: a pallet slat
       // crossing a rail stood on edge covers the rail's whole 3/4"
       // thickness, and full contact is all the bite there is to have.
       const needX = Math.min(
@@ -385,49 +390,75 @@ function makeBlueprint(spec: {
   };
 }
 
+/** A whole pallet board, straight off the pry bar — the stock the shop's
+ * free work is built from, uncut. */
+const PALLET_BOARD_STOCK: InputMaterialWithQuantity<Board> = {
+  type: ["board"],
+  species: ["pallet"],
+  width: [PALLET_BOARD_WIDTH_IN],
+  length: [PALLET_BOARD_LENGTH_IN],
+  thickness: [PALLET_BOARD_THICKNESS_Q],
+  quantity: 1,
+};
+
+const PALLET_BOARD_PART = {
+  widthIn: PALLET_BOARD_WIDTH_IN,
+  lengthIn: PALLET_BOARD_LENGTH_IN,
+  thicknessQ: PALLET_BOARD_THICKNESS_Q,
+} as const;
+
+/** Where the two shelves sit, in inches down from the top of the unit. */
+const RUSTIC_SHELF_HEIGHTS_IN = [12, 30];
+
 /**
- * The rustic shelf, grounded: a pallet-wood slatted shelf, drawn from
- * above the way it's built. Two stringers stand on edge as rails — the
- * joists the whole thing hangs on — and three deck boards lie flat
- * across their top edges as slats, nailed at every crossing: six nails,
- * straight out of the pallet they came from.
+ * The rustic shelf: six whole pallet boards and nothing else — no cuts,
+ * so it's the build a shop with a hammer and a scavenged pallet can do
+ * on its first morning. Drawn as a front elevation, the unit lying on
+ * its back on the bench.
+ *
+ * Two sides stand on edge at either end, running the full height. Each
+ * shelf is a pair: a support board lying flat against the bench (the
+ * unit's back, where it takes the load) with the shelf board itself
+ * stood on edge along its front. Every nail is driven from outside a
+ * side, through it and into the end of a shelf board or a support —
+ * eight in all, two per side per shelf.
  */
 export const RUSTIC_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
   productType: "rusticShelf",
-  widthIn: 48,
+  widthIn: 36,
   heightIn: 36,
   fastenerConsumable: "nails",
   slots: [
-    ...[6, 30].map((yIn) => ({
-      role: "rail",
-      requirement: {
-        type: ["board"],
-        species: ["pallet"],
-        width: [6],
-        length: [48],
-        quantity: 1,
-      } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthIn: 48, thicknessQ: 6 } as const,
-      xIn: 24,
-      yIn,
+    // Backs first: the flat boards go down on the bench, then the sides
+    // stand on edge across their ends, then the shelves drop in.
+    ...RUSTIC_SHELF_HEIGHTS_IN.map((shelfYIn) => ({
+      role: "support",
+      requirement: PALLET_BOARD_STOCK,
+      part: PALLET_BOARD_PART,
+      xIn: 18,
+      yIn: shelfYIn + 2.5,
       angleDeg: 90,
       layer: 0,
-      onEdge: true,
     })),
-    ...[8, 24, 40].map((xIn) => ({
-      role: "shelf",
-      requirement: {
-        type: ["board"],
-        species: ["pallet"],
-        width: [4],
-        length: [36],
-        quantity: 1,
-      } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 36, thicknessQ: 2 } as const,
+    ...[0.5, 35.5].map((xIn) => ({
+      role: "side",
+      requirement: PALLET_BOARD_STOCK,
+      part: PALLET_BOARD_PART,
       xIn,
       yIn: 18,
       angleDeg: 0,
       layer: 1,
+      onEdge: true,
+    })),
+    ...RUSTIC_SHELF_HEIGHTS_IN.map((shelfYIn) => ({
+      role: "shelf",
+      requirement: PALLET_BOARD_STOCK,
+      part: PALLET_BOARD_PART,
+      xIn: 18,
+      yIn: shelfYIn,
+      angleDeg: 90,
+      layer: 2,
+      onEdge: true,
     })),
   ],
 });
@@ -478,7 +509,7 @@ function boxSlots(spec: {
 
 /**
  * The crate: a 3-foot pallet-wood box — a properly slatted bottom (six
- * slats edge to edge, 2" drainage gaps) and four whole deck boards
+ * slats edge to edge, 2" drainage gaps) and four whole pallet boards
  * stood on edge as walls, nailed at the four lapped corners and where
  * each slat crosses the lower walls. Sixteen nails, all derived.
  */
@@ -495,10 +526,10 @@ export const CRATE_BLUEPRINT: ProductBlueprint = makeBlueprint({
       type: ["board"],
       width: [4],
       length: [36],
-      thickness: [2],
+      thickness: [4],
       quantity: 1,
     } as InputMaterialWithQuantity<Board>,
-    part: { widthIn: 4, lengthIn: 36, thicknessQ: 2 } as const,
+    part: { widthIn: 4, lengthIn: 36, thicknessQ: 4 } as const,
   }),
 });
 
@@ -522,17 +553,17 @@ export const PLANTER_BOX_BLUEPRINT: ProductBlueprint = makeBlueprint({
       species: ["pallet"],
       width: [4],
       length: [24],
-      thickness: [2],
+      thickness: [4],
       quantity: 1,
     } as InputMaterialWithQuantity<Board>,
-    part: { widthIn: 4, lengthIn: 24, thicknessQ: 2 } as const,
+    part: { widthIn: 4, lengthIn: 24, thicknessQ: 4 } as const,
   }),
 });
 
 /**
  * The step stool: the rustic shelf's shape holding a person instead of
- * paint cans — two stout sides stand on edge (crosscut stringers or
- * thick hardwood), two treads lie flat across them, the top tread up
+ * paint cans — two stout sides stand on edge (thick hardwood, 6/4 or
+ * heavier), two treads lie flat across them, the top tread up
  * top and the step at half height. Screwed, not nailed: a joint that
  * takes a boot every day works loose around a nail.
  */
@@ -633,10 +664,10 @@ export const BOOKSHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
  * build lies on its back, so the plan you assemble on is the face you'd
  * see on the fence post. Two tall front boards stand side by side with a
  * 1" slit between them (the entrance — no drill bit needed), each with
- * its top end mitered at the 45° stop so the roof seats flush. The roof
- * is a stringer crosscut laid flat over the slope, overhanging both
- * sides; the floor is a deck crosscut on edge, running long as a landing
- * perch; two short side walls stop below the roofline, and the gaps they
+ * its top end mitered at the 45° stop so the roof seats flush. Every
+ * part is a crosscut of the same pallet board — the roof lies flat over
+ * the slope, overhanging both sides; the floor stands on edge, running
+ * long as a landing perch; two short side walls stop below the roofline, and the gaps they
  * leave are the ventilation. No back wall — it hangs against a post,
  * which is the fourth wall. Six nails, all derived: each front board
  * takes one into a side, one through the floor, and one down from the
@@ -657,13 +688,13 @@ export const BIRDHOUSE_BLUEPRINT: ProductBlueprint = makeBlueprint({
         type: ["board"],
         width: [4],
         length: [12],
-        thickness: [2],
+        thickness: [4],
         matches: (material: MaterialInstance) =>
           isBoard(material) && hasOneMiteredEnd(material, 45),
         matchesNote: "one end mitered 45°",
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
+      part: { widthIn: 4, lengthIn: 12, thicknessQ: 4 } as const,
       xIn,
       yIn: 10,
       angleDeg: 0,
@@ -673,27 +704,29 @@ export const BIRDHOUSE_BLUEPRINT: ProductBlueprint = makeBlueprint({
       role: "roof",
       requirement: {
         type: ["board"],
-        width: [6],
+        width: [4],
         length: [12],
-        thickness: [6],
+        thickness: [4],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 6, lengthIn: 12, thicknessQ: 6 } as const,
+      part: { widthIn: 4, lengthIn: 12, thicknessQ: 4 } as const,
       xIn: 7.5,
       yIn: 3.5,
       angleDeg: 90,
       layer: 2,
     },
-    ...[3.25, 11.75].map((xIn) => ({
+    // Pulled a quarter-inch in from the front boards' outer edges, so the
+    // thicker 4/4 stock laps them fully instead of grazing.
+    ...[3.5, 11.5].map((xIn) => ({
       role: "side",
       requirement: {
         type: ["board"],
         width: [4],
         length: [6],
-        thickness: [2],
+        thickness: [4],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 6, thicknessQ: 2 } as const,
+      part: { widthIn: 4, lengthIn: 6, thicknessQ: 4 } as const,
       xIn,
       yIn: 13,
       angleDeg: 0,
@@ -706,12 +739,12 @@ export const BIRDHOUSE_BLUEPRINT: ProductBlueprint = makeBlueprint({
         type: ["board"],
         width: [4],
         length: [12],
-        thickness: [2],
+        thickness: [4],
         quantity: 1,
       } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
+      part: { widthIn: 4, lengthIn: 12, thicknessQ: 4 } as const,
       xIn: 7.5,
-      yIn: 15.75,
+      yIn: 15.5,
       angleDeg: 90,
       layer: 0,
       onEdge: true,
@@ -756,7 +789,7 @@ const RUSTIC_FRAME_LONG_RAIL: InputMaterialWithQuantity<Board> = {
   species: ["pallet"],
   length: [24],
   width: [2],
-  thickness: [2],
+  thickness: [4],
   surface: ["sanded"],
   quantity: 1,
   matches: (material: MaterialInstance) =>
@@ -772,7 +805,7 @@ const RUSTIC_FRAME_SHORT_RAIL: InputMaterialWithQuantity<Board> = {
 /**
  * The rustic frame: the shop's first mitered work, and the build that
  * makes the starter shop hang together — the miter saw swings the 45s,
- * the table saw rips the deck board to 2", and the sanding block takes
+ * the table saw rips the pallet board to 2", and the sanding block takes
  * it the last grade. Four rails around an open middle at 12" × 24",
  * long pair down the sides on layer 0 and short pair lapping over them,
  * so each 2" × 2" corner earns one nail.
@@ -796,7 +829,7 @@ export const RUSTIC_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
       part: {
         widthIn: 2,
         lengthIn: 24,
-        thicknessQ: 2,
+        thicknessQ: 4,
         ends: FRAME_RAIL_ENDS,
       } as const,
       xIn,
@@ -814,7 +847,7 @@ export const RUSTIC_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
       part: {
         widthIn: 2,
         lengthIn: 12,
-        thicknessQ: 2,
+        thicknessQ: 4,
         ends: FRAME_RAIL_ENDS,
       } as const,
       xIn: 6,
@@ -887,8 +920,8 @@ export const PICTURE_FRAME_BLUEPRINT: ProductBlueprint = makeBlueprint({
 // underside — so layer 0 is the show face against the bench, and the
 // last layer is what faces up while you work.
 
-/** Leg-grade stock, straight out of the legacy recipes: stringers and
- * 2×4s qualify; deck boards are too thin. */
+/** Leg-grade stock: 2×4s and heavier. Pallet wood is 4/4 and doesn't
+ * qualify — a bench stands on bought lumber, the way a real one does. */
 const LEG_STOCK: InputMaterialWithQuantity<Board> = {
   type: ["board"],
   thickness: [6, 8],
@@ -1098,12 +1131,12 @@ export const MATERIAL_SHELF_BLUEPRINT: ProductBlueprint = makeBlueprint({
  * jig's own size — none of them is a whole sheet's worth of anything. */
 const JIG_BOARD_REQUIREMENT: InputMaterialWithQuantity<Board> = {
   type: ["board"],
-  width: [4],
-  length: [36],
-  thickness: [2],
+  width: [PALLET_BOARD_WIDTH_IN],
+  length: [PALLET_BOARD_LENGTH_IN],
+  thickness: [PALLET_BOARD_THICKNESS_Q],
   quantity: 1,
 };
-const JIG_BOARD_PART = { widthIn: 4, lengthIn: 36, thicknessQ: 2 } as const;
+const JIG_BOARD_PART = PALLET_BOARD_PART;
 
 /**
  * The crosscut sled, face-down: the miter-slot runner against the bench,

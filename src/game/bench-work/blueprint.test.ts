@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { array } from "../../utils/arrayUtils";
-import { board } from "../board-helpers";
+import { board, palletBoard } from "../board-helpers";
 import { makeMaterial } from "../material-helpers";
 import { Board, FinishedProduct } from "../Materials";
 import {
@@ -44,15 +44,15 @@ import {
 } from "./assembly";
 import { BenchPlacement } from "./bench-layout";
 
-const stringer = () => board("pallet", 48, 6, 6);
-const deckBoard = () => board("pallet", 36, 4, 2);
-const shelfParts = () => [
-  stringer(),
-  stringer(),
-  deckBoard(),
-  deckBoard(),
-  deckBoard(),
-];
+/** Six identical pallet boards — the shelf's whole bill of materials. */
+const shelfParts = () =>
+  array(RUSTIC_SHELF_BLUEPRINT.slots.length).map(palletBoard);
+
+/** The slots by role, in declaration order: supports flat on the bench,
+ * then the sides on edge, then the shelves on edge. Every slot takes the
+ * same board, so orientation is the only thing that tells them apart. */
+const SUPPORT_SLOT = 0;
+const SHELF_SLOT = 4;
 
 /** The shelf frame centered on a 36×24 bench top. */
 const centered: BenchPlacement = {
@@ -63,7 +63,7 @@ const centered: BenchPlacement = {
 };
 
 /** Every piece lying exactly on its slot — tipped on edge where the
- * slot stands its part on edge (the rails). */
+ * slot stands its part on edge (the sides and shelves). */
 function allSeated(placement: BenchPlacement) {
   const pieces = shelfParts();
   return RUSTIC_SHELF_BLUEPRINT.slots.map((slot, i) => ({
@@ -76,37 +76,55 @@ function allSeated(placement: BenchPlacement) {
 }
 
 describe("the rustic shelf blueprint", () => {
-  it("derives one fastener per rail × shelf crossing", () => {
-    assert.strictEqual(RUSTIC_SHELF_BLUEPRINT.fasteners.length, 6);
-    // Every fastener joins a rail to a shelf — never rail/rail
+  it("nails every shelf and support to both sides — eight, driven from the sides", () => {
+    assert.strictEqual(RUSTIC_SHELF_BLUEPRINT.fasteners.length, 8);
+    // Every nail goes through a side and into the end of something else
     for (const fastener of RUSTIC_SHELF_BLUEPRINT.fasteners) {
-      assert.ok(fastener.joins[0].startsWith("rail-"));
-      assert.ok(fastener.joins[1].startsWith("shelf-"));
+      const [lower, upper] = fastener.joins;
+      assert.strictEqual(
+        [lower, upper].filter((id) => id.startsWith("side-")).length,
+        1,
+      );
+      assert.ok(
+        lower.startsWith("support-") || upper.startsWith("shelf-"),
+        `${lower} → ${upper} joins neither a support nor a shelf`,
+      );
     }
   });
 
-  it("puts the fasteners on the crossings", () => {
+  it("puts the fasteners where the sides meet the ends", () => {
     const spots = RUSTIC_SHELF_BLUEPRINT.fasteners
       .map((f) => `${f.xIn},${f.yIn}`)
       .sort();
     assert.deepStrictEqual(
       spots,
-      ["8,6", "24,6", "40,6", "8,30", "24,30", "40,30"].sort(),
+      [
+        // Each side, at both shelf boards…
+        "0.5,12",
+        "35.5,12",
+        "0.5,30",
+        "35.5,30",
+        // …and at both supports, tucked just under them
+        "0.5,14.5",
+        "35.5,14.5",
+        "0.5,32.5",
+        "35.5,32.5",
+      ].sort(),
     );
   });
 
-  it("derives the recipe's inputs from the slots", () => {
+  it("derives the recipe's inputs from the slots — one stock, six of it", () => {
     const inputs = blueprintInputs(RUSTIC_SHELF_BLUEPRINT);
-    assert.strictEqual(inputs.length, 2);
-    assert.strictEqual(inputs[0].quantity, 2);
-    assert.deepStrictEqual(inputs[0].width, [6]);
-    assert.strictEqual(inputs[1].quantity, 3);
-    assert.deepStrictEqual(inputs[1].width, [4]);
+    assert.strictEqual(inputs.length, 1);
+    assert.strictEqual(inputs[0].quantity, 6);
+    assert.deepStrictEqual(inputs[0].width, [4]);
+    assert.deepStrictEqual(inputs[0].length, [36]);
+    assert.deepStrictEqual(inputs[0].thickness, [4]);
   });
 
   it("bills one nail per fastener", () => {
     assert.deepStrictEqual(blueprintFastenerCost(RUSTIC_SHELF_BLUEPRINT), [
-      { id: "nails", amount: 6 },
+      { id: "nails", amount: 8 },
     ]);
   });
 
@@ -129,7 +147,7 @@ describe("the rustic shelf blueprint", () => {
 });
 
 describe("assembleFromBlueprint", () => {
-  it("matches rails and shelves to their slots and keeps their grain", () => {
+  it("matches the boards to their slots and keeps their grain", () => {
     const materials = shelfParts();
     const matched = matchPartsToSlots(RUSTIC_SHELF_BLUEPRINT, materials);
     assert.strictEqual(matched[0].material, materials[0]);
@@ -138,20 +156,20 @@ describe("assembleFromBlueprint", () => {
     const product = assembleFromBlueprint(RUSTIC_SHELF_BLUEPRINT, materials);
     assert.strictEqual(product.type, "rusticShelf");
     assert.strictEqual(product.species, "pallet");
-    assert.strictEqual(product.parts?.length, 5);
+    assert.strictEqual(product.parts?.length, 6);
     // The consumed board's id IS the part's grain seed
     assert.strictEqual(product.parts?.[0].seed, materials[0].id);
-    assert.strictEqual(product.parts?.[0].slot, "rail-0");
-    assert.strictEqual(product.parts?.[4].slot, "shelf-2");
-    assert.strictEqual(product.parts?.[4].width, 4);
+    assert.strictEqual(product.parts?.[0].slot, "support-0");
+    assert.strictEqual(product.parts?.[5].slot, "shelf-1");
+    assert.strictEqual(product.parts?.[5].width, 4);
   });
 
   it("refuses a load that can't fill every slot", () => {
     assert.throws(() =>
       matchPartsToSlots(RUSTIC_SHELF_BLUEPRINT, [
-        stringer(),
-        stringer(),
-        deckBoard(),
+        palletBoard(),
+        palletBoard(),
+        palletBoard(),
       ]),
     );
   });
@@ -162,9 +180,9 @@ describe("assembleFromBlueprint", () => {
       type: "rusticShelf",
       species: "pallet",
     });
-    assert.strictEqual(parts.length, 5);
-    assert.strictEqual(parts[0].seed, "old-shelf:rail-0");
-    assert.strictEqual(parts[0].thickness, 6);
+    assert.strictEqual(parts.length, 6);
+    assert.strictEqual(parts[0].seed, "old-shelf:support-0");
+    assert.strictEqual(parts[0].thickness, 4);
   });
 });
 
@@ -175,7 +193,7 @@ describe("seating and snapping", () => {
       centered,
       allSeated(centered),
     );
-    assert.strictEqual(seated.size, 5);
+    assert.strictEqual(seated.size, 6);
   });
 
   it("seats through the product frame's turn", () => {
@@ -185,7 +203,7 @@ describe("seating and snapping", () => {
       turned,
       allSeated(turned),
     );
-    assert.strictEqual(seated.size, 5);
+    assert.strictEqual(seated.size, 6);
   });
 
   it("accepts a board turned end for end (angle mod 180)", () => {
@@ -197,7 +215,7 @@ describe("seating and snapping", () => {
       },
     }));
     const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, pieces);
-    assert.strictEqual(seated.size, 5);
+    assert.strictEqual(seated.size, 6);
   });
 
   it("does not seat a piece lying askew or off its slot", () => {
@@ -211,26 +229,28 @@ describe("seating and snapping", () => {
       ...pieces.slice(2),
     ];
     const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, askew);
-    assert.strictEqual(seated.size, 3);
+    assert.strictEqual(seated.size, 4);
   });
 
-  it("never seats a shelf board in a rail slot", () => {
-    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+  it("never seats stock a slot's requirement refuses", () => {
+    // The step stool wants 6/4 or heavier for its sides; a tread-sized
+    // board lying right on the seat is still the wrong stock.
+    const sideSlot = STEP_STOOL_BLUEPRINT.slots[0];
     const impostor = {
-      material: deckBoard(),
-      placement: slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot),
+      material: board("oak", 24, 4, 2),
+      placement: slotOnBench(STEP_STOOL_BLUEPRINT, centered, sideSlot),
     };
-    const seated = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [impostor]);
+    const seated = seatedParts(STEP_STOOL_BLUEPRINT, centered, [impostor]);
     assert.strictEqual(seated.size, 0);
   });
 
   it("snaps a near, roughly aligned drop onto the empty slot", () => {
-    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
-    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    const shelfSlot = RUSTIC_SHELF_BLUEPRINT.slots[SHELF_SLOT];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, shelfSlot);
     const snap = snapPlacementFor(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
-      stringer(),
+      palletBoard(),
       {
         xIn: seat.xIn + 3,
         yIn: seat.yIn - 2,
@@ -241,54 +261,60 @@ describe("seating and snapping", () => {
       new Set(),
     );
     assert.ok(snap);
-    assert.strictEqual(snap.slotId, "rail-0");
+    assert.strictEqual(snap.slotId, "shelf-0");
     assert.strictEqual(snap.placement.xIn, seat.xIn);
     assert.strictEqual(snap.placement.angleDeg, seat.angleDeg);
     assert.strictEqual(snap.placement.onEdge, true);
   });
 
   it("holds seating and snapping to the slot's orientation", () => {
-    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
-    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
-    // A rail lying flat on its on-edge seat is not seated…
+    const shelfSlot = RUSTIC_SHELF_BLUEPRINT.slots[SHELF_SLOT];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, shelfSlot);
+    // A shelf board lying flat on its on-edge seat is not seated…
     const flat = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
-      { material: stringer(), placement: seat },
+      { material: palletBoard(), placement: seat },
     ]);
     assert.strictEqual(flat.size, 0);
-    // …and doesn't snap either, until it's tipped up (T)
+    // …and doesn't snap either, until it's tipped up (T). The supports
+    // are spoken for: they're the only flat slots, and one sits close
+    // enough behind this shelf to catch a board lying down.
     assert.strictEqual(
       snapPlacementFor(
         RUSTIC_SHELF_BLUEPRINT,
         centered,
-        stringer(),
+        palletBoard(),
         seat,
-        new Set(),
+        new Set(["support-0", "support-1"]),
       ),
       null,
     );
     const tipped = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
-      { material: stringer(), placement: { ...seat, onEdge: true } },
+      { material: palletBoard(), placement: { ...seat, onEdge: true } },
     ]);
     assert.strictEqual(tipped.size, 1);
-    // A shelf board tipped on edge over its flat slot won't seat there
-    const shelfSlot = RUSTIC_SHELF_BLUEPRINT.slots[2];
-    const shelfSeat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, shelfSlot);
-    const edgyShelf = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
+    // And the same board tipped on edge over a flat slot won't seat there
+    const supportSlot = RUSTIC_SHELF_BLUEPRINT.slots[SUPPORT_SLOT];
+    const supportSeat = slotOnBench(
+      RUSTIC_SHELF_BLUEPRINT,
+      centered,
+      supportSlot,
+    );
+    const edgySupport = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, [
       {
-        material: deckBoard(),
-        placement: { ...shelfSeat, onEdge: true },
+        material: palletBoard(),
+        placement: { ...supportSeat, onEdge: true },
       },
     ]);
-    assert.strictEqual(edgyShelf.size, 0);
+    assert.strictEqual(edgySupport.size, 0);
   });
 
   it("keeps the accumulated turn: a 270° board seats without unwinding", () => {
-    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
-    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot);
+    const shelfSlot = RUSTIC_SHELF_BLUEPRINT.slots[SHELF_SLOT];
+    const seat = slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, shelfSlot);
     const snap = snapPlacementFor(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
-      stringer(),
+      palletBoard(),
       {
         xIn: seat.xIn,
         yIn: seat.yIn,
@@ -303,62 +329,64 @@ describe("seating and snapping", () => {
   });
 
   it("refuses a drop that is too far, misaligned, or already taken", () => {
-    const railSlot = RUSTIC_SHELF_BLUEPRINT.slots[0];
+    const shelfSlot = RUSTIC_SHELF_BLUEPRINT.slots[SHELF_SLOT];
     const seat = {
-      ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, railSlot),
+      ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, centered, shelfSlot),
       onEdge: true,
     };
     const far = snapPlacementFor(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
-      stringer(),
+      palletBoard(),
       { ...seat, xIn: seat.xIn + 20, yIn: 60 },
       new Set(),
     );
-    // 20in right of rail-0's seat could still be near rail-1; push well away
+    // 20in off shelf-0's seat could still be near shelf-1; push well away
     assert.strictEqual(far, null);
     const askew = snapPlacementFor(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
-      stringer(),
+      palletBoard(),
       { ...seat, angleDeg: seat.angleDeg + 50 },
       new Set(),
     );
     assert.strictEqual(askew, null);
+    // With both shelf slots taken, the sides and supports are the only
+    // empties left — and neither will take a board in this orientation.
     const taken = snapPlacementFor(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
-      stringer(),
+      palletBoard(),
       seat,
-      new Set(["rail-0", "rail-1"]),
+      new Set(["shelf-0", "shelf-1"]),
     );
     assert.strictEqual(taken, null);
   });
 
   it("arms a fastener only when both its parts are seated", () => {
     const pieces = allSeated(centered);
-    // Rails only: nothing to nail yet
-    const railsOnly = seatedParts(
+    // Supports only: no side to nail through yet
+    const supportsOnly = seatedParts(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
       pieces.slice(0, 2),
     );
     assert.strictEqual(
-      armedFasteners(RUSTIC_SHELF_BLUEPRINT, railsOnly).length,
+      armedFasteners(RUSTIC_SHELF_BLUEPRINT, supportsOnly).length,
       0,
     );
-    // Rails + one shelf: that shelf's two crossings arm
-    const oneShelf = seatedParts(
+    // Supports + one side: that side's nail into each support arms
+    const oneSide = seatedParts(
       RUSTIC_SHELF_BLUEPRINT,
       centered,
       pieces.slice(0, 3),
     );
     assert.strictEqual(
-      armedFasteners(RUSTIC_SHELF_BLUEPRINT, oneShelf).length,
+      armedFasteners(RUSTIC_SHELF_BLUEPRINT, oneSide).length,
       2,
     );
     const all = seatedParts(RUSTIC_SHELF_BLUEPRINT, centered, pieces);
-    assert.strictEqual(armedFasteners(RUSTIC_SHELF_BLUEPRINT, all).length, 6);
+    assert.strictEqual(armedFasteners(RUSTIC_SHELF_BLUEPRINT, all).length, 8);
   });
 
   it("finds the nearest armed fastener under the pointer, through a turn", () => {
@@ -475,7 +503,7 @@ describe("the crate and planter box blueprints", () => {
     );
     const crate = assembleFromBlueprint(
       CRATE_BLUEPRINT,
-      Array.from({ length: 10 }, () => board("pallet", 36, 4, 2)),
+      Array.from({ length: 10 }, palletBoard),
     );
     assert.strictEqual(crate.type, "crate");
     assert.strictEqual(crate.parts?.length, 10);
@@ -575,14 +603,14 @@ describe("the birdhouse blueprint", () => {
       spots,
       [
         // Each front board into its side wall
-        "3.25,13",
-        "11.75,13",
+        "3.5,13",
+        "11.5,13",
         // Each front board through the floor strip
-        "5,15.75",
-        "10,15.75",
+        "5,15.5",
+        "10,15.5",
         // The roof down into each front board's mitered top
-        "5,5.25",
-        "10,5.25",
+        "5,4.75",
+        "10,4.75",
       ].sort(),
     );
     // The roof never nails into the sides — the ventilation gaps are open
@@ -618,9 +646,10 @@ describe("the birdhouse blueprint", () => {
 
   it("is registered and assembles from its six boards", () => {
     assert.strictEqual(productBlueprintFor("birdhouse"), BIRDHOUSE_BLUEPRINT);
+    // Every part is a crosscut of the same 4"×4/4 pallet board
     const mitered = () =>
       makeMaterial<Board>({
-        ...board("pallet", 12, 4, 2),
+        ...board("pallet", 12, 4, 4),
         ends: {
           left: { kind: "square" },
           right: { kind: "mitered", angle: -45 },
@@ -629,10 +658,10 @@ describe("the birdhouse blueprint", () => {
     const birdhouse = assembleFromBlueprint(BIRDHOUSE_BLUEPRINT, [
       mitered(),
       mitered(),
-      board("pallet", 12, 6, 6),
-      board("pallet", 6, 4, 2),
-      board("pallet", 6, 4, 2),
-      board("pallet", 12, 4, 2),
+      board("pallet", 12, 4, 4),
+      board("pallet", 6, 4, 4),
+      board("pallet", 6, 4, 4),
+      board("pallet", 12, 4, 4),
     ]);
     assert.strictEqual(birdhouse.type, "birdhouse");
     assert.strictEqual(birdhouse.parts?.length, 6);
@@ -752,7 +781,7 @@ describe("the rustic frame blueprint", () => {
   } as const;
   const rail = (length: number) =>
     makeMaterial<Board>({
-      ...board("pallet", length, 2, 2, "sanded"),
+      ...board("pallet", length, 2, 4, "sanded"),
       ends: NOMINAL_ENDS,
     });
 
@@ -779,7 +808,7 @@ describe("the rustic frame blueprint", () => {
       assert.deepStrictEqual(row.surface, ["sanded"]);
       assert.strictEqual(row.matchesNote, "45° both ends, mirrored");
       // Square-ended stock is not a rail, however well milled
-      assert.ok(!row.matches!(board("pallet", 24, 2, 2, "sanded")));
+      assert.ok(!row.matches!(board("pallet", 24, 2, 4, "sanded")));
     }
   });
 

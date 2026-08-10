@@ -472,11 +472,11 @@ test.describe("Market, supplies, and sound", () => {
       );
       expect(pallets.length).toBeGreaterThanOrEqual(1);
       expect(pallets.length).toBeLessThanOrEqual(2);
-      // Damaged: 6-11 deck boards
+      // Damaged: 5-8 of the eight deck boards
       for (const pallet of pallets) {
         const deckCount = pallet.deckBoards.filter(Boolean).length;
-        expect(deckCount).toBeGreaterThanOrEqual(6);
-        expect(deckCount).toBeLessThanOrEqual(11);
+        expect(deckCount).toBeGreaterThanOrEqual(5);
+        expect(deckCount).toBeLessThanOrEqual(8);
       }
       // Back home beside the cab, the errand is on offer again
       await openTruckMenu(page);
@@ -503,7 +503,7 @@ test.describe("Market, supplies, and sound", () => {
       );
       // The shortfall reads right on the pulled drawing's title block —
       // there is no separate supplies row or run hint any more
-      await expect(page.getByText("6 nails (have 0)")).toBeVisible();
+      await expect(page.getByText("8 nails (have 0)")).toBeVisible();
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });
@@ -524,7 +524,7 @@ test.describe("Market, supplies, and sound", () => {
       await expect(suppliesCard.getByText("Nails")).toBeVisible();
       await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
       // And the recipe's shortfall line clears
-      await expect(page.getByText("6 nails (have 8)")).toBeVisible();
+      await expect(page.getByText("8 nails (have 8)")).toBeVisible();
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {

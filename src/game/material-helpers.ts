@@ -88,21 +88,9 @@ export function makeToolItem(toolId: ToolId): ToolItem {
 export function makePallet() {
   return makeMaterial<Pallet>({
     type: "pallet",
-    deckBoards: [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-    ],
+    deckBoards: [true, true, true, true, true, true, true, true],
     stringers: [true, true, true],
-    nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
+    nails: initialPalletNails(Array(8).fill(true), [true, true, true]),
   });
 }
 
@@ -470,21 +458,9 @@ export function createMockMaterial(
     case "pallet":
       return makeMaterial<Pallet>({
         type: "pallet",
-        deckBoards: [
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-        ],
+        deckBoards: [true, true, true, true, true, true, true, true],
         stringers: [true, true, true],
-        nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
+        nails: initialPalletNails(Array(8).fill(true), [true, true, true]),
       });
 
     case "endGrainSlice":

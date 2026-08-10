@@ -17,12 +17,12 @@ import { REAL_WOOD_SPECIES } from "./Materials";
  *
  * Commissions must only require materials the player can actually produce
  * once they've bought the gear the commission is pushing them toward.
- * Current production chain: dismantling a pallet yields stringers
- * (4x6x3 boards) and deck boards (3x4x1 boards), all rough; the miter saw
+ * Current production chain: dismantling a pallet yields eleven 3x4x4/4
+ * boards, all rough and all the same piece; the miter saw
  * cuts length, the table saw rips width; sanding tools (mounted at
  * workstations) step surface rough → smooth → sanded; the planer reduces
  * thickness and leaves surfaces smooth; the workspace builds rustic
- * shelves from 2 stringers + 3 deck boards, rustic frames from four
+ * shelves from 6 whole pallet boards, rustic frames from four
  * mitered 2"-wide rails, glues five smooth 2x2x4 strips into a (rough)
  * panel, and finishes a sanded single-species hardwood panel into a
  * cutting board.

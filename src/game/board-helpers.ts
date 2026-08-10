@@ -12,6 +12,11 @@ import {
   SurfaceCondition,
   worseSurface,
 } from "./Materials";
+import {
+  PALLET_BOARD_LENGTH_IN,
+  PALLET_BOARD_THICKNESS_Q,
+  PALLET_BOARD_WIDTH_IN,
+} from "./bench-work/pallet-geometry";
 import { makeMaterial } from "./material-helpers";
 
 /** Syntactic sugar to create a board material instance */
@@ -38,6 +43,21 @@ export function board(
     jointedFaces: jointed.faces ?? (surface === "rough" ? 1 : 2),
     jointedEdges: jointed.edges ?? 2,
   });
+}
+
+/**
+ * The one board a pallet is built from — 36" × 4" × 4/4 rough pallet
+ * stock. Every berth on the pallet holds this piece and prying frees
+ * this piece, so the shop's free wood is a single interchangeable
+ * board (see bench-work/pallet-geometry).
+ */
+export function palletBoard(): MaterialInstance & { type: "board" } {
+  return board(
+    "pallet",
+    PALLET_BOARD_LENGTH_IN,
+    PALLET_BOARD_WIDTH_IN,
+    PALLET_BOARD_THICKNESS_Q,
+  );
 }
 
 export function isBoard(material: MaterialInstance): material is Board {

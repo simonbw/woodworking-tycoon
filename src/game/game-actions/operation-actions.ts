@@ -11,7 +11,7 @@ import {
   MachineState,
   Operation,
 } from "../Machine";
-import { board } from "../board-helpers";
+import { palletBoard } from "../board-helpers";
 import { isFinishedProduct } from "../material-helpers";
 import { getSellValue } from "../material-values";
 import { playerAttendsMachine } from "../machine-helpers";
@@ -474,9 +474,7 @@ export function pryPalletNailAction(
     // comes off the pallet — the pull frees the board, it doesn't swap
     // it for a different one.
     const freedBoards = freedRefs.map((ref) => ({
-      ...(ref.kind === "deck"
-        ? board("pallet", 36, 4, 2)
-        : board("pallet", 48, 6, 6)),
+      ...palletBoard(),
       id: palletSlotId(pallet, ref),
     }));
 
