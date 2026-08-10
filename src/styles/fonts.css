@@ -13,3 +13,12 @@
   font-display: swap;
   src: url("/fonts/lumberjack-regular.otf");
 }
+
+/* Our own cut of Shantell Sans — the handwriting (`font-ink`) face. */
+@font-face {
+  font-family: "Shantell Notes";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("/fonts/shantell-notes.woff2") format("woff2");
+}

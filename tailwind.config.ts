@@ -32,7 +32,7 @@ const config = {
         condensed: ["Barlow Condensed", ...defaultTheme.fontFamily.sans],
         stencil: ["Stardos Stencil", ...defaultTheme.fontFamily.serif],
         typewriter: ["Andada Pro", "Courier New", "monospace"],
-        ink: ["Caveat", "cursive"],
+        ink: ["Shantell Notes", "cursive"],
 
         // Logo-only
         lumberjack: ["Lumberjack", ...defaultTheme.fontFamily.serif],

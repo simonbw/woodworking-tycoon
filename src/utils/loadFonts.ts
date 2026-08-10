@@ -31,9 +31,9 @@ const FONT_FACES = [
   '600 1rem "Andada Pro"',
   '700 1rem "Andada Pro"',
 
-  // Caveat — handwriting
-  '400 1rem "Caveat"',
-  '700 1rem "Caveat"',
+  // Shantell Notes — handwriting
+  '400 1rem "Shantell Notes"',
+  '700 1rem "Shantell Notes"',
 
   // Stardos Stencil — retail signage
   '400 1rem "Stardos Stencil"',
