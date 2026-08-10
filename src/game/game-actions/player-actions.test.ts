@@ -495,4 +495,62 @@ describe("the blueprint assembly's claim", () => {
       spares.map((m) => m.id).sort(),
     );
   });
+
+  it("builds with a half-seated frame — an empty slot can't take a seated board", () => {
+    // Only the second support slot is seated, and its board sits first
+    // in the bay. Filling the slots in one pass would hand that board to
+    // the empty first slot, leaving the seated slot with nothing.
+    // Six whole pallet boards build the shelf — one seated, five loose.
+    const seatedSupport = palletBoard();
+    const loose = [
+      palletBoard(),
+      palletBoard(),
+      palletBoard(),
+      palletBoard(),
+      palletBoard(),
+    ];
+    const base: MachineState = {
+      machineTypeId: "workspace",
+      position: [4, 2],
+      rotation: 0,
+      selectedOperationId: "buildRusticPalletShelf",
+      selectedParameters: undefined,
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [seatedSupport, ...loose],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: ["hammer"],
+    };
+    const frame = assemblyFramePlacement(
+      benchTopSizeIn(new Machine(base).type),
+    );
+    const secondSlot = RUSTIC_SHELF_BLUEPRINT.slots[1];
+    const bench: MachineState = {
+      ...base,
+      benchLayout: {
+        [seatedSupport.id]: {
+          ...slotOnBench(RUSTIC_SHELF_BLUEPRINT, frame, secondSlot),
+          onEdge: secondSlot.onEdge,
+        },
+      },
+    };
+    const state: GameState = {
+      ...initialGameState,
+      machines: [bench],
+      consumables: { ...initialGameState.consumables, nails: 8 },
+    };
+    const result = operateMachineAction(new Machine(bench))(state);
+    assert.strictEqual(
+      result.machines[0].operationProgress.status,
+      "inProgress",
+    );
+    assert.deepStrictEqual(
+      result.machines[0].processingMaterials.map((m) => m.id).sort(),
+      [seatedSupport, ...loose].map((m) => m.id).sort(),
+    );
+  });
 });
