@@ -32,6 +32,16 @@ Standing at the cab lists numbered rows in two groups:
   permitting.
 - **Work to deliver** — out of the bed.
 
+## A shopping trip ends at a register
+
+Shelves fill a cart rather than transacting a tile at a time: the cart
+hangs off the `shopping` trip itself (`ShoppingTrip.cart`), so driving
+away is what empties it, and the one press that pays for it also drives
+home. The line shapes are in `src/game/cart.ts` and the fold through
+the ordinary buy actions is in
+`src/game/game-actions/cart-actions.ts` — those buy actions still own
+where a purchase lands, and the cart only decides when.
+
 ## Delivery is a trip like any other
 
 Finished work — commissions and job-board jobs alike — only leaves the

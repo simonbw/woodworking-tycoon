@@ -93,8 +93,10 @@ export const WelcomeArticle: React.FC = () => (
       hardware store (a trip from the same cab) and the phone in the top bar,
       where work gets listed for sale and one-off jobs get taken. Jobs and sales
       are how the shop earns between commissions; new commissions arrive by
-      phone as your reputation grows. What you buy rides home in the bed; unload
-      it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
+      phone as your reputation grows. Taking something off a shelf puts it in
+      your cart; nothing is paid for until you check out, and checking out is
+      the same press that drives you home. What you bought rides home in the bed
+      — unload it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

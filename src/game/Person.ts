@@ -1,3 +1,4 @@
+import { CartLine } from "./cart";
 import { StoreId } from "./lumberStock";
 import { MachineState } from "./Machine";
 import { MaterialInstance, Pallet } from "./Materials";
@@ -116,6 +117,13 @@ export type ShoppingTrip = {
   readonly kind: "shopping";
   /** Which store the trip is to; each is its own overlay. */
   readonly store: StoreId;
+  /**
+   * What's off the shelves and not paid for yet (see cart.ts). It hangs
+   * on the trip rather than on the shop because that's what it is: a
+   * cart you're pushing around a store. Driving away is what empties it,
+   * whether you checked out or abandoned it at the end of an aisle.
+   */
+  readonly cart: ReadonlyArray<CartLine>;
 };
 
 /**

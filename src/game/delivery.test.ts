@@ -135,7 +135,11 @@ describe("canHandOff", () => {
       ...state,
       player: {
         ...state.player,
-        away: { kind: "shopping" as const, store: "orangeBox" as const },
+        away: {
+          kind: "shopping" as const,
+          store: "orangeBox" as const,
+          cart: [],
+        },
       },
     };
     assert.strictEqual(canHandOff(away), false);

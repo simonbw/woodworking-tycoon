@@ -5,15 +5,14 @@ import {
   CLAMP_NAME,
   clampsInUse,
 } from "../../game/Clamp";
+import { CartLine } from "../../game/cart";
 import { CONSUMABLE_TYPES, ConsumableId } from "../../game/Consumable";
-import {
-  buyClampAction,
-  buyConsumablePackAction,
-} from "../../game/game-actions/store-actions";
+import { addToCartAction } from "../../game/game-actions/cart-actions";
 import { ClampIcon, ConsumableIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
+import { useCartCount } from "./useStoreTrip";
 
 export const StoreSuppliesSection: React.FC<{ className?: string }> = ({
   className,
@@ -35,6 +34,8 @@ const ClampTile: React.FC = () => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
   const inUse = clampsInUse(gameState.machines);
+  const line: CartLine = { kind: "clamp", price: CLAMP_COST };
+  const inCart = useCartCount(line);
 
   return (
     <ProductTile
@@ -47,8 +48,9 @@ const ClampTile: React.FC = () => {
           ? `${gameState.clamps} owned${inUse > 0 ? ` (${inUse} in use)` : ""}`
           : undefined
       }
+      inCart={inCart}
       canAfford={gameState.money >= CLAMP_COST}
-      onBuy={() => applyAction(buyClampAction())}
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };
@@ -64,6 +66,12 @@ const ConsumablePackTile: React.FC<{ consumableId: ConsumableId }> = ({
   const gameState = useGameState();
   const type = CONSUMABLE_TYPES[consumableId];
   const owned = gameState.consumables[consumableId] ?? 0;
+  const line: CartLine = {
+    kind: "consumablePack",
+    consumableId,
+    price: type.packPrice,
+  };
+  const inCart = useCartCount(line);
 
   return (
     <ProductTile
@@ -72,8 +80,9 @@ const ConsumablePackTile: React.FC<{ consumableId: ConsumableId }> = ({
       price={type.packPrice}
       info={`${type.description} ${type.packSize} ${type.unit} per pack.`}
       owned={owned > 0 ? `${owned} ${type.unit} in shop` : undefined}
+      inCart={inCart}
       canAfford={gameState.money >= type.packPrice}
-      onBuy={() => applyAction(buyConsumablePackAction(consumableId))}
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };

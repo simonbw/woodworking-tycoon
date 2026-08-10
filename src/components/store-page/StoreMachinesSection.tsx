@@ -1,10 +1,12 @@
 import React from "react";
+import { CartLine } from "../../game/cart";
 import { MACHINE_TYPES, MachineId, MachineType } from "../../game/Machine";
-import { buyMachineAction } from "../../game/game-actions/store-actions";
+import { addToCartAction } from "../../game/game-actions/cart-actions";
 import { MachineIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
+import { useCartCount } from "./useStoreTrip";
 
 export const StoreMachinesSection: React.FC<{ className?: string }> = ({
   className,
@@ -58,6 +60,12 @@ const MachineProductTile: React.FC<{ machine: MachineType }> = ({
       (crate) => crate.machine.machineTypeId === machine.id,
     ).length +
     (gameState.player.carriedMachine?.machineTypeId === machine.id ? 1 : 0);
+  const line: CartLine = {
+    kind: "machine",
+    machineTypeId: machine.id as MachineId,
+    price,
+  };
+  const inCart = useCartCount(line);
 
   return (
     <ProductTile
@@ -73,11 +81,9 @@ const MachineProductTile: React.FC<{ machine: MachineType }> = ({
       price={price}
       info={`${machine.description} Rides home crated in the truck's bed.`}
       owned={numberOwned > 0 ? `${numberOwned} owned` : undefined}
+      inCart={inCart}
       canAfford={gameState.money >= price}
-      sfx="ui-purchase"
-      onBuy={() =>
-        applyAction(buyMachineAction(machine.id as MachineId, price))
-      }
+      onAdd={() => applyAction(addToCartAction(line))}
     />
   );
 };

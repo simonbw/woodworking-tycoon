@@ -1,10 +1,10 @@
 import React from "react";
-import { returnFromStoreAction } from "../../game/game-actions/door-actions";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";
-import { useHeadHome } from "../trip/TripTransitionLayer";
-import { useApplyGameAction, useGameState } from "../useGameState";
+import { useGameState } from "../useGameState";
 import { BoardSelector } from "./BoardSelector";
+import { StoreCartReadout, StoreCheckoutButton } from "./StoreCart";
+import { useStoreTrip } from "./useStoreTrip";
 import { StoreMachinesSection } from "./StoreMachinesSection";
 import { StoreSheetGoodsSection } from "./StoreSheetGoodsSection";
 import { StoreSuppliesSection } from "./StoreSuppliesSection";
@@ -63,10 +63,15 @@ const OrangeBoxLogo: React.FC = () => (
  */
 export const StoreTripOverlay: React.FC = () => {
   const gameState = useGameState();
-  const applyAction = useApplyGameAction();
-  const beginReturn = useHeadHome();
-  const headHome = () =>
-    beginReturn(() => applyAction(returnFromStoreAction()));
+  const {
+    cart,
+    total,
+    overdrawn,
+    canCheckOut,
+    confirmingLeave,
+    requestLeave,
+    checkOutAndLeave,
+  } = useStoreTrip();
 
   if (
     gameState.player.away?.kind !== "shopping" ||
@@ -76,7 +81,7 @@ export const StoreTripOverlay: React.FC = () => {
   }
 
   return (
-    <TripOverlay label="Orange Box" onHeadHome={headHome}>
+    <TripOverlay label="Orange Box" onHeadHome={requestLeave}>
       <div className="rounded-md overflow-hidden shadow-2xl border border-store-orange-dark grow min-h-0 flex flex-col">
         <TripHeader
           brand={<OrangeBoxLogo />}
@@ -85,7 +90,26 @@ export const StoreTripOverlay: React.FC = () => {
           brandRowClassName="items-center"
           mutedClassName="text-store-orange-dark"
           homeButtonClassName="border-store-orange-dark text-store-orange-dark hover:bg-store-orange/15"
-          onHeadHome={headHome}
+          onHeadHome={requestLeave}
+          confirmingLeave={confirmingLeave}
+          cart={
+            <StoreCartReadout
+              cart={cart}
+              total={total}
+              overdrawn={overdrawn}
+              mutedClassName="text-store-orange-dark"
+              overdrawnClassName="text-ink-red"
+            />
+          }
+          checkout={
+            cart.length > 0 && (
+              <StoreCheckoutButton
+                canCheckOut={canCheckOut}
+                onCheckOut={checkOutAndLeave}
+                className="border-store-orange bg-store-orange text-white hover:bg-store-orange-dark hover:border-store-orange-dark"
+              />
+            )
+          }
         />
         <div className="bg-store-concrete text-ink-black px-6 py-4 grow min-h-0 overflow-auto">
           {/* The floor plan: wood along the left wall, machines straight

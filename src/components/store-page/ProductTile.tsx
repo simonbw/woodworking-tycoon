@@ -1,5 +1,6 @@
 import React from "react";
 import { formatCount, formatMoney } from "../../utils/formatNumber";
+import { CartIcon } from "../CartIcon";
 import { Tooltip } from "../Tooltip";
 import { BuyButton } from "./BuyButton";
 
@@ -20,13 +21,14 @@ export const ProductTile: React.FC<{
   /** One short line under the name — what the shop already has of this. */
   owned?: React.ReactNode;
   canAfford: boolean;
-  onBuy: () => void;
-  /** Routed to the delegated click-sound listener (e.g. "ui-purchase"). */
-  sfx?: string;
+  /** Put one in the cart. Nothing is paid for until the register. */
+  onAdd: () => void;
+  /** How many of this are already in the cart, called out under the name. */
+  inCart?: number;
   /**
    * Marks the whole tile for the guided opening to ring (see
    * TutorialSpotlightLayer) — the shelf tag is what you look for in an
-   * aisle, not the Buy button on it.
+   * aisle, not the Add to Cart button on it.
    */
   tutorialTarget?: string;
 }> = ({
@@ -36,8 +38,8 @@ export const ProductTile: React.FC<{
   info,
   owned,
   canAfford,
-  onBuy,
-  sfx,
+  onAdd,
+  inCart = 0,
   tutorialTarget,
 }) => (
   // The picture centers over the tile, the words hang off its left edge
@@ -62,15 +64,28 @@ export const ProductTile: React.FC<{
         {owned}
       </span>
     )}
-    <span className="mt-auto flex w-full items-center justify-between gap-1 pt-0.5">
+    {inCart > 0 && (
+      <span className="flex items-center gap-1 text-[0.7rem] font-semibold leading-tight text-ink-blue tabular-nums">
+        <CartIcon />
+        {formatCount(inCart)} in cart
+      </span>
+    )}
+    {/* wrap: "Add to Cart" is wide next to a four-figure price, and a
+        narrow aisle can't seat both on one line. Rather than let the
+        button overhang the tile — where it would sit under the next
+        tile's price tag and swallow clicks — it drops to its own row and
+        fills it. */}
+    <span className="mt-auto flex w-full flex-wrap items-center justify-between gap-1 pt-0.5">
       <PriceTag price={price} />
       <BuyButton
         size="compact"
         disabled={!canAfford}
-        data-sfx={sfx}
-        onClick={onBuy}
+        onClick={onAdd}
+        aria-label={`Add ${name} to cart`}
+        className="flex grow items-center justify-center gap-1 whitespace-nowrap"
       >
-        Buy
+        <CartIcon />
+        Add to Cart
       </BuyButton>
     </span>
   </li>
@@ -80,7 +95,8 @@ export const ProductTile: React.FC<{
  * The ⓘ in the tile's top corner: the one thing on the tile that opens
  * the hover copy. The whole tile used to be the trigger, which meant the
  * description ambushed you every time the pointer crossed an aisle on
- * its way to the Buy button. Reading it is now something you ask for —
+ * its way to the Add to Cart button. Reading it is now something you ask
+ * for —
  * point at the badge, or click it and it stays up until you click away.
  */
 const InfoButton: React.FC<{ name: string; info: React.ReactNode }> = ({

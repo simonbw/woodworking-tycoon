@@ -5,10 +5,14 @@ import { useGameState } from "../useGameState";
 
 /**
  * The sign over a store trip's door: brand on the left, the player's
- * wallet and the Head Home button on the right. Each venue paints it its
- * own colors — Orange Box in safety orange on white, Sawyer & Sons in
- * mill green on cream — so the tint classes come from the caller while
- * the layout stays shared.
+ * wallet, the cart, and the ways out on the right. Each venue paints it
+ * its own colors — Orange Box in safety orange on white, Sawyer & Sons
+ * in mill green on cream — so the tint classes come from the caller
+ * while the layout stays shared.
+ *
+ * The cart and the register arrive as slots rather than props: what goes
+ * in them is store business (see StoreCart.tsx), and a trip with nothing
+ * to buy — the delivery run — just doesn't fill them.
  */
 export const TripHeader: React.FC<{
   /** The brand name itself, already set in the venue's display face. */
@@ -26,6 +30,16 @@ export const TripHeader: React.FC<{
   /** Border and hover tint for the Head Home button, in the same tone. */
   homeButtonClassName: string;
   onHeadHome: () => void;
+  /** The cart's running total, hung between the wallet and the way out. */
+  cart?: React.ReactNode;
+  /** The register: pay for the cart and drive home, when there's a cart to pay for. */
+  checkout?: React.ReactNode;
+  /**
+   * Head Home is armed and asking about the cart it would abandon. The
+   * button says so rather than a dialog saying it: the next press is the
+   * answer, and the store is still right there behind it.
+   */
+  confirmingLeave?: boolean;
 }> = ({
   brand,
   tagline,
@@ -34,6 +48,9 @@ export const TripHeader: React.FC<{
   mutedClassName,
   homeButtonClassName,
   onHeadHome,
+  cart,
+  checkout,
+  confirmingLeave = false,
 }) => {
   const gameState = useGameState();
   return (
@@ -68,6 +85,8 @@ export const TripHeader: React.FC<{
             {formatMoney(gameState.money)}
           </span>
         </div>
+        {cart}
+        {checkout}
         <button
           className={classNames(
             "border-2 rounded-sm px-3 py-1.5 font-condensed font-bold uppercase tracking-[0.2em] text-sm",
@@ -76,7 +95,7 @@ export const TripHeader: React.FC<{
           onClick={onHeadHome}
           data-sfx="ui-back"
         >
-          Head Home
+          {confirmingLeave ? "Leave cart behind?" : "Head Home"}
         </button>
       </div>
     </div>

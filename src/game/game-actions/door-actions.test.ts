@@ -78,6 +78,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
     assert.deepStrictEqual(out.player.away, {
       kind: "shopping",
       store: "orangeBox",
+      cart: [],
     });
     assert.strictEqual(personCanWork(out.player), false);
 
@@ -91,6 +92,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
     assert.deepStrictEqual(out.player.away, {
       kind: "shopping",
       store: "lumberyard",
+      cart: [],
     });
   });
 
@@ -136,6 +138,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
     assert.deepStrictEqual(state.player.away, {
       kind: "shopping",
       store: "orangeBox",
+      cart: [],
     });
     assert.strictEqual(personCanWork(state.player), false);
   });

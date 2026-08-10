@@ -3,10 +3,10 @@ import { modesOf, selectMode } from "./machine-panel";
 import {
   advanceTicks,
   answerPhoneCall,
+  checkOutAndLeaveStore,
   closePhone,
   goToStore,
   deliverFromTruck,
-  leaveStore,
   movePlayerToCab,
   openTruckMenu,
   openPhone,
@@ -535,15 +535,17 @@ test.describe("Market, supplies, and sound", () => {
 
       await page
         .locator("li", { hasText: "Mineral Oil Bottle" })
-        .getByRole("button", { name: "Buy" })
+        .getByRole("button", { name: "Add Mineral Oil Bottle to cart" })
         .click();
       await page.waitForTimeout(30);
-      await expect(page.getByText("16 oz in shop")).toBeVisible();
+      // On the cart, not in the cabinet — the shelf tag still reads empty
+      await expect(page.getByText("16 oz in shop")).toHaveCount(0);
+
+      await checkOutAndLeaveStore(page, returnTo);
       const money = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
       expect(money).toBe(10);
-      await leaveStore(page, returnTo);
     });
 
     await test.step("the oil wipe is the finishing kit's work, not a plan", async () => {

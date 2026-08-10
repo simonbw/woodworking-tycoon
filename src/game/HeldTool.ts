@@ -18,6 +18,9 @@ export type HeldToolId = "broom" | "vacHose";
 /** What the store charges for the shop broom (dustpan included). */
 export const BROOM_COST = 15;
 
+/** What it's called on the shelf tag, and on the cart's receipt. */
+export const BROOM_NAME = "Shop Broom";
+
 export function holdingBroom(gameState: GameState): boolean {
   return gameState.broomOwned && gameState.broomPosition === null;
 }

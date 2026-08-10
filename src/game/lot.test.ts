@@ -109,7 +109,11 @@ describe("walking the lot", () => {
       ...initialGameState,
       player: {
         ...initialGameState.player,
-        away: { kind: "shopping" as const, store: "orangeBox" as const },
+        away: {
+          kind: "shopping" as const,
+          store: "orangeBox" as const,
+          cart: [],
+        },
       },
     };
     const down = walk([6.5, 15], [0, 1], 2, collisionWorld(away));

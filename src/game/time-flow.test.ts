@@ -61,7 +61,11 @@ describe("timeSpeed", () => {
 
   it("idles through a store's aisles — browsing is thinking", () => {
     assert.equal(
-      timeSpeed(withPlayer({ away: { kind: "shopping", store: "orangeBox" } })),
+      timeSpeed(
+        withPlayer({
+          away: { kind: "shopping", store: "orangeBox", cart: [] },
+        }),
+      ),
       "idle",
     );
   });

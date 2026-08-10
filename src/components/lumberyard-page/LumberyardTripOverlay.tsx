@@ -1,11 +1,11 @@
 import React from "react";
-import { returnFromStoreAction } from "../../game/game-actions/door-actions";
 import { BoardSelector } from "../store-page/BoardSelector";
+import { StoreCartReadout, StoreCheckoutButton } from "../store-page/StoreCart";
+import { useStoreTrip } from "../store-page/useStoreTrip";
 import { SawyerAndSonsLogo } from "./SawyerAndSonsLogo";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";
-import { useHeadHome } from "../trip/TripTransitionLayer";
-import { useApplyGameAction, useGameState } from "../useGameState";
+import { useGameState } from "../useGameState";
 
 /**
  * A trip to Sawyer & Sons, the hardwood lumberyard across town. Reached by
@@ -19,10 +19,15 @@ import { useApplyGameAction, useGameState } from "../useGameState";
  */
 export const LumberyardTripOverlay: React.FC = () => {
   const gameState = useGameState();
-  const applyAction = useApplyGameAction();
-  const beginReturn = useHeadHome();
-  const headHome = () =>
-    beginReturn(() => applyAction(returnFromStoreAction()));
+  const {
+    cart,
+    total,
+    overdrawn,
+    canCheckOut,
+    confirmingLeave,
+    requestLeave,
+    checkOutAndLeave,
+  } = useStoreTrip();
 
   if (
     gameState.player.away?.kind !== "shopping" ||
@@ -32,7 +37,7 @@ export const LumberyardTripOverlay: React.FC = () => {
   }
 
   return (
-    <TripOverlay label="Sawyer & Sons" onHeadHome={headHome}>
+    <TripOverlay label="Sawyer & Sons" onHeadHome={requestLeave}>
       <div className="rounded-md overflow-hidden shadow-2xl border border-mill-green-dark grow min-h-0 flex flex-col">
         <TripHeader
           brand={<SawyerAndSonsLogo className="h-12 w-auto shrink-0" />}
@@ -41,7 +46,28 @@ export const LumberyardTripOverlay: React.FC = () => {
           brandRowClassName="items-baseline"
           mutedClassName="text-paper-cream/80"
           homeButtonClassName="border-paper-cream/80 hover:bg-paper-cream/15"
-          onHeadHome={headHome}
+          onHeadHome={requestLeave}
+          confirmingLeave={confirmingLeave}
+          cart={
+            <StoreCartReadout
+              cart={cart}
+              total={total}
+              overdrawn={overdrawn}
+              mutedClassName="text-paper-cream/80"
+              // Ink red vanishes into the yard's green bar — the tag on
+              // the total has to shout from across the lot
+              overdrawnClassName="text-red-300"
+            />
+          }
+          checkout={
+            cart.length > 0 && (
+              <StoreCheckoutButton
+                canCheckOut={canCheckOut}
+                onCheckOut={checkOutAndLeave}
+                className="border-paper-cream bg-paper-cream text-mill-green-dark hover:bg-white hover:border-white"
+              />
+            )
+          }
         />
         <div className="bg-mill-timber text-ink-black p-6 grow min-h-0 overflow-y-auto">
           <div className="max-w-6xl mx-auto pt-2">
