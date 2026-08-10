@@ -13,11 +13,18 @@ import {
 const channel = (color: number, shift: number) => (color >> shift) & 0xff;
 
 describe("the sun's position", () => {
-  it("rises on the left and sets on the right", () => {
+  it("rises in the east and sets in the west", () => {
     assert.equal(sunAltitude(0, false), SUNRISE_ALTITUDE);
     assert.equal(sunAltitude(1, false), SUNSET_ALTITUDE);
-    // Altitude is measured from the left horizon around, so it falls.
-    assert.ok(sunAltitude(0.25, false) > sunAltitude(0.75, false));
+    // Altitude counts counterclockwise from the right-hand (eastern)
+    // horizon, so a day's worth of travel *raises* it toward 180.
+    assert.ok(sunAltitude(0.25, false) < sunAltitude(0.75, false));
+  });
+
+  it("holds the night on past sunset rather than doubling back", () => {
+    // The dial tweens between these poses. Parking the night short of
+    // sunrise instead would spin it half a turn backwards at closing.
+    assert.ok(NIGHT_ALTITUDE > SUNSET_ALTITUDE);
   });
 
   it("is highest in the middle of the day", () => {
@@ -35,9 +42,9 @@ describe("the sun's position", () => {
 
 describe("the shadow the building throws", () => {
   it("falls away from the sun, so it swings across the day", () => {
-    // Morning sun on the left throws the shadow right, and vice versa.
-    assert.ok(daylightAt(0, false).shadow.dx > 0);
-    assert.ok(daylightAt(1, false).shadow.dx < 0);
+    // Morning sun on the right throws the shadow left, and vice versa.
+    assert.ok(daylightAt(0, false).shadow.dx < 0);
+    assert.ok(daylightAt(1, false).shadow.dx > 0);
     // Straight down the screen when the sun is overhead.
     assert.ok(Math.abs(daylightAt(0.5, false).shadow.dx) < 0.01);
   });

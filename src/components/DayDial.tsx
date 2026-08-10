@@ -1,30 +1,26 @@
 import React from "react";
 import { formatShopDate, shopDateParts } from "../game/calendar";
-import {
-  sunAltitude,
-  SUNRISE_ALTITUDE,
-  SUNSET_ALTITUDE,
-} from "../game/daylight";
+import { sunAltitude } from "../game/daylight";
 import { DayPhase } from "../game/time";
 
 /**
- * The clock in the top bar: a spinning disc with the sun on one side and
- * the moon on the other, clipped at the horizon so only the top half
- * shows. The disc turns as the day is spent, carrying the sun up and
- * over and finally down through the horizon's edge, where the clip
- * swallows it and lifts the moon in its place. The date sits at the
- * disc's hub — which, with the bottom half cut away, is the bottom
- * center of the dial.
+ * The clock in the top bar: an open patch of sky with the sun on one side
+ * of an invisible disc and the moon on the other, clipped at the horizon
+ * so only what is up shows. The disc turns as the day is spent, carrying
+ * the sun up and over from the east and finally down through the horizon's
+ * edge in the west, where the clip swallows it and lifts the moon in its
+ * place. The date sits at the disc's hub — which, with the bottom half cut
+ * away, is the bottom center of the dial.
+ *
+ * Nothing is drawn but the bodies themselves: no disc face, no track, no
+ * meter. The sun's position *is* the readout, and a ring behind it only
+ * made it look like a gauge to be read off.
  *
  * There is still deliberately no wall clock (see `src/game/time-flow.ts`)
  * — nothing here reads out an hour. What it shows is where the sun stands,
  * which is how the shop tells time everywhere else: high and the day is
- * young, low on the right and you should be thinking about the drive home,
+ * young, low in the west and you should be thinking about the drive home,
  * gone and the shop is closed.
- *
- * The daylight arc doubles as the day's progress meter — it fills from
- * sunrise to wherever the sun has got to — which is what the top bar's
- * gold hairline used to do on its own.
  */
 
 /**
@@ -36,12 +32,9 @@ import { DayPhase } from "../game/time";
 const BOX_W = 80;
 const BOX_H = 40;
 const CENTER = { x: BOX_W / 2, y: BOX_H };
-/** The disc's face, kept just inside the box. */
-const DISC_RADIUS = 38;
 /**
- * The track the bodies ride: near the rim, and far enough out that a
- * rising or setting body sits in the disc's low corners clear of the
- * date at the hub.
+ * The track the bodies ride: far enough out that a rising or setting body
+ * sits in the dial's low corners clear of the date at the hub.
  */
 const ORBIT_RADIUS = 29;
 /** The size the dial renders at in CSS pixels. */
@@ -69,14 +62,17 @@ export const DayDial: React.FC<DayDialProps> = ({
   phase,
   day,
 }) => {
-  const progress = Math.min(1, Math.max(0, dayProgress));
   // The same sun the shop floor is lit by (`daylight.ts`), so the shadow
   // on the lot can never disagree with the sun drawn up here.
-  const altitude = sunAltitude(progress, night);
+  const altitude = sunAltitude(Math.min(1, Math.max(0, dayProgress)), night);
 
   // The whole disc is one rotated group, so the browser tweens the sun
   // between ticks instead of stepping it. At the idle creep a tick lands
   // only every twelve seconds, and a jumping sun would read as a bug.
+  //
+  // Altitude counts counterclockwise from the right-hand horizon while SVG
+  // rotation goes clockwise, so this subtraction is also what turns a day's
+  // falling altitude into a counterclockwise sweep: east, over the top, west.
   const rotation = 90 - altitude;
   const date = formatShopDate(day);
   const { month, dayOfMonth } = shopDateParts(day);
@@ -89,6 +85,9 @@ export const DayDial: React.FC<DayDialProps> = ({
       aria-label={`${phase}, ${date}`}
       data-testid="day-dial"
       data-day-phase={phase}
+      // With the arc gone there is nothing in the markup that says where
+      // the sun is standing, and where it stands is the whole readout.
+      data-sun-altitude={round(altitude)}
     >
       {/* No overflow-visible here on purpose: the viewport IS the horizon,
           and whatever the disc turns below it is gone. */}
@@ -110,39 +109,6 @@ export const DayDial: React.FC<DayDialProps> = ({
             />
           </mask>
         </defs>
-
-        {/* The disc's visible face: a faint half-moon of surface for the
-            bodies to ride across, flat edge on the horizon. */}
-        <path
-          d={discFace()}
-          fill="currentColor"
-          className="text-paper-manila/10"
-        />
-
-        {/* The daylight arc: the track the sun covers between the open and
-            the close, and the meter for how much of it is spent. */}
-        <path
-          d={daylightArc()}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          className="text-paper-manila/20"
-        />
-        <path
-          d={daylightArc()}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          // pathLength normalizes the arc to 100 units, so the dash maths
-          // is just the percentage — no arc-length trigonometry.
-          pathLength={100}
-          strokeDasharray={100}
-          strokeDashoffset={100 - progress * 100}
-          className="text-gold transition-[stroke-dashoffset] duration-500 ease-linear"
-          data-testid="day-dial-arc"
-        />
 
         <g
           style={{
@@ -225,32 +191,5 @@ export const DayDial: React.FC<DayDialProps> = ({
 
 /** Eight rays, evenly spaced. */
 const SUN_RAYS = [0, 45, 90, 135, 180, 225, 270, 315];
-
-/** The disc's visible half: a semicircle sitting flat on the horizon. */
-function discFace(): string {
-  return [
-    `M ${CENTER.x - DISC_RADIUS} ${CENTER.y}`,
-    `A ${DISC_RADIUS} ${DISC_RADIUS} 0 0 1 ${CENTER.x + DISC_RADIUS} ${CENTER.y}`,
-    "Z",
-  ].join(" ");
-}
-
-/** The sun's path from the open to the close, swept over the top of the dial. */
-function daylightArc(): string {
-  const from = orbitPoint(SUNRISE_ALTITUDE);
-  const to = orbitPoint(SUNSET_ALTITUDE);
-  // Under 180° of sweep, running left to right over the top: small arc,
-  // clockwise on screen.
-  return `M ${from.x} ${from.y} A ${ORBIT_RADIUS} ${ORBIT_RADIUS} 0 0 1 ${to.x} ${to.y}`;
-}
-
-/** A point on the orbit at the given altitude above the horizon, in degrees. */
-function orbitPoint(altitudeDegrees: number): { x: number; y: number } {
-  const radians = (altitudeDegrees * Math.PI) / 180;
-  return {
-    x: round(CENTER.x + ORBIT_RADIUS * Math.cos(radians)),
-    y: round(CENTER.y - ORBIT_RADIUS * Math.sin(radians)),
-  };
-}
 
 const round = (n: number) => Math.round(n * 100) / 100;

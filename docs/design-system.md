@@ -112,8 +112,9 @@ stack of equal-weight cards:
   tabs, split by hairline dividers into three segments: the date and
   light (`Ticker`, which also drives the game loop — time always
   advances unless the pause menu is open — rendering the sun-and-moon
-  dial `DayDial`, whose daylight arc carries the day's progress; there
-  is deliberately no wall clock), the balances (cash and reputation, set exactly
+  dial `DayDial`, where the day's progress is carried by nothing but
+  where the sun stands — east to west over a bare patch of sky, with no
+  face or track behind it; there is deliberately no wall clock), the balances (cash and reputation, set exactly
   like the clock — bold condensed, tabular figures — in the one gold
   accent, the star flowing inline with the digits), and the pocket
   items (Phone, Skills, the `?` manual, and Menu, which opens the pause

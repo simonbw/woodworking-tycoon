@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { SUNRISE_ALTITUDE } from "../src/game/daylight";
 import { machineCard, takeAllHere } from "./machine-panel";
 import {
   checkOutAndLeaveStore,
@@ -218,11 +219,14 @@ test.describe("Shop floor", () => {
       const dial = page.getByTestId("day-dial");
       await expect(dial).toHaveAttribute("data-day-phase", "morning");
       await expect(page.getByTestId("day-date")).toHaveText(/JUN\s*9/);
-      // Sunrise: the daylight arc has nothing filled in yet.
-      await expect(page.getByTestId("day-dial-arc")).toHaveAttribute(
-        "stroke-dashoffset",
-        "100",
+      // Nothing behind the sun to read it off — no disc, no arc, no meter.
+      // Where the sun stands is the readout, and at the open it stands low
+      // in the east, which is the right-hand end of a near-zero altitude.
+      await expect(dial).toHaveAttribute(
+        "data-sun-altitude",
+        String(SUNRISE_ALTITUDE),
       );
+      await expect(dial.locator("path")).toHaveCount(0);
       // No hour anywhere in the chip.
       await expect(page.locator("nav")).not.toContainText(/\d\d?:\d\d/);
     });
