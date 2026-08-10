@@ -120,6 +120,16 @@ tests/
 - Player-facing numbers go through `src/utils/formatNumber.ts` (`formatMoney` / `formatCount` / `formatDecimal`), not `toFixed`, and carry `tabular-nums` unless they sit in prose or in the handwriting face — see the numbers section of `docs/design-system.md`
 - Performance considerations: The game renders many objects, so prefer PIXI components for game entities and React for UI overlays
 
+## Player-facing prose
+
+Everything a player reads — manual articles, tutorial cards, hint chips, tooltips, station sheets, store and commission copy — is written in plain instruction-manual style, for someone seeing the game for the first time. The canonical ruleset is the "Voice & copy rules" section of `docs/shop-manual.md`; it applies to all player-facing text, not just manual articles. The short version:
+
+- Describe what the game **is** — never what it isn't, lacks, or used to be, and never what players would assume anyway
+- No internal design vocabulary, invariants, or units ("verbs", "tiles"); teach through concrete actions and fiction-level quantities ("when the dustpan fills up")
+- State each fact once, plainly: openers give information rather than metaphors, no pithy-sentence-then-restatement, no negative-then-positive pivots, no trailing mood clauses, em dashes rationed
+- Instruct, don't reassure — say what to do and what happens, not how to feel about it
+- Personality is confined to the manual's handwritten margin Notes, where it's wanted; body text stays plain
+
 ## GitHub Issues and the docs/ boundary
 
 Designs for unbuilt work live in GitHub issues, not in `docs/` — the docs describe systems that exist, or provide guidance for creating more content. Within that: **docs describe systems, never content.** A doc may explain what a tool is, how the milling axes work, and the rules for adding a machine — it must not enumerate the tools, quote prices, or restate quantities the registries declare, because those inventories rot (the code is their single source of truth). A system with one owning module doesn't get a doc at all: its explanation belongs in that module's header comment (see `time-flow.ts`, `blueprint.ts`, `material-helpers.ts`); a doc earns its place only when a system spans many files with no single home. Deliberate design decisions ("stays procedural", "out of scope on purpose") stay in docs/code comments, not issues — they're there to stop relitigation.
