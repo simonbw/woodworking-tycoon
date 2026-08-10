@@ -112,6 +112,21 @@ describe("payout announcements", () => {
     assert.strictEqual(result.money, state.money);
   });
 
+  it("gives one handoff one id however often the action is re-run", () => {
+    // Actions run as `setGameState` updaters, and React may invoke an
+    // updater more than once against the same base state. Both invocations
+    // have to describe the same payday, or the flight layer stages it twice
+    // and the client's card is dealt twice (#159).
+    const state = atCab([shelf()]);
+    const first = deliver(state);
+    const again = deliver(state);
+
+    assert.strictEqual(
+      (first.pendingPayouts ?? [])[0].id,
+      (again.pendingPayouts ?? [])[0].id,
+    );
+  });
+
   it("clears the queue once the flight layer has picked it up", () => {
     const delivered = deliver(atCab([shelf()]));
     const drained = clearPendingPayoutsAction(delivered);

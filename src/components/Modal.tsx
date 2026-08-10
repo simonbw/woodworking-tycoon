@@ -3,8 +3,9 @@ import { useModalScope, useShortcut } from "./shortcuts/ShortcutProvider";
 
 /**
  * The shared shell for centered dialogs (Settings, the phone, the journal,
- * the manual): a dimmed backdrop that closes on click, a panel that swallows
- * clicks so only the backdrop dismisses, and the modal keyboard scope so
+ * the manual): a dimmed backdrop that closes on click (unless the caller
+ * asks it not to), a panel that swallows clicks so only the backdrop
+ * dismisses, and the modal keyboard scope so
  * Escape closes this and nothing else — it used to also clear the player's
  * work queue on the page behind. The panel's look is entirely the caller's:
  * each modal is a different physical object (card, notebook, handset), so
@@ -23,8 +24,23 @@ export const Modal: React.FC<{
    */
   panelRef?: React.Ref<HTMLDivElement>;
   backdropRef?: React.Ref<HTMLDivElement>;
+  /**
+   * Whether clicking off the panel closes it. True for anything the player
+   * opened and can put down again; false for a modal that is telling them
+   * something they have to answer, where a click meant for the shop floor
+   * behind it would sweep the message away unread (see ClientCard).
+   */
+  backdropCloses?: boolean;
   children: React.ReactNode;
-}> = ({ onClose, label, panelClassName, panelRef, backdropRef, children }) => {
+}> = ({
+  onClose,
+  label,
+  panelClassName,
+  panelRef,
+  backdropRef,
+  backdropCloses = true,
+  children,
+}) => {
   useModalScope();
   useShortcut("close-modal", onClose);
 
@@ -32,7 +48,7 @@ export const Modal: React.FC<{
     <div
       ref={backdropRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink-black/60 p-4"
-      onClick={onClose}
+      onClick={backdropCloses ? onClose : undefined}
       role="presentation"
     >
       <div
