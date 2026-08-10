@@ -2,6 +2,7 @@
 import type {
   Container,
   Graphics,
+  RenderLayer,
   Sprite,
   Text,
   TextStyle,
@@ -45,6 +46,8 @@ declare global {
       pixiGraphics: PixiProps<Graphics> & {
         draw?: DrawCallback;
       };
+      // No children: RenderLayer takes objects via attach(), not addChild
+      pixiRenderLayer: PixiProps<RenderLayer>;
       pixiSprite: PixiProps<Sprite> & {
         texture?: string | Texture;
         image?: string;
