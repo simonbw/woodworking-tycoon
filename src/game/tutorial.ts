@@ -113,25 +113,24 @@ const isPallet = (material: MaterialInstance) => material.type === "pallet";
 const isRusticShelf = (material: MaterialInstance) =>
   material.type === "rusticShelf";
 
-/** A pallet board of a given width: 6" stringers, 4" deck boards. */
-const palletBoard =
-  (width: number) =>
-  (material: MaterialInstance): boolean =>
-    material.type === "board" &&
-    (material as Board).species === "pallet" &&
-    (material as Board).width === width;
-
-const isStringer = palletBoard(6);
-const isDeckBoard = palletBoard(4);
+/** A board off a pallet — the one piece of stock a pallet is made of. */
+const isPalletBoard = (material: MaterialInstance): boolean =>
+  material.type === "board" && (material as Board).species === "pallet";
 
 const countOf = (
   gameState: GameState,
   match: (material: MaterialInstance) => boolean,
 ): number => shopMaterials(gameState).filter(match).length;
 
-/** The parts a rustic shelf is built from: 2 stringers, 3 deck boards. */
+/** The parts a rustic shelf is built from: six whole pallet boards, one
+ * per slot of RUSTIC_SHELF_BLUEPRINT. Stated here rather than read off
+ * the blueprint — this module stays clear of the blueprint/tool registry
+ * so it can be imported from anywhere; the sequence test walks the real
+ * build and would catch the two drifting apart. */
+const SHELF_BOARD_COUNT = 6;
+
 const hasShelfParts = (gameState: GameState) =>
-  countOf(gameState, isStringer) >= 2 && countOf(gameState, isDeckBoard) >= 3;
+  countOf(gameState, isPalletBoard) >= SHELF_BOARD_COUNT;
 
 const hasShelf = (gameState: GameState) =>
   countOf(gameState, isRusticShelf) > 0;
@@ -195,9 +194,9 @@ export const TUTORIAL_STEPS: ReadonlyArray<TutorialStep> = [
   },
   {
     // The shop's own work, made to sell rather than to order. A pallet
-    // only carries three stringers and a shelf wants two, so this step
-    // is also the second lap of the scavenge-and-pry loop — hence the
-    // cab lighting up alongside the bench.
+    // carries eleven boards and a shelf wants six, so this step is also
+    // the second lap of the scavenge-and-pry loop — hence the cab
+    // lighting up alongside the bench.
     id: "buildSecondShelf",
     title: "Build another shelf to sell",
     targets: [

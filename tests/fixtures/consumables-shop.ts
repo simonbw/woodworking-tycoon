@@ -44,19 +44,7 @@ export const consumablesShop: GameState = {
         {
           id: "fx-pallet",
           type: "pallet",
-          deckBoards: [
-            true,
-            true,
-            true,
-            true,
-            true,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-          ],
+          deckBoards: [true, true, true, true, true, false, false, false],
           stringers: [true, true, true],
           nails: initialPalletNails(
             [true, true, true, true, true],

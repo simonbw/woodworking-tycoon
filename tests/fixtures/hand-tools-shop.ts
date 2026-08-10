@@ -4,14 +4,14 @@ import { GameState } from "../../src/game/GameState";
 import { Board } from "../../src/game/Materials";
 import { STARTER_SKILLS } from "../../src/game/Skill";
 
-function deckBoard(id: string, length: Board["length"]): Board {
+function palletStock(id: string, length: Board["length"]): Board {
   return {
     id,
     type: "board",
     species: "pallet",
     length,
     width: 4,
-    thickness: 2,
+    thickness: 4,
     surface: "rough",
     jointedFaces: 1,
     jointedEdges: 2,
@@ -21,7 +21,7 @@ function deckBoard(id: string, length: Board["length"]): Board {
 /**
  * A shop staged for the hand-tool chain: a bare workspace (both tool slots
  * free), enough money for the hand saw, the drill, and a box of screws, and
- * five pallet deck boards piled at the player's feet — four already crosscut
+ * five pallet boards piled at the player's feet — four already crosscut
  * to 2', one still at 3' so the hand saw has a cut to make. Piled, not
  * carried: the arms have to be free to lift the bought tools out of the
  * truck's bed.
@@ -34,11 +34,11 @@ export const handToolsShop: GameState = {
   money: 150,
   reputation: 0,
   materialPiles: [
-    deckBoard("fx-long-board", 36),
-    deckBoard("fx-slat-1", 24),
-    deckBoard("fx-slat-2", 24),
-    deckBoard("fx-slat-3", 24),
-    deckBoard("fx-slat-4", 24),
+    palletStock("fx-long-board", 36),
+    palletStock("fx-slat-1", 24),
+    palletStock("fx-slat-2", 24),
+    palletStock("fx-slat-3", 24),
+    palletStock("fx-slat-4", 24),
   ].map((material) => ({ material, position: [1.5, 4.5], rotation: 0 })),
   consumables: NO_CONSUMABLES,
   clamps: 0,

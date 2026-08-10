@@ -54,8 +54,8 @@ export const drill: ToolType = {
       id: "buildStepStool",
       requiredSkill: "rusticCarpentry",
       duration: 30,
-      // The blueprint: two stout sides on edge (crosscut stringers or
-      // thick hardwood), two treads screwed flat across them — it has
+      // The blueprint: two stout sides on edge (thick hardwood, 6/4 or
+      // heavier), two treads screwed flat across them — it has
       // to hold a person, so every joint takes a screw, not a nail.
       interaction: { kind: "assembly", blueprint: "stepStool" },
       requiredConsumables: blueprintFastenerCost(STEP_STOOL_BLUEPRINT),

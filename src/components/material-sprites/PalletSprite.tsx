@@ -8,7 +8,7 @@ import {
   palletBoardSlots,
   palletNailPosition,
 } from "../../game/bench-work/pallet-geometry";
-import { board } from "../../game/board-helpers";
+import { palletBoard } from "../../game/board-helpers";
 import { omitUndefined } from "../../utils/objectUtils";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import { BoardSprite } from "./BoardSprite";
@@ -43,11 +43,11 @@ export const PalletSprite: React.FC<{
   alpha?: number;
   tint?: number;
 }> = ({ pallet, flipped = false, layers, alpha, tint }) => {
-  // The very boards prying frees (see pryPalletNailAction) — same dims,
-  // and seeded below by the same slot id the freed board inherits, so a
-  // pulled board keeps its exact grain lying in place.
-  const deckBoard = useMemo(() => board("pallet", 36, 4, 2), []);
-  const stringerBoard = useMemo(() => board("pallet", 48, 6, 6), []);
+  // The very board prying frees (see pryPalletNailAction) — one piece of
+  // stock for every berth, seeded below by the same slot id the freed
+  // board inherits, so a pulled board keeps its exact grain lying in
+  // place.
+  const palletStock = useMemo(() => palletBoard(), []);
 
   const order = palletLayerOrder(flipped);
   const shown = layers ?? order;
@@ -88,7 +88,7 @@ export const PalletSprite: React.FC<{
           angle={slot.angleDeg}
         >
           <BoardSprite
-            board={slot.layer === "stringer" ? stringerBoard : deckBoard}
+            board={palletStock}
             seed={`${pallet.id}:${slot.target.kind}-${slot.target.index}`}
             tint={tint}
           />

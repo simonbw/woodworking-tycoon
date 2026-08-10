@@ -12,7 +12,7 @@ import {
   palletPointOnBench,
   palletStackPlacement,
 } from "./bench-layout";
-import { PALLET_WIDTH_IN } from "./pallet-geometry";
+import { PALLET_HEIGHT_IN, PALLET_WIDTH_IN } from "./pallet-geometry";
 
 /** The hand-stacked slop palletStackPlacement allows, plus a hair. */
 const PILE_SLOP = 0.8;
@@ -56,14 +56,16 @@ describe("bench layout", () => {
   it("seats an unplaced pallet squarely centered, overhang and all", () => {
     const pallet = makePallet();
     const seat = defaultBenchPlacement(MACHINE_TYPES.workspace, pallet);
-    // A 46" pallet centered on a 40" top hangs 3" past each end
+    // A 34" square pallet on a 40 × 30 top: room to spare across the
+    // bench, and 2" hanging past each end of the short way
     assert.deepStrictEqual(seat, {
       xIn: 20,
       yIn: 15,
       angleDeg: 0,
       flipped: false,
     });
-    assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 < 0);
+    assert.ok(seat.xIn - PALLET_WIDTH_IN / 2 > 0);
+    assert.ok(seat.yIn - PALLET_HEIGHT_IN / 2 < 0);
   });
 
   it("carries pallet points through the placement, there and back", () => {
@@ -132,13 +134,14 @@ describe("bench layout", () => {
       { kind: "stringer", index: 0 },
       "p:stringer-0",
     );
-    // Stripping a pallet sorts as it goes: the two piles don't overlap
-    // (a 4"-wide deck board and a 6"-wide stringer, edge to edge)
+    // Stripping a pallet sorts as it goes: the two piles don't overlap.
+    // One board builds the whole pallet, so the lanes are both a board
+    // wide and sit edge to edge — 4" between their centers.
     assert.ok(stringer.yIn > deck.yIn);
-    assert.ok(stringer.yIn - deck.yIn >= 5 - PILE_SLOP);
-    // A 48" stringer outruns the 40" top, so it can't go flush left —
-    // it centers instead of hanging in space
-    assert.ok(Math.abs(stringer.xIn - 20) <= PILE_SLOP);
+    assert.ok(stringer.yIn - deck.yIn >= 4 - PILE_SLOP);
+    // Same board, same length: the stringer lane goes flush left where
+    // the deck lane does, rather than centering the way a longer one did
+    assert.ok(Math.abs(stringer.xIn - 18) <= PILE_SLOP);
   });
 
   it("seats a freed board deterministically by its id", () => {

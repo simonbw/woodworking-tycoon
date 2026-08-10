@@ -144,21 +144,9 @@ describe("explainFeedRefusal", () => {
   it("falls back to the requirement description without an authored line", () => {
     const pallet = makeMaterial<Pallet>({
       type: "pallet",
-      deckBoards: [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-      ],
+      deckBoards: [true, true, true, true, true, true, true, true],
       stringers: [true, true, true],
-      nails: initialPalletNails(Array(11).fill(true), [true, true, true]),
+      nails: initialPalletNails(Array(8).fill(true), [true, true, true]),
     });
     assert.match(
       refusalAt("jointer", "jointFace", undefined, [pallet])!,

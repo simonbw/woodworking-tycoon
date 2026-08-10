@@ -81,7 +81,7 @@ per-operation scripts that compose it.
    `seatInGroup` (`bench-work/bench-group.ts`) lets a piece follow the
    hand until its **middle** reaches the edge of the surface, then hangs
    there. Overhang is fine (stock hangs off a real bench constantly; a
-   46" pallet outsizes the makeshift bench's 40" top on both axes); what
+   pallet hangs off the makeshift bench's short axis); what
    a bench can't do is hold something balanced past its own edge.
    Turning and flipping pivot about the middle — the one point being
    held — so they never re-seat anything. A blueprint slot is the
@@ -198,8 +198,9 @@ is the pallet instance transforming nail by nail:
   presses a nail; a short lever animation paces the pull, then the
   commit lands.
 - The nails are pallet state (`Pallet.nails`): one at every crossing of
-  a present deck board and a present stringer, so every nail is in two
-  boards and joins exactly them. They render in both views from the same
+  two present boards — a pallet is one board repeated, and the two rows
+  are directions, not sizes — so every nail is in two boards and joins
+  exactly them. They render in both views from the same
   geometry (`pallet-geometry.ts` / `PalletSprite`), so the shop floor
   shows the same half-pried pallet the bench view does.
 - Each face only presents its own side's nail heads. The pallet is a

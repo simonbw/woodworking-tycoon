@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board, isBoard } from "../board-helpers";
+import { board, isBoard, palletBoard } from "../board-helpers";
 import { Operation, operationParameters } from "../Machine";
 import { miterSaw } from "../machines/miterSaw";
 import { boardEnds } from "../Materials";
@@ -65,15 +65,15 @@ describe("drill", () => {
     assert.deepStrictEqual(buildPlanterBox.requiredConsumables, [
       { id: "screws", amount: 6 },
     ]);
-    const slats = Array.from({ length: 5 }, () => board("pallet", 24, 4, 2));
+    const slats = Array.from({ length: 5 }, () => board("pallet", 24, 4, 4));
     const { outputs } = buildPlanterBox.output(slats, {});
     assert.strictEqual(outputs.length, 1);
     assert.strictEqual(outputs[0].type, "planterBox");
     assert.ok("species" in outputs[0] && outputs[0].species === "pallet");
   });
 
-  it("rejects uncut deck boards — the slats must be crosscut to 2' first", () => {
-    const freshDeckBoard = board("pallet", 36, 4, 2);
+  it("rejects uncut pallet boards — the slats must be crosscut to 2' first", () => {
+    const freshDeckBoard = palletBoard();
     assert.strictEqual(
       materialMeetsInput(
         freshDeckBoard,
@@ -83,7 +83,7 @@ describe("drill", () => {
     );
     assert.strictEqual(
       materialMeetsInput(
-        board("pallet", 24, 4, 2),
+        board("pallet", 24, 4, 4),
         buildPlanterBox.getInputMaterials({})[0],
       ),
       true,

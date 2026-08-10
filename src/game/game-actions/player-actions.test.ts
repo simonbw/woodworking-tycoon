@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
+import { board, palletBoard } from "../board-helpers";
 import { assemblyFramePlacement, slotOnBench } from "../bench-work/assembly";
 import { benchTopSizeIn } from "../bench-work/bench-layout";
 import { RUSTIC_SHELF_BLUEPRINT } from "../bench-work/blueprint";
@@ -441,18 +441,10 @@ describe("dropMaterialAction", () => {
 
 describe("the blueprint assembly's claim", () => {
   it("consumes the seated boards, leaving spare matching stock on the bench", () => {
-    const stringer = () => board("pallet", 48, 6, 6);
-    const deckBoard = () => board("pallet", 36, 4, 2);
     // The spares come first in the bay: a first-match claim would take
     // them and leave the seated boards lying under the finished shelf
-    const spares = [stringer(), deckBoard()];
-    const seatedPieces = [
-      stringer(),
-      stringer(),
-      deckBoard(),
-      deckBoard(),
-      deckBoard(),
-    ];
+    const spares = [palletBoard(), palletBoard()];
+    const seatedPieces = RUSTIC_SHELF_BLUEPRINT.slots.map(palletBoard);
     const base: MachineState = {
       machineTypeId: "workspace",
       position: [4, 2],
@@ -487,7 +479,7 @@ describe("the blueprint assembly's claim", () => {
     const state: GameState = {
       ...initialGameState,
       machines: [bench],
-      consumables: { ...initialGameState.consumables, nails: 6 },
+      consumables: { ...initialGameState.consumables, nails: 8 },
     };
     const result = operateMachineAction(new Machine(bench))(state);
     assert.strictEqual(

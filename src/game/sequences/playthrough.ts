@@ -45,22 +45,27 @@ const WORKBENCH = "workspace";
 
 // ---------------------------------------------------------------------------
 // Stock predicates. Pallet salvage is the whole early economy: prying one
-// apart yields 6"-wide stringers and 4"-wide deck boards, all rough.
+// apart yields eleven of the same board — 3' × 4" × 4/4, all rough.
 // ---------------------------------------------------------------------------
 
 const isPallet = (m: MaterialInstance) => m.type === "pallet";
 const isBoard = (m: MaterialInstance) => m.type === "board";
-const palletBoard = (width: number, length?: number) => (m: MaterialInstance) =>
-  isBoard(m) &&
-  (m as { species: string }).species === "pallet" &&
-  (m as { width: number }).width === width &&
-  (length === undefined || (m as { length: number }).length === length);
+const palletBoardOfLength =
+  (length?: number) =>
+  (m: MaterialInstance): boolean =>
+    isBoard(m) &&
+    (m as { species: string }).species === "pallet" &&
+    (m as { width: number }).width === 4 &&
+    (length === undefined || (m as { length: number }).length === length);
 
-/** The 6"-wide stringers a pallet's frame is made of. */
-const stringer = palletBoard(6);
-/** The 4"-wide deck boards nailed across it, 3' as pried off. */
-const deckBoard = palletBoard(4);
-const deckBoardOfLength = (length: number) => palletBoard(4, length);
+/** A whole pallet board, uncut — what the shelf is built from. By the
+ * later rungs the floor is also littered with 2' and 1' crosscuts, and
+ * those don't fill a shelf slot. */
+const wholePalletBoard = palletBoardOfLength(36);
+/** Boards for one rustic shelf: two sides, two shelves, two supports. */
+const SHELF_BOARDS = 6;
+/** Nails for one rustic shelf: two per side per shelf. */
+const SHELF_NAILS = 8;
 
 const isRusticShelf = (m: MaterialInstance) => m.type === "rusticShelf";
 
@@ -230,7 +235,7 @@ function makeRusticFrameRail(shop: ShopDriver, length: number): void {
     species: "pallet",
     length: 36,
     width: 2,
-    thickness: 2,
+    thickness: 4,
     surface: "rough",
   };
   // Scavenged stock starts rough, so it climbs two grades to sanded.
@@ -290,9 +295,9 @@ function makeOneFrameRail(shop: ShopDriver): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Pry a pallet apart at the bench. Four deck boards come off one at a time,
- * then a last pass takes the stringers and the final board together, and the
- * nails go back into the shop's tin.
+ * Pry a pallet apart at the bench. The deck boards come off one at a time,
+ * then a last pass takes the frame boards and the final deck board together,
+ * and the nails go back into the shop's tin.
  */
 function dismantleAPallet(shop: ShopDriver): ShopDriver {
   // No plan gets selected: a staged pallet offers prying on its own, and
@@ -304,7 +309,7 @@ function dismantleAPallet(shop: ShopDriver): ShopDriver {
     .takeStock(WORKBENCH);
 }
 
-/** Build one rustic shelf: two stringers as the shelves, three boards behind. */
+/** Build one rustic shelf: six whole pallet boards, no cuts. */
 function buildRusticShelf(shop: ShopDriver): ShopDriver {
   // The shelf is the hammer's recipe: the grind runs between rungs whose
   // rails hold other tools, so make sure the hammer is back on the bench
@@ -314,8 +319,7 @@ function buildRusticShelf(shop: ShopDriver): ShopDriver {
   return shop
     .standAtOperatorCell(WORKBENCH)
     .select(WORKBENCH, "buildRusticPalletShelf")
-    .load(WORKBENCH, stringer, 2)
-    .load(WORKBENCH, deckBoard, 3)
+    .load(WORKBENCH, wholePalletBoard, SHELF_BOARDS)
     .run(WORKBENCH)
     .collect(WORKBENCH);
 }
@@ -352,7 +356,7 @@ function machinePrice(machineTypeId: keyof typeof MACHINE_TYPES): number {
  * One selling round: scavenge a truckload, pry it apart, build two rustic
  * shelves, and put them up on the phone at fair value. Only the shelves
  * go up — the marketplace doesn't take raw stock (see `isListable`), so
- * the leftover deck boards stay on the floor for the jobs to eat.
+ * the leftover pallet boards stay on the floor for the jobs to eat.
  * Fair-priced listings are guaranteed out by the two-day pity timer, so a
  * round is deterministic money plus the review-reputation trickle and the
  * shelves' craft XP.
@@ -407,9 +411,14 @@ function grindShelfJob(shop: ShopDriver): ShopDriver {
       offer.requiredMaterials,
     ) !== null;
   while (!satisfied()) {
-    // A pallet carries three stringers and a shelf wants two, so it's one
-    // shelf per pallet however many deck boards pile up.
-    if (shop.stock(stringer).length < 2 || shop.stock(deckBoard).length < 3) {
+    // A pallet carries eleven boards and twenty-four nails; a shelf wants
+    // six boards and eight nails. Either running short sends the player
+    // back to the pry bar — the tin refills the same way the pile does,
+    // and by this rung the other builds have been eating both.
+    if (
+      shop.stock(wholePalletBoard).length < SHELF_BOARDS ||
+      shop.shop.consumables.nails < SHELF_NAILS
+    ) {
       if (shop.stock(isPallet).length === 0) {
         shop.scavenge();
       }
@@ -507,7 +516,7 @@ function commission2(shop: ShopDriver): ShopDriver {
   dismantleAPallet(shop);
   shop.putEverythingDown();
 
-  // Two deck boards rip into the four 2"-wide blanks the frame wants.
+  // Two pallet boards rip into the four 2"-wide blanks the frame wants.
   for (let i = 0; i < 2; i++) {
     shop.feed(
       "jobsiteTableSaw",
@@ -515,7 +524,7 @@ function commission2(shop: ShopDriver): ShopDriver {
         species: "pallet",
         length: 36,
         width: 4,
-        thickness: 2,
+        thickness: 4,
         surface: "rough",
       }),
       { targetWidth: 2 },
@@ -657,10 +666,13 @@ function commission4(shop: ShopDriver): ShopDriver {
   shop.takeFromFloor(isPallet, 1);
   dismantleAPallet(shop);
   for (let slat = 0; slat < 10; slat++) {
-    shop.feed("miterSaw", deckBoardOfLength(36), { angle: 0, cutPosition: 24 });
+    shop.feed("miterSaw", palletBoardOfLength(36), {
+      angle: 0,
+      cutPosition: 24,
+    });
   }
   for (let box = 0; box < 2; box++) {
-    shop.make(WORKBENCH, "buildPlanterBox", deckBoardOfLength(24), {
+    shop.make(WORKBENCH, "buildPlanterBox", palletBoardOfLength(24), {
       count: 5,
     });
     shop.putEverythingDown();
@@ -783,7 +795,7 @@ function commission6(shop: ShopDriver): ShopDriver {
     .standAtOperatorCell(WORKBENCH)
     .select(WORKBENCH, "buildCrosscutSled")
     .load(WORKBENCH, sledBase, 1)
-    .load(WORKBENCH, deckBoardOfLength(36), 2)
+    .load(WORKBENCH, palletBoardOfLength(36), 2)
     .run(WORKBENCH)
     // The finished sled is a physical thing in the bench's output bay:
     // pick it up and carry it over to the saw

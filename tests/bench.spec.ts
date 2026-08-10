@@ -371,7 +371,7 @@ test.describe("Bench view", () => {
       // Real presses walk one deck board's three nails — a nail sits on
       // every deck-board × stringer crossing, and the board only drops
       // with its last one. The center top-deck board's crossings are
-      // pallet inches (23, 2), (23, 17), (23, 32), published through the
+      // pallet inches (17, 1), (17, 17), (17, 33), published through the
       // stage's fit attrs (the center column stays clear of the bench
       // view's floating corner chrome).
       const palletState = () =>
@@ -383,7 +383,7 @@ test.describe("Bench view", () => {
                 (m: any) => m.type === "pallet",
               ) ?? null,
         );
-      const first = await palletPoint(page, 23, 2);
+      const first = await palletPoint(page, 17, 1);
       await page.mouse.click(first.x, first.y);
       // The pry takes a beat — the hammer's lever is the pacing
       await expect
@@ -394,15 +394,15 @@ test.describe("Bench view", () => {
         )
         .toBe(1);
       // One nail banked, but two still hold the board: nothing freed
-      expect((await palletState()).nails).toHaveLength(32);
+      expect((await palletState()).nails).toHaveLength(23);
       expect((await machineState()).inputs).not.toContainEqual(
         expect.objectContaining({ type: "board" }),
       );
-      for (const yIn of [17, 32]) {
+      for (const yIn of [17, 33]) {
         // One pull per lever: presses inside PRY_MS are deliberately
         // ignored, so give each one its beat before the next
         await page.waitForTimeout(400);
-        const at = await palletPoint(page, 23, yIn);
+        const at = await palletPoint(page, 17, yIn);
         await page.mouse.click(at.x, at.y);
       }
       await expect
@@ -422,7 +422,7 @@ test.describe("Bench view", () => {
       });
       expect(after.outputs).toEqual([]);
       // The exact deck board whose nails were pressed came off
-      expect((await palletState()).deckBoards[7]).toBe(false);
+      expect((await palletState()).deckBoards[5]).toBe(false);
       expect((await palletState()).stringers).toEqual([true, true, true]);
 
       // E takes the piece under the pointer — the freed board, which the
@@ -440,7 +440,7 @@ test.describe("Bench view", () => {
           await page.mouse.move(pile.x + (wiggle++ % 2), pile.y);
           return page.getByTestId("bench-stage").getAttribute("data-hovered");
         })
-        .toBe("fx-bench-pallet:deck-7");
+        .toBe("fx-bench-pallet:deck-5");
       await page.keyboard.press("e");
       await expect
         .poll(async () =>
@@ -448,7 +448,7 @@ test.describe("Bench view", () => {
             window.__GET_GAME_STATE__().player.inventory.map((m: any) => m.id),
           ),
         )
-        .toContain("fx-bench-pallet:deck-7");
+        .toContain("fx-bench-pallet:deck-5");
 
       // F over the pallet turns it over — the bottom face's own nails
       // come on offer (they're driven from that side). Hover is pointer
@@ -469,9 +469,9 @@ test.describe("Bench view", () => {
         )
         .toBe(true);
       await page.getByTestId("bench-tool-hammer").click();
-      // Bottom board 0's crossing at local (6.5, 2) mirrors to (39.5, 2)
+      // Bottom board 0's crossing at local (6.33, 1) mirrors to (27.67, 1)
       await page.waitForTimeout(400);
-      const bottomNail = await palletPoint(page, 46 - 6.5, 2);
+      const bottomNail = await palletPoint(page, 34 - 6.33, 1);
       await page.mouse.click(bottomNail.x, bottomNail.y);
       await expect
         .poll(async () =>
@@ -749,20 +749,21 @@ test.describe("Bench view", () => {
       });
     });
 
-    await test.step("blueprint assembly: tip the rail on edge, one drag seats it, the hammer nails the crossings", async () => {
-      // Stage the shelf build: plan pinned, hammer mounted, four parts
-      // already on their outlines (the seated rail stood on edge, the
-      // way its slot demands), one rail parked askew and still flat. The
-      // workspace bench is 36×24, so the 48×36 ghost frame centers at
-      // (18,12) and every slot lands at its product position − (6,6).
+    await test.step("blueprint assembly: tip the board on edge, one drag seats it, the hammer nails the crossings", async () => {
+      // Stage the shelf build: plan pinned, hammer mounted, five parts
+      // already on their outlines (the sides and shelves stood on edge,
+      // the way their slots demand), one shelf board parked askew and
+      // still flat. Every part is the same pallet board. The workspace
+      // bench top is 40×30, so the 36×36 ghost frame centers at (20,15)
+      // and every slot lands at its product position + (2,−3).
       await page.evaluate(() => {
-        const board = (id: string, w: number, l: number, t: number) => ({
+        const board = (id: string) => ({
           id,
           type: "board",
           species: "pallet",
-          length: l,
-          width: w,
-          thickness: t,
+          length: 36,
+          width: 4,
+          thickness: 4,
           surface: "rough",
           jointedFaces: 1,
           jointedEdges: 2,
@@ -777,11 +778,12 @@ test.describe("Bench view", () => {
                   tools: ["sandingBlock", "hammer"],
                   selectedOperationId: "buildRusticPalletShelf",
                   inputMaterials: [
-                    board("bp-r1", 6, 48, 6),
-                    board("bp-r2", 6, 48, 6),
-                    board("bp-s1", 4, 36, 2),
-                    board("bp-s2", 4, 36, 2),
-                    board("bp-s3", 4, 36, 2),
+                    board("bp-sup1"),
+                    board("bp-sup2"),
+                    board("bp-side1"),
+                    board("bp-side2"),
+                    board("bp-shelf1"),
+                    board("bp-shelf2"),
                   ],
                   processingMaterials: [],
                   outputMaterials: [],
@@ -791,17 +793,46 @@ test.describe("Bench view", () => {
                     ticksRemaining: 0,
                   },
                   benchLayout: {
-                    "bp-r1": { xIn: 35, yIn: 7, angleDeg: 96, flipped: false },
-                    "bp-r2": {
+                    "bp-sup1": {
                       xIn: 20,
-                      yIn: 27,
+                      yIn: 11.5,
+                      angleDeg: 90,
+                      flipped: false,
+                    },
+                    "bp-sup2": {
+                      xIn: 20,
+                      yIn: 29.5,
+                      angleDeg: 90,
+                      flipped: false,
+                    },
+                    "bp-side1": {
+                      xIn: 2.5,
+                      yIn: 15,
+                      angleDeg: 0,
+                      flipped: false,
+                      onEdge: true,
+                    },
+                    "bp-side2": {
+                      xIn: 37.5,
+                      yIn: 15,
+                      angleDeg: 0,
+                      flipped: false,
+                      onEdge: true,
+                    },
+                    "bp-shelf1": {
+                      xIn: 20,
+                      yIn: 9,
                       angleDeg: 90,
                       flipped: false,
                       onEdge: true,
                     },
-                    "bp-s1": { xIn: 4, yIn: 15, angleDeg: 0, flipped: false },
-                    "bp-s2": { xIn: 20, yIn: 15, angleDeg: 0, flipped: false },
-                    "bp-s3": { xIn: 36, yIn: 15, angleDeg: 0, flipped: false },
+                    // Parked flat and 6° off, lying across the far side
+                    "bp-shelf2": {
+                      xIn: 26,
+                      yIn: 22,
+                      angleDeg: 96,
+                      flipped: false,
+                    },
                   },
                 }
               : m,
@@ -811,28 +842,27 @@ test.describe("Bench view", () => {
       const work = page.getByTestId("bench-work");
       await expect(work).toHaveAttribute("data-script", "assembly");
       const stage = page.getByTestId("bench-stage");
-      await expect(stage).toHaveAttribute("data-seated", "4");
+      await expect(stage).toHaveAttribute("data-seated", "5");
 
-      // A bare hand over the empty rail outline reads its requirement —
-      // bench (-2, 3) sits on rail-0's thin strip out on the overhang,
-      // clear of every piece (the parked rail crosses the strip's middle)
-      const overGhost = await inchPoint(page, -2, 3);
+      // A bare hand over the empty shelf outline reads its requirement —
+      // bench (30, 27) sits on shelf-1's thin strip, clear of every piece
+      const overGhost = await inchPoint(page, 30, 27);
       await page.mouse.move(overGhost.x, overGhost.y);
       await expect(page.getByTestId("slot-tip")).toBeVisible();
-      await expect(page.getByTestId("slot-tip")).toContainText("rail");
+      await expect(page.getByTestId("slot-tip")).toContainText("shelf");
       await expect(page.getByTestId("slot-tip")).toContainText("stood on edge");
 
-      // The parked rail lies flat: F flips it up on its long edge (the
-      // one flip verb — boards tip on edge, the pallet turns over). The
-      // park spot overlaps a seated shelf on purpose — a free piece lies
-      // on top and the hover must prefer it.
-      const from = await inchPoint(page, 35, 7);
+      // The parked shelf board lies flat: F flips it up on its long edge
+      // (the one flip verb — boards tip on edge, the pallet turns over).
+      // The park spot crosses a seated side on purpose — a free piece
+      // lies on top and the hover must prefer it.
+      const from = await inchPoint(page, 26, 22);
       await page.mouse.move(from.x, from.y);
       await expect(page.getByTestId("slot-tip")).toBeHidden();
       // Wait for the hover to land before the keypress — the key handler
       // reads the hovered piece, and a busy renderer commits it a beat
       // after the pointer arrives
-      await expect(stage).toHaveAttribute("data-hovered", "bp-r1");
+      await expect(stage).toHaveAttribute("data-hovered", "bp-shelf2");
       // The chip names the stop F reaches next, so the three-stop cycle
       // is readable before it's pressed rather than after
       const hints = page.getByTestId("bench-key-hints");
@@ -842,7 +872,7 @@ test.describe("Bench view", () => {
         .poll(async () =>
           page.evaluate(
             () =>
-              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"]
                 .onEdge ?? false,
           ),
         )
@@ -855,7 +885,7 @@ test.describe("Bench view", () => {
         .poll(async () =>
           page.evaluate(
             () =>
-              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"]
                 .onEnd ?? false,
           ),
         )
@@ -866,7 +896,7 @@ test.describe("Bench view", () => {
         .poll(async () =>
           page.evaluate(() => {
             const at =
-              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"];
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"];
             return [at.onEdge ?? false, at.onEnd ?? false];
           }),
         )
@@ -878,33 +908,37 @@ test.describe("Bench view", () => {
         .poll(async () =>
           page.evaluate(
             () =>
-              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-r1"]
+              window.__GET_GAME_STATE__().machines[0].benchLayout["bp-shelf2"]
                 .onEdge ?? false,
           ),
         )
         .toBe(true);
 
-      // The one real snap-drag: the tipped rail onto rail-0's outline
-      // (product (24,6) → bench (20,3)).
-      const seat = await inchPoint(page, 20, 3);
+      // The one real snap-drag: the tipped board onto shelf-1's outline
+      // (product (18,30) → bench (20,27)).
+      const seat = await inchPoint(page, 20, 27);
       await page.mouse.move(from.x, from.y);
       await page.mouse.down();
       await page.mouse.move(seat.x + 4, seat.y - 3, { steps: 12 });
       await page.mouse.up();
-      await expect(stage).toHaveAttribute("data-seated", "5");
+      await expect(stage).toHaveAttribute("data-seated", "6");
 
-      // The hammer drives one nail per lit crossing; the sixth commits
-      // the whole build — nails spent, the shelf lying where it was built
+      // The hammer drives one nail per lit crossing; the eighth commits
+      // the whole build — nails spent, the shelf lying where it was built.
+      // Every nail is driven from outside a side, into the end of a shelf
+      // board or the support tucked under it.
       await page.getByTestId("bench-tool-hammer").click();
       const productX = Number(await stage.getAttribute("data-product-x"));
       const productY = Number(await stage.getAttribute("data-product-y"));
       const crossings = [
-        [8, 6],
-        [24, 6],
-        [40, 6],
-        [8, 30],
-        [24, 30],
-        [40, 30],
+        [0.5, 12],
+        [35.5, 12],
+        [0.5, 14.5],
+        [35.5, 14.5],
+        [0.5, 30],
+        [35.5, 30],
+        [0.5, 32.5],
+        [35.5, 32.5],
       ];
       for (const [fx, fy] of crossings) {
         const p = await inchPoint(page, productX + fx, productY + fy);
@@ -922,10 +956,10 @@ test.describe("Bench view", () => {
         };
       });
       expect(built.output).toBe("rusticShelf");
-      // The bill of materials rides the product: all five parts
-      expect(built.parts).toBe(5);
+      // The bill of materials rides the product: all six parts
+      expect(built.parts).toBe(6);
       expect(built.inputs).toBe(0);
-      expect(built.nails).toBe(4);
+      expect(built.nails).toBe(2);
     });
 
     await test.step("screwed assembly: the drill drives the planter box's screws", async () => {
@@ -940,7 +974,7 @@ test.describe("Bench view", () => {
           species: "pallet",
           length: l,
           width: 4,
-          thickness: 2,
+          thickness: 4,
           surface: "rough",
           jointedFaces: 1,
           jointedEdges: 2,

@@ -79,14 +79,14 @@ export function rollScavengeStops(
 }
 
 function makeDamagedPallet(rng: () => number): Pallet {
-  // 6-11 of the 11 deck boards survived, in random spots
-  const deckBoardCount = 6 + Math.floor(rng() * 6);
-  const positions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  // 5-8 of the 8 deck boards survived, in random spots
+  const deckBoardCount = 5 + Math.floor(rng() * 4);
+  const positions = [0, 1, 2, 3, 4, 5, 6, 7];
   for (let i = positions.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [positions[i], positions[j]] = [positions[j], positions[i]];
   }
-  const deckBoards = Array(11).fill(false) as boolean[];
+  const deckBoards = Array(8).fill(false) as boolean[];
   for (const position of positions.slice(0, deckBoardCount)) {
     deckBoards[position] = true;
   }
@@ -96,7 +96,7 @@ function makeDamagedPallet(rng: () => number): Pallet {
     rng() < 0.3 ? [true, true, false] : [true, true, true];
   return makeMaterial<Pallet>({
     type: "pallet",
-    deckBoards: deckBoards as Tuple<boolean, 11>,
+    deckBoards: deckBoards as Tuple<boolean, 8>,
     stringers,
     // A weathered pallet still holds a nail at every crossing that has
     // wood on both sides — missing boards took theirs with them

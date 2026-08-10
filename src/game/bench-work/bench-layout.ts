@@ -4,13 +4,11 @@ import { MaterialInstance } from "../Materials";
 import { INCHES_PER_CELL } from "../shop-scale";
 import { productBlueprintFor } from "./blueprint";
 import {
-  DECK_BOARD_LENGTH_IN,
-  DECK_BOARD_WIDTH_IN,
   PalletBoardRef,
+  PALLET_BOARD_LENGTH_IN,
+  PALLET_BOARD_WIDTH_IN,
   PALLET_HEIGHT_IN,
   PALLET_WIDTH_IN,
-  STRINGER_LENGTH_IN,
-  STRINGER_WIDTH_IN,
 } from "./pallet-geometry";
 
 /**
@@ -126,10 +124,12 @@ export function palletStackPlacement(
 ): BenchPlacement {
   const { widthIn, heightIn } = benchTopSizeIn(type);
   const stringer = target.kind === "stringer";
-  const lengthIn = stringer ? STRINGER_LENGTH_IN : DECK_BOARD_LENGTH_IN;
+  // One board builds the whole pallet, so both lanes are a board wide and
+  // a board long — the sort is still by role, stringers behind the deck.
+  const lengthIn = PALLET_BOARD_LENGTH_IN;
   const laneYIn = stringer
-    ? DECK_BOARD_WIDTH_IN + STRINGER_WIDTH_IN / 2
-    : DECK_BOARD_WIDTH_IN / 2;
+    ? PALLET_BOARD_WIDTH_IN * 1.5
+    : PALLET_BOARD_WIDTH_IN / 2;
   const rng = seededRandom(`bench-pile-${boardId}`);
   return {
     // Half the board in from the left — or the middle of the top, once

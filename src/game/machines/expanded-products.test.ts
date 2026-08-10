@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
+import { board, palletBoard } from "../board-helpers";
 import { Operation } from "../Machine";
 import {
   describeMaterialRequirement,
@@ -47,7 +47,7 @@ describe("buildBirdhouse", () => {
   /** A front-wall board: 12" deck crosscut, top end mitered at 45°. */
   const frontBoard = (): Board =>
     makeMaterial<Board>({
-      ...board("pallet", 12, 4, 2),
+      ...board("pallet", 12, 4, 4),
       ends: {
         left: { kind: "square" },
         right: { kind: "mitered", angle: 45 },
@@ -58,12 +58,12 @@ describe("buildBirdhouse", () => {
     const frontReq = op.getInputMaterials({})[0];
     assert.ok(materialMeetsInput(frontBoard(), frontReq));
     // A plain square crosscut can't seat the sloped roof
-    assert.ok(!materialMeetsInput(board("pallet", 12, 4, 2), frontReq));
+    assert.ok(!materialMeetsInput(board("pallet", 12, 4, 4), frontReq));
     // A frame rail is mitered at both ends — too much saw work
     assert.ok(
       !materialMeetsInput(
         makeMaterial<Board>({
-          ...board("pallet", 12, 4, 2),
+          ...board("pallet", 12, 4, 4),
           ends: {
             left: { kind: "mitered", angle: -45 },
             right: { kind: "mitered", angle: 45 },
@@ -80,10 +80,10 @@ describe("buildBirdhouse", () => {
     const inputs = [
       frontBoard(),
       frontBoard(),
-      board("pallet", 12, 6, 6), // stringer-crosscut roof
-      board("pallet", 6, 4, 2),
-      board("pallet", 6, 4, 2),
-      board("pallet", 12, 4, 2), // floor, square-ended
+      board("pallet", 12, 4, 4), // the roof, off the same board
+      board("pallet", 6, 4, 4),
+      board("pallet", 6, 4, 4),
+      board("pallet", 12, 4, 4), // floor, square-ended
     ];
     const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
@@ -99,10 +99,10 @@ describe("buildBirdhouse", () => {
     const inputs = [
       frontBoard(),
       frontBoard(),
-      board("pallet", 12, 4, 2),
-      board("pallet", 12, 6, 6),
-      board("pallet", 6, 4, 2),
-      board("pallet", 6, 4, 2),
+      board("pallet", 12, 4, 4),
+      board("pallet", 12, 4, 4),
+      board("pallet", 6, 4, 4),
+      board("pallet", 6, 4, 4),
     ];
     const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
@@ -111,9 +111,9 @@ describe("buildBirdhouse", () => {
 });
 
 describe("buildCrate", () => {
-  it("takes ten whole deck boards — a slatted bottom and four walls", () => {
+  it("takes ten whole pallet boards — a slatted bottom and four walls", () => {
     const op = toolOp("hammer", "buildCrate");
-    const inputs = Array.from({ length: 10 }, () => board("pallet", 36, 4, 2));
+    const inputs = Array.from({ length: 10 }, palletBoard);
     const { outputs } = op.output(inputs, {});
     assert.ok(isFinishedProduct(outputs[0]));
     assert.strictEqual(outputs[0].type, "crate");
@@ -124,17 +124,16 @@ describe("buildStepStool", () => {
   it("takes stout sides plus thinner treads", () => {
     const op = toolOp("drill", "buildStepStool");
     const [sides, treads] = op.getInputMaterials({});
-    // Crosscut pallet stringers qualify as sides
-    assert.ok(materialMeetsInput(board("pallet", 24, 6, 6), sides));
-    // Deck-board crosscuts qualify as treads
+    // Stout hardwood qualifies as sides — pallet wood is 4/4 and doesn't
+    assert.ok(materialMeetsInput(board("oak", 24, 6, 6), sides));
+    assert.ok(!materialMeetsInput(board("pallet", 24, 4, 4), sides));
+    // Pallet crosscuts qualify as treads
     assert.ok(materialMeetsInput(board("pallet", 24, 4, 2), treads));
-    // A tread is too thin to be a side
-    assert.ok(!materialMeetsInput(board("pallet", 24, 4, 2), sides));
 
     const { outputs } = op.output(
       [
-        board("pallet", 24, 6, 6),
-        board("pallet", 24, 6, 6),
+        board("oak", 24, 6, 6),
+        board("oak", 24, 6, 6),
         board("pallet", 24, 4, 2),
         board("pallet", 24, 4, 2),
       ],
