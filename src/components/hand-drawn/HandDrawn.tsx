@@ -148,7 +148,7 @@ export const HandCheck: React.FC<{
     <svg
       aria-hidden
       viewBox="0 0 23 23"
-      className={classNames("h-[1.15em] w-[1.15em] flex-none", className)}
+      className={classNames("h-[1em] w-[1em] flex-none", className)}
     >
       <path
         d={d}
@@ -247,7 +247,7 @@ export const HandFrame: React.FC<{
         d={d}
         fill="none"
         stroke="currentColor"
-        strokeWidth={1.5}
+        strokeWidth={1.9}
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
       />

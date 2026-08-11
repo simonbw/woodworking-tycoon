@@ -142,11 +142,19 @@ const ChecklistRow: React.FC<{
     data-testid={`tutorial-step-${step.id}`}
     data-checked={checked}
   >
+    {/* The box stays; the tick is drawn into it, running past the corner
+        the way one does. */}
     <span
       aria-hidden
-      className="relative top-[0.15em] flex h-[0.95em] w-[0.95em] flex-none items-center justify-center"
+      className="relative top-[0.15em] flex flex-none items-center justify-center"
     >
-      {checked ? <HandCheck seed={step.id} /> : <HandCheckbox seed={step.id} />}
+      <HandCheckbox seed={step.id} />
+      {checked && (
+        <HandCheck
+          seed={step.id}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        />
+      )}
     </span>
     <span className="relative">
       {step.label}

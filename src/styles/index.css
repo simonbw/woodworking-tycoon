@@ -115,10 +115,10 @@
       ),
       repeating-linear-gradient(
         92deg,
-        rgba(120, 96, 52, 0.04) 0px,
-        rgba(120, 96, 52, 0.04) 1px,
+        rgba(120, 96, 52, 0.022) 0px,
+        rgba(120, 96, 52, 0.022) 1px,
         transparent 1px,
-        transparent 4px
+        transparent 5px
       );
     clip-path: polygon(
       0.4% 0.6%,
