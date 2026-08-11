@@ -2,6 +2,7 @@ import React from "react";
 import { useBenchDiveActive } from "./bench-view/benchSceneSlot";
 import { CommissionTracker } from "./CommissionTracker";
 import { DustTutorialCard } from "./DustTutorialCard";
+import { NightfallCard } from "./NightfallCard";
 import { HandsStrip } from "./HandsStrip";
 import { NavBar } from "./NavBar";
 import { SuppliesSection } from "./SuppliesSection";
@@ -58,6 +59,7 @@ const HomePageContent: React.FC = () => {
         <CommissionTracker />
         <TutorialCard />
         <DustTutorialCard />
+        <NightfallCard />
       </div>
 
       <div
