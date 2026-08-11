@@ -131,6 +131,9 @@ wiring: same path, same size, same component.
 
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
+- [ ] Lumber shelf — `machine-sprites/LumberShelfSprite.tsx`. The starter
+      2×1 shelf every shop opens with; art for the empty shelf, with
+      parked stock keeping its data-driven board colors.
 - [ ] Sawhorses — `machine-sprites/SawhorsesSprite.tsx`. Two folding horses
       seen from above, a couple of feet apart across a 3×2-ft span. The
       sheet lying across them is staged stock and keeps rendering through

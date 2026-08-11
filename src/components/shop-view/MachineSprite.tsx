@@ -24,6 +24,7 @@ import {
 import { BandSawSprite } from "../machine-sprites/BandSawSprite";
 import { GarbageCanSprite } from "../machine-sprites/GarbageCanSprite";
 import { SawhorsesSprite } from "../machine-sprites/SawhorsesSprite";
+import { LumberShelfSprite } from "../machine-sprites/LumberShelfSprite";
 import { StorageRackSprite } from "../machine-sprites/StorageRackSprite";
 import { JobsiteTableSawSprite } from "../machine-sprites/JobsiteTableSawSprite";
 import { JointerSprite } from "../machine-sprites/JointerSprite";
@@ -295,6 +296,9 @@ const LocalMachineSprite: React.FC<{ machine: Machine }> = ({ machine }) => {
   }
   if (machine.type.id === MACHINE_TYPES.storageRack.id) {
     return <StorageRackSprite machine={machine} />;
+  }
+  if (machine.type.id === MACHINE_TYPES.lumberShelf.id) {
+    return <LumberShelfSprite machine={machine} />;
   }
 
   const art = (() => {
