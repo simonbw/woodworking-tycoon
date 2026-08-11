@@ -178,6 +178,19 @@ const hasBirdhouse = (gameState: GameState) =>
 const soldFirstPiece = (gameState: GameState) =>
   gameState.progression.salesCompleted > 0;
 
+/**
+ * Whether the shop has yet to see its first pallet in any form — no
+ * pallet, none of its boards, no shelf, no sale. The scavenge step reads
+ * this, and so does startScavengingAction: while it holds, a scavenging
+ * trip plants its find at the first stop, so the trip the card points
+ * at can't come home empty.
+ */
+export const needsFirstPallet = (gameState: GameState): boolean =>
+  countOf(gameState, isPallet) === 0 &&
+  !hasShelfParts(gameState) &&
+  !hasShelf(gameState) &&
+  !soldFirstPiece(gameState);
+
 const isBirdhousePartStock = (material: MaterialInstance): material is Board =>
   isPalletBoard(material) && isBoard(material);
 
@@ -251,11 +264,7 @@ export const TUTORIAL_GOALS: ReadonlyArray<TutorialGoal> = [
         id: "scavenge",
         label: "Scavenge a pallet",
         targets: [{ kind: "truck", part: "cab" }],
-        satisfied: (gameState) =>
-          countOf(gameState, isPallet) > 0 ||
-          hasShelfParts(gameState) ||
-          hasShelf(gameState) ||
-          soldFirstPiece(gameState),
+        satisfied: (gameState) => !needsFirstPallet(gameState),
       },
       {
         id: "dismantle",

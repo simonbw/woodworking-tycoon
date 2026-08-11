@@ -173,11 +173,66 @@ describe("the street pass", () => {
       state: "browsing",
       browseTicksLeft: 1,
     };
-    const state = atTheStand([], { stand: [piece], customers: [browser] });
+    // A shop with a sale behind it — the first browse never walks away.
+    const state = atTheStand([], {
+      stand: [piece],
+      customers: [browser],
+      progression: { ...initialGameState.progression, salesCompleted: 1 },
+    });
     // Spawn roll misses, then the buy roll misses too.
     const result = standTickPass(tape([0.99, 0.9]))(state);
     assert.deepStrictEqual(result.stand, [piece]);
     assert.strictEqual(result.money, state.money);
     assert.strictEqual(result.customers[0].state, "leaving");
+  });
+});
+
+describe("the first sale", () => {
+  it("summons a customer to a first-stocked stand without waiting on the dice", () => {
+    const state = atTheStand([], { stand: [shelf()] });
+    // The spawn roll never comes up — the customer appears anyway.
+    const result = standTickPass(tape([], 0.99))(state);
+    assert.strictEqual(result.customers.length, 1);
+
+    // No second summons while that one is still headed for the table.
+    const again = standTickPass(tape([], 0.99))(result);
+    assert.strictEqual(again.customers.length, 1);
+  });
+
+  it("never summons after the shop has sold something", () => {
+    const state = atTheStand([], {
+      stand: [shelf()],
+      progression: { ...initialGameState.progression, salesCompleted: 1 },
+    });
+    const result = standTickPass(tape([], 0.99))(state);
+    assert.strictEqual(result.customers.length, 0);
+  });
+
+  it("the first browse always buys, even on a cold roll", () => {
+    const piece = shelf();
+    const browser: Customer = {
+      id: "customer-test",
+      x: 2,
+      walkDirection: 1,
+      state: "browsing",
+      browseTicksLeft: 1,
+    };
+    const state = atTheStand([], { stand: [piece], customers: [browser] });
+    const result = standTickPass(tape([], 0.99))(state);
+    assert.deepStrictEqual(result.stand, []);
+    assert.strictEqual(result.progression.salesCompleted, 1);
+  });
+
+  it("carries an unlucky shop all the way to its first sale", () => {
+    // Every roll as cold as they come: no spawn would pass, no buy
+    // would pass. The guarantee walks its customer to the table anyway.
+    const cold = () => 0.99;
+    let state = atTheStand([], { stand: [shelf()] });
+    for (let i = 0; i < 400 && state.progression.salesCompleted === 0; i++) {
+      state = standTickPass(cold)(state);
+    }
+    assert.strictEqual(state.progression.salesCompleted, 1);
+    assert.deepStrictEqual(state.stand, []);
+    assert.ok(state.money > initialGameState.money);
   });
 });
