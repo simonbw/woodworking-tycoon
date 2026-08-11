@@ -183,9 +183,33 @@ test.describe("Bench view", () => {
     });
 
     await test.step("Tab spreads the bench open onto the scene — no plan for tool work", async () => {
+      // Park the player a cell to the side of the operation cell, facing
+      // away, so the stance walk below has somewhere to walk from.
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          player: { ...state.player, position: [2, 4], direction: 0 },
+        }));
+      });
+      await page.waitForTimeout(50);
       await blur();
       await page.keyboard.press("Tab");
       await expect(page.getByTestId("station-sheet")).toBeVisible();
+      // Opening the view walks the body into the standard working
+      // stance — centered on the bench's operation cell, squared up to
+      // face the top — so the zoomed-in look finds the woodworker
+      // standing at the bench properly.
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const s = window.__GET_GAME_STATE__();
+            return {
+              position: s.player.position,
+              direction: s.player.direction,
+            };
+          }),
+        )
+        .toEqual({ position: [1, 4], direction: 1 });
       // Tool work isn't a plan: the stale Sand Board selection in the
       // fixture is inert, the bench opens idle with the board lying on
       // it, and the plan pile holds only builds — no sanding sheet

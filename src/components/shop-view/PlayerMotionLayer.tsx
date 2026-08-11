@@ -5,11 +5,14 @@ import { collisionWorld } from "../../game/machine-collision";
 import { setPlayerPositionAction } from "../../game/game-actions/player-actions";
 import {
   directionFromInput,
+  headingForDirection,
   motionCell,
   playerWalkSpeed,
   stepPlayerMotion,
+  workStance,
 } from "../../game/player-motion";
 import { Direction, Vector, vectorEquals } from "../../game/Vectors";
+import { benchSceneSlot } from "../bench-view/benchSceneSlot";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { readHeldMovement } from "./heldMovementInput";
 import { playerMotion, snapPlayerMotionToCell } from "./playerMotionStore";
@@ -44,6 +47,12 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
     direction: gameState.player.direction,
   });
 
+  // The dive (benchKey) whose step-in the body gave up on — wedged
+  // against something on the way to the stance. Remembered so a blocked
+  // walk doesn't shove at the obstacle every frame; a fresh dive tries
+  // again.
+  const stanceBlocked = useRef<string | null>(null);
+
   useEffect(() => {
     snapPlayerMotionToCell(stateRef.current.player.position);
     // The body should come up already facing the way the simulation says.
@@ -67,6 +76,66 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
     const gs = stateRef.current;
     if (gs.player.away || pausedRef.current || (gs.player.busyTicks ?? 0) > 0) {
       playerMotion.moving = false;
+      return;
+    }
+
+    // Leaning over a bench pins the walk keys (ShopView), and the body
+    // steps into the standard working stance instead: centered on the
+    // bench's operation cell, squared up to the top, so the dive's
+    // zoomed-in look always finds the woodworker standing at the bench
+    // properly. Same collision step as walking — the body slides around
+    // whatever is in the way, and gives up rather than shoving if the
+    // way is truly blocked.
+    const lean = benchSceneSlot();
+    if (lean && lean.target === 1) {
+      const stance = workStance(lean.bench);
+      if (stance) {
+        playerMotion.heading = stance.heading;
+        const dx = stance.pos[0] - playerMotion.pos[0];
+        const dy = stance.pos[1] - playerMotion.pos[1];
+        const distance = Math.hypot(dx, dy);
+        if (distance < 0.01) {
+          playerMotion.pos = stance.pos;
+          playerMotion.moving = false;
+        } else if (stanceBlocked.current !== lean.benchKey) {
+          const speed = playerWalkSpeed(gs);
+          // Never overshoot: the last step is cut to land exactly on the
+          // stance. Reduced motion takes the whole way in one step, the
+          // same cut the dive's ramp takes.
+          const dt = lean.instant
+            ? distance / speed
+            : Math.min(ticker.deltaMS / 1000, 0.1, distance / speed);
+          const next = stepPlayerMotion(
+            playerMotion.pos,
+            [dx / distance, dy / distance],
+            speed,
+            dt,
+            collisionWorld(gs),
+          );
+          const remaining = Math.hypot(
+            stance.pos[0] - next[0],
+            stance.pos[1] - next[1],
+          );
+          if (remaining >= distance - 1e-6) {
+            stanceBlocked.current = lean.benchKey;
+          }
+          playerMotion.moving = remaining < distance - 1e-6;
+          playerMotion.pos = next;
+        } else {
+          playerMotion.moving = false;
+        }
+        // Facing the bench is the stance too, wherever the walk got to.
+        const cell = motionCell(playerMotion.pos);
+        if (
+          !vectorEquals(cell, lastSynced.current.cell) ||
+          stance.direction !== lastSynced.current.direction
+        ) {
+          lastSynced.current = { cell, direction: stance.direction };
+          applyAction(setPlayerPositionAction(cell, stance.direction));
+        }
+      } else {
+        playerMotion.moving = false;
+      }
       return;
     }
 
@@ -105,17 +174,3 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
 
   return null;
 };
-
-/** The continuous heading matching a 4-way simulation direction. */
-function headingForDirection(direction: Direction): number {
-  switch (direction) {
-    case 0:
-      return 0;
-    case 1:
-      return -Math.PI / 2;
-    case 2:
-      return Math.PI;
-    case 3:
-      return Math.PI / 2;
-  }
-}

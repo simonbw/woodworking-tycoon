@@ -257,3 +257,60 @@ export function motionCell([x, y]: Vector): Vector {
 export function cellCenter([x, y]: Vector): Vector {
   return [x + 0.5, y + 0.5];
 }
+
+/** The continuous heading matching a 4-way simulation direction. */
+export function headingForDirection(direction: Direction): number {
+  switch (direction) {
+    case 0:
+      return 0;
+    case 1:
+      return -Math.PI / 2;
+    case 2:
+      return Math.PI;
+    case 3:
+      return Math.PI / 2;
+  }
+}
+
+/** Where the body stands and faces while working at a station. */
+export interface WorkStance {
+  /** Body center, in continuous cell coordinates. */
+  readonly pos: Vector;
+  /** Facing, in radians (playerMotion's convention). */
+  readonly heading: number;
+  /** The same facing as the simulation's 4-way direction. */
+  readonly direction: Direction;
+}
+
+/**
+ * The standard working stance at a station: body centered on the
+ * operation cell, squared up to face the footprint. The bench view walks
+ * the body into this stance as the camera dives in, so the zoomed-in
+ * look always finds the woodworker standing at the bench the way a
+ * person works at one, whatever angle they shuffled up at.
+ */
+export function workStance(station: {
+  readonly absoluteOperationPosition: Vector | null;
+  readonly occupiedCells: Vector[];
+}): WorkStance | null {
+  const cell = station.absoluteOperationPosition;
+  if (cell === null || station.occupiedCells.length === 0) {
+    return null;
+  }
+  const pos = cellCenter(cell);
+  // Face the footprint's middle, quantized to the dominant axis: the
+  // operation cell can sit off the footprint's centerline (a wide bench),
+  // and the stance still squares up rather than facing a corner.
+  let sumX = 0;
+  let sumY = 0;
+  for (const occupied of station.occupiedCells) {
+    sumX += occupied[0] + 0.5;
+    sumY += occupied[1] + 0.5;
+  }
+  const count = station.occupiedCells.length;
+  const direction = directionFromInput(
+    [sumX / count - pos[0], sumY / count - pos[1]],
+    1,
+  );
+  return { pos, heading: headingForDirection(direction), direction };
+}

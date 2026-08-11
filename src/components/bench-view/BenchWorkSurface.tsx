@@ -1601,6 +1601,7 @@ export const BenchWorkSurface: React.FC<{
       // clock would otherwise think it already landed and never fire
       // onRest again).
       benchKey: diveKey,
+      bench: machine,
       sceneElement,
       frameFit,
       group,

@@ -1,5 +1,6 @@
 import React from "react";
 import { BenchGroup } from "../../game/bench-work/bench-group";
+import { Machine } from "../../game/Machine";
 import { StageFit } from "./stageMath";
 
 /**
@@ -26,6 +27,12 @@ export interface BenchSceneSlot {
   readonly benchKey: string;
   /** The scene subtree (backdrop + work surface), closures and all. */
   readonly sceneElement: React.ReactNode;
+  /**
+   * The bench the player opened (the group member the view was entered
+   * through). PlayerMotionLayer walks the body into the standard working
+   * stance at this bench while the slot is leaning in.
+   */
+  readonly bench: Machine;
   /** The whole-frame fit: the dive's pivot and scale denominator. */
   readonly frameFit: StageFit;
   /** The bench run: anchor center and the un-turn angle. */
