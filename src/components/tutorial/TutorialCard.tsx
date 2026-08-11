@@ -152,7 +152,9 @@ const ChecklistRow: React.FC<{
       {checked && (
         <HandCheck
           seed={step.id}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          // Not dead centre: a tick sits high and right in its box,
+          // because the long stroke is the one that has to clear it.
+          className="absolute left-1/2 top-1/2 translate-x-[calc(-50%+0.06em)] translate-y-[calc(-50%-0.13em)]"
         />
       )}
     </span>
