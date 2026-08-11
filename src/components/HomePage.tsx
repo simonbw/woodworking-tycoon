@@ -32,9 +32,13 @@ export const HomePage: React.FC = () => {
  */
 const HomePageContent: React.FC = () => {
   // Leaned over a bench, the corner chips fade: the bench scene draws
-  // in the shop's canvas underneath them, and they were unreachable
+  // in the shop's canvas underneath them, and they'd be unreachable
   // behind the bench view's pointer surface anyway. The top bar stays —
-  // it deliberately rides above the bench view.
+  // it deliberately rides above the bench view — and so does the
+  // coach's card, because the guided opening's bench steps are read
+  // mid-dive: its column rises over the bench view and slides down its
+  // corner to clear the station nameplate. The one-time notes beneath
+  // it read the shop floor, so they fade with the rest.
   const benchDive = useBenchDiveActive();
   const chipClass = `transition-opacity duration-150 ${
     benchDive ? "opacity-0" : "opacity-100"
@@ -52,12 +56,15 @@ const HomePageContent: React.FC = () => {
       </div>
 
       <div
-        inert={benchDive}
-        className={`absolute left-6 top-6 z-20 w-80 space-y-3 ${chipClass}`}
+        className={`absolute left-6 w-80 space-y-3 transition-[top] duration-300 ${
+          benchDive ? "top-16 z-[36]" : "top-6 z-20"
+        }`}
       >
         <TutorialCard />
-        <DustTutorialCard />
-        <NightfallCard />
+        <div inert={benchDive} className={`space-y-3 ${chipClass}`}>
+          <DustTutorialCard />
+          <NightfallCard />
+        </div>
       </div>
 
       <div

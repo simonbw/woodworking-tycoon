@@ -237,6 +237,26 @@ test.describe("Bench view", () => {
       }, stale);
     });
 
+    await test.step("the coach's card stays up over the bench view", async () => {
+      // The guided opening's bench steps are read mid-dive, so the
+      // card rides above the bench view instead of fading with the
+      // rest of the corner chips. The fixture retired the tutorial;
+      // wake it back up.
+      await page.evaluate(() => {
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          progression: { ...state.progression, tutorialDismissed: false },
+        }));
+      });
+      const card = page.getByTestId("tutorial-card");
+      await expect(card).toBeVisible();
+      // A real click, not a visibility check: it fails if the card is
+      // ghosted behind the bench view's pointer surface or inert. It
+      // also puts the fixture's dismissed tutorial back.
+      await card.getByTestId("tutorial-skip").click();
+      await expect(card).toBeHidden();
+    });
+
     await test.step("right-click hangs the held tool back up", async () => {
       // At a bench the pointer is the hand, so letting go of a tool
       // shouldn't mean reaching for the keyboard. The binding is
