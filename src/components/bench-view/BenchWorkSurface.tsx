@@ -2241,7 +2241,9 @@ export const BenchWorkSurface: React.FC<{
 
         {/* The plans pile in the corner and whatever the bench keeps
           underneath — the whole of the old paperwork card that survived */}
-        {isBench && <BlueprintCorner machine={machine} />}
+        {isBench && (
+          <BlueprintCorner machine={machine} keysEnabled={interactive} />
+        )}
         {isBench && <UnderBenchPanel machine={machine} />}
 
         {/* Instruction and key hints, floating below the bench */}

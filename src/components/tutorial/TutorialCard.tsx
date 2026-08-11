@@ -195,7 +195,8 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
       return (
         <p>
           You have the wood for a shelf: two thick stringers and three deck
-          boards. Load them at the bench, choose the plan{" "}
+          boards. Load them at the bench, open the plans with{" "}
+          <ShortcutKeys shortcut="open-plan-browser" /> and pull{" "}
           <em>Build Rustic Pallet Shelf</em>, then set each piece in place and
           drive the nails home.
         </p>

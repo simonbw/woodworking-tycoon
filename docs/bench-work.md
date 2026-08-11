@@ -44,7 +44,9 @@ per-operation scripts that compose it.
    hands the workpiece's spot to its outputs (`inheritedBenchLayout`) — a
    sanded board doesn't move, a sawn board parts into two pieces lying
    end to end at the mark. Plans survive only where they genuinely choose
-   between products: assembly builds, picked from the blueprint pile.
+   between products: assembly builds, pulled from the plan drawer
+   (`PlanBrowser`, listed by skill from `bench-work/plan-registry.ts`
+   rather than by what's mounted).
    Glue-ups are plan-free — clamps-first (`bench-work/glue-up.ts`): bar
    clamps set out on the top, glue-ready stock laid across them edge to
    edge, the contiguous run deciding the credited recipe
@@ -64,8 +66,8 @@ per-operation scripts that compose it.
    machines, whose whole interface is the floor, and to the garbage can,
    which empties where it stands. A bench answers none of it: out there
    it is a table you set stock on, take stock off, and carry, plus the
-   one door in. Q survives as the bench view's own key, thumbing the
-   blueprint pile with the drawing in front of you.
+   one door in. Q survives as the bench view's own key, opening the plan
+   drawer with the bench in front of you.
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,

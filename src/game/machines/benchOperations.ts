@@ -435,9 +435,9 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   // Shop furniture: worktables are built, never bought. Like the jigs,
   // the output is equipment — the table comes off the bench crated, to
   // be carried into place. Legs are chunky stock — 2×4s, not pallet
-  // wood, the way a real bench is built; the top is plywood. No skill
-  // gate: building a real bench is
-  // every woodworker's first project.
+  // wood, the way a real bench is built; the top is plywood. All of it
+  // sits behind the shopFurniture skill so a brand-new shop's plan pile
+  // holds just the rustic shelf.
   ...worktableBuildOperation("worktable1x1", "Build Small Worktable", 35),
   ...worktableBuildOperation("worktable1x2", "Build Worktable", 45),
   ...worktableBuildOperation("worktable1x3", "Build Long Worktable", 55),
@@ -445,6 +445,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   {
     name: "Build Storage Rack",
     id: "buildStorageRack",
+    requiredSkill: "shopFurniture",
     duration: 30,
     // A cheap deck on stout legs — the one build where OSB belongs.
     // Rack-grade only: good sheets are refused so a rack never eats
@@ -465,6 +466,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   {
     name: "Build Tool Drawers",
     id: "buildToolDrawers",
+    requiredSkill: "shopFurniture",
     duration: 30,
     // A sheet carcass with thin drawer stock — pallet boards qualify
     interaction: { kind: "assembly", blueprint: "toolDrawers" },
@@ -481,6 +483,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   {
     name: "Build Material Shelf",
     id: "buildMaterialShelf",
+    requiredSkill: "shopFurniture",
     duration: 20,
     // Two planks laid side by side — that's the whole build, so the
     // blueprint has no fasteners and laying the second plank commits it
@@ -514,6 +517,7 @@ function worktableBuildOperation(
     {
       name,
       id: `build-${worktableId}`,
+      requiredSkill: "shopFurniture",
       duration,
       interaction: { kind: "assembly", blueprint: worktableId },
       requiredConsumables: blueprintFastenerCost(blueprint),

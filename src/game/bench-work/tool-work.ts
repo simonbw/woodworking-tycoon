@@ -6,6 +6,7 @@ import { materialMeetsInput } from "../material-helpers";
 import { availableOperations } from "../skill-helpers";
 import { TOOL_TYPES, ToolId } from "../Tool";
 import { BenchPlacement } from "./bench-layout";
+import { benchPlanForOperationId } from "./plan-registry";
 
 /**
  * Tool-first work selection: the tool in hand plus the piece under it IS
@@ -38,10 +39,21 @@ export function isToolWork(operation: Operation): boolean {
  * claimed (operateMachineAction writes it), so it only names a plan when
  * it names an assembly build — a bench that just crosscut a board has no
  * drawing out, whatever the id says. Old saves may carry a stale one.
+ *
+ * Resolution falls through to the plan registry so a pulled drawing
+ * survives its driving tool being unmounted (the plan browser lists by
+ * skill, not by what's on the rail); the missing tool then reads as a
+ * supply shortfall rather than the drawing vanishing.
  */
 export function selectedBenchPlan(machine: Machine): Operation | null {
   const selected = machine.selectedOperationOrNull;
-  return selected && !isToolWork(selected) ? selected : null;
+  if (selected) {
+    return isToolWork(selected) ? null : selected;
+  }
+  return (
+    benchPlanForOperationId(machine.state.selectedOperationId)?.operation ??
+    null
+  );
 }
 
 /**

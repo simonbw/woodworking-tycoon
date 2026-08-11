@@ -201,17 +201,19 @@ test.describe("Bench view", () => {
       await expect(corner).toBeVisible();
       await expect(corner).not.toContainText("Sand Board");
       await corner.click();
-      await expect(page.getByTestId("blueprint-stack")).toBeVisible();
-      await expect(
-        page.getByTestId("blueprint-stack").getByText("Sand Board"),
-      ).toHaveCount(0);
-      await corner.click();
+      const browser = page.getByTestId("plan-browser");
+      await expect(browser).toBeVisible();
+      await expect(browser.getByText("Sand Board")).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(browser).toBeHidden();
+      // Escape closed the drawer, never the bench view under it
+      await expect(page.getByTestId("station-sheet")).toBeVisible();
       // The sanding block hangs on the rail, waiting for a hand
       await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
 
-      // Leaned in, Q is the pile's key: it thumbs to the next drawing
-      // with that drawing right there to see. (Out on the floor the same
-      // press does nothing — the step above.)
+      // Leaned in, Q is the drawer's key: it spreads the plans across
+      // the view and closes them again. (Out on the floor the same press
+      // does nothing — the step above.)
       const planId = () =>
         page.evaluate(
           () =>
@@ -223,8 +225,25 @@ test.describe("Bench view", () => {
       const stale = await planId();
       await blur();
       await page.keyboard.press("q");
-      await expect.poll(planId).not.toBe(stale);
-      await expect(corner).toContainText("Build");
+      await expect(browser).toBeVisible();
+
+      // The starter shop's drawer holds exactly one drawing — the rustic
+      // shelf — with its readiness stamp. Pulling it selects the plan
+      // and closes the drawer; the chip names the drawing that's out.
+      await expect(page.getByTestId("plan-thumb")).toHaveCount(1);
+      await expect(page.getByTestId("plan-stamp").first()).toBeVisible();
+      await page.locator("[data-mode-option]").click();
+      await page.getByTestId("pull-plan").click();
+      await expect(browser).toBeHidden();
+      await expect.poll(planId).toBe("buildRusticPalletShelf");
+      await expect(corner).toContainText("Build Rustic Pallet Shelf");
+
+      // Put the drawing back from the chip: the bench keeps no plan at
+      // all, and the pile invites pulling another
+      await page.getByTestId("put-back-plan-chip").click();
+      await expect.poll(planId).toBe("none");
+      await expect(corner).toContainText("Pull a drawing");
+
       await page.evaluate((id) => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -996,6 +1015,15 @@ test.describe("Bench view", () => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
           consumables: { ...state.consumables, screws: 10 },
+          // The planter box rides the rusticProjects skill now that the
+          // starter drawer holds only the shelf
+          progression: {
+            ...state.progression,
+            unlockedSkills: [
+              ...state.progression.unlockedSkills,
+              "rusticProjects",
+            ],
+          },
           machines: state.machines.map((m: any, i: number) =>
             i === 0
               ? {

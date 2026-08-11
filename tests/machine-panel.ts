@@ -1,11 +1,12 @@
 /**
  * Helpers for driving the machine spec sheet's plan and parameter controls.
  *
- * The bench's plan picker is a pile of shop drawings in the bench view's
- * corner (BlueprintCorner): the fold toggle carries `aria-expanded`, and
- * every drawing's edge marks its operation name with `data-mode-option`,
- * exactly once, so selecting a plan is unfolding the pile and clicking
- * the sheet by name — the same contract the older mode controls kept.
+ * The bench's plan picker is the plan drawer (PlanBrowser), opened from
+ * the pile chip in the bench view's corner (BlueprintCorner): the chip
+ * carries `aria-expanded`, and every drawing marks its operation name
+ * with `data-mode-option`, exactly once. Selecting a plan is opening the
+ * drawer, clicking the drawing by name to set it out, and pulling it
+ * (`data-testid="pull-plan"`); the drawer closes itself on the pull.
  */
 
 import { pumpTicks } from "./navigation";
@@ -102,13 +103,32 @@ export async function takeAllHere(page: any) {
   await page.waitForTimeout(30);
 }
 
-/** Unfold a collapsed plan pile (the bench view's blueprint corner, or
+/** Open a collapsed plan drawer (the bench view's blueprint corner, or
  * any older aria-expanded recipe index); no-op for other control shapes. */
 export async function openRecipeIndex(card: any) {
   const toggle = card.locator("button[aria-expanded]");
   if (
     (await toggle.count()) > 0 &&
     (await toggle.first().getAttribute("aria-expanded")) === "false"
+  ) {
+    await toggle.first().click();
+  }
+}
+
+/** Close the plan drawer / fold the pile back up. The drawer's overlay
+ * covers the corner chip, so it closes by Escape rather than the toggle
+ * (Escape is handled inside the overlay and never reaches close-sheet). */
+export async function closeRecipeIndex(page: any, card: any) {
+  const browser = page.getByTestId("plan-browser");
+  if (await browser.isVisible()) {
+    await page.keyboard.press("Escape");
+    await browser.waitFor({ state: "hidden" });
+    return;
+  }
+  const toggle = card.locator("button[aria-expanded]");
+  if (
+    (await toggle.count()) > 0 &&
+    (await toggle.first().getAttribute("aria-expanded")) === "true"
   ) {
     await toggle.first().click();
   }
@@ -128,6 +148,21 @@ export async function selectMode(
     .filter({ hasText: new RegExp(`^${escapeRegExp(label)}$`) })
     .click();
   await page.waitForTimeout(30);
+  // In the plan drawer, clicking a drawing only sets it out for reading;
+  // the pull button commits and closes the drawer. A drawing that is
+  // already pulled offers "put back" instead — the selection is already
+  // in place, so just close the drawer.
+  const browser = page.getByTestId("plan-browser");
+  if (await browser.isVisible()) {
+    const pull = page.getByTestId("pull-plan");
+    if (await pull.isVisible()) {
+      await pull.click();
+    } else {
+      await page.keyboard.press("Escape");
+    }
+    await browser.waitFor({ state: "hidden" });
+  }
+  await page.waitForTimeout(30);
 }
 
 /** The operation names the station currently offers, in display order. */
@@ -139,14 +174,8 @@ export async function modesOf(
   const card = machineCard(page, machineName);
   await openRecipeIndex(card);
   const modes = await card.locator("[data-mode-option]").allTextContents();
-  // Leave the pile folded the way we found it
-  const toggle = card.locator("button[aria-expanded]");
-  if (
-    (await toggle.count()) > 0 &&
-    (await toggle.first().getAttribute("aria-expanded")) === "true"
-  ) {
-    await toggle.first().click();
-  }
+  // Leave the drawer closed the way we found it
+  await closeRecipeIndex(page, card);
   return modes;
 }
 
