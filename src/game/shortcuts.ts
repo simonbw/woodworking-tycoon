@@ -477,26 +477,10 @@ const defs = [
 
   // ---------------------------------------------------------------- General
   {
-    id: "open-phone",
-    codes: ["KeyM"],
-    keys: [["M"]],
-    description: "Take out your phone",
-    scope: "global",
-    group: "General",
-  },
-  {
     id: "open-journal",
     codes: ["KeyJ"],
     keys: [["J"]],
     description: "Open your journal",
-    scope: "global",
-    group: "General",
-  },
-  {
-    id: "open-clipboard",
-    codes: ["KeyC"],
-    keys: [["C"]],
-    description: "Look over your clipboard — the full work order",
     scope: "global",
     group: "General",
   },
@@ -531,31 +515,13 @@ const defs = [
     requiresShift: true,
     hidden: true,
   },
-  // Same trick for the phone and journal: their open keys re-bound inside
-  // the modal scope, so M and J toggle rather than only open.
-  {
-    id: "close-phone",
-    codes: ["KeyM"],
-    keys: [["M"]],
-    description: "Put the phone away",
-    scope: "modal",
-    group: "General",
-    hidden: true,
-  },
+  // Same trick for the journal: its open key re-bound inside the modal
+  // scope, so J toggles rather than only opens.
   {
     id: "close-journal",
     codes: ["KeyJ"],
     keys: [["J"]],
     description: "Close the journal",
-    scope: "modal",
-    group: "General",
-    hidden: true,
-  },
-  {
-    id: "close-clipboard",
-    codes: ["KeyC"],
-    keys: [["C"]],
-    description: "Put the clipboard down",
     scope: "modal",
     group: "General",
     hidden: true,

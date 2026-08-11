@@ -3,10 +3,7 @@ import { SUNRISE_ALTITUDE } from "../src/game/daylight";
 import { machineCard, takeAllHere } from "./machine-panel";
 import {
   checkOutAndLeaveStore,
-  dismissClientCard,
   goToStore,
-  deliverFromTruck,
-  loadTruckBed,
   movePlayerToCab,
   openTruckMenu,
   pressTruckRow,
@@ -19,12 +16,11 @@ import {
  * Everything here is a thing you do *in* the garage (or on its lot) rather
  * than in an overlay: the app comes up and the canvas mounts, a bought crate
  * is lifted out of the truck's bed, carried, rotated, set down and picked up
- * again, and finished work leaves loaded in the truck with a client card and
- * the rewards flying to their readouts.
+ * again, and the day turns over by driving home from the cab.
  *
- * Carrying and handing over are floor verbs with no button anywhere — the
- * handoff half asserts that outright — so this is the one place they can be
- * checked at all.
+ * Carrying is a floor verb with no button anywhere — so this is the one
+ * place it can be checked at all. (Selling off the for-sale stand lives in
+ * market.spec.ts, the selling interface's home.)
  */
 
 declare global {
@@ -101,7 +97,7 @@ async function teleportPlayer(page: any, position: [number, number]) {
 }
 
 test.describe("Shop floor", () => {
-  test("boots, carries machines, and delivers work with the truck", async ({
+  test("boots, carries machines, and lives the truck's day loop", async ({
     page,
   }) => {
     test.setTimeout(300000);
@@ -523,9 +519,7 @@ test.describe("Shop floor", () => {
       ).toHaveCount(0);
     });
 
-    await test.step("start a fresh game for the handoff half", async () => {
-      // The door lists the *active* commission, so this half wants a shop that
-      // hasn't completed any — a fixture would have to undo that.
+    await test.step("start a fresh game for the day-loop half", async () => {
       await page.goto("/");
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
@@ -538,162 +532,15 @@ test.describe("Shop floor", () => {
       await page.waitForTimeout(500);
     });
 
-    await test.step("the work order points at the truck, not a button", async () => {
-      // The full order lives on the clipboard; C holds it up
-      await page.keyboard.press("c");
-      await expect(page.getByTestId("commission-delivery-note")).toContainText(
-        "truck",
-      );
-      // The old "Mark Complete" button is gone for good
-      await expect(
-        page.getByRole("button", { name: "Mark Complete" }),
-      ).toHaveCount(0);
-      await page.keyboard.press("Escape");
-      await expect(
-        page.getByRole("dialog", { name: "Clipboard" }),
-      ).toHaveCount(0);
-    });
-
-    await test.step("an empty-bed walk to the cab offers nothing", async () => {
-      await movePlayerToCab(page);
-      // Fresh game: no destinations unlocked and nothing in the bed
-      await expect(page.getByTestId("truck-panel")).not.toBeVisible();
-    });
-
-    await test.step("the cab lists the commission once it's in the bed", async () => {
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          player: {
-            ...state.player,
-            inventory: [
-              ...state.player.inventory,
-              { id: "e2e-first-shelf", type: "rusticShelf", species: "pallet" },
-            ],
-          },
-        }));
-      });
-      await page.waitForTimeout(30);
-      // Load it over the rail with the real key, then walk to the cab
-      await loadTruckBed(page);
-      const loaded = await page.evaluate(() => window.__GET_GAME_STATE__());
-      expect(
-        loaded.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
-      ).toBe(true);
-      // Standing at the rail, the chip names the piece E would lift back
-      // out rather than the furniture it's lying in
-      await expect(page.getByText("take Rustic Shelf")).toBeVisible();
-      await movePlayerToCab(page);
-      await openTruckMenu(page);
-
-      const panel = page.getByTestId("truck-panel");
-      // Nowhere to go yet, so the card is nothing but the delivery
-      await expect(panel).toContainText("Someone's waiting");
-      await expect(panel).toContainText("Your First Shelf");
-      // The client is named on the row — you know who you're meeting
-      await expect(panel).toContainText("Marguerite");
-      // Delivering is a drive, and the row says what the drive costs
-      await expect(panel).toContainText("30 min there and back");
-      // The row itself is the button — no separate "Deliver" control
-      await expect(
-        panel.getByRole("button", { name: /^Deliver:/ }),
-      ).toBeVisible();
-    });
-
-    const before = await page.evaluate(() =>
-      (window as any).__GET_GAME_STATE__(),
-    );
-
-    await test.step("delivering it shows the client's card", async () => {
-      await deliverFromTruck(page, "Your First Shelf");
-
-      const card = page.getByTestId("client-card");
-      await expect(card).toBeVisible();
-      await expect(card).toContainText("Your First Shelf");
-      await expect(card).toContainText("Marguerite");
-      // The payout is itemized on the card: money, reputation, craft XP
-      await expect(card).toContainText("$20.00");
-      // One handoff deals one card, not a stack of them
-      await expect(card).toHaveCount(1);
-    });
-
-    await test.step("the card holds the screen until the money is taken", async () => {
-      // A click aimed at the floor behind it is not a dismissal — the card
-      // waits for "Take the money" (or Escape)
-      await page.mouse.click(40, 760);
-      await page.waitForTimeout(100);
-      await expect(page.getByTestId("client-card")).toBeVisible();
-    });
-
-    await test.step("the payout has already landed behind the card", async () => {
-      const state = await page.evaluate(() =>
-        (window as any).__GET_GAME_STATE__(),
-      );
-      expect(state.money).toBe(before.money + 20);
-      expect(state.reputation).toBe(before.reputation + 2);
-      expect(state.progression.commissionsCompleted).toBe(1);
-      // The truck went somewhere: both legs charged their minutes, and
-      // the player is back beside the cab rather than never having left
-      expect(state.tick).toBeGreaterThanOrEqual(before.tick + 30);
-      expect(state.player.away).toBe(null);
-      expect(
-        state.truck.bed.some((m: any) => m.id === "e2e-first-shelf"),
-      ).toBe(false);
-      // Completing the first commission unlocks the store and the phone —
-      // the job board is how the next commission's gear gets funded
-      expect(state.progression.storeUnlocked).toBe(true);
-      expect(state.progression.marketplaceUnlocked).toBe(true);
-    });
-
-    await test.step("dismissing the card flies the rewards to their readouts", async () => {
-      await dismissClientCard(page);
-      // Chips are in the air, aimed at the balance / reputation / journal
-      const chips = page.getByTestId("reward-flights").locator(".reward-chip");
-      await expect(chips.first()).toBeVisible();
-
-      // Every reward has somewhere on screen to land
-      await expect(page.locator("[data-reward-target='money']")).toBeVisible();
-      await expect(
-        page.locator("[data-reward-target='reputation']"),
-      ).toBeVisible();
-      await expect(page.locator("[data-reward-target='xp']")).toBeVisible();
-
-      // The flight clears itself up once the last chip lands
-      await expect(chips).toHaveCount(0, { timeout: 8000 });
-    });
-
-    await test.step("the readouts show the new totals", async () => {
-      await expect(page.getByTestId("balance")).toHaveText("$20.00");
-      await expect(page.getByTestId("reputation")).toHaveText("2.0");
-    });
-
-    await test.step("between commissions the shop goes quiet, not busy", async () => {
-      // The next commission is reputation-gated (the phone will ring for
-      // it later) — so no clipboard holds itself up, no tracker chip, and
-      // no call yet at 2 reputation against a gate of 6.
-      await expect(
-        page.getByRole("dialog", { name: "Clipboard" }),
-      ).toHaveCount(0);
-      await expect(page.getByTestId("commission-tracker")).toHaveCount(0);
-      await expect(page.getByTestId("commission-call")).toHaveCount(0);
-      // The clipboard still opens by hand, empty of orders
-      await page.keyboard.press("c");
-      const clipboard = page.getByRole("dialog", { name: "Clipboard" });
-      await expect(clipboard).toContainText("No open work orders");
-      await page.keyboard.press("Escape");
-      await expect(clipboard).toHaveCount(0);
-      // The phone the delivery unlocked is in the top bar now
-      await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
-      // ...and the cab is no longer offering the one just delivered
+    await test.step("a fresh cab offers scavenging and home, not the store", async () => {
       await movePlayerToCab(page);
       await openTruckMenu(page);
       const panel = page.getByTestId("truck-panel");
       await expect(panel).toContainText("Places to go");
-      await expect(
-        panel.getByRole("button", { name: /^Deliver:/ }),
-      ).toHaveCount(0);
-      // The store trip it unlocked is there instead
-      await expect(panel).toContainText("Orange Box");
+      await expect(panel).toContainText("Scavenge for pallets");
+      await expect(panel).toContainText("Home");
+      // The store waits on the first stand sale
+      await expect(panel).not.toContainText("Orange Box");
     });
 
     await test.step("walking away from the cab folds the card for good", async () => {
@@ -734,7 +581,6 @@ test.describe("Shop floor", () => {
       // Nowhere left to go but home — the errands step off the card
       const panel = page.getByTestId("truck-panel");
       await expect(panel).toContainText("Home");
-      await expect(panel).not.toContainText("Orange Box");
       await expect(panel).not.toContainText("Scavenge");
 
       const dayBefore = await page.evaluate(
@@ -769,11 +615,12 @@ test.describe("Shop floor", () => {
       await continueButton.click();
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
 
-      // The handoff's earnings are still there, so is the phone it
-      // unlocked — this is the same shop, not a fresh one.
-      await expect(page.getByTestId("balance")).toHaveText("$20.00");
-      await expect(page.getByTestId("reputation")).toHaveText("2.0");
-      await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
+      // The night slept above is still slept — this is the same shop on
+      // its second morning, not a fresh one on day one.
+      const day = await page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().day,
+      );
+      expect(day).toBe(2);
     });
 
     await test.step("the cursor picks which piece the keys act on", async () => {

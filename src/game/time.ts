@@ -17,10 +17,9 @@ export const NIGHT_TICKS = 840;
 
 /**
  * A full calendar day of shop time, wall-clock: the working day plus the
- * night. Anything the marketplace quotes "in days" — offer lifetimes,
- * pity timers, demand recovery — is denominated in this, so "three days"
- * still means three mornings from now even though most of those ticks
- * pass in overnight batches.
+ * night. Anything the game quotes "in days" is denominated in this, so
+ * "three days" means three mornings from now even though most of those
+ * ticks pass in overnight batches.
  */
 export const TICKS_PER_CALENDAR_DAY = TICKS_PER_DAY + NIGHT_TICKS;
 

@@ -15,6 +15,7 @@ import { TruckHighlight } from "../shop-view/TruckSprite";
 export interface TutorialWorldTargets {
   readonly machineTypeIds: ReadonlySet<MachineId>;
   readonly truck: TruckHighlight;
+  readonly stand: boolean;
   readonly matchesPile: ((material: MaterialInstance) => boolean) | null;
   readonly domIds: ReadonlyArray<TutorialDomTargetId>;
 }
@@ -22,6 +23,7 @@ export interface TutorialWorldTargets {
 const NOTHING: TutorialWorldTargets = {
   machineTypeIds: new Set(),
   truck: null,
+  stand: false,
   matchesPile: null,
   domIds: [],
 };
@@ -33,6 +35,7 @@ export function tutorialTargets(gameState: GameState): TutorialWorldTargets {
   const machineTypeIds = new Set<MachineId>();
   const domIds: TutorialDomTargetId[] = [];
   let truck: TruckHighlight = null;
+  let stand = false;
   let matchesPile: ((material: MaterialInstance) => boolean) | null = null;
 
   for (const target of step.targets) {
@@ -43,6 +46,9 @@ export function tutorialTargets(gameState: GameState): TutorialWorldTargets {
       case "truck":
         truck = target.part === "cab" ? "truck" : "bed";
         break;
+      case "stand":
+        stand = true;
+        break;
       case "pile":
         matchesPile = target.match;
         break;
@@ -51,5 +57,5 @@ export function tutorialTargets(gameState: GameState): TutorialWorldTargets {
         break;
     }
   }
-  return { machineTypeIds, truck, matchesPile, domIds };
+  return { machineTypeIds, truck, stand, matchesPile, domIds };
 }

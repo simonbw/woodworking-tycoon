@@ -1,10 +1,10 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { checkProgressionMilestonesAction } from "../game-actions/progression-actions";
+import { initialGameState } from "../initialGameState";
 import { MaterialInstance } from "../Materials";
 import { currentTutorialStep, TutorialStepId } from "../tutorial";
-import { newGame } from "./playthrough";
-import { ShopDriver } from "./shop-driver";
+import { openShop, ShopDriver } from "./shop-driver";
 
 /**
  * The guided opening, followed the way a new player follows it: read the
@@ -51,7 +51,7 @@ function buildRusticShelf(shop: ShopDriver): ShopDriver {
 
 describe("the guided opening", () => {
   it("walks a new shop through every step, one instruction at a time", () => {
-    const shop = newGame();
+    const shop = openShop(initialGameState);
     assert.strictEqual(step(shop), "scavenge", "a new save opens on step one");
 
     shop.scavenge();
@@ -62,42 +62,22 @@ describe("the guided opening", () => {
     assert.strictEqual(step(shop), "buildShelf", "the shelf's parts are pried");
 
     buildRusticShelf(shop);
-    assert.strictEqual(step(shop), "loadShelf", "the shelf exists");
+    assert.strictEqual(step(shop), "sellShelf", "the shelf exists");
 
-    shop.putEverythingDown().takeFromFloor(isRusticShelf, 1).loadBed();
+    shop.putEverythingDown().setOut(isRusticShelf);
     assert.strictEqual(
       step(shop),
-      "deliverShelf",
-      "the shelf rides in the bed",
+      "sellShelf",
+      "set out is not sold — the card holds until the money exists",
     );
 
-    shop.handOverCommission();
-    assert.strictEqual(
-      step(shop),
-      "buildSecondShelf",
-      "Marguerite has her shelf",
+    shop.awaitSales(1);
+    assert.strictEqual(step(shop), "buySandingBlock", "the shelf sold");
+    assert.ok(
+      shop.shop.progression.storeUnlocked,
+      "the first sale opened the store",
     );
-    // The two unlocks the marketplace half of the tutorial depends on
-    assert.ok(shop.shop.progression.marketplaceUnlocked, "the phone arrived");
-    assert.ok(shop.shop.progression.storeUnlocked, "the store opened");
-
-    // Eleven boards to a pallet and six to a shelf, so the second shelf
-    // is a second lap of the loop — exactly what the card asks for.
-    shop.putEverythingDown().scavenge().takeFromFloor(isPallet, 1);
-    dismantleAPallet(shop);
-    buildRusticShelf(shop);
-    assert.strictEqual(step(shop), "listShelf", "a shelf to sell exists");
-
-    shop.list(isRusticShelf).awaitListingSales();
-    assert.strictEqual(step(shop), "acceptJob", "the shelf is sold");
-
-    shop.seedJobBoard();
-    const offer = shop.shop.jobBoard.find(
-      (candidate) => candidate.materialCostFree,
-    );
-    assert.ok(offer, "the board always carries a material-free offer");
-    shop.acceptJob(offer.id);
-    assert.strictEqual(step(shop), "buySandingBlock", "a job is accepted");
+    assert.ok(shop.shop.money >= 10, "the sale covers the sanding block");
 
     shop.goShopping("orangeBox").buyTool("sandingBlock").comeHome();
     assert.strictEqual(step(shop), "mountSandingBlock", "the block is bought");
@@ -129,10 +109,32 @@ describe("the guided opening", () => {
   it("skips forward past work the player did out of order", () => {
     // A player who ignores the card and builds the shelf anyway shouldn't
     // find it still asking them to go scavenging.
-    const shop = newGame();
+    const shop = openShop(initialGameState);
     shop.scavenge().takeFromFloor(isPallet, 1);
     dismantleAPallet(shop);
     buildRusticShelf(shop);
-    assert.strictEqual(step(shop), "loadShelf");
+    assert.strictEqual(step(shop), "sellShelf");
+  });
+
+  it("keeps selling as the reputation engine: sales reach the lumberyard gate", () => {
+    // The stand is the game's only reputation source now, so the walk
+    // from a fresh shop to the lumberyard's gate has to be pure
+    // scavenge-build-sell. This is the slimmed-down progression ledger:
+    // reachability, not exact numbers.
+    const shop = openShop(initialGameState);
+    let guard = 0;
+    while (!shop.shop.progression.lumberyardUnlocked && guard < 20) {
+      shop.scavenge().takeFromFloor(isPallet, 1);
+      dismantleAPallet(shop);
+      buildRusticShelf(shop);
+      shop.putEverythingDown().setOut(isRusticShelf).awaitSales(1);
+      shop.apply(checkProgressionMilestonesAction());
+      guard++;
+    }
+    assert.ok(
+      shop.shop.progression.lumberyardUnlocked,
+      `the lumberyard never opened — ${shop.shop.reputation} reputation ` +
+        `after ${guard} shelves`,
+    );
   });
 });

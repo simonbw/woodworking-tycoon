@@ -31,12 +31,17 @@ import {
 } from "../../game/game-actions/dust-actions";
 import { heldTool, holdingBroom } from "../../game/HeldTool";
 import { atTruckBed } from "../../game/lot";
+import { atStand, isSellable } from "../../game/stand";
 import { handSpaceLeft } from "../../game/Person";
 import {
   loadTruckBedAction,
   takeCrateFromTruckAction,
   takeFromTruckBedAction,
 } from "../../game/game-actions/truck-actions";
+import {
+  setOutAtStandAction,
+  takeFromStandAction,
+} from "../../game/game-actions/stand-actions";
 import { chebyshevDistance } from "../../game/Vectors";
 import { materialSources, resolveInteract } from "../../game/interact";
 import {
@@ -251,6 +256,8 @@ export const ShopKeyboardShortcuts: React.FC = () => {
             ),
           );
         }
+        case "stand":
+          return applyAction(takeFromStandAction(event.shiftKey ? space : 1));
         case "truck-cab":
           return openTruckMenu();
       }
@@ -277,6 +284,16 @@ export const ShopKeyboardShortcuts: React.FC = () => {
         return applyAction(
           loadTruckBedAction(event.shiftKey ? inventory : [inventory[0]]),
         );
+      }
+
+      // At the for-sale stand, F sets sellable work out on the table
+      if (atStand(gs.shopInfo, gs.player.position)) {
+        const sellable = inventory.filter(isSellable);
+        if (sellable.length > 0) {
+          return applyAction(
+            setOutAtStandAction(event.shiftKey ? sellable : [sellable[0]]),
+          );
+        }
       }
 
       const machine = targeted.current;

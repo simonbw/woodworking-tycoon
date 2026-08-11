@@ -1,6 +1,6 @@
 /**
  * Naming wood: the grammar behind every lumber label in the game — store
- * shelves, floor piles, machine bays, marketplace rows, recipe text.
+ * shelves, floor piles, machine bays, recipe text.
  *
  * The old name (`Pine Board (8'x4"x8/4, smooth, S4S)`) failed both
  * audiences at once: jargon-dense for a newcomer, wrong-shaped for a
@@ -492,8 +492,8 @@ export function createMockMaterial(
     case "bookshelf":
     case "sideTable":
     case "checkerboardCuttingBoard": {
-      // Carry accent and finish through so requirement-priced work (job
-      // pay, commission previews) values an oiled or two-tone ask correctly
+      // Carry accent and finish through so requirement-priced work values
+      // an oiled or two-tone ask correctly
       const r = requirement as InputMaterialWithQuantity<FinishedProduct>;
       return makeMaterial<FinishedProduct>({
         type: requiredType,

@@ -5,33 +5,26 @@ import { playSound } from "../../utils/sfx";
 import { SparkIcon, StarIcon } from "../StarIcon";
 import { useTruckStage } from "../shop-view/truckStageStore";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { ClientCard } from "./ClientCard";
 import { REWARD_TARGET_ATTRIBUTE, RewardTarget } from "./rewardTargets";
 
 /**
- * The payoff moment. Handing work over at the garage door is the biggest
- * beat in the loop, and until this layer existed it was two numbers quietly
+ * The payoff moment. A piece selling off the stand is the beat the whole
+ * loop builds to, and until this layer existed it was two numbers quietly
  * changing in the top bar.
  *
  * Pure reducers can't animate, so they queue a `PayoutEvent`
  * (`gameState.pendingPayouts`) and this headless-ish layer stages it:
- *
- * 1. A commission first deals the client's card onto the screen — what they
- *    said when they took delivery — and waits for the player to dismiss it.
- *    Jobs skip straight to step 2; they're routine work, not a boss.
- * 2. Coins, a star, and a spark fly from the middle of the screen to the
- *    readouts that track them (balance, reputation, journal), each landing
- *    with a thump on its target and, for the money, the cha-ching.
+ * coins and a star fly from the middle of the screen to the readouts
+ * that track them (balance, reputation), each landing with a thump on
+ * its target and, for the money, the cha-ching.
  *
  * The underlying numbers changed the instant the action ran — the flight is
  * decoration over an already-settled state, so nothing here can desync it.
  *
- * Both steps wait for the truck to be parked. A delivery settles on the
- * drive in (delivery-actions.ts), which is a couple of seconds of arrival
- * before the shop is back: staged the moment it was queued, the card dealt
- * itself over the trip's backdrop and the chips flew at readouts that
- * weren't on screen yet. Nothing is dropped by waiting — the queue simply
- * keeps until the shop is there to celebrate in.
+ * The flight waits for the truck to be parked: a sale can land while the
+ * player is out on a trip, when the readouts the chips aim at aren't on
+ * screen. Nothing is dropped by waiting — the queue simply keeps until
+ * the shop is there to celebrate in.
  */
 
 /** How many coins one payout throws. Bigger paydays throw more. */
@@ -120,14 +113,12 @@ export const RewardFlightLayer: React.FC = () => {
   // driveway, and the readouts the chips aim at are where they'll land.
   const home = useTruckStage() === "parked" && !gameState.player.away;
 
-  /** Commission cards waiting to be dismissed, oldest first. */
-  const [cards, setCards] = useState<ReadonlyArray<PayoutEvent>>([]);
   const [flights, setFlights] = useState<ReadonlyArray<Flight>>([]);
   /**
-   * Every payout this session has already been staged from. A handoff can
+   * Every payout this session has already been staged from. A sale can
    * reach the queue twice — actions run as updaters React is free to
    * re-invoke — and the second copy is the same announcement, not a second
-   * payday, so it must not deal a second card (#159).
+   * payday, so it must not fly twice (#159).
    */
   const staged = useRef(new Set<string>());
 
@@ -139,66 +130,40 @@ export const RewardFlightLayer: React.FC = () => {
       {
         id: payout.id,
         chips,
-        // Burst from the middle of the window: it's where the client card
-        // just was, and it's the one point guaranteed to be on screen.
+        // Burst from the middle of the window: the one point guaranteed
+        // to be on screen wherever the player is standing.
         originX: window.innerWidth / 2,
         originY: window.innerHeight / 2,
       },
     ]);
   }, []);
 
-  // Drain the queue once the truck is home: commissions become a card to
-  // dismiss, jobs fly at once. Announcements already staged are dropped
-  // rather than celebrated again.
+  // Drain the queue once the truck is home. Announcements already staged
+  // are dropped rather than celebrated again.
   useEffect(() => {
     if (!pending || pending.length === 0 || !home) return;
     const fresh = pending.filter((payout) => !staged.current.has(payout.id));
     for (const payout of fresh) {
       staged.current.add(payout.id);
-    }
-    const commissions = fresh.filter((payout) => payout.kind === "commission");
-    if (commissions.length > 0) {
-      setCards((current) => [...current, ...commissions]);
-    }
-    for (const payout of fresh) {
-      if (payout.kind !== "commission") launch(payout);
+      launch(payout);
     }
     applyAction(clearPendingPayoutsAction);
   }, [pending, home, applyAction, launch]);
-
-  // No next-order reveal here: the next commission arrives later, by
-  // phone, once reputation reaches its threshold (see CommissionCallLayer)
-  const dismissCard = useCallback(
-    (payout: PayoutEvent) => {
-      setCards((current) => current.filter((card) => card.id !== payout.id));
-      launch(payout);
-    },
-    [launch],
-  );
 
   const endFlight = useCallback((flightId: string) => {
     setFlights((current) => current.filter((flight) => flight.id !== flightId));
   }, []);
 
   return (
-    <>
-      {cards.length > 0 && (
-        <ClientCard
-          payout={cards[0]}
-          onDismiss={() => dismissCard(cards[0])}
-          key={cards[0].id}
-        />
-      )}
-      <div
-        className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
-        aria-hidden
-        data-testid="reward-flights"
-      >
-        {flights.map((flight) => (
-          <FlightChips key={flight.id} flight={flight} onDone={endFlight} />
-        ))}
-      </div>
-    </>
+    <div
+      className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
+      aria-hidden
+      data-testid="reward-flights"
+    >
+      {flights.map((flight) => (
+        <FlightChips key={flight.id} flight={flight} onDone={endFlight} />
+      ))}
+    </div>
   );
 };
 

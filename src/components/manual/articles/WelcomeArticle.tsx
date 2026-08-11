@@ -6,8 +6,8 @@ export const WelcomeArticle: React.FC = () => (
   <>
     <P>
       You start with a one-car garage, a makeshift workbench, and a truck in the
-      driveway. Free lumber is out there on pallets, and the first commission
-      can be built from a single one.
+      driveway. Free lumber is out there on pallets, and your first sale can be
+      built from a single one.
     </P>
     <FigureRow>
       <Photo src="/images/makeshift-bench.png" caption="the makeshift bench" />
@@ -31,12 +31,9 @@ export const WelcomeArticle: React.FC = () => (
       menu.
     </P>
 
-    <H>Your First Commission</H>
+    <H>Your First Sale</H>
     <P>
-      The card in the top-left corner tracks your current{" "}
-      <Term>work order</Term>. Click it, or press{" "}
-      <ShortcutKeys shortcut="open-clipboard" />, to look over the full
-      clipboard. The first order asks for a rustic shelf, and one pallet has
+      A rustic shelf is the quickest thing to build and sell, and one pallet has
       enough wood for it:
     </P>
     <UL>
@@ -72,31 +69,17 @@ export const WelcomeArticle: React.FC = () => (
         home.
       </li>
       <li>
-        Pick up the finished shelf, carry it out the garage door, and load it
-        into the truck's bed with <ShortcutKeys shortcut="put-down" /> at the
-        tailgate.
-      </li>
-      <li>
-        Walk down to the cab and press <ShortcutKeys shortcut="pick-up" />. The
-        truck lists the work riding in the bed; the number beside a row drives
-        it over.
+        Pick up the finished shelf, carry it down the driveway, and set it out
+        at the <Term>for-sale stand</Term> with{" "}
+        <ShortcutKeys shortcut="put-down" />. Someone walking by will buy it.
       </li>
     </UL>
     <P>
-      Every finished job leaves the shop this way, commissions and job-board
-      work alike. A delivery is a real drive — it costs the same minutes off the
-      day a run to the store does, and the shop keeps running while you&apos;re
-      out.
-    </P>
-    <P>
-      Delivering a commission pays money, builds reputation, and unlocks the
-      hardware store (a trip from the same cab) and the phone in the top bar,
-      where work gets listed for sale and one-off jobs get taken. Jobs and sales
-      are how the shop earns between commissions; new commissions arrive by
-      phone as your reputation grows. Taking something off a shelf puts it in
-      your cart; nothing is paid for until you check out, and checking out is
-      the same press that drives you home. What you bought rides home in the bed
-      — unload it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
+      Your first sale unlocks the hardware store, a trip from the truck's cab.
+      Taking something off a shelf there puts it in your cart; nothing is paid
+      for until you check out, and checking out is the same press that drives
+      you home. What you bought rides home in the bed — unload it at the
+      tailgate with <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

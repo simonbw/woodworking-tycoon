@@ -19,9 +19,9 @@ drawing is tracked in `docs/asset-backlog.md`.
 | Font | Class | Role | Budget |
 | --- | --- | --- | --- |
 | Barlow Condensed | `font-condensed` | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free. | Unlimited — it's the quiet default. |
-| Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — commission sheets, the calendar page, receipt fine print — and the figures typed onto them (order numbers, payouts, receipt digits). Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
+| Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — the manual's pages, the calendar page, receipt fine print — and the figures typed onto them (payouts, receipt digits). Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
 | Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | One logo. Adding a second needs a new venue. |
-| Shantell Notes | `font-ink` | **Handwriting.** Human margin notes: the player's own note on a work order, a scribbled errand, a tally next to a quantity, a "nothing here" note pinned to the board. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else — never on a screen (the phone's listings are typed, not inked). |
+| Shantell Notes | `font-ink` | **Handwriting.** Human margin notes: the scavenging log's entries, a scribbled errand, a tally next to a quantity, a margin note in the manual. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else — never on a screen. |
 | Lumberjack | `font-lumberjack` | **Reserved for the shop's own signage.** Currently has no call sites — the title screen and the Sawyer & Sons sign both became artwork — but the family is kept declared and loaded for the next sign that needs live type. It is not a heading face. | Signs only. Nothing today. |
 
 ## Where the fonts come from
@@ -95,9 +95,9 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 | Workshop chrome | `workshop-bg` / `workshop-panel` / `workshop-edge` | The dark room the paper sits in. Never put body text directly on it except `.section-heading` object titles and `.button` chrome. |
 | Manila | `.paper-card`, `paper-manila` | Folders and general shop paperwork. The default card. |
 | Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-typewriter`. |
-| Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people: commission work orders. |
-| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (job board, station sheet, phone) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
-| Corkboard | `corkboard-*` + `.corkboard-bg` | The job board. Things on it are *pinned* (thumbtack + slight rotation via `Thumbtack` component). |
+| Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people. Currently has no consumer (the work orders it dressed are gone); the classes stay declared in `index.css`/`tailwind.config.ts` for the next official document. |
+| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (a station sheet, the manual) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
+| Corkboard | `corkboard-*` + `.corkboard-bg` | Currently has no consumer (the job board it dressed is gone); the tokens stay declared in `index.css`/`tailwind.config.ts` for the next pinned-up surface. The *pinned* idiom lives on: the coach card and the dust note wear a thumbtack + slight rotation via the `Thumbtack` component. |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 | Lumberyard | `mill-*` | The Sawyer & Sons trip (`LumberyardTripOverlay`) only: painted-sign green over stickered stacks and gravel. Same rule as the store tokens — a location's palette stays at that location. |
 
@@ -117,26 +117,19 @@ stack of equal-weight cards:
   face or track behind it; there is deliberately no wall clock), the balances (cash and reputation, set exactly
   like the clock — bold condensed, tabular figures — in the one gold
   accent, the star flowing inline with the digits), and the pocket
-  items (Phone, Skills, the `?` manual, and Menu, which opens the pause
+  items (Skills, the `?` manual, and Menu, which opens the pause
   screen). The row
   itself passes pointer events through to the world; only the chip
   catches them. Everything that used to be a tab is an object in the
-  world: the marketplace is the phone overlay, skills are the journal
-  overlay, and errands are trips out the garage door, each a full-screen
-  overlay (`StoreTripOverlay`, `LumberyardTripOverlay`,
+  world: skills are the journal overlay, selling is the for-sale stand
+  down on the lot, and errands are trips out the garage door, each a
+  full-screen overlay (`StoreTripOverlay`, `LumberyardTripOverlay`,
   `ScavengeTripOverlay` — the last a handwritten travel log beside the
   sketched truck, its bed stacking up with the haul).
-- **Commission tracker** (`CommissionTracker`, top-left) — the
-  objectives readout, and the one HUD corner that is paper rather than
-  chrome: the work order's own legal sheet, cropped to the order's name,
-  its checklist, and what it pays (or where to carry it once complete).
-  Clicking it, or C, holds up the **clipboard** (`ClipboardModal`) — the
-  same sheet at full length, with the client note, pay and reputation —
-  and it gets there by growing out of the corner it was just sitting in,
-  shrinking back on the way down. One `WorkOrder` component prints both,
-  `compact` deciding which lines show, so the two can never disagree. A
-  new commission opens the clipboard by itself once the previous one's
-  reward flight has landed.
+- **Coach card** (`TutorialCard`, the HUD's left column) — the guided
+  opening's one instruction at a time, and the one HUD corner that is
+  paper rather than chrome: a pinned note (thumbtack + slight rotation)
+  that names the current step and disappears when the opening is done.
 - **Hands strip** (`HandsStrip`, bottom-center) — a `hud-chip` of slots,
   one per kind of thing carried; clicking a slot sets one down,
   shift-click the group, and F speaks the same verb from the keyboard.

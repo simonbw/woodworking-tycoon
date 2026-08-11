@@ -1,10 +1,11 @@
 /**
- * Helpers for the diegetic navigation surfaces: the phone and journal
- * overlays (top-bar buttons) and trips out via the truck (the trip
- * card that appears when the player stands at the cab).
+ * Helpers for the diegetic navigation surfaces: the journal overlay
+ * (top-bar button) and trips out via the truck (the trip card that
+ * appears when the player stands at the cab).
  */
 
 import { truckCabSideCell } from "../src/game/lot";
+import { standRect } from "../src/game/stand";
 
 /**
  * Start a fresh shop from the title screen.
@@ -22,6 +23,25 @@ export async function startNewGame(page: any) {
     await page.getByTestId("confirm-new-game").click();
   }
   await confirmPanel.waitFor({ state: "hidden" }).catch(() => {});
+}
+
+/** Teleport the player beside the for-sale stand so its chips appear. */
+export async function movePlayerToStand(page: any) {
+  const shopInfo = await page.evaluate(
+    () => (window as any).__GET_GAME_STATE__().shopInfo,
+  );
+  const rect = standRect(shopInfo);
+  const cell = [
+    Math.floor((rect.min[0] + rect.max[0]) / 2),
+    Math.floor(rect.min[1]) - 1,
+  ];
+  await page.evaluate((position: number[]) => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: { ...state.player, position },
+    }));
+  }, cell);
+  await page.waitForTimeout(30);
 }
 
 /** Teleport the player beside the truck's cab so its prompt appears. */
@@ -93,62 +113,16 @@ export async function loadTruckBed(page: any) {
       ...state,
       player: {
         ...state.player,
-        position: [state.shopInfo.entrancePosition[0], state.shopInfo.size[1] + 1],
+        position: [
+          state.shopInfo.entrancePosition[0],
+          state.shopInfo.size[1] + 1,
+        ],
       },
     }));
   });
   await page.waitForTimeout(30);
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
   await page.keyboard.press("Shift+F");
-  await page.waitForTimeout(30);
-}
-
-/**
- * Deliver finished work from the truck — the only way work leaves the
- * shop. Loads what's in hand into the bed, walks to the cab, opens the
- * card, and takes the row matching `name` (a commission title or a job
- * client).
- *
- * That row starts a delivery run: the truck drives out, the slip shows
- * at the customer's, and it comes back on its own (the E2E build skips
- * the beat, so this only has to wait for the trip to end). The payout
- * lands on the way in — for a commission that's the client's card, which
- * `dismissClientCard` clears before the rewards fly.
- */
-export async function deliverFromTruck(page: any, name: string | RegExp) {
-  await loadTruckBed(page);
-  await movePlayerToCab(page);
-  await openTruckMenu(page);
-  await pressTruckRow(page, name);
-  await waitForDeliveryRun(page);
-}
-
-/** Wait for a delivery run to pull back into the driveway. */
-export async function waitForDeliveryRun(page: any) {
-  await page.waitForFunction(
-    () => (window as any).__GET_GAME_STATE__().player.away === null,
-    undefined,
-    { timeout: 15000 },
-  );
-  await page.waitForTimeout(30);
-}
-
-/** Dismiss the client's card shown after a commission handoff. */
-export async function dismissClientCard(page: any) {
-  await page.getByTestId("client-card").waitFor({ state: "visible" });
-  await page
-    .getByRole("button", { name: "Take the money" })
-    .click({ force: true });
-  await page.waitForTimeout(30);
-}
-
-/**
- * Sit through the commission phone call (see CommissionCallLayer) and
- * accept it — the only way the takeover modal closes.
- */
-export async function answerPhoneCall(page: any) {
-  await page.getByTestId("commission-call").waitFor({ state: "visible" });
-  await page.getByTestId("commission-call-accept").click();
   await page.waitForTimeout(30);
 }
 
@@ -189,9 +163,7 @@ export async function goToLumberyard(page: any): Promise<[number, number]> {
  */
 export async function unloadTruckBed(page: any) {
   const bedCount = () =>
-    page.evaluate(
-      () => (window as any).__GET_GAME_STATE__().truck.bed.length,
-    );
+    page.evaluate(() => (window as any).__GET_GAME_STATE__().truck.bed.length);
   if ((await bedCount()) === 0) return;
   // The arrival performance holds input until the truck is parked, so
   // pressing once and hoping is a race under CPU contention — keep
@@ -271,18 +243,6 @@ async function driveHome(page: any, returnTo?: [number, number]) {
     }, returnTo);
     await page.waitForTimeout(30);
   }
-}
-
-/** Take out the phone (SawdustList). */
-export async function openPhone(page: any) {
-  await page.getByRole("button", { name: "Phone" }).click();
-  await page.waitForTimeout(30);
-}
-
-/** Put the phone away. */
-export async function closePhone(page: any) {
-  await page.getByRole("button", { name: "Put phone away" }).click();
-  await page.waitForTimeout(30);
 }
 
 /** Open the journal (the top bar's Skills button). */

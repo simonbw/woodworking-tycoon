@@ -27,17 +27,13 @@ export function storeUnlocked(gameState: GameState, store: StoreId): boolean {
 
 /**
  * What a drive out (or back) costs in shop minutes. Errands aren't free:
- * each leg of a store run — or of a delivery run, which is the same
- * drive with the bed loaded — charges this many ticks through the
- * ordinary pipeline, so a curing glue-up gains the same minutes the
- * drive spends. Scavenging carries its own, longer timer instead.
+ * each leg of a store run charges this many ticks through the ordinary
+ * pipeline, so a curing glue-up gains the same minutes the drive
+ * spends. Scavenging carries its own, longer timer instead.
  */
 export const DRIVE_TICKS_ONE_WAY = 15;
 
-/**
- * The drive itself: a batch of ordinary ticks, run while `away` is set.
- * Exported for delivery-actions.ts, whose run is the same two legs.
- */
+/** The drive itself: a batch of ordinary ticks, run while `away` is set. */
 export function driveTicks(
   gameState: GameState,
   rng: () => number = Math.random,
@@ -132,11 +128,11 @@ export function goHomeAction(): GameAction {
 
 /**
  * Morning. The whole overnight is a batch of ordinary ticks run through
- * the ordinary tick pipeline — glue cures finish, listings roll their
- * sales, demand recovers, and the job board rotates for the new day —
- * then the truck pulls back in and a fresh budget of working minutes
- * starts. Attended work holds where it was left (the player is away for
- * every overnight tick), same as stepping away from a cut does.
+ * the ordinary tick pipeline — glue cures finish, the street stays
+ * empty (nobody shops at night) — then the truck pulls back in and a
+ * fresh budget of working minutes starts. Attended work holds where it
+ * was left (the player is away for every overnight tick), same as
+ * stepping away from a cut does.
  */
 export function wakeUpAction(rng: () => number = Math.random): GameAction {
   return (gameState) => {
@@ -144,8 +140,7 @@ export function wakeUpAction(rng: () => number = Math.random): GameAction {
       console.warn("Player is not home in bed");
       return gameState;
     }
-    // The day turns over before the night runs, so the first overnight
-    // tick is the one that rotates the job board (see refreshJobBoard).
+    // The day turns over before the night runs.
     gameState = { ...gameState, day: gameState.day + 1 };
     for (let i = 0; i < NIGHT_TICKS; i++) {
       gameState = tickAction(gameState, rng);

@@ -11,14 +11,8 @@ import {
   goToStoreAction,
 } from "../../game/game-actions/door-actions";
 import { isNight } from "../../game/time-flow";
-import {
-  DELIVERY_ROUND_TRIP_TICKS,
-  startDeliveryAction,
-} from "../../game/game-actions/delivery-actions";
 import { startScavengingAction } from "../../game/game-actions/scavenge-actions";
-import { readyHandoffs } from "../../game/delivery";
 import { GameAction } from "../../game/GameState";
-import { formatDuration } from "../../game/time";
 import {
   atTruckBed,
   atTruckCab,
@@ -26,8 +20,6 @@ import {
   truckCabRect,
 } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
-import { jobPayout } from "../../game/marketplace";
-import { formatMoney } from "../../utils/formatNumber";
 import { interactLabel, resolveInteract } from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
 import { classNames } from "../../utils/classNames";
@@ -60,10 +52,8 @@ const CARD_MARGIN = 8;
 /** One numbered row on the cab's card. */
 interface TruckRow {
   readonly key: string;
-  readonly group: "go" | "handoff";
   readonly name: string;
   readonly description: string;
-  /** The row's button label — "Go" for a trip, "Deliver" for work. */
   readonly verb: string;
   readonly action: () => GameAction;
 }
@@ -148,15 +138,8 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
 
 /**
  * The truck's cab: standing at it offers a small hint chip, and the
- * keypress spreads open the trip card. Two kinds of row live on it, each
- * answering to its own number:
- *
- * - **Places to go** — the shopping trips and scavenging errands. Listed
- *   first so their numbers never move; Orange Box is always 1.
- * - **Work to deliver** — the active commission and any accepted job
- *   whose deliverables are loaded in the bed right now. This is how
- *   finished work leaves the shop; there is no "mark complete" button
- *   anywhere, because a delivery is a drive somebody takes.
+ * keypress spreads open the trip card — the places to go, one row per
+ * destination, each answering to its own number. Orange Box is always 1.
  */
 export const TruckPrompt: React.FC<{
   canvasWidth: number;
@@ -190,7 +173,6 @@ export const TruckPrompt: React.FC<{
   if (storeUnlocked && !night) {
     rows.push({
       key: "orangeBox",
-      group: "go",
       name: "Orange Box",
       description:
         "The big-box store: lumber, tools, machines, and supplies. Takes as long as you spend in the aisles.",
@@ -201,7 +183,6 @@ export const TruckPrompt: React.FC<{
   if (lumberyardUnlocked && !night) {
     rows.push({
       key: "lumberyard",
-      group: "go",
       name: "Sawyer & Sons",
       description:
         "The hardwood lumberyard: rough and S2S stock, priced for people who mill their own. Takes as long as you spend in the racks.",
@@ -214,7 +195,6 @@ export const TruckPrompt: React.FC<{
   if (!night) {
     rows.push({
       key: "scavenge",
-      group: "go",
       name: "Scavenge for pallets",
       description:
         "The loading-dock circuit, half an hour a stop. Head back whenever the bed looks good enough.",
@@ -227,7 +207,6 @@ export const TruckPrompt: React.FC<{
   // carry over.
   rows.push({
     key: "home",
-    group: "go",
     name: "Home",
     description: night
       ? "Call it a night. Anything still curing is dry by morning."
@@ -235,42 +214,6 @@ export const TruckPrompt: React.FC<{
     verb: "Go",
     action: () => goHomeAction(),
   });
-
-  // A delivery is a drive like any other, so it comes off the card at
-  // close along with the rest of the day's errands (readyHandoffs is
-  // what empties at night, so the closed chip agrees with the card).
-  const roundTrip = formatDuration(DELIVERY_ROUND_TRIP_TICKS);
-  for (const handoff of readyHandoffs(gameState)) {
-    if (handoff.kind === "commission") {
-      const { commission } = handoff;
-      rows.push({
-        key: `commission-${commission.id}`,
-        group: "handoff",
-        name: commission.name,
-        // "For <client>." rather than "<client> is waiting": the client
-        // strings are appositives ("Marguerite, two doors down") and read
-        // badly with a verb hung straight off them.
-        description:
-          `For ${commission.client}. Pays ${formatMoney(commission.rewardMoney)}. ` +
-          `${roundTrip} there and back.`,
-        verb: "Deliver",
-        action: () => startDeliveryAction(handoff),
-      });
-    } else {
-      const { job } = handoff;
-      const payout = jobPayout(job, gameState.tick);
-      rows.push({
-        key: `job-${job.id}`,
-        group: "handoff",
-        name: job.name,
-        description:
-          `Pays ${formatMoney(payout.money)}, tip included. ` +
-          `${roundTrip} there and back.`,
-        verb: "Deliver",
-        action: () => startDeliveryAction(handoff),
-      });
-    }
-  }
 
   // The digits answer to the rows the open card shows. Registered
   // unconditionally (hooks), enabled per row while the card is open.
@@ -320,8 +263,8 @@ export const TruckPrompt: React.FC<{
   // The card's row cursor: W/S walk it, E takes the row it's on. The raw
   // index is unbounded and `mod` folds it onto whatever rows the card
   // currently shows, so the cursor survives the list changing under it
-  // (a delivery leaving the card). Starts back at the top each time the
-  // card spreads open.
+  // (a destination stepping off at close). Starts back at the top each
+  // time the card spreads open.
   const [cursor, setCursor] = useState(0);
   useEffect(() => {
     if (truckMenuOpen) setCursor(0);
@@ -356,9 +299,6 @@ export const TruckPrompt: React.FC<{
   const cellPx = PIXELS_PER_CELL * scale;
   const centerX = ((cab.min[0] + cab.max[0]) / 2) * cellPx;
   const cabTop = cab.min[1] * cellPx;
-  const handoffCount = rows.filter((row) => row.group === "handoff").length;
-  const mixed = handoffCount > 0 && handoffCount < rows.length;
-
   // Closed: just the chip, the same weight as every other hint — and
   // only when E would actually open the cab (something else in reach
   // may claim the key first).
@@ -378,9 +318,7 @@ export const TruckPrompt: React.FC<{
       >
         <HintList testId="truck-cab-chips">
           <HintRow className="text-paper-manila/60">The truck</HintRow>
-          <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-            {handoffCount > 0 ? "deliver" : "head out"}
-          </HintRow>
+          <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>head out</HintRow>
         </HintList>
       </div>
     );
@@ -415,7 +353,7 @@ export const TruckPrompt: React.FC<{
             </h3>
             <span className="flex items-center gap-3">
               <span className="font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-ink-fade">
-                {handoffCount > 0 ? "Someone's waiting" : "Places to go"}
+                Places to go
               </span>
               <Tooltip content="Stay in the shop" shortcut="close-sheet">
                 <button
@@ -434,15 +372,6 @@ export const TruckPrompt: React.FC<{
           <ul className="min-h-0 space-y-0.5 overflow-y-auto">
             {rows.map((row, index) => (
               <React.Fragment key={row.key}>
-                {/* Subheadings only earn their space when the card is
-                  actually mixed — with one kind of row the card header
-                  has already said what these are. */}
-                {mixed &&
-                  (index === 0 || rows[index - 1].group !== row.group) && (
-                    <li className="px-2 pt-2 pb-0.5 font-condensed uppercase tracking-[0.2em] text-[0.6rem] text-ink-fade">
-                      {row.group === "go" ? "Places to go" : "Work to deliver"}
-                    </li>
-                  )}
                 <li
                   data-selected={index === selectedIndex || undefined}
                   // Pointing at a row selects it even when the button under

@@ -2,7 +2,7 @@ import React from "react";
 import { useModalScope, useShortcut } from "./shortcuts/ShortcutProvider";
 
 /**
- * The shared shell for centered dialogs (Settings, the phone, the journal,
+ * The shared shell for centered dialogs (Settings, the journal,
  * the manual): a dimmed backdrop that closes on click (unless the caller
  * asks it not to), a panel that swallows clicks so only the backdrop
  * dismisses, and the modal keyboard scope so
@@ -19,8 +19,8 @@ export const Modal: React.FC<{
   panelClassName: string;
   /**
    * Handles on the two surfaces, for a modal that arrives as a motion
-   * rather than an appearance (the clipboard grows out of its tracker).
-   * Presentation only — the shell itself never animates anything.
+   * rather than an appearance. Presentation only — the shell itself
+   * never animates anything.
    */
   panelRef?: React.Ref<HTMLDivElement>;
   backdropRef?: React.Ref<HTMLDivElement>;

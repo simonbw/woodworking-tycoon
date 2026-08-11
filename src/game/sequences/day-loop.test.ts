@@ -3,14 +3,13 @@
  * through the driver the way a player lives them (see time-flow.ts).
  * The unit tests pin the mechanics (door-actions, time-flow, the phase
  * names); what belongs here is the rhythm — glue up in the evening and
- * it's dry in the morning, the board rotates while you sleep, and a
- * closed shop refuses the next cut but never the one already running.
+ * it's dry in the morning, and a closed shop refuses the next cut but
+ * never the one already running.
  */
 
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { cuttingBoardShop } from "../../../tests/fixtures/cutting-board-shop";
-import { marketplaceShop } from "../../../tests/fixtures/marketplace-shop";
 import { finishAttendedWorkAction } from "../game-actions/operation-actions";
 import { operateMachineAction } from "../game-actions/player-actions";
 import { isPanel } from "../panel-helpers";
@@ -58,21 +57,6 @@ describe("the day loop", () => {
     assert.equal(bench.outputMaterials.filter(isPanel).length, 1);
     shop.collect(WORKBENCH);
     assert.ok(shop.stock(isPanel).length === 1);
-  });
-
-  it("rotates the job board while the shop sleeps", () => {
-    const shop = openShop(marketplaceShop).tick(1);
-    const before = shop.shop.jobBoard;
-    assert.ok(before.length > 0);
-    assert.equal(shop.shop.jobBoardDay, shop.shop.day);
-
-    shop.sleep();
-
-    // The morning's refresh stamped the new day; unexpired offers may
-    // ride along (expiry itself is a marketplace unit test), but the
-    // board is full and marked as this morning's.
-    assert.equal(shop.shop.jobBoardDay, shop.shop.day);
-    assert.ok(shop.shop.jobBoard.length >= before.length);
   });
 
   it("refuses new work at night but keeps the night quiet, not stuck", () => {

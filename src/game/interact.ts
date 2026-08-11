@@ -1,8 +1,8 @@
 import { CellMap } from "./CellMap";
-import { readyHandoffs } from "./delivery";
 import { GameState, MaterialPile } from "./GameState";
 import { heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
+import { atStand } from "./stand";
 import { Machine, machineKey } from "./Machine";
 import { getMaterialName } from "./material-helpers";
 import { MaterialInstance } from "./Materials";
@@ -38,8 +38,10 @@ export type InteractAction =
   /** Standing at the truck's bed with cargo in it: E lifts the last
    * piece loaded back out — `material` — and Shift empties the bed. */
   | { kind: "truck-bed"; count: number; material: MaterialInstance }
-  /** `handoffCount` is how much finished work is loaded in the bed. */
-  | { kind: "truck-cab"; handoffCount: number };
+  /** Standing at the for-sale stand with pieces on it: E takes the
+   * newest one back — `material` — and Shift clears the table. */
+  | { kind: "stand"; count: number; material: MaterialInstance }
+  | { kind: "truck-cab" };
 
 /**
  * One place E could take material from: a machine's outfeed, a machine's
@@ -239,13 +241,23 @@ export function resolveInteract(
     };
   }
 
-  // The cab always answers: scavenging is on offer from day one, and
-  // finished work in the bed adds its deliveries to the card.
-  if (atTruckCab(gameState.shopInfo, gameState.player.position)) {
+  if (
+    handsFree &&
+    gameState.stand.length > 0 &&
+    atStand(gameState.shopInfo, gameState.player.position)
+  ) {
     return {
-      kind: "truck-cab",
-      handoffCount: readyHandoffs(gameState).length,
+      kind: "stand",
+      count: gameState.stand.length,
+      // The newest piece set out is what a plain press takes back, and
+      // what wears the outline.
+      material: gameState.stand[gameState.stand.length - 1],
     };
+  }
+
+  // The cab always answers: scavenging is on offer from day one.
+  if (atTruckCab(gameState.shopInfo, gameState.player.position)) {
+    return { kind: "truck-cab" };
   }
 
   if (targetedMachine?.type.powerSwitch === true && targetedMachine.isPowered) {
@@ -280,7 +292,9 @@ export function interactLabel(action: InteractAction): string {
       return "pick up broom";
     case "truck-bed":
       return `take ${getMaterialName(action.material)}`;
+    case "stand":
+      return `take back ${getMaterialName(action.material)}`;
     case "truck-cab":
-      return action.handoffCount > 0 ? "deliver" : "head out";
+      return "head out";
   }
 }

@@ -4,16 +4,16 @@ import { useGameState } from "../useGameState";
 import { tutorialTargets } from "./tutorialTargets";
 
 /**
- * The ring the guided opening draws around chrome — the phone button, a
- * tab inside it, a product on the store shelf, a skill's Learn button.
- * In-world things wear an outline shader instead (see targetHighlight);
- * this is for everything that lives in the DOM.
+ * The ring the guided opening draws around chrome — the journal button,
+ * a product on the store shelf, a skill's Learn button. In-world things
+ * wear an outline shader instead (see targetHighlight); this is for
+ * everything that lives in the DOM.
  *
  * Measured rather than positioned: buttons self-mark with
  * `data-tutorial-target` and this layer reads their boxes, the same
  * arrangement reward flights use (see payout/rewardTargets). A target
- * that isn't mounted — the phone is closed, the aisle isn't open — simply
- * has no ring, which is the normal case, not an error.
+ * that isn't mounted — the aisle isn't open — simply has no ring, which
+ * is the normal case, not an error.
  *
  * Rings never take pointer events: the button underneath is the thing
  * being pointed at, and it has to stay clickable.

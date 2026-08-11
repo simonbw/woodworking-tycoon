@@ -86,7 +86,7 @@ export const StationSheet: React.FC = () => {
   // Portaled to the body: the shop-overlay layer this renders from is
   // pinned to the shop floor's box (and rides the camera transform), but
   // the sheet wants the whole window. Still deliberately not a modal —
-  // below the top bar (z-40) on purpose, so the phone, journal, and menu
+  // below the top bar (z-40) on purpose, so the journal and menu
   // stay clickable over it.
   if (bench) {
     // The departing machine object is a snapshot; the world keeps

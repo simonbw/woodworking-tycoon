@@ -473,8 +473,8 @@ export type InputMaterial<T extends MaterialInstance = MaterialInstance> = {
    * to the flat fields by materialMeetsInput.
    *
    * NOT serializable — recipe constants only. Requirements that live in
-   * GameState (job offers, commissions) must stay declarative or they'd
-   * silently lose the predicate on save/load.
+   * GameState must stay declarative or they'd silently lose the
+   * predicate on save/load.
    */
   readonly matches?: (material: MaterialInstance) => boolean;
   /**

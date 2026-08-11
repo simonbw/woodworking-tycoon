@@ -3,8 +3,8 @@ import { DustMap, SpeciesAmounts } from "./Dust";
 import type { ManualArticleId } from "./manual";
 import { ShopVacState } from "./ShopVac";
 import { MachineState } from "./Machine";
-import { InputMaterialWithQuantity } from "./Machine";
 import { MaterialInstance } from "./Materials";
+import type { Customer } from "./stand";
 import { PayoutEvent } from "./PayoutEvent";
 import { SkillId } from "./Skill";
 import { SoundEvent } from "./SoundEvent";
@@ -41,8 +41,7 @@ export type GameAction = (gameState: GameState) => GameState;
 
 /**
  * What's riding in the truck's bed. Purchases and scavenged loot come
- * home here instead of materializing on the shop floor, and finished
- * work will leave from here (see delivery.ts). Loaded and
+ * home here instead of materializing on the shop floor. Loaded and
  * unloaded standing at the bed — the tailgate end, backed up near the
  * garage door. The bed is unbounded — hauling is what a truck is for;
  * the player's hands (HAND_CAPACITY) are what meter the trips to it.
@@ -67,21 +66,8 @@ export interface ProgressionState {
   readonly storeUnlocked: boolean;
   /** Reveals the lumberyard (S2S and rough stock) at the garage door. */
   readonly lumberyardUnlocked: boolean;
-  /** Reveals the phone (listings + job board) in the top bar. */
-  readonly marketplaceUnlocked: boolean;
-  readonly commissionsCompleted: number;
-  /**
-   * How many commissions have been offered over the phone. Always
-   * `commissionsCompleted` (waiting for reputation to reach the next
-   * commission's threshold) or `commissionsCompleted + 1` (an active
-   * work order). See commissionSequence.ts.
-   */
-  readonly commissionsOffered: number;
-  /**
-   * False from the moment a commission is offered until the player has
-   * sat through the phone call that delivers it (see CommissionCallLayer).
-   */
-  readonly commissionArrivalSeen: boolean;
+  /** Lifetime pieces sold off the for-sale stand (see stand.ts). */
+  readonly salesCompleted: number;
   /** The floor has gotten properly dusty — puts up the one-time sweeping note. */
   readonly sweepingUnlocked: boolean;
   /** The one-time "sweep it up" note has been read. */
@@ -138,31 +124,19 @@ export interface GameState {
     upgrades: ReadonlyArray<UpgradeId>;
   };
   readonly progression: ProgressionState;
-  /** Items up for sale on the marketplace, awaiting a buyer. */
-  readonly listings: ReadonlyArray<MarketListing>;
-  /** Open job offers the player hasn't accepted (refreshed daily). */
-  readonly jobBoard: ReadonlyArray<JobOffer>;
   /**
-   * The day the board last rotated. New offers roll in each morning —
-   * the first tick of a day the board hasn't seen yet refreshes it
-   * (see marketplace-actions.ts). 0 = never refreshed.
+   * Finished pieces set out on the for-sale stand at the end of the
+   * driveway, oldest first. Physical goods on a physical table: carried
+   * down and set out by hand, taken back the same way, and sold off it
+   * when a passing customer picks one (see stand.ts).
    */
-  readonly jobBoardDay: number;
+  readonly stand: ReadonlyArray<MaterialInstance>;
   /**
-   * Job template ids that were available at the last board refresh. A
-   * template appearing for the first time (new machine, tool, or skill)
-   * gets a guaranteed burst of offers — word gets around. See
-   * job-generation.ts.
+   * The people out walking past the lot right now. They stroll the
+   * sidewalk line below the driveway, pause at a stocked stand, and
+   * sometimes buy — see standTickPass in game-actions/stand-actions.ts.
    */
-  readonly seenJobTemplateIds: ReadonlyArray<string>;
-  /** Jobs the player has accepted and not yet delivered or cancelled. */
-  readonly acceptedJobs: ReadonlyArray<AcceptedJob>;
-  /**
-   * Per-product-category demand saturation, 0–1. Each sale of a category
-   * dips its meter; meters recover over time. A missing key means full
-   * demand (1) — keys are dropped once fully recovered.
-   */
-  readonly categoryDemand: Readonly<Record<string, number>>;
+  readonly customers: ReadonlyArray<Customer>;
   /**
    * Sawdust on the shop floor: per-cell (keyed "x,y"), per-species
    * amounts, dropped when clean. Machines lay it down while they cut;
@@ -194,109 +168,9 @@ export interface GameState {
    */
   readonly pendingSounds?: ReadonlyArray<SoundEvent>;
   /**
-   * Transient queue of completed handoffs, drained by `RewardFlightLayer`
-   * to fly the rewards to their readouts and show the client's card.
-   * Optional and never persisted (stripped in `saveLoad`); treat a missing
-   * value as empty.
+   * Transient queue of completed sales, drained by `RewardFlightLayer`
+   * to fly the rewards to their readouts. Optional and never persisted
+   * (stripped in `saveLoad`); treat a missing value as empty.
    */
   readonly pendingPayouts?: ReadonlyArray<PayoutEvent>;
-}
-
-/**
- * A standing offer on the marketplace: one or more interchangeable pieces
- * at one price. Listing several of the same thing makes one stack rather
- * than a wall of identical rows — see `listingGroupKey` in marketplace.ts
- * for what counts as "the same thing".
- */
-export interface MarketListing {
-  readonly id: string;
-  /**
-   * The pieces on offer, all sharing a listing group key. Buyers take one
-   * at a time; a listing whose last piece sells is removed, so this is
-   * never empty.
-   */
-  readonly materials: ReadonlyArray<MaterialInstance>;
-  /** Asking price for one piece. */
-  readonly askingPrice: number;
-  /**
-   * When the offer went up at its current price. Repricing resets this —
-   * the pity timer (see marketplace.ts) runs from here, and a price change
-   * is a new offer to the market. Adding stock to a standing offer does
-   * not reset it: the offer is what's been sitting there, not the pieces.
-   */
-  readonly listedAtTick: number;
-}
-
-/**
- * A generated one-off request on the job board. Jobs pay guaranteed money
- * for specific deliverables but never advance the story — that's what the
- * authored commission sequence is for.
- */
-export interface JobOffer {
-  readonly id: string;
-  /** Who's asking — generated flavor. */
-  readonly name: string;
-  /** The listing as the poster typed it, in their own voice. */
-  readonly description: string;
-  readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
-  /** Guaranteed payout. Never decays. */
-  readonly basePay: number;
-  /** Guaranteed reputation gain. Never decays. */
-  readonly baseReputation: number;
-  /** Offers rotate off the board a few days after this (see marketplace.ts). */
-  readonly postedAtTick: number;
-  /**
-   * Fulfillable from scavenged pallet wood alone. The board always keeps at
-   * least one such offer — a broke player's guaranteed path back to solvency.
-   */
-  readonly materialCostFree: boolean;
-}
-
-/** An accepted job: the tip and bonus reputation decay from acceptance. */
-export interface AcceptedJob extends JobOffer {
-  readonly acceptedAtTick: number;
-}
-
-/**
- * A work order in the authored commission sequence. The active commission is
- * derived from `progression.commissionsCompleted` and
- * `progression.commissionsOffered` (see commissionSequence.ts) rather than
- * stored in GameState.
- */
-export interface Commission {
-  readonly id: string;
-  readonly name: string;
-  /**
-   * The note on the work order, in the player's own hand: their shorthand
-   * of the phone call — who asked, what they asked for, what they were
-   * weird about. It must only know things the `call` actually said.
-   */
-  readonly description: string;
-  /**
-   * A second scrawl under the note: the player planning the job — what
-   * gear or journal skill this order is going to take. This is the voice
-   * of a woodworker chewing a pencil, not the game hinting; it carries
-   * the commission's tutorial breadcrumb (which machines/skills to go
-   * get) diegetically.
-   */
-  readonly plan?: string;
-  readonly requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>;
-  readonly rewardMoney: number;
-  readonly rewardReputation: number;
-  /**
-   * The client doesn't call until the shop's reputation reaches this —
-   * between commissions the player builds it up with jobs and listings.
-   */
-  readonly minReputation: number;
-  /**
-   * The text messages the client sends when the commission arrives, in
-   * their own voice — played out as the phone-call moment (see
-   * CommissionCallLayer). The description is the player's jotted
-   * compression of these lines.
-   */
-  readonly call: ReadonlyArray<string>;
-  /** Who takes delivery at the garage door. */
-  readonly client: string;
-  /** What they say when you hand the work over. Shown on the payout card. */
-  readonly thanks: string;
 }

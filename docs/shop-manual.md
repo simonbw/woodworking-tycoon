@@ -12,7 +12,7 @@ article list itself lives in the registry.
 ## What the manual is
 
 The game has enough interlocking systems (surfaces, tool slots,
-marketplace demand, dust physics) that a player can't hold them all from
+milling settings, dust physics) that a player can't hold them all from
 contextual hints alone. The manual is the durable place to re-read how
 something works. It is deliberately **not** an interactive step-by-step
 tutorial — it's the binder on the shelf. One-shot in-world notes like
@@ -105,9 +105,10 @@ in the first copy pass:
    better.
 8. **Say each thing once, in one register.** Not a pithy sentence and
    then its detailed restatement ("That work is milling", "It's where
-   the shop sells outside of commissions: …") — write the informative
-   sentence and delete the setup. Punchy fragment runs ("Accept, build,
-   deliver.") get cut the same way; the steps are already in the prose.
+   rough boards become flat stock: …") — write the informative
+   sentence and delete the setup. Punchy fragment runs ("Scavenge,
+   build, sell.") get cut the same way; the steps are already in the
+   prose.
 9. **End the sentence at the fact.** Trailing clauses that add mood
    instead of information ("for as long as the cut takes", "soaks in on
    its own time") come off.

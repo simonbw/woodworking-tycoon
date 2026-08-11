@@ -25,7 +25,6 @@ import {
 import { GameAction, GameState } from "../GameState";
 import { MaterialInstance, panelWidth } from "../Materials";
 import { HAND_CAPACITY, handSpaceLeft } from "../Person";
-import { consumeRequiredMaterials, ReadyHandoff } from "../delivery";
 import { availableOperations } from "../skill-helpers";
 import { tickAction } from "../game-actions/tickAction";
 import {
@@ -52,10 +51,6 @@ import {
   buyMachineAction,
   buyMaterialAction,
 } from "../game-actions/store-actions";
-import {
-  returnFromDeliveryAction,
-  startDeliveryAction,
-} from "../game-actions/delivery-actions";
 import {
   canPutDownCarriedMachine,
   putDownCarriedMachineAction,
@@ -94,13 +89,8 @@ import {
 } from "../game-actions/scavenge-actions";
 import { clearPendingPayoutsAction } from "../game-actions/payout-actions";
 import { spendSkillPointAction } from "../game-actions/skill-actions";
-import {
-  acceptJobAction,
-  listItemsAction,
-} from "../game-actions/marketplace-actions";
-import { generateJobBoard } from "../job-generation";
-import { LISTING_PITY_TICKS, listingCount, listingItem } from "../marketplace";
-import { getActiveCommission } from "../commissionSequence";
+import { setOutAtStandAction } from "../game-actions/stand-actions";
+import { atStand, isSellable, standRect } from "../stand";
 import { board } from "../board-helpers";
 import { LUMBER_CHANNELS } from "../lumberStock";
 import {
@@ -134,11 +124,10 @@ export class ShopDriver {
   private state: GameState;
 
   /**
-   * The dice every tick rolls (listing sales, the job board's daily
-   * refresh). Seeded so a sequence is deterministic by construction — the
-   * pity timer guarantees fair-priced listings sell *eventually*, but
-   * which tick a sale lands on decides how much money a long playthrough
-   * has in hand, and that must not drift between runs.
+   * The dice every tick rolls (who walks past the stand, who buys).
+   * Seeded so a sequence is deterministic by construction — which tick a
+   * sale lands on decides how much money a long playthrough has in hand,
+   * and that must not drift between runs.
    */
   private readonly rng = seededRandom("shop-driver");
 
@@ -874,7 +863,7 @@ export class ShopDriver {
   /**
    * Call it a day the way the player does: walk to the cab, drive home,
    * and wake up the next morning — the overnight runs as one batch of
-   * ordinary ticks (cures finish, listings roll, the job board rotates).
+   * ordinary ticks (cures finish overnight).
    */
   sleep(): this {
     this.standAtCab();
@@ -1315,204 +1304,86 @@ export class ShopDriver {
     return this;
   }
 
-  /**
-   * Ferry what an order requires into the bed: exactly the pieces its
-   * matcher would claim, out of the hands and off the floor. Anything the
-   * order doesn't want stays in the shop. If what's in reach can't
-   * satisfy it, the hands are loaded anyway so the delivery fails with
-   * its own message naming the bed.
-   */
-  private loadBedFor(
-    requiredMaterials: ReadonlyArray<InputMaterialWithQuantity>,
-  ): this {
-    const candidates = [
-      ...this.inventory,
-      ...this.state.materialPiles.map((pile) => pile.material),
-    ];
-    const leftover = consumeRequiredMaterials(candidates, requiredMaterials);
-    if (leftover !== null) {
-      const leftoverSet = new Set(leftover);
-      return this.loadBed(candidates.filter((m) => !leftoverSet.has(m)));
-    }
-    return this.loadBed();
-  }
+  // ---------------------------------------------------------------------
+  // The for-sale stand: the one selling channel, and where a sequence's
+  // money and reputation come from.
+  // ---------------------------------------------------------------------
 
-  /**
-   * Drive a loaded order out and back, the way the trip overlay does:
-   * the far end has no decision, so the return follows the departure
-   * with nothing in between (see delivery-actions.ts).
-   */
-  private runDelivery(handoff: ReadyHandoff): this {
-    // Nothing goes out after close, and both legs charge their minutes.
-    this.ensureDaylight();
-    this.standAtCab().apply(startDeliveryAction(handoff, this.rng));
-    if (this.state.player.away?.kind === "delivering") {
-      this.apply(returnFromDeliveryAction(this.rng));
+  /** A walkable cell within arm's reach of the stand's table. */
+  standAtStand(): this {
+    const rect = standRect(this.state.shopInfo);
+    this.standAt([
+      Math.floor((rect.min[0] + rect.max[0]) / 2),
+      Math.floor(rect.min[1]) - 1,
+    ]);
+    if (!atStand(this.state.shopInfo, this.state.player.position)) {
+      throw new Error("standAtStand missed the table's reach — driver bug");
     }
     return this;
   }
 
   /**
-   * Deliver the active commission: gather what the order requires, ferry
-   * it into the bed, walk to the cab, and drive it over. Fails loudly
-   * rather than quietly doing nothing, because "the commission silently
-   * didn't complete" is the exact bug a playthrough exists to catch.
+   * Carry every piece matching the predicate — in hand or on the floor —
+   * down the driveway and set it out on the stand, an armful at a time.
    */
-  handOverCommission(): this {
-    const commission = getActiveCommission(this.state.progression);
-    if (!commission) {
-      throw new Error(
-        "No active commission to hand over — the phone hasn't rung yet " +
-          `(${this.state.reputation} reputation, ` +
-          `${this.state.progression.commissionsCompleted} completed)`,
-      );
-    }
-    const before = this.state.progression.commissionsCompleted;
-    this.loadBedFor(commission.requiredMaterials);
-    this.runDelivery({ kind: "commission", commission });
-    if (this.state.progression.commissionsCompleted !== before + 1) {
-      throw new Error(
-        `"${commission.name}" would not deliver. The bed holds ` +
-          `[${this.state.truck.bed.map((m) => m.type).join(", ")}], which ` +
-          `does not satisfy ${JSON.stringify(commission.requiredMaterials)}`,
-      );
-    }
-    return this.apply(clearPendingPayoutsAction);
-  }
-
-  // ---------------------------------------------------------------------
-  // The marketplace: the living between commissions. Jobs and listings
-  // are where reputation and money come from while the phone is quiet.
-  // ---------------------------------------------------------------------
-
-  /**
-   * Put a fresh set of offers on the job board, rolling the same
-   * generator the daily refresh rolls — just with a chosen rng, so a
-   * sequence gets a board it can count on. Everything after this (accept,
-   * build, deliver) goes through the real actions.
-   */
-  seedJobBoard(rng: () => number = () => 0): this {
-    return this.arrange((state) => ({
-      ...state,
-      jobBoard: generateJobBoard(state, rng),
-    }));
-  }
-
-  /** Accept an open offer off the board, if a job slot is free. */
-  acceptJob(offerId: string): this {
-    const before = this.state.acceptedJobs.length;
-    this.apply(acceptJobAction(offerId));
-    if (this.state.acceptedJobs.length !== before + 1) {
-      throw new Error(
-        `Couldn't accept job ${offerId} — the board holds ` +
-          `[${this.state.jobBoard.map((o) => o.id).join(", ")}] and ` +
-          `${before} accepted jobs are using the slots`,
-      );
-    }
-    return this;
-  }
-
-  /**
-   * Deliver an accepted job at the cab, the same drive a commission
-   * takes: gather its requirements into the bed and drive them off.
-   */
-  deliverJob(jobId: string): this {
-    const job = this.state.acceptedJobs.find(
-      (candidate) => candidate.id === jobId,
-    );
-    if (!job) {
-      throw new Error(
-        `No accepted job ${jobId} — accepted ` +
-          `[${this.state.acceptedJobs.map((j) => j.id).join(", ")}]`,
-      );
-    }
-    const before = this.state.acceptedJobs.length;
-    this.loadBedFor(job.requiredMaterials);
-    this.runDelivery({ kind: "job", job });
-    if (this.state.acceptedJobs.length !== before - 1) {
-      throw new Error(
-        `Job "${job.description}" would not deliver. The bed holds ` +
-          `[${this.state.truck.bed.map((m) => m.type).join(", ")}], which ` +
-          `does not satisfy ${JSON.stringify(job.requiredMaterials)}`,
-      );
-    }
-    return this.apply(clearPendingPayoutsAction);
-  }
-
-  /**
-   * Put everything matching up for sale on the phone, at fair value
-   * unless the caller prices it otherwise. Fair-priced listings are
-   * guaranteed money: if no buyer rolls sooner, the pity timer sells
-   * them at two days (see awaitListingSales).
-   */
-  list(
-    predicate: MaterialPredicate,
-    price: (material: MaterialInstance) => number = getSellValue,
-  ): this {
+  setOut(predicate: MaterialPredicate = isSellable): this {
     const count = this.stock(predicate).length;
     if (count === 0) {
       throw new Error(
-        `Nothing in reach to list — holding ` +
+        `Nothing in reach to set out — holding ` +
           `[${this.inventory.map((m) => m.type).join(", ")}], floor has ` +
           `[${this.state.materialPiles.map((p) => p.material.type).join(", ")}]`,
       );
     }
-    const before = this.listedPieces;
-    // Listing takes the item out of the hands, so the arms never fill up;
-    // floor stock is picked up a piece at a time on the way to the phone.
+    const before = this.state.stand.length;
     while (this.stock(predicate).length > 0) {
-      const inHand = this.inventory.find(predicate);
-      if (inHand) {
-        this.apply(listItemsAction([inHand], price(inHand)));
-        if (this.inventory.includes(inHand)) {
-          throw new Error(`Couldn't list ${inHand.type}`);
+      const inHand = this.inventory.filter(predicate);
+      if (inHand.length > 0) {
+        this.standAtStand().apply(setOutAtStandAction(inHand));
+        if (this.inventory.some((piece) => inHand.includes(piece))) {
+          throw new Error(
+            `The stand would not take ` +
+              `[${inHand.map((m) => m.type).join(", ")}]`,
+          );
         }
         continue;
       }
       this.takeFromFloor(predicate, 1);
     }
-    // Identical pieces at one price stack into a single offer, so count
-    // pieces rather than rows.
-    if (this.listedPieces !== before + count) {
+    if (this.state.stand.length !== before + count) {
       throw new Error(
-        `Listed ${this.listedPieces - before} of ${count} pieces — ` +
+        `Set out ${this.state.stand.length - before} of ${count} pieces — ` +
           `this is a driver bug`,
       );
     }
     return this;
   }
 
-  /** How many pieces are up for sale, across every standing offer. */
-  private get listedPieces(): number {
-    return this.state.listings.reduce(
-      (total, listing) => total + listingCount(listing),
-      0,
-    );
-  }
-
   /**
-   * Let the clock run until every listing has sold. Fair-priced listings
-   * are guaranteed out by the pity timer at two days; anything still up
-   * after that was overpriced, and this fails naming it.
+   * Let the street run until `count` more pieces have sold off the
+   * stand, sleeping through nights as they come (nobody walks by after
+   * close). Sales roll from the driver's rng, so a sequence lands the
+   * same buyers every run; the ceiling is generous enough that a stocked
+   * stand can't miss it, and anything slower fails loudly.
    */
-  awaitListingSales(): this {
-    const ceiling = LISTING_PITY_TICKS + 100;
-    for (let i = 0; i < ceiling && this.state.listings.length > 0; i += 25) {
+  awaitSales(count = 1): this {
+    const target = this.state.progression.salesCompleted + count;
+    for (
+      let guard = 0;
+      guard < 400 && this.state.progression.salesCompleted < target;
+      guard++
+    ) {
+      this.ensureDaylight(25);
       this.tick(25);
     }
-    if (this.state.listings.length > 0) {
+    if (this.state.progression.salesCompleted < target) {
       throw new Error(
-        `${this.listedPieces} pieces never sold — asking above ` +
-          `fair value? Still up: ` +
-          `[${this.state.listings
-            .map(
-              (l) =>
-                `${listingCount(l)}× ${listingItem(l).type} at $${l.askingPrice}`,
-            )
-            .join(", ")}]`,
+        `Only ${count - (target - this.state.progression.salesCompleted)} ` +
+          `of ${count} pieces sold — the stand holds ` +
+          `[${this.state.stand.map((m) => m.type).join(", ")}]`,
       );
     }
-    return this;
+    return this.apply(clearPendingPayoutsAction);
   }
 }
 

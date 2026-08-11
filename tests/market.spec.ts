@@ -2,25 +2,23 @@ import { expect, Page, test } from "@playwright/test";
 import { modesOf, selectMode } from "./machine-panel";
 import {
   advanceTicks,
-  answerPhoneCall,
   checkOutAndLeaveStore,
-  closePhone,
   goToStore,
-  deliverFromTruck,
   movePlayerToCab,
+  movePlayerToStand,
   openTruckMenu,
-  openPhone,
   startNewGame,
 } from "./navigation";
 
 /**
  * Selling, supplying, and sounding.
  *
- * Three things the shop does that aren't making something: putting work on the
- * phone and watching it sell, keeping the supply cabinet stocked off the
- * store's aisle, and the audio bridge that turns a game event into a fetched
- * clip. They share a browser because none of them needs a shop full of
- * machines — a listing, a tin of nails, and a queued cue are enough.
+ * Three things the shop does that aren't making something: setting work
+ * out on the for-sale stand and watching it sell, keeping the supply
+ * cabinet stocked off the store's aisle, and the audio bridge that turns
+ * a game event into a fetched clip. They share a browser because none of
+ * them needs a shop full of machines — a shelf on the table, a tin of
+ * nails, and a queued cue are enough.
  *
  * The sound half goes last: it drives cues straight into `pendingSounds`, and
  * it wants a game with no work in flight emitting cues of its own.
@@ -82,8 +80,8 @@ async function queueCue(page: Page, cue: Record<string, string>) {
   }, cue);
 }
 
-test.describe("Market, supplies, and sound", () => {
-  test("lists and sells, stocks the cabinet, and plays its cues", async ({
+test.describe("Selling, supplies, and sound", () => {
+  test("sells off the stand, stocks the cabinet, and plays its cues", async ({
     page,
   }) => {
     test.setTimeout(300000);
@@ -111,231 +109,134 @@ test.describe("Market, supplies, and sound", () => {
     }
     await page.waitForTimeout(500);
 
-    await test.step("locked before the marketplace unlocks", async () => {
-      await expect(
-        page.getByRole("button", { name: "Phone" }),
-      ).not.toBeVisible();
-      // Nothing to walk out for yet either: no door panel in a fresh game
-      await movePlayerToCab(page);
-      await expect(page.getByTestId("truck-panel")).not.toBeVisible();
-    });
-
-    await test.step("load marketplace fixture", async () => {
-      await page.evaluate(() => {
-        const fixtures = (window as any).__TEST_FIXTURES__;
-        (window as any).__UPDATE_GAME_STATE__(
-          () => fixtures["marketplace-shop"],
-        );
-      });
-      await page.waitForTimeout(30);
-      await expect(page.getByRole("button", { name: "Phone" })).toBeVisible();
-    });
-
-    await test.step("list both shelves at fair value as one offer", async () => {
-      await openPhone(page);
-      await expect(
-        page.getByText("SawdustList", { exact: true }),
-      ).toBeVisible();
-
-      // Two identical shelves share one row in "List an item", pre-priced
-      // at fair value ($12 each), and go up together
-      const shelfRow = page.locator("li", { hasText: /Rustic/i });
-      await expect(shelfRow).toHaveCount(1);
-      // The pallet board riding along in the same inventory gets no row at
-      // all — the marketplace only takes finished work
-      await expect(
-        page.locator("li", { hasText: /Pallet Wood/i }),
-      ).toHaveCount(0);
-      await shelfRow.getByRole("button", { name: "List ×2" }).click();
-      // A fairly priced listing can legitimately sell within a tick or two,
-      // so accept either "listed" or "already sold" here
-      await page.waitForFunction(
-        () => {
-          const s = (window as any).__GET_GAME_STATE__();
-          return s.listings.length === 1 || s.money === 124;
-        },
-        undefined,
-        { timeout: 5000 },
-      );
-      const state = await page.evaluate(() =>
-        (window as any).__GET_GAME_STATE__(),
-      );
-      if (state.listings.length === 1) {
-        expect(state.listings[0].askingPrice).toBe(12);
-        // One stacked offer, not a row per shelf
-        expect(state.listings[0].materials.length).toBe(2);
-        // Listing boxes the items up: they leave the inventory unpaid
-        expect(state.money).toBe(100);
-      }
-      expect(
-        state.player.inventory.some((m: any) => m.type === "rusticShelf"),
-      ).toBe(false);
-    });
-
-    await test.step("a fairly priced listing sells within the pity window", async () => {
-      // Fast-forward past the pity window (two calendar days) rather
-      // than waiting out the roll, then feed the tick that fires it —
-      // an idle shop barely ticks on its own now.
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) =>
-          state.listings.length === 0
-            ? state
-            : {
-                ...state,
-                tick: state.listings[0].listedAtTick + 2 * 1440,
-                // The jump would strand the shop deep in "night";
-                // restamp the morning so the day's budget is fresh
-                dayStartTick: state.listings[0].listedAtTick + 2 * 1440,
-              },
-        );
-      });
-      await advanceTicks(page, 1);
-      await page.waitForFunction(
-        () => (window as any).__GET_GAME_STATE__().money === 124,
-        undefined,
-        { timeout: 5000 },
-      );
-      const state = await page.evaluate(() =>
-        (window as any).__GET_GAME_STATE__(),
-      );
-      expect(state.listings.length).toBe(0);
-      // The buyer left a review
-      expect(state.reputation).toBeGreaterThan(5);
-    });
-
-    await test.step("job board fills with producible offers", async () => {
-      await page.getByRole("button", { name: "Job Board" }).click();
-      // The tick pass fills an empty board once the marketplace is unlocked
-      await page.waitForFunction(
-        () => (window as any).__GET_GAME_STATE__().jobBoard.length >= 3,
-        undefined,
-        { timeout: 5000 },
-      );
-      const state = await page.evaluate(() =>
-        (window as any).__GET_GAME_STATE__(),
-      );
-      // The income floor: always at least one zero-material-cost job
-      expect(state.jobBoard.some((offer: any) => offer.materialCostFree)).toBe(
-        true,
-      );
-      await expect(
-        page.getByRole("button", { name: "Accept" }).first(),
-      ).toBeVisible();
-    });
-
-    await test.step("accept and deliver a job", async () => {
-      // Deterministic setup: swap the board for a known shelf job and put
-      // the deliverable in the player's hands
+    await test.step("hand the player a shelf and a raw board", async () => {
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          jobBoard: [
-            {
-              id: "job-e2e",
-              name: "E2E Tester",
-              description: "Wants a rustic shelf.",
-              requiredMaterials: [
-                { type: ["rusticShelf"], species: ["pallet"], quantity: 1 },
-              ],
-              basePay: 100,
-              baseReputation: 1,
-              postedAtTick: state.tick,
-              materialCostFree: true,
-            },
-          ],
           player: {
             ...state.player,
             inventory: [
-              ...state.player.inventory,
               { id: "e2e-shelf", type: "rusticShelf", species: "pallet" },
+              {
+                id: "e2e-board",
+                type: "board",
+                species: "pallet",
+                length: 36,
+                width: 4,
+                thickness: 3,
+                surface: "rough",
+                jointedFaces: 0,
+                jointedEdges: 0,
+              },
             ],
           },
         }));
       });
       await page.waitForTimeout(30);
+    });
 
-      await page
-        .locator("li", { hasText: "E2E Tester" })
-        .getByRole("button", { name: "Accept" })
-        .click();
+    await test.step("the stand offers to take the shelf, and F sets it out", async () => {
+      await movePlayerToStand(page);
+      const chips = page.getByTestId("stand-chips");
+      await expect(chips).toBeVisible();
+      await expect(chips).toContainText("set out for sale");
+      await page.keyboard.press("f");
       await page.waitForTimeout(30);
-      const accepted = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().acceptedJobs.length,
-      );
-      expect(accepted).toBe(1);
-
-      // The phone takes the order but can't complete it — delivery is a
-      // drive, with the goods loaded in the truck's bed
-      await expect(page.locator("li", { hasText: "E2E Tester" })).toContainText(
-        "truck",
-      );
-      await expect(
-        page.locator("li", { hasText: "E2E Tester" }).getByRole("button", {
-          name: "Deliver",
-        }),
-      ).toHaveCount(0);
-
-      const moneyBefore = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().money,
-      );
-      await closePhone(page);
-      await deliverFromTruck(page, "E2E Tester");
-
       const state = await page.evaluate(() =>
         (window as any).__GET_GAME_STATE__(),
       );
-      expect(state.acceptedJobs.length).toBe(0);
-      // Base pay plus a fresh tip: $100 base + up to 40% tip
-      expect(state.money).toBeGreaterThan(moneyBefore + 100);
-      expect(
-        state.player.inventory.some((m: any) => m.id === "e2e-shelf"),
-      ).toBe(false);
-      // A job is routine work: money flies, but no client card to dismiss
-      await expect(page.getByTestId("client-card")).not.toBeVisible();
+      expect(state.stand.length).toBe(1);
+      expect(state.stand[0].type).toBe("rusticShelf");
+      // The raw board stays in hand: nobody pays for unworked wood, and
+      // with only it left the chip stops offering to set anything out
+      expect(state.player.inventory.length).toBe(1);
+      await expect(chips).not.toContainText("set out for sale");
     });
 
-    await test.step("the phone rings when reputation reaches the next gate", async () => {
-      // The next commission arrives at its reputation threshold — push the
-      // shop over it and let the next tick's milestone pass ring the phone
-      const gate = await page.evaluate(() => {
+    await test.step("E takes the piece back, and F puts it out again", async () => {
+      const chips = page.getByTestId("stand-chips");
+      await expect(chips).toContainText(/take back/i);
+      await page.keyboard.press("e");
+      await page.waitForTimeout(30);
+      let state = await page.evaluate(() =>
+        (window as any).__GET_GAME_STATE__(),
+      );
+      expect(state.stand.length).toBe(0);
+      expect(
+        state.player.inventory.some((m: any) => m.type === "rusticShelf"),
+      ).toBe(true);
+      await page.keyboard.press("f");
+      await page.waitForTimeout(30);
+      state = await page.evaluate(() => (window as any).__GET_GAME_STATE__());
+      expect(state.stand.length).toBe(1);
+    });
+
+    await test.step("a passerby buys it, wherever the player is standing", async () => {
+      // Walk back inside so the payoff proves itself away from the stand.
+      await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          reputation: 30,
+          player: { ...state.player, position: [6, 12] },
         }));
-        return 30;
       });
-      expect(gate).toBe(30);
-      await advanceTicks(page, 1);
-
-      // The call is a takeover: the client's messages, and no way out but
-      // through — Escape doesn't dismiss it
-      const call = page.getByTestId("commission-call");
-      await expect(call).toBeVisible();
-      await expect(call).toContainText("Anton Reyes");
-      await expect(call).toContainText("hardwood cutting boards");
-      await page.keyboard.press("Escape");
-      await expect(call).toBeVisible();
+      const before = await page.evaluate(() =>
+        (window as any).__GET_GAME_STATE__(),
+      );
+      // Sales roll real dice, so feed the street ticks until one lands —
+      // a stocked stand draws a buyer well inside a morning. Small
+      // batches, restamping the morning so night never stops the foot
+      // traffic, and stopping the moment the money moves so the reward
+      // flight is still in the air below.
+      for (let i = 0; i < 40; i++) {
+        const sold = await page.evaluate(() => {
+          const s = (window as any).__GET_GAME_STATE__();
+          return s.progression.salesCompleted > 0;
+        });
+        if (sold) break;
+        await page.evaluate(() => {
+          (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+            ...state,
+            dayStartTick: state.tick,
+          }));
+        });
+        await advanceTicks(page, 25);
+      }
+      const state = await page.evaluate(() =>
+        (window as any).__GET_GAME_STATE__(),
+      );
+      expect(state.progression.salesCompleted).toBe(1);
+      expect(state.stand.length).toBe(0);
+      // Sold at fair value ($12), with word of the work spreading
+      expect(state.money).toBe(before.money + 12);
+      expect(state.reputation).toBeGreaterThan(before.reputation);
+      // The first sale is the first payday: the store unlocks off it
+      expect(state.progression.storeUnlocked).toBe(true);
     });
 
-    await test.step("accepting the call puts the order on the clipboard", async () => {
-      await answerPhoneCall(page);
-      await expect(page.getByTestId("commission-call")).toHaveCount(0);
-      // The clipboard holds itself up with the new work order
-      const clipboard = page.getByRole("dialog", { name: "Clipboard" });
-      await expect(clipboard).toBeVisible();
-      await expect(clipboard).toContainText("A Proper Cutting Board");
-      await page.keyboard.press("Escape");
-      await expect(clipboard).toHaveCount(0);
-      // The tracker chip carries it from here, and the call stays answered
-      await expect(page.getByTestId("commission-tracker")).toContainText(
-        "A Proper Cutting Board",
-      );
-      const seen = await page.evaluate(
-        () =>
-          (window as any).__GET_GAME_STATE__().progression
-            .commissionArrivalSeen,
-      );
-      expect(seen).toBe(true);
+    await test.step("the sale flies its rewards to the readouts", async () => {
+      // The flight is decoration over settled money: chips burst from
+      // mid-screen and land on the balance and reputation readouts.
+      const flights = page.getByTestId("reward-flights");
+      await expect(flights.locator(".reward-chip").first()).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(page.locator("[data-reward-target='money']")).toBeVisible();
+      await expect(
+        page.locator("[data-reward-target='reputation']"),
+      ).toBeVisible();
+      // The queue drains once staged, and the chips land and clear
+      await expect
+        .poll(async () =>
+          page.evaluate(
+            () =>
+              ((window as any).__GET_GAME_STATE__().pendingPayouts ?? [])
+                .length,
+          ),
+        )
+        .toBe(0);
+      await expect(flights.locator(".reward-chip")).toHaveCount(0, {
+        timeout: 10000,
+      });
     });
 
     await test.step("scavenging trip starts at the truck's cab", async () => {
@@ -647,16 +548,6 @@ test.describe("Market, supplies, and sound", () => {
         operationId: "someFutureOperation",
       });
       await expect.poll(() => requested).toContain("assembly-mallet.ogg");
-    });
-
-    await test.step("the commission reward stinger plays", async () => {
-      await queueCue(page, { kind: "commission-complete" });
-      await expect.poll(() => requested).toContain("commission-complete.ogg");
-    });
-
-    await test.step("the phone-ring cue plays the notification clip", async () => {
-      await queueCue(page, { kind: "phone-ring" });
-      await expect.poll(() => requested).toContain("ui-notification.flac");
     });
 
     await test.step("material handling cues play", async () => {

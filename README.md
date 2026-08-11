@@ -1,6 +1,6 @@
 # Woodworking Tycoon
 
-An idle/simulation game about running a woodworking shop: buy machines, arrange your workshop, turn raw lumber into finished pieces, and fulfill commissions to work your way up from pallet-wood shelves toward building a retirement sailboat.
+An idle/simulation game about running a woodworking shop: buy machines, arrange your workshop, turn raw lumber into finished pieces, and sell them off the roadside stand to work your way up from pallet-wood shelves toward building a retirement sailboat.
 
 Built with React, TypeScript, PIXI.js, Tailwind CSS, and esbuild.
 
@@ -21,10 +21,9 @@ npm run test       # unit tests + Playwright E2E
 The long arc runs from amateur woodworker with a scavenged pallet to master craftsman building a sailboat for retirement. The principles that shape it:
 
 - More active than typical idle games, but with incremental progression satisfaction
-- Most of play is non-commission work: the job board and marketplace listings are the day-to-day living, where money, reputation, and XP come from
-- Commissions are rare "bosses" — reputation-gated milestone events that arrive as a phone call, each demanding a cluster of capabilities (machines, tools, skills) the shop doesn't have yet
+- The game has one selling channel: the for-sale stand at the end of the driveway, where passing customers buy finished pieces at fair value — money, reputation, and XP all come from making things and selling them
 - Manual operations, no automation
-- Reputation is the pacing metric (it decides when the next commission calls); money is the capability metric (it buys the gear each commission demands)
+- Reputation is the pacing metric (it opens the lumber suppliers and their channels); money is the capability metric (it buys the machines and tools the next kind of piece demands)
 
 Designs for unbuilt features live in the GitHub issue tracker, not in this repo.
 

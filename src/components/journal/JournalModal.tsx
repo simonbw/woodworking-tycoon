@@ -112,8 +112,7 @@ export const JournalModal: React.FC<{ onClose: () => void }> = ({
             ))}
           </div>
           <p className="mt-4 shrink-0 font-typewriter text-xs text-ink-fade">
-            Finish products and commissions to earn craft XP. Each level grants
-            a skill point.
+            Finish products to earn craft XP. Each level grants a skill point.
           </p>
         </div>
       </div>

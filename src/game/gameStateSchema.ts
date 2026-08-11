@@ -132,24 +132,6 @@ const awayTripSchema = z.discriminatedUnion("kind", [
     cart: z.array(cartLineSchema),
   }),
   z.object({
-    kind: z.literal("delivering"),
-    order: z.object({
-      jobId: z.string().optional(),
-      cargo: z.array(materialSchema),
-      // The payout was struck when the truck pulled out — a save reloaded
-      // mid-run still owes exactly what the cab's card quoted.
-      payout: z.object({
-        kind: z.enum(["commission", "job"]),
-        title: z.string(),
-        money: z.number(),
-        reputation: z.number(),
-        xp: z.number(),
-        client: z.string().optional(),
-        dialogue: z.string().optional(),
-      }),
-    }),
-  }),
-  z.object({
     kind: z.literal("home"),
   }),
 ]);
@@ -169,10 +151,7 @@ const progressionSchema = z.object({
   tutorialDismissed: z.boolean(),
   storeUnlocked: z.boolean(),
   lumberyardUnlocked: z.boolean(),
-  marketplaceUnlocked: z.boolean(),
-  commissionsCompleted: z.number(),
-  commissionsOffered: z.number(),
-  commissionArrivalSeen: z.boolean(),
+  salesCompleted: z.number(),
   sweepingUnlocked: z.boolean(),
   dustTipDismissed: z.boolean(),
   unlockedArticles: z.array(z.string()),
@@ -182,22 +161,13 @@ const progressionSchema = z.object({
   unlockedSkills: z.array(skillIdSchema),
 });
 
-/**
- * Job/commission requirements are declarative InputMaterialWithQuantity
- * records (never functions — see the note on InputMaterial.matches), so
- * structurally they're "quantity plus allowed-value fields".
- */
-const requirementSchema = z.object({ quantity: z.number() }).passthrough();
-
-const jobOfferSchema = z.object({
+/** A passerby on the sidewalk line (see stand.ts). */
+const customerSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  requiredMaterials: z.array(requirementSchema),
-  basePay: z.number(),
-  baseReputation: z.number(),
-  postedAtTick: z.number(),
-  materialCostFree: z.boolean(),
+  x: z.number(),
+  walkDirection: z.union([z.literal(1), z.literal(-1)]),
+  state: z.enum(["walking", "browsing", "leaving"]),
+  browseTicksLeft: z.number(),
 });
 
 export const gameStateSchema = z.object({
@@ -206,7 +176,6 @@ export const gameStateSchema = z.object({
   // parseGameState backfills them as a fresh morning at the saved tick.
   day: z.number().optional(),
   dayStartTick: z.number().optional(),
-  jobBoardDay: z.number().optional(),
   money: z.number(),
   reputation: z.number(),
   materialPiles: z.array(
@@ -241,18 +210,8 @@ export const gameStateSchema = z.object({
     upgrades: z.array(upgradeIdSchema),
   }),
   progression: progressionSchema,
-  listings: z.array(
-    z.object({
-      id: z.string(),
-      materials: z.array(materialSchema),
-      askingPrice: z.number(),
-      listedAtTick: z.number(),
-    }),
-  ),
-  jobBoard: z.array(jobOfferSchema),
-  seenJobTemplateIds: z.array(z.string()),
-  acceptedJobs: z.array(jobOfferSchema.extend({ acceptedAtTick: z.number() })),
-  categoryDemand: z.record(z.number()),
+  stand: z.array(materialSchema),
+  customers: z.array(customerSchema),
   dust: z.record(speciesAmountsSchema),
   shopVac: z
     .object({
@@ -286,6 +245,5 @@ export function parseGameState(data: unknown): GameState | null {
     ...parsed,
     day: parsed.day ?? 1,
     dayStartTick: parsed.dayStartTick ?? parsed.tick,
-    jobBoardDay: parsed.jobBoardDay ?? 0,
   } as unknown as GameState;
 }

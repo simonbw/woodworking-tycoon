@@ -5,6 +5,8 @@ import { doorCenterX, DOOR_WIDTH, ShopInfo } from "../../game/ShopInfo";
 import { useTexture } from "../../utils/useTexture";
 import { useGameState } from "../useGameState";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
+import { CustomerLayer } from "./CustomerLayer";
+import { StandSprite } from "./StandSprite";
 import { TruckHighlight, TruckSprite } from "./TruckSprite";
 
 /**
@@ -72,6 +74,9 @@ export const EnvironmentLayer: React.FC<{
   truckHighlight?: TruckHighlight;
   truckCargoHighlight?: MaterialInstance;
   truckTutorialHighlight?: TruckHighlight;
+  standHighlight?: boolean;
+  standItemHighlight?: MaterialInstance;
+  standTutorialHighlight?: boolean;
 }> = ({
   width,
   height,
@@ -79,6 +84,9 @@ export const EnvironmentLayer: React.FC<{
   truckHighlight,
   truckCargoHighlight,
   truckTutorialHighlight,
+  standHighlight,
+  standItemHighlight,
+  standTutorialHighlight,
 }) => {
   const gameState = useGameState();
   const grassTexture = useTexture("/images/grass.png");
@@ -179,6 +187,14 @@ export const EnvironmentLayer: React.FC<{
         highlightedCargo={truckCargoHighlight}
         tutorialHighlight={truckTutorialHighlight}
       />
+      {/* The for-sale stand in the grass at the end of the driveway, and
+          whoever's out walking past it */}
+      <StandSprite
+        highlight={standHighlight}
+        highlightedItem={standItemHighlight}
+        tutorialHighlight={standTutorialHighlight}
+      />
+      <CustomerLayer />
       <pixiGraphics draw={drawBuilding} />
     </pixiContainer>
   );

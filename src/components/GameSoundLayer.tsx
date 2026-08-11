@@ -62,12 +62,10 @@ const CLIP_GAIN: Record<string, number> = {
   "assembly-mallet": 0.6,
   "drill-driver": 0.6,
   "dispose-toss": 0.6,
-  "commission-complete": 0.9,
   "cash-register": 0.6,
   "material-pickup": 0.45,
   "material-drop": 0.45,
   "pallet-load": 0.7,
-  "ui-notification": 0.8,
 };
 
 /**
@@ -81,14 +79,12 @@ const CLIP_MIN_GAP_MS: Record<string, number> = {
 };
 
 /**
- * Clips that are NOT physical events in the shop: reward stingers and
- * marketplace bookkeeping play dry, while everything else goes through the
- * room bus and picks up the shop's acoustics (see `audioBus.ts`).
+ * Clips that are NOT physical events in the shop: reward stingers play
+ * dry, while everything else goes through the room bus and picks up the
+ * shop's acoustics (see `audioBus.ts`).
  */
 const NON_DIEGETIC_CLIPS = new Set([
-  "commission-complete",
   "cash-register",
-  "ui-notification",
   // Happens out on the scavenging circuit, not in the garage — the shop's
   // acoustics don't apply to a loading dock across town.
   "pallet-load",
@@ -104,10 +100,6 @@ function clipFor(event: SoundEvent): string | null {
       // Distinguish "explicitly silent" (null) from "no entry" (undefined).
       return clip === undefined ? FALLBACK_OPERATION_CLIP : clip;
     }
-    case "commission-complete":
-      return "commission-complete";
-    case "sale":
-      return "cash-register";
     case "material-pickup":
       return "material-pickup";
     case "material-drop":
@@ -116,8 +108,6 @@ function clipFor(event: SoundEvent): string | null {
       return "nail-pry";
     case "pallet-load":
       return "pallet-load";
-    case "phone-ring":
-      return "ui-notification";
   }
 }
 

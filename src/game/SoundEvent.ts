@@ -5,19 +5,18 @@ import { MachineId } from "./Machine";
  * the `GameSoundLayer` subscriber, which maps each cue to an actual clip.
  *
  * This is the bridge that lets state transitions — an operation finishing on a
- * tick, a commission being paid out, a material changing hands — play sounds
- * without the reducers themselves touching the DOM or Web Audio. The queue is
- * transient and never persisted to the save (see `saveLoad.ts`).
+ * tick, a material changing hands — play sounds without the reducers
+ * themselves touching the DOM or Web Audio. The queue is transient and never
+ * persisted to the save (see `saveLoad.ts`). (Stand sales don't come through
+ * here: their cha-ching belongs to the reward flight, which plays it when the
+ * first coin lands — see RewardFlightLayer.)
  */
 export type SoundEventKind =
   | "operation-complete"
-  | "commission-complete"
   | "material-pickup"
   | "material-drop"
   | "nail-pry"
-  | "pallet-load"
-  | "sale"
-  | "phone-ring";
+  | "pallet-load";
 
 export interface SoundEvent {
   readonly kind: SoundEventKind;

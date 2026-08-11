@@ -49,11 +49,11 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  * The rest of the system, where it lives:
  *  - src/game/time.ts — the day's units (600 working minutes, 840
  *    overnight, 1440 to a calendar day) and phases. Everything the
- *    marketplace quotes "in days" is denominated in calendar days, so
+ *    game quotes "in days" is denominated in calendar days, so
  *    "three days" means three mornings from now.
  *  - src/components/Ticker.tsx — the variable-rate loop, the wait
- *    ramp, and the action-answering cadence (milestones, board refill)
- *    that runs regardless of clock pace.
+ *    ramp, and the action-answering cadence (milestone unlocks) that
+ *    runs regardless of clock pace.
  *  - src/game/game-actions/door-actions.ts — trips charging for the
  *    drive, and the overnight running as one batch of ordinary ticks.
  *  - src/game/calendar.ts — the derived, presentation-only date.
