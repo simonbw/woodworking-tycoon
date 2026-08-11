@@ -31,20 +31,46 @@ break later PRs, so re-verify every one in turn — never batch):
 1. `git checkout main && git pull` (picks up the previous iteration's merge).
 2. Build the candidate tree locally: `git checkout -B mergeall-test main &&
    git merge --no-edit origin/<headRefName>`.
-   - **Textual conflict** → abort the merge, skip this PR, continue with the
-     next one. Report the conflict; don't resolve it unilaterally.
+   - **Textual conflict** → resolve it (see "Resolving conflicts" below).
 3. Verify the combined tree:
    - `npm run tsc`
    - `npm run test:unit`
    - `npm run test:e2e` — if only `floor.spec`'s load-time budget fails, rerun
      it up to 2 more times before blaming the merge; that check is flaky on
      unmodified `main` (~1 in 3 runs).
-   - Any real failure → skip this PR (leave it open, report why), continue.
+   - Any real failure → first try to fix it on the PR branch the same way as a
+     conflict (small, intent-preserving fixes only — a renamed import, a
+     changed signature, a moved file). If the fix would mean redesigning the
+     PR's approach, leave the PR open, report why, and continue.
 4. Land it: `gh pr merge <number> --merge --delete-branch`.
 5. `git checkout main && git pull`, confirm the merge commit arrived, and
    delete the local branch if one exists with `git branch -d` (never `-D` —
    if `-d` refuses, the branch has commits main doesn't; report it instead of
    forcing).
+
+## Resolving conflicts
+
+Default to resolving conflicts yourself; escalate only when the conflict is a
+real design decision. GitHub can't merge a conflicted PR, so the resolution
+must land **on the PR branch**, not just the test branch:
+
+1. `git checkout <headRefName>` (tracking `origin/<headRefName>`), then
+   `git merge --no-edit main` and resolve every conflicted file. Read enough
+   surrounding code and both branches' intent (`git log main..HEAD` and the PR
+   description) to preserve **both** changes — a resolution that quietly drops
+   one side's behavior is worse than asking.
+2. Re-run the full verification (`tsc`, unit, E2E) on the resolved branch.
+3. Push the merge commit to the PR branch (`git push origin <headRefName>`),
+   confirm the PR shows as mergeable, then continue to `gh pr merge`.
+
+**Stop and ask the user instead** when the resolution would require a
+judgment call they'd want to weigh in on — both branches redesigned the same
+system in incompatible ways, the conflict spans a subsystem's core files with
+no evident right answer, or you'd be choosing which feature's behavior wins.
+Present the conflicting intents concretely, then continue with the remaining
+PRs while waiting; come back to the escalated one last. Sheer conflict-marker
+count is not by itself a reason to escalate — many markers with an obvious
+resolution (imports, adjacent additions, formatting) are still yours to do.
 
 ## Cleanup
 
@@ -59,6 +85,7 @@ break later PRs, so re-verify every one in turn — never batch):
 
 ## Report
 
-End with a summary: PRs merged (in order), PRs skipped and exactly why
-(conflict / tsc / which test), drafts left alone, and any local branches that
-survived cleanup and need the user's decision.
+End with a summary: PRs merged (in order), conflicts resolved and how, PRs
+left open and exactly why (escalated conflict / tsc / which test), drafts left
+alone, and any local branches that survived cleanup and need the user's
+decision.
