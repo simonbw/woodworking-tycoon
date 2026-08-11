@@ -139,12 +139,13 @@ import { StrokeSurface } from "./StrokeSurface";
 import { fitToStage, pointerToInches, StageFit, StageRect } from "./stageMath";
 import { useActivityFlag, useWorkFoley } from "./useWorkFoley";
 
-/** Continuous foley per interactive operation family. */
+/** Continuous foley per interactive operation family. The hand saw is
+ * absent on purpose: it carries its own synthesized voice, driven per
+ * stroke inside SawSurface (handSawSynth.ts), not a looped clip. */
 function foleyClipFor(operationId: string): string | null {
   if (operationId.startsWith("block")) return "hand-sanding";
   if (operationId.startsWith("orbit")) return "orbital-sander";
   if (operationId.startsWith("handPlane")) return "hand-sanding";
-  if (operationId === "handSawCut") return "pallet-dismantle";
   return null;
 }
 

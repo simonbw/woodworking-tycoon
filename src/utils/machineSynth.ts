@@ -316,8 +316,9 @@ export const BAND_SAW_SYNTH_PARAMS: MachineSynthParams = {
 
 let noiseBuffer: AudioBuffer | null = null;
 
-/** 2s of white noise, shared by every consumer (they loop from random offsets). */
-function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
+/** 2s of white noise, shared by every consumer (they loop from random
+ * offsets) — including the hand saw's voice in `handSawSynth.ts`. */
+export function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
   if (!noiseBuffer) {
     const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const data = buffer.getChannelData(0);

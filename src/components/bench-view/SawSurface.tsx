@@ -1,4 +1,5 @@
-import { Container, Graphics } from "pixi.js";
+import { useTick } from "@pixi/react";
+import { Container, Graphics, Ticker } from "pixi.js";
 import React, {
   useCallback,
   useEffect,
@@ -25,6 +26,7 @@ import {
 import { materialDustSpecies } from "../../game/material-helpers";
 import { OperationInteraction, ParameterValues } from "../../game/Machine";
 import { Board } from "../../game/Materials";
+import { HandSawVoice, playSawPartCrack } from "../../utils/handSawSynth";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { BenchPointerBus, BenchPointerEvent } from "./benchPointer";
 import { KerfDust, KerfDustBus } from "./KerfDust";
@@ -102,6 +104,23 @@ export const SawSurface: React.FC<{
   const activeRef = useRef(active);
   activeRef.current = active;
   const lastX = useRef<number | null>(null);
+
+  // The saw's synthesized voice (handSawSynth.ts): fed per stroke with
+  // the hand's speed and direction, ticked every frame so it decays the
+  // moment the hand stops. Built lazily on the first stroke — a surface
+  // that only ever shows the pencil line stays silent and graphless.
+  const voiceRef = useRef<HandSawVoice | null>(null);
+  const lastStrokeAt = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      voiceRef.current?.dispose();
+      voiceRef.current = null;
+    },
+    [],
+  );
+  useTick((ticker: Ticker) => {
+    voiceRef.current?.tick(ticker.deltaMS / 1000);
+  });
 
   const kerfG = useRef<Graphics>(null);
   // The offcut half's container, sagged imperatively as the cut nears
@@ -277,10 +296,27 @@ export const SawSurface: React.FC<{
       if (travel < 0.05) return;
       onWork();
       const next = sawStroke(mask, travel, interaction.kerfPerSecond);
-      // Dust spills at the crossing point, kicked the way the saw moves
       const run = Math.tan((angle * Math.PI) / 180);
       const norm = Math.hypot(1, run);
       const direction = Math.sign(xIn - last) || 1;
+      // The voice hears every stroke: speed from the event spacing,
+      // direction for the push–pull asymmetry, depth for the timbre arc
+      const strokeNow = performance.now();
+      const dt = Math.min(
+        0.1,
+        Math.max(
+          0.004,
+          (strokeNow - (lastStrokeAt.current ?? strokeNow)) / 1000,
+        ),
+      );
+      lastStrokeAt.current = strokeNow;
+      voiceRef.current ??= new HandSawVoice();
+      voiceRef.current.stroke(
+        travel / dt,
+        direction > 0 ? 1 : -1,
+        kerfFraction(mask),
+      );
+      // Dust spills at the crossing point, kicked the way the saw moves
       dustBus.queue.push({
         x: (xIn - size.widthIn / 2) * fit.pxPerIn,
         y: (lineY(xIn, centerY) - size.heightIn / 2) * fit.pxPerIn,
@@ -293,6 +329,11 @@ export const SawSurface: React.FC<{
       onProgress?.(next);
       if (kerfComplete(mask) && !doneRef.current) {
         doneRef.current = true;
+        // The last fibers let go: the crack plays detached from the
+        // voice, which the unmount is about to dispose. handSawCut is
+        // explicitly silent in GameSoundLayer's OPERATION_CLIP map so
+        // no generic completion whack lands on top of this.
+        playSawPartCrack();
         onComplete();
       }
     },
