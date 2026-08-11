@@ -4,9 +4,11 @@ import { consumableIconSrc } from "../../utils/uiImages";
 /**
  * A salvaged consumable's little victory lap: its icon leaves the point
  * where it was pried loose and flies to its row in the supplies tally
- * (SuppliesSection marks each row with `data-supply-id`). Pure
- * decoration over an already-settled state — the tally updated the
- * instant the commit ran — so a missing target simply drops the flight.
+ * (SuppliesSection marks each row with `data-supply-id`; while the panel
+ * is folded closed the flight lands on its header instead,
+ * `data-supplies-toggle`). Pure decoration over an already-settled state
+ * — the tally updated the instant the commit ran — so a missing target
+ * simply drops the flight.
  */
 export function flyToSupply(
   consumableId: ConsumableId,
@@ -16,7 +18,9 @@ export function flyToSupply(
   // The tally row may only have appeared in the commit's own render
   // (the card hides while the cabinet is empty), so measure next frame.
   requestAnimationFrame(() => {
-    const target = document.querySelector(`[data-supply-id="${consumableId}"]`);
+    const target =
+      document.querySelector(`[data-supply-id="${consumableId}"]`) ??
+      document.querySelector("[data-supplies-toggle]");
     if (!target) return;
     const to = target.getBoundingClientRect();
 

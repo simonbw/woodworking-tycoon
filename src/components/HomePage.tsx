@@ -24,8 +24,9 @@ export const HomePage: React.FC = () => {
  * (`hud-chip`). Interaction hints live in the world, pinned to the thing
  * they belong to (see ShopOverlayLayer). The name and readouts sit along
  * the top, what's in hand rides bottom-center (HandsStrip), the supply
- * tally keeps the bottom-right corner, and the coach's card holds the
- * top-left. Panels appearing or growing never shove the canvas around;
+ * panel folds up under the top bar on the right, and the coach's card
+ * holds the top-left. Panels appearing or growing never shove the canvas
+ * around;
  * long content scrolls inside its panel and the page itself never grows
  * a scrollbar.
  */
@@ -67,10 +68,10 @@ const HomePageContent: React.FC = () => {
           <HandsStrip />
         </div>
       </div>
-      <div
-        inert={benchDive}
-        className={`absolute bottom-6 right-6 z-20 ${chipClass}`}
-      >
+      {/* Deliberately outside the bench-dive fade: salvage pried loose at
+          a bench flies to this tally, so it stays up and clickable above
+          the bench view (z-35). below-top-bar clears the top bar's chip. */}
+      <div className="absolute right-6 below-top-bar z-40">
         <SuppliesSection />
       </div>
     </main>

@@ -417,6 +417,8 @@ test.describe("Selling, supplies, and sound", () => {
       const suppliesCard = page
         .locator("section", { hasText: /^Supplies/ })
         .first();
+      // The panel appears folded to its header; open it to read the rows
+      await suppliesCard.getByRole("button", { name: "Supplies" }).click();
       await expect(suppliesCard.getByText("Nails")).toBeVisible();
       await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
       // And the recipe's shortfall line clears
