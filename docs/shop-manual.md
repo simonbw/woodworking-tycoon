@@ -34,9 +34,7 @@ Typewriter-set article text per `docs/design-system.md`.
   follow).
 - A new unlock puts a small badge on the `?` button and a "NEW" marker
   on the article's tab; opening the article clears both. No toasts and
-  no auto-opens — the one exception is Welcome, which shows itself while
-  it is unlocked-but-unread (state-driven, so a fixture-loaded save
-  dissolves it automatically).
+  no auto-opens.
 - State is two persistent `ProgressionState` lists: `unlockedArticles`
   (appended by the same milestone checks that flip the underlying
   features — no parallel boolean flags) and `readArticles` (drives the

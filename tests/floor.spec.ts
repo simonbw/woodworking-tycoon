@@ -161,13 +161,8 @@ test.describe("Shop floor", () => {
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
     });
 
-    await test.step("the shop manual greets a new game and closes for good", async () => {
+    await test.step("a new game starts on the shop floor, no manual in the way", async () => {
       const manual = page.getByRole("dialog", { name: "Shop manual" });
-      await expect(manual).toBeVisible();
-      await expect(
-        manual.getByRole("heading", { name: "Welcome to the Shop" }),
-      ).toBeVisible();
-      await page.keyboard.press("Escape");
       await expect(manual).toHaveCount(0);
     });
 
@@ -529,12 +524,6 @@ test.describe("Shop floor", () => {
       await page.goto("/");
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
-      // A fresh game re-opens the manual, and a modal swallows the door key.
-      const manual = page.getByRole("dialog", { name: "Shop manual" });
-      if (await manual.count()) {
-        await page.keyboard.press("Escape");
-        await manual.waitFor({ state: "detached" });
-      }
       await page.waitForTimeout(500);
     });
 

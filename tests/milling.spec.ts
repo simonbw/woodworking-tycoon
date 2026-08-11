@@ -227,12 +227,6 @@ test.describe("Milling", () => {
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
-    // The manual greets a new game and holds the keyboard until dismissed
-    const manual = page.getByRole("dialog", { name: "Shop manual" });
-    if (await manual.count()) {
-      await page.keyboard.press("Escape");
-      await manual.waitFor({ state: "detached" });
-    }
     await page.waitForTimeout(500);
 
     await test.step("load the milling-shop", async () => {

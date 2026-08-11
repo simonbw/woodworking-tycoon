@@ -37,13 +37,19 @@ test.describe("Screens", () => {
     page.on("dialog", (d) => d.accept());
     const manual = page.getByRole("dialog", { name: "Shop manual" });
 
-    await test.step("auto-opens to Welcome on a brand-new game", async () => {
+    await test.step("a brand-new game starts on the shop floor, ? badge waiting", async () => {
       await page.goto("/");
       await page.waitForLoadState("domcontentloaded");
       await page.waitForSelector("main");
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
 
+      await expect(manual).toHaveCount(0);
+      await expect(page.getByTestId("manual-badge")).toBeVisible();
+    });
+
+    await test.step("? opens to Welcome, the first unread article", async () => {
+      await page.keyboard.press("Shift+/");
       await expect(manual).toBeVisible();
       await expect(
         manual.getByRole("heading", { name: "Welcome to the Shop" }),
@@ -59,7 +65,7 @@ test.describe("Screens", () => {
       ).toHaveCount(0);
     });
 
-    await test.step("closing acknowledges Welcome and stays closed", async () => {
+    await test.step("closing leaves Welcome read and stays closed", async () => {
       await page.keyboard.press("Escape");
       await expect(manual).toHaveCount(0);
       const state = await getState(page);
@@ -457,11 +463,6 @@ test.describe("Screens", () => {
     await test.step("the reloaded store rehydrates into the UI", async () => {
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
-      // A second fresh game greets us with the manual again; dismiss it.
-      const manual = page.getByRole("dialog", { name: "Shop manual" });
-      await manual.waitFor();
-      await page.keyboard.press("Escape");
-      await expect(manual).toHaveCount(0);
       await page.keyboard.press("Escape");
       await expect(page.getByRole("slider", { name: "Master" })).toHaveValue(
         "30",

@@ -71,12 +71,6 @@ test.describe("Bench view", () => {
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
-    // The manual greets a new game and holds the keyboard until dismissed
-    const manual = page.getByRole("dialog", { name: "Shop manual" });
-    if (await manual.count()) {
-      await page.keyboard.press("Escape");
-      await manual.waitFor({ state: "detached" });
-    }
     await page.evaluate(() => {
       window.__UPDATE_GAME_STATE__(
         () => window.__TEST_FIXTURES__["bench-work-shop"],
