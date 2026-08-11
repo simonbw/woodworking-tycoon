@@ -20,33 +20,19 @@ const manualContext = createContext<
 /**
  * Binds `?`, hosts the shop manual, and lets anything open it to a specific
  * article (the NavBar's `?` button, the ActionBar's "All shortcuts" link).
- *
- * The welcome article gets one special behavior: on a brand-new game it is
- * unlocked but unread, and the manual shows itself until it's been closed
- * once. That's state-driven, not an effect — so a test (or migration) that
- * marks welcome read makes the auto-open dissolve on its own.
  */
 export const ManualProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { progression } = useGameState();
   const applyAction = useApplyGameAction();
-  const [uiOpen, setUiOpen] = useState(false);
-  const [active, setActive] = useState<ManualArticleId>("welcome");
-
-  const autoWelcome =
-    progression.unlockedArticles.includes("welcome") &&
-    !progression.readArticles.includes("welcome");
-  const visible = uiOpen || autoWelcome;
-  // When only the auto-open is holding the manual up, it shows welcome.
-  const activeId = uiOpen ? active : "welcome";
+  const [visible, setVisible] = useState(false);
+  const [activeId, setActiveId] = useState<ManualArticleId>("welcome");
 
   // The binder opening is the sound of the manual appearing, however it was
-  // summoned — the ? key, the NavBar button, a ManualLink, the auto-welcome.
-  // (Openers that are buttons carry `data-sfx="none"` so the generic click
-  // doesn't stack on top.) On the auto-welcome this fires before any user
-  // gesture, where the still-locked AudioContext swallows it — fine, a brand
-  // new game shouldn't open with a noise anyway.
+  // summoned — the ? key, the NavBar button, a ManualLink. (Openers that are
+  // buttons carry `data-sfx="none"` so the generic click doesn't stack on
+  // top.)
   useEffect(() => {
     if (visible) playUiSound("ui-book-open");
   }, [visible]);
@@ -60,24 +46,21 @@ export const ManualProvider: React.FC<{ children: React.ReactNode }> = ({
         ) ??
         progression.unlockedArticles[0] ??
         "welcome";
-      setActive(target);
-      setUiOpen(true);
+      setActiveId(target);
+      setVisible(true);
       applyAction(markArticlesReadAction([target]));
     },
     [applyAction, progression.unlockedArticles, progression.readArticles],
   );
 
   const select = (articleId: ManualArticleId) => {
-    setActive(articleId);
-    setUiOpen(true);
+    setActiveId(articleId);
+    setVisible(true);
     applyAction(markArticlesReadAction([articleId]));
   };
 
   const close = () => {
-    // Closing always acknowledges welcome — it's what the auto-open shows,
-    // and leaving it unread would just pop the binder right back up.
-    applyAction(markArticlesReadAction([activeId, "welcome"]));
-    setUiOpen(false);
+    setVisible(false);
   };
 
   useShortcut("toggle-help", () => open());
