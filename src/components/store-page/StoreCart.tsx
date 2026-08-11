@@ -168,6 +168,7 @@ export const StoreCheckoutButton: React.FC<{
     disabled={!canCheckOut}
     data-sfx="ui-purchase"
     data-testid="store-check-out"
+    data-tutorial-target="store-checkout"
   >
     <CartIcon />
     Check Out &amp; Head Home

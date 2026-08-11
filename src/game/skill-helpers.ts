@@ -4,10 +4,12 @@ import { SkillId } from "./Skill";
 
 /**
  * XP needed to go from a given level to the next. Increasing cost keeps
- * skill points feeling like events, not drips.
+ * skill points feeling like events, not drips. The first level is cheap
+ * on purpose: building the first shelf earns it, so the point is waiting
+ * when the guided opening's research step asks the player to spend one.
  */
 export function xpCostOfLevel(level: number): number {
-  return 30 + (level - 1) * 20;
+  return 10 + (level - 1) * 20;
 }
 
 /** The level a player with this much lifetime XP has reached (starts at 1). */

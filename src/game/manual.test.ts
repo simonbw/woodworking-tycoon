@@ -88,8 +88,8 @@ describe("manual article unlock conditions", () => {
       ...initialGameState,
       progression: { ...initialGameState.progression, xp },
     });
-    assert.ok(!unlocked("skills", withXp(29)));
-    assert.ok(unlocked("skills", withXp(30)));
+    assert.ok(!unlocked("skills", withXp(9)));
+    assert.ok(unlocked("skills", withXp(10)));
   });
 });
 

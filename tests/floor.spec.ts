@@ -163,12 +163,13 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("the guided opening puts up its first instruction", async () => {
-      // The step itself is proven in the sequence tier (sequences/
-      // tutorial.test.ts walks all eleven); what the browser is for is that
+      // The steps themselves are proven in the sequence tier (sequences/
+      // tutorial.test.ts walks every box); what the browser is for is that
       // the card is mounted, reads off game state, and can be retired.
       const card = page.getByTestId("tutorial-card");
       await expect(card).toBeVisible();
-      await expect(card).toContainText("Take the truck out for a pallet");
+      await expect(card).toContainText("Make my first item");
+      await expect(card).toContainText("Scavenge a pallet");
       await card.getByTestId("tutorial-skip").click();
       await expect(card).toHaveCount(0);
     });
