@@ -1734,7 +1734,11 @@ export const BenchWorkSurface: React.FC<{
                     ? "Loose stock on the bench. Drag to arrange it."
                     : "The bench is clear. Set stock down on it with F.")))),
       progressLine: inPlaceWork
-        ? `${progress}%`
+        ? // The saw's progress reads off the board itself — the kerf
+          // consuming the pencil line — so it carries no number.
+          inPlaceWork.kind === "saw"
+          ? null
+          : `${progress}%`
         : scenePallet
           ? `${scenePallet.nails.length} nails left`
           : assemblyScript &&
