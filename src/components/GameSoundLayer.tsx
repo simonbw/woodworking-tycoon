@@ -32,6 +32,10 @@ const OPERATION_CLIP: Record<string, string | null> = {
   jointFace: null,
   jointEdge: null,
   plane: null,
+  // The saw's own voice plays the parting crack at the moment the kerf
+  // completes (playSawPartCrack in handSawSynth.ts) — a generic whack
+  // on top of it would be double audio, same as the machine voices.
+  handSawCut: null,
   blockSandBoard: "hand-sanding",
   blockSandPanel: "hand-sanding",
   orbitSandBoard: "orbital-sander",

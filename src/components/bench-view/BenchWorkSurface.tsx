@@ -140,12 +140,13 @@ import { fitToStage, pointerToInches, StageFit, StageRect } from "./stageMath";
 import { useEasedSize } from "./useEasedSize";
 import { useActivityFlag, useWorkFoley } from "./useWorkFoley";
 
-/** Continuous foley per interactive operation family. */
+/** Continuous foley per interactive operation family. The hand saw is
+ * absent on purpose: it carries its own synthesized voice, driven per
+ * stroke inside SawSurface (handSawSynth.ts), not a looped clip. */
 function foleyClipFor(operationId: string): string | null {
   if (operationId.startsWith("block")) return "hand-sanding";
   if (operationId.startsWith("orbit")) return "orbital-sander";
   if (operationId.startsWith("handPlane")) return "hand-sanding";
-  if (operationId === "handSawCut") return "pallet-dismantle";
   return null;
 }
 
@@ -1739,7 +1740,11 @@ export const BenchWorkSurface: React.FC<{
                     ? "Loose stock on the bench. Drag to arrange it."
                     : "The bench is clear. Set stock down on it with F.")))),
       progressLine: inPlaceWork
-        ? `${progress}%`
+        ? // The saw's progress reads off the board itself — the kerf
+          // consuming the pencil line — so it carries no number.
+          inPlaceWork.kind === "saw"
+          ? null
+          : `${progress}%`
         : scenePallet
           ? `${scenePallet.nails.length} nails left`
           : assemblyScript &&
