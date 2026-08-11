@@ -14,12 +14,14 @@ import { findFeedableOperation } from "../machine-helpers";
 import { GameAction, MaterialPile } from "../GameState";
 import {
   defaultParametersFor,
+  isBenchType,
   isSameMachine,
   Machine,
   Operation,
   ParameterValues,
   MACHINE_TYPES,
 } from "../Machine";
+import { unlockedBenchPlans } from "../bench-work/plan-registry";
 import { MaterialInstance } from "../Materials";
 import { Direction, Vector, vectorEquals } from "../Vectors";
 import { cellCenter } from "../player-motion";
@@ -374,7 +376,17 @@ export function setMachineOperationAction(
 ): GameAction {
   return (gameState) => {
     const machineState = machine.state;
+    // A bench accepts any skill-unlocked plan from the registry, even one
+    // whose driving tool isn't mounted — the drawing goes out, and the
+    // missing tool reads as a supply shortfall. Everything else must be
+    // an operation the station itself offers.
+    const isBenchPlan =
+      isBenchType(machine.type) &&
+      unlockedBenchPlans(gameState.progression).some(
+        (plan) => plan.operation === operation,
+      );
     if (
+      !isBenchPlan &&
       !availableOperations(machine, gameState.progression).includes(operation)
     ) {
       throw new Error("Tried to set machine operation to invalid operation");
@@ -394,6 +406,29 @@ export function setMachineOperationAction(
               selectedOperationId: operation.id,
               selectedParameters: parameters,
             }
+          : m,
+      ),
+    };
+  };
+}
+
+/**
+ * Put the pulled drawing back on the pile: the bench keeps no selected
+ * plan at all, and the ghost outlines leave the bench top. Refused while
+ * the station is working, like any plan change.
+ */
+export function clearMachineOperationAction(machine: Machine): GameAction {
+  return (gameState) => {
+    const machineState = machine.state;
+    if (machineState.operationProgress.status === "inProgress") {
+      console.warn("Can't change the plan while the station is working");
+      return gameState;
+    }
+    return {
+      ...gameState,
+      machines: gameState.machines.map((m) =>
+        isSameMachine(m, machineState)
+          ? { ...m, selectedOperationId: "none", selectedParameters: undefined }
           : m,
       ),
     };

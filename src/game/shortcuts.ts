@@ -343,16 +343,17 @@ const defs = [
     group: "Machines",
   },
   {
-    // The bench view's key: it thumbs the blueprint pile in the corner,
-    // and only answers with the drawing in front of you. Out on the floor
-    // a bench is a table, not a machine with a mode dial.
-    id: "cycle-operation",
+    // The bench view's key: it opens the plan drawer — the blueprint
+    // pile in the corner spread out to full size — and only answers with
+    // the bench in front of you. Out on the floor a bench is a table,
+    // not a machine with a mode dial. Handled by BlueprintCorner, which
+    // owns the drawer's open state.
+    id: "open-plan-browser",
     codes: ["KeyQ"],
     keys: [["Q"]],
-    description: "Next plan on the bench",
+    description: "Open the bench's plan drawer",
     scope: "home",
     group: "Machines",
-    shiftHint: "go backwards",
   },
   {
     // One setting, two keys, so it moves the way the thing moves: Z winds

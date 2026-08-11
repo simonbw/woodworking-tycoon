@@ -51,12 +51,12 @@ export const hammer: ToolType = {
     {
       name: "Build Rustic Frame",
       id: "buildRusticFrame",
-      requiredSkill: "rusticCarpentry",
+      requiredSkill: "rusticProjects",
       duration: 25,
-      // No skill of its own to buy: the gate is the shop. Mirrored 45s
-      // need the miter saw's angle stops, 2"-wide rails need the table
-      // saw's fence, and the sanded requirement needs something to sand
-      // with — the first build that asks for all three at once.
+      // Beyond the skill there's a shop gate too: mirrored 45s need the
+      // miter saw's angle stops, 2"-wide rails need the table saw's
+      // fence, and the sanded requirement needs something to sand with —
+      // the first build that asks for all three at once.
       interaction: { kind: "assembly", blueprint: "rusticFrame" },
       requiredConsumables: blueprintFastenerCost(RUSTIC_FRAME_BLUEPRINT),
       getInputMaterials: () => blueprintInputs(RUSTIC_FRAME_BLUEPRINT),

@@ -12,6 +12,22 @@ export const WorkbenchesArticle: React.FC = () => (
       six, depending on size.
     </P>
 
+    <H>Plans</H>
+    <P>
+      Assembly builds run off plans. Press{" "}
+      <ShortcutKeys shortcut="open-plan-browser" /> over a bench to open the
+      plan drawer. Drawings are filed by kind, and each one lists the stock,
+      fasteners, and tool it needs against what the shop has; a drawing stamped{" "}
+      <Term>Ready</Term> can start right away. Pull a drawing to set it out —
+      its part outlines land on the bench top. Lay each piece on its outline,
+      then drive the fasteners with the tool the plan calls for. Putting the
+      drawing back, from the drawer or the corner of the bench view, clears the
+      outlines.
+    </P>
+    <Note>
+      New plans come with skills — the journal shows what each teaches.
+    </Note>
+
     <H>Tools</H>
     <P>
       Tools are sold on the store's <Term>Tool Wall</Term>. Carry one to a bench

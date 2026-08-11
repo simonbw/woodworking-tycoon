@@ -1,5 +1,11 @@
 import { expect, Page, test } from "@playwright/test";
-import { modesOf, selectMode } from "./machine-panel";
+import {
+  closeRecipeIndex,
+  machineCard,
+  modesOf,
+  openRecipeIndex,
+  selectMode,
+} from "./machine-panel";
 import {
   advanceTicks,
   checkOutAndLeaveStore,
@@ -397,9 +403,13 @@ test.describe("Selling, supplies, and sound", () => {
         "Makeshift Workbench",
         "Build Rustic Pallet Shelf",
       );
-      // The shortfall reads right on the pulled drawing's title block —
-      // there is no separate supplies row or run hint any more
+      // The shortfall reads right on the pulled drawing's title block,
+      // set out in the plan drawer (which opens back onto the pulled
+      // drawing) — there is no separate supplies row or run hint
+      const card = machineCard(page, "Makeshift Workbench");
+      await openRecipeIndex(card);
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
+      await closeRecipeIndex(page, card);
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });
@@ -421,8 +431,12 @@ test.describe("Selling, supplies, and sound", () => {
       await suppliesCard.getByRole("button", { name: "Supplies" }).click();
       await expect(suppliesCard.getByText("Nails")).toBeVisible();
       await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
-      // And the recipe's shortfall line clears
+      // And the shortfall line on the pulled drawing clears — reopen the
+      // plan drawer to read it
+      const card = machineCard(page, "Makeshift Workbench");
+      await openRecipeIndex(card);
       await expect(page.getByText("8 nails (have 8)")).toBeVisible();
+      await closeRecipeIndex(page, card);
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {

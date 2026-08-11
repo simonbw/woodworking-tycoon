@@ -1,11 +1,9 @@
 import React, { useRef } from "react";
 import {
-  defaultParametersFor,
   getMachines,
   hasFloorControls,
   isSameMachine,
 } from "../../game/Machine";
-import { isToolWork, selectedBenchPlan } from "../../game/bench-work/tool-work";
 import {
   dropMaterialAction,
   moveMaterialsToMachineAction,
@@ -360,48 +358,9 @@ export const ShopKeyboardShortcuts: React.FC = () => {
     present && !carrying && floorControls,
   );
 
-  // Q thumbs through the blueprint pile — the keyboard's version of
-  // pulling a drawing off the stack in the corner of the bench view,
-  // which is where its chip is drawn (BlueprintCorner) and the only
-  // place it fires. Direct-feed machines have no mode to cycle: the
-  // stock in hand decides what a feed does.
-  useShortcut(
-    "cycle-operation",
-    (event) => {
-      const machine = targeted.current;
-      if (!machine || machine.type.directFeed) return;
-
-      // The same list the pile shows: skill-locked recipes are hidden
-      // there and shouldn't be reachable from the keyboard either, and
-      // tool work isn't a plan at all (the staged pallet offers its
-      // nails, the held tool its strokes, cuts, and glue beads).
-      const operations = availableOperations(
-        machine,
-        gameState.current.progression,
-      ).filter((operation) => !isToolWork(operation));
-      if (operations.length === 0) return;
-
-      // An unset (or no-longer-available) selection cycles in from either
-      // end of the list rather than crashing or skipping an entry.
-      const selected = selectedBenchPlan(machine);
-      const operationIndex = selected ? operations.indexOf(selected) : -1;
-      const nextOperation =
-        operationIndex === -1
-          ? operations[event.shiftKey ? operations.length - 1 : 0]
-          : operations[
-              mod(operationIndex + (event.shiftKey ? -1 : 1), operations.length)
-            ];
-
-      applyAction(
-        setMachineOperationAction(
-          machine,
-          nextOperation,
-          defaultParametersFor(nextOperation),
-        ),
-      );
-    },
-    present && !stationWorking && settingKeysLive,
-  );
+  // Q — the plan drawer — is the bench view's own key: BlueprintCorner
+  // registers it (open-plan-browser), since the drawer's open state
+  // lives there. Out on the floor the key does nothing.
 
   // Step one of the machine's settings — the keyboard equivalent of the
   // scales on its card. `kind` picks which: "linear" is the one Z and X

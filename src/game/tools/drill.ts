@@ -33,7 +33,7 @@ export const drill: ToolType = {
     {
       name: "Build Rustic Planter Box",
       id: "buildPlanterBox",
-      requiredSkill: "rusticCarpentry",
+      requiredSkill: "rusticProjects",
       duration: 25,
       // Screws hold an outdoor box together through wet soil and weather
       // where nails would work loose — and unlike nails, they never come
@@ -52,7 +52,7 @@ export const drill: ToolType = {
     {
       name: "Build Step Stool",
       id: "buildStepStool",
-      requiredSkill: "rusticCarpentry",
+      requiredSkill: "rusticProjects",
       duration: 30,
       // The blueprint: two stout sides on edge (thick hardwood, 6/4 or
       // heavier), two treads screwed flat across them — it has

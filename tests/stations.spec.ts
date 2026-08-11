@@ -591,14 +591,22 @@ test.describe("Stations", () => {
 
     await test.step("the planter box reads its screw cost against the tin", async () => {
       await selectMode(page, "Makeshift Workbench", "Build Rustic Planter Box");
-      await expect(page.getByText("6 screws (have 50)")).toBeVisible();
-      // Selecting a plan pulls its sheet to the top of the blueprint
-      // stack — the drawing pinned over the bench IS the selection
+      // The pulled drawing's name rides the corner chip; its sheet, with
+      // the screw bill read against the tin, is set out in the plan
+      // drawer (which opens back onto the pulled drawing)
+      await expect(page.getByTestId("blueprint-corner")).toContainText(
+        "Build Rustic Planter Box",
+      );
+      const card = stationCard(page, "Makeshift Workbench");
+      await openRecipeIndex(card);
       await expect(
         page
           .getByTestId("blueprint-sheet")
           .getByText("Build Rustic Planter Box"),
       ).toBeVisible();
+      await expect(page.getByText("6 screws (have 50)")).toBeVisible();
+      // A drawing that's already out offers its way back to the pile
+      await expect(page.getByTestId("put-back-plan")).toBeVisible();
     });
 
     await test.step("plans quote shop time, never ticks", async () => {

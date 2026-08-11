@@ -62,8 +62,8 @@ export const WelcomeArticle: React.FC = () => (
         goes back in your tin.
       </li>
       <li>
-        With the wood already on the bench, switch its plan with{" "}
-        <ShortcutKeys shortcut="cycle-operation" /> to{" "}
+        With the wood already on the bench, open the plan drawer with{" "}
+        <ShortcutKeys shortcut="open-plan-browser" /> and pull{" "}
         <Term>Build Rustic Shelf</Term>: six pallet boards and eight of the
         salvaged nails. Set each piece on its outline, then drive the nails
         home.

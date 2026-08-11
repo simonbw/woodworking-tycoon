@@ -90,7 +90,9 @@ export const handToolsShop: GameState = {
     readArticles: ALL_ARTICLE_IDS,
     xp: 0,
     skillPoints: 0,
-    unlockedSkills: STARTER_SKILLS,
+    // The planter box moved to rusticProjects when the plan pile was
+    // trimmed to just the shelf at the start
+    unlockedSkills: [...STARTER_SKILLS, "rusticProjects"],
   },
   stand: [],
   customers: [],
