@@ -18,6 +18,7 @@ import { bandSaw } from "./machines/bandSaw";
 import { garbageCan } from "./machines/garbageCan";
 import { jobsiteTableSaw } from "./machines/jobsiteTableSaw";
 import { jointer } from "./machines/jointer";
+import { lumberShelf } from "./machines/lumberShelf";
 import { lunchboxPlaner } from "./machines/lunchboxPlaner";
 import { miterSaw } from "./machines/miterSaw";
 import { sawhorses } from "./machines/sawhorses";
@@ -240,6 +241,7 @@ export const MACHINE_TYPES = {
   bandSaw,
   garbageCan,
   storageRack,
+  lumberShelf,
   sawhorses,
 } satisfies { [id: string]: MachineType };
 export type MachineId = keyof typeof MACHINE_TYPES;

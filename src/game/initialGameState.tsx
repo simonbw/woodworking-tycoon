@@ -41,6 +41,9 @@ export const initialGameState: GameState = {
     machine("workspace", [2, 2], 0, ["hammer"]),
     // Garbage can for disposing unwanted materials (2×2 ft, in a corner)
     machine("garbageCan", [0, 13], 0),
+    // A small lumber shelf against the back wall, so the first scavenged
+    // boards have an obvious home besides the floor (2×1 ft)
+    machine("lumberShelf", [8, 0], 0),
   ],
   machineCrates: [],
   truck: { bed: [], crates: [] },
@@ -104,7 +107,9 @@ function machine(
     outputMaterials: [],
     tools,
     storedMaterials: [],
-    selectedOperationId: firstOperation.id,
+    // Stations with no operations (the lumber shelf) park on "none",
+    // matching freshMachineState in machine-actions.ts
+    selectedOperationId: firstOperation ? firstOperation.id : "none",
     selectedParameters,
     operationProgress: {
       status: "notStarted",

@@ -110,7 +110,7 @@ const defs = [
     category: "The Shop",
     // Carrying is never locked; the article arrives with the first machine
     // worth arranging — a crate in the bed or on the floor, or anything
-    // bought beyond the starter bench and garbage can.
+    // bought beyond the starting loadout (bench, garbage can, lumber shelf).
     unlocked: (gameState: GameState) =>
       gameState.machineCrates.length > 0 ||
       gameState.truck.crates.length > 0 ||
@@ -118,7 +118,8 @@ const defs = [
       gameState.machines.some(
         (machine) =>
           machine.machineTypeId !== "workspace" &&
-          machine.machineTypeId !== "garbageCan",
+          machine.machineTypeId !== "garbageCan" &&
+          machine.machineTypeId !== "lumberShelf",
       ),
   },
   {
