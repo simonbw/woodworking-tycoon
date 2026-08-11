@@ -737,6 +737,10 @@ test.describe("Shop floor", () => {
       await expect(panel).not.toContainText("Orange Box");
       await expect(panel).not.toContainText("Scavenge");
 
+      // ...and the corner card points the way there
+      const nightfallCard = page.getByTestId("nightfall-card");
+      await expect(nightfallCard).toContainText("Closed for the Night");
+
       const dayBefore = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().day,
       );
@@ -756,6 +760,8 @@ test.describe("Shop floor", () => {
       );
       // Sleeping is what turns the calendar over, so the dial's date moved.
       await expect(page.getByTestId("day-date")).not.toHaveText(dateBefore!);
+      // Morning takes the nudge home back down
+      await expect(nightfallCard).toHaveCount(0);
     });
 
     await test.step("a refresh keeps the shop, without anyone saving it", async () => {
