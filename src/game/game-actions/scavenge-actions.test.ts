@@ -84,6 +84,48 @@ describe("rollScavengeStops", () => {
   });
 });
 
+describe("the first-trip guarantee", () => {
+  it("moves the washout plant to the first stop", () => {
+    const stops = rollScavengeStops(fakeRng([0.9]), true);
+    assert.ok(stops[0].pallet, "stop one should hold the guaranteed find");
+  });
+
+  it("leaves a lucky circuit alone", () => {
+    const stops = rollScavengeStops(fakeRng([0.1]), true);
+    // Every stop found its own pallet; nothing extra was planted
+    assert.strictEqual(
+      stops.filter((stop) => stop.pallet !== null).length,
+      SCAVENGE_STOP_NAMES.length,
+    );
+  });
+
+  it("a brand-new shop's trip can't miss at stop one", () => {
+    const result = startScavengingAction(fakeRng([0.9]))(
+      stateWithFreeSelling(),
+    );
+    const away = result.player.away as ScavengingTrip;
+    assert.ok(away.stops[0].pallet);
+  });
+
+  it("a shop that has wood rolls the circuit straight", () => {
+    const pallet = rollScavengeStops(fakeRng([0.1]))[0].pallet;
+    assert.ok(pallet);
+    const base = stateWithFreeSelling();
+    const state: GameState = {
+      ...base,
+      truck: { ...base.truck, bed: [pallet] },
+    };
+    const result = startScavengingAction(fakeRng([0.9]))(state);
+    const away = result.player.away as ScavengingTrip;
+    // The washout plant lands wherever the roll says, not at stop one
+    assert.strictEqual(away.stops[0].pallet, null);
+    assert.strictEqual(
+      away.stops.filter((stop) => stop.pallet !== null).length,
+      1,
+    );
+  });
+});
+
 describe("startScavengingAction", () => {
   it("sends the player into the first stop's search", () => {
     const result = startScavengingAction(fakeRng([0.1]))(
@@ -165,11 +207,16 @@ describe("the search tick", () => {
   });
 
   it("stays quiet over an empty-handed stop", () => {
-    // All-0.9 rolls leave every stop empty except the planted find at
-    // the last stop, so the first stop reveals nothing
-    const started = startScavengingAction(fakeRng([0.9]))(
-      stateWithFreeSelling(),
-    );
+    // A shop with wood already, so the first-trip guarantee stays out of
+    // it: all-0.9 rolls leave every stop empty except the planted find
+    // at the last stop, so the first stop reveals nothing
+    const pallet = rollScavengeStops(fakeRng([0.1]))[0].pallet;
+    assert.ok(pallet);
+    const base = stateWithFreeSelling();
+    const started = startScavengingAction(fakeRng([0.9]))({
+      ...base,
+      truck: { ...base.truck, bed: [pallet] },
+    });
     const trip = started.player.away as ScavengingTrip;
     const doneTick =
       trip.phase.kind === "searching" ? trip.phase.doneTick : NaN;

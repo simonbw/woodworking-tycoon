@@ -7,6 +7,7 @@ import { ScavengeStopResult, ScavengingTrip } from "../Person";
 import { Tuple } from "../../utils/typeUtils";
 import { TICKS_PER_DAY } from "../time";
 import { dayTicksSpent, isNight } from "../time-flow";
+import { needsFirstPallet } from "../tutorial";
 import { canLeaveShop } from "./door-actions";
 
 /**
@@ -60,15 +61,30 @@ export const SCAVENGE_STOP_TICKS = IS_DEV ? DEV_STOP_TICKS : FULL_STOP_TICKS;
  * would strand a brand-new shop with no wood and no way to get any (the
  * first sale starts from a scavenged pallet), so a washed-out roll
  * plants a find at one stop.
+ *
+ * That backstop isn't enough for the very first trip, though: only
+ * searched stops pay out, so a plant at stop four does nothing for a
+ * player who calls it after stop one. While the shop has never had a
+ * pallet (needsFirstPallet — the same condition the to-do card's
+ * scavenge step reads), `guaranteeFirstStop` moves the plant to the
+ * first stop, so the trip the card points at delivers no matter when
+ * the player heads home. The extra pallet roll comes after the circuit's
+ * own, so a scripted rng tape reads the same either way.
  */
 export function rollScavengeStops(
   rng: () => number = Math.random,
+  guaranteeFirstStop = false,
 ): ScavengeStopResult[] {
   const stops: ScavengeStopResult[] = SCAVENGE_STOP_NAMES.map((stopName) => ({
     stopName,
     pallet: rng() < FIND_CHANCE ? makeDamagedPallet(rng) : null,
   }));
-  if (stops.every((stop) => stop.pallet === null)) {
+  if (guaranteeFirstStop && stops[0].pallet === null) {
+    stops[0] = {
+      ...stops[0],
+      pallet: makeDamagedPallet(rng),
+    };
+  } else if (stops.every((stop) => stop.pallet === null)) {
     const index = Math.min(stops.length - 1, Math.floor(rng() * stops.length));
     stops[index] = {
       ...stops[index],
@@ -160,7 +176,7 @@ export function startScavengingAction(
         away: {
           kind: "scavenging",
           startTick: gameState.tick,
-          stops: rollScavengeStops(rng),
+          stops: rollScavengeStops(rng, needsFirstPallet(gameState)),
           stopsSearched: 0,
           phase: {
             kind: "searching",

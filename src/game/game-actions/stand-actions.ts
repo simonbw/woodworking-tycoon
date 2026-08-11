@@ -116,25 +116,43 @@ export function standTopItem(
  * count move in the same reducer — and queues a PayoutEvent, which
  * RewardFlightLayer turns into the cha-ching and the fly-in wherever
  * the player happens to be standing.
+ *
+ * The first sale ever is dealt, not rolled: until something has sold, a
+ * stocked stand summons its customer immediately and the browse below
+ * always buys, so the opening's "set it out at the stand" step pays off
+ * while the player is still standing there. From the second sale on the
+ * street runs on the dice.
  */
 export function standTickPass(rng: () => number = Math.random): GameAction {
   return (gameState) => {
+    const span = customerSpan(gameState.shopInfo);
+    const frontage = standFrontage(gameState.shopInfo);
+
     // Foot traffic follows the stand: a stocked table draws people down
     // the street, a bare one sees the odd stroller. Nobody at night.
     const spawnChance =
       gameState.stand.length > 0
         ? CUSTOMER_SPAWN_CHANCE_STOCKED
         : CUSTOMER_SPAWN_CHANCE_EMPTY;
+    const firstSaleDue =
+      gameState.progression.salesCompleted === 0 && gameState.stand.length > 0;
+    // The guaranteed customer is only summoned while nobody already on
+    // the street could still make the sale — one at a time, no crowd.
+    const buyerEnRoute = gameState.customers.some(
+      (customer) =>
+        customer.state === "browsing" ||
+        (customer.state === "walking" &&
+          (customer.walkDirection === 1
+            ? customer.x < frontage.right
+            : customer.x > frontage.left)),
+    );
     const spawning =
       !isNight(gameState) &&
       gameState.customers.length < MAX_CUSTOMERS &&
-      rng() < spawnChance;
+      ((firstSaleDue && !buyerEnRoute) || rng() < spawnChance);
     if (gameState.customers.length === 0 && !spawning) {
       return gameState;
     }
-
-    const span = customerSpan(gameState.shopInfo);
-    const frontage = standFrontage(gameState.shopInfo);
 
     let stand = gameState.stand;
     let money = gameState.money;
@@ -154,9 +172,12 @@ export function standTickPass(rng: () => number = Math.random): GameAction {
           continue;
         }
         // Decision time. One purchase per browse at most; either way
-        // they move along afterwards and don't stop again.
+        // they move along afterwards and don't stop again. The shop's
+        // first sale skips the coin flip — see the header.
         const purchase =
-          rng() < CUSTOMER_BUY_CHANCE ? pickPurchase(stand, rng) : null;
+          salesCompleted === 0 || rng() < CUSTOMER_BUY_CHANCE
+            ? pickPurchase(stand, rng)
+            : null;
         if (purchase) {
           const value = roundToCents(getSellValue(purchase));
           const reputationGain = saleReputationGain(value);
