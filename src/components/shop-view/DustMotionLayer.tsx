@@ -11,7 +11,7 @@ import { SWEEP_AIM_REACH } from "../../game/game-actions/dust-actions";
 import { mixColors } from "../../utils/colorUtils";
 import { rUniform } from "../../utils/randUtils";
 import { dominantSpeciesColor } from "./dust-color";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { useGameState } from "../useGameState";
 import { cellToPixel, cellToPixelCenter, PIXELS_PER_CELL } from "./shop-scale";
 

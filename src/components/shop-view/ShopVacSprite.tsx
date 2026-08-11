@@ -4,7 +4,7 @@ import React, { useRef } from "react";
 import { canisterFillFraction, canisterRoom } from "../../game/ShopVac";
 import { GameState } from "../../game/GameState";
 import { useGameState } from "../useGameState";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { cellToPixel, cellToPixelCenter, PIXELS_PER_CELL } from "./shop-scale";
 
 /**

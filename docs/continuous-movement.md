@@ -34,10 +34,17 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 | Piece | File | Role |
 | --- | --- | --- |
 | Pure motion math | `src/game/player-motion.ts` | integration, collision, walk speed, 4-way quantization |
-| Body store | `src/components/shop-view/playerMotionStore.ts` | the mutable singleton sprites read |
-| Input | `src/components/shop-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
-| Integrator | `src/components/shop-view/PlayerMotionLayer.tsx` | per-frame `useTick` loop, cell sync, teleport snap |
+| Body store | `src/components/world-view/playerMotionStore.ts` | the mutable singleton sprites read |
+| Input | `src/components/world-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
+| Walking | `src/components/world-view/useWalkingBody.ts` | reads the keys, integrates, cell sync, teleport snap |
+| Shop's frame | `src/components/shop-view/PlayerMotionLayer.tsx` | the shop's `useTick`: its solids, its speed, the bench stance |
 | Footsteps | `src/game/footsteps.ts` + `src/components/shop-view/FootstepSoundLayer.tsx` | a step every stride of floor covered |
+
+`world-view/` is the part of this that isn't about the shop. The body is
+a singleton and the venues are never on screen together, so a second
+walkable place drives the same body through the same hook, with its own
+solids and its own reasons to stop walking — the hook doesn't own the
+frame, each venue's layer does.
 
 ## Collision
 

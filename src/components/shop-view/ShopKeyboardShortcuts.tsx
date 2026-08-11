@@ -55,7 +55,7 @@ import { hasStationSheet } from "../station/station-helpers";
 import { mod } from "../../utils/mathUtils";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { useTruckStage } from "./truckStageStore";
 import { useApplyGameAction, useGameState } from "../useGameState";
 

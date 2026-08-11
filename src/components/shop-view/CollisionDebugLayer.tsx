@@ -4,7 +4,7 @@ import React, { useCallback, useRef } from "react";
 import { collisionWorld } from "../../game/machine-collision";
 import { PLAYER_RADIUS } from "../../game/player-motion";
 import { useGameState } from "../useGameState";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { PIXELS_PER_CELL } from "./shop-scale";
 
 /**

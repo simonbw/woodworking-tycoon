@@ -8,7 +8,7 @@ import {
 } from "../../game/footsteps";
 import { Vector } from "../../game/Vectors";
 import { playSound, preloadSound } from "../../utils/sfx";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 
 /**
  * The sound of the woodworker walking. Samples the continuous body every

@@ -2,7 +2,7 @@ import { useTick } from "@pixi/react";
 import { Container, Ticker } from "pixi.js";
 import React, { RefObject } from "react";
 import { camera } from "./cameraStore";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { PIXELS_PER_CELL } from "./shop-scale";
 
 /**

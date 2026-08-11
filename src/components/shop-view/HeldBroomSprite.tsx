@@ -3,7 +3,7 @@ import { Graphics, Ticker } from "pixi.js";
 import React, { useRef } from "react";
 import { dustpanFillFraction } from "../../game/game-actions/dust-actions";
 import { holdingBroom } from "../../game/HeldTool";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { useGameState } from "../useGameState";
 import { PIXELS_PER_CELL } from "./shop-scale";
 

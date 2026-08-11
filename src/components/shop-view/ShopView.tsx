@@ -40,7 +40,7 @@ import { DustLayer } from "./DustLayer";
 import { DustMotionLayer } from "./DustMotionLayer";
 import { FeedLaneLayer } from "./FeedLaneLayer";
 import { FloorTileSprite } from "./FloorTileSprite";
-import { HeldMovementListener } from "./heldMovementInput";
+import { HeldMovementListener } from "../world-view/heldMovementInput";
 import { HeldKeyListener } from "./heldOperateInput";
 import { MachineCrateSprite } from "./MachineCrateSprite";
 import { MachineSprite } from "./MachineSprite";
