@@ -62,8 +62,9 @@ import { camera } from "./cameraStore";
 import { BenchDiveLayer } from "./BenchDiveLayer";
 import { useBenchDiveActive } from "../bench-view/benchSceneSlot";
 import { useTruckStage } from "./truckStageStore";
-import { atTruckBed } from "../../game/lot";
+import { atTruckBed, lotSize } from "../../game/lot";
 import { atStand, isSellable, sidewalkY } from "../../game/stand";
+import { isNight } from "../../game/time-flow";
 import { TruckHighlight } from "./TruckSprite";
 import { PIXELS_PER_CELL, cellToPixel, cellToPixelCenter } from "./shop-scale";
 import { WorktableShadowSprite } from "../machine-sprites/WorktableSprite";
@@ -232,6 +233,13 @@ export const ShopView: React.FC = () => {
   // Where the guided opening is pointing, in the world. Empty once the
   // tutorial is done, so this costs nothing for the rest of the game.
   const coach = tutorialTargets(gameState);
+
+  // At close the corner card points home (see NightfallCard), and the
+  // truck wears the same coach outline so the card and the world agree.
+  const homewardNudge: TruckHighlight =
+    isNight(gameState) && !gameState.player.away && truckStage === "parked"
+      ? "truck"
+      : null;
 
   // Which of the floor's pieces answer to the cursor: pointing at one aims
   // E at it (the rummage key's job, done by hand), and right-clicking
@@ -422,7 +430,7 @@ export const ShopView: React.FC = () => {
                     viewport={worldViewport}
                     truckHighlight={truckHighlight}
                     truckCargoHighlight={truckCargoHighlight}
-                    truckTutorialHighlight={coach.truck}
+                    truckTutorialHighlight={coach.truck ?? homewardNudge}
                     standHighlight={standHighlight}
                     standItemHighlight={standItemHighlight}
                     standTutorialHighlight={coach.stand}

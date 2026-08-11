@@ -64,11 +64,6 @@ async function bootShopCountingAudio(page: Page) {
   // A real click also unlocks the AudioContext, which playback depends on.
   await startNewGame(page);
   await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
-  // Dismiss the shop manual's one-time welcome so it can't cover the UI.
-  const manual = page.getByRole("dialog", { name: "Shop manual" });
-  await manual.waitFor();
-  await page.keyboard.press("Escape");
-  await manual.waitFor({ state: "detached" });
 }
 
 async function queueCue(page: Page, cue: Record<string, string>) {

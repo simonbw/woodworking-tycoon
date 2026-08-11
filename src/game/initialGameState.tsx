@@ -63,7 +63,8 @@ export const initialGameState: GameState = {
     salesCompleted: 0,
     sweepingUnlocked: false,
     dustTipDismissed: false,
-    // Welcome starts unread on purpose: the manual auto-opens to it once.
+    // Welcome starts unread on purpose: it keeps the ? badge lit until the
+    // player opens the manual for the first time.
     unlockedArticles: STARTING_ARTICLES,
     readArticles: [],
     xp: 0,
