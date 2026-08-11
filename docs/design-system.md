@@ -21,7 +21,7 @@ drawing is tracked in `docs/asset-backlog.md`.
 | Barlow Condensed | `font-condensed` | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free. | Unlimited — it's the quiet default. |
 | Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — the manual's pages, the calendar page, receipt fine print — and the figures typed onto them (payouts, receipt digits). Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
 | Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | One logo. Adding a second needs a new venue. |
-| Shantell Notes | `font-ink` | **Handwriting.** Human margin notes: the scavenging log's entries, a scribbled errand, a tally next to a quantity, a margin note in the manual. Runs small — use `text-base`/`text-lg`, never `text-xs`. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else — never on a screen. |
+| Shantell Notes | `font-ink` | **Handwriting.** Human margin notes: the scavenging log's entries, a scribbled errand, a tally next to a quantity, a margin note in the manual. Runs small — use `text-base`/`text-lg`, never `text-xs`. Its weight axis runs 300–800: a whole page of it wants `.pencil-hand`, which sets the weight and spacing a pen actually leaves rather than the browser's defaults. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else — never on a screen. |
 | Lumberjack | `font-lumberjack` | **Reserved for the shop's own signage.** Currently has no call sites — the title screen and the Sawyer & Sons sign both became artwork — but the family is kept declared and loaded for the next sign that needs live type. It is not a heading face. | Signs only. Nothing today. |
 
 ## Where the fonts come from
@@ -97,9 +97,33 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 | Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-typewriter`. |
 | Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people. Currently has no consumer (the work orders it dressed are gone); the classes stay declared in `index.css`/`tailwind.config.ts` for the next official document. |
 | HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (a station sheet, the manual) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
-| Corkboard | `corkboard-*` + `.corkboard-bg` | Currently has no consumer (the job board it dressed is gone); the tokens stay declared in `index.css`/`tailwind.config.ts` for the next pinned-up surface. The *pinned* idiom lives on: the coach card and the dust note wear a thumbtack + slight rotation via the `Thumbtack` component. |
+| Loose sheet | `.paper-note` + `.pencil-hand` | A sheet the character wrote on and left lying around, as against a document that was filed: a gradient for the light falling across it, a faint tooth, corners clipped off square, and a half-degree out of true. Today the guided opening's to-do card (`TutorialCard`). Everything on such a sheet is written, not typeset — see *Marks made by hand* below. |
+| Corkboard | `corkboard-*` + `.corkboard-bg` | Currently has no consumer (the job board it dressed is gone); the tokens stay declared in `index.css`/`tailwind.config.ts` for the next pinned-up surface. The *pinned* idiom lives on: the dust note wears a thumbtack + slight rotation via the `Thumbtack` component. |
 | Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
 | Lumberyard | `mill-*` | The Sawyer & Sons trip (`LumberyardTripOverlay`) only: painted-sign green over stickered stacks and gravel. Same rule as the store tokens — a location's palette stays at that location. |
+
+## Marks made by hand
+
+A border-bottom is a machine-straight line, and `line-through` is a
+machine-straight line through the middle of a word. On a surface that is
+supposed to be handwritten, both read as chrome no matter what face the
+text is in — so the rules, checkboxes, ticks, crossings-out, and key caps
+on one are drawn instead: `components/hand-drawn/HandDrawn.tsx`. Each is
+an SVG path whose points wander off true, seeded on whatever the caller
+passes (a step id, a key name) so a mark looks the same every render and
+two marks next to each other look different.
+
+Two rules go with them:
+
+- **All the marks or none.** A drawn checkbox beside a CSS-bordered
+  button puts the one printed thing on the page next to everything that
+  isn't. Wrap a handwritten surface in `HintSurfaceContext` at `"hand"`
+  and the key caps come along.
+- **State is shown by marks, not by fading.** A finished line keeps the
+  same graphite as the rest and carries a stroke through it; a line the
+  player hasn't reached keeps it too. Greying an item makes the page look
+  disabled rather than written, and what's next is already pointed at in
+  the world.
 
 ## HUD hierarchy (Home screen)
 

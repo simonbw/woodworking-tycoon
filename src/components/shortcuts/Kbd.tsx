@@ -1,19 +1,23 @@
 import React, { Fragment, useContext } from "react";
 import { classNames } from "../../utils/classNames";
 import { getShortcut, shortcutChords, ShortcutId } from "../../game/shortcuts";
+import { HandFrame } from "../hand-drawn/HandDrawn";
 
 /**
- * Which surface the hint chrome sits on: "paper" (ink on a light card) or
- * "chrome" (manila on the dark workshop background). Wrap dark-background
- * hint lists in the provider so key caps and muted text stay readable.
+ * Which surface the hint chrome sits on: "paper" (ink on a light card),
+ * "chrome" (manila on the dark workshop background), or "hand" (a note
+ * the character wrote themselves, where the cap is sketched around the
+ * key rather than printed). Wrap dark-background hint lists in the
+ * provider so key caps and muted text stay readable.
  */
-export const HintSurfaceContext = React.createContext<"paper" | "chrome">(
-  "paper",
-);
+export const HintSurfaceContext = React.createContext<
+  "paper" | "chrome" | "hand"
+>("paper");
 
 const mutedText = {
   paper: "text-ink-fade",
   chrome: "text-paper-manila/50",
+  hand: "text-ink-pencil",
 };
 
 /** A single key cap, in the paperwork style. */
@@ -22,6 +26,21 @@ export const Kbd: React.FC<{
   className?: string;
 }> = ({ children, className }) => {
   const surface = useContext(HintSurfaceContext);
+  if (surface === "hand") {
+    return (
+      <kbd
+        className={classNames(
+          // On a handwritten note the key is written, not typeset: the
+          // face is the surrounding hand and the box is drawn around it.
+          "relative inline-block px-1.5 py-0 font-ink text-[0.8em] leading-tight whitespace-nowrap",
+          className,
+        )}
+      >
+        <HandFrame seed={typeof children === "string" ? children : undefined} />
+        <span className="relative">{children}</span>
+      </kbd>
+    );
+  }
   return (
     <kbd
       className={classNames(

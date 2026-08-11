@@ -92,6 +92,66 @@
     @apply bg-paper-legal text-ink-black p-4 rounded-sm shadow-md;
   }
 
+  /* A sheet off the character's own pad — what the guided opening's to-do
+     list is written on (see TutorialCard). Where `.paper-card` is a filed
+     document (even fill, rounded corner, square edge), this is a sheet
+     lying on a desk: the first gradient is the light falling across it,
+     brighter at the top left and shading off toward the bottom right; the
+     second is the faint tooth of the stock; the clip path takes each
+     corner a little off square; and the whole thing sits a half degree
+     out of true. The shadow is a `drop-shadow` filter rather than
+     `box-shadow` so it follows that clipped edge instead of a rectangle
+     that isn't there. */
+  .paper-note {
+    @apply p-4;
+    background-color: theme("colors.paper.manila");
+    background-image:
+      linear-gradient(
+        158deg,
+        rgba(255, 252, 240, 0.6) 0%,
+        rgba(255, 250, 235, 0.18) 36%,
+        rgba(120, 96, 52, 0.05) 70%,
+        rgba(120, 96, 52, 0.17) 100%
+      ),
+      repeating-linear-gradient(
+        92deg,
+        rgba(120, 96, 52, 0.04) 0px,
+        rgba(120, 96, 52, 0.04) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+    clip-path: polygon(
+      0.4% 0.6%,
+      99.5% 0%,
+      100% 99.2%,
+      0.2% 100%
+    );
+    filter: drop-shadow(2px 3px 3px rgb(0 0 0 / 0.45));
+    transform: rotate(-0.5deg);
+  }
+
+  /* The character's own hand on that paper. Shantell's weight axis runs
+     300–800: 330 sits just off the lightest, the line a pencil actually
+     leaves. The tight tracking pulls letters into words and the wider
+     word spacing pushes the words apart, which is how handwriting
+     groups. */
+  .pencil-hand {
+    @apply font-ink text-ink-pencil;
+    font-weight: 330;
+    font-size: 0.92rem;
+    letter-spacing: -0.01em;
+    word-spacing: 0.04em;
+  }
+
+  /* The goal at the top of the sheet, gone over heavily — the same hand
+     pressing hard, at the top of the weight axis. */
+  .pencil-hand-heading {
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+    word-spacing: 0.02em;
+  }
+
   /* Receipt strip — narrow ivory paper with typed digits */
   .receipt-strip {
     @apply bg-paper-ivory text-ink-black px-4 py-2 rounded-sm shadow font-typewriter;

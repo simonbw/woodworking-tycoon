@@ -1,13 +1,20 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { dismissTutorialAction } from "../../game/game-actions/progression-actions";
 import {
   currentTutorialGoalView,
+  TutorialGoalId,
   TutorialStep,
   TutorialStepId,
 } from "../../game/tutorial";
-import { classNames } from "../../utils/classNames";
-import { ShortcutKeys } from "../shortcuts/Kbd";
-import { Thumbtack } from "../Thumbtack";
+import { playMarkerCheck } from "../../utils/markerSynth";
+import {
+  HandCheck,
+  HandCheckbox,
+  HandFrame,
+  HandRule,
+  HandStrike,
+} from "../hand-drawn/HandDrawn";
+import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
@@ -17,15 +24,24 @@ import { useApplyGameAction, useGameState } from "../useGameState";
  * shop's own state, so this card never gets ahead of the player or stuck
  * behind them — it just renders whatever is next.
  *
- * The whole card is handwriting (`font-ink`) — it's a note the character
- * pinned up, not chrome. The prose lives here rather than in the step
- * table so instructions can name their keys through the shortcut
- * registry: rebind a key and these sentences follow.
+ * Everything on it is written rather than typeset: the sheet is
+ * `.paper-note`, the hand is `.pencil-hand`, and the rules, boxes,
+ * ticks, crossings-out, and key caps are drawn marks (see
+ * `hand-drawn/HandDrawn.tsx`). A finished step keeps the same graphite as
+ * the rest — the line through it is what says it's done, and the eye is
+ * sent to the next thing by the outline in the world, not by fading the
+ * list around it.
+ *
+ * The prose lives here rather than in the step table so instructions can
+ * name their keys through the shortcut registry: rebind a key and these
+ * sentences follow.
  */
 export const TutorialCard: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
   const view = currentTutorialGoalView(gameState);
+
+  useMarkerOnCheck(view?.goal.id ?? null, view?.checked ?? null);
 
   if (view === null) {
     return null;
@@ -35,65 +51,107 @@ export const TutorialCard: React.FC = () => {
   const activeStep = activeIndex >= 0 ? view.goal.steps[activeIndex] : null;
 
   return (
-    <section
-      className="paper-card relative space-y-2 font-ink"
-      data-testid="tutorial-card"
-    >
-      <Thumbtack />
-      <header className="border-b-2 border-ink-black/40 pb-1">
-        <h3 className="text-lg leading-tight" data-testid="tutorial-goal">
-          {view.goal.title}
-        </h3>
-      </header>
-      <ul className="space-y-1">
-        {view.goal.steps.map((step, index) => (
-          <ChecklistRow
-            key={step.id}
-            step={step}
-            checked={view.checked[index]}
-            active={index === activeIndex}
-          />
-        ))}
-      </ul>
-      {activeStep !== null && (
-        <div className="border-t border-ink-black/20 pt-1.5 text-base leading-snug">
-          <StepBody step={activeStep.id} />
+    <HintSurfaceContext.Provider value="hand">
+      <section
+        className="paper-note pencil-hand relative space-y-2"
+        data-testid="tutorial-card"
+      >
+        <header>
+          <h3
+            className="pencil-hand-heading leading-tight"
+            data-testid="tutorial-goal"
+          >
+            {view.goal.title}
+          </h3>
+          <HandRule seed={view.goal.id} weight={2} className="mt-0.5" />
+        </header>
+        <ul className="space-y-1">
+          {view.goal.steps.map((step, index) => (
+            <ChecklistRow
+              key={step.id}
+              step={step}
+              checked={view.checked[index]}
+            />
+          ))}
+        </ul>
+        {activeStep !== null && (
+          <div className="space-y-1.5 leading-snug">
+            <HandRule seed={`${view.goal.id}-body`} className="opacity-50" />
+            <StepBody step={activeStep.id} />
+          </div>
+        )}
+        <div className="flex justify-end">
+          {/* Written on the sheet like everything else, with a box drawn
+              around it — a printed button would be the one piece of
+              chrome on a page of handwriting. */}
+          <button
+            className="relative px-3 py-0.5 text-[0.85em] hover:text-ink-black"
+            onClick={() => applyAction(dismissTutorialAction())}
+            data-testid="tutorial-skip"
+          >
+            <HandFrame seed="tutorial-skip" />
+            <span className="relative">Skip</span>
+          </button>
         </div>
-      )}
-      <div className="flex justify-end">
-        <button
-          className="button px-3 py-1 text-xs tracking-[0.15em]"
-          onClick={() => applyAction(dismissTutorialAction())}
-          data-testid="tutorial-skip"
-        >
-          Skip
-        </button>
-      </div>
-    </section>
+      </section>
+    </HintSurfaceContext.Provider>
   );
 };
+
+/**
+ * Sound the felt tip whenever a box goes from open to ticked. It compares
+ * against the previous render's boxes and stays quiet on the first one,
+ * so a page load into a half-finished list doesn't tick off everything
+ * already done.
+ *
+ * A new goal counts as a tick too: satisfying a goal's last step moves
+ * the card straight on to the next goal, so that box never renders
+ * checked — but it was still just crossed off.
+ */
+function useMarkerOnCheck(
+  goalId: TutorialGoalId | null,
+  checked: readonly boolean[] | null,
+): void {
+  const previous = useRef<{
+    goalId: TutorialGoalId;
+    checked: readonly boolean[];
+  } | null>(null);
+
+  useEffect(() => {
+    const before = previous.current;
+    previous.current =
+      goalId === null || checked === null
+        ? null
+        : { goalId, checked: [...checked] };
+    if (before === null || goalId === null || checked === null) return;
+    const ticked =
+      before.goalId !== goalId ||
+      checked.some((now, i) => now && !before.checked[i]);
+    if (ticked) {
+      playMarkerCheck();
+    }
+  }, [goalId, checked?.join("")]);
+}
 
 const ChecklistRow: React.FC<{
   step: TutorialStep;
   checked: boolean;
-  active: boolean;
-}> = ({ step, checked, active }) => (
+}> = ({ step, checked }) => (
   <li
-    className={classNames(
-      "flex items-baseline gap-2 text-base leading-tight",
-      checked && "text-ink-fade line-through decoration-ink-fade/70",
-      !checked && !active && "text-ink-black/70",
-    )}
+    className="flex items-baseline gap-2 leading-tight"
     data-testid={`tutorial-step-${step.id}`}
     data-checked={checked}
   >
     <span
       aria-hidden
-      className="relative top-0.5 flex h-[1em] w-[1em] flex-none items-center justify-center rounded-[2px] border-2 border-ink-black/70"
+      className="relative top-[0.15em] flex h-[0.95em] w-[0.95em] flex-none items-center justify-center"
     >
-      {checked && <span className="text-[1.1em] leading-none">✓</span>}
+      {checked ? <HandCheck seed={step.id} /> : <HandCheckbox seed={step.id} />}
     </span>
-    {step.label}
+    <span className="relative">
+      {step.label}
+      {checked && <HandStrike seed={`${step.id}-strike`} />}
+    </span>
   </li>
 );
 

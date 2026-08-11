@@ -43,6 +43,9 @@ const config = {
         ink: {
           black: "#1a1a1a",
           fade: "#5a5550",
+          // Graphite — a shade cooler and lighter than ink, for the marks
+          // the character makes on their own paper rather than printed text
+          pencil: "#3c3a3b",
           red: "#a62d2d",
           blue: "#1f3a6e",
           brown: "#5c3d2e",
