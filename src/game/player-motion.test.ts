@@ -1,19 +1,22 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { initialGameState } from "./initialGameState";
+import { Machine } from "./Machine";
 import {
   BASE_WALK_SPEED,
   cellCenter,
   CollisionWorld,
   directionFromInput,
+  headingForDirection,
   motionCell,
   PLAYER_RADIUS,
   playerWalkSpeed,
   Solid,
   SolidBox,
   stepPlayerMotion,
+  workStance,
 } from "./player-motion";
-import { Vector } from "./Vectors";
+import { Direction, Vector } from "./Vectors";
 import { DUST_MAX_PER_CELL } from "./Dust";
 
 /** A roomy floor so wall clamping never interferes unless a test wants it. */
@@ -238,5 +241,56 @@ describe("motionCell / cellCenter", () => {
     assert.deepStrictEqual(motionCell(cellCenter([3, 7])), [3, 7]);
     assert.deepStrictEqual(motionCell([0.999, 2.001]), [0, 2]);
     assert.deepStrictEqual(motionCell([-0.2, 1.5]), [-1, 1]);
+  });
+});
+
+describe("workStance", () => {
+  const bench = (rotation: Direction): Machine =>
+    new Machine({
+      machineTypeId: "worktable1x2",
+      position: [4, 4],
+      rotation,
+      selectedOperationId: "none",
+      operationProgress: {
+        status: "notStarted",
+        phaseIndex: 0,
+        ticksRemaining: 0,
+      },
+      inputMaterials: [],
+      processingMaterials: [],
+      outputMaterials: [],
+      tools: [],
+    });
+
+  it("stands centered on the operation cell, facing the bench, at every rotation", () => {
+    // worktable1x2: 4×2 footprint, operation cell mid-front ([1, 2] local)
+    const cases: Array<{
+      rotation: Direction;
+      pos: Vector;
+      direction: Direction;
+    }> = [
+      { rotation: 0, pos: [5.5, 6.5], direction: 1 },
+      { rotation: 1, pos: [6.5, 3.5], direction: 2 },
+      { rotation: 2, pos: [3.5, 2.5], direction: 3 },
+      { rotation: 3, pos: [2.5, 5.5], direction: 0 },
+    ];
+    for (const { rotation, pos, direction } of cases) {
+      const stance = workStance(bench(rotation));
+      assert.ok(stance, `rotation ${rotation}`);
+      assert.deepStrictEqual(stance.pos, pos, `rotation ${rotation}`);
+      assert.strictEqual(stance.direction, direction, `rotation ${rotation}`);
+      assert.strictEqual(
+        stance.heading,
+        headingForDirection(direction),
+        `rotation ${rotation}`,
+      );
+    }
+  });
+
+  it("returns null for a station with no operation position", () => {
+    assert.strictEqual(
+      workStance({ absoluteOperationPosition: null, occupiedCells: [[0, 0]] }),
+      null,
+    );
   });
 });

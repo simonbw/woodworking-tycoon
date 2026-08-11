@@ -183,7 +183,11 @@ The world does not stop for the bench view. Overlays never stop the
 world (only the pause menu does), and the player is standing at the
 station the whole time — the planer keeps power-feeding, glue keeps
 curing, dust keeps settling. Movement keys are pinned until Tab steps
-back. **Dust and foley don't wait for the commit**: active stroking
+back, and opening the view walks the body into the standard working
+stance — centered on the bench's operation cell, squared up to the top
+(`workStance` in `player-motion.ts`, stepped by `PlayerMotionLayer`) —
+so the dive's zoomed-in look always finds the woodworker standing at
+the bench the way a person works at one. **Dust and foley don't wait for the commit**: active stroking
 dispatches a throttled dust-emission action so the dust simulation stays
 honest, and continuous tool foley runs UI-side with the completion
 stinger going through the `SoundEvent` queue as usual.
