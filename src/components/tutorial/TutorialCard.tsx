@@ -1,45 +1,65 @@
 import React from "react";
 import { dismissTutorialAction } from "../../game/game-actions/progression-actions";
-import { currentTutorialStep, TutorialStepId } from "../../game/tutorial";
+import {
+  currentTutorialGoalView,
+  TutorialStep,
+  TutorialStepId,
+} from "../../game/tutorial";
+import { classNames } from "../../utils/classNames";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { Thumbtack } from "../Thumbtack";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * The guided opening, one instruction at a time (see game/tutorial.ts).
- * The step comes from the shop's own state, so this card never gets ahead
- * of the player or stuck behind them — it just renders whatever is next.
+ * The guided opening as the character's own to-do list (see
+ * game/tutorial.ts): one goal at a time, its steps as checkboxes that
+ * tick off as the shop's state satisfies them. The list comes from the
+ * shop's own state, so this card never gets ahead of the player or stuck
+ * behind them — it just renders whatever is next.
  *
- * The prose lives here rather than in the step table so instructions can
- * name their keys through the shortcut registry: rebind a key and these
- * sentences follow.
+ * The whole card is handwriting (`font-ink`) — it's a note the character
+ * pinned up, not chrome. The prose lives here rather than in the step
+ * table so instructions can name their keys through the shortcut
+ * registry: rebind a key and these sentences follow.
  */
 export const TutorialCard: React.FC = () => {
   const gameState = useGameState();
   const applyAction = useApplyGameAction();
-  const step = currentTutorialStep(gameState);
+  const view = currentTutorialGoalView(gameState);
 
-  if (step === null) {
+  if (view === null) {
     return null;
   }
 
+  const activeIndex = view.checked.findIndex((checked) => !checked);
+  const activeStep = activeIndex >= 0 ? view.goal.steps[activeIndex] : null;
+
   return (
     <section
-      className="paper-card relative space-y-2"
+      className="paper-card relative space-y-2 font-ink"
       data-testid="tutorial-card"
     >
       <Thumbtack />
       <header className="border-b-2 border-ink-black/40 pb-1">
-        <span className="block font-condensed text-[0.6rem] uppercase tracking-[0.25em] text-ink-fade">
-          Getting Started
-        </span>
-        <h3 className="font-condensed font-bold text-lg uppercase tracking-wide leading-tight">
-          {step.title}
+        <h3 className="text-lg leading-tight" data-testid="tutorial-goal">
+          {view.goal.title}
         </h3>
       </header>
-      <div className="text-sm leading-snug">
-        <StepBody step={step.id} />
-      </div>
+      <ul className="space-y-1">
+        {view.goal.steps.map((step, index) => (
+          <ChecklistRow
+            key={step.id}
+            step={step}
+            checked={view.checked[index]}
+            active={index === activeIndex}
+          />
+        ))}
+      </ul>
+      {activeStep !== null && (
+        <div className="border-t border-ink-black/20 pt-1.5 text-base leading-snug">
+          <StepBody step={activeStep.id} />
+        </div>
+      )}
       <div className="flex justify-end">
         <button
           className="button px-3 py-1 text-xs tracking-[0.15em]"
@@ -53,13 +73,35 @@ export const TutorialCard: React.FC = () => {
   );
 };
 
+const ChecklistRow: React.FC<{
+  step: TutorialStep;
+  checked: boolean;
+  active: boolean;
+}> = ({ step, checked, active }) => (
+  <li
+    className={classNames(
+      "flex items-baseline gap-2 text-base leading-tight",
+      checked && "text-ink-fade line-through decoration-ink-fade/70",
+      !checked && !active && "text-ink-black/70",
+    )}
+    data-testid={`tutorial-step-${step.id}`}
+    data-checked={checked}
+  >
+    <span
+      aria-hidden
+      className="relative top-0.5 flex h-[1em] w-[1em] flex-none items-center justify-center rounded-[2px] border-2 border-ink-black/70"
+    >
+      {checked && <span className="text-[1.1em] leading-none">✓</span>}
+    </span>
+    {step.label}
+  </li>
+);
+
 /**
  * What to do, in plain instruction-manual voice. Every key comes from the
  * registry — never a hard-coded glyph.
  */
 const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
-  const gameState = useGameState();
-
   switch (step) {
     case "scavenge":
       return (
@@ -99,39 +141,74 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
           Someone walking by will buy it before long.
         </p>
       );
-    case "buySandingBlock":
-      return (
-        <p>
-          Take the truck to the Orange Box and buy a sanding block — it's how
-          rough wood becomes something people pay for. Grab a box of nails while
-          you're there, too. Purchases ride home in the bed.
-        </p>
-      );
-    case "mountSandingBlock":
-      return (
-        <p>
-          A hand tool only works where it's mounted. Carry the block to the
-          workbench, open the bench with{" "}
-          <ShortcutKeys shortcut="open-station-sheet" />, and put it in the tool
-          rack. Its sanding plans then appear on that bench.
-        </p>
-      );
     case "learnSkill":
-      // The point may not have landed yet — XP comes from finished work, so
-      // the honest instruction is "keep going", not "spend what you lack".
-      return gameState.progression.skillPoints > 0 ? (
+      return (
         <p>
-          Finished work earns experience, and you've leveled up. Open the
-          journal with <ShortcutKeys shortcut="open-journal" /> and learn{" "}
-          <em>Rustic Projects</em> — birdhouses and crates, which the job board
-          starts asking for as soon as you can build them.
+          Building the shelf earned your first level, and a level is a skill
+          point. Open the journal with <ShortcutKeys shortcut="open-journal" />{" "}
+          and learn <em>Rustic Projects</em> — it teaches the birdhouse.
         </p>
-      ) : (
+      );
+    case "goToStore":
+      return (
         <p>
-          Every piece you finish earns experience, and a level earns a skill
-          point to spend in the journal (
-          <ShortcutKeys shortcut="open-journal" />
-          ). Keep building and selling — you're close.
+          The birdhouse's parts have to be cut to length, and that takes a saw.
+          Press <ShortcutKeys shortcut="pick-up" /> at the truck's cab and pick
+          the Orange Box.
+        </p>
+      );
+    case "addSawToCart":
+      return (
+        <p>
+          The hand saw hangs on the tool wall. Add it to the cart — the shelf
+          money covers it.
+        </p>
+      );
+    case "checkOut":
+      return (
+        <p>
+          The register takes what the cart holds, and everything you bought
+          rides home in the truck's bed.
+        </p>
+      );
+    case "gatherWood":
+      return (
+        <p>
+          The birdhouse takes two whole pallet boards. If the shop is short,
+          take the truck out for another pallet and pry it apart.
+        </p>
+      );
+    case "mountSaw":
+      return (
+        <p>
+          A hand tool only works where it's mounted. Take the saw from the bed,
+          carry it to the workbench, open the bench with{" "}
+          <ShortcutKeys shortcut="open-station-sheet" />, and put it in the tool
+          rack.
+        </p>
+      );
+    case "cutParts":
+      return (
+        <p>
+          Cut the birdhouse's parts at the bench: two 12-inch fronts, each with
+          one end cut at the 45° stop, a 12-inch roof, a 12-inch floor, and two
+          6-inch sides. The plan <em>Build Birdhouse</em> lists each part as you
+          go.
+        </p>
+      );
+    case "assembleBirdhouse":
+      return (
+        <p>
+          Load the parts at the bench, choose the plan <em>Build Birdhouse</em>,
+          then set each piece on the drawing and nail it down.
+        </p>
+      );
+    case "earnSavings":
+      return (
+        <p>
+          Anything finished sells at the stand. Keep scavenging, building, and
+          setting work out — the savings open the way to better machines and
+          better wood.
         </p>
       );
   }

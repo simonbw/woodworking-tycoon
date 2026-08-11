@@ -127,9 +127,11 @@ stack of equal-weight cards:
   `ScavengeTripOverlay` — the last a handwritten travel log beside the
   sketched truck, its bed stacking up with the haul).
 - **Coach card** (`TutorialCard`, the HUD's left column) — the guided
-  opening's one instruction at a time, and the one HUD corner that is
-  paper rather than chrome: a pinned note (thumbtack + slight rotation)
-  that names the current step and disappears when the opening is done.
+  opening as the character's own to-do list, and the one HUD corner that
+  is paper rather than chrome: a pinned note (thumbtack + slight
+  rotation), handwritten (`font-ink`) top to bottom, showing the current
+  goal's checkboxes and the first unchecked box's instructions. It
+  disappears when the opening is done.
 - **Hands strip** (`HandsStrip`, bottom-center) — a `hud-chip` of slots,
   one per kind of thing carried; clicking a slot sets one down,
   shift-click the group, and F speaks the same verb from the keyboard.

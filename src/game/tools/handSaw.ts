@@ -13,7 +13,9 @@ export const handSaw: ToolType = {
   name: "Hand Saw",
   description:
     "A backsaw and a miter box. Crosscuts boards to length at the same angle stops as the miter saw, and takes about three times as long.",
-  cost: 18,
+  // Priced to what the first shelf sale brings in: the guided opening
+  // sends the player here with exactly one sale in their pocket.
+  cost: 12,
   // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
   compatibleMachines: [
     "workspace",
