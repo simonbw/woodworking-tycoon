@@ -13,6 +13,7 @@ import {
   movePlayerToCab,
   movePlayerToStand,
   openTruckMenu,
+  pickUpFromShelf,
   startNewGame,
 } from "./navigation";
 
@@ -445,11 +446,7 @@ test.describe("Selling, supplies, and sound", () => {
       await expect(page.getByText("Box of Nails")).toBeVisible();
       await expect(page.getByText("Mineral Oil Bottle")).toBeVisible();
 
-      await page
-        .locator("li", { hasText: "Mineral Oil Bottle" })
-        .getByRole("button", { name: "Add Mineral Oil Bottle to cart" })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Mineral Oil Bottle");
       // On the cart, not in the cabinet — the shelf tag still reads empty
       await expect(page.getByText("16 oz in shop")).toHaveCount(0);
 

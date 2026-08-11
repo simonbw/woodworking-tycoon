@@ -194,6 +194,55 @@ export async function unloadTruckBed(page: any) {
   }
 }
 
+/** Where a product hangs, when its name alone doesn't say. */
+export interface ShelfOptions {
+  /**
+   * The line on the tag that tells two of the same product apart — the
+   * panel size on a sheet-goods rack, where every tag reads the same
+   * grade.
+   */
+  variant?: string;
+  /** One rack, when the same product hangs at more than one. */
+  within?: any;
+  /**
+   * Skip the actionability wait. A store trip spends time, so the click
+   * stability check can starve on a loaded machine.
+   */
+  force?: boolean;
+}
+
+/**
+ * A product's shelf tag: the control that puts one in the cart, found
+ * the way a shopper finds it — by the name printed on the tag.
+ *
+ * Returned as a locator rather than clicked so a spec can read the tag
+ * before taking one (a price, whether the shelf hands it over while the
+ * wallet is empty). Use `pickUpFromShelf` to just take one.
+ */
+export function shelfTag(page: any, product: string, options: ShelfOptions = {}) {
+  const scope = options.within ?? page;
+  const tag = options.variant
+    ? scope.locator("li", { hasText: product }).filter({ hasText: options.variant })
+    : scope;
+  return tag.getByRole("button", { name: `Add ${product} to cart` });
+}
+
+/**
+ * Take one off the shelf. Every spec that shops goes through here rather
+ * than reaching for the control itself, so what a shelf *is* can change
+ * without the specs having to (see issue #97).
+ */
+export async function pickUpFromShelf(
+  page: any,
+  product: string,
+  options: ShelfOptions = {},
+) {
+  await shelfTag(page, product, options).click(
+    options.force ? { force: true } : undefined,
+  );
+  await page.waitForTimeout(30);
+}
+
 /**
  * Head home from either store, optionally walking back to a remembered
  * cell. Purchases ride home in the truck's bed, so heading home swings

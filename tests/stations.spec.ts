@@ -15,6 +15,8 @@ import {
   goToStore,
   leaveStore,
   openJournal,
+  pickUpFromShelf,
+  shelfTag,
   startNewGame,
 } from "./navigation";
 
@@ -344,12 +346,7 @@ test.describe("Stations", () => {
       await expect(page.getByText("Cabinet Plywood").first()).toBeVisible();
       // Every kind racks in three sizes, named on the line under the tag
       await expect(page.getByText("2×2 Panel").first()).toBeVisible();
-      await page
-        .locator("li", { hasText: "Shop Plywood" })
-        .filter({ hasText: "2×2 Panel" })
-        .getByRole("button", { name: /Add Shop Plywood to cart/ })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Shop Plywood", { variant: "2×2 Panel" });
       // $11.20: 2 board feet of shop-grade ply, at the small-piece
       // premium — quoted on the cart before a cent leaves the wallet
       await expect(page.getByTestId("store-cart-total")).toContainText("$11.20");
@@ -491,23 +488,11 @@ test.describe("Stations", () => {
       await expect(toolWall.getByText("Hand Saw")).toBeVisible();
       await expect(toolWall.getByText("Drill")).toBeVisible();
 
-      await page
-        .locator("li", { hasText: "Hand Saw" })
-        .getByRole("button", { name: "Add Hand Saw to cart" })
-        .click();
-      await page.waitForTimeout(30);
-      await page
-        .locator("li", { hasText: "Drill" })
-        .getByRole("button", { name: "Add Drill to cart" })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Hand Saw");
+      await pickUpFromShelf(page, "Drill");
 
       await expect(page.getByText("Box of Screws")).toBeVisible();
-      await page
-        .locator("li", { hasText: "Box of Screws" })
-        .getByRole("button", { name: "Add Box of Screws to cart" })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Box of Screws");
 
       // A whole trip's shopping sits on one cart, and nothing has been
       // paid for yet — the supply cabinet is still empty of screws
@@ -545,9 +530,7 @@ test.describe("Stations", () => {
         }));
       });
       await expect(page.getByTestId("store-check-out")).toBeDisabled();
-      const handSaw = page
-        .locator("li", { hasText: "Hand Saw" })
-        .getByRole("button", { name: "Add Hand Saw to cart" });
+      const handSaw = shelfTag(page, "Hand Saw");
       await expect(handSaw).toBeEnabled();
       await handSaw.click();
       await expect(page.getByTestId("store-cart-total")).toContainText(

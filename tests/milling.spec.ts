@@ -7,7 +7,7 @@ import {
   takeAllHere,
 } from "./machine-panel";
 import { pumpTicks, startNewGame } from "./navigation";
-import { goToLumberyard, goToStore, leaveStore } from "./navigation";
+import { goToLumberyard, goToStore, leaveStore, shelfTag } from "./navigation";
 
 /**
  * The direct-feed machines, and the stock that decides what they do.
@@ -272,9 +272,11 @@ test.describe("Milling", () => {
         .last();
       // Dims tags hang under each standing board: size, then length
       await expect(roughRack.getByText(/4\/4×6"\s*8'/).first()).toBeVisible();
-      const roughWalnut = roughRack.getByRole("button", {
-        name: `Add Walnut 4/4 — 6" × 8' (rough sawn) to cart`,
-      });
+      const roughWalnut = shelfTag(
+        page,
+        `Walnut 4/4 — 6" × 8' (rough sawn)`,
+        { within: roughRack },
+      );
       await expect(roughWalnut).toBeVisible();
       // 4 board feet of walnut at the rough rack's 0.55 discount
       await expect(roughWalnut).toContainText("$26.40");
