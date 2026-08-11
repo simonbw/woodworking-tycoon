@@ -4,7 +4,6 @@ import { xpProgress } from "../game/skill-helpers";
 import { formatCount, formatDecimal, formatMoney } from "../utils/formatNumber";
 import { useManual } from "./manual/ManualProvider";
 import { JournalModal } from "./journal/JournalModal";
-import { PhoneModal } from "./phone/PhoneModal";
 import { PauseMenu } from "./PauseMenu";
 import { useShortcut } from "./shortcuts/ShortcutProvider";
 import { StarIcon } from "./StarIcon";
@@ -14,24 +13,21 @@ import { useGameState } from "./useGameState";
 
 /**
  * The top of the HUD: no tabs — every screen that used to be one is an
- * object in the world now (the store is out the garage door, the
- * marketplace lives on your phone, skills in your journal). What's left
- * is one chrome chip on the right, split by hairlines into three
- * segments: the clock, the balances, and the pocket items (plus Menu
- * for the pause screen), floating over the lot. The row itself passes
- * clicks through to the world; only the chip catches them.
+ * object in the world now (the store is out the garage door, skills in
+ * your journal). What's left is one chrome chip on the right, split by
+ * hairlines into three segments: the clock, the balances, and the pocket
+ * items (plus Menu for the pause screen), floating over the lot. The row
+ * itself passes clicks through to the world; only the chip catches them.
  */
 export const NavBar: React.FC = () => {
   const gameState = useGameState();
-  const { marketplaceUnlocked, skillPoints } = gameState.progression;
+  const { skillPoints } = gameState.progression;
   const xp = xpProgress(gameState.progression.xp);
   const [pauseOpen, setPauseOpen] = useState(false);
-  const [phoneOpen, setPhoneOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const manual = useManual();
   const manualHasNews = hasUnreadArticles(gameState.progression);
 
-  useShortcut("open-phone", () => setPhoneOpen(true), marketplaceUnlocked);
   useShortcut("open-journal", () => setJournalOpen(true));
   useShortcut("pause-menu", () => setPauseOpen(true));
 
@@ -45,18 +41,6 @@ export const NavBar: React.FC = () => {
           <Balance />
         </div>
         <div className="flex items-center gap-1 px-2 py-1.5">
-          {marketplaceUnlocked && (
-            <Tooltip content="Your phone — SawdustList" shortcut="open-phone">
-              <button
-                className="button-ghost"
-                onClick={() => setPhoneOpen(true)}
-                data-sfx="ui-tab"
-                data-tutorial-target="navbar-phone"
-              >
-                Phone
-              </button>
-            </Tooltip>
-          )}
           <Tooltip
             content={`Your journal — skills. ${formatCount(xp.needed - xp.current)} XP to the next skill point`}
             shortcut="open-journal"
@@ -115,7 +99,6 @@ export const NavBar: React.FC = () => {
           absolute so the empty wrapper doesn't count as a flex child */}
       <div className="pointer-events-auto absolute">
         {pauseOpen && <PauseMenu onClose={() => setPauseOpen(false)} />}
-        {phoneOpen && <PhoneModal onClose={() => setPhoneOpen(false)} />}
         {journalOpen && <JournalModal onClose={() => setJournalOpen(false)} />}
       </div>
     </nav>
@@ -150,9 +133,8 @@ const XpMeter: React.FC<{ current: number; needed: number }> = ({
  * star flows inline with the digits (StarIcon carries its own baseline
  * nudge), so both readouts share a text baseline; wrapping it in a flex
  * row would hand the group's baseline to the SVG instead. Both are
- * targets for the reward flight after a handoff (see
- * `RewardFlightLayer`), which is also why reputation lives out here now
- * rather than only inside the phone — you should see the star land.
+ * targets for the reward flight after a stand sale (see
+ * `RewardFlightLayer`) — you should see the star land.
  */
 const Balance: React.FC = () => {
   const gameState = useGameState();
@@ -165,7 +147,7 @@ const Balance: React.FC = () => {
       >
         {formatMoney(gameState.money)}
       </div>
-      <Tooltip content="Shop reputation — better lumber, more job slots, higher prices">
+      <Tooltip content="Shop reputation — word of your work getting around. It opens better lumber sources.">
         <div
           className="font-condensed font-bold text-base text-gold tabular-nums leading-none"
           data-reward-target="reputation"

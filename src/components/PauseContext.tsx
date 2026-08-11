@@ -11,7 +11,7 @@ export const TICKS_PER_SECOND = 5;
  * true — pausing stops the world, woodworker included.
  *
  * Only the pause menu sets this. There is no speed control: the shop runs
- * at one pace, and the phone, journal, and manual are objects you look at
+ * at one pace, and the journal and manual are objects you look at
  * while standing in it.
  */
 const pauseContext = createContext<

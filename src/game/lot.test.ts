@@ -71,9 +71,11 @@ describe("walking the lot", () => {
   });
 
   it("rounds the tailgate and walks the grass past the truck's nose", () => {
+    // Down the right-side strip: the left one dead-ends at the for-sale
+    // stand near the street.
     const atTailgate = walk([6.5, 15], [0, 1], 1);
-    const besideTruck = walk(atTailgate, [-1, 0], 1);
-    assert.ok(besideTruck[0] < 3.25 - PLAYER_RADIUS, "cleared the body line");
+    const besideTruck = walk(atTailgate, [1, 0], 1);
+    assert.ok(besideTruck[0] > 8.75 + PLAYER_RADIUS, "cleared the body line");
     const belowTruck = walk(besideTruck, [0, 1], 2);
     const nose = truckParkedRect(initialGameState.shopInfo).max[1];
     assert.ok(belowTruck[1] > nose, "walked the strip past the nose");
@@ -96,11 +98,24 @@ describe("walking the lot", () => {
   });
 
   it("ends at the lot's bottom edge, not the world's", () => {
+    // Down the right-side grass — the left strip dead-ends at the
+    // for-sale stand now (see below).
     const world = collisionWorld(initialGameState);
-    const stopped = walk([1.5, 30], [0, 1], 2);
+    const stopped = walk([10.5, 30], [0, 1], 2);
     assert.ok(
       Math.abs(stopped[1] - (world.size[1] - PLAYER_RADIUS)) < 1e-3,
       "clamped at the lot bound",
+    );
+  });
+
+  it("bounces off the for-sale stand in the left grass", () => {
+    const world = collisionWorld(initialGameState);
+    // Straight down the strip's middle, square into the table's face —
+    // a walk that skims the table's corner slides around it instead.
+    const stopped = walk([0.8, 30], [0, 1], 2);
+    assert.ok(
+      stopped[1] < world.size[1] - 2,
+      "the table stopped the walk short of the lot's edge",
     );
   });
 

@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { refillEmptyJobBoardAction } from "../game/game-actions/marketplace-actions";
 import { checkProgressionMilestonesAction } from "../game/game-actions/progression-actions";
-import { combineActions } from "../game/game-actions/misc-actions";
 import { tickAction } from "../game/game-actions/tickAction";
 import { timeSpeed } from "../game/time-flow";
 import { DayClock } from "./DayClock";
@@ -104,16 +102,13 @@ export const Ticker: React.FC = () => {
   }, [paused, behindCurtain, steadyRate, speed]);
 
   // Bookkeeping that answers the player's actions rather than the
-  // clock: milestone unlocks, the coach's next card, and the empty-board
-  // refill used to ride the 5-per-second tick stream, and shouldn't lag
-  // just because idle ticks now creep. No time passes here — both
-  // actions return the state untouched when there's nothing to do.
+  // clock: milestone unlocks and the coach's next card used to ride the
+  // 5-per-second tick stream, and shouldn't lag just because idle ticks
+  // now creep. No time passes here — the action returns the state
+  // untouched when there's nothing to do.
   useEffect(() => {
     if (paused) return;
-    const bookkeeping = combineActions(
-      checkProgressionMilestonesAction(),
-      refillEmptyJobBoardAction(),
-    );
+    const bookkeeping = checkProgressionMilestonesAction();
     const interval = setInterval(() => {
       applyAction(bookkeeping);
     }, 1000 / TICKS_PER_SECOND);

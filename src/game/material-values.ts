@@ -24,8 +24,8 @@ import { TOOL_TYPES } from "./Tool";
  * to treat a scavenging run as income. Products are priced at realistic
  * craft-fair prices — worth more than the wood in them, with margins thin
  * from expensive lumber channels and fat from cheap ones, so every channel
- * unlock reprices the shop's work. Commissions and jobs pay above these
- * prices; listings are the living, commissions are the milestones.
+ * unlock reprices the shop's work. The sell value is what a piece fetches
+ * off the for-sale stand (see stand.ts).
  */
 
 /**

@@ -86,8 +86,8 @@ export const ShortcutProvider: React.FC<{ children: React.ReactNode }> = ({
   // scope rather than the handler: a modal's cleanup runs at unmount while
   // the ref only catches up on the *next* render, so a key pressed in that
   // window is still routed to the modal scope — and, finding nothing bound
-  // there, swallowed. Pressing J to close the journal and immediately M for
-  // the phone would lose the M.
+  // there, swallowed. Pressing J to close the journal and immediately ? for
+  // the manual would lose the ?.
   const modalDepthRef = useRef(0);
   const [modalDepth, setModalDepth] = useState(0);
 

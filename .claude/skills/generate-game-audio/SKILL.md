@@ -1,6 +1,6 @@
 ---
 name: generate-game-audio
-description: Generate an in-game sound effect or voice line for Woodworking Tycoon via ElevenLabs and drop it into the project's static asset folder. Use whenever a player-facing sound is needed — machine operations (table saw, planer, miter saw), UI feedback (clicks, purchases), reward stingers (commission complete, cash), or the occasional narration line. Wraps the official ElevenLabs `sound-effects` and `text-to-speech` skills with this project's placement + naming conventions.
+description: Generate an in-game sound effect or voice line for Woodworking Tycoon via ElevenLabs and drop it into the project's static asset folder. Use whenever a player-facing sound is needed — machine operations (table saw, planer, miter saw), UI feedback (clicks, purchases), reward stingers (the sale cha-ching, reputation up), or the occasional narration line. Wraps the official ElevenLabs `sound-effects` and `text-to-speech` skills with this project's placement + naming conventions.
 ---
 
 # Generate game audio (SFX or voice line)
@@ -16,7 +16,7 @@ Woodworking Tycoon has no transcode step — sounds are Ogg files served straigh
 | Machine operation sounds (saw rip/crosscut, planer pass, sand)  | `sound-effects`  | `table-saw-rip`, `planer-pass`, `miter-cut`    |
 | Assembly / hand-tool sounds (mallet, screwdriver, pallet break) | `sound-effects`  | `mallet-tap`, `pallet-dismantle`, `hand-plane` |
 | UI feedback (button clicks, purchase, panel open/close, error)  | `sound-effects`  | `ui-click`, `purchase-chime`, `error-buzz`     |
-| Reward stingers (commission complete, cash, reputation up)      | `sound-effects`  | `commission-complete`, `cash-register`         |
+| Reward stingers (a sale off the stand, cash, reputation up)     | `sound-effects`  | `cash-register`, `ui-notification`             |
 | Looping shop ambience (idle workshop hum, background)           | `sound-effects`  | `shop-ambience-loop`                           |
 | Narration / voice lines (tutorial, shopkeeper) — optional       | `text-to-speech` | `voice-tutorial-welcome`, `voice-order-ready`  |
 
@@ -45,7 +45,7 @@ The category is just an organizing hint for the file name — there's no routing
 - **One-shots** (a single cut, a button click, a mallet tap): keep them short, ≤1.5 s, with high `prompt_influence` (~0.6–0.8) so they stay crisp.
 - **Machine / ambience loops** (a running saw, planer pass, shop hum): use `loop=True` + ~2–4 s `duration_seconds` so they cycle seamlessly.
 - **UI sounds**: soft and woody rather than electronic — a wooden click, a drawer sliding, a page turn. Purchases can be a light register chime.
-- **Reward stingers** (commission complete, cash earned, reputation up): warm and satisfying — a pleasant short chime or a cash-register ka-ching, not a fanfare.
+- **Reward stingers** (a sale off the stand, cash earned, reputation up): warm and satisfying — a pleasant short chime or a cash-register ka-ching (the sale's `cash-register` cue is the house example), not a fanfare.
 
 **Voice lines (optional).** This game has no voiced protagonist; use TTS only for something like a friendly tutorial narrator or shopkeeper callout. Aim for a calm, warm, conversational delivery — pick a friendly voice from the `text-to-speech` skill's list (e.g. George for narration, Charlotte for a lighter tone). For a multi-line sequence, use the upstream skill's `previous_text` / `next_text` request-stitching so lines flow into each other without tone jumps.
 

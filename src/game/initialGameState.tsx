@@ -60,12 +60,7 @@ export const initialGameState: GameState = {
     tutorialDismissed: false,
     storeUnlocked: false,
     lumberyardUnlocked: false,
-    marketplaceUnlocked: false,
-    commissionsCompleted: 0,
-    // The first commission is on the clipboard from the start — no phone
-    // call for it (the phone isn't even unlocked yet)
-    commissionsOffered: 1,
-    commissionArrivalSeen: true,
+    salesCompleted: 0,
     sweepingUnlocked: false,
     dustTipDismissed: false,
     // Welcome starts unread on purpose: it keeps the ? badge lit until the
@@ -76,12 +71,8 @@ export const initialGameState: GameState = {
     skillPoints: 0,
     unlockedSkills: STARTER_SKILLS,
   },
-  listings: [],
-  jobBoard: [],
-  jobBoardDay: 0,
-  seenJobTemplateIds: [],
-  acceptedJobs: [],
-  categoryDemand: {},
+  stand: [],
+  customers: [],
   dust: {},
   shopVac: null,
   broomOwned: false,

@@ -30,8 +30,8 @@ import {
  * The direct-feed machines themselves — power switches, settings scales, and
  * the stock deciding the cut — are milling.spec.ts. What the stations
  * *produce* is checked in src/game/sequences/: the recipes, the chains, and
- * the whole ladder from a new save to the last commission. The assertions here
- * are about the interface reaching them.
+ * the guided opening from a new save. The assertions here are about the
+ * interface reaching them.
  *
  * One browser, three fixtures. Each half swaps the shop under it, which costs
  * a few milliseconds against the second and a half a fresh page would.
@@ -227,10 +227,6 @@ test.describe("Stations", () => {
         );
       });
       await page.waitForTimeout(30);
-    });
-
-    await test.step("the cutting-board commission is active", async () => {
-      await expect(page.getByText("A Proper Cutting Board")).toBeVisible();
     });
 
     await test.step("store: tool wall and reputation-gated lumber channels", async () => {

@@ -6,7 +6,6 @@ import { GameSoundLayer } from "./GameSoundLayer";
 import { HoldMusicLayer } from "./HoldMusicLayer";
 import { HomePage } from "./HomePage";
 import { MachineSoundLayer } from "./MachineSoundLayer";
-import { CommissionCallLayer } from "./phone/CommissionCallLayer";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { TripOverlays, TripTransitionLayer } from "./trip/TripTransitionLayer";
@@ -16,14 +15,13 @@ import { ShortcutProvider } from "./shortcuts/ShortcutProvider";
 import { PauseProvider } from "./PauseContext";
 import { ManualProvider } from "./manual/ManualProvider";
 import { BrowserDefaultsGuard } from "./BrowserDefaultsGuard";
-import { ClipboardProvider } from "./clipboard/ClipboardProvider";
 import { GameStateProvider } from "./useGameState";
 
 /**
  * The shop floor is the game's only screen. Everything that used to be a
  * tab is an object reached from it: the manual and journal open as
- * overlays, the marketplace lives on the phone, and the store is a trip
- * out the garage door (a full-screen overlay while the trip lasts).
+ * overlays, and the store is a trip out the garage door (a full-screen
+ * overlay while the trip lasts).
  */
 export const Main: React.FC = () => {
   const [activeGame, setActiveGame] = useState<GameState | null>(null);
@@ -46,22 +44,19 @@ export const Main: React.FC = () => {
           <ShortcutProvider>
             <PauseProvider>
               <ManualProvider>
-                <ClipboardProvider>
-                  <BrowserDefaultsGuard />
-                  <HomePage />
-                  <TripTransitionLayer>
-                    <TripOverlays />
-                  </TripTransitionLayer>
-                  <RewardFlightLayer />
-                  <CommissionCallLayer />
-                  {/* Above the overlays, because what it points at is
-                      often inside one */}
-                  <TutorialSpotlightLayer />
-                  <GameSoundLayer />
-                  <MachineSoundLayer />
-                  <HoldMusicLayer />
-                  <FixtureLoader />
-                </ClipboardProvider>
+                <BrowserDefaultsGuard />
+                <HomePage />
+                <TripTransitionLayer>
+                  <TripOverlays />
+                </TripTransitionLayer>
+                <RewardFlightLayer />
+                {/* Above the overlays, because what it points at is
+                    often inside one */}
+                <TutorialSpotlightLayer />
+                <GameSoundLayer />
+                <MachineSoundLayer />
+                <HoldMusicLayer />
+                <FixtureLoader />
               </ManualProvider>
             </PauseProvider>
           </ShortcutProvider>

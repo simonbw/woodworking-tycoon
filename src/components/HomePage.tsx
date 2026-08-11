@@ -1,6 +1,5 @@
 import React from "react";
 import { useBenchDiveActive } from "./bench-view/benchSceneSlot";
-import { CommissionTracker } from "./CommissionTracker";
 import { DustTutorialCard } from "./DustTutorialCard";
 import { NightfallCard } from "./NightfallCard";
 import { HandsStrip } from "./HandsStrip";
@@ -25,11 +24,10 @@ export const HomePage: React.FC = () => {
  * (`hud-chip`). Interaction hints live in the world, pinned to the thing
  * they belong to (see ShopOverlayLayer). The name and readouts sit along
  * the top, what's in hand rides bottom-center (HandsStrip), the supply
- * tally keeps the bottom-right corner, and the current work order's
- * tracker chip holds the top-left — the always-on corner of the
- * clipboard that C (or a click) holds up in full. Panels appearing or
- * growing never shove the canvas around; long content scrolls inside
- * its panel and the page itself never grows a scrollbar.
+ * tally keeps the bottom-right corner, and the coach's card holds the
+ * top-left. Panels appearing or growing never shove the canvas around;
+ * long content scrolls inside its panel and the page itself never grows
+ * a scrollbar.
  */
 const HomePageContent: React.FC = () => {
   // Leaned over a bench, the corner chips fade: the bench scene draws
@@ -56,7 +54,6 @@ const HomePageContent: React.FC = () => {
         inert={benchDive}
         className={`absolute left-6 top-6 z-20 w-80 space-y-3 ${chipClass}`}
       >
-        <CommissionTracker />
         <TutorialCard />
         <DustTutorialCard />
         <NightfallCard />

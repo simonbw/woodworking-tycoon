@@ -156,7 +156,16 @@ wiring: same path, same size, same component.
 
 ### Props and fixtures
 
-- [ ] Machine delivery crate — `shop-view/MachineCrateSprite.tsx`.
+- [ ] Machine crate — `shop-view/MachineCrateSprite.tsx`.
+- [ ] For-sale stand — `shop-view/StandSprite.tsx`. The little table and
+      hand-written FOR SALE sign in the grass at the end of the driveway.
+      Pieces set out on it keep rendering through `MaterialSprite`, so the
+      art is the bare table and sign — and it has to read as empty when
+      nothing is out.
+- [ ] Customers — `shop-view/CustomerLayer.tsx`. The passersby on the
+      sidewalk line are simple circles, deliberately plain for now; art
+      would be a small set of top-down walkers, drawn to the player
+      sprite's scale and style.
 - [ ] Broom (resting) — `shop-view/BroomSprite.tsx`. Leans wherever it was
       set down; the tutorial points at it.
 - [ ] Broom + dustpan (in hand) — `shop-view/HeldBroomSprite.tsx`.

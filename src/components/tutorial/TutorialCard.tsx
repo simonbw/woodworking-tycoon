@@ -84,53 +84,19 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
     case "buildShelf":
       return (
         <p>
-          You have the wood for Marguerite's shelf: two thick stringers and
-          three deck boards. Load them at the bench, choose the plan{" "}
+          You have the wood for a shelf: two thick stringers and three deck
+          boards. Load them at the bench, choose the plan{" "}
           <em>Build Rustic Pallet Shelf</em>, then set each piece in place and
           drive the nails home.
         </p>
       );
-    case "loadShelf":
+    case "sellShelf":
       return (
         <p>
-          Finished work leaves the shop in the truck. Pick the shelf up with{" "}
-          <ShortcutKeys shortcut="pick-up" />, stand at the truck's bed, and
-          load it in with <ShortcutKeys shortcut="put-down" />.
-        </p>
-      );
-    case "deliverShelf":
-      return (
-        <p>
-          Walk around to the cab and press <ShortcutKeys shortcut="pick-up" />.
-          The shelf is listed under work to deliver — take that row and drive it
-          over.
-        </p>
-      );
-    case "buildSecondShelf":
-      return (
-        <p>
-          Marguerite paid, and word is getting around. Build another rustic
-          shelf — this one is for sale, not for a client. A pallet only carries
-          three stringers and a shelf wants two, so take the truck out for
-          another one first.
-        </p>
-      );
-    case "listShelf":
-      return (
-        <p>
-          You have a phone now. Open it with{" "}
-          <ShortcutKeys shortcut="open-phone" /> and put the shelf up for sale
-          at whatever you think it's worth. Priced fair, anything sells
-          eventually — this is how the shop pays for itself between clients.
-        </p>
-      );
-    case "acceptJob":
-      return (
-        <p>
-          The phone's other tab is the job board. Those are standing orders from
-          strangers: they pay better than a listing and they build your
-          reputation. Accept one you can fill from pallet wood, then build it,
-          load the bed, and drive it over the way you did the shelf.
+          The for-sale stand at the end of the driveway is where work gets sold.
+          Pick the shelf up with <ShortcutKeys shortcut="pick-up" />, carry it
+          down, and set it out with <ShortcutKeys shortcut="put-down" />.
+          Someone walking by will buy it before long.
         </p>
       );
     case "buySandingBlock":

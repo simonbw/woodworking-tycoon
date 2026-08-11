@@ -1,4 +1,3 @@
-import { hasBeenOfferedCommission } from "./commissionSequence";
 import { GameState, ProgressionState } from "./GameState";
 import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import type { MachineId } from "./Machine";
@@ -98,13 +97,11 @@ const defs = [
     title: "Workbenches",
     category: "The Craft",
     // The bench starts teaching when its first extra gear arrives: a bought
-    // tool, a clamp, a bottle of finish, or the cutting-board commission
-    // asking for sanded-and-oiled work.
+    // tool, a clamp, or a bottle of finish.
     unlocked: (gameState: GameState) =>
       ownsBoughtTool(gameState) ||
       gameState.clamps > 0 ||
-      gameState.consumables.mineralOil > 0 ||
-      hasBeenOfferedCommission(gameState.progression, "proper-cutting-board"),
+      gameState.consumables.mineralOil > 0,
   },
   {
     id: "shop-layout",
@@ -137,12 +134,11 @@ const defs = [
       gameState.progression.sweepingUnlocked,
   },
   {
-    id: "marketplace",
-    tab: "Market",
-    title: "Marketplace & Jobs",
+    id: "selling",
+    tab: "Selling",
+    title: "The For-Sale Stand",
     category: "Business",
-    unlocked: (gameState: GameState) =>
-      gameState.progression.marketplaceUnlocked,
+    unlocked: () => true,
   },
   {
     id: "skills",
@@ -168,6 +164,7 @@ export const STARTING_ARTICLES: ReadonlyArray<ManualArticleId> = [
   "welcome",
   "controls",
   "lumber",
+  "selling",
 ];
 
 /**

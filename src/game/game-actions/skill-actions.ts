@@ -4,8 +4,8 @@ import { hasSkill, levelForXp } from "../skill-helpers";
 
 /**
  * Adds craft XP, converting any level-ups into skill points. Plain function
- * (not a GameAction) so tickAction and commission completion can fold it
- * into their own state updates.
+ * (not a GameAction) so tickAction can fold it into its own state
+ * updates.
  */
 export function withXp(gameState: GameState, amount: number): GameState {
   if (amount <= 0) {

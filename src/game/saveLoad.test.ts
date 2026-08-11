@@ -36,15 +36,15 @@ describe("saveGame/loadGame round-trip", () => {
     const state = {
       ...initialGameState,
       money: 123.45,
-      pendingSounds: [{ kind: "sale" as const }],
+      pendingSounds: [{ kind: "material-drop" as const }],
       pendingPayouts: [
         {
           id: "payout-test",
-          kind: "commission" as const,
-          title: "Your First Shelf",
-          money: 200,
-          reputation: 2,
-          xp: 40,
+          kind: "sale" as const,
+          title: "Rustic Shelf",
+          money: 9,
+          reputation: 1.5,
+          xp: 0,
         },
       ],
     };

@@ -18,27 +18,23 @@ import { hasSkill } from "./skill-helpers";
  *   thinks happened.
  * - It cannot lock. Nothing here gates input — the coach points, the
  *   player acts, and every predicate reads a condition the player can
- *   always reach again (scavenging is free and unlimited, the job board
- *   always carries one material-free offer).
+ *   always reach again (scavenging is free and unlimited, and the stand
+ *   sells whatever gets set out on it).
  *
  * The prose lives in TutorialCard, not here, so instructions can name
  * their keys through the shortcut registry instead of hard-coding glyphs.
  * This file owns only ids, targets, and predicates.
  *
- * It stops deliberately at the first learned skill — it does not walk
- * the player to commission 2; the reputation gates pace that. Skip is
- * one flag (`tutorialDismissed`), always offered, never punished.
+ * It stops deliberately at the first learned skill — from there the
+ * reputation gates pace the shop's growth. Skip is one flag
+ * (`tutorialDismissed`), always offered, never punished.
  */
 
 export const TUTORIAL_STEP_IDS = [
   "scavenge",
   "dismantle",
   "buildShelf",
-  "loadShelf",
-  "deliverShelf",
-  "buildSecondShelf",
-  "listShelf",
-  "acceptJob",
+  "sellShelf",
   "buySandingBlock",
   "mountSandingBlock",
   "learnSkill",
@@ -52,10 +48,7 @@ export type TutorialStepId = (typeof TUTORIAL_STEP_IDS)[number];
  * aisle isn't open) simply doesn't light up, which is not an error.
  */
 export const TUTORIAL_DOM_TARGET_IDS = [
-  "navbar-phone",
   "navbar-journal",
-  "phone-tab-sell",
-  "phone-tab-jobs",
   "store-tool-sandingBlock",
   "skill-rusticProjects",
 ] as const;
@@ -67,6 +60,7 @@ export const TUTORIAL_TARGET_ATTRIBUTE = "data-tutorial-target";
 export type TutorialTarget =
   | { readonly kind: "machine"; readonly machineTypeId: MachineId }
   | { readonly kind: "truck"; readonly part: "cab" | "bed" }
+  | { readonly kind: "stand" }
   | {
       readonly kind: "pile";
       readonly match: (material: MaterialInstance) => boolean;
@@ -105,6 +99,7 @@ export function shopMaterials(
       ...(machine.outputMaterials ?? []),
     ]),
     ...gameState.truck.bed,
+    ...gameState.stand,
   ];
 }
 
@@ -135,8 +130,8 @@ const hasShelfParts = (gameState: GameState) =>
 const hasShelf = (gameState: GameState) =>
   countOf(gameState, isRusticShelf) > 0;
 
-const deliveredFirstShelf = (gameState: GameState) =>
-  gameState.progression.commissionsCompleted > 0;
+const soldFirstPiece = (gameState: GameState) =>
+  gameState.progression.salesCompleted > 0;
 
 // ---------------------------------------------------------------------------
 // The steps
@@ -158,7 +153,7 @@ export const TUTORIAL_STEPS: ReadonlyArray<TutorialStep> = [
       countOf(gameState, isPallet) > 0 ||
       hasShelfParts(gameState) ||
       hasShelf(gameState) ||
-      deliveredFirstShelf(gameState),
+      soldFirstPiece(gameState),
   },
   {
     id: "dismantle",
@@ -170,59 +165,22 @@ export const TUTORIAL_STEPS: ReadonlyArray<TutorialStep> = [
     satisfied: (gameState) =>
       hasShelfParts(gameState) ||
       hasShelf(gameState) ||
-      deliveredFirstShelf(gameState),
+      soldFirstPiece(gameState),
   },
   {
     id: "buildShelf",
     title: "Build the rustic shelf",
     targets: [{ kind: "machine", machineTypeId: "workspace" }],
-    satisfied: (gameState) =>
-      hasShelf(gameState) || deliveredFirstShelf(gameState),
+    satisfied: (gameState) => hasShelf(gameState) || soldFirstPiece(gameState),
   },
   {
-    id: "loadShelf",
-    title: "Load the shelf into the truck",
-    targets: [{ kind: "truck", part: "bed" }],
-    satisfied: (gameState) =>
-      gameState.truck.bed.some(isRusticShelf) || deliveredFirstShelf(gameState),
-  },
-  {
-    id: "deliverShelf",
-    title: "Drive it over to Marguerite",
-    targets: [{ kind: "truck", part: "cab" }],
-    satisfied: deliveredFirstShelf,
-  },
-  {
-    // The shop's own work, made to sell rather than to order. A pallet
-    // carries eleven boards and a shelf wants six, so this step is also
-    // the second lap of the scavenge-and-pry loop — hence the cab
-    // lighting up alongside the bench.
-    id: "buildSecondShelf",
-    title: "Build another shelf to sell",
-    targets: [
-      { kind: "truck", part: "cab" },
-      { kind: "machine", machineTypeId: "workspace" },
-    ],
-    satisfied: (gameState) =>
-      hasShelf(gameState) || gameState.listings.length > 0,
-  },
-  {
-    id: "listShelf",
-    title: "Put the shelf up for sale",
-    targets: [
-      { kind: "dom", id: "navbar-phone" },
-      { kind: "dom", id: "phone-tab-sell" },
-    ],
-    satisfied: (gameState) => gameState.listings.length > 0,
-  },
-  {
-    id: "acceptJob",
-    title: "Take a job off the board",
-    targets: [
-      { kind: "dom", id: "navbar-phone" },
-      { kind: "dom", id: "phone-tab-jobs" },
-    ],
-    satisfied: (gameState) => gameState.acceptedJobs.length > 0,
+    // Satisfied by the sale, not the set-out: the next card sends the
+    // player to the store, and the store is what the first sale unlocks
+    // — so the coach holds here until the money exists to spend.
+    id: "sellShelf",
+    title: "Set the shelf out at the for-sale stand",
+    targets: [{ kind: "stand" }],
+    satisfied: soldFirstPiece,
   },
   {
     id: "buySandingBlock",

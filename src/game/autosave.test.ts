@@ -153,7 +153,7 @@ describe("scheduleAutosave", () => {
     withStorage(() => {
       scheduleAutosave({
         ...initialGameState,
-        pendingSounds: [{ kind: "sale" as const }],
+        pendingSounds: [{ kind: "material-drop" as const }],
       });
       runIdleCallbacks();
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Woodworking Tycoon is an idle/simulation game built with React and TypeScript. The game simulates running a woodworking shop where players manage materials, machines, and commissions to make money and build reputation.
+Woodworking Tycoon is an idle/simulation game built with React and TypeScript. The game simulates running a woodworking shop where players manage materials and machines, building pieces to sell off the roadside for-sale stand for money and reputation.
 
 ## Development Commands
 
@@ -28,7 +28,7 @@ For testing changes:
 - Use `npm run test` for full validation, or `test:unit` / `test:e2e` to target one tier
 - Ask the user to test manually if more complex validation is needed
 
-There are four test tiers — unit, sequence (`ShopDriver`), the progression ledger, and fat Playwright E2E specs (deliberately only seven files, one per kind of interface; deliberately no jsdom tier). The `testing` skill is the single source for the tier philosophy and the spec-file map — invoke it before writing or moving any test.
+There are three test tiers — unit, sequence (`ShopDriver`), and fat Playwright E2E specs (deliberately only seven files, one per kind of interface; deliberately no jsdom tier). The `testing` skill is the single source for the tier philosophy and the spec-file map — invoke it before writing or moving any test.
 
 ## Architecture Overview
 
@@ -36,7 +36,7 @@ There are four test tiers — unit, sequence (`ShopDriver`), the progression led
 
 The game follows a state-driven architecture with clear separation between game logic and UI:
 
-- **GameState** (`src/game/GameState.ts`): Core game state interface containing all simulation data (money, materials, machines, commissions, etc.). Includes a `ProgressionState` slice for the persistent unlock state.
+- **GameState** (`src/game/GameState.ts`): Core game state interface containing all simulation data (money, materials, machines, the stand's stock, etc.). Includes a `ProgressionState` slice for the persistent unlock state.
 - **Game Actions** (`src/game/game-actions/`): Pure functions that transform game state
 - **Save/Load** (`src/game/saveLoad.ts`): Serializes the persistent slice of `GameState` to/from JSON for browser storage
 - **Autosave** (`src/game/autosave.ts`, `src/components/useAutosave.ts`): The shop saves itself as it runs — coalesced idle writes, flushed synchronously on `pagehide`. Because a save is always waiting, "New Game" confirms with a card on the workbench rather than a browser `confirm()`
@@ -49,10 +49,9 @@ The game follows a state-driven architecture with clear separation between game 
 3. **Diegetic UI**: The shop floor (`HomePage`) is the game's only screen — there are no tabs. The canvas runs full-bleed with the garage drawn as a building on its lot (grass, driveway, walls, and the garage-door opening: `EnvironmentLayer`), and the remaining chrome floats over it as a HUD. Everything else is an object reached from it:
    - **Shop manual** (`ManualProvider`): the `?` reference binder, an overlay
    - **The guided opening** (`src/components/tutorial/`, steps in `src/game/tutorial.ts`): a coach card in the HUD's left column showing one instruction at a time, with the thing it names outlined in the world or ringed in the chrome. Steps are predicates over `GameState`, not a script (see the header of `src/game/tutorial.ts`)
-   - **Phone** (`PhoneModal`): SawdustList — sell listings & the job board — opened from the top bar
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
-   - **Clipboard** (`ClipboardModal`): the active commission's full work order, held up with C or by clicking the top-left tracker chip (`CommissionTracker`); it holds itself up when a new commission arrives after a payout
-   - **The truck** (`TruckPrompt`): the pickup on the walkable lot outside. Its bed carries all physical cargo (`GameState.truck`), and every trip — shopping, scavenging, delivery — starts at the cab. Finished work only leaves the shop this way; there is no "mark complete" button. See `docs/trips.md`
+   - **The for-sale stand** (model in `src/game/stand.ts`, tick pass in `src/game/game-actions/stand-actions.ts`): a small table with a hand-written FOR SALE sign in the grass at the end of the driveway — the game's one selling channel. The player carries finished pieces down and sets them out (F) or takes them back (E) (`StandPrompt`); customers stroll the sidewalk line below the lot, stop at a stocked stand, and buy at fair value (`getSellValue`) — there is no pricing step. `GameState.stand` holds what's set out, `GameState.customers` the passersby. Every sale settles instantly and queues a `PayoutEvent`; `RewardFlightLayer` (`src/components/payout/`) flies the coins and star to the HUD readouts. Sales are the game's only money and reputation source: the first sale unlocks the store, and reputation gates the lumberyard's channels
+   - **The truck** (`TruckPrompt`): the pickup on the walkable lot outside. Its bed carries all physical cargo (`GameState.truck`), and every trip — shopping or scavenging — starts at the cab. See `docs/trips.md`
    - **In-world interaction UI**: the machine the player stands at is highlighted and wears hint chips naming its live keys; the mouse never acts at a distance — it chooses among what the body can already reach, and right-click opens what's under it. Targeting, chips, station sheets, hit-testing, and the mouse rules are in `docs/floor-interaction.md`
    - **The bench view** (`src/components/bench-view/`, engine in `src/game/bench-work/`): Tab at a bench dives into a zoomed work surface where the pointer is the hand — prying pallets apart, tool-first work on the piece where it lies, clamps-first glue-ups, and blueprint assembly, all committing through the actions in `game-actions/operation-actions.ts` (the view decides _when_, the actions decide _what_). The world keeps ticking while the view is open. The system doc is `docs/bench-work.md`; single-module detail lives in the `bench-work/` module headers (blueprints in `blueprint.ts`, bench groups in `bench-group.ts`, glue-ups in `glue-up.ts`, the tool-first offer in `tool-work.ts`)
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `src/game/game-actions/machine-actions.ts`)
@@ -82,10 +81,8 @@ src/
 │   ├── shop-view/         # Main game area rendering (PIXI)
 │   ├── store-page/        # The Orange Box store trip overlay
 │   ├── lumberyard-page/   # The Sawyer & Sons lumberyard trip overlay
-│   ├── phone/             # Phone overlay (SawdustList: listings + job board)
 │   ├── journal/           # Journal overlay (skill tree)
-│   ├── clipboard/         # Clipboard overlay (the full work order)
-│   ├── payout/            # Handoff celebration (client card + reward flight)
+│   ├── payout/            # Sale celebration (the reward flight to the HUD readouts)
 │   ├── current-cell-info/ # Shared cell/material widgets (scales, icons, lists)
 │   ├── machine-sprites/   # PIXI machine renderers
 │   ├── material-sprites/  # PIXI material renderers
@@ -122,7 +119,7 @@ tests/
 
 ## Player-facing prose
 
-Everything a player reads — manual articles, tutorial cards, hint chips, tooltips, station sheets, store and commission copy — is written in plain instruction-manual style, for someone seeing the game for the first time. The canonical ruleset is the "Voice & copy rules" section of `docs/shop-manual.md`; it applies to all player-facing text, not just manual articles. The short version:
+Everything a player reads — manual articles, tutorial cards, hint chips, tooltips, station sheets, store copy — is written in plain instruction-manual style, for someone seeing the game for the first time. The canonical ruleset is the "Voice & copy rules" section of `docs/shop-manual.md`; it applies to all player-facing text, not just manual articles. The short version:
 
 - Describe what the game **is** — never what it isn't, lacks, or used to be, and never what players would assume anyway
 - No internal design vocabulary, invariants, or units ("verbs", "tiles"); teach through concrete actions and fiction-level quantities ("when the dustpan fills up")
@@ -140,7 +137,7 @@ Every open issue lives on the **Woodworking Tycoon** project board with a stage 
 
 The game implements a time-based simulation where players queue actions and the game processes them over time. Key gameplay elements include:
 
-- **Commission System**: Players fulfill orders for money and reputation, handing each one over at the garage door for a client card and a reward flight (see `src/game/delivery.ts`)
+- **Selling**: Finished pieces go out on the roadside for-sale stand, where passing customers buy them at fair value for money and reputation, each sale celebrated with a reward flight (see `src/game/stand.ts`)
 - **Machine Operations**: Transform raw materials into finished products
 - **Shop Layout**: Physical space management affects workflow efficiency
 - **Economic Progression**: Purchase better machines and expand workshop space

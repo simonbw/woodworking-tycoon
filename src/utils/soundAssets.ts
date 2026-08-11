@@ -34,7 +34,6 @@ import { clipUrl, preloadSound, UI_SOUND_NAMES } from "./sfx";
 const GAME_SOUND_CLIPS = [
   "assembly-mallet",
   "cash-register",
-  "commission-complete",
   "dispose-toss",
   "drill-driver",
   "glue-clamp",
@@ -47,7 +46,6 @@ const GAME_SOUND_CLIPS = [
   "pallet-load",
   "truck-arrive",
   "truck-start",
-  "ui-notification",
 ];
 
 /** Every clip name the game can ask `playSound` for. */
@@ -93,6 +91,8 @@ export const SOUND_FILES_NOT_PRELOADED: readonly string[] = [
   "/sounds/table-saw-rip.ogg",
   // Recorded but not yet wired to a cue
   "/sounds/ui-error.flac",
+  "/sounds/ui-notification.flac",
+  "/sounds/commission-complete.ogg",
   // Generated ahead of the system that would play them: an ambient bed for
   // the garage, and a rolling loop for the truck's driving legs. Neither has
   // a player yet — at their length whatever plays them wants `musicTrack.ts`'s

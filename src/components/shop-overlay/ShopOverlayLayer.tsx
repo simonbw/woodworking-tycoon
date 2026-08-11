@@ -7,6 +7,7 @@ import { MachineChips, OutfeedChips } from "../station/MachineChips";
 import { StationSheet } from "../station/StationSheet";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
+import { StandPrompt } from "./StandPrompt";
 import { TruckBedPrompt, TruckPrompt } from "./TruckPrompt";
 import { PlayerPrompt } from "./PlayerPrompt";
 import { FloorSheet } from "./FloorSheet";
@@ -83,6 +84,7 @@ export const ShopOverlayLayer: React.FC<{
 
         <TruckPrompt canvasWidth={width} canvasHeight={height} />
         <TruckBedPrompt canvasWidth={width} />
+        <StandPrompt canvasWidth={width} />
         {/* A handle on each machine the body can reach, for the same
             reason the floor's pieces have one — see PointMarker */}
         {!carrying &&

@@ -4,7 +4,7 @@ import { emitMachineDust, machineDustMultiplier } from "../Dust";
 import { DUST_BAG_CAPTURE } from "../tools/dustBag";
 import { GameAction, GameState } from "../GameState";
 import { DustSpecies } from "../Materials";
-import { marketplaceTickPass } from "./marketplace-actions";
+import { standTickPass } from "./stand-actions";
 import { checkProgressionMilestonesAction } from "./progression-actions";
 import { sweepTickPass } from "./dust-actions";
 import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
@@ -25,14 +25,15 @@ import {
  * - cleaning (the broom's sweep, then the shop vac) runs before machines
  *   emit this tick's dust, so it always cleans the floor as of last tick;
  * - the tick counter advances after machine work (returnTick comparisons
- *   read the pre-advance tick) and before the marketplace (day boundaries
+ *   read the pre-advance tick) and before the street pass (night checks
  *   read the post-advance tick);
  * - milestones run last so unlocks that hinge on tick-driven state (a
  *   dusty floor) fire on their own.
  *
- * The marketplace rolls dice every tick, so the tick takes an rng: the
- * real game leaves the default, and the sequence tier pins a seeded one
- * (ShopDriver) so a playthrough lands the same sales every run.
+ * The street rolls dice every tick — who walks by, who buys — so the
+ * tick takes an rng: the real game leaves the default, and the sequence
+ * tier pins a seeded one (ShopDriver) so a playthrough lands the same
+ * sales every run.
  */
 export function tickAction(
   gameState: GameState,
@@ -45,7 +46,7 @@ export function tickAction(
     shopVacTickPass(),
     machineTickPass(),
     advanceTickPass(),
-    marketplaceTickPass(rng),
+    standTickPass(rng),
     checkProgressionMilestonesAction(),
   )(gameState);
 }

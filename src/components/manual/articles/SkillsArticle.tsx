@@ -13,11 +13,10 @@ export const SkillsArticle: React.FC = () => (
     <H>XP and Skill Points</H>
     <P>
       Craft XP comes from completed work: finishing a product earns XP equal to
-      its value, and completing a commission adds a share of its payout. Each
-      level grants one <Term>skill point</Term> to spend in the tree in your
-      journal (<ShortcutKeys shortcut="open-journal" /> or the Skills button up
-      top). The bar under that button fills as you earn XP toward the next
-      point.
+      its value. Each level grants one <Term>skill point</Term> to spend in the
+      tree in your journal (<ShortcutKeys shortcut="open-journal" /> or the
+      Skills button up top). The bar under that button fills as you earn XP
+      toward the next point.
     </P>
 
     <H>The Skill Tree</H>
@@ -30,13 +29,10 @@ export const SkillsArticle: React.FC = () => (
 
     <H>Reputation</H>
     <P>
-      Reputation comes from completed commissions and marketplace sales. It
-      opens the lumberyard's racks in turn, first S2S and later cheap rough-sawn
-      stock, and lets you price listings above fair value and still sell.
+      Reputation comes from selling work off the stand. It opens the
+      lumberyard's racks in turn, first S2S and later cheap rough-sawn stock.
     </P>
 
-    <Note>
-      XP scales with value — bigger pieces and commissions level you fastest.
-    </Note>
+    <Note>XP scales with value — bigger pieces level you fastest.</Note>
   </>
 );

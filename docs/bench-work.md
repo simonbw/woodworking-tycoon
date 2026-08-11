@@ -69,7 +69,7 @@ per-operation scripts that compose it.
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,
-   commission matching, and every test assertion stay deterministic.
+   sell values, and every test assertion stay deterministic.
 3. **Mid-action progress is ephemeral; the arrangement is not.** Refresh
    mid-sanding and the pass starts over: masks, glue beads, and tool
    positions are UI state, never saved. But where pieces **lie** on the

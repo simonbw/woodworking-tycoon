@@ -61,7 +61,7 @@ test.describe("Screens", () => {
         0,
       );
       await expect(
-        manual.getByRole("button", { name: /Marketplace/ }),
+        manual.getByRole("button", { name: /Skills/ }),
       ).toHaveCount(0);
     });
 
@@ -92,44 +92,60 @@ test.describe("Screens", () => {
       ).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(manual).toHaveCount(0);
+      // ...and the stand's page after that
+      await expect(page.getByTestId("manual-badge")).toBeVisible();
+      await page.keyboard.press("Shift+/");
+      await expect(
+        manual.getByRole("heading", { name: "The For-Sale Stand" }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(manual).toHaveCount(0);
       await expect(page.getByTestId("manual-badge")).toHaveCount(0);
     });
 
     await test.step("unlocking features reveals their articles", async () => {
-      // Dust past the sweeping threshold unlocks Sawdust & Cleaning; the
-      // marketplace flag unlocks Marketplace & Jobs. The milestone check
-      // picks both up on the next tick.
+      // Dust past the sweeping threshold unlocks Sawdust & Cleaning; XP
+      // past level 2 unlocks Skills & XP. The milestone check picks both
+      // up on the next tick.
       await page.evaluate(() => {
         (window as any).__UPDATE_GAME_STATE__((s: any) => ({
           ...s,
           dust: { "1,1": { pine: 80 } },
-          progression: { ...s.progression, marketplaceUnlocked: true },
+          progression: { ...s.progression, xp: 30 },
         }));
       });
       await expect
         .poll(async () => (await getState(page)).progression.unlockedArticles)
-        .toContain("marketplace");
+        .toContain("skills");
       await expect(page.getByTestId("manual-badge")).toBeVisible();
     });
 
     await test.step("a freshly unlocked article wears a NEW tab until opened", async () => {
-      // Opening jumps to the first unread article (dust), so the
-      // marketplace tab is still unread and marked NEW.
+      // Opening jumps to the first unread article (dust), so the skills
+      // tab is still unread and marked NEW.
       await page.keyboard.press("Shift+/");
       await expect(manual).toBeVisible();
       await expect(
         manual.getByRole("heading", { name: "Sawdust & Cleaning" }),
       ).toBeVisible();
 
-      const marketTab = manual.getByRole("button", {
-        name: /Marketplace & Jobs/,
+      const skillsTab = manual.getByRole("button", {
+        name: /Skills & XP/,
       });
-      await expect(marketTab).toContainText("New");
-      await marketTab.click();
+      await expect(skillsTab).toContainText("New");
+      await skillsTab.click();
       await expect(
-        manual.getByRole("heading", { name: "Marketplace & Jobs" }),
+        manual.getByRole("heading", { name: "Skills & XP" }),
       ).toBeVisible();
-      await expect(marketTab).not.toContainText("New");
+      await expect(skillsTab).not.toContainText("New");
+      // Take the loaned XP back: the journal half below reads a fresh
+      // shop's Craft Level 1. The article unlock is one-way and stays.
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((s: any) => ({
+          ...s,
+          progression: { ...s.progression, xp: 0 },
+        }));
+      });
     });
 
     await test.step("with everything read, the badge stays gone", async () => {
@@ -166,38 +182,6 @@ test.describe("Screens", () => {
         await manual.waitFor({ state: "detached" });
       }
       await page.waitForTimeout(30);
-    });
-
-    await test.step("the tracker chip expands into the clipboard", async () => {
-      const clipboard = page.getByRole("dialog", { name: "Clipboard" });
-      const tracker = page.getByTestId("commission-tracker");
-      // The always-on corner: the current order's name and checklist
-      await expect(tracker).toBeVisible();
-      await expect(tracker).toContainText("First Shelf");
-      // Tracker and clipboard are the same sheet of paper — both print
-      // the work order on paper-legal, not on HUD chrome
-      const PAPER_LEGAL = "rgb(232, 217, 156)";
-      await expect(tracker.locator("article")).toHaveCSS(
-        "background-color",
-        PAPER_LEGAL,
-      );
-      // C holds the full clipboard up, and C puts it back down
-      await page.keyboard.press("c");
-      await expect(clipboard).toBeVisible();
-      await expect(clipboard.locator("article")).toHaveCSS(
-        "background-color",
-        PAPER_LEGAL,
-      );
-      await expect(
-        clipboard.getByTestId("commission-delivery-note"),
-      ).toContainText("truck");
-      await page.keyboard.press("c");
-      await expect(clipboard).toHaveCount(0);
-      // Clicking the tracker does the same; Escape closes
-      await tracker.click();
-      await expect(clipboard).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(clipboard).toHaveCount(0);
     });
 
     await test.step("tooltip is absent until the trigger is hovered", async () => {

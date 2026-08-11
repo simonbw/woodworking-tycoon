@@ -23,7 +23,6 @@ describe("manual article unlock conditions", () => {
       "workbenches",
       "shop-layout",
       "dust",
-      "marketplace",
       "skills",
     ] as const) {
       assert.ok(!unlocked(id, initialGameState), `${id} should be locked`);
@@ -32,6 +31,7 @@ describe("manual article unlock conditions", () => {
       "welcome",
       "controls",
       "lumber",
+      "selling",
     ]);
   });
 
@@ -72,25 +72,14 @@ describe("manual article unlock conditions", () => {
     assert.ok(unlocked("milling", withJointer));
   });
 
-  it("unlocks workbenches on owning finish or reaching the cutting-board commission", () => {
+  it("unlocks workbenches on the bench's first extra gear", () => {
     assert.ok(
       unlocked("workbenches", {
         ...initialGameState,
         consumables: { ...initialGameState.consumables, mineralOil: 1 },
       }),
     );
-    // The cutting-board commission being *offered* is enough — the manual
-    // starts teaching the moment a client asks for finished work
-    assert.ok(
-      unlocked("workbenches", {
-        ...initialGameState,
-        progression: {
-          ...initialGameState.progression,
-          commissionsCompleted: 2,
-          commissionsOffered: 3,
-        },
-      }),
-    );
+    assert.ok(unlocked("workbenches", { ...initialGameState, clamps: 1 }));
     assert.ok(!unlocked("workbenches", initialGameState));
   });
 

@@ -3,8 +3,8 @@ import { ManualArticleId } from "../../../game/manual";
 import { ControlsArticle } from "./ControlsArticle";
 import { DustArticle } from "./DustArticle";
 import { LumberArticle } from "./LumberArticle";
-import { MarketplaceArticle } from "./MarketplaceArticle";
 import { MillingArticle } from "./MillingArticle";
+import { SellingArticle } from "./SellingArticle";
 import { SheetGoodsArticle } from "./SheetGoodsArticle";
 import { ShopLayoutArticle } from "./ShopLayoutArticle";
 import { SkillsArticle } from "./SkillsArticle";
@@ -25,6 +25,6 @@ export const ARTICLE_BODIES: Record<ManualArticleId, React.ComponentType> = {
   workbenches: WorkbenchesArticle,
   "shop-layout": ShopLayoutArticle,
   dust: DustArticle,
-  marketplace: MarketplaceArticle,
+  selling: SellingArticle,
   skills: SkillsArticle,
 };

@@ -23,7 +23,7 @@ function fakeRng(values: number[]): () => number {
   return () => values[i++ % values.length];
 }
 
-/** Marketplace unlocked and the player standing at the truck's cab. */
+/** The player standing at the truck's cab. */
 function stateWithFreeSelling(): GameState {
   return {
     ...initialGameState,
@@ -31,7 +31,6 @@ function stateWithFreeSelling(): GameState {
       ...initialGameState.player,
       position: truckCabSideCell(initialGameState.shopInfo),
     },
-    progression: { ...initialGameState.progression, marketplaceUnlocked: true },
   };
 }
 

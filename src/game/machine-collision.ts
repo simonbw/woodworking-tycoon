@@ -1,6 +1,7 @@
 import { GameState } from "./GameState";
 import { CollisionShape, getMachines, Machine } from "./Machine";
 import { lotSize, truckSolid, wallSolids } from "./lot";
+import { standSolid } from "./stand";
 import { CollisionWorld, Solid, SolidBox } from "./player-motion";
 import { rotateVec, Vector, vectorKey } from "./Vectors";
 
@@ -86,8 +87,8 @@ export function shopSolids(machines: ReadonlyArray<Machine>): Solid[] {
 /**
  * The whole world the walking body collides with: the lot's outer edges
  * as the bounds, the building's walls (with the garage-door gap), the
- * parked truck, and every machine. The truck is off its spot while the
- * player is away — they drove it.
+ * parked truck, the for-sale stand, and every machine. The truck is off
+ * its spot while the player is away — they drove it.
  */
 export function collisionWorld(gameState: GameState): CollisionWorld {
   return {
@@ -95,6 +96,7 @@ export function collisionWorld(gameState: GameState): CollisionWorld {
     solids: [
       ...wallSolids(gameState.shopInfo),
       ...(gameState.player.away ? [] : [truckSolid(gameState.shopInfo)]),
+      standSolid(gameState.shopInfo),
       ...shopSolids(getMachines(gameState.machines)),
     ],
   };

@@ -63,6 +63,7 @@ import { BenchDiveLayer } from "./BenchDiveLayer";
 import { useBenchDiveActive } from "../bench-view/benchSceneSlot";
 import { useTruckStage } from "./truckStageStore";
 import { atTruckBed, lotSize } from "../../game/lot";
+import { atStand, isSellable, sidewalkY } from "../../game/stand";
 import { isNight } from "../../game/time-flow";
 import { TruckHighlight } from "./TruckSprite";
 import { PIXELS_PER_CELL, cellToPixel, cellToPixelCenter } from "./shop-scale";
@@ -217,6 +218,18 @@ export const ShopView: React.FC = () => {
   const truckCargoHighlight =
     atBed && interact?.kind === "truck-bed" ? interact.material : undefined;
 
+  // The stand wears the same treatment: the table lights when F would
+  // set work out on it, and the piece E would take back lights on its
+  // own the way a floor pile does.
+  const atStandNow =
+    !gameState.player.away &&
+    gameState.player.carriedMachine == null &&
+    atStand(gameState.shopInfo, gameState.player.position);
+  const standHighlight =
+    atStandNow && gameState.player.inventory.some(isSellable);
+  const standItemHighlight =
+    interact?.kind === "stand" ? interact.material : undefined;
+
   // Where the guided opening is pointing, in the world. Empty once the
   // tutorial is done, so this costs nothing for the rest of the game.
   const coach = tutorialTargets(gameState);
@@ -332,13 +345,14 @@ export const ShopView: React.FC = () => {
   };
   const clearAim = () => updateGameState(setSweepAimAction(null));
   // How far the camera can follow the player down the lot, in world
-  // pixels: at full scroll the viewport's bottom edge reaches the
-  // walkable world's bottom. Zero on a viewport tall enough to see the
-  // whole lot already — the camera then never moves at all.
-  const lotHeightCells = lotSize(gameState.shopInfo)[1];
+  // pixels: at full scroll the viewport's bottom edge reaches past the
+  // walkable world's bottom to the sidewalk line the stand's customers
+  // stroll, with a little ground under their feet. Zero on a viewport
+  // tall enough to see it all already — the camera then never moves.
+  const seenBottomCells = sidewalkY(gameState.shopInfo) + 1.5;
   const scrollMax = Math.max(
     0,
-    cellToPixel(lotHeightCells) - (view.height - offsetY) / scale,
+    cellToPixel(seenBottomCells) - (view.height - offsetY) / scale,
   );
   // What the canvas can ever see, in world pixels — the lot fills all of
   // it, extended down by the camera's scroll range so the ground is
@@ -417,6 +431,9 @@ export const ShopView: React.FC = () => {
                     truckHighlight={truckHighlight}
                     truckCargoHighlight={truckCargoHighlight}
                     truckTutorialHighlight={coach.truck ?? homewardNudge}
+                    standHighlight={standHighlight}
+                    standItemHighlight={standItemHighlight}
+                    standTutorialHighlight={coach.stand}
                   />
                   <pixiTilingSprite
                     eventMode="static"

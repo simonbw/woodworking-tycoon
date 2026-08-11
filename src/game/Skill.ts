@@ -6,8 +6,8 @@
  *
  * The two progression axes stay separate on purpose: skills (bought
  * with points from XP levels, see skill-helpers.ts) gate what the shop
- * can MAKE; reputation gates who calls — commissions, job slots, lumber
- * channels, pricing power. Reputation never gates recipes. Locked
+ * can MAKE; reputation gates the shop's standing — lumber channels,
+ * and later the stand's foot traffic. Reputation never gates recipes. Locked
  * recipes hide at the station and list in the journal under the skill
  * that grants them, so the tree is browsed as "what could I make next".
  * There is no respec; points only accumulate.

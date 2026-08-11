@@ -58,7 +58,7 @@ export const SCAVENGE_STOP_TICKS = IS_DEV ? DEV_STOP_TICKS : FULL_STOP_TICKS;
  *
  * The circuit always turns up at least one pallet: an all-empty trip
  * would strand a brand-new shop with no wood and no way to get any (the
- * first commission starts from a scavenged pallet), so a washed-out roll
+ * first sale starts from a scavenged pallet), so a washed-out roll
  * plants a find at one stop.
  */
 export function rollScavengeStops(

@@ -78,16 +78,8 @@ test.describe("Keyboard", () => {
           () => fixtures["layout-with-placed-machines"],
         );
       });
-      // No fixture ships with the marketplace unlocked, which gates the phone.
-      await page.evaluate(() => {
-        (window as any).__UPDATE_GAME_STATE__((s: any) => ({
-          ...s,
-          progression: {
-            ...s.progression,
-            marketplaceUnlocked: true,
-          },
-        }));
-      });
+      // The update lands on React's schedule, not the evaluate's return
+      await page.waitForTimeout(30);
     });
 
     // Movement is continuous and rAF-driven: hold a key and the body walks
@@ -186,12 +178,6 @@ test.describe("Keyboard", () => {
       // J re-binds inside the modal scope, so it toggles rather than only opens
       await page.keyboard.press("j");
       await expect(journal).toHaveCount(0);
-
-      await page.keyboard.press("m");
-      const phone = page.getByRole("dialog", { name: "Phone" });
-      await expect(phone).toBeVisible();
-      await page.keyboard.press("m");
-      await expect(phone).toHaveCount(0);
     });
 
     await test.step("E opens the door card, 1 heads out to the store", async () => {
@@ -268,16 +254,16 @@ test.describe("Keyboard", () => {
     await test.step("Space still activates a focused button", async () => {
       // Space runs the machine you're standing at, so the dispatcher has to
       // let a focused control keep its own activation key.
-      const button = page.getByRole("button", { name: "Phone" });
+      const button = page.getByRole("button", { name: /^Skills/ });
       await button.focus();
       await page.keyboard.press("Space");
-      const phone = page.getByRole("dialog", { name: "Phone" });
-      await expect(phone).toBeVisible();
+      const journal = page.getByRole("dialog", { name: "Journal" });
+      await expect(journal).toBeVisible();
 
-      // Close with M rather than Escape: the focused button's tooltip is
+      // Close with J rather than Escape: the focused button's tooltip is
       // open (tooltips open on focus) and swallows the first Escape.
-      await page.keyboard.press("m");
-      await expect(phone).toHaveCount(0);
+      await page.keyboard.press("j");
+      await expect(journal).toHaveCount(0);
       // Drop focus so the button's tooltip can't linger into later steps
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur(),
