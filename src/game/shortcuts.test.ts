@@ -131,13 +131,13 @@ describe("shortcutsForEvent", () => {
     assert.deepEqual(shortcutsForEvent(keyEvent("KeyU")), []);
   });
 
-  it("gives the door's destinations the digit row to themselves", () => {
-    // Nothing else answers to 1/2/3 any more — the speed presets that used
-    // to share them are gone, so the binding is contextual rather than
-    // shadowing.
+  it("shares the digit row between the door's rows and the bench rail", () => {
+    // Both bindings are contextual — the card only opens at the cab and
+    // the rail only hangs in an open bench view — so they can never both
+    // be listening, and the provider picks by which handler is enabled.
     assert.deepEqual(
       shortcutsForEvent(keyEvent("Digit1")).map((d) => d.id),
-      ["door-option-1"],
+      ["door-option-1", "bench-tool-1"],
     );
   });
 
