@@ -600,6 +600,32 @@ test.describe("Keyboard", () => {
       await takeAllHere(page);
     });
 
+    await test.step("the rail's hooks answer to the digit row", async () => {
+      // The same digits the door card uses: the card only listens at the
+      // cab and the rail only in an open bench view, so the shared key
+      // resolves by which handler is enabled. Hooks are numbered in rail
+      // order — the mounted sander wears 1.
+      await expect(
+        page
+          .getByTestId("bench-tool-randomOrbitSander")
+          .locator("..")
+          .locator("kbd"),
+      ).toHaveText("1");
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      // 1 takes the mounted sander in hand…
+      await page.keyboard.press("1");
+      await expect(page.getByTestId("bench-put-back-hint")).toBeVisible();
+      // …and 1 again hangs it back up
+      await page.keyboard.press("1");
+      await expect(page.getByTestId("bench-put-back-hint")).toHaveCount(0);
+      // The finishing kit riding in the arms ghosts on hook 2, and its
+      // digit hangs it on the rail for real — same as clicking the ghost
+      await page.keyboard.press("2");
+      await expect(page.getByTestId("bench-tool-finishingKit")).toBeVisible();
+    });
+
     await test.step("the bench view pins the feet — no walking away mid-lean", async () => {
       // The full-window bench view is open from the step above. Held
       // movement keys drive nothing while leaning over the bench…

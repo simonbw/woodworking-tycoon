@@ -2158,6 +2158,7 @@ export const BenchWorkSurface: React.FC<{
             machine={machine}
             heldTool={heldTool}
             interactive={sceneActive}
+            keysEnabled={interactive}
             onToggle={(toolId) => {
               setHoldingClamp(false);
               setHoldingGlue(false);
