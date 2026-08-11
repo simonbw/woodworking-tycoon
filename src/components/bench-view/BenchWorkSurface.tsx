@@ -137,6 +137,7 @@ import {
 import { SawSurface } from "./SawSurface";
 import { StrokeSurface } from "./StrokeSurface";
 import { fitToStage, pointerToInches, StageFit, StageRect } from "./stageMath";
+import { useEasedSize } from "./useEasedSize";
 import { useActivityFlag, useWorkFoley } from "./useWorkFoley";
 
 /** Continuous foley per interactive operation family. */
@@ -491,6 +492,9 @@ export const BenchWorkSurface: React.FC<{
   // jumps as boards come and go — except when a plan bigger than the
   // bench is pulled (a worktable builds a 48×48 frame on the makeshift
   // bench): the scene leans back far enough to hold the whole build.
+  // That lean-back, and the lean back in when the plan is put away, is
+  // a ramp rather than a cut: the frame's inches ease toward the target
+  // (useEasedSize) and every fit below follows the eased value.
   // The whole run's tops, not one table's: two 4-ft tables pushed
   // together frame as 8 ft of bench, and an L-shaped run frames as its
   // bounding box (the corner that isn't bench is empty scene — the seating
@@ -498,7 +502,7 @@ export const BenchWorkSurface: React.FC<{
   const benchSize = { widthIn: group.widthIn, heightIn: group.heightIn };
   const planWidthIn = assemblyBlueprint?.widthIn ?? 0;
   const planHeightIn = assemblyBlueprint?.heightIn ?? 0;
-  const frame = useMemo(
+  const frameTarget = useMemo(
     () => ({
       widthIn:
         Math.max(benchSize.widthIn, PALLET_WIDTH_IN, planWidthIn) +
@@ -509,6 +513,7 @@ export const BenchWorkSurface: React.FC<{
     }),
     [benchSize.widthIn, benchSize.heightIn, planWidthIn, planHeightIn],
   );
+  const frame = useEasedSize(frameTarget, reduceMotion);
   const benchOriginIn = {
     xIn: (frame.widthIn - benchSize.widthIn) / 2,
     yIn: (frame.heightIn - benchSize.heightIn) / 2,
