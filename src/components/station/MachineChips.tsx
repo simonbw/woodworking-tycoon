@@ -3,6 +3,7 @@ import {
   interactLabel,
   materialSources,
   resolveInteract,
+  takeBlockedReason,
 } from "../../game/interact";
 import {
   hasFloorControls,
@@ -27,7 +28,7 @@ import {
 import { getMaterialName } from "../../game/material-helpers";
 import { hasStationSheet } from "./station-helpers";
 import { availableOperations } from "../../game/skill-helpers";
-import { HintList, HintRow } from "../shortcuts/HintList";
+import { HintList, HintRow, ReasonRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -68,6 +69,19 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     isSameMachine(interact.machine.state, machine.state)
       ? interact
       : null;
+
+  // Blocked hands (an armload, the broom) hide the take verbs from the
+  // resolver entirely — so when this machine holds stock the chips would
+  // otherwise offer, say why the offer is gone instead of going quiet.
+  const takeBlocked = takeBlockedReason(gameState);
+  const blockedTakeHere =
+    takeBlocked != null &&
+    interactHere == null &&
+    materialSources(gameState, machine, true).some(
+      (source) =>
+        source.kind !== "floor-pile" &&
+        isSameMachine(source.machine.state, machine.state),
+    );
 
   // With more material in reach than this machine's stock — pieces on
   // the floor beside the bench — R steps E through the whole ring, and
@@ -172,6 +186,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           {interactLabel(interactHere)}
         </HintRow>
       )}
+      {blockedTakeHere && <ReasonRow>{takeBlocked}</ReasonRow>}
       {rummageable && (
         <HintRow
           className="text-paper-manila/70"
@@ -198,11 +213,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
           {(runOperation?.name ?? machine.type.feedVerb ?? "run").toLowerCase()}
         </HintRow>
       )}
-      {refusal && (
-        <HintRow className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
-          {refusal}
-        </HintRow>
-      )}
+      {refusal && <ReasonRow>{refusal}</ReasonRow>}
       {isTargeted(machine) &&
         settings.map((param) => {
           const value =
@@ -299,15 +310,25 @@ function machineSettings(
 
 /**
  * Finished stock waiting at the outfeed side of a feed-through machine,
- * offered while the player stands at its outfeed cell.
+ * offered while the player stands at its outfeed cell — or, with the
+ * hands committed elsewhere, the reason the take is off, so the chip
+ * never offers a key the resolver would ignore.
  */
-export const OutfeedChips: React.FC<{ machine: Machine }> = ({ machine }) => (
-  <HintList>
-    <HintRow className="text-paper-manila/60">
-      {machine.type.name} · outfeed
-    </HintRow>
-    <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-      take ({machine.outputMaterials.length})
-    </HintRow>
-  </HintList>
-);
+export const OutfeedChips: React.FC<{ machine: Machine }> = ({ machine }) => {
+  const gameState = useGameState();
+  const takeBlocked = takeBlockedReason(gameState);
+  return (
+    <HintList>
+      <HintRow className="text-paper-manila/60">
+        {machine.type.name} · outfeed
+      </HintRow>
+      {takeBlocked ? (
+        <ReasonRow>{takeBlocked}</ReasonRow>
+      ) : (
+        <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+          take ({machine.outputMaterials.length})
+        </HintRow>
+      )}
+    </HintList>
+  );
+};

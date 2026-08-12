@@ -13,10 +13,16 @@ import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { MaterialPile } from "../../game/GameState";
 import { getMaterialFullName } from "../../game/material-helpers";
 import { liveSettingParameter } from "../../game/machine-helpers";
-import { materialSources, resolveInteract } from "../../game/interact";
+import { explainUnpackRefusal } from "../../game/game-actions/machine-actions";
+import {
+  broomWithinReach,
+  materialSources,
+  resolveInteract,
+  takeBlockedReason,
+} from "../../game/interact";
 import { timeSpeed } from "../../game/time-flow";
 import { chebyshevDistance } from "../../game/Vectors";
-import { HintList, HintRow } from "../shortcuts/HintList";
+import { HintList, HintRow, ReasonRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -57,6 +63,17 @@ export const PlayerPrompt: React.FC = () => {
     ? null
     : resolveInteract(gameState, targetedMachine, pileOffset);
 
+  // Where the pickup chip would land if the hands were free: the top of
+  // the reachable ring's floor pieces. The chip still shows there, naming
+  // the piece — its verb row just becomes the reason the verb is off.
+  const takeBlocked = carried ? null : takeBlockedReason(gameState);
+  const blockedPile =
+    takeBlocked != null
+      ? (materialSources(gameState, targetedMachine, true).find(
+          (source) => source.kind === "floor-pile",
+        )?.pile ?? null)
+      : null;
+
   // Whether R belongs to the targeted machine's rotate setting — the same
   // test the keyboard bindings split the key on, so the rummage hint only
   // shows when R would actually rummage.
@@ -89,10 +106,20 @@ export const PlayerPrompt: React.FC = () => {
     }
   } else {
     if (crateUnderfoot) {
+      // The unpack key wants completely empty hands — offered only when
+      // it would work, and the chip says why when it wouldn't.
+      const unpackRefusal = explainUnpackRefusal(gameState);
       rows.push(
-        <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
-          unpack {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
-        </HintRow>,
+        unpackRefusal ? (
+          <ReasonRow key="unpack">{unpackRefusal}</ReasonRow>
+        ) : (
+          <HintRow
+            key="unpack"
+            keys={<ShortcutKeys shortcut="carry-machine" />}
+          >
+            unpack {MACHINE_TYPES[crateUnderfoot.machine.machineTypeId].name}
+          </HintRow>
+        ),
       );
     }
     // The truck's bed wears its own chips, pinned over the tailgate
@@ -103,6 +130,18 @@ export const PlayerPrompt: React.FC = () => {
           pick up broom
         </HintRow>,
       );
+    } else if (broomWithinReach(gameState)) {
+      // The broom wants completely empty hands, a stricter bar than the
+      // pickup verbs' — carrying even one board hides the offer, so say
+      // why instead of going quiet.
+      const broomRefusal = carryingShopVac(gameState)
+        ? "set the vac down to take the broom"
+        : gameState.player.inventory.length > 0
+          ? "empty your hands to take the broom"
+          : null;
+      if (broomRefusal) {
+        rows.push(<ReasonRow key="broom-blocked">{broomRefusal}</ReasonRow>);
+      }
     }
     // No chip for putting things down: it followed the player to every
     // cell, which read as a strobe. The hands strip carries the F hint
@@ -175,10 +214,18 @@ export const PlayerPrompt: React.FC = () => {
       );
     }
     if (standingOnVac && !draggingVac) {
+      // The hose takes a hand — the toggle refuses while the broom's in
+      // it, so the chip explains instead of offering a dead key.
       rows.push(
-        <HintRow key="grab-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
-          grab vac
-        </HintRow>,
+        holdingBroom(gameState) ? (
+          <ReasonRow key="grab-vac">
+            put the broom down to grab the vac
+          </ReasonRow>
+        ) : (
+          <HintRow key="grab-vac" keys={<ShortcutKeys shortcut="vac-toggle" />}>
+            grab vac
+          </HintRow>
+        ),
       );
     }
     // The wait key earns its chip when there's something to wait *for*:
@@ -218,6 +265,22 @@ export const PlayerPrompt: React.FC = () => {
           sourceCount={materialSources(gameState, targetedMachine).length}
           rotateSettingLive={rotateSettingLive}
         />
+      )}
+      {/* Blocked hands: the chip still sits on the piece it would take,
+          named as usual, with the reason where the verb would be */}
+      {blockedPile && takeBlocked && (
+        <PointAnchored
+          point={blockedPile.position}
+          placement="above"
+          testId="blocked-pickup-chip"
+        >
+          <HintList>
+            <HintRow className="text-paper-manila/60">
+              {getMaterialFullName(blockedPile.material)}
+            </HintRow>
+            <ReasonRow>{takeBlocked}</ReasonRow>
+          </HintList>
+        </PointAnchored>
       )}
       {rows.length > 0 && (
         <CellAnchored cell={gameState.player.position}>

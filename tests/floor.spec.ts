@@ -451,6 +451,43 @@ test.describe("Shop floor", () => {
       const southStance = await chip.boundingBox();
       expect(southStance!.x).toBeCloseTo(northStance!.x, 0);
       expect(southStance!.y).toBeCloseTo(northStance!.y, 0);
+      await test.step("with the arms at capacity the chip explains instead of vanishing", async () => {
+        // The verb row can't be offered (the action would refuse), so
+        // the chip on the piece says why — issue #198.
+        await page.evaluate(() => {
+          window.__UPDATE_GAME_STATE__((state: any) => ({
+            ...state,
+            player: {
+              ...state.player,
+              inventory: Array.from({ length: 4 }, (_, i) => ({
+                id: `e2e-armload-${i}`,
+                type: "board",
+                species: "pine",
+                length: 12,
+                width: 4,
+                thickness: 1,
+                surface: "rough",
+                jointedFaces: 0,
+                jointedEdges: 0,
+              })),
+            },
+          }));
+        });
+        const blocked = page.getByTestId("blocked-pickup-chip");
+        await expect(blocked).toContainText(/Pine/i);
+        await expect(blocked).toContainText("arms full");
+        await expect(page.getByTestId("pickup-chip")).toHaveCount(0);
+        // Hands emptied again, the verb comes back
+        await page.evaluate(() => {
+          window.__UPDATE_GAME_STATE__((state: any) => ({
+            ...state,
+            player: { ...state.player, inventory: [] },
+          }));
+        });
+        await expect(page.getByTestId("pickup-chip").first()).toBeVisible();
+        await expect(blocked).toHaveCount(0);
+      });
+
       // Clear the floor so the board doesn't shadow the broom steps below
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
