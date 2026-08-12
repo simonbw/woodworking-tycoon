@@ -12,16 +12,22 @@ import { BENCH_OPERATIONS } from "./benchOperations";
  * rest of the top free for bench work, and the shelf below doubles as the
  * machine's stand storage.
  *
+ * Two sizes only — a 2'×2' stand and the full-size 4'×2' — because
+ * bigger benches are composed, not built: tables pushed edge to edge
+ * work as one bench (bench-work/bench-group.ts), so a long run or a
+ * deep island is arranged on the shop floor from these two.
+ *
  * All tables are two feet deep (cells are 1 sq ft); `widthFeet` sets the
  * run of the top. The ids keep their old grid-era names for save
  * compatibility.
  */
+const DEPTH_FEET = 2;
+
 function worktable(
   id: string,
   name: string,
   description: string,
   widthFeet: number,
-  depthFeet: number,
   stats: {
     materialStorage: number;
     toolSlots: number;
@@ -30,7 +36,7 @@ function worktable(
   },
 ): MachineType {
   const cells: Vector[] = [];
-  for (let y = 0; y < depthFeet; y++) {
+  for (let y = 0; y < DEPTH_FEET; y++) {
     for (let x = 0; x < widthFeet; x++) {
       cells.push([x, y]);
     }
@@ -40,11 +46,11 @@ function worktable(
   // bench is workable along its length.
   const operationPosition: Vector = [
     Math.floor((widthFeet - 1) / 2),
-    depthFeet,
+    DEPTH_FEET,
   ];
   const freeCellsNeeded: Vector[] = [];
   for (let x = 0; x < widthFeet; x++) {
-    freeCellsNeeded.push([x, depthFeet]);
+    freeCellsNeeded.push([x, DEPTH_FEET]);
   }
   return {
     id,
@@ -73,7 +79,6 @@ export const worktable1x1 = worktable(
   "Small Worktable",
   "A sturdy shop-built bench, 2'×2'. Solid top, tool slots, and a shelf below.",
   2,
-  2,
   // Bench tops hold stock, not bays: every table takes the widest
   // blueprint build (the crate's ten boards), bigger tops take more
   { materialStorage: 3, toolSlots: 3, inputSpaces: 12, upgradeSlots: 1 },
@@ -84,24 +89,5 @@ export const worktable1x2 = worktable(
   "Worktable",
   "A full-size shop-built bench, 4'×2': room to work and a benchtop machine.",
   4,
-  2,
   { materialStorage: 6, toolSlots: 4, inputSpaces: 14, upgradeSlots: 2 },
-);
-
-export const worktable1x3 = worktable(
-  "worktable1x3",
-  "Long Worktable",
-  "A 6'×2' run of bench: machines on the ends, hand work in the middle.",
-  6,
-  2,
-  { materialStorage: 9, toolSlots: 5, inputSpaces: 16, upgradeSlots: 3 },
-);
-
-export const worktable2x2 = worktable(
-  "worktable2x2",
-  "Big Worktable",
-  "A deep 4'×4' island of bench space with a generous shelf underneath.",
-  4,
-  4,
-  { materialStorage: 12, toolSlots: 6, inputSpaces: 18, upgradeSlots: 3 },
 );

@@ -24,12 +24,7 @@ import { miterSaw } from "./machines/miterSaw";
 import { sawhorses } from "./machines/sawhorses";
 import { storageRack } from "./machines/storageRack";
 import { workspace } from "./machines/workspace";
-import {
-  worktable1x1,
-  worktable1x2,
-  worktable1x3,
-  worktable2x2,
-} from "./machines/worktables";
+import { worktable1x1, worktable1x2 } from "./machines/worktables";
 
 /**
  * One solid piece of a machine, in cell units in the machine's local
@@ -232,8 +227,6 @@ export const MACHINE_TYPES = {
   workspace,
   worktable1x1,
   worktable1x2,
-  worktable1x3,
-  worktable2x2,
   jobsiteTableSaw,
   miterSaw,
   lunchboxPlaner,

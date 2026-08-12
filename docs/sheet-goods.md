@@ -80,7 +80,7 @@ That gap is the circular saw's entire business case. Breaking sheets down
 is never *required* for the small builds — the panels exist so a shop with
 one saw can still make its first jigs — it just costs more to skip. The
 things that genuinely need a full sheet are the ones no panel can yield:
-the long worktable's top, and anything else wider than the rack sells.
+anything wider than the widest panel on the rack.
 
 Because the premium is a function of area rather than a table of SKUs, an
 offcut prices on the same curve as everything on the shelf.

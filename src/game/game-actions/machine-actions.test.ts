@@ -166,16 +166,19 @@ describe("putting the carried machine down", () => {
   });
 
   it("sets a benchtop machine down onto free worktable cells", () => {
-    // A long worktable spanning [1..6, 2..3]: the saw's whole 3×2
-    // footprint lands on the tabletop with the player at its operator cell
-    const table = machineAt("worktable1x3", [1, 2]);
+    // Two tables pushed into one run spanning [1..6, 2..3]: the saw's
+    // whole 3×2 footprint lands on the shared tabletop — straddling the
+    // seam — with the player at its operator cell
     const state = {
       ...carryingState(machineAt("miterSaw", [0, 0])),
-      machines: [table],
+      machines: [
+        machineAt("worktable1x2", [1, 2]),
+        machineAt("worktable1x1", [5, 2]),
+      ],
     };
     const result = putDownCarriedMachineAction()(state);
-    assert.strictEqual(result.machines.length, 2);
-    assert.deepStrictEqual(result.machines[1].position, [5, 3]);
+    assert.strictEqual(result.machines.length, 3);
+    assert.deepStrictEqual(result.machines[2].position, [5, 3]);
   });
 });
 
@@ -186,7 +189,7 @@ describe("carry weight", () => {
       player: {
         ...initialGameState.player,
         position: [2, 2],
-        carriedMachine: machineAt("worktable2x2", [0, 0]),
+        carriedMachine: machineAt("worktable1x2", [0, 0]),
       },
     });
     assert.strictEqual(playerWalkSpeed(state), BASE_WALK_SPEED);

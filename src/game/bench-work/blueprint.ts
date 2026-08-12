@@ -139,8 +139,6 @@ export interface BlueprintFastener {
 export type EquipmentBlueprintId =
   | "worktable1x1"
   | "worktable1x2"
-  | "worktable1x3"
-  | "worktable2x2"
   | "storageRack"
   | "toolDrawers"
   | "materialShelf"
@@ -1044,8 +1042,6 @@ function worktableBlueprint(
 export const WORKTABLE_BLUEPRINTS = {
   worktable1x1: worktableBlueprint("worktable1x1", 24, 24, 1, 3),
   worktable1x2: worktableBlueprint("worktable1x2", 48, 24, 1, 4),
-  worktable1x3: worktableBlueprint("worktable1x3", 72, 24, 1, 5),
-  worktable2x2: worktableBlueprint("worktable2x2", 48, 48, 2, 6),
 } as const;
 
 /** The storage rack: the worktable's shape in the cheap sheets — a deck
@@ -1546,8 +1542,6 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   sideTable: SIDE_TABLE_BLUEPRINT,
   worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
   worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
-  worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,
-  worktable2x2: WORKTABLE_BLUEPRINTS.worktable2x2,
   storageRack: STORAGE_RACK_BLUEPRINT,
   toolDrawers: TOOL_DRAWERS_BLUEPRINT,
   materialShelf: MATERIAL_SHELF_BLUEPRINT,

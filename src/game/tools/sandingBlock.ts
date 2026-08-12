@@ -7,13 +7,7 @@ export const sandingBlock: ToolType = {
   description: "A cork block and sandpaper. Sands a surface smooth by hand.",
   cost: 10,
   // A hand tool belongs on a bench, not clamped into a jointer's jig slot.
-  compatibleMachines: [
-    "workspace",
-    "worktable1x1",
-    "worktable1x2",
-    "worktable1x3",
-    "worktable2x2",
-  ],
+  compatibleMachines: ["workspace", "worktable1x1", "worktable1x2"],
   operations: makeSandingOperations("block", 40, {
     // A cork block is a narrow, patient brush
     brushWidthIn: 2.5,
