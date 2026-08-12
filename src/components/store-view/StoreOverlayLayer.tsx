@@ -56,7 +56,26 @@ const rectCenter = (rect: StoreRect): [number, number] => [
   (rect.min[1] + rect.max[1]) / 2,
 ];
 
-/** The world point a fixture's chip hangs from: off its shopped face. */
+/** The world point a fixture's tag sits at: nudged toward the shopped
+ * face, so the two rows of a double-sided island never stack their tags
+ * and a wall bay's tag hangs into its aisle rather than over the wall. */
+function tagPoint(rect: StoreRect, facing: number): [number, number] {
+  const [cx, cy] = rectCenter(rect);
+  const nudge = 0.4;
+  switch (facing) {
+    case 1:
+      return [cx, rect.min[1] - nudge];
+    case 3:
+      return [cx, rect.max[1] + nudge];
+    case 0:
+      return [rect.max[0] - nudge, cy];
+    default:
+      return [rect.min[0] + nudge, cy];
+  }
+}
+
+/** The world point a fixture's chip hangs from: off its shopped face,
+ * clear of the tag sitting between it and the shelf. */
 function chipPoint(
   rect: StoreRect,
   facing: number,
@@ -64,13 +83,13 @@ function chipPoint(
   const [cx, cy] = rectCenter(rect);
   switch (facing) {
     case 1:
-      return [cx, rect.min[1] - 0.15, "above"];
+      return [cx, rect.min[1] - 1.7, "above"];
     case 3:
-      return [cx, rect.max[1] + 0.15, "below"];
+      return [cx, rect.max[1] + 1.7, "below"];
     case 0:
-      return [rect.max[0] + 1.6, cy, "above"];
+      return [rect.max[0] + 1.9, cy, "above"];
     default:
-      return [rect.min[0] - 1.6, cy, "above"];
+      return [rect.min[0] - 1.9, cy, "above"];
   }
 }
 
@@ -82,7 +101,7 @@ const ShelfTag: React.FC<{
   onAdd: () => void;
 }> = ({ bay, scale, inReach, inCart, onAdd }) => {
   const { name, description, line } = bay.product;
-  const [cx, cy] = rectCenter(bay.rect);
+  const [cx, cy] = tagPoint(bay.rect, bay.facing);
   const toolId =
     line.kind === "material" && line.material.type === "tool"
       ? line.material.toolId

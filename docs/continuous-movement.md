@@ -38,13 +38,17 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 | Input | `src/components/world-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
 | Walking | `src/components/world-view/useWalkingBody.ts` | reads the keys, integrates, cell sync, teleport snap |
 | Shop's frame | `src/components/shop-view/PlayerMotionLayer.tsx` | the shop's `useTick`: its solids, its speed, the bench stance |
+| Store's frame | `src/components/store-view/StoreWalkLayer.tsx` | the store's `useTick`: planogram solids, ambient shoppers as moving solids, cell sync onto the trip |
 | Footsteps | `src/game/footsteps.ts` + `src/components/shop-view/FootstepSoundLayer.tsx` | a step every stride of floor covered |
 
 `world-view/` is the part of this that isn't about the shop. The body is
-a singleton and the venues are never on screen together, so a second
+a singleton and the venues are never on screen together (`HomePage`
+swaps the whole canvas between `ShopView` and `StoreView`), so a second
 walkable place drives the same body through the same hook, with its own
 solids and its own reasons to stop walking — the hook doesn't own the
-frame, each venue's layer does.
+frame, each venue's layer does. The store's cell bookkeeping lands on
+the trip (`ShoppingTrip.position`) rather than on `player.position`,
+which keeps meaning the cell underfoot back home.
 
 ## Collision
 

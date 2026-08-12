@@ -299,8 +299,9 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
               </div>
             </WorldOverlayBox>
             {/* The running total, floating with the rest of the HUD
-                chrome — the hover panel is where quantities change. */}
-            <div className="absolute left-1/2 top-20 z-40 -translate-x-1/2">
+                chrome in the corner the aisles never reach — the hover
+                panel is where quantities change. */}
+            <div className="absolute bottom-6 left-6 z-40">
               <div className="pointer-events-auto rounded-sm border border-store-orange-dark bg-white/95 px-3 py-1.5 shadow-md">
                 <StoreCartReadout
                   cart={cart}

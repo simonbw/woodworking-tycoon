@@ -116,6 +116,9 @@ export const STORE_REACH = 1.5;
 
 const MACHINE_BAY_WIDTH = 3;
 const SMALL_BAY_WIDTH = 2;
+/** Wall bays run taller than they are wide, so a run's tags — hung on
+ * the aisle side, stacked down the wall — keep clear of each other. */
+const WALL_BAY_HEIGHT = 2.75;
 const FIXTURE_DEPTH = 1.5;
 const RACK_LENGTH = 5;
 
@@ -256,7 +259,7 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
   const westRunHeight =
     channels.length * (RACK_LENGTH + 1) +
     (sheetKinds.length > 0 ? RACK_LENGTH + 1 : 0);
-  const suppliesRunHeight = supplies.length * SMALL_BAY_WIDTH;
+  const suppliesRunHeight = supplies.length * WALL_BAY_HEIGHT;
   const height = Math.ceil(
     westRunTop + Math.max(westRunHeight, suppliesRunHeight, 11) + 5,
   );
@@ -284,7 +287,8 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
   if (machines.length > 0) {
     signs.push({
       title: "Machines",
-      at: [machineRunLeft + (machines.length * MACHINE_BAY_WIDTH) / 2, 0.75],
+      // Over the back wall, clear of the run's own tags.
+      at: [machineRunLeft + (machines.length * MACHINE_BAY_WIDTH) / 2, -1.1],
     });
   }
 
@@ -359,16 +363,18 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
       product,
       rect: {
         min: [width - FIXTURE_DEPTH, eastY],
-        max: [width, eastY + SMALL_BAY_WIDTH],
+        max: [width, eastY + WALL_BAY_HEIGHT],
       },
       facing: 2,
     });
-    eastY += SMALL_BAY_WIDTH;
+    eastY += WALL_BAY_HEIGHT;
   }
   if (supplies.length > 0) {
     signs.push({
       title: "Supplies",
-      at: [width - FIXTURE_DEPTH / 2 - 1.2, westRunTop + suppliesRunHeight / 2],
+      // Over the run's head rather than beside it — the tags hang into
+      // the aisle there and would bury a sign at mid-run.
+      at: [width - FIXTURE_DEPTH - 0.6, westRunTop - 0.6],
     });
   }
 
