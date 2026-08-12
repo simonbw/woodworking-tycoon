@@ -113,7 +113,7 @@ export type ScavengingTrip = {
 /** Out at a store. No timer — browsing the aisles is what takes the time. */
 export type ShoppingTrip = {
   readonly kind: "shopping";
-  /** Which store the trip is to; each is its own overlay. */
+  /** Which store the trip is to. */
   readonly store: StoreId;
   /**
    * What's off the shelves and not paid for yet (see cart.ts). It hangs
@@ -122,6 +122,15 @@ export type ShoppingTrip = {
    * whether you checked out or abandoned it at the end of an aisle.
    */
   readonly cart: ReadonlyArray<CartLine>;
+  /**
+   * The cell the shopper stands in on the store's floor (store-layout.ts
+   * coordinates). It lives on the trip rather than on the player for the
+   * same reason the cart does: `player.position` keeps meaning "the cell
+   * underfoot in the shop", so every cell system back home is untouched,
+   * and a reload mid-trip finds you standing in the aisle.
+   */
+  readonly position: Vector;
+  readonly direction: Direction;
 };
 
 /**

@@ -9,7 +9,7 @@ const SAVE_KEY = "woodworking-tycoon-save";
  * schema shows as incompatible on the start menu, and starting a new game
  * writes over it.
  */
-const SAVE_VERSION = 16;
+const SAVE_VERSION = 17;
 
 export type SaveStatus = "none" | "ok" | "incompatible";
 
