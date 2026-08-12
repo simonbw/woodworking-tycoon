@@ -19,11 +19,11 @@ import {
   StoreId,
   unlockedLumberChannels,
 } from "../../game/lumberStock";
-import { BoardFaceSvg } from "../shopping/BoardFaceSvg";
+import { BoardFaceSvg } from "./BoardFaceSvg";
 import { CartIcon } from "../CartIcon";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { useCartCount } from "../shopping/useStoreTrip";
+import { useCartCount } from "./useStoreTrip";
 
 /**
  * Every rack in town shares one pixels-per-foot, so lengths compare at a
@@ -58,9 +58,19 @@ const CHAIN_BG = `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg
  * flavor line wait in the channel-name tooltip; the surrounding overlay
  * owns the section heading, so each store keeps its own signage.
  */
-export const BoardSelector: React.FC<{ store: StoreId }> = ({ store }) => {
+export const BoardSelector: React.FC<{
+  store: StoreId;
+  /**
+   * One channel's rack alone — what the walkable store's rack card
+   * shows, the rack you walked to being the category you chose. Omitted,
+   * every unlocked channel renders in one run (the website's wood wall).
+   */
+  channel?: LumberChannel;
+}> = ({ store, channel }) => {
   const gameState = useGameState();
-  const channels = unlockedLumberChannels(gameState.reputation, store);
+  const channels = channel
+    ? [channel]
+    : unlockedLumberChannels(gameState.reputation, store);
 
   return (
     // One unbroken run of racks, the way an aisle actually stands. A

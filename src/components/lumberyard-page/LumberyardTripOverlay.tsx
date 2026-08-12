@@ -1,5 +1,5 @@
 import React from "react";
-import { BoardSelector } from "../store-page/BoardSelector";
+import { BoardSelector } from "../shopping/BoardSelector";
 import { StoreCartReadout, StoreCheckoutButton } from "../shopping/StoreCart";
 import { useStoreTrip } from "../shopping/useStoreTrip";
 import { SawyerAndSonsLogo } from "./SawyerAndSonsLogo";

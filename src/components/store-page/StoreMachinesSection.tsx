@@ -5,7 +5,7 @@ import { addToCartAction } from "../../game/game-actions/cart-actions";
 import { MachineIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { AisleSection } from "./AisleSection";
-import { ProductTile } from "./ProductTile";
+import { ProductTile } from "../shopping/ProductTile";
 import { useCartCount } from "../shopping/useStoreTrip";
 
 export const StoreMachinesSection: React.FC<{ className?: string }> = ({

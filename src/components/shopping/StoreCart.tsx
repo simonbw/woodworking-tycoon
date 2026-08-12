@@ -311,8 +311,9 @@ export function cartLineName(line: CartLine): string {
   }
 }
 
-/** The same picture the shelf tag showed, shrunk to a receipt line. */
-const CartLineIcon: React.FC<{ line: CartLine }> = ({ line }) => {
+/** The picture a product goes by wherever a cart line stands for it —
+ * the receipt row here, and the walkable store's shelf tags. */
+export const CartLineIcon: React.FC<{ line: CartLine }> = ({ line }) => {
   switch (line.kind) {
     case "material": {
       const material = line.material;

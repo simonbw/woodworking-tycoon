@@ -2,7 +2,7 @@ import React from "react";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";
 import { useGameState } from "../useGameState";
-import { BoardSelector } from "./BoardSelector";
+import { BoardSelector } from "../shopping/BoardSelector";
 import { StoreCartReadout, StoreCheckoutButton } from "../shopping/StoreCart";
 import { useStoreTrip } from "../shopping/useStoreTrip";
 import { StoreMachinesSection } from "./StoreMachinesSection";

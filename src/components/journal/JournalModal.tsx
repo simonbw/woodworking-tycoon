@@ -14,7 +14,7 @@ import { hasSkill, levelForXp, xpProgress } from "../../game/skill-helpers";
 import { formatCount } from "../../utils/formatNumber";
 import { humanizeString } from "../../utils/humanizeString";
 import { Modal } from "../Modal";
-import { BuyButton } from "../store-page/BuyButton";
+import { BuyButton } from "../shopping/BuyButton";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useApplyGameAction, useGameState } from "../useGameState";
 

@@ -11,7 +11,7 @@ import { addToCartAction } from "../../game/game-actions/cart-actions";
 import { ClampIcon, ConsumableIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
-import { ProductTile } from "./ProductTile";
+import { ProductTile } from "../shopping/ProductTile";
 import { useCartCount } from "../shopping/useStoreTrip";
 
 export const StoreSuppliesSection: React.FC<{ className?: string }> = ({

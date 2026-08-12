@@ -3,6 +3,7 @@ import { BASE_WALK_SPEED } from "../src/game/player-motion";
 import { openStationSheet, takeAllHere } from "./machine-panel";
 import {
   advanceTicks,
+  leaveStore,
   movePlayerToCab,
   openTruckMenu,
   setPaused,
@@ -181,10 +182,11 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("E opens the door card, 1 heads out to the store", async () => {
-      const store = page.getByRole("dialog", { name: "Orange Box" });
+      // The storefront's sign is what says the trip landed at the store
+      const storefront = page.getByText("The Orange Box");
       // Away from the door the digit is a dead key — no trip starts
       await page.keyboard.press("1");
-      await expect(store).toHaveCount(0);
+      await expect(storefront).toHaveCount(0);
 
       // At the door, E spreads open the destination card; its rows claim
       // the number keys, and the store (first unlocked destination)
@@ -192,14 +194,14 @@ test.describe("Keyboard", () => {
       await movePlayerToCab(page);
       await openTruckMenu(page);
       await page.keyboard.press("1");
-      await expect(store).toBeVisible();
-      // Escape heads home
-      await page.keyboard.press("Escape");
-      await expect(store).toHaveCount(0);
+      await expect(storefront).toBeVisible();
+      // E at the truck's cab in the store's lot heads home
+      await leaveStore(page);
+      await expect(storefront).toHaveCount(0);
     });
 
     await test.step("the open card claims W, S, and E for its row cursor", async () => {
-      const store = page.getByRole("dialog", { name: "Orange Box" });
+      const storefront = page.getByText("The Orange Box");
       await movePlayerToCab(page);
       await openTruckMenu(page);
       const panel = page.getByTestId("truck-panel");
@@ -218,9 +220,9 @@ test.describe("Keyboard", () => {
 
       // E takes the highlighted row instead of folding the card
       await page.keyboard.press("e");
-      await expect(store).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(store).toHaveCount(0);
+      await expect(storefront).toBeVisible();
+      await leaveStore(page);
+      await expect(storefront).toHaveCount(0);
     });
 
     await test.step("? opens the shop manual and Escape closes it", async () => {

@@ -10,7 +10,7 @@ import { UPGRADE_TYPES, UpgradeId, UpgradeType } from "../../game/Upgrade";
 import { BroomIcon, ShopVacIcon, ToolIcon, UpgradeIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
-import { ProductTile } from "./ProductTile";
+import { ProductTile } from "../shopping/ProductTile";
 import { useCartCount } from "../shopping/useStoreTrip";
 
 export const StoreToolsSection: React.FC<{ className?: string }> = ({

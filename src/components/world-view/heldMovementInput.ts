@@ -34,23 +34,23 @@ const KEY_VECTORS: Record<string, Vector> = {
 const heldCodes = new Set<string>();
 
 /**
- * Whether held keys should actually drive the body. Mirrored from the
- * listener's prop during render, like `enabledRef` — the gate belongs here
- * rather than on recording, so that closing a modal resumes a key that was
- * already down.
+ * Whether held keys should actually drive the body, per mounted listener.
+ * Mirrored from each listener's props during render, like `enabledRef` —
+ * the gate belongs here rather than on recording, so that closing a modal
+ * resumes a key that was already down. A registry rather than one flag
+ * because two venues' listeners overlap for a commit when the canvas
+ * swaps (the shop's unmount cleanup runs after the store's mount render,
+ * and a single flag would be stomped by whichever wrote last).
  */
-let movementEnabled = false;
-
-/**
- * Whether an open panel has claimed the vertical keys for its row cursor
- * (see the panel-up/panel-down shortcuts). Horizontal movement keeps
- * working — sidestepping off the cell is still how such a card is left.
- */
-let verticalCaptured = false;
+const listeners = new Map<
+  symbol,
+  { enabled: boolean; captureVertical: boolean }
+>();
 
 /** The current input direction; diagonal when two keys are held. */
 export function readHeldMovement(): Vector {
-  if (!movementEnabled) {
+  const live = [...listeners.values()].filter((listener) => listener.enabled);
+  if (live.length === 0) {
     return [0, 0];
   }
   let x = 0;
@@ -60,6 +60,7 @@ export function readHeldMovement(): Vector {
     x += vec[0];
     y += vec[1];
   }
+  const verticalCaptured = live.some((listener) => listener.captureVertical);
   return [Math.sign(x), verticalCaptured ? 0 : Math.sign(y)];
 }
 
@@ -86,8 +87,15 @@ export const HeldMovementListener: React.FC<{
   // so a key pressed the same frame a modal opens can't slip through.
   const enabledRef = React.useRef(enabled);
   enabledRef.current = enabled;
-  movementEnabled = enabled;
-  verticalCaptured = captureVertical;
+  const keyRef = React.useRef<symbol | null>(null);
+  keyRef.current ??= Symbol("held-movement-listener");
+  listeners.set(keyRef.current, { enabled, captureVertical });
+  useEffect(() => {
+    const key = keyRef.current!;
+    return () => {
+      listeners.delete(key);
+    };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -115,9 +123,11 @@ export const HeldMovementListener: React.FC<{
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
-      heldCodes.clear();
-      movementEnabled = false;
-      verticalCaptured = false;
+      // Only the last listener out clears the keys — its sibling in a
+      // canvas swap is still live and mid-stride.
+      if (listeners.size === 0) {
+        heldCodes.clear();
+      }
     };
   }, []);
 

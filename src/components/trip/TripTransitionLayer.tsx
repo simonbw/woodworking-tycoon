@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { playSound, preloadSound } from "../../utils/sfx";
+import { websiteRequested } from "../../utils/urlFlags";
 import { LumberyardTripOverlay } from "../lumberyard-page/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "../scavenge-page/ScavengeTripOverlay";
 import { StoreTripOverlay } from "../store-page/StoreTripOverlay";
@@ -172,7 +173,10 @@ export const TripOverlays: React.FC = () => {
   const stage = useTruckStage();
   return (
     <div className={stage === "departing" ? "hidden" : undefined}>
-      <StoreTripOverlay />
+      {/* The Orange Box is a walkable place now (StoreView, swapped in
+          by HomePage); its overlay survives behind ?website as the
+          future Orange Box website — see issue #200. */}
+      {websiteRequested() && <StoreTripOverlay />}
       <LumberyardTripOverlay />
       <ScavengeTripOverlay />
       <SleepOverlay />
