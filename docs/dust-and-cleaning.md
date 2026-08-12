@@ -167,10 +167,11 @@ that chore arrives with the central collector (issue #113).
 No unlock latch for the system itself — dust simply starts appearing
 when power tools run, and the broom, dust bag, and shop vac sit on the
 store's shelves from the start. Once floor dust crosses
-`DUST_TUTORIAL_THRESHOLD`, a one-time note fires (`sweepingUnlocked`, a
-one-way latch in `ProgressionState`) explaining the penalty and the
-sweep loop — and pointing at the store's broom if the shop doesn't own
-one yet.
+`DUST_TUTORIAL_THRESHOLD` (`sweepingUnlocked`, a one-way latch in
+`ProgressionState`), the sweeping tutorial track begins: a second to-do
+card under the guided opening's (see `src/game/tutorial.ts`) that walks
+the loop — buy the broom, sweep the pan full, empty it at the can —
+with the coach outline on whichever of those the player hasn't done.
 
 ## Considered and deliberately cut
 

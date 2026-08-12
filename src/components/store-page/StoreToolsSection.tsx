@@ -60,6 +60,7 @@ const BroomProductTile: React.FC = () => {
       info="A push broom with a dustpan. Sweeps sawdust off the floor; empty the pan at the garbage can."
       inCart={inCart}
       onAdd={() => applyAction(addToCartAction(line))}
+      tutorialTarget="store-tool-broom"
     />
   );
 };

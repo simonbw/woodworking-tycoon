@@ -146,14 +146,20 @@ const personSchema = z.object({
   away: awayTripSchema.nullable(),
 });
 
+const tutorialTrackProgressSchema = z.object({
+  step: z.number(),
+  dismissed: z.boolean(),
+});
+
 const progressionSchema = z.object({
-  tutorialStep: z.number(),
-  tutorialDismissed: z.boolean(),
+  tutorials: z.object({
+    opening: tutorialTrackProgressSchema,
+    dust: tutorialTrackProgressSchema,
+  }),
   storeUnlocked: z.boolean(),
   lumberyardUnlocked: z.boolean(),
   salesCompleted: z.number(),
   sweepingUnlocked: z.boolean(),
-  dustTipDismissed: z.boolean(),
   unlockedArticles: z.array(z.string()),
   readArticles: z.array(z.string()),
   xp: z.number(),

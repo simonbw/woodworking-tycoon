@@ -454,7 +454,7 @@ export const ShopView: React.FC = () => {
                   {/* Cords run along the slab from the electric machines to
                   the wall outlets, under everything that sits on it */}
                   <PowerCordLayer />
-                  <BroomSprite />
+                  <BroomSprite tutorialHighlight={coach.broom} />
 
                   {gameState.machineCrates.map((crate, index) => (
                     <MachineCrateSprite

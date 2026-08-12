@@ -38,10 +38,10 @@ const palletBoardOfLength = (length: number) => (m: MaterialInstance) =>
 const isMiteredTwelve = (m: MaterialInstance) =>
   palletBoardOfLength(12)(m) && hasOneMiteredEnd(m as Board, 45);
 
-/** What the card is telling the player to do right now. */
+/** What the opening's card is telling the player to do right now. */
 function step(shop: ShopDriver): TutorialStepId | undefined {
   shop.apply(checkProgressionMilestonesAction());
-  return currentTutorialStep(shop.shop)?.id;
+  return currentTutorialStep(shop.shop, "opening")?.id;
 }
 
 function dismantleAPallet(shop: ShopDriver): ShopDriver {
@@ -104,9 +104,9 @@ function assembleBirdhouse(shop: ShopDriver): ShopDriver {
     .collect(WORKBENCH);
 }
 
-/** The checkbox states of the current goal, keyed by step id. */
+/** The checkbox states of the opening's current goal, keyed by step id. */
 function checkedBoxes(shop: ShopDriver): Record<string, boolean> {
-  const view = currentTutorialGoalView(shop.shop);
+  const view = currentTutorialGoalView(shop.shop, "opening");
   assert.ok(view, "the card is up");
   return Object.fromEntries(
     view.goal.steps.map((s, i) => [s.id, view.checked[i]]),

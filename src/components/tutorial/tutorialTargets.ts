@@ -1,21 +1,25 @@
 import { GameState } from "../../game/GameState";
 import { MachineId } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
-import { currentTutorialStep, TutorialDomTargetId } from "../../game/tutorial";
+import { activeTutorialSteps, TutorialDomTargetId } from "../../game/tutorial";
 import { TruckHighlight } from "../shop-view/TruckSprite";
 
 /**
- * The current tutorial step's targets, sorted into the shapes the things
- * that draw them actually take: a set of machine types, a truck part, a
- * pile predicate, and the chrome ids TutorialSpotlightLayer measures.
+ * Every up tutorial card's current-step targets, merged and sorted into
+ * the shapes the things that draw them actually take: a set of machine
+ * types, a truck part, a pile predicate, and the chrome ids
+ * TutorialSpotlightLayer measures. Two cards can point at once — the
+ * opening at the bench, the sweeping lesson at the can — and the world
+ * simply wears both outlines.
  *
- * Everything is empty once the tutorial is finished or skipped, so callers
- * can wire this in unconditionally and pay nothing afterward.
+ * Everything is empty once the tutorials are finished or skipped, so
+ * callers can wire this in unconditionally and pay nothing afterward.
  */
 export interface TutorialWorldTargets {
   readonly machineTypeIds: ReadonlySet<MachineId>;
   readonly truck: TruckHighlight;
   readonly stand: boolean;
+  readonly broom: boolean;
   readonly matchesPile: ((material: MaterialInstance) => boolean) | null;
   readonly domIds: ReadonlyArray<TutorialDomTargetId>;
 }
@@ -24,38 +28,50 @@ const NOTHING: TutorialWorldTargets = {
   machineTypeIds: new Set(),
   truck: null,
   stand: false,
+  broom: false,
   matchesPile: null,
   domIds: [],
 };
 
 export function tutorialTargets(gameState: GameState): TutorialWorldTargets {
-  const step = currentTutorialStep(gameState);
-  if (step === null) return NOTHING;
+  const steps = activeTutorialSteps(gameState);
+  if (steps.length === 0) return NOTHING;
 
   const machineTypeIds = new Set<MachineId>();
   const domIds: TutorialDomTargetId[] = [];
   let truck: TruckHighlight = null;
   let stand = false;
-  let matchesPile: ((material: MaterialInstance) => boolean) | null = null;
+  let broom = false;
+  const pileMatchers: Array<(material: MaterialInstance) => boolean> = [];
 
-  for (const target of step.targets) {
-    switch (target.kind) {
-      case "machine":
-        machineTypeIds.add(target.machineTypeId);
-        break;
-      case "truck":
-        truck = target.part === "cab" ? "truck" : "bed";
-        break;
-      case "stand":
-        stand = true;
-        break;
-      case "pile":
-        matchesPile = target.match;
-        break;
-      case "dom":
-        domIds.push(target.id);
-        break;
+  for (const step of steps) {
+    for (const target of step.targets) {
+      switch (target.kind) {
+        case "machine":
+          machineTypeIds.add(target.machineTypeId);
+          break;
+        case "truck":
+          truck = truck ?? (target.part === "cab" ? "truck" : "bed");
+          break;
+        case "stand":
+          stand = true;
+          break;
+        case "broom":
+          broom = true;
+          break;
+        case "pile":
+          pileMatchers.push(target.match);
+          break;
+        case "dom":
+          domIds.push(target.id);
+          break;
+      }
     }
   }
-  return { machineTypeIds, truck, stand, matchesPile, domIds };
+  const matchesPile =
+    pileMatchers.length === 0
+      ? null
+      : (material: MaterialInstance) =>
+          pileMatchers.some((matches) => matches(material));
+  return { machineTypeIds, truck, stand, broom, matchesPile, domIds };
 }
