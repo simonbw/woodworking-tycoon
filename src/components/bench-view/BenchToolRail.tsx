@@ -1,6 +1,7 @@
 import React from "react";
-import { Machine } from "../../game/Machine";
+import { Machine, machineKey } from "../../game/Machine";
 import {
+  gatherBenchToolAction,
   mountToolAction,
   unmountToolAction,
 } from "../../game/game-actions/tool-actions";
@@ -35,9 +36,19 @@ const BENCH_TOOL_SHORTCUTS: readonly ShortcutId[] = [
  * appears ghosted on a hook, and clicking it hangs it up — mounting adds
  * its operations to the bench's plans. DOM buttons over the canvas so
  * they keep focus states, titles, and testability for free.
+ *
+ * Tables pushed together are one bench (bench-work/bench-group.ts), so
+ * the rail shows the whole run's tools: the neighbours' hang past a
+ * divider, and clicking one slides it onto this table's rack
+ * (gatherBenchToolAction) and takes it in hand — the same move-then-work
+ * the pieces make. A full rack refuses the slide, saying so in the
+ * hook's title.
  */
 export const BenchToolRail: React.FC<{
   machine: Machine;
+  /** The other tables in this bench's run, whose tools share the rail;
+   * empty for a bench standing on its own. */
+  runNeighbours: ReadonlyArray<Machine>;
   heldTool: ToolId | null;
   /** Taking a tool in hand stands down while a plan-driven script owns
    * the surface; hanging tools on and off the rail only locks while the
@@ -49,7 +60,14 @@ export const BenchToolRail: React.FC<{
    * gate here. */
   keysEnabled: boolean;
   onToggle: (toolId: ToolId) => void;
-}> = ({ machine, heldTool, interactive, keysEnabled, onToggle }) => {
+}> = ({
+  machine,
+  runNeighbours,
+  heldTool,
+  interactive,
+  keysEnabled,
+  onToggle,
+}) => {
   const applyAction = useApplyGameAction();
   const gameState = useGameState();
 
@@ -67,6 +85,19 @@ export const BenchToolRail: React.FC<{
       const compatible = TOOL_TYPES[tool.toolId].compatibleMachines;
       return !compatible || compatible.includes(machine.state.machineTypeId);
     });
+
+  // The rest of the run's tools, hung past the divider. Clicking one
+  // slides it onto this table's rack and takes it in hand — but the
+  // rack needs a hook free for it, so a full rail refuses the take.
+  const neighbourTools = runNeighbours.flatMap((neighbour) =>
+    neighbour.state.tools
+      .filter((toolId) => {
+        const compatible = TOOL_TYPES[toolId].compatibleMachines;
+        return !compatible || compatible.includes(machine.state.machineTypeId);
+      })
+      .map((toolId) => ({ toolId, from: neighbour })),
+  );
+  const railFull = freeSlots <= 0;
 
   // The digits answer to the hooks in rail order: digit N does what
   // clicking the Nth hook does, whether that's a mounted tool or a
@@ -206,6 +237,47 @@ export const BenchToolRail: React.FC<{
             </span>
           );
         })}
+        {/* The neighbours' tools, past a divider: one rail for the whole
+          run. Clicking slides the tool onto this table's rack and takes
+          it in hand */}
+        {neighbourTools.length > 0 && (
+          <span className="ml-1 flex items-center gap-2 border-l border-paper-manila/20 pl-3">
+            {neighbourTools.map(({ toolId, from }, index) => {
+              const refused = working || railFull;
+              return (
+                <button
+                  key={`${machineKey(from.state)}-${toolId}-${index}`}
+                  type="button"
+                  data-testid={`bench-run-tool-${toolId}`}
+                  aria-label={`Bring the ${TOOL_TYPES[toolId].name} to this bench`}
+                  title={
+                    railFull
+                      ? "The rail is full — take a tool off first"
+                      : `On the next table over — click to bring it here`
+                  }
+                  disabled={!interactive || refused}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    applyAction(gatherBenchToolAction(machine, toolId));
+                    if (heldTool !== toolId) onToggle(toolId);
+                  }}
+                  className={`rounded p-1 opacity-60 transition-transform ${
+                    !interactive || refused
+                      ? "cursor-default opacity-40"
+                      : "cursor-pointer hover:-translate-y-0.5 hover:opacity-100 hover:drop-shadow-[0_3px_4px_rgba(0,0,0,0.5)]"
+                  }`}
+                >
+                  <img
+                    src={toolIconSrc(toolId)}
+                    alt=""
+                    draggable={false}
+                    className="size-11 select-none [image-rendering:pixelated] drop-shadow-[0_2px_2px_rgba(0,0,0,0.45)]"
+                  />
+                </button>
+              );
+            })}
+          </span>
+        )}
         {/* With a tool in hand the rail says how to let go of it — the hook
           it came off is right there, but the button and the key are
           quicker and neither is guessable */}

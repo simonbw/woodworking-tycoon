@@ -1151,5 +1151,83 @@ test.describe("Bench view", () => {
       expect(built.parts).toBe(5);
       expect(built.screws).toBe(4);
     });
+
+    await test.step("two tables pushed together share one tool rail", async () => {
+      // Close the workspace's bench view, then restage the floor as a
+      // run: the full-size table (player at its operation cell) with a
+      // sanding block, the small table pushed against it with the
+      // hammer. The rail shows the run's tools — the neighbour's hangs
+      // past the divider, and clicking it slides it onto this table's
+      // rack and takes it in hand.
+      // Escape backs out one layer at a time (a held tool first), and on
+      // the bare floor it opens the pause menu — so press until the
+      // stage is gone, then resume if the last press overshot
+      for (
+        let presses = 0;
+        (await page.getByTestId("bench-stage").count()) > 0 && presses < 4;
+        presses++
+      ) {
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(600);
+      }
+      await expect(page.getByTestId("bench-stage")).toHaveCount(0);
+      const resume = page.getByRole("button", { name: "Resume" });
+      if (await resume.count()) {
+        await resume.click();
+      }
+      await page.evaluate(() => {
+        const table = (
+          machineTypeId: string,
+          position: [number, number],
+          tools: string[],
+        ) => ({
+          machineTypeId,
+          position,
+          rotation: 0,
+          inputMaterials: [],
+          processingMaterials: [],
+          outputMaterials: [],
+          tools,
+          selectedOperationId: "",
+          operationProgress: {
+            status: "notStarted",
+            phaseIndex: 0,
+            ticksRemaining: 0,
+          },
+        });
+        window.__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          machines: [
+            table("worktable1x2", [1, 1], ["sandingBlock"]),
+            table("worktable1x1", [5, 1], ["hammer"]),
+          ],
+          player: {
+            ...state.player,
+            position: [2, 3],
+            direction: 0,
+            inventory: [],
+          },
+        }));
+      });
+      await page.waitForTimeout(400);
+      await blur();
+      await page.keyboard.press("Tab");
+      // The working table's own tool hangs on its hook; the neighbour's
+      // hammer shows past the divider
+      await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
+      await expect(page.getByTestId("bench-run-tool-hammer")).toBeVisible();
+
+      await page.getByTestId("bench-run-tool-hammer").click();
+      // The slide is real state: the hammer now hangs on this table's
+      // rack and the neighbour's is bare
+      await expect(page.getByTestId("bench-tool-hammer")).toBeVisible();
+      await expect(page.getByTestId("bench-run-tool-hammer")).toHaveCount(0);
+      const racks = await page.evaluate(() => {
+        const state = window.__GET_GAME_STATE__();
+        return state.machines.map((m: any) => m.tools);
+      });
+      expect(racks[0]).toEqual(["sandingBlock", "hammer"]);
+      expect(racks[1]).toEqual([]);
+    });
   });
 });

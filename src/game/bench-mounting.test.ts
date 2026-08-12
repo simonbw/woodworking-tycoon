@@ -49,14 +49,31 @@ function shopWith(machines: ReadonlyArray<MachineState>): {
 }
 
 describe("benchtop mounting", () => {
-  // A 6'×2' table at the origin; the miter saw's 3×2 footprint fits
-  // entirely on its top when anchored at [1,1] (see worktables.test.ts).
-  const table = machineAt("worktable1x3", [0, 0]);
+  // A 6'×2' run of two tables pushed together: the full-size table's top
+  // spans x 0..3, the small one continues it over x 4..5. The miter
+  // saw's 3×2 footprint fits entirely on the run when anchored at [1,1]
+  // (see worktables.test.ts).
+  const run = [
+    machineAt("worktable1x2", [0, 0]),
+    machineAt("worktable1x1", [4, 0]),
+  ];
 
   it("counts a benchtop machine wholly on a table as mounted", () => {
     const { gameState, machine } = shopWith([
-      table,
+      ...run,
       machineAt("miterSaw", [1, 1]),
+    ]);
+    assert.ok(isMountedOnWorktable(machine("miterSaw"), gameState));
+    assert.ok(!isBenchtopOnFloor(machine("miterSaw"), gameState));
+  });
+
+  it("counts a machine straddling the seam between two tables as mounted", () => {
+    // Anchored at [4,1], the saw's footprint covers x 3..5 — one column
+    // on the full-size table, two on the small one. Mounting is per
+    // cell, so a run of tables carries a machine the same as one table.
+    const { gameState, machine } = shopWith([
+      ...run,
+      machineAt("miterSaw", [4, 1]),
     ]);
     assert.ok(isMountedOnWorktable(machine("miterSaw"), gameState));
     assert.ok(!isBenchtopOnFloor(machine("miterSaw"), gameState));
@@ -69,10 +86,10 @@ describe("benchtop mounting", () => {
   });
 
   it("does not count a machine half off the table as mounted", () => {
-    // Anchored at [5,1], the saw's footprint runs past the table's right
+    // Anchored at [5,1], the saw's footprint runs past the run's right
     // edge — one foot on the top, one on the ground.
     const { gameState, machine } = shopWith([
-      table,
+      ...run,
       machineAt("miterSaw", [5, 1]),
     ]);
     assert.ok(!isMountedOnWorktable(machine("miterSaw"), gameState));
@@ -93,7 +110,7 @@ describe("benchtop mounting", () => {
 });
 
 describe("the floor penalty", () => {
-  const table = machineAt("worktable1x3", [0, 0]);
+  const table = machineAt("worktable1x2", [0, 0]);
 
   it("halves work speed for a benchtop machine on the floor", () => {
     const onFloor = shopWith([machineAt("miterSaw", [6, 6])]);
@@ -121,7 +138,7 @@ describe("the floor penalty", () => {
     // the saw cut faster.
     const bare = shopWith([table, machineAt("miterSaw", [1, 1])]);
     const upgraded = shopWith([
-      machineAt("worktable1x3", [0, 0], { upgrades: ["vise"] }),
+      machineAt("worktable1x2", [0, 0], { upgrades: ["vise"] }),
       machineAt("miterSaw", [1, 1]),
     ]);
     assert.strictEqual(

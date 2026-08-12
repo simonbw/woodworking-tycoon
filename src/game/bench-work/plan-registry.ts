@@ -113,14 +113,6 @@ const PLAN_FACTS: Partial<
     category: "shopFurniture",
     note: "The standard bench. Most of the shop happens here.",
   },
-  worktable1x3: {
-    category: "shopFurniture",
-    note: "Room to lay a long board down at last.",
-  },
-  worktable2x2: {
-    category: "shopFurniture",
-    note: "Big enough to lose a tape measure on.",
-  },
   storageRack: {
     category: "shopFurniture",
     note: "OSB is fine here. Save the good sheets for jigs.",

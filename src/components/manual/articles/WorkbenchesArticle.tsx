@@ -8,8 +8,10 @@ export const WorkbenchesArticle: React.FC = () => (
       Hand work happens at a workbench. Press{" "}
       <ShortcutKeys shortcut="open-station-sheet" /> at one to lean over its
       top; tools hang on the rail above it, and the work lies where you put it.
-      The makeshift workbench has two tool slots. Built worktables have three to
-      six, depending on size.
+      The makeshift workbench has two tool slots. Built worktables have three or
+      four, depending on size. Worktables pushed edge to edge work as one bench:
+      their tops make one surface, and every tool on the run hangs on the same
+      rail.
     </P>
 
     <H>Plans</H>

@@ -25,7 +25,7 @@ import {
 import { finishAttendedWorkAction } from "../game-actions/operation-actions";
 import { getOperationPhases } from "../skill-helpers";
 import { workspace } from "./workspace";
-import { worktable1x1, worktable1x3 } from "./worktables";
+import { worktable1x1, worktable1x2 } from "./worktables";
 
 function machineAt(
   machineTypeId: MachineState["machineTypeId"],
@@ -71,14 +71,9 @@ describe("worktable build recipes", () => {
     (op) => op.id === "build-worktable1x1",
   ) as Operation;
 
-  it("every bench station carries all four build recipes", () => {
+  it("every bench station carries both build recipes", () => {
     for (const stationType of [workspace, worktable1x1]) {
-      for (const table of [
-        "worktable1x1",
-        "worktable1x2",
-        "worktable1x3",
-        "worktable2x2",
-      ]) {
+      for (const table of ["worktable1x1", "worktable1x2"]) {
         assert.ok(
           stationType.operations.some((op) => op.id === `build-${table}`),
           `${stationType.id} should offer build-${table}`,
@@ -160,7 +155,7 @@ describe("worktable stats", () => {
 });
 
 describe("benchtop mounting placement rules", () => {
-  const table = machineAt("worktable1x3", [0, 0]);
+  const table = machineAt("worktable1x2", [0, 0]);
 
   function cellMapWith(machines: ReadonlyArray<MachineState>): CellMap {
     return CellMap.fromGameState(stateWith({ machines }));
@@ -230,13 +225,13 @@ describe("benchtop mounting placement rules", () => {
     ]) {
       const cell = cellMapWith(machines).at([1, 1])!;
       assert.strictEqual(cell.machine?.type.id, "miterSaw");
-      assert.strictEqual(cell.tableMachine?.type.id, "worktable1x3");
+      assert.strictEqual(cell.tableMachine?.type.id, "worktable1x2");
     }
   });
 });
 
 describe("moving and removing tables", () => {
-  const table = machineAt("worktable1x3", [0, 0]);
+  const table = machineAt("worktable1x2", [0, 0]);
   const saw = machineAt("miterSaw", [1, 1]);
 
   it("reports machines mounted on a table", () => {

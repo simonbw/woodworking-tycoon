@@ -56,7 +56,6 @@ export const MACHINE_ICON_SRC: Partial<Record<MachineId, string>> = {
   // table stands on its own, shadow and all.
   worktable1x1: "/images/workbench-2x2-complete.png",
   worktable1x2: "/images/workbench-2x4-complete.png",
-  worktable2x2: "/images/workbench-4x4-complete.png",
 };
 
 /**

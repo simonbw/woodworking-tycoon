@@ -89,9 +89,7 @@ wiring: same path, same size, same component.
 
 ### Machines
 
-- [~] Worktable — three of four drawn (`workbench-2x2`, `-2x4`, `-4x4`;
-  the 6-ft `worktable1x3` still falls back to the procedural sprite,
-  which is what the fallback is for). Registered in
+- [x] Worktable — both sizes drawn (`workbench-2x2`, `-2x4`). Registered in
   `machine-sprites/worktable-art.ts`. Each table ships three layers off
   one drawing, plus an `@4x` close-up of each at 32 px/inch: - `-top` — the laminated top, filling the footprint edge to edge. - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
   Drawn in a pass of its own _under every table's top_
@@ -101,9 +99,8 @@ wiring: same path, same size, same component.
   draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
-      filling the artboard**: 192×192, 384×192, 384×384, and 576×192 for
-      the 6-ft table (8 px/inch; ×4 for the close-ups). All three drawn
-      tops now measure exactly that. It matters because a half-transparent
+      filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
+      close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
       edge sitting over the black shadow beneath reads as a hairline down
       every seam where two tables butt — which is the one place this art
       has to be precise, and the only place. (`-2x4-top` still carries a

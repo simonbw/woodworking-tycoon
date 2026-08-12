@@ -440,8 +440,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   // holds just the rustic shelf.
   ...worktableBuildOperation("worktable1x1", "Build Small Worktable", 35),
   ...worktableBuildOperation("worktable1x2", "Build Worktable", 45),
-  ...worktableBuildOperation("worktable1x3", "Build Long Worktable", 55),
-  ...worktableBuildOperation("worktable2x2", "Build Big Worktable", 65),
   {
     name: "Build Storage Rack",
     id: "buildStorageRack",
@@ -507,8 +505,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
  * stretchers nailed across its underside.
  */
 function worktableBuildOperation(
-  worktableId:
-    "worktable1x1" | "worktable1x2" | "worktable1x3" | "worktable2x2",
+  worktableId: "worktable1x1" | "worktable1x2",
   name: string,
   duration: number,
 ): [Operation] {

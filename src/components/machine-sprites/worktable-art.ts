@@ -27,7 +27,7 @@ import { MachineId } from "../../game/Machine";
  *
  * A table with no entry here falls back to the procedural sprite, which
  * is what the shop floor drew for every table until now — so art can land
- * one table at a time. `worktable1x3` (the 6-ft run) has none yet.
+ * one table at a time. Both tables have art today.
  *
  * These are deliberately NOT in `scripts/trim-images.ts`, and they don't
  * need to be. The tops have no margin to trim at all — they're opaque
@@ -43,7 +43,6 @@ import { MachineId } from "../../game/Machine";
 const WORKTABLE_ART: Partial<Record<MachineId, string>> = {
   worktable1x1: "workbench-2x2",
   worktable1x2: "workbench-2x4",
-  worktable2x2: "workbench-4x4",
 };
 
 export type WorktableLayer = "top" | "shadow" | "complete";
