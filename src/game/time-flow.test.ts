@@ -63,7 +63,13 @@ describe("timeSpeed", () => {
     assert.equal(
       timeSpeed(
         withPlayer({
-          away: { kind: "shopping", store: "orangeBox", cart: [] },
+          away: {
+            kind: "shopping",
+            store: "orangeBox",
+            cart: [],
+            position: [0, 0],
+            direction: 1,
+          },
         }),
       ),
       "idle",

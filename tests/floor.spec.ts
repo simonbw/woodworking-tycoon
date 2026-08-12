@@ -6,6 +6,7 @@ import {
   goToStore,
   movePlayerToCab,
   openTruckMenu,
+  pickUpFromShelf,
   pressTruckRow,
   startNewGame,
 } from "./navigation";
@@ -336,11 +337,7 @@ test.describe("Shop floor", () => {
       await goToStore(page);
       // force: the store keeps ticking now (a trip costs time), so the
       // stability check can starve on slow machines
-      await page
-        .locator("li", { hasText: "Jobsite Table Saw" })
-        .getByRole("button", { name: "Add Jobsite Table Saw to cart" })
-        .click({ force: true });
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Jobsite Table Saw", { force: true });
       // A shelf tag is not a receipt: the saw is in the cart and the bed
       // is still empty until the register
       const shopping = await page.evaluate(() => window.__GET_GAME_STATE__());

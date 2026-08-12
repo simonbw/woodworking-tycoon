@@ -5,7 +5,7 @@ import { Person } from "../../game/Person";
 import { useTexture } from "../../utils/useTexture";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
 import { HeldBroomSprite } from "./HeldBroomSprite";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 import { cellToPixel, inchesToPixels } from "./shop-scale";
 
 const personSize = inchesToPixels(32);

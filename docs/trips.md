@@ -20,22 +20,44 @@ into place; there is no separate layout editor.
 ## The cab menu
 
 Standing at the cab lists numbered rows of places to go: shopping
-trips (`AwayTrip`s of kind `shopping`) to the Orange Box store
-(`StoreTripOverlay`) or the Sawyer & Sons lumberyard
-(`LumberyardTripOverlay`, reputation-gated), and pallet scavenging
-(`ScavengeTripOverlay`): a stop-by-stop circuit steered from the cab —
-each search costs game time and reveals a stop's result, then the
-player keeps searching or heads home, daylight permitting.
+trips (`AwayTrip`s of kind `shopping`) to the Orange Box store or the
+Sawyer & Sons lumberyard (`LumberyardTripOverlay`, reputation-gated),
+and pallet scavenging (`ScavengeTripOverlay`): a stop-by-stop circuit
+steered from the cab — each search costs game time and reveals a
+stop's result, then the player keeps searching or heads home, daylight
+permitting.
+
+## The Orange Box is a place you walk
+
+A trip to the store swaps the canvas from the shop to the store
+(`HomePage` → `components/store-view/StoreView`): the same walking
+body, camera, and canvas machinery drawing a different venue. The
+floor plan is a planogram generated from the registries
+(`src/game/store-layout.ts`), the trip itself carries the shopper's
+cell (`ShoppingTrip.position` — `player.position` keeps meaning the
+cell underfoot back home), and the keys mirror the shop floor's
+(`src/game/store-interact.ts`): F puts one in the cart, E puts one
+back, a rack opens its size-picker card, the register rings the cart
+up, and E at the cab is the way home. How long a trip takes is how
+long you browse — the clock idles along under it (`time-flow.ts`).
+
+The lumberyard is still a menu overlay; it becomes the second walkable
+venue by running the same planogram generator with its own channels.
+The store's old menu overlay survives behind the `?website` URL flag
+as the future Orange Box website (issue #200) and is otherwise
+unreachable.
 
 ## A shopping trip ends at a register
 
 Shelves fill a cart rather than transacting a tile at a time: the cart
 hangs off the `shopping` trip itself (`ShoppingTrip.cart`), so driving
-away is what empties it, and the one press that pays for it also drives
-home. The line shapes are in `src/game/cart.ts` and the fold through
-the ordinary buy actions is in
+away is what empties it. The line shapes are in `src/game/cart.ts` and
+the fold through the ordinary buy actions is in
 `src/game/game-actions/cart-actions.ts` — those buy actions still own
-where a purchase lands, and the cart only decides when.
+where a purchase lands, and the cart only decides when. At the
+walkable store paying and leaving are two places (the counter, then
+the cab, which asks before abandoning a full cart); the lumberyard's
+overlay still pays and drives home in one press.
 
 ## Departure and arrival staging
 

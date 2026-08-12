@@ -1,9 +1,11 @@
 import { GameAction, GameState } from "../GameState";
 import { atTruckCab, truckCabSideCell } from "../lot";
 import { StoreId } from "../lumberStock";
+import { storeLayout } from "../store-layout";
 import { NIGHT_TICKS } from "../time";
 import { isNight } from "../time-flow";
 import { tickAction } from "./tickAction";
+import { Direction, Vector } from "../Vectors";
 
 /**
  * Leaving the shop happens at the truck's cab: walk out to the driveway,
@@ -67,16 +69,48 @@ export function goToStoreAction(
       console.warn("Shop's closed for the night — nowhere to go but home");
       return gameState;
     }
+    // The trip arrives beside the truck's cab in the store's lot, the
+    // mirror of stepping out beside it back home.
+    const spawn = storeLayout(store, gameState).spawn;
     return driveTicks(
       {
         ...gameState,
         player: {
           ...gameState.player,
-          away: { kind: "shopping", store, cart: [] },
+          away: {
+            kind: "shopping",
+            store,
+            cart: [],
+            position: spawn.cell,
+            direction: spawn.direction,
+          },
         },
       },
       rng,
     );
+  };
+}
+
+/**
+ * Bookkeeping for the store floor's walk: the shopper's cell and facing,
+ * written by the store view the way setPlayerPositionAction is written by
+ * the shop's (see useWalkingBody). No-op off a shopping trip.
+ */
+export function setShoppingPositionAction(
+  position: Vector,
+  direction: Direction,
+): GameAction {
+  return (gameState) => {
+    if (gameState.player.away?.kind !== "shopping") {
+      return gameState;
+    }
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        away: { ...gameState.player.away, position, direction },
+      },
+    };
   };
 }
 

@@ -1,7 +1,7 @@
 import React from "react";
-import { BoardSelector } from "../store-page/BoardSelector";
-import { StoreCartReadout, StoreCheckoutButton } from "../store-page/StoreCart";
-import { useStoreTrip } from "../store-page/useStoreTrip";
+import { BoardSelector } from "../shopping/BoardSelector";
+import { StoreCartReadout, StoreCheckoutButton } from "../shopping/StoreCart";
+import { useStoreTrip } from "../shopping/useStoreTrip";
 import { SawyerAndSonsLogo } from "./SawyerAndSonsLogo";
 import { TripHeader } from "../trip/TripHeader";
 import { TripOverlay } from "../trip/TripOverlay";

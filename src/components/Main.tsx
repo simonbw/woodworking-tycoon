@@ -45,8 +45,11 @@ export const Main: React.FC = () => {
             <PauseProvider>
               <ManualProvider>
                 <BrowserDefaultsGuard />
-                <HomePage />
+                {/* HomePage rides inside the transition layer so the
+                    walkable store's Head Home can fade through the same
+                    dip to black the overlay trips use. */}
                 <TripTransitionLayer>
+                  <HomePage />
                   <TripOverlays />
                 </TripTransitionLayer>
                 <RewardFlightLayer />

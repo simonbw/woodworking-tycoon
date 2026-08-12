@@ -76,10 +76,11 @@ export const WelcomeArticle: React.FC = () => (
     </UL>
     <P>
       Your first sale unlocks the hardware store, a trip from the truck's cab.
-      Taking something off a shelf there puts it in your cart; nothing is paid
-      for until you check out, and checking out is the same press that drives
-      you home. What you bought rides home in the bed — unload it at the
-      tailgate with <ShortcutKeys shortcut="pick-up" />.
+      Walk the aisles and take things off the shelves with{" "}
+      <ShortcutKeys shortcut="put-down" /> — they go in your cart, and nothing
+      is paid for until the register rings the cart up. Pay at the counter, then
+      head home from the truck out front. What you bought rides home in the bed
+      — unload it at the tailgate with <ShortcutKeys shortcut="pick-up" />.
     </P>
 
     <Note>

@@ -15,15 +15,15 @@ sweeping, vac dumping, crate pickup, the inspector panels) is untouched.
 
 - **The body** is a mutable singleton (`playerMotionStore.ts`): a float
   position in cell units, a heading in radians, and a `moving` flag. It is
-  written by `PlayerMotionLayer` every render frame and read imperatively
+  written by `useWalkingBody` every render frame and read imperatively
   by sprites inside `useTick` — walking causes **zero React re-renders**.
 - **The cell** is derived: when the body crosses into a new cell (or the
-  facing changes), `PlayerMotionLayer` dispatches
-  `setPlayerPositionAction(cell, direction)` — a cheap bookkeeping action,
-  a few times per second at most.
+  facing changes), `useWalkingBody` reports it and the venue's layer
+  dispatches `setPlayerPositionAction(cell, direction)` — a cheap
+  bookkeeping action, a few times per second at most.
 
 Reconciliation runs the other way when the *simulation* moves the player:
-`PlayerMotionLayer` remembers the last cell it wrote, and any
+`useWalkingBody` remembers the last cell it wrote, and any
 `player.position` that doesn't match came from outside (a loaded save, an
 E2E fixture, `__UPDATE_GAME_STATE__` teleports in tests). The body then
 snaps to that cell's center. This is what keeps the Playwright specs'
@@ -34,10 +34,21 @@ snaps to that cell's center. This is what keeps the Playwright specs'
 | Piece | File | Role |
 | --- | --- | --- |
 | Pure motion math | `src/game/player-motion.ts` | integration, collision, walk speed, 4-way quantization |
-| Body store | `src/components/shop-view/playerMotionStore.ts` | the mutable singleton sprites read |
-| Input | `src/components/shop-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
-| Integrator | `src/components/shop-view/PlayerMotionLayer.tsx` | per-frame `useTick` loop, cell sync, teleport snap |
+| Body store | `src/components/world-view/playerMotionStore.ts` | the mutable singleton sprites read |
+| Input | `src/components/world-view/heldMovementInput.ts` | tracks *held* keys (DOM side) |
+| Walking | `src/components/world-view/useWalkingBody.ts` | reads the keys, integrates, cell sync, teleport snap |
+| Shop's frame | `src/components/shop-view/PlayerMotionLayer.tsx` | the shop's `useTick`: its solids, its speed, the bench stance |
+| Store's frame | `src/components/store-view/StoreWalkLayer.tsx` | the store's `useTick`: planogram solids, ambient shoppers as moving solids, cell sync onto the trip |
 | Footsteps | `src/game/footsteps.ts` + `src/components/shop-view/FootstepSoundLayer.tsx` | a step every stride of floor covered |
+
+`world-view/` is the part of this that isn't about the shop. The body is
+a singleton and the venues are never on screen together (`HomePage`
+swaps the whole canvas between `ShopView` and `StoreView`), so a second
+walkable place drives the same body through the same hook, with its own
+solids and its own reasons to stop walking — the hook doesn't own the
+frame, each venue's layer does. The store's cell bookkeeping lands on
+the trip (`ShoppingTrip.position`) rather than on `player.position`,
+which keeps meaning the cell underfoot back home.
 
 ## Collision
 

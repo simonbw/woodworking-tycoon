@@ -192,6 +192,20 @@ wiring: same path, same size, same component.
       walls, jambs, and threshold are flat bands. Art could carry siding,
       corner trim, and door tracks — but it has to follow an arbitrary shop
       footprint, so tiling strips rather than one sprite.
+- [ ] Store racking and counter — `store-view/StoreFixturesLayer.tsx`. The
+      big-box shelf bays, lumber racks, sheet stack, and checkout counter
+      are rects on the planogram's footprints. The fixture wants art with
+      the DOM shelf tags still laid on top; sizes come from
+      `game/store-layout.ts`, so tiling bay strips rather than one sprite.
+- [ ] Storefront and lot — `store-view/StoreEnvironmentLayer.tsx`. Wall
+      bands, glass panes, sidewalk, and stall paint, all flat fills on an
+      arbitrary generated footprint — tiling strips, like the shop's walls.
+- [ ] Other shoppers — `store-view/StoreShopperLayer.tsx`. The same
+      circle-people as the sidewalk's customers; whatever art the customers
+      get should walk the aisles too.
+- [ ] Shopping cart — `store-view/StorePushCartSprite.tsx`. Basket, handle,
+      and parcels as rounded rects; wants a real cart with the parcels
+      still drawn in it.
 - [x] The light — `shop-view/DaylightLayer.tsx`. Procedural on purpose,
       and not art at all: one offscreen light mask, painted from the sun in
       `game/daylight.ts` and multiplied over the scene once. The building's

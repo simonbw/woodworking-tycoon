@@ -9,7 +9,7 @@ import { FeedRunRulerLayer } from "./FeedRunRulerLayer";
 import { MachineGhostPreview } from "./MachineGhostPreview";
 import { MachineSprite } from "./MachineSprite";
 import { PIXELS_PER_CELL, cellToPixel } from "./shop-scale";
-import { playerMotion } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
 
 /**
  * Everything drawn while the player is lugging a machine: the machine

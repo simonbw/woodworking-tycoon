@@ -13,7 +13,7 @@ import { getMaterialFullName } from "../game/material-helpers";
 import { Vector } from "../game/Vectors";
 import { groupBy } from "../utils/arrayUtils";
 import { MaterialIcon } from "./current-cell-info/MaterialIcon";
-import { playerMotion } from "./shop-view/playerMotionStore";
+import { playerMotion } from "./world-view/playerMotionStore";
 import { ShiftHint } from "./shortcuts/Kbd";
 import { Tooltip } from "./Tooltip";
 import { useApplyGameAction, useGameState } from "./useGameState";

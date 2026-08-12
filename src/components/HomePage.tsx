@@ -1,12 +1,16 @@
 import React from "react";
+import { websiteRequested } from "../utils/urlFlags";
 import { useBenchDiveActive } from "./bench-view/benchSceneSlot";
 import { NightfallCard } from "./NightfallCard";
 import { HandsStrip } from "./HandsStrip";
 import { NavBar } from "./NavBar";
+import { useTruckStage } from "./shop-view/truckStageStore";
+import { StoreView } from "./store-view/StoreView";
 import { SuppliesSection } from "./SuppliesSection";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
 import { TutorialCards } from "./tutorial/TutorialCard";
 import { ShopView } from "./shop-view/ShopView";
+import { useGameState } from "./useGameState";
 
 export const HomePage: React.FC = () => {
   return (
@@ -42,10 +46,26 @@ const HomePageContent: React.FC = () => {
   const chipClass = `transition-opacity duration-150 ${
     benchDive ? "opacity-0" : "opacity-100"
   }`;
+
+  // A shopping trip swaps the canvas from the shop to the store — one
+  // scene at a time, so the single walking body, camera, and renderer
+  // are never contested. The swap waits for the truck's departure roll
+  // to finish (the fade covers it), and swaps back the moment the trip
+  // ends so the arrival roll plays on the shop. The lumberyard is still
+  // a menu overlay, and `?website` keeps the old store overlay instead
+  // (see urlFlags.ts and issue #200).
+  const gameState = useGameState();
+  const truckStage = useTruckStage();
+  const atWalkableStore =
+    gameState.player.away?.kind === "shopping" &&
+    gameState.player.away.store === "orangeBox" &&
+    truckStage === "away" &&
+    !websiteRequested();
+
   return (
     <main className="relative h-screen overflow-hidden">
       <div className="absolute inset-0">
-        <ShopView />
+        {atWalkableStore ? <StoreView /> : <ShopView />}
       </div>
 
       {/* pointer-events-none so the full-width strip doesn't eat clicks

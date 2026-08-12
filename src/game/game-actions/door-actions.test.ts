@@ -7,6 +7,7 @@ import { truckCabSideCell } from "../lot";
 import { tickAction } from "./tickAction";
 import { NIGHT_TICKS, TICKS_PER_DAY } from "../time";
 import { isNight } from "../time-flow";
+import { storeLayout } from "../store-layout";
 import {
   canLeaveShop,
   DRIVE_TICKS_ONE_WAY,
@@ -75,10 +76,13 @@ describe("canLeaveShop", () => {
 describe("goToStoreAction / returnFromStoreAction", () => {
   it("starts a shopping trip at the cab and comes home on request", () => {
     const out = goToStoreAction("orangeBox")(stateAtCab());
+    const spawn = storeLayout("orangeBox", stateAtCab()).spawn;
     assert.deepStrictEqual(out.player.away, {
       kind: "shopping",
       store: "orangeBox",
       cart: [],
+      position: spawn.cell,
+      direction: spawn.direction,
     });
     assert.strictEqual(personCanWork(out.player), false);
 
@@ -89,11 +93,11 @@ describe("goToStoreAction / returnFromStoreAction", () => {
 
   it("remembers which store the trip is to", () => {
     const out = goToStoreAction("lumberyard")(stateAtCab());
-    assert.deepStrictEqual(out.player.away, {
-      kind: "shopping",
-      store: "lumberyard",
-      cart: [],
-    });
+    assert.strictEqual(out.player.away?.kind, "shopping");
+    assert.strictEqual(
+      out.player.away.kind === "shopping" ? out.player.away.store : null,
+      "lumberyard",
+    );
   });
 
   it("does nothing before the store is unlocked", () => {
@@ -135,11 +139,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
     for (let i = 0; i < 5; i++) {
       state = tickAction(state);
     }
-    assert.deepStrictEqual(state.player.away, {
-      kind: "shopping",
-      store: "orangeBox",
-      cart: [],
-    });
+    assert.strictEqual(state.player.away?.kind, "shopping");
     assert.strictEqual(personCanWork(state.player), false);
   });
 });

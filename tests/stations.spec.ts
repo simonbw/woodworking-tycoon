@@ -15,7 +15,11 @@ import {
   goToStore,
   leaveStore,
   openJournal,
+  pickUpFromShelf,
+  shelfTag,
+  standAtStoreRegister,
   startNewGame,
+  walkToShelf,
 } from "./navigation";
 
 /**
@@ -229,56 +233,47 @@ test.describe("Stations", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("store: tool wall and reputation-gated lumber channels", async () => {
+    await test.step("store: tool island and reputation-gated lumber racks", async () => {
       const returnTo = await goToStore(page);
+      // The aisles announce themselves: signage over each run
       await expect(page.getByText("Tools", { exact: true })).toBeVisible();
+      await expect(page.getByText("Machines", { exact: true })).toBeVisible();
       await expect(page.getByText("Sanding Block")).toBeVisible();
-      // Scoped: the supplies aisle sells a $10.00 oil bottle too
-      await expect(
-        page.locator("section", { hasText: "Tools" }).getByText("$10.00"),
-      ).toBeVisible();
       await expect(page.getByText("Random Orbit Sander")).toBeVisible();
-      // A shelf tile carries the picture, the name and the price; what
-      // the thing actually does is behind the ⓘ in its corner, which is
-      // what keeps the store as short as it is. Crossing the tile does
-      // nothing — you have to point at the badge.
+
+      // A shelf tag carries the picture, the name and the price; what
+      // the thing actually does waits in the tag's tooltip — and the
+      // tag only answers once you're standing at its bay.
       //
-      // Retried rather than hovered once: the tool shelf sits below this
-      // viewport's fold, so the pointer has to be placed on a badge the
-      // page just scrolled to, and a late web font or a tick that reflows
-      // the aisle slides it out from under it. Re-hovering costs nothing
-      // and the tooltip only opens on a pointer that landed.
-      const sandingBlock = page.locator("li", { hasText: "Sanding Block" });
-      const aboutSandingBlock = sandingBlock.getByRole("button", {
-        name: "About Sanding Block",
-      });
+      // Retried rather than hovered once: a tick that re-renders the
+      // overlay can slide the tag out from under a pointer that just
+      // landed. Re-hovering costs nothing and the tooltip only opens on
+      // a pointer that stuck.
+      await walkToShelf(page, "Sanding Block");
+      const sandingTag = shelfTag(page, "Sanding Block");
+      await expect(sandingTag).toContainText("$10.00");
       await expect(async () => {
-        await aboutSandingBlock.scrollIntoViewIfNeeded();
-        await aboutSandingBlock.hover();
+        await sandingTag.hover();
         await expect(page.getByRole("tooltip")).toContainText(
           "Sands a surface smooth by hand",
           { timeout: 2000 },
         );
       }).toPass({ timeout: 15000 });
-      // Pointing away puts it back; clicking pins it, so copy you asked
-      // for stays up while you read it and takes a press elsewhere to
-      // dismiss (Escape can't do it — in here Escape is Head Home)
       await page.mouse.move(0, 0);
       await expect(page.getByRole("tooltip")).toHaveCount(0);
-      await aboutSandingBlock.click();
-      await expect(page.getByRole("tooltip")).toContainText(
-        "Sands a surface smooth by hand",
-      );
-      await page.mouse.move(0, 0);
-      await expect(page.getByRole("tooltip")).toBeVisible();
-      await page.locator("h2", { hasText: "Machines" }).click();
-      await expect(page.getByRole("tooltip")).toHaveCount(0);
-      // Cheap channels: framing pine and marked-up big-box S4S hardwood.
-      // Boards carry dimensions only — species lives on the bundle's tag.
+
+      // Cheap channels: framing pine and marked-up big-box S4S hardwood,
+      // each a rack you walk to. The boards themselves wait in the
+      // rack's card — walk for the category, click for the size.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
-      await expect(page.getByText(/1x4\s*8'/)).toBeVisible();
-      await expect(page.getByText("$2.00")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
+      await walkToShelf(page, "Construction Lumber");
+      const rackCard = page.getByTestId("store-rack-card");
+      await expect(rackCard.getByText(/1x4\s*8'/)).toBeVisible();
+      await expect(rackCard.getByText("$2.00")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await rackCard.waitFor({ state: "detached" });
+
       // The less-than-S4S channels live at the lumberyard, not here
       await expect(page.getByText("S2S Rack")).not.toBeVisible();
       await expect(page.getByText("Rough Rack")).not.toBeVisible();
@@ -333,23 +328,19 @@ test.describe("Stations", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("buy jig plywood from the Sheet Goods aisle", async () => {
+    await test.step("buy jig plywood from the Sheet Goods rack", async () => {
       afterStore = await goToStore(page);
       await expect(page.getByText("Sheet Goods")).toBeVisible();
-      // The sled itself is NOT for sale on the tool wall
+      // The sled itself is NOT for sale in the tool aisle
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
-      // The whole rack is out: cheap chip boards through cabinet ply
-      // (reputation 20 clears the rep-12 shelf)
+      // The rack's card holds the whole spread: cheap chip boards
+      // through cabinet ply (reputation 20 clears the rep-12 shelf)
+      await walkToShelf(page, "Sheet Goods");
       await expect(page.getByText("OSB").first()).toBeVisible();
       await expect(page.getByText("Cabinet Plywood").first()).toBeVisible();
       // Every kind racks in three sizes, named on the line under the tag
       await expect(page.getByText("2×2 Panel").first()).toBeVisible();
-      await page
-        .locator("li", { hasText: "Shop Plywood" })
-        .filter({ hasText: "2×2 Panel" })
-        .getByRole("button", { name: /Add Shop Plywood to cart/ })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Shop Plywood", { variant: "2×2 Panel" });
       // $11.20: 2 board feet of shop-grade ply, at the small-piece
       // premium — quoted on the cart before a cent leaves the wallet
       await expect(page.getByTestId("store-cart-total")).toContainText("$11.20");
@@ -485,29 +476,17 @@ test.describe("Stations", () => {
       await page.waitForTimeout(30);
     });
 
-    await test.step("the tool wall sells the hand saw and drill, supplies sell screws", async () => {
+    await test.step("the tool island sells the hand saw and drill, supplies sell screws", async () => {
       const returnTo = await goToStore(page);
-      const toolWall = page.locator("section", { hasText: "Tools" });
-      await expect(toolWall.getByText("Hand Saw")).toBeVisible();
-      await expect(toolWall.getByText("Drill")).toBeVisible();
+      // The tags on the island's bays name what hangs there
+      await expect(page.getByText("Hand Saw")).toBeVisible();
+      await expect(page.getByText("Drill", { exact: true })).toBeVisible();
 
-      await page
-        .locator("li", { hasText: "Hand Saw" })
-        .getByRole("button", { name: "Add Hand Saw to cart" })
-        .click();
-      await page.waitForTimeout(30);
-      await page
-        .locator("li", { hasText: "Drill" })
-        .getByRole("button", { name: "Add Drill to cart" })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Hand Saw");
+      await pickUpFromShelf(page, "Drill");
 
       await expect(page.getByText("Box of Screws")).toBeVisible();
-      await page
-        .locator("li", { hasText: "Box of Screws" })
-        .getByRole("button", { name: "Add Box of Screws to cart" })
-        .click();
-      await page.waitForTimeout(30);
+      await pickUpFromShelf(page, "Box of Screws");
 
       // A whole trip's shopping sits on one cart, and nothing has been
       // paid for yet — the supply cabinet is still empty of screws
@@ -532,9 +511,14 @@ test.describe("Stations", () => {
       await expect(page.getByTestId("store-cart-total")).toContainText(
         "3 items",
       );
+      // Point away so the panel folds — left open it hangs over the
+      // aisle and swallows the next shelf click
+      await page.mouse.move(0, 0);
+      await expect(cartPanel).toHaveCount(0);
 
       // The shelf hands over anything — only the register checks the
-      // wallet. Broke, the Add buttons still work and Check Out doesn't.
+      // wallet. Broke, the shelves still hand things over and the
+      // register's button greys out.
       const wallet = await page.evaluate(
         () => (window as any).__GET_GAME_STATE__().money,
       );
@@ -544,10 +528,10 @@ test.describe("Stations", () => {
           money: 1,
         }));
       });
+      await standAtStoreRegister(page);
       await expect(page.getByTestId("store-check-out")).toBeDisabled();
-      const handSaw = page
-        .locator("li", { hasText: "Hand Saw" })
-        .getByRole("button", { name: "Add Hand Saw to cart" });
+      await walkToShelf(page, "Hand Saw");
+      const handSaw = shelfTag(page, "Hand Saw");
       await expect(handSaw).toBeEnabled();
       await handSaw.click();
       await expect(page.getByTestId("store-cart-total")).toContainText(
@@ -556,6 +540,8 @@ test.describe("Stations", () => {
       // Put it back and pay with the money that was actually there
       await page.getByTestId("store-cart-total").hover();
       await cartPanel.getByRole("button", { name: "Remove one Hand Saw" }).click();
+      await page.mouse.move(0, 0);
+      await expect(cartPanel).toHaveCount(0);
       await page.evaluate((money: number) => {
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,

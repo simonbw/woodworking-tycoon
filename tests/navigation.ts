@@ -194,31 +194,198 @@ export async function unloadTruckBed(page: any) {
   }
 }
 
+/** Where a product hangs, when its name alone doesn't say. */
+export interface ShelfOptions {
+  /**
+   * The line on the tag that tells two of the same product apart — the
+   * panel size on a sheet-goods rack, where every tag reads the same
+   * grade.
+   */
+  variant?: string;
+  /** One rack, when the same product hangs at more than one. */
+  within?: any;
+  /**
+   * Skip the actionability wait. A store trip spends time, so the click
+   * stability check can starve on a loaded machine.
+   */
+  force?: boolean;
+}
+
+/** Which store the current trip is at, or null when not shopping. */
+async function shoppingAt(page: any): Promise<string | null> {
+  return page.evaluate(() => {
+    const away = (window as any).__GET_GAME_STATE__().player.away;
+    return away?.kind === "shopping" ? away.store : null;
+  });
+}
+
+/**
+ * Walk (well, teleport) the shopper to a cell of the store's floor. The
+ * store view snaps the body to any trip position it didn't write itself,
+ * the same reconciliation the shop's floor does for `movePlayerTo`.
+ */
+export async function moveShopperTo(page: any, cell: [number, number]) {
+  await page.evaluate((position: [number, number]) => {
+    (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+      ...state,
+      player: {
+        ...state.player,
+        away: { ...state.player.away, position },
+      },
+    }));
+  }, cell);
+  // Long enough for the capped E2E renderer (10fps) to run the frame
+  // that snaps the body and the camera to the new cell.
+  await page.waitForTimeout(220);
+}
+
+/** Stand the shopper at the register (the walkable store only). */
+export async function standAtStoreRegister(page: any) {
+  const points = await storePoints(page);
+  await moveShopperTo(page, points.register);
+}
+
+/** Stand the shopper beside the truck's cab in the store's lot. */
+export async function standAtStoreCab(page: any) {
+  const points = await storePoints(page);
+  await moveShopperTo(page, points.cab);
+}
+
+async function storePoints(page: any) {
+  await page.waitForFunction(() => (window as any).__STORE_POINTS__, undefined, {
+    timeout: 10000,
+  });
+  return page.evaluate(() => (window as any).__STORE_POINTS__);
+}
+
+/**
+ * Stand at the shelf a product hangs on, opening its rack's card when
+ * the product lives in a family rack (lumber, sheet goods) rather than
+ * its own bay. After this the product's Add-to-cart control is on
+ * screen and live.
+ */
+export async function walkToShelf(page: any, product: string) {
+  await page.waitForFunction(() => (window as any).__FIND_SHELF__, undefined, {
+    timeout: 10000,
+  });
+  const spot = await page.evaluate(
+    (name: string) => (window as any).__FIND_SHELF__(name),
+    product,
+  );
+  if (!spot) {
+    throw new Error(`No shelf in this store sells "${product}"`);
+  }
+  await moveShopperTo(page, spot.cell);
+  if (spot.kind === "rack") {
+    const card = page.getByTestId("store-rack-card");
+    if (!(await card.isVisible().catch(() => false))) {
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("Tab");
+      await card.waitFor({ state: "visible" });
+    }
+  }
+  return spot;
+}
+
+/**
+ * A product's shelf tag: the control that puts one in the cart, found
+ * the way a shopper finds it — by the name printed on the tag. In the
+ * walkable store the control only answers while the shopper stands at
+ * the shelf — use `walkToShelf` (or `pickUpFromShelf`) to get there.
+ *
+ * Returned as a locator rather than clicked so a spec can read the tag
+ * before taking one (a price, whether the shelf hands it over while the
+ * wallet is empty). Use `pickUpFromShelf` to just take one.
+ */
+export function shelfTag(
+  page: any,
+  product: string,
+  options: ShelfOptions = {},
+) {
+  const scope = options.within ?? page;
+  const tag = options.variant
+    ? scope
+        .locator("li", { hasText: product })
+        .filter({ hasText: options.variant })
+    : scope;
+  return tag.getByRole("button", { name: `Add ${product} to cart` });
+}
+
+/**
+ * Take one off the shelf. Every spec that shops goes through here rather
+ * than reaching for the control itself, so what a shelf *is* can change
+ * without the specs having to (see issue #97): at the walkable store
+ * this walks to the shelf first; at the lumberyard's menu it clicks the
+ * rack directly.
+ */
+export async function pickUpFromShelf(
+  page: any,
+  product: string,
+  options: ShelfOptions = {},
+) {
+  if ((await shoppingAt(page)) === "orangeBox") {
+    await walkToShelf(page, product);
+  }
+  await shelfTag(page, product, options).click(
+    options.force ? { force: true } : undefined,
+  );
+  await page.waitForTimeout(30);
+}
+
 /**
  * Head home from either store, optionally walking back to a remembered
  * cell. Purchases ride home in the truck's bed, so heading home swings
  * past the tailgate and unloads it — every spec that buys stock relies
  * on coming home with it in hand.
+ *
+ * At the walkable store this is a walk out to the cab and E — pressed
+ * again if a non-empty cart armed the "leave the cart behind?" ask. At
+ * the lumberyard's menu it's still the Head Home button.
  */
 export async function leaveStore(page: any, returnTo?: [number, number]) {
-  // exact: the register's button also ends in "Head Home", and a
-  // substring match would find both once there's a cart
-  await page
-    .getByRole("button", { name: "Head Home", exact: true })
-    .click({ force: true });
+  if ((await shoppingAt(page)) === "orangeBox") {
+    await standAtStoreCab(page);
+    const away = () =>
+      page.evaluate(
+        () => (window as any).__GET_GAME_STATE__().player.away !== null,
+      );
+    for (let tries = 0; tries < 3 && (await away()); tries++) {
+      await page.evaluate(() =>
+        (document.activeElement as HTMLElement)?.blur?.(),
+      );
+      await page.keyboard.press("e");
+      await page.waitForTimeout(150);
+    }
+  } else {
+    // exact: the register's button also ends in "Head Home", and a
+    // substring match would find both once there's a cart
+    await page
+      .getByRole("button", { name: "Head Home", exact: true })
+      .click({ force: true });
+  }
   await driveHome(page, returnTo);
 }
 
 /**
- * Pay for the cart and drive home in one press — the register's button.
- * Nothing in a store is bought until this happens (see cart.ts), so any
- * spec that shops has to end its trip this way rather than with
- * `leaveStore`, which walks out on the cart.
+ * Pay for the cart and drive home. Nothing in a store is bought until
+ * the register rings the cart up (see cart.ts), so any spec that shops
+ * has to end its trip this way rather than with `leaveStore`, which
+ * walks out on the cart. At the walkable store the register and the way
+ * home are two places: pay at the counter, then E at the cab.
  */
 export async function checkOutAndLeaveStore(
   page: any,
   returnTo?: [number, number],
 ) {
+  if ((await shoppingAt(page)) === "orangeBox") {
+    await standAtStoreRegister(page);
+    await page.getByTestId("store-check-out").click({ force: true });
+    await page.waitForTimeout(60);
+    await leaveStore(page, returnTo);
+    return;
+  }
   await page.getByTestId("store-check-out").click({ force: true });
   await driveHome(page, returnTo);
 }

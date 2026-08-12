@@ -1,33 +1,32 @@
 import { useTick } from "@pixi/react";
 import { Ticker } from "pixi.js";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { collisionWorld } from "../../game/machine-collision";
 import { setPlayerPositionAction } from "../../game/game-actions/player-actions";
 import {
-  directionFromInput,
-  headingForDirection,
   motionCell,
   playerWalkSpeed,
   stepPlayerMotion,
   workStance,
 } from "../../game/player-motion";
-import { Direction, Vector, vectorEquals } from "../../game/Vectors";
+import { Direction, Vector } from "../../game/Vectors";
 import { benchSceneSlot } from "../bench-view/benchSceneSlot";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { readHeldMovement } from "./heldMovementInput";
-import { playerMotion, snapPlayerMotionToCell } from "./playerMotionStore";
+import { playerMotion } from "../world-view/playerMotionStore";
+import { useWalkingBody } from "../world-view/useWalkingBody";
 
 /**
- * Integrates the player's continuous body every render frame: reads the
- * held movement keys, walks the body with collision against machines and
- * walls, and stamps the cell underfoot back into GameState whenever it
- * changes. Renders nothing — it's the bridge between the 60fps world of
- * the body and the tick-rate world of the simulation.
+ * Walks the player around the shop and its lot every render frame, and
+ * stamps the cell underfoot back into GameState whenever it changes.
+ * Renders nothing — it's the bridge between the 60fps world of the body
+ * and the tick-rate world of the simulation.
  *
  * GameState remains the authority on *which cell* the player occupies;
- * this layer is the authority on *where in it* they are. When the
- * simulation moves the player without us (a fixture load, a loaded save),
- * the body snaps to the new cell's center.
+ * this layer is the authority on *where in it* they are. The general
+ * machinery — reading the keys, integrating, spotting a teleport — is
+ * `useWalkingBody`, shared with the other places the player walks. What
+ * lives here is what's particular to the shop: its solids, its walking
+ * speed, and the bench stance below.
  */
 export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
   paused,
@@ -40,37 +39,24 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
 
-  // The last cell/facing this layer wrote into GameState. Any state cell
-  // that doesn't match came from outside — that's the teleport signal.
-  const lastSynced = useRef<{ cell: Vector; direction: Direction }>({
-    cell: gameState.player.position,
-    direction: gameState.player.direction,
-  });
-
   // The dive (benchKey) whose step-in the body gave up on — wedged
   // against something on the way to the stance. Remembered so a blocked
   // walk doesn't shove at the obstacle every frame; a fresh dive tries
   // again.
   const stanceBlocked = useRef<string | null>(null);
 
-  useEffect(() => {
-    snapPlayerMotionToCell(stateRef.current.player.position);
-    // The body should come up already facing the way the simulation says.
-    playerMotion.heading = headingForDirection(
-      stateRef.current.player.direction,
-    );
-  }, []);
+  const onCellChange = useCallback(
+    (cell: Vector, direction: Direction) => {
+      applyAction(setPlayerPositionAction(cell, direction));
+    },
+    [applyAction],
+  );
 
-  const statePosition = gameState.player.position;
-  useEffect(() => {
-    if (!vectorEquals(statePosition, lastSynced.current.cell)) {
-      snapPlayerMotionToCell(statePosition);
-      lastSynced.current = {
-        cell: statePosition,
-        direction: stateRef.current.player.direction,
-      };
-    }
-  }, [statePosition]);
+  const { walk, syncCell } = useWalkingBody({
+    cell: gameState.player.position,
+    direction: gameState.player.direction,
+    onCellChange,
+  });
 
   useTick((ticker: Ticker) => {
     const gs = stateRef.current;
@@ -125,51 +111,14 @@ export const PlayerMotionLayer: React.FC<{ paused: boolean }> = ({
           playerMotion.moving = false;
         }
         // Facing the bench is the stance too, wherever the walk got to.
-        const cell = motionCell(playerMotion.pos);
-        if (
-          !vectorEquals(cell, lastSynced.current.cell) ||
-          stance.direction !== lastSynced.current.direction
-        ) {
-          lastSynced.current = { cell, direction: stance.direction };
-          applyAction(setPlayerPositionAction(cell, stance.direction));
-        }
+        syncCell(motionCell(playerMotion.pos), stance.direction);
       } else {
         playerMotion.moving = false;
       }
       return;
     }
 
-    const input = readHeldMovement();
-    if (input[0] === 0 && input[1] === 0) {
-      playerMotion.moving = false;
-      return;
-    }
-
-    // You face the way you're pushing, even pinned against a machine.
-    playerMotion.heading = Math.atan2(input[1], input[0]);
-
-    // Clamp dt so a hitch (tab switch, GC pause) can't fling the body.
-    const dt = Math.min(ticker.deltaMS / 1000, 0.1);
-    const next = stepPlayerMotion(
-      playerMotion.pos,
-      input,
-      playerWalkSpeed(gs),
-      dt,
-      collisionWorld(gs),
-    );
-    playerMotion.moving =
-      next[0] !== playerMotion.pos[0] || next[1] !== playerMotion.pos[1];
-    playerMotion.pos = next;
-
-    const cell = motionCell(next);
-    const direction = directionFromInput(input, lastSynced.current.direction);
-    if (
-      !vectorEquals(cell, lastSynced.current.cell) ||
-      direction !== lastSynced.current.direction
-    ) {
-      lastSynced.current = { cell, direction };
-      applyAction(setPlayerPositionAction(cell, direction));
-    }
+    walk(ticker.deltaMS, playerWalkSpeed(gs), collisionWorld(gs));
   });
 
   return null;

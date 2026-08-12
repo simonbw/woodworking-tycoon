@@ -51,7 +51,13 @@ function atStore(money: number, cart: ReadonlyArray<CartLine> = []): GameState {
     money,
     player: {
       ...initialGameState.player,
-      away: { kind: "shopping", store: "orangeBox", cart },
+      away: {
+        kind: "shopping",
+        store: "orangeBox",
+        cart,
+        position: [0, 0],
+        direction: 1,
+      },
     },
   };
 }

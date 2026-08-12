@@ -52,6 +52,7 @@ The game follows a state-driven architecture with clear separation between game 
    - **Journal** (`JournalModal`): the skill tree, opened from the top bar
    - **The for-sale stand** (model in `src/game/stand.ts`, tick pass in `src/game/game-actions/stand-actions.ts`): a small table with a hand-written FOR SALE sign in the grass at the end of the driveway — the game's one selling channel. The player carries finished pieces down and sets them out (F) or takes them back (E) (`StandPrompt`); customers stroll the sidewalk line below the lot, stop at a stocked stand, and buy at fair value (`getSellValue`) — there is no pricing step. `GameState.stand` holds what's set out, `GameState.customers` the passersby. Every sale settles instantly and queues a `PayoutEvent`; `RewardFlightLayer` (`src/components/payout/`) flies the coins and star to the HUD readouts. Sales are the game's only money and reputation source: the first sale unlocks the store, and reputation gates the lumberyard's channels
    - **The truck** (`TruckPrompt`): the pickup on the walkable lot outside. Its bed carries all physical cargo (`GameState.truck`), and every trip — shopping or scavenging — starts at the cab. See `docs/trips.md`
+   - **The Orange Box store** (`src/components/store-view/`, planogram in `src/game/store-layout.ts`, keys in `src/game/store-interact.ts`): a shopping trip swaps the canvas to the store's own walkable floor — racks generated from the registries, F/E at the shelves, a rack card for sizes, the register, and the truck out front as the way home. The lumberyard is still a menu overlay, and the old store overlay survives behind `?website` as the future website (issue #200)
    - **In-world interaction UI**: the machine the player stands at is highlighted and wears hint chips naming its live keys; the mouse never acts at a distance — it chooses among what the body can already reach, and right-click opens what's under it. Targeting, chips, station sheets, hit-testing, and the mouse rules are in `docs/floor-interaction.md`
    - **The bench view** (`src/components/bench-view/`, engine in `src/game/bench-work/`): Tab at a bench dives into a zoomed work surface where the pointer is the hand — prying pallets apart, tool-first work on the piece where it lies, clamps-first glue-ups, and blueprint assembly, all committing through the actions in `game-actions/operation-actions.ts` (the view decides _when_, the actions decide _what_). The world keeps ticking while the view is open. The system doc is `docs/bench-work.md`; single-module detail lives in the `bench-work/` module headers (blueprints in `blueprint.ts`, bench groups in `bench-group.ts`, glue-ups in `glue-up.ts`, the tool-first offer in `tool-work.ts`)
    - Shop layout management happens on the floor itself: machines are physically picked up, carried, and set down by the player (see `src/game/game-actions/machine-actions.ts`)
@@ -78,9 +79,12 @@ In-world things are drawn either from a PNG texture (registered in `src/utils/lo
 ```
 src/
 ├── components/            # React components
-│   ├── shop-view/         # Main game area rendering (PIXI)
-│   ├── store-page/        # The Orange Box store trip overlay
-│   ├── lumberyard-page/   # The Sawyer & Sons lumberyard trip overlay
+│   ├── world-view/        # The walkable-place machinery: the canvas, the body, walking
+│   ├── shop-view/         # The shop and its lot, drawn on that canvas (PIXI)
+│   ├── shopping/          # A trip's till and its drawings, whatever the storefront
+│   ├── store-view/        # The walkable Orange Box, drawn on the world canvas
+│   ├── store-page/        # The old storefront overlay — the future website, behind ?website
+│   ├── lumberyard-page/   # The Sawyer & Sons lumberyard storefront
 │   ├── journal/           # Journal overlay (skill tree)
 │   ├── payout/            # Sale celebration (the reward flight to the HUD readouts)
 │   ├── current-cell-info/ # Shared cell/material widgets (scales, icons, lists)
