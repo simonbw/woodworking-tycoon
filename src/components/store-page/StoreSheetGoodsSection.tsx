@@ -18,8 +18,8 @@ import {
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
-import { SheetFaceSvg } from "./SheetFaceSvg";
-import { useCartCount } from "./useStoreTrip";
+import { SheetFaceSvg } from "../shopping/SheetFaceSvg";
+import { useCartCount } from "../shopping/useStoreTrip";
 
 /**
  * The sheet-good rack (see sheetStock.ts). One tile per SKU, cheapest

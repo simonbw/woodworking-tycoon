@@ -78,9 +78,11 @@ In-world things are drawn either from a PNG texture (registered in `src/utils/lo
 ```
 src/
 ├── components/            # React components
-│   ├── shop-view/         # Main game area rendering (PIXI)
-│   ├── store-page/        # The Orange Box store trip overlay
-│   ├── lumberyard-page/   # The Sawyer & Sons lumberyard trip overlay
+│   ├── world-view/        # The walkable-place machinery: the canvas, the body, walking
+│   ├── shop-view/         # The shop and its lot, drawn on that canvas (PIXI)
+│   ├── shopping/          # A trip's till and its drawings, whatever the storefront
+│   ├── store-page/        # The Orange Box storefront
+│   ├── lumberyard-page/   # The Sawyer & Sons lumberyard storefront
 │   ├── journal/           # Journal overlay (skill tree)
 │   ├── payout/            # Sale celebration (the reward flight to the HUD readouts)
 │   ├── current-cell-info/ # Shared cell/material widgets (scales, icons, lists)

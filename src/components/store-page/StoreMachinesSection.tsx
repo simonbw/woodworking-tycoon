@@ -6,7 +6,7 @@ import { MachineIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState, useMachines } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
-import { useCartCount } from "./useStoreTrip";
+import { useCartCount } from "../shopping/useStoreTrip";
 
 export const StoreMachinesSection: React.FC<{ className?: string }> = ({
   className,

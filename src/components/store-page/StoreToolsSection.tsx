@@ -11,7 +11,7 @@ import { BroomIcon, ShopVacIcon, ToolIcon, UpgradeIcon } from "../ItemIcon";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { AisleSection } from "./AisleSection";
 import { ProductTile } from "./ProductTile";
-import { useCartCount } from "./useStoreTrip";
+import { useCartCount } from "../shopping/useStoreTrip";
 
 export const StoreToolsSection: React.FC<{ className?: string }> = ({
   className,

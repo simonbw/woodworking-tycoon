@@ -19,11 +19,11 @@ import {
   StoreId,
   unlockedLumberChannels,
 } from "../../game/lumberStock";
-import { BoardFaceSvg } from "./BoardFaceSvg";
+import { BoardFaceSvg } from "../shopping/BoardFaceSvg";
 import { CartIcon } from "../CartIcon";
 import { Tooltip } from "../Tooltip";
 import { useApplyGameAction, useGameState } from "../useGameState";
-import { useCartCount } from "./useStoreTrip";
+import { useCartCount } from "../shopping/useStoreTrip";
 
 /**
  * Every rack in town shares one pixels-per-foot, so lengths compare at a
