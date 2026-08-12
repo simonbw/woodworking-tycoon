@@ -370,13 +370,14 @@ describe("finishSunriseBoard", () => {
 
 describe("quickDryGlue covers the freeform ops", () => {
   const progression = {
-    tutorialStep: 0,
-    tutorialDismissed: true,
+    tutorials: {
+      opening: { step: 0, dismissed: true },
+      dust: { step: 0, dismissed: false },
+    },
     storeUnlocked: true,
     salesCompleted: 1,
     lumberyardUnlocked: false,
     sweepingUnlocked: false,
-    dustTipDismissed: false,
     unlockedArticles: [],
     readArticles: [],
     xp: 0,

@@ -9,7 +9,6 @@ import {
   MATERIAL_SHELF_BLUEPRINT,
   PICTURE_FRAME_BLUEPRINT,
   ProductBlueprint,
-  RESAW_FENCE_BLUEPRINT,
   SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
   SIDE_TABLE_BLUEPRINT,
@@ -287,23 +286,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
     },
   },
   {
-    name: "Build Tall Resaw Fence",
-    id: "buildResawFence",
-    requiredSkill: "resawing",
-    duration: 25,
-    // A tall sheet face and two triangular braces to keep it square to
-    // the table — nothing rides, so it's the cheapest jig of the three
-    interaction: { kind: "assembly", blueprint: "resawFence" },
-    requiredConsumables: blueprintFastenerCost(RESAW_FENCE_BLUEPRINT),
-    getInputMaterials: () => blueprintInputs(RESAW_FENCE_BLUEPRINT),
-    output: () => {
-      return {
-        inputs: [],
-        outputs: [makeToolItem("resawFence")],
-      };
-    },
-  },
-  {
     name: "Glue Up End-Grain Panel",
     id: "glueUpEndGrain",
     requiredSkill: "endGrainBoards",
@@ -440,8 +422,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
   // holds just the rustic shelf.
   ...worktableBuildOperation("worktable1x1", "Build Small Worktable", 35),
   ...worktableBuildOperation("worktable1x2", "Build Worktable", 45),
-  ...worktableBuildOperation("worktable1x3", "Build Long Worktable", 55),
-  ...worktableBuildOperation("worktable2x2", "Build Big Worktable", 65),
   {
     name: "Build Storage Rack",
     id: "buildStorageRack",
@@ -507,8 +487,7 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
  * stretchers nailed across its underside.
  */
 function worktableBuildOperation(
-  worktableId:
-    "worktable1x1" | "worktable1x2" | "worktable1x3" | "worktable2x2",
+  worktableId: "worktable1x1" | "worktable1x2",
   name: string,
   duration: number,
 ): [Operation] {

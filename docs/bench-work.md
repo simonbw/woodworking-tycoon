@@ -277,7 +277,10 @@ Worktables pushed edge to edge are one bench (`bench-work/bench-group.ts`):
 the view spans every member's top as one surface, a dragged piece is
 bookkept by the table it comes to rest on, and an operation still
 belongs to one table (`gatherBenchPiecesAction` slides a spanning job
-onto one; `benchGroupWork` says which). Tool racks don't pool yet.
+onto one; `benchGroupWork` says which). Tool racks pool the same way:
+the rail shows the whole run's tools, and taking a neighbour's slides it
+onto the working table's rack first (`gatherBenchToolAction`), so an
+operation still resolves tools off one machine's state.
 
 Opening and closing are performed by a camera dive
 (`shop-view/BenchDiveLayer.tsx`), pure presentation: the shop's world

@@ -59,13 +59,14 @@ export const initialGameState: GameState = {
     entrancePosition: defaultEntrancePosition([12, 16]),
   },
   progression: {
-    tutorialStep: 0,
-    tutorialDismissed: false,
+    tutorials: {
+      opening: { step: 0, dismissed: false },
+      dust: { step: 0, dismissed: false },
+    },
     storeUnlocked: false,
     lumberyardUnlocked: false,
     salesCompleted: 0,
     sweepingUnlocked: false,
-    dustTipDismissed: false,
     // Welcome starts unread on purpose: it keeps the ? badge lit until the
     // player opens the manual for the first time.
     unlockedArticles: STARTING_ARTICLES,

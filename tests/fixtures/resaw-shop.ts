@@ -47,8 +47,8 @@ function walnutBlank(id: string): Board {
 
 /**
  * A shop set up to resaw both ways: a band saw (op cell [2,9]) and a table
- * saw the tall resaw fence can go on (op cell [8,9]), with two 8/4 walnut
- * blanks in the player's pockets and the Resawing skill earned.
+ * saw (op cell [8,9]), with two 8/4 walnut blanks in the player's pockets
+ * and the Resawing skill earned.
  */
 export const resawShop: GameState = {
   tick: 0,
@@ -58,14 +58,7 @@ export const resawShop: GameState = {
   reputation: 22,
   consumables: NO_CONSUMABLES,
   clamps: 4,
-  // The shop-built fence waits on the dropoff spot, to be carried to the saw
-  materialPiles: [
-    {
-      material: { id: "test-resaw-fence", type: "tool", toolId: "resawFence" },
-      position: [10.5, 13.5],
-      rotation: 0,
-    },
-  ],
+  materialPiles: [],
   player: {
     name: "Player",
     position: [2, 9], // the band saw's operation cell
@@ -80,7 +73,7 @@ export const resawShop: GameState = {
     // Mid-shop, so a 6' blank has lane to travel both sides of the blade
     // (see feed-clearance.ts)
     idleMachine("bandSaw", [2, 7], "resaw", { targetThickness: 4 }),
-    // The tall fence isn't mounted yet, so the saw is set up to rip
+    // The saw rests flat, so it rips until R stands the stock up
     idleMachine("jobsiteTableSaw", [8, 7], "ripBoard", {
       targetWidth: 4,
       targetThickness: 4,
@@ -99,13 +92,14 @@ export const resawShop: GameState = {
     entrancePosition: [6, 15],
   },
   progression: {
-    tutorialStep: 0,
-    tutorialDismissed: true,
+    tutorials: {
+      opening: { step: 0, dismissed: true },
+      dust: { step: 0, dismissed: false },
+    },
     storeUnlocked: true,
     lumberyardUnlocked: true,
     salesCompleted: 5,
     sweepingUnlocked: false,
-    dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,
     readArticles: ALL_ARTICLE_IDS,
     xp: 0,

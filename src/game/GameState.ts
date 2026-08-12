@@ -53,25 +53,38 @@ export type TruckState = {
   readonly crates: ReadonlyArray<MachineState>;
 };
 
+/**
+ * The tutorial tracks, each a to-do card of its own: the guided opening,
+ * and the sweeping lesson that goes up when the floor first gets properly
+ * dusty. Declared here rather than in tutorial.ts so the state can name
+ * them without importing the goal tables (tutorial.ts imports GameState).
+ */
+export const TUTORIAL_TRACK_IDS = ["opening", "dust"] as const;
+export type TutorialTrackId = (typeof TUTORIAL_TRACK_IDS)[number];
+
+/** One tutorial track's ratchet (see tutorial.ts). */
+export interface TutorialTrackProgress {
+  /**
+   * How far the track's walk has gotten: an index into its flattened
+   * steps, moved forward by the milestone pass and never backward. Equal
+   * to the step count once every box is ticked.
+   */
+  readonly step: number;
+  /** The player retired the card early ("Skip"). One way, like an unlock. */
+  readonly dismissed: boolean;
+}
+
 /** Represents all of the state for the game simulation. This is what gets loaded/saved. Does not include UI state. */
 export interface ProgressionState {
-  /**
-   * How far the guided opening has gotten: an index into TUTORIAL_STEPS,
-   * ratcheted forward by the milestone pass and never backward. Equal to
-   * TUTORIAL_COMPLETE once every step is done. See tutorial.ts.
-   */
-  readonly tutorialStep: number;
-  /** The player retired the coach early ("Skip"), or it ran out of steps. */
-  readonly tutorialDismissed: boolean;
+  /** Each tutorial track's walk index and skip flag, by track. */
+  readonly tutorials: Readonly<Record<TutorialTrackId, TutorialTrackProgress>>;
   readonly storeUnlocked: boolean;
   /** Reveals the lumberyard (S2S and rough stock) at the garage door. */
   readonly lumberyardUnlocked: boolean;
   /** Lifetime pieces sold off the for-sale stand (see stand.ts). */
   readonly salesCompleted: number;
-  /** The floor has gotten properly dusty — puts up the one-time sweeping note. */
+  /** The floor has gotten properly dusty — begins the sweeping tutorial track. */
   readonly sweepingUnlocked: boolean;
-  /** The one-time "sweep it up" note has been read. */
-  readonly dustTipDismissed: boolean;
   /** Shop-manual articles revealed so far (one-way, like the flags above). */
   readonly unlockedArticles: ReadonlyArray<ManualArticleId>;
   /** Articles the player has opened — drives the manual's NEW markers. */

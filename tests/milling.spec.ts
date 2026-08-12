@@ -642,29 +642,25 @@ test.describe("Milling", () => {
       }
     });
 
-    await test.step("mounting the tall fence stands the table saw's work on edge", async () => {
+    await test.step("R stands the table saw's work on edge, no jig in the rack", async () => {
       await movePlayerTo(page, [8, 9]);
       await switchOn(page);
       await expect(page.getByText("Jobsite Table Saw · on")).toBeVisible();
-      // Bare, the saw's one setting is the rip fence, in inches
+      // The saw rests flat: its live setting is the rip fence, in inches
       await expect(page.getByText("target width:")).toBeVisible();
+      // Nothing is bolted to it — resawing comes off the saw itself
+      const mounted = await page.evaluate(
+        () =>
+          (window as any)
+            .__GET_GAME_STATE__()
+            .machines.find((m: any) => m.machineTypeId === "jobsiteTableSaw")
+            .tools,
+      );
+      expect(mounted).toEqual([]);
 
-      // The fence is a physical thing: fetch it off the dropoff pile and
-      // carry it back to the saw before it can go on
-      await movePlayerTo(page, [10, 13]);
-      await pressKey(page, "e");
-      await movePlayerTo(page, [8, 9]);
-      await openStationSheet(page);
-      await page
-        .locator("li", { hasText: "Tall Resaw Fence (in hand)" })
-        .getByRole("button", { name: "Attach" })
-        .click();
-      await page.waitForTimeout(30);
-      await pressKey(page, "Escape");
-
-      // Freshly mounted, the work stands on edge: the rip's setting steps
-      // aside and the fence that's live reads in quarters (R would lay
-      // the stock back flat — proven at the band saw above)
+      // Turn the stock up: the rip's setting steps aside and the fence
+      // that's live reads in quarters
+      await pressKey(page, "r");
       await expect(page.getByText("target width:")).toHaveCount(0);
       await expect(page.getByText("fence:")).toBeVisible();
       await expect(page.getByText("on edge", { exact: false })).toBeVisible();
@@ -731,8 +727,8 @@ test.describe("Milling", () => {
         }));
       });
       await movePlayerTo(page, [8, 9]);
-      // The resaw fence left the saw standing its work on edge; a sheet
-      // lies flat, so R turns the table back over first
+      // The resaw left the saw standing its work on edge; a sheet lies
+      // flat, so R turns the table back over first
       await pressKey(page, "r");
       await setStockDown(page);
       // The fence scale is the sheet's now — inches, not quarters

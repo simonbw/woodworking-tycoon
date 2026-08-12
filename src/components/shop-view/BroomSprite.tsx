@@ -2,13 +2,17 @@ import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import { useGameState } from "../useGameState";
 import { cellToPixelVec, PIXELS_PER_CELL } from "./shop-scale";
+import { TUTORIAL_HIGHLIGHT_FILTERS } from "./targetHighlight";
 
 /**
  * The shop broom, leaning wherever it was last set down (F). Hidden
  * while it's in the player's hands — the hands strip carries it there.
  * Picked up with E standing beside it; worked by holding Space.
+ * Wears the coach outline while the sweeping lesson points at it.
  */
-export const BroomSprite: React.FC = () => {
+export const BroomSprite: React.FC<{ tutorialHighlight?: boolean }> = ({
+  tutorialHighlight,
+}) => {
   const gameState = useGameState();
 
   const draw = useCallback((g: Graphics) => {
@@ -57,7 +61,11 @@ export const BroomSprite: React.FC = () => {
   }
   const [x, y] = cellToPixelVec(gameState.broomPosition);
   return (
-    <pixiContainer x={x} y={y}>
+    <pixiContainer
+      x={x}
+      y={y}
+      filters={tutorialHighlight ? TUTORIAL_HIGHLIGHT_FILTERS : undefined}
+    >
       <pixiGraphics draw={draw} />
     </pixiContainer>
   );

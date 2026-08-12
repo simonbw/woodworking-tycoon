@@ -167,7 +167,7 @@ test.describe("Shop floor", () => {
       // The steps themselves are proven in the sequence tier (sequences/
       // tutorial.test.ts walks every box); what the browser is for is that
       // the card is mounted, reads off game state, and can be retired.
-      const card = page.getByTestId("tutorial-card");
+      const card = page.getByTestId("tutorial-card-opening");
       await expect(card).toBeVisible();
       await expect(card).toContainText("Make my first item");
       await expect(card).toContainText("Scavenge a pallet");
@@ -375,9 +375,12 @@ test.describe("Shop floor", () => {
       expect(await carried(page)).toBeNull();
     });
 
-    await test.step("a dusty floor triggers the sweeping note", async () => {
-      // Dust past the tutorial threshold flips sweepingUnlocked — the
-      // one-time "sweep it up" note — on the next milestone tick.
+    await test.step("a dusty floor triggers the sweeping lesson", async () => {
+      // Dust past the tutorial threshold flips sweepingUnlocked on the
+      // next milestone tick, and the sweeping track's to-do card goes up
+      // beneath the opening's. The steps themselves are proven in the
+      // sequence tier (sequences/cleaning-chain.test.ts); the browser
+      // checks the card mounts and reads off game state.
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
@@ -390,6 +393,9 @@ test.describe("Shop floor", () => {
             .sweepingUnlocked,
         )
         .toBe(true);
+      const dustCard = page.getByTestId("tutorial-card-dust");
+      await expect(dustCard).toBeVisible();
+      await expect(dustCard).toContainText("Sweep the floor");
     });
 
     await test.step("the pickup chip sits on the pile it would grab", async () => {

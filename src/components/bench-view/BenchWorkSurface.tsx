@@ -2157,6 +2157,9 @@ export const BenchWorkSurface: React.FC<{
         {rail && (
           <BenchToolRail
             machine={machine}
+            runNeighbours={group.members
+              .map((member) => member.machine)
+              .filter((member) => member.state !== machine.state)}
             heldTool={heldTool}
             interactive={sceneActive}
             keysEnabled={interactive}

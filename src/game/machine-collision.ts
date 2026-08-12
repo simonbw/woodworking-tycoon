@@ -40,7 +40,7 @@ function shapeToWorld(shape: CollisionShape, machine: Machine): Solid {
 /**
  * A boxless machine's occupied tiles as merged solid boxes: greedy
  * row-strips, then strips with identical x-spans fused vertically — a
- * 4×4 worktable is one box, not sixteen. Fewer solids means fewer seams
+ * 4×2 worktable is one box, not eight. Fewer solids means fewer seams
  * for the depenetration pass to meet and a cheaper per-frame loop.
  */
 export function mergedTileBoxes(cells: ReadonlyArray<Vector>): SolidBox[] {

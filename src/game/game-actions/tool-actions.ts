@@ -1,5 +1,6 @@
+import { benchGroupAt } from "../bench-work/bench-group";
 import { GameAction } from "../GameState";
-import { Machine, MachineState } from "../Machine";
+import { getMachines, isSameMachine, Machine, MachineState } from "../Machine";
 import { makeToolItem } from "../material-helpers";
 import { ToolItem } from "../Materials";
 import { handSpaceLeft } from "../Person";
@@ -101,6 +102,84 @@ export function unmountToolAction(
             })
           : machineState,
       ),
+    };
+  };
+}
+
+/**
+ * Slides a tool mounted on a neighbouring table in the same bench run
+ * onto this one — the tool-rack half of what gatherBenchPiecesAction does
+ * for stock. Tables pushed together are one bench
+ * (bench-work/bench-group.ts) and the view shows the run's tools on one
+ * rail, but an operation still resolves tools off a single machine's
+ * rack (completeOperation reads `Machine.operations`, which sees only its
+ * own state) — so reaching for a neighbour's tool moves it here first,
+ * then everything downstream runs exactly as if it had always hung here.
+ */
+export function gatherBenchToolAction(
+  target: Machine,
+  toolId: ToolId,
+): GameAction {
+  return (gameState) => {
+    const targetState = gameState.machines.find((m) =>
+      isSameMachine(m, target.state),
+    );
+    if (!targetState) {
+      console.warn("No such bench to gather a tool onto");
+      return gameState;
+    }
+    const targetMachine = new Machine(targetState);
+    if (targetState.tools.length >= targetMachine.toolSlots) {
+      console.warn(`No free tool slots on ${targetMachine.type.name}`);
+      return gameState;
+    }
+    const compatible = TOOL_TYPES[toolId].compatibleMachines;
+    if (compatible && !compatible.includes(targetState.machineTypeId)) {
+      console.warn(`${toolId} doesn't mount on a ${targetMachine.type.name}`);
+      return gameState;
+    }
+    if (targetState.operationProgress.status === "inProgress") {
+      console.warn("Can't mount tools while the station is working");
+      return gameState;
+    }
+
+    // Only within the run this table belongs to — a tool two benches
+    // over across the shop stays where it hangs
+    const group = benchGroupAt(getMachines(gameState.machines), targetMachine);
+    const fromState = group.members
+      .map((member) => member.machine.state)
+      .find(
+        (state) =>
+          state !== targetState &&
+          state.tools.includes(toolId) &&
+          state.operationProgress.status !== "inProgress",
+      );
+    if (!fromState) {
+      console.warn(`No idle table in the run has a ${toolId} to gather`);
+      return gameState;
+    }
+
+    const toolIndex = fromState.tools.indexOf(toolId);
+    return {
+      ...gameState,
+      machines: gameState.machines.map((machineState) => {
+        if (machineState === fromState) {
+          return withValidSelectedOperation({
+            ...machineState,
+            tools: [
+              ...machineState.tools.slice(0, toolIndex),
+              ...machineState.tools.slice(toolIndex + 1),
+            ],
+          });
+        }
+        if (machineState === targetState) {
+          return withValidSelectedOperation({
+            ...machineState,
+            tools: [...machineState.tools, toolId],
+          });
+        }
+        return machineState;
+      }),
     };
   };
 }

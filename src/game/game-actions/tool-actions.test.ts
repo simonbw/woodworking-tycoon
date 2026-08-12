@@ -8,10 +8,11 @@ import { ToolId } from "../Tool";
 import { initialGameState } from "../initialGameState";
 import {
   buyToolAction,
+  gatherBenchToolAction,
   mountToolAction,
   unmountToolAction,
 } from "./tool-actions";
-import { pickUpMachineAction } from "./machine-actions";
+import { freshMachineState, pickUpMachineAction } from "./machine-actions";
 
 function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
@@ -229,6 +230,80 @@ describe("unmountToolAction", () => {
       ),
     };
     const result = unmountToolAction(workspaceOf(state), "sandingBlock")(state);
+    assert.strictEqual(result, state);
+  });
+});
+
+describe("gatherBenchToolAction", () => {
+  // A run of two tables pushed edge to edge, plus a third standing alone
+  // across the shop. The hammer hangs on the small table in the run.
+  function runState(
+    overrides: {
+      targetTools?: ToolId[];
+      targetProgress?: MachineState["operationProgress"];
+    } = {},
+  ): GameState {
+    const target: MachineState = {
+      ...freshMachineState("worktable1x2", initialGameState.progression),
+      position: [1, 1],
+      tools: overrides.targetTools ?? [],
+      operationProgress:
+        overrides.targetProgress ??
+        freshMachineState("worktable1x2", initialGameState.progression)
+          .operationProgress,
+    };
+    const neighbour: MachineState = {
+      ...freshMachineState("worktable1x1", initialGameState.progression),
+      position: [5, 1],
+      tools: ["hammer"],
+    };
+    const stray: MachineState = {
+      ...freshMachineState("worktable1x1", initialGameState.progression),
+      position: [10, 10],
+      tools: ["sandingBlock"],
+    };
+    return stateWith({ machines: [target, neighbour, stray] });
+  }
+
+  function targetOf(gameState: GameState): Machine {
+    return getMachines(gameState.machines)[0];
+  }
+
+  it("slides the tool from the neighbouring table onto this one", () => {
+    const state = runState();
+    const result = gatherBenchToolAction(targetOf(state), "hammer")(state);
+    assert.deepStrictEqual(result.machines[0].tools, ["hammer"]);
+    assert.deepStrictEqual(result.machines[1].tools, []);
+  });
+
+  it("leaves a tool on a table outside the run where it hangs", () => {
+    const state = runState();
+    const result = gatherBenchToolAction(
+      targetOf(state),
+      "sandingBlock",
+    )(state);
+    assert.strictEqual(result, state);
+    assert.deepStrictEqual(result.machines[2].tools, ["sandingBlock"]);
+  });
+
+  it("refuses when this table's rack is full", () => {
+    // The full-size table has four slots
+    const state = runState({
+      targetTools: ["sandingBlock", "handSaw", "drill", "handPlane"],
+    });
+    const result = gatherBenchToolAction(targetOf(state), "hammer")(state);
+    assert.strictEqual(result, state);
+  });
+
+  it("refuses while this table is mid-operation", () => {
+    const state = runState({
+      targetProgress: {
+        status: "inProgress",
+        phaseIndex: 0,
+        ticksRemaining: 5,
+      },
+    });
+    const result = gatherBenchToolAction(targetOf(state), "hammer")(state);
     assert.strictEqual(result, state);
   });
 });

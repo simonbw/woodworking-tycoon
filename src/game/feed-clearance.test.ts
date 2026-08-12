@@ -113,7 +113,7 @@ describe("feedRunAvailable", () => {
   it("passes over a bare worktable — an outfeed table", () => {
     const state = shopWith(
       machineAt("jobsiteTableSaw", [6, 8]),
-      machineAt("worktable1x3", [6, 4]),
+      machineAt("worktable1x2", [6, 4]),
     );
     const saw = new Machine(state.machines[0]);
     const run = feedRunAvailable(saw, CellMap.fromGameState(state), 8);

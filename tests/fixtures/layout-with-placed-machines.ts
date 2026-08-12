@@ -112,13 +112,14 @@ export const layoutWithPlacedMachines: GameState = {
     entrancePosition: [6, 15],
   },
   progression: {
-    tutorialStep: 0,
-    tutorialDismissed: true,
+    tutorials: {
+      opening: { step: 0, dismissed: true },
+      dust: { step: 0, dismissed: false },
+    },
     storeUnlocked: true,
     lumberyardUnlocked: false,
     salesCompleted: 1,
     sweepingUnlocked: false,
-    dustTipDismissed: false,
     unlockedArticles: ALL_ARTICLE_IDS,
     readArticles: ALL_ARTICLE_IDS,
     xp: 0,

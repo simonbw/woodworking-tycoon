@@ -13,12 +13,6 @@ export const finishingKit: ToolType = {
   description:
     "Rags, applicator pads, and a card scraper. Rubs a sanded blank out into a finished board, and wipes the oil on after.",
   cost: 8,
-  compatibleMachines: [
-    "workspace",
-    "worktable1x1",
-    "worktable1x2",
-    "worktable1x3",
-    "worktable2x2",
-  ],
+  compatibleMachines: ["workspace", "worktable1x1", "worktable1x2"],
   operations: FINISHING_OPERATIONS,
 };

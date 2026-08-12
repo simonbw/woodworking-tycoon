@@ -113,14 +113,6 @@ const PLAN_FACTS: Partial<
     category: "shopFurniture",
     note: "The standard bench. Most of the shop happens here.",
   },
-  worktable1x3: {
-    category: "shopFurniture",
-    note: "Room to lay a long board down at last.",
-  },
-  worktable2x2: {
-    category: "shopFurniture",
-    note: "Big enough to lose a tape measure on.",
-  },
   storageRack: {
     category: "shopFurniture",
     note: "OSB is fine here. Save the good sheets for jigs.",
@@ -141,10 +133,6 @@ const PLAN_FACTS: Partial<
   straightLineSled: {
     category: "jigs",
     note: "A straight edge for boards that don't have one.",
-  },
-  resawFence: {
-    category: "jigs",
-    note: "Tall enough to clear the blade, and no taller.",
   },
 };
 

@@ -139,14 +139,11 @@ export interface BlueprintFastener {
 export type EquipmentBlueprintId =
   | "worktable1x1"
   | "worktable1x2"
-  | "worktable1x3"
-  | "worktable2x2"
   | "storageRack"
   | "toolDrawers"
   | "materialShelf"
   | "crosscutSled"
-  | "straightLineSled"
-  | "resawFence";
+  | "straightLineSled";
 
 export type BlueprintId = FinishedProductType | EquipmentBlueprintId;
 
@@ -1045,8 +1042,6 @@ function worktableBlueprint(
 export const WORKTABLE_BLUEPRINTS = {
   worktable1x1: worktableBlueprint("worktable1x1", 24, 24, 1, 3),
   worktable1x2: worktableBlueprint("worktable1x2", 48, 24, 1, 4),
-  worktable1x3: worktableBlueprint("worktable1x3", 72, 24, 1, 5),
-  worktable2x2: worktableBlueprint("worktable2x2", 48, 48, 2, 6),
 } as const;
 
 /** The storage rack: the worktable's shape in the cheap sheets — a deck
@@ -1205,46 +1200,6 @@ export const STRAIGHT_LINE_SLED_BLUEPRINT: ProductBlueprint = makeBlueprint({
       yIn,
       angleDeg: 90,
       layer: 1,
-    })),
-  ],
-});
-
-/**
- * The tall resaw fence, on its back: the face sheet down, two triangular
- * braces stood on edge where they keep it square to the table.
- */
-export const RESAW_FENCE_BLUEPRINT: ProductBlueprint = makeBlueprint({
-  id: "resawFence",
-  widthIn: 24,
-  heightIn: 12,
-  fastenerConsumable: "screws",
-  slots: [
-    {
-      role: "face",
-      // Tall enough to clear the blade and no taller: the fence only
-      // ever holds stock up to the saw's resaw capacity on edge.
-      requirement: sheetRequirement(JIG_GRADE_KINDS, 24, 6),
-      part: sheetPart(6, 24),
-      xIn: 12,
-      yIn: 6,
-      angleDeg: 90,
-      layer: 0,
-    },
-    ...[6, 18].map((xIn) => ({
-      role: "brace",
-      requirement: {
-        type: ["board"],
-        width: [4],
-        length: [12],
-        thickness: [2],
-        quantity: 1,
-      } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
-      xIn,
-      yIn: 6,
-      angleDeg: 0,
-      layer: 1,
-      onEdge: true,
     })),
   ],
 });
@@ -1587,14 +1542,11 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   sideTable: SIDE_TABLE_BLUEPRINT,
   worktable1x1: WORKTABLE_BLUEPRINTS.worktable1x1,
   worktable1x2: WORKTABLE_BLUEPRINTS.worktable1x2,
-  worktable1x3: WORKTABLE_BLUEPRINTS.worktable1x3,
-  worktable2x2: WORKTABLE_BLUEPRINTS.worktable2x2,
   storageRack: STORAGE_RACK_BLUEPRINT,
   toolDrawers: TOOL_DRAWERS_BLUEPRINT,
   materialShelf: MATERIAL_SHELF_BLUEPRINT,
   crosscutSled: CROSSCUT_SLED_BLUEPRINT,
   straightLineSled: STRAIGHT_LINE_SLED_BLUEPRINT,
-  resawFence: RESAW_FENCE_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */
