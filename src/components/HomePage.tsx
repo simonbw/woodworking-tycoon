@@ -1,12 +1,11 @@
 import React from "react";
 import { useBenchDiveActive } from "./bench-view/benchSceneSlot";
-import { DustTutorialCard } from "./DustTutorialCard";
 import { NightfallCard } from "./NightfallCard";
 import { HandsStrip } from "./HandsStrip";
 import { NavBar } from "./NavBar";
 import { SuppliesSection } from "./SuppliesSection";
 import { TargetedMachineProvider } from "./TargetedMachineContext";
-import { TutorialCard } from "./tutorial/TutorialCard";
+import { TutorialCards } from "./tutorial/TutorialCard";
 import { ShopView } from "./shop-view/ShopView";
 
 export const HomePage: React.FC = () => {
@@ -34,11 +33,11 @@ const HomePageContent: React.FC = () => {
   // Leaned over a bench, the corner chips fade: the bench scene draws
   // in the shop's canvas underneath them, and they'd be unreachable
   // behind the bench view's pointer surface anyway. The top bar stays —
-  // it deliberately rides above the bench view — and so does the
-  // coach's card, because the guided opening's bench steps are read
-  // mid-dive: its column rises over the bench view and slides down its
-  // corner to clear the station nameplate. The one-time notes beneath
-  // it read the shop floor, so they fade with the rest.
+  // it deliberately rides above the bench view — and so do the
+  // coach's cards, because the guided opening's bench steps are read
+  // mid-dive: their column rises over the bench view and slides down its
+  // corner to clear the station nameplate. The nightfall note beneath
+  // them reads the shop floor, so it fades with the rest.
   const benchDive = useBenchDiveActive();
   const chipClass = `transition-opacity duration-150 ${
     benchDive ? "opacity-0" : "opacity-100"
@@ -60,9 +59,8 @@ const HomePageContent: React.FC = () => {
           benchDive ? "top-16 z-[36]" : "top-6 z-20"
         }`}
       >
-        <TutorialCard />
+        <TutorialCards />
         <div inert={benchDive} className={`space-y-3 ${chipClass}`}>
-          <DustTutorialCard />
           <NightfallCard />
         </div>
       </div>

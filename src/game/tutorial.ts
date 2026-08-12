@@ -1,6 +1,7 @@
 import { PALLET_BOARD_LENGTH_IN } from "./bench-work/pallet-geometry";
 import { hasOneMiteredEnd, isBoard } from "./board-helpers";
-import { GameState } from "./GameState";
+import { dustTotal } from "./Dust";
+import { GameState, TutorialTrackId, TutorialTrackProgress } from "./GameState";
 import { MachineId } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
 import { formatMoney } from "../utils/formatNumber";
@@ -8,12 +9,14 @@ import { ownsTool } from "./progression-helpers";
 import { hasSkill } from "./skill-helpers";
 
 /**
- * The guided opening: the character's own to-do list, a card of goals
- * with checkboxes, derived from the shop rather than scripted. Each
+ * The tutorials: the character's own to-do lists, cards of goals with
+ * checkboxes, derived from the shop rather than scripted. Each card is a
+ * track — the guided opening that starts every new game, and the sweeping
+ * lesson that goes up once the floor first gets properly dusty — and each
  * sub-step is a predicate over GameState; a box is checked when its
  * predicate holds (or the walk already passed it), the first unchecked
- * box is what the coach points at, and `advanceTutorialStep` walks the
- * flat index forward inside the milestone pass.
+ * box of every up card is what the coach points at, and `advanceTutorials`
+ * walks each track's flat index forward inside the milestone pass.
  *
  * Two properties fall out of that, and both are the point:
  *
@@ -23,16 +26,18 @@ import { hasSkill } from "./skill-helpers";
  *   thinks happened.
  * - It cannot lock. Nothing here gates input — the coach points, the
  *   player acts, and every predicate reads a condition the player can
- *   always reach again (scavenging is free and unlimited, and the stand
- *   sells whatever gets set out on it).
+ *   always reach again (scavenging is free and unlimited, the stand
+ *   sells whatever gets set out on it, and dusty machines keep making
+ *   dust).
  *
  * The prose lives in TutorialCard, not here, so instructions can name
  * their keys through the shortcut registry instead of hard-coding glyphs.
- * This file owns goal titles, checkbox labels, targets, and predicates.
+ * This file owns track begin conditions, goal titles, checkbox labels,
+ * targets, and predicates.
  *
- * It ends deliberately at the money goal — from there the reputation
- * gates pace the shop's growth. Skip is one flag (`tutorialDismissed`),
- * always offered, never punished.
+ * The opening ends deliberately at the money goal — from there the
+ * reputation gates pace the shop's growth. Skip is one flag per track
+ * (`tutorials[id].dismissed`), always offered, never punished.
  */
 
 export const TUTORIAL_STEP_IDS = [
@@ -49,10 +54,18 @@ export const TUTORIAL_STEP_IDS = [
   "cutParts",
   "assembleBirdhouse",
   "earnSavings",
+  "getBroom",
+  "sweepUp",
+  "emptyPan",
 ] as const;
 export type TutorialStepId = (typeof TUTORIAL_STEP_IDS)[number];
 
-export const TUTORIAL_GOAL_IDS = ["firstItem", "birdhouse", "savings"] as const;
+export const TUTORIAL_GOAL_IDS = [
+  "firstItem",
+  "birdhouse",
+  "savings",
+  "sweepFloor",
+] as const;
 export type TutorialGoalId = (typeof TUTORIAL_GOAL_IDS)[number];
 
 /**
@@ -64,6 +77,7 @@ export type TutorialGoalId = (typeof TUTORIAL_GOAL_IDS)[number];
 export const TUTORIAL_DOM_TARGET_IDS = [
   "navbar-journal",
   "store-tool-handSaw",
+  "store-tool-broom",
   "store-checkout",
   "skill-rusticProjects",
 ] as const;
@@ -76,6 +90,7 @@ export type TutorialTarget =
   | { readonly kind: "machine"; readonly machineTypeId: MachineId }
   | { readonly kind: "truck"; readonly part: "cab" | "bed" }
   | { readonly kind: "stand" }
+  | { readonly kind: "broom" }
   | {
       readonly kind: "pile";
       readonly match: (material: MaterialInstance) => boolean;
@@ -255,7 +270,7 @@ const reachedMoneyGoal = (gameState: GameState) =>
  * it on a condition that has already come and gone. The money goal is the
  * terminal fallback: a shop that saved up past it has outgrown the list.
  */
-export const TUTORIAL_GOALS: ReadonlyArray<TutorialGoal> = [
+const OPENING_GOALS: ReadonlyArray<TutorialGoal> = [
   {
     id: "firstItem",
     title: "Make my first item",
@@ -391,63 +406,167 @@ export const TUTORIAL_GOALS: ReadonlyArray<TutorialGoal> = [
   },
 ];
 
-/** The goals flattened to the walk order the stored index counts in. */
-export const TUTORIAL_STEPS: ReadonlyArray<TutorialStep> =
-  TUTORIAL_GOALS.flatMap((goal) => goal.steps);
+/**
+ * The sweeping lesson. Its steps are the broom loop end to end: the pan
+ * holding dust proves a sweep happened, and the pan coming back up empty
+ * proves it was poured out at the can — the only drain it has. Transient
+ * conditions are fine here because the walk ratchets: the frontier moves
+ * the tick a predicate first holds and never comes back.
+ */
+const DUST_GOALS: ReadonlyArray<TutorialGoal> = [
+  {
+    id: "sweepFloor",
+    title: "Sweep the floor",
+    steps: [
+      {
+        id: "getBroom",
+        label: "Buy a broom at the Orange Box",
+        targets: [
+          { kind: "truck", part: "cab" },
+          { kind: "dom", id: "store-tool-broom" },
+        ],
+        satisfied: (gameState) => gameState.broomOwned,
+      },
+      {
+        id: "sweepUp",
+        label: "Sweep dust into the pan",
+        targets: [{ kind: "broom" }],
+        satisfied: (gameState) => dustTotal(gameState.dustpan) > 0,
+      },
+      {
+        id: "emptyPan",
+        label: "Empty the pan at the garbage can",
+        targets: [{ kind: "machine", machineTypeId: "garbageCan" }],
+        satisfied: (gameState) => dustTotal(gameState.dustpan) === 0,
+      },
+    ],
+  },
+];
 
-/** The index that means "every step is done". */
-export const TUTORIAL_COMPLETE = TUTORIAL_STEPS.length;
+/** One to-do card: when it goes up, and the goals written on it. */
+export interface TutorialTrack {
+  readonly id: TutorialTrackId;
+  /** Whether the card has gone up yet. Reads a one-way condition, so a
+   * begun track never un-begins. */
+  readonly begun: (gameState: GameState) => boolean;
+  readonly goals: ReadonlyArray<TutorialGoal>;
+}
+
+/** Every track, in the order their cards stack on the wall. */
+export const TUTORIAL_TRACKS: ReadonlyArray<TutorialTrack> = [
+  { id: "opening", begun: () => true, goals: OPENING_GOALS },
+  {
+    id: "dust",
+    begun: (gameState) => gameState.progression.sweepingUnlocked,
+    goals: DUST_GOALS,
+  },
+];
+
+/** Each track's goals flattened to the walk order its stored index counts in. */
+const STEPS_BY_TRACK: Readonly<
+  Record<TutorialTrackId, ReadonlyArray<TutorialStep>>
+> = {
+  opening: OPENING_GOALS.flatMap((goal) => goal.steps),
+  dust: DUST_GOALS.flatMap((goal) => goal.steps),
+};
 
 /**
- * Walk the step index past everything the shop already satisfies. Called
- * from the milestone pass, which runs every tick, so the card keeps up
- * with whatever the player did without any action needing to know the
- * tutorial exists.
+ * Walk every track's step index past everything the shop already
+ * satisfies. Called from the milestone pass, which runs every tick, so
+ * the cards keep up with whatever the player did without any action
+ * needing to know the tutorials exist. Returns the incoming record
+ * untouched when nothing moved, so the pass can compare by identity.
+ *
+ * Tracks walk whether or not their card is up yet: a player who buys a
+ * broom and sweeps before the floor ever gets bad has already taken the
+ * lesson, and the card skips what they've shown they know.
  */
-export function advanceTutorialStep(gameState: GameState): number {
-  let step = gameState.progression.tutorialStep;
-  while (
-    step < TUTORIAL_STEPS.length &&
-    TUTORIAL_STEPS[step].satisfied(gameState)
-  ) {
-    step++;
+export function advanceTutorials(
+  gameState: GameState,
+): Readonly<Record<TutorialTrackId, TutorialTrackProgress>> {
+  let tutorials = gameState.progression.tutorials;
+  for (const track of TUTORIAL_TRACKS) {
+    const progress = tutorials[track.id];
+    const steps = STEPS_BY_TRACK[track.id];
+    let step = progress.step;
+    while (step < steps.length && steps[step].satisfied(gameState)) {
+      step++;
+    }
+    if (step !== progress.step) {
+      tutorials = { ...tutorials, [track.id]: { ...progress, step } };
+    }
   }
-  return step;
+  return tutorials;
 }
 
-/** The step the coach is currently on, or null once it's done or skipped. */
-export function currentTutorialStep(gameState: GameState): TutorialStep | null {
-  if (gameState.progression.tutorialDismissed) return null;
-  return TUTORIAL_STEPS[gameState.progression.tutorialStep] ?? null;
+/** The step a track's coach is on, or null while its card isn't up —
+ * not begun yet, skipped, or every box ticked. */
+export function currentTutorialStep(
+  gameState: GameState,
+  trackId: TutorialTrackId,
+): TutorialStep | null {
+  const track = TUTORIAL_TRACKS.find((t) => t.id === trackId);
+  const progress = gameState.progression.tutorials[trackId];
+  if (track === undefined || progress.dismissed || !track.begun(gameState)) {
+    return null;
+  }
+  return STEPS_BY_TRACK[trackId][progress.step] ?? null;
 }
 
-/** The to-do card's view of the current goal: its steps and which boxes
+/** A to-do card's view of its current goal: its steps and which boxes
  * are checked right now. */
 export interface TutorialGoalView {
+  readonly trackId: TutorialTrackId;
   readonly goal: TutorialGoal;
   /** Aligned with goal.steps: passed by the walk, or satisfied live. */
   readonly checked: ReadonlyArray<boolean>;
 }
 
 /**
- * The goal holding the current step, with each box's checked state. A box
- * is checked once the walk has passed it — the walk only moves forward,
- * so a condition that has come and gone (the pallet that got pried, the
- * store trip that ended) stays checked — or while its predicate holds,
- * so work done ahead of the coach shows up immediately.
+ * The goal holding a track's current step, with each box's checked state.
+ * A box is checked once the walk has passed it — the walk only moves
+ * forward, so a condition that has come and gone (the pallet that got
+ * pried, the pan that got poured out) stays checked — or while its
+ * predicate holds, so work done ahead of the coach shows up immediately.
  */
 export function currentTutorialGoalView(
   gameState: GameState,
+  trackId: TutorialTrackId,
 ): TutorialGoalView | null {
-  const step = currentTutorialStep(gameState);
+  const step = currentTutorialStep(gameState, trackId);
   if (step === null) return null;
-  const goal = TUTORIAL_GOALS.find((g) => g.steps.includes(step));
+  const track = TUTORIAL_TRACKS.find((t) => t.id === trackId);
+  const goal = track?.goals.find((g) => g.steps.includes(step));
   if (goal === undefined) return null;
-  const walkFrontier = gameState.progression.tutorialStep;
+  const steps = STEPS_BY_TRACK[trackId];
+  const walkFrontier = gameState.progression.tutorials[trackId].step;
   return {
+    trackId,
     goal,
     checked: goal.steps.map(
-      (s) => TUTORIAL_STEPS.indexOf(s) < walkFrontier || s.satisfied(gameState),
+      (s) => steps.indexOf(s) < walkFrontier || s.satisfied(gameState),
     ),
   };
+}
+
+/** Every card on the wall right now, in track order — the opening on
+ * top, lessons that begin later beneath it. */
+export function tutorialViews(
+  gameState: GameState,
+): ReadonlyArray<TutorialGoalView> {
+  return TUTORIAL_TRACKS.flatMap((track) => {
+    const view = currentTutorialGoalView(gameState, track.id);
+    return view === null ? [] : [view];
+  });
+}
+
+/** The current step of every up card — everything the coach is pointing
+ * at, across all tracks. */
+export function activeTutorialSteps(
+  gameState: GameState,
+): ReadonlyArray<TutorialStep> {
+  return TUTORIAL_TRACKS.flatMap((track) => {
+    const step = currentTutorialStep(gameState, track.id);
+    return step === null ? [] : [step];
+  });
 }

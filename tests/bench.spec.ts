@@ -288,10 +288,19 @@ test.describe("Bench view", () => {
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          progression: { ...state.progression, tutorialDismissed: false },
+          progression: {
+            ...state.progression,
+            tutorials: {
+              ...state.progression.tutorials,
+              opening: {
+                ...state.progression.tutorials.opening,
+                dismissed: false,
+              },
+            },
+          },
         }));
       });
-      const card = page.getByTestId("tutorial-card");
+      const card = page.getByTestId("tutorial-card-opening");
       await expect(card).toBeVisible();
       // A real click, not a visibility check: it fails if the card is
       // ghosted behind the bench view's pointer surface or inert. It

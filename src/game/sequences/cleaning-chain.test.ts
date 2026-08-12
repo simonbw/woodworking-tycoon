@@ -7,7 +7,9 @@
  * `dust-actions.test.ts` covers each rule (rates, the film, the pan
  * cap); the point of running them in order is that the chain has no
  * gaps — the unlock really fires from milling, the broom really commits
- * the hands, and the pan really empties through the can.
+ * the hands, and the pan really empties through the can. The sweeping
+ * tutorial's card reads this same chain, so its frontier is asserted at
+ * each stage the way sequences/tutorial.test.ts walks the opening.
  */
 
 import { describe, it } from "node:test";
@@ -23,6 +25,7 @@ import {
   setOperatingAction,
   setPlayerPositionAction,
 } from "../game-actions/player-actions";
+import { currentTutorialStep } from "../tutorial";
 import { Direction } from "../Vectors";
 import { openShop, ShopDriver } from "./shop-driver";
 
@@ -95,6 +98,14 @@ describe("cleaning chain", () => {
     const mess = floorDust(shop.shop);
     assert.ok(mess >= 60, `expected a real mess, found ${mess} units`);
 
+    // The unlock puts the sweeping card up, and the shop already owns a
+    // broom, so its first unchecked box is the sweep itself
+    assert.strictEqual(
+      currentTutorialStep(shop.shop, "dust")?.id,
+      "sweepUp",
+      "the card opens on sweeping with the broom already owned",
+    );
+
     // The broom leans at its home corner; picking it up takes empty hands
     shop.putEverythingDown();
     shop.standAt([1, 1]).apply(pickUpBroomAction());
@@ -124,6 +135,11 @@ describe("cleaning chain", () => {
       inThePan > mess * 0.4,
       `the pan should hold most of the mess: ${inThePan} of ${mess}`,
     );
+    assert.strictEqual(
+      currentTutorialStep(shop.shop, "dust")?.id,
+      "emptyPan",
+      "dust in the pan ticks the sweep box",
+    );
 
     // Sweeping commits the hands: the pickup action refuses while the
     // broom is in hand, so the boards stay on the floor
@@ -144,6 +160,13 @@ describe("cleaning chain", () => {
     assert.deepStrictEqual(shop.shop.dustpan, {});
     // Still holding the broom — the trip never took it out of the hands
     assert.strictEqual(heldTool(shop.shop), "broom");
+    // The empty pan ticks the last box, and the card comes down for good
+    shop.tick();
+    assert.strictEqual(
+      currentTutorialStep(shop.shop, "dust"),
+      null,
+      "the finished lesson takes its card down",
+    );
   });
 
   it("the vac finishes the job: suction to zero, deliberate empty", () => {

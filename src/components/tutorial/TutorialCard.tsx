@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { dismissTutorialAction } from "../../game/game-actions/progression-actions";
 import {
-  currentTutorialGoalView,
   TutorialGoalId,
+  TutorialGoalView,
   TutorialStep,
   TutorialStepId,
+  tutorialViews,
 } from "../../game/tutorial";
 import { playMarkerCheck } from "../../utils/markerSynth";
 import {
@@ -14,17 +15,19 @@ import {
   HandRule,
   HandStrike,
 } from "../hand-drawn/HandDrawn";
+import { ManualLink } from "../manual/ManualLink";
 import { HintSurfaceContext, ShortcutKeys } from "../shortcuts/Kbd";
 import { useApplyGameAction, useGameState } from "../useGameState";
 
 /**
- * The guided opening as the character's own to-do list (see
- * game/tutorial.ts): one goal at a time, its steps as checkboxes that
- * tick off as the shop's state satisfies them. The list comes from the
- * shop's own state, so this card never gets ahead of the player or stuck
- * behind them — it just renders whatever is next.
+ * The tutorials as the character's own to-do list (see game/tutorial.ts):
+ * one card per up track — the guided opening, and later the sweeping
+ * lesson beneath it — each showing its current goal, its steps as
+ * checkboxes that tick off as the shop's state satisfies them. The lists
+ * come from the shop's own state, so a card never gets ahead of the
+ * player or stuck behind them — it just renders whatever is next.
  *
- * Everything on it is written rather than typeset: the sheet is
+ * Everything on a card is written rather than typeset: the sheet is
  * `.paper-note`, the hand is `.pencil-hand`, and the rules, boxes,
  * ticks, crossings-out, and key caps are drawn marks (see
  * `hand-drawn/HandDrawn.tsx`). A finished step keeps the same graphite as
@@ -36,16 +39,22 @@ import { useApplyGameAction, useGameState } from "../useGameState";
  * name their keys through the shortcut registry: rebind a key and these
  * sentences follow.
  */
-export const TutorialCard: React.FC = () => {
+export const TutorialCards: React.FC = () => {
   const gameState = useGameState();
+  const views = tutorialViews(gameState);
+  return (
+    <>
+      {views.map((view) => (
+        <TutorialCard key={view.trackId} view={view} />
+      ))}
+    </>
+  );
+};
+
+const TutorialCard: React.FC<{ view: TutorialGoalView }> = ({ view }) => {
   const applyAction = useApplyGameAction();
-  const view = currentTutorialGoalView(gameState);
 
-  useMarkerOnCheck(view?.goal.id ?? null, view?.checked ?? null);
-
-  if (view === null) {
-    return null;
-  }
+  useMarkerOnCheck(view.goal.id, view.checked);
 
   const activeIndex = view.checked.findIndex((checked) => !checked);
   const activeStep = activeIndex >= 0 ? view.goal.steps[activeIndex] : null;
@@ -54,7 +63,7 @@ export const TutorialCard: React.FC = () => {
     <HintSurfaceContext.Provider value="hand">
       <section
         className="paper-note pencil-hand relative space-y-2"
-        data-testid="tutorial-card"
+        data-testid={`tutorial-card-${view.trackId}`}
       >
         <header>
           <h3
@@ -80,13 +89,18 @@ export const TutorialCard: React.FC = () => {
             <StepBody step={activeStep.id} />
           </div>
         )}
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          {/* The sweeping lesson has a manual page behind it; the pointer
+              rides its card the way it rode the old one-time note. */}
+          <span>
+            {view.trackId === "dust" && <ManualLink article="dust" />}
+          </span>
           {/* Written on the sheet like everything else, with a box drawn
               around it — a printed button would be the one piece of
               chrome on a page of handwriting. */}
           <button
             className="relative px-3 py-0.5 text-[0.85em] hover:text-ink-black"
-            onClick={() => applyAction(dismissTutorialAction())}
+            onClick={() => applyAction(dismissTutorialAction(view.trackId))}
             data-testid="tutorial-skip"
           >
             <HandFrame seed="tutorial-skip" />
@@ -278,6 +292,29 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
           Anything finished sells at the stand. Keep scavenging, building, and
           setting work out — the savings open the way to better machines and
           better wood.
+        </p>
+      );
+    case "getBroom":
+      return (
+        <p>
+          Left on the floor, sawdust slows your machines and your feet. The
+          Orange Box sells a broom — press <ShortcutKeys shortcut="pick-up" />{" "}
+          at the truck's cab, drive over, and take one off the tool wall.
+        </p>
+      );
+    case "sweepUp":
+      return (
+        <p>
+          Pick the broom up with <ShortcutKeys shortcut="pick-up" />, then hold{" "}
+          <ShortcutKeys shortcut="operate-machine" /> and walk to sweep the dust
+          into the dustpan.
+        </p>
+      );
+    case "emptyPan":
+      return (
+        <p>
+          The pan rides on the broom. Stand at the garbage can and hold{" "}
+          <ShortcutKeys shortcut="operate-machine" /> to pour it out.
         </p>
       );
   }

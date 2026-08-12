@@ -1,7 +1,7 @@
-import { GameAction } from "../GameState";
+import { GameAction, TutorialTrackId } from "../GameState";
 import { ManualArticleId, MANUAL_ARTICLES } from "../manual";
 import { UNLOCK_CONDITIONS } from "../progression-helpers";
-import { advanceTutorialStep } from "../tutorial";
+import { advanceTutorials } from "../tutorial";
 
 /** The player opened these manual articles — clears their NEW markers. */
 export function markArticlesReadAction(
@@ -22,23 +22,22 @@ export function markArticlesReadAction(
   };
 }
 
-/** The player has read the one-time "sweep it up" note. */
-export function dismissDustTipAction(): GameAction {
-  return (gameState) => ({
-    ...gameState,
-    progression: { ...gameState.progression, dustTipDismissed: true },
-  });
-}
-
-/** The player retired the guided opening early. One way, like an unlock. */
-export function dismissTutorialAction(): GameAction {
-  return (gameState) =>
-    gameState.progression.tutorialDismissed
-      ? gameState
-      : {
-          ...gameState,
-          progression: { ...gameState.progression, tutorialDismissed: true },
-        };
+/** The player retired a tutorial card early. One way, like an unlock. */
+export function dismissTutorialAction(trackId: TutorialTrackId): GameAction {
+  return (gameState) => {
+    const progress = gameState.progression.tutorials[trackId];
+    if (progress.dismissed) return gameState;
+    return {
+      ...gameState,
+      progression: {
+        ...gameState.progression,
+        tutorials: {
+          ...gameState.progression.tutorials,
+          [trackId]: { ...progress, dismissed: true },
+        },
+      },
+    };
+  };
 }
 
 /**
@@ -74,17 +73,17 @@ export function checkProgressionMilestonesAction(): GameAction {
     const updatedState = { ...gameState, progression };
     // The coach walks forward over everything the shop already satisfies.
     // This pass runs every tick, so no action has to know it exists.
-    const tutorialStep = advanceTutorialStep(updatedState);
+    const tutorials = advanceTutorials(updatedState);
 
     if (
       progression === gameState.progression &&
-      tutorialStep === progression.tutorialStep
+      tutorials === progression.tutorials
     ) {
       return gameState;
     }
     return {
       ...updatedState,
-      progression: { ...progression, tutorialStep },
+      progression: { ...progression, tutorials },
     };
   };
 }

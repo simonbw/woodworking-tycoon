@@ -15,10 +15,10 @@ The game has enough interlocking systems (surfaces, tool slots,
 milling settings, dust physics) that a player can't hold them all from
 contextual hints alone. The manual is the durable place to re-read how
 something works. It is deliberately **not** an interactive step-by-step
-tutorial — it's the binder on the shelf. One-shot in-world notes like
-`DustTutorialCard` stay: they're the moment-of-need nudge, the manual is
-the re-readable reference. New systems can ship both; the card may end
-with "see the shop manual".
+tutorial — it's the binder on the shelf. The moment-of-need nudges are
+the tutorial cards (tracks in `src/game/tutorial.ts`) and one-shot notes
+like `NightfallCard`; the manual is the re-readable reference. New
+systems can ship both; the card may end with "see the shop manual".
 
 The paperwork design system carries the fiction: an in-fiction
 **spiral-bound shop notebook** — one ivory page at a time, a wire coil
