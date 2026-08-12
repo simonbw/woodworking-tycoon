@@ -15,15 +15,15 @@ sweeping, vac dumping, crate pickup, the inspector panels) is untouched.
 
 - **The body** is a mutable singleton (`playerMotionStore.ts`): a float
   position in cell units, a heading in radians, and a `moving` flag. It is
-  written by `PlayerMotionLayer` every render frame and read imperatively
+  written by `useWalkingBody` every render frame and read imperatively
   by sprites inside `useTick` — walking causes **zero React re-renders**.
 - **The cell** is derived: when the body crosses into a new cell (or the
-  facing changes), `PlayerMotionLayer` dispatches
-  `setPlayerPositionAction(cell, direction)` — a cheap bookkeeping action,
-  a few times per second at most.
+  facing changes), `useWalkingBody` reports it and the venue's layer
+  dispatches `setPlayerPositionAction(cell, direction)` — a cheap
+  bookkeeping action, a few times per second at most.
 
 Reconciliation runs the other way when the *simulation* moves the player:
-`PlayerMotionLayer` remembers the last cell it wrote, and any
+`useWalkingBody` remembers the last cell it wrote, and any
 `player.position` that doesn't match came from outside (a loaded save, an
 E2E fixture, `__UPDATE_GAME_STATE__` teleports in tests). The body then
 snaps to that cell's center. This is what keeps the Playwright specs'
