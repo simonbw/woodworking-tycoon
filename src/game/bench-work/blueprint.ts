@@ -145,8 +145,7 @@ export type EquipmentBlueprintId =
   | "toolDrawers"
   | "materialShelf"
   | "crosscutSled"
-  | "straightLineSled"
-  | "resawFence";
+  | "straightLineSled";
 
 export type BlueprintId = FinishedProductType | EquipmentBlueprintId;
 
@@ -1209,46 +1208,6 @@ export const STRAIGHT_LINE_SLED_BLUEPRINT: ProductBlueprint = makeBlueprint({
   ],
 });
 
-/**
- * The tall resaw fence, on its back: the face sheet down, two triangular
- * braces stood on edge where they keep it square to the table.
- */
-export const RESAW_FENCE_BLUEPRINT: ProductBlueprint = makeBlueprint({
-  id: "resawFence",
-  widthIn: 24,
-  heightIn: 12,
-  fastenerConsumable: "screws",
-  slots: [
-    {
-      role: "face",
-      // Tall enough to clear the blade and no taller: the fence only
-      // ever holds stock up to the saw's resaw capacity on edge.
-      requirement: sheetRequirement(JIG_GRADE_KINDS, 24, 6),
-      part: sheetPart(6, 24),
-      xIn: 12,
-      yIn: 6,
-      angleDeg: 90,
-      layer: 0,
-    },
-    ...[6, 18].map((xIn) => ({
-      role: "brace",
-      requirement: {
-        type: ["board"],
-        width: [4],
-        length: [12],
-        thickness: [2],
-        quantity: 1,
-      } as InputMaterialWithQuantity<Board>,
-      part: { widthIn: 4, lengthIn: 12, thicknessQ: 2 } as const,
-      xIn,
-      yIn: 6,
-      angleDeg: 0,
-      layer: 1,
-      onEdge: true,
-    })),
-  ],
-});
-
 /** A short frame rail for the tray's ends: the same 1×1 mirrored-miter
  * stock as every frame, crosscut at the 12" detent. */
 const SHORT_FRAME_RAIL_REQUIREMENT: InputMaterialWithQuantity<Board> = {
@@ -1594,7 +1553,6 @@ const BLUEPRINTS: Partial<Record<BlueprintId, ProductBlueprint>> = {
   materialShelf: MATERIAL_SHELF_BLUEPRINT,
   crosscutSled: CROSSCUT_SLED_BLUEPRINT,
   straightLineSled: STRAIGHT_LINE_SLED_BLUEPRINT,
-  resawFence: RESAW_FENCE_BLUEPRINT,
 };
 
 /** The blueprint behind an assembled product type, or null. */

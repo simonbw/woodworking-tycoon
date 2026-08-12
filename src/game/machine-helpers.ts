@@ -257,14 +257,29 @@ export function matchRequirements(
   return { matched, remaining, firstUnmet: null };
 }
 
+/** Whether any of these operations wants the stock sitting this way. */
+function someOperationWants(
+  operations: ReadonlyArray<Operation>,
+  orientation: StockOrientation,
+): boolean {
+  return operations.some(
+    (operation) =>
+      operation.stockOrientation === undefined ||
+      operation.stockOrientation === orientation,
+  );
+}
+
 /**
  * Which way stock currently sits on this machine's table: the bag value if
  * the player has turned it, else the resting default of whichever
  * operation declares the `stockOrientation` parameter. A machine none of
  * whose operations declare it has nothing to stand stock against, so it
- * reads "flat" — which also means unmounting the jig that declared it
- * (the table saw's tall fence) lays the machine back down cleanly, stale
- * bag value and all.
+ * reads "flat".
+ *
+ * A bag value no operation on this list wants doesn't count — the table
+ * saw rests flat for the rip, and a player who hasn't learned resawing
+ * has nothing to stand a board up for, so the saw reads flat however the
+ * bag was left. Pass the skill-filtered list to get that reading.
  */
 export function stockOrientation(
   machine: Machine,
@@ -277,7 +292,10 @@ export function stockOrientation(
     return "flat";
   }
   const set = machine.selectedParameters?.stockOrientation;
-  if (set === "flat" || set === "on edge") {
+  if (
+    (set === "flat" || set === "on edge") &&
+    someOperationWants(operations, set)
+  ) {
     return set;
   }
   return (declared.defaultValue as StockOrientation) ?? "flat";
@@ -716,12 +734,24 @@ export function liveSettingParameter(
   // actually on the table: the table saw's fence reads in board detents
   // for a board and in inches for a sheet, and the scale you turn is the
   // one for the stock in front of you.
+  const available = machine.type.directFeed
+    ? availableOperations(machine, progression)
+    : [];
   const candidates = machine.type.directFeed
-    ? operationsForStagedStock(
-        machine,
-        orientedOperations(machine, availableOperations(machine, progression)),
-      )
+    ? operationsForStagedStock(machine, orientedOperations(machine, available))
     : [selectedBenchPlan(machine)].filter((op) => op != null);
+
+  // Turning the stock over is only a setting when the machine has work
+  // waiting the other way up. A table saw whose owner hasn't learned
+  // resawing only ever rips, so R goes back to rummaging the pile — and
+  // nobody can strand the saw standing on edge with nothing to run.
+  const orientationsWanted = new Set(
+    available
+      .map((operation) => operation.stockOrientation)
+      .filter((orientation) => orientation !== undefined),
+  );
+  const canTurnStock = orientationsWanted.size > 1;
+
   return candidates
     .flatMap((operation) =>
       operationParameters(operation).map((parameter) => ({
@@ -729,5 +759,10 @@ export function liveSettingParameter(
         parameter,
       })),
     )
-    .find(({ parameter }) => isKind(parameter) && parameter.values.length > 1);
+    .find(
+      ({ parameter }) =>
+        isKind(parameter) &&
+        parameter.values.length > 1 &&
+        (parameter.id !== "stockOrientation" || canTurnStock),
+    );
 }

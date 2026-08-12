@@ -92,11 +92,10 @@ export const MillingArticle: React.FC = () => (
         come off rough, so plan on planing or sanding them.
       </li>
       <li>
-        <Term>Table saw</Term>, with the tall resaw fence bolted on: up to 6"
-        wide, since the cut is two passes that meet in the middle. The blade
-        takes a quarter inch, but leaves cleaner faces. The board needs a
-        straight edge as well as a flat face to stand up square. Press R to lay
-        the stock back down and rip with the fence still mounted.
+        <Term>Table saw</Term> — up to 6" wide, since the cut is two passes that
+        meet in the middle. The blade takes a quarter inch, but leaves cleaner
+        faces. The board needs a straight edge as well as a flat face to stand
+        up square against the fence. Press R to lay the stock back down and rip.
       </li>
     </UL>
 

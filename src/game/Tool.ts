@@ -8,7 +8,6 @@ import { hammer } from "./tools/hammer";
 import { handPlane } from "./tools/handPlane";
 import { handSaw } from "./tools/handSaw";
 import { randomOrbitSander } from "./tools/randomOrbitSander";
-import { resawFence } from "./tools/resawFence";
 import { sandingBlock } from "./tools/sandingBlock";
 import { straightLineSled } from "./tools/straightLineSled";
 
@@ -50,7 +49,6 @@ export const TOOL_TYPES = {
   circularSaw,
   crosscutSled,
   straightLineSled,
-  resawFence,
   dustBag,
 } satisfies { [id: string]: ToolType };
 

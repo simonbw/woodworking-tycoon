@@ -261,7 +261,7 @@ export interface OperationPhase {
 
 /**
  * How stock sits on a saw table: lying flat on a face, or standing on edge
- * against a tall fence. One physical fact per machine, kept in the shared
+ * against the fence. One physical fact per machine, kept in the shared
  * settings bag under `stockOrientation` (see stockOrientationParameter) and
  * flipped with R like any other rotating setting — turning the workpiece
  * over is the shop's most literal rotation.

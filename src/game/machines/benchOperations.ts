@@ -9,7 +9,6 @@ import {
   MATERIAL_SHELF_BLUEPRINT,
   PICTURE_FRAME_BLUEPRINT,
   ProductBlueprint,
-  RESAW_FENCE_BLUEPRINT,
   SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
   SIDE_TABLE_BLUEPRINT,
@@ -283,23 +282,6 @@ export const BENCH_OPERATIONS: ReadonlyArray<Operation> = [
       return {
         inputs: [],
         outputs: [makeToolItem("straightLineSled")],
-      };
-    },
-  },
-  {
-    name: "Build Tall Resaw Fence",
-    id: "buildResawFence",
-    requiredSkill: "resawing",
-    duration: 25,
-    // A tall sheet face and two triangular braces to keep it square to
-    // the table — nothing rides, so it's the cheapest jig of the three
-    interaction: { kind: "assembly", blueprint: "resawFence" },
-    requiredConsumables: blueprintFastenerCost(RESAW_FENCE_BLUEPRINT),
-    getInputMaterials: () => blueprintInputs(RESAW_FENCE_BLUEPRINT),
-    output: () => {
-      return {
-        inputs: [],
-        outputs: [makeToolItem("resawFence")],
       };
     },
   },

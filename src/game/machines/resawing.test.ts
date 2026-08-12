@@ -5,10 +5,14 @@ import { Machine, MachineState, Operation, ParameterValues } from "../Machine";
 import {
   explainFeedRefusal,
   findFeedableOperation,
+  liveSettingParameter,
+  orientedOperations,
   stockOrientation,
 } from "../machine-helpers";
+import { availableOperations } from "../skill-helpers";
 import { materialMeetsInput } from "../material-helpers";
-import { resawFence } from "../tools/resawFence";
+import { initialGameState } from "../initialGameState";
+import { STARTER_SKILLS } from "../Skill";
 import { bandSaw } from "./bandSaw";
 import { jobsiteTableSaw } from "./jobsiteTableSaw";
 
@@ -16,9 +20,17 @@ const resaw = bandSaw.operations.find((op) => op.id === "resaw") as Operation;
 const bandSawRip = bandSaw.operations.find(
   (op) => op.id === "ripBoard",
 ) as Operation;
-const resawOnTableSaw = resawFence.operations.find(
+const resawOnTableSaw = jobsiteTableSaw.operations.find(
   (op) => op.id === "resawOnTableSaw",
 ) as Operation;
+
+/** Before the Resawing skill: the saw only rips. */
+const beforeResawing = initialGameState.progression;
+/** After it: the saw can stand a board up. */
+const afterResawing = {
+  ...initialGameState.progression,
+  unlockedSkills: [...STARTER_SKILLS, "resawing" as const],
+};
 
 /** 8/4 stock, milled flat and straight — the resaw's happy path. */
 const blank = (thickness: 4 | 6 | 8 = 8, width: 4 | 6 | 8 = 6) =>
@@ -253,42 +265,72 @@ describe("table saw resaw", () => {
   });
 });
 
-describe("mounting the tall fence", () => {
-  it("keeps ripping on the saw's list — orientation decides, not the rack", () => {
-    const fenced = idleSaw("jobsiteTableSaw", ["resawFence"]);
-    const ids = fenced.operations.map((op) => op.id);
+describe("table saw stock orientation", () => {
+  it("resaws on a bare saw — no jig in the rack", () => {
+    const bare = idleSaw("jobsiteTableSaw");
+    const ids = bare.operations.map((op) => op.id);
     assert.ok(ids.includes("ripBoard"));
     assert.ok(ids.includes("resawOnTableSaw"));
+    assert.deepStrictEqual(bare.state.tools, []);
   });
 
-  it("stands the work on edge as soon as it's bolted on", () => {
-    const fenced = idleSaw("jobsiteTableSaw", ["resawFence"]);
-    assert.strictEqual(stockOrientation(fenced), "on edge");
-    const match = findFeedableOperation(fenced, fenced.operations, [blank()]);
-    assert.strictEqual(match?.operation.id, "resawOnTableSaw");
-  });
-
-  it("rips again once R lays the stock flat, fence still mounted", () => {
-    const fenced = idleSaw("jobsiteTableSaw", ["resawFence"], {
-      stockOrientation: "flat",
-    });
-    const match = findFeedableOperation(fenced, fenced.operations, [blank()]);
-    assert.strictEqual(match?.operation.id, "ripBoard");
-  });
-
-  it("ignores a stale on-edge setting once the fence comes off", () => {
-    // Unmounting removes the only operation that declares the
-    // orientation, so the leftover bag value stops meaning anything and
-    // the bare saw lies its work flat again
-    const bare = idleSaw("jobsiteTableSaw", [], {
-      stockOrientation: "on edge",
-    });
+  it("rests flat, so the same blank rips by default", () => {
+    const bare = idleSaw("jobsiteTableSaw");
     assert.strictEqual(stockOrientation(bare), "flat");
     const match = findFeedableOperation(bare, bare.operations, [blank()]);
     assert.strictEqual(match?.operation.id, "ripBoard");
   });
 
-  it("mounts only on the table saw", () => {
-    assert.deepStrictEqual(resawFence.compatibleMachines, [jobsiteTableSaw.id]);
+  it("resaws once R stands the stock up", () => {
+    const bare = idleSaw("jobsiteTableSaw", [], {
+      stockOrientation: "on edge",
+    });
+    const match = findFeedableOperation(bare, bare.operations, [blank()]);
+    assert.strictEqual(match?.operation.id, "resawOnTableSaw");
+  });
+
+  it("keeps the two sleds' slots free", () => {
+    assert.strictEqual(jobsiteTableSaw.toolSlots, 2);
+  });
+});
+
+describe("R at the table saw", () => {
+  it("turns the stock over once resawing is learned", () => {
+    const bare = idleSaw("jobsiteTableSaw");
+    const live = liveSettingParameter(bare, afterResawing, "rotate");
+    assert.strictEqual(live?.parameter.id, "stockOrientation");
+  });
+
+  it("offers nothing to turn before then — the saw only rips", () => {
+    const bare = idleSaw("jobsiteTableSaw");
+    assert.strictEqual(
+      liveSettingParameter(bare, beforeResawing, "rotate"),
+      undefined,
+    );
+  });
+
+  it("stays live standing on edge, so the stock can come back down", () => {
+    const onEdge = idleSaw("jobsiteTableSaw", [], {
+      stockOrientation: "on edge",
+    });
+    const live = liveSettingParameter(onEdge, afterResawing, "rotate");
+    assert.strictEqual(live?.parameter.id, "stockOrientation");
+  });
+
+  it("reads flat for a player who can't resaw, whatever the bag says", () => {
+    // A skill-filtered saw has nothing that wants a board on edge, so a
+    // leftover setting stops meaning anything rather than stranding the
+    // saw in a mode with no cut to run
+    const onEdge = idleSaw("jobsiteTableSaw", [], {
+      stockOrientation: "on edge",
+    });
+    const canRun = availableOperations(onEdge, beforeResawing);
+    assert.strictEqual(stockOrientation(onEdge, canRun), "flat");
+    const match = findFeedableOperation(
+      onEdge,
+      orientedOperations(onEdge, canRun),
+      [blank()],
+    );
+    assert.strictEqual(match?.operation.id, "ripBoard");
   });
 });
