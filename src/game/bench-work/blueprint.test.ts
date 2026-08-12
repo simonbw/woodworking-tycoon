@@ -24,7 +24,6 @@ import {
   CROSSCUT_SLED_BLUEPRINT,
   HEX_FRAME_BLUEPRINT,
   MATERIAL_SHELF_BLUEPRINT,
-  RESAW_FENCE_BLUEPRINT,
   SERVING_TRAY_BLUEPRINT,
   SHELF_BLUEPRINT,
   SIDE_TABLE_BLUEPRINT,
@@ -882,18 +881,12 @@ describe("equipment blueprints", () => {
   });
 
   it("the jigs are screwed", () => {
-    for (const jig of [
-      CROSSCUT_SLED_BLUEPRINT,
-      STRAIGHT_LINE_SLED_BLUEPRINT,
-      RESAW_FENCE_BLUEPRINT,
-    ]) {
+    for (const jig of [CROSSCUT_SLED_BLUEPRINT, STRAIGHT_LINE_SLED_BLUEPRINT]) {
       assert.strictEqual(jig.fastenerConsumable, "screws");
     }
-    // The sleds' runner and fence seams take a screw or two each;
-    // the resaw fence's short braces take one
+    // The sleds' runner and fence seams take a screw or two each
     assert.strictEqual(CROSSCUT_SLED_BLUEPRINT.fasteners.length, 3);
     assert.strictEqual(STRAIGHT_LINE_SLED_BLUEPRINT.fasteners.length, 4);
-    assert.strictEqual(RESAW_FENCE_BLUEPRINT.fasteners.length, 2);
   });
 
   it("is registered under its equipment id and never becomes a product", () => {

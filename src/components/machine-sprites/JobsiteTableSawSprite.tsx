@@ -53,35 +53,6 @@ const SLED_FENCE = 0x6e5638;
 const SLED_CLAMP = 0x2a2520;
 
 /**
- * The tall resaw fence, bolted to the rip fence and drawn riding with it:
- * from above it's a plywood face standing proud of the fence, with its
- * triangular braces flaring back toward the operator.
- */
-const TallFenceSprite: React.FC = () => {
-  const draw = useCallback((g: Graphics) => {
-    g.clear();
-    const length = feetToPixels(2);
-    const thickness = inchesToPixels(0.75);
-    // The face itself, on the blade side of the fence
-    g.rect(-thickness, -length / 2, thickness, length)
-      .fill(SLED_PLY)
-      .stroke({ width: 1, color: SLED_EDGE });
-    // Braces reaching back over the fence body to hold it square
-    for (const at of [-0.3, 0.3]) {
-      g.poly([
-        0,
-        at * length - inchesToPixels(1),
-        inchesToPixels(4),
-        at * length,
-        0,
-        at * length + inchesToPixels(1),
-      ]).fill(SLED_FENCE);
-    }
-  }, []);
-  return <pixiGraphics draw={draw} />;
-};
-
-/**
  * A shop-built sled, drawn procedurally with its blade slit at local x = 0
  * so parking it on the table lines it up with the kerf. The crosscut sled
  * is the classic plywood square with front and back fences; the
@@ -160,12 +131,10 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
       (param) => param.id === "targetWidth" || param.id === "targetThickness",
     );
 
-  // The tall fence rides the rail whenever it's bolted on; whether the
-  // work actually stands on edge against it is the stock orientation (R
-  // turns it over), which also moves the fence to a reading in quarters
-  // instead of inches. Work already committed to the blade keeps the
-  // orientation of the cut that claimed it.
-  const tallFenceMounted = machine.state.tools.includes("resawFence");
+  // Whether the work stands on edge against the fence is the stock
+  // orientation (R turns it over), which also moves the fence to a
+  // reading in quarters instead of inches. Work already committed to the
+  // blade keeps the orientation of the cut that claimed it.
   const committedWork =
     processingMaterials.length > 0 || outputMaterials.length > 0;
   const resawing = committedWork
@@ -280,8 +249,6 @@ export const JobsiteTableSawSprite: React.FC<{ machine: Machine }> = ({
             </pixiContainer>
           );
         })}
-        {/* The tall fence bolts on ahead of the rip fence and rides with it */}
-        {tallFenceMounted && <TallFenceSprite />}
         <pixiSprite
           texture={tableSawFenceTexture}
           scale={IMAGE_SCALE * 0.8}

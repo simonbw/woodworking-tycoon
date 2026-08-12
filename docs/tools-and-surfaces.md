@@ -63,9 +63,14 @@ Some tools are never sold — you build them (`ToolType.craftedOnly`,
 granted via the build's `toolOutputs`). The pattern: cheap sheet-good
 ingredients, built at a bench under a skill, mounted only on the machine
 they fit (`compatibleMachines`), and unlocking a capability the bare
-machine lacks — the crosscut sled opens wide panel crosscuts, the
+machine lacks — the crosscut sled opens wide panel crosscuts, and the
 straight-line sled turns the table saw into a no-prerequisites edge
-jointer, the resaw fence stands the band saw's cut on edge.
+jointer.
+
+A jig earns its place by adding a capability the machine has no other way
+to reach. Work the machine can already do, gated behind a skill, belongs
+on the machine: the table saw resaws with its own rip fence, so standing
+a board on edge is a skill and a turn of the stock, not a build.
 
 Related hard rule: **end grain never meets the planer** (`Panel.grain`).
 Planing an end-grain panel tears it apart in real life, so the planer

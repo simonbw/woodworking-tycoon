@@ -142,10 +142,6 @@ const PLAN_FACTS: Partial<
     category: "jigs",
     note: "A straight edge for boards that don't have one.",
   },
-  resawFence: {
-    category: "jigs",
-    note: "Tall enough to clear the blade, and no taller.",
-  },
 };
 
 /** One drawing in the drawer. */

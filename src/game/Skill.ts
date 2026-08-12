@@ -190,7 +190,7 @@ export const SKILL_TYPES: Record<SkillId, SkillType> = {
     id: "resawing",
     name: "Resawing",
     description:
-      "Standing a board on edge and splitting it in two on the table saw. A tall fence, two passes, and nerve.",
+      "Standing a board on edge and splitting it in two on the table saw. Two passes, one from each edge, meeting in the middle.",
     branch: "milling",
     requires: ["jigsAndFixtures"],
   },

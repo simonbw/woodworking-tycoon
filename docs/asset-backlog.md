@@ -70,8 +70,8 @@ wiring: same path, same size, same component.
       saw, drill, sanding block, random orbit sander, hand plane, finishing
       kit, crosscut sled, straight-line sled, dust bag. The same files
       double as the shop-floor sprite for a loose tool (`ToolItemSprite` in
-      `material-sprites/`), so a tool without icon art (the resaw fence,
-      the circular saw) falls back to the default pile square on the floor
+      `material-sprites/`), so a tool without icon art (the circular saw)
+      falls back to the default pile square on the floor
       too, and its store tile draws no picture at all — see
       `IDS_WITHOUT_ICON_ART` in `utils/uiImages.ts`, which is the list of
       what's missing.
@@ -151,10 +151,9 @@ wiring: same path, same size, same component.
       table and the arm reaching over it; the blade sits at (245, 200) in
       the art, which is what `BandSawSprite` measures everything from.
       `bandsaw-14.png` is the three flattened together for the store shelf.
-- [ ] Table saw jigs — `SledSprite` and `TallFenceSprite` in
-      `machine-sprites/JobsiteTableSawSprite.tsx`. Crosscut sled,
-      straight-line sled, and the tall resaw fence are shop-built jigs
-      sitting on (or bolted to) the saw.
+- [ ] Table saw jigs — `SledSprite` in
+      `machine-sprites/JobsiteTableSawSprite.tsx`. The crosscut sled and
+      the straight-line sled are shop-built jigs sitting on the saw.
 - [ ] Dust bag — `DustBagSprite` in `shop-view/MachineSprite.tsx`.
 
 ### Props and fixtures
