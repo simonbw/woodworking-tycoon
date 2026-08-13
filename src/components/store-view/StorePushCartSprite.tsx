@@ -1,6 +1,6 @@
 import { useTick } from "@pixi/react";
 import { Container, Graphics, Ticker } from "pixi.js";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { CartLine } from "../../game/cart";
 import { currentCart } from "../../game/game-actions/cart-actions";
 import { MaterialSprite } from "../material-sprites/MaterialSprite";
@@ -9,12 +9,13 @@ import { playerMotion } from "../world-view/playerMotionStore";
 import { useGameState } from "../useGameState";
 
 /**
- * The shopping cart itself, pushed along in front of the shopper. It
- * appears with the first thing set in it — there is no fetch-a-cart
- * errand, which would be hassle without depth — and the basket carries
- * what the cart actually holds: the boards and sheets at a hand-truck
- * scale, boxed goods as their cartons, so a loaded cart reads at a
- * glance.
+ * The flatbed cart, pushed along in front of the shopper — the big
+ * orange lumber cart, not a grocery basket. It rides with the trip from
+ * the moment a flatbed is taken from the corral by the entrance
+ * (takeCartAction), and the deck carries what the cart actually holds at
+ * world size: boards and sheets lying full length (a sheet overhangs the
+ * deck the way it overhangs the real thing), boxed goods as their
+ * cartons, stacked biggest on the bottom so the load reads as a load.
  *
  * The cart is presentation only: GameState's cart is the list of lines
  * (Person.ts), and this eases toward a point ahead of the body each
@@ -22,52 +23,91 @@ import { useGameState } from "../useGameState";
  */
 
 /** How far ahead of the body the pushed cart rides, in cells. */
-const LEAD_DISTANCE = 1.45;
+const LEAD_DISTANCE = 1.9;
 
 /** How much of the remaining gap the cart closes per second. */
 const FOLLOW_RATE = 14;
 
 /** The most the cart ever trails its lead point, in cells — the easing
  * gives it swing through turns, and this cap is what keeps a walking
- * shopper from outrunning it and treading on the basket. */
+ * shopper from outrunning it and treading on the deck. */
 const MAX_TRAIL = 0.35;
 
-const BASKET = 0x8b9094;
-const BASKET_RIM = 0xb9bec2;
-const HANDLE = 0xe06010;
+const FRAME = 0xe06010;
+const FRAME_DARK = 0xa8490c;
+const DECK = 0x6b5637;
+const DECK_SEAM = 0x57452c;
 const KRAFT = 0xb98d54;
 const KRAFT_EDGE = 0x8a6537;
 
-const CART_WIDTH_CELLS = 1.6;
-const CART_DEPTH_CELLS = 1.0;
+/** The deck, in cells — a real flatbed's four-and-a-half by two and a
+ * half feet, long axis toward the handle. */
+export const FLATBED_LENGTH_CELLS = 2.3;
+export const FLATBED_WIDTH_CELLS = 1.25;
 
-/** How big the basket draws its stock, relative to the world. */
-const PARCEL_SCALE = 0.3;
+/** An orange flatbed's deck, drawn about its own center with the handle
+ * end toward +x. Shared with the corral's nested row
+ * (StoreFixturesLayer). */
+export function drawFlatbed(g: Graphics): void {
+  const l = cellToPixel(FLATBED_LENGTH_CELLS);
+  const w = cellToPixel(FLATBED_WIDTH_CELLS);
+  // The deck: dark plywood over the frame, seamed down the middle.
+  g.roundRect(-l / 2, -w / 2, l, w, 3);
+  g.fill(DECK);
+  g.rect(-l / 2 + 3, -1, l - 6, 2);
+  g.fill(DECK_SEAM);
+  // The frame shows as orange rails across both short ends.
+  g.rect(-l / 2, -w / 2, 5, w);
+  g.rect(l / 2 - 5, -w / 2, 5, w);
+  g.fill(FRAME);
+}
 
-/** One line of the cart, lying in the basket. */
+/** The upright handle past the shopper's end — drawn over the load,
+ * because it stands taller than anything lying on the deck. */
+export function drawFlatbedHandle(g: Graphics): void {
+  const l = cellToPixel(FLATBED_LENGTH_CELLS);
+  const w = cellToPixel(FLATBED_WIDTH_CELLS);
+  g.rect(l / 2 + 2, -w / 2 + 2, 3.5, w - 4);
+  g.fill(FRAME);
+  g.rect(l / 2 - 5, -w / 2 + 2, 8, 2.5);
+  g.rect(l / 2 - 5, w / 2 - 4.5, 8, 2.5);
+  g.fill(FRAME_DARK);
+}
+
+/** A line's rough footprint on the deck, in square feet — what decides
+ * the stacking order: sheets under boards under boxes. */
+function lineFootprint(line: CartLine): number {
+  if (line.kind === "machine") return 4;
+  if (line.kind !== "material") return 0.8;
+  const material = line.material as { length?: number; width?: number };
+  if (
+    typeof material.length === "number" &&
+    typeof material.width === "number"
+  ) {
+    return (material.length / 12) * (material.width / 12);
+  }
+  return 1;
+}
+
+/** One line of the cart, lying on the deck at world size. */
 const CartParcel: React.FC<{ line: CartLine; index: number }> = ({
   line,
   index,
 }) => {
-  const ox = cellToPixel(((index % 3) - 1) * 0.14);
-  const oy = cellToPixel((((index * 29) % 40) - 20) / 90);
-  const tilt = (((index * 13) % 17) - 8) / 60;
+  const ox = cellToPixel((((index * 29) % 14) - 7) / 100);
+  const oy = cellToPixel((((index * 17) % 22) - 11) / 100);
+  const tilt = (((index * 13) % 17) - 8) / 160;
   if (line.kind === "material") {
     return (
-      <pixiContainer
-        x={ox}
-        y={oy}
-        rotation={Math.PI / 2 + tilt}
-        scale={PARCEL_SCALE}
-      >
+      <pixiContainer x={ox} y={oy} rotation={Math.PI / 2 + tilt}>
         <MaterialSprite material={line.material} />
       </pixiContainer>
     );
   }
   // Everything boxed rides as its carton — a machine's is just bigger.
   const big = line.kind === "machine";
-  const w = big ? 30 : 14;
-  const h = big ? 22 : 11;
+  const w = big ? 34 : 15;
+  const h = big ? 25 : 12;
   return (
     <pixiContainer x={ox} y={oy} rotation={tilt}>
       <pixiGraphics
@@ -87,7 +127,22 @@ const CartParcel: React.FC<{ line: CartLine; index: number }> = ({
 
 export const StorePushCartSprite: React.FC = () => {
   const gameState = useGameState();
+  const away = gameState.player.away;
   const cart = currentCart(gameState) ?? [];
+
+  // Biggest footprint on the bottom, smallest on top — a stable sort on
+  // the line's place in the cart keeps the pile from reshuffling as
+  // things are added around it.
+  const stacked = useMemo(
+    () =>
+      cart
+        .map((line, index) => ({ line, index }))
+        .sort(
+          (a, b) =>
+            lineFootprint(b.line) - lineFootprint(a.line) || a.index - b.index,
+        ),
+    [cart],
+  );
 
   const nodeRef = useRef<Container>(null);
   const placed = useRef(false);
@@ -128,29 +183,16 @@ export const StorePushCartSprite: React.FC = () => {
 
   const draw = useCallback((g: Graphics) => {
     g.clear();
-    const w = cellToPixel(CART_WIDTH_CELLS);
-    const d = cellToPixel(CART_DEPTH_CELLS);
-    // Basket, drawn nose toward +x (the handle end faces the shopper).
-    g.roundRect(-w / 2, -d / 2, w, d, 5);
-    g.fill(BASKET);
+    drawFlatbed(g);
   }, []);
-
-  // The rim and handle draw back over the load, so a cart under a full
-  // sheet still reads as a cart and not a runaway panel.
-  const drawRim = useCallback((g: Graphics) => {
+  const drawHandle = useCallback((g: Graphics) => {
     g.clear();
-    const w = cellToPixel(CART_WIDTH_CELLS);
-    const d = cellToPixel(CART_DEPTH_CELLS);
-    g.roundRect(-w / 2, -d / 2, w, d, 5);
-    g.stroke({ width: 2.5, color: BASKET_RIM });
-    // The handle bar across the shopper's end.
-    g.rect(w / 2 - 3, -d / 2 - 3, 4, d + 6);
-    g.fill(HANDLE);
+    drawFlatbedHandle(g);
   }, []);
 
-  if (cart.length === 0) {
-    // Next appearance snaps into place rather than easing in from the
-    // stale spot the last cart was abandoned at.
+  if (away?.kind !== "shopping" || !away.hasCart) {
+    // The next flatbed snaps into place at the corral rather than easing
+    // in from wherever the last one was abandoned.
     placed.current = false;
     return null;
   }
@@ -158,10 +200,10 @@ export const StorePushCartSprite: React.FC = () => {
   return (
     <pixiContainer ref={nodeRef} eventMode="none">
       <pixiGraphics draw={draw} />
-      {cart.slice(0, 8).map((line, index) => (
+      {stacked.slice(0, 10).map(({ line, index }) => (
         <CartParcel key={index} line={line} index={index} />
       ))}
-      <pixiGraphics draw={drawRim} />
+      <pixiGraphics draw={drawHandle} />
     </pixiContainer>
   );
 };

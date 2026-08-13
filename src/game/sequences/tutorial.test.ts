@@ -160,7 +160,10 @@ describe("the guided opening", () => {
     assert.strictEqual(step(shop), "goToStore", "the skill is learned");
 
     shop.goShopping("orangeBox");
-    assert.strictEqual(step(shop), "addSawToCart", "the trip is underway");
+    assert.strictEqual(step(shop), "grabCart", "the trip is underway");
+
+    shop.takeCart();
+    assert.strictEqual(step(shop), "addSawToCart", "the flatbed is in hand");
 
     shop.buyTool("handSaw");
     assert.strictEqual(step(shop), "checkOut", "the saw is in the cart");

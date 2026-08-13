@@ -102,6 +102,7 @@ describe("storeLayout", () => {
         ...layout.decor.map((item) => item.rect),
         ...layout.spines,
         layout.register,
+        layout.corral,
       ];
       for (const rect of rects) {
         assert.ok(rect.min[0] >= 0 && rect.min[1] >= 0, "inside the walls");
@@ -158,6 +159,7 @@ describe("storeLayout", () => {
         );
       }
       assert.ok(rectReachable(seen, layout.register), "register walled off");
+      assert.ok(rectReachable(seen, layout.corral), "corral walled off");
       assert.ok(rectReachable(seen, layout.truckCab), "cab walled off");
       // The door really is the way in: some indoor point is reachable
       // from the spawn outside.
@@ -298,6 +300,7 @@ describe("resolveStoreInteract", () => {
           kind: "shopping",
           store: "orangeBox",
           cart: [],
+          hasCart: true,
           position,
           direction: 1,
         },

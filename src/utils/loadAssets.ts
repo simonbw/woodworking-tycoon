@@ -1,7 +1,17 @@
 import { worktableArtPaths } from "../components/machine-sprites/worktable-art";
 import { Assets } from "pixi.js";
+import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../game/Tool";
-import { IDS_WITHOUT_ICON_ART, toolIconSrc } from "./uiImages";
+import { UPGRADE_TYPES, UpgradeId } from "../game/Upgrade";
+import {
+  BAR_CLAMP_ICON,
+  BROOM_ICON,
+  IDS_WITHOUT_ICON_ART,
+  SHOP_VAC_ICON,
+  consumableIconSrc,
+  toolIconSrc,
+  upgradeIconSrc,
+} from "./uiImages";
 
 /**
  * The tool icons double as the shop-floor sprite for a tool lying loose
@@ -12,10 +22,27 @@ const TOOL_ITEM_ASSETS = (Object.keys(TOOL_TYPES) as ToolId[])
   .map(toolIconSrc);
 
 /**
+ * The supply icons do the same on the store's shelves — a racking bay
+ * with no world-size art shows its product's own icon
+ * (StoreMerchandiseLayer), so PIXI needs those too.
+ */
+const SUPPLY_SHELF_ASSETS = [
+  ...(Object.keys(CONSUMABLE_TYPES) as ConsumableId[])
+    .filter((id) => !IDS_WITHOUT_ICON_ART.consumables.includes(id))
+    .map(consumableIconSrc),
+  ...(Object.keys(UPGRADE_TYPES) as UpgradeId[])
+    .filter((id) => !IDS_WITHOUT_ICON_ART.upgrades.includes(id))
+    .map(upgradeIconSrc),
+  BAR_CLAMP_ICON,
+  SHOP_VAC_ICON,
+  BROOM_ICON,
+];
+
+/**
  * Pixel art, as opposed to the smooth machine art: these have to sample
  * nearest-neighbor or the shop's fit-to-column upscale blurs them.
  */
-const PIXEL_ART_ASSETS = [...TOOL_ITEM_ASSETS];
+const PIXEL_ART_ASSETS = [...TOOL_ITEM_ASSETS, ...SUPPLY_SHELF_ASSETS];
 
 // List of all texture assets used in the game
 export const TEXTURE_ASSETS = [

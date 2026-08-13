@@ -12,6 +12,7 @@ import {
   checkoutAction,
   currentCart,
   removeFromCartAction,
+  takeCartAction,
 } from "../../game/game-actions/cart-actions";
 import { returnFromStoreAction } from "../../game/game-actions/door-actions";
 import { cartTotal } from "../../game/cart";
@@ -25,6 +26,7 @@ import {
   ShelfBay,
   StoreLayout,
   cabStandCell,
+  corralStandCell,
   fixtureStandCell,
   registerStandCell,
   storeLayout,
@@ -52,6 +54,7 @@ import {
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { Vector } from "../../game/Vectors";
 import { StoreCheckoutModal } from "./StoreCheckoutModal";
+import { StoreDaylightLayer } from "./StoreDaylightLayer";
 import { StoreEnvironmentLayer } from "./StoreEnvironmentLayer";
 import { StoreFixturesLayer } from "./StoreFixturesLayer";
 import { StoreKeyboardShortcuts } from "./StoreKeyboardShortcuts";
@@ -168,6 +171,10 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
     },
     [applyAction],
   );
+  const onTakeCart = useCallback(
+    () => applyAction(takeCartAction()),
+    [applyAction],
+  );
   const onOpenCheckout = useCallback(() => setCheckoutOpen(true), []);
   const onCancelCheckout = useCallback(() => setCheckoutOpen(false), []);
   // Buying rings the cart up — the goods land in the truck's bed — then
@@ -218,6 +225,7 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
     hooks.__STORE_POINTS__ = {
       register: registerStandCell(layout),
       cab: cabStandCell(layout),
+      corral: corralStandCell(layout),
       spawn: layout.spawn.cell,
     };
     hooks.__FIND_SHELF__ = (product: string) => findShelf(layout, product);
@@ -279,6 +287,7 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
             <StoreFixturesLayer
               layout={layout}
               registerTargeted={interact?.atRegister ?? false}
+              corralTargeted={(interact?.atCorral && !interact.hasCart) ?? false}
             />
             <StoreMerchandiseLayer layout={layout} />
             <StoreTargetHighlightLayer
@@ -305,6 +314,9 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
                 truck is the player on screen until the fade. */}
             {!departing && <StorePushCartSprite />}
             {!departing && <PersonSprite person={gameState.player} />}
+            {/* The hour of the day, multiplied over everything above —
+                the last thing the camera draws, like the shop's. */}
+            <StoreDaylightLayer layout={layout} viewport={worldViewport} />
           </pixiContainer>
         </pixiContainer>
       </>
@@ -317,6 +329,7 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
         interact={checkoutOpen ? null : interact}
         onAddFromBay={onAddFromBay}
         onReturnToBay={onReturnToBay}
+        onTakeCart={onTakeCart}
         onOpenCheckout={onOpenCheckout}
         onLeave={onLeave}
       />
@@ -342,6 +355,7 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
                   tutorialIds={tutorialIds}
                   armedLeave={armedLeave}
                   onAddFromBay={onAddFromBay}
+                  onTakeCart={onTakeCart}
                   onOpenCheckout={onOpenCheckout}
                 />
               </div>

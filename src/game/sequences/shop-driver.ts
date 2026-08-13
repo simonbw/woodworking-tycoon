@@ -78,6 +78,7 @@ import {
   storeUnlocked,
   wakeUpAction,
 } from "../game-actions/door-actions";
+import { takeCartAction } from "../game-actions/cart-actions";
 import { TICKS_PER_DAY } from "../time";
 import { isNight } from "../time-flow";
 import {
@@ -963,6 +964,17 @@ export class ShopDriver {
       throw new Error(
         `The trip to ${store} would not start — hands full, or mid-trip already`,
       );
+    }
+    return this;
+  }
+
+  /** Grab a flatbed from the corral by the entrance — the walkable
+   * store's first stop (the shelves only load a cart you're pushing). */
+  takeCart(): this {
+    this.apply(takeCartAction());
+    const away = this.state.player.away;
+    if (away?.kind !== "shopping" || !away.hasCart) {
+      throw new Error("No cart in hand — is the trip underway?");
     }
     return this;
   }

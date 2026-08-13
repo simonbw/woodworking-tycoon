@@ -26,6 +26,10 @@ export interface StoreInteract {
   readonly fixture: StoreFixture | null;
   /** How many of the standing bay's product are in the cart (0 off-bay). */
   readonly inCart: number;
+  /** Whether a flatbed has been taken from the corral — shelves only
+   * load a cart you're pushing. */
+  readonly hasCart: boolean;
+  readonly atCorral: boolean;
   readonly atRegister: boolean;
   readonly atCab: boolean;
   /** The cart's damage, for the register chip. */
@@ -80,6 +84,8 @@ export function resolveStoreInteract(
   return {
     fixture,
     inCart,
+    hasCart: away.hasCart,
+    atCorral: withinStoreReach(position, layout.corral),
     atRegister: withinStoreReach(position, layout.register),
     atCab: withinStoreReach(position, layout.truckCab),
     total,

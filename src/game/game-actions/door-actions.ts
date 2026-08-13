@@ -81,6 +81,7 @@ export function goToStoreAction(
             kind: "shopping",
             store,
             cart: [],
+            hasCart: false,
             position: spawn.cell,
             direction: spawn.direction,
           },

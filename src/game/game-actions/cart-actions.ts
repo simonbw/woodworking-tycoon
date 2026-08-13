@@ -96,6 +96,24 @@ export function addToCartAction(line: CartLine): GameAction {
   };
 }
 
+/** Pull a flatbed from the corral by the entrance. No-op off a shopping
+ * trip; taking a second cart is taking the one you already have. */
+export function takeCartAction(): GameAction {
+  return (gameState) => {
+    const away = gameState.player.away;
+    if (away?.kind !== "shopping" || away.hasCart) {
+      return gameState;
+    }
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        away: { ...away, hasCart: true },
+      },
+    };
+  };
+}
+
 /** A line's own copy: a distinct object needs a distinct id. */
 function freshLine(line: CartLine): CartLine {
   if (line.kind !== "material") {

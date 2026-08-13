@@ -47,9 +47,15 @@ shopper's cell (`ShoppingTrip.position` — `player.position` keeps
 meaning the cell underfoot back home), and the keys mirror the shop
 floor's (`src/game/store-interact.ts`): every product is its own bay
 — E puts one in the cart, F puts one back, E at the register opens
-the receipt card, and E at the cab is the way home. How long a trip
-takes is how long you browse — the clock idles along under it
-(`time-flow.ts`).
+the receipt card, and E at the cab is the way home. Shelves only load
+a cart you're pushing: the trip starts cartless, and E at the corral
+of orange flatbeds by the entrance (`ShoppingTrip.hasCart`,
+`takeCartAction`) is the first stop. The flatbed's deck carries the
+load at world size, biggest pieces on the bottom
+(`StorePushCartSprite`). Outside, the lot runs the shop's own
+day/night model as a multiply mask (`StoreDaylightLayer`); the sales
+floor stays lit at every hour. How long a trip takes is how long you
+browse — the clock idles along under it (`time-flow.ts`).
 
 The lumberyard is still a menu overlay; it becomes the second walkable
 venue by running the same planogram generator with its own channels.

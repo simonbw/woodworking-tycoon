@@ -3,6 +3,11 @@ import React, { useCallback } from "react";
 import { ShelfBay, StoreLayout, StoreRect } from "../../game/store-layout";
 import { TARGET_HIGHLIGHT_FILTERS } from "../shop-view/targetHighlight";
 import { cellToPixel } from "../shop-view/shop-scale";
+import {
+  drawFlatbed,
+  drawFlatbedHandle,
+  FLATBED_LENGTH_CELLS,
+} from "./StorePushCartSprite";
 
 /**
  * The store's furniture, drawn onto the footprints store-layout.ts
@@ -63,6 +68,41 @@ function drawPileBand(g: Graphics, bay: ShelfBay): void {
   g.fill({ color: PILE_BAND, alpha: 0.55 });
 }
 
+/** How far apart the corral's nested decks sit, in cells. */
+const CORRAL_NESTING = 0.3;
+const CORRAL_CART_COUNT = 3;
+
+/** The corral's flatbeds: nested deck-into-handle against the wall the
+ * way returned carts actually stack — each the same drawing the pushed
+ * cart uses, so the thing you take is the thing you saw. */
+const CorralCarts: React.FC<{ rect: StoreRect; targeted: boolean }> = ({
+  rect,
+  targeted,
+}) => {
+  const drawCart = useCallback((g: Graphics) => {
+    g.clear();
+    drawFlatbed(g);
+    drawFlatbedHandle(g);
+  }, []);
+  const cy = cellToPixel((rect.min[1] + rect.max[1]) / 2);
+  const firstCenter = rect.max[0] - 0.1 - FLATBED_LENGTH_CELLS / 2;
+  return (
+    <pixiContainer filters={targeted ? TARGET_HIGHLIGHT_FILTERS : undefined}>
+      {Array.from({ length: CORRAL_CART_COUNT }, (_, i) => (
+        <pixiContainer
+          key={i}
+          x={cellToPixel(firstCenter - i * CORRAL_NESTING)}
+          y={cy}
+          // Handles face the walkway, decks nose toward the wall.
+          rotation={Math.PI}
+        >
+          <pixiGraphics draw={drawCart} />
+        </pixiContainer>
+      ))}
+    </pixiContainer>
+  );
+};
+
 function drawCounter(g: Graphics, rect: StoreRect): void {
   const counter = rectPx(rect);
   g.rect(counter.x, counter.y, counter.w, counter.h);
@@ -76,7 +116,8 @@ function drawCounter(g: Graphics, rect: StoreRect): void {
 export const StoreFixturesLayer: React.FC<{
   layout: StoreLayout;
   registerTargeted?: boolean;
-}> = ({ layout, registerTargeted }) => {
+  corralTargeted?: boolean;
+}> = ({ layout, registerTargeted, corralTargeted }) => {
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
@@ -124,6 +165,7 @@ export const StoreFixturesLayer: React.FC<{
         draw={drawRegister}
         filters={registerTargeted ? TARGET_HIGHLIGHT_FILTERS : undefined}
       />
+      <CorralCarts rect={layout.corral} targeted={corralTargeted ?? false} />
     </>
   );
 };

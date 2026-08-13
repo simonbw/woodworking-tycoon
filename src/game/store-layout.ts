@@ -140,6 +140,9 @@ export interface StoreLayout {
   readonly spines: ReadonlyArray<StoreRect>;
   /** The checkout counter; shopped from its north side. */
   readonly register: StoreRect;
+  /** The cart corral just inside the entrance: the nested flatbeds a
+   * trip takes its cart from before the shelves will load one. */
+  readonly corral: StoreRect;
   /** The truck, parked in its stall out front. Nose points +x. */
   readonly truck: StoreRect;
   /** The door band of the parked truck — where E heads home. */
@@ -798,6 +801,12 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     min: [exit.right + 1.5, height - 3.5],
     max: [exit.right + 5.5, height - 2],
   };
+  // The corral of nested flatbeds, tucked against the front wall just
+  // inside the entrance — the first stop of every trip.
+  const corral: StoreRect = {
+    min: [width - 3.4, height - 2.3],
+    max: [width - 0.8, height - 0.8],
+  };
 
   // ---- Stencil paint on the concrete: each aisle names itself down
   // its own floor, and the doors say which way they swing.
@@ -861,6 +870,12 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
       rotation: 0,
       size: 0.7,
     });
+    decals.push({
+      text: "CARTS",
+      at: [(corral.min[0] + corral.max[0]) / 2, corral.min[1] - 0.9],
+      rotation: 0,
+      size: 0.55,
+    });
   }
 
   // ---- The lot: sidewalk, then the stall, nose pointing +x.
@@ -894,6 +909,7 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     fixtures,
     spines,
     register,
+    corral,
     truck,
     truckCab,
     spawn,
@@ -964,6 +980,7 @@ export function storeCollisionWorld(layout: StoreLayout): CollisionWorld {
       (spine): SolidBox => ({ kind: "box", min: spine.min, max: spine.max }),
     ),
     { kind: "box", min: layout.register.min, max: layout.register.max },
+    { kind: "box", min: layout.corral.min, max: layout.corral.max },
     { kind: "box", min: layout.truck.min, max: layout.truck.max },
   ];
   return { size: layout.worldSize, solids };
@@ -1010,6 +1027,11 @@ export function fixtureStandCell(fixture: {
 /** The register's stand cell: on its shopped (north) side. */
 export function registerStandCell(layout: StoreLayout): Vector {
   return fixtureStandCell({ rect: layout.register, facing: 1 });
+}
+
+/** The corral's stand cell: in front of the nested flatbeds. */
+export function corralStandCell(layout: StoreLayout): Vector {
+  return fixtureStandCell({ rect: layout.corral, facing: 1 });
 }
 
 /** The cab's stand cell: on the sidewalk beside the driver's door. */

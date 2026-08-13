@@ -67,6 +67,7 @@ describe("timeSpeed", () => {
             kind: "shopping",
             store: "orangeBox",
             cart: [],
+            hasCart: true,
             position: [0, 0],
             direction: 1,
           },

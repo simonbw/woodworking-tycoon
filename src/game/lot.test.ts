@@ -128,6 +128,7 @@ describe("walking the lot", () => {
           kind: "shopping" as const,
           store: "orangeBox" as const,
           cart: [],
+          hasCart: true,
           position: [0, 0] as [number, number],
           direction: 1 as const,
         },

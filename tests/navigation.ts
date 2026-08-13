@@ -264,11 +264,32 @@ async function storePoints(page: any) {
 }
 
 /**
+ * Grab a flatbed from the corral by the entrance if the trip doesn't
+ * have one yet — the shelves only load a cart you're pushing, so this
+ * is the first stop of every shopping run.
+ */
+export async function grabCartIfNeeded(page: any) {
+  const hasCart = await page.evaluate(() => {
+    const away = (window as any).__GET_GAME_STATE__().player.away;
+    return away?.kind === "shopping" ? away.hasCart : true;
+  });
+  if (hasCart) return;
+  const points = await storePoints(page);
+  await moveShopperTo(page, points.corral);
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur?.();
+  });
+  await page.keyboard.press("e");
+  await page.waitForTimeout(60);
+}
+
+/**
  * Stand at the shelf a product hangs on. Every product is its own bay —
  * lumber and sheet goods included, piled on the floor per SKU — so after
  * this the product's Add-to-cart tag is on screen and live. Category
  * names work too ("Construction Lumber", "Sheet Goods"): they stand the
- * shopper at the category's front pile.
+ * shopper at the category's front pile. Swings past the corral for a
+ * cart first, because the tag's button is dead without one.
  */
 export async function walkToShelf(page: any, product: string) {
   // Same generous, interval-polled wait as storePoints — see there.
@@ -276,6 +297,7 @@ export async function walkToShelf(page: any, product: string) {
     timeout: 30000,
     polling: 250,
   });
+  await grabCartIfNeeded(page);
   const spot = await page.evaluate(
     (name: string) => (window as any).__FIND_SHELF__(name),
     product,

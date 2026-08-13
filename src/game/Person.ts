@@ -123,6 +123,13 @@ export type ShoppingTrip = {
    */
   readonly cart: ReadonlyArray<CartLine>;
   /**
+   * Whether a flatbed cart has been taken from the corral by the
+   * entrance. Shelves only load a cart you're actually pushing, so the
+   * errand of grabbing one is the first stop of a walkable-store trip.
+   * The lumberyard's counter service never involves one.
+   */
+  readonly hasCart: boolean;
+  /**
    * The cell the shopper stands in on the store's floor (store-layout.ts
    * coordinates). It lives on the trip rather than on the player for the
    * same reason the cart does: `player.position` keeps meaning "the cell

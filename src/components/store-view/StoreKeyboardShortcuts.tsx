@@ -4,21 +4,29 @@ import { ShelfBay } from "../../game/store-layout";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 
 /**
- * The store floor's keys, mirroring the shop's: E takes things — one off
- * the shelf into the cart — and works the register and the way home; F
- * puts things down, one from the cart back on its shelf. Every binding
- * reads the same resolver the chips draw from (store-interact.ts), so a
- * key never does something the chip didn't offer. ShopKeyboardShortcuts
- * stands down for the whole trip (it guards on `away`), so the ids never
- * fight.
+ * The store floor's keys, mirroring the shop's: E takes things — a
+ * flatbed from the corral, one off the shelf into it — and works the
+ * register and the way home; F puts things down, one from the cart back
+ * on its shelf. Every binding reads the same resolver the chips draw
+ * from (store-interact.ts), so a key never does something the chip
+ * didn't offer. ShopKeyboardShortcuts stands down for the whole trip
+ * (it guards on `away`), so the ids never fight.
  */
 export const StoreKeyboardShortcuts: React.FC<{
   interact: StoreInteract | null;
   onAddFromBay: (bay: ShelfBay) => void;
   onReturnToBay: (bay: ShelfBay) => void;
+  onTakeCart: () => void;
   onOpenCheckout: () => void;
   onLeave: () => void;
-}> = ({ interact, onAddFromBay, onReturnToBay, onOpenCheckout, onLeave }) => {
+}> = ({
+  interact,
+  onAddFromBay,
+  onReturnToBay,
+  onTakeCart,
+  onOpenCheckout,
+  onLeave,
+}) => {
   // Read at dispatch time, the same pattern the shop's handler uses.
   const interactRef = useRef(interact);
   interactRef.current = interact;
@@ -32,11 +40,16 @@ export const StoreKeyboardShortcuts: React.FC<{
       if (!now) return;
       if (now.atRegister) return onOpenCheckout();
       if (now.atCab) return onLeave();
-      if (now.fixture) {
+      if (now.atCorral && !now.hasCart) return onTakeCart();
+      if (now.fixture && now.hasCart) {
         onAddFromBay(now.fixture);
       }
     },
-    interact != null && (interact.atRegister || interact.atCab || bay != null),
+    interact != null &&
+      (interact.atRegister ||
+        interact.atCab ||
+        (interact.atCorral && !interact.hasCart) ||
+        (bay != null && interact.hasCart)),
   );
 
   useShortcut(

@@ -105,8 +105,10 @@ const ShelfTag = React.memo<{
    * exist on screen. */
   forced: boolean;
   inCart: number;
+  /** Shelves only load a cart you're pushing (see store-interact.ts). */
+  hasCart: boolean;
   onAdd: (bay: ShelfBay) => void;
-}>(function ShelfTag({ bay, scale, inReach, forced, inCart, onAdd }) {
+}>(function ShelfTag({ bay, scale, inReach, forced, inCart, hasCart, onAdd }) {
   const { name, description, line } = bay.product;
   const [cx, cy] = tagPoint(bay.rect, bay.facing);
   const toolId =
@@ -152,13 +154,13 @@ const ShelfTag = React.memo<{
           <button
             type="button"
             aria-label={`Add ${name} to cart`}
-            disabled={!inReach}
+            disabled={!inReach || !hasCart}
             onClick={() => onAdd(bay)}
             data-sfx="ui-purchase"
             data-tutorial-target={tutorialTarget}
             className={classNames(
               "pointer-events-auto flex flex-col items-center gap-0.5 rounded-[2px] border border-paper-manila-edge bg-paper-ivory/95 px-1 py-0.5 shadow-sm",
-              inReach
+              inReach && hasCart
                 ? "cursor-pointer ring-1 ring-ink-blue/40"
                 : "cursor-default",
             )}
@@ -205,6 +207,7 @@ export const StoreOverlayLayer: React.FC<{
   tutorialIds: ReadonlySet<string>;
   armedLeave: boolean;
   onAddFromBay: (bay: ShelfBay) => void;
+  onTakeCart: () => void;
   onOpenCheckout: () => void;
 }> = ({
   layout,
@@ -214,9 +217,11 @@ export const StoreOverlayLayer: React.FC<{
   tutorialIds,
   armedLeave,
   onAddFromBay,
+  onTakeCart,
   onOpenCheckout,
 }) => {
   const standingBay = interact?.fixture ?? null;
+  const hasCart = interact?.hasCart ?? false;
 
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -242,6 +247,7 @@ export const StoreOverlayLayer: React.FC<{
             inReach={standingBay?.id === fixture.id}
             forced={target != null && tutorialIds.has(target)}
             inCart={bayCartCounts.get(fixture.id) ?? 0}
+            hasCart={hasCart}
             onAdd={onAddFromBay}
           />
         );
@@ -259,16 +265,37 @@ export const StoreOverlayLayer: React.FC<{
             <HintRow className="text-paper-manila/60">
               {standingBay.product.name}
             </HintRow>
-            <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-              Add to cart ·{" "}
-              {formatMoney(standingBay.product.line.price)}
-            </HintRow>
+            {hasCart ? (
+              <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+                Add to cart ·{" "}
+                {formatMoney(standingBay.product.line.price)}
+              </HintRow>
+            ) : (
+              <HintRow className="text-paper-manila/60">
+                grab a cart by the entrance
+              </HintRow>
+            )}
             {(interact?.inCart ?? 0) > 0 && (
               <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
                 put one back ({interact?.inCart})
               </HintRow>
             )}
           </HintList>
+        </ChipAt>
+      )}
+
+      {interact && !hasCart && (interact.atCorral || tutorialIds.has("store-corral")) && (
+        <ChipAt rect={layout.corral} facing={1} scale={scale}>
+          <div data-tutorial-target="store-corral">
+            <HintList testId="store-corral-chips">
+              <HintRow className="text-paper-manila/60">Carts</HintRow>
+              {interact.atCorral && (
+                <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+                  take a cart
+                </HintRow>
+              )}
+            </HintList>
+          </div>
         </ChipAt>
       )}
 
@@ -287,7 +314,7 @@ export const StoreOverlayLayer: React.FC<{
                 </HintRow>
               ) : (
                 <HintRow className="text-red-300">
-                  more than your wallet — put something back
+                  more than you have — put something back
                 </HintRow>
               )}
             </HintList>

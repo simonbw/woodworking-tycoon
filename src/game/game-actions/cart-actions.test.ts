@@ -16,6 +16,7 @@ import {
   clearCartAction,
   currentCart,
   removeFromCartAction,
+  takeCartAction,
 } from "./cart-actions";
 import { returnFromStoreAction } from "./door-actions";
 
@@ -55,6 +56,7 @@ function atStore(money: number, cart: ReadonlyArray<CartLine> = []): GameState {
         kind: "shopping",
         store: "orangeBox",
         cart,
+        hasCart: true,
         position: [0, 0],
         direction: 1,
       },
@@ -106,6 +108,34 @@ describe("addToCartAction", () => {
   it("does nothing when the player isn't at a store", () => {
     const home = initialGameState;
     assert.strictEqual(addToCartAction(PINE)(home), home);
+  });
+});
+
+describe("takeCartAction", () => {
+  it("takes a flatbed from the corral, once", () => {
+    const without: GameState = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        away: {
+          kind: "shopping",
+          store: "orangeBox",
+          cart: [],
+          hasCart: false,
+          position: [0, 0],
+          direction: 1,
+        },
+      },
+    };
+    const taken = takeCartAction()(without);
+    const away = taken.player.away;
+    assert.strictEqual(away?.kind === "shopping" && away.hasCart, true);
+    // Taking a second cart is taking the one you already have.
+    assert.strictEqual(takeCartAction()(taken), taken);
+  });
+
+  it("does nothing when the player isn't at a store", () => {
+    assert.strictEqual(takeCartAction()(initialGameState), initialGameState);
   });
 });
 

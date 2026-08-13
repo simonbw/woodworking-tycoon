@@ -81,6 +81,7 @@ describe("goToStoreAction / returnFromStoreAction", () => {
       kind: "shopping",
       store: "orangeBox",
       cart: [],
+      hasCart: false,
       position: spawn.cell,
       direction: spawn.direction,
     });

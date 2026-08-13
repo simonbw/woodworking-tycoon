@@ -47,6 +47,7 @@ export const TUTORIAL_STEP_IDS = [
   "sellShelf",
   "learnSkill",
   "goToStore",
+  "grabCart",
   "addSawToCart",
   "checkOut",
   "gatherWood",
@@ -76,6 +77,7 @@ export type TutorialGoalId = (typeof TUTORIAL_GOAL_IDS)[number];
  */
 export const TUTORIAL_DOM_TARGET_IDS = [
   "navbar-journal",
+  "store-corral",
   "store-tool-handSaw",
   "store-tool-broom",
   "store-checkout",
@@ -333,6 +335,19 @@ const OPENING_GOALS: ReadonlyArray<TutorialGoal> = [
         satisfied: (gameState) =>
           (gameState.player.away?.kind === "shopping" &&
             gameState.player.away.store === "orangeBox") ||
+          sawInCart(gameState) ||
+          hasSaw(gameState) ||
+          reachedMoneyGoal(gameState),
+      },
+      {
+        // The shelves only load a cart you're pushing, so the corral by
+        // the entrance is the first stop of every shopping run.
+        id: "grabCart",
+        label: "Grab a cart by the entrance",
+        targets: [{ kind: "dom", id: "store-corral" }],
+        satisfied: (gameState) =>
+          (gameState.player.away?.kind === "shopping" &&
+            gameState.player.away.hasCart) ||
           sawInCart(gameState) ||
           hasSaw(gameState) ||
           reachedMoneyGoal(gameState),
