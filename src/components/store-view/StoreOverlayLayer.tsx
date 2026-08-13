@@ -10,13 +10,15 @@ import { ShortcutKeys } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";
 
 /**
- * The DOM layer pinned over the store's canvas: each bay's shelf tag
- * (the price and the name — the same face a real shelf edge wears), the
- * aisle signage, and the key-hint chips at whatever the shopper stands
- * at. The same contract as the shop floor's overlay: everything you can
- * do is shown at the thing you'd do it to, and the mouse only acts on
- * what the body can already reach — a tag's button is dead until you're
- * standing at its bay.
+ * The DOM layer pinned over the store's canvas: the aisle signage, the
+ * key-hint chips at whatever the shopper stands at, and each bay's
+ * shelf tag (the price and the name — the same face a real shelf edge
+ * wears). The tags stay put away until asked for: the bay the shopper
+ * stands at shows its tag, and the mouse can hover any bay's footprint
+ * to read one — the merchandise itself is the floor's picture, not a
+ * field of labels. The same contract as the shop floor's overlay
+ * otherwise: the mouse only acts on what the body can already reach —
+ * a tag's button is dead until you're standing at its bay.
  *
  * Bays whose merchandise is drawn at world size (the floor piles, the
  * machine displays, the tool wall) wear a compact tag — the stock itself
@@ -96,29 +98,51 @@ const ShelfTag: React.FC<{
   bay: ShelfBay;
   scale: number;
   inReach: boolean;
+  /** The tutorial's current DOM targets: a targeted tag shows without
+   * hover — the guided opening's ring needs it to exist on screen. */
+  tutorialIds: ReadonlySet<string>;
   inCart: number;
   onAdd: () => void;
-}> = ({ bay, scale, inReach, inCart, onAdd }) => {
+}> = ({ bay, scale, inReach, tutorialIds, inCart, onAdd }) => {
   const { name, description, line } = bay.product;
-  let [cx, cy] = tagPoint(bay.rect, bay.facing);
+  const [cx, cy] = tagPoint(bay.rect, bay.facing);
   const toolId =
     line.kind === "material" && line.material.type === "tool"
       ? line.material.toolId
       : null;
+  const tutorialTarget = toolId
+    ? `store-tool-${toolId}`
+    : line.kind === "broom"
+      ? "store-tool-broom"
+      : undefined;
+  const forced = tutorialTarget != null && tutorialIds.has(tutorialTarget);
   // The stock drawn at world size is its own picture; only bays without
   // world art put an icon on the tag.
   const compact = bay.display !== "racking" || toolId != null;
-  // A wall run's bays sit closer together than a tag is wide, so
-  // alternate bays drop their tags to a second row — the same trick a
-  // real aisle plays with its hanging tags.
-  if (bay.facing === 1 || bay.facing === 3) {
-    const secondRow = Math.floor(cx / 2) % 2 === 1;
-    if (secondRow) {
-      cy += bay.facing === 3 ? 0.75 : -0.75;
-    }
-  }
+  const cell = PIXELS_PER_CELL * scale;
   return (
-    <At x={cx} y={cy} scale={scale} className={inReach ? "z-20" : "z-10"}>
+    // The bay's footprint is the tag's hover surface: the floor reads
+    // clean until the mouse asks about a pile, or the body stands at it.
+    <div
+      className="group pointer-events-auto absolute"
+      style={{
+        left: bay.rect.min[0] * cell,
+        top: bay.rect.min[1] * cell,
+        width: (bay.rect.max[0] - bay.rect.min[0]) * cell,
+        height: (bay.rect.max[1] - bay.rect.min[1]) * cell,
+      }}
+    >
+      <div
+        className={classNames(
+          "absolute -translate-x-1/2 -translate-y-1/2",
+          inReach || forced ? "block" : "hidden group-hover:block",
+          inReach ? "z-20" : "z-10",
+        )}
+        style={{
+          left: (cx - bay.rect.min[0]) * cell,
+          top: (cy - bay.rect.min[1]) * cell,
+        }}
+      >
       <Tooltip
         content={`${name} — ${formatMoney(line.price)}. ${description}`}
         delay={120}
@@ -129,7 +153,7 @@ const ShelfTag: React.FC<{
           disabled={!inReach}
           onClick={onAdd}
           data-sfx="ui-purchase"
-          data-tutorial-target={toolId ? `store-tool-${toolId}` : undefined}
+          data-tutorial-target={tutorialTarget}
           className={classNames(
             "pointer-events-auto flex flex-col items-center gap-0.5 rounded-[2px] border border-paper-manila-edge bg-paper-ivory/95 px-1 py-0.5 shadow-sm",
             inReach
@@ -155,7 +179,8 @@ const ShelfTag: React.FC<{
           )}
         </button>
       </Tooltip>
-    </At>
+      </div>
+    </div>
   );
 };
 
@@ -179,6 +204,8 @@ export const StoreOverlayLayer: React.FC<{
   interact: StoreInteract | null;
   /** Cart counts per bay id — what the tags call out. */
   bayCartCounts: ReadonlyMap<string, number>;
+  /** The tutorial's current DOM target ids (empty outside the opening). */
+  tutorialIds: ReadonlySet<string>;
   armedLeave: boolean;
   onAddFromBay: (bay: ShelfBay) => void;
   onCheckout: () => void;
@@ -187,6 +214,7 @@ export const StoreOverlayLayer: React.FC<{
   scale,
   interact,
   bayCartCounts,
+  tutorialIds,
   armedLeave,
   onAddFromBay,
   onCheckout,
@@ -223,6 +251,7 @@ export const StoreOverlayLayer: React.FC<{
           bay={fixture}
           scale={scale}
           inReach={standingBay?.id === fixture.id}
+          tutorialIds={tutorialIds}
           inCart={bayCartCounts.get(fixture.id) ?? 0}
           onAdd={() => onAddFromBay(fixture)}
         />

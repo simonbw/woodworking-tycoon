@@ -113,6 +113,10 @@ export interface StoreLayout {
   /** The door opening's x-span on the front wall. */
   readonly door: { readonly left: number; readonly right: number };
   readonly fixtures: ReadonlyArray<StoreFixture>;
+  /** The gondola spines: interior walls between back-to-back runs, so
+   * an aisle reads as an aisle instead of merchandise floating in a
+   * warehouse. Solid, like the perimeter walls. */
+  readonly spines: ReadonlyArray<StoreRect>;
   /** The checkout counter; shopped from its north side. */
   readonly register: StoreRect;
   /** The truck, parked in its stall out front. Nose points +x. */
@@ -138,11 +142,11 @@ export const STORE_REACH = 1.5;
 const LUMBER_DEPTH = 8;
 /** How much aisle a lumber pile takes, side to side. */
 const LUMBER_SLOT = 1.6;
-/** The sheet band's depth — a full sheet pointed away from aisle 1. */
-const SHEET_DEPTH = 8;
+/** The sheet band's depth — a full sheet pointed away from aisle 1,
+ * with a little room before the back row of panel piles. */
+const SHEET_DEPTH = 8.5;
 /** A machine display's pad — every machine for sale fits 3×3. */
 const MACHINE_PAD = 3;
-const MACHINE_GAP = 0.75;
 /** Steel racking depth for the tool wall and the supplies runs. */
 const FIXTURE_DEPTH = 1.5;
 /** A tool bay's width along the back wall. */
@@ -151,8 +155,8 @@ const TOOL_BAY_WIDTH = 2;
 const SUPPLY_BAY_HEIGHT = 2.75;
 /** Walking room between the bands. */
 const AISLE_WIDTH = 3.5;
-/** A breath between merchandise groups in the same band. */
-const GROUP_GAP = 1;
+/** A gondola spine's thickness. */
+const SPINE_WIDTH = 0.75;
 /** The cross-aisle between the tool wall and the tops of the runs. */
 const BACK_CROSS_AISLE = 3;
 /** The front of the store: cross-aisle, register, doors. */
@@ -161,13 +165,39 @@ const FRONT_ZONE = 6.5;
 const LUMBER_BAND_LEFT = 0;
 const AISLE_1_LEFT = LUMBER_BAND_LEFT + LUMBER_DEPTH;
 const SHEET_BAND_LEFT = AISLE_1_LEFT + AISLE_WIDTH;
-const MACHINE_WEST_LEFT = SHEET_BAND_LEFT + SHEET_DEPTH;
+const SPINE_A_LEFT = SHEET_BAND_LEFT + SHEET_DEPTH;
+const MACHINE_WEST_LEFT = SPINE_A_LEFT + SPINE_WIDTH;
 const AISLE_2_LEFT = MACHINE_WEST_LEFT + MACHINE_PAD;
 const MACHINE_EAST_LEFT = AISLE_2_LEFT + AISLE_WIDTH;
-const SUPPLY_WEST_LEFT = MACHINE_EAST_LEFT + MACHINE_PAD;
+const SPINE_B_LEFT = MACHINE_EAST_LEFT + MACHINE_PAD;
+const SUPPLY_WEST_LEFT = SPINE_B_LEFT + SPINE_WIDTH;
 const AISLE_3_LEFT = SUPPLY_WEST_LEFT + FIXTURE_DEPTH;
 const SUPPLY_EAST_LEFT = AISLE_3_LEFT + AISLE_WIDTH;
 const INTERIOR_WIDTH = SUPPLY_EAST_LEFT + FIXTURE_DEPTH;
+
+/** Gap kept between the columns of paired panel piles. */
+const SHEET_COLUMN_GAP = 0.4;
+
+/**
+ * Evenly space a run's items between its ends, equal air on every side —
+ * what keeps a short run from huddling at the front of a long band. Items
+ * are given front-first; returns each one's min coordinate.
+ */
+function justifyRun(
+  sizes: ReadonlyArray<number>,
+  top: number,
+  bottom: number,
+): number[] {
+  const total = sizes.reduce((sum, size) => sum + size, 0);
+  const gap = Math.max(0.15, (bottom - top - total) / (sizes.length + 1));
+  let edge = bottom - gap;
+  return sizes.map((size) => {
+    edge -= size;
+    const min = edge;
+    edge -= gap;
+    return min;
+  });
+}
 
 /** The truck's stall footprint, reusing the lot's real dimensions but
  * parked parallel to the storefront (nose +x). */
@@ -316,45 +346,58 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
   const sheetKinds =
     store === "orangeBox" ? unlockedSheetSkus(gameState.reputation) : [];
 
-  // ---- How long each band's run is, so the front cross-aisle (the
-  // "frontier" every run hangs from) can sit past the longest one.
-  const lumberPileCount = channels.reduce(
-    (sum, channel) => sum + channel.species.length * channel.skus.length,
-    0,
+  // ---- The shared run length. Every band justifies its stock across
+  // the same span, so no aisle crams while another trails off into bare
+  // concrete; the span itself is set by whichever band carries the most.
+  const lumberPiles = channels.flatMap((channel) =>
+    channel.species.flatMap((species) =>
+      channel.skus.map((sku) => ({ channel, species, sku })),
+    ),
   );
-  const lumberRun =
-    lumberPileCount * LUMBER_SLOT +
-    Math.max(0, channels.length - 1) * GROUP_GAP;
-  const pairedRows = Math.ceil(sheetKinds.length / 2);
-  const sheetRun =
-    sheetKinds.length === 0
-      ? 0
-      : sheetKinds.length * 4 + GROUP_GAP + pairedRows * 2 + GROUP_GAP + pairedRows * 2;
+  const sheetRows: Array<{
+    size: SheetSize;
+    skus: Array<(typeof sheetKinds)[number]>;
+  }> = [];
+  for (const size of SHEET_SIZES) {
+    if (sheetKinds.length === 0) break;
+    if (size.id === "full") {
+      for (const sku of sheetKinds) sheetRows.push({ size, skus: [sku] });
+    } else {
+      // The panel sizes pair up: one pile at the aisle, one behind it —
+      // both walkable, so the back row is browsed by stepping over the
+      // front one.
+      for (let i = 0; i < sheetKinds.length; i += 2) {
+        sheetRows.push({ size, skus: sheetKinds.slice(i, i + 2) });
+      }
+    }
+  }
   const machinesWest = machines.slice(0, Math.ceil(machines.length / 2));
   const machinesEast = machines.slice(machinesWest.length);
-  const machineRun = (side: number) =>
-    side === 0 ? 0 : side * MACHINE_PAD + (side - 1) * MACHINE_GAP;
   const suppliesWest = supplies.slice(0, Math.ceil(supplies.length / 2));
   const suppliesEast = supplies.slice(suppliesWest.length);
 
   const runTop = FIXTURE_DEPTH + BACK_CROSS_AISLE;
-  const frontier =
-    runTop +
-    Math.max(
-      lumberRun,
-      sheetRun,
-      machineRun(machinesWest.length),
-      machineRun(machinesEast.length),
-      suppliesWest.length * SUPPLY_BAY_HEIGHT,
-      suppliesEast.length * SUPPLY_BAY_HEIGHT,
-      11,
-    );
+  const targetRun = Math.max(
+    lumberPiles.length * (LUMBER_SLOT + 0.55),
+    sheetRows.reduce((sum, row) => sum + row.size.width / 12, 0) +
+      (sheetRows.length + 1) * 0.5,
+    Math.max(machinesWest.length, machinesEast.length) * (MACHINE_PAD + 1.25),
+    12,
+  );
+  const frontier = runTop + targetRun;
   const width = INTERIOR_WIDTH;
   const height = Math.ceil(frontier + FRONT_ZONE);
 
-  // ---- Back wall: the tool wall, shopped from the south.
+  // ---- Back wall: the tool wall, spread across the whole wall.
+  const toolMins = justifyRun(
+    tools.map(() => TOOL_BAY_WIDTH),
+    1.5,
+    width - 1.5,
+  );
   tools.forEach((product, index) => {
-    const x = 2 + index * TOOL_BAY_WIDTH;
+    // justifyRun hands out positions from its far end; walk order reads
+    // west to east.
+    const x = toolMins[tools.length - 1 - index];
     fixtures.push({
       kind: "bay",
       id: `wall:${bayIdForLine(product.line)}`,
@@ -369,89 +412,84 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     signs.push({
       title: "Tools",
       // Over the back wall, clear of the run's own tags.
-      at: [2 + (tools.length * TOOL_BAY_WIDTH) / 2, -1.1],
+      at: [width / 2, -1.1],
     });
   }
 
   // ---- Aisle 1 west: the lumber piles, boards pointed at the west
   // wall so every pile meets the aisle end-on. Construction first, then
   // hardwoods; within a channel, by species, then by dimension.
-  let lumberY = frontier;
+  const lumberMins = justifyRun(
+    lumberPiles.map(() => LUMBER_SLOT),
+    runTop,
+    frontier,
+  );
+  lumberPiles.forEach(({ channel, species, sku }, index) => {
+    const pileLength = sku.length / 12;
+    const min = lumberMins[index];
+    const material = channelBoard(channel, species, sku);
+    fixtures.push({
+      kind: "bay",
+      id: `lumber:${channel.id}:${species}:${sku.thickness}x${sku.width}x${sku.length}`,
+      section: channel.name,
+      display: "lumberStack",
+      product: {
+        name: getMaterialName(material),
+        description: channel.tagline,
+        line: {
+          kind: "material",
+          material,
+          price: getBoardBuyPrice(material, channel.priceMultiplier),
+        },
+      },
+      rect: {
+        min: [AISLE_1_LEFT - pileLength, min],
+        max: [AISLE_1_LEFT, min + LUMBER_SLOT],
+      },
+      facing: 0,
+    });
+  });
   channels.forEach((channel, channelIndex) => {
+    const first = lumberPiles.findIndex((pile) => pile.channel === channel);
+    if (first === -1) return;
     signs.push({
       title: channel.name,
       at: [
         AISLE_1_LEFT - 2,
-        channelIndex === 0 ? frontier + 0.6 : lumberY + GROUP_GAP / 2,
+        channelIndex === 0
+          ? frontier + 0.6
+          : // In the seam between this group and the one in front of it.
+            (lumberMins[first - 1] + lumberMins[first] + LUMBER_SLOT) / 2,
       ],
     });
-    for (const species of channel.species) {
-      for (const sku of channel.skus) {
-        const pileLength = sku.length / 12;
-        lumberY -= LUMBER_SLOT;
-        const material = channelBoard(channel, species, sku);
-        fixtures.push({
-          kind: "bay",
-          id: `lumber:${channel.id}:${species}:${sku.thickness}x${sku.width}x${sku.length}`,
-          section: channel.name,
-          display: "lumberStack",
-          product: {
-            name: getMaterialName(material),
-            description: channel.tagline,
-            line: {
-              kind: "material",
-              material,
-              price: getBoardBuyPrice(material, channel.priceMultiplier),
-            },
-          },
-          rect: {
-            min: [AISLE_1_LEFT - pileLength, lumberY],
-            max: [AISLE_1_LEFT, lumberY + LUMBER_SLOT],
-          },
-          facing: 0,
-        });
-      }
-    }
-    lumberY -= GROUP_GAP;
   });
 
   // ---- Aisle 1 east: the sheet piles, flat on the floor, sorted by
-  // size then kind. Full sheets run one to a slot; the panel sizes pair
-  // up, one pile at the aisle and one behind it — both walkable, so the
-  // back row is browsed by stepping over the front one.
-  let sheetY = frontier;
-  if (sheetKinds.length > 0) {
+  // size then kind.
+  if (sheetRows.length > 0) {
     signs.push({
       title: "Sheet Goods",
-      at: [SHEET_BAND_LEFT + SHEET_DEPTH / 2, frontier + 0.6],
+      at: [SHEET_BAND_LEFT + 4, frontier + 0.6],
     });
-    for (const size of SHEET_SIZES) {
-      const long = size.length / 12;
-      const wide = size.width / 12;
-      if (size.id === "full") {
-        for (const sku of sheetKinds) {
-          sheetY -= wide;
-          pushSheetPile(fixtures, sku, size, SHEET_BAND_LEFT, sheetY, [
-            long,
-            wide,
-          ]);
-        }
-      } else {
-        sheetKinds.forEach((sku, index) => {
-          if (index % 2 === 0) sheetY -= wide;
-          const column = index % 2;
-          pushSheetPile(
-            fixtures,
-            sku,
-            size,
-            SHEET_BAND_LEFT + column * long,
-            sheetY,
-            [long, wide],
-          );
-        });
-      }
-      sheetY -= GROUP_GAP;
-    }
+    const rowMins = justifyRun(
+      sheetRows.map((row) => row.size.width / 12),
+      runTop,
+      frontier,
+    );
+    sheetRows.forEach((row, rowIndex) => {
+      const long = row.size.length / 12;
+      const wide = row.size.width / 12;
+      row.skus.forEach((sku, column) => {
+        pushSheetPile(
+          fixtures,
+          sku,
+          row.size,
+          SHEET_BAND_LEFT + column * (long + SHEET_COLUMN_GAP),
+          rowMins[rowIndex],
+          [long, wide],
+        );
+      });
+    });
   }
 
   // ---- Aisle 2: the machines, full-size displays on both sides.
@@ -460,9 +498,12 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     left: number,
     facing: Direction,
   ) => {
-    let y = frontier;
-    for (const machine of run) {
-      y -= MACHINE_PAD;
+    const mins = justifyRun(
+      run.map(() => MACHINE_PAD),
+      runTop,
+      frontier,
+    );
+    run.forEach((machine, index) => {
       fixtures.push({
         kind: "bay",
         id: `machine:${machine.id}`,
@@ -477,11 +518,13 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
             price: machine.cost,
           },
         },
-        rect: { min: [left, y], max: [left + MACHINE_PAD, y + MACHINE_PAD] },
+        rect: {
+          min: [left, mins[index]],
+          max: [left + MACHINE_PAD, mins[index] + MACHINE_PAD],
+        },
         facing,
       });
-      y -= MACHINE_GAP;
-    }
+    });
   };
   placeMachines(machinesWest, MACHINE_WEST_LEFT, 0);
   placeMachines(machinesEast, MACHINE_EAST_LEFT, 2);
@@ -492,28 +535,47 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     });
   }
 
-  // ---- Aisle 3: the supplies runs on both sides.
+  // ---- Aisle 3: the supplies runs on both sides. A few products fill
+  // a whole aisle the way a real planogram does: duplicate facings,
+  // grouped, until the run is stocked end to end.
   const placeSupplies = (
     run: ShelfProduct[],
     left: number,
     facing: Direction,
   ) => {
-    let y = frontier;
-    for (const product of run) {
-      y -= SUPPLY_BAY_HEIGHT;
+    if (run.length === 0) return;
+    const bayCount = Math.max(run.length, Math.round(targetRun / 5.5));
+    const perProduct = run.map(
+      (_, index) =>
+        Math.floor(bayCount / run.length) +
+        (index < bayCount % run.length ? 1 : 0),
+    );
+    const sequence = run.flatMap((product, index) =>
+      Array<ShelfProduct>(perProduct[index]).fill(product),
+    );
+    const seen = new Map<string, number>();
+    const mins = justifyRun(
+      sequence.map(() => SUPPLY_BAY_HEIGHT),
+      runTop,
+      frontier,
+    );
+    sequence.forEach((product, index) => {
+      const base = `supplies:${bayIdForLine(product.line)}`;
+      const nth = (seen.get(base) ?? 0) + 1;
+      seen.set(base, nth);
       fixtures.push({
         kind: "bay",
-        id: `supplies:${bayIdForLine(product.line)}`,
+        id: nth === 1 ? base : `${base}:${nth}`,
         section: "Supplies",
         display: "racking",
         product,
         rect: {
-          min: [left, y],
-          max: [left + FIXTURE_DEPTH, y + SUPPLY_BAY_HEIGHT],
+          min: [left, mins[index]],
+          max: [left + FIXTURE_DEPTH, mins[index] + SUPPLY_BAY_HEIGHT],
         },
         facing,
       });
-    }
+    });
   };
   placeSupplies(suppliesWest, SUPPLY_WEST_LEFT, 0);
   placeSupplies(suppliesEast, SUPPLY_EAST_LEFT, 2);
@@ -523,6 +585,21 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
       at: [AISLE_3_LEFT + AISLE_WIDTH / 2, frontier + 0.6],
     });
   }
+
+  // ---- The gondola spines between back-to-back runs.
+  const spines: StoreRect[] =
+    store === "orangeBox"
+      ? [
+          {
+            min: [SPINE_A_LEFT, runTop],
+            max: [SPINE_A_LEFT + SPINE_WIDTH, frontier],
+          },
+          {
+            min: [SPINE_B_LEFT, runTop],
+            max: [SPINE_B_LEFT + SPINE_WIDTH, frontier],
+          },
+        ]
+      : [];
 
   // ---- The front: doors toward the east end, register beside the lane.
   const doorRight = width - 4;
@@ -561,6 +638,7 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     worldSize,
     door: { left: doorLeft, right: doorRight },
     fixtures,
+    spines,
     register,
     truck,
     truckCab,
@@ -651,6 +729,9 @@ export function storeCollisionWorld(layout: StoreLayout): CollisionWorld {
         min: fixture.rect.min,
         max: fixture.rect.max,
       }),
+    ),
+    ...layout.spines.map(
+      (spine): SolidBox => ({ kind: "box", min: spine.min, max: spine.max }),
     ),
     { kind: "box", min: layout.register.min, max: layout.register.max },
     { kind: "box", min: layout.truck.min, max: layout.truck.max },

@@ -99,6 +99,7 @@ describe("storeLayout", () => {
       const layout = storeLayout(store, stateWith({ reputation: 100 }));
       const rects = [
         ...layout.fixtures.map((fixture) => fixture.rect),
+        ...layout.spines,
         layout.register,
       ];
       for (const rect of rects) {

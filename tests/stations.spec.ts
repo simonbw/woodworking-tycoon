@@ -235,15 +235,15 @@ test.describe("Stations", () => {
 
     await test.step("store: tool island and reputation-gated lumber racks", async () => {
       const returnTo = await goToStore(page);
-      // The aisles announce themselves: signage over each run
+      // The aisles announce themselves: signage over each run. The
+      // shelf tags themselves stay tucked away until the shopper stands
+      // at a bay (or the mouse hovers one) — the floor is the picture.
       await expect(page.getByText("Tools", { exact: true })).toBeVisible();
       await expect(page.getByText("Machines", { exact: true })).toBeVisible();
-      await expect(page.getByText("Sanding Block")).toBeVisible();
-      await expect(page.getByText("Random Orbit Sander")).toBeVisible();
+      await expect(page.getByText("Sanding Block")).not.toBeVisible();
 
-      // A shelf tag carries the picture, the name and the price; what
-      // the thing actually does waits in the tag's tooltip — and the
-      // tag only answers once you're standing at its bay.
+      // Standing at a bay reveals its tag: the name and the price; what
+      // the thing actually does waits in the tag's tooltip.
       //
       // Retried rather than hovered once: a tick that re-renders the
       // overlay can slide the tag out from under a pointer that just
@@ -252,6 +252,8 @@ test.describe("Stations", () => {
       await walkToShelf(page, "Sanding Block");
       const sandingTag = shelfTag(page, "Sanding Block");
       await expect(sandingTag).toContainText("$10.00");
+      // The neighbor's tag is still put away — one bay, one tag.
+      await expect(page.getByText("Random Orbit Sander")).not.toBeVisible();
       await expect(async () => {
         await sandingTag.hover();
         await expect(page.getByRole("tooltip")).toContainText(
@@ -331,12 +333,12 @@ test.describe("Stations", () => {
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
       // The floor holds the whole spread: cheap chip boards through
       // cabinet ply (reputation 20 clears the rep-12 shelf), piled by
-      // size then kind
-      await walkToShelf(page, "Sheet Goods");
-      await expect(page.getByText("OSB").first()).toBeVisible();
-      await expect(page.getByText("Cabinet Plywood").first()).toBeVisible();
+      // size then kind — each pile's tag appears at the pile
+      await walkToShelf(page, "OSB — 4×8 Sheet");
+      await expect(shelfTag(page, "OSB — 4×8 Sheet")).toBeVisible();
       // Every kind piles in three sizes, named right on the tag
-      await expect(page.getByText("2×2 Panel").first()).toBeVisible();
+      await walkToShelf(page, "Cabinet Plywood — 2×2 Panel");
+      await expect(shelfTag(page, "Cabinet Plywood — 2×2 Panel")).toBeVisible();
       await pickUpFromShelf(page, "Shop Plywood — 2×2 Panel");
       // $11.20: 2 board feet of shop-grade ply, at the small-piece
       // premium — quoted on the cart before a cent leaves the wallet
@@ -475,14 +477,10 @@ test.describe("Stations", () => {
 
     await test.step("the tool island sells the hand saw and drill, supplies sell screws", async () => {
       const returnTo = await goToStore(page);
-      // The tags on the island's bays name what hangs there
-      await expect(page.getByText("Hand Saw")).toBeVisible();
-      await expect(page.getByText("Drill", { exact: true })).toBeVisible();
-
+      // Each pickup walks to the bay, whose tag appears on arrival and
+      // hands one over
       await pickUpFromShelf(page, "Hand Saw");
       await pickUpFromShelf(page, "Drill");
-
-      await expect(page.getByText("Box of Screws")).toBeVisible();
       await pickUpFromShelf(page, "Box of Screws");
 
       // A whole trip's shopping sits on one cart, and nothing has been

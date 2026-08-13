@@ -30,6 +30,7 @@ import {
   storeLayout,
 } from "../../game/store-layout";
 import { getMaterialFullName } from "../../game/material-helpers";
+import { tutorialTargets } from "../tutorial/tutorialTargets";
 import { usePaused } from "../PauseContext";
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
 import { useHeadHome } from "../trip/TripTransitionLayer";
@@ -99,6 +100,8 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
   );
 
   const interact = resolveStoreInteract(gameState, layout);
+  // A tag the guided opening points at stays visible without hover.
+  const tutorialIds = new Set(tutorialTargets(gameState).domIds);
   const cart = currentCart(gameState) ?? [];
   const total = cartTotal(cart);
   const overdrawn = total > gameState.money;
@@ -269,6 +272,7 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
                   scale={view.scale}
                   interact={interact}
                   bayCartCounts={bayCartCounts}
+                  tutorialIds={tutorialIds}
                   armedLeave={armedLeave}
                   onAddFromBay={onAddFromBay}
                   onCheckout={onCheckout}

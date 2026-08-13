@@ -96,6 +96,19 @@ export const StoreFixturesLayer: React.FC<{
         }
       }
 
+      // The gondola spines: steel dividers between back-to-back runs,
+      // capped in orange like the racking uprights.
+      for (const spine of layout.spines) {
+        const s = rectPx(spine);
+        g.rect(s.x, s.y, s.w, s.h);
+        g.fill(RACK_STEEL);
+        g.rect(s.x + 2, s.y + 2, s.w - 4, s.h - 4);
+        g.fill(RACK_SHELF);
+        g.rect(s.x, s.y, s.w, 5);
+        g.rect(s.x, s.y + s.h - 5, s.w, 5);
+        g.fill(RACK_ORANGE);
+      }
+
       // The checkout counter: a dark top with the belt inset and a
       // terminal at the lane end.
       const counter = rectPx(layout.register);

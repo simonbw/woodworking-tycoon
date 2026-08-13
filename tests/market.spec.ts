@@ -442,10 +442,8 @@ test.describe("Selling, supplies, and sound", () => {
 
     await test.step("the store's supplies aisle sells packs", async () => {
       const returnTo = await goToStore(page);
+      // The aisle sign shows from anywhere; a bay's tag appears at it
       await expect(page.getByText("Supplies", { exact: true })).toBeVisible();
-      await expect(page.getByText("Box of Nails")).toBeVisible();
-      await expect(page.getByText("Mineral Oil Bottle")).toBeVisible();
-
       await pickUpFromShelf(page, "Mineral Oil Bottle");
       // On the cart, not in the cabinet — the shelf tag still reads empty
       await expect(page.getByText("16 oz in shop")).toHaveCount(0);
