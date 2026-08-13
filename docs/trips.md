@@ -33,13 +33,19 @@ A trip to the store swaps the canvas from the shop to the store
 (`HomePage` → `components/store-view/StoreView`): the same walking
 body, camera, and canvas machinery drawing a different venue. The
 floor plan is a planogram generated from the registries
-(`src/game/store-layout.ts`), the trip itself carries the shopper's
-cell (`ShoppingTrip.position` — `player.position` keeps meaning the
-cell underfoot back home), and the keys mirror the shop floor's
-(`src/game/store-interact.ts`): F puts one in the cart, E puts one
-back, a rack opens its size-picker card, the register rings the cart
-up, and E at the cab is the way home. How long a trip takes is how
-long you browse — the clock idles along under it (`time-flow.ts`).
+(`src/game/store-layout.ts`), laid out in aisles: lumber and sheet
+goods down aisle 1 as per-SKU floor piles (walkable, like loose stock
+on the shop floor), full-size machine displays flanking aisle 2,
+supplies down aisle 3, hand tools on the back wall. The merchandise
+draws with the shop's own sprites (`StoreMerchandiseLayer`, cached as
+one texture because a floor of procedural grain is heavy). The trip
+itself carries the shopper's cell (`ShoppingTrip.position` —
+`player.position` keeps meaning the cell underfoot back home), and
+the keys mirror the shop floor's (`src/game/store-interact.ts`):
+every product is its own bay — F puts one in the cart, E puts one
+back, the register rings the cart up, and E at the cab is the way
+home. How long a trip takes is how long you browse — the clock idles
+along under it (`time-flow.ts`).
 
 The lumberyard is still a menu overlay; it becomes the second walkable
 venue by running the same planogram generator with its own channels.

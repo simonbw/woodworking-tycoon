@@ -259,10 +259,11 @@ async function storePoints(page: any) {
 }
 
 /**
- * Stand at the shelf a product hangs on, opening its rack's card when
- * the product lives in a family rack (lumber, sheet goods) rather than
- * its own bay. After this the product's Add-to-cart control is on
- * screen and live.
+ * Stand at the shelf a product hangs on. Every product is its own bay —
+ * lumber and sheet goods included, piled on the floor per SKU — so after
+ * this the product's Add-to-cart tag is on screen and live. Category
+ * names work too ("Construction Lumber", "Sheet Goods"): they stand the
+ * shopper at the category's front pile.
  */
 export async function walkToShelf(page: any, product: string) {
   await page.waitForFunction(() => (window as any).__FIND_SHELF__, undefined, {
@@ -276,16 +277,6 @@ export async function walkToShelf(page: any, product: string) {
     throw new Error(`No shelf in this store sells "${product}"`);
   }
   await moveShopperTo(page, spot.cell);
-  if (spot.kind === "rack") {
-    const card = page.getByTestId("store-rack-card");
-    if (!(await card.isVisible().catch(() => false))) {
-      await page.evaluate(() =>
-        (document.activeElement as HTMLElement)?.blur?.(),
-      );
-      await page.keyboard.press("Tab");
-      await card.waitFor({ state: "visible" });
-    }
-  }
   return spot;
 }
 

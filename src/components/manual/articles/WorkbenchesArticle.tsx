@@ -32,7 +32,7 @@ export const WorkbenchesArticle: React.FC = () => (
 
     <H>Tools</H>
     <P>
-      Tools are sold in the store's <Term>tool aisle</Term>. Carry one to a
+      Tools are sold on the store's <Term>tool wall</Term>. Carry one to a
       bench and an empty hook on the rail takes it; unmounting puts it back in
       your hands. Higher-tier tools do the same work faster: the random orbit
       sander sands like the sanding block, and the hand plane flattens like the

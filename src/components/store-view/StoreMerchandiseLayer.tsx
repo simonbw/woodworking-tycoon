@@ -1,0 +1,174 @@
+import type { Container } from "pixi.js";
+import React, { useEffect, useMemo, useRef } from "react";
+import { freshMachineState } from "../../game/game-actions/machine-actions";
+import { MaterialPile } from "../../game/GameState";
+import { Machine, MACHINE_TYPES, footprintCenter } from "../../game/Machine";
+import { MaterialInstance } from "../../game/Materials";
+import { ShelfBay, StoreLayout } from "../../game/store-layout";
+import { Vector } from "../../game/Vectors";
+import { MachineSprite } from "../shop-view/MachineSprite";
+import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
+import { useGameState } from "../useGameState";
+
+/**
+ * The merchandise itself, drawn with the same sprites the shop floor
+ * uses: boards and sheets piled on the floor at the size they really
+ * are, machines as full-size displays, tools laid out on their racking.
+ * The planogram (store-layout.ts) says where everything stands; this
+ * layer only decides how a pile of it looks.
+ *
+ * Everything here is scenery — the piles never enter GameState, so the
+ * sprites are built from each bay's own product line (whose material ids
+ * are stable for a given layout, which keeps the procedural grain from
+ * shimmering between renders).
+ */
+
+/** A resting pile: material, center position (cells), rotation. */
+function pile(
+  material: MaterialInstance,
+  position: Vector,
+  rotation: number,
+): MaterialPile {
+  return { material, position, rotation };
+}
+
+const rectCenter = (rect: ShelfBay["rect"]): Vector => [
+  (rect.min[0] + rect.max[0]) / 2,
+  (rect.min[1] + rect.max[1]) / 2,
+];
+
+/** The piles a lumber bay wears: a row of boards side by side with a
+ * couple more on top, long axis pointed at the wall. */
+function lumberPiles(bay: ShelfBay): MaterialPile[] {
+  if (bay.product.line.kind !== "material") return [];
+  const material = bay.product.line.material;
+  if (material.type !== "board") return [];
+  const [cx, cy] = rectCenter(bay.rect);
+  const boardWidth = material.width / 12;
+  const across = Math.max(2, Math.min(4, Math.floor(1.2 / boardWidth)));
+  const piles: MaterialPile[] = [];
+  for (let i = 0; i < across; i++) {
+    const offset = (i - (across - 1) / 2) * (boardWidth + 0.04);
+    piles.push(pile(material, [cx, cy + offset], Math.PI / 2));
+  }
+  // The top layer, set a touch off square so the pile reads as a pile.
+  piles.push(pile(material, [cx - 0.08, cy - boardWidth / 2], Math.PI / 2 + 0.02));
+  piles.push(pile(material, [cx + 0.1, cy + boardWidth / 2], Math.PI / 2 - 0.015));
+  return piles;
+}
+
+/** A sheet bay's stack: a few sheets flat on the floor, slightly fanned. */
+function sheetPiles(bay: ShelfBay): MaterialPile[] {
+  if (bay.product.line.kind !== "material") return [];
+  const material = bay.product.line.material;
+  const [cx, cy] = rectCenter(bay.rect);
+  return [
+    pile(material, [cx, cy], Math.PI / 2),
+    pile(material, [cx + 0.06, cy + 0.05], Math.PI / 2 + 0.012),
+    pile(material, [cx - 0.05, cy - 0.04], Math.PI / 2 - 0.01),
+  ];
+}
+
+/** Tool bays lay a pair of the tool itself out on the racking. */
+function toolPiles(bay: ShelfBay): MaterialPile[] {
+  if (bay.product.line.kind !== "material") return [];
+  const material = bay.product.line.material;
+  if (material.type !== "tool") return [];
+  const [cx, cy] = rectCenter(bay.rect);
+  return [
+    pile(material, [cx - 0.45, cy], -0.15),
+    pile(material, [cx + 0.45, cy], 0.2),
+  ];
+}
+
+/** Rotate a footprint-center offset the way the sprite's angle will. */
+function rotateOffset([x, y]: Vector, rotation: number): Vector {
+  switch (rotation) {
+    case 1:
+      return [y, -x];
+    case 2:
+      return [-x, -y];
+    case 3:
+      return [-y, x];
+    default:
+      return [x, y];
+  }
+}
+
+/** A full-size display model, idle on its pad, turned to face the aisle. */
+const MachineDisplay: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
+  const gameState = useGameState();
+  const machine = useMemo(() => {
+    if (bay.product.line.kind !== "machine") return null;
+    const machineTypeId = bay.product.line.machineTypeId;
+    // Facing 0 shops from the east, facing 2 from the west; the display
+    // turns its working side toward its aisle.
+    const rotation = bay.facing === 0 ? 1 : bay.facing === 2 ? 3 : 0;
+    const [padX, padY] = rectCenter(bay.rect);
+    const [fx, fy] = rotateOffset(
+      footprintCenter(MACHINE_TYPES[machineTypeId].cellsOccupied),
+      rotation,
+    );
+    return new Machine({
+      ...freshMachineState(machineTypeId, gameState.progression),
+      // Fractional position centers the art on the pad exactly; only
+      // shop machines need to live on the grid.
+      position: [padX - 0.5 - fx, padY - 0.5 - fy],
+      rotation: rotation as 0 | 1 | 2 | 3,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuilt only
+    // when the bay moves; progression only picks the idle operation
+  }, [bay]);
+  if (!machine) return null;
+  return <MachineSprite machine={machine} />;
+};
+
+export const StoreMerchandiseLayer: React.FC<{ layout: StoreLayout }> = ({
+  layout,
+}) => {
+  const stacks = useMemo(() => {
+    const piles: { key: string; pile: MaterialPile }[] = [];
+    for (const bay of layout.fixtures) {
+      const bayPiles =
+        bay.display === "lumberStack"
+          ? lumberPiles(bay)
+          : bay.display === "sheetStack"
+            ? sheetPiles(bay)
+            : bay.display === "racking"
+              ? toolPiles(bay)
+              : [];
+      bayPiles.forEach((p, index) =>
+        piles.push({ key: `${bay.id}:${index}`, pile: p }),
+      );
+    }
+    return piles;
+  }, [layout]);
+
+  // The merchandise never moves, but it's a lot of procedural geometry —
+  // hundreds of boards' worth of grain and speckle. Rendered live it can
+  // dominate the frame (the E2E build's software rasterizer measured
+  // whole seconds per frame), so the layer rasterizes once and re-renders
+  // as a single texture until the planogram changes.
+  const containerRef = useRef<Container>(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.cacheAsTexture({ antialias: true });
+    return () => {
+      container.cacheAsTexture(false);
+    };
+  }, [stacks]);
+
+  return (
+    <pixiContainer ref={containerRef}>
+      {stacks.map(({ key, pile }) => (
+        <MaterialPileSprite key={key} pile={pile} />
+      ))}
+      {layout.fixtures
+        .filter((bay) => bay.display === "machine")
+        .map((bay) => (
+          <MachineDisplay key={bay.id} bay={bay} />
+        ))}
+    </pixiContainer>
+  );
+};

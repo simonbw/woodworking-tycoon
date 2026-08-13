@@ -1,36 +1,31 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
 import {
-  LumberRack,
-  SheetRack,
+  fixtureIsSolid,
   ShelfBay,
-  StoreFixture,
   StoreLayout,
   StoreRect,
 } from "../../game/store-layout";
 import { useTexture } from "../../utils/useTexture";
-import {
-  colorBySheetGoodKind,
-  colorBySpecies,
-} from "../shop-view/colorBySpecies";
 import { cellToPixel, inchesToPixels } from "../shop-view/shop-scale";
 
 /**
  * The store's furniture, drawn onto the footprints store-layout.ts
- * declares: big-box steel racking for the bays, timber racks striped
- * with the species they carry for the lumber channels, a sheet stack,
- * and the checkout counter. What each bay *sells* is the DOM shelf tag's
- * job (StoreOverlayLayer); these are the shelves under the tags.
- * Procedural on purpose — see docs/asset-backlog.md.
+ * declares: big-box steel racking under the tool wall and the supplies
+ * runs, display pads under the machines, painted floor bands under the
+ * lumber and sheet piles, and the checkout counter. The merchandise
+ * itself is StoreMerchandiseLayer's job — these are the shelves and
+ * pads under it. Procedural on purpose — see docs/asset-backlog.md.
  */
 
 const RACK_STEEL = 0x43474b;
 const RACK_SHELF = 0x5a5f64;
 const RACK_ORANGE = 0xe06010;
+const PAD_PAINT = 0xcfd3d6;
+const PILE_BAND = 0xd8d4cc;
 const COUNTER = 0x33363a;
 const COUNTER_BELT = 0x55402a;
 const TERMINAL = 0x191b1d;
-const WOOD_POST = 0x6d5639;
 
 function rectPx(rect: StoreRect): {
   x: number;
@@ -46,50 +41,38 @@ function rectPx(rect: StoreRect): {
   };
 }
 
-function drawBay(g: Graphics, bay: ShelfBay): void {
+function drawRackingBay(g: Graphics, bay: ShelfBay): void {
   const { x, y, w, h } = rectPx(bay.rect);
   g.rect(x, y, w, h);
   g.fill(RACK_STEEL);
   g.rect(x + 3, y + 3, w - 6, h - 6);
   g.fill(RACK_SHELF);
   // Orange uprights at the bay's ends — the big-box racking look.
-  g.rect(x, y, 5, h);
-  g.rect(x + w - 5, y, 5, h);
+  if (w >= h) {
+    g.rect(x, y, 5, h);
+    g.rect(x + w - 5, y, 5, h);
+  } else {
+    g.rect(x, y, w, 5);
+    g.rect(x, y + h - 5, w, 5);
+  }
   g.fill(RACK_ORANGE);
 }
 
-function drawLumberRack(g: Graphics, rack: LumberRack): void {
-  const { x, y, w, h } = rectPx(rack.rect);
+/** A machine display's pad: painted floor with an orange border. */
+function drawMachinePad(g: Graphics, bay: ShelfBay): void {
+  const { x, y, w, h } = rectPx(bay.rect);
   g.rect(x, y, w, h);
-  g.fill(WOOD_POST);
-  // The stock itself: a band per species carried, running the rack's
-  // length, in the same colors the boards draw with on the shop floor.
-  const bandGap = 3;
-  const bands = rack.channel.species.length;
-  const bandHeight = (h - bandGap * (bands + 1)) / bands;
-  rack.channel.species.forEach((species, index) => {
-    const top = y + bandGap + index * (bandHeight + bandGap);
-    g.rect(x + 3, top, w - 6, bandHeight);
-    g.fill(parseInt(colorBySpecies[species].primary.slice(1), 16));
-    // A few board seams down the band
-    for (let seam = 1; seam < 4; seam++) {
-      g.rect(x + 3, top + (bandHeight / 4) * seam, w - 6, 1);
-    }
-    g.fill(parseInt(colorBySpecies[species].secondary.slice(1), 16));
-  });
+  g.fill(PAD_PAINT);
+  g.rect(x + 1, y + 1, w - 2, h - 2);
+  g.stroke({ width: 2, color: RACK_ORANGE, alpha: 0.7 });
 }
 
-function drawSheetRack(g: Graphics, rack: SheetRack): void {
-  const { x, y, w, h } = rectPx(rack.rect);
-  g.rect(x, y, w, h);
-  g.fill(RACK_STEEL);
-  // A leaning stack of sheets: offset slices in ply tones.
-  const kinds = ["plywoodB", "osb", "particleBoard", "plywoodC"] as const;
-  kinds.forEach((kind, index) => {
-    const inset = 3 + index * 2.5;
-    g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
-    g.fill(parseInt(colorBySheetGoodKind[kind].primary.slice(1), 16));
-  });
+/** The painted band a floor pile sits in — enough floor answer that a
+ * pile reads as a spot in the planogram, not a dropped delivery. */
+function drawPileBand(g: Graphics, bay: ShelfBay): void {
+  const { x, y, w, h } = rectPx(bay.rect);
+  g.rect(x + 1, y + 1, w - 2, h - 2);
+  g.fill({ color: PILE_BAND, alpha: 0.55 });
 }
 
 export const StoreFixturesLayer: React.FC<{
@@ -104,16 +87,12 @@ export const StoreFixturesLayer: React.FC<{
     (g: Graphics) => {
       g.clear();
       for (const fixture of layout.fixtures) {
-        switch (fixture.kind) {
-          case "bay":
-            drawBay(g, fixture);
-            break;
-          case "lumberRack":
-            drawLumberRack(g, fixture);
-            break;
-          case "sheetRack":
-            drawSheetRack(g, fixture);
-            break;
+        if (fixture.display === "machine") {
+          drawMachinePad(g, fixture);
+        } else if (fixtureIsSolid(fixture)) {
+          drawRackingBay(g, fixture);
+        } else {
+          drawPileBand(g, fixture);
         }
       }
 

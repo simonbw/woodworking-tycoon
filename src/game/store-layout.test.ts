@@ -15,7 +15,8 @@ import {
 } from "./store-layout";
 import { resolveStoreInteract, cartIndexToReturn } from "./store-interact";
 import { addToCartAction } from "./game-actions/cart-actions";
-import { StoreId } from "./lumberStock";
+import { StoreId, unlockedLumberChannels } from "./lumberStock";
+import { SHEET_SIZES, unlockedSheetSkus } from "./sheetStock";
 import { Vector } from "./Vectors";
 
 function stateWith(overrides: Partial<GameState> = {}): GameState {
@@ -147,45 +148,119 @@ describe("storeLayout", () => {
     });
   }
 
-  it("puts every priced machine and store-bought tool on a shelf", () => {
+  it("puts every priced machine, tool, lumber sku, and sheet sku on the floor", () => {
     const layout = storeLayout("orangeBox", stateWith());
-    const bayIds = layout.fixtures
-      .filter((fixture) => fixture.kind === "bay")
-      .map((fixture) => fixture.id);
+    const bayIds = layout.fixtures.map((fixture) => fixture.id);
     for (const machine of machinesForSale()) {
       assert.ok(
         bayIds.includes(`machine:${machine.id}`),
-        `${machine.id} missing from the machine run`,
+        `${machine.id} missing from the machine aisle`,
       );
     }
     for (const tool of toolsForSale()) {
       assert.ok(
-        bayIds.includes(`island:tool:${tool.id}`),
-        `${tool.id} missing from the tool island`,
+        bayIds.includes(`wall:tool:${tool.id}`),
+        `${tool.id} missing from the tool wall`,
       );
     }
     assert.ok(bayIds.some((id) => id.startsWith("supplies:")));
+    // One pile per channel × species × dimension...
+    for (const channel of unlockedLumberChannels(0, "orangeBox")) {
+      for (const species of channel.species) {
+        for (const sku of channel.skus) {
+          assert.ok(
+            bayIds.includes(
+              `lumber:${channel.id}:${species}:${sku.thickness}x${sku.width}x${sku.length}`,
+            ),
+            `${channel.id} ${species} ${sku.length}" pile missing`,
+          );
+        }
+      }
+    }
+    // ...and one per sheet kind × size.
+    for (const sku of unlockedSheetSkus(0)) {
+      for (const size of SHEET_SIZES) {
+        assert.ok(
+          bayIds.includes(`sheet:${sku.kind}:${size.id}`),
+          `${sku.kind} ${size.id} pile missing`,
+        );
+      }
+    }
   });
 
-  it("materializes lumber racks with reputation and hides them without", () => {
+  it("sorts the lumber aisle construction-first and the sheets size-first", () => {
+    const layout = storeLayout("orangeBox", stateWith());
+    const lumber = layout.fixtures.filter((fixture) =>
+      fixture.id.startsWith("lumber:"),
+    );
+    // Runs hang from the front cross-aisle: walking in from the doors
+    // (larger y first), construction comes before the hardwood rack.
+    const firstHardwood = lumber.findIndex(
+      (fixture) => !fixture.id.startsWith("lumber:constructionLumber:"),
+    );
+    assert.ok(firstHardwood > 0, "construction piles come first");
+    assert.ok(
+      lumber
+        .slice(firstHardwood)
+        .every((fixture) => !fixture.id.startsWith("lumber:constructionLumber:")),
+      "hardwood piles all follow the construction group",
+    );
+    const frontOf = (id: string) =>
+      layout.fixtures.find((fixture) => fixture.id === id)!.rect.max[1];
+    assert.ok(
+      frontOf("lumber:constructionLumber:pine:8x4x96") >
+        frontOf(lumber[firstHardwood].id),
+      "construction stands nearer the doors than the hardwoods",
+    );
+    // Sheets: every full-sheet pile stands nearer the doors than every
+    // project-panel pile.
+    const fulls = layout.fixtures.filter((fixture) =>
+      fixture.id.endsWith(":full"),
+    );
+    const projects = layout.fixtures.filter((fixture) =>
+      fixture.id.endsWith(":project"),
+    );
+    assert.ok(fulls.length > 0 && projects.length > 0);
+    for (const full of fulls) {
+      for (const project of projects) {
+        assert.ok(full.rect.min[1] > project.rect.max[1] - 0.01);
+      }
+    }
+  });
+
+  it("materializes lumber piles with reputation and hides them without", () => {
     const fresh = storeLayout("lumberyard", stateWith({ reputation: 0 }));
     assert.strictEqual(
-      fresh.fixtures.filter((fixture) => fixture.kind === "lumberRack").length,
+      fresh.fixtures.filter((fixture) => fixture.id.startsWith("lumber:"))
+        .length,
       0,
     );
     const seasoned = storeLayout("lumberyard", stateWith({ reputation: 100 }));
+    // Two channels' worth of piles: one per species × dimension.
     assert.strictEqual(
-      seasoned.fixtures.filter((fixture) => fixture.kind === "lumberRack")
+      seasoned.fixtures.filter((fixture) => fixture.id.startsWith("lumber:"))
         .length,
-      2,
+      24,
+    );
+    // The sheet piles grow with reputation too.
+    const starterSheets = storeLayout("orangeBox", stateWith({ reputation: 0 }));
+    const seasonedSheets = storeLayout(
+      "orangeBox",
+      stateWith({ reputation: 100 }),
+    );
+    assert.ok(
+      seasonedSheets.fixtures.filter((fixture) =>
+        fixture.id.startsWith("sheet:"),
+      ).length >
+        starterSheets.fixtures.filter((fixture) =>
+          fixture.id.startsWith("sheet:"),
+        ).length,
     );
   });
 
-  it("takes the broom bay off the island once the shop owns one", () => {
+  it("takes the broom bay off the wall once the shop owns one", () => {
     const layout = storeLayout("orangeBox", stateWith({ broomOwned: true }));
-    assert.ok(
-      !layout.fixtures.some((fixture) => fixture.id === "island:broom"),
-    );
+    assert.ok(!layout.fixtures.some((fixture) => fixture.id === "wall:broom"));
   });
 });
 
@@ -209,15 +284,32 @@ describe("resolveStoreInteract", () => {
 
   const layout = storeLayout("orangeBox", stateWith());
   const sawBay = layout.fixtures.find(
-    (fixture) => fixture.id === "island:tool:handSaw",
+    (fixture) => fixture.id === "wall:tool:handSaw",
   );
   assert.ok(sawBay && sawBay.kind === "bay");
 
   it("finds the bay the shopper stands at", () => {
     const state = shoppingAt(fixtureStandCell(sawBay));
     const interact = resolveStoreInteract(state, layout);
-    assert.strictEqual(interact?.fixture?.id, "island:tool:handSaw");
+    assert.strictEqual(interact?.fixture?.id, "wall:tool:handSaw");
     assert.strictEqual(interact.inCart, 0);
+  });
+
+  it("resolves a back-row pile by standing on it", () => {
+    // The paired panel piles sit one behind the other; the far pile is
+    // walkable, and standing on it beats the pile in front.
+    const farPile = layout.fixtures.find(
+      (fixture, index, all) =>
+        fixture.id.startsWith("sheet:") &&
+        fixture.id.endsWith(":handy") &&
+        index > all.findIndex((f) => f.id.endsWith(":handy")),
+    );
+    assert.ok(farPile);
+    const state = shoppingAt(fixtureStandCell(farPile));
+    assert.strictEqual(
+      resolveStoreInteract(state, layout)?.fixture?.id,
+      farPile.id,
+    );
   });
 
   it("counts the bay's product in the cart and finds the line to return", () => {

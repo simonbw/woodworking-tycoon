@@ -26,11 +26,18 @@ const FOLLOW_RATE = 5;
 export const CameraLayer: React.FC<{
   worldRef: RefObject<Container | null>;
   overlayRef: RefObject<HTMLDivElement | null>;
-  /** Player cell y where the outdoors begins: the building's south wall. */
+  /** Player cell y where the outdoors begins: the building's south wall.
+   * A venue whose floor is taller than the screen (the store) passes -1:
+   * the camera then follows the player everywhere, indoors included. */
   scrollStartY: number;
   /** Furthest the view scrolls, in world pixels (0 on a tall viewport
    * that already sees the whole lot). */
   scrollMax: number;
+  /** Nearest the view scrolls, in world pixels. 0 (the fitted framing)
+   * unless the world's top hangs above the viewport — a centered fit of
+   * a too-tall world puts the origin off screen, and reaching the back
+   * wall means scrolling above the framing (negative). */
+  scrollMin?: number;
   /** Where the shop floor's origin lands on the canvas, in screen px. */
   offsetY: number;
   /** The canvas height, in screen px. */
@@ -41,6 +48,7 @@ export const CameraLayer: React.FC<{
   overlayRef,
   scrollStartY,
   scrollMax,
+  scrollMin = 0,
   offsetY,
   viewHeight,
   scale,
@@ -52,12 +60,20 @@ export const CameraLayer: React.FC<{
     camera.scroll = 0;
   }, []);
 
+  // The first frame snaps rather than eases: at mount the scroll is
+  // whatever the reset left, and gliding from there to wherever the body
+  // just snapped (a trip arrival, a reload mid-aisle) is a swoop across
+  // the world nobody asked for.
+  const firstFrame = React.useRef(true);
+
   useTick((ticker: Ticker) => {
     // The scroll that would put the player at the middle of the screen.
     const playerYPx = playerMotion.pos[1] * PIXELS_PER_CELL;
     const centered = playerYPx - (viewHeight / 2 - offsetY) / scale;
     const outdoors = playerMotion.pos[1] > scrollStartY;
-    const target = outdoors ? Math.min(Math.max(centered, 0), scrollMax) : 0;
+    const target = outdoors
+      ? Math.min(Math.max(centered, scrollMin), scrollMax)
+      : scrollMin;
 
     // Ease with the same hitch clamp the body uses, then snap the last
     // fraction of a pixel so a settled camera writes a settled number.
@@ -65,10 +81,12 @@ export const CameraLayer: React.FC<{
     // performances): specs teleport across the world and click the next
     // frame, and a camera mid-ease leaves their target off screen.
     const dt = Math.min(ticker.deltaMS / 1000, 0.1);
-    const eased = TRIP_TRANSITIONS_DISABLED
-      ? target
-      : camera.scroll +
-        (target - camera.scroll) * (1 - Math.exp(-FOLLOW_RATE * dt));
+    const eased =
+      TRIP_TRANSITIONS_DISABLED || firstFrame.current
+        ? target
+        : camera.scroll +
+          (target - camera.scroll) * (1 - Math.exp(-FOLLOW_RATE * dt));
+    firstFrame.current = false;
     camera.scroll = Math.abs(target - eased) < 0.1 ? target : eased;
 
     if (worldRef.current) {

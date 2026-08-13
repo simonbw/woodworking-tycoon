@@ -193,9 +193,11 @@ wiring: same path, same size, same component.
       corner trim, and door tracks — but it has to follow an arbitrary shop
       footprint, so tiling strips rather than one sprite.
 - [ ] Store racking and counter — `store-view/StoreFixturesLayer.tsx`. The
-      big-box shelf bays, lumber racks, sheet stack, and checkout counter
-      are rects on the planogram's footprints. The fixture wants art with
-      the DOM shelf tags still laid on top; sizes come from
+      big-box shelf bays, machine display pads, and checkout counter are
+      rects on the planogram's footprints (the lumber and sheet piles
+      already draw with the shop's own material sprites —
+      `StoreMerchandiseLayer.tsx`). The fixture wants art with the DOM
+      shelf tags still laid on top; sizes come from
       `game/store-layout.ts`, so tiling bay strips rather than one sprite.
 - [ ] Storefront and lot — `store-view/StoreEnvironmentLayer.tsx`. Wall
       bands, glass panes, sidewalk, and stall paint, all flat fills on an

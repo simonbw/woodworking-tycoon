@@ -7,18 +7,18 @@ import { playerMotion } from "../world-view/playerMotionStore";
 import { useGameState } from "../useGameState";
 
 /**
- * The shopping cart itself, rolling along at the shopper's heels. It
+ * The shopping cart itself, pushed along in front of the shopper. It
  * appears with the first thing set in it — there is no fetch-a-cart
  * errand, which would be hassle without depth — and what's in the basket
  * is drawn as parcels so a loaded cart looks loaded at a glance.
  *
- * The trail is presentation only: GameState's cart is the list of lines
- * (Person.ts), and this eases toward a point behind the body each frame
- * the way the vac canister trails back home.
+ * The cart is presentation only: GameState's cart is the list of lines
+ * (Person.ts), and this eases toward a point ahead of the body each
+ * frame, handle end swinging back toward the hands pushing it.
  */
 
-/** How far behind the body the cart trails, in cells. */
-const TRAIL_DISTANCE = 1.45;
+/** How far ahead of the body the pushed cart rides, in cells. */
+const LEAD_DISTANCE = 1.45;
 
 /** How much of the remaining gap the cart closes per second. */
 const FOLLOW_RATE = 7;
@@ -42,12 +42,12 @@ export const StorePushCartSprite: React.FC = () => {
   useTick((ticker: Ticker) => {
     const node = nodeRef.current;
     if (!node) return;
-    const behind: [number, number] = [
-      playerMotion.pos[0] - Math.cos(playerMotion.heading) * TRAIL_DISTANCE,
-      playerMotion.pos[1] - Math.sin(playerMotion.heading) * TRAIL_DISTANCE,
+    const ahead: [number, number] = [
+      playerMotion.pos[0] + Math.cos(playerMotion.heading) * LEAD_DISTANCE,
+      playerMotion.pos[1] + Math.sin(playerMotion.heading) * LEAD_DISTANCE,
     ];
-    const targetX = cellToPixel(behind[0]);
-    const targetY = cellToPixel(behind[1]);
+    const targetX = cellToPixel(ahead[0]);
+    const targetY = cellToPixel(ahead[1]);
     if (!placed.current) {
       node.position.set(targetX, targetY);
       placed.current = true;
@@ -58,7 +58,7 @@ export const StorePushCartSprite: React.FC = () => {
         node.position.y + (targetY - node.position.y) * k,
       );
     }
-    // The cart points at the person pulling it.
+    // The handle end swings back toward the person pushing it.
     node.rotation = Math.atan2(
       cellToPixel(playerMotion.pos[1]) - node.position.y,
       cellToPixel(playerMotion.pos[0]) - node.position.x,

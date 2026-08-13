@@ -263,16 +263,12 @@ test.describe("Stations", () => {
       await expect(page.getByRole("tooltip")).toHaveCount(0);
 
       // Cheap channels: framing pine and marked-up big-box S4S hardwood,
-      // each a rack you walk to. The boards themselves wait in the
-      // rack's card — walk for the category, click for the size.
+      // piled on the floor down aisle 1 — a stack per species and
+      // dimension, each wearing its own tag.
       await expect(page.getByText("Construction Lumber")).toBeVisible();
       await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
-      await walkToShelf(page, "Construction Lumber");
-      const rackCard = page.getByTestId("store-rack-card");
-      await expect(rackCard.getByText(/1x4\s*8'/)).toBeVisible();
-      await expect(rackCard.getByText("$2.00")).toBeVisible();
-      await page.keyboard.press("Escape");
-      await rackCard.waitFor({ state: "detached" });
+      await walkToShelf(page, "Pine 1x4 — 8'");
+      await expect(shelfTag(page, "Pine 1x4 — 8'")).toContainText("$2.00");
 
       // The less-than-S4S channels live at the lumberyard, not here
       await expect(page.getByText("S2S Rack")).not.toBeVisible();
@@ -333,14 +329,15 @@ test.describe("Stations", () => {
       await expect(page.getByText("Sheet Goods")).toBeVisible();
       // The sled itself is NOT for sale in the tool aisle
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
-      // The rack's card holds the whole spread: cheap chip boards
-      // through cabinet ply (reputation 20 clears the rep-12 shelf)
+      // The floor holds the whole spread: cheap chip boards through
+      // cabinet ply (reputation 20 clears the rep-12 shelf), piled by
+      // size then kind
       await walkToShelf(page, "Sheet Goods");
       await expect(page.getByText("OSB").first()).toBeVisible();
       await expect(page.getByText("Cabinet Plywood").first()).toBeVisible();
-      // Every kind racks in three sizes, named on the line under the tag
+      // Every kind piles in three sizes, named right on the tag
       await expect(page.getByText("2×2 Panel").first()).toBeVisible();
-      await pickUpFromShelf(page, "Shop Plywood", { variant: "2×2 Panel" });
+      await pickUpFromShelf(page, "Shop Plywood — 2×2 Panel");
       // $11.20: 2 board feet of shop-grade ply, at the small-piece
       // premium — quoted on the cart before a cent leaves the wallet
       await expect(page.getByTestId("store-cart-total")).toContainText("$11.20");

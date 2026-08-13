@@ -1,12 +1,6 @@
 import React from "react";
 import { CartLineIcon } from "../shopping/StoreCart";
-import {
-  LumberRack,
-  SheetRack,
-  ShelfBay,
-  StoreLayout,
-  StoreRect,
-} from "../../game/store-layout";
+import { ShelfBay, StoreLayout, StoreRect } from "../../game/store-layout";
 import { StoreInteract } from "../../game/store-interact";
 import { formatMoney } from "../../utils/formatNumber";
 import { classNames } from "../../utils/classNames";
@@ -16,13 +10,18 @@ import { ShortcutKeys } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";
 
 /**
- * The DOM layer pinned over the store's canvas: the products on the
- * shelves (each bay's tag, with the picture and the price — the same
- * face a real shelf edge wears), the aisle signage, and the key-hint
- * chips at whatever the shopper stands at. The same contract as the
- * shop floor's overlay: everything you can do is shown at the thing
- * you'd do it to, and the mouse only acts on what the body can already
- * reach — a tag's button is dead until you're standing at its bay.
+ * The DOM layer pinned over the store's canvas: each bay's shelf tag
+ * (the price and the name — the same face a real shelf edge wears), the
+ * aisle signage, and the key-hint chips at whatever the shopper stands
+ * at. The same contract as the shop floor's overlay: everything you can
+ * do is shown at the thing you'd do it to, and the mouse only acts on
+ * what the body can already reach — a tag's button is dead until you're
+ * standing at its bay.
+ *
+ * Bays whose merchandise is drawn at world size (the floor piles, the
+ * machine displays, the tool wall) wear a compact tag — the stock itself
+ * is the picture. Only the racking with no world art (supplies) keeps
+ * the icon on its tag.
  */
 
 /** A cluster pinned to a world point, hanging in the given direction. */
@@ -57,8 +56,8 @@ const rectCenter = (rect: StoreRect): [number, number] => [
 ];
 
 /** The world point a fixture's tag sits at: nudged toward the shopped
- * face, so the two rows of a double-sided island never stack their tags
- * and a wall bay's tag hangs into its aisle rather than over the wall. */
+ * face, so facing runs never stack their tags and a wall bay's tag
+ * hangs into its aisle rather than over the wall. */
 function tagPoint(rect: StoreRect, facing: number): [number, number] {
   const [cx, cy] = rectCenter(rect);
   const nudge = 0.4;
@@ -101,13 +100,25 @@ const ShelfTag: React.FC<{
   onAdd: () => void;
 }> = ({ bay, scale, inReach, inCart, onAdd }) => {
   const { name, description, line } = bay.product;
-  const [cx, cy] = tagPoint(bay.rect, bay.facing);
+  let [cx, cy] = tagPoint(bay.rect, bay.facing);
   const toolId =
     line.kind === "material" && line.material.type === "tool"
       ? line.material.toolId
       : null;
+  // The stock drawn at world size is its own picture; only bays without
+  // world art put an icon on the tag.
+  const compact = bay.display !== "racking" || toolId != null;
+  // A wall run's bays sit closer together than a tag is wide, so
+  // alternate bays drop their tags to a second row — the same trick a
+  // real aisle plays with its hanging tags.
+  if (bay.facing === 1 || bay.facing === 3) {
+    const secondRow = Math.floor(cx / 2) % 2 === 1;
+    if (secondRow) {
+      cy += bay.facing === 3 ? 0.75 : -0.75;
+    }
+  }
   return (
-    <At x={cx} y={cy} scale={scale} className="z-10">
+    <At x={cx} y={cy} scale={scale} className={inReach ? "z-20" : "z-10"}>
       <Tooltip
         content={`${name} — ${formatMoney(line.price)}. ${description}`}
         delay={120}
@@ -126,10 +137,12 @@ const ShelfTag: React.FC<{
               : "cursor-default",
           )}
         >
-          <span className="grid size-7 place-items-center overflow-hidden">
-            <CartLineIcon line={line} />
-          </span>
-          <span className="max-w-16 truncate font-condensed text-[9px] uppercase leading-none text-ink-black">
+          {!compact && (
+            <span className="grid size-7 place-items-center overflow-hidden">
+              <CartLineIcon line={line} />
+            </span>
+          )}
+          <span className="max-w-20 truncate font-condensed text-[9px] uppercase leading-none text-ink-black">
             {name}
           </span>
           <span className="font-condensed text-[10px] font-bold leading-none tabular-nums text-ink-black">
@@ -168,7 +181,6 @@ export const StoreOverlayLayer: React.FC<{
   bayCartCounts: ReadonlyMap<string, number>;
   armedLeave: boolean;
   onAddFromBay: (bay: ShelfBay) => void;
-  onBrowseRack: (rack: LumberRack | SheetRack) => void;
   onCheckout: () => void;
 }> = ({
   layout,
@@ -177,15 +189,9 @@ export const StoreOverlayLayer: React.FC<{
   bayCartCounts,
   armedLeave,
   onAddFromBay,
-  onBrowseRack,
   onCheckout,
 }) => {
-  const standing = interact?.fixture ?? null;
-  const standingBay = standing?.kind === "bay" ? standing : null;
-  const standingRack =
-    standing && standing.kind !== "bay"
-      ? (standing as LumberRack | SheetRack)
-      : null;
+  const standingBay = interact?.fixture ?? null;
 
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -211,51 +217,16 @@ export const StoreOverlayLayer: React.FC<{
         />
       ))}
 
-      {layout.fixtures.map((fixture) =>
-        fixture.kind === "bay" ? (
-          <ShelfTag
-            key={fixture.id}
-            bay={fixture}
-            scale={scale}
-            inReach={standingBay?.id === fixture.id}
-            inCart={bayCartCounts.get(fixture.id) ?? 0}
-            onAdd={() => onAddFromBay(fixture)}
-          />
-        ) : (
-          // The rack's own click surface: browsing by mouse, once the
-          // body is there to browse with.
-          <At
-            key={fixture.id}
-            x={rectCenter(fixture.rect)[0]}
-            y={rectCenter(fixture.rect)[1]}
-            scale={scale}
-            className="z-10"
-          >
-            <button
-              type="button"
-              aria-label={`Browse ${rackTitle(fixture)}`}
-              disabled={standingRack?.id !== fixture.id}
-              onClick={() => onBrowseRack(fixture)}
-              className={classNames(
-                "pointer-events-auto block rounded-sm",
-                standingRack?.id === fixture.id
-                  ? "cursor-pointer"
-                  : "cursor-default",
-              )}
-              style={{
-                width:
-                  (fixture.rect.max[0] - fixture.rect.min[0]) *
-                  PIXELS_PER_CELL *
-                  scale,
-                height:
-                  (fixture.rect.max[1] - fixture.rect.min[1]) *
-                  PIXELS_PER_CELL *
-                  scale,
-              }}
-            />
-          </At>
-        ),
-      )}
+      {layout.fixtures.map((fixture) => (
+        <ShelfTag
+          key={fixture.id}
+          bay={fixture}
+          scale={scale}
+          inReach={standingBay?.id === fixture.id}
+          inCart={bayCartCounts.get(fixture.id) ?? 0}
+          onAdd={() => onAddFromBay(fixture)}
+        />
+      ))}
 
       {/* ---- The chip at whatever the shopper stands at ---- */}
 
@@ -278,23 +249,6 @@ export const StoreOverlayLayer: React.FC<{
                 put one back ({interact?.inCart})
               </HintRow>
             )}
-          </HintList>
-        </ChipAt>
-      )}
-
-      {standingRack && (
-        <ChipAt
-          rect={standingRack.rect}
-          facing={standingRack.facing}
-          scale={scale}
-        >
-          <HintList testId="store-rack-chips">
-            <HintRow className="text-paper-manila/60">
-              {rackTitle(standingRack)}
-            </HintRow>
-            <HintRow keys={<ShortcutKeys shortcut="open-station-sheet" />}>
-              browse the rack
-            </HintRow>
           </HintList>
         </ChipAt>
       )}
@@ -371,7 +325,3 @@ const ChipAt: React.FC<{
     </At>
   );
 };
-
-export function rackTitle(rack: LumberRack | SheetRack): string {
-  return rack.kind === "lumberRack" ? rack.channel.name : "Sheet Goods";
-}
