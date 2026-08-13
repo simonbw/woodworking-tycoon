@@ -1,8 +1,12 @@
 import React, { useContext } from "react";
-import { interactLabel, resolveInteract } from "../../game/interact";
+import {
+  interactLabel,
+  resolveInteract,
+  takeBlockedReason,
+} from "../../game/interact";
 import { atStand, isSellable, standRect } from "../../game/stand";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
-import { HintList, HintRow } from "../shortcuts/HintList";
+import { HintList, HintRow, ReasonRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { useTargetedMachine } from "../TargetedMachineContext";
 import { useGameState } from "../useGameState";
@@ -41,6 +45,13 @@ export const StandPrompt: React.FC<{ canvasWidth: number }> = ({
         {interact.count > 1 && ` (${interact.count})`}
       </HintRow>,
     );
+  } else if (gameState.stand.length > 0) {
+    // Stock on the table but the hands can't take it back — say why
+    // instead of letting the chip go quiet about it.
+    const takeBlocked = takeBlockedReason(gameState);
+    if (takeBlocked) {
+      rows.push(<ReasonRow key="take-blocked">{takeBlocked}</ReasonRow>);
+    }
   }
   if (sellableInHand) {
     rows.push(

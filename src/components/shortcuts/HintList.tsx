@@ -62,3 +62,18 @@ export const HintRow: React.FC<{
       <span>{children}</span>
     </li>
   );
+
+/**
+ * A key-less row explaining why a verb isn't on offer right now — "arms
+ * full" where "pick up" would sit. Muted, sentence-case italic so it
+ * reads as a note rather than a control, and allowed to wrap since a
+ * reason can run longer than a verb. The same dress the feed-refusal
+ * advice wears (MachineChips), so every "here's why not" reads alike.
+ */
+export const ReasonRow: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <HintRow className="max-w-56 whitespace-normal normal-case italic tracking-normal text-paper-manila/70">
+    {children}
+  </HintRow>
+);

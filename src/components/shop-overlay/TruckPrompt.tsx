@@ -20,12 +20,17 @@ import {
   truckCabRect,
 } from "../../game/lot";
 import { MACHINE_TYPES } from "../../game/Machine";
-import { interactLabel, resolveInteract } from "../../game/interact";
+import { explainUnpackRefusal } from "../../game/game-actions/machine-actions";
+import {
+  interactLabel,
+  resolveInteract,
+  takeBlockedReason,
+} from "../../game/interact";
 import { ShortcutId } from "../../game/shortcuts";
 import { classNames } from "../../utils/classNames";
 import { mod } from "../../utils/mathUtils";
 import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
-import { HintList, HintRow } from "../shortcuts/HintList";
+import { HintList, HintRow, ReasonRow } from "../shortcuts/HintList";
 import { Kbd, ShortcutKeys } from "../shortcuts/Kbd";
 import { useShortcut } from "../shortcuts/ShortcutProvider";
 import { useTargetedMachine } from "../TargetedMachineContext";
@@ -95,6 +100,13 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
         {interact.count > 1 && ` (${interact.count})`}
       </HintRow>,
     );
+  } else if (gameState.truck.bed.length > 0) {
+    // Cargo in the bed but the hands can't lift it out — say why
+    // instead of letting the chip go quiet about it.
+    const takeBlocked = takeBlockedReason(gameState);
+    if (takeBlocked) {
+      rows.push(<ReasonRow key="take-blocked">{takeBlocked}</ReasonRow>);
+    }
   }
   if (holding) {
     rows.push(
@@ -105,11 +117,18 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
       </HintRow>,
     );
   }
-  if (gameState.truck.crates.length > 0 && !holding) {
+  if (gameState.truck.crates.length > 0) {
+    // Same bar as the shop-floor crate: unpacking wants completely empty
+    // hands, and the chip says so rather than dropping the row.
+    const unpackRefusal = explainUnpackRefusal(gameState);
     rows.push(
-      <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
-        unpack {MACHINE_TYPES[gameState.truck.crates[0].machineTypeId].name}
-      </HintRow>,
+      unpackRefusal ? (
+        <ReasonRow key="unpack">{unpackRefusal}</ReasonRow>
+      ) : (
+        <HintRow key="unpack" keys={<ShortcutKeys shortcut="carry-machine" />}>
+          unpack {MACHINE_TYPES[gameState.truck.crates[0].machineTypeId].name}
+        </HintRow>
+      ),
     );
   }
   if (rows.length === 0) {
@@ -301,10 +320,12 @@ export const TruckPrompt: React.FC<{
   const cabTop = cab.min[1] * cellPx;
   // Closed: just the chip, the same weight as every other hint — and
   // only when E would actually open the cab (something else in reach
-  // may claim the key first).
+  // may claim the key first). With a machine on the shoulders nothing
+  // resolves at all, so the chip carries the reason instead: the card's
+  // own "set it down first" advice, brought out where it can be read.
   if (!truckMenuOpen) {
     const interact = resolveInteract(gameState, targetedMachine);
-    if (interact?.kind !== "truck-cab") {
+    if (interact?.kind !== "truck-cab" && !carried) {
       return null;
     }
     return (
@@ -318,7 +339,16 @@ export const TruckPrompt: React.FC<{
       >
         <HintList testId="truck-cab-chips">
           <HintRow className="text-paper-manila/60">The truck</HintRow>
-          <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>head out</HintRow>
+          {carried ? (
+            <ReasonRow>
+              set the {MACHINE_TYPES[carried.machineTypeId].name} down to head
+              out
+            </ReasonRow>
+          ) : (
+            <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+              head out
+            </HintRow>
+          )}
         </HintList>
       </div>
     );

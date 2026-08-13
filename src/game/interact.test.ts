@@ -4,7 +4,13 @@ import { board } from "./board-helpers";
 import { GameState, MaterialPile } from "./GameState";
 import { getMachines, Machine, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
-import { interactLabel, offsetForSource, resolveInteract } from "./interact";
+import {
+  interactLabel,
+  materialSources,
+  offsetForSource,
+  resolveInteract,
+  takeBlockedReason,
+} from "./interact";
 import { Board } from "./Materials";
 import { HAND_CAPACITY } from "./Person";
 
@@ -157,6 +163,59 @@ describe("resolveInteract", () => {
       resolveInteract(state, bench, -1)?.kind,
       "pick-up-floor",
     );
+  });
+});
+
+describe("takeBlockedReason", () => {
+  function fullHanded(gameState: GameState): GameState {
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        inventory: Array.from({ length: HAND_CAPACITY }, () =>
+          board("pine", 12),
+        ),
+      },
+    };
+  }
+
+  it("has nothing to say while the hands could take something", () => {
+    assert.strictEqual(takeBlockedReason(shopWithPiles()), null);
+  });
+
+  it("says the arms are full at capacity", () => {
+    assert.strictEqual(
+      takeBlockedReason(fullHanded(shopWithPiles())),
+      "arms full",
+    );
+  });
+
+  it("names the broom when it's the thing committing the hands", () => {
+    const sweeping: GameState = {
+      ...shopWithPiles(),
+      broomOwned: true,
+      broomPosition: null,
+    };
+    assert.strictEqual(takeBlockedReason(sweeping), "put the broom down first");
+  });
+
+  it("names the vac hose when it's the thing committing the hands", () => {
+    const dragging: GameState = {
+      ...shopWithPiles(),
+      shopVac: { position: null, canister: {} },
+    };
+    assert.strictEqual(takeBlockedReason(dragging), "set the vac down first");
+  });
+
+  it("still lists what a blocked take would land on when told to ignore the hands", () => {
+    // The chips use this to put the explanation where the verb would
+    // have been — on the piece the free-handed press would grab.
+    const underfoot = pileAt([5.5, 5.5]);
+    const state = fullHanded(shopWithPiles(underfoot));
+    assert.strictEqual(materialSources(state, undefined).length, 0);
+    const ignoring = materialSources(state, undefined, true);
+    assert.strictEqual(ignoring.length, 1);
+    assert.strictEqual(ignoring[0].kind, "floor-pile");
   });
 });
 

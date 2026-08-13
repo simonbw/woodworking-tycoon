@@ -8,6 +8,7 @@ import {
   canPutDownCarriedMachine,
   carriedMachinePlacement,
   deliverMachineCrate,
+  explainUnpackRefusal,
   freshMachineState,
   pickUpCrateAction,
   pickUpMachineAction,
@@ -107,6 +108,33 @@ describe("pickUpCrateAction", () => {
       player: { ...initialGameState.player, position: [0, 0] },
     });
     assert.strictEqual(pickUpCrateAction()(state), state);
+  });
+});
+
+describe("explainUnpackRefusal", () => {
+  it("has nothing to say with empty hands", () => {
+    assert.strictEqual(explainUnpackRefusal(initialGameState), null);
+  });
+
+  it("agrees with the action about an armload", () => {
+    // The same test the unpack actions run, so the chip's reason and the
+    // key's refusal can never drift apart.
+    const holding = stateWith({
+      player: { ...initialGameState.player, inventory: [board("pine", 12)] },
+    });
+    assert.strictEqual(
+      explainUnpackRefusal(holding),
+      "empty your hands to unpack",
+    );
+    assert.strictEqual(pickUpCrateAction()(holding), holding);
+  });
+
+  it("names the vac when it's the thing in hand", () => {
+    const dragging = stateWith({ shopVac: { position: null, canister: {} } });
+    assert.strictEqual(
+      explainUnpackRefusal(dragging),
+      "set the vac down to unpack",
+    );
   });
 });
 

@@ -228,6 +228,23 @@ function handsFree(gameState: GameState): boolean {
   );
 }
 
+/**
+ * Why the crate at hand can't be hoisted right now, for the chip to say
+ * in place of "unpack" — the same test the unpack actions run (here and
+ * at the truck's bed), so the chip and the key always agree. Null when
+ * unpacking would work; the carried-machine case never asks (no chips
+ * show with a machine on the shoulders).
+ */
+export function explainUnpackRefusal(gameState: GameState): string | null {
+  if (carryingShopVac(gameState)) {
+    return "set the vac down to unpack";
+  }
+  if (gameState.player.inventory.length > 0) {
+    return "empty your hands to unpack";
+  }
+  return null;
+}
+
 /*
  * Carrying machines IS shop-layout management — there is no separate
  * layout editor. One contextual key (B) three-way toggles: put down what

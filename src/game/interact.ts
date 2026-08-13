@@ -70,14 +70,34 @@ export function materialSourceKey(source: MaterialSource): string {
 }
 
 /**
+ * Why the material verbs (take, pick up) are off right now: a tool
+ * committing the hands, or arms already at capacity. Null when the hands
+ * could take something. The chips show this text in place of the verb
+ * they can't offer, so a full-handed player standing over stock reads
+ * "arms full" instead of silence.
+ */
+export function takeBlockedReason(gameState: GameState): string | null {
+  switch (heldTool(gameState)) {
+    case "broom":
+      return "put the broom down first";
+    case "vacHose":
+      return "set the vac down first";
+  }
+  return handSpaceLeft(gameState.player) > 0 ? null : "arms full";
+}
+
+/**
  * Every material source in reach, in priority order: outfeeds, then
  * loaded bays, then the floor's pieces newest-first. Empty when the
  * hands aren't free to take anything (a held tool, full arms, a carried
- * machine, or the player away).
+ * machine, or the player away) — unless `ignoreHands`, which the chips
+ * use to find what a blocked take *would* land on, so the explanation
+ * can sit where the verb would have.
  */
 export function materialSources(
   gameState: GameState,
   targetedMachine: Machine | undefined,
+  ignoreHands = false,
 ): ReadonlyArray<MaterialSource> {
   if (gameState.player.away || gameState.player.carriedMachine != null) {
     return [];
@@ -86,9 +106,7 @@ export function materialSources(
   // A tool in hand commits the hands: material verbs (take, unload, pick
   // up the floor) step aside until it's set down. Full arms step the same
   // verbs aside: the chip never offers a pickup the action would refuse.
-  const handsFree =
-    heldTool(gameState) === null && handSpaceLeft(gameState.player) > 0;
-  if (!handsFree) return [];
+  if (!ignoreHands && takeBlockedReason(gameState) !== null) return [];
 
   const cellMap = CellMap.fromGameState(gameState);
   const cell = cellMap.at(gameState.player.position);
@@ -161,6 +179,16 @@ export function offsetForSource(
   return index === -1 ? null : index;
 }
 
+/** The leaning broom is a step away — where the pick-up offer (or the
+ * note explaining why the hands can't take it) belongs. */
+export function broomWithinReach(gameState: GameState): boolean {
+  return (
+    gameState.broomOwned &&
+    gameState.broomPosition !== null &&
+    chebyshevDistance(gameState.broomPosition, gameState.player.position) <= 1
+  );
+}
+
 function dedupeMachines(machines: ReadonlyArray<Machine>): Machine[] {
   const seen = new Set<string>();
   return machines.filter((machine) => {
@@ -218,11 +246,9 @@ export function resolveInteract(
   // (and a free shoulder). Floor pickups outrank it so a pile lying at
   // the broom's feet — the dustpan moment — still gets E first.
   if (
-    gameState.broomOwned &&
+    broomWithinReach(gameState) &&
     handsFree &&
-    gameState.player.inventory.length === 0 &&
-    gameState.broomPosition !== null &&
-    chebyshevDistance(gameState.broomPosition, gameState.player.position) <= 1
+    gameState.player.inventory.length === 0
   ) {
     return { kind: "pick-up-broom" };
   }
