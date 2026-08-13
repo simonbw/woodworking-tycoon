@@ -296,20 +296,19 @@ describe("resolveStoreInteract", () => {
     assert.strictEqual(interact.inCart, 0);
   });
 
-  it("resolves a back-row pile by standing on it", () => {
-    // The paired panel piles sit one behind the other; the far pile is
-    // walkable, and standing on it beats the pile in front.
-    const farPile = layout.fixtures.find(
-      (fixture, index, all) =>
-        fixture.id.startsWith("sheet:") &&
-        fixture.id.endsWith(":handy") &&
-        index > all.findIndex((f) => f.id.endsWith(":handy")),
+  it("resolves a small panel pile by standing on it", () => {
+    // The little 2×2 piles pack tightest; standing on one still resolves
+    // it over its neighbors, because a walkable pile underfoot is at
+    // distance zero.
+    const panelPiles = layout.fixtures.filter((fixture) =>
+      fixture.id.endsWith(":project"),
     );
-    assert.ok(farPile);
-    const state = shoppingAt(fixtureStandCell(farPile));
+    assert.ok(panelPiles.length >= 2);
+    const pile = panelPiles[1];
+    const state = shoppingAt(fixtureStandCell(pile));
     assert.strictEqual(
       resolveStoreInteract(state, layout)?.fixture?.id,
-      farPile.id,
+      pile.id,
     );
   });
 

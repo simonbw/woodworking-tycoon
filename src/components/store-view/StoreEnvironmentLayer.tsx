@@ -1,5 +1,5 @@
 import { Graphics } from "pixi.js";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StoreLayout } from "../../game/store-layout";
 import { useTexture } from "../../utils/useTexture";
 import { WorldViewport } from "../shop-view/EnvironmentLayer";
@@ -23,6 +23,32 @@ const SIDEWALK_SEAM = 0x7f7c78;
 const STALL_PAINT = 0xd8d4cd;
 const FLOOR_TINT = 0xe3e3e3;
 const ASPHALT_TINT = 0x8f8f8f;
+const DECAL_PAINT = 0x5a6068;
+
+/** The stencil face the storefront chrome uses, painted onto the slab.
+ * PIXI rasterizes DOM-loaded fonts, so the decals wait for the face —
+ * text drawn before the font lands would bake the serif fallback. */
+const DECAL_FONT = "Stardos Stencil";
+
+function useStencilReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    document.fonts
+      .load(`700 32px "${DECAL_FONT}"`)
+      .then(() => {
+        if (!cancelled) setReady(true);
+      })
+      .catch(() => {
+        // Fallback face beats no wayfinding at all.
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return ready;
+}
 
 export const StoreEnvironmentLayer: React.FC<{
   layout: StoreLayout;
@@ -30,6 +56,7 @@ export const StoreEnvironmentLayer: React.FC<{
 }> = ({ layout, viewport }) => {
   const floorTexture = useTexture("/images/concrete-floor-2-big.png");
   const asphaltTexture = useTexture("/images/asphalt.png");
+  const stencilReady = useStencilReady();
 
   const [width, height] = [
     cellToPixel(layout.interior[0]),
@@ -178,6 +205,27 @@ export const StoreEnvironmentLayer: React.FC<{
         width={width}
         height={height}
       />
+      {/* Stencil paint on the slab: aisle names and wayfinding, under
+          everything that stands on the floor. */}
+      {stencilReady &&
+        layout.decals.map((decal) => (
+          <pixiText
+            key={decal.text}
+            text={decal.text}
+            x={cellToPixel(decal.at[0])}
+            y={cellToPixel(decal.at[1])}
+            rotation={decal.rotation}
+            anchor={{ x: 0.5, y: 0.5 }}
+            alpha={0.4}
+            style={{
+              fontFamily: DECAL_FONT,
+              fontWeight: "700",
+              fontSize: cellToPixel(decal.size),
+              letterSpacing: 6,
+              fill: DECAL_PAINT,
+            }}
+          />
+        ))}
       <pixiGraphics draw={drawBuilding} />
     </>
   );

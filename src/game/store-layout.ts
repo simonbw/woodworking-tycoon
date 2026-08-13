@@ -104,6 +104,26 @@ export interface AisleSign {
   readonly at: Vector;
 }
 
+/** Stencil paint on the concrete: aisle names and wayfinding, drawn on
+ * the floor under everything. Presentation only. */
+export interface FloorDecal {
+  readonly text: string;
+  /** Center, in continuous cell coordinates. */
+  readonly at: Vector;
+  /** Radians; π/2 reads down a north–south aisle. */
+  readonly rotation: number;
+  /** Cap height, in cells. */
+  readonly size: number;
+}
+
+/** Scenery with a footprint but no product: today, the crate stacks of
+ * boxed machines behind the display models. Walkable, like the shop's
+ * own delivery crates. */
+export interface StoreDecor {
+  readonly kind: "crateStack";
+  readonly rect: StoreRect;
+}
+
 export interface StoreLayout {
   readonly store: StoreId;
   /** Wall-to-wall floor, in cells. The front wall is at y = interior[1]. */
@@ -126,6 +146,8 @@ export interface StoreLayout {
   /** Where the player stands when the trip arrives: beside the cab. */
   readonly spawn: { readonly cell: Vector; readonly direction: Direction };
   readonly signs: ReadonlyArray<AisleSign>;
+  readonly decals: ReadonlyArray<FloorDecal>;
+  readonly decor: ReadonlyArray<StoreDecor>;
 }
 
 /** Stud wall thickness, matching the shop's (lot.ts). */
@@ -142,19 +164,22 @@ export const STORE_REACH = 1.5;
 const LUMBER_DEPTH = 8;
 /** How much aisle a lumber pile takes, side to side. */
 const LUMBER_SLOT = 1.6;
-/** The sheet band's depth — a full sheet pointed away from aisle 1,
- * with a little room before the back row of panel piles. */
+/** The sheet band's depth — a full sheet pointed away from aisle 1. */
 const SHEET_DEPTH = 8.5;
-/** A machine display's pad — every machine for sale fits 3×3. */
+/** A machine display's footprint — every machine for sale fits 3×3. */
 const MACHINE_PAD = 3;
+/** A crate stack's footprint on the machine run — display stock boxed
+ * behind the floor models. */
+const CRATE_STACK = 1.8;
 /** Steel racking depth for the tool wall and the supplies runs. */
 const FIXTURE_DEPTH = 1.5;
 /** A tool bay's width along the back wall. */
 const TOOL_BAY_WIDTH = 2;
 /** A supplies bay's height along its aisle. */
 const SUPPLY_BAY_HEIGHT = 2.75;
-/** Walking room between the bands. */
-const AISLE_WIDTH = 3.5;
+/** Walking room between the bands — wide enough for a cart to pass a
+ * browsing shopper without brushing either run. */
+const AISLE_WIDTH = 5;
 /** A gondola spine's thickness. */
 const SPINE_WIDTH = 0.75;
 /** The cross-aisle between the tool wall and the tops of the runs. */
@@ -175,27 +200,33 @@ const AISLE_3_LEFT = SUPPLY_WEST_LEFT + FIXTURE_DEPTH;
 const SUPPLY_EAST_LEFT = AISLE_3_LEFT + AISLE_WIDTH;
 const INTERIOR_WIDTH = SUPPLY_EAST_LEFT + FIXTURE_DEPTH;
 
-/** Gap kept between the columns of paired panel piles. */
-const SHEET_COLUMN_GAP = 0.4;
+/** One item of a run: its extent along the run and the air it wants
+ * between itself and the item in front of it (or the run's front end). */
+interface RunItem {
+  readonly size: number;
+  readonly gapBefore: number;
+}
 
 /**
- * Evenly space a run's items between its ends, equal air on every side —
- * what keeps a short run from huddling at the front of a long band. Items
+ * Lay a run front to back: each item keeps its preferred gap, and
+ * whatever span is left over pads every gap equally — groups stay
+ * grouped, and the slack spreads instead of pooling at one end. Items
  * are given front-first; returns each one's min coordinate.
  */
-function justifyRun(
-  sizes: ReadonlyArray<number>,
+function layRun(
+  items: ReadonlyArray<RunItem>,
   top: number,
   bottom: number,
 ): number[] {
-  const total = sizes.reduce((sum, size) => sum + size, 0);
-  const gap = Math.max(0.15, (bottom - top - total) / (sizes.length + 1));
-  let edge = bottom - gap;
-  return sizes.map((size) => {
-    edge -= size;
-    const min = edge;
-    edge -= gap;
-    return min;
+  const natural = items.reduce(
+    (sum, item) => sum + item.size + item.gapBefore,
+    0,
+  );
+  const pad = Math.max(0, (bottom - top - natural) / (items.length + 1));
+  let edge = bottom;
+  return items.map((item) => {
+    edge -= item.gapBefore + pad + item.size;
+    return edge;
   });
 }
 
@@ -338,6 +369,8 @@ export function pileSheet(
 export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
   const fixtures: StoreFixture[] = [];
   const signs: AisleSign[] = [];
+  const decals: FloorDecal[] = [];
+  const decor: StoreDecor[] = [];
 
   const machines = store === "orangeBox" ? machinesForSale() : [];
   const tools = store === "orangeBox" ? toolWallProducts(gameState) : [];
@@ -346,56 +379,61 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
   const sheetKinds =
     store === "orangeBox" ? unlockedSheetSkus(gameState.reputation) : [];
 
-  // ---- The shared run length. Every band justifies its stock across
-  // the same span, so no aisle crams while another trails off into bare
-  // concrete; the span itself is set by whichever band carries the most.
-  const lumberPiles = channels.flatMap((channel) =>
-    channel.species.flatMap((species) =>
-      channel.skus.map((sku) => ({ channel, species, sku })),
+  // ---- What each run carries, front to back. The sheet run — every
+  // kind in every size, at true size, one row so every pile meets the
+  // aisle — is the longest thing in the building and sets the pace; the
+  // other bands fill their share of that span with duplicate facings
+  // rather than stretching thin.
+  const sheetPiles = sheetKinds.length
+    ? SHEET_SIZES.flatMap((size) =>
+        sheetKinds.map((sku, index) => ({
+          size,
+          sku,
+          gapBefore: index === 0 ? 1.4 : 0.35,
+        })),
+      )
+    : [];
+  const sheetNatural = sheetPiles.reduce(
+    (sum, pile) => sum + pile.size.width / 12 + pile.gapBefore,
+    0,
+  );
+
+  const lumberSkus = channels.flatMap((channel, channelIndex) =>
+    channel.species.flatMap((species, speciesIndex) =>
+      channel.skus.map((sku, skuIndex) => ({
+        channel,
+        species,
+        sku,
+        opensChannel: speciesIndex === 0 && skuIndex === 0,
+        channelIndex,
+      })),
     ),
   );
-  const sheetRows: Array<{
-    size: SheetSize;
-    skus: Array<(typeof sheetKinds)[number]>;
-  }> = [];
-  for (const size of SHEET_SIZES) {
-    if (sheetKinds.length === 0) break;
-    if (size.id === "full") {
-      for (const sku of sheetKinds) sheetRows.push({ size, skus: [sku] });
-    } else {
-      // The panel sizes pair up: one pile at the aisle, one behind it —
-      // both walkable, so the back row is browsed by stepping over the
-      // front one.
-      for (let i = 0; i < sheetKinds.length; i += 2) {
-        sheetRows.push({ size, skus: sheetKinds.slice(i, i + 2) });
-      }
-    }
-  }
+  const lumberNatural =
+    lumberSkus.length * (LUMBER_SLOT + 0.5) + channels.length * 1.1;
+
   const machinesWest = machines.slice(0, Math.ceil(machines.length / 2));
   const machinesEast = machines.slice(machinesWest.length);
   const suppliesWest = supplies.slice(0, Math.ceil(supplies.length / 2));
   const suppliesEast = supplies.slice(suppliesWest.length);
 
   const runTop = FIXTURE_DEPTH + BACK_CROSS_AISLE;
-  const targetRun = Math.max(
-    lumberPiles.length * (LUMBER_SLOT + 0.55),
-    sheetRows.reduce((sum, row) => sum + row.size.width / 12, 0) +
-      (sheetRows.length + 1) * 0.5,
-    Math.max(machinesWest.length, machinesEast.length) * (MACHINE_PAD + 1.25),
-    12,
-  );
+  const targetRun = Math.max(sheetNatural, lumberNatural, 14);
   const frontier = runTop + targetRun;
   const width = INTERIOR_WIDTH;
   const height = Math.ceil(frontier + FRONT_ZONE);
 
   // ---- Back wall: the tool wall, spread across the whole wall.
-  const toolMins = justifyRun(
-    tools.map(() => TOOL_BAY_WIDTH),
+  const toolMins = layRun(
+    tools.map((_, index) => ({
+      size: TOOL_BAY_WIDTH,
+      gapBefore: index === 0 ? 0 : 0.4,
+    })),
     1.5,
     width - 1.5,
   );
   tools.forEach((product, index) => {
-    // justifyRun hands out positions from its far end; walk order reads
+    // layRun hands out positions from its far end; walk order reads
     // west to east.
     const x = toolMins[tools.length - 1 - index];
     fixtures.push({
@@ -418,19 +456,33 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
 
   // ---- Aisle 1 west: the lumber piles, boards pointed at the west
   // wall so every pile meets the aisle end-on. Construction first, then
-  // hardwoods; within a channel, by species, then by dimension.
-  const lumberMins = justifyRun(
-    lumberPiles.map(() => LUMBER_SLOT),
-    runTop,
-    frontier,
+  // hardwoods; within a channel, by species, then by dimension — and
+  // each dimension gets as many piles as it takes to hold its share of
+  // the run.
+  const lumberCopies = Math.max(1, Math.round(targetRun / lumberNatural));
+  const lumberItems = lumberSkus.flatMap((entry) =>
+    Array.from({ length: lumberCopies }, (_, copyIndex) => ({
+      ...entry,
+      copy: copyIndex + 1,
+      size: LUMBER_SLOT,
+      gapBefore:
+        copyIndex > 0
+          ? 0.2
+          : entry.opensChannel && entry.channelIndex > 0
+            ? 1.6
+            : 0.5,
+    })),
   );
-  lumberPiles.forEach(({ channel, species, sku }, index) => {
+  const lumberMins = layRun(lumberItems, runTop, frontier);
+  lumberItems.forEach((entry, index) => {
+    const { channel, species, sku } = entry;
     const pileLength = sku.length / 12;
     const min = lumberMins[index];
     const material = channelBoard(channel, species, sku);
+    const baseId = `lumber:${channel.id}:${species}:${sku.thickness}x${sku.width}x${sku.length}`;
     fixtures.push({
       kind: "bay",
-      id: `lumber:${channel.id}:${species}:${sku.thickness}x${sku.width}x${sku.length}`,
+      id: entry.copy === 1 ? baseId : `${baseId}:${entry.copy}`,
       section: channel.name,
       display: "lumberStack",
       product: {
@@ -450,7 +502,7 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     });
   });
   channels.forEach((channel, channelIndex) => {
-    const first = lumberPiles.findIndex((pile) => pile.channel === channel);
+    const first = lumberItems.findIndex((entry) => entry.channel === channel);
     if (first === -1) return;
     signs.push({
       title: channel.name,
@@ -465,57 +517,96 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
   });
 
   // ---- Aisle 1 east: the sheet piles, flat on the floor, sorted by
-  // size then kind.
-  if (sheetRows.length > 0) {
+  // size then kind, every pile fronting the aisle.
+  if (sheetPiles.length > 0) {
     signs.push({
       title: "Sheet Goods",
       at: [SHEET_BAND_LEFT + 4, frontier + 0.6],
     });
-    const rowMins = justifyRun(
-      sheetRows.map((row) => row.size.width / 12),
+    const sheetMins = layRun(
+      sheetPiles.map((pile) => ({
+        size: pile.size.width / 12,
+        gapBefore: pile.gapBefore,
+      })),
       runTop,
       frontier,
     );
-    sheetRows.forEach((row, rowIndex) => {
-      const long = row.size.length / 12;
-      const wide = row.size.width / 12;
-      row.skus.forEach((sku, column) => {
-        pushSheetPile(
-          fixtures,
-          sku,
-          row.size,
-          SHEET_BAND_LEFT + column * (long + SHEET_COLUMN_GAP),
-          rowMins[rowIndex],
-          [long, wide],
-        );
-      });
+    sheetPiles.forEach((pile, index) => {
+      pushSheetPile(fixtures, pile.sku, pile.size, SHEET_BAND_LEFT, sheetMins[index], [
+        pile.size.length / 12,
+        pile.size.width / 12,
+      ]);
     });
   }
 
-  // ---- Aisle 2: the machines, full-size displays on both sides.
+  // ---- Aisle 2: the machines. Each floor model shows twice, its boxed
+  // stock crated up beside the displays — a stocked run, not lone pads
+  // on bare concrete.
   const placeMachines = (
     run: ReturnType<typeof machinesForSale>,
     left: number,
     facing: Direction,
   ) => {
-    const mins = justifyRun(
-      run.map(() => MACHINE_PAD),
-      runTop,
-      frontier,
-    );
-    run.forEach((machine, index) => {
+    if (run.length === 0) return;
+    type MachineRunItem = RunItem &
+      (
+        | { kind: "machine"; machine: (typeof run)[number]; copy: number }
+        | { kind: "crates" }
+      );
+    const items: MachineRunItem[] = run.flatMap((machine, index) => [
+      {
+        kind: "machine" as const,
+        machine,
+        copy: 1,
+        size: MACHINE_PAD,
+        gapBefore: index === 0 ? 0 : 1.1,
+      },
+      {
+        kind: "crates" as const,
+        size: CRATE_STACK,
+        gapBefore: 0.5,
+      },
+      {
+        kind: "machine" as const,
+        machine,
+        copy: 2,
+        size: MACHINE_PAD,
+        gapBefore: 0.5,
+      },
+      {
+        kind: "crates" as const,
+        size: CRATE_STACK,
+        gapBefore: 0.5,
+      },
+    ]);
+    const mins = layRun(items, runTop, frontier);
+    items.forEach((item, index) => {
+      if (item.kind === "crates") {
+        const inset = (MACHINE_PAD - CRATE_STACK) / 2;
+        decor.push({
+          kind: "crateStack",
+          rect: {
+            min: [left + inset, mins[index]],
+            max: [left + inset + CRATE_STACK, mins[index] + CRATE_STACK],
+          },
+        });
+        return;
+      }
       fixtures.push({
         kind: "bay",
-        id: `machine:${machine.id}`,
+        id:
+          item.copy === 1
+            ? `machine:${item.machine.id}`
+            : `machine:${item.machine.id}:${item.copy}`,
         section: "Machines",
         display: "machine",
         product: {
-          name: machine.name,
-          description: machine.description,
+          name: item.machine.name,
+          description: item.machine.description,
           line: {
             kind: "machine",
-            machineTypeId: machine.id as MachineId,
-            price: machine.cost,
+            machineTypeId: item.machine.id as MachineId,
+            price: item.machine.cost,
           },
         },
         rect: {
@@ -544,7 +635,7 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     facing: Direction,
   ) => {
     if (run.length === 0) return;
-    const bayCount = Math.max(run.length, Math.round(targetRun / 5.5));
+    const bayCount = Math.max(run.length, Math.round(targetRun / 4.2));
     const perProduct = run.map(
       (_, index) =>
         Math.floor(bayCount / run.length) +
@@ -554,8 +645,12 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
       Array<ShelfProduct>(perProduct[index]).fill(product),
     );
     const seen = new Map<string, number>();
-    const mins = justifyRun(
-      sequence.map(() => SUPPLY_BAY_HEIGHT),
+    const mins = layRun(
+      sequence.map((product, index) => ({
+        size: SUPPLY_BAY_HEIGHT,
+        gapBefore:
+          index === 0 ? 0 : sequence[index - 1] === product ? 0.3 : 1.2,
+      })),
       runTop,
       frontier,
     );
@@ -586,6 +681,52 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     });
   }
 
+  // ---- Stencil paint on the concrete: each aisle names itself down
+  // its own floor, the way a big box's wayfinding actually reads.
+  if (store === "orangeBox") {
+    const midRun = frontier - targetRun / 2;
+    if (lumberSkus.length > 0) {
+      decals.push({
+        text: "LUMBER",
+        at: [AISLE_1_LEFT + 1.4, midRun],
+        rotation: Math.PI / 2,
+        size: 1.5,
+      });
+    }
+    if (sheetPiles.length > 0) {
+      decals.push({
+        text: "SHEET GOODS",
+        at: [SHEET_BAND_LEFT - 1.4, midRun],
+        rotation: Math.PI / 2,
+        size: 1.5,
+      });
+    }
+    if (machines.length > 0) {
+      decals.push({
+        text: "MACHINES",
+        at: [AISLE_2_LEFT + AISLE_WIDTH / 2, midRun],
+        rotation: Math.PI / 2,
+        size: 1.8,
+      });
+    }
+    if (supplies.length > 0) {
+      decals.push({
+        text: "SUPPLIES",
+        at: [AISLE_3_LEFT + AISLE_WIDTH / 2, midRun],
+        rotation: Math.PI / 2,
+        size: 1.8,
+      });
+    }
+    if (tools.length > 0) {
+      decals.push({
+        text: "TOOLS",
+        at: [width / 2, runTop - BACK_CROSS_AISLE / 2],
+        rotation: 0,
+        size: 1.3,
+      });
+    }
+  }
+
   // ---- The gondola spines between back-to-back runs.
   const spines: StoreRect[] =
     store === "orangeBox"
@@ -608,6 +749,14 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     min: [doorLeft - 5.5, height - 3.5],
     max: [doorLeft - 1.5, height - 2],
   };
+  if (store === "orangeBox") {
+    decals.push({
+      text: "CHECKOUT",
+      at: [(register.min[0] + register.max[0]) / 2, register.min[1] - 1.3],
+      rotation: 0,
+      size: 0.9,
+    });
+  }
 
   // ---- The lot: sidewalk, then the stall, nose pointing +x.
   const truckTop = height + STORE_WALL_CELLS + SIDEWALK_DEPTH;
@@ -644,6 +793,8 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     truckCab,
     spawn,
     signs,
+    decals,
+    decor,
   };
 }
 
@@ -751,8 +902,8 @@ export function withinStoreReach(position: Vector, rect: StoreRect): boolean {
 /**
  * The cell to stand on to shop a fixture — where a helper or a test
  * puts the player. Solid fixtures are stood at, in front of the shopped
- * face; the floor piles are stood *on*, which is also how the resolver
- * picks a back-row pile over the pile in front of it.
+ * face; the floor piles are stood *on*, which also makes the resolver's
+ * nearest-fixture answer unambiguous however tightly the piles pack.
  */
 export function fixtureStandCell(fixture: {
   rect: StoreRect;

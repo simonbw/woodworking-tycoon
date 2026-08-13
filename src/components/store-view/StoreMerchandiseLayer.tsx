@@ -4,8 +4,9 @@ import { freshMachineState } from "../../game/game-actions/machine-actions";
 import { MaterialPile } from "../../game/GameState";
 import { Machine, MACHINE_TYPES, footprintCenter } from "../../game/Machine";
 import { MaterialInstance } from "../../game/Materials";
-import { ShelfBay, StoreLayout } from "../../game/store-layout";
+import { ShelfBay, StoreDecor, StoreLayout } from "../../game/store-layout";
 import { Vector } from "../../game/Vectors";
+import { MachineCrateSprite } from "../shop-view/MachineCrateSprite";
 import { MachineSprite } from "../shop-view/MachineSprite";
 import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
 import { useGameState } from "../useGameState";
@@ -95,6 +96,31 @@ function rotateOffset([x, y]: Vector, rotation: number): Vector {
   }
 }
 
+/** A stack of boxed stock on the machine run: the same stenciled pine
+ * crates a delivery drops on the shop floor, two to a stack. */
+const CrateStack: React.FC<{ decor: StoreDecor }> = ({ decor }) => {
+  const gameState = useGameState();
+  const crates = useMemo(() => {
+    const [cx, cy] = rectCenter(decor.rect);
+    // The sprite draws centered on its cell's center; the machine inside
+    // is never read for drawing, so any type will do.
+    const machine = freshMachineState("jobsiteTableSaw", gameState.progression);
+    return [
+      { machine, position: [cx - 0.5, cy - 0.5] as Vector },
+      { machine, position: [cx - 0.28, cy - 0.68] as Vector },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scenery;
+    // rebuilt only when the stack moves
+  }, [decor]);
+  return (
+    <>
+      {crates.map((crate, index) => (
+        <MachineCrateSprite key={index} crate={crate} />
+      ))}
+    </>
+  );
+};
+
 /** A full-size display model, idle on its pad, turned to face the aisle. */
 const MachineDisplay: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
   const gameState = useGameState();
@@ -169,6 +195,9 @@ export const StoreMerchandiseLayer: React.FC<{ layout: StoreLayout }> = ({
         .map((bay) => (
           <MachineDisplay key={bay.id} bay={bay} />
         ))}
+      {layout.decor.map((item, index) => (
+        <CrateStack key={index} decor={item} />
+      ))}
     </pixiContainer>
   );
 };

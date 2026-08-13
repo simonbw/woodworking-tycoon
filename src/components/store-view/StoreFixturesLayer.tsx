@@ -21,7 +21,6 @@ import { cellToPixel, inchesToPixels } from "../shop-view/shop-scale";
 const RACK_STEEL = 0x43474b;
 const RACK_SHELF = 0x5a5f64;
 const RACK_ORANGE = 0xe06010;
-const PAD_PAINT = 0xcfd3d6;
 const PILE_BAND = 0xd8d4cc;
 const COUNTER = 0x33363a;
 const COUNTER_BELT = 0x55402a;
@@ -58,15 +57,6 @@ function drawRackingBay(g: Graphics, bay: ShelfBay): void {
   g.fill(RACK_ORANGE);
 }
 
-/** A machine display's pad: painted floor with an orange border. */
-function drawMachinePad(g: Graphics, bay: ShelfBay): void {
-  const { x, y, w, h } = rectPx(bay.rect);
-  g.rect(x, y, w, h);
-  g.fill(PAD_PAINT);
-  g.rect(x + 1, y + 1, w - 2, h - 2);
-  g.stroke({ width: 2, color: RACK_ORANGE, alpha: 0.7 });
-}
-
 /** The painted band a floor pile sits in — enough floor answer that a
  * pile reads as a spot in the planogram, not a dropped delivery. */
 function drawPileBand(g: Graphics, bay: ShelfBay): void {
@@ -88,7 +78,9 @@ export const StoreFixturesLayer: React.FC<{
       g.clear();
       for (const fixture of layout.fixtures) {
         if (fixture.display === "machine") {
-          drawMachinePad(g, fixture);
+          // The machine art carries the display itself — no pad; the
+          // white rim below still answers when the shopper stands at it.
+          continue;
         } else if (fixtureIsSolid(fixture)) {
           drawRackingBay(g, fixture);
         } else {
