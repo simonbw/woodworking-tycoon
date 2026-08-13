@@ -130,6 +130,9 @@ const awayTripSchema = z.discriminatedUnion("kind", [
     kind: z.literal("shopping"),
     store: z.string(),
     cart: z.array(cartLineSchema),
+    // Whether a flatbed has been taken from the corral — a reload
+    // mid-trip keeps the cart in hand.
+    hasCart: z.boolean(),
     // Where on the store's floor the trip stands (see store-layout.ts) —
     // a reload mid-trip finds the shopper in the aisle they left off in.
     position: vectorSchema,

@@ -62,6 +62,34 @@ describe("saveGame/loadGame round-trip", () => {
     assert.deepStrictEqual(loadedRest, JSON.parse(JSON.stringify(savedRest)));
   });
 
+  it("keeps a mid-trip shopping cart in hand across the round-trip", () => {
+    const state = {
+      ...initialGameState,
+      player: {
+        ...initialGameState.player,
+        away: {
+          kind: "shopping" as const,
+          store: "orangeBox" as const,
+          cart: [],
+          hasCart: true,
+          position: [3, 4] as [number, number],
+          direction: 1 as const,
+        },
+      },
+    };
+    saveGame(state);
+    const loaded = loadGame();
+    assert.ok(loaded);
+    const away = loaded.player.away;
+    assert.strictEqual(away?.kind, "shopping");
+    // The schema must carry the flag through, not strip it — a reload
+    // mid-trip that loses the flatbed strands the shopper cartless.
+    assert.strictEqual(
+      away.kind === "shopping" ? away.hasCart : null,
+      true,
+    );
+  });
+
   it("round-trips every E2E fixture", () => {
     for (const [name, fixture] of Object.entries(TEST_FIXTURES)) {
       saveGame(fixture);
