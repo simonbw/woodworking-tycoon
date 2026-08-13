@@ -85,7 +85,7 @@ export const StoreCheckoutModal: React.FC<{
         </div>
         {overdrawn && (
           <p className="border-t border-paper-manila-edge px-3 py-1.5 text-center text-xs text-ink-red">
-            More than your wallet — put something back.
+            That&apos;s more than you have. Put something back.
           </p>
         )}
         <div className="flex justify-end gap-2 border-t border-paper-manila-edge px-3 py-2.5">

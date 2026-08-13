@@ -260,7 +260,7 @@ export const StoreOverlayLayer: React.FC<{
               {standingBay.product.name}
             </HintRow>
             <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-              put one in the cart ·{" "}
+              Add to cart ·{" "}
               {formatMoney(standingBay.product.line.price)}
             </HintRow>
             {(interact?.inCart ?? 0) > 0 && (

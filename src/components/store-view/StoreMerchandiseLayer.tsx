@@ -219,6 +219,27 @@ function rotateOffset([x, y]: Vector, rotation: number): Vector {
   }
 }
 
+/** The store's tool-stand palette: orange steel frame, laminate top. */
+const BENCH_FRAME = 0xe06010;
+const BENCH_TOP = 0xcfccc4;
+
+/** The steel display bench a benchtop machine shows on — at counter
+ * height, the way the store racks its portable tools. Floor-standing
+ * machines stand straight on the slab. */
+function drawDisplayBench(g: Graphics, bay: ShelfBay): void {
+  const inset = 0.3;
+  const x = cellToPixel(bay.rect.min[0] + inset);
+  const y = cellToPixel(bay.rect.min[1] + inset);
+  const w = cellToPixel(bay.rect.max[0] - bay.rect.min[0] - inset * 2);
+  const h = cellToPixel(bay.rect.max[1] - bay.rect.min[1] - inset * 2);
+  g.roundRect(x - 2, y - 2, w + 4, h + 4, 5);
+  g.fill({ color: 0x000000, alpha: 0.18 });
+  g.roundRect(x, y, w, h, 4);
+  g.fill(BENCH_FRAME);
+  g.roundRect(x + 4, y + 4, w - 8, h - 8, 3);
+  g.fill(BENCH_TOP);
+}
+
 /** A full-size display model, idle on its pad, turned to face the aisle. */
 const MachineDisplay: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
   const gameState = useGameState();
@@ -243,8 +264,21 @@ const MachineDisplay: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuilt only
     // when the bay moves; progression only picks the idle operation
   }, [bay]);
+  const drawBench = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      drawDisplayBench(g, bay);
+    },
+    [bay],
+  );
   if (!machine) return null;
-  return <MachineSprite machine={machine} />;
+  const benchtop = Boolean(machine.type.benchtop);
+  return (
+    <>
+      {benchtop && <pixiGraphics draw={drawBench} />}
+      <MachineSprite machine={machine} />
+    </>
+  );
 };
 
 /** One bay's stock, drawn at world size — shared between the static

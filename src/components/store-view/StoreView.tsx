@@ -90,6 +90,10 @@ const CONFIRM_TIMEOUT_MS = 5000;
 /** When the head-home fade starts within the truck's pull-out. */
 const DEPART_FADE_LEAD_MS = 500;
 
+/** How far past the walls the camera may look: the wall band itself
+ * plus about a foot of the lot outside it. */
+const CAMERA_SLACK_CELLS = 1.5;
+
 export const StoreView: React.FC = () => {
   const gameState = useGameState();
   const away = gameState.player.away;
@@ -230,18 +234,21 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
   const renderWorld = (view: SceneView) => {
     const { scale, offsetX, offsetY } = view;
     // The camera follows the shopper everywhere — at the garage's zoom
-    // the building overruns the screen in both axes. The ranges reach
-    // the walls and the far edge of the lot; a viewport big enough to
-    // see everything collapses them to zero and the camera never moves.
-    const scrollMin = Math.min(0, offsetY / scale);
+    // the building overruns the screen in both axes. The ranges reach a
+    // stride past the walls (so the building's edge and a little lot
+    // show, not a wall flush with the screen) and the far edge of the
+    // lot; a viewport big enough to see everything collapses them to
+    // zero and the camera never moves.
+    const slack = cellToPixel(CAMERA_SLACK_CELLS);
+    const scrollMin = Math.min(0, offsetY / scale) - slack;
     const scrollMax = Math.max(
       scrollMin,
       cellToPixel(layout.worldSize[1]) - (view.height - offsetY) / scale,
     );
-    const scrollMinX = Math.min(0, offsetX / scale);
+    const scrollMinX = Math.min(0, offsetX / scale) - slack;
     const scrollMaxX = Math.max(
       scrollMinX,
-      cellToPixel(layout.worldSize[0]) - (view.width - offsetX) / scale,
+      cellToPixel(layout.worldSize[0]) - (view.width - offsetX) / scale + slack,
     );
     const worldViewport = {
       left: scrollMinX - offsetX / scale,

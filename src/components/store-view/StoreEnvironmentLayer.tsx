@@ -27,7 +27,7 @@ const ASPHALT_TINT = 0x8f8f8f;
 
 /** Worn white paint, the way floor stencils actually read on concrete. */
 const DECAL_PAINT = 0xffffff;
-const DECAL_ALPHA = 0.8;
+const DECAL_ALPHA = 0.65;
 
 /** The stencil face the storefront chrome uses, painted onto the slab.
  * PIXI rasterizes DOM-loaded fonts, so the decals wait for the face —
@@ -237,7 +237,7 @@ export const StoreEnvironmentLayer: React.FC<{
               fontFamily: DECAL_FONT,
               fontWeight: "700",
               fontSize: cellToPixel(decal.size),
-              letterSpacing: 6,
+              letterSpacing: 2,
               fill: DECAL_PAINT,
             }}
           />
