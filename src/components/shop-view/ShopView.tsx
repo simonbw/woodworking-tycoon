@@ -67,7 +67,7 @@ import { WorktableShadowSprite } from "../machine-sprites/WorktableSprite";
  * camera, in world pixels — the apron is what makes the shop read as a
  * building on a lot instead of a floor grid pinned to the viewport.
  */
-const LOT_APRON = PIXELS_PER_CELL * 3;
+export const LOT_APRON = PIXELS_PER_CELL * 3;
 
 /**
  * The shop and its lot: everything drawn on the game's one screen, and

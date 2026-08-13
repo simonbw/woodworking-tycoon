@@ -247,11 +247,20 @@ test.describe("Milling", () => {
 
     await test.step("Orange Box: only ready-to-use lumber on its racks", async () => {
       const returnTo = await goToStore(page);
-      await expect(page.getByText("Construction Lumber")).toBeVisible();
-      await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
+      // The channels are floor piles now, not labeled racks — a
+      // channel's name finds its front pile, and a channel this store
+      // doesn't carry finds nothing.
+      await page.waitForFunction(() => (window as any).__FIND_SHELF__);
+      const stocks = (name: string) =>
+        page.evaluate(
+          (channel: string) => (window as any).__FIND_SHELF__(channel) != null,
+          name,
+        );
+      expect(await stocks("Construction Lumber")).toBe(true);
+      expect(await stocks("S4S Hardwood Rack")).toBe(true);
       // Anything milled short of S4S moved across town to the lumberyard
-      await expect(page.getByText("S2S Rack")).not.toBeVisible();
-      await expect(page.getByText("Rough Rack")).not.toBeVisible();
+      expect(await stocks("S2S Rack")).toBe(false);
+      expect(await stocks("Rough Rack")).toBe(false);
       await leaveStore(page, returnTo);
     });
 

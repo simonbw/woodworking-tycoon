@@ -10,15 +10,15 @@ import { ShortcutKeys } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";
 
 /**
- * The DOM layer pinned over the store's canvas: the aisle signage, the
- * key-hint chips at whatever the shopper stands at, and each bay's
- * shelf tag (the price and the name — the same face a real shelf edge
- * wears). The tags stay put away until asked for: the bay the shopper
- * stands at shows its tag, and the mouse can hover any bay's footprint
- * to read one — the merchandise itself is the floor's picture, not a
- * field of labels. The same contract as the shop floor's overlay
- * otherwise: the mouse only acts on what the body can already reach —
- * a tag's button is dead until you're standing at its bay.
+ * The DOM layer pinned over the store's canvas: the key-hint chips at
+ * whatever the shopper stands at, and each bay's shelf tag (the price
+ * and the name — the same face a real shelf edge wears). The tags stay
+ * put away until asked for: the bay the shopper stands at shows its tag,
+ * and the mouse can hover any bay's footprint to read one — the
+ * merchandise itself is the floor's picture, not a field of labels. The
+ * same contract as the shop floor's overlay otherwise: the mouse only
+ * acts on what the body can already reach — a tag's button is dead until
+ * you're standing at its bay.
  *
  * Bays whose merchandise is drawn at world size (the floor piles, the
  * machine displays, the tool wall) wear a compact tag — the stock itself
@@ -94,16 +94,19 @@ function chipPoint(
   }
 }
 
-const ShelfTag: React.FC<{
+/** One bay's shelf tag. Memoized on primitives: a cell crossing
+ * re-renders the overlay, and rebuilding a hundred tags (each wearing a
+ * Tooltip) every step is measurable CPU for tags that didn't change. */
+const ShelfTag = React.memo<{
   bay: ShelfBay;
   scale: number;
   inReach: boolean;
-  /** The tutorial's current DOM targets: a targeted tag shows without
-   * hover — the guided opening's ring needs it to exist on screen. */
-  tutorialIds: ReadonlySet<string>;
+  /** Shown without hover — the guided opening's ring needs the tag to
+   * exist on screen. */
+  forced: boolean;
   inCart: number;
-  onAdd: () => void;
-}> = ({ bay, scale, inReach, tutorialIds, inCart, onAdd }) => {
+  onAdd: (bay: ShelfBay) => void;
+}>(function ShelfTag({ bay, scale, inReach, forced, inCart, onAdd }) {
   const { name, description, line } = bay.product;
   const [cx, cy] = tagPoint(bay.rect, bay.facing);
   const toolId =
@@ -115,7 +118,6 @@ const ShelfTag: React.FC<{
     : line.kind === "broom"
       ? "store-tool-broom"
       : undefined;
-  const forced = tutorialTarget != null && tutorialIds.has(tutorialTarget);
   // The stock drawn at world size is its own picture; only bays without
   // world art put an icon on the tag.
   const compact = bay.display !== "racking" || toolId != null;
@@ -143,60 +145,55 @@ const ShelfTag: React.FC<{
           top: (cy - bay.rect.min[1]) * cell,
         }}
       >
-      <Tooltip
-        content={`${name} — ${formatMoney(line.price)}. ${description}`}
-        delay={120}
-      >
-        <button
-          type="button"
-          aria-label={`Add ${name} to cart`}
-          disabled={!inReach}
-          onClick={onAdd}
-          data-sfx="ui-purchase"
-          data-tutorial-target={tutorialTarget}
-          className={classNames(
-            "pointer-events-auto flex flex-col items-center gap-0.5 rounded-[2px] border border-paper-manila-edge bg-paper-ivory/95 px-1 py-0.5 shadow-sm",
-            inReach
-              ? "cursor-pointer ring-1 ring-ink-blue/40"
-              : "cursor-default",
-          )}
+        <Tooltip
+          content={`${name} — ${formatMoney(line.price)}. ${description}`}
+          delay={120}
         >
-          {!compact && (
-            <span className="grid size-7 place-items-center overflow-hidden">
-              <CartLineIcon line={line} />
+          <button
+            type="button"
+            aria-label={`Add ${name} to cart`}
+            disabled={!inReach}
+            onClick={() => onAdd(bay)}
+            data-sfx="ui-purchase"
+            data-tutorial-target={tutorialTarget}
+            className={classNames(
+              "pointer-events-auto flex flex-col items-center gap-0.5 rounded-[2px] border border-paper-manila-edge bg-paper-ivory/95 px-1 py-0.5 shadow-sm",
+              inReach
+                ? "cursor-pointer ring-1 ring-ink-blue/40"
+                : "cursor-default",
+            )}
+          >
+            {!compact && (
+              <span className="grid size-7 place-items-center overflow-hidden">
+                <CartLineIcon line={line} />
+              </span>
+            )}
+            <span className="max-w-20 truncate font-condensed text-[9px] uppercase leading-none text-ink-black">
+              {name}
             </span>
-          )}
-          <span className="max-w-20 truncate font-condensed text-[9px] uppercase leading-none text-ink-black">
-            {name}
-          </span>
-          <span className="font-condensed text-[10px] font-bold leading-none tabular-nums text-ink-black">
-            {formatMoney(line.price)}
-          </span>
-          {inCart > 0 && (
-            <span className="font-condensed text-[9px] font-semibold leading-none tabular-nums text-ink-blue">
-              {inCart} in cart
+            <span className="font-condensed text-[10px] font-bold leading-none tabular-nums text-ink-black">
+              {formatMoney(line.price)}
             </span>
-          )}
-        </button>
-      </Tooltip>
+            {inCart > 0 && (
+              <span className="font-condensed text-[9px] font-semibold leading-none tabular-nums text-ink-blue">
+                {inCart} in cart
+              </span>
+            )}
+          </button>
+        </Tooltip>
       </div>
     </div>
   );
-};
+});
 
-/** Big-box aisle signage: an orange blade hung over the run. */
-const SignChip: React.FC<{
-  title: string;
-  x: number;
-  y: number;
-  scale: number;
-}> = ({ title, x, y, scale }) => (
-  <At x={x} y={y} scale={scale} className="z-10">
-    <span className="block whitespace-nowrap rounded-[2px] bg-store-orange px-1.5 py-0.5 font-condensed text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-      {title}
-    </span>
-  </At>
-);
+/** Whether the guided opening is pointing at this bay's tag. */
+function bayTutorialTarget(bay: ShelfBay): string | null {
+  const line = bay.product.line;
+  if (line.kind === "material" && line.material.type === "tool") {
+    return `store-tool-${line.material.toolId}`;
+  }
+  return line.kind === "broom" ? "store-tool-broom" : null;
+}
 
 export const StoreOverlayLayer: React.FC<{
   layout: StoreLayout;
@@ -208,7 +205,7 @@ export const StoreOverlayLayer: React.FC<{
   tutorialIds: ReadonlySet<string>;
   armedLeave: boolean;
   onAddFromBay: (bay: ShelfBay) => void;
-  onCheckout: () => void;
+  onOpenCheckout: () => void;
 }> = ({
   layout,
   scale,
@@ -217,7 +214,7 @@ export const StoreOverlayLayer: React.FC<{
   tutorialIds,
   armedLeave,
   onAddFromBay,
-  onCheckout,
+  onOpenCheckout,
 }) => {
   const standingBay = interact?.fixture ?? null;
 
@@ -235,27 +232,20 @@ export const StoreOverlayLayer: React.FC<{
         </span>
       </At>
 
-      {layout.signs.map((sign) => (
-        <SignChip
-          key={sign.title}
-          title={sign.title}
-          x={sign.at[0]}
-          y={sign.at[1]}
-          scale={scale}
-        />
-      ))}
-
-      {layout.fixtures.map((fixture) => (
-        <ShelfTag
-          key={fixture.id}
-          bay={fixture}
-          scale={scale}
-          inReach={standingBay?.id === fixture.id}
-          tutorialIds={tutorialIds}
-          inCart={bayCartCounts.get(fixture.id) ?? 0}
-          onAdd={() => onAddFromBay(fixture)}
-        />
-      ))}
+      {layout.fixtures.map((fixture) => {
+        const target = bayTutorialTarget(fixture);
+        return (
+          <ShelfTag
+            key={fixture.id}
+            bay={fixture}
+            scale={scale}
+            inReach={standingBay?.id === fixture.id}
+            forced={target != null && tutorialIds.has(target)}
+            inCart={bayCartCounts.get(fixture.id) ?? 0}
+            onAdd={onAddFromBay}
+          />
+        );
+      })}
 
       {/* ---- The chip at whatever the shopper stands at ---- */}
 
@@ -269,12 +259,12 @@ export const StoreOverlayLayer: React.FC<{
             <HintRow className="text-paper-manila/60">
               {standingBay.product.name}
             </HintRow>
-            <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
+            <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
               put one in the cart ·{" "}
               {formatMoney(standingBay.product.line.price)}
             </HintRow>
             {(interact?.inCart ?? 0) > 0 && (
-              <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+              <HintRow keys={<ShortcutKeys shortcut="put-down" />}>
                 put one back ({interact?.inCart})
               </HintRow>
             )}
@@ -293,7 +283,7 @@ export const StoreOverlayLayer: React.FC<{
                 </HintRow>
               ) : interact.canCheckOut ? (
                 <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-                  check out · {formatMoney(interact.total)}
+                  ring it up · {formatMoney(interact.total)}
                 </HintRow>
               ) : (
                 <HintRow className="text-red-300">
@@ -306,9 +296,8 @@ export const StoreOverlayLayer: React.FC<{
               className="button-paper pointer-events-auto text-xs"
               data-testid="store-check-out"
               data-tutorial-target="store-checkout"
-              data-sfx="ui-purchase"
               disabled={!interact.canCheckOut}
-              onClick={onCheckout}
+              onClick={onOpenCheckout}
             >
               Check Out · {formatMoney(interact.total)}
             </button>

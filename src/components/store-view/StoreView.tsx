@@ -33,10 +33,14 @@ import { getMaterialFullName } from "../../game/material-helpers";
 import { tutorialTargets } from "../tutorial/tutorialTargets";
 import { usePaused } from "../PauseContext";
 import { useModalOpen } from "../shortcuts/ShortcutProvider";
-import { useHeadHome } from "../trip/TripTransitionLayer";
+import {
+  TRIP_TRANSITIONS_DISABLED,
+  useHeadHome,
+} from "../trip/TripTransitionLayer";
 import { StoreCartReadout } from "../shopping/StoreCart";
 import { CameraLayer } from "../shop-view/CameraLayer";
 import { FootstepSoundLayer } from "../shop-view/FootstepSoundLayer";
+import { LOT_APRON } from "../shop-view/ShopView";
 import { PersonSprite } from "../shop-view/PersonSprite";
 import { cellToPixel } from "../shop-view/shop-scale";
 import { HeldMovementListener } from "../world-view/heldMovementInput";
@@ -47,33 +51,44 @@ import {
 } from "../world-view/WorldScene";
 import { useApplyGameAction, useGameState } from "../useGameState";
 import { Vector } from "../../game/Vectors";
+import { StoreCheckoutModal } from "./StoreCheckoutModal";
 import { StoreEnvironmentLayer } from "./StoreEnvironmentLayer";
 import { StoreFixturesLayer } from "./StoreFixturesLayer";
 import { StoreKeyboardShortcuts } from "./StoreKeyboardShortcuts";
-import { StoreMerchandiseLayer } from "./StoreMerchandiseLayer";
+import {
+  StoreMerchandiseLayer,
+  StoreTargetHighlightLayer,
+} from "./StoreMerchandiseLayer";
 import { StoreOverlayLayer } from "./StoreOverlayLayer";
 import { StorePushCartSprite } from "./StorePushCartSprite";
 import { StoreShopperLayer } from "./StoreShopperLayer";
+import { STORE_DEPART_MS, StoreTruckSprite } from "./StoreTruckSprite";
 import { StoreWalkLayer } from "./StoreWalkLayer";
 
 /**
  * The store as a walkable place: the sales floor drawn on the same
  * canvas machinery the shop floor uses (WorldScene), swapped in for
  * ShopView while a shopping trip is on screen (see HomePage). Everything
- * about *this* venue is here — its planogram-driven world, its camera
- * down to the parking lot, its register — while the walking body, the
- * fit, and the renderer are the shared pieces.
+ * about *this* venue is here — its planogram-driven world, its camera,
+ * its register — while the walking body, the fit, and the renderer are
+ * the shared pieces.
+ *
+ * The view runs at the garage's own zoom rather than fitting the whole
+ * floor on screen: WorldScene computes the scale against the garage's
+ * dimensions, and the camera pans both axes to follow the shopper
+ * through a building bigger than the viewport.
  *
  * How long the trip takes is how long you spend in the aisles: the shop
- * back home keeps ticking at the idle creep (time-flow.ts), and heading
- * home from the cab is what ends it.
+ * back home keeps ticking at the idle creep (time-flow.ts), and paying
+ * at the register — or walking out on the cart at the cab — is what
+ * ends it.
  */
-
-/** Ground kept visible around the building when fitting. */
-const STORE_APRON = cellToPixel(1.5);
 
 /** How long an armed "leave the cart behind?" waits before disarming. */
 const CONFIRM_TIMEOUT_MS = 5000;
+
+/** When the head-home fade starts within the truck's pull-out. */
+const DEPART_FADE_LEAD_MS = 500;
 
 export const StoreView: React.FC = () => {
   const gameState = useGameState();
@@ -99,7 +114,19 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
     [trip.store, gameState.reputation, gameState.broomOwned, gameState.shopVac],
   );
 
-  const interact = resolveStoreInteract(gameState, layout);
+  // ---- The register's receipt and the drive it starts ----
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [departingSince, setDepartingSince] = useState<number | null>(null);
+  const departTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (departTimer.current) clearTimeout(departTimer.current);
+    },
+    [],
+  );
+
+  const departing = departingSince !== null;
+  const interact = departing ? null : resolveStoreInteract(gameState, layout);
   // A tag the guided opening points at stays visible without hover.
   const tutorialIds = new Set(tutorialTargets(gameState).domIds);
   const cart = currentCart(gameState) ?? [];
@@ -137,9 +164,22 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
     },
     [applyAction],
   );
-  const onCheckout = useCallback(() => {
+  const onOpenCheckout = useCallback(() => setCheckoutOpen(true), []);
+  const onCancelCheckout = useCallback(() => setCheckoutOpen(false), []);
+  // Buying rings the cart up — the goods land in the truck's bed — then
+  // the truck pulls out of the stall and the screen heads home under it.
+  const onBuy = useCallback(() => {
     applyAction(checkoutAction());
-  }, [applyAction]);
+    setCheckoutOpen(false);
+    if (TRIP_TRANSITIONS_DISABLED) {
+      beginReturn(() => applyAction(returnFromStoreAction()));
+      return;
+    }
+    setDepartingSince(performance.now());
+    departTimer.current = setTimeout(() => {
+      beginReturn(() => applyAction(returnFromStoreAction()));
+    }, STORE_DEPART_MS - DEPART_FADE_LEAD_MS);
+  }, [applyAction, beginReturn]);
   const onLeave = useCallback(() => {
     if (cart.length > 0 && !armedLeave) {
       setArmedLeave(true);
@@ -189,20 +229,24 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
 
   const renderWorld = (view: SceneView) => {
     const { scale, offsetX, offsetY } = view;
-    // The camera follows the shopper everywhere — the aisles run taller
-    // than a screen, so unlike the shop there is no fitted framing to
-    // hold indoors. scrollMin reaches the back wall (the centered fit of
-    // a too-tall world hangs the origin above the viewport), scrollMax
-    // the far edge of the lot.
+    // The camera follows the shopper everywhere — at the garage's zoom
+    // the building overruns the screen in both axes. The ranges reach
+    // the walls and the far edge of the lot; a viewport big enough to
+    // see everything collapses them to zero and the camera never moves.
     const scrollMin = Math.min(0, offsetY / scale);
     const scrollMax = Math.max(
       scrollMin,
       cellToPixel(layout.worldSize[1]) - (view.height - offsetY) / scale,
     );
+    const scrollMinX = Math.min(0, offsetX / scale);
+    const scrollMaxX = Math.max(
+      scrollMinX,
+      cellToPixel(layout.worldSize[0]) - (view.width - offsetX) / scale,
+    );
     const worldViewport = {
-      left: -offsetX / scale,
+      left: scrollMinX - offsetX / scale,
       top: scrollMin - offsetY / scale,
-      right: (view.width - offsetX) / scale,
+      right: (view.width - offsetX) / scale + scrollMaxX,
       bottom: (view.height - offsetY) / scale + scrollMax,
     };
 
@@ -214,7 +258,11 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
           scrollStartY={-1}
           scrollMax={scrollMax}
           scrollMin={scrollMin}
+          scrollMinX={scrollMinX}
+          scrollMaxX={scrollMaxX}
+          offsetX={offsetX}
           offsetY={offsetY}
+          viewWidth={view.width}
           viewHeight={view.height}
           scale={scale}
         />
@@ -223,10 +271,13 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
             <StoreEnvironmentLayer layout={layout} viewport={worldViewport} />
             <StoreFixturesLayer
               layout={layout}
-              targetId={interact?.fixture?.id ?? null}
               registerTargeted={interact?.atRegister ?? false}
             />
             <StoreMerchandiseLayer layout={layout} />
+            <StoreTargetHighlightLayer
+              layout={layout}
+              targetId={interact?.fixture?.id ?? null}
+            />
             <StoreShopperLayer
               layout={layout}
               paused={paused}
@@ -238,8 +289,15 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
               shoppersRef={shoppersRef}
             />
             <FootstepSoundLayer />
-            <StorePushCartSprite />
-            <PersonSprite person={gameState.player} />
+            <StoreTruckSprite
+              layout={layout}
+              departingSince={departingSince}
+              targeted={interact?.atCab ?? false}
+            />
+            {/* Once the register rings, the shopper is in the cab — the
+                truck is the player on screen until the fade. */}
+            {!departing && <StorePushCartSprite />}
+            {!departing && <PersonSprite person={gameState.player} />}
           </pixiContainer>
         </pixiContainer>
       </>
@@ -249,17 +307,19 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
   return (
     <>
       <StoreKeyboardShortcuts
-        interact={interact}
+        interact={checkoutOpen ? null : interact}
         onAddFromBay={onAddFromBay}
         onReturnToBay={onReturnToBay}
-        onCheckout={onCheckout}
+        onOpenCheckout={onOpenCheckout}
         onLeave={onLeave}
       />
-      <HeldMovementListener enabled={!modalOpen} />
+      <HeldMovementListener enabled={!modalOpen && !checkoutOpen && !departing} />
       <WorldScene
         worldWidth={width}
         worldHeight={height}
-        apron={STORE_APRON}
+        fitWidth={cellToPixel(gameState.shopInfo.size[0])}
+        fitHeight={cellToPixel(gameState.shopInfo.size[1])}
+        apron={LOT_APRON}
         overlay={(view) => (
           <>
             <WorldOverlayBox
@@ -275,7 +335,7 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
                   tutorialIds={tutorialIds}
                   armedLeave={armedLeave}
                   onAddFromBay={onAddFromBay}
-                  onCheckout={onCheckout}
+                  onOpenCheckout={onOpenCheckout}
                 />
               </div>
             </WorldOverlayBox>
@@ -293,6 +353,15 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
                 />
               </div>
             </div>
+            {checkoutOpen && (
+              <StoreCheckoutModal
+                cart={cart}
+                total={total}
+                overdrawn={overdrawn}
+                onBuy={onBuy}
+                onCancel={onCancelCheckout}
+              />
+            )}
           </>
         )}
       >

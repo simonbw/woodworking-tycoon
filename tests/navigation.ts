@@ -252,8 +252,13 @@ export async function standAtStoreCab(page: any) {
 }
 
 async function storePoints(page: any) {
+  // Interval polling with a generous timeout: under a fully parallel
+  // suite the store's first mount (and its merchandise bake) can starve
+  // rAF long enough that raf-polled waits give up on a store that's
+  // merely slow.
   await page.waitForFunction(() => (window as any).__STORE_POINTS__, undefined, {
-    timeout: 10000,
+    timeout: 30000,
+    polling: 250,
   });
   return page.evaluate(() => (window as any).__STORE_POINTS__);
 }
@@ -266,8 +271,10 @@ async function storePoints(page: any) {
  * shopper at the category's front pile.
  */
 export async function walkToShelf(page: any, product: string) {
+  // Same generous, interval-polled wait as storePoints — see there.
   await page.waitForFunction(() => (window as any).__FIND_SHELF__, undefined, {
-    timeout: 10000,
+    timeout: 30000,
+    polling: 250,
   });
   const spot = await page.evaluate(
     (name: string) => (window as any).__FIND_SHELF__(name),
@@ -363,8 +370,8 @@ export async function leaveStore(page: any, returnTo?: [number, number]) {
  * Pay for the cart and drive home. Nothing in a store is bought until
  * the register rings the cart up (see cart.ts), so any spec that shops
  * has to end its trip this way rather than with `leaveStore`, which
- * walks out on the cart. At the walkable store the register and the way
- * home are two places: pay at the counter, then E at the cab.
+ * walks out on the cart. At the walkable store the register opens its
+ * receipt card first — Buy is what pays and starts the drive home.
  */
 export async function checkOutAndLeaveStore(
   page: any,
@@ -373,8 +380,9 @@ export async function checkOutAndLeaveStore(
   if ((await shoppingAt(page)) === "orangeBox") {
     await standAtStoreRegister(page);
     await page.getByTestId("store-check-out").click({ force: true });
-    await page.waitForTimeout(60);
-    await leaveStore(page, returnTo);
+    await page.getByTestId("store-checkout-modal").waitFor({ state: "visible" });
+    await page.getByTestId("store-buy").click({ force: true });
+    await driveHome(page, returnTo);
     return;
   }
   await page.getByTestId("store-check-out").click({ force: true });

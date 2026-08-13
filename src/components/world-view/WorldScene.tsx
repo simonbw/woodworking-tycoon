@@ -144,6 +144,15 @@ export const WorldScene: React.FC<{
   worldWidth: number;
   worldHeight: number;
   /**
+   * What the fit is computed against, in world pixels — by default the
+   * world itself, so the whole place fits on screen. A venue that wants
+   * a particular zoom rather than a fitted one (the store matches the
+   * garage's) passes the garage's dimensions here and lets its camera
+   * pan the difference.
+   */
+  fitWidth?: number;
+  fitHeight?: number;
+  /**
    * Ground kept visible around the world when fitting, in world pixels —
    * an apron is what makes a place read as a building on a lot rather
    * than a floor grid pinned to the viewport.
@@ -162,6 +171,8 @@ export const WorldScene: React.FC<{
 }> = ({
   worldWidth,
   worldHeight,
+  fitWidth = worldWidth,
+  fitHeight = worldHeight,
   apron = 0,
   containerProps,
   children,
@@ -188,8 +199,8 @@ export const WorldScene: React.FC<{
     const measure = () => {
       const rect = container.getBoundingClientRect();
       const fit = Math.min(
-        rect.width / (worldWidth + apron * 2),
-        rect.height / (worldHeight + apron * 2),
+        rect.width / (fitWidth + apron * 2),
+        rect.height / (fitHeight + apron * 2),
       );
       // Quantized so ordinary layout jitter doesn't rebuild the renderer
       setMeasured({
@@ -202,7 +213,7 @@ export const WorldScene: React.FC<{
     const observer = new ResizeObserver(measure);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [worldWidth, worldHeight, apron]);
+  }, [fitWidth, fitHeight, apron]);
 
   if (measured === null) {
     return <div ref={containerRef} className="h-full w-full min-h-0 min-w-0" />;

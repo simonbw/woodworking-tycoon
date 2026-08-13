@@ -1,21 +1,19 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import {
-  fixtureIsSolid,
-  ShelfBay,
-  StoreLayout,
-  StoreRect,
-} from "../../game/store-layout";
-import { useTexture } from "../../utils/useTexture";
-import { cellToPixel, inchesToPixels } from "../shop-view/shop-scale";
+import { ShelfBay, StoreLayout, StoreRect } from "../../game/store-layout";
+import { TARGET_HIGHLIGHT_FILTERS } from "../shop-view/targetHighlight";
+import { cellToPixel } from "../shop-view/shop-scale";
 
 /**
  * The store's furniture, drawn onto the footprints store-layout.ts
  * declares: big-box steel racking under the tool wall and the supplies
- * runs, display pads under the machines, painted floor bands under the
- * lumber and sheet piles, and the checkout counter. The merchandise
- * itself is StoreMerchandiseLayer's job — these are the shelves and
- * pads under it. Procedural on purpose — see docs/asset-backlog.md.
+ * runs, painted floor bands under the lumber and sheet piles, the
+ * gondola spines, and the checkout counter. The merchandise itself is
+ * StoreMerchandiseLayer's job — these are the shelves under it. What the
+ * shopper stands at wears the shop's outline shader, drawn by the
+ * merchandise layer's highlight pass (the register's rim lives here,
+ * because the counter is this layer's own drawing). Procedural on
+ * purpose — see docs/asset-backlog.md.
  */
 
 const RACK_STEEL = 0x43474b;
@@ -65,23 +63,28 @@ function drawPileBand(g: Graphics, bay: ShelfBay): void {
   g.fill({ color: PILE_BAND, alpha: 0.55 });
 }
 
+function drawCounter(g: Graphics, rect: StoreRect): void {
+  const counter = rectPx(rect);
+  g.rect(counter.x, counter.y, counter.w, counter.h);
+  g.fill(COUNTER);
+  g.rect(counter.x + 6, counter.y + 5, counter.w * 0.55, counter.h - 10);
+  g.fill(COUNTER_BELT);
+  g.rect(counter.x + counter.w - 18, counter.y + 4, 14, 14);
+  g.fill(TERMINAL);
+}
+
 export const StoreFixturesLayer: React.FC<{
   layout: StoreLayout;
-  /** The fixture the shopper stands at, rimmed so the floor answers. */
-  targetId?: string | null;
   registerTargeted?: boolean;
-}> = ({ layout, targetId, registerTargeted }) => {
-  const truckTexture = useTexture("/images/pickup-truck.png");
-
+}> = ({ layout, registerTargeted }) => {
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
       for (const fixture of layout.fixtures) {
         if (fixture.display === "machine") {
-          // The machine art carries the display itself — no pad; the
-          // white rim below still answers when the shopper stands at it.
+          // The machine art carries the display itself — no pad.
           continue;
-        } else if (fixtureIsSolid(fixture)) {
+        } else if (fixture.display === "racking") {
           drawRackingBay(g, fixture);
         } else {
           drawPileBand(g, fixture);
@@ -100,57 +103,26 @@ export const StoreFixturesLayer: React.FC<{
         g.rect(s.x, s.y + s.h - 5, s.w, 5);
         g.fill(RACK_ORANGE);
       }
-
-      // The checkout counter: a dark top with the belt inset and a
-      // terminal at the lane end.
-      const counter = rectPx(layout.register);
-      g.rect(counter.x, counter.y, counter.w, counter.h);
-      g.fill(COUNTER);
-      g.rect(counter.x + 6, counter.y + 5, counter.w * 0.55, counter.h - 10);
-      g.fill(COUNTER_BELT);
-      g.rect(counter.x + counter.w - 18, counter.y + 4, 14, 14);
-      g.fill(TERMINAL);
-
-      // The floor answering the feet: a light rim around whatever the
-      // shopper is standing at (the same job the shop's outline filters
-      // do, drawn instead of filtered because the furniture is all one
-      // Graphics pass).
-      const targeted =
-        layout.fixtures.find((fixture) => fixture.id === targetId) ?? null;
-      const rimRect = registerTargeted
-        ? layout.register
-        : (targeted?.rect ?? null);
-      if (rimRect) {
-        const rim = rectPx(rimRect);
-        g.rect(rim.x - 2, rim.y - 2, rim.w + 4, rim.h + 4);
-        g.stroke({ width: 2.5, color: 0xffffff, alpha: 0.9 });
-      }
     },
-    [layout, targetId, registerTargeted],
+    [layout],
   );
 
-  // The parked truck, nose along +x: the same art the driveway uses,
-  // turned a quarter. The canvas maps 144" across the art's width, the
-  // same figure TruckSprite documents.
-  const stall = layout.truck;
-  const truckCenter = {
-    x: cellToPixel((stall.min[0] + stall.max[0]) / 2),
-    y: cellToPixel((stall.min[1] + stall.max[1]) / 2),
-  };
-  const canvasWidth = inchesToPixels(144);
-  const canvasHeight = canvasWidth * (600 / 400);
+  // The counter is its own drawing so it can wear the targeting outline
+  // when the shopper stands at the register.
+  const drawRegister = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      drawCounter(g, layout.register);
+    },
+    [layout],
+  );
 
   return (
     <>
       <pixiGraphics draw={draw} />
-      <pixiSprite
-        texture={truckTexture}
-        anchor={{ x: 0.5, y: 0.5 }}
-        x={truckCenter.x}
-        y={truckCenter.y}
-        rotation={Math.PI / 2}
-        width={canvasWidth}
-        height={canvasHeight}
+      <pixiGraphics
+        draw={drawRegister}
+        filters={registerTargeted ? TARGET_HIGHLIGHT_FILTERS : undefined}
       />
     </>
   );

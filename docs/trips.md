@@ -34,18 +34,22 @@ A trip to the store swaps the canvas from the shop to the store
 body, camera, and canvas machinery drawing a different venue. The
 floor plan is a planogram generated from the registries
 (`src/game/store-layout.ts`), laid out in aisles: lumber and sheet
-goods down aisle 1 as per-SKU floor piles (walkable, like loose stock
-on the shop floor), full-size machine displays flanking aisle 2,
-supplies down aisle 3, hand tools on the back wall. The merchandise
-draws with the shop's own sprites (`StoreMerchandiseLayer`, cached as
-one texture because a floor of procedural grain is heavy). The trip
-itself carries the shopper's cell (`ShoppingTrip.position` —
-`player.position` keeps meaning the cell underfoot back home), and
-the keys mirror the shop floor's (`src/game/store-interact.ts`):
-every product is its own bay — F puts one in the cart, E puts one
-back, the register rings the cart up, and E at the cab is the way
-home. How long a trip takes is how long you browse — the clock idles
-along under it (`time-flow.ts`).
+goods down aisle 1 as per-SKU floor piles (solid — merchandise is
+walked to, not through; the cut panels pack three deep along
+mini-aisles off aisle 1), full-size machine displays flanking aisle
+2, supplies down aisle 3, hand tools on the back wall. The view runs
+at the garage's own zoom (the camera pans both axes), and the front
+wall has separate entrance and exit openings with the wayfinding
+stenciled on the slab. The merchandise draws with the shop's own
+sprites (`StoreMerchandiseLayer`, cached as one texture because a
+floor of procedural grain is heavy). The trip itself carries the
+shopper's cell (`ShoppingTrip.position` — `player.position` keeps
+meaning the cell underfoot back home), and the keys mirror the shop
+floor's (`src/game/store-interact.ts`): every product is its own bay
+— E puts one in the cart, F puts one back, E at the register opens
+the receipt card, and E at the cab is the way home. How long a trip
+takes is how long you browse — the clock idles along under it
+(`time-flow.ts`).
 
 The lumberyard is still a menu overlay; it becomes the second walkable
 venue by running the same planogram generator with its own channels.
@@ -61,9 +65,12 @@ away is what empties it. The line shapes are in `src/game/cart.ts` and
 the fold through the ordinary buy actions is in
 `src/game/game-actions/cart-actions.ts` — those buy actions still own
 where a purchase lands, and the cart only decides when. At the
-walkable store paying and leaving are two places (the counter, then
-the cab, which asks before abandoning a full cart); the lumberyard's
-overlay still pays and drives home in one press.
+walkable store the register opens a receipt card
+(`StoreCheckoutModal`): Buy pays, the goods land in the bed, and the
+truck pulls out of its stall while the screen heads home — there is
+no paying and carrying on shopping. Walking out on a full cart is
+still the cab's E, which asks first. The lumberyard's overlay still
+pays and drives home in one press.
 
 ## Departure and arrival staging
 

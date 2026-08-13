@@ -1,5 +1,6 @@
 import type { Container } from "pixi.js";
-import React, { useEffect, useMemo, useRef } from "react";
+import { Graphics } from "pixi.js";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { freshMachineState } from "../../game/game-actions/machine-actions";
 import { MaterialPile } from "../../game/GameState";
 import { Machine, MACHINE_TYPES, footprintCenter } from "../../game/Machine";
@@ -9,14 +10,17 @@ import { Vector } from "../../game/Vectors";
 import { MachineCrateSprite } from "../shop-view/MachineCrateSprite";
 import { MachineSprite } from "../shop-view/MachineSprite";
 import { MaterialPileSprite } from "../shop-view/MaterialPileSprite";
+import { cellToPixel } from "../shop-view/shop-scale";
+import { TARGET_HIGHLIGHT_FILTERS } from "../shop-view/targetHighlight";
 import { useGameState } from "../useGameState";
 
 /**
  * The merchandise itself, drawn with the same sprites the shop floor
  * uses: boards and sheets piled on the floor at the size they really
- * are, machines as full-size displays, tools laid out on their racking.
- * The planogram (store-layout.ts) says where everything stands; this
- * layer only decides how a pile of it looks.
+ * are, machines as full-size displays, tools laid out on their racking,
+ * and the supplies' boxed stock visible on the shelf tops. The planogram
+ * (store-layout.ts) says where everything stands; this layer only
+ * decides how a pile of it looks.
  *
  * Everything here is scenery — the piles never enter GameState, so the
  * sprites are built from each bay's own product line (whose material ids
@@ -58,15 +62,20 @@ function lumberPiles(bay: ShelfBay): MaterialPile[] {
   return piles;
 }
 
-/** A sheet bay's stack: a few sheets flat on the floor, slightly fanned. */
+/** A sheet bay's stack: a few sheets flat on the floor, slightly fanned.
+ * The sprite's long axis follows the pile's footprint — the packed
+ * panels lie turned lengthwise along their mini-aisles. */
 function sheetPiles(bay: ShelfBay): MaterialPile[] {
   if (bay.product.line.kind !== "material") return [];
   const material = bay.product.line.material;
   const [cx, cy] = rectCenter(bay.rect);
+  const alongX =
+    bay.rect.max[0] - bay.rect.min[0] >= bay.rect.max[1] - bay.rect.min[1];
+  const base = alongX ? Math.PI / 2 : 0;
   return [
-    pile(material, [cx, cy], Math.PI / 2),
-    pile(material, [cx + 0.06, cy + 0.05], Math.PI / 2 + 0.012),
-    pile(material, [cx - 0.05, cy - 0.04], Math.PI / 2 - 0.01),
+    pile(material, [cx, cy], base),
+    pile(material, [cx + 0.06, cy + 0.05], base + 0.012),
+    pile(material, [cx - 0.05, cy - 0.04], base - 0.01),
   ];
 }
 
@@ -82,17 +91,92 @@ function toolPiles(bay: ShelfBay): MaterialPile[] {
   ];
 }
 
-/** Rotate a footprint-center offset the way the sprite's angle will. */
-function rotateOffset([x, y]: Vector, rotation: number): Vector {
-  switch (rotation) {
-    case 1:
-      return [y, -x];
-    case 2:
-      return [-x, -y];
-    case 3:
-      return [-y, x];
-    default:
-      return [x, y];
+/** The carton colors the boxed stock wears, by what's in the box. */
+const STOCK_COLORS: Record<string, number> = {
+  nails: 0x99a1ab,
+  screws: 0xb5a065,
+  mineralOil: 0xc9862c,
+  clamp: 0xe06010,
+  upgrade: 0x6b7683,
+  broom: 0xb08d57,
+  shopVac: 0x3a4148,
+};
+
+/** What a racking bay with no world-size art shows from above: its
+ * stock, boxed and racked on the top shelf, so a shelf never reads
+ * empty. */
+function drawBoxedStock(g: Graphics, bay: ShelfBay): void {
+  const line = bay.product.line;
+  const key =
+    line.kind === "consumablePack"
+      ? line.consumableId
+      : line.kind === "upgrade"
+        ? "upgrade"
+        : line.kind;
+  const color = STOCK_COLORS[key] ?? 0x9a7648;
+  const x = cellToPixel(bay.rect.min[0]);
+  const y = cellToPixel(bay.rect.min[1]);
+  const w = cellToPixel(bay.rect.max[0] - bay.rect.min[0]);
+  const h = cellToPixel(bay.rect.max[1] - bay.rect.min[1]);
+
+  if (line.kind === "clamp") {
+    // Bar clamps lie racked side by side, bars along the long axis.
+    const bars = 4;
+    for (let i = 0; i < bars; i++) {
+      if (w >= h) {
+        const by = y + 10 + ((h - 24) / (bars - 1)) * i;
+        g.rect(x + 8, by, w - 16, 3);
+        g.fill(color);
+        g.rect(x + 8, by - 2, 5, 7);
+        g.rect(x + w - 15, by - 2, 5, 7);
+        g.fill(0x43474b);
+      } else {
+        const bx = x + 10 + ((w - 24) / (bars - 1)) * i;
+        g.rect(bx, y + 8, 3, h - 16);
+        g.fill(color);
+        g.rect(bx - 2, y + 8, 7, 5);
+        g.rect(bx - 2, y + h - 15, 7, 5);
+        g.fill(0x43474b);
+      }
+    }
+    return;
+  }
+  if (line.kind === "shopVac") {
+    // The canister itself, on display.
+    const r = Math.min(w, h) * 0.28;
+    g.circle(x + w / 2, y + h / 2, r);
+    g.fill(color);
+    g.circle(x + w / 2, y + h / 2, r * 0.55);
+    g.fill(0x565f68);
+    return;
+  }
+  if (line.kind === "broom") {
+    // A couple of brooms laid across the racking.
+    for (const offset of [-0.18, 0.16]) {
+      const cy = y + h / 2 + offset * h;
+      g.rect(x + 6, cy - 1.5, w - 26, 3);
+      g.fill(STOCK_COLORS.broom);
+      g.rect(x + w - 22, cy - 5, 14, 10);
+      g.fill(0x384048);
+    }
+    return;
+  }
+  // Cartons in rows, a lighter lid stripe on each.
+  const columns = w >= h ? 3 : 2;
+  const rows = w >= h ? 2 : 3;
+  const inset = 8;
+  const gap = 5;
+  const bw = (w - inset * 2 - gap * (columns - 1)) / columns;
+  const bh = (h - inset * 2 - gap * (rows - 1)) / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      const bx = x + inset + c * (bw + gap) + ((r * 3 + c) % 3) - 1;
+      const by = y + inset + r * (bh + gap) + ((r + c * 2) % 3) - 1;
+      g.rect(bx, by, bw, bh);
+      g.fill(color);
+      g.rect(bx + 2, by + 2, bw - 4, bh * 0.3);
+      g.fill({ color: 0xffffff, alpha: 0.35 });
+    }
   }
 }
 
@@ -120,6 +204,20 @@ const CrateStack: React.FC<{ decor: StoreDecor }> = ({ decor }) => {
     </>
   );
 };
+
+/** Rotate a footprint-center offset the way the sprite's angle will. */
+function rotateOffset([x, y]: Vector, rotation: number): Vector {
+  switch (rotation) {
+    case 1:
+      return [y, -x];
+    case 2:
+      return [-x, -y];
+    case 3:
+      return [-y, x];
+    default:
+      return [x, y];
+  }
+}
 
 /** A full-size display model, idle on its pad, turned to face the aisle. */
 const MachineDisplay: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
@@ -149,55 +247,90 @@ const MachineDisplay: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
   return <MachineSprite machine={machine} />;
 };
 
-export const StoreMerchandiseLayer: React.FC<{ layout: StoreLayout }> = ({
-  layout,
-}) => {
-  const stacks = useMemo(() => {
-    const piles: { key: string; pile: MaterialPile }[] = [];
-    for (const bay of layout.fixtures) {
-      const bayPiles =
-        bay.display === "lumberStack"
-          ? lumberPiles(bay)
-          : bay.display === "sheetStack"
-            ? sheetPiles(bay)
-            : bay.display === "racking"
-              ? toolPiles(bay)
-              : [];
-      bayPiles.forEach((p, index) =>
-        piles.push({ key: `${bay.id}:${index}`, pile: p }),
-      );
-    }
-    return piles;
-  }, [layout]);
-
-  // The merchandise never moves, but it's a lot of procedural geometry —
-  // hundreds of boards' worth of grain and speckle. Rendered live it can
-  // dominate the frame (the E2E build's software rasterizer measured
-  // whole seconds per frame), so the layer rasterizes once and re-renders
-  // as a single texture until the planogram changes.
-  const containerRef = useRef<Container>(null);
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    container.cacheAsTexture({ antialias: true });
-    return () => {
-      container.cacheAsTexture(false);
-    };
-  }, [stacks]);
-
+/** One bay's stock, drawn at world size — shared between the static
+ * merchandise bake and the targeting highlight's live copy. */
+const BayStock: React.FC<{ bay: ShelfBay }> = ({ bay }) => {
+  const piles =
+    bay.display === "lumberStack"
+      ? lumberPiles(bay)
+      : bay.display === "sheetStack"
+        ? sheetPiles(bay)
+        : bay.display === "racking"
+          ? toolPiles(bay)
+          : [];
+  const boxed = bay.display === "racking" && piles.length === 0;
+  const drawBoxes = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      drawBoxedStock(g, bay);
+    },
+    [bay],
+  );
+  if (bay.display === "machine") {
+    return <MachineDisplay bay={bay} />;
+  }
   return (
-    <pixiContainer ref={containerRef}>
-      {stacks.map(({ key, pile }) => (
-        <MaterialPileSprite key={key} pile={pile} />
+    <>
+      {piles.map((p, index) => (
+        <MaterialPileSprite key={`${bay.id}:${index}`} pile={p} />
       ))}
-      {layout.fixtures
-        .filter((bay) => bay.display === "machine")
-        .map((bay) => (
-          <MachineDisplay key={bay.id} bay={bay} />
+      {boxed && <pixiGraphics draw={drawBoxes} />}
+    </>
+  );
+};
+
+/**
+ * The whole floor's stock, baked once. The merchandise never moves, but
+ * it's a lot of procedural geometry — hundreds of boards' worth of grain
+ * and speckle. Rendered live it can dominate the frame (the E2E build's
+ * software rasterizer measured whole seconds per frame), so the layer
+ * rasterizes once and re-renders as a single texture until the planogram
+ * changes. Memoized for the same reason: a cell crossing re-renders the
+ * world, and re-reconciling a few hundred cached sprites every step is
+ * measurable CPU for a picture that cannot have changed.
+ */
+export const StoreMerchandiseLayer = React.memo<{ layout: StoreLayout }>(
+  function StoreMerchandiseLayer({ layout }) {
+    const containerRef = useRef<Container>(null);
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      container.cacheAsTexture({ antialias: true });
+      return () => {
+        container.cacheAsTexture(false);
+      };
+    }, [layout]);
+
+    return (
+      <pixiContainer ref={containerRef}>
+        {layout.fixtures.map((bay) => (
+          <BayStock key={bay.id} bay={bay} />
         ))}
-      {layout.decor.map((item, index) => (
-        <CrateStack key={index} decor={item} />
-      ))}
+        {layout.decor.map((item, index) => (
+          <CrateStack key={index} decor={item} />
+        ))}
+      </pixiContainer>
+    );
+  },
+);
+
+/**
+ * The targeting treatment: the stock of the bay the shopper stands at,
+ * drawn again over the baked floor wearing the same outline shader the
+ * shop's stations use. A separate layer so pointing at a new bay never
+ * touches the bake.
+ */
+export const StoreTargetHighlightLayer: React.FC<{
+  layout: StoreLayout;
+  targetId: string | null;
+}> = ({ layout, targetId }) => {
+  const bay = targetId
+    ? (layout.fixtures.find((fixture) => fixture.id === targetId) ?? null)
+    : null;
+  if (!bay) return null;
+  return (
+    <pixiContainer filters={TARGET_HIGHLIGHT_FILTERS}>
+      <BayStock bay={bay} />
     </pixiContainer>
   );
 };

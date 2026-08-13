@@ -235,11 +235,9 @@ test.describe("Stations", () => {
 
     await test.step("store: tool island and reputation-gated lumber racks", async () => {
       const returnTo = await goToStore(page);
-      // The aisles announce themselves: signage over each run. The
-      // shelf tags themselves stay tucked away until the shopper stands
+      // The aisle names are stencil paint on the slab (canvas, not
+      // DOM); the shelf tags stay tucked away until the shopper stands
       // at a bay (or the mouse hovers one) — the floor is the picture.
-      await expect(page.getByText("Tools", { exact: true })).toBeVisible();
-      await expect(page.getByText("Machines", { exact: true })).toBeVisible();
       await expect(page.getByText("Sanding Block")).not.toBeVisible();
 
       // Standing at a bay reveals its tag: the name and the price; what
@@ -266,15 +264,21 @@ test.describe("Stations", () => {
 
       // Cheap channels: framing pine and marked-up big-box S4S hardwood,
       // piled on the floor down aisle 1 — a stack per species and
-      // dimension, each wearing its own tag.
-      await expect(page.getByText("Construction Lumber")).toBeVisible();
-      await expect(page.getByText("S4S Hardwood Rack")).toBeVisible();
+      // dimension, each wearing its own tag. A channel's name finds its
+      // front pile through the same lookup the specs walk with.
+      const stocks = (name: string) =>
+        page.evaluate(
+          (channel: string) => (window as any).__FIND_SHELF__(channel) != null,
+          name,
+        );
+      expect(await stocks("Construction Lumber")).toBe(true);
+      expect(await stocks("S4S Hardwood Rack")).toBe(true);
       await walkToShelf(page, "Pine 1x4 — 8'");
       await expect(shelfTag(page, "Pine 1x4 — 8'")).toContainText("$2.00");
 
       // The less-than-S4S channels live at the lumberyard, not here
-      await expect(page.getByText("S2S Rack")).not.toBeVisible();
-      await expect(page.getByText("Rough Rack")).not.toBeVisible();
+      expect(await stocks("S2S Rack")).toBe(false);
+      expect(await stocks("Rough Rack")).toBe(false);
       await leaveStore(page, returnTo);
     });
 
@@ -328,7 +332,6 @@ test.describe("Stations", () => {
 
     await test.step("buy jig plywood from the Sheet Goods rack", async () => {
       afterStore = await goToStore(page);
-      await expect(page.getByText("Sheet Goods")).toBeVisible();
       // The sled itself is NOT for sale in the tool aisle
       await expect(page.getByText("Crosscut Sled")).toHaveCount(0);
       // The floor holds the whole spread: cheap chip boards through

@@ -99,6 +99,7 @@ describe("storeLayout", () => {
       const layout = storeLayout(store, stateWith({ reputation: 100 }));
       const rects = [
         ...layout.fixtures.map((fixture) => fixture.rect),
+        ...layout.decor.map((item) => item.rect),
         ...layout.spines,
         layout.register,
       ];
@@ -133,6 +134,27 @@ describe("storeLayout", () => {
         assert.ok(
           rectReachable(seen, fixture.rect),
           `${fixture.id} is walled off`,
+        );
+        // The piles are solid now, so standing "at" a pile means beside
+        // it: the stand cell must be in reach of the shopped face and in
+        // open floor near a reachable point (its center may sit inside
+        // the body's collision margin — the walk just shoulders it out).
+        const stand = fixtureStandCell(fixture);
+        assert.ok(
+          withinStoreReach(stand, fixture.rect),
+          `${fixture.id}'s stand cell is out of reach`,
+        );
+        assert.ok(
+          [
+            [0, 0],
+            [0.5, 0],
+            [-0.5, 0],
+            [0, 0.5],
+            [0, -0.5],
+          ].some(([dx, dy]) =>
+            seen.has(`${stand[0] + 0.5 + dx},${stand[1] + 0.5 + dy}`),
+          ),
+          `${fixture.id}'s stand cell is not next to walkable ground`,
         );
       }
       assert.ok(rectReachable(seen, layout.register), "register walled off");
@@ -296,20 +318,23 @@ describe("resolveStoreInteract", () => {
     assert.strictEqual(interact.inCart, 0);
   });
 
-  it("resolves a small panel pile by standing on it", () => {
-    // The little 2×2 piles pack tightest; standing on one still resolves
-    // it over its neighbors, because a walkable pile underfoot is at
-    // distance zero.
-    const panelPiles = layout.fixtures.filter((fixture) =>
-      fixture.id.endsWith(":project"),
+  it("resolves every packed panel pile from its own stand cell", () => {
+    // The little panels pack three deep along the mini-aisles; standing
+    // at each pile's stand cell must resolve that pile, not a neighbor
+    // in the same column.
+    const panelPiles = layout.fixtures.filter(
+      (fixture) =>
+        fixture.id.endsWith(":project") || fixture.id.endsWith(":handy"),
     );
-    assert.ok(panelPiles.length >= 2);
-    const pile = panelPiles[1];
-    const state = shoppingAt(fixtureStandCell(pile));
-    assert.strictEqual(
-      resolveStoreInteract(state, layout)?.fixture?.id,
-      pile.id,
-    );
+    assert.ok(panelPiles.length >= 4);
+    for (const pile of panelPiles) {
+      const state = shoppingAt(fixtureStandCell(pile));
+      assert.strictEqual(
+        resolveStoreInteract(state, layout)?.fixture?.id,
+        pile.id,
+        `${pile.id} did not resolve from its stand cell`,
+      );
+    }
   });
 
   it("counts the bay's product in the cart and finds the line to return", () => {
