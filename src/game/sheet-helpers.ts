@@ -1,5 +1,5 @@
 import { OperationOutput } from "./Machine";
-import { MaterialInstance, SheetGood } from "./Materials";
+import { MaterialInstance, SheetFaceRegion, SheetGood } from "./Materials";
 import { makeMaterial } from "./material-helpers";
 
 /**
@@ -43,11 +43,23 @@ export function cutSheet(
   if (startingDimension <= outputSize) {
     throw new Error("Sheet is too small to cut");
   }
+  // Both pieces stay on the source sheet's face: the kept piece keeps
+  // the input's region (materialized, because the input's id — which a
+  // virgin sheet's region is seeded by — dies with the cut), and the
+  // offcut starts where the blade fell. Which source axis the cut
+  // advances along depends on how this piece sits on its source.
+  const face = sheetFaceRegion(sheet);
+  const cutAxis = (dimension === "length") !== face.rotated ? "u" : "v";
+  const offcutFace = { ...face, [cutAxis]: face[cutAxis] + outputSize };
   return {
     inputs: [],
     outputs: [
-      makeSheet({ ...sheet, [dimension]: outputSize }),
-      makeSheet({ ...sheet, [dimension]: startingDimension - outputSize }),
+      makeSheet({ ...sheet, [dimension]: outputSize, face }),
+      makeSheet({
+        ...sheet,
+        [dimension]: startingDimension - outputSize,
+        face: offcutFace,
+      }),
     ],
   };
 }
@@ -63,7 +75,41 @@ export function cutSheet(
  * can state one orientation and mean either.
  */
 export function makeSheet(sheet: Omit<SheetGood, "id">): SheetGood {
-  const long = Math.max(sheet.length, sheet.width);
-  const short = Math.min(sheet.length, sheet.width);
-  return makeMaterial<SheetGood>({ ...sheet, length: long, width: short });
+  if (sheet.width <= sheet.length) {
+    return makeMaterial<SheetGood>(sheet);
+  }
+  // Swapping the labels turns the piece a quarter against its source
+  // sheet, and the face region has to remember that (see SheetFaceRegion)
+  return makeMaterial<SheetGood>({
+    ...sheet,
+    length: sheet.width,
+    width: sheet.length,
+    face: sheet.face && { ...sheet.face, rotated: !sheet.face.rotated },
+  });
+}
+
+/**
+ * A sheet's face region with the virgin-sheet default applied: a piece
+ * that was never cut is its own source, sitting at the source's origin,
+ * unrotated.
+ */
+export function sheetFaceRegion(sheet: SheetGood): SheetFaceRegion {
+  return sheet.face ?? { seed: sheet.id, u: 0, v: 0, rotated: false };
+}
+
+/**
+ * The point on the source sheet's face that a point on this piece's
+ * face shows — both in inches, the piece's measured (along its length,
+ * across its width) from its origin corner. This is the whole contract
+ * between the cut bookkeeping and the renderer: two pieces of one sheet
+ * agree wherever they meet, so the veneer runs unbroken across a cut.
+ */
+export function sheetFacePoint(
+  face: SheetFaceRegion,
+  alongLength: number,
+  acrossWidth: number,
+): { u: number; v: number } {
+  return face.rotated
+    ? { u: face.u + acrossWidth, v: face.v + alongLength }
+    : { u: face.u + alongLength, v: face.v + acrossWidth };
 }
