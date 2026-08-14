@@ -229,11 +229,22 @@ and needs no flat art; the flat sprites they once used are deleted.)
 
 Decided — don't re-open these without a reason.
 
-- **Boards, on-edge boards, panels, sheet goods** —
-  `BoardSprite`, `OnEdgeBoardSprite`, `PanelSprite`, `SheetGoodSprite`.
-  Length, width, species, and surface condition all vary continuously, and
-  the sprite is drawn at true scale against `PIXELS_PER_INCH`. No fixed-size
-  asset can cover that space.
+- **Boards, on-edge boards, panels** — `BoardSprite`, `OnEdgeBoardSprite`,
+  `PanelSprite`. Length, width, species, and surface condition all vary
+  continuously, and the sprite is drawn at true scale against
+  `PIXELS_PER_INCH`, so no fixed-size asset can cover the space — but the
+  _silhouette_ is the procedural part that has to stay. The surface detail
+  is expected to follow the sheet goods onto raster texture fills (below):
+  seamless photo tiles windowed by a fill matrix, sliced from the sources
+  in `assets/textures/materials/`.
+- **Sheet-good silhouettes, textured faces** — `SheetGoodSprite` draws its
+  rectangle procedurally but fills the face from a seamless photo tile per
+  kind (`sheetFaceTextures.ts`, cut from `assets/textures/materials/`, all
+  CC0 or homemade). The fill matrix windows the tile by the piece's
+  `SheetFaceRegion`, which is what keeps a cut piece wearing the veneer it
+  was cut with. Particle board still awaits a source tile and keeps its
+  procedural speckle; the edge faces (laminations, crumble) stay procedural
+  on purpose — they're a half-inch strip.
 - **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
   `DustMotionLayer`. Per-frame effects; the dust layer already bakes its
   stamps into a single `RenderTexture`.

@@ -251,6 +251,32 @@ export const RACK_GRADE_KINDS: ReadonlyArray<SheetGoodKind> = [
   "plywoodC",
 ];
 
+/**
+ * Where a piece's face lies on the virgin sheet it was cut from —
+ * cosmetic provenance for the renderer, so the two pieces a cut makes
+ * keep wearing adjacent stretches of the same veneer instead of each
+ * rerolling its look. Purely visual: grain direction still never gates
+ * a cut or a recipe (see docs/sheet-goods.md).
+ *
+ * `u` runs along the source sheet's length (the veneer's grain), `v`
+ * across its width, both inches from the piece's origin corner.
+ * `rotated` records that the piece's own length/width axes sit swapped
+ * against the source's — the mark `makeSheet` leaves when normalizing a
+ * piece whose long side came off the cut the other way round. The
+ * renderer treats the swap as a transpose rather than a true quarter
+ * turn; on woodgrain the mirror is undetectable and the bookkeeping
+ * stays two numbers and a flag.
+ */
+export interface SheetFaceRegion {
+  /** Identity of the virgin source sheet — seeds where on the (tiling)
+   * face art that sheet's window sits, so different sheets of one kind
+   * don't all show the same stretch of veneer. */
+  readonly seed: string;
+  readonly u: number;
+  readonly v: number;
+  readonly rotated: boolean;
+}
+
 export interface SheetGood {
   readonly id: string;
   readonly type: "plywood";
@@ -259,6 +285,9 @@ export interface SheetGood {
   readonly width: number;
   readonly thickness: SheetThickness;
   readonly kind: SheetGoodKind;
+  /** Absent on a virgin sheet — the piece IS its own source, region
+   * (0,0) unrotated (see sheetFaceRegion). Cuts fill it in. */
+  readonly face?: SheetFaceRegion;
 }
 
 /** One strip of wood in a glued-up panel. */

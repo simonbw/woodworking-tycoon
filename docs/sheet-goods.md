@@ -104,7 +104,11 @@ holds the two in step.
 - **Kerf**, as above.
 - **Grain direction on plywood.** Real sheets have a face grain that
   matters for how you cut a carcass; nothing in the game would ask about
-  it yet, and it would double every requirement.
+  it yet, and it would double every requirement. (The renderer does track
+  where a piece lay on its source sheet — `SheetFaceRegion`, filled in by
+  `cutSheet` and `makeSheet` — so cut pieces keep showing the veneer they
+  were cut with. That bookkeeping is cosmetic only: no cut, recipe, or
+  price ever reads it.)
 - **Scrap thresholds.** Every cut yields both pieces, however small. A
   cutoff below which an offcut vanished would be a rule the player can't
   see, and the garbage can already absorbs clutter.

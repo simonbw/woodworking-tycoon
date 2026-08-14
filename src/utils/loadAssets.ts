@@ -1,4 +1,5 @@
 import { worktableArtPaths } from "../components/machine-sprites/worktable-art";
+import { SHEET_FACE_TEXTURE_ASSETS } from "../components/material-sprites/sheetFaceTextures";
 import { Assets } from "pixi.js";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../game/Tool";
@@ -72,6 +73,8 @@ export const TEXTURE_ASSETS = [
   // Worktable tops, shadows, and their close-up copies — three layers per
   // table, and only for the tables that have art (see worktable-art.ts)
   ...worktableArtPaths(),
+  // The sheet goods' seamless face tiles (see sheetFaceTextures.ts)
+  ...SHEET_FACE_TEXTURE_ASSETS,
   ...PIXEL_ART_ASSETS,
 ];
 
@@ -89,5 +92,16 @@ export async function loadAssets(): Promise<void> {
 
   for (const path of PIXEL_ART_ASSETS) {
     Assets.get(path).source.scaleMode = "nearest";
+  }
+
+  // The face tiles repeat (a piece's texture window can sit anywhere on
+  // the source sheet) and render minified five-fold at shop scale, so
+  // they need wrap addressing and mipmaps where the machine art needs
+  // neither.
+  for (const path of SHEET_FACE_TEXTURE_ASSETS) {
+    const source = Assets.get(path).source;
+    source.autoGenerateMipmaps = true;
+    source.style.addressMode = "repeat";
+    source.style.update();
   }
 }
