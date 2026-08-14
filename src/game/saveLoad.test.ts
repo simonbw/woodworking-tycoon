@@ -84,10 +84,7 @@ describe("saveGame/loadGame round-trip", () => {
     assert.strictEqual(away?.kind, "shopping");
     // The schema must carry the flag through, not strip it — a reload
     // mid-trip that loses the flatbed strands the shopper cartless.
-    assert.strictEqual(
-      away.kind === "shopping" ? away.hasCart : null,
-      true,
-    );
+    assert.strictEqual(away.kind === "shopping" ? away.hasCart : null, true);
   });
 
   it("round-trips every E2E fixture", () => {

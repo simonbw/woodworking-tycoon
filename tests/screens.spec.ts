@@ -60,9 +60,9 @@ test.describe("Screens", () => {
       await expect(manual.getByRole("button", { name: /Sawdust/ })).toHaveCount(
         0,
       );
-      await expect(
-        manual.getByRole("button", { name: /Skills/ }),
-      ).toHaveCount(0);
+      await expect(manual.getByRole("button", { name: /Skills/ })).toHaveCount(
+        0,
+      );
     });
 
     await test.step("closing leaves Welcome read and stays closed", async () => {

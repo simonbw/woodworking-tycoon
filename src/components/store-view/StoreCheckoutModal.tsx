@@ -51,7 +51,10 @@ export const StoreCheckoutModal: React.FC<{
         ) : (
           <ul className="max-h-[50vh] divide-y divide-paper-manila-edge/60 overflow-y-auto">
             {groups.map((group) => (
-              <li key={group.key} className="flex items-center gap-2.5 px-3 py-2">
+              <li
+                key={group.key}
+                className="flex items-center gap-2.5 px-3 py-2"
+              >
                 <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-[1px]">
                   <CartLineIcon line={group.line} />
                 </span>

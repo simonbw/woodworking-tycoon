@@ -154,13 +154,17 @@ async function main() {
 
   const assets = toAssets(faces);
   for (const asset of assets) {
-    const res = await fetch(asset.url, { headers: { "User-Agent": CHROME_UA } });
+    const res = await fetch(asset.url, {
+      headers: { "User-Agent": CHROME_UA },
+    });
     if (!res.ok) throw new Error(`${asset.url}: ${res.status}`);
     const bytes = Buffer.from(await res.arrayBuffer());
     const file = path.join(FONT_DIR, fileNameFor(asset));
     await fsp.writeFile(file, bytes);
     const covers = weightRuleFor(asset);
-    console.log(`  ${file} (${(bytes.length / 1024).toFixed(1)} KB, ${covers})`);
+    console.log(
+      `  ${file} (${(bytes.length / 1024).toFixed(1)} KB, ${covers})`,
+    );
   }
 
   const rules = assets.map((asset) =>

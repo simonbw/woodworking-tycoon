@@ -54,7 +54,10 @@ export const StoreTruckSprite: React.FC<{
       return;
     }
     // Ease in like the driveway roll: idle settle, then away.
-    const p = Math.min(1, (performance.now() - departingSince) / STORE_DEPART_MS);
+    const p = Math.min(
+      1,
+      (performance.now() - departingSince) / STORE_DEPART_MS,
+    );
     container.x = p * p * DEPART_TRAVEL_PX;
   });
 

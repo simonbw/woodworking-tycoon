@@ -294,7 +294,9 @@ test.describe("Shop floor", () => {
       // The fixture's miter saw at [6,3] holds a board; stand at its
       // operator cell and try
       await teleportPlayer(page, [6, 5]);
-      await expect(page.getByTestId("machine-chips")).not.toContainText("carry");
+      await expect(page.getByTestId("machine-chips")).not.toContainText(
+        "carry",
+      );
       await page.keyboard.press("b");
       await page.waitForTimeout(30);
       expect(await carried(page)).toBeNull();
@@ -343,7 +345,9 @@ test.describe("Shop floor", () => {
       const shopping = await page.evaluate(() => window.__GET_GAME_STATE__());
       expect(shopping.truck.crates).toHaveLength(0);
       expect(shopping.money).toBe(500);
-      await expect(page.getByTestId("store-cart-total")).toContainText("1 item");
+      await expect(page.getByTestId("store-cart-total")).toContainText(
+        "1 item",
+      );
 
       // One press pays for the cart and drives home
       await checkOutAndLeaveStore(page);
@@ -384,13 +388,20 @@ test.describe("Shop floor", () => {
       await page.evaluate(() => {
         window.__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          dust: { "5,5": { walnut: 14 }, "5,6": { walnut: 14 }, "6,5": { walnut: 14 }, "6,6": { walnut: 14 }, "5,7": { walnut: 14 } },
+          dust: {
+            "5,5": { walnut: 14 },
+            "5,6": { walnut: 14 },
+            "6,5": { walnut: 14 },
+            "6,6": { walnut: 14 },
+            "5,7": { walnut: 14 },
+          },
         }));
       });
       await expect
-        .poll(async () =>
-          (await page.evaluate(() => window.__GET_GAME_STATE__())).progression
-            .sweepingUnlocked,
+        .poll(
+          async () =>
+            (await page.evaluate(() => window.__GET_GAME_STATE__())).progression
+              .sweepingUnlocked,
         )
         .toBe(true);
       const dustCard = page.getByTestId("tutorial-card-dust");
@@ -499,9 +510,7 @@ test.describe("Shop floor", () => {
 
     await test.step("E takes the broom into the hands strip", async () => {
       await teleportPlayer(page, [1, 1]);
-      await expect(
-        page.getByText(/pick up broom/i).first(),
-      ).toBeVisible();
+      await expect(page.getByText(/pick up broom/i).first()).toBeVisible();
       await page.keyboard.press("e");
       await page.waitForTimeout(30);
       const state = await page.evaluate(() => window.__GET_GAME_STATE__());
@@ -580,12 +589,15 @@ test.describe("Shop floor", () => {
       );
       // Walk down the lot past the truck's nose: the card belongs to the
       // cab, and out of reach of it there is no card
-      await page.evaluate((position: number[]) => {
-        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
-          ...state,
-          player: { ...state.player, position },
-        }));
-      }, [cell[0], cell[1] + 4]);
+      await page.evaluate(
+        (position: number[]) => {
+          (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+            ...state,
+            player: { ...state.player, position },
+          }));
+        },
+        [cell[0], cell[1] + 4],
+      );
       await expect(panel).toHaveCount(0);
       // ...and coming back leaves it closed rather than spreading it
       // open again under the player
@@ -742,7 +754,6 @@ test.describe("Shop floor", () => {
       await rightClickUntilVisible(page, bench, stationSheet);
       await expect(stationSheet).toBeVisible();
       await page.keyboard.press("Escape");
-
     });
 
     await test.step("starting over asks first, then clears the shop", async () => {

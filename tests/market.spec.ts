@@ -591,7 +591,9 @@ test.describe("Selling, supplies, and sound", () => {
       await expect.poll(holdMusic).toMatchObject({ paused: false });
       // Playing, not merely started: the position has to move.
       const { at } = (await holdMusic())!;
-      await expect.poll(async () => (await holdMusic())!.at).toBeGreaterThan(at);
+      await expect
+        .poll(async () => (await holdMusic())!.at)
+        .toBeGreaterThan(at);
     });
 
     await test.step("letting go stops it where it stands", async () => {

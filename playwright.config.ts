@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
+import { defineConfig, devices } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 
 // Every run gets its own port, so two `npm run test`s in two terminals don't
 // fight over one. Node has no synchronous way to ask for a free port, and this
@@ -14,14 +14,14 @@ function allocateFreePort(): string {
   return execFileSync(
     process.execPath,
     [
-      '-e',
+      "-e",
       // String(), not the number: under FORCE_COLOR (set in some shells)
       // console.log colorizes numbers even into a pipe, and the ANSI codes
       // would ride along into Number() below and come out NaN.
       "const s = require('net').createServer();" +
         "s.listen(0, () => { console.log(String(s.address().port)); s.close() })",
     ],
-    { encoding: 'utf8' },
+    { encoding: "utf8" },
   ).trim();
 }
 
@@ -48,26 +48,26 @@ export const outputDir = `test-results/${port}`;
 export const e2eBuildDir = `dist-e2e/${port}`;
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   // Default is half the cores, which was right when each worker pegged a
   // core rendering. With the render loop capped (see webServer below) a
   // worker is mostly idle, so more of them pack the suite tighter.
-  workers: process.env.CI ? 1 : '80%',
-  reporter: 'list',
+  workers: process.env.CI ? 1 : "80%",
+  reporter: "list",
   outputDir,
-  globalTeardown: './tests/global-teardown.ts',
+  globalTeardown: "./tests/global-teardown.ts",
 
   use: {
     baseURL,
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
     // The specs drive surfaces, not choreography: with reduced motion
     // emulated, presentation-only transitions (the bench view's camera
     // lean-in honors it) resolve instantly instead of making every spec
     // wait out — or worse, race — an animation.
-    contextOptions: { reducedMotion: 'reduce' },
+    contextOptions: { reducedMotion: "reduce" },
     // Escape hatch for environments with a preinstalled browser instead of
     // the exact build this Playwright version would download.
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
@@ -81,8 +81,8 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
 
@@ -110,8 +110,7 @@ export default defineConfig({
     // not forward Playwright's SIGTERM: the build script never got to
     // dispose esbuild's service child, which outlived it still holding this
     // port and serving a stale bundle.
-    command:
-      `E2E_RENDER_FPS=10 ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=${e2eBuildDir} ES_BUILD_DEV_PORT=${port} node esbuild-client.config.mjs --dev`,
+    command: `E2E_RENDER_FPS=10 ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=${e2eBuildDir} ES_BUILD_DEV_PORT=${port} node esbuild-client.config.mjs --dev`,
     url: baseURL,
     // Always start our own. A freshly allocated port has nothing to reuse,
     // but E2E_PORT can pin one — and reuse would then attach to whatever

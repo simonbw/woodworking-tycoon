@@ -267,8 +267,7 @@ export const StoreOverlayLayer: React.FC<{
             </HintRow>
             {hasCart ? (
               <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-                Add to cart ·{" "}
-                {formatMoney(standingBay.product.line.price)}
+                Add to cart · {formatMoney(standingBay.product.line.price)}
               </HintRow>
             ) : (
               <HintRow className="text-paper-manila/60">
@@ -284,20 +283,22 @@ export const StoreOverlayLayer: React.FC<{
         </ChipAt>
       )}
 
-      {interact && !hasCart && (interact.atCorral || tutorialIds.has("store-corral")) && (
-        <ChipAt rect={layout.corral} facing={1} scale={scale}>
-          <div data-tutorial-target="store-corral">
-            <HintList testId="store-corral-chips">
-              <HintRow className="text-paper-manila/60">Carts</HintRow>
-              {interact.atCorral && (
-                <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
-                  take a cart
-                </HintRow>
-              )}
-            </HintList>
-          </div>
-        </ChipAt>
-      )}
+      {interact &&
+        !hasCart &&
+        (interact.atCorral || tutorialIds.has("store-corral")) && (
+          <ChipAt rect={layout.corral} facing={1} scale={scale}>
+            <div data-tutorial-target="store-corral">
+              <HintList testId="store-corral-chips">
+                <HintRow className="text-paper-manila/60">Carts</HintRow>
+                {interact.atCorral && (
+                  <HintRow keys={<ShortcutKeys shortcut="pick-up" />}>
+                    take a cart
+                  </HintRow>
+                )}
+              </HintList>
+            </div>
+          </ChipAt>
+        )}
 
       {interact?.atRegister && (
         <ChipAt rect={layout.register} facing={1} scale={scale}>

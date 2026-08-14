@@ -345,7 +345,9 @@ test.describe("Stations", () => {
       await pickUpFromShelf(page, "Shop Plywood — 2×2 Panel");
       // $11.20: 2 board feet of shop-grade ply, at the small-piece
       // premium — quoted on the cart before a cent leaves the wallet
-      await expect(page.getByTestId("store-cart-total")).toContainText("$11.20");
+      await expect(page.getByTestId("store-cart-total")).toContainText(
+        "$11.20",
+      );
       expect(
         await page.evaluate(() => (window as any).__GET_GAME_STATE__().money),
       ).toBe(100);
@@ -366,7 +368,10 @@ test.describe("Stations", () => {
           m.type === "plywood" ? { ...m, width: 20 } : m;
         (window as any).__UPDATE_GAME_STATE__((state: any) => ({
           ...state,
-          player: { ...state.player, inventory: state.player.inventory.map(ripped) },
+          player: {
+            ...state.player,
+            inventory: state.player.inventory.map(ripped),
+          },
           truck: { ...state.truck, bed: state.truck.bed.map(ripped) },
           materialPiles: state.materialPiles.map((pile: any) => ({
             ...pile,
@@ -537,7 +542,9 @@ test.describe("Stations", () => {
       );
       // Put it back and pay with the money that was actually there
       await page.getByTestId("store-cart-total").hover();
-      await cartPanel.getByRole("button", { name: "Remove one Hand Saw" }).click();
+      await cartPanel
+        .getByRole("button", { name: "Remove one Hand Saw" })
+        .click();
       await page.mouse.move(0, 0);
       await expect(cartPanel).toHaveCount(0);
       await page.evaluate((money: number) => {
