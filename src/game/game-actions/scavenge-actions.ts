@@ -133,7 +133,9 @@ export function scavengeLoot(trip: ScavengingTrip): ReadonlyArray<Pallet> {
  * next search wouldn't fit before the 5 PM close.
  */
 export type KeepScavengingBlock =
-  "notDeciding" | "outOfStops" | "outOfDaylight";
+  | "notDeciding"
+  | "outOfStops"
+  | "outOfDaylight";
 
 export function keepScavengingBlock(
   gameState: GameState,

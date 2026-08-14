@@ -465,11 +465,7 @@ export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
     );
 
   const runTop = FIXTURE_DEPTH + BACK_CROSS_AISLE;
-  const targetRun = Math.max(
-    sheetNatural,
-    runNatural(lumberRunFor(1)),
-    14,
-  );
+  const targetRun = Math.max(sheetNatural, runNatural(lumberRunFor(1)), 14);
   const frontier = runTop + targetRun;
   const width = INTERIOR_WIDTH;
   const height = Math.ceil(frontier + FRONT_ZONE);
@@ -974,7 +970,11 @@ export function storeCollisionWorld(layout: StoreLayout): CollisionWorld {
       }),
     ),
     ...layout.decor.map(
-      (item): SolidBox => ({ kind: "box", min: item.rect.min, max: item.rect.max }),
+      (item): SolidBox => ({
+        kind: "box",
+        min: item.rect.min,
+        max: item.rect.max,
+      }),
     ),
     ...layout.spines.map(
       (spine): SolidBox => ({ kind: "box", min: spine.min, max: spine.max }),

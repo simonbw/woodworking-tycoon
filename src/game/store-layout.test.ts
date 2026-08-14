@@ -227,7 +227,9 @@ describe("storeLayout", () => {
     assert.ok(
       lumber
         .slice(firstHardwood)
-        .every((fixture) => !fixture.id.startsWith("lumber:constructionLumber:")),
+        .every(
+          (fixture) => !fixture.id.startsWith("lumber:constructionLumber:"),
+        ),
       "hardwood piles all follow the construction group",
     );
     const frontOf = (id: string) =>
@@ -268,7 +270,10 @@ describe("storeLayout", () => {
       24,
     );
     // The sheet piles grow with reputation too.
-    const starterSheets = storeLayout("orangeBox", stateWith({ reputation: 0 }));
+    const starterSheets = storeLayout(
+      "orangeBox",
+      stateWith({ reputation: 0 }),
+    );
     const seasonedSheets = storeLayout(
       "orangeBox",
       stateWith({ reputation: 100 }),

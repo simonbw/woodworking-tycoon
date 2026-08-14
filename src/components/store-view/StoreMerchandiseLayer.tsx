@@ -65,8 +65,12 @@ function lumberPiles(bay: ShelfBay): MaterialPile[] {
     piles.push(pile(material, [cx, cy + offset], Math.PI / 2));
   }
   // The top layer, set a touch off square so the pile reads as a pile.
-  piles.push(pile(material, [cx - 0.08, cy - boardWidth / 2], Math.PI / 2 + 0.02));
-  piles.push(pile(material, [cx + 0.1, cy + boardWidth / 2], Math.PI / 2 - 0.015));
+  piles.push(
+    pile(material, [cx - 0.08, cy - boardWidth / 2], Math.PI / 2 + 0.02),
+  );
+  piles.push(
+    pile(material, [cx + 0.1, cy + boardWidth / 2], Math.PI / 2 - 0.015),
+  );
   return piles;
 }
 

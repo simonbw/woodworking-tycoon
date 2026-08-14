@@ -287,7 +287,9 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
             <StoreFixturesLayer
               layout={layout}
               registerTargeted={interact?.atRegister ?? false}
-              corralTargeted={(interact?.atCorral && !interact.hasCart) ?? false}
+              corralTargeted={
+                (interact?.atCorral && !interact.hasCart) ?? false
+              }
             />
             <StoreMerchandiseLayer layout={layout} />
             <StoreTargetHighlightLayer
@@ -333,7 +335,9 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
         onOpenCheckout={onOpenCheckout}
         onLeave={onLeave}
       />
-      <HeldMovementListener enabled={!modalOpen && !checkoutOpen && !departing} />
+      <HeldMovementListener
+        enabled={!modalOpen && !checkoutOpen && !departing}
+      />
       <WorldScene
         worldWidth={width}
         worldHeight={height}
@@ -405,7 +409,11 @@ function findShelf(
 ): { kind: "bay"; id: string; cell: Vector } | null {
   const found = (fixture: ShelfBay | undefined) =>
     fixture
-      ? { kind: "bay" as const, id: fixture.id, cell: fixtureStandCell(fixture) }
+      ? {
+          kind: "bay" as const,
+          id: fixture.id,
+          cell: fixtureStandCell(fixture),
+        }
       : null;
 
   for (const fixture of layout.fixtures) {
@@ -423,7 +431,9 @@ function findShelf(
     }
   }
   // A lumber channel's name finds the front pile of its group.
-  const channel = LUMBER_CHANNELS.find((candidate) => candidate.name === product);
+  const channel = LUMBER_CHANNELS.find(
+    (candidate) => candidate.name === product,
+  );
   if (channel) {
     return found(
       layout.fixtures.find((fixture) =>
