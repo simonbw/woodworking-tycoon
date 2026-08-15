@@ -302,7 +302,12 @@ transform tests as it lands.
       overnight now passes at one sim minute per engine tick (~14s of
       night card vs the old instant batch; the SleepSystem's interleaving
       parity is the constraint, revisit at polish if it reads slow)
-- [ ] **Gate:** shopping-trip spec passes end to end
+- [x] **Gate:** shopping-trip spec passes end to end — transitional home:
+      the engine-shell journey grew the whole trip through the real seams
+      (the cab's trip card, the 15-minute drive charge, the scene swap,
+      corral/shelf/register keys, the receipt's Buy, the deferred drive
+      home landing the purchase in the bed); the canonical trips spec
+      rehosts at cutover (decision 9)
 
 ## Phase 7 — Bench view [size L — riskiest]
 
@@ -648,3 +653,6 @@ transform tests as it lands.
   overlays needed a pointer-events-auto wrapper under HudRoot's inert
   sheet (the manual's seam). tsc + 1350 unit + engine-shell journey
   green. Next: the phase-6 gate's shopping-trip E2E coverage.
+- 2026-08-15 — Phase 6 gate green: the shopping-trip step runs the full
+  loop end to end in the engine-shell journey. Phase 6 complete; phase 7
+  (the bench view — the riskiest item) is next.

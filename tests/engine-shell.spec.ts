@@ -357,6 +357,118 @@ test.describe("Engine shell", () => {
       await expect(page.getByTestId("machine-chips")).toBeVisible();
     });
 
+    await test.step("a shopping trip: out the cab, cart, shelf, register, home", async () => {
+      // The phase-6 gate: the whole trip through the real seams — the
+      // cab's trip card, the corral, a shelf, the register's receipt,
+      // and the deferred drive home landing the purchase in the bed.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        game.entities.getById("progression").storeUnlocked = true;
+        game.entities.getById("wallet").money += 100;
+        const save = (window as any).__GET_GAME_STATE__();
+        save.singletons.player.position = [2.5, 28.5];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+      const moneyBefore = await page.evaluate(
+        () => (window as any).game.entities.getById("wallet").money,
+      );
+      // E at the cab opens the trip card; E again takes the selected
+      // row — the Orange Box sits first once the store is unlocked.
+      await page.keyboard.press("KeyE");
+      await expect(page.getByTestId("truck-panel")).toBeVisible();
+      const tickBefore = await page.evaluate(
+        () => (window as any).game.entities.getById("clock").tick,
+      );
+      await page.keyboard.press("KeyE");
+      await page.waitForFunction(
+        () =>
+          (window as any).game.entities.getById("player").away?.kind ===
+          "shopping",
+        null,
+        { timeout: 5_000 },
+      );
+      // The drive out charges its minutes with the trip underway.
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => (window as any).game.entities.getById("clock").tick,
+          ),
+        )
+        .toBeGreaterThanOrEqual(tickBefore + 15);
+      // The scene swapped: the store's root is up, the shop's views are
+      // torn down.
+      expect(
+        await page.evaluate(() =>
+          Boolean((window as any).game.entities.getById("storeSceneRoot")),
+        ),
+      ).toBe(true);
+
+      // Walk the floor by teleports (the aisles are long; walking is
+      // covered above): the corral's E takes a flatbed…
+      const standAt = (point: string) =>
+        page.evaluate((point) => {
+          const game = (window as any).game;
+          const layout = game.entities.getById("storeSceneRoot").layout();
+          const rect =
+            point === "corral"
+              ? layout.corral
+              : point === "register"
+                ? layout.register
+                : layout.fixtures.find((f: any) => f.display === "racking")
+                    .rect;
+          const save = (window as any).__GET_GAME_STATE__();
+          save.singletons.player.away.position = [
+            Math.floor((rect.min[0] + rect.max[0]) / 2),
+            Math.floor(rect.max[1]) + (point === "bay" ? 1 : 0),
+          ];
+          (window as any).__UPDATE_GAME_STATE__(save);
+        }, point);
+      const trip = () =>
+        page.evaluate(() => {
+          const away = (window as any).game.entities.getById("player").away;
+          return { hasCart: away.hasCart, cart: away.cart.length };
+        });
+      await standAt("corral");
+      await page.keyboard.press("KeyE");
+      expect((await trip()).hasCart).toBe(true);
+
+      // …a shelf's E puts one in the cart, F puts it back, E re-adds…
+      await standAt("bay");
+      await page.keyboard.press("KeyE");
+      expect((await trip()).cart).toBe(1);
+      await page.keyboard.press("KeyF");
+      expect((await trip()).cart).toBe(0);
+      await page.keyboard.press("KeyE");
+
+      // …and the register's E opens the receipt; Buy pays and drives
+      // home, the purchase riding in the bed.
+      await standAt("register");
+      await page.keyboard.press("KeyE");
+      await expect(page.getByTestId("store-checkout-modal")).toBeVisible();
+      await page
+        .getByTestId("store-checkout-modal")
+        .getByRole("button", { name: /buy/i })
+        .click();
+      await page.waitForFunction(
+        () => (window as any).game.entities.getById("player").away === null,
+        null,
+        { timeout: 10_000 },
+      );
+      const home = await page.evaluate(() => {
+        const game = (window as any).game;
+        return {
+          money: game.entities.getById("wallet").money,
+          bed:
+            game.entities.getById("truck").bed.length +
+            game.entities.getById("truck").crates.length,
+          storeRoot: Boolean(game.entities.getById("storeSceneRoot")),
+        };
+      });
+      expect(home.money).toBeLessThan(moneyBefore);
+      expect(home.bed).toBeGreaterThan(0);
+      expect(home.storeRoot).toBe(false);
+    });
+
     await test.step("the first sale pays out with a reward flight", async () => {
       // Stock the stand and stage a browsing customer one street pass
       // from deciding; the shop's first sale skips the coin flip, so the
