@@ -39,6 +39,7 @@ import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
 import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
 import { StoreFixturesView } from "./store-views/StoreFixturesView";
+import { StoreMerchandiseView } from "./store-views/StoreMerchandiseView";
 
 /**
  * The walkable Orange Box's scene root (migration phase 6). Spawned by
@@ -57,15 +58,11 @@ import { StoreFixturesView } from "./store-views/StoreFixturesView";
  * axes here, following the body.
  */
 
-/** Placeholder paint for the merchandise that hasn't ported yet. */
-const FIXTURE = 0x7d7a76;
-
 export class StoreSceneRoot extends BaseEntity implements Entity {
   id = "storeSceneRoot";
   persistenceLevel: number = Persistence.Level;
   pausable = false;
 
-  private floor: Graphics & GameSprite;
   private body: Graphics & GameSprite;
 
   /** The continuous store body, in cell coordinates. */
@@ -92,13 +89,9 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
 
   constructor() {
     super();
-    // "floorItems", not "environment": the environment child draws the
-    // slab later in add order, and these blocks must ride above it.
-    this.floor = new Graphics() as Graphics & GameSprite;
-    this.floor.layerName = "floorItems";
     this.body = new Graphics() as Graphics & GameSprite;
     this.body.layerName = "actors";
-    this.sprites = [this.floor, this.body];
+    this.sprites = [this.body];
   }
 
   layout(): StoreLayout | null {
@@ -127,7 +120,7 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     }
     this.addChild(new StoreEnvironmentView(layout));
     this.addChild(new StoreFixturesView(layout));
-    this.drawVenue(layout);
+    this.addChild(new StoreMerchandiseView(layout));
   }
 
   /** The resolver the keys and the chips share (store-interact.ts). */
@@ -240,23 +233,6 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   onAdd() {
     const layout = this.layout();
     if (layout) this.dress(layout);
-  }
-
-  /** Placeholder blocks for what hasn't ported yet: every bay's
-   * merchandise as a gray box (the fixtures view draws the shelving,
-   * but the stock itself is the merchandise view's, still pending). */
-  private drawVenue(layout: StoreLayout) {
-    const g = this.floor;
-    g.clear();
-    for (const fixture of layout.fixtures) {
-      const rect = fixture.rect;
-      g.rect(
-        cellToPixel(rect.min[0]) + 4,
-        cellToPixel(rect.min[1]) + 4,
-        cellToPixel(rect.max[0] - rect.min[0]) - 8,
-        cellToPixel(rect.max[1] - rect.min[1]) - 8,
-      ).fill({ color: FIXTURE, alpha: 0.9 });
-    }
   }
 
   @on("tick")

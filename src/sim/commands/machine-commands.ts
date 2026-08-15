@@ -706,3 +706,8 @@ export function finishAttendedWork(game: Game, entity: MachineEntity): boolean {
   applyCompletionGrants(game, [completion]);
   return true;
 }
+
+// Pure factory re-exported so engine-world files never lean on the old
+// transform layer directly (the same seam the other command files give
+// their read helpers) — the store's display models are built from it.
+export { freshMachineState } from "../../game/game-actions/machine-actions";

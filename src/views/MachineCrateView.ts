@@ -34,7 +34,9 @@ export class MachineCrateView extends BaseEntity implements Entity {
   }
 }
 
-function drawCrate(g: Graphics): void {
+/** The stenciled pine crate's drawing — exported for the store's
+ * merchandise view, whose decor stacks the same crates. */
+export function drawCrate(g: Graphics): void {
   g.clear();
   // A real crate is bigger than the 1-ft cell it anchors to — it
   // overhangs its cell visually but never blocks walking.
