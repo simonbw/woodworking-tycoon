@@ -123,8 +123,11 @@ export const NavBar: React.FC = () => {
   );
 };
 
-/** The old DayClock over the shell hooks (the loop it rode moved into the engine). */
-const DayClock: React.FC = () => {
+/** The old DayClock over the shell hooks (the loop it rode moved into
+ * the engine). Exported because it isn't only the top bar's: the trip
+ * pages show this exact readout (the daylight left is the cost being
+ * weighed out there). */
+export const DayClock: React.FC = () => {
   const gameState = useShopState();
   const phase = currentDayPhase(gameState);
 

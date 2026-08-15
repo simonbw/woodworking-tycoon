@@ -9,6 +9,9 @@ import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
 import { StoreScreen } from "./store/StoreScreen";
+import { LumberyardTripOverlay } from "./trips/LumberyardTripOverlay";
+import { ScavengeTripOverlay } from "./trips/ScavengeTripOverlay";
+import { SleepOverlay } from "./trips/SleepOverlay";
 import { SuppliesSection } from "./SuppliesSection";
 import { TutorialCards } from "./tutorial/TutorialCard";
 import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
@@ -79,6 +82,18 @@ export const EngineHud: React.FC = () => {
       {/* The walkable store's chrome (cart corner + receipt card); its
           own null-gate keeps it off-screen at home. */}
       <StoreScreen />
+
+      {/* The away trips that cover the screen (each gates on its own
+          `player.away` kind): the lumberyard's storefront, the
+          scavenging circuit, and the night between days. The wrapper
+          re-enables pointer events under HudRoot's inert sheet (the
+          same seam the manual's modal crosses), without a box of its
+          own. */}
+      <div className="pointer-events-auto contents">
+        <LumberyardTripOverlay />
+        <ScavengeTripOverlay />
+        <SleepOverlay />
+      </div>
 
       {/* The sale celebration, above everything (z-60): coins and the
           star fly to the top bar's readouts. */}

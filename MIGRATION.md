@@ -289,7 +289,19 @@ transform tests as it lands.
       imported verbatim through the OverlayRoot bridge, cart readout as a
       shell copy over the cart commands. Departure is instant until the
       trip theater lands (the next item) — the old E2E build's behavior
-- [ ] Lumberyard + shopping overlays; scavenging trip UI
+- [x] Lumberyard + shopping overlays; scavenging trip UI — shell copies in
+      `src/shell/hud/trips/` over the command surface (useStoreTrip's till
+      via checkout + the director's drive home; scavenge decisions via
+      continueScavenging/headHomeFromScavenging; the night card via
+      beginWakeUp), TripOverlay/logo/checkout-button imported verbatim,
+      TripHeader/BoardSelector copied with hooks swapped, DayClock
+      exported from the NavBar port for the trip pages. Deviations: the
+      departure/arrival theater (truck rolls, fades, truckStage) is
+      deferred to phase 8's polish alongside the sound layers — every
+      overlay swaps instantly, the old E2E build's behavior — and the
+      overnight now passes at one sim minute per engine tick (~14s of
+      night card vs the old instant batch; the SleepSystem's interleaving
+      parity is the constraint, revisit at polish if it reads slow)
 - [ ] **Gate:** shopping-trip spec passes end to end
 
 ## Phase 7 — Bench view [size L — riskiest]
@@ -627,3 +639,12 @@ transform tests as it lands.
   with bed cargo, the storefront sign and stencils. tsc + 1350 unit +
   engine-shell journey green. Next: the trip theater, lumberyard and
   scavenging overlays, then the shopping-trip gate.
+- 2026-08-15 — Phase 6 trip overlays landed and browser-verified: the
+  scavenging circuit at parity (flatbed drawing, handwritten stop report,
+  keep-searching/good-enough decisions, loot landing in the bed), the
+  lumberyard storefront with its reputation-gated racks (S2S rack renders
+  with earned rep; empty below threshold, as designed), and the night
+  card waking through the SleepSystem's 840-minute overnight. Trip
+  overlays needed a pointer-events-auto wrapper under HudRoot's inert
+  sheet (the manual's seam). tsc + 1350 unit + engine-shell journey
+  green. Next: the phase-6 gate's shopping-trip E2E coverage.

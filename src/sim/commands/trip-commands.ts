@@ -57,6 +57,11 @@ export { DRIVE_TICKS_ONE_WAY, SCAVENGE_STOP_NAMES, SCAVENGE_STOP_TICKS };
 // and the dispatcher (their import rules keep them off the old actions).
 export { canLeaveShop };
 
+// The scavenging trip's pure reads, re-exported for the trip overlay
+// (the same seam): why another search is refused, and what the circuit
+// has in the truck so far.
+export { keepScavengingBlock, scavengeLoot };
+
 function player(game: Game): Player {
   return game.entities.getSingleton(Player);
 }
