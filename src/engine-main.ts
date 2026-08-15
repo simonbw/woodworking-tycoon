@@ -7,6 +7,7 @@ import { ShortcutDispatcher } from "./shell/dispatch/ShortcutDispatcher";
 import { TargetingState } from "./shell/dispatch/TargetingState";
 import { HudRoot } from "./shell/HudRoot";
 import { OverlayRoot } from "./shell/OverlayRoot";
+import { PayoutBuffer } from "./shell/PayoutBuffer";
 import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
@@ -60,6 +61,7 @@ async function main() {
   // on signals) and the overlay (world-pinned, re-renders every frame
   // to ride the camera).
   game.addEntity(new ShellStore());
+  game.addEntity(new PayoutBuffer());
   game.addEntity(new HudRoot());
   game.addEntity(new OverlayRoot());
 

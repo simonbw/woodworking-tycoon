@@ -254,7 +254,17 @@ transform tests as it lands.
       (see the Log entries below); the phase-4 hint-chip deferral is
       closed by the overlay slice, and the world-pinned DOM rides a
       per-frame OverlayRoot beside the signal-driven HudRoot
-- [ ] **Gate:** HUD/tutorial/selling specs pass; first sale + reward flight
+- [x] **Gate:** HUD/tutorial/selling specs pass; first sale + reward flight —
+      transitional home: the engine-shell journey spec carries the
+      HUD/tutorial/selling coverage until the seven canonical specs rehost
+      at cutover (decision 9). The reward flight ported early (phase 8
+      lists it, but this gate demands it): the StreetSystem's "payout"
+      event lands in a shell `PayoutBuffer` entity, and
+      `src/shell/hud/payout/RewardFlightLayer.tsx` drains it when the
+      player is home — the truck-roll wait rejoins in phase 6. The spec's
+      selling step stages the guaranteed first sale (stocked stand +
+      deciding customer + held wait key) and asserts settle + flight +
+      store unlock
 
 ## Phase 6 — Trips & the store venue [size M]
 
@@ -553,3 +563,14 @@ transform tests as it lands.
   crosses two React effect passes and OverlayRoot's per-frame renders
   exposed the race). tsc + unit (1350) + the full engine-shell journey
   green after each merge.
+- 2026-08-15 — Phase 5 gate green: the reward flight ported onto the shell
+  (PayoutBuffer entity over the "payout" event + the old RewardFlightLayer
+  markup verbatim, gated on being home; truck-stage wait rejoins in phase
+  6), mounted above everything in EngineHud. The engine-shell journey
+  grew the first-sale step: stand stocked and a deciding customer staged
+  via the hooks, the wait key held until the sale settles, then stand
+  empty / money+reputation up / salesCompleted=1 / store unlocked / coins
+  airborne toward the readouts all asserted. Screenshots: fresh shop with
+  the coach's card and full NavBar; post-sale with $12.00, ★ 1.7, the
+  next goal card, and the Skills ring. tsc + 1350 unit + the journey spec
+  green. Phase 5 complete; next is phase 6 (trips & the store venue).

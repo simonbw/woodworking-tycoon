@@ -142,3 +142,4 @@ dist-e2e/
 # Misc
 .DS_Store
 node_modules
+dist-verify/

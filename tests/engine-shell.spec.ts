@@ -355,6 +355,69 @@ test.describe("Engine shell", () => {
       await expect(page.getByTestId("machine-chips")).toBeVisible();
     });
 
+    await test.step("the first sale pays out with a reward flight", async () => {
+      // Stock the stand and stage a browsing customer one street pass
+      // from deciding; the shop's first sale skips the coin flip, so the
+      // buy is certain (StreetSystem's first-sale rule).
+      await page.evaluate(() => {
+        const save = (window as any).__GET_GAME_STATE__();
+        save.singletons.stand = {
+          pieces: [{ id: "spec-shelf", type: "rusticShelf", species: "pallet" }],
+        };
+        save.entities = save.entities.filter((e: any) => e.type !== "customer");
+        save.entities.push({
+          type: "customer",
+          data: {
+            id: "spec-buyer",
+            x: 8,
+            walkDirection: 1,
+            state: "browsing",
+            browseTicksLeft: 1,
+          },
+        });
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      // The street pass runs on sim minutes: hold the wait key until the
+      // sale settles.
+      await page.keyboard.down("KeyT");
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () => (window as any).game.entities.getById("wallet").money,
+            ),
+          { timeout: 10_000 },
+        )
+        .toBeGreaterThan(0);
+      await page.keyboard.up("KeyT");
+
+      // The sale settled everywhere at once: the stand emptied, the
+      // balances rose, and the first sale unlocked the store.
+      const settled = await page.evaluate(() => {
+        const game = (window as any).game;
+        return {
+          standPieces: game.entities.getById("stand").pieces.length,
+          reputation: game.entities.getById("reputation").reputation,
+          storeUnlocked: game.entities.getById("progression").storeUnlocked,
+          salesCompleted: game.entities.getById("progression").salesCompleted,
+        };
+      });
+      expect(settled.standPieces).toBe(0);
+      expect(settled.reputation).toBeGreaterThan(0);
+      expect(settled.salesCompleted).toBe(1);
+      // The milestone layer runs after the street's in the same minute.
+      expect(settled.storeUnlocked).toBe(true);
+
+      // The celebration is airborne: coins bursting toward the balance
+      // readout, the star toward reputation (chips live ~1.2s).
+      await expect(
+        page.getByTestId("reward-flights").locator(".reward-chip").first(),
+      ).toBeVisible({ timeout: 3_000 });
+      // The readouts the chips fly to show the settled numbers.
+      await expect(page.getByTestId("balance")).not.toHaveText("$0.00");
+    });
+
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
         const first = (window as any).__GET_GAME_STATE__();

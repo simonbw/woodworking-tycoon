@@ -5,6 +5,7 @@ import { ManualProvider } from "./manual/ManualProvider";
 import { NavBar } from "./NavBar";
 import { NightfallCard } from "./NightfallCard";
 import { FloorSheet } from "./overlay/FloorSheet";
+import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
 import { SuppliesSection } from "./SuppliesSection";
@@ -73,6 +74,10 @@ export const EngineHud: React.FC = () => {
           bar's z-40 on purpose so its buttons stay clickable over them. */}
       <StationSheet />
       <FloorSheet />
+
+      {/* The sale celebration, above everything (z-60): coins and the
+          star fly to the top bar's readouts. */}
+      <RewardFlightLayer />
     </ManualProvider>
   );
 };
