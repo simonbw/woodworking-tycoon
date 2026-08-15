@@ -110,12 +110,17 @@ conversation that produced this file.
       `step(ticks)`; loop = advance + render
 - [x] View registry: `registerView(SimClass, ViewClass)`; addEntity spawns the
       view as a child iff the game has a renderer
-- [ ] Second esbuild entry (`src/engine-main.ts` + html) alongside the old app
-- [ ] Lint boundary: sim directories may not import pixi/react/DOM;
-      `Math.random`/`Date.now`/`performance.now` banned in sim directories
-- [ ] **Gate:** Node test boots headless Game, steps 10,000 ticks, twice with
-      the same seed → identical results; browser entry shows an empty lot with
-      pannable camera; `npm run tsc` + `npm run test:unit` green
+- [x] Second esbuild entry (`src/engine-main.ts` + `static/engine.html`,
+      served at `/engine.html`) alongside the old app
+- [x] Lint boundary (`src/import-boundaries.test.ts`, runs with test:unit):
+      sim directories may not import pixi/react/DOM;
+      `Math.random`/`Date.now`/`performance.now` banned in new-world sim
+      directories (`src/sim`; the retiring `src/game` predates the rule)
+- [x] **Gate:** Node test boots headless Game, steps 10,000 ticks, twice with
+      the same seed → identical results (`src/core/Game.test.ts`); browser
+      entry shows an empty lot with pannable camera (verified via Playwright:
+      camera panned, no console errors); `npm run tsc` + `npm run test:unit`
+      green
 
 ## Phase 1 — Foundations [size S]
 
@@ -224,4 +229,7 @@ transform tests as it lands.
   layers), new `Game` with headless mode, `advance`/`render` split,
   `step(ticks)`, seeded `game.random`, tick layers, and the view registry.
   Resource name-literal types now generate from `static/`. tsc + unit green.
-  Remaining in phase 0: engine browser entry, lint boundary, gate test.
+- 2026-08-15 — Phase 0 complete. Engine shell at `/engine.html` (empty lot,
+  WASD/arrow pan, Q/E zoom), boundary rules as a unit test, determinism gate
+  test green (10,000 ticks × 2, identical), browser gate verified with
+  Playwright screenshots.

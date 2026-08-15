@@ -70,10 +70,11 @@ type NumberTuple3 = [number, number, number];
  * const normalized = v.normalize();
  */
 export class V3d extends Array implements NumberTuple3, ReadonlyV3d {
-  0: number;
-  1: number;
-  2: number;
-  length: 3 = 3;
+  declare 0: number;
+  declare 1: number;
+  declare 2: number;
+  // See V2d: `declare` avoids a field define on Array's `length`.
+  declare length: 3;
 
   constructor(x: number, y: number, z: number) {
     super();

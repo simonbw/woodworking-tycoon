@@ -73,9 +73,12 @@ type NumberTuple = [number, number];
  * const normalized = v.normalize();
  */
 export class V2d extends Array implements NumberTuple, ReadonlyV2d {
-  0: number;
-  1: number;
-  length: 2 = 2;
+  declare 0: number;
+  declare 1: number;
+  // The index assignments in the constructor make the runtime length 2;
+  // `declare` keeps the type without emitting a field define, which would
+  // throw on Array's non-configurable `length`.
+  declare length: 2;
 
   constructor(x: number, y: number) {
     super();

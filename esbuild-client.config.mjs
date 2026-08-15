@@ -100,7 +100,13 @@ process.on("exit", (code) => {
 
 const context = await esbuild
   .context({
-    entryPoints: ["src/index.tsx", "src/styles/index.css"],
+    entryPoints: [
+      "src/index.tsx",
+      "src/styles/index.css",
+      // The engine shell being built up alongside the current app during
+      // the migration (see MIGRATION.md). Served at /engine.html.
+      "src/engine-main.ts",
+    ],
     bundle: true,
     minify,
     sourcemap,
