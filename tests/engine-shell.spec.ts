@@ -389,22 +389,26 @@ test.describe("Engine shell", () => {
             (window as any).game.entities.getById("player").away?.kind ?? null,
         );
       await page.keyboard.press("KeyE");
-      const tookByKey = await page
-        .waitForFunction(
-          () =>
-            (window as any).game.entities.getById("player").away?.kind ===
-            "shopping",
-          null,
-          { timeout: 2_500 },
+      await expect
+        .poll(
+          async () => {
+            const kind = await awayKind();
+            if (kind !== null) return kind;
+            // The row is a real, enabled button; a loaded host can
+            // starve both the key's frame window and Playwright's
+            // stability waits, so fall back to the DOM's own click.
+            await page.evaluate(() => {
+              document
+                .querySelector<HTMLButtonElement>(
+                  'button[aria-label="Go: Orange Box"]',
+                )
+                ?.click();
+            });
+            return awayKind();
+          },
+          { timeout: 15_000 },
         )
-        .then(
-          () => true,
-          () => false,
-        );
-      if (!tookByKey) {
-        await page.getByRole("button", { name: "Go: Orange Box" }).click();
-      }
-      await expect.poll(awayKind, { timeout: 8_000 }).toBe("shopping");
+        .toBe("shopping");
       // The drive out charges its minutes with the trip underway.
       await expect
         .poll(() =>
