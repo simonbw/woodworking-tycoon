@@ -5,7 +5,7 @@ import { on } from "../../core/entity/handler";
 import { GameEventMap } from "../../core/entity/Entity";
 import { heldTool } from "../../game/HeldTool";
 import { materialSources, resolveInteract } from "../../game/interact";
-import { hasFloorControls } from "../../game/Machine";
+import { hasFloorControls, isBenchType } from "../../game/Machine";
 import { liveSettingParameter } from "../../game/machine-helpers";
 import { ShortcutDef, ShortcutId, SHORTCUTS } from "../../game/shortcuts";
 import { hasStationSheet } from "../../components/station/station-helpers";
@@ -22,6 +22,7 @@ import { setOperating, setWaiting } from "../../sim/commands/player-commands";
 import { canLeaveShop } from "../../sim/commands/trip-commands";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
+import { BenchDive } from "../scenes/bench/BenchDive";
 import { StoreSceneRoot } from "../scenes/StoreSceneRoot";
 import { ShellStore } from "../ShellStore";
 import { TargetingState } from "./TargetingState";
@@ -70,6 +71,18 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     // key fires and no hold starts. Key *releases* still land below, so
     // a hold begun before the dialog opened can't stick.
     if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
+
+    // Leaned over a bench, the dive owns the keys: Tab or Escape stands
+    // back up; the floor's verbs wait until then. (The dive's own
+    // gesture surfaces run on the pointer, not here.)
+    const dive = this.game.entities.tryGetSingleton(BenchDive);
+    if (dive?.openBenchKey != null) {
+      if (key === "Tab" || key === "Escape") {
+        dive.close();
+        event.preventDefault();
+      }
+      return;
+    }
 
     // The walkable store's keys, mirroring the shop's: E takes things —
     // a flatbed from the corral, one off the shelf, the register, the
@@ -236,9 +249,18 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       case "cycle-machine":
         targeting.cycleTarget();
         return;
-      case "open-station-sheet":
+      case "open-station-sheet": {
+        // Tab at a bench dives into the work surface instead of a sheet
+        // (decision 1 in docs/bench-work.md: the bench view is the one
+        // player path to hand work).
+        const view = targeted?.view();
+        if (view && isBenchType(view.type)) {
+          this.game.entities.tryGetSingleton(BenchDive)?.open(targeted!);
+          return;
+        }
         targeting.toggleSheet();
         return;
+      }
       case "pick-up": {
         if (targeting.truckMenuOpen) {
           // The open trip card owns E while its rows can run — the DOM

@@ -669,3 +669,16 @@ transform tests as it lands.
   gestures over `game.io` in bench-top inches (stageMath), and the four
   modes landing in the plan's order: pry, tool-first, glue-ups,
   blueprint assembly.
+- 2026-08-15 — Phase 7 dive skeleton landed: BenchDive (shell state —
+  which bench is open; folds when the bench vanishes or the player
+  leaves) + BenchDiveView on the screen-space hud layer (backdrop, the
+  group frame's tops via benchGroupAt, every staged piece drawn from
+  groupPieces with the shop's material sprites at the stage fit).
+  Tab at a bench dives (the sheet stays for non-bench stations), Tab or
+  Escape stands up, the walk holds while leaned in. Browser-verified:
+  the staged pallet and a loose board render zoomed, keys behave.
+  Deviations: the dive is an instant swap (no lean-in tween yet) and
+  flip/edge visuals draw un-mirrored — both revisit with the gesture
+  passes. Note: two earlier full-suite runs raced my live edits (the
+  E2E server rebuilds the working tree); a clean run follows each
+  commit from now on.

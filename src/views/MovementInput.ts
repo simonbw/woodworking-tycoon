@@ -5,6 +5,7 @@ import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
 import { setMoveInput } from "../sim/commands/player-commands";
 import { Player } from "../sim/entities/Player";
+import { BenchDive } from "../shell/scenes/bench/BenchDive";
 import { ShellStore } from "../shell/ShellStore";
 import { TargetingState } from "../shell/dispatch/TargetingState";
 
@@ -22,7 +23,11 @@ export class MovementInput extends BaseEntity implements Entity {
   onTick() {
     if (!this.game.entities.tryGetSingleton(Player)) return;
     // An open dialog owns the keyboard: the body stands still under it.
-    if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) {
+    // Leaned over a bench likewise — the dive holds the walk.
+    if (
+      this.game.entities.tryGetSingleton(ShellStore)?.modalOpen ||
+      this.game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null
+    ) {
       setMoveInput(this.game, [0, 0]);
       return;
     }

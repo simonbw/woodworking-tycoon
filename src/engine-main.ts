@@ -8,6 +8,8 @@ import { TargetingState } from "./shell/dispatch/TargetingState";
 import { HudRoot } from "./shell/HudRoot";
 import { OverlayRoot } from "./shell/OverlayRoot";
 import { PayoutBuffer } from "./shell/PayoutBuffer";
+import { BenchDive } from "./shell/scenes/bench/BenchDive";
+import { BenchDiveView } from "./shell/scenes/bench/BenchDiveView";
 import { SceneDirector } from "./shell/scenes/SceneDirector";
 import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
@@ -43,6 +45,9 @@ async function main() {
   // the SceneDirector's to spawn and swap (phase 6's one-scene-at-a-time
   // contract); nothing scenery-shaped is added here directly.
   game.addEntity(new SceneDirector());
+  // The bench dive: its state, and the zoomed surface over the world.
+  game.addEntity(new BenchDive());
+  game.addEntity(new BenchDiveView());
   game.addEntity(new MovementInput());
   game.addEntity(new TargetingState());
   game.addEntity(new ShortcutDispatcher());
