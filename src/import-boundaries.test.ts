@@ -58,4 +58,62 @@ describe("sim/view import boundaries", () => {
       .filter((file) => BANNED_GLOBAL_PATTERN.test(read(file)));
     assert.deepEqual(offenders, []);
   });
+
+  it("holds the dispatcher and driver to the command surface", () => {
+    // The input dispatcher contains no logic — only command calls — and
+    // the new ShopDriver mutates the world through the same commands the
+    // dispatcher uses. Their imports into src/sim must resolve into the
+    // command layer; the driver may additionally read the save plumbing,
+    // the bootstrap, and singleton classes for its assertion surface.
+    // Neither may lean on the old world's transform layer.
+    const RULES: Array<{ dirs: string[]; allowed: RegExp[] }> = [
+      {
+        dirs: ["src/sim/dispatch"],
+        allowed: [/^src\/sim\/commands\//],
+      },
+      {
+        dirs: ["src/sim/driver"],
+        allowed: [
+          /^src\/sim\/commands\//,
+          /^src\/sim\/save\//,
+          /^src\/sim\/bootstrap(\.ts)?$/,
+          /^src\/sim\/singletons\//,
+          /^src\/sim\/TimeFlow(\.ts)?$/,
+        ],
+      },
+    ];
+
+    const offenders: string[] = [];
+    for (const { dirs, allowed } of RULES) {
+      for (const file of dirs.flatMap(sourceFiles)) {
+        for (const target of importTargets(file)) {
+          const inSim = target.startsWith("src/sim/");
+          const inOldActions = target.startsWith("src/game/game-actions");
+          if (inSim && !allowed.some((pattern) => pattern.test(target))) {
+            offenders.push(`${file} → ${target}`);
+          }
+          if (inOldActions) {
+            offenders.push(`${file} → ${target}`);
+          }
+        }
+      }
+    }
+    assert.deepEqual(offenders, []);
+  });
 });
+
+/** Repo-relative resolutions of a file's relative imports. */
+function importTargets(file: string): string[] {
+  const dir = path.dirname(file);
+  const targets: string[] = [];
+  for (const match of read(file).matchAll(
+    /^\s*import\s[^;]*?from\s+["'](\.[^"']*)["']/gm,
+  )) {
+    const resolved = path
+      .normalize(path.join(dir, match[1]))
+      .split(path.sep)
+      .join("/");
+    targets.push(resolved.endsWith(".ts") ? resolved : `${resolved}.ts`);
+  }
+  return targets;
+}

@@ -124,21 +124,31 @@ conversation that produced this file.
 
 ## Phase 1 — Foundations [size S]
 
-- [ ] `TimeFlow` singleton (paces: working/idle/waiting-ramp/stopped; ported
-      from `time-flow.ts` with its tests' expectations)
-- [ ] Singletons: Wallet, Reputation, Progression, TutorialTracker, Clock,
+- [x] `TimeFlow` singleton (paces: working/idle/waiting-ramp/stopped; ported
+      from `time-flow.ts` with its tests' expectations) — `src/sim/TimeFlow.ts`;
+      spenders/providers register in, `gameDt` comes out, capped per tick
+- [x] Singletons: Wallet, Reputation, Progression, TutorialTracker, Clock,
       Consumables, StorageUpgrades, ShopInfo — each serializable
-- [ ] Serialization registry + SaveFile format + SAVE_VERSION + migration
-      chain scaffold + `SaveManager` entity hosting the `autosave.ts` coalescer
-- [ ] Command-layer scaffold (module layout + lint rule: dispatcher/driver may
-      import commands only)
-- [ ] New ShopDriver skeleton: boots headless Game from a fixture save;
-      `tick(n)` → `game.step(n)`; assertion helpers over entities/singletons
-- [ ] `window.__*` hooks on the new shell: `__GET_GAME_STATE__` (serialize),
+      (`src/sim/singletons/`; Clock consumes TimeFlow's gameDt on the
+      "clock" layer and carries a fractional-minute remainder)
+- [x] Serialization registry + SaveFile format + SAVE_VERSION + migration
+      chain scaffold + `SaveManager` entity hosting the `autosave.ts`
+      coalescer (`src/sim/save/`; storage injected so headless stays
+      DOM-free; snapshot serialized at write time, always between ticks)
+- [x] Command-layer scaffold (`src/sim/commands/` + import-boundary rule:
+      dispatcher imports commands only; driver additionally save/bootstrap/
+      singleton reads; neither may touch old `game-actions/`)
+- [x] New ShopDriver skeleton (`src/sim/driver/ShopDriver.ts`): boots headless
+      Game from a fixture save; `tick(n)` → `game.step(n)`; assertion helpers
+      over entities/singletons
+- [x] `window.__*` hooks on the new shell: `__GET_GAME_STATE__` (serialize),
       `__UPDATE_GAME_STATE__`/fixture load (deserialize), `__ADVANCE_TICKS__`
       (`step`), `__SET_PAUSED__`, render-throttle equivalent of `capRenderRate`
-- [ ] **Gate:** save → load → save round-trips byte-identical on a minimal
+      (`Game.renderFpsCap`, wired to `E2E_RENDER_FPS`)
+- [x] **Gate:** save → load → save round-trips byte-identical on a minimal
       shop, headless; driver boots and ticks deterministically
+      (`src/sim/save/SaveFile.test.ts`; hooks additionally verified in-browser
+      via Playwright — all 8 singletons round-trip through the shell)
 
 ## Phase 2 — The working shop, sim only [size L — the keystone]
 
@@ -233,3 +243,9 @@ transform tests as it lands.
   WASD/arrow pan, Q/E zoom), boundary rules as a unit test, determinism gate
   test green (10,000 ticks × 2, identical), browser gate verified with
   Playwright screenshots.
+- 2026-08-15 — Phase 1 complete. TimeFlow (pace rules as spender/provider
+  registrations, gameDt out), eight serializable singletons, serialization
+  registry + SaveFile v1 + migration scaffold + SaveManager coalescer,
+  command-layer scaffold with boundary rules, new ShopDriver, and the
+  engine shell's window.__* hooks. Gate green: byte-identical round-trip,
+  deterministic driver, hooks verified in-browser.

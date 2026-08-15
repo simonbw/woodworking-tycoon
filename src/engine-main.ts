@@ -4,12 +4,28 @@ import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";
 import { CameraPanController } from "./engine-shell/CameraPanController";
 import { EmptyLot } from "./engine-shell/EmptyLot";
+import { bootShop } from "./sim/bootstrap";
+import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
+import { SaveManager } from "./sim/save/SaveManager";
 
 /**
  * The engine shell: the entity-based rebuild of the game, running alongside
  * the current app while the migration is in progress (see MIGRATION.md).
  * Served at /engine.html.
  */
+
+/** The engine shell's own save slot — separate from the old shell's. */
+const SAVE_KEY = "woodworking-tycoon-engine-save";
+
+function readStoredSave(): SaveFile | undefined {
+  try {
+    const serialized = localStorage.getItem(SAVE_KEY);
+    return serialized ? (JSON.parse(serialized) as SaveFile) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function main() {
   polyfill();
 
@@ -27,8 +43,47 @@ async function main() {
   game.addEntity(new EmptyLot());
   game.addEntity(new CameraPanController());
 
+  const saveManager = game.addEntity(
+    new SaveManager({
+      write: (file) => localStorage.setItem(SAVE_KEY, JSON.stringify(file)),
+    }),
+  );
+  // Because a save is always waiting, the write must land even when the
+  // tab goes away mid-idle.
+  window.addEventListener("pagehide", () => saveManager.flush());
+
+  bootShop(game, readStoredSave());
+
   // Handy for poking at the world from the console while the shell is bare.
   (window as unknown as { game: Game }).game = game;
+
+  installTestHooks(game);
+}
+
+/**
+ * The E2E surface, same contract as the old shell's Ticker hooks: read
+ * and replace the world, advance it synchronously, pause it, and throttle
+ * rendering (see capRenderRate in WorldScene for why E2E builds cap).
+ * Dev/test builds only.
+ */
+function installTestHooks(game: Game) {
+  if (process.env.NODE_ENV === "production") return;
+
+  const hooks = window as unknown as {
+    __GET_GAME_STATE__: () => SaveFile;
+    __UPDATE_GAME_STATE__: (save: SaveFile) => void;
+    __ADVANCE_TICKS__: (ticks: number) => void;
+    __SET_PAUSED__: (paused: boolean) => void;
+  };
+  hooks.__GET_GAME_STATE__ = () => serializeGame(game);
+  hooks.__UPDATE_GAME_STATE__ = (save) => loadSaveFile(game, save);
+  hooks.__ADVANCE_TICKS__ = (ticks) => game.step(ticks);
+  hooks.__SET_PAUSED__ = (paused) => (paused ? game.pause() : game.unpause());
+
+  const fps = Number(process.env.E2E_RENDER_FPS);
+  if (Number.isFinite(fps) && fps > 0) {
+    game.renderFpsCap = fps;
+  }
 }
 
 main();

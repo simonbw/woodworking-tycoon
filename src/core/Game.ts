@@ -377,6 +377,13 @@ export class Game {
   }
 
   private timeToSimulate = 0.0;
+  /**
+   * Maximum renders per second, or null to draw every frame. E2E builds
+   * cap this so headless Chromium isn't saturated by the render loop.
+   */
+  renderFpsCap: number | null = null;
+  /** Timestamp of the last frame actually drawn. */
+  private lastRenderTime = -Infinity;
 
   /** The animation-frame loop: advance sim time, then render. */
   private loop(time: number): void {
@@ -410,7 +417,16 @@ export class Game {
     );
     this.timeToSimulate = this.advance(this.timeToSimulate);
 
-    this.render(renderDt);
+    // A capped render rate (test builds) skips draws, never sim time: the
+    // loop keeps advancing every frame and hands the thread back between
+    // the frames it doesn't draw.
+    if (
+      this.renderFpsCap === null ||
+      time - this.lastRenderTime >= 1000 / this.renderFpsCap
+    ) {
+      this.lastRenderTime = time;
+      this.render(renderDt);
+    }
 
     // Request next frame at END to prevent concurrent loops
     if (this.looping) {
