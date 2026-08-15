@@ -21,6 +21,7 @@ import { TutorialTracker } from "./singletons/TutorialTracker";
 import { DustLayer } from "./singletons/DustLayer";
 import { Wallet } from "./singletons/Wallet";
 import { MachineSystem } from "./systems/MachineSystem";
+import { MilestoneSystem } from "./systems/MilestoneSystem";
 import { TimeFlow } from "./TimeFlow";
 
 /**
@@ -38,6 +39,7 @@ import { TimeFlow } from "./TimeFlow";
 export function addSessionSingletons(game: Game): void {
   game.addEntity(new TimeFlow());
   game.addEntity(new MachineSystem());
+  game.addEntity(new MilestoneSystem());
 }
 
 /** Add a fresh shop's persistent singletons (a brand-new game). */

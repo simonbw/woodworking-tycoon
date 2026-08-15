@@ -4,6 +4,7 @@ import { Game } from "../../core/Game";
 import { mulberry32 } from "../../core/util/SeededRandom";
 import { GameState } from "../../game/GameState";
 import { MachineId, ParameterValues } from "../../game/Machine";
+import { SkillId } from "../../game/Skill";
 import { MaterialInstance } from "../../game/Materials";
 import { cellCenter } from "../../game/player-motion";
 import { Vector } from "../../game/Vectors";
@@ -17,6 +18,7 @@ import {
   toggleMachinePower,
 } from "../commands/machine-commands";
 import { setOperating } from "../commands/player-commands";
+import { spendSkillPoint } from "../commands/progression-commands";
 import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
 import { loadGameState } from "../save/fixture";
@@ -229,6 +231,19 @@ export class ShopDriver {
   /** Press or release the operate key. */
   holdOperate(operating = true): this {
     setOperating(this.game, operating);
+    return this;
+  }
+
+  /** Spend a point in the journal. */
+  learn(skillId: SkillId): this {
+    const before = this.progression.unlockedSkills.length;
+    spendSkillPoint(this.game, skillId);
+    if (this.progression.unlockedSkills.length === before) {
+      throw new Error(
+        `Couldn't learn ${skillId} — ${this.progression.skillPoints} ` +
+          `points unspent, and its prerequisites may not be met`,
+      );
+    }
     return this;
   }
 
