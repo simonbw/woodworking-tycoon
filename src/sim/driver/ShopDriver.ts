@@ -12,6 +12,7 @@ import { cellCenter, motionCell } from "../../game/player-motion";
 import { atStand, isSellable, standRect } from "../../game/stand";
 import { Vector } from "../../game/Vectors";
 import { bootShop } from "../bootstrap";
+import { NIGHT_TICKS, TICKS_PER_DAY } from "../../game/time";
 import {
   buyBroom,
   buyShopVac,
@@ -19,6 +20,7 @@ import {
   putDownBroom,
   toggleCarryShopVac,
 } from "../commands/cleaning-commands";
+import { beginWakeUp, goHome } from "../commands/day-commands";
 import {
   moveMaterialsToMachine,
   operateMachine,
@@ -500,6 +502,62 @@ export class ShopDriver {
   }
 
   // ------------------------------------------------------------------
+  // The day cycle: driving home and sleeping to the next morning.
+  // ------------------------------------------------------------------
+
+  /**
+   * Call it a day the way the player does: walk to the cab, drive home,
+   * and wake up the next morning — the overnight runs as one batch of
+   * ordinary sim minutes (cures finish overnight). The wake is the
+   * split command: beginWakeUp queues the night on the SleepSystem, and
+   * this loop steps the engine until the truck pulls back in.
+   */
+  sleep(): this {
+    this.standAtCab();
+    goHome(this.game);
+    if (this.player.away?.kind !== "home") {
+      throw new Error(
+        "The drive home would not start — hands full, or mid-trip already",
+      );
+    }
+    const before = this.clock.day;
+    beginWakeUp(this.game);
+    // One sim minute per engine tick, plus a tick on each end (the first
+    // feed and the morning bookkeeping) — the guard is slack on purpose.
+    for (
+      let guard = 0;
+      guard < NIGHT_TICKS + 60 && this.player.away !== null;
+      guard++
+    ) {
+      this.stepEngine(1);
+    }
+    if (this.player.away || this.clock.day !== before + 1) {
+      throw new Error("Morning never came — this is a driver bug");
+    }
+    return this;
+  }
+
+  /**
+   * Sleep off the night if the shop has closed — or, given a budget, if
+   * fewer than `ticksNeeded` of today are left — putting the body back
+   * where it stood. Verbs that wait out something time-shaped run
+   * through this, so a long sequence rolls through its days the way a
+   * player does — nothing new starts at night, but nobody wants a test
+   * to fail over it either.
+   */
+  private ensureDaylight(ticksNeeded = 0): this {
+    if (
+      !this.clock.isNight() &&
+      this.clock.dayTicksSpent() + ticksNeeded <= TICKS_PER_DAY
+    ) {
+      return this;
+    }
+    const cell = this.player.cell;
+    this.sleep();
+    return this.standAt(cell);
+  }
+
+  // ------------------------------------------------------------------
   // The for-sale stand: the one selling channel, and where a sequence's
   // money and reputation come from.
   // ------------------------------------------------------------------
@@ -545,11 +603,10 @@ export class ShopDriver {
 
   /**
    * Let the street run until `count` more pieces have sold off the
-   * stand. Sales roll from the game's seeded rng, so a sequence lands
+   * stand, sleeping through nights as they come (nobody walks by after
+   * close). Sales roll from the game's seeded rng, so a sequence lands
    * the same buyers every run; the ceiling is generous enough that a
    * stocked stand can't miss it, and anything slower fails loudly.
-   * (The old driver slept through nights as they came; sleeping arrives
-   * with the day-cycle port, so this ticks straight through.)
    */
   awaitSales(count = 1): this {
     const target = this.progression.salesCompleted + count;
@@ -558,6 +615,7 @@ export class ShopDriver {
       guard < 400 && this.progression.salesCompleted < target;
       guard++
     ) {
+      this.ensureDaylight(25);
       this.tick(25);
     }
     if (this.progression.salesCompleted < target) {
