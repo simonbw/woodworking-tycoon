@@ -16,13 +16,25 @@ import { expect, test } from "@playwright/test";
 test.describe("Engine shell", () => {
   test("boots a walkable shop with a following camera", async ({ page }) => {
     // One long journey through the shell, growing a step per ported
-    // system: the default 30s budget was already nearly spent before
-    // the phase-5 steps arrived.
+    // system — two boots and a page reload on top of real walking put
+    // it well past the default 30s budget.
     test.setTimeout(60_000);
+
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
       timeout: 15_000,
     });
+
+    await test.step("the start menu comes first", async () => {
+      // A fresh browser has no engine save: no Continue on offer, and
+      // New Game is the way into the shop.
+      await expect(page.getByRole("button", { name: "New Game" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(
+        0,
+      );
+      await page.getByRole("button", { name: "New Game" }).click();
+    });
+
     // The world settles: assets in, entities added, first frames drawn.
     await page.waitForFunction(
       () => (window as any).game.entities.all.size > 10,
@@ -258,6 +270,42 @@ test.describe("Engine shell", () => {
       });
       expect(roundTrip.identical).toBe(true);
       expect(roundTrip.version).toBeGreaterThanOrEqual(1);
+    });
+
+    await test.step("a reload lands on the menu, and Continue restores the shop", async () => {
+      // Freeze the world so the stored save can't drift past our snapshot,
+      // mark it dirty (the autosave only owes a write after sim minutes,
+      // and the idle creep may not have carried one yet), and flush it
+      // through the same pagehide listener leaving the page uses.
+      const stored = await page.evaluate(() => {
+        (window as any).__SET_PAUSED__(true);
+        (window as any).game.entities.getById("saveManager").schedule();
+        window.dispatchEvent(new Event("pagehide"));
+        return localStorage.getItem("woodworking-tycoon-engine-save");
+      });
+      expect(stored).not.toBeNull();
+
+      await page.reload();
+      await page.waitForFunction(() => Boolean((window as any).game), null, {
+        timeout: 15_000,
+      });
+      const continueButton = page.getByRole("button", { name: "Continue" });
+      await expect(continueButton).toBeVisible();
+      await expect(continueButton).toBeEnabled();
+      await continueButton.click();
+      await page.waitForFunction(
+        () => (window as any).game.entities.all.size > 10,
+        null,
+        { timeout: 15_000 },
+      );
+
+      // The same world comes back: pause before reading so the restored
+      // shop can't tick between load and snapshot, then compare bytes.
+      const restored = await page.evaluate(() => {
+        (window as any).__SET_PAUSED__(true);
+        return JSON.stringify((window as any).__GET_GAME_STATE__());
+      });
+      expect(restored).toBe(stored);
     });
   });
 });

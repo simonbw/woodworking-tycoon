@@ -1,12 +1,12 @@
 import { AutoPauser } from "./core/AutoPauser";
 import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";
-import { bootShop } from "./sim/bootstrap";
 import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
 import { SaveManager } from "./sim/save/SaveManager";
 import { ShortcutDispatcher } from "./shell/dispatch/ShortcutDispatcher";
 import { TargetingState } from "./shell/dispatch/TargetingState";
 import { HudRoot } from "./shell/HudRoot";
+import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
 import { loadFonts } from "./utils/loadFonts";
@@ -25,18 +25,6 @@ import { registerAllViews } from "./views/register";
  * the current app while the migration is in progress (see MIGRATION.md).
  * Served at /engine.html.
  */
-
-/** The engine shell's own save slot — separate from the old shell's. */
-const SAVE_KEY = "woodworking-tycoon-engine-save";
-
-function readStoredSave(): SaveFile | undefined {
-  try {
-    const serialized = localStorage.getItem(SAVE_KEY);
-    return serialized ? (JSON.parse(serialized) as SaveFile) : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 async function main() {
   polyfill();
@@ -69,18 +57,23 @@ async function main() {
   game.addEntity(new HudRoot());
 
   const saveManager = game.addEntity(
-    new SaveManager({
-      write: (file) => localStorage.setItem(SAVE_KEY, JSON.stringify(file)),
-    }),
+    new SaveManager({ write: writeEngineSave }),
   );
   // Because a save is always waiting, the write must land even when the
   // tab goes away mid-idle.
   window.addEventListener("pagehide", () => saveManager.flush());
 
-  bootShop(game, readStoredSave());
+  // No shop boots here: the world stays empty (every input and view
+  // entity stands down without a Player), so the HUD root shows the
+  // start menu, and its buttons boot the shop — fresh, or from the
+  // engine save slot. A quit-to-menu reload lands back here with
+  // Continue on offer.
 
   // Handy for poking at the world from the console while the shell is bare.
   (window as unknown as { game: Game }).game = game;
+
+  // The menu is the first real paint; the boot placeholder has done its job.
+  document.getElementById("boot-loading")?.remove();
 
   installTestHooks(game);
 }

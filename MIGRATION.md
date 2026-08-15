@@ -466,3 +466,19 @@ transform tests as it lands.
   green. (Merge note: the NavBar `?` button was re-added at merge, wired
   to this provider's `useManual`/`hasUnreadArticles` as in the old
   NavBar.)
+- 2026-08-15 — [fan-out] Start menu + boot flow ported: StartMenu lands in
+  `src/shell/hud/` verbatim (painted sign, Continue with the incompatible
+  note, the clear-the-shop confirm card) over the new `shell/saveSlot.ts`
+  (engine-slot getSaveStatus/read/write/delete; "incompatible" = a dry run
+  of loadSaveFile's migration + schema validation), and engine-main no
+  longer boots unconditionally — the empty world shows the menu through
+  EngineHud's !shopOpen branch, and the menu's buttons run bootShop
+  (fresh, or from the slot), so a quit-to-menu reload offers Continue for
+  free. engine.html gains index.html's boot placeholder + logo preload.
+  Deviations: one markup addition (`pointer-events-auto` on the menu's
+  `<main>`, required under the HUD root's pointer-transparent sheet), no
+  UiSoundLayer on the menu (sounds are phase 8), and the engine-shell
+  spec's timeout raised to 60s for its two boots + reload. Spec grew the
+  menu-first opening and a reload→Continue byte-identical restore step;
+  tsc + unit green, spec green, menus screenshot-identical to the old
+  shell's.
