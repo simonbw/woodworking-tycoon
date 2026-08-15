@@ -22,7 +22,6 @@ import {
 } from "../../game/Materials";
 import { HAND_CAPACITY } from "../../game/Person";
 import { SHEET_SKUS, SheetSize, sheetSize } from "../../game/sheetStock";
-import { availableOperations } from "../../game/skill-helpers";
 import { ToolId } from "../../game/Tool";
 import { cellCenter, motionCell } from "../../game/player-motion";
 import { atStand, isSellable, standRect } from "../../game/stand";
