@@ -11,6 +11,7 @@ import { Direction } from "../game/Vectors";
 import { SaveFile, loadSaveFile } from "./save/SaveFile";
 import { MachineEntity } from "./entities/MachineEntity";
 import { Player } from "./entities/Player";
+import { TruckEntity } from "./entities/TruckEntity";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { Progression } from "./singletons/Progression";
@@ -54,6 +55,7 @@ export function addFreshShopSingletons(game: Game): void {
   game.addEntity(new Progression());
   game.addEntity(new TutorialTracker());
   game.addEntity(new DustLayer());
+  game.addEntity(new TruckEntity());
 
   // The starter floor, exactly the old initialGameState's: a workspace
   // with the starter hammer, a garbage can, and a small lumber shelf.

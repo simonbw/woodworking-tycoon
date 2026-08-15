@@ -3,10 +3,12 @@ import { Entity } from "../../core/entity/Entity";
 import { Game } from "../../core/Game";
 import { mulberry32 } from "../../core/util/SeededRandom";
 import { GameState } from "../../game/GameState";
+import { isOutdoors, truckCabSideCell } from "../../game/lot";
 import { MachineId, ParameterValues } from "../../game/Machine";
 import { SkillId } from "../../game/Skill";
 import { MaterialInstance } from "../../game/Materials";
-import { cellCenter } from "../../game/player-motion";
+import { HAND_CAPACITY } from "../../game/Person";
+import { cellCenter, motionCell } from "../../game/player-motion";
 import { Vector } from "../../game/Vectors";
 import { bootShop } from "../bootstrap";
 import {
@@ -17,10 +19,14 @@ import {
   takeOutputsFromMachine,
   toggleMachinePower,
 } from "../commands/machine-commands";
+import { dropMaterial, pickUpMaterial } from "../commands/pile-commands";
 import { setOperating } from "../commands/player-commands";
 import { spendSkillPoint } from "../commands/progression-commands";
+import { loadTruckBed, takeFromTruckBed } from "../commands/truck-commands";
 import { MachineEntity } from "../entities/MachineEntity";
+import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
+import { TruckEntity } from "../entities/TruckEntity";
 import { loadGameState } from "../save/fixture";
 import { SaveFile, serializeGame } from "../save/SaveFile";
 import { Clock } from "../singletons/Clock";
@@ -47,6 +53,10 @@ import { TimeFlow } from "../TimeFlow";
  * test defeats that; the import-boundary test holds this file to the
  * command surface (plus read-only singleton access for assertions).
  */
+
+/** Matches the stock a job wants out of wherever it's being taken from. */
+type MaterialPredicate = (material: MaterialInstance) => boolean;
+
 export class ShopDriver {
   readonly game: Game;
 
@@ -98,6 +108,54 @@ export class ShopDriver {
 
   get player(): Player {
     return this.singleton(Player);
+  }
+
+  get truck(): TruckEntity {
+    return this.singleton(TruckEntity);
+  }
+
+  /** What the player's arms hold right now. */
+  get inventory(): ReadonlyArray<MaterialInstance> {
+    return this.player.inventory;
+  }
+
+  /** Every pile of loose stock on the shop floor, insertion order. */
+  get piles(): ReadonlyArray<MaterialPileEntity> {
+    return [...this.game.entities.byConstructor(MaterialPileEntity)];
+  }
+
+  /** Everything in hand that the predicate matches. */
+  holding(predicate: MaterialPredicate): ReadonlyArray<MaterialInstance> {
+    return this.inventory.filter(predicate);
+  }
+
+  /**
+   * Everything within reach that the predicate matches — in the arms or
+   * piled on the floor. The hands hold HAND_CAPACITY pieces, so a
+   * chain's stock lives mostly on the floor between steps; what a test
+   * usually wants to know is "does the shop have it", and this is that.
+   */
+  stock(predicate: MaterialPredicate): ReadonlyArray<MaterialInstance> {
+    return [
+      ...this.inventory.filter(predicate),
+      ...this.piles.map((pile) => pile.material).filter(predicate),
+    ];
+  }
+
+  /**
+   * The one thing within reach (hand or floor) that matches, or a failure
+   * naming what's there.
+   */
+  theOne(predicate: MaterialPredicate): MaterialInstance {
+    const matches = this.stock(predicate);
+    if (matches.length !== 1) {
+      throw new Error(
+        `Expected exactly one matching material in reach, found ${matches.length}` +
+          ` among hand [${this.inventory.map((m) => m.type).join(", ")}] and ` +
+          `floor [${this.piles.map((p) => p.material.type).join(", ")}]`,
+      );
+    }
+    return matches[0];
   }
 
   get timeFlow(): TimeFlow {
@@ -158,6 +216,159 @@ export class ShopDriver {
   /** Teleport the body to stand in a cell (arrangement, not walking). */
   standAt(position: Vector): this {
     this.player.position = cellCenter(position);
+    return this;
+  }
+
+  /**
+   * Walk to a pile. Piles rest at continuous positions, not on cells —
+   * standing in the cell under the piece's center is always within reach
+   * (see pileWithinReach).
+   */
+  standNear(pile: MaterialPileEntity): this {
+    return this.standAt(motionCell(pile.position));
+  }
+
+  /** Stand at the tailgate — the loading side of the parked truck. */
+  standAtBed(): this {
+    const [doorX] = this.shopInfo.info.entrancePosition;
+    return this.standAt([doorX, this.shopInfo.info.size[1] + 1]);
+  }
+
+  /** Stand at the truck's cab, where trips start and work is driven off. */
+  standAtCab(): this {
+    return this.standAt(truckCabSideCell(this.shopInfo.info));
+  }
+
+  /**
+   * Set everything down on the floor here. A crate takes both hands, so the
+   * offcuts and leftovers a chain accumulates have to go somewhere before a
+   * machine can be carried — and they stay on the floor to be picked up
+   * again, the way they would in a real shop.
+   */
+  putEverythingDown(): this {
+    if (this.inventory.length === 0) {
+      return this;
+    }
+    // Piles live on floor cells; from out on the lot (the cab, the bed)
+    // this walks in to the dropoff spot first.
+    if (isOutdoors(this.shopInfo.info, this.player.cell)) {
+      this.standAt(this.shopInfo.info.materialDropoffPosition);
+    }
+    const held = this.inventory.length;
+    dropMaterial(this.game, [...this.inventory]);
+    if (this.inventory.length === held) {
+      throw new Error(`Couldn't set the carried stock down`);
+    }
+    return this;
+  }
+
+  /**
+   * Pick a matching pile back up off the floor, into the arms. This
+   * refuses an ask bigger than the arm room outright — take an armful
+   * and set it down yourself.
+   */
+  takeFromFloor(predicate: MaterialPredicate, count?: number): this {
+    const matches = this.piles.filter((pile) => predicate(pile.material));
+    const wanted = count === undefined ? matches : matches.slice(0, count);
+    if (wanted.length === 0) {
+      throw new Error(
+        `Nothing matching on the floor — the piles hold ` +
+          `[${this.piles.map((p) => p.material.type).join(", ")}]`,
+      );
+    }
+    if (wanted.length > this.player.handSpaceLeft) {
+      throw new Error(
+        `Wanted ${wanted.length} pieces off the floor with arm room for ` +
+          `${this.player.handSpaceLeft} — the hands hold ${HAND_CAPACITY}`,
+      );
+    }
+    // Piles can sit on different cells; take them one cell at a time.
+    for (const pile of wanted) {
+      this.standNear(pile);
+      pickUpMaterial(this.game, [pile]);
+    }
+    return this;
+  }
+
+  /**
+   * Ferry these materials — in hand or on the floor — into the truck's
+   * bed at the tailgate, an armful at a time. With no argument it loads
+   * what's in hand. The first half of every delivery.
+   */
+  loadBed(materials: ReadonlyArray<MaterialInstance> = this.inventory): this {
+    const targets = new Set(materials);
+    if (targets.size === 0) {
+      return this;
+    }
+    while (true) {
+      const inHand = this.inventory.filter((m) => targets.has(m));
+      if (inHand.length > 0) {
+        this.standAtBed();
+        const before = this.truck.bed.length;
+        loadTruckBed(this.game, inHand);
+        if (this.truck.bed.length !== before + inHand.length) {
+          throw new Error(`The bed would not take what's in hand`);
+        }
+        for (const m of inHand) {
+          targets.delete(m);
+        }
+      }
+      const piles = this.piles.filter((pile) => targets.has(pile.material));
+      if (piles.length === 0) {
+        break;
+      }
+      // Full of stock that isn't going: stage it on the dropoff spot so
+      // the arms are free to ferry what is.
+      if (this.player.handSpaceLeft === 0) {
+        this.standAt(this.shopInfo.info.materialDropoffPosition);
+        dropMaterial(this.game, [...this.inventory]);
+      }
+      for (const pile of piles.slice(0, this.player.handSpaceLeft)) {
+        const held = this.inventory.length;
+        this.standNear(pile);
+        pickUpMaterial(this.game, [pile]);
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't pick ${pile.material.type} up to load the bed`,
+          );
+        }
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Empty the truck's bed onto the material dropoff spot, an armful at a
+   * time — the tailgate-to-floor trips the hand cap makes real. Ends
+   * empty-handed, with the haul staged on the floor where `takeFromFloor`
+   * will find it.
+   */
+  unloadBed(): this {
+    if (this.truck.bed.length === 0) {
+      return this;
+    }
+    const dropoff = this.shopInfo.info.materialDropoffPosition;
+    while (this.truck.bed.length > 0) {
+      if (this.player.handSpaceLeft === 0) {
+        this.standAt(dropoff);
+        dropMaterial(this.game, [...this.inventory]);
+      }
+      this.standAtBed();
+      const before = this.truck.bed.length;
+      takeFromTruckBed(
+        this.game,
+        this.truck.bed.slice(0, this.player.handSpaceLeft),
+      );
+      if (this.truck.bed.length === before) {
+        throw new Error(
+          `The bed would not unload — holding a tool, or too far from it`,
+        );
+      }
+    }
+    if (this.inventory.length > 0) {
+      this.standAt(dropoff);
+      dropMaterial(this.game, [...this.inventory]);
+    }
     return this;
   }
 
