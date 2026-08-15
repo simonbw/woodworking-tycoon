@@ -295,6 +295,18 @@ transform tests as it lands.
   take the old driver's ferrying semantics. Deviations, both waiting on the
   day-cycle port: run() can't sleep off the night first (no ensureDaylight
   yet), and glue cures tick straight through. tsc + unit green.
+- 2026-08-15 — [fan-out] Trips ported (sim side): trip-commands
+  (scavenging circuit off game.random + the store legs), cart-commands
+  (the register folds through the purchase commands), store-commands
+  (buys → Wallet + bed/crates/stock, tool wall, upgrades; buyMachine runs
+  the milestone pass synchronously like the old action), the scavenge
+  reveal + searching TimeFlow spender on the Player, and the driver's
+  scavenge/goShopping/takeCart/comeHome/buy\* verbs. Store-leg minutes
+  are charged by the caller through TimeFlow (the driver ticks them;
+  phase 6's venue will force them) since commands never step the sim —
+  ordering matches the old driveTicks exactly. Driver deviation, waiting
+  on the day-cycle port: scavenge/goShopping can't sleep off the night
+  first (ensureDaylight). tsc + unit green.
 - 2026-08-15 — [fan-out] Cleaning system ported: Broom singleton (owned/
   position/dustpan), ShopVacEntity (absent until bought), CleaningSystem on
   the "cleaning" layer running the old sweep → vacuum → shopVac passes per

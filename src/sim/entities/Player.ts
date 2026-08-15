@@ -27,6 +27,7 @@ import {
   registerSerializable,
   SerializableEntity,
 } from "../save/serialization";
+import { Clock } from "../singletons/Clock";
 import { TimeFlow } from "../TimeFlow";
 
 /**
@@ -111,7 +112,7 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
    */
   private speedPenalties = new Set<() => number>();
 
-  private unregisterSpender: (() => void) | null = null;
+  private unregisterSpenders: Array<() => void> = [];
 
   constructor(data?: Partial<PlayerData>) {
     super();
@@ -163,8 +164,19 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
   onAfterAdded() {
     const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
     if (timeFlow) {
-      this.unregisterSpender = timeFlow.registerSpender(
-        () => this.busyTicks > 0 && this.away === null,
+      this.unregisterSpenders.push(
+        timeFlow.registerSpender(
+          () => this.busyTicks > 0 && this.away === null,
+        ),
+        // A scavenging run's search is spent time — the half-hour is
+        // driving to the stop and digging through it (the old timeSpeed's
+        // away leg). Sitting at the decision afterwards is thinking, and
+        // thinking is nearly free, so it falls through to the idle creep.
+        timeFlow.registerSpender(
+          () =>
+            this.away?.kind === "scavenging" &&
+            this.away.phase.kind === "searching",
+        ),
       );
       timeFlow.setWaitingProvider(() => this.waiting);
       timeFlow.setStopProvider(() => this.away?.kind === "home");
@@ -173,16 +185,45 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
 
   @on("destroy")
   onDestroy() {
-    this.unregisterSpender?.();
-    this.unregisterSpender = null;
+    for (const unregister of this.unregisterSpenders) {
+      unregister();
+    }
+    this.unregisterSpenders = [];
   }
 
   @on("tick")
   onTick(dt: number) {
+    const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
+
+    // A scavenging search that has run its half-hour reveals its stop
+    // and parks the trip at a decision — the old playerTickPass's away
+    // leg. The clock layer runs after the player's, so `clock.tick` here
+    // is the pre-advance tick the old pass compared doneTick against; the
+    // reveal lands on the same sim minute it always did. A find was
+    // loaded on the spot — the thud is worth hearing.
+    const clock = this.game.entities.tryGetSingleton(Clock);
+    if (
+      timeFlow &&
+      timeFlow.wholeTicks > 0 &&
+      clock &&
+      this.away?.kind === "scavenging" &&
+      this.away.phase.kind === "searching" &&
+      clock.tick >= this.away.phase.doneTick
+    ) {
+      const stop = this.away.stops[this.away.stopsSearched];
+      this.away = {
+        ...this.away,
+        stopsSearched: this.away.stopsSearched + 1,
+        phase: { kind: "deciding" },
+      };
+      if (stop?.pallet) {
+        this.game.dispatch("sound", { sound: { kind: "pallet-load" } });
+      }
+    }
+
     // Busy time burns one minute per sim tick, exactly like the old
     // world's playerTickPass; it doesn't burn while away (a sweep waits
     // where it was left).
-    const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
     if (timeFlow && this.busyTicks > 0 && this.away === null) {
       this.busyTicks = Math.max(0, this.busyTicks - timeFlow.wholeTicks);
     }

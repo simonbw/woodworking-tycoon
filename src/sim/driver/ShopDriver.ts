@@ -3,13 +3,25 @@ import { Entity } from "../../core/entity/Entity";
 import { Game } from "../../core/Game";
 import { mulberry32 } from "../../core/util/SeededRandom";
 import { benchTopSizeIn } from "../../game/bench-work/bench-layout";
+import { board } from "../../game/board-helpers";
+import { ConsumableId } from "../../game/Consumable";
 import { GameState } from "../../game/GameState";
 import { isOutdoors, truckCabSideCell } from "../../game/lot";
+import { LUMBER_CHANNELS, StoreId } from "../../game/lumberStock";
 import { MachineId, ParameterValues } from "../../game/Machine";
+import { makeMaterial } from "../../game/material-helpers";
+import { getBoardBuyPrice, getSheetBuyPrice } from "../../game/material-values";
 import { SkillId } from "../../game/Skill";
-import { MaterialInstance, panelWidth, ToolItem } from "../../game/Materials";
-import { ToolId } from "../../game/Tool";
+import {
+  Board,
+  MaterialInstance,
+  panelWidth,
+  SheetGood,
+  ToolItem,
+} from "../../game/Materials";
 import { HAND_CAPACITY } from "../../game/Person";
+import { SHEET_SKUS, SheetSize, sheetSize } from "../../game/sheetStock";
+import { ToolId } from "../../game/Tool";
 import { cellCenter, motionCell } from "../../game/player-motion";
 import { atStand, isSellable, standRect } from "../../game/stand";
 import { Vector } from "../../game/Vectors";
@@ -22,6 +34,7 @@ import {
   putDownBroom,
   toggleCarryShopVac,
 } from "../commands/cleaning-commands";
+import { takeCart } from "../commands/cart-commands";
 import { beginWakeUp, goHome } from "../commands/day-commands";
 import {
   benchOffersPry,
@@ -35,6 +48,7 @@ import {
   machineCanOperateNow,
   moveMaterialsToMachine,
   operateMachine,
+  putDownCarriedMachine,
   setMachineOperation,
   setMachineSettings,
   takeInputsFromMachine,
@@ -46,7 +60,28 @@ import { dropMaterial, pickUpMaterial } from "../commands/pile-commands";
 import { setOperating, setSweepAim } from "../commands/player-commands";
 import { spendSkillPoint } from "../commands/progression-commands";
 import { setOutAtStand } from "../commands/stand-commands";
-import { loadTruckBed, takeFromTruckBed } from "../commands/truck-commands";
+import {
+  buyClamp,
+  buyConsumablePack,
+  buyMachine,
+  buyMaterial,
+  buyTool,
+} from "../commands/store-commands";
+import {
+  continueScavenging,
+  DRIVE_TICKS_ONE_WAY,
+  goToStore,
+  headHomeFromScavenging,
+  returnFromStore,
+  SCAVENGE_STOP_NAMES,
+  SCAVENGE_STOP_TICKS,
+  startScavenging,
+} from "../commands/trip-commands";
+import {
+  loadTruckBed,
+  takeCrateFromTruck,
+  takeFromTruckBed,
+} from "../commands/truck-commands";
 import { MachineEntity } from "../entities/MachineEntity";
 import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
@@ -1042,6 +1077,274 @@ export class ShopDriver {
   }
 
   // ------------------------------------------------------------------
+  // Leaving the shop, spending money, and handing work over. A chain test
+  // starts from a fixture that already owns its machines; a playthrough
+  // has to buy them, which means these.
+  // ------------------------------------------------------------------
+
+  /**
+   * Take the truck out scavenging, work the given number of stops, and
+   * pull back into the shop with the haul ferried out of the bed onto
+   * the dropoff spot. The circuit is rolled up front from the rng; the
+   * default finds a pallet with all eight deck boards and solid
+   * stringers at each stop searched, so sequences can count on the wood
+   * — two stops means two pristine pallets, and the errand costs only
+   * the searching: half an hour a stop, nothing for the drive back.
+   * (The old driver slept off the night first if the trip wouldn't fit
+   * the day; sleeping arrives with the day-cycle port.)
+   */
+  scavenge({
+    stops = 2,
+    rng,
+  }: { stops?: number; rng?: () => number } = {}): this {
+    if (stops < 1 || stops > SCAVENGE_STOP_NAMES.length) {
+      throw new Error(`A trip searches 1-${SCAVENGE_STOP_NAMES.length} stops`);
+    }
+    this.standAtCab();
+    startScavenging(this.game, rng ?? pristineFindsRng(stops));
+    if (!this.player.away) {
+      throw new Error(
+        "The scavenging trip would not start — hands full, or mid-trip already",
+      );
+    }
+    for (let searched = 1; searched <= stops; searched++) {
+      this.tick(SCAVENGE_STOP_TICKS + 1);
+      const away = this.player.away;
+      if (away?.kind !== "scavenging" || away.phase.kind !== "deciding") {
+        throw new Error(
+          `The search should have parked at a decision after stop ${searched}`,
+        );
+      }
+      if (searched < stops) {
+        continueScavenging(this.game);
+      }
+    }
+    // Calling it good enough is instant — the truck is back at the shop
+    // with the haul in its bed the same tick.
+    headHomeFromScavenging(this.game);
+    if (this.player.away) {
+      throw new Error("Still out scavenging after the trip should have ended");
+    }
+    return this.unloadBed();
+  }
+
+  /** Take a trip out to a store, if the truck offers it yet. The drive
+   * out charges its minutes here, as the old action did itself. */
+  goShopping(store: StoreId): this {
+    const unlocked =
+      store === "orangeBox"
+        ? this.progression.storeUnlocked
+        : this.progression.lumberyardUnlocked;
+    if (!unlocked) {
+      throw new Error(
+        `The truck doesn't offer ${store} yet — check the progression flags`,
+      );
+    }
+    this.standAtCab();
+    goToStore(this.game, store);
+    if (this.player.away?.kind !== "shopping") {
+      throw new Error(
+        `The trip to ${store} would not start — hands full, or mid-trip already`,
+      );
+    }
+    this.tick(DRIVE_TICKS_ONE_WAY);
+    return this;
+  }
+
+  /** Grab a flatbed from the corral by the entrance — the walkable
+   * store's first stop (the shelves only load a cart you're pushing). */
+  takeCart(): this {
+    takeCart(this.game);
+    const away = this.player.away;
+    if (away?.kind !== "shopping" || !away.hasCart) {
+      throw new Error("No cart in hand — is the trip underway?");
+    }
+    return this;
+  }
+
+  /**
+   * Come home from a trip and unload the truck: purchases ride in the
+   * bed, so pulling in ends with tailgate-to-dropoff trips that stage
+   * the stock on the floor — the same walk the player makes. Crated
+   * machines stay in the bed until buyAndPlaceMachine lifts them. The
+   * drive home charges its minutes before the player steps out, as the
+   * old action did itself.
+   */
+  comeHome(): this {
+    if (this.player.away?.kind === "shopping") {
+      this.tick(DRIVE_TICKS_ONE_WAY);
+    }
+    returnFromStore(this.game);
+    return this.unloadBed();
+  }
+
+  /** Buy stock off a rack. The caller names the price the rack charges. */
+  buy(material: MaterialInstance, price: number): this {
+    const before = this.wallet.money;
+    buyMaterial(this.game, material, price);
+    if (this.wallet.money !== before - price) {
+      throw new Error(
+        `Couldn't afford ${material.type} at $${price} — the shop had $${before}`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Buy `count` boards off a named lumber channel, at whatever that channel
+   * charges — so a repriced rack changes what a playthrough can afford
+   * instead of quietly staying free.
+   */
+  buyBoards(
+    channelId: string,
+    species: Board["species"],
+    dimensions: {
+      length: Board["length"];
+      width: Board["width"];
+      thickness: Board["thickness"];
+    },
+    count = 1,
+  ): this {
+    const channel = LUMBER_CHANNELS.find(
+      (candidate) => candidate.id === channelId,
+    );
+    if (!channel) {
+      throw new Error(`No lumber channel called ${channelId}`);
+    }
+    if (this.reputation.reputation < channel.minReputation) {
+      throw new Error(
+        `The ${channelId} rack needs ${channel.minReputation} reputation and ` +
+          `the shop has ${this.reputation.reputation} — a channel this rung needs ` +
+          `is out of reach`,
+      );
+    }
+    for (let i = 0; i < count; i++) {
+      const stock = board(
+        species,
+        dimensions.length,
+        dimensions.width,
+        dimensions.thickness,
+        channel.surface,
+      );
+      this.buy(stock, getBoardBuyPrice(stock, channel.priceMultiplier));
+    }
+    return this;
+  }
+
+  /** Buy a sheet off the Sheet Goods aisle, at what the aisle charges. */
+  buySheet(kind: SheetGood["kind"], size: SheetSize["id"] = "full"): this {
+    const sku = SHEET_SKUS.find((candidate) => candidate.kind === kind);
+    if (!sku) {
+      throw new Error(`The aisle doesn't stock ${kind}`);
+    }
+    if (this.reputation.reputation < sku.minReputation) {
+      throw new Error(
+        `${kind} needs ${sku.minReputation} reputation and the shop has ` +
+          `${this.reputation.reputation}`,
+      );
+    }
+    const racked = sheetSize(size);
+    const sheet = makeMaterial<SheetGood>({
+      type: "plywood",
+      kind,
+      length: racked.length,
+      width: racked.width,
+      thickness: sku.thickness,
+    });
+    return this.buy(sheet, getSheetBuyPrice(sheet));
+  }
+
+  /** Buy a pack of supplies (nails, screws, oil). */
+  buySupplies(consumableId: ConsumableId): this {
+    const before = this.wallet.money;
+    buyConsumablePack(this.game, consumableId);
+    if (this.wallet.money === before) {
+      throw new Error(`Couldn't afford a pack of ${consumableId}`);
+    }
+    return this;
+  }
+
+  /** Buy a clamp bar. Glue-ups tie clamps up until they've cured. */
+  buyClamps(count: number): this {
+    for (let i = 0; i < count; i++) {
+      const before = this.consumables.clamps;
+      buyClamp(this.game);
+      if (this.consumables.clamps === before) {
+        throw new Error(`Couldn't afford clamp ${i + 1} of ${count}`);
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Buy a tool off the tool wall. It lands in the truck's bed like any
+   * other purchase; mount it separately.
+   */
+  buyTool(toolId: ToolId): this {
+    const before = this.truck.bed.length;
+    buyTool(this.game, toolId);
+    if (this.truck.bed.length === before) {
+      throw new Error(
+        `Couldn't afford the ${toolId} — the shop had $${this.wallet.money}`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Buy a machine and carry it to where it's going to live. It rides
+   * home crated in the truck's bed, gets lifted out at the tailgate, and
+   * is set down standing at the cell it will be worked from — the same
+   * steps the floor demands, so a machine that can't physically fit
+   * fails here rather than silently never arriving. (The sequence tier
+   * doesn't model the drive home; the crate is lifted from the bed
+   * whenever this runs, mid-trip or after.)
+   */
+  buyAndPlaceMachine(
+    machineTypeId: MachineId,
+    price: number,
+    operatorCell: Vector,
+  ): this {
+    const before = this.wallet.money;
+    buyMachine(this.game, machineTypeId, price);
+    if (this.wallet.money !== before - price) {
+      throw new Error(
+        `Couldn't afford the ${machineTypeId} at $${price} — the shop had $${before}`,
+      );
+    }
+    const crate = this.truck.crates.find(
+      (candidate) => candidate.machineTypeId === machineTypeId,
+    );
+    if (!crate) {
+      throw new Error(`No ${machineTypeId} crate arrived in the truck's bed`);
+    }
+    this.standAtBed();
+    takeCrateFromTruck(this.game, machineTypeId);
+    if (!this.player.carriedMachine) {
+      throw new Error(
+        `Couldn't lift the ${machineTypeId} crate. A crate takes both hands, ` +
+          `and the player is holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}] — ` +
+          `putEverythingDown() first.`,
+      );
+    }
+    this.standAt(operatorCell);
+    if (!putDownCarriedMachine(this.game)) {
+      throw new Error(
+        `No room to set the ${machineTypeId} down from ${operatorCell} — ` +
+          `something already occupies the cells it needs`,
+      );
+    }
+    // Out of the crate a powered machine is switched off. Throw the switch
+    // here so a rung reads as "buy the saw" rather than "buy the saw, and
+    // remember the thing every machine needs".
+    if (this.machine(machineTypeId).type.powerSwitch) {
+      this.switchOn(machineTypeId);
+    }
+    return this;
+  }
+
+  // ------------------------------------------------------------------
   // The for-sale stand: the one selling channel, and where a sequence's
   // money and reputation come from.
   // ------------------------------------------------------------------
@@ -1160,4 +1463,25 @@ export class ShopDriver {
     setSweepAim(this.game, null);
     return this;
   }
+}
+
+/**
+ * The default scavenging rng: a scripted roll tape that finds a pallet
+ * with all eight deck boards and solid stringers at each of the first
+ * `finds` stops and nothing after. Written against the roll order in
+ * rollScavengeStops — per stop, one find roll, then (on a find) the deck
+ * count, seven shuffle rolls, and the stringers.
+ */
+function pristineFindsRng(finds: number): () => number {
+  const tape: number[] = [];
+  for (let stop = 0; stop < SCAVENGE_STOP_NAMES.length; stop++) {
+    if (stop < finds) {
+      // find, deck count (5 + floor(0.99 * 4) = 8), shuffle, stringers
+      tape.push(0, 0.99, ...Array<number>(7).fill(0.5), 0.9);
+    } else {
+      tape.push(0.9);
+    }
+  }
+  let i = 0;
+  return () => tape[Math.min(i++, tape.length - 1)];
 }
