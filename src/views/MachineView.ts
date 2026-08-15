@@ -98,6 +98,12 @@ export class MachineView extends BaseEntity implements Entity {
     this.sprites = [this.shadowHolder, this.root, this.effects];
   }
 
+  /** The machine's own drawable — the container the highlight rims dress
+   * (never the shadow or the spray). */
+  get highlightRoot(): Container {
+    return this.root;
+  }
+
   @on("render")
   onRender(dt: number) {
     const state = this.entity.state;

@@ -14,6 +14,10 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Engine shell", () => {
+  // One fat journey in the repo's style; the phase-4/5 steps grew it
+  // past the default 30s budget on slower machines.
+  test.setTimeout(90_000);
+
   test("boots a walkable shop with a following camera", async ({ page }) => {
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
@@ -64,6 +68,20 @@ test.describe("Engine shell", () => {
         (window as any).game.entities.getById("wallet").money -= 45;
       });
       await expect(page.getByTestId("balance")).toHaveText("$0.00");
+    });
+
+    await test.step("the coach's first card is up", async () => {
+      // A fresh shop starts the guided opening: one handwritten card,
+      // its first goal showing, the first box still open.
+      const card = page.getByTestId("tutorial-card-opening");
+      await expect(card).toBeVisible();
+      await expect(card.getByTestId("tutorial-goal")).toHaveText(
+        "Make my first item",
+      );
+      await expect(card.getByTestId("tutorial-step-scavenge")).toHaveAttribute(
+        "data-checked",
+        "false",
+      );
     });
 
     await test.step("held keys walk the body", async () => {
@@ -180,6 +198,53 @@ test.describe("Engine shell", () => {
       expect(await carrying()).toBe("workspace");
       await page.keyboard.press("KeyB");
       expect(await carrying()).toBe(null);
+    });
+
+    await test.step("the hands strip, supplies panel, and nightfall card read the sim", async () => {
+      // Stage a held board and stocked nails via the save hooks.
+      await page.evaluate(() => {
+        const save = (window as any).__GET_GAME_STATE__();
+        save.singletons.player.inventory = [
+          {
+            id: "hud-board",
+            type: "board",
+            species: "pallet",
+            length: 24,
+            width: 4,
+            thickness: 1,
+            surface: "rough",
+          },
+        ];
+        save.singletons.consumables = { stock: { nails: 8 }, clamps: 0 };
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+      await expect(page.getByTestId("hands-strip")).toContainText("In hand");
+      await expect(page.locator("[data-supplies-toggle]")).toBeVisible();
+      // Clicking the slot speaks the F verb: the piece lands at the body
+      // and the emptied strip folds away.
+      await page.getByTestId("hands-strip").getByRole("button").click();
+      await expect(page.getByTestId("hands-strip")).toHaveCount(0);
+      const dropped = await page.evaluate(
+        () =>
+          [...(window as any).game.entities.all].filter(
+            (e: any) => e.saveType === "materialPile",
+          ).length,
+      );
+      expect(dropped).toBe(2);
+
+      // Spend the day's minutes and the closed-for-the-night card pins up.
+      const dayTicks = await page.evaluate(() => {
+        const clock = (window as any).game.entities.getById("clock");
+        const spent = clock.tick - clock.dayStartTick;
+        clock.tick = clock.dayStartTick + 10_000;
+        return spent;
+      });
+      await expect(page.getByTestId("nightfall-card")).toBeVisible();
+      await page.evaluate((spent) => {
+        const clock = (window as any).game.entities.getById("clock");
+        clock.tick = clock.dayStartTick + spent;
+      }, dayTicks);
+      await expect(page.getByTestId("nightfall-card")).toHaveCount(0);
     });
 
     await test.step("the world round-trips through the hooks", async () => {

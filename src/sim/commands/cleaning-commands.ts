@@ -25,6 +25,13 @@ function emitSound(game: Game, kind: string): void {
   game.dispatch("sound", { sound: { kind } as never });
 }
 
+/**
+ * The dustpan readout the hands strip shows, re-exported here so shell
+ * files read it off the command surface instead of the old actions
+ * (the same seam bench-commands gives palletPryTargetsLeft).
+ */
+export { dustpanFillFraction } from "../../game/game-actions/dust-actions";
+
 /** Bought at the store; it arrives leaning at the material dropoff spot. */
 export function buyBroom(game: Game): boolean {
   const gameState = projectGameState(game);

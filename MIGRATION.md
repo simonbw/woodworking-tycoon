@@ -435,3 +435,22 @@ transform tests as it lands.
   Browser-verified (chip renders in paperwork chrome, wallet mutation
   propagates, clicks pass through to the canvas); HUD assertion step added
   to the engine-shell spec. Dispatching the DOM-tree fan-out.
+- 2026-08-15 — [fan-out] Tutorial cards + spotlight ported: TutorialCards/
+  TutorialSpotlightLayer/tutorialTargets land in `src/shell/hud/tutorial/`
+  over the shell hooks (skip → the existing dismissTutorial command; copy,
+  markup, and testids verbatim), and the world half is a new
+  `TutorialHighlightView` — the old coach outlines (machines by type,
+  truck, stand, broom, matching piles, the nightfall homeward nudge) as
+  the same orange OutlineFilters on the view roots (MachineView/TruckView
+  grew a `highlightRoot`), rendering after TargetHighlightView so the
+  white rim wins. Deviations: ManualLink is copied with a `useManualMaybe`
+  seam that renders plain text until the manual port's provider is wired
+  in at merge; the tutorial's truck target only ever names the cab, so
+  the bed crop stays unported; the fat engine-shell spec got
+  `test.setTimeout(90s)` — the phase-4/5 steps outgrew the 30s default.
+  Browser-verified against the old shell (card up on a fresh shop, truck
+  rimmed, box ticks + strike on staging a pallet, skip retires the card,
+  white-beats-orange on the reachable pile). This commit also carries the
+  hands-strip/supplies/nightfall slice that arrived uncommitted in this
+  worktree mid-task (kept so the commit builds; attribution with the
+  orchestrator). tsc + unit (1350) + engine-shell E2E green.

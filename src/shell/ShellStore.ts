@@ -2,9 +2,12 @@ import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
-import { machineKey } from "../game/Machine";
+import { clampsInUse } from "../game/Clamp";
+import { machineKey, MachineState } from "../game/Machine";
 import { MachineEntity } from "../sim/entities/MachineEntity";
 import { Player } from "../sim/entities/Player";
+import { ShopVacEntity } from "../sim/entities/ShopVacEntity";
+import { Broom } from "../sim/singletons/Broom";
 import { Clock } from "../sim/singletons/Clock";
 import { Consumables } from "../sim/singletons/Consumables";
 import { Progression } from "../sim/singletons/Progression";
@@ -83,12 +86,16 @@ export class ShellStore extends BaseEntity implements Entity {
     const progression = game.entities.tryGetSingleton(Progression);
     const tutorials = game.entities.tryGetSingleton(TutorialTracker);
     const targeting = game.entities.tryGetSingleton(TargetingState);
+    const broom = game.entities.tryGetSingleton(Broom);
+    const shopVac = game.entities.tryGetSingleton(ShopVacEntity);
 
     const machines: string[] = [];
+    const machineStates: MachineState[] = [];
     for (const machine of game.entities.byConstructor(MachineEntity)) {
       // Object identity is the change signal: entity code replaces the
       // state object on every mutation (the commands' contract).
       machines.push(machineKey(machine.state));
+      machineStates.push(machine.state);
     }
 
     return [
@@ -103,6 +110,23 @@ export class ShellStore extends BaseEntity implements Entity {
       player.busyTicks > 0 ? "busy" : "",
       consumables ? JSON.stringify(consumables.stock) : "",
       consumables?.clamps,
+      // The supplies panel's rack count: clamps tied up in glue-ups
+      clampsInUse(machineStates),
+      // The hands strip's tool chips: broom in hand + dustpan fill,
+      // vac hose in hand + canister fill
+      broom
+        ? [
+            broom.owned,
+            broom.position?.join(",") ?? "hand",
+            JSON.stringify(broom.dustpan),
+          ].join("/")
+        : "",
+      shopVac
+        ? [
+            shopVac.position?.join(",") ?? "hand",
+            JSON.stringify(shopVac.canister),
+          ].join("/")
+        : "",
       progression?.xp,
       progression?.skillPoints,
       progression?.storeUnlocked,

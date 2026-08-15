@@ -68,6 +68,11 @@ export class TruckView extends BaseEntity implements Entity {
     this.sprites = [this.body, this.cargo];
   }
 
+  /** The truck's body art — the container the highlight rims dress. */
+  get highlightRoot(): Container {
+    return this.body;
+  }
+
   private shopInfo(): ShopInfoData | undefined {
     return this.game.entities.tryGetSingleton(ShopInfo)?.info;
   }

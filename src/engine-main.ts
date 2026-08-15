@@ -17,6 +17,7 @@ import { FloorView } from "./views/FloorView";
 import { MousePicking } from "./views/MousePicking";
 import { MovementInput } from "./views/MovementInput";
 import { TargetHighlightView } from "./views/TargetHighlightView";
+import { TutorialHighlightView } from "./views/TutorialHighlightView";
 import { PowerCordView } from "./views/PowerCordView";
 import { registerAllViews } from "./views/register";
 
@@ -63,6 +64,8 @@ async function main() {
   game.addEntity(new ShortcutDispatcher());
   game.addEntity(new MousePicking());
   game.addEntity(new TargetHighlightView());
+  // After the white rim on purpose: the coach's orange yields to it.
+  game.addEntity(new TutorialHighlightView());
   // The DOM layer: the state-change signal first, then the React root
   // that resolves it at first render.
   game.addEntity(new ShellStore());
