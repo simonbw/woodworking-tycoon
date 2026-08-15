@@ -423,8 +423,8 @@ test.describe("Engine shell", () => {
 
       // Walk the floor by teleports (the aisles are long; walking is
       // covered above): the corral's E takes a flatbed…
-      const standAt = (point: string) =>
-        page.evaluate((point) => {
+      const standAt = async (point: string) => {
+        await page.evaluate((point) => {
           const game = (window as any).game;
           const layout = game.entities.getById("storeSceneRoot").layout();
           const rect =
@@ -441,6 +441,16 @@ test.describe("Engine shell", () => {
           ];
           (window as any).__UPDATE_GAME_STATE__(save);
         }, point);
+        // The hook reload cleared the scene root; the director respawns
+        // it on the next engine tick — a gap only the hooks can create,
+        // and a press inside it would find no store to act on.
+        await page.waitForFunction(
+          () =>
+            Boolean((window as any).game.entities.getById("storeSceneRoot")),
+          null,
+          { timeout: 5_000 },
+        );
+      };
       const trip = () =>
         page.evaluate(() => {
           const away = (window as any).game.entities.getById("player").away;
