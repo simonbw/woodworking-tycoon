@@ -359,3 +359,20 @@ transform tests as it lands.
   forced-minute isolation in TimeFlow) rather than in tests. 1350 unit
   tests green, tsc clean. The working shop now runs entirely on entities,
   headless.
+- 2026-08-15 — [fan-out] Machine views ported: MachineView/MachineCrateView
+  via registerView, per-type arts under `src/views/machine-sprites/`
+  (dispatch = old LocalMachineSprite switch; textures, offsets, fence/
+  slide/plunge poses, kerf, vibration, cut-particle emitters, dust bag,
+  status badge, worktable shadow pass as zIndex bands on the "machines"
+  layer), CarriedMachineView (hoisted machine + set-down ghost + feed-run
+  rulers) as a PlayerView child on "carried". Static art rebuilds on
+  state-object identity change; running visuals re-read per frame
+  (react-spring → exponential approach, audible-phase sync waits for the
+  phase-8 sound port). Stock ON machines routes through the
+  `material-slot.ts` seam — the material-sprite port registers its
+  builder there and every placement/animation is already wired. Settling
+  chips still publish to the shared dustStampBus (world px) for the dust
+  view port. Targeting/tutorial highlights + hit shapes deferred to
+  phase 4, leaned-bench suppression to phase 7. Verified side-by-side
+  against the old shell (13 machines, mid-rip badge+kerf, carried+ghost+
+  rulers+crate). tsc + unit green.

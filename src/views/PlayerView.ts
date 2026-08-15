@@ -9,6 +9,7 @@ import { GameSprite, loadGameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
 import { headingForDirection } from "../game/player-motion";
 import { Player } from "../sim/entities/Player";
+import { CarriedMachineView } from "./CarriedMachineView";
 
 /**
  * The player's body on screen — the old PersonSprite as a view entity,
@@ -39,6 +40,9 @@ export class PlayerView extends BaseEntity implements Entity {
     this.body.width = PERSON_SIZE;
     this.body.height = PERSON_SIZE;
     this.sprite = this.body;
+    // The hoisted machine (and its set-down ghost) ride the same body,
+    // as their own view on the "carried" layer.
+    this.addChild(new CarriedMachineView(player));
   }
 
   @on("render")
