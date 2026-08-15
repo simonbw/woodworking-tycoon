@@ -183,9 +183,16 @@ transform tests as it lands.
 
 ## Phase 3 — Shop floor views [size L]
 
-- [ ] Layer table (`src/config/layers.ts`) matching current draw order
-- [ ] Environment/lot, camera follow, WorldViewport sizing
-- [ ] Player view  ← exemplar for sprite ports
+- [x] Layer table (`src/config/layers.ts`) matching current draw order
+      (world layers in old world-pixel coordinates, 48/cell)
+- [x] Environment/lot, camera follow, WorldViewport sizing
+      (`src/views/EnvironmentView.ts` ports EnvironmentLayer's lot/walls;
+      `src/views/CameraRig.ts` reproduces ShopView's fit + CameraLayer's
+      outdoor follow as Camera2d position/zoom; lawn re-follows the
+      camera's world viewport each frame)
+- [x] Player view  ← exemplar for sprite ports (`src/views/PlayerView.ts`
+      via registerView; `MovementInput` feeds held movement so the shell
+      walks — the full dispatcher stays phase 4)
 - [ ] **[fan-out]** ~40 sprites as view entities (Graphics bodies port into
       `onRender`/redraw-on-change), daylight, dust, truck, customers, stand
 - [ ] **Gate:** walkable shop at visual parity (side-by-side screenshots vs

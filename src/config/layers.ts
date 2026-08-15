@@ -1,13 +1,36 @@
 import { V } from "../core/Vector";
 import { LayerInfo } from "../core/graphics/LayerInfo";
 
-/** TODO: Document layers */
+/**
+ * The render layers, back to front — the old ShopView's JSX order as a
+ * table. World layers share the camera (world coordinates are the old
+ * shell's world pixels, 48 to a cell — see `shop-scale`); the HUD layers
+ * are screen space (paralax 0).
+ */
 export const LAYERS = {
-  // DEFAULT: The main stuff
+  /** The lot: lawn, driveway, the building's walls, stand, truck, passersby. */
+  environment: new LayerInfo(),
+  /** The shop's slab and floor tiles. */
+  floor: new LayerInfo(),
+  /** Sawdust on the floor. */
+  dust: new LayerInfo(),
+  /** Things lying on the floor: power cords, the leaning broom, crates, piles. */
+  floorItems: new LayerInfo(),
+  /** The machines, with their worktable shadows. */
+  machines: new LayerInfo(),
+  /** Cut spray, feed lanes, and other in-world effects over the machines. */
+  effects: new LayerInfo(),
+  /** Anything unclaimed lands here, between effects and actors. */
   main: new LayerInfo(),
-  // Stuff not in the world
+  /** The bodies: shop vac in tow, the player, whoever else walks. */
+  actors: new LayerInfo(),
+  /** What rides above the body: dust motes, the carried machine. */
+  carried: new LayerInfo(),
+  /** The daylight tint over the whole world. */
+  daylight: new LayerInfo(),
+  /** Screen-space chrome drawn by the canvas (most HUD is DOM). */
   hud: new LayerInfo({ paralax: V(0, 0) }),
-  // Stuff on the absolute top that's just used for debugging
+  /** Absolute top, debugging only. */
   debugHud: new LayerInfo({ paralax: V(0, 0) }),
 } satisfies { [key: string]: LayerInfo };
 

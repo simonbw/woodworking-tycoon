@@ -1,6 +1,8 @@
 import { Persistence } from "../../config/constants";
 import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
+import { on } from "../../core/entity/handler";
+import { TimeFlow } from "../TimeFlow";
 import { SaveFile, serializeGame } from "./SaveFile";
 
 /**
@@ -48,6 +50,18 @@ export class SaveManager extends BaseEntity implements Entity {
 
   constructor(private storage: SaveStorage) {
     super();
+  }
+
+  /**
+   * The shop saves itself as it runs: any engine tick that carried sim
+   * minutes is worth keeping. Coalesced — a burst still writes once.
+   */
+  @on("afterTick")
+  onAfterTick() {
+    const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
+    if (timeFlow && timeFlow.wholeTicks > 0) {
+      this.schedule();
+    }
   }
 
   /**

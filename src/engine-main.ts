@@ -1,12 +1,14 @@
-import { Assets } from "pixi.js";
 import { AutoPauser } from "./core/AutoPauser";
 import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";
-import { CameraPanController } from "./engine-shell/CameraPanController";
-import { EmptyLot } from "./engine-shell/EmptyLot";
 import { bootShop } from "./sim/bootstrap";
 import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
 import { SaveManager } from "./sim/save/SaveManager";
+import { loadAssets } from "./utils/loadAssets";
+import { CameraRig } from "./views/CameraRig";
+import { EnvironmentView } from "./views/EnvironmentView";
+import { MovementInput } from "./views/MovementInput";
+import { registerAllViews } from "./views/register";
 
 /**
  * The engine shell: the entity-based rebuild of the game, running alongside
@@ -28,20 +30,16 @@ function readStoredSave(): SaveFile | undefined {
 
 async function main() {
   polyfill();
-
-  const textures = ["/images/grass.png", "/images/asphalt.png"];
-  for (const path of textures) {
-    Assets.add({ alias: path, src: path });
-  }
-  await Assets.load(textures);
+  registerAllViews();
+  await loadAssets();
 
   const game = new Game();
   await game.init({ rendererOptions: { background: "#1f1c18" } });
 
-  game.camera.z = 30;
   game.addEntity(new AutoPauser());
-  game.addEntity(new EmptyLot());
-  game.addEntity(new CameraPanController());
+  game.addEntity(new CameraRig());
+  game.addEntity(new EnvironmentView());
+  game.addEntity(new MovementInput());
 
   const saveManager = game.addEntity(
     new SaveManager({
