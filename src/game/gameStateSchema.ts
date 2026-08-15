@@ -20,8 +20,8 @@ import { UPGRADE_TYPES } from "./Upgrade";
  * slice takes down the whole sim.
  */
 
-const vectorSchema = z.tuple([z.number(), z.number()]);
-const directionSchema = z.union([
+export const vectorSchema = z.tuple([z.number(), z.number()]);
+export const directionSchema = z.union([
   z.literal(0),
   z.literal(1),
   z.literal(2),
@@ -38,18 +38,18 @@ const skillIdSchema = z.enum(SKILL_IDS);
 const consumableIdSchema = idEnum(CONSUMABLE_TYPES);
 
 /** See note above: materials stay structural, not exhaustive. */
-const materialSchema = z.object({ type: z.string() }).passthrough();
+export const materialSchema = z.object({ type: z.string() }).passthrough();
 
 /** Species amounts keyed by species name (dust cells, vac canister). */
-const speciesAmountsSchema = z.record(z.number());
+export const speciesAmountsSchema = z.record(z.number());
 
-const operationProgressSchema = z.object({
+export const operationProgressSchema = z.object({
   status: z.enum(["notStarted", "inProgress", "finished"]),
   phaseIndex: z.number(),
   ticksRemaining: z.number(),
 });
 
-const machineStateSchema = z.object({
+export const machineStateSchema = z.object({
   machineTypeId: machineIdSchema,
   position: vectorSchema,
   rotation: directionSchema,
@@ -84,7 +84,7 @@ const machineStateSchema = z.object({
  * was shelved at, so a reloaded trip rings up exactly what the aisle
  * quoted.
  */
-const cartLineSchema = z.discriminatedUnion("kind", [
+export const cartLineSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("material"),
     material: materialSchema,
@@ -110,7 +110,7 @@ const cartLineSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("shopVac"), price: z.number() }),
 ]);
 
-const awayTripSchema = z.discriminatedUnion("kind", [
+export const awayTripSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("scavenging"),
     startTick: z.number(),
@@ -175,7 +175,7 @@ const progressionSchema = z.object({
 });
 
 /** A passerby on the sidewalk line (see stand.ts). */
-const customerSchema = z.object({
+export const customerSchema = z.object({
   id: z.string(),
   x: z.number(),
   walkDirection: z.union([z.literal(1), z.literal(-1)]),

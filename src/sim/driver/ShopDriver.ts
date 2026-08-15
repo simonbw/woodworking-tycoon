@@ -3,6 +3,7 @@ import { Entity } from "../../core/entity/Entity";
 import { Game } from "../../core/Game";
 import { mulberry32 } from "../../core/util/SeededRandom";
 import { bootShop } from "../bootstrap";
+import { Player } from "../entities/Player";
 import { SaveFile, serializeGame } from "../save/SaveFile";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
@@ -52,6 +53,10 @@ export class ShopDriver {
 
   singleton<T extends Entity>(constructor: Constructor<T>): T {
     return this.game.entities.getSingleton(constructor);
+  }
+
+  get player(): Player {
+    return this.singleton(Player);
   }
 
   get timeFlow(): TimeFlow {

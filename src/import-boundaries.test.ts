@@ -78,6 +78,7 @@ describe("sim/view import boundaries", () => {
           /^src\/sim\/save\//,
           /^src\/sim\/bootstrap(\.ts)?$/,
           /^src\/sim\/singletons\//,
+          /^src\/sim\/entities\//,
           /^src\/sim\/TimeFlow(\.ts)?$/,
         ],
       },

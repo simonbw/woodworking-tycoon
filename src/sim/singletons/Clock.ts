@@ -84,6 +84,13 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
     }
   }
 
+  @on("afterAdded")
+  onAfterAdded() {
+    // The clock is what knows night; TimeFlow asks it when resolving pace.
+    const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
+    timeFlow?.setNightProvider(() => this.isNight());
+  }
+
   @on("tick")
   onTick() {
     const timeFlow = this.game.entities.getById("timeFlow") as

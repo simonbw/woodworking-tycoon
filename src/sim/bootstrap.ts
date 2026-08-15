@@ -1,5 +1,6 @@
 import { Game } from "../core/Game";
 import { SaveFile, loadSaveFile } from "./save/SaveFile";
+import { Player } from "./entities/Player";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { Progression } from "./singletons/Progression";
@@ -28,6 +29,7 @@ export function addSessionSingletons(game: Game): void {
 
 /** Add a fresh shop's persistent singletons (a brand-new game). */
 export function addFreshShopSingletons(game: Game): void {
+  game.addEntity(new Player());
   game.addEntity(new Clock());
   game.addEntity(new Wallet());
   game.addEntity(new Reputation());
