@@ -68,8 +68,13 @@ describe("sim/view import boundaries", () => {
     // Neither may lean on the old world's transform layer.
     const RULES: Array<{ dirs: string[]; allowed: RegExp[] }> = [
       {
-        dirs: ["src/sim/dispatch"],
-        allowed: [/^src\/sim\/commands\//],
+        dirs: ["src/sim/dispatch", "src/shell/dispatch"],
+        allowed: [
+          /^src\/sim\/commands\//,
+          // Read-only surfaces for enablement checks and targeting:
+          /^src\/sim\/projection(\.ts)?$/,
+          /^src\/sim\/entities\//,
+        ],
       },
       {
         dirs: ["src/sim/driver"],

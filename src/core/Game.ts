@@ -70,8 +70,13 @@ export class Game {
   readonly ticksPerSecond: number;
   /** Number of seconds of game time to simulate per tick */
   readonly tickDuration: number;
-  /** Maximum ticks to run in a single frame of the render loop. */
-  readonly maxTicksPerFrame = 5;
+  /**
+   * Maximum sim backlog per frame of the render loop, in ticks. Half a
+   * second: enough that a slow renderer (a throttled tab, headless
+   * Chromium) keeps sim time tracking wall time, small enough that a
+   * long hitch can't fling the world.
+   */
+  readonly maxTicksPerFrame = 30;
 
   /** ID of the current animation frame request, used for cancellation */
   private animationFrameId: number = 0;
@@ -405,7 +410,13 @@ export class Game {
       );
     }
 
-    const renderDt = 1.0 / this.getScreenFps();
+    // Accrue the frame's ACTUAL elapsed wall time (clamped against
+    // hitches), not the rolling fps estimate: on a slow renderer the
+    // estimate lags and sim time falls behind the clock on the wall.
+    const renderDt = Math.min(
+      lastFrameDuration > 0 ? lastFrameDuration : this.tickDuration,
+      0.25,
+    );
 
     this.slowTick(renderDt * this.slowMo);
 

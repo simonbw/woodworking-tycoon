@@ -4,6 +4,8 @@ import { polyfill } from "./core/Polyfills";
 import { bootShop } from "./sim/bootstrap";
 import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
 import { SaveManager } from "./sim/save/SaveManager";
+import { ShortcutDispatcher } from "./shell/dispatch/ShortcutDispatcher";
+import { TargetingState } from "./shell/dispatch/TargetingState";
 import { loadAssets } from "./utils/loadAssets";
 import { CameraRig } from "./views/CameraRig";
 import { DaylightView } from "./views/DaylightView";
@@ -68,6 +70,8 @@ async function main() {
   game.addEntity(new PowerCordView());
   game.addEntity(new DaylightView());
   game.addEntity(new MovementInput());
+  game.addEntity(new TargetingState());
+  game.addEntity(new ShortcutDispatcher());
 
   const saveManager = game.addEntity(
     new SaveManager({

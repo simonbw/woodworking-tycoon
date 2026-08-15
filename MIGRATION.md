@@ -204,9 +204,17 @@ transform tests as it lands.
 
 ## Phase 4 — Interaction [size M]
 
-- [ ] `ShortcutDispatcher` entity over `shortcuts.ts` registry (scopes
-      global/home/modal), commands only
-- [ ] Held operate/wait keys; held movement via `io.getMovementVector()`
+- [x] `ShortcutDispatcher` entity over `shortcuts.ts` registry (scopes
+      global/home; modal arrives with the phase-5 overlays), commands only —
+      the old handler bodies became composite commands
+      (`src/sim/commands/interact-commands.ts`), targeting is a shell entity
+      (`src/shell/dispatch/TargetingState.ts`, the old
+      TargetedMachineContext), and the boundary test holds
+      `src/shell/dispatch` to the command surface
+- [x] Held operate/wait keys (dispatcher keyDown/keyUp → held flags); held
+      movement via `io.getMovementVector()` (MovementInput, phase 3);
+      Game.loop now accrues actual frame time so a slow renderer can't
+      starve the pace model
 - [ ] Mouse picking: `camera.toWorld(io.mousePosition)` + footprint hit-test
       (replaces invisible Pixi hit shapes); right-click routing
 - [ ] Targeting highlight + hint chips (shared resolvers)
@@ -391,3 +399,8 @@ transform tests as it lands.
   screenshots show the world canvas at parity (old shell's extras are the
   phase-4/5 DOM chrome). Movement E2E green. Human playtest gate flagged
   to the user; continuing into phase 4 per the working agreements.
+- 2026-08-15 — Phase 4 spine: ShortcutDispatcher + TargetingState +
+  composite interact commands live on the shell; browser-verified (carry
+  toggle, held wait). Loop time accrual fixed to actual frame delta
+  (headless/throttled renderers ran sim time slow). Remaining: mouse
+  picking, highlight + hint chips, floor-interaction gate.
