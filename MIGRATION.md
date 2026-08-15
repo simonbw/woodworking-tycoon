@@ -656,3 +656,16 @@ transform tests as it lands.
 - 2026-08-15 — Phase 6 gate green: the shopping-trip step runs the full
   loop end to end in the engine-shell journey. Phase 6 complete; phase 7
   (the bench view — the riskiest item) is next.
+- 2026-08-15 — Phase 7 opened with the study pass. The port's shape: the
+  pure engine (`src/game/bench-work/`) and the bench commands (phase 2's
+  `bench-commands.ts`) stay as-is; what rebuilds is the view half — the
+  old `BenchWorkSurface` (state + pointer handling, publishing a React
+  subtree into `benchSceneSlot` for the canvas's dive layer) and its pure
+  renderers (BenchScene/StrokeSurface/SawSurface/GlueUpLayer/…, all
+  @pixi/react). Engine design: a shell-side dive state (which bench is
+  open, Tab at a worktable opens it — the phase-4 note's deferral), a
+  BenchDiveRoot entity drawing the zoomed work surface in screen space
+  above the still-ticking world with the old dive transform, pointer
+  gestures over `game.io` in bench-top inches (stageMath), and the four
+  modes landing in the plan's order: pry, tool-first, glue-ups,
+  blueprint assembly.
