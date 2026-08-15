@@ -1,9 +1,11 @@
 import { Game } from "../core/Game";
-import { GameState } from "../game/GameState";
+import { GameState, MaterialPile } from "../game/GameState";
 import { MachineState } from "../game/Machine";
 import { MachineCrateEntity } from "./entities/MachineCrateEntity";
 import { MachineEntity } from "./entities/MachineEntity";
+import { MaterialPileEntity } from "./entities/MaterialPileEntity";
 import { Player } from "./entities/Player";
+import { TruckEntity } from "./entities/TruckEntity";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { DustLayer } from "./singletons/DustLayer";
@@ -42,12 +44,17 @@ export function projectGameState(game: Game): GameState {
   const tutorials = game.entities.getSingleton(TutorialTracker);
   const dust = game.entities.tryGetSingleton(DustLayer);
 
+  const truck = game.entities.getSingleton(TruckEntity);
+
   const machines: MachineState[] = [
     ...game.entities.byConstructor(MachineEntity),
   ].map((entity) => entity.state);
   const machineCrates = [
     ...game.entities.byConstructor(MachineCrateEntity),
   ].map((crate) => ({ machine: crate.machine, position: crate.position }));
+  const materialPiles: MaterialPile[] = [
+    ...game.entities.byConstructor(MaterialPileEntity),
+  ].map((entity) => entity.pile);
 
   return {
     tick: clock.tick,
@@ -55,12 +62,12 @@ export function projectGameState(game: Game): GameState {
     dayStartTick: clock.dayStartTick,
     money: wallet.money,
     reputation: reputation.reputation,
-    materialPiles: [],
+    materialPiles,
     consumables: consumables.stock,
     clamps: consumables.clamps,
     machines,
     machineCrates,
-    truck: { bed: [], crates: [] },
+    truck: { bed: truck.bed, crates: truck.crates },
     shopInfo: shopInfo.info,
     player: {
       name: player.name,

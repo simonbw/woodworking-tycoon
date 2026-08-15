@@ -4,7 +4,9 @@ import { GameState } from "../../game/GameState";
 import { cellCenter } from "../../game/player-motion";
 import { MachineCrateEntity } from "../entities/MachineCrateEntity";
 import { MachineEntity } from "../entities/MachineEntity";
+import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
+import { TruckEntity } from "../entities/TruckEntity";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
@@ -88,7 +90,15 @@ export function loadGameState(game: Game, state: GameState): void {
     new TutorialTracker({ tutorials: state.progression.tutorials }),
   );
   game.addEntity(new DustLayer({ dust: state.dust }));
+  game.addEntity(
+    new TruckEntity({ bed: state.truck.bed, crates: state.truck.crates }),
+  );
 
+  for (const pile of state.materialPiles) {
+    game.addEntity(
+      new MaterialPileEntity(pile.material, pile.position, pile.rotation),
+    );
+  }
   for (const machine of state.machines) {
     game.addEntity(new MachineEntity(machine));
   }
@@ -99,10 +109,6 @@ export function loadGameState(game: Game, state: GameState): void {
   // Slices the entity world can't hold yet. Each system's port claims
   // its slice and deletes its check here.
   const unsupported: string[] = [];
-  if (state.materialPiles.length > 0) unsupported.push("materialPiles");
-  if (state.truck.bed.length > 0 || state.truck.crates.length > 0) {
-    unsupported.push("truck");
-  }
   if (state.stand.length > 0) unsupported.push("stand");
   if (state.customers.length > 0) unsupported.push("customers");
   if (state.shopVac !== null) unsupported.push("shopVac");
