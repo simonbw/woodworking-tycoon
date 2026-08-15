@@ -12,6 +12,7 @@ import { MachineId, ParameterValues } from "../../game/Machine";
 import { makeMaterial } from "../../game/material-helpers";
 import { getBoardBuyPrice, getSheetBuyPrice } from "../../game/material-values";
 import { SkillId } from "../../game/Skill";
+import { availableOperations } from "../../game/skill-helpers";
 import {
   Board,
   MaterialInstance,
@@ -506,18 +507,29 @@ export class ShopDriver {
     return this;
   }
 
-  /** Select an operation on a machine by id. */
+  /**
+   * Select an operation on a machine by id. Resolved against what the
+   * station *offers* — the machine's and mounted tools' operations minus
+   * skill-locked recipes — exactly as the old driver did, so a sequence
+   * can assert that an unmounted tool's recipe is refused.
+   */
   select(
     machineTypeId: MachineId,
     operationId: string,
     parameters?: ParameterValues,
   ): this {
     const entity = this.machine(machineTypeId);
-    const operation = entity
-      .view()
-      .operations.find((op) => op.id === operationId);
+    const offered = availableOperations(entity.view(), this.shop.progression);
+    const operation = offered.find((op) => op.id === operationId);
     if (!operation) {
-      throw new Error(`${machineTypeId} has no operation ${operationId}`);
+      throw new Error(
+        `${machineTypeId} does not offer "${operationId}" — it offers ` +
+          `[${offered
+            .map((op) => op.id)
+            .join(
+              ", ",
+            )}]. A locked skill or an unmounted tool is the usual cause.`,
+      );
     }
     setMachineOperation(this.game, entity, operation, parameters);
     return this;
