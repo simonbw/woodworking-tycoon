@@ -28,10 +28,29 @@ function readStoredSave(): SaveFile | undefined {
   }
 }
 
+/**
+ * The one canvas-drawn typeface: the stand's hand-written FOR SALE sign
+ * (StandView). The old shell got it from the CSS bundle's @font-face;
+ * engine.html ships no stylesheet, so the shell registers the face
+ * itself. The full font set arrives with the phase-5 DOM port.
+ */
+async function loadSignFont(): Promise<void> {
+  try {
+    const face = new FontFace(
+      "Shantell Notes",
+      'url("/fonts/shantell-notes.woff2") format("woff2")',
+      { weight: "300 800" },
+    );
+    document.fonts.add(await face.load());
+  } catch {
+    // The sign falls back to the default face rather than blocking boot.
+  }
+}
+
 async function main() {
   polyfill();
   registerAllViews();
-  await loadAssets();
+  await Promise.all([loadAssets(), loadSignFont()]);
 
   const game = new Game();
   await game.init({ rendererOptions: { background: "#1f1c18" } });
