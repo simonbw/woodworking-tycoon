@@ -11,11 +11,8 @@ import { Direction } from "../game/Vectors";
 import { SaveFile, loadSaveFile } from "./save/SaveFile";
 import { MachineEntity } from "./entities/MachineEntity";
 import { Player } from "./entities/Player";
-<<<<<<< HEAD
-import { TruckEntity } from "./entities/TruckEntity";
-=======
 import { StandEntity } from "./entities/StandEntity";
->>>>>>> worktree-agent-a2e5b0028f4989e20
+import { TruckEntity } from "./entities/TruckEntity";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { Progression } from "./singletons/Progression";
@@ -26,11 +23,8 @@ import { TutorialTracker } from "./singletons/TutorialTracker";
 import { DustLayer } from "./singletons/DustLayer";
 import { Wallet } from "./singletons/Wallet";
 import { MachineSystem } from "./systems/MachineSystem";
-<<<<<<< HEAD
 import { MilestoneSystem } from "./systems/MilestoneSystem";
-=======
 import { StreetSystem } from "./systems/StreetSystem";
->>>>>>> worktree-agent-a2e5b0028f4989e20
 import { TimeFlow } from "./TimeFlow";
 
 /**
@@ -48,11 +42,8 @@ import { TimeFlow } from "./TimeFlow";
 export function addSessionSingletons(game: Game): void {
   game.addEntity(new TimeFlow());
   game.addEntity(new MachineSystem());
-<<<<<<< HEAD
   game.addEntity(new MilestoneSystem());
-=======
   game.addEntity(new StreetSystem());
->>>>>>> worktree-agent-a2e5b0028f4989e20
 }
 
 /** Add a fresh shop's persistent singletons (a brand-new game). */
@@ -67,11 +58,8 @@ export function addFreshShopSingletons(game: Game): void {
   game.addEntity(new Progression());
   game.addEntity(new TutorialTracker());
   game.addEntity(new DustLayer());
-<<<<<<< HEAD
   game.addEntity(new TruckEntity());
-=======
   game.addEntity(new StandEntity());
->>>>>>> worktree-agent-a2e5b0028f4989e20
 
   // The starter floor, exactly the old initialGameState's: a workspace
   // with the starter hammer, a garbage can, and a small lumber shelf.
