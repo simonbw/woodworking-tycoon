@@ -37,6 +37,7 @@ import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
+import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
 
 /**
  * The walkable Orange Box's scene root (migration phase 6). Spawned by
@@ -55,15 +56,11 @@ import { SceneDirector } from "./SceneDirector";
  * axes here, following the body.
  */
 
-/** The scene's own sprite colors, placeholder dress until the store
- * layers port: concrete slab, drywall, gondola gray, orange accents. */
-const SLAB = 0x9a9a98;
-const LOT = 0x2b2b2b;
+/** Placeholder paint for the fixtures that haven't ported yet:
+ * gondola gray and the store's orange accents. */
 const WALL = 0x4a4642;
 const FIXTURE = 0x7d7a76;
 const ACCENT = 0xd96f1f;
-
-const WALL_PX = 8;
 
 export class StoreSceneRoot extends BaseEntity implements Entity {
   id = "storeSceneRoot";
@@ -97,8 +94,10 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
 
   constructor() {
     super();
+    // "floorItems", not "environment": the environment child draws the
+    // slab later in add order, and these blocks must ride above it.
     this.floor = new Graphics() as Graphics & GameSprite;
-    this.floor.layerName = "environment";
+    this.floor.layerName = "floorItems";
     this.body = new Graphics() as Graphics & GameSprite;
     this.body.layerName = "actors";
     this.sprites = [this.floor, this.body];
@@ -117,9 +116,19 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     if (!this.layoutCache || key !== this.layoutKey) {
       this.layoutCache = storeLayout(player.away.store, gameState);
       this.layoutKey = key;
-      if (this.isAdded) this.drawVenue(this.layoutCache);
+      if (this.isAdded) this.dress(this.layoutCache);
     }
     return this.layoutCache;
+  }
+
+  /** (Re)build the venue's drawn layers for a layout — on add, and
+   * whenever the planogram moves (stock changes relayout the floor). */
+  private dress(layout: StoreLayout): void {
+    while (this.children?.length) {
+      this.children[this.children.length - 1].destroy();
+    }
+    this.addChild(new StoreEnvironmentView(layout));
+    this.drawVenue(layout);
   }
 
   /** The resolver the keys and the chips share (store-interact.ts). */
@@ -231,42 +240,15 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   @on("add")
   onAdd() {
     const layout = this.layout();
-    if (layout) this.drawVenue(layout);
+    if (layout) this.dress(layout);
   }
 
+  /** Placeholder blocks for what hasn't ported yet: gondola spines and
+   * fixtures as gray boxes, register and corral in the store's orange —
+   * the environment view draws the real slab, walls, and lot. */
   private drawVenue(layout: StoreLayout) {
     const g = this.floor;
     g.clear();
-    const [w, h] = layout.interior;
-    const [worldW, worldH] = layout.worldSize;
-
-    // The lot the whole world sits on, then the sales floor's slab.
-    g.rect(0, 0, cellToPixel(worldW), cellToPixel(worldH)).fill(LOT);
-    g.rect(0, 0, cellToPixel(w), cellToPixel(h)).fill(SLAB);
-
-    // Perimeter walls; the front wall (y = interior height) is split by
-    // the entrance and exit spans.
-    g.rect(-WALL_PX, -WALL_PX, cellToPixel(w) + 2 * WALL_PX, WALL_PX).fill(
-      WALL,
-    );
-    g.rect(-WALL_PX, 0, WALL_PX, cellToPixel(h)).fill(WALL);
-    g.rect(cellToPixel(w), 0, WALL_PX, cellToPixel(h)).fill(WALL);
-    const frontY = cellToPixel(h);
-    const spans = [layout.doors.entrance, layout.doors.exit]
-      .map((door) => ({
-        left: cellToPixel(door.left),
-        right: cellToPixel(door.right),
-      }))
-      .sort((a, b) => a.left - b.left);
-    let x = -WALL_PX;
-    for (const span of spans) {
-      g.rect(x, frontY, span.left - x, WALL_PX).fill(WALL);
-      x = span.right;
-    }
-    g.rect(x, frontY, cellToPixel(w) + WALL_PX - x, WALL_PX).fill(WALL);
-
-    // Gondola spines and fixtures as blocks; register and corral in the
-    // store's orange so the landmarks read before the real dress lands.
     for (const spine of layout.spines) {
       g.rect(
         cellToPixel(spine.min[0]),
@@ -368,9 +350,30 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     ).fill(0x3d85c6);
 
     // The camera pans both axes at the shop's own zoom, following the
-    // body (the old store CameraLayer's behavior).
+    // body, clamped a stride past the walls and the lot's far edge (the
+    // old CameraLayer's scroll ranges); a viewport big enough to see
+    // everything collapses a range and that axis never moves.
+    const layout = this.layoutCache;
     const camera = this.game.camera;
-    camera.x = cellToPixel(this.position[0]);
-    camera.y = cellToPixel(this.position[1]);
+    if (layout) {
+      const halfW = renderer.getWidth() / 2 / camera.z;
+      const halfH = renderer.getHeight() / 2 / camera.z;
+      const slack = cellToPixel(1.5);
+      const clamp = (value: number, lo: number, hi: number) =>
+        hi <= lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, value));
+      camera.x = clamp(
+        cellToPixel(this.position[0]),
+        -slack + halfW,
+        cellToPixel(layout.worldSize[0]) + slack - halfW,
+      );
+      camera.y = clamp(
+        cellToPixel(this.position[1]),
+        -slack + halfH,
+        cellToPixel(layout.worldSize[1]) + slack - halfH,
+      );
+    } else {
+      camera.x = cellToPixel(this.position[0]);
+      camera.y = cellToPixel(this.position[1]);
+    }
   }
 }
