@@ -179,11 +179,12 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
 
   @on("tick")
   onTick(dt: number) {
-    // Busy time burns on game minutes; it doesn't burn while away (a
-    // sweep waits where it was left).
+    // Busy time burns one minute per sim tick, exactly like the old
+    // world's playerTickPass; it doesn't burn while away (a sweep waits
+    // where it was left).
     const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
     if (timeFlow && this.busyTicks > 0 && this.away === null) {
-      this.busyTicks = Math.max(0, this.busyTicks - timeFlow.gameDt);
+      this.busyTicks = Math.max(0, this.busyTicks - timeFlow.wholeTicks);
     }
 
     // The body moves on raw dt — never while out of the shop.

@@ -16,7 +16,7 @@ describe("Player movement", () => {
     const driver = new ShopDriver();
     const [startX, startY] = driver.player.position;
     setMoveInput(driver.game, [1, 0]);
-    driver.tick(60); // one real second
+    driver.stepEngine(60); // one real second
     const [x, y] = driver.player.position;
     assert.ok(x > startX + 3, `moved right (${startX} → ${x})`);
     assert.ok(Math.abs(y - startY) < 1e-9, "held the line");
@@ -26,14 +26,14 @@ describe("Player movement", () => {
   it("stands still without input", () => {
     const driver = new ShopDriver();
     const before = [...driver.player.position];
-    driver.tick(60);
+    driver.stepEngine(60);
     assert.deepStrictEqual([...driver.player.position], before);
   });
 
   it("stops at the shop's wall instead of walking through it", () => {
     const driver = new ShopDriver();
     setMoveInput(driver.game, [-1, 0]);
-    driver.tick(60 * 5);
+    driver.stepEngine(60 * 5);
     const [x] = driver.player.position;
     // The west wall sits just outside the shop's floor; the body rests
     // against it, never inside it.
@@ -49,7 +49,7 @@ describe("Player movement", () => {
     driver.player.away = { kind: "home" };
     const before = [...driver.player.position];
     setMoveInput(driver.game, [1, 0]);
-    driver.tick(60);
+    driver.stepEngine(60);
     assert.deepStrictEqual([...driver.player.position], before);
   });
 
@@ -70,8 +70,8 @@ describe("Player time wiring", () => {
     const driver = new ShopDriver();
     driver.player.busyTicks = 3;
     // Working pace is 5 game minutes per real second: 3 minutes of busy
-    // work takes 0.6 real seconds = 36 engine ticks.
-    driver.tick(40);
+    // work takes 0.6 real seconds = 36 engine frames.
+    driver.stepEngine(40);
     assert.strictEqual(driver.player.busyTicks, 0);
     assert.strictEqual(driver.timeFlow.resolveSpeed(), "idle");
   });
@@ -81,6 +81,7 @@ describe("Player time wiring", () => {
     driver.player.busyTicks = 3;
     driver.player.away = { kind: "home" };
     driver.tick(60);
+    driver.stepEngine(60);
     assert.strictEqual(driver.player.busyTicks, 3);
   });
 
@@ -118,7 +119,7 @@ describe("Player serialization", () => {
     driver.player.operating = true;
     driver.player.waiting = true;
     setMoveInput(driver.game, [1, 0]);
-    driver.tick(30);
+    driver.stepEngine(30);
 
     const save = driver.save();
     const reloaded = new ShopDriver({ save });

@@ -37,9 +37,25 @@ export class ShopDriver {
     bootShop(this.game, save);
   }
 
-  /** Advance the world by whole engine ticks. */
+  /**
+   * Advance the world by whole game minutes — the old tickAction unit,
+   * which is what every sequence test thinks in. Each minute is forced
+   * through TimeFlow one engine tick at a time so the per-minute
+   * interleaving of the sim layers matches the old pipeline exactly.
+   */
   tick(ticks: number = 1): void {
-    this.game.step(ticks);
+    for (let i = 0; i < ticks; i++) {
+      this.timeFlow.forceMinutes(1);
+      this.game.step(1);
+    }
+  }
+
+  /**
+   * Advance raw engine frames under the live pace model (movement and
+   * real-time pacing tests; sim time accrues only as TimeFlow allows).
+   */
+  stepEngine(frames: number = 1): void {
+    this.game.step(frames);
   }
 
   /** Snapshot the world as a save file. */

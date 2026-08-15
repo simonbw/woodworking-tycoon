@@ -43,7 +43,6 @@ describe("save round-trip", () => {
     assert.strictEqual(reloaded.progression.xp, 17);
     assert.strictEqual(reloaded.tutorials.tutorials.opening.step, 3);
     assert.strictEqual(reloaded.clock.tick, driver.clock.tick);
-    assert.strictEqual(reloaded.clock.fraction, driver.clock.fraction);
     assert.deepStrictEqual(reloaded.shopInfo.info, driver.shopInfo.info);
   });
 
@@ -72,13 +71,17 @@ describe("driver determinism", () => {
 
   it("advances the clock through TimeFlow's idle creep", () => {
     const driver = new ShopDriver();
-    // One real minute of engine time at the idle creep (5 game min per
-    // real second at working pace, 5/60 idle) → 5 game minutes, up to
-    // float accumulation across 3600 ticks.
-    driver.tick(60 * 60);
-    const accrued = driver.clock.tick + driver.clock.fraction;
-    assert.ok(Math.abs(accrued - 5) < 1e-6, `accrued ${accrued}`);
+    // One real minute of engine frames at the idle creep (5/60 game
+    // minutes per real second) accrues 5 game minutes; float
+    // accumulation across 3600 frames leaves the last carry just shy.
+    driver.stepEngine(60 * 60);
     assert.strictEqual(driver.clock.tick, 4);
+  });
+
+  it("advances the clock one minute per driver tick", () => {
+    const driver = new ShopDriver();
+    driver.tick(7);
+    assert.strictEqual(driver.clock.tick, 7);
   });
 });
 

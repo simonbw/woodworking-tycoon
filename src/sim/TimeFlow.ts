@@ -74,8 +74,23 @@ export class TimeFlow extends BaseEntity implements Entity {
 
   /** The game minutes the sim should advance this engine tick. */
   gameDt = 0;
+  /**
+   * Whole game minutes ("sim ticks") the quantized sim layers should
+   * process this engine tick. The old world ran everything as one-minute
+   * `tickAction`s; the new sim entities keep that quantization by
+   * looping `wholeTicks` times inside their engine tick, which is also
+   * how deep fast-forward substeps instead of tunneling. Usually 0, and
+   * 1 when the minute accumulator carries; forced minutes (the driver's
+   * `tick(n)`, the overnight batch) can make it large.
+   */
+  wholeTicks = 0;
   /** The speed resolved for this engine tick. */
   speed: TimeSpeed = "idle";
+
+  /** Fractional game minutes accrued toward the next whole sim tick. */
+  private minuteAccumulator = 0;
+  /** Minutes queued by forceMinutes, drained on the next engine tick. */
+  private forcedMinutes = 0;
 
   private spenders = new Set<BoolProvider>();
   private waitingProvider: BoolProvider = () => false;
@@ -140,6 +155,16 @@ export class TimeFlow extends BaseEntity implements Entity {
     return WAIT_START_PACE + t * (WAIT_MAX_PACE - WAIT_START_PACE);
   }
 
+  /**
+   * Queue whole game minutes to run on the next engine tick, outside the
+   * pace model. The sequence driver's `tick(n)` and the overnight batch
+   * advance the world this way — the same one-minute passes, just many
+   * of them in one engine tick.
+   */
+  forceMinutes(minutes: number): void {
+    this.forcedMinutes += minutes;
+  }
+
   @on("tick")
   onTick(dt: number) {
     this.speed = this.resolveSpeed();
@@ -162,5 +187,13 @@ export class TimeFlow extends BaseEntity implements Entity {
             : 0;
 
     this.gameDt = Math.min(pace * dt, MAX_GAME_MINUTES_PER_TICK);
+
+    // Carry whole minutes out to the quantized sim layers.
+    this.minuteAccumulator += this.gameDt;
+    let whole = Math.floor(this.minuteAccumulator);
+    this.minuteAccumulator -= whole;
+    whole += this.forcedMinutes;
+    this.forcedMinutes = 0;
+    this.wholeTicks = whole;
   }
 }

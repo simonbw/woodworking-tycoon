@@ -16,11 +16,10 @@ import { TimeFlow } from "../TimeFlow";
  * this morning started.
  *
  * One game tick is one shop minute (see `src/game/time.ts` — the units
- * are shared with the old world). Each engine tick the clock draws
- * `gameDt` game minutes from TimeFlow and carries whole minutes into
- * `tick`; sim systems that think in whole minutes read `tick`, and the
- * fractional remainder is persisted so a save can land between minutes
- * without losing the carry.
+ * are shared with the old world). TimeFlow carries fractional pace into
+ * whole sim ticks (`timeFlow.wholeTicks`); the clock counts them. Saves
+ * land on whole minutes — the sub-minute carry is TimeFlow's and is
+ * deliberately transient, like the old world's between-tick remainder.
  *
  * The day advances only by sleeping — the drive home sets a new
  * `dayStartTick` and bumps `day` — never by the tick counter rolling
@@ -31,8 +30,6 @@ const schema = z.object({
   tick: z.number().int(),
   day: z.number().int(),
   dayStartTick: z.number().int(),
-  /** Game minutes accrued toward the next tick, in [0, 1). */
-  fraction: z.number(),
 });
 
 type ClockData = z.infer<typeof schema>;
@@ -46,14 +43,12 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
   tick: number;
   day: number;
   dayStartTick: number;
-  fraction: number;
 
   constructor(data: Partial<ClockData> = {}) {
     super();
     this.tick = data.tick ?? 0;
     this.day = data.day ?? 1;
     this.dayStartTick = data.dayStartTick ?? 0;
-    this.fraction = data.fraction ?? 0;
   }
 
   /** How many of today's working minutes have been spent. */
@@ -75,15 +70,6 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
     return this.dayTicksSpent() >= TICKS_PER_DAY;
   }
 
-  /** Advance the clock by a span of game minutes, carrying whole ticks. */
-  advance(gameMinutes: number): void {
-    this.fraction += gameMinutes;
-    while (this.fraction >= 1) {
-      this.fraction -= 1;
-      this.tick += 1;
-    }
-  }
-
   @on("afterAdded")
   onAfterAdded() {
     // The clock is what knows night; TimeFlow asks it when resolving pace.
@@ -93,10 +79,12 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
 
   @on("tick")
   onTick() {
-    const timeFlow = this.game.entities.getById("timeFlow") as
-      TimeFlow | undefined;
+    // The minute carry lives in TimeFlow (transient, like the old
+    // world's between-tick remainder — saves land on whole minutes);
+    // the clock just counts the whole sim ticks it hands out.
+    const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
     if (timeFlow) {
-      this.advance(timeFlow.gameDt);
+      this.tick += timeFlow.wholeTicks;
     }
   }
 
@@ -105,7 +93,6 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
       tick: this.tick,
       day: this.day,
       dayStartTick: this.dayStartTick,
-      fraction: this.fraction,
     };
   }
 }
