@@ -379,14 +379,29 @@ test.describe("Engine shell", () => {
       const tickBefore = await page.evaluate(
         () => (window as any).game.entities.getById("clock").tick,
       );
-      await page.keyboard.press("KeyE");
-      await page.waitForFunction(
-        () =>
-          (window as any).game.entities.getById("player").away?.kind ===
-          "shopping",
-        null,
-        { timeout: 5_000 },
-      );
+      // The row's accept binding registers in a passive effect, which a
+      // loaded host can flush after this press would land — press again
+      // until the trip takes (never once it has: at the store E acts on
+      // the floor).
+      await expect
+        .poll(
+          async () => {
+            const kind = await page.evaluate(
+              () =>
+                (window as any).game.entities.getById("player").away?.kind ??
+                null,
+            );
+            if (kind !== null) return kind;
+            await page.keyboard.press("KeyE");
+            return page.evaluate(
+              () =>
+                (window as any).game.entities.getById("player").away?.kind ??
+                null,
+            );
+          },
+          { timeout: 10_000 },
+        )
+        .toBe("shopping");
       // The drive out charges its minutes with the trip underway.
       await expect
         .poll(() =>
