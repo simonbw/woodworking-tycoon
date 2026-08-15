@@ -43,6 +43,16 @@ const OAK_EDGES: ReadonlyArray<Job> = Array.from({ length: 3 }, (_, i) => ({
   out: `board-edge-oak-${i + 1}.jpg`,
 }));
 
+/** Grayscale wear maps at board proportions — white is clean wood, dark
+ * is scuffed and saw-marked. Species-independent: they multiply over
+ * whatever face is under them. */
+const ROUGHNESS: ReadonlyArray<Job> = Array.from({ length: 5 }, (_, i) => ({
+  source: `board-roughness-${i + 1}.png`,
+  out: `board-roughness-${i + 1}.jpg`,
+  // Wear doesn't need the grain's resolution
+  maxSize: 2048,
+}));
+
 const MANIFEST: ReadonlyArray<Job> = [
   // Sheet-good faces (SHEET_FACE_TEXTURES) — seamless square tiles
   { source: "face-birch-1.jpg", out: "sheet-plywood-birch.jpg", maxSize: 2048 },
@@ -62,6 +72,8 @@ const MANIFEST: ReadonlyArray<Job> = [
   // Board faces and edges (BOARD_FACE_TEXTURES) — full-board scans
   ...OAK_BOARDS,
   ...OAK_EDGES,
+  // Wear maps (BOARD_ROUGHNESS_TEXTURES)
+  ...ROUGHNESS,
 ];
 
 fs.mkdirSync(OUT_DIR, { recursive: true });

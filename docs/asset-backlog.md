@@ -241,8 +241,10 @@ Decided — don't re-open these without a reason.
   without scans yet draws the old procedural face until its sources land.
   The fill matrix windows the art by the piece's face region
   (`SheetFaceRegion` / `BoardFaceRegion`), which is what keeps a cut
-  piece wearing the grain it was cut with. Weathering, saw marks, and
-  sheen stay procedural overlays on purpose — they're states, not wood.
+  piece wearing the grain it was cut with. Board roughness is art too —
+  grayscale wear maps multiplied over the face, fading as the board is
+  milled. The weathered-gray veil and the sanded sheen stay procedural
+  overlays on purpose — they're color states, not wood.
 - **On-edge boards, panels, sheet edges** — `OnEdgeBoardSprite`,
   `PanelSprite`, and the sheets' lamination/crumble edge strips are still
   fully procedural; the panel strips and on-edge boards are expected to

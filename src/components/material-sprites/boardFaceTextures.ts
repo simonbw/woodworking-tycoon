@@ -39,6 +39,23 @@ export const BOARD_FACE_TEXTURES: Partial<Record<Species, BoardFaceArt>> = {
   },
 };
 
-export const BOARD_FACE_TEXTURE_ASSETS = Object.values(
-  BOARD_FACE_TEXTURES,
-).flatMap((art) => [...art.faces, ...art.edges]);
+/**
+ * Grayscale wear maps at the same canonical board proportions — white is
+ * clean wood, dark is scuffed and saw-marked. Species-independent: the
+ * sprite multiplies one over whatever face is underneath (scan art and
+ * procedural alike), windowed by the same face region as the grain, so
+ * a board's scuffs survive its cuts the way its cathedrals do. Milling
+ * fades them: strongest on unmilled stock, gone once a face is smooth.
+ */
+export const BOARD_ROUGHNESS_TEXTURES: ReadonlyArray<string> = Array.from(
+  { length: 5 },
+  (_, i) => `/images/textures/board-roughness-${i + 1}.jpg`,
+);
+
+export const BOARD_FACE_TEXTURE_ASSETS = [
+  ...Object.values(BOARD_FACE_TEXTURES).flatMap((art) => [
+    ...art.faces,
+    ...art.edges,
+  ]),
+  ...BOARD_ROUGHNESS_TEXTURES,
+];
