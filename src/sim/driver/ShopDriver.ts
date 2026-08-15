@@ -88,6 +88,7 @@ import { Player } from "../entities/Player";
 import { ShopVacEntity } from "../entities/ShopVacEntity";
 import { StandEntity } from "../entities/StandEntity";
 import { TruckEntity } from "../entities/TruckEntity";
+import { projectGameState } from "../projection";
 import { loadGameState } from "../save/fixture";
 import { SaveFile, serializeGame } from "../save/SaveFile";
 import { Broom } from "../singletons/Broom";
@@ -165,6 +166,26 @@ export class ShopDriver {
   /** Snapshot the world as a save file. */
   save(): SaveFile {
     return serializeGame(this.game);
+  }
+
+  /**
+   * The world as a read-only GameState — the old driver's `.shop`
+   * assertion surface, served by the projection. For reading in
+   * assertions only; writes go through commands (or `arrange`).
+   */
+  get shop(): GameState {
+    return projectGameState(this.game);
+  }
+
+  /**
+   * Direct arrangement of the world for test setup — the old driver's
+   * `arrange`, handed the live Game instead of a state transform. A
+   * deliberate backdoor: sequences use it to stage a scenario, never to
+   * exercise a player-reachable path.
+   */
+  arrange(edit: (game: Game) => void): this {
+    edit(this.game);
+    return this;
   }
 
   // ------------------------------------------------------------------

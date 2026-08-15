@@ -79,6 +79,9 @@ describe("sim/view import boundaries", () => {
           /^src\/sim\/bootstrap(\.ts)?$/,
           /^src\/sim\/singletons\//,
           /^src\/sim\/entities\//,
+          // The read-only GameState projection: the driver's `.shop`
+          // assertion surface. Reading is not mutating.
+          /^src\/sim\/projection(\.ts)?$/,
           /^src\/sim\/TimeFlow(\.ts)?$/,
         ],
       },
