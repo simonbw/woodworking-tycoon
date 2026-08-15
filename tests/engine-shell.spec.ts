@@ -20,9 +20,11 @@ test.describe("Engine shell", () => {
 
   test("boots a walkable shop with a following camera", async ({ page }) => {
     // One long journey through the shell, growing a step per ported
-    // system — two boots and a page reload on top of real walking put
-    // it well past the default 30s budget.
-    test.setTimeout(60_000);
+    // system — two boots, a page reload, real walking, and a real sale
+    // put it far past the default 30s budget, and a full-suite run
+    // shares the machine with seven other specs' servers, so the
+    // standalone time (~40s) roughly doubles under load.
+    test.setTimeout(120_000);
 
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
