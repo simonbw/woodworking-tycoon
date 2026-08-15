@@ -8,6 +8,7 @@ import {
   useQuitToMenu,
   useSaveGame,
 } from "../useGameState";
+import { CANVAS_RESOLUTION } from "./canvas-resolution";
 
 /**
  * The canvas a walkable place is drawn on: a full-bleed PIXI application
@@ -252,7 +253,7 @@ export const WorldScene: React.FC<{
         // (capped: past 2× nothing reads sharper). The E2E build's onInit
         // override still lands after this.
         autoDensity={true}
-        resolution={Math.min(window.devicePixelRatio || 1, 2)}
+        resolution={CANVAS_RESOLUTION}
         onInit={capRenderRate}
       >
         {/* PIXI renders through its own reconciler, so the game's context
