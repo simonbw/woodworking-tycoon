@@ -280,8 +280,15 @@ transform tests as it lands.
       legs charge through `TimeFlow.forceMinutes` — out immediately after
       `goToStore`, home *before* `returnFromStore` via the director's
       deferred completion — preserving the old actions' ordering
-- [ ] `StoreScene`: walkable aisles, shelf/corral/register interactions,
-      checkout, departure
+- [x] `StoreScene`: walkable aisles, shelf/corral/register interactions,
+      checkout, departure — StoreSceneRoot + store-views/ (environment,
+      fixtures, merchandise bake + highlight, actors with the pushed
+      flatbed and ambient shoppers, the stalled truck, daylight), keys in
+      a ShortcutDispatcher store branch over the shared
+      resolveStoreInteract, the old StoreOverlayLayer/StoreCheckoutModal
+      imported verbatim through the OverlayRoot bridge, cart readout as a
+      shell copy over the cart commands. Departure is instant until the
+      trip theater lands (the next item) — the old E2E build's behavior
 - [ ] Lumberyard + shopping overlays; scavenging trip UI
 - [ ] **Gate:** shopping-trip spec passes end to end
 
@@ -612,3 +619,11 @@ transform tests as it lands.
   the drive home lands the purchase in the bed. tsc + 1350 unit green.
   Remaining in this item: the venue dress (environment/fixtures/
   merchandise/daylight/shoppers/truck/cart sprites + decals).
+- 2026-08-15 — Phase 6 StoreScene complete: the daylight mask (sky
+  ambient, swept building shadow, sales floor lit from inside) and the
+  full dress verified in the browser — the stocked aisles, the shopper's
+  person sprite pushing a loaded flatbed that trails and swings, three
+  ambient shoppers solid to the walk, the truck in its painted stall
+  with bed cargo, the storefront sign and stencils. tsc + 1350 unit +
+  engine-shell journey green. Next: the trip theater, lumberyard and
+  scavenging overlays, then the shopping-trip gate.

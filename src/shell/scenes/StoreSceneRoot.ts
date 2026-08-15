@@ -47,6 +47,7 @@ import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
 import { StoreActorsView } from "./store-views/StoreActorsView";
+import { StoreDaylightView } from "./store-views/StoreDaylightView";
 import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
 import { StoreTruckView } from "./store-views/StoreTruckView";
 import { StoreFixturesView } from "./store-views/StoreFixturesView";
@@ -150,6 +151,7 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     this.addChild(new StoreMerchandiseView(layout));
     this.addChild(new StoreActorsView());
     this.addChild(new StoreTruckView(layout));
+    this.addChild(new StoreDaylightView(layout));
   }
 
   /** The resolver the keys and the chips share (store-interact.ts). */
