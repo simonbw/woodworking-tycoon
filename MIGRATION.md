@@ -193,10 +193,14 @@ transform tests as it lands.
 - [x] Player view  ← exemplar for sprite ports (`src/views/PlayerView.ts`
       via registerView; `MovementInput` feeds held movement so the shell
       walks — the full dispatcher stays phase 4)
-- [ ] **[fan-out]** ~40 sprites as view entities (Graphics bodies port into
+- [x] **[fan-out]** ~40 sprites as view entities (Graphics bodies port into
       `onRender`/redraw-on-change), daylight, dust, truck, customers, stand
+      (four subagent ports merged: floor/dust/daylight/cords, machines +
+      crates + carried, materials/broom/vac/arms, truck/stand/customers)
 - [ ] **Gate:** walkable shop at visual parity (side-by-side screenshots vs
-      old shell — **human playtest gate**); movement E2E spec passes
+      old shell — **human playtest gate**, FLAGGED — screenshots delivered,
+      awaiting the playtest); movement E2E spec passes
+      (tests/engine-shell.spec.ts, green)
 
 ## Phase 4 — Interaction [size M]
 
@@ -383,3 +387,7 @@ transform tests as it lands.
   phase 4, leaned-bench suppression to phase 7. Verified side-by-side
   against the old shell (13 machines, mid-rip badge+kerf, carried+ghost+
   rulers+crate). tsc + unit green.
+- 2026-08-15 — Phase 3 fan-out fully merged; fresh-shop side-by-side
+  screenshots show the world canvas at parity (old shell's extras are the
+  phase-4/5 DOM chrome). Movement E2E green. Human playtest gate flagged
+  to the user; continuing into phase 4 per the working agreements.
