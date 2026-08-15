@@ -333,3 +333,11 @@ transform tests as it lands.
   at the cab, away null). Driver grows sleep()/ensureDaylight and
   awaitSales now sleeps through nights like the old driver. tsc + unit
   green.
+- 2026-08-15 — [fan-out] Sequence rehost: cleaning-chain, day-loop, and
+  tutorial land in `src/sim/sequences/` on the new driver — same
+  structure, same assertions, same fixtures, no parity bugs found. Three
+  recorded driver deviations resolved now that their blocking ports have
+  landed: run/scavenge/goShopping regain the old ensureDaylight guards
+  (night refusals no longer strand a long sequence) and setOut ferries
+  matching stock off the floor again, an armful at a time. tsc + unit
+  green (1303).

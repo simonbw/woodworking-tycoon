@@ -900,9 +900,6 @@ export class ShopDriver {
    * there is nothing else it could legally hold. Either way, hands-free
    * phases (glue curing) run out on the clock, so one verb covers both
    * halves of a glue-up.
-   *
-   * (The old driver slept off the night before starting; sleeping
-   * arrives with the day-cycle port, so nothing guards daylight yet.)
    */
   run(machineTypeId: MachineId): this {
     // Dismantling never "runs": a staged pallet transforms nail by nail
@@ -913,6 +910,9 @@ export class ShopDriver {
       return this.performWork(machineTypeId);
     }
 
+    // Nothing new starts at night; a long sequence sleeps through to
+    // morning and picks the work back up.
+    this.ensureDaylight();
     operateMachine(this.game, this.machine(machineTypeId));
     if (
       this.machine(machineTypeId).state.operationProgress.status !==
@@ -1123,8 +1123,6 @@ export class ShopDriver {
    * stringers at each stop searched, so sequences can count on the wood
    * — two stops means two pristine pallets, and the errand costs only
    * the searching: half an hour a stop, nothing for the drive back.
-   * (The old driver slept off the night first if the trip wouldn't fit
-   * the day; sleeping arrives with the day-cycle port.)
    */
   scavenge({
     stops = 2,
@@ -1133,6 +1131,10 @@ export class ShopDriver {
     if (stops < 1 || stops > SCAVENGE_STOP_NAMES.length) {
       throw new Error(`A trip searches 1-${SCAVENGE_STOP_NAMES.length} stops`);
     }
+    // The whole trip has to fit inside one day: "keep searching" is
+    // refused once the next search would run past close, and a sequence
+    // shouldn't trip over the daylight rule.
+    this.ensureDaylight(stops * (SCAVENGE_STOP_TICKS + 1));
     this.standAtCab();
     startScavenging(this.game, rng ?? pristineFindsRng(stops));
     if (!this.player.away) {
@@ -1173,6 +1175,8 @@ export class ShopDriver {
         `The truck doesn't offer ${store} yet — check the progression flags`,
       );
     }
+    // Nothing new starts at night; sleep it off and go in the morning.
+    this.ensureDaylight();
     this.standAtCab();
     goToStore(this.game, store);
     if (this.player.away?.kind !== "shopping") {
@@ -1396,26 +1400,40 @@ export class ShopDriver {
   }
 
   /**
-   * Carry every piece in hand matching the predicate down the driveway
-   * and set it out on the stand. (The old driver also swept the floor's
-   * piles; those arrive with the piles port.)
+   * Carry every piece matching the predicate — in hand or on the floor —
+   * down the driveway and set it out on the stand, an armful at a time.
    */
   setOut(
     predicate: (material: MaterialInstance) => boolean = isSellable,
   ): this {
-    const materials = this.player.inventory.filter(predicate);
-    if (materials.length === 0) {
+    const count = this.stock(predicate).length;
+    if (count === 0) {
       throw new Error(
-        `Nothing in hand to set out — holding ` +
-          `[${this.player.inventory.map((m) => m.type).join(", ")}]`,
+        `Nothing in reach to set out — holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}], floor has ` +
+          `[${this.piles.map((p) => p.material.type).join(", ")}]`,
       );
     }
     const before = this.stand.pieces.length;
-    this.standAtStand();
-    setOutAtStand(this.game, materials);
-    if (this.stand.pieces.length !== before + materials.length) {
+    while (this.stock(predicate).length > 0) {
+      const inHand = this.inventory.filter(predicate);
+      if (inHand.length > 0) {
+        this.standAtStand();
+        setOutAtStand(this.game, inHand);
+        if (this.inventory.some((piece) => inHand.includes(piece))) {
+          throw new Error(
+            `The stand would not take ` +
+              `[${inHand.map((m) => m.type).join(", ")}]`,
+          );
+        }
+        continue;
+      }
+      this.takeFromFloor(predicate, 1);
+    }
+    if (this.stand.pieces.length !== before + count) {
       throw new Error(
-        `The stand would not take [${materials.map((m) => m.type).join(", ")}]`,
+        `Set out ${this.stand.pieces.length - before} of ${count} pieces — ` +
+          `this is a driver bug`,
       );
     }
     return this;
