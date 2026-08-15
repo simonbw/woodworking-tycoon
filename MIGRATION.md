@@ -275,3 +275,12 @@ transform tests as it lands.
   fan-out ports: setOut sweeps only the hands (piles unported) and
   awaitSales can't sleep through nights (day cycle unported). tsc + unit
   green.
+- 2026-08-15 — [fan-out] Cleaning system ported: Broom singleton (owned/
+  position/dustpan), ShopVacEntity (absent until bought), CleaningSystem on
+  the "cleaning" layer running the old sweep → vacuum → shopVac passes per
+  sim minute over a projection and writing the slices back (parity by
+  construction — the old passes are reused wholesale, not rehosted),
+  held-tool TimeFlow spender, walk-speed penalties (dust/vac drag/active
+  sweep) re-registered per Player instance from beforeTick, cleaning
+  commands + driver verbs, fixture/projection claims for the broom, pan,
+  and vac slices. tsc + unit green.

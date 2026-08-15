@@ -9,6 +9,8 @@ import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
 import { StandEntity } from "../entities/StandEntity";
 import { TruckEntity } from "../entities/TruckEntity";
+import { ShopVacEntity } from "../entities/ShopVacEntity";
+import { Broom } from "../singletons/Broom";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
@@ -96,6 +98,16 @@ export function loadGameState(game: Game, state: GameState): void {
     new TruckEntity({ bed: state.truck.bed, crates: state.truck.crates }),
   );
   game.addEntity(new StandEntity(state.stand));
+  game.addEntity(
+    new Broom({
+      owned: state.broomOwned,
+      position: state.broomPosition,
+      dustpan: state.dustpan,
+    }),
+  );
+  if (state.shopVac !== null) {
+    game.addEntity(new ShopVacEntity(state.shopVac));
+  }
 
   for (const pile of state.materialPiles) {
     game.addEntity(
@@ -115,16 +127,6 @@ export function loadGameState(game: Game, state: GameState): void {
   // Slices the entity world can't hold yet. Each system's port claims
   // its slice and deletes its check here.
   const unsupported: string[] = [];
-
-  if (state.shopVac !== null) unsupported.push("shopVac");
-  // A parked broom (broomPosition set) affects nothing the ported
-  // systems read — walk speed and held-tool checks only see a broom in
-  // hand — so it's tolerated (and dropped) until the cleaning port
-  // claims the slice. A held broom is not.
-  if (state.broomOwned && state.broomPosition === null) {
-    unsupported.push("broom (in hand)");
-  }
-  if (Object.keys(state.dustpan).length > 0) unsupported.push("dustpan");
   if (unsupported.length > 0) {
     throw new Error(
       `Fixture uses slices the entity world hasn't ported yet: ${unsupported.join(", ")}`,

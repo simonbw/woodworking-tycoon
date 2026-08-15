@@ -13,6 +13,7 @@ import { MachineEntity } from "./entities/MachineEntity";
 import { Player } from "./entities/Player";
 import { StandEntity } from "./entities/StandEntity";
 import { TruckEntity } from "./entities/TruckEntity";
+import { Broom } from "./singletons/Broom";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { Progression } from "./singletons/Progression";
@@ -22,6 +23,7 @@ import { StorageUpgrades } from "./singletons/StorageUpgrades";
 import { TutorialTracker } from "./singletons/TutorialTracker";
 import { DustLayer } from "./singletons/DustLayer";
 import { Wallet } from "./singletons/Wallet";
+import { CleaningSystem } from "./systems/CleaningSystem";
 import { MachineSystem } from "./systems/MachineSystem";
 import { MilestoneSystem } from "./systems/MilestoneSystem";
 import { StreetSystem } from "./systems/StreetSystem";
@@ -41,6 +43,7 @@ import { TimeFlow } from "./TimeFlow";
 /** Add the session-lifetime singletons every game needs exactly once. */
 export function addSessionSingletons(game: Game): void {
   game.addEntity(new TimeFlow());
+  game.addEntity(new CleaningSystem());
   game.addEntity(new MachineSystem());
   game.addEntity(new MilestoneSystem());
   game.addEntity(new StreetSystem());
@@ -60,6 +63,7 @@ export function addFreshShopSingletons(game: Game): void {
   game.addEntity(new DustLayer());
   game.addEntity(new TruckEntity());
   game.addEntity(new StandEntity());
+  game.addEntity(new Broom());
 
   // The starter floor, exactly the old initialGameState's: a workspace
   // with the starter hammer, a garbage can, and a small lumber shelf.
