@@ -284,3 +284,9 @@ transform tests as it lands.
   sweep) re-registered per Player instance from beforeTick, cleaning
   commands + driver verbs, fixture/projection claims for the broom, pan,
   and vac slices. tsc + unit green.
+- 2026-08-15 — Wave 1 of the phase-2 fan-out merged (four subagents in
+  worktrees): piles & truck, cleaning (dust/broom/vac), stand & customers
+  (seeded street), milestones/progression. All fixture slices except
+  trips-side state now load; 1235 unit tests green. Wave 2 dispatched:
+  trips & store purchases, day cycle & sleep, tools & upgrades, bench-work
+  commands.
