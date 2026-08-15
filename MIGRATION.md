@@ -359,3 +359,10 @@ transform tests as it lands.
   forced-minute isolation in TimeFlow) rather than in tests. 1350 unit
   tests green, tsc clean. The working shop now runs entirely on entities,
   headless.
+- 2026-08-15 — Phase 3 spine merged (layer table, EnvironmentView,
+  CameraRig, PlayerView exemplar, MovementInput); the movement E2E gate
+  lives in a transitional eighth spec file, tests/engine-shell.spec.ts —
+  the shell is a genuinely different interface until cutover, when the
+  seven canonical specs rehost onto it and this file is absorbed
+  (recorded as the testing-skill deviation it is). Sprite fan-out
+  dispatched: floor/dust/daylight, machines, materials/broom/vac, street.

@@ -1,0 +1,117 @@
+/**
+ * The engine shell (/engine.html) — the entity-based rebuild being stood
+ * up beside the app during the migration (see MIGRATION.md). This is a
+ * transitional eighth spec file: the shell is a genuinely different
+ * interface (its own entry, boot, and hooks) until cutover, when the
+ * seven canonical specs rehost onto it and this file is absorbed.
+ *
+ * Phase 3's automated gate lives here: the shop is walkable — held keys
+ * move the continuous body, walls and machines stop it, the camera
+ * hands off to the player past the garage door — and the world's clock
+ * only creeps while nobody spends time.
+ */
+
+import { expect, test } from "@playwright/test";
+
+test.describe("Engine shell", () => {
+  test("boots a walkable shop with a following camera", async ({ page }) => {
+    await page.goto("/engine.html");
+    await page.waitForFunction(() => Boolean((window as any).game), null, {
+      timeout: 15_000,
+    });
+    // The world settles: assets in, entities added, first frames drawn.
+    await page.waitForFunction(
+      () => (window as any).game.entities.all.size > 10,
+      null,
+      { timeout: 15_000 },
+    );
+
+    const readPlayer = () =>
+      page.evaluate(() => {
+        const game = (window as any).game;
+        const player = game.entities.getById("player");
+        return {
+          pos: [...player.position] as [number, number],
+          cameraY: game.camera.y as number,
+          clockTick: game.entities.getById("clock").tick as number,
+        };
+      });
+
+    await test.step("boots the starter shop", async () => {
+      const state = await page.evaluate(() => {
+        const game = (window as any).game;
+        return {
+          // saveType, not constructor.name: the E2E bundle is minified.
+          machines: [...game.entities.all].filter(
+            (e: any) => e.saveType === "machine",
+          ).length,
+          hasCanvas: Boolean(document.querySelector("canvas")),
+        };
+      });
+      expect(state.hasCanvas).toBe(true);
+      expect(state.machines).toBe(3);
+    });
+
+    await test.step("held keys walk the body", async () => {
+      const before = await readPlayer();
+      await page.keyboard.down("KeyD");
+      await page.waitForTimeout(500);
+      await page.keyboard.up("KeyD");
+      const after = await readPlayer();
+      expect(after.pos[0]).toBeGreaterThan(before.pos[0] + 0.5);
+      expect(Math.abs(after.pos[1] - before.pos[1])).toBeLessThan(1e-6);
+    });
+
+    await test.step("walls stop the walk", async () => {
+      await page.keyboard.down("KeyD");
+      await page.waitForTimeout(1500);
+      await page.keyboard.up("KeyD");
+      const atWall = await readPlayer();
+      // The east wall: the shop is 12 cells wide and the body's radius
+      // is 0.8, so it rests just inside x = 11.2.
+      expect(atWall.pos[0]).toBeLessThanOrEqual(11.2 + 1e-3);
+      expect(atWall.pos[0]).toBeGreaterThan(10.5);
+    });
+
+    await test.step("the camera follows out the garage door", async () => {
+      const indoors = await readPlayer();
+      expect(indoors.cameraY).toBeGreaterThan(0);
+      const cameraBefore = indoors.cameraY;
+      // Walk to the door's span, then south out onto the driveway.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const player = game.entities.getById("player");
+        player.position = [6.5, 15.0];
+      });
+      await page.keyboard.down("KeyS");
+      await page.waitForTimeout(2000);
+      await page.keyboard.up("KeyS");
+      const outdoors = await readPlayer();
+      expect(outdoors.pos[1]).toBeGreaterThan(16.5);
+      expect(outdoors.cameraY).toBeGreaterThan(cameraBefore + 1);
+    });
+
+    await test.step("idle time barely creeps", async () => {
+      const before = await readPlayer();
+      await page.waitForTimeout(1000);
+      const after = await readPlayer();
+      // The idle creep is 5 game minutes per real minute — one real
+      // second may carry the accumulator over at most one whole minute.
+      expect(after.clockTick - before.clockTick).toBeLessThanOrEqual(1);
+    });
+
+    await test.step("the world round-trips through the hooks", async () => {
+      const roundTrip = await page.evaluate(() => {
+        const first = (window as any).__GET_GAME_STATE__();
+        (window as any).__UPDATE_GAME_STATE__(first);
+        const second = (window as any).__GET_GAME_STATE__();
+        return {
+          identical: JSON.stringify(first) === JSON.stringify(second),
+          version: first.version,
+        };
+      });
+      expect(roundTrip.identical).toBe(true);
+      expect(roundTrip.version).toBeGreaterThanOrEqual(1);
+    });
+  });
+});
