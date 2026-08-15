@@ -179,6 +179,10 @@ export class TargetingState extends BaseEntity implements Entity {
     this.floorSheetOpen = true;
   }
 
+  closeFloorSheet(): void {
+    this.floorSheetOpen = false;
+  }
+
   cyclePile(step: 1 | -1): void {
     this.pileOffset += step;
   }

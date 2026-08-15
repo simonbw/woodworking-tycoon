@@ -7,6 +7,7 @@ import { SaveManager } from "./sim/save/SaveManager";
 import { ShortcutDispatcher } from "./shell/dispatch/ShortcutDispatcher";
 import { TargetingState } from "./shell/dispatch/TargetingState";
 import { HudRoot } from "./shell/HudRoot";
+import { OverlayRoot } from "./shell/OverlayRoot";
 import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
 import { loadFonts } from "./utils/loadFonts";
@@ -63,10 +64,13 @@ async function main() {
   game.addEntity(new ShortcutDispatcher());
   game.addEntity(new MousePicking());
   game.addEntity(new TargetHighlightView());
-  // The DOM layer: the state-change signal first, then the React root
-  // that resolves it at first render.
+  // The DOM layer: the state-change signal first, then the React roots
+  // that resolve it at first render — the HUD (screen-anchored, renders
+  // on signals) and the overlay (world-pinned, re-renders every frame
+  // to ride the camera).
   game.addEntity(new ShellStore());
   game.addEntity(new HudRoot());
+  game.addEntity(new OverlayRoot());
 
   const saveManager = game.addEntity(
     new SaveManager({

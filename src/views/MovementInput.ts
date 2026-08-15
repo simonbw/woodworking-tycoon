@@ -6,6 +6,7 @@ import { on } from "../core/entity/handler";
 import { setMoveInput } from "../sim/commands/player-commands";
 import { Player } from "../sim/entities/Player";
 import { ShellStore } from "../shell/ShellStore";
+import { TargetingState } from "../shell/dispatch/TargetingState";
 
 /**
  * Feeds held movement keys (WASD/arrows/stick) into the player's move
@@ -26,6 +27,11 @@ export class MovementInput extends BaseEntity implements Entity {
       return;
     }
     const [x, y] = this.game.io.getMovementVector();
-    setMoveInput(this.game, [x, y]);
+    // An open trip card is using W/S for its row cursor; only A/D drive
+    // the body (the old shell's `captureVertical`).
+    const captureVertical =
+      this.game.entities.tryGetSingleton(TargetingState)?.truckMenuOpen ??
+      false;
+    setMoveInput(this.game, [x, captureVertical ? 0 : y]);
   }
 }

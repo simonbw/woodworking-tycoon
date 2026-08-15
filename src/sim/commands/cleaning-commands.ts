@@ -5,6 +5,15 @@ import { personCanWork } from "../../game/Person";
 import { carryingShopVac, SHOP_VAC_COST } from "../../game/ShopVac";
 import { chebyshevDistance } from "../../game/Vectors";
 import { ShopVacEntity } from "../entities/ShopVacEntity";
+
+// Pure read helpers re-exported so the shell (whose import rule keeps it
+// off the old transform layer) reads them through the command surface.
+export {
+  canSweepAt,
+  dustpanFillFraction,
+  nextToGarbageCan,
+} from "../../game/game-actions/dust-actions";
+export { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { projectGameState } from "../projection";
 import { Broom } from "../singletons/Broom";
 import { Wallet } from "../singletons/Wallet";

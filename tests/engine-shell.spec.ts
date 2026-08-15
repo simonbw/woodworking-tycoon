@@ -182,6 +182,32 @@ test.describe("Engine shell", () => {
       expect(await carrying()).toBe(null);
     });
 
+    await test.step("the targeted machine wears its hint chips", async () => {
+      // Stand beside the garbage can (workable from any side — it has
+      // no operator cell): the DOM overlay pins the machine's chip
+      // cluster over it, named and offering its keys. The can sits at
+      // [0,13] on a 2×2 footprint, so [2.5, 13.5] is in its ring.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        game.entities.getById("player").position = [2.5, 13.5];
+      });
+      const chips = page.getByTestId("machine-chips");
+      await expect(chips).toBeVisible();
+      await expect(chips).toContainText("Garbage Can");
+    });
+
+    await test.step("Tab opens and closes the station sheet", async () => {
+      await page.keyboard.press("Tab");
+      const sheet = page.getByTestId("station-sheet");
+      await expect(sheet).toBeVisible();
+      await expect(sheet).toContainText("Garbage Can");
+      // The chips fold away while the sheet is spread out.
+      await expect(page.getByTestId("machine-chips")).toHaveCount(0);
+      await page.keyboard.press("Tab");
+      await expect(sheet).toHaveCount(0);
+      await expect(page.getByTestId("machine-chips")).toBeVisible();
+    });
+
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
         const first = (window as any).__GET_GAME_STATE__();
