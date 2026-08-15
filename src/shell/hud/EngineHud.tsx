@@ -8,6 +8,7 @@ import { FloorSheet } from "./overlay/FloorSheet";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
+import { StoreScreen } from "./store/StoreScreen";
 import { SuppliesSection } from "./SuppliesSection";
 import { TutorialCards } from "./tutorial/TutorialCard";
 import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
@@ -74,6 +75,10 @@ export const EngineHud: React.FC = () => {
           bar's z-40 on purpose so its buttons stay clickable over them. */}
       <StationSheet />
       <FloorSheet />
+
+      {/* The walkable store's chrome (cart corner + receipt card); its
+          own null-gate keeps it off-screen at home. */}
+      <StoreScreen />
 
       {/* The sale celebration, above everything (z-60): coins and the
           star fly to the top bar's readouts. */}

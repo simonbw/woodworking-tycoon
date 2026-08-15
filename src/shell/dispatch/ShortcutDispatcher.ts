@@ -22,6 +22,7 @@ import { setOperating, setWaiting } from "../../sim/commands/player-commands";
 import { canLeaveShop } from "../../sim/commands/trip-commands";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
+import { StoreSceneRoot } from "../scenes/StoreSceneRoot";
 import { ShellStore } from "../ShellStore";
 import { TargetingState } from "./TargetingState";
 
@@ -69,6 +70,34 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     // key fires and no hold starts. Key *releases* still land below, so
     // a hold begun before the dialog opened can't stick.
     if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
+
+    // The walkable store's keys, mirroring the shop's: E takes things —
+    // a flatbed from the corral, one off the shelf, the register, the
+    // way home — F puts one back, Escape folds the receipt card. The
+    // old StoreKeyboardShortcuts read the same resolver the chips draw
+    // from; here the StoreSceneRoot owns both. The shop branch below is
+    // naturally quiet for the whole trip (`present` guards on `away`).
+    const storeScene = this.game.entities.tryGetSingleton(StoreSceneRoot);
+    if (storeScene) {
+      // The receipt card owns the keys while it's open (its own DOM
+      // Escape handler folds it; nothing else may fire behind it).
+      if (storeScene.checkoutOpen) return;
+      if (key === "KeyE") {
+        storeScene.pressE();
+        event.preventDefault();
+        return;
+      }
+      if (key === "KeyF") {
+        storeScene.pressF();
+        event.preventDefault();
+        return;
+      }
+      if (key === "Escape" && storeScene.pressEscape()) {
+        event.preventDefault();
+        return;
+      }
+      return;
+    }
 
     // Held keys first — they're state, not shortcuts.
     if (key === "Space") setOperating(this.game, true);

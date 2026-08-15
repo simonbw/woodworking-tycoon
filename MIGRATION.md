@@ -597,3 +597,18 @@ transform tests as it lands.
   charges 15 minutes and lands the player at the cab with all views
   respawned. tsc + 1350 unit + engine-shell journey green. Next: the
   StoreScene proper (fixtures, merchandise, store keys, checkout).
+- 2026-08-15 — Phase 6 store interactions landed: the StoreSceneRoot owns
+  the old StoreView's transient state (checkout card, armed leave-confirm
+  with its timeout/step-away/empty disarms) and the store floor's keys
+  (E/F/Escape branch in ShortcutDispatcher, reading the shared
+  resolveStoreInteract exactly like the old StoreKeyboardShortcuts); the
+  DOM rides the spine roots — the old StoreOverlayLayer and
+  StoreCheckoutModal import verbatim (props-driven) via a world-origin
+  bridge in OverlayRoot, and the cart readout is a shell copy over the
+  cart commands. The SceneDirector's missing-scene probe now covers both
+  venues (a save load's clearScene strips either). Browser-verified full
+  loop: corral E takes a cart, bay E/F loads and returns a Hammer with
+  tag/chips/cart-corner live, register E opens the receipt, Buy pays and
+  the drive home lands the purchase in the bed. tsc + 1350 unit green.
+  Remaining in this item: the venue dress (environment/fixtures/
+  merchandise/daylight/shoppers/truck/cart sprites + decals).

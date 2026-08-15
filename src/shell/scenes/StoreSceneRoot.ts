@@ -15,15 +15,28 @@ import {
   stepPlayerMotion,
 } from "../../game/player-motion";
 import {
+  ShelfBay,
   storeCollisionWorld,
   StoreLayout,
   storeLayout,
 } from "../../game/store-layout";
+import {
+  cartIndexToReturn,
+  resolveStoreInteract,
+  StoreInteract,
+} from "../../game/store-interact";
 import { Direction, Vector, vectorKey } from "../../game/Vectors";
+import {
+  addToCart,
+  checkout,
+  removeFromCart,
+  takeCart,
+} from "../../sim/commands/cart-commands";
 import { setShoppingPosition } from "../../sim/commands/trip-commands";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
+import { SceneDirector } from "./SceneDirector";
 
 /**
  * The walkable Orange Box's scene root (migration phase 6). Spawned by
@@ -66,6 +79,21 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   private lastReported = "";
 
   private layoutCache: StoreLayout | null = null;
+  /** What the cached layout was built for — the same slices the old
+   * StoreView's memo keyed on (the floor only moves when stock moves). */
+  private layoutKey = "";
+
+  // ---- The store floor's transient UI state (the old StoreView's) ----
+
+  /** The register's receipt card. */
+  checkoutOpen = false;
+  /** The armed "leave the cart behind?" at the cab. */
+  armedLeave = false;
+  /** Real seconds left before the armed confirm disarms itself. */
+  private armedLeaveLeft = 0;
+
+  /** How long an armed "leave the cart behind?" waits before disarming. */
+  private static readonly CONFIRM_TIMEOUT_S = 5;
 
   constructor() {
     super();
@@ -76,15 +104,128 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     this.sprites = [this.floor, this.body];
   }
 
-  private layout(): StoreLayout | null {
-    if (this.layoutCache) return this.layoutCache;
+  layout(): StoreLayout | null {
     const player = this.game.entities.tryGetSingleton(Player);
     if (player?.away?.kind !== "shopping") return null;
-    this.layoutCache = storeLayout(
+    const gameState = projectGameState(this.game);
+    const key = [
       player.away.store,
-      projectGameState(this.game),
-    );
+      gameState.reputation,
+      gameState.broomOwned,
+      gameState.shopVac != null,
+    ].join(",");
+    if (!this.layoutCache || key !== this.layoutKey) {
+      this.layoutCache = storeLayout(player.away.store, gameState);
+      this.layoutKey = key;
+      if (this.isAdded) this.drawVenue(this.layoutCache);
+    }
     return this.layoutCache;
+  }
+
+  /** The resolver the keys and the chips share (store-interact.ts). */
+  interact(): StoreInteract | null {
+    const layout = this.layout();
+    if (!layout) return null;
+    return resolveStoreInteract(projectGameState(this.game), layout);
+  }
+
+  // ---- The store floor's keys (dispatched by ShortcutDispatcher) ----
+
+  /** E: take a cart, take one off the shelf, ring up, or head home. */
+  pressE(): void {
+    const now = this.interact();
+    if (!now) return;
+    if (now.atRegister) {
+      if (now.canCheckOut) this.openCheckout();
+      return;
+    }
+    if (now.atCab) {
+      this.leave();
+      return;
+    }
+    if (now.atCorral && !now.hasCart) {
+      takeCart(this.game);
+      this.bump();
+      return;
+    }
+    if (now.fixture && now.hasCart) {
+      this.addFromBay(now.fixture);
+    }
+  }
+
+  /** F: put one of the standing bay's product back on its shelf. */
+  pressF(): void {
+    const now = this.interact();
+    if (now?.fixture && now.inCart > 0) {
+      this.returnToBay(now.fixture);
+    }
+  }
+
+  /** Escape: fold the receipt card. True when the press was spent. */
+  pressEscape(): boolean {
+    if (this.checkoutOpen) {
+      this.closeCheckout();
+      return true;
+    }
+    if (this.armedLeave) {
+      this.armedLeave = false;
+      this.bump();
+      return true;
+    }
+    return false;
+  }
+
+  addFromBay(bay: ShelfBay): void {
+    addToCart(this.game, bay.product.line);
+    this.bump();
+  }
+
+  returnToBay(bay: ShelfBay): void {
+    const index = cartIndexToReturn(projectGameState(this.game), bay);
+    if (index !== null) {
+      removeFromCart(this.game, index);
+      this.bump();
+    }
+  }
+
+  openCheckout(): void {
+    this.checkoutOpen = true;
+    this.bump();
+  }
+
+  closeCheckout(): void {
+    this.checkoutOpen = false;
+    this.bump();
+  }
+
+  /** The receipt's Buy: ring the cart up, then the drive home starts. */
+  buy(): void {
+    if (!checkout(this.game)) return;
+    this.checkoutOpen = false;
+    this.bump();
+    this.game.entities.getSingleton(SceneDirector).requestDriveHome();
+  }
+
+  /**
+   * The cab's E. A loaded cart asks first (the armed confirm, which
+   * disarms on a timeout, on stepping away, or when the cart empties);
+   * pressing again — or standing there cartless — heads home.
+   */
+  leave(): void {
+    const now = this.interact();
+    if ((now?.cartCount ?? 0) > 0 && !this.armedLeave) {
+      this.armedLeave = true;
+      this.armedLeaveLeft = StoreSceneRoot.CONFIRM_TIMEOUT_S;
+      this.bump();
+      return;
+    }
+    this.armedLeave = false;
+    this.bump();
+    this.game.entities.getSingleton(SceneDirector).requestDriveHome();
+  }
+
+  private bump(): void {
+    this.game.entities.tryGetSingleton(ShellStore)?.bump();
   }
 
   @on("add")
@@ -159,6 +300,21 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     const layout = this.layout();
     if (!player || player.away?.kind !== "shopping" || !layout) return;
     const trip = player.away;
+
+    // The armed "leave the cart behind?" disarms on its timeout, on
+    // stepping away from the cab, or when the cart empties.
+    if (this.armedLeave) {
+      this.armedLeaveLeft -= dt;
+      const now = this.interact();
+      if (
+        this.armedLeaveLeft <= 0 ||
+        !now?.atCab ||
+        (now?.cartCount ?? 0) === 0
+      ) {
+        this.armedLeave = false;
+        this.bump();
+      }
+    }
 
     // Mount snap: the body stands wherever the trip does — the spawn
     // beside the cab on arrival, mid-aisle on a reload.

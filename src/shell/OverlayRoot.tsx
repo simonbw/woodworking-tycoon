@@ -4,12 +4,25 @@ import { Persistence } from "../config/constants";
 import { ReactEntity } from "../core/ReactEntity";
 import { V } from "../core/Vector";
 import { OverlayFrameContext, OverlayLayer } from "./hud/overlay/OverlayLayer";
-import { ShellProvider, useShopOpen } from "./useShell";
+import { StoreOverlayBridge } from "./hud/store/StoreOverlayBridge";
+import { ShellProvider, useShopOpen, useShopState } from "./useShell";
 
-/** The overlay only exists while a shop is live (a Player is in play). */
+/** The overlay only exists while a shop is live (a Player is in play);
+ * which venue's overlay follows the canvas (the SceneDirector's swap).
+ * The projection read lives in the child so the menu — no Player, no
+ * projection — never evaluates it. */
 const OverlayGate: React.FC = () => {
   const open = useShopOpen();
-  return open ? <OverlayLayer /> : null;
+  return open ? <VenueOverlay /> : null;
+};
+
+const VenueOverlay: React.FC = () => {
+  const gameState = useShopState();
+  const away = gameState.player.away;
+  if (away?.kind === "shopping" && away.store === "orangeBox") {
+    return <StoreOverlayBridge />;
+  }
+  return <OverlayLayer />;
 };
 
 /**

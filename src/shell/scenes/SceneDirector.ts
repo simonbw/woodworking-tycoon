@@ -64,10 +64,13 @@ export class SceneDirector extends BaseEntity implements Entity {
 
     if (!game.renderer) return;
     const venue = currentVenue(game);
-    const shopSceneryMissing =
-      venue === "shop" &&
-      game.entities.byConstructor(EnvironmentView).size === 0;
-    if (venue === this.drawnVenue && !shopSceneryMissing) return;
+    // "Does the world need drawing" is one probe per venue: a save
+    // load's clearScene strips the Level-persistence scenery either way.
+    const sceneMissing =
+      venue === "shop"
+        ? game.entities.byConstructor(EnvironmentView).size === 0
+        : game.entities.byConstructor(StoreSceneRoot).size === 0;
+    if (venue === this.drawnVenue && !sceneMissing) return;
 
     teardownWorldViews(game);
     if (venue === "shop") {
