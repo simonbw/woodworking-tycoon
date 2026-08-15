@@ -1,5 +1,7 @@
 import { registerView } from "../core/ViewRegistry";
 import { Player } from "../sim/entities/Player";
+import { DustLayer } from "../sim/singletons/DustLayer";
+import { DustView } from "./DustView";
 import { PlayerView } from "./PlayerView";
 
 /**
@@ -8,4 +10,5 @@ import { PlayerView } from "./PlayerView";
  */
 export function registerAllViews(): void {
   registerView(Player, PlayerView);
+  registerView(DustLayer, DustView);
 }
