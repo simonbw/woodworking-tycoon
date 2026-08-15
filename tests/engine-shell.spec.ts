@@ -52,6 +52,20 @@ test.describe("Engine shell", () => {
       expect(state.machines).toBe(3);
     });
 
+    await test.step("the HUD chip reads the sim", async () => {
+      // The DOM layer over the canvas: the top bar's balance follows the
+      // wallet through the ShellStore's state-change signal.
+      await expect(page.getByTestId("balance")).toHaveText("$0.00");
+      await page.evaluate(() => {
+        (window as any).game.entities.getById("wallet").money += 45;
+      });
+      await expect(page.getByTestId("balance")).toHaveText("$45.00");
+      await page.evaluate(() => {
+        (window as any).game.entities.getById("wallet").money -= 45;
+      });
+      await expect(page.getByTestId("balance")).toHaveText("$0.00");
+    });
+
     await test.step("held keys walk the body", async () => {
       const before = await readPlayer();
       await page.keyboard.down("KeyD");

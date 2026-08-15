@@ -232,11 +232,22 @@ transform tests as it lands.
 
 ## Phase 5 — HUD & overlays [size M]
 
-- [ ] ReactEntity roots (HUD + modal layer) mounted into the canvas stacking
+- [x] ReactEntity roots (HUD + modal layer) mounted into the canvas stacking
       context; state-change-driven renders; `useSyncExternalStore` hooks over
-      singletons/entities (successor of `useGameState`)
-- [ ] Tutorial predicates become queries over the entity world (same
-      declarative shape per `tutorial.ts`'s header philosophy)
+      singletons/entities (successor of `useGameState`): `ShellStore` folds
+      the HUD-visible surface into a per-tick signature and bumps a version;
+      `useShell.tsx` exposes `useShopState()` (projected `GameState`, memoized
+      per version) as the `useGameState()` drop-in; `HudRoot` is one
+      ReactEntity (autoRender=false, renders once — updates flow through the
+      components' own subscriptions) hosting HUD and modals alike. Exemplar:
+      the top bar's clock + balance segments (`src/shell/hud/TopBar.tsx`),
+      reusing DayDial/StarIcon/Tooltip verbatim
+- [x] Tutorial predicates become queries over the entity world (same
+      declarative shape per `tutorial.ts`'s header philosophy) — satisfied by
+      the projection: MilestoneSystem already walks `advanceTutorials` over
+      `projectGameState` (phase 2), and the DOM cards read the same
+      projection through `useShopState()`; the predicates themselves stay
+      untouched
 - [ ] **[fan-out]** Port the DOM tree: NavBar, day clock, hands strip,
       supplies, station sheets, prompts, manual, journal, tutorial cards,
       pause/start menus, nightfall card
@@ -418,3 +429,9 @@ transform tests as it lands.
   recorded above): mouse picking + highlight live, dispatcher-driven
   floor interaction covered in the engine-shell spec. Next: phase 5
   (ReactEntity HUD roots, tutorial queries, DOM tree fan-out).
+- 2026-08-15 — Phase 5 spine: ShellStore version signal + useShell hooks +
+  HudRoot ReactEntity + top-bar exemplar; engine.html now links the real
+  stylesheet and loadFonts() replaces the interim sign-font loader.
+  Browser-verified (chip renders in paperwork chrome, wallet mutation
+  propagates, clicks pass through to the canvas); HUD assertion step added
+  to the engine-shell spec. Dispatching the DOM-tree fan-out.

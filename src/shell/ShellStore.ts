@@ -1,0 +1,108 @@
+import { Persistence } from "../config/constants";
+import { BaseEntity } from "../core/entity/BaseEntity";
+import { Entity } from "../core/entity/Entity";
+import { on } from "../core/entity/handler";
+import { machineKey } from "../game/Machine";
+import { MachineEntity } from "../sim/entities/MachineEntity";
+import { Player } from "../sim/entities/Player";
+import { Clock } from "../sim/singletons/Clock";
+import { Consumables } from "../sim/singletons/Consumables";
+import { Progression } from "../sim/singletons/Progression";
+import { Reputation } from "../sim/singletons/Reputation";
+import { TutorialTracker } from "../sim/singletons/TutorialTracker";
+import { Wallet } from "../sim/singletons/Wallet";
+import { TargetingState } from "./dispatch/TargetingState";
+
+/**
+ * The DOM layer's state-change signal (migration decision 8: ReactEntity
+ * with autoRender=false, render on signals).
+ *
+ * The sim mutates imperatively, so nothing tells React "something
+ * changed" for free. Each engine tick this entity folds the HUD-visible
+ * surface — money, reputation, the clock, the hands, targeting, machine
+ * states — into a cheap signature, and bumps a version when it moves.
+ * React roots subscribe via `useSyncExternalStore`; a version bump is
+ * one root render, and a quiet frame is zero.
+ */
+export class ShellStore extends BaseEntity implements Entity {
+  id = "shellStore";
+  persistenceLevel: number = Persistence.Permanent;
+  pausable = false;
+
+  private listeners = new Set<() => void>();
+  version = 0;
+  private lastSignature = "";
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  getVersion = (): number => this.version;
+
+  /** Force a render (shell-side state the signature can't see). */
+  bump(): void {
+    this.version += 1;
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+
+  @on("afterTick")
+  onAfterTick() {
+    const signature = this.signature();
+    if (signature !== this.lastSignature) {
+      this.lastSignature = signature;
+      this.bump();
+    }
+  }
+
+  private signature(): string {
+    const game = this.game;
+    const player = game.entities.tryGetSingleton(Player);
+    if (!player) return "empty";
+    const clock = game.entities.tryGetSingleton(Clock);
+    const wallet = game.entities.tryGetSingleton(Wallet);
+    const reputation = game.entities.tryGetSingleton(Reputation);
+    const consumables = game.entities.tryGetSingleton(Consumables);
+    const progression = game.entities.tryGetSingleton(Progression);
+    const tutorials = game.entities.tryGetSingleton(TutorialTracker);
+    const targeting = game.entities.tryGetSingleton(TargetingState);
+
+    const machines: string[] = [];
+    for (const machine of game.entities.byConstructor(MachineEntity)) {
+      // Object identity is the change signal: entity code replaces the
+      // state object on every mutation (the commands' contract).
+      machines.push(machineKey(machine.state));
+    }
+
+    return [
+      clock?.tick,
+      clock?.day,
+      wallet?.money,
+      reputation?.reputation,
+      player.inventory.length,
+      player.inventory[player.inventory.length - 1]?.id,
+      player.carriedMachine?.machineTypeId,
+      player.away?.kind ?? "",
+      player.busyTicks > 0 ? "busy" : "",
+      consumables ? JSON.stringify(consumables.stock) : "",
+      consumables?.clamps,
+      progression?.xp,
+      progression?.skillPoints,
+      progression?.storeUnlocked,
+      progression?.unlockedArticles.length,
+      tutorials ? JSON.stringify(tutorials.tutorials) : "",
+      targeting
+        ? [
+            targeting.targeted()?.state.machineTypeId ?? "",
+            targeting.sheetMachine()?.state.machineTypeId ?? "",
+            targeting.truckMenuOpen,
+            targeting.floorSheetOpen,
+            targeting.pileOffset,
+          ].join(",")
+        : "",
+      machines.join("|"),
+    ].join("§");
+  }
+}

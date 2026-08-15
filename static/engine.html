@@ -3,6 +3,12 @@
 <head>
   <meta name="viewport" content="width=device-width">
   <title>Woodworking Tycoon (engine shell)</title>
+  <!-- The same stylesheet and self-hosted fonts as index.html — the DOM
+       HUD wears the paperwork design system unchanged. The workhorse
+       face rides ahead of the stylesheet like it does there; the rest
+       are fetched by loadFonts() behind the boot gate. -->
+  <link rel="preload" href="/fonts/barlow-condensed-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles/index.css" />
   <link rel="icon" href="/images/favicon.png" />
   <style>
     html {
