@@ -1,5 +1,15 @@
 import { Game } from "../core/Game";
+import {
+  defaultParametersFor,
+  MACHINE_TYPES,
+  MachineId,
+  MachineState,
+  ParameterValues,
+} from "../game/Machine";
+import { ToolId } from "../game/Tool";
+import { Direction } from "../game/Vectors";
 import { SaveFile, loadSaveFile } from "./save/SaveFile";
+import { MachineEntity } from "./entities/MachineEntity";
 import { Player } from "./entities/Player";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
@@ -8,7 +18,9 @@ import { Reputation } from "./singletons/Reputation";
 import { ShopInfo } from "./singletons/ShopInfo";
 import { StorageUpgrades } from "./singletons/StorageUpgrades";
 import { TutorialTracker } from "./singletons/TutorialTracker";
+import { DustLayer } from "./singletons/DustLayer";
 import { Wallet } from "./singletons/Wallet";
+import { MachineSystem } from "./systems/MachineSystem";
 import { TimeFlow } from "./TimeFlow";
 
 /**
@@ -25,6 +37,7 @@ import { TimeFlow } from "./TimeFlow";
 /** Add the session-lifetime singletons every game needs exactly once. */
 export function addSessionSingletons(game: Game): void {
   game.addEntity(new TimeFlow());
+  game.addEntity(new MachineSystem());
 }
 
 /** Add a fresh shop's persistent singletons (a brand-new game). */
@@ -38,6 +51,47 @@ export function addFreshShopSingletons(game: Game): void {
   game.addEntity(new ShopInfo());
   game.addEntity(new Progression());
   game.addEntity(new TutorialTracker());
+  game.addEntity(new DustLayer());
+
+  // The starter floor, exactly the old initialGameState's: a workspace
+  // with the starter hammer, a garbage can, and a small lumber shelf.
+  game.addEntity(
+    new MachineEntity(machine("workspace", [2, 2], 0, ["hammer"])),
+  );
+  game.addEntity(new MachineEntity(machine("garbageCan", [0, 13], 0)));
+  game.addEntity(new MachineEntity(machine("lumberShelf", [8, 0], 0)));
+}
+
+/** The old initialGameState's machine() helper, verbatim. */
+function machine(
+  machineTypeId: MachineId,
+  position: [number, number],
+  rotation: Direction,
+  tools: ReadonlyArray<ToolId> = [],
+): MachineState {
+  const machineType = MACHINE_TYPES[machineTypeId];
+  const firstOperation = machineType.operations[0];
+  const selectedParameters: ParameterValues | undefined = firstOperation
+    ? defaultParametersFor(firstOperation)
+    : undefined;
+
+  return {
+    machineTypeId,
+    position,
+    rotation,
+    inputMaterials: [],
+    processingMaterials: [],
+    outputMaterials: [],
+    tools,
+    storedMaterials: [],
+    selectedOperationId: firstOperation ? firstOperation.id : "none",
+    selectedParameters,
+    operationProgress: {
+      status: "notStarted",
+      phaseIndex: 0,
+      ticksRemaining: 0,
+    },
+  };
 }
 
 /** Boot a world: session singletons plus a fresh shop or a save file. */

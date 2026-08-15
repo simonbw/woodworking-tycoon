@@ -72,7 +72,10 @@ export function serializeGame(game: Game): SaveFile {
         `Entity ${entity.constructor.name} has unregistered saveType "${entity.saveType}"`,
       );
     }
-    const data = entity.toJSON();
+    // Canonicalize through the schema so key order is the schema's,
+    // whatever order the live state carried — a fixture-loaded world and
+    // its reloaded save serialize byte-identically.
+    const data = spec.schema.parse(entity.toJSON());
     if (spec.singleton) {
       if (entity.saveType in singletons) {
         throw new Error(`Duplicate singleton in scene: ${entity.saveType}`);

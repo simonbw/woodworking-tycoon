@@ -157,11 +157,18 @@ relevant `src/game/sequences/` files with each system. Old `game-actions/` is
 the reference implementation; equivalent entity tests replace each system's
 transform tests as it lands.
 
-- [ ] Player entity: 60 Hz movement (port `player-motion.ts` integration +
+- [x] Player entity: 60 Hz movement (port `player-motion.ts` integration +
       collision), carrying/hands, busyTicks  ← exemplar #1, spine
-- [ ] Machines: placement, carrying machines, power, settings, operations as
-      coroutines (phases, attended work via `waitUntil`, dust emission), feed
-      clearance  ← exemplar #2, spine
+      (`src/sim/entities/Player.ts`; collision world assembled from
+      "solids"-tagged entities, `src/sim/collision.ts`)
+- [x] Machines: placement, carrying machines, power, settings, operations
+      (phases, attended work, dust emission), feed clearance  ← exemplar #2,
+      spine (`MachineEntity` + `MachineSystem` minute pass +
+      `machine-commands.ts`; **deviation, recorded**: operations advance as
+      the serialized `operationProgress` state machine, not live coroutines —
+      a save must land mid-cure and round-trip byte-identically, and the
+      resumable state IS the progress record; behavior matches
+      `machineTickPass` line for line)
 - [ ] **[fan-out]** Remaining systems, each with its sequence files: piles &
       material flow; dust/sweeping/vac; stand & customers (seeded rng); day
       cycle & sleep; trips (shopping/scavenging, sim side); consumables &
@@ -249,3 +256,13 @@ transform tests as it lands.
   command-layer scaffold with boundary rules, new ShopDriver, and the
   engine shell's window.__* hooks. Gate green: byte-identical round-trip,
   deterministic driver, hooks verified in-browser.
+- 2026-08-15 — Phase 2 exemplars done. Player (continuous body on raw dt,
+  busy burn on sim ticks) and Machines (MachineEntity + MachineSystem +
+  commands) live on the new driver; `projection.ts` bridges entity state to
+  the shared pure helpers, `save/fixture.ts` loads old GameState fixtures
+  into the entity world (unported slices fail loudly), and the resaw
+  scenario runs attended with pause/resume, dust, settings lock, and
+  mid-operation save round-trip. Sim time quantized via timeFlow.wholeTicks.
+  Coroutine note above is the one mechanism deviation, taken for
+  serialization; flagging it for review rather than asking up front since
+  behavior is line-for-line machineTickPass.

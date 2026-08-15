@@ -2,8 +2,24 @@ import { Constructor } from "../../core/EntityList";
 import { Entity } from "../../core/entity/Entity";
 import { Game } from "../../core/Game";
 import { mulberry32 } from "../../core/util/SeededRandom";
+import { GameState } from "../../game/GameState";
+import { MachineId, ParameterValues } from "../../game/Machine";
+import { MaterialInstance } from "../../game/Materials";
+import { cellCenter } from "../../game/player-motion";
+import { Vector } from "../../game/Vectors";
 import { bootShop } from "../bootstrap";
+import {
+  moveMaterialsToMachine,
+  operateMachine,
+  setMachineOperation,
+  setMachineSettings,
+  takeOutputsFromMachine,
+  toggleMachinePower,
+} from "../commands/machine-commands";
+import { setOperating } from "../commands/player-commands";
+import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
+import { loadGameState } from "../save/fixture";
 import { SaveFile, serializeGame } from "../save/SaveFile";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
@@ -32,9 +48,16 @@ import { TimeFlow } from "../TimeFlow";
 export class ShopDriver {
   readonly game: Game;
 
-  constructor({ seed = 1, save }: { seed?: number; save?: SaveFile } = {}) {
+  constructor({
+    seed = 1,
+    save,
+    state,
+  }: { seed?: number; save?: SaveFile; state?: GameState } = {}) {
     this.game = new Game({ headless: true, random: mulberry32(seed) });
     bootShop(this.game, save);
+    if (state) {
+      loadGameState(this.game, state);
+    }
   }
 
   /**
@@ -109,5 +132,114 @@ export class ShopDriver {
 
   get tutorials(): TutorialTracker {
     return this.singleton(TutorialTracker);
+  }
+
+  // ------------------------------------------------------------------
+  // Job-level verbs, each a call into the command layer (the same
+  // surface the input dispatcher uses). Arrangement-style setup (stand
+  // here, hold this) mirrors the old driver's teleporting verbs.
+  // ------------------------------------------------------------------
+
+  /** The one machine of this type on the floor. Throws on none or many. */
+  machine(machineTypeId: MachineId): MachineEntity {
+    const matches = [...this.game.entities.byConstructor(MachineEntity)].filter(
+      (entity) => entity.state.machineTypeId === machineTypeId,
+    );
+    if (matches.length !== 1) {
+      throw new Error(
+        `Expected exactly one ${machineTypeId}, found ${matches.length}`,
+      );
+    }
+    return matches[0];
+  }
+
+  /** Teleport the body to stand in a cell (arrangement, not walking). */
+  standAt(position: Vector): this {
+    this.player.position = cellCenter(position);
+    return this;
+  }
+
+  /** Stand at a machine's operator cell, ready to work it. */
+  standAtOperatorCell(machineTypeId: MachineId): this {
+    const cell = this.machine(machineTypeId).view().absoluteOperationPosition;
+    if (!cell) {
+      throw new Error(`${machineTypeId} has no operator cell`);
+    }
+    return this.standAt(cell);
+  }
+
+  /** Make sure a machine's power switch is on. */
+  switchOn(machineTypeId: MachineId): this {
+    const entity = this.machine(machineTypeId);
+    if (!entity.type.powerSwitch) {
+      throw new Error(`${machineTypeId} has no power switch`);
+    }
+    if (!(entity.state.poweredOn ?? false)) {
+      toggleMachinePower(this.game, entity);
+    }
+    return this;
+  }
+
+  /** Turn a machine's persistent settings (fence, stops, angle). */
+  setSettings(machineTypeId: MachineId, settings: ParameterValues): this {
+    setMachineSettings(this.game, this.machine(machineTypeId), settings);
+    return this;
+  }
+
+  /** Select an operation on a machine by id. */
+  select(
+    machineTypeId: MachineId,
+    operationId: string,
+    parameters?: ParameterValues,
+  ): this {
+    const entity = this.machine(machineTypeId);
+    const operation = entity
+      .view()
+      .operations.find((op) => op.id === operationId);
+    if (!operation) {
+      throw new Error(`${machineTypeId} has no operation ${operationId}`);
+    }
+    setMachineOperation(this.game, entity, operation, parameters);
+    return this;
+  }
+
+  /**
+   * Move matching materials from the player's hands onto a machine's
+   * input bay.
+   */
+  load(
+    machineTypeId: MachineId,
+    predicate: (material: MaterialInstance) => boolean,
+    count = 1,
+  ): this {
+    const materials = this.player.inventory.filter(predicate).slice(0, count);
+    if (materials.length < count) {
+      throw new Error("Not holding enough matching materials to load");
+    }
+    moveMaterialsToMachine(this.game, materials, this.machine(machineTypeId));
+    return this;
+  }
+
+  /** Start the machine's operation (direct feed reads the staged stock). */
+  operate(machineTypeId: MachineId): this {
+    operateMachine(this.game, this.machine(machineTypeId));
+    return this;
+  }
+
+  /** Press or release the operate key. */
+  holdOperate(operating = true): this {
+    setOperating(this.game, operating);
+    return this;
+  }
+
+  /** Take everything out of a machine's output bay into the hands. */
+  collect(machineTypeId: MachineId): this {
+    const entity = this.machine(machineTypeId);
+    takeOutputsFromMachine(
+      this.game,
+      [...entity.state.outputMaterials],
+      entity,
+    );
+    return this;
   }
 }
