@@ -4,6 +4,8 @@ import { MachineState } from "../game/Machine";
 import { MachineCrateEntity } from "./entities/MachineCrateEntity";
 import { MachineEntity } from "./entities/MachineEntity";
 import { Player } from "./entities/Player";
+import { ShopVacEntity } from "./entities/ShopVacEntity";
+import { Broom } from "./singletons/Broom";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { DustLayer } from "./singletons/DustLayer";
@@ -41,6 +43,8 @@ export function projectGameState(game: Game): GameState {
   const progression = game.entities.getSingleton(Progression);
   const tutorials = game.entities.getSingleton(TutorialTracker);
   const dust = game.entities.tryGetSingleton(DustLayer);
+  const broom = game.entities.tryGetSingleton(Broom);
+  const shopVac = game.entities.tryGetSingleton(ShopVacEntity);
 
   const machines: MachineState[] = [
     ...game.entities.byConstructor(MachineEntity),
@@ -90,9 +94,9 @@ export function projectGameState(game: Game): GameState {
     stand: [],
     customers: [],
     dust: dust?.map ?? {},
-    shopVac: null,
-    broomOwned: false,
-    broomPosition: null,
-    dustpan: {},
+    shopVac: shopVac?.view() ?? null,
+    broomOwned: broom?.owned ?? false,
+    broomPosition: broom?.position ?? null,
+    dustpan: broom?.dustpan ?? {},
   };
 }

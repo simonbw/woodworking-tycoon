@@ -43,6 +43,12 @@ export const materialSchema = z.object({ type: z.string() }).passthrough();
 /** Species amounts keyed by species name (dust cells, vac canister). */
 export const speciesAmountsSchema = z.record(z.number());
 
+/** The shop vac: where it's parked (null in hand) and what it holds. */
+export const shopVacSchema = z.object({
+  position: vectorSchema.nullable(),
+  canister: speciesAmountsSchema,
+});
+
 export const operationProgressSchema = z.object({
   status: z.enum(["notStarted", "inProgress", "finished"]),
   phaseIndex: z.number(),
@@ -226,12 +232,7 @@ export const gameStateSchema = z.object({
   stand: z.array(materialSchema),
   customers: z.array(customerSchema),
   dust: z.record(speciesAmountsSchema),
-  shopVac: z
-    .object({
-      position: vectorSchema.nullable(),
-      canister: speciesAmountsSchema,
-    })
-    .nullable(),
+  shopVac: shopVacSchema.nullable(),
   broomOwned: z.boolean(),
   broomPosition: vectorSchema.nullable(),
   dustpan: speciesAmountsSchema,

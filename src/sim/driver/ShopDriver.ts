@@ -9,6 +9,13 @@ import { cellCenter } from "../../game/player-motion";
 import { Vector } from "../../game/Vectors";
 import { bootShop } from "../bootstrap";
 import {
+  buyBroom,
+  buyShopVac,
+  pickUpBroom,
+  putDownBroom,
+  toggleCarryShopVac,
+} from "../commands/cleaning-commands";
+import {
   moveMaterialsToMachine,
   operateMachine,
   setMachineOperation,
@@ -16,13 +23,16 @@ import {
   takeOutputsFromMachine,
   toggleMachinePower,
 } from "../commands/machine-commands";
-import { setOperating } from "../commands/player-commands";
+import { setOperating, setSweepAim } from "../commands/player-commands";
 import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
+import { ShopVacEntity } from "../entities/ShopVacEntity";
 import { loadGameState } from "../save/fixture";
 import { SaveFile, serializeGame } from "../save/SaveFile";
+import { Broom } from "../singletons/Broom";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
+import { DustLayer } from "../singletons/DustLayer";
 import { Progression } from "../singletons/Progression";
 import { Reputation } from "../singletons/Reputation";
 import { ShopInfo } from "../singletons/ShopInfo";
@@ -134,6 +144,19 @@ export class ShopDriver {
     return this.singleton(TutorialTracker);
   }
 
+  get dustLayer(): DustLayer {
+    return this.singleton(DustLayer);
+  }
+
+  get broom(): Broom {
+    return this.singleton(Broom);
+  }
+
+  /** The shop vac, or null while the shop doesn't own one. */
+  get shopVac(): ShopVacEntity | null {
+    return this.game.entities.tryGetSingleton(ShopVacEntity) ?? null;
+  }
+
   // ------------------------------------------------------------------
   // Job-level verbs, each a call into the command layer (the same
   // surface the input dispatcher uses). Arrangement-style setup (stand
@@ -240,6 +263,55 @@ export class ShopDriver {
       [...entity.state.outputMaterials],
       entity,
     );
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // Cleaning verbs
+  // ------------------------------------------------------------------
+
+  /** Buy the broom; it arrives leaning at the material dropoff spot. */
+  buyBroom(): this {
+    buyBroom(this.game);
+    return this;
+  }
+
+  /** Take the leaning broom (within reach) into the hands. */
+  grabBroom(): this {
+    pickUpBroom(this.game);
+    return this;
+  }
+
+  /** Lean the held broom on the floor right here. */
+  leanBroom(): this {
+    putDownBroom(this.game);
+    return this;
+  }
+
+  /** Buy the shop vac; it's delivered parked at the dropoff spot. */
+  buyShopVac(): this {
+    buyShopVac(this.game);
+    return this;
+  }
+
+  /** Grab the vac's hose (standing by it) or park it right here. */
+  toggleVacHose(): this {
+    toggleCarryShopVac(this.game);
+    return this;
+  }
+
+  /**
+   * One held stroke of the tool in hand — a minute with the operate key
+   * down, optionally with the broom aimed at a cell (the mouse steer),
+   * then the key released. Works the broom or the vac's hose alike; at
+   * the garbage can, the same hold pours the pan or canister out.
+   */
+  sweep(at?: Vector): this {
+    setSweepAim(this.game, at ?? null);
+    setOperating(this.game, true);
+    this.tick(1);
+    setOperating(this.game, false);
+    setSweepAim(this.game, null);
     return this;
   }
 }

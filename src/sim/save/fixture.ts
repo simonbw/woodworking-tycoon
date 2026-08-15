@@ -5,6 +5,8 @@ import { cellCenter } from "../../game/player-motion";
 import { MachineCrateEntity } from "../entities/MachineCrateEntity";
 import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
+import { ShopVacEntity } from "../entities/ShopVacEntity";
+import { Broom } from "../singletons/Broom";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
@@ -88,6 +90,16 @@ export function loadGameState(game: Game, state: GameState): void {
     new TutorialTracker({ tutorials: state.progression.tutorials }),
   );
   game.addEntity(new DustLayer({ dust: state.dust }));
+  game.addEntity(
+    new Broom({
+      owned: state.broomOwned,
+      position: state.broomPosition,
+      dustpan: state.dustpan,
+    }),
+  );
+  if (state.shopVac !== null) {
+    game.addEntity(new ShopVacEntity(state.shopVac));
+  }
 
   for (const machine of state.machines) {
     game.addEntity(new MachineEntity(machine));
@@ -105,15 +117,6 @@ export function loadGameState(game: Game, state: GameState): void {
   }
   if (state.stand.length > 0) unsupported.push("stand");
   if (state.customers.length > 0) unsupported.push("customers");
-  if (state.shopVac !== null) unsupported.push("shopVac");
-  // A parked broom (broomPosition set) affects nothing the ported
-  // systems read — walk speed and held-tool checks only see a broom in
-  // hand — so it's tolerated (and dropped) until the cleaning port
-  // claims the slice. A held broom is not.
-  if (state.broomOwned && state.broomPosition === null) {
-    unsupported.push("broom (in hand)");
-  }
-  if (Object.keys(state.dustpan).length > 0) unsupported.push("dustpan");
   if (unsupported.length > 0) {
     throw new Error(
       `Fixture uses slices the entity world hasn't ported yet: ${unsupported.join(", ")}`,
