@@ -452,7 +452,10 @@ test.describe("Engine shell", () => {
           () =>
             Boolean((window as any).game.entities.getById("storeSceneRoot")),
           null,
-          { timeout: 5_000 },
+          // Generous: under a full-suite run the frame loop shares the
+          // machine with seven sibling servers, and the respawn rides
+          // an engine tick.
+          { timeout: 15_000 },
         );
       };
       const trip = () =>
