@@ -3,6 +3,7 @@ import { DayDial } from "../../components/DayDial";
 import { useShortcut } from "../../components/shortcuts/ShortcutProvider";
 import { StarIcon } from "../../components/StarIcon";
 import { Tooltip } from "../../components/Tooltip";
+import { hasUnreadArticles } from "../../game/manual";
 import { xpProgress } from "../../game/skill-helpers";
 import { TICKS_PER_DAY } from "../../game/time";
 import { currentDayPhase, dayTicksSpent, isNight } from "../../game/time-flow";
@@ -14,6 +15,7 @@ import {
 import { TargetingState } from "../dispatch/TargetingState";
 import { useGame, useShopState } from "../useShell";
 import { JournalModal } from "./journal/JournalModal";
+import { useManual } from "./manual/ManualProvider";
 import { PauseMenu } from "./PauseMenu";
 
 /**
@@ -24,9 +26,6 @@ import { PauseMenu } from "./PauseMenu";
  * the balances, and the pocket items (plus Menu for the pause screen),
  * floating over the lot. The row itself passes clicks through to the
  * world; only the chip catches them.
- *
- * The manual's `?` button is not here yet — the manual ports in its own
- * fan-out slice, and the button lands back in this row with it.
  */
 export const NavBar: React.FC = () => {
   const gameState = useShopState();
@@ -35,6 +34,8 @@ export const NavBar: React.FC = () => {
   const xp = xpProgress(gameState.progression.xp);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
+  const manual = useManual();
+  const manualHasNews = hasUnreadArticles(gameState.progression);
 
   // In the old shell one provider held every Escape binding, and registry
   // order let an open sheet or door card claim the key ahead of the pause
@@ -78,6 +79,25 @@ export const NavBar: React.FC = () => {
                 >
                   {formatCount(skillPoints)}
                 </span>
+              )}
+            </button>
+          </Tooltip>
+          <Tooltip content="Shop manual" shortcut="toggle-help">
+            <button
+              className="button-ghost relative text-lg leading-none"
+              onClick={() => manual.open()}
+              aria-label="Shop manual"
+              // The manual's own book-open sound plays as it appears
+              // (ManualProvider); the generic click would stack on top.
+              data-sfx="none"
+            >
+              ?
+              {manualHasNews && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-gold"
+                  data-testid="manual-badge"
+                  aria-hidden
+                />
               )}
             </button>
           </Tooltip>

@@ -107,6 +107,7 @@ export class ShellStore extends BaseEntity implements Entity {
       progression?.skillPoints,
       progression?.storeUnlocked,
       progression?.unlockedArticles.length,
+      progression?.readArticles.length,
       tutorials ? JSON.stringify(tutorials.tutorials) : "",
       targeting
         ? [

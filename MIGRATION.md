@@ -450,3 +450,19 @@ transform tests as it lands.
   (marked `test.slow()` — the journey test outgrew the default budget).
   Browser-verified: modal quiets floor keys, pause stops the clock, a
   learned skill survives Save & Quit's reload. tsc + unit green.
+- 2026-08-15 — [fan-out] Shop manual ported: ManualProvider (same
+  `useManual` surface, binds `toggle-help` itself; the NavBar `?` button
+  returns with the NavBar port at merge), ShopManualModal + ManualLink in
+  `src/shell/hud/manual/` over `useShopState`, mark-read through the
+  existing `markArticlesRead` command; the article bodies are pure and
+  import straight from the old `articles/`. ShellStore's signature grows
+  `readArticles.length` so opening a page clears its New flag, and the
+  provider's modal mount re-enables pointer events under HudRoot's inert
+  sheet (`contents` wrapper). Manual open/close step added to the
+  engine-shell spec, whose one long test now carries an explicit 60s
+  budget (the default 30s was nearly spent before phase 5's steps).
+  Browser-verified: `?` opens the binder, articles and tabs render, floor
+  keys go quiet under the modal scope and return on close. tsc + unit
+  green. (Merge note: the NavBar `?` button was re-added at merge, wired
+  to this provider's `useManual`/`hasUnreadArticles` as in the old
+  NavBar.)

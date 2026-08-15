@@ -15,9 +15,10 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Engine shell", () => {
   test("boots a walkable shop with a following camera", async ({ page }) => {
-    // One long journey through the shell; the phase-5 fan-out keeps
-    // appending steps, and the walk itself spends real seconds.
-    test.slow();
+    // One long journey through the shell, growing a step per ported
+    // system: the default 30s budget was already nearly spent before
+    // the phase-5 steps arrived.
+    test.setTimeout(60_000);
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
       timeout: 15_000,
@@ -67,6 +68,29 @@ test.describe("Engine shell", () => {
         (window as any).game.entities.getById("wallet").money -= 45;
       });
       await expect(page.getByTestId("balance")).toHaveText("$0.00");
+    });
+
+    await test.step("? opens the manual and claims the keyboard", async () => {
+      const manual = page.getByRole("dialog", { name: "Shop manual" });
+      await page.keyboard.press("Shift+Slash");
+      await expect(manual).toBeVisible();
+      // The binder is open to an article, tabs down the right edge.
+      await expect(
+        manual.getByRole("heading", { name: "Welcome to the Shop" }),
+      ).toBeVisible();
+      await expect(
+        manual.getByRole("button", { name: "Controls" }),
+      ).toBeVisible();
+      // The floor keys go quiet while the modal owns the keyboard.
+      const before = await readPlayer();
+      await page.keyboard.down("KeyD");
+      await page.waitForTimeout(300);
+      await page.keyboard.up("KeyD");
+      const after = await readPlayer();
+      expect(after.pos[0]).toBeCloseTo(before.pos[0], 6);
+      // The same key closes it, and the floor keys come back below.
+      await page.keyboard.press("Shift+Slash");
+      await expect(manual).toBeHidden();
     });
 
     await test.step("held keys walk the body", async () => {

@@ -1,5 +1,6 @@
 import React from "react";
 import { useShopOpen } from "../useShell";
+import { ManualProvider } from "./manual/ManualProvider";
 import { NavBar } from "./NavBar";
 
 /**
@@ -19,8 +20,12 @@ export const EngineHud: React.FC = () => {
   if (!open) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-40 px-6 pt-6">
-      <NavBar />
-    </div>
+    // ManualProvider wraps the whole frame (old Main.tsx's nesting) so
+    // `useManual` reaches every chip and card that points into the binder.
+    <ManualProvider>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 px-6 pt-6">
+        <NavBar />
+      </div>
+    </ManualProvider>
   );
 };
