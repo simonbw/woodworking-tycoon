@@ -493,13 +493,16 @@ test.describe("Engine shell", () => {
       });
 
       // The street pass runs on sim minutes: hold the wait key until the
-      // sale settles.
+      // sale settles. (Poll the sale count, not the wallet — the
+      // shopping trip above already left money in it.)
       await page.keyboard.down("KeyT");
       await expect
         .poll(
           () =>
             page.evaluate(
-              () => (window as any).game.entities.getById("wallet").money,
+              () =>
+                (window as any).game.entities.getById("progression")
+                  .salesCompleted,
             ),
           { timeout: 10_000 },
         )
