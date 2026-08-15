@@ -28,7 +28,7 @@ const TILE_ALPHA = 0.1;
 const TILE_COLOR = colors.zinc[700];
 
 export class FloorView extends BaseEntity implements Entity {
-  persistenceLevel: number = Persistence.Permanent;
+  persistenceLevel: number = Persistence.Level;
   pausable = false;
 
   private slab: TilingSprite & GameSprite;

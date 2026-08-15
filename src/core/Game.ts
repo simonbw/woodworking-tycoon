@@ -320,16 +320,7 @@ export class Game {
     // Pair the entity with its view, if one is registered and we can render.
     // The view rides along as a child so it's destroyed with its sim entity.
     if (this.renderer) {
-      const view = createViewFor(entity);
-      if (view) {
-        if (hasAddChild(entity)) {
-          entity.addChild(view);
-        } else {
-          view.parent = entity;
-          entity.children?.push(view);
-          this.addEntity(view);
-        }
-      }
+      this.spawnRegisteredView(entity);
     }
 
     if (entity.onAfterAdded) {
@@ -338,6 +329,27 @@ export class Game {
 
     return entity;
   };
+
+  /**
+   * Spawn the registered view for a sim entity as its child, if one is
+   * registered and none is attached. Views are tagged `isRegistryView`
+   * so scene swaps can tear them down and respawn them (the shell's
+   * SceneDirector re-pairs the surviving sim world when a venue returns).
+   */
+  spawnRegisteredView(entity: Entity): void {
+    if (!this.renderer) return;
+    if (entity.children?.some((child) => child.isRegistryView)) return;
+    const view = createViewFor(entity);
+    if (!view) return;
+    view.isRegistryView = true;
+    if (hasAddChild(entity)) {
+      entity.addChild(view);
+    } else {
+      view.parent = entity;
+      entity.children?.push(view);
+      this.addEntity(view);
+    }
+  }
 
   /** Shortcut for adding multiple entities. */
   addEntities<T extends readonly Entity[]>(...entities: T): T {

@@ -7,6 +7,7 @@ import {
   PIXELS_PER_CELL,
 } from "../components/shop-view/shop-scale";
 import { sidewalkY } from "../game/stand";
+import { currentVenue } from "../shell/scenes/venue";
 import { Player } from "../sim/entities/Player";
 import { ShopInfo } from "../sim/singletons/ShopInfo";
 
@@ -46,6 +47,9 @@ export class CameraRig extends BaseEntity implements Entity {
     const shopInfo = game.entities.tryGetSingleton(ShopInfo)?.info;
     const player = game.entities.tryGetSingleton(Player);
     if (!shopInfo || !player) return;
+    // At the walkable store another scene owns the camera (the store
+    // pans both axes at this rig's zoom — see StoreSceneRoot).
+    if (currentVenue(game) !== "shop") return;
 
     const viewWidth = renderer.getWidth();
     const viewHeight = renderer.getHeight();

@@ -268,8 +268,18 @@ transform tests as it lands.
 
 ## Phase 6 — Trips & the store venue [size M]
 
-- [ ] Scene-swap plumbing (persistence levels guard sim/HUD/camera across
-      `clearScene`)
+- [x] Scene-swap plumbing (persistence levels guard sim/HUD/camera across
+      `clearScene`): the SceneDirector rebuilds the view side whenever the
+      venue changes or a save load strips it — shop scenery demoted to
+      Level persistence and spawned by the director, registry views tagged
+      (`isRegistryView`) so teardown/respawn can find them on surviving
+      sim entities (`Game.spawnRegisteredView` is the shared pairing), and
+      the StoreSceneRoot owns the store floor's walk (shared
+      `stepPlayerMotion` over `storeCollisionWorld`, cell reported onto
+      `away.position`) plus a both-axes camera at the rig's zoom. Drive
+      legs charge through `TimeFlow.forceMinutes` — out immediately after
+      `goToStore`, home *before* `returnFromStore` via the director's
+      deferred completion — preserving the old actions' ordering
 - [ ] `StoreScene`: walkable aisles, shelf/corral/register interactions,
       checkout, departure
 - [ ] Lumberyard + shopping overlays; scavenging trip UI
@@ -574,3 +584,16 @@ transform tests as it lands.
   the coach's card and full NavBar; post-sale with $12.00, ★ 1.7, the
   next goal card, and the Skills ring. tsc + 1350 unit + the journey spec
   green. Phase 5 complete; next is phase 6 (trips & the store venue).
+- 2026-08-15 — Phase 6 scene-swap spine landed: SceneDirector venue
+  machinery (teardown/respawn over tagged registry views + Level-scoped
+  scenery), StoreSceneRoot with the store's placeholder bones (slab,
+  walls with door gaps, spines/fixtures/register/corral blocks), the
+  store floor's continuous walk writing `away.position` through the
+  setShoppingPosition command, drive legs charged through
+  TimeFlow.forceMinutes with the director completing the return after
+  its minutes serve, and CameraRig standing down for the store's
+  both-axes pan. Browser-verified end to end: swap to the store empties
+  the registry views, walking updates the trip's cell, requestDriveHome
+  charges 15 minutes and lands the player at the cab with all views
+  respawned. tsc + 1350 unit + engine-shell journey green. Next: the
+  StoreScene proper (fixtures, merchandise, store keys, checkout).

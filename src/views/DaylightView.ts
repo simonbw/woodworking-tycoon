@@ -83,7 +83,7 @@ const SETTLED = 0.4;
 const SHADOW_UNIT = 21;
 
 export class DaylightView extends BaseEntity implements Entity {
-  persistenceLevel: number = Persistence.Permanent;
+  persistenceLevel: number = Persistence.Level;
   pausable = false;
 
   private mask: Sprite & GameSprite;

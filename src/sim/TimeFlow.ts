@@ -161,6 +161,15 @@ export class TimeFlow extends BaseEntity implements Entity {
    * advance the world this way — the same one-minute passes, just many
    * of them in one engine tick.
    */
+  /**
+   * Minutes queued by forceMinutes that no tick has served yet — zero
+   * means any charged leg (a store drive, say) has already run, which is
+   * what the shell's deferred trip completions wait on.
+   */
+  get pendingForcedMinutes(): number {
+    return this.forcedMinutes;
+  }
+
   forceMinutes(minutes: number): void {
     this.forcedMinutes += minutes;
   }

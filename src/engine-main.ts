@@ -8,19 +8,16 @@ import { TargetingState } from "./shell/dispatch/TargetingState";
 import { HudRoot } from "./shell/HudRoot";
 import { OverlayRoot } from "./shell/OverlayRoot";
 import { PayoutBuffer } from "./shell/PayoutBuffer";
+import { SceneDirector } from "./shell/scenes/SceneDirector";
 import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
 import { loadFonts } from "./utils/loadFonts";
 import { CameraRig } from "./views/CameraRig";
-import { DaylightView } from "./views/DaylightView";
-import { EnvironmentView } from "./views/EnvironmentView";
-import { FloorView } from "./views/FloorView";
 import { MousePicking } from "./views/MousePicking";
 import { MovementInput } from "./views/MovementInput";
 import { TargetHighlightView } from "./views/TargetHighlightView";
 import { TutorialHighlightView } from "./views/TutorialHighlightView";
-import { PowerCordView } from "./views/PowerCordView";
 import { registerAllViews } from "./views/register";
 
 /**
@@ -42,13 +39,10 @@ async function main() {
 
   game.addEntity(new AutoPauser());
   game.addEntity(new CameraRig());
-  // Scenery views (each draws on its own layer; sim-paired views spawn
-  // through the view registry instead): the lot, the slab over it, the
-  // cords on the slab, and the light over the whole world.
-  game.addEntity(new EnvironmentView());
-  game.addEntity(new FloorView());
-  game.addEntity(new PowerCordView());
-  game.addEntity(new DaylightView());
+  // The venue's views — the shop's scenery, or the store's scene — are
+  // the SceneDirector's to spawn and swap (phase 6's one-scene-at-a-time
+  // contract); nothing scenery-shaped is added here directly.
+  game.addEntity(new SceneDirector());
   game.addEntity(new MovementInput());
   game.addEntity(new TargetingState());
   game.addEntity(new ShortcutDispatcher());

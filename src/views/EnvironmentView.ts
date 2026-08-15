@@ -50,7 +50,7 @@ export function doorSpan(shopInfo: ShopInfoData): {
 }
 
 export class EnvironmentView extends BaseEntity implements Entity {
-  persistenceLevel: number = Persistence.Permanent;
+  persistenceLevel: number = Persistence.Level;
   pausable = false;
 
   private lawn: TilingSprite & GameSprite;

@@ -123,7 +123,7 @@ function drawCord(g: Graphics, machine: Machine, shopInfo: ShopInfoData): void {
 }
 
 export class PowerCordView extends BaseEntity implements Entity {
-  persistenceLevel: number = Persistence.Permanent;
+  persistenceLevel: number = Persistence.Level;
   pausable = false;
 
   private cords: Graphics & GameSprite;

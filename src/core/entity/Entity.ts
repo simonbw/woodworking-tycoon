@@ -56,6 +56,13 @@ export interface Entity extends EventHandler<GameEventMap> {
    * point, like the end of a level or we change to a new menu screen */
   readonly persistenceLevel: number;
 
+  /**
+   * Set on views spawned through the view registry (see Game.addEntity),
+   * so a scene swap can find and tear them down without disturbing the
+   * sim entities they draw (the SceneDirector's venue changes).
+   */
+  isRegistryView?: boolean;
+
   /** True if this entity will stop updating when the game is paused. */
   readonly pausable: boolean;
 

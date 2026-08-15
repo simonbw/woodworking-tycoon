@@ -5,8 +5,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { canLeaveShop, goToStore } from "../../../sim/commands/trip-commands";
+import { canLeaveShop } from "../../../sim/commands/trip-commands";
 import { startScavenging } from "../../../sim/commands/trip-commands";
+import { driveToStore } from "../../scenes/venue";
 import { goHome } from "../../../sim/commands/day-commands";
 import { isNight } from "../../../game/time-flow";
 import {
@@ -196,7 +197,7 @@ export const TruckPrompt: React.FC<{
       description:
         "The big-box store: lumber, tools, machines, and supplies. Takes as long as you spend in the aisles.",
       verb: "Go",
-      go: () => goToStore(game, "orangeBox"),
+      go: () => driveToStore(game, "orangeBox"),
     });
   }
   if (lumberyardUnlocked && !night) {
@@ -206,7 +207,7 @@ export const TruckPrompt: React.FC<{
       description:
         "The hardwood lumberyard: rough and S2S stock, priced for people who mill their own. Takes as long as you spend in the racks.",
       verb: "Go",
-      go: () => goToStore(game, "lumberyard"),
+      go: () => driveToStore(game, "lumberyard"),
     });
   }
   // Scavenging is on offer from day one — it's how the first pallet
