@@ -38,6 +38,7 @@ import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
 import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
+import { StoreFixturesView } from "./store-views/StoreFixturesView";
 
 /**
  * The walkable Orange Box's scene root (migration phase 6). Spawned by
@@ -56,11 +57,8 @@ import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
  * axes here, following the body.
  */
 
-/** Placeholder paint for the fixtures that haven't ported yet:
- * gondola gray and the store's orange accents. */
-const WALL = 0x4a4642;
+/** Placeholder paint for the merchandise that hasn't ported yet. */
 const FIXTURE = 0x7d7a76;
-const ACCENT = 0xd96f1f;
 
 export class StoreSceneRoot extends BaseEntity implements Entity {
   id = "storeSceneRoot";
@@ -128,6 +126,7 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
       this.children[this.children.length - 1].destroy();
     }
     this.addChild(new StoreEnvironmentView(layout));
+    this.addChild(new StoreFixturesView(layout));
     this.drawVenue(layout);
   }
 
@@ -243,36 +242,20 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     if (layout) this.dress(layout);
   }
 
-  /** Placeholder blocks for what hasn't ported yet: gondola spines and
-   * fixtures as gray boxes, register and corral in the store's orange —
-   * the environment view draws the real slab, walls, and lot. */
+  /** Placeholder blocks for what hasn't ported yet: every bay's
+   * merchandise as a gray box (the fixtures view draws the shelving,
+   * but the stock itself is the merchandise view's, still pending). */
   private drawVenue(layout: StoreLayout) {
     const g = this.floor;
     g.clear();
-    for (const spine of layout.spines) {
-      g.rect(
-        cellToPixel(spine.min[0]),
-        cellToPixel(spine.min[1]),
-        cellToPixel(spine.max[0] - spine.min[0]),
-        cellToPixel(spine.max[1] - spine.min[1]),
-      ).fill(WALL);
-    }
     for (const fixture of layout.fixtures) {
       const rect = fixture.rect;
       g.rect(
-        cellToPixel(rect.min[0]),
-        cellToPixel(rect.min[1]),
-        cellToPixel(rect.max[0] - rect.min[0]),
-        cellToPixel(rect.max[1] - rect.min[1]),
-      ).fill(FIXTURE);
-    }
-    for (const landmark of [layout.register, layout.corral]) {
-      g.rect(
-        cellToPixel(landmark.min[0]),
-        cellToPixel(landmark.min[1]),
-        cellToPixel(landmark.max[0] - landmark.min[0]),
-        cellToPixel(landmark.max[1] - landmark.min[1]),
-      ).fill(ACCENT);
+        cellToPixel(rect.min[0]) + 4,
+        cellToPixel(rect.min[1]) + 4,
+        cellToPixel(rect.max[0] - rect.min[0]) - 8,
+        cellToPixel(rect.max[1] - rect.min[1]) - 8,
+      ).fill({ color: FIXTURE, alpha: 0.9 });
     }
   }
 
