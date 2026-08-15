@@ -187,9 +187,12 @@ export function gatherBenchToolAction(
 /**
  * Keeps selectedOperationId pointing at an operation that actually exists
  * after the tool list changes; falls back to the first available operation,
- * or "none" for a station with no operations left.
+ * or "none" for a station with no operations left. (Exported for the sim
+ * world's tool commands, which share it rather than fork it.)
  */
-function withValidSelectedOperation(machineState: MachineState): MachineState {
+export function withValidSelectedOperation(
+  machineState: MachineState,
+): MachineState {
   const machine = new Machine(machineState);
   const operations = machine.operations;
   if (operations.some((op) => op.id === machineState.selectedOperationId)) {
