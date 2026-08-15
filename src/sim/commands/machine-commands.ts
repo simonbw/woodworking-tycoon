@@ -26,7 +26,9 @@ import {
 } from "../../game/Machine";
 import {
   findFeedableOperation,
+  machineCanOperate,
   playerAttendsMachine,
+  shopSupply,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 import { MaterialInstance } from "../../game/Materials";
@@ -85,6 +87,25 @@ function handsFree(gameState: GameState): boolean {
     gameState.player.carriedMachine == null &&
     gameState.player.inventory.length === 0 &&
     !carryingShopVac(gameState)
+  );
+}
+
+/**
+ * Whether holding the trigger would start anything on this machine right
+ * now — the question the old driver's `canOperate` asked, judged by the
+ * shared `machineCanOperate` over the live shop's supply. A read, not a
+ * mutation; it lives on the command surface so the driver can ask it
+ * without reaching past the boundary.
+ */
+export function machineCanOperateNow(
+  game: Game,
+  entity: MachineEntity,
+): boolean {
+  const gameState = projectGameState(game);
+  return machineCanOperate(
+    entity.view(),
+    shopSupply(gameState),
+    gameState.progression,
   );
 }
 

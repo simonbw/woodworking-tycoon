@@ -6,7 +6,8 @@ import { GameState } from "../../game/GameState";
 import { isOutdoors, truckCabSideCell } from "../../game/lot";
 import { MachineId, ParameterValues } from "../../game/Machine";
 import { SkillId } from "../../game/Skill";
-import { MaterialInstance } from "../../game/Materials";
+import { MaterialInstance, ToolItem } from "../../game/Materials";
+import { ToolId } from "../../game/Tool";
 import { HAND_CAPACITY } from "../../game/Person";
 import { cellCenter, motionCell } from "../../game/player-motion";
 import { atStand, isSellable, standRect } from "../../game/stand";
@@ -20,6 +21,7 @@ import {
   toggleCarryShopVac,
 } from "../commands/cleaning-commands";
 import {
+  machineCanOperateNow,
   moveMaterialsToMachine,
   operateMachine,
   setMachineOperation,
@@ -27,6 +29,7 @@ import {
   takeOutputsFromMachine,
   toggleMachinePower,
 } from "../commands/machine-commands";
+import { mountTool, unmountTool } from "../commands/tool-commands";
 import { dropMaterial, pickUpMaterial } from "../commands/pile-commands";
 import { setOperating, setSweepAim } from "../commands/player-commands";
 import { spendSkillPoint } from "../commands/progression-commands";
@@ -496,6 +499,114 @@ export class ShopDriver {
       [...entity.state.outputMaterials],
       entity,
     );
+    return this;
+  }
+
+  /**
+   * Whether holding the trigger would start anything right now — the
+   * same question `operate` asks before it acts. Sequence tests use it
+   * to assert a machine *refuses*: no lane for an 8-foot sheet, no
+   * clamps free for a straightedge.
+   */
+  canOperate(machineTypeId: MachineId): boolean {
+    return machineCanOperateNow(this.game, this.machine(machineTypeId));
+  }
+
+  // ------------------------------------------------------------------
+  // Tools: physical things that mount into a station's slots.
+  // ------------------------------------------------------------------
+
+  /**
+   * Bolt a tool onto the station. Tools are physical things, so the tool
+   * is fetched from wherever it's resting first — the arms, a floor pile,
+   * or the truck's bed — the same trips a player makes. A bench has a
+   * fixed number of slots, so this fails rather than silently doing
+   * nothing when they're all taken — unmount something, or build a
+   * worktable.
+   */
+  mount(machineTypeId: MachineId, toolId: ToolId): this {
+    if (this.machine(machineTypeId).state.tools.includes(toolId)) {
+      return this;
+    }
+    const tool = this.fetchTool(toolId);
+    mountTool(this.game, this.machine(machineTypeId), tool);
+    if (!this.machine(machineTypeId).state.tools.includes(toolId)) {
+      const station = this.machine(machineTypeId);
+      throw new Error(
+        `The ${machineTypeId} would not take the ${toolId}. It has ` +
+          `${station.type.toolSlots} slots holding ` +
+          `[${station.state.tools.join(", ")}].`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Get the named tool into the arms: already carried, picked up off a
+   * floor pile, or lifted out of the truck's bed. Fails if the shop
+   * doesn't own a loose one — buy or build it first.
+   */
+  private fetchTool(toolId: ToolId): ToolItem {
+    const isTheTool = (material: MaterialInstance): material is ToolItem =>
+      material.type === "tool" && material.toolId === toolId;
+    const carried = this.inventory.find(isTheTool);
+    if (carried) {
+      return carried;
+    }
+    // Full arms can't pick anything up — stage the load on the floor first
+    if (this.player.handSpaceLeft === 0) {
+      this.standAt(this.shopInfo.info.materialDropoffPosition);
+      dropMaterial(this.game, [...this.inventory]);
+    }
+    const pile = this.piles.find((candidate) => isTheTool(candidate.material));
+    if (pile) {
+      this.standNear(pile);
+      pickUpMaterial(this.game, [pile]);
+    } else {
+      const inBed = this.truck.bed.find(isTheTool);
+      if (inBed) {
+        this.standAtBed();
+        takeFromTruckBed(this.game, [inBed]);
+      }
+    }
+    const fetched = this.inventory.find(isTheTool);
+    if (!fetched) {
+      throw new Error(
+        `No loose ${toolId} anywhere — not in hand, in a pile, or in the ` +
+          `truck's bed. Buy or build one first.`,
+      );
+    }
+    return fetched;
+  }
+
+  /** Take a tool back off a station, into the arms — it's a physical thing. */
+  unmount(machineTypeId: MachineId, toolId: ToolId): this {
+    // The tool comes off into the arms, so make sure they have room
+    if (this.player.handSpaceLeft === 0) {
+      this.standAt(this.shopInfo.info.materialDropoffPosition);
+      dropMaterial(this.game, [...this.inventory]);
+    }
+    unmountTool(this.game, this.machine(machineTypeId), toolId);
+    if (this.machine(machineTypeId).state.tools.includes(toolId)) {
+      throw new Error(`The ${toolId} would not come off the ${machineTypeId}`);
+    }
+    return this;
+  }
+
+  /**
+   * Make sure exactly these tools are on the station, swapping as needed. Two
+   * slots on the starter bench is not many, and by the middle of the game a
+   * playthrough is juggling a hammer, a sanding block and a drill.
+   */
+  fitOut(machineTypeId: MachineId, toolIds: ReadonlyArray<ToolId>): this {
+    for (const mounted of [...this.machine(machineTypeId).state.tools]) {
+      if (!toolIds.includes(mounted)) {
+        this.unmount(machineTypeId, mounted);
+      }
+    }
+    for (const toolId of toolIds) {
+      this.mount(machineTypeId, toolId);
+    }
     return this;
   }
 

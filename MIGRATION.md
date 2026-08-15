@@ -275,6 +275,16 @@ transform tests as it lands.
   fan-out ports: setOut sweeps only the hands (piles unported) and
   awaitSales can't sleep through nights (day cycle unported). tsc + unit
   green.
+- 2026-08-15 — [fan-out] Tools & worktable upgrades ported: tool-commands
+  (mountTool/unmountTool over the shared withValidSelectedOperation, now
+  exported from the old tool-actions) and upgrade-commands
+  (installUpgrade/uninstallUpgrade against the StorageUpgrades singleton),
+  machineCanOperateNow query on machine-commands, driver grows
+  mount/fetchTool/unmount/fitOut/canOperate with the old verbs' exact
+  semantics and messages. Loose tools stay MaterialInstances of kind
+  "tool" (hands / MaterialPileEntity / truck bed), as in the old world.
+  No sounds — the old actions queued none. gatherBenchToolAction waits
+  for the bench-work port. tsc + unit green.
 - 2026-08-15 — [fan-out] Cleaning system ported: Broom singleton (owned/
   position/dustpan), ShopVacEntity (absent until bought), CleaningSystem on
   the "cleaning" layer running the old sweep → vacuum → shopVac passes per
