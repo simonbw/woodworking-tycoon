@@ -9,9 +9,18 @@ import { Entity } from "../../core/entity/Entity";
 import { GameSprite } from "../../core/entity/GameSprite";
 import { on } from "../../core/entity/handler";
 import {
+  Shopper,
+  SHOPPER_RADIUS,
+  spawnShoppers,
+  stepShoppers,
+} from "../../components/store-view/storeShoppers";
+import {
   BASE_WALK_SPEED,
   cellCenter,
+  CollisionWorld,
   directionFromInput,
+  headingForDirection,
+  SolidCircle,
   stepPlayerMotion,
 } from "../../game/player-motion";
 import {
@@ -37,7 +46,9 @@ import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
+import { StoreActorsView } from "./store-views/StoreActorsView";
 import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
+import { StoreTruckView } from "./store-views/StoreTruckView";
 import { StoreFixturesView } from "./store-views/StoreFixturesView";
 import { StoreMerchandiseView } from "./store-views/StoreMerchandiseView";
 
@@ -63,12 +74,30 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   persistenceLevel: number = Persistence.Level;
   pausable = false;
 
-  private body: Graphics & GameSprite;
-
   /** The continuous store body, in cell coordinates. */
   private position: Vector | null = null;
   private direction: Direction = 3;
+  /** The last motion's continuous heading, for the cart's lead point. */
+  private heading = Math.PI / 2;
   private lastReported = "";
+
+  /** The ambient shoppers, stepped here so the walk treats them as
+   * solid, walking people rather than scenery (the actors view draws
+   * them). */
+  shoppers: Shopper[] = [];
+
+  /** The continuous body, for the views riding it. */
+  bodyPosition(): Vector | null {
+    return this.position;
+  }
+
+  bodyDirection(): Direction {
+    return this.direction;
+  }
+
+  bodyHeading(): number {
+    return this.heading;
+  }
 
   private layoutCache: StoreLayout | null = null;
   /** What the cached layout was built for — the same slices the old
@@ -89,9 +118,7 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
 
   constructor() {
     super();
-    this.body = new Graphics() as Graphics & GameSprite;
-    this.body.layerName = "actors";
-    this.sprites = [this.body];
+    this.sprites = [];
   }
 
   layout(): StoreLayout | null {
@@ -121,6 +148,8 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     this.addChild(new StoreEnvironmentView(layout));
     this.addChild(new StoreFixturesView(layout));
     this.addChild(new StoreMerchandiseView(layout));
+    this.addChild(new StoreActorsView());
+    this.addChild(new StoreTruckView(layout));
   }
 
   /** The resolver the keys and the chips share (store-interact.ts). */
@@ -264,6 +293,13 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
       this.direction = trip.direction;
     }
 
+    // The ambient shoppers stroll their patrols, yielding to the body.
+    if (this.shoppers.length === 0) {
+      this.shoppers = spawnShoppers(layout);
+    }
+    const baseWorld = storeCollisionWorld(layout);
+    stepShoppers(this.shoppers, this.position, dt, baseWorld);
+
     // A DOM dialog owns the keyboard here exactly like at home.
     const modalOpen =
       this.game.entities.tryGetSingleton(ShellStore)?.modalOpen ?? false;
@@ -272,12 +308,24 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
       : this.game.io.getMovementVector();
     if (input[0] !== 0 || input[1] !== 0) {
       this.direction = directionFromInput(input, this.direction);
+      this.heading = Math.atan2(input[1], input[0]);
+      // The shoppers are solid, walking people, not scenery the body
+      // clips through.
+      const shopperSolids: SolidCircle[] = this.shoppers.map((shopper) => ({
+        kind: "circle",
+        center: shopper.position,
+        radius: SHOPPER_RADIUS,
+      }));
+      const world: CollisionWorld = {
+        ...baseWorld,
+        solids: [...baseWorld.solids, ...shopperSolids],
+      };
       this.position = stepPlayerMotion(
         this.position,
         input,
         BASE_WALK_SPEED,
         dt,
-        storeCollisionWorld(layout),
+        world,
       );
     }
 
@@ -298,15 +346,6 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     if (!this.position) return;
     const renderer = this.game.renderer;
     if (!renderer) return;
-
-    // The body, drawn where it stands.
-    const g = this.body;
-    g.clear();
-    g.circle(
-      cellToPixel(this.position[0]),
-      cellToPixel(this.position[1]),
-      PIXELS_PER_CELL * 0.34,
-    ).fill(0x3d85c6);
 
     // The camera pans both axes at the shop's own zoom, following the
     // body, clamped a stride past the walls and the lot's far edge (the
