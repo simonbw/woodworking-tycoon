@@ -169,12 +169,17 @@ transform tests as it lands.
       a save must land mid-cure and round-trip byte-identically, and the
       resumable state IS the progress record; behavior matches
       `machineTickPass` line for line)
-- [ ] **[fan-out]** Remaining systems, each with its sequence files: piles &
+- [x] **[fan-out]** Remaining systems, each with its sequence files: piles &
       material flow; dust/sweeping/vac; stand & customers (seeded rng); day
       cycle & sleep; trips (shopping/scavenging, sim side); consumables &
       tools; bench-work commands (engine is already pure — wire commands);
-      milestones/progression
-- [ ] **Gate:** all 14 sequence files green on the new driver
+      milestones/progression (eight subagent ports, merged; details in the
+      Log)
+- [x] **Gate:** all 14 sequence files green on the new driver
+      (`src/sim/sequences/*.test.ts`, same describes/assertions/fixtures as
+      the old tier, mutations through commands only; old copies stay until
+      phase 8; zero `it.skip`s — two parity bugs found by the rehost were
+      fixed in the sim/driver, none papered over)
 
 ## Phase 3 — Shop floor views [size L]
 
@@ -341,3 +346,9 @@ transform tests as it lands.
   (night refusals no longer strand a long sequence) and setOut ferries
   matching stock off the floor again, an armful at a time. tsc + unit
   green (1303).
+- 2026-08-15 — PHASE 2 GATE MET. All 14 sequence files rehosted onto the
+  new driver by four gate agents and merged: same structure, assertions,
+  and fixtures; parity fixes landed in the sim (skill-gated select(),
+  forced-minute isolation in TimeFlow) rather than in tests. 1350 unit
+  tests green, tsc clean. The working shop now runs entirely on entities,
+  headless.
