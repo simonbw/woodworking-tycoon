@@ -19,7 +19,7 @@ import { handSpaceLeft } from "../../../game/Person";
 import { ToolIcon } from "../../../components/ItemIcon";
 import { MaterialIcon } from "../../../components/current-cell-info/MaterialIcon";
 import { useGame, useShopState } from "../../useShell";
-import { ManualLink } from "../ManualLink";
+import { ManualLink } from "../manual/ManualLink";
 
 /** The station sheet's pointer to the article that explains this machine. */
 export const MachineManualLink: React.FC<{ machine: Machine }> = ({

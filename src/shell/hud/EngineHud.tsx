@@ -8,6 +8,8 @@ import { FloorSheet } from "./overlay/FloorSheet";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
 import { SuppliesSection } from "./SuppliesSection";
+import { TutorialCards } from "./tutorial/TutorialCard";
+import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
 
 /**
  * The HUD chrome over the engine shell's canvas — the successor of
@@ -41,13 +43,18 @@ export const EngineHud: React.FC = () => {
         <NavBar />
       </div>
 
-      {/* The coach's column: the tutorial cards land at the top of this
-          wrapper (phase-5 fan-out), the nightfall note beneath them */}
+      {/* The coach's column: the tutorial cards at the top of the
+          wrapper, the nightfall note beneath them */}
       <div className="absolute left-6 top-6 z-20 w-80 space-y-3">
+        <TutorialCards />
         <div className="space-y-3">
           <NightfallCard />
         </div>
       </div>
+
+      {/* The ring the guided opening draws around chrome; in-world
+          things wear TutorialHighlightView's outline instead. */}
+      <TutorialSpotlightLayer />
 
       {/* pointer-events-none so the full-width strip doesn't eat clicks
           meant for what's underneath (the chip re-enables its buttons) */}

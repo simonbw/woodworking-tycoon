@@ -248,9 +248,12 @@ transform tests as it lands.
       `projectGameState` (phase 2), and the DOM cards read the same
       projection through `useShopState()`; the predicates themselves stay
       untouched
-- [ ] **[fan-out]** Port the DOM tree: NavBar, day clock, hands strip,
+- [x] **[fan-out]** Port the DOM tree: NavBar, day clock, hands strip,
       supplies, station sheets, prompts, manual, journal, tutorial cards,
-      pause/start menus, nightfall card
+      pause/start menus, nightfall card — six worktree slices, all merged
+      (see the Log entries below); the phase-4 hint-chip deferral is
+      closed by the overlay slice, and the world-pinned DOM rides a
+      per-frame OverlayRoot beside the signal-driven HudRoot
 - [ ] **Gate:** HUD/tutorial/selling specs pass; first sale + reward flight
 
 ## Phase 6 — Trips & the store venue [size M]
@@ -519,3 +522,34 @@ transform tests as it lands.
   key off `player.away` alone); ManualLink renders only once the manual
   port supplies an opener (manualOpenContext); BlueprintStack ported
   dormant for phase 7's plan browser.
+- 2026-08-15 — [fan-out] Tutorial cards + spotlight ported: TutorialCards/
+  TutorialSpotlightLayer/tutorialTargets land in `src/shell/hud/tutorial/`
+  over the shell hooks (skip → the existing dismissTutorial command; copy,
+  markup, and testids verbatim), and the world half is a new
+  `TutorialHighlightView` — the old coach outlines (machines by type,
+  truck, stand, broom, matching piles, the nightfall homeward nudge) as
+  the same orange OutlineFilters on the view roots (MachineView/TruckView
+  grew a `highlightRoot`), rendering after TargetHighlightView so the
+  white rim wins. Deviations: ManualLink is copied with a `useManualMaybe`
+  seam that renders plain text until the manual port's provider is wired
+  in at merge; the tutorial's truck target only ever names the cab, so
+  the bed crop stays unported; the fat engine-shell spec got
+  `test.setTimeout(90s)` — the phase-4/5 steps outgrew the 30s default.
+  Browser-verified against the old shell (card up on a fresh shop, truck
+  rimmed, box ticks + strike on staging a pallet, skip retires the card,
+  white-beats-orange on the reachable pile). This commit also carries the
+  hands-strip/supplies/nightfall slice that arrived uncommitted in this
+  worktree mid-task (kept so the commit builds; attribution with the
+  orchestrator). tsc + unit (1350) + engine-shell E2E green.
+- 2026-08-15 — Phase-5 fan-out fully merged (six slices: NavBar/journal/
+  pause, manual, start menu/boot, hands/supplies/nightfall, overlay/
+  station, tutorial). Merge reconciliations: the NavBar `?` button rewired
+  to the ported ManualProvider; three ManualLink variants consolidated
+  onto `src/shell/hud/manual/ManualLink.tsx` (the tutorial stub and the
+  overlay's context shim deleted — every consumer renders under the
+  provider); duplicate `dustpanFillFraction` re-exports deduped in
+  cleaning-commands; ShellStore signature and EngineHud unioned across
+  slices; the journal spec's modalOpen assertions poll now (the flag
+  crosses two React effect passes and OverlayRoot's per-frame renders
+  exposed the race). tsc + unit (1350) + the full engine-shell journey
+  green after each merge.

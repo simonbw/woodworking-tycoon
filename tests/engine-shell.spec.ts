@@ -14,6 +14,10 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Engine shell", () => {
+  // One fat journey in the repo's style; the phase-4/5 steps grew it
+  // past the default 30s budget on slower machines.
+  test.setTimeout(90_000);
+
   test("boots a walkable shop with a following camera", async ({ page }) => {
     // One long journey through the shell, growing a step per ported
     // system — two boots and a page reload on top of real walking put
@@ -103,6 +107,20 @@ test.describe("Engine shell", () => {
       // The same key closes it, and the floor keys come back below.
       await page.keyboard.press("Shift+Slash");
       await expect(manual).toBeHidden();
+    });
+
+    await test.step("the coach's first card is up", async () => {
+      // A fresh shop starts the guided opening: one handwritten card,
+      // its first goal showing, the first box still open.
+      const card = page.getByTestId("tutorial-card-opening");
+      await expect(card).toBeVisible();
+      await expect(card.getByTestId("tutorial-goal")).toHaveText(
+        "Make my first item",
+      );
+      await expect(card.getByTestId("tutorial-step-scavenge")).toHaveAttribute(
+        "data-checked",
+        "false",
+      );
     });
 
     await test.step("held keys walk the body", async () => {
