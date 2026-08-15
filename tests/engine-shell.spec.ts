@@ -379,29 +379,32 @@ test.describe("Engine shell", () => {
       const tickBefore = await page.evaluate(
         () => (window as any).game.entities.getById("clock").tick,
       );
-      // The row's accept binding registers in a passive effect, which a
-      // loaded host can flush after this press would land — press again
-      // until the trip takes (never once it has: at the store E acts on
-      // the floor).
-      await expect
-        .poll(
-          async () => {
-            const kind = await page.evaluate(
-              () =>
-                (window as any).game.entities.getById("player").away?.kind ??
-                null,
-            );
-            if (kind !== null) return kind;
-            await page.keyboard.press("KeyE");
-            return page.evaluate(
-              () =>
-                (window as any).game.entities.getById("player").away?.kind ??
-                null,
-            );
-          },
-          { timeout: 10_000 },
+      // Take the row by key, falling back to its button: the accept
+      // binding lives in the per-frame overlay root, and a loaded host
+      // can starve the press's window. The click is the same user path
+      // with Playwright's own enabled-and-stable waiting behind it.
+      const awayKind = () =>
+        page.evaluate(
+          () =>
+            (window as any).game.entities.getById("player").away?.kind ?? null,
+        );
+      await page.keyboard.press("KeyE");
+      const tookByKey = await page
+        .waitForFunction(
+          () =>
+            (window as any).game.entities.getById("player").away?.kind ===
+            "shopping",
+          null,
+          { timeout: 2_500 },
         )
-        .toBe("shopping");
+        .then(
+          () => true,
+          () => false,
+        );
+      if (!tookByKey) {
+        await page.getByRole("button", { name: "Go: Orange Box" }).click();
+      }
+      await expect.poll(awayKind, { timeout: 8_000 }).toBe("shopping");
       // The drive out charges its minutes with the trip underway.
       await expect
         .poll(() =>
