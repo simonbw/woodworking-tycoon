@@ -44,19 +44,20 @@ export class KeyboardManager {
 
   /**
    * Determines whether to prevent the default browser action for a key press.
+   *
+   * Trimmed from the vendored engine (which swallowed Tab and "s"
+   * outright): the DOM layer owns Tab's focus handling — modal-aware,
+   * via BrowserDefaultsGuard — and plain "s" has no browser default,
+   * only Ctrl/Cmd+S does. Here only the chrome shortcuts that would
+   * yank the page out from under the game are stopped.
    */
   private shouldPreventDefault(event: KeyboardEvent): boolean {
-    if (event.key === "Tab") {
-      return true;
-    }
-    if (event.key.toLowerCase() === "s") {
-      // s for save
-      return true;
-    }
-    // Prevent browser zoom shortcuts (Cmd/Ctrl + Plus/Minus)
+    // Browser zoom and save shortcuts (Cmd/Ctrl + Plus/Minus/S)
     if (
       (event.metaKey || event.ctrlKey) &&
-      (event.key === "=" || event.key === "-")
+      (event.key === "=" ||
+        event.key === "-" ||
+        event.key.toLowerCase() === "s")
     ) {
       return true;
     }

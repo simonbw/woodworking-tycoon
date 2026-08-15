@@ -33,6 +33,21 @@ export class ShellStore extends BaseEntity implements Entity {
   version = 0;
   private lastSignature = "";
 
+  /**
+   * Whether a DOM modal claims the keyboard. Mirrored from the
+   * ShortcutProvider's modal scope (ModalScopeBridge) so the engine's
+   * input entities — ShortcutDispatcher, MovementInput, MousePicking —
+   * can stand down while a dialog is up, the way the old shell's
+   * modal-scoped dispatch kept floor keys out of open overlays.
+   */
+  modalOpen = false;
+
+  setModalOpen(open: boolean): void {
+    if (open === this.modalOpen) return;
+    this.modalOpen = open;
+    this.bump();
+  }
+
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

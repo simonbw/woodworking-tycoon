@@ -21,6 +21,7 @@ import { toggleCarryShopVac } from "../../sim/commands/cleaning-commands";
 import { setOperating, setWaiting } from "../../sim/commands/player-commands";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
+import { ShellStore } from "../ShellStore";
 import { TargetingState } from "./TargetingState";
 
 /**
@@ -63,6 +64,11 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
 
   @on("keyDown")
   onKeyDown({ key, event }: GameEventMap["keyDown"]) {
+    // An open dialog owns the keyboard (the old modal scope): no floor
+    // key fires and no hold starts. Key *releases* still land below, so
+    // a hold begun before the dialog opened can't stick.
+    if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
+
     // Held keys first — they're state, not shortcuts.
     if (key === "Space") setOperating(this.game, true);
     if (key === "KeyT") setWaiting(this.game, true);

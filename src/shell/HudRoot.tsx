@@ -1,7 +1,10 @@
 import React from "react";
+import { BrowserDefaultsGuard } from "../components/BrowserDefaultsGuard";
+import { ShortcutProvider } from "../components/shortcuts/ShortcutProvider";
 import { Persistence } from "../config/constants";
 import { ReactEntity } from "../core/ReactEntity";
 import { EngineHud } from "./hud/EngineHud";
+import { ModalScopeBridge } from "./hud/ModalScopeBridge";
 import { ShellProvider } from "./useShell";
 
 /**
@@ -20,9 +23,19 @@ export class HudRoot extends ReactEntity {
 
   constructor() {
     super(
+      // The old shell's ShortcutProvider mounts verbatim — it's
+      // self-contained (its own keydown listener, scopes, registrations)
+      // and serves the DOM-side bindings (open-journal, close-modal, …);
+      // the floor's keys stay with the engine's ShortcutDispatcher, and
+      // the two never bind the same id. ModalScopeBridge tells the
+      // engine's input entities when a dialog owns the keyboard.
       () => (
         <ShellProvider game={this.game}>
-          <EngineHud />
+          <ShortcutProvider>
+            <BrowserDefaultsGuard />
+            <ModalScopeBridge />
+            <EngineHud />
+          </ShortcutProvider>
         </ShellProvider>
       ),
       false,

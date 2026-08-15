@@ -11,6 +11,7 @@ import { GameState, MaterialPile } from "../game/GameState";
 import { Vector } from "../game/Vectors";
 import { hasStationSheet } from "../components/station/station-helpers";
 import { TargetingState } from "../shell/dispatch/TargetingState";
+import { ShellStore } from "../shell/ShellStore";
 import { Player } from "../sim/entities/Player";
 import { projectGameState } from "../sim/projection";
 
@@ -86,6 +87,7 @@ export class MousePicking extends BaseEntity implements Entity {
   @on("tick")
   onTick() {
     if (!this.game.entities.tryGetSingleton(Player)) return;
+    if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
     const cell = this.cursorCell();
     if (!cell) return;
     // Hover re-picks only while the cursor moves, so the keyboard's own
@@ -115,6 +117,7 @@ export class MousePicking extends BaseEntity implements Entity {
   @on("rightDown")
   onRightDown() {
     if (!this.game.entities.tryGetSingleton(Player)) return;
+    if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
     const gs = projectGameState(this.game);
     if (gs.player.away) return;
     this.cursorWorld = this.cursorCell();
