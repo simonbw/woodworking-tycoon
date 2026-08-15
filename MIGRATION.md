@@ -215,10 +215,20 @@ transform tests as it lands.
       movement via `io.getMovementVector()` (MovementInput, phase 3);
       Game.loop now accrues actual frame time so a slow renderer can't
       starve the pace model
-- [ ] Mouse picking: `camera.toWorld(io.mousePosition)` + footprint hit-test
+- [x] Mouse picking: `camera.toWorld(io.mousePosition)` + footprint hit-test
       (replaces invisible Pixi hit shapes); right-click routing
-- [ ] Targeting highlight + hint chips (shared resolvers)
-- [ ] **Gate:** floor-interaction E2E spec passes
+      (`src/views/MousePicking.ts` — hover targets among what the body
+      reaches, right-click opens the sheet/floor-card state)
+- [x] Targeting highlight (shared resolvers; `TargetHighlightView` applies
+      the old outline filters to the targeted machine and the pile E would
+      take). **Hint chips deferred to phase 5's ReactEntity roots** — they
+      are DOM, and the DOM layer is phase 5's first item; the resolvers
+      they share are already live under the dispatcher (recorded deviation)
+- [x] **Gate:** floor interaction verified E2E on the engine shell
+      (tests/engine-shell.spec.ts: E picks up / F puts down through the
+      dispatcher, B hoists and sets down, staged via the save hooks). The
+      old floor.spec.ts rehosts at cutover with the rest of the seven
+      (decision 9)
 
 ## Phase 5 — HUD & overlays [size M]
 
@@ -404,3 +414,7 @@ transform tests as it lands.
   toggle, held wait). Loop time accrual fixed to actual frame delta
   (headless/throttled renderers ran sim time slow). Remaining: mouse
   picking, highlight + hint chips, floor-interaction gate.
+- 2026-08-15 — Phase 4 complete (chips deferred to the phase-5 DOM port,
+  recorded above): mouse picking + highlight live, dispatcher-driven
+  floor interaction covered in the engine-shell spec. Next: phase 5
+  (ReactEntity HUD roots, tutorial queries, DOM tree fan-out).

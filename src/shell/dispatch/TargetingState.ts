@@ -4,7 +4,11 @@ import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
 import { on } from "../../core/entity/handler";
 import { CellMap } from "../../game/CellMap";
-import { materialSources, materialSourceKey } from "../../game/interact";
+import {
+  materialSourceKey,
+  materialSources,
+  offsetForSource,
+} from "../../game/interact";
 import { atTruckCab } from "../../game/lot";
 import { Machine, machineKey as machineStateKey } from "../../game/Machine";
 import {
@@ -133,6 +137,46 @@ export class TargetingState extends BaseEntity implements Entity {
 
   cycleTarget(): void {
     this.offset += 1;
+  }
+
+  /** The cursor picking a machine outright (the pointing version of G). */
+  setTarget(candidate: Machine): void {
+    const machines = this.machines();
+    const index = machines.findIndex(
+      (m) => machineStateKey(m.state) === machineStateKey(candidate.state),
+    );
+    if (index === -1) return;
+    const gs = projectGameState(this.game);
+    const defaultIndex = facingIndex(
+      machines,
+      gs.player.position,
+      gs.player.direction,
+    );
+    const len = machines.length;
+    this.offset = (((index - defaultIndex) % len) + len) % len;
+  }
+
+  /** The cursor picking a floor piece outright (the pointing R). */
+  setPileTarget(pile: { material: { id: string } }): void {
+    const gs = projectGameState(this.game);
+    const targetedView = this.targeted()?.view();
+    const match = gs.materialPiles.find(
+      (candidate) => candidate.material.id === pile.material.id,
+    );
+    if (!match) return;
+    const offset = offsetForSource(gs, targetedView, {
+      kind: "floor-pile",
+      pile: match,
+    });
+    if (offset !== null) this.pileOffset = offset;
+  }
+
+  openSheet(target: Machine): void {
+    this.sheetKey = machineStateKey(target.state);
+  }
+
+  openFloorSheet(): void {
+    this.floorSheetOpen = true;
   }
 
   cyclePile(step: 1 | -1): void {

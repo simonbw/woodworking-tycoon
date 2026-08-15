@@ -100,6 +100,74 @@ test.describe("Engine shell", () => {
       expect(after.clockTick - before.clockTick).toBeLessThanOrEqual(1);
     });
 
+    await test.step("E picks up and F puts down through the dispatcher", async () => {
+      // Stage a board on the floor beside the player via the save hooks.
+      await page.evaluate(() => {
+        const save = (window as any).__GET_GAME_STATE__();
+        save.singletons.player.position = [6.5, 12.5];
+        save.entities.push({
+          type: "materialPile",
+          data: {
+            material: {
+              id: "spec-board",
+              type: "board",
+              species: "pallet",
+              length: 24,
+              width: 4,
+              thickness: 1,
+              surface: "rough",
+            },
+            position: [6.5, 12.5],
+            rotation: 0,
+          },
+        });
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+      const held = async () =>
+        page.evaluate(
+          () =>
+            (window as any).game.entities.getById("player").inventory.length,
+        );
+      expect(await held()).toBe(0);
+      await page.keyboard.press("KeyE");
+      expect(await held()).toBe(1);
+      await page.keyboard.press("KeyF");
+      expect(await held()).toBe(0);
+      const piles = await page.evaluate(
+        () =>
+          [...(window as any).game.entities.all].filter(
+            (e: any) => e.saveType === "materialPile",
+          ).length,
+      );
+      expect(piles).toBe(1);
+    });
+
+    await test.step("B hoists and sets down the machine underfoot", async () => {
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" &&
+            e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        game.entities.getById("player").position = [
+          cell[0] + 0.5,
+          cell[1] + 0.5,
+        ];
+      });
+      const carrying = async () =>
+        page.evaluate(
+          () =>
+            (window as any).game.entities.getById("player").carriedMachine
+              ?.machineTypeId ?? null,
+        );
+      await page.keyboard.press("KeyB");
+      expect(await carrying()).toBe("workspace");
+      await page.keyboard.press("KeyB");
+      expect(await carrying()).toBe(null);
+    });
+
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
         const first = (window as any).__GET_GAME_STATE__();

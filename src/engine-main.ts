@@ -11,7 +11,9 @@ import { CameraRig } from "./views/CameraRig";
 import { DaylightView } from "./views/DaylightView";
 import { EnvironmentView } from "./views/EnvironmentView";
 import { FloorView } from "./views/FloorView";
+import { MousePicking } from "./views/MousePicking";
 import { MovementInput } from "./views/MovementInput";
+import { TargetHighlightView } from "./views/TargetHighlightView";
 import { PowerCordView } from "./views/PowerCordView";
 import { registerAllViews } from "./views/register";
 
@@ -72,6 +74,8 @@ async function main() {
   game.addEntity(new MovementInput());
   game.addEntity(new TargetingState());
   game.addEntity(new ShortcutDispatcher());
+  game.addEntity(new MousePicking());
+  game.addEntity(new TargetHighlightView());
 
   const saveManager = game.addEntity(
     new SaveManager({
