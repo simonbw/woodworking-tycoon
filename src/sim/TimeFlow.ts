@@ -177,6 +177,17 @@ export class TimeFlow extends BaseEntity implements Entity {
       this.waitHeldSeconds = 0;
     }
 
+    // A forced engine tick serves exactly the forced minutes: the pace
+    // model neither accrues nor advances alongside it, so the driver's
+    // tick(n) (and the overnight batch) mean exactly n minutes — never
+    // n plus whatever the live pace would have crept in.
+    if (this.forcedMinutes > 0) {
+      this.gameDt = 0;
+      this.wholeTicks = this.forcedMinutes;
+      this.forcedMinutes = 0;
+      return;
+    }
+
     const pace =
       this.speed === "working"
         ? WORKING_PACE
@@ -190,10 +201,8 @@ export class TimeFlow extends BaseEntity implements Entity {
 
     // Carry whole minutes out to the quantized sim layers.
     this.minuteAccumulator += this.gameDt;
-    let whole = Math.floor(this.minuteAccumulator);
+    const whole = Math.floor(this.minuteAccumulator);
     this.minuteAccumulator -= whole;
-    whole += this.forcedMinutes;
-    this.forcedMinutes = 0;
     this.wholeTicks = whole;
   }
 }
