@@ -22,6 +22,7 @@ import {
 } from "../../game/Materials";
 import { HAND_CAPACITY } from "../../game/Person";
 import { SHEET_SKUS, SheetSize, sheetSize } from "../../game/sheetStock";
+import { availableOperations } from "../../game/skill-helpers";
 import { ToolId } from "../../game/Tool";
 import { cellCenter, motionCell } from "../../game/player-motion";
 import { atStand, isSellable, standRect } from "../../game/stand";
@@ -1494,6 +1495,161 @@ export class ShopDriver {
     this.tick(1);
     setOperating(this.game, false);
     setSweepAim(this.game, null);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // --- verbs added by sequence rehost: bench-group.test.ts ---
+  // Entity-addressed twins of machine()/glueUp()/performWork()/collect().
+  // The type-addressed verbs refuse to choose between twins of one type,
+  // and the bench-group sequence stands two worktable1x2s side by side —
+  // the old driver's machine() quietly took the first match; here the
+  // caller says which table it means by cell. Ports of the old verbs,
+  // mutating only through commands.
+  // ------------------------------------------------------------------
+
+  /**
+   * The one machine of this type standing at this cell — for shops with
+   * twins of a type, where machine() refuses to choose.
+   */
+  machineAt(machineTypeId: MachineId, position: Vector): MachineEntity {
+    const matches = [...this.game.entities.byConstructor(MachineEntity)].filter(
+      (entity) =>
+        entity.state.machineTypeId === machineTypeId &&
+        entity.state.position[0] === position[0] &&
+        entity.state.position[1] === position[1],
+    );
+    if (matches.length !== 1) {
+      throw new Error(
+        `Expected exactly one ${machineTypeId} at [${position.join(", ")}], ` +
+          `found ${matches.length}`,
+      );
+    }
+    return matches[0];
+  }
+
+  /**
+   * glueUp() addressed to a held station entity — the same clamps-first
+   * run, on the one table the caller names. See glueUp() for the shape.
+   */
+  glueUpAt(target: MachineEntity, stock?: MaterialPredicate): this {
+    const operatorCell = target.view().absoluteOperationPosition;
+    if (!operatorCell) {
+      throw new Error(`${target.state.machineTypeId} has no operator cell`);
+    }
+    this.standAt(operatorCell);
+    const machine = target.view();
+    const pieces = machine.inputMaterials.filter(
+      stock ??
+        ((m) =>
+          m.type === "board" ||
+          m.type === "panel" ||
+          m.type === "endGrainSlice"),
+    );
+    if (pieces.length < 2) {
+      throw new Error(
+        `A glue-up at the ${target.state.machineTypeId} needs at least two ` +
+          `staged pieces, found ${pieces.length}`,
+      );
+    }
+    // Lay the run edge to edge across the bench center, first piece
+    // leftmost — widths across, lengths down, nothing on edge.
+    const widthOf = (m: MaterialInstance): number =>
+      m.type === "board"
+        ? m.width
+        : m.type === "panel"
+          ? panelWidth(m)
+          : m.type === "endGrainSlice"
+            ? m.thickness / 4
+            : 0;
+    const bench = benchTopSizeIn(machine.type);
+    const span = pieces.reduce((sum, piece) => sum + widthOf(piece), 0);
+    let across = -span / 2;
+    for (const piece of pieces) {
+      arrangeBenchMaterial(this.game, target, piece.id, {
+        xIn: bench.widthIn / 2 + across + widthOf(piece) / 2,
+        yIn: bench.heightIn / 2,
+        angleDeg: 0,
+        flipped: false,
+      });
+      across += widthOf(piece);
+    }
+    startGlueUp(
+      this.game,
+      target,
+      pieces.map((piece) => piece.id),
+    );
+    if (target.state.operationProgress.status !== "inProgress") {
+      throw new Error(
+        `The glue-up at the ${target.state.machineTypeId} would not start. ` +
+          `Unprepped stock, a locked skill, or short of clamps.`,
+      );
+    }
+    return this.performWorkAt(target).collectAt(target);
+  }
+
+  /**
+   * performWork()'s interactive-finish half, addressed to a held entity:
+   * the real finish commit, then the hands-free remainder (a glue-up's
+   * cure) ticked out on the clock. Pry work stays with performWork() —
+   * a teardown never has twins to disambiguate in the rehosted files.
+   */
+  performWorkAt(target: MachineEntity): this {
+    if (target.state.operationProgress.status !== "inProgress") {
+      throw new Error(
+        `No work in progress on the ${target.state.machineTypeId} to ` +
+          `perform — start it first`,
+      );
+    }
+    finishAttendedWork(this.game, target);
+    // A hands-free remainder (the cure) runs out on the clock
+    for (let i = 0; i < TICK_CEILING; i++) {
+      if (target.state.operationProgress.status !== "inProgress") {
+        return this;
+      }
+      this.tick();
+    }
+    throw new Error(
+      `The ${target.state.machineTypeId}'s hand work never resolved in ` +
+        `${TICK_CEILING} ticks. finishAttendedWork refusing (player not at ` +
+        `the station?) is the usual cause.`,
+    );
+  }
+
+  /**
+   * collect() addressed to a held station entity: pick the finished work
+   * up an armful at a time, walking to the outfeed first if it has one.
+   */
+  collectAt(target: MachineEntity): this {
+    const outfeed = target.view().absoluteOutputPosition;
+    if (outfeed) {
+      this.standAt(outfeed);
+    }
+    while (target.state.outputMaterials.length > 0) {
+      if (this.player.handSpaceLeft === 0) {
+        const held = this.inventory.length;
+        dropMaterial(this.game, [...this.inventory]);
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down while collecting from the ` +
+              `${target.state.machineTypeId}`,
+          );
+        }
+        continue;
+      }
+      const before = target.state.outputMaterials.length;
+      takeOutputsFromMachine(
+        this.game,
+        target.state.outputMaterials.slice(0, this.player.handSpaceLeft),
+        target,
+      );
+      if (target.state.outputMaterials.length === before) {
+        throw new Error(
+          `The ${target.state.machineTypeId}'s outputs would not come off — ` +
+            `holding a tool?`,
+        );
+      }
+    }
     return this;
   }
 }
