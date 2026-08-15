@@ -92,21 +92,23 @@ conversation that produced this file.
 
 ## Phase 0 — Vendor & engine surgery [size M]
 
-- [ ] Vendor `src/core/` + `src/config/` from simonbw/game-engine
-- [ ] Strip p2/physics (world, bodies, contacts, ground, EntityDef body path);
-      remove the dependency entirely
-- [ ] Apply tack-and-trim lifts: `@on` decorator registration + non-nullable
-      `game` getter; Keyboard/Mouse/Gamepad manager split with `destroy()`;
-      `PersistedState` (namespace `woodworking-tycoon:setting:`); tick layers;
-      Profiler; Vector improvements
-- [ ] Replace Parcel resource codegen with our pipeline: `static/` +
-      `loadAssets.ts`; small script generating name-literal types where
-      vendored code wants `ImageName`/`SoundName`
-- [ ] Headless mode: `GameOptions { headless?, random? }`; constructor/init
+- [x] Vendor `src/core/` + `src/config/` from simonbw/game-engine
+- [x] Strip p2/physics (world, bodies, contacts, ground, EntityDef body path);
+      remove the dependency entirely (never added: physics-free files only)
+- [x] Apply tack-and-trim lifts: `@on` decorator registration + non-nullable
+      `game` getter; Keyboard/Mouse/Gamepad manager split with `destroy()`
+      (steering wheel dropped); `PersistedState` (namespace
+      `woodworking-tycoon:setting:`); tick layers; Profiler (vendored as a
+      util, not yet wired into Game); Vector improvements
+- [x] Replace Parcel resource codegen with our pipeline: `static/` +
+      `loadAssets.ts`; `npm run generate:resources`
+      (`scripts/generate-resources.ts`) emits `src/resources/resources.ts`
+      name-literal types from `static/`
+- [x] Headless mode: `GameOptions { headless?, random? }`; constructor/init
       skip renderer, IO, audio, DOM, rAF when headless
-- [ ] Split `loop()` into `advance(seconds)` + `render()`; public
+- [x] Split `loop()` into `advance(seconds)` + `render()`; public
       `step(ticks)`; loop = advance + render
-- [ ] View registry: `registerView(SimClass, ViewClass)`; addEntity spawns the
+- [x] View registry: `registerView(SimClass, ViewClass)`; addEntity spawns the
       view as a child iff the game has a renderer
 - [ ] Second esbuild entry (`src/engine-main.ts` + html) alongside the old app
 - [ ] Lint boundary: sim directories may not import pixi/react/DOM;
@@ -217,3 +219,9 @@ transform tests as it lands.
 ## Log
 
 - 2026-08-15 — Plan committed. No implementation started.
+- 2026-08-15 — Phase 0 core landed: vendored physics-free engine core
+  (game-engine's Pixi graphics/sound stack + tack-and-trim's entity/IO/util
+  layers), new `Game` with headless mode, `advance`/`render` split,
+  `step(ticks)`, seeded `game.random`, tick layers, and the view registry.
+  Resource name-literal types now generate from `static/`. tsc + unit green.
+  Remaining in phase 0: engine browser entry, lint boundary, gate test.

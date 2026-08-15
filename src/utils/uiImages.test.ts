@@ -55,7 +55,14 @@ describe("UI image preloading", () => {
     const registered = new Set([...UI_IMAGE_ASSETS, ...TEXTURE_ASSETS]);
     const unregistered = new Set<string>();
 
-    for (const file of sourceFiles(SRC_DIR)) {
+    // The generated resource registry (src/resources/) enumerates every
+    // file under static/ for the engine shell's name-literal types; listing
+    // an image there is not a request to preload it in this shell.
+    const scannedFiles = sourceFiles(SRC_DIR).filter(
+      (file) => !file.includes(`${path.sep}resources${path.sep}`),
+    );
+
+    for (const file of scannedFiles) {
       const contents = fs.readFileSync(file, "utf8");
       for (const [match] of contents.matchAll(/\/images\/[\w./-]+\.\w+/g)) {
         if (!registered.has(match)) unregistered.add(`${match} (${file})`);

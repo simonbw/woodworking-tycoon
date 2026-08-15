@@ -962,23 +962,21 @@ export function storeWallSolids(layout: StoreLayout): SolidBox[] {
 export function storeCollisionWorld(layout: StoreLayout): CollisionWorld {
   const solids: Solid[] = [
     ...storeWallSolids(layout),
-    ...layout.fixtures.map(
-      (fixture): SolidBox => ({
-        kind: "box",
-        min: fixture.rect.min,
-        max: fixture.rect.max,
-      }),
-    ),
-    ...layout.decor.map(
-      (item): SolidBox => ({
-        kind: "box",
-        min: item.rect.min,
-        max: item.rect.max,
-      }),
-    ),
-    ...layout.spines.map(
-      (spine): SolidBox => ({ kind: "box", min: spine.min, max: spine.max }),
-    ),
+    ...layout.fixtures.map((fixture): SolidBox => ({
+      kind: "box",
+      min: fixture.rect.min,
+      max: fixture.rect.max,
+    })),
+    ...layout.decor.map((item): SolidBox => ({
+      kind: "box",
+      min: item.rect.min,
+      max: item.rect.max,
+    })),
+    ...layout.spines.map((spine): SolidBox => ({
+      kind: "box",
+      min: spine.min,
+      max: spine.max,
+    })),
     { kind: "box", min: layout.register.min, max: layout.register.max },
     { kind: "box", min: layout.corral.min, max: layout.corral.max },
     { kind: "box", min: layout.truck.min, max: layout.truck.max },

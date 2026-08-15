@@ -125,11 +125,7 @@ export interface CuringScript {
 }
 
 export type BenchScript =
-  | StrokeScript
-  | SawScript
-  | PryScript
-  | AssemblyScript
-  | CuringScript;
+  StrokeScript | SawScript | PryScript | AssemblyScript | CuringScript;
 
 /**
  * The first staged material meeting each of the operation's input slots,
