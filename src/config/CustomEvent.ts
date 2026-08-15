@@ -1,3 +1,4 @@
+import type { PayoutEvent } from "../game/PayoutEvent";
 import type { SoundEvent } from "../game/SoundEvent";
 
 /**
@@ -11,4 +12,11 @@ export type CustomEvents = {
    * dispatch is a no-op.
    */
   sound: { sound: SoundEvent };
+  /**
+   * A completed sale, announced so it can be celebrated (the old world's
+   * pendingPayouts queue, as an event). The StreetSystem dispatches it;
+   * the reward-flight view layer (phase 8) listens. Headless games have
+   * no listener and the dispatch is a no-op.
+   */
+  payout: { payout: PayoutEvent };
 };

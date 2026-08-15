@@ -9,6 +9,7 @@ import { SkillId } from "../../game/Skill";
 import { MaterialInstance } from "../../game/Materials";
 import { HAND_CAPACITY } from "../../game/Person";
 import { cellCenter, motionCell } from "../../game/player-motion";
+import { atStand, isSellable, standRect } from "../../game/stand";
 import { Vector } from "../../game/Vectors";
 import { bootShop } from "../bootstrap";
 import {
@@ -22,10 +23,12 @@ import {
 import { dropMaterial, pickUpMaterial } from "../commands/pile-commands";
 import { setOperating } from "../commands/player-commands";
 import { spendSkillPoint } from "../commands/progression-commands";
+import { setOutAtStand } from "../commands/stand-commands";
 import { loadTruckBed, takeFromTruckBed } from "../commands/truck-commands";
 import { MachineEntity } from "../entities/MachineEntity";
 import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
+import { StandEntity } from "../entities/StandEntity";
 import { TruckEntity } from "../entities/TruckEntity";
 import { loadGameState } from "../save/fixture";
 import { SaveFile, serializeGame } from "../save/SaveFile";
@@ -192,6 +195,10 @@ export class ShopDriver {
 
   get tutorials(): TutorialTracker {
     return this.singleton(TutorialTracker);
+  }
+
+  get stand(): StandEntity {
+    return this.singleton(StandEntity);
   }
 
   // ------------------------------------------------------------------
@@ -466,6 +473,77 @@ export class ShopDriver {
       [...entity.state.outputMaterials],
       entity,
     );
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // The for-sale stand: the one selling channel, and where a sequence's
+  // money and reputation come from.
+  // ------------------------------------------------------------------
+
+  /** A walkable cell within arm's reach of the stand's table. */
+  standAtStand(): this {
+    const rect = standRect(this.shopInfo.info);
+    this.standAt([
+      Math.floor((rect.min[0] + rect.max[0]) / 2),
+      Math.floor(rect.min[1]) - 1,
+    ]);
+    if (!atStand(this.shopInfo.info, this.player.cell)) {
+      throw new Error("standAtStand missed the table's reach — driver bug");
+    }
+    return this;
+  }
+
+  /**
+   * Carry every piece in hand matching the predicate down the driveway
+   * and set it out on the stand. (The old driver also swept the floor's
+   * piles; those arrive with the piles port.)
+   */
+  setOut(
+    predicate: (material: MaterialInstance) => boolean = isSellable,
+  ): this {
+    const materials = this.player.inventory.filter(predicate);
+    if (materials.length === 0) {
+      throw new Error(
+        `Nothing in hand to set out — holding ` +
+          `[${this.player.inventory.map((m) => m.type).join(", ")}]`,
+      );
+    }
+    const before = this.stand.pieces.length;
+    this.standAtStand();
+    setOutAtStand(this.game, materials);
+    if (this.stand.pieces.length !== before + materials.length) {
+      throw new Error(
+        `The stand would not take [${materials.map((m) => m.type).join(", ")}]`,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Let the street run until `count` more pieces have sold off the
+   * stand. Sales roll from the game's seeded rng, so a sequence lands
+   * the same buyers every run; the ceiling is generous enough that a
+   * stocked stand can't miss it, and anything slower fails loudly.
+   * (The old driver slept through nights as they came; sleeping arrives
+   * with the day-cycle port, so this ticks straight through.)
+   */
+  awaitSales(count = 1): this {
+    const target = this.progression.salesCompleted + count;
+    for (
+      let guard = 0;
+      guard < 400 && this.progression.salesCompleted < target;
+      guard++
+    ) {
+      this.tick(25);
+    }
+    if (this.progression.salesCompleted < target) {
+      throw new Error(
+        `Only ${count - (target - this.progression.salesCompleted)} ` +
+          `of ${count} pieces sold — the stand holds ` +
+          `[${this.stand.pieces.map((m) => m.type).join(", ")}]`,
+      );
+    }
     return this;
   }
 }
