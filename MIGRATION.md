@@ -435,3 +435,17 @@ transform tests as it lands.
   Browser-verified (chip renders in paperwork chrome, wallet mutation
   propagates, clicks pass through to the canvas); HUD assertion step added
   to the engine-shell spec. Dispatching the DOM-tree fan-out.
+- 2026-08-15 — [fan-out] Hands strip, supplies panel, and nightfall card
+  ported into `src/shell/hud/` on the shell hooks, mounted in EngineHud
+  with HomePage's exact wrappers (bench-dive fade stays phase 7; the
+  coach's column wrapper is structured for the tutorial cards to land
+  above the nightfall note). Mutations ride the existing dropMaterial /
+  putDownBroom / toggleCarryShopVac commands — none added;
+  dustpanFillFraction is re-exported off cleaning-commands so the shell
+  stays off the old actions. The old `playerMotionStore` read became a
+  click-time read of the Player entity (the drop's orientation now
+  quantizes to the facing via headingForDirection, exactly the shell F
+  key's spelling). ShellStore's signature grows broom, vac, and
+  clamps-in-use coverage. Engine-shell spec grows a HUD step and is
+  green; staged-HUD screenshot checked against the old shell's layout.
+  tsc + unit green.
