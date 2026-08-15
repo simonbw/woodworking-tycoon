@@ -275,6 +275,16 @@ transform tests as it lands.
   fan-out ports: setOut sweeps only the hands (piles unported) and
   awaitSales can't sleep through nights (day cycle unported). tsc + unit
   green.
+- 2026-08-15 — [fan-out] Bench-work commands ported: the pure engine
+  (`src/game/bench-work/`) stays shared, and the operation-actions commits
+  land as `bench-commands.ts` — pryPalletNail (nail → Consumables stock,
+  freed boards under their pallet-slot ids), startGlueUp (clamps-first
+  claim, all guards), arrangeBenchMaterial, gatherBenchPieces (bench-group
+  seam), emitBenchDust (writes the DustLayer singleton), benchOffersPry.
+  Driver grows run/performWork/takeStock/feed/glueUp/make, and load/collect
+  take the old driver's ferrying semantics. Deviations, both waiting on the
+  day-cycle port: run() can't sleep off the night first (no ensureDaylight
+  yet), and glue cures tick straight through. tsc + unit green.
 - 2026-08-15 — [fan-out] Cleaning system ported: Broom singleton (owned/
   position/dustpan), ShopVacEntity (absent until bought), CleaningSystem on
   the "cleaning" layer running the old sweep → vacuum → shopVac passes per
