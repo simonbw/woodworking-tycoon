@@ -1,5 +1,7 @@
 import { registerView } from "../core/ViewRegistry";
 import { CustomerEntity } from "../sim/entities/CustomerEntity";
+import { MachineCrateEntity } from "../sim/entities/MachineCrateEntity";
+import { MachineEntity } from "../sim/entities/MachineEntity";
 import { MaterialPileEntity } from "../sim/entities/MaterialPileEntity";
 import { Player } from "../sim/entities/Player";
 import { ShopVacEntity } from "../sim/entities/ShopVacEntity";
@@ -10,6 +12,8 @@ import { DustLayer } from "../sim/singletons/DustLayer";
 import { BroomView } from "./BroomView";
 import { CustomerView } from "./CustomerView";
 import { DustView } from "./DustView";
+import { MachineCrateView } from "./MachineCrateView";
+import { MachineView } from "./MachineView";
 import { MaterialPileView } from "./MaterialPileView";
 import { PlayerView } from "./PlayerView";
 import { ShopVacView } from "./ShopVacView";
@@ -31,4 +35,6 @@ export function registerAllViews(): void {
   registerView(MaterialPileEntity, MaterialPileView);
   registerView(Broom, BroomView);
   registerView(ShopVacEntity, ShopVacView);
+  registerView(MachineEntity, MachineView);
+  registerView(MachineCrateEntity, MachineCrateView);
 }

@@ -34,6 +34,11 @@ export const LAYERS = {
   debugHud: new LayerInfo({ paralax: V(0, 0) }),
 } satisfies { [key: string]: LayerInfo };
 
+// Within the machines layer, draw order is by zIndex: worktable cast
+// shadows under every table's top, worktable tops under the benchtop
+// machines mounted on them (see MachineView's zIndex bands).
+LAYERS.machines.container.sortableChildren = true;
+
 export type LayerName = keyof typeof LAYERS;
 
 /** The layer that sprites that do not specify a layer will be added to. */
