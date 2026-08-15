@@ -15,6 +15,9 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Engine shell", () => {
   test("boots a walkable shop with a following camera", async ({ page }) => {
+    // One long journey through the shell; the phase-5 fan-out keeps
+    // appending steps, and the walk itself spends real seconds.
+    test.slow();
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
       timeout: 15_000,
@@ -180,6 +183,43 @@ test.describe("Engine shell", () => {
       expect(await carrying()).toBe("workspace");
       await page.keyboard.press("KeyB");
       expect(await carrying()).toBe(null);
+    });
+
+    await test.step("J opens the journal and claims the keyboard", async () => {
+      const journal = page.getByRole("dialog", { name: "Journal" });
+      await page.keyboard.press("KeyJ");
+      await expect(journal).toBeVisible();
+      // The DOM modal makes the engine's input stand down (ModalScopeBridge).
+      expect(
+        await page.evaluate(
+          () => (window as any).game.entities.getById("shellStore").modalOpen,
+        ),
+      ).toBe(true);
+      // J again closes it (the modal-scope rebind of the same key).
+      await page.keyboard.press("KeyJ");
+      await expect(journal).toBeHidden();
+      expect(
+        await page.evaluate(
+          () => (window as any).game.entities.getById("shellStore").modalOpen,
+        ),
+      ).toBe(false);
+    });
+
+    await test.step("Escape pauses, and the pause menu stops the clock", async () => {
+      const menu = page.getByRole("dialog", { name: "Paused" });
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeVisible();
+      expect(await page.evaluate(() => (window as any).game.paused)).toBe(true);
+      const before = await readPlayer();
+      await page.waitForTimeout(600);
+      const after = await readPlayer();
+      expect(after.clockTick).toBe(before.clockTick);
+      // Escape again resumes (unmounting is what unpauses).
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeHidden();
+      expect(await page.evaluate(() => (window as any).game.paused)).toBe(
+        false,
+      );
     });
 
     await test.step("the world round-trips through the hooks", async () => {

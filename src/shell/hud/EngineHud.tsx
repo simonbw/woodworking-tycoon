@@ -1,6 +1,6 @@
 import React from "react";
 import { useShopOpen } from "../useShell";
-import { TopBar } from "./TopBar";
+import { NavBar } from "./NavBar";
 
 /**
  * The HUD chrome over the engine shell's canvas — the successor of
@@ -9,9 +9,10 @@ import { TopBar } from "./TopBar";
  * (`pointer-events-none`) and only the chips re-enable them, and panels
  * never shove the canvas around.
  *
- * The spine carries the top bar; the rest of the frame — the coach's
- * column, the hands strip, the supplies fold-out, the modal layer —
- * lands with the phase-5 fan-out.
+ * The top strip is the NavBar (clock, balances, Skills, Menu — with the
+ * journal and pause menu behind them); the rest of the frame — the
+ * coach's column, the hands strip, the supplies fold-out — lands with
+ * the rest of the phase-5 fan-out.
  */
 export const EngineHud: React.FC = () => {
   const open = useShopOpen();
@@ -19,7 +20,7 @@ export const EngineHud: React.FC = () => {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-40 px-6 pt-6">
-      <TopBar />
+      <NavBar />
     </div>
   );
 };

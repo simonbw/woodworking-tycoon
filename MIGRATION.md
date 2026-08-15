@@ -435,3 +435,18 @@ transform tests as it lands.
   Browser-verified (chip renders in paperwork chrome, wallet mutation
   propagates, clicks pass through to the canvas); HUD assertion step added
   to the engine-shell spec. Dispatching the DOM-tree fan-out.
+- 2026-08-15 — [fan-out] NavBar + journal + pause menu ported: the full
+  NavBar (absorbing the TopBar exemplar's clock/balance segments) with
+  Skills button, XP meter, and skill-point badge; JournalModal at
+  `src/shell/hud/journal/` spending points through the existing
+  `spendSkillPoint` command; PauseMenu over `game.pause()`/`unpause()`
+  (unmount resumes) with Save & Quit forcing a SaveManager write then
+  reloading. Deviations: the manual `?` button is omitted (the manual is
+  its own fan-out slice — the button returns with it); quit-via-reload is
+  transitional until boot lands on a start menu; and pause-menu's Escape
+  binding disables itself while the engine dispatcher's close-sheet
+  answers, since two providers now share the key that one registry order
+  used to arbitrate. Journal + pause steps added to the engine-shell spec
+  (marked `test.slow()` — the journey test outgrew the default budget).
+  Browser-verified: modal quiets floor keys, pause stops the clock, a
+  learned skill survives Save & Quit's reload. tsc + unit green.
