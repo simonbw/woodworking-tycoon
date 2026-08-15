@@ -26,6 +26,7 @@ import { Wallet } from "./singletons/Wallet";
 import { CleaningSystem } from "./systems/CleaningSystem";
 import { MachineSystem } from "./systems/MachineSystem";
 import { MilestoneSystem } from "./systems/MilestoneSystem";
+import { SleepSystem } from "./systems/SleepSystem";
 import { StreetSystem } from "./systems/StreetSystem";
 import { TimeFlow } from "./TimeFlow";
 
@@ -46,6 +47,7 @@ export function addSessionSingletons(game: Game): void {
   game.addEntity(new CleaningSystem());
   game.addEntity(new MachineSystem());
   game.addEntity(new MilestoneSystem());
+  game.addEntity(new SleepSystem());
   game.addEntity(new StreetSystem());
 }
 

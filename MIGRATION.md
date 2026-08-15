@@ -300,3 +300,14 @@ transform tests as it lands.
   trips-side state now load; 1235 unit tests green. Wave 2 dispatched:
   trips & store purchases, day cycle & sleep, tools & upgrades, bench-work
   commands.
+- 2026-08-15 — [fan-out] Day cycle & sleep ported: day-commands (goHome +
+  beginWakeUp, old door-actions' goHome/wakeUp; the store-trip actions
+  stay with the trips port) and a transient SleepSystem — the overnight
+  batch's ported spelling: beginWakeUp turns the day over and queues
+  NIGHT_TICKS on the system, which feeds TimeFlow.forceMinutes(1) per
+  engine tick (caller-driven; commands never step the engine) so the
+  per-minute layer interleaving matches the old sequential-tickAction
+  batch, then lands the morning bookkeeping (fresh dayStartTick, player
+  at the cab, away null). Driver grows sleep()/ensureDaylight and
+  awaitSales now sleeps through nights like the old driver. tsc + unit
+  green.
