@@ -2,11 +2,12 @@ import { Constructor } from "../../core/EntityList";
 import { Entity } from "../../core/entity/Entity";
 import { Game } from "../../core/Game";
 import { mulberry32 } from "../../core/util/SeededRandom";
+import { benchTopSizeIn } from "../../game/bench-work/bench-layout";
 import { GameState } from "../../game/GameState";
 import { isOutdoors, truckCabSideCell } from "../../game/lot";
 import { MachineId, ParameterValues } from "../../game/Machine";
 import { SkillId } from "../../game/Skill";
-import { MaterialInstance, ToolItem } from "../../game/Materials";
+import { MaterialInstance, panelWidth, ToolItem } from "../../game/Materials";
 import { ToolId } from "../../game/Tool";
 import { HAND_CAPACITY } from "../../game/Person";
 import { cellCenter, motionCell } from "../../game/player-motion";
@@ -23,11 +24,20 @@ import {
 } from "../commands/cleaning-commands";
 import { beginWakeUp, goHome } from "../commands/day-commands";
 import {
+  benchOffersPry,
+  palletPryTargetsLeft,
+  pryPalletNail,
+  startGlueUp,
+  arrangeBenchMaterial,
+} from "../commands/bench-commands";
+import {
+  finishAttendedWork,
   machineCanOperateNow,
   moveMaterialsToMachine,
   operateMachine,
   setMachineOperation,
   setMachineSettings,
+  takeInputsFromMachine,
   takeOutputsFromMachine,
   toggleMachinePower,
 } from "../commands/machine-commands";
@@ -74,6 +84,12 @@ import { TimeFlow } from "../TimeFlow";
 
 /** Matches the stock a job wants out of wherever it's being taken from. */
 type MaterialPredicate = (material: MaterialInstance) => boolean;
+
+/**
+ * Long enough for the slowest cure in the game with room to spare, short
+ * enough that a job which can never finish fails instead of hanging.
+ */
+const TICK_CEILING = 20_000;
 
 export class ShopDriver {
   readonly game: Game;
@@ -452,19 +468,97 @@ export class ShopDriver {
   }
 
   /**
-   * Move matching materials from the player's hands onto a machine's
-   * input bay.
+   * Carry the matching stock onto the station, out of the arms and off the
+   * floor, an armful (HAND_CAPACITY) at a time — walking out to each pile
+   * and back, the way the player has to. `count` takes only the first so
+   * many matches, for recipes that want two of one board and three of
+   * another out of a pile of both.
+   *
+   * The move is checked rather than assumed: a bay with fewer free spaces
+   * than the load needs refuses the whole thing, which downstream looks
+   * like a station that won't start for no reason.
    */
   load(
     machineTypeId: MachineId,
-    predicate: (material: MaterialInstance) => boolean,
-    count = 1,
+    predicate: MaterialPredicate,
+    count?: number,
   ): this {
-    const materials = this.player.inventory.filter(predicate).slice(0, count);
-    if (materials.length < count) {
-      throw new Error("Not holding enough matching materials to load");
+    const matches = this.stock(predicate);
+    const materials = count === undefined ? matches : matches.slice(0, count);
+    if (materials.length === 0) {
+      throw new Error(
+        `Nothing in reach to load onto the ${machineTypeId} — holding ` +
+          `[${this.inventory.map((m) => m.type).join(", ")}], floor has ` +
+          `[${this.piles.map((p) => p.material.type).join(", ")}]`,
+      );
     }
-    moveMaterialsToMachine(this.game, materials, this.machine(machineTypeId));
+    if (count !== undefined && materials.length < count) {
+      throw new Error(
+        `Wanted ${count} matching pieces for the ${machineTypeId}, ` +
+          `only ${materials.length} in reach`,
+      );
+    }
+    const before = this.machine(machineTypeId).state.inputMaterials.length;
+    const spaces = this.machine(machineTypeId).type.inputSpaces - before;
+    if (materials.length > spaces) {
+      throw new Error(
+        `The ${machineTypeId} would not take ${materials.length} more ` +
+          `pieces — its bay holds ${this.machine(machineTypeId).type.inputSpaces} ` +
+          `and already had ${before}. Load only what the recipe wants.`,
+      );
+    }
+    // Deposits happen from where the caller stood — the operator's side.
+    const at = this.player.cell;
+    const wanted = new Set(materials);
+    while (wanted.size > 0) {
+      const inHand = this.inventory.filter((m) => wanted.has(m));
+      if (inHand.length > 0) {
+        this.standAt(at);
+        moveMaterialsToMachine(this.game, inHand, this.machine(machineTypeId));
+        for (const m of inHand) {
+          wanted.delete(m);
+        }
+        continue;
+      }
+      // The rest is on the floor. Full arms set their (unwanted) load down
+      // right here first, where a later fetch can still find it.
+      if (this.player.handSpaceLeft === 0) {
+        const held = this.inventory.length;
+        this.standAt(at);
+        dropMaterial(this.game, [...this.inventory]);
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down at ${JSON.stringify(at)} to free the hands`,
+          );
+        }
+      }
+      const piles = this.piles.filter((pile) => wanted.has(pile.material));
+      if (piles.length === 0) {
+        throw new Error(
+          `Stock for the ${machineTypeId} vanished mid-ferry — this is a ` +
+            `driver bug`,
+        );
+      }
+      for (const pile of piles.slice(0, this.player.handSpaceLeft)) {
+        const held = this.inventory.length;
+        this.standNear(pile);
+        pickUpMaterial(this.game, [pile]);
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't pick ${pile.material.type} up off the floor — ` +
+              `holding a tool, or the hands are full`,
+          );
+        }
+      }
+    }
+    this.standAt(at);
+    const after = this.machine(machineTypeId).state.inputMaterials.length;
+    if (after !== before + materials.length) {
+      throw new Error(
+        `The ${machineTypeId} took ${after - before} of ${materials.length} ` +
+          `pieces — this is a driver bug`,
+      );
+    }
     return this;
   }
 
@@ -493,14 +587,41 @@ export class ShopDriver {
     return this;
   }
 
-  /** Take everything out of a machine's output bay into the hands. */
+  /**
+   * Pick the finished work up. Feed-through machines (planer, jointer, table
+   * saw) deliver to an outfeed cell, so this walks there first, the way the
+   * player has to. An armful at a time: what doesn't fit in the hands is
+   * set down right where it's collected, where the next `load` will find it.
+   */
   collect(machineTypeId: MachineId): this {
-    const entity = this.machine(machineTypeId);
-    takeOutputsFromMachine(
-      this.game,
-      [...entity.state.outputMaterials],
-      entity,
-    );
+    const outfeed = this.machine(machineTypeId).view().absoluteOutputPosition;
+    if (outfeed) {
+      this.standAt(outfeed);
+    }
+    while (this.machine(machineTypeId).state.outputMaterials.length > 0) {
+      if (this.player.handSpaceLeft === 0) {
+        const held = this.inventory.length;
+        dropMaterial(this.game, [...this.inventory]);
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down while collecting from the ${machineTypeId}`,
+          );
+        }
+        continue;
+      }
+      const entity = this.machine(machineTypeId);
+      const before = entity.state.outputMaterials.length;
+      takeOutputsFromMachine(
+        this.game,
+        entity.state.outputMaterials.slice(0, this.player.handSpaceLeft),
+        entity,
+      );
+      if (this.machine(machineTypeId).state.outputMaterials.length === before) {
+        throw new Error(
+          `The ${machineTypeId}'s outputs would not come off — holding a tool?`,
+        );
+      }
+    }
     return this;
   }
 
@@ -666,6 +787,258 @@ export class ShopDriver {
     const cell = this.player.cell;
     this.sleep();
     return this.standAt(cell);
+  }
+
+  /**
+   * Clear the loose stock lying on a bench back into the arms — a
+   * teardown's freed boards live in the input bay (they stay on the bench,
+   * see pryPalletNail), so collect() never sees them. An armful at a
+   * time, dropping what doesn't fit at the feet, exactly like collect().
+   */
+  takeStock(machineTypeId: MachineId): this {
+    while (this.machine(machineTypeId).state.inputMaterials.length > 0) {
+      if (this.player.handSpaceLeft === 0) {
+        const held = this.inventory.length;
+        dropMaterial(this.game, [...this.inventory]);
+        if (this.inventory.length === held) {
+          throw new Error(
+            `Couldn't set stock down while clearing the ${machineTypeId}`,
+          );
+        }
+        continue;
+      }
+      const entity = this.machine(machineTypeId);
+      const before = entity.state.inputMaterials.length;
+      takeInputsFromMachine(
+        this.game,
+        entity.state.inputMaterials.slice(0, this.player.handSpaceLeft),
+        entity,
+      );
+      if (this.machine(machineTypeId).state.inputMaterials.length === before) {
+        throw new Error(
+          `The ${machineTypeId}'s stock would not come off — holding a tool?`,
+        );
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Start the station and stay on it until the work is done. For legacy
+   * operations that means holding the operate key through the ticks. For
+   * interactive operations (the bench view's hand work) the driver
+   * commits through the SAME commands the mini-game commits through —
+   * start, then `finishAttendedWork` — with no mini-game in between;
+   * there is nothing else it could legally hold. Either way, hands-free
+   * phases (glue curing) run out on the clock, so one verb covers both
+   * halves of a glue-up.
+   *
+   * (The old driver slept off the night before starting; sleeping
+   * arrives with the day-cycle port, so nothing guards daylight yet.)
+   */
+  run(machineTypeId: MachineId): this {
+    // Dismantling never "runs": a staged pallet transforms nail by nail
+    // through incremental commits — no plan is ever selected for it — so
+    // one run() is one whole teardown.
+    const selected = this.machine(machineTypeId).view().selectedOperationOrNull;
+    if (this.offersPry(machineTypeId)) {
+      return this.performWork(machineTypeId);
+    }
+
+    operateMachine(this.game, this.machine(machineTypeId));
+    if (
+      this.machine(machineTypeId).state.operationProgress.status !==
+      "inProgress"
+    ) {
+      throw new Error(
+        `The ${machineTypeId} would not start. Unpowered, nothing loaded, ` +
+          `or short of clamps or supplies.`,
+      );
+    }
+    if (selected?.interaction) {
+      return this.performWork(machineTypeId);
+    }
+    this.holdOperate(true);
+    for (let i = 0; i < TICK_CEILING; i++) {
+      this.tick();
+      if (
+        this.machine(machineTypeId).state.operationProgress.status !==
+        "inProgress"
+      ) {
+        return this.holdOperate(false);
+      }
+    }
+    this.holdOperate(false);
+    throw new Error(
+      `The ${machineTypeId} never finished in ${TICK_CEILING} ticks. An ` +
+        `attended phase with the player standing somewhere else is the usual cause.`,
+    );
+  }
+
+  /**
+   * Complete a station's interactive hand work through the real commit
+   * commands — the same ones the bench view dispatches, with no mini-game
+   * in between. Assumes the operation is already started (run() does
+   * that) except for pry work, which never starts an operation at all:
+   * a staged pallet is torn down pull by pull. Ends by ticking out any
+   * hands-free remainder (a glue-up's cure).
+   */
+  performWork(machineTypeId: MachineId): this {
+    if (this.offersPry(machineTypeId)) {
+      let pulls = palletPryTargetsLeft(this.machine(machineTypeId).view());
+      if (pulls === 0) {
+        throw new Error(
+          `Nothing on the ${machineTypeId} to pry — stage a pallet first`,
+        );
+      }
+      while (pulls > 0) {
+        pryPalletNail(this.game, this.machine(machineTypeId));
+        const left = palletPryTargetsLeft(this.machine(machineTypeId).view());
+        if (left >= pulls) {
+          throw new Error(
+            `A pry at the ${machineTypeId} freed nothing — the player ` +
+              `isn't standing at it, or the skill is locked`,
+          );
+        }
+        pulls = left;
+      }
+      return this;
+    }
+
+    if (
+      this.machine(machineTypeId).state.operationProgress.status !==
+      "inProgress"
+    ) {
+      throw new Error(
+        `No work in progress on the ${machineTypeId} to perform — run() starts it`,
+      );
+    }
+    finishAttendedWork(this.game, this.machine(machineTypeId));
+    // A hands-free remainder (the cure) runs out on the clock
+    for (let i = 0; i < TICK_CEILING; i++) {
+      if (
+        this.machine(machineTypeId).state.operationProgress.status !==
+        "inProgress"
+      ) {
+        return this;
+      }
+      this.tick();
+    }
+    throw new Error(
+      `The ${machineTypeId}'s hand work never resolved in ${TICK_CEILING} ` +
+        `ticks. finishAttendedWork refusing (player not at the ` +
+        `station?) is the usual cause.`,
+    );
+  }
+
+  /**
+   * Whether the station's bench view would be offering pry work right
+   * now: idle, a pallet staged, dismantling known. Mirrors
+   * benchScriptFor's pallet-wins rule — no plan selection involved.
+   */
+  private offersPry(machineTypeId: MachineId): boolean {
+    return benchOffersPry(this.game, this.machine(machineTypeId));
+  }
+
+  /**
+   * One whole job on a direct-feed machine: dial the settings, set the stock
+   * down, hold the trigger, collect at the outfeed. No plan is chosen — which
+   * operation runs is inferred from what's on the table.
+   */
+  feed(
+    machineTypeId: MachineId,
+    stock: MaterialPredicate,
+    settings?: ParameterValues,
+  ): this {
+    this.standAtOperatorCell(machineTypeId);
+    if (settings) {
+      this.setSettings(machineTypeId, settings);
+    }
+    return this.load(machineTypeId, stock, 1)
+      .run(machineTypeId)
+      .collect(machineTypeId);
+  }
+
+  /**
+   * One whole clamps-first glue-up — no plan, exactly like the bench
+   * view: the matching staged stock is laid edge to edge across the
+   * bench (real arrange commits, so the run detection sees what a
+   * player's drags would leave), the tighten claims it through
+   * startGlueUp — the composition decides which recipe is credited —
+   * and the cure runs out on the clock. Pieces glue in staged order;
+   * there is no count because the run takes whatever matches, two or
+   * more.
+   */
+  glueUp(machineTypeId: MachineId, stock?: MaterialPredicate): this {
+    this.standAtOperatorCell(machineTypeId);
+    const machine = this.machine(machineTypeId).view();
+    const pieces = machine.inputMaterials.filter(
+      stock ??
+        ((m) =>
+          m.type === "board" ||
+          m.type === "panel" ||
+          m.type === "endGrainSlice"),
+    );
+    if (pieces.length < 2) {
+      throw new Error(
+        `A glue-up at the ${machineTypeId} needs at least two staged pieces, ` +
+          `found ${pieces.length}`,
+      );
+    }
+    // Lay the run edge to edge across the bench center, first piece
+    // leftmost — widths across, lengths down, nothing on edge.
+    const widthOf = (m: MaterialInstance): number =>
+      m.type === "board"
+        ? m.width
+        : m.type === "panel"
+          ? panelWidth(m)
+          : m.type === "endGrainSlice"
+            ? m.thickness / 4
+            : 0;
+    const bench = benchTopSizeIn(machine.type);
+    const span = pieces.reduce((sum, piece) => sum + widthOf(piece), 0);
+    let across = -span / 2;
+    for (const piece of pieces) {
+      arrangeBenchMaterial(this.game, this.machine(machineTypeId), piece.id, {
+        xIn: bench.widthIn / 2 + across + widthOf(piece) / 2,
+        yIn: bench.heightIn / 2,
+        angleDeg: 0,
+        flipped: false,
+      });
+      across += widthOf(piece);
+    }
+    startGlueUp(
+      this.game,
+      this.machine(machineTypeId),
+      pieces.map((piece) => piece.id),
+    );
+    if (
+      this.machine(machineTypeId).state.operationProgress.status !==
+      "inProgress"
+    ) {
+      throw new Error(
+        `The glue-up at the ${machineTypeId} would not start. Unprepped ` +
+          `stock, a locked skill, or short of clamps.`,
+      );
+    }
+    return this.performWork(machineTypeId).collect(machineTypeId);
+  }
+
+  /**
+   * One whole job: set the plan, load the stock, run it out, pick it up.
+   * The shape almost every step of a chain takes.
+   */
+  make(
+    machineTypeId: MachineId,
+    operationId: string,
+    stock: MaterialPredicate,
+    options?: { parameters?: ParameterValues; count?: number },
+  ): this {
+    return this.standAtOperatorCell(machineTypeId)
+      .select(machineTypeId, operationId, options?.parameters)
+      .load(machineTypeId, stock, options?.count)
+      .run(machineTypeId)
+      .collect(machineTypeId);
   }
 
   // ------------------------------------------------------------------

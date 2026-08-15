@@ -651,7 +651,7 @@ export function startGlueUpAction(
 }
 
 /** The layout with entries for departed pieces dropped. */
-function prunedBenchLayout(
+export function prunedBenchLayout(
   layout: Readonly<Record<string, BenchPlacement>> | undefined,
   inputMaterials: ReadonlyArray<{ id: string }>,
 ): Record<string, BenchPlacement> {
