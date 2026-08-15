@@ -53,6 +53,10 @@ import { projectGameState } from "../projection";
 // keeps it off the old transform layer) reads them through the commands.
 export { DRIVE_TICKS_ONE_WAY, SCAVENGE_STOP_NAMES, SCAVENGE_STOP_TICKS };
 
+// The leaving guard, re-exported the same way for the shell's trip card
+// and the dispatcher (their import rules keep them off the old actions).
+export { canLeaveShop };
+
 function player(game: Game): Player {
   return game.entities.getSingleton(Player);
 }

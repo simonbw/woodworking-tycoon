@@ -4,9 +4,14 @@ import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
 import { clampsInUse } from "../game/Clamp";
 import { machineKey, MachineState } from "../game/Machine";
+import { vectorKey } from "../game/Vectors";
+import { MachineCrateEntity } from "../sim/entities/MachineCrateEntity";
 import { MachineEntity } from "../sim/entities/MachineEntity";
+import { MaterialPileEntity } from "../sim/entities/MaterialPileEntity";
 import { Player } from "../sim/entities/Player";
 import { ShopVacEntity } from "../sim/entities/ShopVacEntity";
+import { StandEntity } from "../sim/entities/StandEntity";
+import { TruckEntity } from "../sim/entities/TruckEntity";
 import { Broom } from "../sim/singletons/Broom";
 import { Clock } from "../sim/singletons/Clock";
 import { Consumables } from "../sim/singletons/Consumables";
@@ -88,6 +93,8 @@ export class ShellStore extends BaseEntity implements Entity {
     const targeting = game.entities.tryGetSingleton(TargetingState);
     const broom = game.entities.tryGetSingleton(Broom);
     const shopVac = game.entities.tryGetSingleton(ShopVacEntity);
+    const stand = game.entities.tryGetSingleton(StandEntity);
+    const truck = game.entities.tryGetSingleton(TruckEntity);
 
     const machines: string[] = [];
     const machineStates: MachineState[] = [];
@@ -97,6 +104,10 @@ export class ShellStore extends BaseEntity implements Entity {
       machines.push(machineKey(machine.state));
       machineStates.push(machine.state);
     }
+    const pileCount = [...game.entities.byConstructor(MaterialPileEntity)]
+      .length;
+    const crateCount = [...game.entities.byConstructor(MachineCrateEntity)]
+      .length;
 
     return [
       clock?.tick,
@@ -108,6 +119,18 @@ export class ShellStore extends BaseEntity implements Entity {
       player.carriedMachine?.machineTypeId,
       player.away?.kind ?? "",
       player.busyTicks > 0 ? "busy" : "",
+      // The interaction UI reads reach and facing off the projection, so
+      // crossing a cell line or turning must re-render the chips.
+      vectorKey(player.cell),
+      player.direction,
+      player.operating,
+      player.waiting,
+      broom ? `${broom.owned},${JSON.stringify(broom.position)}` : "",
+      shopVac ? JSON.stringify(shopVac.position) : "no-vac",
+      stand?.pieces.length,
+      truck ? `${truck.bed.length},${truck.crates.length}` : "",
+      pileCount,
+      crateCount,
       consumables ? JSON.stringify(consumables.stock) : "",
       consumables?.clamps,
       // The supplies panel's rack count: clamps tied up in glue-ups

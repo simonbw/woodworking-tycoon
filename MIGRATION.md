@@ -496,3 +496,26 @@ transform tests as it lands.
   clamps-in-use coverage. Engine-shell spec grows a HUD step and is
   green; staged-HUD screenshot checked against the old shell's layout.
   tsc + unit green.
+- 2026-08-15 — [fan-out] In-world interaction DOM ported (the phase-4
+  hint-chip deferral closed): OverlayRoot (autoRender ReactEntity, z 5,
+  camera transform folded into an OverlayFrame context) carries the old
+  ShopOverlayLayer tree — MachineChips/OutfeedChips, PlayerPrompt,
+  StandPrompt, TruckBedPrompt, the cab's trip card — pinned via
+  camera.toScreen each frame; StationSheet (Contents/Accessory + racks)
+  and FloorSheet render screen-anchored in the HUD root (portal dropped:
+  the root is already a fixed whole-window layer, z-35 under the top
+  bar's 40 as before). Sheets/racks mutate through machine/tool/upgrade/
+  pile commands; the trip card fires goToStore/startScavenging/goHome;
+  pure read helpers (canPickUpMachine, canSweepAt, canLeaveShop, …)
+  re-exported through the command modules. ShellStore signature grew the
+  overlay's inputs (player cell/facing/held keys, broom, vac, stand, bed,
+  piles); dispatcher takes the floor sheet into close-sheet and stands E
+  down for the open card's panel-accept (old registry order); MovementInput
+  captures W/S while the card is open. Chips + Tab steps added to the
+  engine-shell spec; browser-verified side-by-side with the old shell at
+  parity. Gaps, recorded: Tab at a bench opens no surface (bench view is
+  phase 7); trip rows launch the sim commands but drive minutes/venues/
+  away-side UI are phase 6, as is the truck's roll-in theater (prompts
+  key off `player.away` alone); ManualLink renders only once the manual
+  port supplies an opener (manualOpenContext); BlueprintStack ported
+  dormant for phase 7's plan browser.

@@ -19,6 +19,7 @@ import {
 import { rotateCarriedMachine } from "../../sim/commands/machine-commands";
 import { toggleCarryShopVac } from "../../sim/commands/cleaning-commands";
 import { setOperating, setWaiting } from "../../sim/commands/player-commands";
+import { canLeaveShop } from "../../sim/commands/trip-commands";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
@@ -118,7 +119,11 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       case "carry-rotate":
         return present && carrying;
       case "close-sheet":
-        return sheetMachine != null || targeting.truckMenuOpen;
+        return (
+          sheetMachine != null ||
+          targeting.truckMenuOpen ||
+          targeting.floorSheetOpen
+        );
       case "cycle-machine":
         return present;
       case "open-station-sheet":
@@ -189,6 +194,13 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
         rotateCarriedMachine(game);
         return;
       case "close-sheet":
+        // Escape backs out one layer at a time: the floor's card is the
+        // innermost surface whenever it's open (the old FloorSheet bound
+        // the key ahead of the station sheet's own binding).
+        if (targeting.floorSheetOpen) {
+          targeting.closeFloorSheet();
+          return;
+        }
         targeting.closeSheet();
         targeting.closeTruckMenu();
         return;
@@ -200,7 +212,13 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
         return;
       case "pick-up": {
         if (targeting.truckMenuOpen) {
-          targeting.closeTruckMenu();
+          // The open trip card owns E while its rows can run — the DOM
+          // card's panel-accept takes the row the cursor is on (the old
+          // registry order). With full hands nothing on the card can
+          // run, so the press falls through here and folds the card.
+          if (!canLeaveShop(projectGameState(game))) {
+            targeting.closeTruckMenu();
+          }
           return;
         }
         const outcome = interactHere(

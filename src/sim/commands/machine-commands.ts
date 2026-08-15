@@ -61,6 +61,15 @@ import { BenchToolClaim } from "../../game/game-actions/player-actions";
  * backstop.
  */
 
+// Pure read helpers re-exported so the shell (whose import rule keeps it
+// off the old transform layer) reads them through the command surface,
+// the way trip-commands re-exports its constants.
+export {
+  canPickUpMachine,
+  canPutDownCarriedMachine,
+  explainUnpackRefusal,
+} from "../../game/game-actions/machine-actions";
+
 export function findMachineEntity(
   game: Game,
   machineState: MachineState,

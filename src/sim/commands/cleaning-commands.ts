@@ -5,6 +5,15 @@ import { personCanWork } from "../../game/Person";
 import { carryingShopVac, SHOP_VAC_COST } from "../../game/ShopVac";
 import { chebyshevDistance } from "../../game/Vectors";
 import { ShopVacEntity } from "../entities/ShopVacEntity";
+
+// Pure read helpers re-exported so the shell (whose import rule keeps it
+// off the old transform layer) reads them through the command surface.
+export {
+  canSweepAt,
+  dustpanFillFraction,
+  nextToGarbageCan,
+} from "../../game/game-actions/dust-actions";
+export { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { projectGameState } from "../projection";
 import { Broom } from "../singletons/Broom";
 import { Wallet } from "../singletons/Wallet";
@@ -24,13 +33,6 @@ import { Wallet } from "../singletons/Wallet";
 function emitSound(game: Game, kind: string): void {
   game.dispatch("sound", { sound: { kind } as never });
 }
-
-/**
- * The dustpan readout the hands strip shows, re-exported here so shell
- * files read it off the command surface instead of the old actions
- * (the same seam bench-commands gives palletPryTargetsLeft).
- */
-export { dustpanFillFraction } from "../../game/game-actions/dust-actions";
 
 /** Bought at the store; it arrives leaning at the material dropoff spot. */
 export function buyBroom(game: Game): boolean {

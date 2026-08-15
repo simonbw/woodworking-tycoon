@@ -4,7 +4,9 @@ import { HandsStrip } from "./HandsStrip";
 import { ManualProvider } from "./manual/ManualProvider";
 import { NavBar } from "./NavBar";
 import { NightfallCard } from "./NightfallCard";
+import { FloorSheet } from "./overlay/FloorSheet";
 import { StartMenu } from "./StartMenu";
+import { StationSheet } from "./station/StationSheet";
 import { SuppliesSection } from "./SuppliesSection";
 
 /**
@@ -22,7 +24,10 @@ import { SuppliesSection } from "./SuppliesSection";
  * with phase 7's bench scene): the NavBar along the top (clock, balances,
  * Skills, the manual's ?, Menu — with the journal, binder, and pause menu
  * behind them), the coach's column top-left, what's in hand bottom-center,
- * the supply panel folded under the top bar on the right.
+ * the supply panel folded under the top bar on the right. The
+ * screen-anchored station and floor cards ride below the top bar's z-40
+ * so its buttons stay clickable over them; the world-pinned chips and
+ * prompts live in OverlayRoot, not here.
  */
 export const EngineHud: React.FC = () => {
   const open = useShopOpen();
@@ -56,6 +61,11 @@ export const EngineHud: React.FC = () => {
       <div className="absolute right-6 below-top-bar z-40">
         <SuppliesSection />
       </div>
+
+      {/* The screen-anchored cards: whole-window surfaces, below the top
+          bar's z-40 on purpose so its buttons stay clickable over them. */}
+      <StationSheet />
+      <FloorSheet />
     </ManualProvider>
   );
 };
