@@ -11,6 +11,7 @@ import { Direction } from "../game/Vectors";
 import { SaveFile, loadSaveFile } from "./save/SaveFile";
 import { MachineEntity } from "./entities/MachineEntity";
 import { Player } from "./entities/Player";
+import { StandEntity } from "./entities/StandEntity";
 import { Clock } from "./singletons/Clock";
 import { Consumables } from "./singletons/Consumables";
 import { Progression } from "./singletons/Progression";
@@ -21,6 +22,7 @@ import { TutorialTracker } from "./singletons/TutorialTracker";
 import { DustLayer } from "./singletons/DustLayer";
 import { Wallet } from "./singletons/Wallet";
 import { MachineSystem } from "./systems/MachineSystem";
+import { StreetSystem } from "./systems/StreetSystem";
 import { TimeFlow } from "./TimeFlow";
 
 /**
@@ -38,6 +40,7 @@ import { TimeFlow } from "./TimeFlow";
 export function addSessionSingletons(game: Game): void {
   game.addEntity(new TimeFlow());
   game.addEntity(new MachineSystem());
+  game.addEntity(new StreetSystem());
 }
 
 /** Add a fresh shop's persistent singletons (a brand-new game). */
@@ -52,6 +55,7 @@ export function addFreshShopSingletons(game: Game): void {
   game.addEntity(new Progression());
   game.addEntity(new TutorialTracker());
   game.addEntity(new DustLayer());
+  game.addEntity(new StandEntity());
 
   // The starter floor, exactly the old initialGameState's: a workspace
   // with the starter hammer, a garbage can, and a small lumber shelf.

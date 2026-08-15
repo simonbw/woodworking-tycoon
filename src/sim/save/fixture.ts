@@ -2,9 +2,11 @@ import { Persistence } from "../../config/constants";
 import { Game } from "../../core/Game";
 import { GameState } from "../../game/GameState";
 import { cellCenter } from "../../game/player-motion";
+import { CustomerEntity } from "../entities/CustomerEntity";
 import { MachineCrateEntity } from "../entities/MachineCrateEntity";
 import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
+import { StandEntity } from "../entities/StandEntity";
 import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
@@ -88,12 +90,16 @@ export function loadGameState(game: Game, state: GameState): void {
     new TutorialTracker({ tutorials: state.progression.tutorials }),
   );
   game.addEntity(new DustLayer({ dust: state.dust }));
+  game.addEntity(new StandEntity(state.stand));
 
   for (const machine of state.machines) {
     game.addEntity(new MachineEntity(machine));
   }
   for (const crate of state.machineCrates) {
     game.addEntity(new MachineCrateEntity(crate.machine, crate.position));
+  }
+  for (const customer of state.customers) {
+    game.addEntity(new CustomerEntity(customer));
   }
 
   // Slices the entity world can't hold yet. Each system's port claims
@@ -103,8 +109,6 @@ export function loadGameState(game: Game, state: GameState): void {
   if (state.truck.bed.length > 0 || state.truck.crates.length > 0) {
     unsupported.push("truck");
   }
-  if (state.stand.length > 0) unsupported.push("stand");
-  if (state.customers.length > 0) unsupported.push("customers");
   if (state.shopVac !== null) unsupported.push("shopVac");
   // A parked broom (broomPosition set) affects nothing the ported
   // systems read — walk speed and held-tool checks only see a broom in

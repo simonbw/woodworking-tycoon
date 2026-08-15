@@ -266,3 +266,12 @@ transform tests as it lands.
   Coroutine note above is the one mechanism deviation, taken for
   serialization; flagging it for review rather than asking up front since
   behavior is line-for-line machineTickPass.
+- 2026-08-15 — [fan-out] Stand & customers ported: StandEntity (singleton)
+  + one CustomerEntity per passerby, StreetSystem on the "street" layer
+  (standTickPass line for line, dice from game.random), stand-commands,
+  projection/fixture claim their slices, driver grows standAtStand/
+  setOut/awaitSales, "payout" event added to CustomEvents (reward flight
+  subscribes in phase 3+). Driver deviations, both waiting on other
+  fan-out ports: setOut sweeps only the hands (piles unported) and
+  awaitSales can't sleep through nights (day cycle unported). tsc + unit
+  green.
