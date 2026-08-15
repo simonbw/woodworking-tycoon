@@ -39,9 +39,10 @@ describe("hand saw", () => {
       angle: 45,
     });
     assert.strictEqual(offcut.length, 36);
-    // Same pieces the miter saw would leave, ignoring instance ids
+    // Same pieces the miter saw would leave, ignoring instance identity
+    // (ids, and the face placements seeded by them)
     const strip = (m: unknown) => {
-      const { id: _, ...rest } = m as { id: string };
+      const { id: _, face: __, ...rest } = m as { id: string; face?: unknown };
       return rest;
     };
     assert.deepStrictEqual(

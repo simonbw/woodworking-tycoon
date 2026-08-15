@@ -39,6 +39,12 @@ export const SHEET_FACE_TEXTURES: Partial<
     src: "/images/textures/sheet-mdf.jpg",
     spanInches: 48,
   },
+  // White melamine facing — which is why the game's particle board has
+  // always drawn whitish. The crumbly chip core still shows on the edge.
+  particleBoard: {
+    src: "/images/textures/sheet-melamine.jpg",
+    spanInches: 48,
+  },
 };
 
 export const SHEET_FACE_TEXTURE_ASSETS = Object.values(SHEET_FACE_TEXTURES).map(

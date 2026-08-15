@@ -1,4 +1,5 @@
 import { worktableArtPaths } from "../components/machine-sprites/worktable-art";
+import { BOARD_FACE_TEXTURE_ASSETS } from "../components/material-sprites/boardFaceTextures";
 import { SHEET_FACE_TEXTURE_ASSETS } from "../components/material-sprites/sheetFaceTextures";
 import { Assets } from "pixi.js";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
@@ -73,8 +74,10 @@ export const TEXTURE_ASSETS = [
   // Worktable tops, shadows, and their close-up copies — three layers per
   // table, and only for the tables that have art (see worktable-art.ts)
   ...worktableArtPaths(),
-  // The sheet goods' seamless face tiles (see sheetFaceTextures.ts)
+  // The sheet goods' seamless face tiles (see sheetFaceTextures.ts) and
+  // the boards' full-plank scans (see boardFaceTextures.ts)
   ...SHEET_FACE_TEXTURE_ASSETS,
+  ...BOARD_FACE_TEXTURE_ASSETS,
   ...PIXEL_ART_ASSETS,
 ];
 
@@ -94,7 +97,7 @@ export async function loadAssets(): Promise<void> {
     Assets.get(path).source.scaleMode = "nearest";
   }
 
-  // The face tiles repeat (a piece's texture window can sit anywhere on
+  // The sheet tiles repeat (a piece's texture window can sit anywhere on
   // the source sheet) and render minified five-fold at shop scale, so
   // they need wrap addressing and mipmaps where the machine art needs
   // neither.
@@ -103,5 +106,13 @@ export async function loadAssets(): Promise<void> {
     source.autoGenerateMipmaps = true;
     source.style.addressMode = "repeat";
     source.style.update();
+  }
+
+  // The board scans want the mipmaps but not the wrap: a board's window
+  // never leaves its scan, and a photographed plank has real edges that
+  // must not bleed around.
+  for (const path of BOARD_FACE_TEXTURE_ASSETS) {
+    const source = Assets.get(path).source;
+    source.autoGenerateMipmaps = true;
   }
 }

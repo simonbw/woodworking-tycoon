@@ -11,6 +11,7 @@
     "trim:images": "npx tsx scripts/trim-images.ts",
     "generate:collision-boxes": "npm run trim:images && npx tsx scripts/generate-collision-boxes.ts",
     "fetch:fonts": "npx tsx scripts/fetch-fonts.ts",
+    "process:textures": "npx tsx scripts/process-textures.ts",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "tsx --test --experimental-test-isolation=none 'src/**/*.test.ts'",
     "test:e2e": "npx playwright test",

@@ -1,24 +1,35 @@
-import { Graphics } from "pixi.js";
+import { Assets, Graphics, Matrix, Texture } from "pixi.js";
 import React, { useCallback } from "react";
-import { Board } from "../../game/Materials";
+import {
+  Board,
+  BOARD_FACE_SCAN_LENGTH_IN,
+  BOARD_FACE_SCAN_WIDTH_IN,
+  defaultBoardFace,
+} from "../../game/Materials";
 import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { BOARD_FACE_TEXTURES } from "./boardFaceTextures";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;
 
 /**
  * A board's milled state is drawn, not labeled:
- * - Unjointed faces on rough stock render weathered gray; jointing (or
- *   sanding) reveals the species color.
+ * - Species with scan art (boardFaceTextures.ts) wear a window of a real
+ *   plank photograph, placed by the board's face region so a cut piece
+ *   keeps the very grain it was cut with; the rest draw the procedural
+ *   face. The edge face works the same way from the edge strips.
+ * - Unjointed faces on rough stock hide under a weathered-gray veil;
+ *   jointing (or sanding) lifts it and the same grain comes up in color.
  * - Unjointed long edges are wavy; jointing snaps them straight (right
  *   edge first — it carries the visible edge face).
- * - Rough surface shows cross-grain saw marks, smooth shows long grain
- *   lines, sanded adds a lighter tone and a sheen band.
+ * - Rough surface shows cross-grain saw marks, smooth trusts the wood
+ *   (procedural species add long grain lines), sanded adds a lighter
+ *   tone and a sheen band.
  * - Mitered ends draw as diagonals: the left end is the sprite's top, the
  *   right end its bottom, and the angle sets the diagonal's run.
  * All irregularity is seeded so a board never shimmers between renders.
@@ -39,6 +50,7 @@ export const BoardSprite: React.FC<
     jointedFaces,
     jointedEdges,
     ends,
+    face,
   } = board;
 
   const draw = useCallback(
@@ -47,9 +59,9 @@ export const BoardSprite: React.FC<
       const width = boardWidth * PIXELS_PER_INCH;
       const height = boardLength * PIXELS_PER_INCH;
       const depth = (thickness * PIXELS_PER_INCH) / 4;
-      const rng = seededRandom(
-        seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`,
-      );
+      const fallbackSeed =
+        seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`;
+      const rng = seededRandom(fallbackSeed);
 
       const { primary, secondary } = colorBySpecies[species];
       const colorRevealed = jointedFaces > 0 || surface !== "rough";
@@ -116,6 +128,11 @@ export const BoardSprite: React.FC<
         -height / 2 + Math.max(0, -topSkew),
         height / 2 - Math.max(0, bottomSkew),
       );
+      const facePolyPoints = [...leftEdge, ...[...rightEdge].reverse()].flat();
+      const edgePolyPoints = [
+        ...rightEdge,
+        ...[...rightEdge].reverse().map(([x, y]) => [x + depth, y]),
+      ].flat();
 
       // shadow
       for (const shadowWidth of [1, 2]) {
@@ -128,18 +145,90 @@ export const BoardSprite: React.FC<
         g.fill({ color: 0x000000, alpha: 0.1 });
       }
 
-      // main face: down the left edge, back up the right
-      g.poly([...leftEdge, ...[...rightEdge].reverse()].flat());
-      g.fill(faceColor);
+      const art = BOARD_FACE_TEXTURES[species];
+      if (art) {
+        // The board's window onto its source plank's scan. The face
+        // region is inches on the canonical scan rectangle; the seed
+        // picks which scan of the library (an independent stream, so
+        // the placement draws stay untouched).
+        const region =
+          face ?? defaultBoardFace(fallbackSeed, boardLength, boardWidth);
+        const artRng = seededRandom(`${region.seed}/art`);
+        const faceTexture = Assets.get<Texture>(
+          art.faces[Math.floor(artRng() * art.faces.length)],
+        );
+        const edgeTexture = Assets.get<Texture>(
+          art.edges[Math.floor(artRng() * art.edges.length)],
+        );
+        const edgeV =
+          artRng() * Math.max(0, art.edgeSpanInches - thickness / 4);
 
-      // edge face: the right edge extruded by the board's thickness
-      g.poly(
-        [
-          ...rightEdge,
-          ...[...rightEdge].reverse().map(([x, y]) => [x + depth, y]),
-        ].flat(),
-      );
-      g.fill(edgeColor);
+        // The matrix maps texture pixels into local space (PIXI inverts
+        // it to build UVs): image x is across the plank, image y along
+        // the grain, drawn top-to-bottom like the board's length.
+        const sx =
+          (PIXELS_PER_INCH * BOARD_FACE_SCAN_WIDTH_IN) /
+          faceTexture.source.width;
+        const sy =
+          (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) /
+          faceTexture.source.height;
+        g.poly(facePolyPoints);
+        g.fill({
+          texture: faceTexture,
+          matrix: new Matrix(
+            sx,
+            0,
+            0,
+            sy,
+            -region.v * PIXELS_PER_INCH - width / 2,
+            -region.u * PIXELS_PER_INCH - height / 2,
+          ),
+          textureSpace: "global",
+        });
+
+        // The edge strip shares the face's lengthwise position, so a
+        // cut board's edge streaks continue across the seam too.
+        const esx =
+          (PIXELS_PER_INCH * art.edgeSpanInches) / edgeTexture.source.width;
+        const esy =
+          (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) /
+          edgeTexture.source.height;
+        g.poly(edgePolyPoints);
+        g.fill({
+          texture: edgeTexture,
+          matrix: new Matrix(
+            esx,
+            0,
+            0,
+            esy,
+            width / 2 - edgeV * PIXELS_PER_INCH,
+            -region.u * PIXELS_PER_INCH - height / 2,
+          ),
+          textureSpace: "global",
+        });
+
+        // Weathering and finish read as veils over the real grain: the
+        // gray lifts when milling reveals the wood, sanding brightens it
+        if (!colorRevealed) {
+          g.poly(facePolyPoints);
+          g.fill({ color: WEATHERED_GRAY, alpha: 0.62 });
+        } else if (surface === "sanded") {
+          g.poly(facePolyPoints);
+          g.fill({ color: 0xffffff, alpha: 0.1 });
+        }
+        if (jointedEdges === 0) {
+          g.poly(edgePolyPoints);
+          g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
+        }
+      } else {
+        // main face: down the left edge, back up the right
+        g.poly(facePolyPoints);
+        g.fill(faceColor);
+
+        // edge face: the right edge extruded by the board's thickness
+        g.poly(edgePolyPoints);
+        g.fill(edgeColor);
+      }
 
       const inset = amp + 1.5;
       // Surface detail stays inside the mitered silhouette
@@ -156,8 +245,8 @@ export const BoardSprite: React.FC<
           g.stroke({ width: 1, color: 0x000000, alpha: markAlpha });
           y += 5 + rng() * 8;
         }
-      } else {
-        // Long grain lines down the length
+      } else if (!art) {
+        // Long grain lines down the length — the scans carry their own
         const grainLines = Math.max(1, Math.round(width / 8));
         for (let i = 0; i < grainLines; i++) {
           const x =
@@ -201,6 +290,7 @@ export const BoardSprite: React.FC<
       jointedFaces,
       jointedEdges,
       ends,
+      face,
       seed,
     ],
   );

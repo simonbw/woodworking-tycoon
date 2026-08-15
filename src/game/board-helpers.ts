@@ -2,8 +2,10 @@ import { OperationOutput } from "./Machine";
 import {
   Board,
   BoardDimension,
+  defaultBoardFace,
   BoardEnd,
   boardEnds,
+  BoardFaceRegion,
   JointedCount,
   MaterialInstance,
   MiterAngle,
@@ -136,17 +138,35 @@ export function cutBoard(
 
   const offcutSize = startingDimension - outputSize - waste;
 
+  // Both pieces stay on the source board's face (materialized here
+  // because the input's id — which a virgin board's placement is seeded
+  // by — dies with the cut). Length and width cuts are the two axes of
+  // the face; a thickness cut is the one that leaves it, so its offcut
+  // rerolls below.
+  const face = boardFaceRegion(inputBoard);
+
   // Each piece is a new material (makeMaterial — a fresh id): two pieces
   // sharing the input's id would be indistinguishable to everything
   // id-keyed (bench layout, hover, take), and every other operation's
   // outputs already get fresh ids.
   if (dimension !== "length") {
     const outputs = [
-      makeMaterial<Board>({ ...inputBoard, [dimension]: outputSize }),
+      makeMaterial<Board>({ ...inputBoard, [dimension]: outputSize, face }),
     ];
     if (offcutSize > 0) {
+      // A rip's offcut is the far side of the face, past the blade. The
+      // thickness offcut's outer face is the input's far face — wood the
+      // scan never showed — so it rolls a placement of its own instead
+      // (absent face: seeded by its final id).
+      const { face: _parentFace, ...faceless } = inputBoard;
       outputs.push(
-        makeMaterial<Board>({ ...inputBoard, [dimension]: offcutSize }),
+        makeMaterial<Board>({
+          ...faceless,
+          [dimension]: offcutSize,
+          ...(dimension === "width"
+            ? { face: { ...face, v: face.v + outputSize + waste } }
+            : {}),
+        }),
       );
     }
     return { inputs: [], outputs };
@@ -158,11 +178,18 @@ export function cutBoard(
   const ends = boardEnds(inputBoard);
 
   // The kept piece's fresh face is on the cut end; the offcut's fresh face
-  // is on its side toward the blade — the opposite label.
+  // is on its side toward the blade — the opposite label. `cutEnd` names
+  // the end of the input that comes OFF, so the offcut is that end's
+  // portion of the face and the kept window slides to the other side
+  // (past the kerf, when the cut charges one).
   const kept = makeMaterial<Board>({
     ...inputBoard,
     length: outputSize,
     ends: { ...ends, [cutEnd]: freshEnd },
+    face:
+      cutEnd === "left"
+        ? { ...face, u: face.u + (startingDimension - outputSize) }
+        : face,
   });
   const outputs = [kept];
   if (offcutSize > 0) {
@@ -172,11 +199,24 @@ export function cutBoard(
         ...inputBoard,
         length: offcutSize,
         ends: { ...ends, [offcutFreshEnd]: freshEnd },
+        face:
+          cutEnd === "left"
+            ? face
+            : { ...face, u: face.u + outputSize + waste },
       }),
     );
   }
 
   return { inputs: [], outputs };
+}
+
+/**
+ * A board's face region. Boards minted through makeMaterial always carry
+ * one; the default covers boards from before the face bookkeeping
+ * (fixtures, old saves).
+ */
+export function boardFaceRegion(board: Board): BoardFaceRegion {
+  return board.face ?? defaultBoardFace(board.id, board.length, board.width);
 }
 
 /** How a resaw lands on the two pieces it makes. */

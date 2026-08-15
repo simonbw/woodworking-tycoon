@@ -1,5 +1,6 @@
 // Represents length, width, or thickness.
 
+import { seededRandom } from "../utils/randUtils";
 import { Tuple } from "../utils/typeUtils";
 import type { ToolId } from "./Tool";
 
@@ -111,6 +112,59 @@ export function worseSurface(
   return SURFACE_CONDITIONS.indexOf(a) <= SURFACE_CONDITIONS.indexOf(b) ? a : b;
 }
 
+/**
+ * The rectangle of wood a board-face scan represents: the boards' art is
+ * a library of full-board photographs, each standing for one canonical
+ * 8-foot, 8-inch-wide plank. Face regions are measured in inches on this
+ * rectangle, and a virgin board is placed somewhere inside it
+ * (defaultBoardFace in board-helpers.ts).
+ */
+export const BOARD_FACE_SCAN_LENGTH_IN = 96;
+export const BOARD_FACE_SCAN_WIDTH_IN = 8;
+
+/**
+ * Where a board's face lies on the virgin board it was cut from —
+ * cosmetic provenance for the renderer, the boards' version of
+ * SheetFaceRegion. Simpler than the sheets': a board's length is along
+ * the grain by definition, so no cut ever turns one and there is no
+ * rotation to remember. `u` runs along the source board from its left
+ * end (the end the sprite draws at its top), `v` across its width, both
+ * inches on the canonical scan rectangle above. Purely visual — no cut,
+ * recipe, or price reads it.
+ */
+export interface BoardFaceRegion {
+  /** Identity of the virgin source board — picks which scan of the
+   * species' library it shows, and seeds where on it the source sat. */
+  readonly seed: string;
+  readonly u: number;
+  readonly v: number;
+}
+
+/**
+ * A virgin board's face region: the board placed at a seeded spot inside
+ * the canonical scan rectangle, so boards sharing one scan don't all
+ * show the same stretch of plank. A full-size board fills the scan and
+ * sits at its origin.
+ *
+ * Called by makeMaterial the moment a board is minted, because the
+ * placement is seeded by the board's first id: operations that transform
+ * a board in place (planing, jointing) re-mint it under a fresh id, and
+ * a placement left implicit would reroll the very grain those
+ * operations claim to reveal.
+ */
+export function defaultBoardFace(
+  seed: string,
+  length: number,
+  width: number,
+): BoardFaceRegion {
+  const rng = seededRandom(seed);
+  return {
+    seed,
+    u: rng() * Math.max(0, BOARD_FACE_SCAN_LENGTH_IN - length),
+    v: rng() * Math.max(0, BOARD_FACE_SCAN_WIDTH_IN - width),
+  };
+}
+
 export interface Board {
   readonly id: string;
   readonly type: "board";
@@ -130,6 +184,9 @@ export interface Board {
    * Panel.grain precedent). Length cuts rewrite these (see cutBoard).
    */
   readonly ends?: BoardEnds;
+  /** Absent on a virgin board — it gets a seeded placement on the scan
+   * (see boardFaceRegion). Cuts fill it in. */
+  readonly face?: BoardFaceRegion;
 }
 
 /** A board's end state with the square/square default applied. */

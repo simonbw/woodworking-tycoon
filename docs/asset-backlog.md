@@ -229,22 +229,24 @@ and needs no flat art; the flat sprites they once used are deleted.)
 
 Decided — don't re-open these without a reason.
 
-- **Boards, on-edge boards, panels** — `BoardSprite`, `OnEdgeBoardSprite`,
-  `PanelSprite`. Length, width, species, and surface condition all vary
-  continuously, and the sprite is drawn at true scale against
-  `PIXELS_PER_INCH`, so no fixed-size asset can cover the space — but the
-  _silhouette_ is the procedural part that has to stay. The surface detail
-  is expected to follow the sheet goods onto raster texture fills (below):
-  seamless photo tiles windowed by a fill matrix, sliced from the sources
-  in `assets/textures/materials/`.
-- **Sheet-good silhouettes, textured faces** — `SheetGoodSprite` draws its
-  rectangle procedurally but fills the face from a seamless photo tile per
-  kind (`sheetFaceTextures.ts`, cut from `assets/textures/materials/`, all
-  CC0 or homemade). The fill matrix windows the tile by the piece's
-  `SheetFaceRegion`, which is what keeps a cut piece wearing the veneer it
-  was cut with. Particle board still awaits a source tile and keeps its
-  procedural speckle; the edge faces (laminations, crumble) stay procedural
-  on purpose — they're a half-inch strip.
+- **Board and sheet silhouettes, textured faces** — `BoardSprite` and
+  `SheetGoodSprite` draw their outlines procedurally (dimensions vary
+  continuously — wavy unjointed edges, miter skews, true scale against
+  `PIXELS_PER_INCH`) and fill the faces from photography under
+  `assets/textures/materials/` (all CC0 or homemade), processed by
+  `npm run process:textures` (the manifest in
+  `scripts/process-textures.ts`). Sheets tile a seamless square per kind
+  (`sheetFaceTextures.ts`); boards window a library of full-plank scans
+  plus edge strips per species (`boardFaceTextures.ts`), and a species
+  without scans yet draws the old procedural face until its sources land.
+  The fill matrix windows the art by the piece's face region
+  (`SheetFaceRegion` / `BoardFaceRegion`), which is what keeps a cut
+  piece wearing the grain it was cut with. Weathering, saw marks, and
+  sheen stay procedural overlays on purpose — they're states, not wood.
+- **On-edge boards, panels, sheet edges** — `OnEdgeBoardSprite`,
+  `PanelSprite`, and the sheets' lamination/crumble edge strips are still
+  fully procedural; the panel strips and on-edge boards are expected to
+  pick up the board scans' art in a later pass.
 - **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
   `DustMotionLayer`. Per-frame effects; the dust layer already bakes its
   stamps into a single `RenderTexture`.

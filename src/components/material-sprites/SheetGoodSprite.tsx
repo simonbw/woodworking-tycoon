@@ -15,7 +15,8 @@ import { SHEET_FACE_TEXTURES } from "./sheetFaceTextures";
  * piece shows the very stretch of veneer it had before the cut — the
  * fill matrix is the rendering half of the SheetFaceRegion contract
  * (see sheetFacePoint in sheet-helpers.ts, which the matrix mirrors).
- * Particle board has no art yet and keeps its procedural speckle.
+ * Every kind has art now; the procedural speckle face below stays as
+ * the fallback for any future kind that ships before its texture.
  *
  * The edge face is still drawn: plywood's laminations stripe it, the
  * chip boards crumble into speckle, MDF stays solid. Seeded, so a sheet
