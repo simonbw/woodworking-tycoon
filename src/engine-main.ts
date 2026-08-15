@@ -6,8 +6,11 @@ import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
 import { SaveManager } from "./sim/save/SaveManager";
 import { loadAssets } from "./utils/loadAssets";
 import { CameraRig } from "./views/CameraRig";
+import { DaylightView } from "./views/DaylightView";
 import { EnvironmentView } from "./views/EnvironmentView";
+import { FloorView } from "./views/FloorView";
 import { MovementInput } from "./views/MovementInput";
+import { PowerCordView } from "./views/PowerCordView";
 import { registerAllViews } from "./views/register";
 
 /**
@@ -38,7 +41,13 @@ async function main() {
 
   game.addEntity(new AutoPauser());
   game.addEntity(new CameraRig());
+  // Scenery views (each draws on its own layer; sim-paired views spawn
+  // through the view registry instead): the lot, the slab over it, the
+  // cords on the slab, and the light over the whole world.
   game.addEntity(new EnvironmentView());
+  game.addEntity(new FloorView());
+  game.addEntity(new PowerCordView());
+  game.addEntity(new DaylightView());
   game.addEntity(new MovementInput());
 
   const saveManager = game.addEntity(
