@@ -24,6 +24,10 @@ import {
   stepPlayerMotion,
 } from "../../game/player-motion";
 import {
+  cabStandCell,
+  corralStandCell,
+  findShelf,
+  registerStandCell,
   ShelfBay,
   storeCollisionWorld,
   StoreLayout,
@@ -137,6 +141,7 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
       this.layoutCache = storeLayout(player.away.store, gameState);
       this.layoutKey = key;
       if (this.isAdded) this.dress(this.layoutCache);
+      publishStoreHooks(this.layoutCache);
     }
     return this.layoutCache;
   }
@@ -283,6 +288,11 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     if (layout) this.dress(layout);
   }
 
+  @on("destroy")
+  onDestroy() {
+    publishStoreHooks(null);
+  }
+
   @on("tick")
   onTick(dt: number) {
     const player = this.game.entities.tryGetSingleton(Player);
@@ -393,4 +403,30 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
       camera.y = cellToPixel(this.position[1]);
     }
   }
+}
+
+/**
+ * The store floor's test surface, the same three names the old shell
+ * published: the planogram, the cells worth standing on, and a shelf
+ * looked up by the name on its tag. A spec walks the floor the player
+ * walks, so this is how it finds where to stand. Cleared when the trip
+ * ends, so nothing points at a store that isn't there.
+ */
+function publishStoreHooks(layout: StoreLayout | null): void {
+  if (process.env.NODE_ENV === "production") return;
+  const hooks = globalThis as unknown as Record<string, unknown>;
+  if (!layout) {
+    delete hooks.__STORE_LAYOUT__;
+    delete hooks.__STORE_POINTS__;
+    delete hooks.__FIND_SHELF__;
+    return;
+  }
+  hooks.__STORE_LAYOUT__ = layout;
+  hooks.__STORE_POINTS__ = {
+    register: registerStandCell(layout),
+    cab: cabStandCell(layout),
+    corral: corralStandCell(layout),
+    spawn: layout.spawn.cell,
+  };
+  hooks.__FIND_SHELF__ = (product: string) => findShelf(layout, product);
 }

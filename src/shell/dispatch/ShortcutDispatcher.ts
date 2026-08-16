@@ -199,6 +199,13 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
             (targetedView != null && hasStationSheet(targetedView)))
         );
       case "pick-up":
+        // The open trip card owns E while its rows can run: the card's
+        // own panel-accept takes the row the cursor is on, and this key
+        // has to stay out of its way — a fired shortcut is a consumed
+        // key, and the DOM listener runs after this one. With full hands
+        // nothing on the card can run, so E is the interact key again
+        // and folds the card (below).
+        if (targeting.truckMenuOpen && canLeaveShop(gs)) return false;
         return present && !carrying;
       case "put-down":
         return present && !carrying;
@@ -286,13 +293,9 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       }
       case "pick-up": {
         if (targeting.truckMenuOpen) {
-          // The open trip card owns E while its rows can run — the DOM
-          // card's panel-accept takes the row the cursor is on (the old
-          // registry order). With full hands nothing on the card can
-          // run, so the press falls through here and folds the card.
-          if (!canLeaveShop(projectGameState(game))) {
-            targeting.closeTruckMenu();
-          }
+          // Only reached with the card's rows dead (see `enabled`): the
+          // press folds the card instead.
+          targeting.closeTruckMenu();
           return;
         }
         const outcome = interactHere(

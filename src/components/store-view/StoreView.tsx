@@ -27,6 +27,7 @@ import {
   StoreLayout,
   cabStandCell,
   corralStandCell,
+  findShelf,
   fixtureStandCell,
   registerStandCell,
   storeLayout,
@@ -396,62 +397,3 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
   );
 };
 
-/**
- * Find the shelf a product hangs on, by the name printed on its tag —
- * the same names the Add-to-cart buttons carry, so a spec that shopped
- * the old overlay finds the same product on the new floor. Category
- * names still answer too: a channel's name finds its first pile, "Sheet
- * Goods" the first sheet pile, and a sheet kind its full-size pile.
- */
-function findShelf(
-  layout: StoreLayout,
-  product: string,
-): { kind: "bay"; id: string; cell: Vector } | null {
-  const found = (fixture: ShelfBay | undefined) =>
-    fixture
-      ? {
-          kind: "bay" as const,
-          id: fixture.id,
-          cell: fixtureStandCell(fixture),
-        }
-      : null;
-
-  for (const fixture of layout.fixtures) {
-    if (fixture.product.name === product) {
-      return found(fixture);
-    }
-  }
-  for (const fixture of layout.fixtures) {
-    const line = fixture.product.line;
-    if (
-      line.kind === "material" &&
-      getMaterialFullName(line.material) === product
-    ) {
-      return found(fixture);
-    }
-  }
-  // A lumber channel's name finds the front pile of its group.
-  const channel = LUMBER_CHANNELS.find(
-    (candidate) => candidate.name === product,
-  );
-  if (channel) {
-    return found(
-      layout.fixtures.find((fixture) =>
-        fixture.id.startsWith(`lumber:${channel.id}:`),
-      ),
-    );
-  }
-  if (product === "Sheet Goods") {
-    return found(
-      layout.fixtures.find((fixture) => fixture.id.startsWith("sheet:")),
-    );
-  }
-  // A sheet kind alone ("Shop Plywood") finds its full-sheet pile.
-  return found(
-    layout.fixtures.find(
-      (fixture) =>
-        fixture.id.startsWith("sheet:") &&
-        fixture.product.name.startsWith(`${product} — `),
-    ),
-  );
-}

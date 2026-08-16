@@ -410,10 +410,11 @@ transform tests as it lands.
       both shells, and the station helpers answer to either surface (the
       sheet, or the bench's own rail and plan drawer). Ported so far:
       - [x] `screens.spec.ts`
+      - [x] `keyboard.spec.ts`
       - [ ] `bench.spec.ts` (needs the dive's stage published to the DOM
             the way the old scene published `bench-work` / `bench-stage`)
-      - [ ] `floor.spec.ts`, `keyboard.spec.ts`, `market.spec.ts`,
-            `milling.spec.ts`, `stations.spec.ts`
+      - [ ] `floor.spec.ts`, `market.spec.ts`, `milling.spec.ts`,
+            `stations.spec.ts`
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
 - [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
@@ -904,3 +905,17 @@ transform tests as it lands.
   read the plan drawer at a bench and the sheet's index elsewhere,
   `openStationRacks` finds the racks on whichever chrome carries them,
   and `closeStationSurface` puts either away. Suite green (9 tests).
+- 2026-08-16 — `keyboard.spec.ts` moved onto `/`, and it brought three
+  gaps in the shell with it, all fixed here rather than in the spec:
+  the walkable store publishes the test surface the old one did
+  (`__STORE_LAYOUT__`, `__STORE_POINTS__`, `__FIND_SHELF__` — `findShelf`
+  moved into `game/store-layout.ts` so both shells share the one copy);
+  the bench's four commit hooks are back (`__START_OPERATION__`,
+  `__FINISH_ATTENDED_WORK__`, `__PRY_PALLET_NAIL__`, `__START_GLUE_UP__`,
+  by the machine's place in shop state); and `__ADVANCE_TICKS__` means a
+  tick of the shop's clock again rather than an engine frame — the clock
+  is spend-to-advance, so an idle shop crept where the old hook stepped.
+  One real bug fell out of it: with the trip card open, E fired the floor's
+  interact shortcut and consumed the key, so the card's own row-accept
+  never ran. The card owns E while its rows can run; with full hands E is
+  the interact key again and folds it.

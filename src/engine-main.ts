@@ -2,7 +2,15 @@ import { AutoPauser } from "./core/AutoPauser";
 import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";
 import { GameState } from "./game/GameState";
+import { machineKey } from "./game/Machine";
+import { pryPalletNail, startGlueUp } from "./sim/commands/bench-commands";
+import {
+  finishAttendedWork,
+  operateMachine,
+} from "./sim/commands/machine-commands";
+import { MachineEntity } from "./sim/entities/MachineEntity";
 import { projectGameState } from "./sim/projection";
+import { TimeFlow } from "./sim/TimeFlow";
 import { loadGameState } from "./sim/save/fixture";
 import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
 import { SaveManager } from "./sim/save/SaveManager";
@@ -137,6 +145,13 @@ function installTestHooks(game: Game) {
     __LOAD_SAVE__: (save: SaveFile) => void;
     __ADVANCE_TICKS__: (ticks: number) => void;
     __SET_PAUSED__: (paused: boolean) => void;
+    __START_OPERATION__: (machineIndex: number) => void;
+    __FINISH_ATTENDED_WORK__: (machineIndex: number) => void;
+    __PRY_PALLET_NAIL__: (machineIndex: number) => void;
+    __START_GLUE_UP__: (
+      machineIndex: number,
+      pieceIds: ReadonlyArray<string>,
+    ) => void;
   };
   hooks.__GET_GAME_STATE__ = () => projectGameState(game);
   hooks.__UPDATE_GAME_STATE__ = (next) =>
@@ -146,8 +161,42 @@ function installTestHooks(game: Game) {
     );
   hooks.__GET_SAVE__ = () => serializeGame(game);
   hooks.__LOAD_SAVE__ = (save) => loadSaveFile(game, save);
-  hooks.__ADVANCE_TICKS__ = (ticks) => game.step(ticks);
+  // A tick a spec asks for is a tick of the *shop's* clock, the way the
+  // old Ticker's hook meant it: the clock is spend-to-advance now, so an
+  // idle shop would creep through an engine tick without the minute the
+  // spec is waiting on. Forced minutes are the driver's own path
+  // (ShopDriver.tick), served one per engine tick.
+  hooks.__ADVANCE_TICKS__ = (ticks) => {
+    const timeFlow = game.entities.getSingleton(TimeFlow);
+    for (let i = 0; i < ticks; i++) {
+      timeFlow.forceMinutes(1);
+      game.step(1);
+    }
+  };
   hooks.__SET_PAUSED__ = (paused) => (paused ? game.pause() : game.unpause());
+
+  // The bench's commits, by the machine's place in the shop-state list:
+  // hand work finishes through the same commands the gestures dispatch
+  // (docs/bench-work.md, decision 1), and a spec that isn't testing the
+  // gesture drives them straight. Never exposed as UI.
+  const bench = (machineIndex: number): MachineEntity | null =>
+    machineEntities(game)[machineIndex] ?? null;
+  hooks.__START_OPERATION__ = (machineIndex) => {
+    const entity = bench(machineIndex);
+    if (entity) operateMachine(game, entity);
+  };
+  hooks.__FINISH_ATTENDED_WORK__ = (machineIndex) => {
+    const entity = bench(machineIndex);
+    if (entity) finishAttendedWork(game, entity);
+  };
+  hooks.__PRY_PALLET_NAIL__ = (machineIndex) => {
+    const entity = bench(machineIndex);
+    if (entity) pryPalletNail(game, entity);
+  };
+  hooks.__START_GLUE_UP__ = (machineIndex, pieceIds) => {
+    const entity = bench(machineIndex);
+    if (entity) startGlueUp(game, entity, pieceIds);
+  };
 
   const fps = Number(process.env.E2E_RENDER_FPS);
   if (Number.isFinite(fps) && fps > 0) {
@@ -156,3 +205,22 @@ function installTestHooks(game: Game) {
 }
 
 main();
+
+/**
+ * The machines in the order shop state lists them, so an index taken
+ * from `__GET_GAME_STATE__().machines` names the same one here.
+ */
+function machineEntities(game: Game): MachineEntity[] {
+  const keys = projectGameState(game).machines.map((state) =>
+    machineKey(state),
+  );
+  const byKey = new Map(
+    [...game.entities.byConstructor(MachineEntity)].map((entity) => [
+      machineKey(entity.state),
+      entity,
+    ]),
+  );
+  return keys
+    .map((key) => byKey.get(key))
+    .filter((entity): entity is MachineEntity => entity != null);
+}
