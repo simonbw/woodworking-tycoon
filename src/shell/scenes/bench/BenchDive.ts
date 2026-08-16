@@ -3,6 +3,8 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { on } from "../../../core/entity/handler";
 import { machineKey } from "../../../game/Machine";
+import { PalletNail } from "../../../game/Materials";
+import { ToolId } from "../../../game/Tool";
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { Player } from "../../../sim/entities/Player";
 import { ShellStore } from "../../ShellStore";
@@ -25,6 +27,20 @@ export class BenchDive extends BaseEntity implements Entity {
   /** machineKey of the opened bench, or null on the shop floor. */
   openBenchKey: string | null = null;
 
+  /**
+   * The tool in hand — the bench's mode selector (docs/bench-work.md
+   * decision 0). Applying it to a valid target IS the operation, so a
+   * hammer over a staged pallet is pry mode and nothing else is.
+   */
+  heldTool: ToolId | null = null;
+
+  /** The nail the hammer is over, if any — the ring that warms. */
+  hoveredNail: PalletNail | null = null;
+
+  /** The pull playing out right now: the nail that just left, and how
+   * much of the claw's lever is left to draw (seconds). */
+  prying: { nail: PalletNail; secondsLeft: number } | null = null;
+
   open(bench: MachineEntity): void {
     this.openBenchKey = machineKey(bench.state);
     this.bump();
@@ -33,6 +49,25 @@ export class BenchDive extends BaseEntity implements Entity {
   close(): void {
     if (this.openBenchKey === null) return;
     this.openBenchKey = null;
+    // Standing up empties the hands: the tool goes back on its rail,
+    // as the old view's unmount did.
+    this.heldTool = null;
+    this.hoveredNail = null;
+    this.prying = null;
+    this.bump();
+  }
+
+  /** Take a tool in hand, or hang the held one back up. */
+  toggleTool(toolId: ToolId): void {
+    this.heldTool = this.heldTool === toolId ? null : toolId;
+    this.hoveredNail = null;
+    this.bump();
+  }
+
+  dropTool(): void {
+    if (this.heldTool === null) return;
+    this.heldTool = null;
+    this.hoveredNail = null;
     this.bump();
   }
 
@@ -48,8 +83,14 @@ export class BenchDive extends BaseEntity implements Entity {
   }
 
   @on("tick")
-  onTick() {
+  onTick(dt: number) {
     if (this.openBenchKey === null) return;
+    if (this.prying) {
+      this.prying =
+        this.prying.secondsLeft <= dt
+          ? null
+          : { ...this.prying, secondsLeft: this.prying.secondsLeft - dt };
+    }
     // The dive folds when its bench stops making sense: the bench gone
     // (picked up by a fixture load), the player away, or no player at
     // all (quit to the menu).

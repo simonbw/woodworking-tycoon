@@ -4,8 +4,9 @@ import { Persistence } from "../config/constants";
 import { ReactEntity } from "../core/ReactEntity";
 import { V } from "../core/Vector";
 import { OverlayFrameContext, OverlayLayer } from "./hud/overlay/OverlayLayer";
+import { BenchDive } from "./scenes/bench/BenchDive";
 import { StoreOverlayBridge } from "./hud/store/StoreOverlayBridge";
-import { ShellProvider, useShopOpen, useShopState } from "./useShell";
+import { ShellProvider, useGame, useShopOpen, useShopState } from "./useShell";
 
 /** The overlay only exists while a shop is live (a Player is in play);
  * which venue's overlay follows the canvas (the SceneDirector's swap).
@@ -17,7 +18,14 @@ const OverlayGate: React.FC = () => {
 };
 
 const VenueOverlay: React.FC = () => {
+  const game = useGame();
   const gameState = useShopState();
+  // Leaned over a bench, the world's chips fold away: the dive draws
+  // over the floor they annotate, and they'd be unreachable behind it
+  // (the old HomePage's bench-dive fade).
+  if (game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null) {
+    return null;
+  }
   const away = gameState.player.away;
   if (away?.kind === "shopping" && away.store === "orangeBox") {
     return <StoreOverlayBridge />;

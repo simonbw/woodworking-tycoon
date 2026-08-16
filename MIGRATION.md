@@ -312,7 +312,13 @@ transform tests as it lands.
 ## Phase 7 — Bench view [size L — riskiest]
 
 - [ ] `BenchScene` replacing `BenchWorkSurface.tsx`, sub-phased by mode:
-  - [ ] pry (pallets)
+  - [x] pry (pallets) — BenchDive holds the tool in hand (the bench's
+        mode selector), the DOM tool rail takes it, and BenchPryView
+        rings every nail on the shown face, warms the one under the
+        pointer, and commits each press through `pryPalletNail`. The
+        world's hint chips fold while leaned in (the old bench-dive
+        fade). Covered in the engine-shell journey: dive, take the
+        hammer, pry a nail out of the pallet and into the tin, stand up
   - [ ] tool-first work
   - [ ] glue-ups (clamps-first)
   - [ ] blueprint assembly
@@ -682,3 +688,10 @@ transform tests as it lands.
   passes. Note: two earlier full-suite runs raced my live edits (the
   E2E server rebuilds the working tree); a clean run follows each
   commit from now on.
+- 2026-08-15 — Phase 7 pry mode landed: tool rail + nail rings + the
+  pull, all through the phase-2 bench command (nail leaves the pallet,
+  lands in the tin, a board that loses its last nail comes free on the
+  bench). Browser-verified and covered in the journey spec. Deviations
+  still open for the later sub-phases: no lean-in tween, the rail's
+  mount/unmount half (the ✕ and ghosted hooks) still lives on the
+  station sheet, and no work foley (sounds are phase 8).

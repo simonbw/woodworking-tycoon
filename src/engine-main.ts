@@ -10,6 +10,7 @@ import { OverlayRoot } from "./shell/OverlayRoot";
 import { PayoutBuffer } from "./shell/PayoutBuffer";
 import { BenchDive } from "./shell/scenes/bench/BenchDive";
 import { BenchDiveView } from "./shell/scenes/bench/BenchDiveView";
+import { BenchPryView } from "./shell/scenes/bench/BenchPryView";
 import { SceneDirector } from "./shell/scenes/SceneDirector";
 import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
@@ -48,6 +49,7 @@ async function main() {
   // The bench dive: its state, and the zoomed surface over the world.
   game.addEntity(new BenchDive());
   game.addEntity(new BenchDiveView());
+  game.addEntity(new BenchPryView());
   game.addEntity(new MovementInput());
   game.addEntity(new TargetingState());
   game.addEntity(new ShortcutDispatcher());

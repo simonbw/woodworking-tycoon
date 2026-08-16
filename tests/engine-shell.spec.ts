@@ -571,6 +571,125 @@ test.describe("Engine shell", () => {
       await expect(page.getByTestId("balance")).not.toHaveText("$0.00");
     });
 
+    await test.step("Tab dives into the bench, and the hammer pries a nail", async () => {
+      // Stage a nailed pallet on the workspace with a hammer on its
+      // rack, and stand in the operator's apron.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        const save = (window as any).__GET_GAME_STATE__();
+        const ws = save.entities.find(
+          (e: any) =>
+            e.type === "machine" && e.data.machineTypeId === "workspace",
+        );
+        ws.data.tools = ["hammer"];
+        ws.data.inputMaterials = [
+          {
+            id: "spec-pallet",
+            type: "pallet",
+            deckBoards: [true, true, true, true, true, true, true, true],
+            stringers: [true, true, true],
+            nails: [
+              { deck: 3, stringer: 0 },
+              { deck: 3, stringer: 1 },
+              { deck: 3, stringer: 2 },
+              { deck: 4, stringer: 0 },
+            ],
+          },
+        ];
+        save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      await page.keyboard.press("Tab");
+      await expect.poll(
+        () =>
+          page.evaluate(
+            () => (window as any).game.entities.getById("benchDive")
+              .openBenchKey,
+          ),
+        { timeout: 10_000 },
+      ).not.toBeNull();
+      // The tool rail is the mode selector: take the hammer in hand.
+      await expect(page.getByTestId("bench-tool-rail")).toBeVisible();
+      await page.getByTestId("bench-tool-hammer").click();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => (window as any).game.entities.getById("benchDive").heldTool,
+          ),
+        )
+        .toBe("hammer");
+
+      // Sweep the stage for a nail's ring, then press it: the pull is
+      // the commit — the nail leaves the pallet and lands in the tin.
+      const stage = await page.evaluate(() => {
+        const game = (window as any).game;
+        const view = [...game.entities.all].find(
+          (e: any) => e.fit !== undefined && e.group !== undefined,
+        );
+        return {
+          originX: view.fit.originX,
+          originY: view.fit.originY,
+          pxPerIn: view.fit.pxPerIn,
+          widthIn: view.group.widthIn,
+          heightIn: view.group.heightIn,
+        };
+      });
+      let hit: { x: number; y: number } | null = null;
+      for (let gy = 0; gy < 30 && !hit; gy++) {
+        for (let gx = 0; gx < 45 && !hit; gx++) {
+          const x =
+            stage.originX + (gx / 45) * stage.widthIn * stage.pxPerIn;
+          const y =
+            stage.originY + (gy / 30) * stage.heightIn * stage.pxPerIn;
+          await page.mouse.move(x, y);
+          const hovered = await page.evaluate(
+            () =>
+              (window as any).game.entities.getById("benchDive").hoveredNail,
+          );
+          if (hovered) hit = { x, y };
+        }
+      }
+      expect(hit).not.toBeNull();
+
+      const nailCount = () =>
+        page.evaluate(() => {
+          const bench = (window as any).game.entities
+            .getById("benchDive")
+            .openBench();
+          const pallet = bench.state.inputMaterials.find(
+            (m: any) => m.type === "pallet",
+          );
+          return pallet ? pallet.nails.length : 0;
+        });
+      const before = await nailCount();
+      await page.mouse.click(hit!.x, hit!.y);
+      await expect.poll(nailCount).toBe(before - 1);
+      expect(
+        await page.evaluate(
+          () =>
+            (window as any).game.entities.getById("consumables").stock.nails ??
+            0,
+        ),
+      ).toBeGreaterThan(0);
+
+      // Escape stands back up.
+      await page.keyboard.press("Escape");
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              (window as any).game.entities.getById("benchDive").openBenchKey,
+          ),
+        )
+        .toBeNull();
+    });
+
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
         const first = (window as any).__GET_GAME_STATE__();
