@@ -20,29 +20,29 @@ export const SHEET_FACE_TEXTURES: Partial<
   Record<SheetGoodKind, SheetFaceTexture>
 > = {
   plywoodA: {
-    src: "/images/textures/sheet-plywood-birch.jpg",
+    src: "/images/textures/sheet-goods/plywood-birch.jpg",
     spanInches: 96,
   },
   plywoodB: {
-    src: "/images/textures/sheet-plywood-fir.jpg",
+    src: "/images/textures/sheet-goods/plywood-fir.jpg",
     spanInches: 96,
   },
   plywoodC: {
-    src: "/images/textures/sheet-plywood-fir-knotty.jpg",
+    src: "/images/textures/sheet-goods/plywood-fir-knotty.jpg",
     spanInches: 96,
   },
   osb: {
-    src: "/images/textures/sheet-osb.jpg",
+    src: "/images/textures/sheet-goods/osb.jpg",
     spanInches: 48,
   },
   mdf: {
-    src: "/images/textures/sheet-mdf.jpg",
+    src: "/images/textures/sheet-goods/mdf.jpg",
     spanInches: 48,
   },
   // White melamine facing — which is why the game's particle board has
   // always drawn whitish. The crumbly chip core still shows on the edge.
   particleBoard: {
-    src: "/images/textures/sheet-melamine.jpg",
+    src: "/images/textures/sheet-goods/melamine.jpg",
     spanInches: 48,
   },
 };

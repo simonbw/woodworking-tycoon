@@ -90,41 +90,41 @@ wiring: same path, same size, same component.
 ### Machines
 
 - [x] Worktable — both sizes drawn (`workbench-2x2`, `-2x4`). Registered in
-  `machine-sprites/worktable-art.ts`. Each table ships three layers off
-  one drawing, plus an `@4x` close-up of each at 32 px/inch: - `-top` — the laminated top, filling the footprint edge to edge. - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
-  Drawn in a pass of its own _under every table's top_
-  (`WorktableShadowLayer` in ShopView, and both passes in
-  `BenchSceneBackdrop`), because tables get pushed together and a
-  neighbour's shadow falling across the top butted against it would
-  draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
+      `machine-sprites/worktable-art.ts`. Each table ships three layers off
+      one drawing, plus an `@4x` close-up of each at 32 px/inch: - `-top` — the laminated top, filling the footprint edge to edge. - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
+      Drawn in a pass of its own _under every table's top_
+      (`WorktableShadowLayer` in ShopView, and both passes in
+      `BenchSceneBackdrop`), because tables get pushed together and a
+      neighbour's shadow falling across the top butted against it would
+      draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
-      filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
-      close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
-      edge sitting over the black shadow beneath reads as a hairline down
-      every seam where two tables butt — which is the one place this art
-      has to be precise, and the only place. (`-2x4-top` still carries a
-      1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
-      on one side, versus the 39–62% that was drawing a visible line —
-      invisible in play. Not worth an export on its own; worth squaring up
-      if that artboard is opened again.)
+          filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
+          close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
+          edge sitting over the black shadow beneath reads as a hairline down
+          every seam where two tables butt — which is the one place this art
+          has to be precise, and the only place. (`-2x4-top` still carries a
+          1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
+          on one side, versus the 39–62% that was drawing a visible line —
+          invisible in play. Not worth an export on its own; worth squaring up
+          if that artboard is opened again.)
 
-      Shadows and completes are centred on even canvases so no shadow core
-      peeks out from under its own top.
+          Shadows and completes are centred on even canvases so no shadow core
+          peeks out from under its own top.
 
-      Legs want to sit in from the corners so butted tables don't collide
-      visually; a top texture that tiles horizontally reads best across a
-      run. Vise and tool-drawer upgrades stay procedural overlays drawn on
-      the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
+          Legs want to sit in from the corners so butted tables don't collide
+          visually; a top texture that tiles horizontally reads best across a
+          run. Vise and tool-drawer upgrades stay procedural overlays drawn on
+          the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
 
-      These are deliberately **not** in `scripts/trim-images.ts`, and don't
-      need to be: the tops are opaque corner to corner so there is nothing
-      to trim, and while the shadows and completes do carry a transparent
-      margin, trimming them would be harmless rather than helpful — the
-      script keeps every pixel with any alpha (soft halos survive) and
-      crops symmetrically about the canvas centre, which is the
-      registration these rely on. It would save a couple of kilobytes and
-      cost the ability to compare a top and its shadow by their canvases.
+          These are deliberately **not** in `scripts/trim-images.ts`, and don't
+          need to be: the tops are opaque corner to corner so there is nothing
+          to trim, and while the shadows and completes do carry a transparent
+          margin, trimming them would be harmless rather than helpful — the
+          script keeps every pixel with any alpha (soft halos survive) and
+          crops symmetrically about the canvas centre, which is the
+          registration these rely on. It would save a couple of kilobytes and
+          cost the ability to compare a top and its shadow by their canvases.
 
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
@@ -235,7 +235,11 @@ Decided — don't re-open these without a reason.
   `PIXELS_PER_INCH`) and fill the faces from photography under
   `assets/textures/materials/` (all CC0 or homemade), processed by
   `npm run process:textures` (the manifest in
-  `scripts/process-textures.ts`). Sheets tile a seamless square per kind
+  `scripts/process-textures.ts`). Source and shipped textures alike are
+  foldered by material — one folder per species, one for sheet goods of
+  every kind, and `shared` for overlays tied to no material, so adding a
+  species means adding a folder and a manifest block. Sheets tile a
+  seamless square per kind
   (`sheetFaceTextures.ts`); boards window a library of full-plank scans
   plus edge strips per species (`boardFaceTextures.ts`), and a species
   without scans yet draws the old procedural face until its sources land.

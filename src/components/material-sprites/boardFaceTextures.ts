@@ -25,16 +25,17 @@ export interface BoardFaceArt {
   readonly edgeSpanInches: number;
 }
 
-const oakRange = (count: number, name: string) =>
+/** A species keeps its scans in its own folder, numbered from 1. */
+const scans = (species: Species, kind: "face" | "edge", count: number) =>
   Array.from(
     { length: count },
-    (_, i) => `/images/textures/${name}-${i + 1}.jpg`,
+    (_, i) => `/images/textures/${species}/${kind}-${i + 1}.jpg`,
   );
 
 export const BOARD_FACE_TEXTURES: Partial<Record<Species, BoardFaceArt>> = {
   oak: {
-    faces: oakRange(13, "board-oak"),
-    edges: oakRange(3, "board-edge-oak"),
+    faces: scans("oak", "face", 13),
+    edges: scans("oak", "edge", 3),
     edgeSpanInches: 3,
   },
 };
@@ -49,7 +50,7 @@ export const BOARD_FACE_TEXTURES: Partial<Record<Species, BoardFaceArt>> = {
  */
 export const BOARD_ROUGHNESS_TEXTURES: ReadonlyArray<string> = Array.from(
   { length: 5 },
-  (_, i) => `/images/textures/board-roughness-${i + 1}.jpg`,
+  (_, i) => `/images/textures/shared/roughness-${i + 1}.jpg`,
 );
 
 export const BOARD_FACE_TEXTURE_ASSETS = [
