@@ -1093,6 +1093,145 @@ test.describe("Engine shell", () => {
       await page.keyboard.press("Escape");
     });
 
+    await test.step("a drawing off the pile builds a shelf", async () => {
+      // The last bench mode: pull a plan, lay each part on its outline,
+      // and drive a fastener at every lit crossing — the last one
+      // commits the whole build.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        const save = (window as any).__GET_GAME_STATE__();
+        const ws = save.entities.find(
+          (e: any) =>
+            e.type === "machine" && e.data.machineTypeId === "workspace",
+        );
+        ws.data.tools = ["drill"];
+        ws.data.outputMaterials = [];
+        // The glue-up from the step before is still curing on this
+        // bench; a build wants it clear.
+        ws.data.processingMaterials = [];
+        ws.data.operationProgress = {
+          status: "notStarted",
+          phaseIndex: 0,
+          ticksRemaining: 0,
+        };
+        const plank = (id: string) => ({
+          id,
+          type: "board",
+          species: "pine",
+          length: 48,
+          width: 6,
+          thickness: 4,
+          surface: "sanded",
+        });
+        ws.data.inputMaterials = [plank("spec-plank"), plank("spec-cleat")];
+        ws.data.benchLayout = {
+          "spec-plank": { xIn: 12, yIn: 10, angleDeg: 90, flipped: false },
+          "spec-cleat": { xIn: 12, yIn: 26, angleDeg: 90, flipped: false },
+        };
+        save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
+        save.singletons.consumables.stock.screws = 50;
+        save.singletons.progression.unlockedSkills = [
+          ...new Set([
+            ...(save.singletons.progression.unlockedSkills ?? []),
+            "fineShelving",
+          ]),
+        ];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      await page.keyboard.press("Tab");
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                (window as any).game.entities.getById("benchDive").openBenchKey,
+            ),
+          { timeout: 10_000 },
+        )
+        .not.toBeNull();
+
+      // The pile in the corner spreads the drawer; pulling a sheet is
+      // selecting the plan, and its outlines land on the bench.
+      await page.getByTestId("blueprint-corner").click();
+      await page
+        .locator("[data-mode-option]", { hasText: "Build Shelf" })
+        .first()
+        .click();
+      await page.getByTestId("pull-plan").click();
+
+      const build = () =>
+        page.evaluate(() => {
+          const view = [...(window as any).game.entities.all].find(
+            (e: any) => typeof e.assemblyProgress === "function",
+          );
+          const stage = [...(window as any).game.entities.all].find(
+            (e: any) => typeof e.piecePoints === "function",
+          );
+          return {
+            progress: view.assemblyProgress(),
+            slots: view.slotPoints(),
+            fasteners: view.fastenerPoints(),
+            pieces: stage.piecePoints(),
+          };
+        });
+      await expect
+        .poll(async () => (await build()).progress?.slots ?? 0, {
+          timeout: 10_000,
+        })
+        .toBe(2);
+
+      // Lay the plank flat on its outline, then tip the cleat up on its
+      // long edge (F) and lay that on its thin one.
+      for (const [id, tipUp] of [
+        ["spec-plank", false],
+        ["spec-cleat", true],
+      ] as const) {
+        const state = await build();
+        const slot = state.slots[0];
+        let piece = state.pieces.find((p: any) => p.id === id);
+        expect(piece).toBeTruthy();
+        if (tipUp) {
+          await page.mouse.move(piece.x, piece.y);
+          await page.keyboard.press("KeyF");
+          piece = (await build()).pieces.find((p: any) => p.id === id);
+        }
+        await page.mouse.move(piece.x, piece.y);
+        await page.mouse.down();
+        await page.mouse.move(slot.x, slot.y, { steps: 4 });
+        await page.mouse.up();
+      }
+      await expect.poll(async () => (await build()).progress.seated).toBe(2);
+
+      // The drill drives every armed crossing; the last one is the build.
+      await page.getByTestId("bench-tool-drill").click();
+      for (let screw = 0; screw < 8; screw++) {
+        const state = await build();
+        const point = state.progress ? state.fasteners[0] : null;
+        if (!point) break;
+        await page.mouse.click(point.x, point.y);
+        await page.waitForTimeout(150);
+      }
+      const built = await page.evaluate(() => {
+        const bench = (window as any).game.entities
+          .getById("benchDive")
+          .openBench();
+        return {
+          outputs: bench.state.outputMaterials.map((m: any) => m.type),
+          inputs: bench.state.inputMaterials.length,
+        };
+      });
+      expect(built.outputs).toEqual(["shelf"]);
+      expect(built.inputs).toBe(0);
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+    });
+
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
         const first = (window as any).__GET_GAME_STATE__();

@@ -10,6 +10,7 @@ import { OverlayRoot } from "./shell/OverlayRoot";
 import { PayoutBuffer } from "./shell/PayoutBuffer";
 import { BenchDive } from "./shell/scenes/bench/BenchDive";
 import { BenchArrangeView } from "./shell/scenes/bench/BenchArrangeView";
+import { BenchAssemblyView } from "./shell/scenes/bench/BenchAssemblyView";
 import { BenchDiveView } from "./shell/scenes/bench/BenchDiveView";
 import { BenchGlueView } from "./shell/scenes/bench/BenchGlueView";
 import { BenchPryView } from "./shell/scenes/bench/BenchPryView";
@@ -57,6 +58,7 @@ async function main() {
   game.addEntity(new BenchSawView());
   game.addEntity(new BenchArrangeView());
   game.addEntity(new BenchGlueView());
+  game.addEntity(new BenchAssemblyView());
   game.addEntity(new BenchStrokeView());
   game.addEntity(new MovementInput());
   game.addEntity(new TargetingState());

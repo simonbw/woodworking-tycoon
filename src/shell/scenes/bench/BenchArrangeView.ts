@@ -32,6 +32,7 @@ import {
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
 import { ShellStore } from "../../ShellStore";
+import { BenchAssemblyView } from "./BenchAssemblyView";
 import { BenchDive } from "./BenchDive";
 import {
   benchStage,
@@ -121,6 +122,14 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     return groupPieces(group).find((piece) => piece.material.id === id) ?? null;
   }
 
+  /** Parts a driven fastener holds — nailed on, so they don't move. */
+  private fastened(): ReadonlySet<string> {
+    return (
+      this.game.entities.tryGetSingleton(BenchAssemblyView)?.fastened() ??
+      new Set()
+    );
+  }
+
   /** The machine entity behind a member of the run. */
   private entityFor(member: BenchGroupMember): MachineEntity | null {
     return findMachineEntity(this.game, member.machine.state);
@@ -133,6 +142,9 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     if (!stage) return;
     const piece = pieceUnder(stage.group, stage.pointer.xIn, stage.pointer.yIn);
     if (!piece) return;
+    // A part a fastener already holds is part of the build: no dragging
+    // it back off.
+    if (this.fastened().has(piece.material.id)) return;
     this.drag = {
       materialId: piece.material.id,
       placement: piece.placement,
@@ -183,7 +195,21 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     this.drag = null;
     const stage = this.stage();
     if (!drag || !stage) return;
-    const landing = seatInGroup(stage.group, drag.placement);
+    // Released near a blueprint outline, the part settles onto it — a
+    // slot is the one thing that may seat a piece off the bench, since
+    // a plan bigger than the top reaches past the edges on purpose.
+    const piece = groupPieces(stage.group).find(
+      (candidate) => candidate.material.id === drag.materialId,
+    );
+    const snapped = piece
+      ? (this.game.entities
+          .tryGetSingleton(BenchAssemblyView)
+          ?.snapFor(piece.material, drag.placement) ?? null)
+      : null;
+    const landing = snapped
+      ? { placement: snapped, member: memberOf(stage.group, drag.materialId) }
+      : seatInGroup(stage.group, drag.placement);
+    if (!landing.member) return;
     const onto = this.entityFor(landing.member);
     if (!onto) return;
     // Dragged across a seam: the table it came to rest on bookkeeps it
@@ -215,6 +241,7 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     if (!stage) return;
     const piece = this.handPiece(stage.group);
     if (!piece) return;
+    if (this.fastened().has(piece.material.id)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
 
@@ -316,6 +343,11 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     this.carried.removeChildren().forEach((child) => child.destroy());
     this.drawnDragId = null;
   }
+}
+
+/** The member bookkeeping this piece, or the run's first table. */
+function memberOf(group: BenchGroup, materialId: string): BenchGroupMember {
+  return ownerOf(group, materialId) ?? group.members[0];
 }
 
 /** Which member of the run bookkeeps this piece. */

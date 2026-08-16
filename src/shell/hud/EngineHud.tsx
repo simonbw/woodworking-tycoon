@@ -8,6 +8,7 @@ import { FloorSheet } from "./overlay/FloorSheet";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
+import { BenchPlanCorner } from "./bench/BenchPlanCorner";
 import { BenchStatusLine } from "./bench/BenchStatusLine";
 import { BenchToolRail } from "./bench/BenchToolRail";
 import { useBenchDiveActive } from "./bench/useBenchDive";
@@ -110,6 +111,7 @@ export const EngineHud: React.FC = () => {
           the line naming the next move below. */}
       <BenchToolRail />
       <BenchStatusLine />
+      <BenchPlanCorner />
 
       {/* The away trips that cover the screen (each gates on its own
           `player.away` kind): the lumberyard's storefront, the

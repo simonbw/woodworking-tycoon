@@ -7,6 +7,7 @@ import { Machine } from "../../../game/Machine";
 import { Pallet } from "../../../game/Materials";
 import { TOOL_TYPES } from "../../../game/Tool";
 import { BenchDive } from "../../scenes/bench/BenchDive";
+import { BenchAssemblyView } from "../../scenes/bench/BenchAssemblyView";
 import { BenchGlueView } from "../../scenes/bench/BenchGlueView";
 import { openBenchGroup } from "../../scenes/bench/benchStage";
 import { useGame, useShellVersion, useShopState } from "../../useShell";
@@ -24,6 +25,7 @@ export const BenchStatusLine: React.FC = () => {
   const gameState = useShopState();
   const dive = game.entities.tryGetSingleton(BenchDive);
   const glue = game.entities.tryGetSingleton(BenchGlueView);
+  const assembly = game.entities.tryGetSingleton(BenchAssemblyView);
   const run = openBenchGroup(game);
   if (!dive || dive.openBenchKey === null || !run) return null;
 
@@ -79,6 +81,10 @@ export const BenchStatusLine: React.FC = () => {
       }
       return "Press a nail to pry it loose.";
     }
+    // A drawing out on the bench walks itself too: stock down, each
+    // piece on its outline, a fastener at every lit crossing.
+    const buildLine = assemblyInstruction(assembly, pieces.length);
+    if (buildLine) return buildLine;
     // The clamps-first glue-up walks itself: clamps out, stock across
     // them, glue down the seams, tighten. Each line names the next move.
     const glueLine = glueInstruction(dive, glue);
@@ -136,8 +142,15 @@ export const BenchStatusLine: React.FC = () => {
             ["Tab", "step back"],
           ];
 
+  const build = assembly?.assemblyProgress() ?? null;
   const progressLine =
-    script?.kind === "pry" ? `${script.pallet.nails.length} nails left` : null;
+    script?.kind === "pry"
+      ? `${script.pallet.nails.length} nails left`
+      : build
+        ? `${build.seated}/${build.slots} placed · ${build.driven}/${build.fasteners} ${
+            build.fastenerId === "screws" ? "screwed" : "nailed"
+          }`
+        : null;
 
   return (
     <div
@@ -170,6 +183,36 @@ export const BenchStatusLine: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * The build's line while a drawing is out: what to lay on next, and
+ * once everything is seated, what to drive it with.
+ */
+function assemblyInstruction(
+  assembly: BenchAssemblyView | undefined,
+  piecesOnBench: number,
+): string | null {
+  const build = assembly?.assemblyProgress();
+  if (!build) return null;
+  if (build.seated >= build.slots) {
+    if (!build.driverHeld) {
+      const driver = build.driver ? TOOL_TYPES[build.driver].name : "driver";
+      return `All laid out. Take the ${driver.toLowerCase()} down off the rail.`;
+    }
+    return build.fastenerId === "screws"
+      ? "Drive a screw at each lit crossing."
+      : "Nail each lit crossing.";
+  }
+  if (piecesOnBench < build.slots) {
+    return "Set the plan's stock down on the bench (F), then lay each piece on its outline.";
+  }
+  if (build.tipUp) {
+    return build.tipUp.onEnd
+      ? `Stand each ${build.tipUp.role} on its end (F cycles), then set it on its small outline.`
+      : `Flip each ${build.tipUp.role} up on its long edge (F), then lay it on its thin outline.`;
+  }
+  return "Lay each piece on its ghost outline — drag it close and it settles. R turns it.";
+}
 
 /**
  * The clamps-first glue-up's line, or null when nothing about one

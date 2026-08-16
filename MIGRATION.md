@@ -347,7 +347,13 @@ transform tests as it lands.
         startGlueUp → finishAttendedWork), so the cure begins on the
         bench. No plan is ever pulled: the contiguous run lying in the
         clamps is the glue-up. Covered in the journey spec
-  - [ ] blueprint assembly
+  - [x] blueprint assembly — the plan pile in the corner (and its
+        drawer, Q) pulls a drawing, its ghost outlines land on the bench
+        top, a part dragged near one settles onto it, and every crossing
+        of two seated parts arms for the drawing's own fastener. Driving
+        the last one commits the whole build, which lands exactly where
+        the parts were lying. Covered in the journey spec: pull Build
+        Shelf, seat both parts (one tipped on edge), drive the screws
 - [ ] **Gate:** bench spec passes; all modes at parity (**human playtest
       gate** for feel)
 
@@ -767,3 +773,14 @@ transform tests as it lands.
   between pointer events (the engine has no per-move event), capped the
   same way — identical at full frame rate, and it no longer starves on a
   slow renderer.
+- 2026-08-16 — Phase 7 blueprint assembly landed, which completes the
+  four modes: BenchAssemblyView (ghost outlines, snap-on-release through
+  the arranging view's drag, armed crossings, the drive and its commit)
+  plus the plan pile and drawer ported into the shell's HUD
+  (BenchPlanCorner + PlanBrowser, pulling a drawing through
+  setMachineOperation). Nailed-on parts stop dragging and turning, as
+  they did before. The status line and progress readout cover all four
+  modes now. Still open for the sub-phase's polish: no lean-in tween, the
+  rail's mount/unmount half (the ✕ and ghosted hooks) is still on the
+  station sheet, the under-bench panel isn't ported, and work foley plus
+  the saw's voice wait for phase 8's sound layer.
