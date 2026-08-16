@@ -52,6 +52,7 @@ import {
   stagePointer,
   workpieceSpot,
 } from "./benchStage";
+import { HandSawVoice, playSawPartCrack } from "../../../utils/handSawSynth";
 import { KerfDust } from "./KerfDust";
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
 
@@ -98,6 +99,11 @@ export class BenchSawView extends BaseEntity implements Entity {
   private lines = new Graphics();
   private dust = new KerfDust();
   private cut: SawCut | null = null;
+  /** The saw's synthesized voice, built on the first stroke so a bench
+   * that only ever shows a pencil line stays silent and graphless. */
+  private voice: HandSawVoice | null = null;
+  /** Seconds since the last stroke, for the voice's stroke speed. */
+  private sinceStroke = 0;
   /** The board the halves were built for, so they're rebuilt only when
    * a different piece comes under the saw. */
   private drawnPieceId: string | null = null;
@@ -251,6 +257,8 @@ export class BenchSawView extends BaseEntity implements Entity {
 
   @on("tick")
   onTick(dt: number) {
+    this.sinceStroke += dt;
+    this.voice?.tick(dt);
     const bench = this.dive()?.openBench();
     const running = bench ? this.sawScript() : null;
     const spot =
@@ -260,6 +268,7 @@ export class BenchSawView extends BaseEntity implements Entity {
     if (!running || !bench || !spot) {
       this.cut = null;
       this.dust.tick(dt, null);
+      this.hushVoice();
       return;
     }
     const board = running.script.workpiece;
@@ -304,6 +313,16 @@ export class BenchSawView extends BaseEntity implements Entity {
     const run = Math.tan((line.angle * Math.PI) / 180);
     const norm = Math.hypot(1, run);
     const direction = Math.sign(local.xIn - last) || 1;
+    // The voice hears every stroke: speed from how long this one took,
+    // direction for the push–pull asymmetry, depth for the timbre arc.
+    const seconds = Math.min(0.1, Math.max(0.004, this.sinceStroke));
+    this.sinceStroke = 0;
+    this.voice ??= new HandSawVoice();
+    this.voice.stroke(
+      travel / seconds,
+      direction > 0 ? 1 : -1,
+      kerfFraction(this.cut.mask),
+    );
     this.dust.spill({
       xIn: local.xIn,
       yIn: lineY(local.xIn, line.centerIn, line.angle, spot),
@@ -314,11 +333,21 @@ export class BenchSawView extends BaseEntity implements Entity {
     });
 
     if (kerfComplete(this.cut.mask)) {
-      // The last fibers let go: the offcut is a board of its own now.
+      // The last fibers let go: the crack plays detached from the voice,
+      // which is about to be disposed. handSawCut is explicitly silent
+      // in the clip table so no generic whack lands on top of it.
+      playSawPartCrack();
+      this.hushVoice();
       finishAttendedWork(this.game, bench);
       this.cut = null;
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
     }
+  }
+
+  /** Put the saw's voice away until the next cut. */
+  private hushVoice(): void {
+    this.voice?.dispose();
+    this.voice = null;
   }
 
   /** The cut the board was marked with: where the line crosses it and

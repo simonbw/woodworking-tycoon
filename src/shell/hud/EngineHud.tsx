@@ -1,6 +1,7 @@
 import React from "react";
 import { useShopOpen } from "../useShell";
 import { HandsStrip } from "./HandsStrip";
+import { HoldMusicLayer } from "./HoldMusicLayer";
 import { ManualProvider } from "./manual/ManualProvider";
 import { NavBar } from "./NavBar";
 import { NightfallCard } from "./NightfallCard";
@@ -128,6 +129,9 @@ export const EngineHud: React.FC = () => {
       {/* The sale celebration, above everything (z-60): coins and the
           star fly to the top bar's readouts. */}
       <RewardFlightLayer />
+
+      {/* Headless: elevator music while the wait key is held down. */}
+      <HoldMusicLayer />
     </ManualProvider>
   );
 };

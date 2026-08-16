@@ -35,6 +35,7 @@ import {
   startGlueUp,
 } from "../../../sim/commands/bench-commands";
 import { projectGameState } from "../../../sim/projection";
+import { playSound } from "../../../utils/sfx";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
 import { benchStage, openBenchGroup, stagePointer } from "./benchStage";
@@ -416,6 +417,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
         this.commit(run);
         return;
       }
+      playSound("glue-clamp", 0.5);
       this.tightened = next;
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
       return;
@@ -437,6 +439,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
     if (!bench) return;
     const ids = run.pieces.map((piece) => piece.id);
     gatherBenchPieces(this.game, bench, ids);
+    playSound("glue-clamp", 0.5);
     if (startGlueUp(this.game, bench, ids)) {
       finishAttendedWork(this.game, bench);
     }

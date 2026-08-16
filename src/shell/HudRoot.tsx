@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserDefaultsGuard } from "../components/BrowserDefaultsGuard";
 import { ShortcutProvider } from "../components/shortcuts/ShortcutProvider";
+import { UiSoundLayer } from "../components/UiSoundLayer";
 import { Persistence } from "../config/constants";
 import { ReactEntity } from "../core/ReactEntity";
 import { EngineHud } from "./hud/EngineHud";
@@ -33,6 +34,10 @@ export class HudRoot extends ReactEntity {
         <ShellProvider game={this.game}>
           <ShortcutProvider>
             <BrowserDefaultsGuard />
+            {/* The old shell's UI sound layer mounts verbatim: it hangs
+                its own listeners on the document and gives every button
+                a hover tick and a press, with no game state involved. */}
+            <UiSoundLayer />
             <ModalScopeBridge />
             <EngineHud />
           </ShortcutProvider>

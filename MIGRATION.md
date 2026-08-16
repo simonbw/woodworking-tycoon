@@ -364,7 +364,17 @@ transform tests as it lands.
 
 ## Phase 8 — Cutover [size S]
 
-- [ ] Sound layers + payout flight as view entities
+- [x] Sound layers as view entities: `SoundView` (the sim's one-shot
+      cues, collapsed per tick and throttled), `MachineSoundView` (the
+      continuous machine voices, phase re-derived per frame), and
+      `FootstepSoundView` (the body's stride). The clip table moved to
+      `game/sound-clips.ts` and the voice table to
+      `utils/machineVoices.ts`, both shared with the old shell so the two
+      can't drift. The DOM side mounts the old `UiSoundLayer` verbatim
+      and a ported hold-music layer; the bench gestures carry their own
+      foley (the tool's loop, the saw's synthesized voice and its parting
+      crack, the clamp click, the drive). The payout flight was already
+      ported with phase 5's HUD
 - [ ] Flip default entry to the engine shell
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
@@ -800,3 +810,8 @@ transform tests as it lands.
   cores for the same reason. Both come back up at cutover, when these
   journeys split across the seven canonical specs. **The human playtest
   gate for bench feel is open** — see the phase-7 checklist.
+- 2026-08-16 — Phase 8 opened with sound: the engine shell has a voice
+  now. Verified in the browser by counting buffer starts — footsteps
+  while walking, one-shot cues off the `sound` event, UI clicks — with
+  the machine voices and the bench foley riding the same shared tables
+  as the old shell.

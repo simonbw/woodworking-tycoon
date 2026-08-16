@@ -37,6 +37,7 @@ import {
   finishAttendedWork,
   operateMachine,
 } from "../../../sim/commands/machine-commands";
+import { playSound } from "../../../utils/sfx";
 import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
@@ -301,6 +302,12 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
       at.yIn,
     );
     if (!target) return;
+    playSound(
+      build.blueprint.fastenerConsumable === "screws"
+        ? "drill-driver"
+        : "assembly-mallet",
+      0.5,
+    );
     this.driving = { fastener: target, secondsLeft: DRIVE_SECONDS };
     this.hovered = null;
     this.driven = [...this.driven, target];

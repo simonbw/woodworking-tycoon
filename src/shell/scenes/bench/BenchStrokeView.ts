@@ -34,6 +34,7 @@ import {
 import { projectGameState } from "../../../sim/projection";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
+import { foleyClipFor, WorkFoley } from "./WorkFoley";
 import {
   benchStage,
   benchWork,
@@ -65,6 +66,10 @@ import {
 
 const MASK = 0xf0e6d2;
 
+/** How long after the last stroke the tool's foley keeps running — the
+ * old surface's activity hold, so a stroke's rhythm doesn't stutter. */
+const FOLEY_HOLD_SECONDS = 0.18;
+
 /** How far the hand must travel before it counts as a stroke, in
  * inches — the old surface's threshold, so a resting hand on an
  * unpowered tool lays nothing down. */
@@ -86,6 +91,9 @@ export class BenchStrokeView extends BaseEntity implements Entity {
 
   private mask: Graphics & GameSprite;
   private pass: StrokePass | null = null;
+  /** The tool's own continuous voice, and how long since it last cut. */
+  private foley = new WorkFoley();
+  private sinceWork = Infinity;
 
   /** How far the pass in progress has got, 0..1 (null when idle) — the
    * same seam `piecePoints` gives the stage: a test watches the real
@@ -160,12 +168,21 @@ export class BenchStrokeView extends BaseEntity implements Entity {
 
   @on("tick")
   onTick(dt: number) {
+    this.sinceWork += dt;
     const dive = this.dive();
     const bench = dive?.openBench();
     if (!dive || !bench) {
       this.pass = null;
+      this.foley.stop();
       return;
     }
+    // The tool's own voice runs while it is cutting and hangs on for a
+    // moment after, so a stroke's rhythm doesn't stutter it.
+    this.foley.set(
+      this.pass && this.sinceWork < FOLEY_HOLD_SECONDS
+        ? foleyClipFor(this.pass.operation.id)
+        : null,
+    );
     const at = this.pointerInches();
     const down = this.game.io.lmb;
 
@@ -287,6 +304,7 @@ export class BenchStrokeView extends BaseEntity implements Entity {
         strokeGain(interaction.coveragePerSecond, radiusIn, distance, dtMs),
       );
       this.pass.last = local;
+      this.sinceWork = 0;
     } else if (interaction.powered) {
       // A powered pad keeps cutting the spot it rests on; a block only
       // cuts while it moves.
@@ -299,11 +317,13 @@ export class BenchStrokeView extends BaseEntity implements Entity {
         radiusIn,
         dwellGain(interaction.coveragePerSecond, radiusIn, dtMs),
       );
+      this.sinceWork = 0;
     }
 
     if (coverageComplete(this.pass.grid)) {
       finishAttendedWork(this.game, bench);
       this.pass = null;
+      this.foley.stop();
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
     }
   }
