@@ -14,6 +14,7 @@ import { formatCount } from "../../../utils/formatNumber";
 import { seededRandom } from "../../../utils/randUtils";
 import { colorBySpecies } from "../../../components/shop-view/colorBySpecies";
 import { TripOverlay } from "../../../components/trip/TripOverlay";
+import { useHeadHome } from "./TripFade";
 import { DayClock } from "../NavBar";
 import { useGame, useShopState } from "../../useShell";
 
@@ -56,7 +57,7 @@ const PULL_AWAY_MS = 500;
 const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
   const gameState = useShopState();
   const game = useGame();
-  const fadeThen = (apply: () => void) => apply();
+  const fadeThen = useHeadHome();
   // Set the moment the player calls it, and never cleared: this
   // component is unmounted by the return it sets in motion.
   const [leaving, setLeaving] = useState(false);

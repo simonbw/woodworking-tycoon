@@ -4,6 +4,7 @@ import { currentCart } from "../../../game/game-actions/cart-actions";
 import { checkout } from "../../../sim/commands/cart-commands";
 import { SceneDirector } from "../../scenes/SceneDirector";
 import { useGame, useShopState } from "../../useShell";
+import { useHeadHome } from "./TripFade";
 
 /** How long the armed "Leave cart behind?" button waits before disarming. */
 const CONFIRM_TIMEOUT_MS = 5000;
@@ -22,6 +23,9 @@ const CONFIRM_TIMEOUT_MS = 5000;
 export function useStoreTrip() {
   const gameState = useShopState();
   const game = useGame();
+  // Every way out dips to black over the storefront first, then charges
+  // the drive — the shop is what fades back in (TripTheater).
+  const headHome = useHeadHome();
 
   const cart = currentCart(gameState) ?? [];
   const total = cartTotal(cart);
@@ -32,8 +36,10 @@ export function useStoreTrip() {
 
   const leave = useCallback(() => {
     setConfirmingLeave(false);
-    game.entities.getSingleton(SceneDirector).requestDriveHome();
-  }, [game]);
+    headHome(() =>
+      game.entities.getSingleton(SceneDirector).requestDriveHome(),
+    );
+  }, [game, headHome]);
 
   /** Head Home. Arms a confirmation first when a cart would be left behind. */
   const requestLeave = useCallback(() => {
@@ -47,8 +53,10 @@ export function useStoreTrip() {
   const checkOutAndLeave = useCallback(() => {
     setConfirmingLeave(false);
     if (!checkout(game)) return;
-    game.entities.getSingleton(SceneDirector).requestDriveHome();
-  }, [game]);
+    headHome(() =>
+      game.entities.getSingleton(SceneDirector).requestDriveHome(),
+    );
+  }, [game, headHome]);
 
   // An armed button that stays armed is a trap: empty the cart (or just
   // go back to shopping) and the next Escape shouldn't skip the ask.

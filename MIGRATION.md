@@ -364,6 +364,14 @@ transform tests as it lands.
 
 ## Phase 8 — Cutover [size S]
 
+- [x] Trip theater (deferred from phase 6): `TripTheater` owns the stage
+      clock — parked → departing → away → arriving — with the truck's
+      roll read off it by `TruckView`, the black curtain drawn by the
+      HUD's `TripFade`, and the destinations held back until the truck is
+      off the lot. Heading home dips to black over the storefront before
+      the drive is charged. The E2E build skips the whole show, exactly
+      as the old shell's does
+
 - [x] Sound layers as view entities: `SoundView` (the sim's one-shot
       cues, collapsed per tick and throttled), `MachineSoundView` (the
       continuous machine voices, phase re-derived per frame), and
@@ -815,3 +823,10 @@ transform tests as it lands.
   while walking, one-shot cues off the `sound` event, UI clicks — with
   the machine voices and the bench foley riding the same shared tables
   as the old shell.
+- 2026-08-16 — The trip theater landed, closing phase 6's one deferral:
+  the stage clock is an entity now (TripTheater), so the truck's roll,
+  the black, the destination's entrance, and the held-back drive home all
+  read one source instead of a React effect chain. Verified in a
+  full-rate browser build: parked → departing with the shop still drawn →
+  the fade rising → away with the store swapped in behind it. The E2E
+  build skips the show, so the specs are untouched; full suite green.

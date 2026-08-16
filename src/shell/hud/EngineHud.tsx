@@ -17,6 +17,7 @@ import { StoreScreen } from "./store/StoreScreen";
 import { LumberyardTripOverlay } from "./trips/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "./trips/ScavengeTripOverlay";
 import { SleepOverlay } from "./trips/SleepOverlay";
+import { TripFade, useTripStaged } from "./trips/TripFade";
 import { SuppliesSection } from "./SuppliesSection";
 import { TutorialCards } from "./tutorial/TutorialCard";
 import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
@@ -40,6 +41,22 @@ import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
  * z-40 so its buttons stay clickable over them; the world-pinned chips
  * and prompts live in OverlayRoot, not here.
  */
+/**
+ * The destinations a trip takes over the screen with — held back while
+ * the truck is still rolling out, which is a whole performance before
+ * the destination should be up (TripTheater).
+ */
+const TripDestinations: React.FC = () => {
+  if (!useTripStaged()) return null;
+  return (
+    <>
+      <LumberyardTripOverlay />
+      <ScavengeTripOverlay />
+      <SleepOverlay />
+    </>
+  );
+};
+
 export const EngineHud: React.FC = () => {
   const open = useShopOpen();
   // Leaned over a bench, the corner chips fade: the bench view draws in
@@ -121,14 +138,15 @@ export const EngineHud: React.FC = () => {
           same seam the manual's modal crosses), without a box of its
           own. */}
       <div className="pointer-events-auto contents">
-        <LumberyardTripOverlay />
-        <ScavengeTripOverlay />
-        <SleepOverlay />
+        <TripDestinations />
       </div>
 
       {/* The sale celebration, above everything (z-60): coins and the
           star fly to the top bar's readouts. */}
       <RewardFlightLayer />
+
+      {/* The trip's black, above everything it covers. */}
+      <TripFade />
 
       {/* Headless: elevator music while the wait key is held down. */}
       <HoldMusicLayer />

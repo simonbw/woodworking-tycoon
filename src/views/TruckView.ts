@@ -12,6 +12,13 @@ import { on } from "../core/entity/handler";
 import { truckBedRect, truckParkedRect } from "../game/lot";
 import { ShopInfo as ShopInfoData } from "../game/ShopInfo";
 import { Player } from "../sim/entities/Player";
+import {
+  TripTheater,
+  TRUCK_ARRIVE_SECONDS,
+  TRUCK_DEPART_SECONDS,
+  TRUCK_ROLL_IN_SECONDS,
+  TRUCK_ROLL_OUT_SECONDS,
+} from "../shell/scenes/TripTheater";
 import { TruckEntity } from "../sim/entities/TruckEntity";
 import { ShopInfo } from "../sim/singletons/ShopInfo";
 import { drawMaterialGlyph } from "./material-glyph";
@@ -82,12 +89,16 @@ export class TruckView extends BaseEntity implements Entity {
     const shopInfo = this.shopInfo();
     if (!shopInfo) return;
 
-    // The player drove it — nothing parked while they're away.
+    // The player drove it — nothing parked while they're away. The
+    // theater stretches that instant: the truck is still on the lot
+    // while it rolls out, and back on it before the trip has cleared.
+    const theater = this.game.entities.tryGetSingleton(TripTheater);
     const player = this.game.entities.tryGetSingleton(Player);
-    const parked = !player || player.away === null;
-    this.body.visible = parked;
-    this.cargo.visible = parked;
-    if (!parked) return;
+    const stage = theater?.stage() ?? (player?.away ? "away" : "parked");
+    const onTheLot = stage !== "away";
+    this.body.visible = onTheLot;
+    this.cargo.visible = onTheLot;
+    if (!onTheLot) return;
 
     const rect = truckParkedRect(shopInfo);
     const centerX = cellToPixel((rect.min[0] + rect.max[0]) / 2);
@@ -97,7 +108,10 @@ export class TruckView extends BaseEntity implements Entity {
       tailgateY -
       TRUCK_CANVAS_HEIGHT * TRUCK_TAIL_INSET +
       TRUCK_CANVAS_HEIGHT / 2;
-    this.body.position.set(centerX, centerY);
+    // The trip roll: the truck (cargo riding along) slides down the
+    // driveway on departure and backs up it on arrival.
+    const roll = theater ? driveOffset(theater) : 0;
+    this.body.position.set(centerX, centerY + roll);
 
     const key = [
       `${shopInfo.size[0]}x${shopInfo.size[1]}`,
@@ -184,4 +198,33 @@ function drawCrate(g: Graphics) {
     g.circle(nx * (half - 5), ny * (half - 5), 2);
     g.fill(0x5c4a2e);
   }
+}
+
+/** How far the truck travels before it's off the lot, in pixels. */
+const TRUCK_TRAVEL_PX = 1200;
+
+/** How far down the driveway the truck has rolled, in pixels. */
+function driveOffset(theater: TripTheater): number {
+  const elapsed = theater.stageElapsed();
+  if (theater.stage() === "departing") {
+    // The first stretch is the crank; then the wheels roll, easing in.
+    const p = clamp01(
+      (elapsed - TRUCK_ROLL_OUT_SECONDS) /
+        (TRUCK_DEPART_SECONDS - TRUCK_ROLL_OUT_SECONDS),
+    );
+    return p * p * TRUCK_TRAVEL_PX;
+  }
+  if (theater.stage() === "arriving") {
+    // Backing in: fast off the street, settling gently into the spot.
+    const p = clamp01(
+      elapsed / Math.min(TRUCK_ROLL_IN_SECONDS, TRUCK_ARRIVE_SECONDS),
+    );
+    const eased = 1 - Math.pow(1 - p, 3);
+    return (1 - eased) * TRUCK_TRAVEL_PX;
+  }
+  return 0;
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }

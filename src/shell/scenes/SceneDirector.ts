@@ -5,6 +5,7 @@ import { on } from "../../core/entity/handler";
 import { EnvironmentView } from "../../views/EnvironmentView";
 import { ShellStore } from "../ShellStore";
 import { StoreSceneRoot } from "./StoreSceneRoot";
+import { TripTheater } from "./TripTheater";
 import {
   chargeDriveHome,
   completeDriveHome,
@@ -32,9 +33,10 @@ import {
  * before clearing `away`; commands never advance the sim, so the
  * ordering is preserved by waiting).
  *
- * The departure/arrival theater (truck rolls, the dip to black) is the
- * phase-6 overlay work; until it lands the swap is immediate, which is
- * exactly the old shell's E2E-build behavior.
+ * The departure holds the swap: while the truck is still rolling down
+ * the driveway the shop stays on screen (TripTheater), and the
+ * destination arrives with the black. Coming home the screen is already
+ * black, so the swap happens the moment `away` clears.
  */
 export class SceneDirector extends BaseEntity implements Entity {
   id = "sceneDirector";
@@ -63,6 +65,10 @@ export class SceneDirector extends BaseEntity implements Entity {
     }
 
     if (!game.renderer) return;
+    // The truck is still on the lot until the theater says it's gone.
+    if (game.entities.tryGetSingleton(TripTheater)?.stage() === "departing") {
+      return;
+    }
     const venue = currentVenue(game);
     // "Does the world need drawing" is one probe per venue: a save
     // load's clearScene strips the Level-persistence scenery either way.

@@ -17,6 +17,7 @@ import { BenchPryView } from "./shell/scenes/bench/BenchPryView";
 import { BenchSawView } from "./shell/scenes/bench/BenchSawView";
 import { BenchStrokeView } from "./shell/scenes/bench/BenchStrokeView";
 import { SceneDirector } from "./shell/scenes/SceneDirector";
+import { TripTheater } from "./shell/scenes/TripTheater";
 import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
@@ -53,6 +54,7 @@ async function main() {
   // The venue's views — the shop's scenery, or the store's scene — are
   // the SceneDirector's to spawn and swap (phase 6's one-scene-at-a-time
   // contract); nothing scenery-shaped is added here directly.
+  game.addEntity(new TripTheater());
   game.addEntity(new SceneDirector());
   // The bench dive: its state, and the zoomed surface over the world.
   game.addEntity(new BenchDive());

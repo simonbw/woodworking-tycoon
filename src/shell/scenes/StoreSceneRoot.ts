@@ -46,6 +46,7 @@ import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
 import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
+import { TripTheater } from "./TripTheater";
 import { StoreActorsView } from "./store-views/StoreActorsView";
 import { StoreDaylightView } from "./store-views/StoreDaylightView";
 import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
@@ -235,7 +236,15 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     if (!checkout(this.game)) return;
     this.checkoutOpen = false;
     this.bump();
-    this.game.entities.getSingleton(SceneDirector).requestDriveHome();
+    // Dip to black over the store, then charge the drive: the
+    // destination is what fades out, not the shop (TripTheater).
+    const director = this.game.entities.getSingleton(SceneDirector);
+    const theater = this.game.entities.tryGetSingleton(TripTheater);
+    if (theater) {
+      theater.headHome(() => director.requestDriveHome());
+    } else {
+      director.requestDriveHome();
+    }
   }
 
   /**
@@ -253,7 +262,15 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     }
     this.armedLeave = false;
     this.bump();
-    this.game.entities.getSingleton(SceneDirector).requestDriveHome();
+    // Dip to black over the store, then charge the drive: the
+    // destination is what fades out, not the shop (TripTheater).
+    const director = this.game.entities.getSingleton(SceneDirector);
+    const theater = this.game.entities.tryGetSingleton(TripTheater);
+    if (theater) {
+      theater.headHome(() => director.requestDriveHome());
+    } else {
+      director.requestDriveHome();
+    }
   }
 
   private bump(): void {
