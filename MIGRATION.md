@@ -354,8 +354,13 @@ transform tests as it lands.
         the last one commits the whole build, which lands exactly where
         the parts were lying. Covered in the journey spec: pull Build
         Shelf, seat both parts (one tipped on edge), drive the screws
-- [ ] **Gate:** bench spec passes; all modes at parity (**human playtest
-      gate** for feel)
+- [x] **Gate (automated half):** the bench journey passes — pry, stroke,
+      saw, arrange, glue-up, and a build off a drawing, all through the
+      real surfaces (`tests/engine-shell.spec.ts`, "works wood at the
+      bench"); full suite green (9 tests) with `npm run tsc` and
+      `npm run test:unit`
+- [ ] **Gate (human playtest):** all four modes at parity for _feel_ —
+      flagged to the user, see the Log
 
 ## Phase 8 — Cutover [size S]
 
@@ -784,3 +789,14 @@ transform tests as it lands.
   rail's mount/unmount half (the ✕ and ghosted hooks) is still on the
   station sheet, the under-bench panel isn't ported, and work foley plus
   the saw's voice wait for phase 8's sound layer.
+- 2026-08-16 — Phase 7's automated gate is green: the engine-shell spec
+  now carries two journeys — the world (boot, walking, floor keys, a
+  shopping trip, the first sale, reload) and the bench (all four modes)
+  — and the whole suite passes. Two test-harness deviations came out of
+  it, both about this machine rather than the game: the engine-shell
+  file runs its two journeys serially (a headless renderer with no GPU
+  is the slowest thing in the suite, and two of these journeys starve
+  each other), and the suite's worker count drops from 80% to 50% of
+  cores for the same reason. Both come back up at cutover, when these
+  journeys split across the seven canonical specs. **The human playtest
+  gate for bench feel is open** — see the phase-7 checklist.

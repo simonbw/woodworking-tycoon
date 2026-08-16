@@ -52,10 +52,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Default is half the cores, which was right when each worker pegged a
-  // core rendering. With the render loop capped (see webServer below) a
-  // worker is mostly idle, so more of them pack the suite tighter.
-  workers: process.env.CI ? 1 : '80%',
+  // Half the cores. The render loop is capped (see webServer below), so
+  // a worker spends most of its time idle — but the engine shell's two
+  // journeys drive the pointer for minutes at a stretch, and three of
+  // those on one machine starve each other's frames until waits that are
+  // generous in a real browser start timing out. This comes back up when
+  // the cutover splits those journeys across the canonical specs.
+  workers: process.env.CI ? 1 : '50%',
   reporter: 'list',
   outputDir,
   globalTeardown: './tests/global-teardown.ts',
