@@ -5,19 +5,14 @@ import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
 import {
+  dwellGain,
+  strokeGain,
+} from "../../../components/bench-view/stageMath";
+import { GroupPiece } from "../../../game/bench-work/bench-group";
+import {
   benchPointInFrame,
   framePointOnBench,
 } from "../../../game/bench-work/bench-layout";
-import {
-  groupPieces,
-  GroupPiece,
-  placementInFrame,
-} from "../../../game/bench-work/bench-group";
-import {
-  benchGroupWork,
-  StrokeScript,
-} from "../../../game/bench-work/workpiece";
-import { benchPlacementFor } from "../../../game/bench-work/bench-layout";
 import {
   CoverageGrid,
   coverageComplete,
@@ -25,14 +20,13 @@ import {
   makeCoverageGrid,
   stampStroke,
 } from "../../../game/bench-work/coverage";
-import {
-  dwellGain,
-  strokeGain,
-} from "../../../components/bench-view/stageMath";
-import { placedPieceSize } from "../../../game/bench-work/workpiece";
-import { Machine, machineKey } from "../../../game/Machine";
 import { toolOperationFor } from "../../../game/bench-work/tool-work";
-import { Operation } from "../../../game/Machine";
+import {
+  placedPieceSize,
+  StrokeScript,
+} from "../../../game/bench-work/workpiece";
+import { Machine, machineKey, Operation } from "../../../game/Machine";
+import { gatherBenchPieces } from "../../../sim/commands/bench-commands";
 import {
   finishAttendedWork,
   operateMachine,
@@ -40,7 +34,15 @@ import {
 import { projectGameState } from "../../../sim/projection";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
-import { benchStage, openBenchGroup, stagePointer } from "./benchStage";
+import {
+  benchStage,
+  benchWork,
+  openBenchGroup,
+  PieceSpot,
+  pieceUnder,
+  stagePointer,
+  workpieceSpot,
+} from "./benchStage";
 
 /**
  * Stroke work — sanding, planing, and spreading finish, the second of
@@ -52,8 +54,9 @@ import { benchStage, openBenchGroup, stagePointer } from "./benchStage";
  * Pressing claims the piece (`operateMachine` with the tool claim, the
  * old BenchToolClaim path) and dragging lays coverage down through the
  * shared grid; the mask over the piece is what "how far along" looks
- * like. Coverage is ephemeral (decision 3): let go and walk away, and
- * the pass starts over — the commit only fires when the grid fills, and
+ * like. Coverage is ephemeral (decision 3): it lives as long as the
+ * player is leaned over the bench, and standing up (or reloading)
+ * starts the pass over — the commit only fires when the grid fills, and
  * that's `finishAttendedWork`.
  *
  * A powered tool keeps cutting where it rests (the orbit sander's
@@ -62,20 +65,19 @@ import { benchStage, openBenchGroup, stagePointer } from "./benchStage";
 
 const MASK = 0xf0e6d2;
 
+/** How far the hand must travel before it counts as a stroke, in
+ * inches — the old surface's threshold, so a resting hand on an
+ * unpowered tool lays nothing down. */
+const STROKE_MIN_TRAVEL_IN = 0.05;
+
 interface StrokePass {
   readonly pieceId: string;
   readonly operation: Operation;
   readonly grid: CoverageGrid;
-  /** The last pointer position in piece-local inches. */
-  lastX: number;
-  lastY: number;
-}
-
-/** Where the workpiece lies and how big it is, in frame inches. */
-interface WorkpieceSpot {
-  readonly id: string;
-  readonly placement: ReturnType<typeof benchPlacementFor>;
-  readonly size: { widthIn: number; heightIn: number };
+  /** Where the tool last was, in piece-local inches — null between
+   * strokes (the hand lifted, or off the piece), so the next touch
+   * starts a fresh segment instead of sweeping across the gap. */
+  last: { xIn: number; yIn: number } | null;
 }
 
 export class BenchStrokeView extends BaseEntity implements Entity {
@@ -109,37 +111,25 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     return stage ? stagePointer(this.game, stage.fit) : null;
   }
 
-  /** The piece under the pointer, nearest-first by its own footprint. */
+  /** The piece under the pointer, top of the stack first. */
   private pieceUnder(xIn: number, yIn: number): GroupPiece | null {
     const group = openBenchGroup(this.game)?.group;
-    if (!group) return null;
-    // Last drawn wins, so the piece on top of a stack takes the stroke.
-    const pieces = [...groupPieces(group)].reverse();
-    for (const piece of pieces) {
-      if (piece.material.type === "pallet") continue;
-      const size = placedPieceSize(piece.material, piece.placement);
-      const local = benchPointInFrame(piece.placement, size, xIn, yIn);
-      if (
-        local.xIn >= 0 &&
-        local.yIn >= 0 &&
-        local.xIn <= size.widthIn &&
-        local.yIn <= size.heightIn
-      ) {
-        return piece;
-      }
-    }
-    return null;
+    return group ? pieceUnder(group, xIn, yIn) : null;
   }
 
-  /** The stroke this held tool offers on that piece, or null. */
+  /**
+   * The stroke this held tool offers on that piece, or null. The tool
+   * hangs on the bench the player opened, so that's the machine whose
+   * operations it can run — even when the wood is lying on the table
+   * next to it.
+   */
   private strokeOffer(piece: GroupPiece): Operation | null {
     const dive = this.dive();
-    const bench = dive?.openBench();
-    if (!dive?.heldTool || !bench) return null;
-    const gs = projectGameState(this.game);
+    const opened = openBenchGroup(this.game)?.opened;
+    if (!dive?.heldTool || !opened) return null;
     const operation = toolOperationFor(
-      piece.member.machine,
-      gs.progression,
+      opened,
+      projectGameState(this.game).progression,
       dive.heldTool,
       piece.material,
       piece.placement,
@@ -153,15 +143,8 @@ export class BenchStrokeView extends BaseEntity implements Entity {
    * script is what knows where the work actually is (workpiece.ts).
    */
   private strokeScript(): { machine: Machine; script: StrokeScript } | null {
-    const stage = openBenchGroup(this.game);
-    if (!stage) return null;
-    const gs = projectGameState(this.game);
-    const work = benchGroupWork(
-      stage.group.members,
-      stage.opened,
-      gs.progression,
-    );
-    return work.script?.kind === "stroke"
+    const work = benchWork(this.game);
+    return work?.script.kind === "stroke"
       ? { machine: work.machine, script: work.script }
       : null;
   }
@@ -170,20 +153,9 @@ export class BenchStrokeView extends BaseEntity implements Entity {
   private workpieceSpot(
     machine: Machine,
     script: StrokeScript,
-  ): WorkpieceSpot | null {
+  ): PieceSpot | null {
     const group = openBenchGroup(this.game)?.group;
-    if (!group) return null;
-    const key = machineKey(machine.state);
-    const member = group.members.find(
-      (candidate) => machineKey(candidate.machine.state) === key,
-    );
-    if (!member) return null;
-    const onMember = benchPlacementFor(machine, script.workpiece);
-    return {
-      id: script.workpiece.id,
-      placement: placementInFrame(group, member, onMember),
-      size: placedPieceSize(script.workpiece, onMember),
-    };
+    return group ? workpieceSpot(group, machine, script.workpiece) : null;
   }
 
   @on("tick")
@@ -197,13 +169,12 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     const at = this.pointerInches();
     const down = this.game.io.lmb;
 
+    // The pass outlives letting go: the mask is the work done so far on
+    // this piece, and the hand comes off it between strokes. Lifting
+    // only breaks the segment, so the next touch doesn't sweep across
+    // the gap.
     if (!down) {
-      // Letting go abandons the pass — nothing was granted (decision 4:
-      // work that only transforms the workpiece commits atomically).
-      if (this.pass) {
-        this.pass = null;
-        this.game.entities.tryGetSingleton(ShellStore)?.bump();
-      }
+      if (this.pass) this.pass.last = null;
       return;
     }
     if (!at) return;
@@ -211,10 +182,10 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     // Start a pass on the press: the claim takes exactly the piece the
     // tool is over (tool-first), and the operation swallows it.
     if (!this.pass) {
-      // A pass already running on this bench (the player let go and came
-      // back to it) resumes rather than re-claiming: the operation still
-      // holds the workpiece, and the mask restarts from zero — coverage
-      // is ephemeral (decision 3).
+      // A pass already running on this bench (the player stood up and
+      // came back to it) resumes rather than re-claiming: the operation
+      // still holds the workpiece, and the mask restarts from zero —
+      // coverage is ephemeral (decision 3).
       const running = this.strokeScript();
       if (running?.script.started) {
         const spot = this.workpieceSpot(running.machine, running.script);
@@ -237,8 +208,7 @@ export class BenchStrokeView extends BaseEntity implements Entity {
           pieceId: spot.id,
           operation: running.script.operation,
           grid: makeCoverageGrid(spot.size.widthIn, spot.size.heightIn),
-          lastX: local.xIn,
-          lastY: local.yIn,
+          last: local,
         };
         this.game.entities.tryGetSingleton(ShellStore)?.bump();
         return;
@@ -247,6 +217,11 @@ export class BenchStrokeView extends BaseEntity implements Entity {
       if (!piece) return;
       const operation = this.strokeOffer(piece);
       if (!operation) return;
+      // The wood may be lying on the next table over; the tool and the
+      // operation are this bench's, so slide it across first.
+      if (machineKey(piece.member.machine.state) !== machineKey(bench.state)) {
+        gatherBenchPieces(this.game, bench, [piece.material.id]);
+      }
       if (
         !operateMachine(this.game, bench, {
           operationId: operation.id,
@@ -256,13 +231,11 @@ export class BenchStrokeView extends BaseEntity implements Entity {
         return;
       }
       const size = placedPieceSize(piece.material, piece.placement);
-      const local = benchPointInFrame(piece.placement, size, at.xIn, at.yIn);
       this.pass = {
         pieceId: piece.material.id,
         operation,
         grid: makeCoverageGrid(size.widthIn, size.heightIn),
-        lastX: local.xIn,
-        lastY: local.yIn,
+        last: benchPointInFrame(piece.placement, size, at.xIn, at.yIn),
       };
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
       return;
@@ -282,26 +255,38 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     const interaction = this.pass.operation.interaction;
     if (interaction?.kind !== "stroke") return;
     const radiusIn = interaction.brushWidthIn / 2;
-    const distance = Math.hypot(
-      local.xIn - this.pass.lastX,
-      local.yIn - this.pass.lastY,
-    );
+    // A brush's width off the piece still works its edge; further out
+    // the tool is off the wood, and the segment breaks there.
+    if (
+      local.xIn < -radiusIn ||
+      local.yIn < -radiusIn ||
+      local.xIn > spot.size.widthIn + radiusIn ||
+      local.yIn > spot.size.heightIn + radiusIn
+    ) {
+      this.pass.last = null;
+      return;
+    }
+    const last = this.pass.last;
+    if (!last) {
+      this.pass.last = local;
+      return;
+    }
+    const distance = Math.hypot(local.xIn - last.xIn, local.yIn - last.yIn);
     const dtMs = dt * 1000;
     // The same gain math the old surface used, so the tool tiers feel
     // the way they were tuned: a slow deliberate stroke saturates as it
     // goes, a fast scrub spreads the same work thin.
-    if (distance > 1e-4) {
+    if (distance >= STROKE_MIN_TRAVEL_IN) {
       stampStroke(
         this.pass.grid,
-        this.pass.lastX,
-        this.pass.lastY,
+        last.xIn,
+        last.yIn,
         local.xIn,
         local.yIn,
         radiusIn,
         strokeGain(interaction.coveragePerSecond, radiusIn, distance, dtMs),
       );
-      this.pass.lastX = local.xIn;
-      this.pass.lastY = local.yIn;
+      this.pass.last = local;
     } else if (interaction.powered) {
       // A powered pad keeps cutting the spot it rests on; a block only
       // cuts while it moves.

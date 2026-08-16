@@ -4,8 +4,25 @@ import {
   StageRect,
 } from "../../../components/bench-view/stageMath";
 import { Game } from "../../../core/Game";
-import { BenchGroup, benchGroupAt } from "../../../game/bench-work/bench-group";
+import {
+  BenchPlacement,
+  benchPlacementFor,
+  benchPointInFrame,
+} from "../../../game/bench-work/bench-layout";
+import {
+  BenchGroup,
+  benchGroupAt,
+  GroupPiece,
+  groupPieces,
+  placementInFrame,
+} from "../../../game/bench-work/bench-group";
+import {
+  BenchScript,
+  benchGroupWork,
+  placedPieceSize,
+} from "../../../game/bench-work/workpiece";
 import { getMachines, Machine, machineKey } from "../../../game/Machine";
+import { MaterialInstance } from "../../../game/Materials";
 import { projectGameState } from "../../../sim/projection";
 import { BenchDive } from "./BenchDive";
 
@@ -76,4 +93,77 @@ export function stagePointer(
     xIn: (px - fit.originX) / fit.pxPerIn,
     yIn: (py - fit.originY) / fit.pxPerIn,
   };
+}
+
+/**
+ * What the run is doing right now: the script the pure engine reads out
+ * of the tables' state, and which table is running it. Tables pushed
+ * together work as one bench, so the work may belong to the neighbour
+ * of the one the player opened.
+ */
+export function benchWork(
+  game: Game,
+): { machine: Machine; script: BenchScript } | null {
+  const run = openBenchGroup(game);
+  if (!run) return null;
+  const work = benchGroupWork(
+    run.group.members,
+    run.opened,
+    projectGameState(game).progression,
+  );
+  return work.script ? { machine: work.machine, script: work.script } : null;
+}
+
+/** Where a piece lies and how big it is, in the run's frame. */
+export interface PieceSpot {
+  readonly id: string;
+  readonly placement: BenchPlacement;
+  readonly size: { widthIn: number; heightIn: number };
+}
+
+/**
+ * Where the piece a running operation holds lies. It left the pile when
+ * the operation claimed it (`processingMaterials`), so the group's own
+ * piece list no longer carries it — the machine running the work and
+ * its seat in the frame are what's left to go on.
+ */
+export function workpieceSpot(
+  group: BenchGroup,
+  machine: Machine,
+  workpiece: MaterialInstance,
+): PieceSpot | null {
+  const key = machineKey(machine.state);
+  const member = group.members.find(
+    (candidate) => machineKey(candidate.machine.state) === key,
+  );
+  if (!member) return null;
+  const onMember = benchPlacementFor(machine, workpiece);
+  return {
+    id: workpiece.id,
+    placement: placementInFrame(group, member, onMember),
+    size: placedPieceSize(workpiece, onMember),
+  };
+}
+
+/** The piece under a point in the run's frame, top of the stack first. */
+export function pieceUnder(
+  group: BenchGroup,
+  xIn: number,
+  yIn: number,
+): GroupPiece | null {
+  // Last drawn wins, so the piece on top of a stack takes the gesture.
+  for (const piece of [...groupPieces(group)].reverse()) {
+    if (piece.material.type === "pallet") continue;
+    const size = placedPieceSize(piece.material, piece.placement);
+    const local = benchPointInFrame(piece.placement, size, xIn, yIn);
+    if (
+      local.xIn >= 0 &&
+      local.yIn >= 0 &&
+      local.xIn <= size.widthIn &&
+      local.yIn <= size.heightIn
+    ) {
+      return piece;
+    }
+  }
+  return null;
 }

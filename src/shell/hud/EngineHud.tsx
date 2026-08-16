@@ -8,6 +8,7 @@ import { FloorSheet } from "./overlay/FloorSheet";
 import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
+import { BenchStatusLine } from "./bench/BenchStatusLine";
 import { BenchToolRail } from "./bench/BenchToolRail";
 import { useBenchDiveActive } from "./bench/useBenchDive";
 import { StoreScreen } from "./store/StoreScreen";
@@ -105,8 +106,10 @@ export const EngineHud: React.FC = () => {
           own null-gate keeps it off-screen at home. */}
       <StoreScreen />
 
-      {/* Leaned over a bench: the tool rail is the mode selector. */}
+      {/* Leaned over a bench: the tool rail is the mode selector above,
+          the line naming the next move below. */}
       <BenchToolRail />
+      <BenchStatusLine />
 
       {/* The away trips that cover the screen (each gates on its own
           `player.away` kind): the lumberyard's storefront, the

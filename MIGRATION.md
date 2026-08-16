@@ -326,7 +326,14 @@ transform tests as it lands.
         `finishAttendedWork`. Coverage is ephemeral, so letting go
         abandons the pass and coming back restarts the mask. Covered in
         the journey spec: the powered sander carries a board to `sanded`
-  - [ ] tool-first work (saw)
+  - [x] tool-first work (saw) — the pencil line follows the hand along
+        the half-foot detents (R swings the angle stop), the press marks
+        the cut and claims the board, and push–pull strokes along the
+        line deepen the kerf until the board parts. The claimed board
+        draws in two halves seamed under the line so the offcut sags
+        open over the last strokes, and each stroke spills sawdust at
+        the crossing. Covered in the journey spec: a 12" board becomes
+        two 6" halves
   - [ ] glue-ups (clamps-first)
   - [ ] blueprint assembly
 - [ ] **Gate:** bench spec passes; all modes at parity (**human playtest
@@ -718,3 +725,15 @@ transform tests as it lands.
   the coach's column rises over the view, the supplies tally stays up
   for the salvage flight. Test seams: `piecePoints()` and `nailPoints()`
   (where the pieces and rings are on screen) plus `strokeProgress()`.
+- 2026-08-16 — Phase 7 saw gesture landed, with the bench's status line
+  (the instruction and key hints under the top, ported for the gestures
+  that exist so far). Two parity fixes came with it: the claimed
+  workpiece is drawn again while a job runs (it leaves the pile when the
+  operation takes it, and nothing was drawing it — the sander's board
+  vanished mid-pass), and a stroke pass now survives letting go of the
+  button, restarting only when the player stands up, which is what the
+  old surface did. Pieces also draw flipped now (the deferred
+  un-mirrored note from the dive skeleton). Deviations still open: no
+  lean-in tween, the rail's mount/unmount half is still on the station
+  sheet, no work foley (sounds are phase 8), and the saw's voice
+  (handSawSynth) waits with them.

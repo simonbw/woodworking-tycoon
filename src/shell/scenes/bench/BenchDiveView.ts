@@ -4,12 +4,15 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
+import { StageFit } from "../../../components/bench-view/stageMath";
 import { groupPieces } from "../../../game/bench-work/bench-group";
+import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
+import { MaterialInstance } from "../../../game/Materials";
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
-import { benchStage } from "./benchStage";
+import { benchStage, benchWork, workpieceSpot } from "./benchStage";
 
 /**
  * The zoomed look at the bench — phase 7's scene skeleton, drawn on the
@@ -48,6 +51,11 @@ export class BenchDiveView extends BaseEntity implements Entity {
     y: number;
     widthIn: number;
     heightIn: number;
+    /** How the piece is turned on the top — a gesture that runs along
+     * one of its axes (the saw's line) needs the heading, not just the
+     * middle. */
+    angleDeg: number;
+    pxPerIn: number;
   }> {
     const stage = benchStage(this.game);
     if (!stage) return [];
@@ -60,6 +68,8 @@ export class BenchDiveView extends BaseEntity implements Entity {
         y: fit.originY + piece.placement.yIn * fit.pxPerIn,
         widthIn: size.widthIn,
         heightIn: size.heightIn,
+        angleDeg: piece.placement.angleDeg,
+        pxPerIn: fit.pxPerIn,
       };
     });
   }
@@ -115,23 +125,45 @@ export class BenchDiveView extends BaseEntity implements Entity {
     // Everything lying on the tops, where the layout says it lies.
     this.pieces.removeChildren().forEach((child) => child.destroy());
     for (const piece of groupPieces(group)) {
-      const holder = new Container();
-      const size = placedPieceSize(piece.material, piece.placement);
-      const sprite = createMaterialSprite(piece.material, {
-        onEdge: piece.placement.onEdge,
-        onEnd: piece.placement.onEnd,
-      });
-      sprite.scale.set(fit.spriteScale);
-      holder.addChild(sprite);
-      holder.position.set(
-        fit.originX + piece.placement.xIn * fit.pxPerIn,
-        fit.originY + piece.placement.yIn * fit.pxPerIn,
+      this.pieces.addChild(
+        pieceHolder(piece.material, piece.placement, stage.fit),
       );
-      holder.angle = piece.placement.angleDeg;
-      // placedPieceSize is the hit footprint; the sprite draws centered
-      // already, so size is only consulted by the gesture surfaces.
-      void size;
-      this.pieces.addChild(holder);
+    }
+
+    // The piece a running job holds left the pile when the operation
+    // claimed it, so the group no longer lists it — but it's still lying
+    // right there under the hands. The saw draws its own board (in two
+    // halves, so the offcut can sag open); everything else draws here.
+    const work = benchWork(game);
+    const held =
+      work?.script.kind === "stroke" ? work.script.workpiece : undefined;
+    if (work && held) {
+      const spot = workpieceSpot(group, work.machine, held);
+      if (spot) {
+        this.pieces.addChild(pieceHolder(held, spot.placement, stage.fit));
+      }
     }
   }
+}
+
+/** One piece, drawn where it lies on the stage. */
+function pieceHolder(
+  material: MaterialInstance,
+  placement: BenchPlacement,
+  fit: StageFit,
+): Container {
+  const holder = new Container();
+  const sprite = createMaterialSprite(material, {
+    onEdge: placement.onEdge,
+    onEnd: placement.onEnd,
+  });
+  sprite.scale.set(fit.spriteScale);
+  holder.addChild(sprite);
+  holder.position.set(
+    fit.originX + placement.xIn * fit.pxPerIn,
+    fit.originY + placement.yIn * fit.pxPerIn,
+  );
+  holder.angle = placement.angleDeg;
+  holder.scale.x = placement.flipped ? -1 : 1;
+  return holder;
 }

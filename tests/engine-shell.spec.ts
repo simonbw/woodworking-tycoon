@@ -25,7 +25,7 @@ test.describe("Engine shell", () => {
     // shares the machine with seven other specs' servers, which more
     // than doubles it. The journey splits across the seven canonical
     // specs at cutover; until then it carries their coverage alone.
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
 
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
@@ -760,6 +760,109 @@ test.describe("Engine shell", () => {
       // commits without the pointer having to travel.
       await expect.poll(surfaces, { timeout: 20_000 }).toContain("sanded");
       await page.mouse.up();
+      await page.keyboard.press("Escape");
+    });
+
+    await test.step("the hand saw marks a line and cuts through it", async () => {
+      // The saw's two halves: the press marks the cut at the detent
+      // under the hand (which claims the board), and push–pull strokes
+      // along the line deepen the kerf until the board parts.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        const save = (window as any).__GET_GAME_STATE__();
+        const ws = save.entities.find(
+          (e: any) =>
+            e.type === "machine" && e.data.machineTypeId === "workspace",
+        );
+        ws.data.tools = ["handSaw"];
+        // The sanded board from the step before is still lying there;
+        // clear the bench so the halves are the only finished work on it.
+        ws.data.outputMaterials = [];
+        // Narrow, thin stock: the kerf budget is the cross-section, so
+        // this parts in a handful of strokes.
+        ws.data.inputMaterials = [
+          {
+            id: "spec-saw-board",
+            type: "board",
+            species: "pine",
+            length: 12,
+            width: 2,
+            thickness: 2,
+            surface: "rough",
+          },
+        ];
+        save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      await page.keyboard.press("Tab");
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                (window as any).game.entities.getById("benchDive").openBenchKey,
+            ),
+          { timeout: 10_000 },
+        )
+        .not.toBeNull();
+      await page.getByTestId("bench-tool-handSaw").click();
+
+      const board = await page.evaluate(() => {
+        const view = [...(window as any).game.entities.all].find(
+          (e: any) => typeof e.piecePoints === "function",
+        );
+        return view.piecePoints().find((p: any) => p.id === "spec-saw-board");
+      });
+      expect(board).toBeTruthy();
+
+      // The line runs across the board's width, so the strokes run
+      // along the piece's own heading.
+      const radians = (board.angleDeg * Math.PI) / 180;
+      const reach = board.pxPerIn * 0.8;
+      const along = {
+        x: Math.cos(radians) * reach,
+        y: Math.sin(radians) * reach,
+      };
+
+      await page.mouse.move(board.x, board.y);
+      await page.mouse.down();
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const bench = (window as any).game.entities
+              .getById("benchDive")
+              .openBench();
+            return bench.state.operationProgress.status;
+          }),
+        )
+        .toBe("inProgress");
+
+      const halves = () =>
+        page.evaluate(() => {
+          const bench = (window as any).game.entities
+            .getById("benchDive")
+            .openBench();
+          return bench.state.outputMaterials.length;
+        });
+      for (let stroke = 0; stroke < 40 && (await halves()) === 0; stroke++) {
+        await page.mouse.move(board.x - along.x, board.y - along.y);
+        await page.mouse.move(board.x + along.x, board.y + along.y);
+      }
+      await page.mouse.up();
+      // Cut through: one board became two, each half the marked length.
+      const lengths = await page.evaluate(() => {
+        const bench = (window as any).game.entities
+          .getById("benchDive")
+          .openBench();
+        return bench.state.outputMaterials.map((m: any) => m.length);
+      });
+      expect(lengths).toEqual([6, 6]);
       await page.keyboard.press("Escape");
     });
 
