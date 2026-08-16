@@ -400,17 +400,20 @@ transform tests as it lands.
       — the reference to check against until the deletion below lands.
       The seven old specs drive `/legacy.html` for the same window;
       `/engine.html` is a redirect so a bookmark still opens the game
-- [ ] Port the seven canonical specs onto the shell at `/` (they still
-      drive `/legacy.html`), folding the engine-shell journeys back into
-      them. Started: the shell's test hooks now speak the shop-state
-      shape the specs are written against (`__GET_GAME_STATE__` reads the
-      projection, `__UPDATE_GAME_STATE__` takes a state or an updater and
-      loads it), the save file has its own pair (`__GET_SAVE__` /
-      `__LOAD_SAVE__`, which the engine-shell spec uses), and the
-      fixtures are on `window` in both shells. What's left is per-spec
-      surface work: the bench's steps read the old station sheet, and the
-      dive answers with its own rail, plan drawer, and under-bench drawer
-      instead
+- [ ] Port the seven canonical specs onto the shell at `/`, folding the
+      engine-shell journeys back into them. Groundwork done: the shell's
+      test hooks speak the shop-state shape the specs are written against
+      (`__GET_GAME_STATE__` reads the projection,
+      `__UPDATE_GAME_STATE__` takes a state or an updater and loads it),
+      the save file has its own pair (`__GET_SAVE__` / `__LOAD_SAVE__`,
+      which the engine-shell spec uses), the fixtures are on `window` in
+      both shells, and the station helpers answer to either surface (the
+      sheet, or the bench's own rail and plan drawer). Ported so far:
+      - [x] `screens.spec.ts`
+      - [ ] `bench.spec.ts` (needs the dive's stage published to the DOM
+            the way the old scene published `bench-work` / `bench-stage`)
+      - [ ] `floor.spec.ts`, `keyboard.spec.ts`, `market.spec.ts`,
+            `milling.spec.ts`, `stations.spec.ts`
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
 - [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
@@ -892,3 +895,12 @@ transform tests as it lands.
   the old station sheet at a bench, where the dive now answers with its
   own chrome. Left pointed at `/legacy.html` until each is ported, so the
   suite stays green (9 tests).
+- 2026-08-16 — First canonical spec ported: `screens.spec.ts` drives the
+  shell at `/` — every overlay, the manual, the journal's disclosure, the
+  pause menu and its preferences across a reload. The station helpers now
+  answer to either surface, so the six specs still on `/legacy.html` keep
+  passing on the same helpers: `openStationSurface` says whether Tab
+  spread a sheet or leaned the player over a bench, `modesOf`/`selectMode`
+  read the plan drawer at a bench and the sheet's index elsewhere,
+  `openStationRacks` finds the racks on whichever chrome carries them,
+  and `closeStationSurface` puts either away. Suite green (9 tests).
