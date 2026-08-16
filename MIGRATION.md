@@ -400,6 +400,17 @@ transform tests as it lands.
       — the reference to check against until the deletion below lands.
       The seven old specs drive `/legacy.html` for the same window;
       `/engine.html` is a redirect so a bookmark still opens the game
+- [ ] Port the seven canonical specs onto the shell at `/` (they still
+      drive `/legacy.html`), folding the engine-shell journeys back into
+      them. Started: the shell's test hooks now speak the shop-state
+      shape the specs are written against (`__GET_GAME_STATE__` reads the
+      projection, `__UPDATE_GAME_STATE__` takes a state or an updater and
+      loads it), the save file has its own pair (`__GET_SAVE__` /
+      `__LOAD_SAVE__`, which the engine-shell spec uses), and the
+      fixtures are on `window` in both shells. What's left is per-spec
+      surface work: the bench's steps read the old station sheet, and the
+      dive answers with its own rail, plan drawer, and under-bench drawer
+      instead
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
 - [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
@@ -872,3 +883,12 @@ transform tests as it lands.
   (its seven specs point there, so the suite stayed green — 9 tests).
   Nothing was deleted: the old shell is still the reference for the two
   open human playtest gates, and it goes in one piece when they pass.
+- 2026-08-16 — Started the spec port with the shell's test surface: reads
+  and writes at `/` now speak `GameState` (projection out, the fixture
+  loader in), the save file moved to its own hook pair, and
+  `tests/fixtures` loads in both shells. A trial run of `screens.spec`
+  against `/` got two thirds of the way through on that alone; the rest
+  of it, and of its six siblings, is surface work — those specs reach for
+  the old station sheet at a bench, where the dive now answers with its
+  own chrome. Left pointed at `/legacy.html` until each is ported, so the
+  suite stays green (9 tests).

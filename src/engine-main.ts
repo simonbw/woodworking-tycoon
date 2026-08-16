@@ -1,6 +1,9 @@
 import { AutoPauser } from "./core/AutoPauser";
 import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";
+import { GameState } from "./game/GameState";
+import { projectGameState } from "./sim/projection";
+import { loadGameState } from "./sim/save/fixture";
 import { loadSaveFile, SaveFile, serializeGame } from "./sim/save/SaveFile";
 import { SaveManager } from "./sim/save/SaveManager";
 import { ShortcutDispatcher } from "./shell/dispatch/ShortcutDispatcher";
@@ -31,6 +34,9 @@ import { SoundView } from "./views/SoundView";
 import { TargetHighlightView } from "./views/TargetHighlightView";
 import { TutorialHighlightView } from "./views/TutorialHighlightView";
 import { registerAllViews } from "./views/register";
+// The shop-state fixtures, on window for the specs and for poking at
+// the world from the console (see tests/fixtures/index.ts).
+import "../tests/fixtures";
 
 /**
  * The engine shell: the entity-based rebuild of the game, served at /.
@@ -112,18 +118,34 @@ async function main() {
  * and replace the world, advance it synchronously, pause it, and throttle
  * rendering (see capRenderRate in WorldScene for why E2E builds cap).
  * Dev/test builds only.
+ *
+ * State reads and writes speak the shop-state shape the specs are
+ * written against — `projectGameState` out, the fixture loader in, the
+ * same two directions the sequence tier's fixtures travel. The save
+ * file, which is a different shape (entities and singletons), has its
+ * own pair for the specs that care about what's on disk.
  */
 function installTestHooks(game: Game) {
   if (process.env.NODE_ENV === "production") return;
 
   const hooks = window as unknown as {
-    __GET_GAME_STATE__: () => SaveFile;
-    __UPDATE_GAME_STATE__: (save: SaveFile) => void;
+    __GET_GAME_STATE__: () => GameState;
+    __UPDATE_GAME_STATE__: (
+      next: GameState | ((state: GameState) => GameState),
+    ) => void;
+    __GET_SAVE__: () => SaveFile;
+    __LOAD_SAVE__: (save: SaveFile) => void;
     __ADVANCE_TICKS__: (ticks: number) => void;
     __SET_PAUSED__: (paused: boolean) => void;
   };
-  hooks.__GET_GAME_STATE__ = () => serializeGame(game);
-  hooks.__UPDATE_GAME_STATE__ = (save) => loadSaveFile(game, save);
+  hooks.__GET_GAME_STATE__ = () => projectGameState(game);
+  hooks.__UPDATE_GAME_STATE__ = (next) =>
+    loadGameState(
+      game,
+      typeof next === "function" ? next(projectGameState(game)) : next,
+    );
+  hooks.__GET_SAVE__ = () => serializeGame(game);
+  hooks.__LOAD_SAVE__ = (save) => loadSaveFile(game, save);
   hooks.__ADVANCE_TICKS__ = (ticks) => game.step(ticks);
   hooks.__SET_PAUSED__ = (paused) => (paused ? game.pause() : game.unpause());
 

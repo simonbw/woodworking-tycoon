@@ -187,7 +187,7 @@ test.describe("Engine shell", () => {
     await test.step("E picks up and F puts down through the dispatcher", async () => {
       // Stage a board on the floor beside the player via the save hooks.
       await page.evaluate(() => {
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         save.singletons.player.position = [6.5, 12.5];
         save.entities.push({
           type: "materialPile",
@@ -205,7 +205,7 @@ test.describe("Engine shell", () => {
             rotation: 0,
           },
         });
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
       const held = async () =>
         page.evaluate(
@@ -297,7 +297,7 @@ test.describe("Engine shell", () => {
     await test.step("the hands strip, supplies panel, and nightfall card read the sim", async () => {
       // Stage a held board and stocked nails via the save hooks.
       await page.evaluate(() => {
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         save.singletons.player.inventory = [
           {
             id: "hud-board",
@@ -310,7 +310,7 @@ test.describe("Engine shell", () => {
           },
         ];
         save.singletons.consumables = { stock: { nails: 8 }, clamps: 0 };
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
       await expect(page.getByTestId("hands-strip")).toContainText("In hand");
       await expect(page.locator("[data-supplies-toggle]")).toBeVisible();
@@ -375,9 +375,9 @@ test.describe("Engine shell", () => {
         const game = (window as any).game;
         game.entities.getById("progression").storeUnlocked = true;
         game.entities.getById("wallet").money += 100;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         save.singletons.player.position = [2.5, 28.5];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
       const moneyBefore = await page.evaluate(
         () => (window as any).game.entities.getById("wallet").money,
@@ -448,12 +448,12 @@ test.describe("Engine shell", () => {
                 ? layout.register
                 : layout.fixtures.find((f: any) => f.display === "racking")
                     .rect;
-          const save = (window as any).__GET_GAME_STATE__();
+          const save = (window as any).__GET_SAVE__();
           save.singletons.player.away.position = [
             Math.floor((rect.min[0] + rect.max[0]) / 2),
             Math.floor(rect.max[1]) + (point === "bay" ? 1 : 0),
           ];
-          (window as any).__UPDATE_GAME_STATE__(save);
+          (window as any).__LOAD_SAVE__(save);
         }, point);
         // The hook reload cleared the scene root; the director respawns
         // it on the next engine tick — a gap only the hooks can create,
@@ -519,7 +519,7 @@ test.describe("Engine shell", () => {
       // from deciding; the shop's first sale skips the coin flip, so the
       // buy is certain (StreetSystem's first-sale rule).
       await page.evaluate(() => {
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         save.singletons.stand = {
           pieces: [
             { id: "spec-shelf", type: "rusticShelf", species: "pallet" },
@@ -536,7 +536,7 @@ test.describe("Engine shell", () => {
             browseTicksLeft: 1,
           },
         });
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       // The street pass runs on sim minutes: hold the wait key until the
@@ -583,9 +583,9 @@ test.describe("Engine shell", () => {
     });
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
-        const first = (window as any).__GET_GAME_STATE__();
-        (window as any).__UPDATE_GAME_STATE__(first);
-        const second = (window as any).__GET_GAME_STATE__();
+        const first = (window as any).__GET_SAVE__();
+        (window as any).__LOAD_SAVE__(first);
+        const second = (window as any).__GET_SAVE__();
         return {
           identical: JSON.stringify(first) === JSON.stringify(second),
           version: first.version,
@@ -626,7 +626,7 @@ test.describe("Engine shell", () => {
       // shop can't tick between load and snapshot, then compare bytes.
       const restored = await page.evaluate(() => {
         (window as any).__SET_PAUSED__(true);
-        return JSON.stringify((window as any).__GET_GAME_STATE__());
+        return JSON.stringify((window as any).__GET_SAVE__());
       });
       expect(restored).toBe(stored);
     });
@@ -662,7 +662,7 @@ test.describe("Engine shell", () => {
             e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         const ws = save.entities.find(
           (e: any) =>
             e.type === "machine" && e.data.machineTypeId === "workspace",
@@ -683,7 +683,7 @@ test.describe("Engine shell", () => {
           },
         ];
         save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       await page.keyboard.press("Tab");
@@ -784,7 +784,7 @@ test.describe("Engine shell", () => {
             e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         const ws = save.entities.find(
           (e: any) =>
             e.type === "machine" && e.data.machineTypeId === "workspace",
@@ -802,7 +802,7 @@ test.describe("Engine shell", () => {
           },
         ];
         save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       await page.keyboard.press("Tab");
@@ -856,7 +856,7 @@ test.describe("Engine shell", () => {
             e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         const ws = save.entities.find(
           (e: any) =>
             e.type === "machine" && e.data.machineTypeId === "workspace",
@@ -879,7 +879,7 @@ test.describe("Engine shell", () => {
           },
         ];
         save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       await page.keyboard.press("Tab");
@@ -959,7 +959,7 @@ test.describe("Engine shell", () => {
             e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         const ws = save.entities.find(
           (e: any) =>
             e.type === "machine" && e.data.machineTypeId === "workspace",
@@ -978,7 +978,7 @@ test.describe("Engine shell", () => {
           },
         ];
         save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       await page.keyboard.press("Tab");
@@ -1058,7 +1058,7 @@ test.describe("Engine shell", () => {
             e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         const ws = save.entities.find(
           (e: any) =>
             e.type === "machine" && e.data.machineTypeId === "workspace",
@@ -1089,7 +1089,7 @@ test.describe("Engine shell", () => {
             "freeformLamination",
           ]),
         ];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       await page.keyboard.press("Tab");
@@ -1182,7 +1182,7 @@ test.describe("Engine shell", () => {
             e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
-        const save = (window as any).__GET_GAME_STATE__();
+        const save = (window as any).__GET_SAVE__();
         const ws = save.entities.find(
           (e: any) =>
             e.type === "machine" && e.data.machineTypeId === "workspace",
@@ -1219,7 +1219,7 @@ test.describe("Engine shell", () => {
             "fineShelving",
           ]),
         ];
-        (window as any).__UPDATE_GAME_STATE__(save);
+        (window as any).__LOAD_SAVE__(save);
       });
 
       await page.keyboard.press("Tab");
