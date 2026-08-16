@@ -413,8 +413,15 @@ transform tests as it lands.
       - [x] `keyboard.spec.ts`
       - [ ] `bench.spec.ts` (needs the dive's stage published to the DOM
             the way the old scene published `bench-work` / `bench-stage`)
-      - [ ] `floor.spec.ts`, `market.spec.ts`, `milling.spec.ts`,
-            `stations.spec.ts`
+      - [ ] `floor.spec.ts` — started: the shop keeps its own save slot
+            key while the old shell is served beside it (the spec's
+            incompatible-save step names it), and the HUD grew the `main`
+            landmark it asserts. Left on `/legacy.html`: the floor
+            sheet's step polls a piece's 1px handle until it stops
+            moving, and on the new canvas it never settles — worth
+            understanding before the spec is changed, since a marker that
+            never holds still is a camera that never lands
+      - [ ] `market.spec.ts`, `milling.spec.ts`, `stations.spec.ts`
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
 - [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
@@ -919,3 +926,10 @@ transform tests as it lands.
   interact shortcut and consumed the key, so the card's own row-accept
   never ran. The card owns E while its rows can run; with full hands E is
   the interact key again and folds it.
+- 2026-08-16 — The HUD has a `main` landmark now (the chrome's one
+  grouping element, `display: contents` so nothing is boxed by it). Found
+  porting `floor.spec.ts`, which is otherwise still on `/legacy.html`:
+  its floor-sheet step waits for a piece's on-screen handle to hold
+  still, and against the new canvas the handle keeps moving. That is a
+  question about the camera rather than the spec, so it stays parked
+  until the next session looks at it.

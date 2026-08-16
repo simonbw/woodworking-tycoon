@@ -396,4 +396,3 @@ const StoreScene: React.FC<{ trip: ShoppingTrip }> = ({ trip }) => {
     </>
   );
 };
-

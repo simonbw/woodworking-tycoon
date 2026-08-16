@@ -62,80 +62,85 @@ export const EngineHud: React.FC = () => {
     // ManualProvider wraps the whole frame (old Main.tsx's nesting) so
     // `useManual` reaches every chip and card that points into the binder.
     <ManualProvider>
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 px-6 pt-6">
-        <NavBar />
-      </div>
+      {/* The page's one landmark, laid over the shop the canvas draws.
+          `contents` so it groups the chrome without boxing it — every
+          piece below is positioned against the window. */}
+      <main className="contents">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 px-6 pt-6">
+          <NavBar />
+        </div>
 
-      {/* The coach's column: the tutorial cards at the top of the
+        {/* The coach's column: the tutorial cards at the top of the
           wrapper, the nightfall note beneath them */}
-      <div
-        className={`absolute left-6 w-80 space-y-3 transition-[top] duration-300 ${
-          benchDive ? "top-16 z-[36]" : "top-6 z-20"
-        }`}
-      >
-        <TutorialCards />
-        <div inert={benchDive} className={`space-y-3 ${chipClass}`}>
-          <NightfallCard />
+        <div
+          className={`absolute left-6 w-80 space-y-3 transition-[top] duration-300 ${
+            benchDive ? "top-16 z-[36]" : "top-6 z-20"
+          }`}
+        >
+          <TutorialCards />
+          <div inert={benchDive} className={`space-y-3 ${chipClass}`}>
+            <NightfallCard />
+          </div>
         </div>
-      </div>
 
-      {/* The ring the guided opening draws around chrome; in-world
+        {/* The ring the guided opening draws around chrome; in-world
           things wear TutorialHighlightView's outline instead. */}
-      <TutorialSpotlightLayer />
+        <TutorialSpotlightLayer />
 
-      {/* pointer-events-none so the full-width strip doesn't eat clicks
+        {/* pointer-events-none so the full-width strip doesn't eat clicks
           meant for what's underneath (the chip re-enables its buttons) */}
-      <div
-        inert={benchDive}
-        className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6 ${chipClass}`}
-      >
-        <div className="pointer-events-auto">
-          <HandsStrip />
+        <div
+          inert={benchDive}
+          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6 ${chipClass}`}
+        >
+          <div className="pointer-events-auto">
+            <HandsStrip />
+          </div>
         </div>
-      </div>
 
-      {/* Deliberately outside the bench-dive fade: salvage pried loose at
+        {/* Deliberately outside the bench-dive fade: salvage pried loose at
           a bench flies to this tally, so it stays up and clickable above
           the bench view. below-top-bar clears the top bar's chip. */}
-      <div className="absolute right-6 below-top-bar z-40">
-        <SuppliesSection />
-      </div>
+        <div className="absolute right-6 below-top-bar z-40">
+          <SuppliesSection />
+        </div>
 
-      {/* The screen-anchored cards: whole-window surfaces, below the top
+        {/* The screen-anchored cards: whole-window surfaces, below the top
           bar's z-40 on purpose so its buttons stay clickable over them. */}
-      <StationSheet />
-      <FloorSheet />
+        <StationSheet />
+        <FloorSheet />
 
-      {/* The walkable store's chrome (cart corner + receipt card); its
+        {/* The walkable store's chrome (cart corner + receipt card); its
           own null-gate keeps it off-screen at home. */}
-      <StoreScreen />
+        <StoreScreen />
 
-      {/* Leaned over a bench: the tool rail is the mode selector above,
+        {/* Leaned over a bench: the tool rail is the mode selector above,
           the line naming the next move below. */}
-      <BenchToolRail />
-      <BenchStatusLine />
-      <BenchPlanCorner />
-      <UnderBenchPanel />
+        <BenchToolRail />
+        <BenchStatusLine />
+        <BenchPlanCorner />
+        <UnderBenchPanel />
 
-      {/* The away trips that cover the screen (each gates on its own
+        {/* The away trips that cover the screen (each gates on its own
           `player.away` kind): the lumberyard's storefront, the
           scavenging circuit, and the night between days. The wrapper
           re-enables pointer events under HudRoot's inert sheet (the
           same seam the manual's modal crosses), without a box of its
           own. */}
-      <div className="pointer-events-auto contents">
-        <TripDestinations />
-      </div>
+        <div className="pointer-events-auto contents">
+          <TripDestinations />
+        </div>
 
-      {/* The sale celebration, above everything (z-60): coins and the
+        {/* The sale celebration, above everything (z-60): coins and the
           star fly to the top bar's readouts. */}
-      <RewardFlightLayer />
+        <RewardFlightLayer />
 
-      {/* The trip's black, above everything it covers. */}
-      <TripFade />
+        {/* The trip's black, above everything it covers. */}
+        <TripFade />
 
-      {/* Headless: elevator music while the wait key is held down. */}
-      <HoldMusicLayer />
+        {/* Headless: elevator music while the wait key is held down. */}
+        <HoldMusicLayer />
+      </main>
     </ManualProvider>
   );
 };
