@@ -9,6 +9,16 @@ import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { Player } from "../../../sim/entities/Player";
 import { ShellStore } from "../../ShellStore";
 
+/** How long the lean-in takes, each way. */
+const DIVE_SECONDS = 0.65;
+
+/** Motion the player has asked not to see is pinned, not played. */
+function reducedMotion(): boolean {
+  return (
+    globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
+  );
+}
+
 /**
  * Which bench the player is leaned over (migration phase 7) — the old
  * benchSceneSlot's open/closed half as a shell entity. Tab at a
@@ -26,6 +36,22 @@ export class BenchDive extends BaseEntity implements Entity {
 
   /** machineKey of the opened bench, or null on the shop floor. */
   openBenchKey: string | null = null;
+
+  /**
+   * The bench the view is still rolling back off, once the player has
+   * stood up: the gestures stop the moment `openBenchKey` clears, but
+   * the picture keeps the bench until the lean-in has run backwards.
+   */
+  closingKey: string | null = null;
+
+  /**
+   * How far the lean-in has run, 0..1. Opening a bench doesn't cut to
+   * it — the view eases in from the bench's own footprint on the floor
+   * — and standing up runs the same ramp backwards. Reduced motion pins
+   * it, and nothing on the surface answers the pointer until it lands
+   * (the old view's `settled`).
+   */
+  dive = 0;
 
   /**
    * The tool in hand — the bench's mode selector (docs/bench-work.md
@@ -50,13 +76,24 @@ export class BenchDive extends BaseEntity implements Entity {
   prying: { nail: PalletNail; secondsLeft: number } | null = null;
 
   open(bench: MachineEntity): void {
-    this.openBenchKey = machineKey(bench.state);
+    const key = machineKey(bench.state);
+    // Re-opening the bench being rolled back off just re-leans in from
+    // wherever the ramp is; a different bench starts its own dive.
+    if (this.closingKey !== null && this.closingKey !== key) this.dive = 0;
+    this.openBenchKey = key;
+    this.closingKey = null;
+    if (reducedMotion()) this.dive = 1;
     this.bump();
   }
 
   close(): void {
     if (this.openBenchKey === null) return;
+    this.closingKey = this.openBenchKey;
     this.openBenchKey = null;
+    if (reducedMotion()) {
+      this.dive = 0;
+      this.closingKey = null;
+    }
     // Standing up empties the hands: the tool goes back on its rail
     // and the clamp and bottle go back on the rack, as the old view's
     // unmount did.
@@ -111,11 +148,27 @@ export class BenchDive extends BaseEntity implements Entity {
     this.setHolding(null);
   }
 
+  /** Whether the lean-in has landed: until it does, the surface is a
+   * picture in motion and nothing on it answers the pointer. */
+  settled(): boolean {
+    return this.openBenchKey !== null && this.dive >= 1;
+  }
+
   /** The opened bench's live entity, or null once it's out of reach. */
   openBench(): MachineEntity | null {
-    if (this.openBenchKey === null) return null;
+    return this.benchFor(this.openBenchKey);
+  }
+
+  /** The bench the view is drawing — the open one, or the one still
+   * rolling back off the screen. */
+  displayedBench(): MachineEntity | null {
+    return this.benchFor(this.openBenchKey ?? this.closingKey);
+  }
+
+  private benchFor(key: string | null): MachineEntity | null {
+    if (key === null) return null;
     for (const machine of this.game.entities.byConstructor(MachineEntity)) {
-      if (machineKey(machine.state) === this.openBenchKey) {
+      if (machineKey(machine.state) === key) {
         return machine;
       }
     }
@@ -124,6 +177,18 @@ export class BenchDive extends BaseEntity implements Entity {
 
   @on("tick")
   onTick(dt: number) {
+    // The lean-in runs on real time, like the truck's roll: forward
+    // while a bench is open, backwards once the player stands up.
+    const target = this.openBenchKey === null ? 0 : 1;
+    if (this.dive !== target) {
+      const step = dt / DIVE_SECONDS;
+      this.dive =
+        target > this.dive
+          ? Math.min(1, this.dive + step)
+          : Math.max(0, this.dive - step);
+      if (this.dive === 0 && this.closingKey !== null) this.closingKey = null;
+      this.bump();
+    }
     if (this.openBenchKey === null) return;
     if (this.prying) {
       this.prying =

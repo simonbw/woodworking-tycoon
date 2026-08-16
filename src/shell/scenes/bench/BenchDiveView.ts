@@ -13,7 +13,9 @@ import { createMaterialSprite } from "../../../views/material-sprites/MaterialSp
 import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
-import { benchStage, benchWork, workpieceSpot } from "./benchStage";
+import { V } from "../../../core/Vector";
+import { PIXELS_PER_INCH } from "../../../components/shop-view/shop-scale";
+import { BenchStage, benchStage, benchWork, workpieceSpot } from "./benchStage";
 
 /**
  * The zoomed look at the bench — phase 7's scene skeleton, drawn on the
@@ -35,6 +37,13 @@ export class BenchDiveView extends BaseEntity implements Entity {
 
   private root: Container & GameSprite;
   private backdrop = new Graphics();
+  /**
+   * Everything drawn in stage coordinates — the run's tops, the pieces,
+   * and every gesture surface's own graphics, which attach here rather
+   * than to the layer. One container carries the lean-in, so the whole
+   * picture rides one motion.
+   */
+  readonly frame = new Container();
   private tops = new Graphics();
   private pieces = new Container();
 
@@ -80,7 +89,8 @@ export class BenchDiveView extends BaseEntity implements Entity {
     this.root = new Container() as Container & GameSprite;
     this.root.layerName = "hud";
     this.root.visible = false;
-    this.root.addChild(this.backdrop, this.tops, this.pieces);
+    this.frame.addChild(this.tops, this.pieces);
+    this.root.addChild(this.backdrop, this.frame);
     this.sprite = this.root;
   }
 
@@ -97,6 +107,13 @@ export class BenchDiveView extends BaseEntity implements Entity {
     }
     this.root.visible = true;
     const { fit, group } = stage;
+
+    // The lean-in: at the start of the dive the whole surface sits on
+    // the bench's own footprint on the shop floor, and it eases up to
+    // the full frame — the old shell's camera dive, carried by the one
+    // container everything on the stage draws into. (The shop no longer
+    // swells pixel-locked behind it; see MIGRATION.md.)
+    this.leanIn(dive.dive, stage);
 
     // Redraw when the sim moved or a different bench opened; the fit
     // also follows the window (cheap to recompute, compared each frame).
@@ -151,6 +168,48 @@ export class BenchDiveView extends BaseEntity implements Entity {
       }
     }
   }
+
+  /**
+   * Ride the dive: at 0 the stage is mapped onto the bench's footprint
+   * where it stands on the shop floor, at 1 it is the frame itself. The
+   * backdrop comes up with it, so the shop dims as the bench arrives.
+   */
+  private leanIn(progress: number, stage: BenchStage): void {
+    const eased = easeInOutCubic(Math.min(1, Math.max(0, progress)));
+    this.backdrop.alpha = eased;
+    if (eased >= 1) {
+      this.frame.scale.set(1);
+      this.frame.position.set(0, 0);
+      return;
+    }
+    const { fit, group } = stage;
+    // Where the run sits on the floor, in the canvas the camera draws.
+    const camera = this.game.camera;
+    const [screenX, screenY] = camera.toScreen(
+      V(
+        group.centerInShopIn.xIn * PIXELS_PER_INCH,
+        group.centerInShopIn.yIn * PIXELS_PER_INCH,
+      ),
+    );
+    // An inch of bench is this many screen pixels out on the floor.
+    const floorScale = (camera.z * PIXELS_PER_INCH) / fit.pxPerIn;
+    const scale = floorScale + (1 - floorScale) * eased;
+    // The middle of the finished picture, in stage coordinates.
+    const centerX = fit.originX + (group.widthIn / 2) * fit.pxPerIn;
+    const centerY = fit.originY + (group.heightIn / 2) * fit.pxPerIn;
+    const targetX = screenX + (centerX - screenX) * eased;
+    const targetY = screenY + (centerY - screenY) * eased;
+    this.frame.scale.set(scale);
+    this.frame.position.set(
+      targetX - centerX * scale,
+      targetY - centerY * scale,
+    );
+  }
+}
+
+/** The cubic the dive rides, the old scene's own easing. */
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /** One piece, drawn where it lies on the stage. */

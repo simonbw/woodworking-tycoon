@@ -38,6 +38,7 @@ import { projectGameState } from "../../../sim/projection";
 import { playSound } from "../../../utils/sfx";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
+import { BenchDiveView } from "./BenchDiveView";
 import { benchStage, openBenchGroup, stagePointer } from "./benchStage";
 
 /**
@@ -89,8 +90,6 @@ export class BenchGlueView extends BaseEntity implements Entity {
   constructor() {
     super();
     this.layer = new Graphics() as Graphics & GameSprite;
-    this.layer.layerName = "hud";
-    this.sprite = this.layer;
   }
 
   /** How the glue-up stands right now — the seam the specs watch. */
@@ -164,6 +163,12 @@ export class BenchGlueView extends BaseEntity implements Entity {
         placement: piece.placement,
       })),
     ).reason;
+  }
+
+  onAdd() {
+    // Draw into the dive's own frame, so the lean-in carries every
+    // surface on the stage as one picture.
+    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.layer);
   }
 
   private dive(): BenchDive | undefined {
@@ -356,7 +361,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
   onTick(dt: number) {
     const dive = this.dive();
     const stage = benchStage(this.game);
-    if (!dive || !stage || !this.glueContext()) {
+    if (!dive || !stage || !dive.settled() || !this.glueContext()) {
       this.clearBench();
       return;
     }
@@ -394,7 +399,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
   onMouseDown() {
     const dive = this.dive();
     const stage = benchStage(this.game);
-    if (!dive || !stage || !this.glueContext()) return;
+    if (!dive || !stage || !dive.settled() || !this.glueContext()) return;
     const at = stagePointer(this.game, stage.fit);
     const run = this.run();
 

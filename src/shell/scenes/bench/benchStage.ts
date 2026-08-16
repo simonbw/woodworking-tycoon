@@ -57,7 +57,9 @@ export function openBenchGroup(
   game: Game,
 ): { group: BenchGroup; opened: Machine } | null {
   const dive = game.entities.tryGetSingleton(BenchDive);
-  const bench = dive?.openBench();
+  // The displayed bench, not the open one: the picture keeps the bench
+  // through the roll-back after the player has stood up.
+  const bench = dive?.displayedBench();
   if (!bench) return null;
   const machines = getMachines(projectGameState(game).machines);
   const key = machineKey(bench.state);
@@ -82,6 +84,16 @@ export function benchStage(game: Game): BenchStage | null {
     stage,
   );
   return { group: run.group, opened: run.opened, fit };
+}
+
+/**
+ * Whether the surface is holding still enough to be worked. The stage's
+ * inches only line up with what's drawn once the lean-in has landed, so
+ * a press mid-dive would land where a piece is about to be rather than
+ * where it looks — the old scene's `settled` gate, in one place.
+ */
+export function stageSettled(game: Game): boolean {
+  return game.entities.tryGetSingleton(BenchDive)?.settled() ?? false;
 }
 
 /** The pointer in the run's frame, in inches. */

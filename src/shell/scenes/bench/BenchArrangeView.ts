@@ -34,6 +34,7 @@ import { createMaterialSprite } from "../../../views/material-sprites/MaterialSp
 import { ShellStore } from "../../ShellStore";
 import { BenchAssemblyView } from "./BenchAssemblyView";
 import { BenchDive } from "./BenchDive";
+import { BenchDiveView } from "./BenchDiveView";
 import {
   benchStage,
   pieceCorners,
@@ -95,15 +96,23 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     return this.drag?.materialId ?? null;
   }
 
+  onAdd() {
+    // Draw into the dive's own frame, so the lean-in carries every
+    // surface on the stage as one picture.
+    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.root);
+  }
+
   private dive(): BenchDive | undefined {
     return this.game.entities.tryGetSingleton(BenchDive);
   }
 
   /** Whether the hands are free to arrange — no tool, no clamp, no
-   * bottle: whatever the hands are carrying owns the pointer. */
+   * bottle: whatever the hands are carrying owns the pointer. Only once
+   * the lean-in has landed, so a piece can't be grabbed by where it is
+   * about to be. */
   private handsFree(): boolean {
     const dive = this.dive();
-    return dive != null && dive.openBenchKey !== null && !dive.handsFull();
+    return dive != null && dive.settled() && !dive.handsFull();
   }
 
   private stage(): {

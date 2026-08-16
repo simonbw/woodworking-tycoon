@@ -11,6 +11,7 @@ import { BenchAssemblyView } from "../../scenes/bench/BenchAssemblyView";
 import { BenchGlueView } from "../../scenes/bench/BenchGlueView";
 import { openBenchGroup } from "../../scenes/bench/benchStage";
 import { useGame, useShellVersion, useShopState } from "../../useShell";
+import { useBenchChrome } from "./useBenchDive";
 
 /**
  * The line under the bench: what to do next, and the key hints for
@@ -23,6 +24,7 @@ export const BenchStatusLine: React.FC = () => {
   const game = useGame();
   useShellVersion();
   const gameState = useShopState();
+  const chrome = useBenchChrome();
   const dive = game.entities.tryGetSingleton(BenchDive);
   const glue = game.entities.tryGetSingleton(BenchGlueView);
   const assembly = game.entities.tryGetSingleton(BenchAssemblyView);
@@ -154,7 +156,7 @@ export const BenchStatusLine: React.FC = () => {
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex flex-col items-center gap-2"
+      className={`pointer-events-none absolute inset-x-0 bottom-5 z-30 flex flex-col items-center gap-2 ${chrome.className}`}
       data-testid="bench-status"
     >
       <div className="flex items-baseline gap-3 rounded bg-ink-black/70 px-3 py-1.5 shadow-lg">

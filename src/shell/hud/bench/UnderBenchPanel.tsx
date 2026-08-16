@@ -2,6 +2,7 @@ import React from "react";
 import { MaterialShelf, UpgradeRack } from "../station/racks";
 import { BenchDive } from "../../scenes/bench/BenchDive";
 import { useGame, useShellVersion } from "../../useShell";
+import { useBenchChrome } from "./useBenchDive";
 
 /**
  * What's literally under the bench top: a worktable's storage shelf and
@@ -14,6 +15,7 @@ import { useGame, useShellVersion } from "../../useShell";
 export const UnderBenchPanel: React.FC = () => {
   const game = useGame();
   useShellVersion();
+  const chrome = useBenchChrome();
   const bench = game.entities.tryGetSingleton(BenchDive)?.openBench();
   if (!bench) return null;
 
@@ -24,8 +26,9 @@ export const UnderBenchPanel: React.FC = () => {
 
   return (
     <details
-      className="pointer-events-auto absolute bottom-5 left-4 z-40 w-80 max-w-[80vw]"
+      className={`pointer-events-auto absolute bottom-5 left-4 z-40 w-80 max-w-[80vw] ${chrome.className}`}
       data-testid="under-bench"
+      inert={chrome.inert}
     >
       <summary className="ml-0 inline-block cursor-pointer select-none rounded bg-ink-black/70 px-2.5 py-1.5 font-condensed uppercase tracking-[0.15em] text-[0.65rem] text-paper-manila/80 shadow-lg hover:text-paper-manila">
         Under the bench

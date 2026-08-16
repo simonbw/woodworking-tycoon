@@ -13,6 +13,7 @@ import { BLUEPRINT_BLUE, BLUEPRINT_BLUE_DEEP } from "../station/BlueprintStack";
 import { ParameterScaleRow } from "../../../components/station/ParameterScaleRow";
 import { loadedStockDimension } from "../../../components/station/station-helpers";
 import { PlanBrowser } from "./PlanBrowser";
+import { useBenchChrome } from "./useBenchDive";
 
 /**
  * The bench's plans, as the thing they diegetically are: a pile of shop
@@ -33,6 +34,7 @@ export const BenchPlanCorner: React.FC = () => {
   useShellVersion();
   const gameState = useShopState();
   const [open, setOpen] = useState(false);
+  const chrome = useBenchChrome();
   const dive = game.entities.tryGetSingleton(BenchDive);
   const bench = dive?.openBench();
 
@@ -42,7 +44,7 @@ export const BenchPlanCorner: React.FC = () => {
   useShortcut(
     "open-plan-browser",
     () => setOpen((current) => !current),
-    bench != null && plans.length > 0,
+    bench != null && !chrome.inert && plans.length > 0,
   );
 
   if (!dive || !bench || plans.length === 0) return null;
@@ -64,7 +66,10 @@ export const BenchPlanCorner: React.FC = () => {
         />
       )}
 
-      <div className="pointer-events-auto absolute bottom-5 right-4 z-40 flex w-80 max-w-[85vw] flex-col items-stretch gap-1.5">
+      <div
+        className={`pointer-events-auto absolute bottom-5 right-4 z-40 flex w-80 max-w-[85vw] flex-col items-stretch gap-1.5 ${chrome.className}`}
+        inert={chrome.inert}
+      >
         {/* Settings ride the pulled drawing on a paper strip — the one
             piece of the plan a chip can't carry in its margins */}
         {selected && params.length > 0 && (

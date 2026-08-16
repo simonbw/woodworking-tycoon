@@ -365,6 +365,12 @@ transform tests as it lands.
       real surfaces (`tests/engine-shell.spec.ts`, "works wood at the
       bench"); full suite green (9 tests) with `npm run tsc` and
       `npm run test:unit`
+- [x] the lean-in — opening a bench eases the surface up from the
+      bench's own footprint on the shop floor instead of cutting to it,
+      and standing up runs the same ramp backwards (the picture keeps
+      the bench until it lands). Nothing on the surface answers the
+      pointer, and no chrome is up, until the ramp lands — the old
+      scene's `settled` gate
 - [ ] **Gate (human playtest):** all four modes at parity for _feel_ —
       flagged to the user, see the Log
 
@@ -843,3 +849,17 @@ transform tests as it lands.
   only ever a hand on the work surface. Browser-verified: hang a carried
   saw on a hook, take the hammer off with the ✕, digit-key a tool into
   hand, right-click to put it back.
+
+- 2026-08-16 — The bench's lean-in landed, the last of phase 7's known
+  feel gaps: `BenchDive` carries a 0..1 ramp (0.65 s, pinned under
+  `prefers-reduced-motion`, which is how the E2E suite runs), and
+  everything on the stage draws into one container the ramp moves, so
+  the surface eases up from the bench's footprint on the floor and rolls
+  back off when the player stands up. The floating chrome fades in with
+  it, `inert` until it lands, and the gestures read the same gate — a
+  press mid-ramp would land where a piece is going to be. **Deviation:**
+  the old shell dove the shop's own camera, so the room swelled
+  pixel-locked behind the stage; here the world camera stays on the
+  player and only the stage rides the ramp. The bench arrives from the
+  right place at the right size, and the shop dims behind it, but it no
+  longer un-turns the room's rotation or grows the floor along with it.

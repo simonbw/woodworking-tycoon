@@ -22,6 +22,7 @@ import { projectGameState } from "../../../sim/projection";
 import { toolIconSrc } from "../../../utils/uiImages";
 import { BenchDive } from "../../scenes/bench/BenchDive";
 import { useGame, useShellVersion } from "../../useShell";
+import { useBenchChrome } from "./useBenchDive";
 
 const BENCH_TOOL_SHORTCUTS: readonly ShortcutId[] = [
   "bench-tool-1",
@@ -58,6 +59,7 @@ const BENCH_TOOL_SHORTCUTS: readonly ShortcutId[] = [
 export const BenchToolRail: React.FC = () => {
   const game = useGame();
   useShellVersion();
+  const chrome = useBenchChrome();
   const dive = game.entities.tryGetSingleton(BenchDive);
   const bench = dive?.openBench();
 
@@ -118,7 +120,9 @@ export const BenchToolRail: React.FC = () => {
         if (mounted) dive?.toggleTool(mounted);
         else if (ghost && bench) mountTool(game, bench, ghost);
       },
-      bench != null && (mounted != null || (ghost != null && !working)),
+      bench != null &&
+        !chrome.inert &&
+        (mounted != null || (ghost != null && !working)),
     );
   }
 
@@ -137,8 +141,9 @@ export const BenchToolRail: React.FC = () => {
       <div
         // below-top-bar keeps the rail's ends clear of the top bar's
         // chip cluster at narrow windows — hooks must stay clickable
-        className="pointer-events-auto absolute left-1/2 below-top-bar z-50 flex -translate-x-1/2 items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg"
+        className={`pointer-events-auto absolute left-1/2 below-top-bar z-50 flex -translate-x-1/2 items-center gap-2 rounded border-2 border-black/40 bg-[#4a3826]/95 px-3 py-1.5 shadow-lg ${chrome.className}`}
         data-testid="bench-tool-rail"
+        inert={chrome.inert}
       >
         <span className="mr-1 flex flex-col items-start font-condensed uppercase tracking-[0.15em] text-[0.6rem] text-paper-manila/60">
           <span>Tools</span>

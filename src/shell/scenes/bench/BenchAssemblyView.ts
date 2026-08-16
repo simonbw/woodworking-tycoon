@@ -41,7 +41,13 @@ import { playSound } from "../../../utils/sfx";
 import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
-import { benchStage, openBenchGroup, stagePointer } from "./benchStage";
+import { BenchDiveView } from "./BenchDiveView";
+import {
+  benchStage,
+  openBenchGroup,
+  stagePointer,
+  stageSettled,
+} from "./benchStage";
 
 /**
  * Blueprint assembly on the bench itself (migration phase 7, the last
@@ -79,8 +85,6 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
   constructor() {
     super();
     this.layer = new Graphics() as Graphics & GameSprite;
-    this.layer.layerName = "hud";
-    this.sprite = this.layer;
   }
 
   /** How the build stands: parts seated and fasteners driven, of how
@@ -146,6 +150,12 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
         y: stage.fit.originY + seat.yIn * stage.fit.pxPerIn,
       };
     });
+  }
+
+  onAdd() {
+    // Draw into the dive's own frame, so the lean-in carries every
+    // surface on the stage as one picture.
+    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.layer);
   }
 
   private dive(): BenchDive | undefined {
@@ -267,7 +277,11 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
     }
 
     const stage = benchStage(this.game);
-    if (!stage || !this.driverHeld(build.blueprint)) {
+    if (
+      !stage ||
+      !stageSettled(this.game) ||
+      !this.driverHeld(build.blueprint)
+    ) {
       this.hovered = null;
       return;
     }
@@ -292,7 +306,8 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
   onMouseDown() {
     const build = this.build();
     const stage = benchStage(this.game);
-    if (!build || !stage || !this.driverHeld(build.blueprint)) return;
+    if (!build || !stage || !stageSettled(this.game)) return;
+    if (!this.driverHeld(build.blueprint)) return;
     const at = stagePointer(this.game, stage.fit);
     const target = fastenerAt(
       build.blueprint,

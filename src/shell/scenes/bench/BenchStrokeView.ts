@@ -34,6 +34,7 @@ import {
 import { projectGameState } from "../../../sim/projection";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
+import { BenchDiveView } from "./BenchDiveView";
 import { foleyClipFor, WorkFoley } from "./WorkFoley";
 import {
   benchStage,
@@ -105,8 +106,12 @@ export class BenchStrokeView extends BaseEntity implements Entity {
   constructor() {
     super();
     this.mask = new Graphics() as Graphics & GameSprite;
-    this.mask.layerName = "hud";
-    this.sprite = this.mask;
+  }
+
+  onAdd() {
+    // Draw into the dive's own frame, so the lean-in carries every
+    // surface on the stage as one picture.
+    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.mask);
   }
 
   private dive(): BenchDive | undefined {
@@ -171,7 +176,7 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     this.sinceWork += dt;
     const dive = this.dive();
     const bench = dive?.openBench();
-    if (!dive || !bench) {
+    if (!dive || !bench || !dive.settled()) {
       this.pass = null;
       this.foley.stop();
       return;

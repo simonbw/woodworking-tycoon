@@ -43,6 +43,7 @@ import {
 import { projectGameState } from "../../../sim/projection";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
+import { BenchDiveView } from "./BenchDiveView";
 import {
   benchStage,
   benchWork,
@@ -50,6 +51,7 @@ import {
   PieceSpot,
   pieceUnder,
   stagePointer,
+  stageSettled,
   workpieceSpot,
 } from "./benchStage";
 import { HandSawVoice, playSawPartCrack } from "../../../utils/handSawSynth";
@@ -122,6 +124,12 @@ export class BenchSawView extends BaseEntity implements Entity {
     this.root.layerName = "hud";
     this.root.addChild(this.halves, this.lines);
     this.sprite = this.root;
+  }
+
+  onAdd() {
+    // Draw into the dive's own frame, so the lean-in carries every
+    // surface on the stage as one picture.
+    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.root);
   }
 
   private dive(): BenchDive | undefined {
@@ -203,7 +211,7 @@ export class BenchSawView extends BaseEntity implements Entity {
   onMouseDown() {
     const dive = this.dive();
     const bench = dive?.openBench();
-    if (!dive || !bench) return;
+    if (!dive || !bench || !dive.settled()) return;
     const ghost = this.ghostMark();
     if (!ghost) return;
     const operation = this.sawOffer(ghost.piece);
@@ -232,7 +240,7 @@ export class BenchSawView extends BaseEntity implements Entity {
     if (key !== "KeyR") return;
     const dive = this.dive();
     const bench = dive?.openBench();
-    if (!dive?.heldTool || !bench) return;
+    if (!dive?.heldTool || !bench || !dive.settled()) return;
     if (bench.state.operationProgress.status === "inProgress") return;
     if (!this.sawInHand()) return;
     const current = this.angle();
@@ -259,7 +267,7 @@ export class BenchSawView extends BaseEntity implements Entity {
   onTick(dt: number) {
     this.sinceStroke += dt;
     this.voice?.tick(dt);
-    const bench = this.dive()?.openBench();
+    const bench = stageSettled(this.game) ? this.dive()?.openBench() : null;
     const running = bench ? this.sawScript() : null;
     const spot =
       running?.script.started && bench

@@ -21,7 +21,8 @@ import {
 } from "../../../sim/commands/bench-commands";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
-import { benchStage, stagePointer } from "./benchStage";
+import { BenchDiveView } from "./BenchDiveView";
+import { benchStage, stagePointer, stageSettled } from "./benchStage";
 
 /**
  * Pry mode — the first of the bench's gestures (migration phase 7). A
@@ -56,8 +57,12 @@ export class BenchPryView extends BaseEntity implements Entity {
   constructor() {
     super();
     this.rings = new Graphics() as Graphics & GameSprite;
-    this.rings.layerName = "hud";
-    this.sprite = this.rings;
+  }
+
+  onAdd() {
+    // Draw into the dive's own frame, so the lean-in carries every
+    // surface on the stage as one picture.
+    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.rings);
   }
 
   private dive(): BenchDive | undefined {
@@ -137,7 +142,7 @@ export class BenchPryView extends BaseEntity implements Entity {
   @on("tick")
   onTick() {
     const dive = this.dive();
-    if (!dive || dive.openBenchKey === null) return;
+    if (!dive || !dive.settled()) return;
     if (!this.hammerHeld() || dive.prying) {
       if (dive.hoveredNail !== null) dive.hoveredNail = null;
       return;
@@ -150,7 +155,8 @@ export class BenchPryView extends BaseEntity implements Entity {
   onClick() {
     const dive = this.dive();
     const bench = dive?.openBench();
-    if (!dive || !bench || !this.hammerHeld() || dive.prying) return;
+    if (!dive || !bench || !dive.settled()) return;
+    if (!this.hammerHeld() || dive.prying) return;
     const at = this.pointerInches();
     const nail = at ? this.nailAt(at.xIn, at.yIn) : null;
     if (!nail) return;
@@ -169,6 +175,7 @@ export class BenchPryView extends BaseEntity implements Entity {
   @on("keyDown")
   onKeyDown({ key, event }: GameEventMap["keyDown"]) {
     if (key !== "KeyF" || !this.hammerHeld()) return;
+    if (!stageSettled(this.game)) return;
     const bench = this.dive()?.openBench();
     const staged = this.stagedPallet();
     if (!bench || !staged) return;
