@@ -100,6 +100,17 @@ export class BenchDive extends BaseEntity implements Entity {
     this.bump();
   }
 
+  /**
+   * At a bench the pointer *is* the hand, so the right button puts back
+   * whatever it's holding — the same move Escape makes, without
+   * reaching for the keyboard.
+   */
+  @on("rightDown")
+  onRightDown() {
+    if (this.openBenchKey === null || !this.handsFull()) return;
+    this.setHolding(null);
+  }
+
   /** The opened bench's live entity, or null once it's out of reach. */
   openBench(): MachineEntity | null {
     if (this.openBenchKey === null) return null;

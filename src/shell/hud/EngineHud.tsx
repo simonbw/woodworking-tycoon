@@ -12,6 +12,7 @@ import { StationSheet } from "./station/StationSheet";
 import { BenchPlanCorner } from "./bench/BenchPlanCorner";
 import { BenchStatusLine } from "./bench/BenchStatusLine";
 import { BenchToolRail } from "./bench/BenchToolRail";
+import { UnderBenchPanel } from "./bench/UnderBenchPanel";
 import { useBenchDiveActive } from "./bench/useBenchDive";
 import { StoreScreen } from "./store/StoreScreen";
 import { LumberyardTripOverlay } from "./trips/LumberyardTripOverlay";
@@ -41,22 +42,6 @@ import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
  * z-40 so its buttons stay clickable over them; the world-pinned chips
  * and prompts live in OverlayRoot, not here.
  */
-/**
- * The destinations a trip takes over the screen with — held back while
- * the truck is still rolling out, which is a whole performance before
- * the destination should be up (TripTheater).
- */
-const TripDestinations: React.FC = () => {
-  if (!useTripStaged()) return null;
-  return (
-    <>
-      <LumberyardTripOverlay />
-      <ScavengeTripOverlay />
-      <SleepOverlay />
-    </>
-  );
-};
-
 export const EngineHud: React.FC = () => {
   const open = useShopOpen();
   // Leaned over a bench, the corner chips fade: the bench view draws in
@@ -130,6 +115,7 @@ export const EngineHud: React.FC = () => {
       <BenchToolRail />
       <BenchStatusLine />
       <BenchPlanCorner />
+      <UnderBenchPanel />
 
       {/* The away trips that cover the screen (each gates on its own
           `player.away` kind): the lumberyard's storefront, the
@@ -151,5 +137,21 @@ export const EngineHud: React.FC = () => {
       {/* Headless: elevator music while the wait key is held down. */}
       <HoldMusicLayer />
     </ManualProvider>
+  );
+};
+
+/**
+ * The destinations a trip takes over the screen with — held back while
+ * the truck is still rolling out, which is a whole performance before
+ * the destination should be up (TripTheater).
+ */
+const TripDestinations: React.FC = () => {
+  if (!useTripStaged()) return null;
+  return (
+    <>
+      <LumberyardTripOverlay />
+      <ScavengeTripOverlay />
+      <SleepOverlay />
+    </>
   );
 };

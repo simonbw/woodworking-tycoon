@@ -11,6 +11,7 @@ import { GameState, MaterialPile } from "../game/GameState";
 import { Vector } from "../game/Vectors";
 import { hasStationSheet } from "../components/station/station-helpers";
 import { TargetingState } from "../shell/dispatch/TargetingState";
+import { BenchDive } from "../shell/scenes/bench/BenchDive";
 import { ShellStore } from "../shell/ShellStore";
 import { Player } from "../sim/entities/Player";
 import { projectGameState } from "../sim/projection";
@@ -88,6 +89,11 @@ export class MousePicking extends BaseEntity implements Entity {
   onTick() {
     if (!this.game.entities.tryGetSingleton(Player)) return;
     if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
+    // Leaned over a bench the pointer is a hand on the work surface,
+    // not an eye on the floor.
+    if (this.game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null) {
+      return;
+    }
     const cell = this.cursorCell();
     if (!cell) return;
     // Hover re-picks only while the cursor moves, so the keyboard's own
@@ -118,6 +124,9 @@ export class MousePicking extends BaseEntity implements Entity {
   onRightDown() {
     if (!this.game.entities.tryGetSingleton(Player)) return;
     if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
+    if (this.game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null) {
+      return;
+    }
     const gs = projectGameState(this.game);
     if (gs.player.away) return;
     this.cursorWorld = this.cursorCell();

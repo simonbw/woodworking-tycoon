@@ -334,6 +334,12 @@ transform tests as it lands.
         open over the last strokes, and each stroke spills sawdust at
         the crossing. Covered in the journey spec: a 12" board becomes
         two 6" halves
+  - [x] the rail's management half and the bench's furniture: the ✕ that
+        takes a tool off into the arms, the ghosted hooks that hang a
+        carried one up, the run's neighbours sharing one rail, the digit
+        keys, the put-back hint, right-click to put down, and the
+        under-bench drawer (shelf + upgrade slots). The station sheet no
+        longer has to stand in for any of it
   - [x] pieces on the bench — the bare-handed half of the old scene:
         drag stock around the run (it follows the hand until its middle
         reaches the edge of the wood, and crossing a seam hands it to the
@@ -830,3 +836,10 @@ transform tests as it lands.
   full-rate browser build: parked → departing with the shop still drawn →
   the fade rising → away with the store swapped in behind it. The E2E
   build skips the show, so the specs are untouched; full suite green.
+- 2026-08-16 — The bench's remaining chrome landed: the tool rail is the
+  old rail now, management and all (a new `gatherBenchTool` command
+  carries the run-neighbour slide), plus the under-bench drawer, and
+  mouse picking stands down while the dive is open so the pointer is
+  only ever a hand on the work surface. Browser-verified: hang a carried
+  saw on a hook, take the hammer off with the ✕, digit-key a tool into
+  hand, right-click to put it back.
