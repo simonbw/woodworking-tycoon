@@ -33,15 +33,16 @@ import { TutorialHighlightView } from "./views/TutorialHighlightView";
 import { registerAllViews } from "./views/register";
 
 /**
- * The engine shell: the entity-based rebuild of the game, running alongside
- * the current app while the migration is in progress (see MIGRATION.md).
- * Served at /engine.html.
+ * The engine shell: the entity-based rebuild of the game, served at /.
+ * The shell it replaced is still built beside it at /legacy.html, as the
+ * reference this one is checked against until the migration's last
+ * deletion lands (see MIGRATION.md).
  */
 
 async function main() {
   polyfill();
   registerAllViews();
-  // engine.html links the same stylesheet as the old shell, so loadFonts
+  // index.html links the same stylesheet as the old shell, so loadFonts
   // finds every declared face — including the stand sign's canvas-drawn
   // Shantell Notes, which must be in before StandView's first draw.
   await Promise.all([loadAssets(), loadFonts()]);

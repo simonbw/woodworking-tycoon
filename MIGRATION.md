@@ -395,7 +395,11 @@ transform tests as it lands.
       foley (the tool's loop, the saw's synthesized voice and its parting
       crack, the clamp click, the drive). The payout flight was already
       ported with phase 5's HUD
-- [ ] Flip default entry to the engine shell
+- [x] Flip default entry to the engine shell: the shop is served at `/`
+      now, and the shell it replaced is built beside it at `/legacy.html`
+      — the reference to check against until the deletion below lands.
+      The seven old specs drive `/legacy.html` for the same window;
+      `/engine.html` is a redirect so a bookmark still opens the game
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
 - [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
@@ -863,3 +867,8 @@ transform tests as it lands.
   player and only the stage rides the ramp. The bench arrives from the
   right place at the right size, and the shop dims behind it, but it no
   longer un-turns the room's rotation or grows the floor along with it.
+- 2026-08-16 — The default entry flipped: `npm run dev` opens the engine
+  shell at `/`, and the old shell is served beside it at `/legacy.html`
+  (its seven specs point there, so the suite stayed green — 9 tests).
+  Nothing was deleted: the old shell is still the reference for the two
+  open human playtest gates, and it goes in one piece when they pass.

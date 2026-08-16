@@ -38,7 +38,7 @@ test.describe("Screens", () => {
     const manual = page.getByRole("dialog", { name: "Shop manual" });
 
     await test.step("a brand-new game starts on the shop floor, ? badge waiting", async () => {
-      await page.goto("/");
+      await page.goto("/legacy.html");
       await page.waitForLoadState("domcontentloaded");
       await page.waitForSelector("main");
       await startNewGame(page);

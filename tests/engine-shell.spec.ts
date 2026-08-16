@@ -1,5 +1,5 @@
 /**
- * The engine shell (/engine.html) — the entity-based rebuild being stood
+ * The engine shell (/) — the entity-based rebuild being stood
  * up beside the app during the migration (see MIGRATION.md). This is a
  * transitional eighth spec file: the shell is a genuinely different
  * interface (its own entry, boot, and hooks) until cutover, when the
@@ -35,7 +35,7 @@ test.describe("Engine shell", () => {
     // own modes ride in the second test below).
     test.setTimeout(300_000);
 
-    await page.goto("/engine.html");
+    await page.goto("/");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
       timeout: 15_000,
     });
@@ -641,7 +641,7 @@ test.describe("Engine shell", () => {
     // specs better than one long one does.
     test.setTimeout(420_000);
 
-    await page.goto("/engine.html");
+    await page.goto("/");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
       timeout: 15_000,
     });

@@ -68,7 +68,7 @@ test.describe("Bench view", () => {
     page,
   }) => {
     test.setTimeout(300000);
-    await page.goto("/");
+    await page.goto("/legacy.html");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     await page.evaluate(() => {

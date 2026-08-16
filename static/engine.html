@@ -2,56 +2,16 @@
 
 <head>
   <meta name="viewport" content="width=device-width">
-  <title>Woodworking Tycoon (engine shell)</title>
-  <!-- The same stylesheet and self-hosted fonts as index.html — the DOM
-       HUD wears the paperwork design system unchanged. The workhorse
-       face rides ahead of the stylesheet like it does there; the rest
-       are fetched by loadFonts() behind the boot gate. -->
-  <link rel="preload" href="/fonts/barlow-condensed-400.woff2" as="font" type="font/woff2" crossorigin>
-  <!-- The painted sign is the first thing drawn, in the start menu's first
-       render, so it's fetched alongside the bundle rather than after it. -->
-  <link rel="preload" href="/images/main-title-logo.png" as="image">
-  <link rel="stylesheet" href="/styles/index.css" />
-  <link rel="icon" href="/images/favicon.png" />
-  <style>
-    html {
-      background: #1f1c18;
-    }
-
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-
-    /* The boot placeholder, index.html's pattern: on screen from first
-       paint until assets and fonts are in and the shell removes it, so it
-       depends on nothing the bundle loads — colors inlined from
-       tailwind.config.ts, face the one weight the <link> above preloads. */
-    #boot-loading {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #1f1c18;
-      color: #e6d5a8;
-      font: 400 20px "Barlow Condensed", sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      animation: boot-breathe 1.6s ease-in-out infinite;
-    }
-
-    @keyframes boot-breathe {
-      50% {
-        opacity: 0.35;
-      }
-    }
-  </style>
+  <title>Woodworking Tycoon</title>
+  <!-- The shop moved to / — this page is only here so a bookmark from
+       while the engine shell was being built alongside the old one still
+       opens the game. It goes with the old shell (MIGRATION.md phase 8). -->
+  <meta http-equiv="refresh" content="0; url=/">
+  <link rel="canonical" href="/">
 </head>
 
 <body>
-  <div id="boot-loading">Opening the shop&hellip;</div>
-  <script src="/engine-main.js"></script>
+  <p>The shop is at <a href="/">/</a>.</p>
 </body>
 
 </html>

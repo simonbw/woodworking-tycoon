@@ -112,7 +112,7 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("navigate to app and wait for start menu", async () => {
-      await page.goto("/");
+      await page.goto("/legacy.html");
       await page.waitForLoadState("domcontentloaded");
       await page.waitForSelector("main");
     });
@@ -556,7 +556,7 @@ test.describe("Shop floor", () => {
     });
 
     await test.step("start a fresh game for the day-loop half", async () => {
-      await page.goto("/");
+      await page.goto("/legacy.html");
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
       await page.waitForTimeout(500);

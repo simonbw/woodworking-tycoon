@@ -101,11 +101,12 @@ process.on("exit", (code) => {
 const context = await esbuild
   .context({
     entryPoints: [
+      // The shop, served at /. The old shell it replaced is still built
+      // beside it and served at /legacy.html, as the reference the
+      // migration is checked against (see MIGRATION.md phase 8).
+      "src/engine-main.ts",
       "src/index.tsx",
       "src/styles/index.css",
-      // The engine shell being built up alongside the current app during
-      // the migration (see MIGRATION.md). Served at /engine.html.
-      "src/engine-main.ts",
     ],
     bundle: true,
     minify,

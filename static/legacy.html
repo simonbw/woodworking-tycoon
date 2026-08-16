@@ -1,0 +1,68 @@
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width">
+  <title>Woodworking Tycoon (old shell)</title>
+  <!-- The shop as it was built the first time, kept reachable at
+       /legacy.html while the entity-based shell at / is checked against
+       it (MIGRATION.md phase 8). It goes when the migration's last
+       deletion lands.
+
+       Every font is served from this origin; there is no font CDN to
+       preconnect to. They're vendored by `npm run fetch:fonts` (see
+       scripts/fetch-fonts.ts) and declared in styles/fonts.generated.css.
+
+       Two faces start alongside the bundle rather than waiting for the
+       stylesheet to be parsed and a glyph to ask for them: the logo,
+       which is by far the heaviest file we ship, and the workhorse the
+       <html> element itself is set in. The rest are fetched by
+       loadFonts() before the app renders. Fonts are fetched in CORS mode
+       even from our own origin, so `crossorigin` is required here —
+       without it the preload is wasted and the file loads twice. -->
+  <link rel="preload" href="/fonts/lumberjack-regular.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/barlow-condensed-400.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- The painted sign is the first thing drawn, in the start menu's first
+       render, so it's fetched alongside the bundle rather than after it. -->
+  <link rel="preload" href="/images/main-title-logo.png" as="image">
+  <link rel="stylesheet" href="/styles/index.css" />
+  <link rel="icon" href="/images/favicon.png" />
+  <style>
+    /* The boot placeholder only. It's on screen from first paint until the
+       bundle, textures, and fonts are in and React's first render replaces
+       it, so it can't depend on any of those: colors are the workshop-bg /
+       paper-manila values from tailwind.config.ts inlined, and the face is
+       the one weight of Barlow Condensed the <link> above preloads. */
+    html {
+      background: #1f1c18;
+    }
+
+    #boot-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1f1c18;
+      color: #e6d5a8;
+      font: 400 20px "Barlow Condensed", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      animation: boot-breathe 1.6s ease-in-out infinite;
+    }
+
+    @keyframes boot-breathe {
+      50% {
+        opacity: 0.35;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="react-container">
+    <div id="boot-loading">Opening the shop&hellip;</div>
+  </div>
+  <script src="/index.js"></script>
+</body>
+
+</html>

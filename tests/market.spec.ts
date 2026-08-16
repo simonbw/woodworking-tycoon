@@ -65,7 +65,7 @@ async function bootShopCountingAudio(page: Page) {
     };
     (window as any).Audio.prototype = RealAudio.prototype;
   });
-  await page.goto("/");
+  await page.goto("/legacy.html");
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("main");
   // A real click also unlocks the AudioContext, which playback depends on.
@@ -101,7 +101,7 @@ test.describe("Selling, supplies, and sound", () => {
       if (m) requested.push(m[1]);
     });
 
-    await page.goto("/");
+    await page.goto("/legacy.html");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     const manual = page.getByRole("dialog", { name: "Shop manual" });

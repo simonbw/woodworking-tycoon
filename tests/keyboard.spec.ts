@@ -67,7 +67,7 @@ test.describe("Keyboard", () => {
     page.on("dialog", (d) => d.accept());
 
     await test.step("start a game with every screen unlocked", async () => {
-      await page.goto("/");
+      await page.goto("/legacy.html");
       await page.waitForLoadState("domcontentloaded");
       await page.waitForSelector("main");
       await startNewGame(page);
