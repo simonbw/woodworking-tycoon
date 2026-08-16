@@ -52,12 +52,12 @@ export class MouseManager {
   }
 
   private updatePosition(event: MouseEvent): void {
-    // Note: offsetX/offsetY are relative to target element with Y=0 at top
-    // This matches the screen coordinate system used by the camera
-    const target = event.target as HTMLElement;
-    const height = target.clientHeight;
-    // Flip Y to match the coordinate system expected by the camera
-    this._position = V(event.offsetX, height - event.offsetY);
+    // offsetX/offsetY are relative to the target element, Y down from its
+    // top — the same screen space the renderer draws in and the camera's
+    // matrix maps to, so the pointer is reported as it arrives. (Upstream
+    // flipped Y here for a Y-up world; this game's cells run downward, so
+    // a flip would mirror every pick about the middle of the screen.)
+    this._position = V(event.offsetX, event.offsetY);
   }
 
   private onMouseMove(event: MouseEvent): void {

@@ -9,6 +9,7 @@ import { RewardFlightLayer } from "./payout/RewardFlightLayer";
 import { StartMenu } from "./StartMenu";
 import { StationSheet } from "./station/StationSheet";
 import { BenchToolRail } from "./bench/BenchToolRail";
+import { useBenchDiveActive } from "./bench/useBenchDive";
 import { StoreScreen } from "./store/StoreScreen";
 import { LumberyardTripOverlay } from "./trips/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "./trips/ScavengeTripOverlay";
@@ -28,17 +29,28 @@ import { TutorialSpotlightLayer } from "./tutorial/TutorialSpotlightLayer";
  * menu fills the sheet, and starting a game (its buttons boot the shop)
  * swaps it for the HUD.
  *
- * The wrappers are HomePage's, minus the bench-dive fade (that arrives
- * with phase 7's bench scene): the NavBar along the top (clock, balances,
- * Skills, the manual's ?, Menu — with the journal, binder, and pause menu
- * behind them), the coach's column top-left, what's in hand bottom-center,
- * the supply panel folded under the top bar on the right. The
- * screen-anchored station and floor cards ride below the top bar's z-40
- * so its buttons stay clickable over them; the world-pinned chips and
- * prompts live in OverlayRoot, not here.
+ * The wrappers are HomePage's: the NavBar along the top (clock,
+ * balances, Skills, the manual's ?, Menu — with the journal, binder, and
+ * pause menu behind them), the coach's column top-left, what's in hand
+ * bottom-center, the supply panel folded under the top bar on the right.
+ * The screen-anchored station and floor cards ride below the top bar's
+ * z-40 so its buttons stay clickable over them; the world-pinned chips
+ * and prompts live in OverlayRoot, not here.
  */
 export const EngineHud: React.FC = () => {
   const open = useShopOpen();
+  // Leaned over a bench, the corner chips fade: the bench view draws in
+  // the canvas underneath them, and they'd be unreachable behind its
+  // pointer surface anyway. The top bar stays — it deliberately rides
+  // above the bench view — and so do the coach's cards, because the
+  // guided opening's bench steps are read mid-dive: their column rises
+  // over the bench view and slides down its corner to clear the tool
+  // rail. The nightfall note beneath them reads the shop floor, so it
+  // fades with the rest.
+  const benchDive = useBenchDiveActive();
+  const chipClass = `transition-opacity duration-150 ${
+    benchDive ? "opacity-0" : "opacity-100"
+  }`;
   if (!open) return <StartMenu />;
 
   return (
@@ -51,9 +63,13 @@ export const EngineHud: React.FC = () => {
 
       {/* The coach's column: the tutorial cards at the top of the
           wrapper, the nightfall note beneath them */}
-      <div className="absolute left-6 top-6 z-20 w-80 space-y-3">
+      <div
+        className={`absolute left-6 w-80 space-y-3 transition-[top] duration-300 ${
+          benchDive ? "top-16 z-[36]" : "top-6 z-20"
+        }`}
+      >
         <TutorialCards />
-        <div className="space-y-3">
+        <div inert={benchDive} className={`space-y-3 ${chipClass}`}>
           <NightfallCard />
         </div>
       </div>
@@ -64,13 +80,18 @@ export const EngineHud: React.FC = () => {
 
       {/* pointer-events-none so the full-width strip doesn't eat clicks
           meant for what's underneath (the chip re-enables its buttons) */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6">
+      <div
+        inert={benchDive}
+        className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-6 ${chipClass}`}
+      >
         <div className="pointer-events-auto">
           <HandsStrip />
         </div>
       </div>
 
-      {/* below-top-bar clears the top bar's chip. */}
+      {/* Deliberately outside the bench-dive fade: salvage pried loose at
+          a bench flies to this tally, so it stays up and clickable above
+          the bench view. below-top-bar clears the top bar's chip. */}
       <div className="absolute right-6 below-top-bar z-40">
         <SuppliesSection />
       </div>

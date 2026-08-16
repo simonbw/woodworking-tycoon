@@ -18,7 +18,7 @@ import { Pallet, PalletNail } from "../../../game/Materials";
 import { pryPalletNail } from "../../../sim/commands/bench-commands";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
-import { BenchDiveView } from "./BenchDiveView";
+import { benchStage, stagePointer } from "./benchStage";
 
 /**
  * Pry mode — the first of the bench's gestures (migration phase 7). A
@@ -59,6 +59,26 @@ export class BenchPryView extends BaseEntity implements Entity {
 
   private dive(): BenchDive | undefined {
     return this.game.entities.tryGetSingleton(BenchDive);
+  }
+
+  /**
+   * Where the shown face's nails sit on screen right now — the pry
+   * side of `piecePoints`: a spec aims at a real ring instead of
+   * sweeping the stage for one.
+   */
+  nailPoints(): ReadonlyArray<{ nail: PalletNail; x: number; y: number }> {
+    const staged = this.stagedPallet();
+    const fit = benchStage(this.game)?.fit;
+    if (!staged || !fit) return [];
+    return faceNails(staged.pallet, staged.placement.flipped).map((nail) => {
+      const local = palletNailPosition(nail);
+      const at = palletPointOnBench(staged.placement, local.xIn, local.yIn);
+      return {
+        nail,
+        x: fit.originX + at.xIn * fit.pxPerIn,
+        y: fit.originY + at.yIn * fit.pxPerIn,
+      };
+    });
   }
 
   /** The pallet staged on the opened bench, with where it lies. */
@@ -102,14 +122,8 @@ export class BenchPryView extends BaseEntity implements Entity {
 
   /** The pointer in bench-frame inches, or null off the stage. */
   private pointerInches(): { xIn: number; yIn: number } | null {
-    const view = this.game.entities.tryGetSingleton(BenchDiveView);
-    const fit = view?.fit;
-    if (!fit) return null;
-    const [px, py] = this.game.io.mousePosition;
-    return {
-      xIn: (px - fit.originX) / fit.pxPerIn,
-      yIn: (py - fit.originY) / fit.pxPerIn,
-    };
+    const stage = benchStage(this.game);
+    return stage ? stagePointer(this.game, stage.fit) : null;
   }
 
   /** Whether the hammer is the tool in hand. */
@@ -150,8 +164,7 @@ export class BenchPryView extends BaseEntity implements Entity {
     const g = this.rings;
     g.clear();
     const dive = this.dive();
-    const view = this.game.entities.tryGetSingleton(BenchDiveView);
-    const fit = view?.fit;
+    const fit = benchStage(this.game)?.fit;
     const staged = this.stagedPallet();
     if (!dive || !fit || !staged) return;
 

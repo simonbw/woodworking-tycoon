@@ -12,7 +12,7 @@ import {
   formatDecimal,
   formatMoney,
 } from "../../utils/formatNumber";
-import { TargetingState } from "../dispatch/TargetingState";
+import { escapeClaimedByWorld } from "../dispatch/escapeClaims";
 import { useGame, useShopState } from "../useShell";
 import { JournalModal } from "./journal/JournalModal";
 import { useManual } from "./manual/ManualProvider";
@@ -40,11 +40,9 @@ export const NavBar: React.FC = () => {
   // In the old shell one provider held every Escape binding, and registry
   // order let an open sheet or door card claim the key ahead of the pause
   // menu. Here those bindings live in the engine's ShortcutDispatcher, so
-  // this one steps aside exactly when that one answers.
-  const targeting = game.entities.tryGetSingleton(TargetingState);
-  const floorClaimsEscape =
-    targeting != null &&
-    (targeting.sheetMachine() != null || targeting.truckMenuOpen);
+  // this one steps aside exactly when that one answers (a sheet, a trip
+  // card, a receipt, or a bench the player is leaned over).
+  const floorClaimsEscape = escapeClaimedByWorld(game);
 
   useShortcut("open-journal", () => setJournalOpen(true));
   useShortcut("pause-menu", () => setPauseOpen(true), !floorClaimsEscape);

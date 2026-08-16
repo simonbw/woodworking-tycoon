@@ -35,7 +35,9 @@ test.describe("Engine shell", () => {
     await test.step("the start menu comes first", async () => {
       // A fresh browser has no engine save: no Continue on offer, and
       // New Game is the way into the shop.
-      await expect(page.getByRole("button", { name: "New Game" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "New Game" }),
+      ).toBeVisible();
       await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(
         0,
       );
@@ -221,8 +223,7 @@ test.describe("Engine shell", () => {
         const game = (window as any).game;
         const workspace = [...game.entities.all].find(
           (e: any) =>
-            e.saveType === "machine" &&
-            e.state.machineTypeId === "workspace",
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
         );
         const cell = workspace.view().absoluteOperationPosition;
         game.entities.getById("player").position = [
@@ -512,7 +513,9 @@ test.describe("Engine shell", () => {
       await page.evaluate(() => {
         const save = (window as any).__GET_GAME_STATE__();
         save.singletons.stand = {
-          pieces: [{ id: "spec-shelf", type: "rusticShelf", species: "pallet" }],
+          pieces: [
+            { id: "spec-shelf", type: "rusticShelf", species: "pallet" },
+          ],
         };
         save.entities = save.entities.filter((e: any) => e.type !== "customer");
         save.entities.push({
@@ -606,14 +609,16 @@ test.describe("Engine shell", () => {
       });
 
       await page.keyboard.press("Tab");
-      await expect.poll(
-        () =>
-          page.evaluate(
-            () => (window as any).game.entities.getById("benchDive")
-              .openBenchKey,
-          ),
-        { timeout: 10_000 },
-      ).not.toBeNull();
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                (window as any).game.entities.getById("benchDive").openBenchKey,
+            ),
+          { timeout: 10_000 },
+        )
+        .not.toBeNull();
       // The tool rail is the mode selector: take the hammer in hand.
       await expect(page.getByTestId("bench-tool-rail")).toBeVisible();
       await page.getByTestId("bench-tool-hammer").click();
@@ -625,37 +630,35 @@ test.describe("Engine shell", () => {
         )
         .toBe("hammer");
 
-      // Sweep the stage for a nail's ring, then press it: the pull is
-      // the commit — the nail leaves the pallet and lands in the tin.
-      const stage = await page.evaluate(() => {
-        const game = (window as any).game;
-        const view = [...game.entities.all].find(
-          (e: any) => e.fit !== undefined && e.group !== undefined,
+      // The stage seam says where the rings are; point at one and it
+      // warms, and the press is the commit — the nail leaves the pallet
+      // and lands in the tin.
+      const nailPoint = await page.evaluate(() => {
+        const view = [...(window as any).game.entities.all].find(
+          (e: any) => typeof e.nailPoints === "function",
         );
-        return {
-          originX: view.fit.originX,
-          originY: view.fit.originY,
-          pxPerIn: view.fit.pxPerIn,
-          widthIn: view.group.widthIn,
-          heightIn: view.group.heightIn,
-        };
+        // The coach's column floats over the stage's left edge, as it
+        // does in the old shell — take a ring the canvas can hear.
+        return (
+          view
+            .nailPoints()
+            .find(
+              (p: any) =>
+                document.elementFromPoint(p.x, p.y)?.tagName === "CANVAS",
+            ) ?? null
+        );
       });
-      let hit: { x: number; y: number } | null = null;
-      for (let gy = 0; gy < 30 && !hit; gy++) {
-        for (let gx = 0; gx < 45 && !hit; gx++) {
-          const x =
-            stage.originX + (gx / 45) * stage.widthIn * stage.pxPerIn;
-          const y =
-            stage.originY + (gy / 30) * stage.heightIn * stage.pxPerIn;
-          await page.mouse.move(x, y);
-          const hovered = await page.evaluate(
+      expect(nailPoint).toBeTruthy();
+      const hit = { x: nailPoint.x, y: nailPoint.y };
+      await page.mouse.move(hit.x, hit.y);
+      await expect
+        .poll(() =>
+          page.evaluate(
             () =>
               (window as any).game.entities.getById("benchDive").hoveredNail,
-          );
-          if (hovered) hit = { x, y };
-        }
-      }
-      expect(hit).not.toBeNull();
+          ),
+        )
+        .not.toBeNull();
 
       const nailCount = () =>
         page.evaluate(() => {
@@ -668,7 +671,7 @@ test.describe("Engine shell", () => {
           return pallet ? pallet.nails.length : 0;
         });
       const before = await nailCount();
-      await page.mouse.click(hit!.x, hit!.y);
+      await page.mouse.click(hit.x, hit.y);
       await expect.poll(nailCount).toBe(before - 1);
       expect(
         await page.evaluate(
@@ -688,6 +691,76 @@ test.describe("Engine shell", () => {
           ),
         )
         .toBeNull();
+    });
+
+    await test.step("the sander strokes a board smooth", async () => {
+      // Tool-first work: the tool in hand plus the piece under it is the
+      // operation. The powered pad cuts where it rests, so a short
+      // press over a small board carries the pass to its commit.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        const save = (window as any).__GET_GAME_STATE__();
+        const ws = save.entities.find(
+          (e: any) =>
+            e.type === "machine" && e.data.machineTypeId === "workspace",
+        );
+        ws.data.tools = ["randomOrbitSander"];
+        ws.data.inputMaterials = [
+          {
+            id: "spec-sand-board",
+            type: "board",
+            species: "pine",
+            length: 3,
+            width: 2,
+            thickness: 4,
+            surface: "smooth",
+          },
+        ];
+        save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      await page.keyboard.press("Tab");
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                (window as any).game.entities.getById("benchDive").openBenchKey,
+            ),
+          { timeout: 10_000 },
+        )
+        .not.toBeNull();
+      await page.getByTestId("bench-tool-randomOrbitSander").click();
+
+      // The stage seam says where the board actually lies.
+      const board = await page.evaluate(() => {
+        const view = [...(window as any).game.entities.all].find(
+          (e: any) => typeof e.piecePoints === "function",
+        );
+        return view.piecePoints().find((p: any) => p.id === "spec-sand-board");
+      });
+      expect(board).toBeTruthy();
+
+      await page.mouse.move(board.x, board.y);
+      await page.mouse.down();
+      const surfaces = () =>
+        page.evaluate(() => {
+          const bench = (window as any).game.entities
+            .getById("benchDive")
+            .openBench();
+          return bench.state.outputMaterials.map((m: any) => m.surface);
+        });
+      // The pad keeps working the spot it rests on: the pass fills and
+      // commits without the pointer having to travel.
+      await expect.poll(surfaces, { timeout: 20_000 }).toContain("sanded");
+      await page.mouse.up();
+      await page.keyboard.press("Escape");
     });
 
     await test.step("the world round-trips through the hooks", async () => {

@@ -28,6 +28,21 @@ import { ShellStore } from "../ShellStore";
 import { TargetingState } from "./TargetingState";
 
 /**
+ * Take the key out of circulation.
+ *
+ * Two dispatchers share the document's keydown: this one for the floor
+ * and the DOM's ShortcutProvider for the chrome. The engine's listener
+ * is installed first (Game.init runs before React mounts), so stopping
+ * propagation here is what keeps a key the world just used from also
+ * reaching the chrome — Escape standing up from a bench must not pop
+ * the pause menu behind it.
+ */
+function consume(event: KeyboardEvent): void {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+/**
  * Keys to commands — the ShortcutDispatcher the migration plan calls
  * for. The registry (`src/game/shortcuts.ts`) stays the single source
  * of truth for bindings and scopes; this entity matches engine key
@@ -79,7 +94,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     if (dive?.openBenchKey != null) {
       if (key === "Tab" || key === "Escape") {
         dive.close();
-        event.preventDefault();
+        consume(event);
       }
       return;
     }
@@ -97,16 +112,16 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       if (storeScene.checkoutOpen) return;
       if (key === "KeyE") {
         storeScene.pressE();
-        event.preventDefault();
+        consume(event);
         return;
       }
       if (key === "KeyF") {
         storeScene.pressF();
-        event.preventDefault();
+        consume(event);
         return;
       }
       if (key === "Escape" && storeScene.pressEscape()) {
-        event.preventDefault();
+        consume(event);
         return;
       }
       return;
@@ -123,7 +138,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       if (def.scope !== "home" && def.scope !== "global") continue;
       if (!this.enabled(def.id)) continue;
       this.fire(def.id, event.shiftKey);
-      event.preventDefault();
+      consume(event);
       return;
     }
   }

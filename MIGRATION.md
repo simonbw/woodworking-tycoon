@@ -158,11 +158,11 @@ the reference implementation; equivalent entity tests replace each system's
 transform tests as it lands.
 
 - [x] Player entity: 60 Hz movement (port `player-motion.ts` integration +
-      collision), carrying/hands, busyTicks  ← exemplar #1, spine
+      collision), carrying/hands, busyTicks ← exemplar #1, spine
       (`src/sim/entities/Player.ts`; collision world assembled from
       "solids"-tagged entities, `src/sim/collision.ts`)
 - [x] Machines: placement, carrying machines, power, settings, operations
-      (phases, attended work, dust emission), feed clearance  ← exemplar #2,
+      (phases, attended work, dust emission), feed clearance ← exemplar #2,
       spine (`MachineEntity` + `MachineSystem` minute pass +
       `machine-commands.ts`; **deviation, recorded**: operations advance as
       the serialized `operationProgress` state machine, not live coroutines —
@@ -190,7 +190,7 @@ transform tests as it lands.
       `src/views/CameraRig.ts` reproduces ShopView's fit + CameraLayer's
       outdoor follow as Camera2d position/zoom; lawn re-follows the
       camera's world viewport each frame)
-- [x] Player view  ← exemplar for sprite ports (`src/views/PlayerView.ts`
+- [x] Player view ← exemplar for sprite ports (`src/views/PlayerView.ts`
       via registerView; `MovementInput` feeds held movement so the shell
       walks — the full dispatcher stays phase 4)
 - [x] **[fan-out]** ~40 sprites as view entities (Graphics bodies port into
@@ -278,7 +278,7 @@ transform tests as it lands.
       `stepPlayerMotion` over `storeCollisionWorld`, cell reported onto
       `away.position`) plus a both-axes camera at the rig's zoom. Drive
       legs charge through `TimeFlow.forceMinutes` — out immediately after
-      `goToStore`, home *before* `returnFromStore` via the director's
+      `goToStore`, home _before_ `returnFromStore` via the director's
       deferred completion — preserving the old actions' ordering
 - [x] `StoreScene`: walkable aisles, shelf/corral/register interactions,
       checkout, departure — StoreSceneRoot + store-views/ (environment,
@@ -319,7 +319,14 @@ transform tests as it lands.
         world's hint chips fold while leaned in (the old bench-dive
         fade). Covered in the engine-shell journey: dive, take the
         hammer, pry a nail out of the pallet and into the tin, stand up
-  - [ ] tool-first work
+  - [x] tool-first work (stroke) — the tool in hand plus the piece under
+        it is the operation (`toolOperationFor`): the press claims that
+        piece through `operateMachine`, the drag lays coverage down with
+        the old surface's gain math, and a filled grid commits through
+        `finishAttendedWork`. Coverage is ephemeral, so letting go
+        abandons the pass and coming back restarts the mask. Covered in
+        the journey spec: the powered sander carries a board to `sanded`
+  - [ ] tool-first work (saw)
   - [ ] glue-ups (clamps-first)
   - [ ] blueprint assembly
 - [ ] **Gate:** bench spec passes; all modes at parity (**human playtest
@@ -365,14 +372,14 @@ transform tests as it lands.
   serialization; flagging it for review rather than asking up front since
   behavior is line-for-line machineTickPass.
 - 2026-08-15 — [fan-out] Stand & customers ported: StandEntity (singleton)
-  + one CustomerEntity per passerby, StreetSystem on the "street" layer
-  (standTickPass line for line, dice from game.random), stand-commands,
-  projection/fixture claim their slices, driver grows standAtStand/
-  setOut/awaitSales, "payout" event added to CustomEvents (reward flight
-  subscribes in phase 3+). Driver deviations, both waiting on other
-  fan-out ports: setOut sweeps only the hands (piles unported) and
-  awaitSales can't sleep through nights (day cycle unported). tsc + unit
-  green.
+  - one CustomerEntity per passerby, StreetSystem on the "street" layer
+    (standTickPass line for line, dice from game.random), stand-commands,
+    projection/fixture claim their slices, driver grows standAtStand/
+    setOut/awaitSales, "payout" event added to CustomEvents (reward flight
+    subscribes in phase 3+). Driver deviations, both waiting on other
+    fan-out ports: setOut sweeps only the hands (piles unported) and
+    awaitSales can't sleep through nights (day cycle unported). tsc + unit
+    green.
 - 2026-08-15 — [fan-out] Tools & worktable upgrades ported: tool-commands
   (mountTool/unmountTool over the shared withValidSelectedOperation, now
   exported from the old tool-actions) and upgrade-commands
@@ -695,3 +702,19 @@ transform tests as it lands.
   still open for the later sub-phases: no lean-in tween, the rail's
   mount/unmount half (the ✕ and ghosted hooks) still lives on the
   station sheet, and no work foley (sounds are phase 8).
+- 2026-08-16 — Phase 7 stroke work landed, and with it two bugs the
+  gesture surfaces were the first to feel. (1) The vendored
+  `MouseManager` flipped the pointer's Y for a Y-up world; this game's
+  cells run downward and its HUD layers are plain screen space, so every
+  pick was mirrored about the middle of the window — the floor's mouse
+  targeting and the broom's aim included. It now reports the pointer as
+  it arrives (engine surgery, `src/core/io/MouseManager.ts`). (2) The
+  stage fit and the run were cached on the view at render time, and the
+  gestures read them during the tick — a frame stale, which is exactly
+  the frame a press lands in. Both now come from `benchStage(game)`,
+  computed fresh, with the old scene's pixel chrome insets (152/96/24)
+  so a bench frames up where it used to. The dive also picks up
+  HomePage's mid-dive chrome rules: the corner chips fade and go inert,
+  the coach's column rises over the view, the supplies tally stays up
+  for the salvage flight. Test seams: `piecePoints()` and `nailPoints()`
+  (where the pieces and rings are on screen) plus `strokeProgress()`.
