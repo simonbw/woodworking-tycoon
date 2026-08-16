@@ -1,7 +1,7 @@
 import { Graphics } from "pixi.js";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
-import { Entity } from "../../../core/entity/Entity";
+import { Entity, GameEventMap } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
 import {
@@ -15,7 +15,10 @@ import {
   palletNailPosition,
 } from "../../../game/bench-work/pallet-geometry";
 import { Pallet, PalletNail } from "../../../game/Materials";
-import { pryPalletNail } from "../../../sim/commands/bench-commands";
+import {
+  arrangeBenchMaterial,
+  pryPalletNail,
+} from "../../../sim/commands/bench-commands";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
 import { benchStage, stagePointer } from "./benchStage";
@@ -157,6 +160,25 @@ export class BenchPryView extends BaseEntity implements Entity {
       dive.hoveredNail = null;
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
     }
+  }
+
+  /**
+   * With the hammer in hand, F turns the pallet over without putting
+   * the hammer down — the rest of the nails are on the other side.
+   */
+  @on("keyDown")
+  onKeyDown({ key, event }: GameEventMap["keyDown"]) {
+    if (key !== "KeyF" || !this.hammerHeld()) return;
+    const bench = this.dive()?.openBench();
+    const staged = this.stagedPallet();
+    if (!bench || !staged) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    arrangeBenchMaterial(this.game, bench, staged.pallet.id, {
+      ...staged.placement,
+      flipped: !staged.placement.flipped,
+    });
+    this.game.entities.tryGetSingleton(ShellStore)?.bump();
   }
 
   @on("render")

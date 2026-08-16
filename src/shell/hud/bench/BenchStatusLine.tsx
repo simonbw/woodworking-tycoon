@@ -1,6 +1,10 @@
 import React from "react";
 import { benchGroupWork } from "../../../game/bench-work/workpiece";
+import { benchPlacementFor } from "../../../game/bench-work/bench-layout";
+import { faceNails } from "../../../game/bench-work/pallet-geometry";
 import { toolForOperation } from "../../../game/bench-work/tool-work";
+import { Machine } from "../../../game/Machine";
+import { Pallet } from "../../../game/Materials";
 import { TOOL_TYPES } from "../../../game/Tool";
 import { BenchDive } from "../../scenes/bench/BenchDive";
 import { openBenchGroup } from "../../scenes/bench/benchStage";
@@ -33,6 +37,9 @@ export const BenchStatusLine: React.FC = () => {
     ...member.machine.inputMaterials,
     ...member.machine.outputMaterials,
   ]);
+  const finished = run.group.members.flatMap(
+    (member) => member.machine.outputMaterials,
+  );
 
   // The tool a running job needs back in hand to carry on.
   const workTool =
@@ -65,13 +72,19 @@ export const BenchStatusLine: React.FC = () => {
     }
     if (script?.kind === "pry") {
       if (!held) return "Take the hammer down off the rail.";
+      if (script.pallet.nails.length > 0 && faceIsClear(run.opened, script)) {
+        return "The rest are nailed from the other side. Press F to flip the pallet.";
+      }
       return "Press a nail to pry it loose.";
     }
     if (held) {
       return `Move the ${heldName} over a piece it can work.`;
     }
+    if (finished.length > 0) {
+      return "Finished work on the bench. Press E over a piece to take it.";
+    }
     if (pieces.length > 0) {
-      return "Take a tool down off the rail to work a piece.";
+      return "Loose stock on the bench. Drag to arrange it.";
     }
     return "The bench is clear. Set stock down on it with F.";
   };
@@ -84,10 +97,23 @@ export const BenchStatusLine: React.FC = () => {
         ...(sawsWithoutACut(held, script)
           ? ([["R", "swing the angle"]] as Array<[string, string]>)
           : []),
+        ...(script?.kind === "pry"
+          ? ([["F", "flip the pallet"]] as Array<[string, string]>)
+          : []),
         ["Esc", `hang the ${heldName} up`],
         ["Tab", "step back"],
       ]
-    : [["Tab", "step back"]];
+    : [
+        ...(pieces.length > 0
+          ? ([
+              ["Drag", "move a piece"],
+              ["R", "turn"],
+              ["F", "tip it up"],
+              ["E", "take it"],
+            ] as Array<[string, string]>)
+          : []),
+        ["Tab", "step back"],
+      ];
 
   const progressLine =
     script?.kind === "pry" ? `${script.pallet.nails.length} nails left` : null;
@@ -123,6 +149,16 @@ export const BenchStatusLine: React.FC = () => {
     </div>
   );
 };
+
+/** Whether every nail left is on the underside — the flip is the only
+ * move the hammer has from here. */
+function faceIsClear(
+  opened: Machine,
+  script: { kind: "pry"; pallet: Pallet },
+): boolean {
+  const placement = benchPlacementFor(opened, script.pallet);
+  return faceNails(script.pallet, placement.flipped).length === 0;
+}
 
 /** Whether R would swing the miter box right now: a saw in hand with no
  * cut marked yet (the stop locks once the line is on the board). */

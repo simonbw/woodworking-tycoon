@@ -11,6 +11,7 @@ import { placedPieceSize } from "../../../game/bench-work/workpiece";
 import { MaterialInstance } from "../../../game/Materials";
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
 import { ShellStore } from "../../ShellStore";
+import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
 import { benchStage, benchWork, workpieceSpot } from "./benchStage";
 
@@ -122,9 +123,15 @@ export class BenchDiveView extends BaseEntity implements Entity {
       this.tops.rect(x, y, w, h).fill(BENCH_WOOD);
     }
 
-    // Everything lying on the tops, where the layout says it lies.
+    // Everything lying on the tops, where the layout says it lies —
+    // except a piece riding the hand, which the arranging view draws
+    // where the hand has it rather than where it was set down.
+    const dragging = game.entities
+      .tryGetSingleton(BenchArrangeView)
+      ?.draggingId();
     this.pieces.removeChildren().forEach((child) => child.destroy());
     for (const piece of groupPieces(group)) {
+      if (piece.material.id === dragging) continue;
       this.pieces.addChild(
         pieceHolder(piece.material, piece.placement, stage.fit),
       );

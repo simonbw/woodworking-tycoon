@@ -9,6 +9,7 @@ import { HudRoot } from "./shell/HudRoot";
 import { OverlayRoot } from "./shell/OverlayRoot";
 import { PayoutBuffer } from "./shell/PayoutBuffer";
 import { BenchDive } from "./shell/scenes/bench/BenchDive";
+import { BenchArrangeView } from "./shell/scenes/bench/BenchArrangeView";
 import { BenchDiveView } from "./shell/scenes/bench/BenchDiveView";
 import { BenchPryView } from "./shell/scenes/bench/BenchPryView";
 import { BenchSawView } from "./shell/scenes/bench/BenchSawView";
@@ -53,6 +54,7 @@ async function main() {
   game.addEntity(new BenchDiveView());
   game.addEntity(new BenchPryView());
   game.addEntity(new BenchSawView());
+  game.addEntity(new BenchArrangeView());
   game.addEntity(new BenchStrokeView());
   game.addEntity(new MovementInput());
   game.addEntity(new TargetingState());

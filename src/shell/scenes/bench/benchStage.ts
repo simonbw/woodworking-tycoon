@@ -8,6 +8,7 @@ import {
   BenchPlacement,
   benchPlacementFor,
   benchPointInFrame,
+  framePointOnBench,
 } from "../../../game/bench-work/bench-layout";
 import {
   BenchGroup,
@@ -143,6 +144,27 @@ export function workpieceSpot(
     placement: placementInFrame(group, member, onMember),
     size: placedPieceSize(workpiece, onMember),
   };
+}
+
+/** A placed piece's four corners on the stage, in screen px. */
+export function pieceCorners(
+  placement: BenchPlacement,
+  size: { widthIn: number; heightIn: number },
+  fit: StageFit,
+): number[] {
+  const corners: Array<[number, number]> = [
+    [0, 0],
+    [size.widthIn, 0],
+    [size.widthIn, size.heightIn],
+    [0, size.heightIn],
+  ];
+  return corners.flatMap(([localX, localY]) => {
+    const at = framePointOnBench(placement, size, localX, localY);
+    return [
+      fit.originX + at.xIn * fit.pxPerIn,
+      fit.originY + at.yIn * fit.pxPerIn,
+    ];
+  });
 }
 
 /** The piece under a point in the run's frame, top of the stack first. */

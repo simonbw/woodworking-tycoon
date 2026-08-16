@@ -334,6 +334,13 @@ transform tests as it lands.
         open over the last strokes, and each stroke spills sawdust at
         the crossing. Covered in the journey spec: a 12" board becomes
         two 6" halves
+  - [x] pieces on the bench — the bare-handed half of the old scene:
+        drag stock around the run (it follows the hand until its middle
+        reaches the edge of the wood, and crossing a seam hands it to the
+        other table), R turns, F tumbles a board flat → on edge → on end,
+        E takes the piece under the hand, and with the hammer in hand F
+        turns the pallet over. Covered in the journey spec: drag, turn,
+        take
   - [ ] glue-ups (clamps-first)
   - [ ] blueprint assembly
 - [ ] **Gate:** bench spec passes; all modes at parity (**human playtest
@@ -737,3 +744,11 @@ transform tests as it lands.
   lean-in tween, the rail's mount/unmount half is still on the station
   sheet, no work foley (sounds are phase 8), and the saw's voice
   (handSawSynth) waits with them.
+- 2026-08-16 — Phase 7 arrangement gestures landed (an item the plan
+  folded into "tool-first work" but which is really its own half of the
+  old scene, so it's listed on its own now): dragging, turning, tumbling,
+  taking, and the hammer's pallet flip. The bench status line grew its
+  bare-handed lines and hints with them. Everything commits through the
+  phase-2 commands (arrangeBenchMaterial, gatherBenchPieces across a
+  seam), so an arrangement survives standing up and shows on the shop
+  floor.

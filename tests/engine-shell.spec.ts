@@ -866,6 +866,104 @@ test.describe("Engine shell", () => {
       await page.keyboard.press("Escape");
     });
 
+    await test.step("bare hands drag, turn, and take a piece", async () => {
+      // Where pieces lie is real state, so each gesture commits to the
+      // bench's layout — the shop floor draws the same arrangement.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        const save = (window as any).__GET_GAME_STATE__();
+        const ws = save.entities.find(
+          (e: any) =>
+            e.type === "machine" && e.data.machineTypeId === "workspace",
+        );
+        ws.data.tools = [];
+        ws.data.outputMaterials = [];
+        ws.data.inputMaterials = [
+          {
+            id: "spec-loose-board",
+            type: "board",
+            species: "pine",
+            length: 24,
+            width: 4,
+            thickness: 4,
+            surface: "rough",
+          },
+        ];
+        save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      await page.keyboard.press("Tab");
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                (window as any).game.entities.getById("benchDive").openBenchKey,
+            ),
+          { timeout: 10_000 },
+        )
+        .not.toBeNull();
+
+      const boardPoint = () =>
+        page.evaluate(() => {
+          const view = [...(window as any).game.entities.all].find(
+            (e: any) => typeof e.piecePoints === "function",
+          );
+          return view
+            .piecePoints()
+            .find((p: any) => p.id === "spec-loose-board");
+        });
+      const seat = () =>
+        page.evaluate(() => {
+          const bench = (window as any).game.entities
+            .getById("benchDive")
+            .openBench();
+          return bench.state.benchLayout?.["spec-loose-board"] ?? null;
+        });
+
+      const before = await boardPoint();
+      expect(before).toBeTruthy();
+      await page.mouse.move(before.x, before.y);
+      await page.mouse.down();
+      await page.mouse.move(before.x + 60, before.y + 30, { steps: 3 });
+      await page.mouse.up();
+      // The drag committed: the piece has a seat of its own now, and the
+      // stage draws it where the hand left it.
+      await expect.poll(seat).not.toBeNull();
+      const after = await boardPoint();
+      expect(after.x).toBeGreaterThan(before.x + 40);
+
+      // R turns it a quarter turn about its middle.
+      await page.mouse.move(after.x, after.y);
+      const turnedFrom = (await seat()).angleDeg;
+      await page.keyboard.press("KeyR");
+      await expect
+        .poll(async () => (await seat()).angleDeg)
+        .toBe(turnedFrom + 90);
+
+      // E takes the piece under the hand off the bench.
+      const turned = await boardPoint();
+      await page.mouse.move(turned.x, turned.y);
+      await page.keyboard.press("KeyE");
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const bench = (window as any).game.entities
+              .getById("benchDive")
+              .openBench();
+            return bench.state.inputMaterials.length;
+          }),
+        )
+        .toBe(0);
+      await page.keyboard.press("Escape");
+    });
+
     await test.step("the world round-trips through the hooks", async () => {
       const roundTrip = await page.evaluate(() => {
         const first = (window as any).__GET_GAME_STATE__();
