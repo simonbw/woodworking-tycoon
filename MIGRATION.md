@@ -341,7 +341,12 @@ transform tests as it lands.
         E takes the piece under the hand, and with the hammer in hand F
         turns the pallet over. Covered in the journey spec: drag, turn,
         take
-  - [ ] glue-ups (clamps-first)
+  - [x] glue-ups (clamps-first) — bars off the rack snap to the ghosts
+        the run wants, the bottle runs a bead down each open seam, and
+        winding the last clamp tight is the single commit (gather →
+        startGlueUp → finishAttendedWork), so the cure begins on the
+        bench. No plan is ever pulled: the contiguous run lying in the
+        clamps is the glue-up. Covered in the journey spec
   - [ ] blueprint assembly
 - [ ] **Gate:** bench spec passes; all modes at parity (**human playtest
       gate** for feel)
@@ -752,3 +757,13 @@ transform tests as it lands.
   phase-2 commands (arrangeBenchMaterial, gatherBenchPieces across a
   seam), so an arrangement survives standing up and shows on the shop
   floor.
+- 2026-08-16 — Phase 7 glue-ups landed: the clamp and the bottle hang on
+  the rail beside the tools (they aren't tools — nothing mounts them),
+  bars snap to the ghosts the detected run asks for, the bead fills each
+  seam, and the last tighten commits. Escape now empties the hands
+  before it stands the player up, matching the old view's put-back
+  binding. One deliberate difference from the old surface: the bead's
+  pacing counts sim time since the last bead rather than wall time
+  between pointer events (the engine has no per-move event), capped the
+  same way — identical at full frame rate, and it no longer starves on a
+  slow renderer.

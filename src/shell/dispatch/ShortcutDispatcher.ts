@@ -92,6 +92,14 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     // gesture surfaces run on the pointer, not here.)
     const dive = this.game.entities.tryGetSingleton(BenchDive);
     if (dive?.openBenchKey != null) {
+      // Whatever the hands picked up off the rail — a tool, a clamp,
+      // the glue bottle — goes back where it came from before Escape
+      // means standing up. Tab always steps back.
+      if (key === "Escape" && dive.handsFull()) {
+        dive.setHolding(null);
+        consume(event);
+        return;
+      }
       if (key === "Tab" || key === "Escape") {
         dive.close();
         consume(event);

@@ -3,6 +3,9 @@ import { HintSurfaceContext, Kbd } from "../../../components/shortcuts/Kbd";
 import { TOOL_TYPES } from "../../../game/Tool";
 import { toolIconSrc } from "../../../utils/uiImages";
 import { BenchDive } from "../../scenes/bench/BenchDive";
+import { clampsFree } from "../../../game/Clamp";
+import { availableOperations } from "../../../game/skill-helpers";
+import { projectGameState } from "../../../sim/projection";
 import { useGame, useShellVersion } from "../../useShell";
 
 /**
@@ -26,6 +29,14 @@ export const BenchToolRail: React.FC = () => {
   if (!dive || !bench) return null;
 
   const tools = bench.state.tools;
+  // The glue-up's two hands hang beside the tools: a bar off the rack
+  // and the bottle. They aren't tools — nothing mounts them — so they
+  // only show where a glue-up could happen (a bench that knows one).
+  const gameState = projectGameState(game);
+  const glue = availableOperations(bench.view(), gameState.progression).some(
+    (operation) => operation.interaction?.kind === "glue",
+  );
+  const clampsAvailable = clampsFree(gameState.clamps, gameState.machines);
 
   return (
     <HintSurfaceContext.Provider value="chrome">
@@ -33,7 +44,7 @@ export const BenchToolRail: React.FC = () => {
         className="pointer-events-auto absolute inset-x-0 top-0 z-50 flex justify-center gap-2 p-3"
         data-testid="bench-tool-rail"
       >
-        {tools.length === 0 ? (
+        {tools.length === 0 && !glue ? (
           <p className="hud-chip px-3 py-1.5 font-condensed uppercase tracking-[0.2em] text-[0.65rem] text-paper-manila/70">
             No tools on this bench
           </p>
@@ -71,7 +82,56 @@ export const BenchToolRail: React.FC = () => {
             );
           })
         )}
+        {glue && (
+          <>
+            <RailButton
+              testId="bench-clamp"
+              label="Clamp"
+              title={`Bar clamps — ${clampsAvailable} free on the rack`}
+              held={dive.holdingClamp}
+              disabled={clampsAvailable === 0 && !dive.holdingClamp}
+              onClick={() =>
+                dive.setHolding(dive.holdingClamp ? null : "clamp")
+              }
+            />
+            <RailButton
+              testId="bench-glue-bottle"
+              label="Glue"
+              title="Wood glue — run a bead down each open seam"
+              held={dive.holdingGlue}
+              onClick={() => dive.setHolding(dive.holdingGlue ? null : "glue")}
+            />
+          </>
+        )}
       </div>
     </HintSurfaceContext.Provider>
   );
 };
+
+/** One plain chip on the rail — the clamp and the bottle, which have no
+ * tool icon of their own. */
+const RailButton: React.FC<{
+  testId: string;
+  label: string;
+  title: string;
+  held: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}> = ({ testId, label, title, held, disabled, onClick }) => (
+  <button
+    type="button"
+    data-testid={testId}
+    aria-pressed={held}
+    title={title}
+    disabled={disabled}
+    onClick={onClick}
+    data-sfx="ui-tab"
+    className={`rounded-sm border px-2.5 py-1.5 font-condensed uppercase tracking-wider text-xs disabled:opacity-40 ${
+      held
+        ? "border-gold bg-gold/20 text-paper-ivory"
+        : "border-workshop-edge bg-workshop-bg/85 text-paper-manila hover:bg-workshop-bg"
+    }`}
+  >
+    {label}
+  </button>
+);

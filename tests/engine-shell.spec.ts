@@ -25,7 +25,7 @@ test.describe("Engine shell", () => {
     // shares the machine with seven other specs' servers, which more
     // than doubles it. The journey splits across the seven canonical
     // specs at cutover; until then it carries their coverage alone.
-    test.setTimeout(300_000);
+    test.setTimeout(420_000);
 
     await page.goto("/engine.html");
     await page.waitForFunction(() => Boolean((window as any).game), null, {
@@ -681,7 +681,9 @@ test.describe("Engine shell", () => {
         ),
       ).toBeGreaterThan(0);
 
-      // Escape stands back up.
+      // Escape empties the hands first — the hammer goes back on the
+      // rail — and the second one stands back up.
+      await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
       await expect
         .poll(() =>
@@ -760,6 +762,8 @@ test.describe("Engine shell", () => {
       // commits without the pointer having to travel.
       await expect.poll(surfaces, { timeout: 20_000 }).toContain("sanded");
       await page.mouse.up();
+      // One Escape hangs the sander up, the next stands back up.
+      await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
     });
 
@@ -864,6 +868,7 @@ test.describe("Engine shell", () => {
       });
       expect(lengths).toEqual([6, 6]);
       await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
     });
 
     await test.step("bare hands drag, turn, and take a piece", async () => {
@@ -961,6 +966,130 @@ test.describe("Engine shell", () => {
           }),
         )
         .toBe(0);
+      await page.keyboard.press("Escape");
+    });
+
+    await test.step("clamps, glue, and a tighten start a glue-up", async () => {
+      // Clamps-first: no plan is pulled. Two boards lying edge to edge
+      // ARE the glue-up once the bars are set, the seam is beaded, and
+      // the last clamp comes tight.
+      await page.evaluate(() => {
+        const game = (window as any).game;
+        const workspace = [...game.entities.all].find(
+          (e: any) =>
+            e.saveType === "machine" && e.state.machineTypeId === "workspace",
+        );
+        const cell = workspace.view().absoluteOperationPosition;
+        const save = (window as any).__GET_GAME_STATE__();
+        const ws = save.entities.find(
+          (e: any) =>
+            e.type === "machine" && e.data.machineTypeId === "workspace",
+        );
+        ws.data.tools = [];
+        ws.data.outputMaterials = [];
+        const board = (id: string) => ({
+          id,
+          type: "board",
+          species: "pine",
+          length: 12,
+          width: 6,
+          thickness: 4,
+          surface: "smooth",
+        });
+        ws.data.inputMaterials = [board("spec-glue-a"), board("spec-glue-b")];
+        // Laid across the bench, edge to edge — a run with one seam.
+        ws.data.benchLayout = {
+          "spec-glue-a": { xIn: 20, yIn: 14, angleDeg: 90, flipped: false },
+          "spec-glue-b": { xIn: 20, yIn: 20, angleDeg: 90, flipped: false },
+        };
+        save.singletons.player.position = [cell[0] + 0.5, cell[1] + 0.5];
+        save.singletons.consumables.clamps = 6;
+        save.singletons.progression.unlockedSkills = [
+          ...new Set([
+            ...(save.singletons.progression.unlockedSkills ?? []),
+            "panelWork",
+            "freeformLamination",
+          ]),
+        ];
+        (window as any).__UPDATE_GAME_STATE__(save);
+      });
+
+      await page.keyboard.press("Tab");
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                (window as any).game.entities.getById("benchDive").openBenchKey,
+            ),
+          { timeout: 10_000 },
+        )
+        .not.toBeNull();
+
+      const glue = () =>
+        page.evaluate(() => {
+          const view = [...(window as any).game.entities.all].find(
+            (e: any) => typeof e.glueProgress === "function",
+          );
+          return { progress: view.glueProgress(), points: view.gluePoints() };
+        });
+      // The run reads itself off the bench: one seam, two clamps wanted.
+      const start = await glue();
+      expect(start.progress).toMatchObject({ seams: 1, needed: 2, clamps: 0 });
+
+      // Lay a bar on each ghost.
+      await page.getByTestId("bench-clamp").click();
+      for (let bar = 0; bar < 2; bar++) {
+        const ghost = (await glue()).points.ghosts[0];
+        if (!ghost) break;
+        await page.mouse.click(ghost.x, ghost.y);
+        const holding = await page.evaluate(
+          () => (window as any).game.entities.getById("benchDive").holdingClamp,
+        );
+        if (!holding) await page.getByTestId("bench-clamp").click();
+      }
+      await expect.poll(async () => (await glue()).progress.clamps).toBe(2);
+
+      // Run a bead down the seam with the bottle.
+      await page.getByTestId("bench-glue-bottle").click();
+      const seam = (await glue()).points.seams[0];
+      await page.mouse.move(seam.x0, seam.y0);
+      await page.mouse.down();
+      for (let pass = 0; pass < 8; pass++) {
+        const progress = (await glue()).progress;
+        if (progress.seamsGlued >= progress.seams) break;
+        for (let step = 0; step <= 8; step++) {
+          const t = pass % 2 === 0 ? step / 8 : 1 - step / 8;
+          await page.mouse.move(
+            seam.x0 + (seam.x1 - seam.x0) * t,
+            seam.y0 + (seam.y1 - seam.y0) * t,
+          );
+        }
+      }
+      await page.mouse.up();
+      expect((await glue()).progress.seamsGlued).toBe(1);
+
+      // Bare hands again: each bar winds tight, and the last one is the
+      // commit — the boards leave the bench for the operation's cure.
+      await page.getByTestId("bench-glue-bottle").click();
+      for (let bar = 0; bar < 3; bar++) {
+        const state = await glue();
+        const point = state.points?.clamps?.[bar];
+        if (!point) break;
+        await page.mouse.click(point.x, point.y);
+        await page.waitForTimeout(150);
+      }
+      const curing = await page.evaluate(() => {
+        const bench = (window as any).game.entities
+          .getById("benchDive")
+          .openBench();
+        return {
+          status: bench.state.operationProgress.status,
+          processing: bench.state.processingMaterials.map((m: any) => m.id),
+        };
+      });
+      expect(curing.status).toBe("inProgress");
+      expect(curing.processing).toEqual(["spec-glue-a", "spec-glue-b"]);
       await page.keyboard.press("Escape");
     });
 

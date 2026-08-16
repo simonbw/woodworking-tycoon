@@ -7,6 +7,7 @@ import { Machine } from "../../../game/Machine";
 import { Pallet } from "../../../game/Materials";
 import { TOOL_TYPES } from "../../../game/Tool";
 import { BenchDive } from "../../scenes/bench/BenchDive";
+import { BenchGlueView } from "../../scenes/bench/BenchGlueView";
 import { openBenchGroup } from "../../scenes/bench/benchStage";
 import { useGame, useShellVersion, useShopState } from "../../useShell";
 
@@ -22,6 +23,7 @@ export const BenchStatusLine: React.FC = () => {
   useShellVersion();
   const gameState = useShopState();
   const dive = game.entities.tryGetSingleton(BenchDive);
+  const glue = game.entities.tryGetSingleton(BenchGlueView);
   const run = openBenchGroup(game);
   if (!dive || dive.openBenchKey === null || !run) return null;
 
@@ -77,6 +79,10 @@ export const BenchStatusLine: React.FC = () => {
       }
       return "Press a nail to pry it loose.";
     }
+    // The clamps-first glue-up walks itself: clamps out, stock across
+    // them, glue down the seams, tighten. Each line names the next move.
+    const glueLine = glueInstruction(dive, glue);
+    if (glueLine) return glueLine;
     if (held) {
       return `Move the ${heldName} over a piece it can work.`;
     }
@@ -89,31 +95,46 @@ export const BenchStatusLine: React.FC = () => {
     return "The bench is clear. Set stock down on it with F.";
   };
 
-  const hints: Array<[string, string]> = held
+  const hints: Array<[string, string]> = dive.holdingClamp
     ? [
-        script?.kind === "pry"
-          ? ["Click", "pry a nail"]
-          : ["Drag", script?.kind === "saw" ? "saw the line" : "work a piece"],
-        ...(sawsWithoutACut(held, script)
-          ? ([["R", "swing the angle"]] as Array<[string, string]>)
-          : []),
-        ...(script?.kind === "pry"
-          ? ([["F", "flip the pallet"]] as Array<[string, string]>)
-          : []),
-        ["Esc", `hang the ${heldName} up`],
+        ["Click", "lay the clamp down"],
+        ["Esc", "put the clamp back"],
         ["Tab", "step back"],
       ]
-    : [
-        ...(pieces.length > 0
-          ? ([
-              ["Drag", "move a piece"],
-              ["R", "turn"],
-              ["F", "tip it up"],
-              ["E", "take it"],
-            ] as Array<[string, string]>)
-          : []),
-        ["Tab", "step back"],
-      ];
+    : dive.holdingGlue
+      ? [
+          ["Drag", "spread glue on a seam"],
+          ["Esc", "put the glue away"],
+          ["Tab", "step back"],
+        ]
+      : held
+        ? [
+            script?.kind === "pry"
+              ? ["Click", "pry a nail"]
+              : [
+                  "Drag",
+                  script?.kind === "saw" ? "saw the line" : "work a piece",
+                ],
+            ...(sawsWithoutACut(held, script)
+              ? ([["R", "swing the angle"]] as Array<[string, string]>)
+              : []),
+            ...(script?.kind === "pry"
+              ? ([["F", "flip the pallet"]] as Array<[string, string]>)
+              : []),
+            ["Esc", `hang the ${heldName} up`],
+            ["Tab", "step back"],
+          ]
+        : [
+            ...(pieces.length > 0
+              ? ([
+                  ["Drag", "move a piece"],
+                  ["R", "turn"],
+                  ["F", "tip it up"],
+                  ["E", "take it"],
+                ] as Array<[string, string]>)
+              : []),
+            ["Tab", "step back"],
+          ];
 
   const progressLine =
     script?.kind === "pry" ? `${script.pallet.nails.length} nails left` : null;
@@ -149,6 +170,38 @@ export const BenchStatusLine: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * The clamps-first glue-up's line, or null when nothing about one
+ * applies: bars out, stock across them, a bead down each seam, tighten.
+ */
+function glueInstruction(
+  dive: BenchDive,
+  glue: BenchGlueView | undefined,
+): string | null {
+  if (!glue) return null;
+  const progress = glue.glueProgress();
+  if (progress) {
+    if (progress.clamps < progress.needed) {
+      return dive.holdingClamp
+        ? `Lay the bar across the boards (${progress.clamps}/${progress.needed} set).`
+        : `The run wants ${progress.needed} clamps — one per foot of length (${progress.clamps}/${progress.needed} set).`;
+    }
+    if (progress.seamsGlued < progress.seams) {
+      return dive.holdingGlue
+        ? `Run the bead down each open seam (${progress.seamsGlued}/${progress.seams}).`
+        : "Take the glue and run a bead down each seam.";
+    }
+    return `Tighten each clamp — the last one starts the cure (${progress.tightened}/${progress.clamps}).`;
+  }
+  const refusal = glue.glueRefusal();
+  if (refusal) return refusal;
+  if (dive.holdingClamp) return "Lay the bar down where the glue-up will sit.";
+  if (glue.clampsSetOut() > 0) {
+    return "Clamps are set. Lay glue-ready stock across them, edge to edge.";
+  }
+  return null;
+}
 
 /** Whether every nail left is on the underside — the flip is the only
  * move the hammer has from here. */

@@ -98,11 +98,11 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     return this.game.entities.tryGetSingleton(BenchDive);
   }
 
-  /** Whether the hands are free to arrange (no tool, no job running). */
+  /** Whether the hands are free to arrange — no tool, no clamp, no
+   * bottle: whatever the hands are carrying owns the pointer. */
   private handsFree(): boolean {
     const dive = this.dive();
-    if (!dive || dive.openBenchKey === null || dive.heldTool) return false;
-    return true;
+    return dive != null && dive.openBenchKey !== null && !dive.handsFull();
   }
 
   private stage(): {

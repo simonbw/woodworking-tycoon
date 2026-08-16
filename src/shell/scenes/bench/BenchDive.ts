@@ -34,6 +34,14 @@ export class BenchDive extends BaseEntity implements Entity {
    */
   heldTool: ToolId | null = null;
 
+  /**
+   * The glue-up's two hands, which aren't tools on the rail: a bar
+   * clamp off the rack, or the glue bottle. Holding either puts the
+   * tool down — one thing in the hands at a time.
+   */
+  holdingClamp = false;
+  holdingGlue = false;
+
   /** The nail the hammer is over, if any — the ring that warms. */
   hoveredNail: PalletNail | null = null;
 
@@ -49,9 +57,12 @@ export class BenchDive extends BaseEntity implements Entity {
   close(): void {
     if (this.openBenchKey === null) return;
     this.openBenchKey = null;
-    // Standing up empties the hands: the tool goes back on its rail,
-    // as the old view's unmount did.
+    // Standing up empties the hands: the tool goes back on its rail
+    // and the clamp and bottle go back on the rack, as the old view's
+    // unmount did.
     this.heldTool = null;
+    this.holdingClamp = false;
+    this.holdingGlue = false;
     this.hoveredNail = null;
     this.prying = null;
     this.bump();
@@ -60,8 +71,26 @@ export class BenchDive extends BaseEntity implements Entity {
   /** Take a tool in hand, or hang the held one back up. */
   toggleTool(toolId: ToolId): void {
     this.heldTool = this.heldTool === toolId ? null : toolId;
+    this.holdingClamp = false;
+    this.holdingGlue = false;
     this.hoveredNail = null;
     this.bump();
+  }
+
+  /** Pick up a clamp or the glue bottle — or put both down (null). */
+  setHolding(what: "clamp" | "glue" | null): void {
+    this.holdingClamp = what === "clamp";
+    this.holdingGlue = what === "glue";
+    // Empty hands are empty: putting the clamp down also hangs up
+    // whatever tool was in the other hand.
+    this.heldTool = null;
+    this.hoveredNail = null;
+    this.bump();
+  }
+
+  /** Whether the hands are carrying anything at all. */
+  handsFull(): boolean {
+    return this.heldTool !== null || this.holdingClamp || this.holdingGlue;
   }
 
   dropTool(): void {
