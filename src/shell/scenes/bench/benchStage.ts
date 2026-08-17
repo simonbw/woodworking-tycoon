@@ -1,8 +1,4 @@
-import {
-  fitToStage,
-  StageFit,
-  StageRect,
-} from "../../../components/bench-view/stageMath";
+import { fitToStage, StageFit, StageRect } from "./stageMath";
 import { Game } from "../../../core/Game";
 import {
   BenchPlacement,

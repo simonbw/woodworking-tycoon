@@ -411,10 +411,23 @@ transform tests as it lands.
       sheet, or the bench's own rail and plan drawer). Ported so far:
       All seven drive `/` now: `screens`, `keyboard`, `floor`, `market`,
       `milling`, `stations`, and `bench`
-- [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
-      retired tests
-- [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
-      `bench-work.md`, CLAUDE.md architecture, testing skill map
+- [x] Delete the old shell: its entry, its React world layers, its
+      providers, and everything only they reached (~145 files), plus
+      `/legacy.html` and the `/engine.html` redirect. `@pixi/react` is
+      gone with them — the DOM icons draw on their own little canvas
+      (`SpriteThumb`). What the shop still uses out of `src/components/`
+      is DOM widgets; the pure view helpers moved to `src/views/`
+      (`shop-scale`, `colorBySpecies`, `power-cords`, `targetHighlight`,
+      the daylight tween, the dust bus) and the bench's stage math to
+      `src/shell/scenes/bench/`. **Left standing:** `game-actions/` —
+      the transform layer proper is dead, but the modules also hold pure
+      helpers the shop still reads (footprints, cart lines, store
+      interaction), so it wants a helper extraction rather than a
+      deletion. Its sequence tests still pass through it
+- [x] Docs: `continuous-movement.md` retired (the split it described now
+      lives in `player-motion.ts`'s header, which is the one module that
+      owns it), and every doc, skill, and CLAUDE.md section that pointed
+      at an old-shell file points at what draws or decides it now
 - [ ] Delete this file
 - [ ] **Gate:** one shell, no dead code, `npm run test` fully green
 
@@ -950,3 +963,17 @@ transform tests as it lands.
     body walks into the working stance when the dive opens.
   The bench dive also publishes its stage to the page
   (`BenchStageMarker`), the seam the specs measure inches by.
+- 2026-08-17 — The cutover: the old shell is gone. Its entry, its React
+  world layers, its providers, and everything only they reached went in
+  one sweep — about 145 files — along with `/legacy.html`, the
+  `/engine.html` redirect, `@pixi/react`, and the engine-shell spec whose
+  journeys the seven canonical specs now carry. What the shop still uses
+  out of `src/components/` is DOM widgets; the pure view helpers moved to
+  `src/views/`, the bench's stage math to `src/shell/scenes/bench/`, the
+  glue-up's pacing constants into `game/bench-work/glue-up.ts`, and the
+  cart's line names and icons are all that's left of the old cart
+  module. One thing stays standing: `game-actions/`. The transform layer
+  proper is dead, but those modules also hold pure helpers the shop reads
+  every frame (footprints, cart lines, store interaction), so it wants a
+  helper extraction and its own test rework rather than a deletion —
+  the one piece of this plan left for later.

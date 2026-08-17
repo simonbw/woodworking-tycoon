@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import { inchesToPixels } from "../../components/shop-view/shop-scale";
+import { inchesToPixels } from "../shop-scale";
 import { isBoard } from "../../game/board-helpers";
 import { Machine } from "../../game/Machine";
 import { CutParticleEmitter, cutSprayIntensity } from "./CutParticleEmitter";

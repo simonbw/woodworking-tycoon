@@ -1,9 +1,5 @@
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
-import {
-  feetToPixels,
-  inchesToPixels,
-  PIXELS_PER_INCH,
-} from "../../components/shop-view/shop-scale";
+import { feetToPixels, inchesToPixels, PIXELS_PER_INCH } from "../shop-scale";
 import { isBoard } from "../../game/board-helpers";
 import { Machine, operationParameters } from "../../game/Machine";
 import { stockOrientation } from "../../game/machine-helpers";

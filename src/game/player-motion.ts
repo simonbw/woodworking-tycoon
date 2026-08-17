@@ -5,10 +5,20 @@ import { carryingShopVac, SHOP_VAC_DRAG_PENALTY } from "./ShopVac";
 import { Direction, Vector } from "./Vectors";
 
 /**
- * Continuous player movement. The player's body lives off-grid — a point
- * with a radius, integrated every render frame — while GameState keeps
- * only the cell underfoot (see docs/continuous-movement.md). Everything
- * here is pure so it can be unit-tested without PIXI or React.
+ * Continuous player movement, and the split it rests on: the body lives
+ * off-grid — a point with a radius, integrated every frame from the held
+ * keys — while the simulation reasons only about the cell underfoot.
+ * Machines, piles, and reach are all cell business; walking is not, which
+ * is what makes the woodworker read as a person rather than a cursor.
+ *
+ * The body belongs to the `Player` entity (position, facing, the step it
+ * takes each frame); `MovementInput` feeds it what the keys say, and
+ * every cell-based system reads `player.cell`, derived. Anything that
+ * moves the player from outside — a save loaded, a spec's teleport, a
+ * trip returning — writes the position, and the body simply is where it
+ * was put.
+ *
+ * Everything here is pure, so it unit-tests without a renderer.
  */
 
 /** Walking pace on a clean floor, in cells (feet) per second. */

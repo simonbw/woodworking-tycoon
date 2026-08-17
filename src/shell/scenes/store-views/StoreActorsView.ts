@@ -3,7 +3,7 @@ import {
   cellToPixel,
   inchesToPixels,
   PIXELS_PER_CELL,
-} from "../../../components/shop-view/shop-scale";
+} from "../../../views/shop-scale";
 import {
   Shopper,
   SHOPPER_RADIUS,

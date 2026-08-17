@@ -17,15 +17,10 @@ import {
  * Everything is empty once the tutorials are finished or skipped, so
  * callers can wire this in unconditionally and pay nothing afterward.
  *
- * A copy of the old `components/tutorial/tutorialTargets.ts` for the
- * engine shell — identical but for the `TruckHighlight` type, declared
- * here instead of imported from the old TruckSprite so this module never
- * drags `@pixi/react` into the engine bundle.
  */
 
 /** The targeting treatment the truck wears: the whole body when the cab
- * is the destination, just the cargo box when the bed is. Mirrors the
- * old TruckSprite's `TruckHighlight`. */
+ * is the destination, just the cargo box when the bed is. */
 export type TruckHighlight = "truck" | "bed" | null;
 
 export interface TutorialWorldTargets {

@@ -1,9 +1,6 @@
 import { Graphics } from "pixi.js";
-import {
-  colorBySheetGoodKind,
-  colorBySpecies,
-} from "../components/shop-view/colorBySpecies";
-import { PIXELS_PER_INCH } from "../components/shop-view/shop-scale";
+import { colorBySheetGoodKind, colorBySpecies } from "./colorBySpecies";
+import { PIXELS_PER_INCH } from "./shop-scale";
 import { MaterialInstance, panelWidth } from "../game/Materials";
 import { colorToNumber, mixColors } from "../utils/colorUtils";
 

@@ -1,4 +1,4 @@
-import { PIXELS_PER_CELL } from "../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "./shop-scale";
 import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";

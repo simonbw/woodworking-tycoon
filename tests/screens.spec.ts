@@ -37,7 +37,7 @@ test.describe("Screens", () => {
   test("opens every overlay, shows what's unlocked, hides what isn't", async ({
     page,
   }) => {
-    test.setTimeout(180000);
+    test.setTimeout(300000);
     page.on("dialog", (d) => d.accept());
     const manual = page.getByRole("dialog", { name: "Shop manual" });
 

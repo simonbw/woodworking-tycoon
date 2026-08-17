@@ -79,6 +79,24 @@ export interface GlueSeam {
 }
 
 /** A contiguous edge-to-edge run of glueable stock, ordered across. */
+// ---- How the bead is paced (the gesture's own tunables) ----
+
+/** How wide the glue bottle's bead paints along a seam, in inches. */
+export const BEAD_RADIUS_IN = 1;
+
+/** Glue laid per second of active spreading, in²/s — one tunable. */
+export const SPREAD_PER_SECOND = 14;
+
+/**
+ * How much of a seam the bead must cover. Deliberately short of the
+ * sanding mask's 98%: squeeze-out closes small gaps, and pixel-hunting
+ * the last half-inch of a glue line is nobody's idea of joinery.
+ */
+export const SPREAD_COMPLETE = 0.85;
+
+/** How close a bare-hand press must land to a clamp bar to grab it. */
+export const CLAMP_HIT_IN = 1.6;
+
 export interface GlueRun {
   readonly pieces: ReadonlyArray<MaterialInstance>;
   readonly seams: ReadonlyArray<GlueSeam>;

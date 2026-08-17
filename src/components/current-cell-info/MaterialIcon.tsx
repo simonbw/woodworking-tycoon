@@ -2,11 +2,11 @@ import React, { ReactNode } from "react";
 import { productBlueprintFor } from "../../game/bench-work/blueprint";
 import { MaterialInstance } from "../../game/Materials";
 import { SpriteThumb } from "./SpriteThumb";
-import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../../views/shop-scale";
 import {
   colorBySheetGoodKind,
   colorBySpecies,
-} from "../shop-view/colorBySpecies";
+} from "../../views/colorBySpecies";
 import { classNames } from "../../utils/classNames";
 import { formatCount } from "../../utils/formatNumber";
 import { toolIconSrc } from "../../utils/uiImages";

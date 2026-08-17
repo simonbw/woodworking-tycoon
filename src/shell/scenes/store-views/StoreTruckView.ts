@@ -1,9 +1,6 @@
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
-import {
-  cellToPixel,
-  inchesToPixels,
-} from "../../../components/shop-view/shop-scale";
-import { TARGET_HIGHLIGHT_FILTERS } from "../../../components/shop-view/targetHighlight";
+import { cellToPixel, inchesToPixels } from "../../../views/shop-scale";
+import { TARGET_HIGHLIGHT_FILTERS } from "../../../views/targetHighlight";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";

@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import { PIXELS_PER_CELL } from "../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../shop-scale";
 import { Machine, MACHINE_TYPES } from "../../game/Machine";
 import { colors } from "../../utils/colors";
 import { colorToNumber } from "../../utils/colorUtils";

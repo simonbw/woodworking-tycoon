@@ -76,7 +76,7 @@ export function useShopOpen(): boolean {
 }
 
 /**
- * The world as the old shell's `GameState`, read-only — the successor of
+ * The world as `GameState`, read-only — the successor of
  * `useGameState()`. Only valid while a shop is open (`useShopOpen`).
  */
 export function useShopState(): GameState {

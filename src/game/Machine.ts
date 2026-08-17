@@ -34,7 +34,7 @@ import { worktable1x1, worktable1x2 } from "./machines/worktables";
  * concave machine (a jointer's narrow beds on a wide body) doesn't cast
  * one fat invisible wall. The player's body collides with the shapes
  * instead of the full cellsOccupied tiles (see
- * docs/continuous-movement.md). Everything else — placement, targeting,
+ * the header of `player-motion.ts`). Everything else — placement, targeting,
  * attendance — still works on whole cells, and the shape union is capped
  * below the player's radius inside the footprint so the cell underfoot
  * can never be a machine's (see machine-collision.ts).

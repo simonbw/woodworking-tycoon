@@ -4,9 +4,9 @@ import {
   easeFraction,
   packed,
   stepColor,
-} from "../../../components/shop-view/daylight-tween";
-import { WALL_THICKNESS } from "../../../components/shop-view/EnvironmentLayer";
-import { cellToPixel } from "../../../components/shop-view/shop-scale";
+} from "../../../views/daylight-tween";
+import { WALL_THICKNESS } from "../../../views/EnvironmentView";
+import { cellToPixel } from "../../../views/shop-scale";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";

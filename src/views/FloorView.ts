@@ -1,9 +1,5 @@
 import { Graphics, Texture, TilingSprite } from "pixi.js";
-import {
-  cellToPixel,
-  PIXELS_PER_CELL,
-  SPACING,
-} from "../components/shop-view/shop-scale";
+import { cellToPixel, PIXELS_PER_CELL, SPACING } from "./shop-scale";
 import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";

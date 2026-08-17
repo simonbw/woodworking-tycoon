@@ -1,10 +1,10 @@
 import { Graphics } from "pixi.js";
-import { StageFit } from "../../../components/bench-view/stageMath";
+import { StageFit } from "./stageMath";
 import { framePointOnBench } from "../../../game/bench-work/bench-layout";
 import { DustSpecies } from "../../../game/Materials";
 import { rBool, rUniform } from "../../../utils/randUtils";
 import { mixColors } from "../../../utils/colorUtils";
-import { dustColorBySpecies } from "../../../components/shop-view/colorBySpecies";
+import { dustColorBySpecies } from "../../../views/colorBySpecies";
 import { PieceSpot } from "./benchStage";
 
 /**

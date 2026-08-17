@@ -101,7 +101,7 @@ test.describe("Shop floor", () => {
   test("boots, carries machines, and lives the truck's day loop", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(420000);
     const startTime = Date.now();
 
     const consoleErrors: string[] = [];

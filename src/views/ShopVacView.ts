@@ -1,9 +1,5 @@
 import { Graphics } from "pixi.js";
-import {
-  cellToPixel,
-  cellToPixelCenter,
-  PIXELS_PER_CELL,
-} from "../components/shop-view/shop-scale";
+import { cellToPixel, cellToPixelCenter, PIXELS_PER_CELL } from "./shop-scale";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";

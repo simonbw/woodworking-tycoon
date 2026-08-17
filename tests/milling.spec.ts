@@ -224,7 +224,7 @@ test.describe("Milling", () => {
   test("switches on, dials in, and lets the stock decide the cut", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(420000);
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);

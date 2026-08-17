@@ -4,7 +4,7 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
-import { StageFit } from "../../../components/bench-view/stageMath";
+import { StageFit } from "./stageMath";
 import { groupPieces } from "../../../game/bench-work/bench-group";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
@@ -14,7 +14,7 @@ import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
 import { V } from "../../../core/Vector";
-import { PIXELS_PER_INCH } from "../../../components/shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../../../views/shop-scale";
 import { BenchStage, benchStage, benchWork, workpieceSpot } from "./benchStage";
 
 /**

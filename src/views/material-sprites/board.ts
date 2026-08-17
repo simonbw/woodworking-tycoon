@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
-import { colorBySpecies } from "../../components/shop-view/colorBySpecies";
-import { PIXELS_PER_INCH } from "../../components/shop-view/shop-scale";
+import { colorBySpecies } from "../colorBySpecies";
+import { PIXELS_PER_INCH } from "../shop-scale";
 import { Board } from "../../game/Materials";
 import { clipArcToRect } from "../../utils/arcClipping";
 import { colorToNumber, mixColors } from "../../utils/colorUtils";

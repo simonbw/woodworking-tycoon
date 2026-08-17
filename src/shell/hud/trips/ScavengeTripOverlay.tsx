@@ -12,7 +12,7 @@ import { formatDuration } from "../../../game/time";
 import { classNames } from "../../../utils/classNames";
 import { formatCount } from "../../../utils/formatNumber";
 import { seededRandom } from "../../../utils/randUtils";
-import { colorBySpecies } from "../../../components/shop-view/colorBySpecies";
+import { colorBySpecies } from "../../../views/colorBySpecies";
 import { TripOverlay } from "../../../components/trip/TripOverlay";
 import { useHeadHome } from "./TripFade";
 import { DayClock } from "../NavBar";

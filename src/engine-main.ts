@@ -1,8 +1,3 @@
-// The DOM icons (a board in the hands, a consumable in the cabinet)
-// draw themselves with the same PIXI sprites the world does, through
-// @pixi/react — which has to be told which PIXI classes its JSX may
-// name before any of them render.
-import "./pixi-setup";
 import { AutoPauser } from "./core/AutoPauser";
 import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";
@@ -52,17 +47,16 @@ import { registerAllViews } from "./views/register";
 import "../tests/fixtures";
 
 /**
- * The engine shell: the entity-based rebuild of the game, served at /.
- * The shell it replaced is still built beside it at /legacy.html, as the
- * reference this one is checked against until the migration's last
- * deletion lands (see MIGRATION.md).
+ * The game: an entity world, its views, and the shell over it. This is
+ * where the standing entities are put in place and the world is left
+ * empty for the start menu to fill.
  */
 
 async function main() {
   polyfill();
   registerAllViews();
-  // index.html links the same stylesheet as the old shell, so loadFonts
-  // finds every declared face — including the stand sign's canvas-drawn
+  // index.html links the stylesheet that declares every face, so
+  // loadFonts finds them all — including the stand sign's canvas-drawn
   // Shantell Notes, which must be in before StandView's first draw.
   await Promise.all([loadAssets(), loadFonts()]);
 
@@ -127,10 +121,8 @@ async function main() {
 }
 
 /**
- * The E2E surface, same contract as the old shell's Ticker hooks: read
- * and replace the world, advance it synchronously, pause it, and throttle
- * rendering (see capRenderRate in WorldScene for why E2E builds cap).
- * Dev/test builds only.
+ * The E2E surface: read and replace the world, advance it synchronously,
+ * pause it, and throttle rendering. Dev/test builds only.
  *
  * State reads and writes speak the shop-state shape the specs are
  * written against — `projectGameState` out, the fixture loader in, the
@@ -166,10 +158,10 @@ function installTestHooks(game: Game) {
     );
   hooks.__GET_SAVE__ = () => serializeGame(game);
   hooks.__LOAD_SAVE__ = (save) => loadSaveFile(game, save);
-  // A tick a spec asks for is a tick of the *shop's* clock, the way the
-  // old Ticker's hook meant it: the clock is spend-to-advance now, so an
-  // idle shop would creep through an engine tick without the minute the
-  // spec is waiting on. Forced minutes are the driver's own path
+  // A tick a spec asks for is a tick of the *shop's* clock: the clock is
+  // spend-to-advance, so an idle shop would creep through an engine tick
+  // without the minute the spec is waiting on. Forced minutes are the
+  // driver's own path
   // (ShopDriver.tick), served one per engine tick.
   hooks.__ADVANCE_TICKS__ = (ticks) => {
     const timeFlow = game.entities.getSingleton(TimeFlow);

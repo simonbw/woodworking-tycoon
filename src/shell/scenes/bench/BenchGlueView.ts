@@ -1,11 +1,5 @@
 import { Graphics } from "pixi.js";
-import {
-  BEAD_RADIUS_IN,
-  CLAMP_HIT_IN,
-  SPREAD_COMPLETE,
-  SPREAD_PER_SECOND,
-} from "../../../components/bench-view/GlueUpLayer";
-import { StageFit } from "../../../components/bench-view/stageMath";
+import { StageFit } from "./stageMath";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
@@ -19,13 +13,17 @@ import {
   stampStroke,
 } from "../../../game/bench-work/coverage";
 import {
+  BEAD_RADIUS_IN,
   ClampPlacement,
   clampGhosts,
   clampsForGlueSpan,
   clampsOnRun,
+  CLAMP_HIT_IN,
   CLAMP_SNAP_IN,
   detectGlueRun,
   GlueRun,
+  SPREAD_COMPLETE,
+  SPREAD_PER_SECOND,
 } from "../../../game/bench-work/glue-up";
 import { clampsFree } from "../../../game/Clamp";
 import { availableOperations } from "../../../game/skill-helpers";

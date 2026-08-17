@@ -5,7 +5,7 @@ import {
   takeBlockedReason,
 } from "../../../game/interact";
 import { atStand, isSellable, standRect } from "../../../game/stand";
-import { PIXELS_PER_CELL } from "../../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../../../views/shop-scale";
 import {
   HintList,
   HintRow,

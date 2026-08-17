@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import { PIXELS_PER_INCH } from "../../components/shop-view/shop-scale";
+import { PIXELS_PER_INCH } from "../shop-scale";
 import {
   faceNails,
   PALLET_HEIGHT_IN,

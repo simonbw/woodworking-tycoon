@@ -5,11 +5,8 @@ import {
   nearestOutlet,
   Outlet,
   outletPositions,
-} from "../components/shop-view/power-cords";
-import {
-  cellToPixel,
-  PIXELS_PER_CELL,
-} from "../components/shop-view/shop-scale";
+} from "./power-cords";
+import { cellToPixel, PIXELS_PER_CELL } from "./shop-scale";
 import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";

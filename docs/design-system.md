@@ -128,15 +128,13 @@ Two rules go with them:
 ## HUD hierarchy (Home screen)
 
 The home screen **is the world**: the canvas runs edge to edge with the
-garage drawn as a building on its lot (`EnvironmentLayer`), and the
+garage drawn as a building on its lot (`views/EnvironmentView.ts`), and the
 remaining UI floats over it as a small number of HUD objects, not a
 stack of equal-weight cards:
 
 - **Top row** (`NavBar`) — one floating `hud-chip` in the top-right, no
   tabs, split by hairline dividers into three segments: the date and
-  light (`Ticker`, which also drives the game loop — time always
-  advances unless the pause menu is open — rendering the sun-and-moon
-  dial `DayDial`, where the day's progress is carried by nothing but
+  light (the sun-and-moon dial `DayDial`, where the day's progress is carried by nothing but
   where the sun stands — east to west over a bare patch of sky, with no
   face or track behind it; there is deliberately no wall clock), the balances (cash and reputation, set exactly
   like the clock — bold condensed, tabular figures — in the one gold

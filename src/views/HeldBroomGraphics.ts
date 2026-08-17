@@ -1,5 +1,5 @@
 import { Graphics } from "pixi.js";
-import { PIXELS_PER_CELL } from "../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "./shop-scale";
 import { Game } from "../core/Game";
 import { dustTotal } from "../game/Dust";
 import { DUSTPAN_CAPACITY } from "../game/game-actions/dust-actions";

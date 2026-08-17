@@ -5,8 +5,8 @@ import { DUST_BAG_CAPTURE } from "../../game/tools/dustBag";
 import { mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { rBool, rUniform } from "../../utils/randUtils";
-import { dustColorBySpecies } from "../../components/shop-view/colorBySpecies";
-import { emitDustStamp } from "../../components/shop-view/dustStampBus";
+import { dustColorBySpecies } from "../colorBySpecies";
+import { emitDustStamp } from "../dustStampBus";
 import { EffectsFrame } from "./machine-art";
 
 /**

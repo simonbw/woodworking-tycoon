@@ -3,8 +3,8 @@ import { Board } from "../../game/Materials";
 import { colorToCss, mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
-import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { colorBySpecies } from "../../views/colorBySpecies";
+import { PIXELS_PER_INCH } from "../../views/shop-scale";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;

@@ -51,10 +51,9 @@ already reach:
 - In the bench view, where the pointer _is_ the hand, right-click
   instead puts back whatever it's holding.
 
-Machines are hit-tested through invisible footprint shapes drawn under
-the loose stock (`shop-view/MachineHitTargets.tsx`) — texture art has
-no geometry to test against, and a board lying across a machine should
-outrank it.
+Machines are hit-tested against their footprints rather than their art
+(`src/views/MousePicking.ts`) — texture art has no geometry to test
+against, and a board lying across a machine should outrank it.
 
 ## Bindings teach themselves
 

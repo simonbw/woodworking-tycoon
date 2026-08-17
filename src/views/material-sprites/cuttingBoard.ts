@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
-import { colorBySpecies } from "../../components/shop-view/colorBySpecies";
-import { PIXELS_PER_INCH } from "../../components/shop-view/shop-scale";
+import { colorBySpecies } from "../colorBySpecies";
+import { PIXELS_PER_INCH } from "../shop-scale";
 import { FinishedProduct } from "../../game/Materials";
 
 /** Accent stripes for each board tier, as [offset, width] in inches. */

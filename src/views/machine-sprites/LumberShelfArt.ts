@@ -1,5 +1,5 @@
 import { Graphics } from "pixi.js";
-import { PIXELS_PER_CELL } from "../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../shop-scale";
 import { Machine } from "../../game/Machine";
 import { seededRandom } from "../../utils/randUtils";
 import { MachineArtBase } from "./machine-art";

@@ -1,5 +1,5 @@
 import { Container } from "pixi.js";
-import { PIXELS_PER_CELL } from "../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../shop-scale";
 import { Machine } from "../../game/Machine";
 import { artSprite, MachineArtBase } from "./machine-art";
 import { buildMaterialSprite } from "./material-slot";

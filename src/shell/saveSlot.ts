@@ -2,16 +2,12 @@ import { migrateSaveFile, SaveFile } from "../sim/save/SaveFile";
 import { getSerializationSpec } from "../sim/save/serialization";
 
 /**
- * The engine shell's save slot in browser storage — the successor of the
- * old shell's `saveLoad.ts`, holding a `SaveFile` instead of a
- * `GameState`, under its own key so the two shells never touch each
- * other's saves while the migration runs.
+ * The shop's save slot in browser storage, holding a `SaveFile`.
  *
- * Same contract as the old module: `getEngineSaveStatus` judges the
- * stored save without loading it (a version the migration chain can't
- * reach, or a record its schema rejects, shows as incompatible on the
- * start menu); an incompatible save is left in place, not deleted —
- * only starting a new game writes over it.
+ * `getEngineSaveStatus` judges the stored save without loading it — a
+ * version the migration chain can't reach, or a record its schema
+ * rejects, shows as incompatible on the start menu. An incompatible save
+ * is left in place, not deleted: only starting a new game writes over it.
  */
 
 export const ENGINE_SAVE_KEY = "woodworking-tycoon-engine-save";

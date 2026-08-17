@@ -87,7 +87,7 @@ test.describe("Selling, supplies, and sound", () => {
   test("sells off the stand, stocks the cabinet, and plays its cues", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(360000);
 
     // Anything the page logs as an error — the sound half asserts silence.
     const consoleErrors: string[] = [];

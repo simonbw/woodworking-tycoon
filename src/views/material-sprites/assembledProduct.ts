@@ -1,6 +1,6 @@
 import { Container, Graphics } from "pixi.js";
-import { drawFastenerHead } from "../../components/material-sprites/fastenerHead";
-import { PIXELS_PER_INCH } from "../../components/shop-view/shop-scale";
+import { drawFastenerHead } from "./fastenerHead";
+import { PIXELS_PER_INCH } from "../shop-scale";
 import {
   defaultPartsFor,
   productBlueprintFor,

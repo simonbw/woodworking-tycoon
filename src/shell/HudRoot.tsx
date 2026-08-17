@@ -24,7 +24,7 @@ export class HudRoot extends ReactEntity {
 
   constructor() {
     super(
-      // The old shell's ShortcutProvider mounts verbatim — it's
+      // The ShortcutProvider is DOM-side — it's
       // self-contained (its own keydown listener, scopes, registrations)
       // and serves the DOM-side bindings (open-journal, close-modal, …);
       // the floor's keys stay with the engine's ShortcutDispatcher, and
@@ -34,7 +34,7 @@ export class HudRoot extends ReactEntity {
         <ShellProvider game={this.game}>
           <ShortcutProvider>
             <BrowserDefaultsGuard />
-            {/* The old shell's UI sound layer mounts verbatim: it hangs
+            {/* The UI sound layer hangs
                 its own listeners on the document and gives every button
                 a hover tick and a press, with no game state involved. */}
             <UiSoundLayer />

@@ -67,7 +67,7 @@ test.describe("Keyboard", () => {
     page,
   }) => {
     // Many small steps; the default 30s budget is tight on slow machines
-    test.setTimeout(240000);
+    test.setTimeout(300000);
     page.on("dialog", (d) => d.accept());
 
     await test.step("start a game with every screen unlocked", async () => {

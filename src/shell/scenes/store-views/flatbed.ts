@@ -1,12 +1,9 @@
 import { Graphics } from "pixi.js";
-import { cellToPixel } from "../../../components/shop-view/shop-scale";
+import { cellToPixel } from "../../../views/shop-scale";
 
 /**
  * The orange flatbed's drawing, shared by the corral's nested row and
- * the pushed cart — copied from the old StorePushCartSprite rather than
- * imported, because that module leans on @pixi/react (which the engine
- * bundle must not carry — phase 8 deletes it). Same numbers, same look:
- * the thing you take is the thing you saw.
+ * the pushed cart: the thing you take is the thing you saw.
  */
 
 export const FRAME = 0xe06010;

@@ -249,3 +249,26 @@ const StepperButton: React.FC<{
     {children}
   </button>
 );
+
+/** The register's own way out: pay and drive home. */
+export const StoreCheckoutButton: React.FC<{
+  canCheckOut: boolean;
+  onCheckOut: () => void;
+  /** The venue's paint for the button itself. */
+  className: string;
+}> = ({ canCheckOut, onCheckOut, className }) => (
+  <button
+    className={classNames(
+      "flex items-center gap-2 rounded-sm border-2 px-3 py-1.5 font-condensed font-bold uppercase tracking-[0.2em] text-sm disabled:cursor-not-allowed disabled:opacity-50",
+      className,
+    )}
+    onClick={onCheckOut}
+    disabled={!canCheckOut}
+    data-sfx="ui-purchase"
+    data-testid="store-check-out"
+    data-tutorial-target="store-checkout"
+  >
+    <CartIcon />
+    Check Out &amp; Head Home
+  </button>
+);

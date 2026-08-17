@@ -1,7 +1,4 @@
-import {
-  colorBySheetGoodKind,
-  colorBySpecies,
-} from "../../components/shop-view/colorBySpecies";
+import { colorBySheetGoodKind, colorBySpecies } from "../colorBySpecies";
 import { MaterialInstance } from "../../game/Materials";
 import { colorToNumber } from "../../utils/colorUtils";
 

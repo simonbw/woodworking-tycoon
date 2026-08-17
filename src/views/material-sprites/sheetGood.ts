@@ -1,9 +1,6 @@
 import { Graphics } from "pixi.js";
-import {
-  colorBySheetGoodKind,
-  osbFlakeColors,
-} from "../../components/shop-view/colorBySpecies";
-import { PIXELS_PER_INCH } from "../../components/shop-view/shop-scale";
+import { colorBySheetGoodKind, osbFlakeColors } from "../colorBySpecies";
+import { PIXELS_PER_INCH } from "../shop-scale";
 import { SheetGood } from "../../game/Materials";
 import { mixColors } from "../../utils/colorUtils";
 import { clamp, lerp } from "../../utils/mathUtils";

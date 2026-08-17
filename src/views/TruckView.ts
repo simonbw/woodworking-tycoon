@@ -4,7 +4,7 @@ import {
   cellToPixelCenter,
   inchesToPixels,
   PIXELS_PER_CELL,
-} from "../components/shop-view/shop-scale";
+} from "./shop-scale";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite, loadGameSprite } from "../core/entity/GameSprite";

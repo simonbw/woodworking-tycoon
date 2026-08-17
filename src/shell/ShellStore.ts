@@ -47,8 +47,8 @@ export class ShellStore extends BaseEntity implements Entity {
    * Whether a DOM modal claims the keyboard. Mirrored from the
    * ShortcutProvider's modal scope (ModalScopeBridge) so the engine's
    * input entities — ShortcutDispatcher, MovementInput, MousePicking —
-   * can stand down while a dialog is up, the way the old shell's
-   * modal-scoped dispatch kept floor keys out of open overlays.
+   * can stand down while a dialog is up, keeping floor keys out of
+   * open overlays.
    */
   modalOpen = false;
 

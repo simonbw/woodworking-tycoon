@@ -1,8 +1,8 @@
 import React from "react";
 import { SawyerAndSonsLogo } from "../../../components/lumberyard-page/SawyerAndSonsLogo";
-import { StoreCheckoutButton } from "../../../components/shopping/StoreCart";
+
 import { TripOverlay } from "../../../components/trip/TripOverlay";
-import { StoreCartReadout } from "../store/StoreCart";
+import { StoreCartReadout, StoreCheckoutButton } from "../store/StoreCart";
 import { useShopState } from "../../useShell";
 import { BoardSelector } from "./BoardSelector";
 import { TripHeader } from "./TripHeader";

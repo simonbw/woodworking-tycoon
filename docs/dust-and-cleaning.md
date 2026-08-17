@@ -140,7 +140,7 @@ that chore arrives with the central collector (issue #113).
 ## Rendering
 
 - **Particle layer** (`CutParticles`,
-  `src/components/machine-sprites/CutParticles.tsx`): an imperative
+  `src/views/machine-sprites/CutParticleEmitter.ts`): an imperative
   particle pool inside `useTick` drawing to one `pixiGraphics` — no
   per-particle React. Species-colored chips spray while the machine
   works; saws throw fast dust flecks, jointer/planer throw tumbling
@@ -149,7 +149,7 @@ that chore arrives with the central collector (issue #113).
   container, so settle positions convert to shop space (`toGlobal` at
   stamp time).
 - **Floor bake** (`DustLayer` + `dustStampBus`,
-  `src/components/shop-view/`): settling chips come to rest and bake
+  `src/views/DustView.ts`): settling chips come to rest and bake
   into a shop-sized `RenderTexture` where they stopped — the chip you
   watched fly _is_ the smudge it left, at constant render cost
   regardless of filth. On load the texture is rebuilt from

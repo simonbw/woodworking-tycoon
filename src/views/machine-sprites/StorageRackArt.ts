@@ -1,9 +1,6 @@
 import { Graphics } from "pixi.js";
-import {
-  colorBySheetGoodKind,
-  osbFlakeColors,
-} from "../../components/shop-view/colorBySpecies";
-import { PIXELS_PER_CELL } from "../../components/shop-view/shop-scale";
+import { colorBySheetGoodKind, osbFlakeColors } from "../colorBySpecies";
+import { PIXELS_PER_CELL } from "../shop-scale";
 import { Machine } from "../../game/Machine";
 import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { seededRandom } from "../../utils/randUtils";

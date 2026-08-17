@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
-import { StageFit } from "../../../components/bench-view/stageMath";
-import { drawFastenerHead } from "../../../components/material-sprites/fastenerHead";
+import { StageFit } from "./stageMath";
+import { drawFastenerHead } from "../../../views/material-sprites/fastenerHead";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";

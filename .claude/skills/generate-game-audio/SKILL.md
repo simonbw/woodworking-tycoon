@@ -7,7 +7,7 @@ description: Generate an in-game sound effect or voice line for Woodworking Tyco
 
 This skill ties the official ElevenLabs `sound-effects` and `text-to-speech` skills to Woodworking Tycoon's static-asset pipeline. The official skills handle the API call; this one covers naming the file, where it lands, and how to make it sound like this game.
 
-Woodworking Tycoon has no transcode step — sounds are Ogg files served straight from `static/`. **Every sound effect is Ogg, never MP3** — an MP3's start position isn't reliable, so codec padding smears an attack and puts a gap at a loop's wrap; the Electron target means Chromium's decoder everywhere (see the header of `src/utils/sfx.ts`). Music is exempt: a streamed track fades in over seconds and never has to hit a mark, so MP3 is fine there. There *is* a small audio system to plug into: a mixing bus with master/SFX/music volume (`src/utils/audioBus.ts`, settings UI in `src/components/AudioSettingsSection.tsx`), a game-event → sound bridge (`src/components/GameSoundLayer.tsx`), and streamed music tracks (`src/utils/musicTrack.ts`). Play through those rather than rolling your own `new Audio(...)`, so volume and mute apply.
+Woodworking Tycoon has no transcode step — sounds are Ogg files served straight from `static/`. **Every sound effect is Ogg, never MP3** — an MP3's start position isn't reliable, so codec padding smears an attack and puts a gap at a loop's wrap; the Electron target means Chromium's decoder everywhere (see the header of `src/utils/sfx.ts`). Music is exempt: a streamed track fades in over seconds and never has to hit a mark, so MP3 is fine there. There *is* a small audio system to plug into: a mixing bus with master/SFX/music volume (`src/utils/audioBus.ts`, settings UI in `src/components/AudioSettingsSection.tsx`), a game-event → sound bridge (`src/views/SoundView.ts` over the table in `src/game/sound-clips.ts`), and streamed music tracks (`src/utils/musicTrack.ts`). Play through those rather than rolling your own `new Audio(...)`, so volume and mute apply.
 
 ## Pick the upstream skill and category
 
@@ -31,9 +31,9 @@ The category is just an organizing hint for the file name — there's no routing
    - Voice → `text-to-speech` skill. Default model `eleven_multilingual_v2`, pick a `voice_id` from the skill's list.
 4. **Place** the take you want into `static/sounds/<name>.ogg`. Files under `static/` are copied to `dist/` at build time and served at the root path, so the asset is reachable in-game at `/sounds/<name>.ogg` (the same way images are referenced, e.g. `/images/miter-saw.png` — see `src/utils/loadAssets.ts`). No transcode or normalize step — ElevenLabs already returns a sensible level.
 5. **Wire up playback** if the sound is new to the game. Skip this step if you're just replacing an existing asset — the file name is the only wiring. Otherwise pick the path that matches the trigger:
-   - **A game event** (an operation finishing, a payout, a material moving): don't play anything from the reducer. Have the pure action queue a cue with `emitSound(state, { kind: … })` (`src/game/game-actions/sound-actions.ts`), add the kind to `SoundEventKind` (`src/game/SoundEvent.ts`), and map it to your clip in `GameSoundLayer.tsx`. Operation clips are keyed by `operationId` in `OPERATION_CLIP`, so a new operation is usually a one-line addition.
+   - **A game event** (an operation finishing, a payout, a material moving): don't play anything from the command. Say what happened — `game.dispatch("sound", { sound: { kind: … } })` — add the kind to `SoundEventKind` (`src/game/SoundEvent.ts`), and map it to your clip in `src/game/sound-clips.ts`. Operation clips are keyed by `operationId` in `OPERATION_CLIP`, so a new operation is usually a one-line addition.
    - **A UI interaction**: buttons already get hover/click for free via `UiSoundLayer.tsx`; give one a distinct clip with `data-sfx="<name>"`.
-   - **A continuous machine sound** (spin-up → idle/cutting loops → wind-down): add a `MachineSoundDef` in `src/components/MachineSoundLayer.tsx` and generate the loops with `loop=True`. See the `MachineSoundDef` field docs in `src/utils/loopingSound.ts` for the clip requirements (start clip must end at steady idle, loops seamless, matched levels; full editing spec on issue #114).
+   - **A continuous machine sound** (spin-up → idle/cutting loops → wind-down): add a voice to `MACHINE_VOICES` in `src/utils/machineVoices.ts` (played by `src/views/MachineSoundView.ts`) and generate the loops with `loop=True`. See the `MachineSoundDef` field docs in `src/utils/loopingSound.ts` for the clip requirements (start clip must end at steady idle, loops seamless, matched levels; full editing spec on issue #114).
    - **Anything else**: call `playSound("<name>", gain)` from `src/utils/sfx.ts`, which routes through the SFX bus.
 
    Set the clip's relative level in `CLIP_GAIN`, and give frequent cues an entry in `CLIP_MIN_GAP_MS` so they can't machine-gun at fast tick speeds.
@@ -59,8 +59,8 @@ ElevenLabs is non-deterministic — the same prompt produces different audio eac
 - `src/utils/loadAssets.ts` — how static assets are referenced by root path (mirror this for sounds)
 - `src/utils/sfx.ts` — `playSound(name, gain)` / `playUiSound(name)`; fetch + decode + cache
 - `src/utils/audioBus.ts` — master / SFX / music mixing graph; `src/utils/audioSettings.ts` — persisted volume + mute
-- `src/components/GameSoundLayer.tsx` — game-event → clip mapping (`OPERATION_CLIP`, `CLIP_GAIN`, `CLIP_MIN_GAP_MS`)
+- `src/game/sound-clips.ts` — game-event → clip mapping (`OPERATION_CLIP`, `CLIP_GAIN`, `CLIP_MIN_GAP_MS`), played by `src/views/SoundView.ts`
 - `src/components/UiSoundLayer.tsx` — automatic button hover/click sounds, `data-sfx` overrides
-- `src/game/SoundEvent.ts` / `src/game/game-actions/sound-actions.ts` — cue types and `emitSound`
+- `src/game/SoundEvent.ts` — the cue types a command can say happened
 - `sound-effects` / `text-to-speech` skills — the upstream ElevenLabs API wrappers
 - `setup-api-key` skill — configures `ELEVENLABS_API_KEY` when missing (this project keeps it in `.env` at the repo root)

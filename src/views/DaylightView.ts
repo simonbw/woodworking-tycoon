@@ -5,13 +5,8 @@ import {
   RenderTexture,
   Sprite,
 } from "pixi.js";
-import {
-  easedColor,
-  easeFraction,
-  packed,
-  stepColor,
-} from "../components/shop-view/daylight-tween";
-import { cellToPixel } from "../components/shop-view/shop-scale";
+import { easedColor, easeFraction, packed, stepColor } from "./daylight-tween";
+import { cellToPixel } from "./shop-scale";
 import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";

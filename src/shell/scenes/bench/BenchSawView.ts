@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import { StageFit } from "../../../components/bench-view/stageMath";
+import { StageFit } from "./stageMath";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity, GameEventMap } from "../../../core/entity/Entity";

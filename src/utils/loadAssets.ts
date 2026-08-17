@@ -1,4 +1,4 @@
-import { worktableArtPaths } from "../components/machine-sprites/worktable-art";
+import { worktableArtPaths } from "../views/machine-sprites/worktable-art";
 import { Assets } from "pixi.js";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../game/Tool";

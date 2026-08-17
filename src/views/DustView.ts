@@ -1,10 +1,7 @@
 import { Container, Graphics, RenderTexture, Sprite } from "pixi.js";
-import { DustStamp, onDustStamp } from "../components/shop-view/dustStampBus";
-import { dustColorBySpecies } from "../components/shop-view/colorBySpecies";
-import {
-  cellToPixel,
-  PIXELS_PER_CELL,
-} from "../components/shop-view/shop-scale";
+import { DustStamp, onDustStamp } from "./dustStampBus";
+import { dustColorBySpecies } from "./colorBySpecies";
+import { cellToPixel, PIXELS_PER_CELL } from "./shop-scale";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";

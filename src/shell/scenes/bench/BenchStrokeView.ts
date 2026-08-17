@@ -4,10 +4,7 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
-import {
-  dwellGain,
-  strokeGain,
-} from "../../../components/bench-view/stageMath";
+import { dwellGain, strokeGain } from "./stageMath";
 import { GroupPiece } from "../../../game/bench-work/bench-group";
 import {
   benchPointInFrame,

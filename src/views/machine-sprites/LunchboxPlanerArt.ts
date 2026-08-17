@@ -1,8 +1,5 @@
 import { Container, Sprite } from "pixi.js";
-import {
-  inchesToPixels,
-  PIXELS_PER_INCH,
-} from "../../components/shop-view/shop-scale";
+import { inchesToPixels, PIXELS_PER_INCH } from "../shop-scale";
 import { isBoard } from "../../game/board-helpers";
 import { Machine } from "../../game/Machine";
 import { thicknessStepBelow } from "../../game/machines/lunchboxPlaner";

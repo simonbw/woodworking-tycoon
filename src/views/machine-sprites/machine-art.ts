@@ -3,7 +3,7 @@ import {
   IMAGE_PIXELS_PER_INCH,
   PIXELS_PER_CELL,
   PIXELS_PER_INCH,
-} from "../../components/shop-view/shop-scale";
+} from "../shop-scale";
 import { footprintCenter, Machine } from "../../game/Machine";
 import { MachineActivity } from "./machine-activity";
 

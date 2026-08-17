@@ -2,10 +2,7 @@ import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
-import {
-  cellToPixel,
-  PIXELS_PER_CELL,
-} from "../components/shop-view/shop-scale";
+import { cellToPixel, PIXELS_PER_CELL } from "./shop-scale";
 import { sidewalkY } from "../game/stand";
 import { TRIP_TRANSITIONS_DISABLED } from "../shell/scenes/TripTheater";
 import { currentVenue } from "../shell/scenes/venue";

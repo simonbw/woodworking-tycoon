@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
-import { PIXELS_PER_CELL } from "../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../shop-scale";
 import { ToolItem } from "../../game/Materials";
 import { IDS_WITHOUT_ICON_ART, toolIconSrc } from "../../utils/uiImages";
 

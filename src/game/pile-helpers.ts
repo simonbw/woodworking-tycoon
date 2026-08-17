@@ -60,7 +60,7 @@ export function materialExtentInches(material: MaterialInstance): {
 /**
  * Whether a pile can be grabbed by someone standing at the given cell.
  * Piles sit at continuous positions (`pile.position` is the material's
- * center point, in cell units — see docs/continuous-movement.md), so reach
+ * center point, in cell units — see player-motion.ts), so reach
  * is geometry, not cell membership: the distance from the standing cell's
  * center to the material's resting rectangle, against PILE_REACH_CELLS.
  * Long stock is grabbable anywhere along its length this way, with no

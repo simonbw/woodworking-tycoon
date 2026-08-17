@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite } from "pixi.js";
-import { PIXELS_PER_CELL } from "../../components/shop-view/shop-scale";
-import { worktableArtSrc } from "../../components/machine-sprites/worktable-art";
+import { PIXELS_PER_CELL } from "../shop-scale";
+import { worktableArtSrc } from "./worktable-art";
 import { Machine } from "../../game/Machine";
 import { MachineActivity } from "./machine-activity";
 import {

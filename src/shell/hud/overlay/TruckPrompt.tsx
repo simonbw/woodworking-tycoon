@@ -26,7 +26,7 @@ import {
 import { ShortcutId } from "../../../game/shortcuts";
 import { classNames } from "../../../utils/classNames";
 import { mod } from "../../../utils/mathUtils";
-import { PIXELS_PER_CELL } from "../../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../../../views/shop-scale";
 import {
   HintList,
   HintRow,

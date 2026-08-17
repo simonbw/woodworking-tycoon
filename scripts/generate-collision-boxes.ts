@@ -6,7 +6,7 @@ import { MACHINE_TYPES, MachineId, footprintCenter } from "../src/game/Machine";
 /**
  * Measures each machine's visible silhouette from its sprite art and
  * writes src/game/machine-collision-boxes.generated.ts — the collision
- * shapes the player's body bumps into (see docs/continuous-movement.md).
+ * shapes the player's body bumps into (see game/player-motion.ts).
  *
  *   npm run generate:collision-boxes
  *

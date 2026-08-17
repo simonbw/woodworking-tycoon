@@ -2,7 +2,7 @@ import React, { createContext, useContext } from "react";
 import { CellMap } from "../../../game/CellMap";
 import { Machine, machineKey } from "../../../game/Machine";
 import { Vector, rotateVec, translateVec } from "../../../game/Vectors";
-import { PIXELS_PER_CELL } from "../../../components/shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../../../views/shop-scale";
 import { MachineChips, OutfeedChips } from "../station/MachineChips";
 import { useShopState } from "../../useShell";
 import { useTargeting } from "../useTargeting";
