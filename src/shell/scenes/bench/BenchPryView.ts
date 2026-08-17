@@ -12,6 +12,8 @@ import {
 import {
   faceNails,
   isSameNail,
+  PALLET_HEIGHT_IN,
+  PALLET_WIDTH_IN,
   palletNailPosition,
 } from "../../../game/bench-work/pallet-geometry";
 import { Pallet, PalletNail } from "../../../game/Materials";
@@ -87,6 +89,19 @@ export class BenchPryView extends BaseEntity implements Entity {
         y: fit.originY + at.yIn * fit.pxPerIn,
       };
     });
+  }
+
+  /**
+   * The staged pallet's top-left corner, in the run's frame — where a
+   * spec starts measuring to aim at a board rather than a nail.
+   */
+  palletCorner(): { xIn: number; yIn: number } | null {
+    const staged = this.stagedPallet();
+    if (!staged) return null;
+    return {
+      xIn: staged.placement.xIn - PALLET_WIDTH_IN / 2,
+      yIn: staged.placement.yIn - PALLET_HEIGHT_IN / 2,
+    };
   }
 
   /** The pallet staged on the opened bench, with where it lies. */
@@ -169,16 +184,35 @@ export class BenchPryView extends BaseEntity implements Entity {
   }
 
   /**
-   * With the hammer in hand, F turns the pallet over without putting
-   * the hammer down — the rest of the nails are on the other side.
+   * F turns the pallet over: bare-handed with the pointer on it, or with
+   * the hammer in hand anywhere on the stage — the rest of the nails are
+   * on the other side, and putting the hammer down to turn it would be
+   * a step for nothing.
    */
   @on("keyDown")
   onKeyDown({ key, event }: GameEventMap["keyDown"]) {
-    if (key !== "KeyF" || !this.hammerHeld()) return;
+    if (key !== "KeyF") return;
     if (!stageSettled(this.game)) return;
-    const bench = this.dive()?.openBench();
+    const dive = this.dive();
+    const bench = dive?.openBench();
     const staged = this.stagedPallet();
     if (!bench || !staged) return;
+    if (!this.hammerHeld()) {
+      // Bare hands: only the pallet under the pointer turns over, so F
+      // over a board still means that board.
+      if (dive?.handsFull()) return;
+      const at = this.pointerInches();
+      if (!at) return;
+      const local = benchPointOnPallet(staged.placement, at.xIn, at.yIn);
+      if (
+        local.xIn < 0 ||
+        local.yIn < 0 ||
+        local.xIn > PALLET_WIDTH_IN ||
+        local.yIn > PALLET_HEIGHT_IN
+      ) {
+        return;
+      }
+    }
     event.preventDefault();
     event.stopImmediatePropagation();
     arrangeBenchMaterial(this.game, bench, staged.pallet.id, {

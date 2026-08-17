@@ -1,3 +1,8 @@
+// The DOM icons (a board in the hands, a consumable in the cabinet)
+// draw themselves with the same PIXI sprites the world does, through
+// @pixi/react — which has to be told which PIXI classes its JSX may
+// name before any of them render.
+import "./pixi-setup";
 import { AutoPauser } from "./core/AutoPauser";
 import { Game } from "./core/Game";
 import { polyfill } from "./core/Polyfills";

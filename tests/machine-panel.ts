@@ -252,10 +252,12 @@ export async function modesOf(
   return modes;
 }
 
-/** Spread the bench's plan drawer open from the pile in the corner. */
+/** Spread the bench's plan drawer open from the pile in the corner,
+ * leaning the player over the bench first if they're standing up. */
 export async function openPlanDrawer(page: any) {
   const browser = page.getByTestId("plan-browser");
   if (await browser.isVisible()) return;
+  await openStationSurface(page);
   await page.getByTestId("blueprint-corner").click();
   await browser.waitFor({ state: "visible" });
   await page.waitForTimeout(30);

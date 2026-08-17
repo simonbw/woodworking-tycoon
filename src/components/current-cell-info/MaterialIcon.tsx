@@ -1,8 +1,7 @@
-import { Application } from "@pixi/react";
 import React, { ReactNode } from "react";
 import { productBlueprintFor } from "../../game/bench-work/blueprint";
 import { MaterialInstance } from "../../game/Materials";
-import { MaterialSprite } from "../material-sprites/MaterialSprite";
+import { SpriteThumb } from "./SpriteThumb";
 import { PIXELS_PER_CELL, PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import {
   colorBySheetGoodKind,
@@ -12,32 +11,6 @@ import { classNames } from "../../utils/classNames";
 import { formatCount } from "../../utils/formatNumber";
 import { toolIconSrc } from "../../utils/uiImages";
 import { Tooltip } from "../Tooltip";
-
-export const SimpleSpriteStage: React.FC<{
-  children: ReactNode;
-  scale?: number;
-  /**
-   * How much of the world the stage has to show, in world pixels. One cell
-   * covers every sprite drawn at pile scale; the furniture art is bigger
-   * than that and would be cropped to its middle without a wider fit.
-   */
-  fit?: number;
-}> = ({ children, scale = 0.5, fit = PIXELS_PER_CELL }) => {
-  const size = PIXELS_PER_CELL * scale;
-  return (
-    <Application
-      width={size}
-      height={size}
-      backgroundAlpha={0}
-      antialias={true}
-      className="rounded bg-zinc-700 p-0.5"
-    >
-      <pixiContainer y={size / 2} x={size / 2} scale={size / fit}>
-        {children}
-      </pixiContainer>
-    </Application>
-  );
-};
 
 /** A blueprint-assembled product spans its blueprint's footprint, which
  * is far wider than one cell — fit the icon to its longest side. */
@@ -188,12 +161,11 @@ export const MaterialIcon: React.FC<{
           tooltip={tooltip}
           placeholder={placeholder}
         >
-          <SimpleSpriteStage
-            scale={sizeToScale[size]}
+          <SpriteThumb
+            material={material}
+            size={PIXELS_PER_CELL * sizeToScale[size]}
             fit={blueprintIconFit(material.type) ?? undefined}
-          >
-            <MaterialSprite material={material} />
-          </SimpleSpriteStage>
+          />
         </Wrapper>
       );
   }

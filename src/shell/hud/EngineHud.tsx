@@ -101,7 +101,7 @@ export const EngineHud: React.FC = () => {
         {/* Deliberately outside the bench-dive fade: salvage pried loose at
           a bench flies to this tally, so it stays up and clickable above
           the bench view. below-top-bar clears the top bar's chip. */}
-        <div className="absolute right-6 below-top-bar z-40">
+        <div className="pointer-events-auto absolute right-6 below-top-bar z-40">
           <SuppliesSection />
         </div>
 

@@ -40,6 +40,8 @@ export class ShellStore extends BaseEntity implements Entity {
   private listeners = new Set<() => void>();
   version = 0;
   private lastSignature = "";
+  /** The machine states as of the last render signal — see onAfterTick. */
+  private lastMachineStates: MachineState[] = [];
 
   /**
    * Whether a DOM modal claims the keyboard. Mirrored from the
@@ -74,8 +76,20 @@ export class ShellStore extends BaseEntity implements Entity {
   @on("afterTick")
   onAfterTick() {
     const signature = this.signature();
-    if (signature !== this.lastSignature) {
+    // A machine's state object is replaced on every mutation (the
+    // commands' contract), so identity is the whole change signal —
+    // cheaper than describing a machine in the signature, and it catches
+    // the changes a description would miss (a plan pulled, a setting
+    // dialed) even when the clock is standing still.
+    const states = [...this.game.entities.byConstructor(MachineEntity)].map(
+      (machine) => machine.state,
+    );
+    const machinesMoved =
+      states.length !== this.lastMachineStates.length ||
+      states.some((state, index) => state !== this.lastMachineStates[index]);
+    if (signature !== this.lastSignature || machinesMoved) {
       this.lastSignature = signature;
+      this.lastMachineStates = states;
       this.bump();
     }
   }
@@ -117,7 +131,11 @@ export class ShellStore extends BaseEntity implements Entity {
       player.inventory.length,
       player.inventory[player.inventory.length - 1]?.id,
       player.carriedMachine?.machineTypeId,
-      player.away?.kind ?? "",
+      // The whole trip, not just its kind: a leg of scavenging that
+      // ends, a cart that gains a line, a stop's haul — all of it is
+      // what the trip's own screen draws, and none of it moves the
+      // clock, so a frozen clock would leave the screen stale.
+      player.away ? JSON.stringify(player.away) : "",
       player.busyTicks > 0 ? "busy" : "",
       // The interaction UI reads reach and facing off the projection, so
       // crossing a cell line or turning must re-render the chips.

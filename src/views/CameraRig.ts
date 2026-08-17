@@ -7,6 +7,7 @@ import {
   PIXELS_PER_CELL,
 } from "../components/shop-view/shop-scale";
 import { sidewalkY } from "../game/stand";
+import { TRIP_TRANSITIONS_DISABLED } from "../shell/scenes/TripTheater";
 import { currentVenue } from "../shell/scenes/venue";
 import { Player } from "../sim/entities/Player";
 import { ShopInfo } from "../sim/singletons/ShopInfo";
@@ -36,8 +37,13 @@ export class CameraRig extends BaseEntity implements Entity {
 
   private scroll = 0;
   private firstFrame = true;
-  /** Test hook: snap instead of glide (the E2E render cap sets this). */
-  snap = false;
+  /**
+   * Snap to the framing instead of gliding to it. The E2E build does,
+   * as the old shell's camera did: a spec that measures where something
+   * sits on screen would otherwise race a camera still easing in, and a
+   * capped renderer glides in visible steps.
+   */
+  snap = TRIP_TRANSITIONS_DISABLED;
 
   @on("render")
   onRender(dt: number) {

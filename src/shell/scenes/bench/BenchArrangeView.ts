@@ -92,6 +92,11 @@ export class BenchArrangeView extends BaseEntity implements Entity {
 
   /** The piece riding the hand right now, if any — the dive view skips
    * drawing it so this one can draw it where the hand has it. */
+  /** The piece the hand is over (or carrying), for the stage marker. */
+  handPieceId(): string | null {
+    return this.drag?.materialId ?? this.hoveredId;
+  }
+
   draggingId(): string | null {
     return this.drag?.materialId ?? null;
   }
@@ -195,7 +200,13 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     }
 
     const under = pieceUnder(stage.group, stage.pointer.xIn, stage.pointer.yIn);
-    this.hoveredId = under?.material.id ?? null;
+    const hovered = under?.material.id ?? null;
+    if (hovered !== this.hoveredId) {
+      this.hoveredId = hovered;
+      // The chips read the piece under the hand (F names the stop it
+      // would reach), so a new piece under the pointer is a redraw.
+      this.game.entities.tryGetSingleton(ShellStore)?.bump();
+    }
   }
 
   /** Set the piece down where the hand left it. */

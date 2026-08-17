@@ -5,6 +5,7 @@ import { ReactEntity } from "../core/ReactEntity";
 import { V } from "../core/Vector";
 import { OverlayFrameContext, OverlayLayer } from "./hud/overlay/OverlayLayer";
 import { BenchDive } from "./scenes/bench/BenchDive";
+import { BenchStageMarker } from "./hud/bench/BenchStageMarker";
 import { StoreOverlayBridge } from "./hud/store/StoreOverlayBridge";
 import { ShellProvider, useGame, useShopOpen, useShopState } from "./useShell";
 
@@ -22,9 +23,11 @@ const VenueOverlay: React.FC = () => {
   const gameState = useShopState();
   // Leaned over a bench, the world's chips fold away: the dive draws
   // over the floor they annotate, and they'd be unreachable behind it
-  // (the old HomePage's bench-dive fade).
+  // (the old HomePage's bench-dive fade). What stays is the marker
+  // saying where the run sits — it belongs to this layer because it
+  // follows the pointer, which only this layer redraws with.
   if (game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null) {
-    return null;
+    return <BenchStageMarker />;
   }
   const away = gameState.player.away;
   if (away?.kind === "shopping" && away.store === "orangeBox") {

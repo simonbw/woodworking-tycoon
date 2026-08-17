@@ -1116,7 +1116,7 @@ test.describe("Engine shell", () => {
       expect(start.progress).toMatchObject({ seams: 1, needed: 2, clamps: 0 });
 
       // Lay a bar on each ghost.
-      await page.getByTestId("bench-clamp").click();
+      await page.getByTestId("bench-clamp-supply").click();
       for (let bar = 0; bar < 2; bar++) {
         const ghost = (await glue()).points.ghosts[0];
         if (!ghost) break;
@@ -1124,7 +1124,7 @@ test.describe("Engine shell", () => {
         const holding = await page.evaluate(
           () => (window as any).game.entities.getById("benchDive").holdingClamp,
         );
-        if (!holding) await page.getByTestId("bench-clamp").click();
+        if (!holding) await page.getByTestId("bench-clamp-supply").click();
       }
       await expect.poll(async () => (await glue()).progress.clamps).toBe(2);
 

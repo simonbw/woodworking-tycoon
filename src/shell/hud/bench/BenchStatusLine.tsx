@@ -10,6 +10,14 @@ import { BenchDive } from "../../scenes/bench/BenchDive";
 import { BenchAssemblyView } from "../../scenes/bench/BenchAssemblyView";
 import { BenchGlueView } from "../../scenes/bench/BenchGlueView";
 import { openBenchGroup } from "../../scenes/bench/benchStage";
+import { BenchArrangeView } from "../../scenes/bench/BenchArrangeView";
+import { groupPieces } from "../../../game/bench-work/bench-group";
+import {
+  FLIP_STOP_HINTS,
+  flipStopOf,
+  nextFlipStop,
+  tumbles,
+} from "../../../game/bench-work/flip-cycle";
 import { useGame, useShellVersion, useShopState } from "../../useShell";
 import { useBenchChrome } from "./useBenchDive";
 
@@ -103,6 +111,21 @@ export const BenchStatusLine: React.FC = () => {
     return "The bench is clear. Set stock down on it with F.";
   };
 
+  // What F would do to the piece under the hand — the same one the key
+  // handler acts on. `groupPieces` rather than the bay lists: the flip
+  // stop is a property of how the piece lies.
+  const flipPiece = (() => {
+    const id = game.entities.tryGetSingleton(BenchArrangeView)?.handPieceId();
+    return id
+      ? groupPieces(run.group).find((piece) => piece.material.id === id)
+      : undefined;
+  })();
+  const flipHint =
+    flipPiece && tumbles(flipPiece.material)
+      ? (FLIP_STOP_HINTS[nextFlipStop(flipStopOf(flipPiece.placement))] ??
+        "flip")
+      : "flip";
+
   const hints: Array<[string, string]> = dive.holdingClamp
     ? [
         ["Click", "lay the clamp down"],
@@ -137,7 +160,9 @@ export const BenchStatusLine: React.FC = () => {
               ? ([
                   ["Drag", "move a piece"],
                   ["R", "turn"],
-                  ["F", "tip it up"],
+                  // The chip names the stop F is about to reach, so the
+                  // three-stop cycle isn't found by surprise.
+                  ["F", flipHint],
                   ["E", "take it"],
                 ] as Array<[string, string]>)
               : []),

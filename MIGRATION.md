@@ -409,19 +409,8 @@ transform tests as it lands.
       which the engine-shell spec uses), the fixtures are on `window` in
       both shells, and the station helpers answer to either surface (the
       sheet, or the bench's own rail and plan drawer). Ported so far:
-      - [x] `screens.spec.ts`
-      - [x] `keyboard.spec.ts`
-      - [ ] `bench.spec.ts` (needs the dive's stage published to the DOM
-            the way the old scene published `bench-work` / `bench-stage`)
-      - [ ] `floor.spec.ts` — started: the shop keeps its own save slot
-            key while the old shell is served beside it (the spec's
-            incompatible-save step names it), and the HUD grew the `main`
-            landmark it asserts. Left on `/legacy.html`: the floor
-            sheet's step polls a piece's 1px handle until it stops
-            moving, and on the new canvas it never settles — worth
-            understanding before the spec is changed, since a marker that
-            never holds still is a camera that never lands
-      - [ ] `market.spec.ts`, `milling.spec.ts`, `stations.spec.ts`
+      All seven drive `/` now: `screens`, `keyboard`, `floor`, `market`,
+      `milling`, `stations`, and `bench`
 - [ ] Delete old shell, `game-actions/` transform layer, `@pixi/react`,
       retired tests
 - [ ] Docs: retire `continuous-movement.md`, update `floor-interaction.md`,
@@ -933,3 +922,31 @@ transform tests as it lands.
   still, and against the new canvas the handle keeps moving. That is a
   question about the camera rather than the spec, so it stays parked
   until the next session looks at it.
+- 2026-08-17 — The last five specs moved onto `/`, and each brought back
+  something real:
+  - the camera snaps to its framing in the E2E build, as the old one did
+    (a spec measuring where a thing sits was racing a camera still easing
+    in);
+  - the shop's chrome re-renders when a machine's state object is
+    replaced, not only when the clock moves — a plan put back left the
+    corner chip reading the old drawing while the clock stood still;
+  - a trip's own screen refreshes on the trip, so a leg of scavenging
+    that ends is on screen even with the clock frozen;
+  - the supply cabinet takes clicks again (it sat under the HUD's
+    pointer-transparent sheet);
+  - the icons' little canvases are raw Pixi now (`SpriteThumb`), which
+    takes `@pixi/react` off the shop's own path;
+  - right-clicking a bench leans the player over it — a bench has no
+    sheet to open, so the gesture did nothing at all;
+  - Tab at a container bench spreads its sheet again: a can is a bench by
+    type but has no work surface, and both keys now ask one shared
+    question (`divesToBench`);
+  - the bench's press claims on the press rather than on the next tick's
+    look at the mouse button, so a quick click can't fall between ticks;
+  - the run is framed clear of the tool rail — wood under the rail is
+    wood the hand can't reach;
+  - F turns the pallet over bare-handed, the chips name the flip stop F
+    reaches next, an empty outline tags what belongs in it, and the
+    body walks into the working stance when the dive opens.
+  The bench dive also publishes its stage to the page
+  (`BenchStageMarker`), the seam the specs measure inches by.

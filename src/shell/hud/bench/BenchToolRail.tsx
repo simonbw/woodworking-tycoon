@@ -296,7 +296,7 @@ export const BenchToolRail: React.FC = () => {
         {glue && (
           <span className="ml-1 flex items-center gap-2 border-l border-paper-manila/20 pl-3">
             <RailButton
-              testId="bench-clamp"
+              testId="bench-clamp-supply"
               label="Clamp"
               title={`Bar clamps — ${clampsAvailable} free on the rack`}
               held={dive.holdingClamp}

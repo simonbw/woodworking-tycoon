@@ -32,6 +32,7 @@ import {
   operateMachine,
 } from "../../../sim/commands/machine-commands";
 import { projectGameState } from "../../../sim/projection";
+import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
 import { BenchDiveView } from "./BenchDiveView";
@@ -136,6 +137,17 @@ export class BenchStrokeView extends BaseEntity implements Entity {
    * operations it can run — even when the wood is lying on the table
    * next to it.
    */
+  /**
+   * What the tool in hand would do to the piece under the pointer — the
+   * offer, before any press. Null with nothing to work on.
+   */
+  hoveredOperationId(): string | null {
+    if (!this.dive()?.heldTool) return null;
+    const at = this.pointerInches();
+    const piece = at ? this.pieceUnder(at.xIn, at.yIn) : null;
+    return piece ? (this.strokeOffer(piece)?.id ?? null) : null;
+  }
+
   private strokeOffer(piece: GroupPiece): Operation | null {
     const dive = this.dive();
     const opened = openBenchGroup(this.game)?.opened;
@@ -171,6 +183,80 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     return group ? workpieceSpot(group, machine, script.workpiece) : null;
   }
 
+  /**
+   * The press: claim the piece the tool is over (tool-first) and start
+   * the pass. A press over work already running resumes it instead —
+   * the operation still holds the workpiece, and the mask restarts from
+   * zero, coverage being ephemeral (decision 3).
+   */
+  @on("mouseDown")
+  onMouseDown() {
+    const dive = this.dive();
+    const bench = dive?.openBench();
+    const at = this.pointerInches();
+    if (!dive || !bench || !dive.settled() || !at || this.pass) return;
+    this.claim(bench, at);
+  }
+
+  private claim(bench: MachineEntity, at: { xIn: number; yIn: number }): void {
+    // A pass already running on this bench (the player stood up and
+    // came back to it) resumes rather than re-claiming: the operation
+    // still holds the workpiece, and the mask restarts from zero —
+    // coverage is ephemeral (decision 3).
+    const running = this.strokeScript();
+    if (running?.script.started) {
+      const spot = this.workpieceSpot(running.machine, running.script);
+      if (!spot) return;
+      const local = benchPointInFrame(
+        spot.placement,
+        spot.size,
+        at.xIn,
+        at.yIn,
+      );
+      if (
+        local.xIn < 0 ||
+        local.yIn < 0 ||
+        local.xIn > spot.size.widthIn ||
+        local.yIn > spot.size.heightIn
+      ) {
+        return;
+      }
+      this.pass = {
+        pieceId: spot.id,
+        operation: running.script.operation,
+        grid: makeCoverageGrid(spot.size.widthIn, spot.size.heightIn),
+        last: local,
+      };
+      this.game.entities.tryGetSingleton(ShellStore)?.bump();
+      return;
+    }
+    const piece = this.pieceUnder(at.xIn, at.yIn);
+    if (!piece) return;
+    const operation = this.strokeOffer(piece);
+    if (!operation) return;
+    // The wood may be lying on the next table over; the tool and the
+    // operation are this bench's, so slide it across first.
+    if (machineKey(piece.member.machine.state) !== machineKey(bench.state)) {
+      gatherBenchPieces(this.game, bench, [piece.material.id]);
+    }
+    if (
+      !operateMachine(this.game, bench, {
+        operationId: operation.id,
+        materialId: piece.material.id,
+      })
+    ) {
+      return;
+    }
+    const size = placedPieceSize(piece.material, piece.placement);
+    this.pass = {
+      pieceId: piece.material.id,
+      operation,
+      grid: makeCoverageGrid(size.widthIn, size.heightIn),
+      last: benchPointInFrame(piece.placement, size, at.xIn, at.yIn),
+    };
+    this.game.entities.tryGetSingleton(ShellStore)?.bump();
+  }
+
   @on("tick")
   onTick(dt: number) {
     this.sinceWork += dt;
@@ -201,65 +287,11 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     }
     if (!at) return;
 
-    // Start a pass on the press: the claim takes exactly the piece the
-    // tool is over (tool-first), and the operation swallows it.
+    // Start a pass on the press. The press itself is caught below (a
+    // click can open and close between two ticks); this covers a hand
+    // that came back down onto the wood without a fresh press.
     if (!this.pass) {
-      // A pass already running on this bench (the player stood up and
-      // came back to it) resumes rather than re-claiming: the operation
-      // still holds the workpiece, and the mask restarts from zero —
-      // coverage is ephemeral (decision 3).
-      const running = this.strokeScript();
-      if (running?.script.started) {
-        const spot = this.workpieceSpot(running.machine, running.script);
-        if (!spot) return;
-        const local = benchPointInFrame(
-          spot.placement,
-          spot.size,
-          at.xIn,
-          at.yIn,
-        );
-        if (
-          local.xIn < 0 ||
-          local.yIn < 0 ||
-          local.xIn > spot.size.widthIn ||
-          local.yIn > spot.size.heightIn
-        ) {
-          return;
-        }
-        this.pass = {
-          pieceId: spot.id,
-          operation: running.script.operation,
-          grid: makeCoverageGrid(spot.size.widthIn, spot.size.heightIn),
-          last: local,
-        };
-        this.game.entities.tryGetSingleton(ShellStore)?.bump();
-        return;
-      }
-      const piece = this.pieceUnder(at.xIn, at.yIn);
-      if (!piece) return;
-      const operation = this.strokeOffer(piece);
-      if (!operation) return;
-      // The wood may be lying on the next table over; the tool and the
-      // operation are this bench's, so slide it across first.
-      if (machineKey(piece.member.machine.state) !== machineKey(bench.state)) {
-        gatherBenchPieces(this.game, bench, [piece.material.id]);
-      }
-      if (
-        !operateMachine(this.game, bench, {
-          operationId: operation.id,
-          materialId: piece.material.id,
-        })
-      ) {
-        return;
-      }
-      const size = placedPieceSize(piece.material, piece.placement);
-      this.pass = {
-        pieceId: piece.material.id,
-        operation,
-        grid: makeCoverageGrid(size.widthIn, size.heightIn),
-        last: benchPointInFrame(piece.placement, size, at.xIn, at.yIn),
-      };
-      this.game.entities.tryGetSingleton(ShellStore)?.bump();
+      this.claim(bench, at);
       return;
     }
 

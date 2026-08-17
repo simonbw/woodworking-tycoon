@@ -40,8 +40,11 @@ import { BenchDive } from "./BenchDive";
 
 /** The screen the run is fitted into, inset for the dive's chrome: the
  * tool rail across the top, the status line along the bottom, a margin
- * at the sides. The old scene's insets, so a bench frames up the same. */
-const TOP_CHROME_PX = 152;
+ * at the sides. The top band clears the rail's full height (the top bar
+ * it hangs under, plus its own row of hooks) — wood framed up under the
+ * rail would be wood the hand can't reach, since the rail catches the
+ * pointer first. */
+const TOP_CHROME_PX = 232;
 const BOTTOM_CHROME_PX = 96;
 const SIDE_CHROME_PX = 24;
 

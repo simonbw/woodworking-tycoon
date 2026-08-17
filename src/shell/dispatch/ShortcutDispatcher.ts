@@ -5,7 +5,8 @@ import { on } from "../../core/entity/handler";
 import { GameEventMap } from "../../core/entity/Entity";
 import { heldTool } from "../../game/HeldTool";
 import { materialSources, resolveInteract } from "../../game/interact";
-import { hasFloorControls, isBenchType } from "../../game/Machine";
+import { hasFloorControls } from "../../game/Machine";
+import { divesToBench } from "../../components/station/station-helpers";
 import { liveSettingParameter } from "../../game/machine-helpers";
 import { ShortcutDef, ShortcutId, SHORTCUTS } from "../../game/shortcuts";
 import { hasStationSheet } from "../../components/station/station-helpers";
@@ -282,9 +283,10 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       case "open-station-sheet": {
         // Tab at a bench dives into the work surface instead of a sheet
         // (decision 1 in docs/bench-work.md: the bench view is the one
-        // player path to hand work).
+        // player path to hand work). A container bench — a garbage can,
+        // a rack — has no work surface, so it keeps its sheet.
         const view = targeted?.view();
-        if (view && isBenchType(view.type)) {
+        if (view && divesToBench(view, projectGameState(game).progression)) {
           this.game.entities.tryGetSingleton(BenchDive)?.open(targeted!);
           return;
         }

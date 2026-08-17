@@ -1,7 +1,7 @@
 import React from "react";
-import { isBenchType, Machine } from "../../../game/Machine";
+import { Machine } from "../../../game/Machine";
 import { ProgressionState } from "../../../game/GameState";
-import { availableOperations } from "../../../game/skill-helpers";
+import { divesToBench } from "../../../components/station/station-helpers";
 import { Tooltip } from "../../../components/Tooltip";
 import { useShopState } from "../../useShell";
 import { useTargeting } from "../useTargeting";
@@ -37,11 +37,7 @@ export function sheetIsBenchView(
   machine: Machine,
   progression: ProgressionState,
 ): boolean {
-  return (
-    isBenchType(machine.type) &&
-    !machine.type.container &&
-    availableOperations(machine, progression).length > 0
-  );
+  return divesToBench(machine, progression);
 }
 
 export const StationSheet: React.FC = () => {

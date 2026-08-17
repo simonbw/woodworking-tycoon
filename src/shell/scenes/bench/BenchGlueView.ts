@@ -94,6 +94,9 @@ export class BenchGlueView extends BaseEntity implements Entity {
 
   /** How the glue-up stands right now — the seam the specs watch. */
   glueProgress(): {
+    /** How many pieces the run lays up, and what it amounts to. */
+    pieces: number;
+    operationId: string;
     clamps: number;
     needed: number;
     seamsGlued: number;
@@ -105,6 +108,8 @@ export class BenchGlueView extends BaseEntity implements Entity {
     const run = this.run();
     if (!run) return null;
     return {
+      pieces: run.pieces.length,
+      operationId: run.operationId,
       clamps: clampsOnRun(run, this.clamps).length,
       needed: clampsForGlueSpan(run.lengthIn),
       seamsGlued: this.seamsGlued(run),

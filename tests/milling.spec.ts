@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  closeStationSurface,
   runUntilOutput,
   openStationSheet,
   runWhileHolding,
@@ -224,7 +225,7 @@ test.describe("Milling", () => {
     page,
   }) => {
     test.setTimeout(300000);
-    await page.goto("/legacy.html");
+    await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     await page.waitForTimeout(500);
@@ -544,6 +545,9 @@ test.describe("Milling", () => {
       await dropAllExcept(page, /1" × 2'/);
       await movePlayerTo(page, [7, 4]);
       await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
+      // Pulling the drawing leaned the player over the bench; staging is
+      // a floor verb, so stand back up for it
+      await closeStationSurface(page);
       // F is plan-aware: with Build Picture Frame selected the bench only
       // takes the mitered rails out of what's carried.
       await setStockDown(page);

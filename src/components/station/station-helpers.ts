@@ -1,4 +1,6 @@
-import { Machine } from "../../game/Machine";
+import { isBenchType, Machine } from "../../game/Machine";
+import { ProgressionState } from "../../game/GameState";
+import { availableOperations } from "../../game/skill-helpers";
 import { MaterialInstance } from "../../game/Materials";
 
 /**
@@ -36,4 +38,22 @@ export function loadedStockDimension(
  */
 export function hasStationSheet(machine: Machine): boolean {
   return machine.type.directFeed ? machine.toolSlots > 0 : true;
+}
+
+/**
+ * Whether Tab (or a right-click) at this station leans the player over a
+ * work surface rather than spreading a sheet. A bench with work to do
+ * does: its plans, tools, and racks hang on the bench's own chrome. A
+ * container bench — a garbage can, a lumber rack — has no work surface,
+ * so its sheet stays the inventory it always was.
+ */
+export function divesToBench(
+  machine: Machine,
+  progression: ProgressionState,
+): boolean {
+  return (
+    isBenchType(machine.type) &&
+    !machine.type.container &&
+    availableOperations(machine, progression).length > 0
+  );
 }

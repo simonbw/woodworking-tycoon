@@ -9,7 +9,11 @@ import { getMachineOccupiedCells } from "../game/game-actions/machine-actions";
 import { pileWithinReach } from "../game/pile-helpers";
 import { GameState, MaterialPile } from "../game/GameState";
 import { Vector } from "../game/Vectors";
-import { hasStationSheet } from "../components/station/station-helpers";
+import {
+  divesToBench,
+  hasStationSheet,
+} from "../components/station/station-helpers";
+import { findMachineEntity } from "../sim/commands/machine-commands";
 import { TargetingState } from "../shell/dispatch/TargetingState";
 import { BenchDive } from "../shell/scenes/bench/BenchDive";
 import { ShellStore } from "../shell/ShellStore";
@@ -131,8 +135,18 @@ export class MousePicking extends BaseEntity implements Entity {
     if (gs.player.away) return;
     this.cursorWorld = this.cursorCell();
 
-    // A station's sheet for the machine under the cursor…
+    // A station's sheet for the machine under the cursor — or, at a
+    // bench, the lean over its work surface, which is what a bench has
+    // instead of a sheet (the same thing Tab opens there).
     const machine = this.machineUnderCursor(gs);
+    if (machine && divesToBench(machine, gs.progression)) {
+      const entity = findMachineEntity(this.game, machine.state);
+      if (entity) {
+        this.targeting().setTarget(machine);
+        this.game.entities.tryGetSingleton(BenchDive)?.open(entity);
+        return;
+      }
+    }
     if (machine && hasStationSheet(machine)) {
       this.targeting().setTarget(machine);
       this.targeting().openSheet(machine);

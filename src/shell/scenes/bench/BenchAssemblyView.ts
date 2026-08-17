@@ -23,6 +23,7 @@ import {
 } from "../../../game/bench-work/bench-layout";
 import {
   BlueprintFastener,
+  BlueprintSlot,
   fastenerToolId,
   ProductBlueprint,
   productBlueprintFor,
@@ -116,6 +117,50 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
       driverHeld: this.driverHeld(build.blueprint),
       tipUp: tipUp ? { role: tipUp.role, onEnd: tipUp.onEnd === true } : null,
     };
+  }
+
+  /**
+   * The drawing's top-left corner, in the run's frame: where its ghost
+   * outlines start, and what a spec measures a part's landing from.
+   */
+  productCorner(): { xIn: number; yIn: number } | null {
+    const build = this.build();
+    if (!build) return null;
+    return {
+      xIn: build.productPlacement.xIn - build.blueprint.widthIn / 2,
+      yIn: build.productPlacement.yIn - build.blueprint.heightIn / 2,
+    };
+  }
+
+  /**
+   * The empty outline under the pointer, when the hands are free — what
+   * the tag beside the cursor names. Null with anything in hand, mid-
+   * drag, or over an outline that already has its part.
+   */
+  hoveredSlot(): BlueprintSlot | null {
+    const build = this.build();
+    const stage = benchStage(this.game);
+    const dive = this.dive();
+    if (!build || !stage || !dive || dive.handsFull()) return null;
+    if (this.game.entities.tryGetSingleton(BenchArrangeView)?.draggingId()) {
+      return null;
+    }
+    const at = stagePointer(this.game, stage.fit);
+    for (const slot of build.blueprint.slots) {
+      if (build.seated.has(slot.id)) continue;
+      const seat = slotOnBench(build.blueprint, build.productPlacement, slot);
+      const { wIn, hIn } = slotFootprintIn(slot);
+      const across = (seat.angleDeg ?? 0) % 180 !== 0;
+      const halfW = (across ? hIn : wIn) / 2;
+      const halfH = (across ? wIn : hIn) / 2;
+      if (
+        Math.abs(at.xIn - seat.xIn) <= halfW &&
+        Math.abs(at.yIn - seat.yIn) <= halfH
+      ) {
+        return slot;
+      }
+    }
+    return null;
   }
 
   /** Where the armed crossings sit on screen — the seam a spec drives

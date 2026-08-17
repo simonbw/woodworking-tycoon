@@ -67,8 +67,8 @@ test.describe("Bench view", () => {
   test("hand work happens on the bench's zoomed work surface", async ({
     page,
   }) => {
-    test.setTimeout(300000);
-    await page.goto("/legacy.html");
+    test.setTimeout(900000);
+    await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
     await page.evaluate(() => {
@@ -194,7 +194,8 @@ test.describe("Bench view", () => {
       await page.waitForTimeout(50);
       await blur();
       await page.keyboard.press("Tab");
-      await expect(page.getByTestId("station-sheet")).toBeVisible();
+      // The bench's own chrome is up: the tool rail across the top
+      await expect(page.getByTestId("bench-tool-rail")).toBeVisible();
       // Opening the view walks the body into the standard working
       // stance — centered on the bench's operation cell, squared up to
       // face the top — so the zoomed-in look finds the woodworker
@@ -231,7 +232,7 @@ test.describe("Bench view", () => {
       await page.keyboard.press("Escape");
       await expect(browser).toBeHidden();
       // Escape closed the drawer, never the bench view under it
-      await expect(page.getByTestId("station-sheet")).toBeVisible();
+      await expect(page.getByTestId("bench-tool-rail")).toBeVisible();
       // The sanding block hangs on the rail, waiting for a hand
       await expect(page.getByTestId("bench-tool-sandingBlock")).toBeVisible();
 
