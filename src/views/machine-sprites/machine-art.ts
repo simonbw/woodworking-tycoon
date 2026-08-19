@@ -93,6 +93,16 @@ export abstract class MachineArtBase {
 
   abstract rebuild(machine: Machine, activity: MachineActivity): void;
 
+  /**
+   * Hide the staged stock while the bench dive's close-up covers this
+   * machine — the dive draws the same pieces live, and the static copies
+   * would only ghost out from underneath it. No-op for arts that stage
+   * nothing.
+   */
+  setStockHidden(hidden: boolean): void {
+    void hidden;
+  }
+
   animate(
     dt: number,
     machine: Machine,

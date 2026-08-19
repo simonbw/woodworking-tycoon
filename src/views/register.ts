@@ -1,4 +1,6 @@
 import { registerView } from "../core/ViewRegistry";
+import { registerMaterialSpriteBuilder } from "./machine-sprites/material-slot";
+import { createMaterialSprite } from "./material-sprites/MaterialSprite";
 import { CustomerEntity } from "../sim/entities/CustomerEntity";
 import { MachineCrateEntity } from "../sim/entities/MachineCrateEntity";
 import { MachineEntity } from "../sim/entities/MachineEntity";
@@ -27,6 +29,15 @@ import { enableViewZOrdering } from "./z-order";
  */
 export function registerAllViews(): void {
   enableViewZOrdering();
+  // The machine arts' staged stock draws through this seam — without it
+  // a bench's arranged pieces and every machine's fed stock are invisible
+  // on the shop floor.
+  registerMaterialSpriteBuilder((material, options = {}) =>
+    createMaterialSprite(material, {
+      onEdge: options.onEdge,
+      flipped: options.flipped,
+    }),
+  );
   registerView(Player, PlayerView);
   registerView(DustLayer, DustView);
   registerView(TruckEntity, TruckView);

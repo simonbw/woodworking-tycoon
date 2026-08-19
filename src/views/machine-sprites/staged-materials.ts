@@ -18,9 +18,9 @@ import { buildMaterialSprite } from "./material-slot";
  * The material drawings come through the material-sprite seam
  * (material-slot.ts); the placements and the rocking are all here.
  *
- * The old sprite also skipped drawing under the bench view's close-up
- * (the leaned-over bench draws its own live stock); the bench scene is
- * phase 7, so that guard returns with it.
+ * Under the bench dive's close-up the whole run's staged stock hides
+ * instead of drawing (the leaned-over bench draws its own live stock) —
+ * MachineView toggles it through the art's setStockHidden.
  */
 export class StagedMaterials {
   /** Mounts on the machine's footprint center, like the old FootprintArt. */

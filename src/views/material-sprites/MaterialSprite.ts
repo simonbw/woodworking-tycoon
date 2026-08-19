@@ -29,13 +29,17 @@ export interface MaterialSpriteOptions {
   onEdge?: boolean;
   /** …or standing on its end: boards draw as bare end grain. */
   onEnd?: boolean;
+  /** The piece lies face-down. The caller applies the actual mirror (a
+   * negative x scale); pallets additionally reorder their layers and
+   * swap which nail heads show (createPalletSprite). */
+  flipped?: boolean;
 }
 
 export function createMaterialSprite(
   material: MaterialInstance,
   options: MaterialSpriteOptions = {},
 ): Container {
-  const { alpha, tint, onEdge, onEnd } = options;
+  const { alpha, tint, onEdge, onEnd, flipped } = options;
 
   /** One Graphics with the shared alpha/tint applied — the common case. */
   const graphics = (draw: (g: Graphics) => void): Graphics => {
@@ -55,7 +59,7 @@ export function createMaterialSprite(
           : createBoardSprite(material, material.id, { alpha, tint });
 
     case "pallet":
-      return createPalletSprite(material, { alpha, tint });
+      return createPalletSprite(material, { alpha, tint, flipped });
 
     case "plywood":
       return graphics((g) => drawSheetGood(g, material, material.id));

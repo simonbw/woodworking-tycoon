@@ -21,6 +21,10 @@ import { StagedMaterials } from "./staged-materials";
 export class SawhorsesArt extends MachineArtBase {
   private readonly materials = new StagedMaterials();
 
+  override setStockHidden(hidden: boolean): void {
+    this.materials.root.visible = !hidden;
+  }
+
   constructor(machine: Machine) {
     super();
     const holder = footprintContainer(machine);

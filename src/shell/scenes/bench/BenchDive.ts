@@ -2,7 +2,9 @@ import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { on } from "../../../core/entity/handler";
-import { machineKey } from "../../../game/Machine";
+import { getMachines, machineKey } from "../../../game/Machine";
+import { benchGroupAt } from "../../../game/bench-work/bench-group";
+import { projectGameState } from "../../../sim/projection";
 import { PalletNail } from "../../../game/Materials";
 import { ToolId } from "../../../game/Tool";
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
@@ -164,6 +166,40 @@ export class BenchDive extends BaseEntity implements Entity {
   displayedBench(): MachineEntity | null {
     return this.benchFor(this.openBenchKey ?? this.closingKey);
   }
+
+  /**
+   * The machineKeys of every table in the displayed bench's group, or
+   * null on the shop floor. The dive's close-up covers the whole run of
+   * pushed-together tables, so the shop view hides all their staged
+   * stock, not just the opened one's (see MachineView). Cached by the
+   * displayed key: the group can't change while the player is leaned
+   * over it.
+   */
+  displayedGroupKeys(): ReadonlySet<string> | null {
+    const key = this.openBenchKey ?? this.closingKey;
+    if (key === null) {
+      this.groupKeysFor = null;
+      this.groupKeys = null;
+      return null;
+    }
+    if (this.groupKeysFor !== key) {
+      const machines = getMachines(projectGameState(this.game).machines);
+      const opened = machines.find(
+        (machine) => machineKey(machine.state) === key,
+      );
+      this.groupKeysFor = key;
+      this.groupKeys = opened
+        ? new Set(
+            benchGroupAt(machines, opened).members.map((member) =>
+              machineKey(member.machine.state),
+            ),
+          )
+        : new Set([key]);
+    }
+    return this.groupKeys;
+  }
+  private groupKeysFor: string | null = null;
+  private groupKeys: ReadonlySet<string> | null = null;
 
   private benchFor(key: string | null): MachineEntity | null {
     if (key === null) return null;

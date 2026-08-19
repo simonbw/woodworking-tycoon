@@ -27,6 +27,10 @@ export class WorktableArt extends MachineArtBase {
   private readonly upgradeGraphics = new Graphics();
   private readonly materials = new StagedMaterials();
 
+  override setStockHidden(hidden: boolean): void {
+    this.materials.root.visible = !hidden;
+  }
+
   constructor(machine: Machine) {
     super();
     const topSrc = worktableArtSrc(machine.type.id, "top");

@@ -4,8 +4,9 @@ import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
-import { Machine, MachineState } from "../game/Machine";
+import { Machine, machineKey, MachineState } from "../game/Machine";
 import { MachineEntity } from "../sim/entities/MachineEntity";
+import { BenchDive } from "../shell/scenes/bench/BenchDive";
 import { createMachineArt } from "./machine-sprites/create-machine-art";
 import {
   computeMachineActivity,
@@ -45,9 +46,8 @@ import { buildWorktableShadow } from "./machine-sprites/WorktableArt";
  * spray, the status badge) re-read the world every frame.
  *
  * Not here on purpose: the targeting/tutorial highlight rims and the
- * invisible hit shapes — interaction chrome, phase 4 — and the
- * leaned-over-bench suppression, which returns with the bench scene in
- * phase 7.
+ * invisible hit shapes — interaction chrome, owned by the dispatch
+ * layer.
  */
 
 /** zIndex bands within the "machines" layer. */
@@ -114,6 +114,15 @@ export class MachineView extends BaseEntity implements Entity {
       this.lastState = state;
       this.rebuild(machine, activity);
     }
+
+    // The bench the player is leaned over draws its stock in the dive's
+    // close-up instead — live, with drags and cure chrome — opaque
+    // exactly over this spot. These static copies would only ghost out
+    // from underneath it.
+    const dive = this.game.entities.tryGetSingleton(BenchDive);
+    this.art?.setStockHidden(
+      dive?.displayedGroupKeys()?.has(machineKey(state)) ?? false,
+    );
 
     // The badge floats over the footprint, counter-rotated so it reads
     // upright at any machine rotation; redrawn when its inputs change.
