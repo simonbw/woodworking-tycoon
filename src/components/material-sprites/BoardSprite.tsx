@@ -6,11 +6,9 @@ import {
   BOARD_FACE_SCAN_WIDTH_IN,
   defaultBoardFace,
 } from "../../game/Materials";
-import { colorToNumber } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 import {
   BOARD_FACE_TEXTURES,
@@ -25,8 +23,9 @@ const WEATHERED_GRAY = 0x9a9186;
  * - Every species wears a window of a real plank photograph
  *   (boardFaceTextures.ts), placed by the board's face region so a cut
  *   piece keeps the very grain it was cut with. The edge face works the
- *   same way from the edge strips where a species has them; the rest
- *   draw the edge procedurally under the scanned face.
+ *   same way from the edge strips where a species has them, and
+ *   otherwise carries the face scan around the corner; either way it
+ *   sits a little darker than the face so the board reads as thick.
  * - Roughness is real too: a grayscale wear map multiplies over the face
  *   (white is clean wood, dark is scuffs and saw marks), windowed by the
  *   same region so a board's scars survive its cuts. Milling fades it —
@@ -204,9 +203,10 @@ export const BoardSprite: React.FC<
         textureSpace: "global",
       });
 
+      // The edge shares the face's lengthwise position either way, so a
+      // cut board's edge streaks continue across the seam too.
+      const edgeY = -region.u * PIXELS_PER_INCH - height / 2;
       if (art.edges !== undefined && art.edgeSpanInches !== undefined) {
-        // The edge strip shares the face's lengthwise position, so a
-        // cut board's edge streaks continue across the seam too.
         const edgeTexture = Assets.get<Texture>(
           art.edges[Math.floor(artRng() * art.edges.length)],
         );
@@ -226,16 +226,42 @@ export const BoardSprite: React.FC<
             0,
             esy,
             width / 2 - edgeV * PIXELS_PER_INCH,
-            -region.u * PIXELS_PER_INCH - height / 2,
+            edgeY,
           ),
           textureSpace: "global",
         });
       } else {
-        // No edge strips for this species yet — flat species color; the
-        // shared veil below weathers it until the edges are jointed
+        // No edge strips for this species — carry the face scan around
+        // the corner, windowed at the wood just past the board's own
+        // width so the grain runs on rather than restarting. Pulled
+        // back when that would reach off the scan, which doesn't tile.
+        const edgeThickness = thickness / 4;
+        const edgeV = Math.max(
+          0,
+          Math.min(
+            region.v + boardWidth,
+            BOARD_FACE_SCAN_WIDTH_IN - edgeThickness,
+          ),
+        );
         g.poly(silhouette.edgePoly);
-        g.fill(colorToNumber(colorBySpecies[species].secondary));
+        g.fill({
+          texture: faceTexture,
+          matrix: new Matrix(
+            sx,
+            0,
+            0,
+            sy,
+            width / 2 - edgeV * PIXELS_PER_INCH,
+            edgeY,
+          ),
+          textureSpace: "global",
+        });
       }
+
+      // The edge turns away from the light — a touch darker than the
+      // face, so the board still reads as having thickness
+      g.poly(silhouette.edgePoly);
+      g.fill({ color: 0x000000, alpha: 0.22 });
 
       // Weathering and finish read as veils over the real grain: the
       // gray lifts when milling reveals the wood, sanding brightens it

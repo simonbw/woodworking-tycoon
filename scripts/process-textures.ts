@@ -77,6 +77,27 @@ const OAK_EDGES: ReadonlyArray<Job> = Array.from({ length: 3 }, (_, i) => ({
   out: `oak/edge-${i + 1}.jpg`,
 }));
 
+/** Crosscut ends: growth rings on the sawn face, one crop per file.
+ * Small already — a cap only trims the few oversized ones. */
+const endScans = (species: string, count: number): ReadonlyArray<Job> =>
+  Array.from({ length: count }, (_, i) => ({
+    source: `${species}/${species}-end-${i + 1}.png`,
+    out: `${species}/end-${i + 1}.jpg`,
+    maxSize: 1024,
+  }));
+
+const ALL_ENDS: ReadonlyArray<Job> = [
+  ...endScans("pallet", 4),
+  ...endScans("pine", 4),
+  ...endScans("poplar", 4),
+  ...endScans("oak", 4),
+  ...endScans("maple", 4),
+  ...endScans("cherry", 4),
+  ...endScans("walnut", 8),
+  ...endScans("mahogany", 4),
+  ...endScans("purpleheart", 4),
+];
+
 /** Grayscale wear maps at board proportions — white is clean wood, dark
  * is scuffed and saw-marked. Species-independent: they multiply over
  * whatever face is under them. */
@@ -122,6 +143,8 @@ const MANIFEST: ReadonlyArray<Job> = [
   // Board faces and edges (BOARD_FACE_TEXTURES) — full-board scans
   ...ALL_BOARDS,
   ...OAK_EDGES,
+  // Crosscut ends (BOARD_FACE_TEXTURES[species].ends)
+  ...ALL_ENDS,
   // Wear maps (BOARD_ROUGHNESS_TEXTURES)
   ...ROUGHNESS,
 ];

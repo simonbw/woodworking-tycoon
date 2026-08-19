@@ -1,23 +1,18 @@
-import { Graphics } from "pixi.js";
+import { Assets, Graphics, Matrix, Texture } from "pixi.js";
 import React, { useCallback } from "react";
 import { Board } from "../../game/Materials";
-import { clipArcToRect } from "../../utils/arcClipping";
-import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { BOARD_END_SPAN_IN, BOARD_FACE_TEXTURES } from "./boardFaceTextures";
 
 /**
  * A board stood on its end, seen from above: nothing but the end grain —
  * the bare width × thickness cross-section a table leg presents while it
- * waits under a face-down top. Drawn darker than the face (end grain
- * drinks light) with a few growth arcs seeded off the piece's id, so
- * standing a board up doesn't reroll its character.
- *
- * The arcs are rings around a pith sitting off the face, the way a flatsawn
- * board's end reads, and they are clipped to the cut face — a ring only
- * exists where the saw exposed it.
+ * waits under a face-down top. A window onto a real crosscut photograph
+ * (boardFaceTextures.ts), placed by the piece's seed so standing a board
+ * up doesn't reroll its character, and darkened a little because end
+ * grain drinks light.
  */
 export const BoardOnEndSprite: React.FC<
   {
@@ -33,11 +28,7 @@ export const BoardOnEndSprite: React.FC<
       g.clear();
       const w = boardWidth * PIXELS_PER_INCH;
       const h = (thickness / 4) * PIXELS_PER_INCH;
-      const rand = seededRandom(seed ?? "on-end");
-      const face = colorBySpecies[species].primary;
-      const endGrain = colorToNumber(mixColors(face, 0x000000, 0.25));
-      const ring = colorToNumber(mixColors(face, 0x000000, 0.45));
-      const cut = { x: -w / 2, y: -h / 2, width: w, height: h };
+      const rand = seededRandom(`${seed ?? "on-end"}/end`);
 
       // shadow: the standing piece throws a slightly wider foot
       for (const spread of [1, 2]) {
@@ -50,39 +41,41 @@ export const BoardOnEndSprite: React.FC<
         g.fill({ color: 0x000000, alpha: 0.12 });
       }
 
-      g.rect(-w / 2, -h / 2, w, h);
-      g.fill(endGrain);
+      const ends = BOARD_FACE_TEXTURES[species].ends;
+      const texture = Assets.get<Texture>(
+        ends[Math.floor(rand() * ends.length)],
+      );
+      // The crop spans BOARD_END_SPAN_IN across; its height in inches
+      // follows from the image's own aspect. The window slides within
+      // whatever room the piece's cross-section leaves.
+      const spanY =
+        (BOARD_END_SPAN_IN * texture.source.height) / texture.source.width;
+      const scale =
+        (PIXELS_PER_INCH * BOARD_END_SPAN_IN) / texture.source.width;
+      const offsetX = rand() * Math.max(0, BOARD_END_SPAN_IN - boardWidth);
+      const offsetY = rand() * Math.max(0, spanY - thickness / 4);
 
-      // Growth rings around a pith below the face, spaced so each one actually
-      // crosses the cut, then trimmed to the piece.
-      const pithX = (rand() - 0.5) * w * 2;
-      const pithY = h / 2 + w * (0.6 + rand() * 1.0);
-      const ringCount = Math.max(2, Math.min(5, Math.round(w / 6)));
-      for (let i = 0; i < ringCount; i++) {
-        const t = (i + 0.5 + (rand() - 0.5) * 0.5) / ringCount;
-        const crossingX = -w / 2 + t * w;
-        const radius = Math.hypot(crossingX - pithX, pithY);
-        const spans = clipArcToRect(
-          pithX,
-          pithY,
-          radius,
-          Math.PI,
-          Math.PI * 2,
-          cut,
-        );
-        for (const [from, to] of spans) {
-          g.moveTo(
-            pithX + radius * Math.cos(from),
-            pithY + radius * Math.sin(from),
-          );
-          g.arc(pithX, pithY, radius, from, to);
-          g.stroke({ color: ring, width: 1, alpha: 0.5 });
-        }
-      }
+      g.rect(-w / 2, -h / 2, w, h);
+      g.fill({
+        texture,
+        matrix: new Matrix(
+          scale,
+          0,
+          0,
+          scale,
+          -offsetX * PIXELS_PER_INCH - w / 2,
+          -offsetY * PIXELS_PER_INCH - h / 2,
+        ),
+        textureSpace: "global",
+      });
+
+      // End grain sits in shade against the faces around it
+      g.rect(-w / 2, -h / 2, w, h);
+      g.fill({ color: 0x000000, alpha: 0.18 });
 
       // a hairline rim so the block reads as a cut face, not a fill
       g.rect(-w / 2, -h / 2, w, h);
-      g.stroke({ color: ring, width: 1, alpha: 0.7 });
+      g.stroke({ color: 0x000000, width: 1, alpha: 0.35 });
     },
     [boardWidth, thickness, species, seed],
   );
