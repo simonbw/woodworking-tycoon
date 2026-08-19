@@ -328,6 +328,37 @@ export function drawBoardOnEdge(
 }
 
 /**
+ * The narrow edge strip (thickness × length) the block plane's strokes
+ * are constrained to, windowed onto the board's own wood — the old
+ * `EdgeBandSprite`. Just the band: no shadow and no sliver of face
+ * leaning in beside it (drawBoardOnEdge draws the standing board; this
+ * draws the surface being worked). Unjointed it hides under the
+ * weathered veil; `finished` shows the grain the plane brought up.
+ */
+export function drawBoardEdgeBand(
+  g: Graphics,
+  board: BoardLook,
+  finished: boolean,
+  seed?: string,
+): void {
+  const { width: boardWidth, length, thickness, species, face } = board;
+
+  g.clear();
+  const width = (thickness / 4) * PIXELS_PER_INCH;
+  const height = length * PIXELS_PER_INCH;
+  const pieceSeed = seed ?? `${species}-${boardWidth}x${length}x${thickness}`;
+  const region = face ?? defaultBoardFace(pieceSeed, length, boardWidth);
+  const art = woodArt(species, region.seed, thickness);
+
+  g.rect(-width / 2, -height / 2, width, height);
+  g.fill(edgeFill(art, region, boardWidth, thickness, -width / 2, -height / 2));
+  if (!finished) {
+    g.rect(-width / 2, -height / 2, width, height);
+    g.fill({ color: WEATHERED_GRAY, alpha: 0.55 });
+  }
+}
+
+/**
  * A board stood on its end, seen from above: nothing but the end grain —
  * the bare width × thickness cross-section a table leg presents while it
  * waits under a face-down top. A window onto a real crosscut photograph,

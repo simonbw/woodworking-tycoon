@@ -1,40 +1,26 @@
-import { useSyncExternalStore } from "react";
 import { MachineSoundPhase } from "../game/machine-sound-helpers";
 import { MachineVoice } from "./machineVoice";
 
 /**
  * The audible phase of every machine with a continuous voice, published by
- * the sound layer and read by the sprites. This is what keeps the visuals
- * honest: the lead-in/lead-out sequencing (`LeadInOutVoice`) lives in
- * wall-clock time inside the sound layer, so game state alone can't tell a
- * sprite whether the machine is actually biting wood *right now* — this
- * store can. Blade animation and cut particles key off it so chips fly
- * exactly while the cut is audible, not during spin-up or wind-out.
+ * `MachineSoundView` and read by the machine arts. This is what keeps the
+ * visuals honest: the lead-in/lead-out sequencing (`LeadInOutVoice`) lives
+ * in wall-clock time inside the voice, so the shop's state alone can't tell
+ * the art whether the machine is actually biting wood *right now* — this
+ * store can. Blade animation and cut particles key off it (see
+ * `deriveMachineVisuals`) so chips fly exactly while the cut is audible,
+ * not during spin-up or wind-out.
+ *
+ * The voices publish once a frame, ahead of the draw, so the art reads the
+ * phase the ear is hearing this frame.
  *
  * Keyed by the same `machineKey` the sound layer uses (type@x,y).
  */
 
 const phases = new Map<string, MachineSoundPhase>();
-const listeners = new Set<() => void>();
-
-function notify(): void {
-  listeners.forEach((listener) => listener());
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
 
 export function getAudiblePhase(key: string): MachineSoundPhase {
   return phases.get(key) ?? "off";
-}
-
-/** React to a machine's audible phase (re-renders on change). */
-export function useAudiblePhase(key: string): MachineSoundPhase {
-  return useSyncExternalStore(subscribe, () => getAudiblePhase(key));
 }
 
 /**
@@ -50,17 +36,12 @@ export class PhaseReportingVoice implements MachineVoice {
   ) {}
 
   setPhase(phase: MachineSoundPhase, load?: number): void {
-    if (getAudiblePhase(this.key) !== phase) {
-      phases.set(this.key, phase);
-      notify();
-    }
+    phases.set(this.key, phase);
     this.inner.setPhase(phase, load);
   }
 
   dispose(): void {
-    if (phases.delete(this.key)) {
-      notify();
-    }
+    phases.delete(this.key);
     this.inner.dispose();
   }
 }

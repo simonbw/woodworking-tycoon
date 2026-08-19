@@ -1,23 +1,25 @@
 import { Game } from "../../core/Game";
 import { stationWorkSpeed } from "../../game/bench-mounting";
 import { machineDustMultiplier } from "../../game/Dust";
-import { Machine, OperationPhase } from "../../game/Machine";
+import { Machine, machineKey, OperationPhase } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
+import { deriveMachineVisuals } from "../../game/machine-sound-helpers";
 import { getOperationPhases } from "../../game/skill-helpers";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
+import { getAudiblePhase } from "../../utils/machineSoundState";
+import { machineHasVoice } from "../../utils/machineVoices";
 
 /**
- * Live status of a machine's current operation — the old
- * `useMachineActivity` hook, recomputed from the entity world instead of
- * React state. Shared by the floating badge and the machine arts'
- * processing animations.
+ * Live status of a machine's current operation, shared by the floating
+ * badge and the machine arts' processing animations.
  *
- * The old hook let machines with a continuous voice follow their
- * *audible* phase, so particles and blade shake lined up with the sound
- * layer's lead-in/lead-out. The sound layers arrive at cutover (phase 8),
- * so until then every machine uses the hook's no-voice fallback: visuals
- * follow the game state directly.
+ * `working` and `powered` are the fields to drive visuals from: for a
+ * machine with a continuous voice they follow its *audible* phase
+ * (`deriveMachineVisuals`), so cut particles and blade shake line up with
+ * what the ear hears — the machine spins up before the wood bites and
+ * coasts after the operation is done. Machines without a voice follow the
+ * operation itself.
  */
 export interface MachineActivity {
   isOperating: boolean;
@@ -42,16 +44,23 @@ export const IDLE_ACTIVITY: MachineActivity = {
 /**
  * Compute a machine's activity right now. Costs a game-state projection,
  * so callers only pay for machines whose operation is in progress — an
- * idle machine short-circuits to `IDLE_ACTIVITY`.
+ * idle machine short-circuits, taking only its motor's visuals from the
+ * voice (a saw with nothing left to cut is still coasting down, and a
+ * switched-on planer still idles).
  */
 export function computeMachineActivity(
   game: Game,
   machine: Machine,
 ): MachineActivity {
+  const audiblePhase = machineHasVoice(machine.state.machineTypeId)
+    ? getAudiblePhase(machineKey(machine.state))
+    : null;
+
   const progress = machine.operationProgress;
   const operation = machine.selectedOperationOrNull;
   if (progress.status !== "inProgress" || !operation) {
-    return IDLE_ACTIVITY;
+    const visuals = deriveMachineVisuals(audiblePhase, false);
+    return visuals.powered ? { ...IDLE_ACTIVITY, ...visuals } : IDLE_ACTIVITY;
   }
 
   const gameState = projectGameState(game);
@@ -92,13 +101,11 @@ export function computeMachineActivity(
     : 0;
   const fraction = total > 0 ? (total - remaining) / total : 0;
 
-  const working = isOperating && !needsYou;
   return {
     isOperating,
     needsYou,
     fraction,
     relevantPhase,
-    working,
-    powered: working,
+    ...deriveMachineVisuals(audiblePhase, isOperating && !needsYou),
   };
 }

@@ -264,8 +264,8 @@ Decided — don't re-open these without a reason.
   `StorageRackArt` draw what's on the shelf as a few pixel-tall bars
   in the species' color. They're tallies of what's stored, read from
   across the shop, not surfaces anyone looks at.
-- **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
-  `DustMotionLayer`. Per-frame effects; the dust layer already bakes its
+- **Cut particles and the dust layers** — `CutParticleEmitter`, `DustView`,
+  `DustMotionView`. Per-frame effects; the dust layer already bakes its
   stamps into a single `RenderTexture`.
 - **Feeding masks** — `FeedingBoard`. The two `Graphics` there are masks for
   the infeed/outfeed reveal and never render.

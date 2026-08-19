@@ -158,9 +158,10 @@ that chore arrives with the central collector (issue #113).
   the texture is an exact picture of the ledger and cleaning visibly
   thins it. Particles stay purely cosmetic: state is authoritative,
   and a landing only animates the ledger entry arriving.
-- `DustMotionLayer` is the motion between the ledger entries: cells that
-  lose dust throw pale flecks that fly into the broom head or the
-  nozzle, and emptying pours a stream into the can.
+- `DustMotionView` (`src/views/DustMotionView.ts`) is the motion between
+  the ledger entries: cells that lose dust throw pale flecks that fly
+  into the broom head or the nozzle, and emptying pours a stream into
+  the can.
 
 ## Disclosure & tutorial
 

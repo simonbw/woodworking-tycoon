@@ -8,7 +8,9 @@ import { Player } from "../../sim/entities/Player";
 import { TimeFlow } from "../../sim/TimeFlow";
 import { StoreId } from "../../game/lumberStock";
 import { DaylightView } from "../../views/DaylightView";
+import { DustMotionView } from "../../views/DustMotionView";
 import { EnvironmentView } from "../../views/EnvironmentView";
+import { FeedLaneView } from "../../views/FeedLaneView";
 import { FloorView } from "../../views/FloorView";
 import { PowerCordView } from "../../views/PowerCordView";
 
@@ -38,6 +40,8 @@ export function spawnShopScenery(game: Game): void {
   game.addEntity(new EnvironmentView());
   game.addEntity(new FloorView());
   game.addEntity(new PowerCordView());
+  game.addEntity(new FeedLaneView());
+  game.addEntity(new DustMotionView());
   game.addEntity(new DaylightView());
 }
 

@@ -34,7 +34,10 @@ import { SAW_ANGLE_STOPS } from "../../../game/machines/miterSaw";
 import { materialDustSpecies } from "../../../game/material-helpers";
 import { Board } from "../../../game/Materials";
 import { TOOL_TYPES } from "../../../game/Tool";
-import { gatherBenchPieces } from "../../../sim/commands/bench-commands";
+import {
+  emitBenchDust,
+  gatherBenchPieces,
+} from "../../../sim/commands/bench-commands";
 import {
   finishAttendedWork,
   operateMachine,
@@ -42,6 +45,7 @@ import {
 } from "../../../sim/commands/machine-commands";
 import { projectGameState } from "../../../sim/projection";
 import { ShellStore } from "../../ShellStore";
+import { BenchDustThrottle } from "./benchDust";
 import { BenchDive } from "./BenchDive";
 import { BenchDiveView } from "./BenchDiveView";
 import {
@@ -106,6 +110,10 @@ export class BenchSawView extends BaseEntity implements Entity {
   private voice: HandSawVoice | null = null;
   /** Seconds since the last stroke, for the voice's stroke speed. */
   private sinceStroke = 0;
+  /** Sawdust doesn't wait for the board to part: the kerf sheds onto the
+   * shop floor a couple of times a second while the blade is moving —
+   * the sim's ledger, where `dust` above is the spill you watch fly. */
+  private floorDust = new BenchDustThrottle();
   /** The board the halves were built for, so they're rebuilt only when
    * a different piece comes under the saw. */
   private drawnPieceId: string | null = null;
@@ -266,6 +274,7 @@ export class BenchSawView extends BaseEntity implements Entity {
   @on("tick")
   onTick(dt: number) {
     this.sinceStroke += dt;
+    this.floorDust.step(dt);
     this.voice?.tick(dt);
     const bench = stageSettled(this.game) ? this.dive()?.openBench() : null;
     const running = bench ? this.sawScript() : null;
@@ -316,6 +325,8 @@ export class BenchSawView extends BaseEntity implements Entity {
     const travel = Math.abs(local.xIn - last);
     if (travel < MIN_TRAVEL_IN) return;
     sawStroke(this.cut.mask, travel, running.script.interaction.kerfPerSecond);
+    // The floor gets its share while the cut is still open.
+    if (this.floorDust.due()) emitBenchDust(this.game, bench);
 
     // Dust spills at the crossing point, kicked the way the saw moves.
     const run = Math.tan((line.angle * Math.PI) / 180);

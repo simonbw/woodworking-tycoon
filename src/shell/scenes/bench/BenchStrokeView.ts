@@ -1,4 +1,4 @@
-import { Graphics } from "pixi.js";
+import { Graphics, Renderer } from "pixi.js";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
@@ -6,10 +6,7 @@ import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
 import { dwellGain, strokeGain } from "./stageMath";
 import { GroupPiece } from "../../../game/bench-work/bench-group";
-import {
-  benchPointInFrame,
-  framePointOnBench,
-} from "../../../game/bench-work/bench-layout";
+import { benchPointInFrame } from "../../../game/bench-work/bench-layout";
 import {
   CoverageGrid,
   coverageComplete,
@@ -23,7 +20,11 @@ import {
   StrokeScript,
 } from "../../../game/bench-work/workpiece";
 import { Machine, machineKey, Operation } from "../../../game/Machine";
-import { gatherBenchPieces } from "../../../sim/commands/bench-commands";
+import { MaterialInstance } from "../../../game/Materials";
+import {
+  emitBenchDust,
+  gatherBenchPieces,
+} from "../../../sim/commands/bench-commands";
 import {
   finishAttendedWork,
   operateMachine,
@@ -31,13 +32,16 @@ import {
 import { projectGameState } from "../../../sim/projection";
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { ShellStore } from "../../ShellStore";
+import { BenchDustThrottle } from "./benchDust";
 import { BenchDive } from "./BenchDive";
 import { BenchDiveView } from "./BenchDiveView";
+import { StrokeReveal } from "./StrokeReveal";
 import { foleyClipFor, WorkFoley } from "./WorkFoley";
 import {
   benchStage,
   benchWork,
   openBenchGroup,
+  pieceCorners,
   PieceSpot,
   pieceUnder,
   stagePointer,
@@ -53,8 +57,10 @@ import {
  *
  * Pressing claims the piece (`operateMachine` with the tool claim, the
  * old BenchToolClaim path) and dragging lays coverage down through the
- * shared grid; the mask over the piece is what "how far along" looks
- * like. Coverage is ephemeral (decision 3): it lives as long as the
+ * shared grid. The claimed piece draws here rather than on the pile,
+ * its worked state scratched in under the tool (`StrokeReveal`) as the
+ * same strokes land — so how far along the pass is is the wood itself.
+ * Coverage is ephemeral (decision 3): it lives as long as the
  * player is leaned over the bench, and standing up (or reloading)
  * starts the pass over — the commit only fires when the grid fills, and
  * that's `finishAttendedWork`.
@@ -63,7 +69,8 @@ import {
  * orbit); an unpowered one only cuts while it moves.
  */
 
-const MASK = 0xf0e6d2;
+/** The hairline around the piece the tool in hand is offering to work. */
+const HAIRLINE = 0xf0e6d2;
 
 /** How long after the last stroke the tool's foley keeps running — the
  * old surface's activity hold, so a stroke's rhythm doesn't stutter. */
@@ -88,11 +95,20 @@ export class BenchStrokeView extends BaseEntity implements Entity {
   persistenceLevel: number = Persistence.Permanent;
   pausable = false;
 
-  private mask: Graphics & GameSprite;
+  private outline: Graphics & GameSprite;
+  /** The claimed piece and the worked state scratched into it. */
+  private reveal = new StrokeReveal();
   private pass: StrokePass | null = null;
   /** The tool's own continuous voice, and how long since it last cut. */
   private foley = new WorkFoley();
   private sinceWork = Infinity;
+  /** Dust doesn't wait for the commit: active stroking sheds onto the
+   * floor a couple of times a second (docs/bench-work.md). */
+  private dust = new BenchDustThrottle();
+  /** The worked state the scratch reveals, held for the job it belongs
+   * to (see finishedPreview). */
+  private preview: { key: string; material: MaterialInstance | null } | null =
+    null;
 
   /** How far the pass in progress has got, 0..1 (null when idle) — the
    * same seam `piecePoints` gives the stage: a test watches the real
@@ -103,13 +119,20 @@ export class BenchStrokeView extends BaseEntity implements Entity {
 
   constructor() {
     super();
-    this.mask = new Graphics() as Graphics & GameSprite;
+    this.outline = new Graphics() as Graphics & GameSprite;
   }
 
   onAdd() {
     // Draw into the dive's own frame, so the lean-in carries every
-    // surface on the stage as one picture.
-    this.game.entities.getSingleton(BenchDiveView).frame.addChild(this.mask);
+    // surface on the stage as one picture. The piece goes down first and
+    // the outline over it.
+    const frame = this.game.entities.getSingleton(BenchDiveView).frame;
+    frame.addChild(this.reveal.root, this.outline);
+  }
+
+  @on("destroy")
+  onDestroy() {
+    this.reveal.destroy();
   }
 
   private dive(): BenchDive | undefined {
@@ -257,6 +280,7 @@ export class BenchStrokeView extends BaseEntity implements Entity {
   @on("tick")
   onTick(dt: number) {
     this.sinceWork += dt;
+    this.dust.step(dt);
     const dive = this.dive();
     const bench = dive?.openBench();
     if (!dive || !bench || !dive.settled()) {
@@ -337,8 +361,10 @@ export class BenchStrokeView extends BaseEntity implements Entity {
         radiusIn,
         strokeGain(interaction.coveragePerSecond, radiusIn, distance, dtMs),
       );
+      this.scratch(last.xIn, last.yIn, local.xIn, local.yIn, radiusIn);
       this.pass.last = local;
       this.sinceWork = 0;
+      this.shedDust(bench);
     } else if (interaction.powered) {
       // A powered pad keeps cutting the spot it rests on; a block only
       // cuts while it moves.
@@ -351,7 +377,9 @@ export class BenchStrokeView extends BaseEntity implements Entity {
         radiusIn,
         dwellGain(interaction.coveragePerSecond, radiusIn, dtMs),
       );
+      this.scratch(local.xIn, local.yIn, local.xIn, local.yIn, radiusIn);
       this.sinceWork = 0;
+      this.shedDust(bench);
     }
 
     if (coverageComplete(this.pass.grid)) {
@@ -362,27 +390,91 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     }
   }
 
+  /** Lay the same stroke into the scratch the finished wood shows
+   * through — the visual half of the stamp the grid just accounted for.
+   * The stack is put up first, because the very first stroke of a pass
+   * lands before the frame the claim is drawn in. */
+  private scratch(
+    x0In: number,
+    y0In: number,
+    x1In: number,
+    y1In: number,
+    radiusIn: number,
+  ): void {
+    const renderer = this.game.renderer?.app.renderer;
+    if (!renderer || !this.showReveal(renderer)) return;
+    this.reveal.stamp(renderer, x0In, y0In, x1In, y1In, radiusIn);
+  }
+
+  /**
+   * Put the claimed piece up where it lies — the dive's pile no longer
+   * has it — as its two surface states stacked, the finished one showing
+   * through where the tool has been. False with no job to draw.
+   */
+  private showReveal(renderer: Renderer): boolean {
+    const fit = benchStage(this.game)?.fit;
+    const running = this.strokeScript();
+    const spot = running
+      ? this.workpieceSpot(running.machine, running.script)
+      : null;
+    if (!fit || !running || !spot) {
+      this.reveal.hide();
+      return false;
+    }
+    this.reveal.show(
+      {
+        material: running.script.workpiece,
+        finished: this.finishedPreview(running.machine, running.script),
+        placement: spot.placement,
+        size: spot.size,
+        band: running.script.interaction.band ?? "face",
+        fit,
+      },
+      renderer,
+    );
+    return true;
+  }
+
+  /** Hand the sim one emission's worth of hand-work dust, at most twice
+   * a second — the tool is shedding onto the floor the whole pass, not
+   * at the commit. */
+  private shedDust(bench: MachineEntity): void {
+    if (this.dust.due()) emitBenchDust(this.game, bench);
+  }
+
+  /**
+   * How the pass leaves the piece — the layer the scratch reveals: the
+   * operation's own output, run on the workpiece it holds. An operation
+   * that can't compute one (stock the parameters don't suit) simply has
+   * nothing to reveal.
+   *
+   * Held from job to job, because `output` mints a fresh instance every
+   * call: a preview recomputed each frame would be a different piece
+   * each frame, and the scratch would start over from bare wood.
+   */
+  private finishedPreview(
+    machine: Machine,
+    script: StrokeScript,
+  ): MaterialInstance | null {
+    const key = `${script.workpiece.id}|${script.operation.id}`;
+    if (this.preview?.key !== key) {
+      this.preview = { key, material: previewOutput(machine, script) };
+    }
+    return this.preview.material;
+  }
+
   @on("render")
   onRender() {
-    const g = this.mask;
+    const g = this.outline;
     g.clear();
     const fit = benchStage(this.game)?.fit;
-    if (!fit) return;
-
-    // The pass in progress: the worked area brightening over the piece.
-    if (this.pass) {
-      const running = this.strokeScript();
-      const spot = running
-        ? this.workpieceSpot(running.machine, running.script)
-        : null;
-      if (spot) {
-        const progress = coverageProgress(this.pass.grid);
-        const points = cornerPoints(spot.placement, spot.size, fit);
-        g.poly(points).fill({ color: MASK, alpha: 0.15 + progress * 0.4 });
-        g.poly(points).stroke({ width: 2, color: MASK, alpha: 0.8 });
-      }
+    const renderer = this.game.renderer?.app.renderer;
+    if (!fit || !renderer) {
+      this.reveal.hide();
       return;
     }
+    // A job running is the whole picture: the piece and its scratch.
+    if (this.showReveal(renderer)) return;
 
     // Idle: the piece the held tool would work wears a hairline.
     const at = this.pointerInches();
@@ -390,31 +482,26 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     const piece = this.pieceUnder(at.xIn, at.yIn);
     if (!piece || !this.strokeOffer(piece)) return;
     const size = placedPieceSize(piece.material, piece.placement);
-    g.poly(cornerPoints(piece.placement, size, fit)).stroke({
+    g.poly(pieceCorners(piece.placement, size, fit)).stroke({
       width: 2,
-      color: MASK,
+      color: HAIRLINE,
       alpha: 0.55,
     });
   }
 }
 
-/** A placed piece's four corners on the stage, in screen px. */
-function cornerPoints(
-  placement: Parameters<typeof framePointOnBench>[0],
-  size: { widthIn: number; heightIn: number },
-  fit: { originX: number; originY: number; pxPerIn: number },
-): number[] {
-  const corners: Array<[number, number]> = [
-    [0, 0],
-    [size.widthIn, 0],
-    [size.widthIn, size.heightIn],
-    [0, size.heightIn],
-  ];
-  return corners.flatMap(([lx, ly]) => {
-    const at = framePointOnBench(placement, size, lx, ly);
-    return [
-      fit.originX + at.xIn * fit.pxPerIn,
-      fit.originY + at.yIn * fit.pxPerIn,
-    ];
-  });
+/** The piece the operation would hand back, or null when it can't say. */
+function previewOutput(
+  machine: Machine,
+  script: StrokeScript,
+): MaterialInstance | null {
+  try {
+    const out = script.operation.output(
+      [script.workpiece],
+      machine.resolvedParameters(script.operation),
+    );
+    return out.outputs[0] ?? null;
+  } catch {
+    return null;
+  }
 }

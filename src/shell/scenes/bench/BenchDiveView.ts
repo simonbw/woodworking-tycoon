@@ -15,7 +15,7 @@ import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
 import { V } from "../../../core/Vector";
 import { PIXELS_PER_INCH } from "../../../views/shop-scale";
-import { BenchStage, benchStage, benchWork, workpieceSpot } from "./benchStage";
+import { BenchStage, benchStage } from "./benchStage";
 
 /**
  * The zoomed look at the bench — phase 7's scene skeleton, drawn on the
@@ -158,7 +158,11 @@ export class BenchDiveView extends BaseEntity implements Entity {
 
     // Everything lying on the tops, where the layout says it lies —
     // except a piece riding the hand, which the arranging view draws
-    // where the hand has it rather than where it was set down.
+    // where the hand has it rather than where it was set down. A piece a
+    // running job claimed left the pile with it, and that job's gesture
+    // surface draws it: the saw in two halves so the offcut can sag
+    // open, stroke work as two surface states with the finished one
+    // scratched in under the tool.
     const dragging = game.entities
       .tryGetSingleton(BenchArrangeView)
       ?.draggingId();
@@ -169,18 +173,6 @@ export class BenchDiveView extends BaseEntity implements Entity {
     for (const piece of groupPieces(group)) {
       if (piece.material.id === dragging) continue;
       lying.push(piece);
-    }
-
-    // The piece a running job holds left the pile when the operation
-    // claimed it, so the group no longer lists it — but it's still lying
-    // right there under the hands. The saw draws its own board (in two
-    // halves, so the offcut can sag open); everything else draws here.
-    const work = benchWork(game);
-    const held =
-      work?.script.kind === "stroke" ? work.script.workpiece : undefined;
-    if (work && held) {
-      const spot = workpieceSpot(group, work.machine, held);
-      if (spot) lying.push({ material: held, placement: spot.placement });
     }
 
     // Sync the holders: pieces come and go, standing holders retarget —

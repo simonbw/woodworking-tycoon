@@ -9,7 +9,7 @@ import { ShopInfo as ShopInfoData } from "../game/ShopInfo";
 import { standRect } from "../game/stand";
 import { StandEntity } from "../sim/entities/StandEntity";
 import { ShopInfo } from "../sim/singletons/ShopInfo";
-import { drawMaterialGlyph } from "./material-glyph";
+import { createMaterialSprite } from "./material-sprites/MaterialSprite";
 
 /**
  * The for-sale stand: a plank table in the grass at the street end of
@@ -151,8 +151,10 @@ export class StandView extends BaseEntity implements Entity {
     this.pieces.removeChildren().forEach((child) => child.destroy());
     this.pieceRoots.clear();
     this.stand.pieces.forEach((material, i) => {
-      const item = new Graphics();
-      drawMaterialGlyph(item, material);
+      // The material's real sprite, exactly as it draws on the floor —
+      // a cutting board on the table reads as a cutting board.
+      const item = new Container();
+      item.addChild(createMaterialSprite(material));
       this.pieceRoots.set(material, item);
       item.position.set(
         width / 2 + (i % 2 === 0 ? -3 : 3),

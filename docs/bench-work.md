@@ -134,7 +134,7 @@ speclet.
 
 `src/game/bench-work/coverage.ts` (the accumulation grid, the completion
 threshold, the saw's kerf mask) with the RenderTexture scratch-off in
-`src/shell/scenes/bench/BenchStrokeView.ts`:
+`src/shell/scenes/bench/StrokeReveal.ts`, which the stroke view drives:
 
 - **Visual layer**: the workpiece draws its two surface states stacked,
   the upper erased through a PIXI `RenderTexture`. Each frame of active

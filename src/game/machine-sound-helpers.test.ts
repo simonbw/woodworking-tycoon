@@ -2,7 +2,10 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { initialGameState } from "./initialGameState";
 import { Machine, MachineId, MachineState, OperationProgress } from "./Machine";
-import { deriveMachineSoundPhase } from "./machine-sound-helpers";
+import {
+  deriveMachineSoundPhase,
+  deriveMachineVisuals,
+} from "./machine-sound-helpers";
 import { Vector } from "./Vectors";
 
 /** Planer at [2,2], rotation 0 — operation cell (infeed) is [2,3]. */
@@ -230,5 +233,49 @@ describe("deriveMachineSoundPhase", () => {
       ),
       "off",
     );
+  });
+});
+
+describe("deriveMachineVisuals", () => {
+  it("holds the blade still and the chips off while the machine is off", () => {
+    assert.deepEqual(deriveMachineVisuals("off", false), {
+      working: false,
+      powered: false,
+    });
+  });
+
+  it("spins the blade through spin-up before the wood bites", () => {
+    // The operation is already underway, but the voice is still winding
+    // up: the motor turns, nothing is being cut yet.
+    assert.deepEqual(deriveMachineVisuals("running", true), {
+      working: false,
+      powered: true,
+    });
+  });
+
+  it("throws chips only while the cut is audible", () => {
+    assert.deepEqual(deriveMachineVisuals("cutting", true), {
+      working: true,
+      powered: true,
+    });
+  });
+
+  it("keeps the blade turning through the coast-down", () => {
+    // The operation is finished, but the motor is still audible.
+    assert.deepEqual(deriveMachineVisuals("running", false), {
+      working: false,
+      powered: true,
+    });
+  });
+
+  it("follows the operation itself for a machine with no voice", () => {
+    assert.deepEqual(deriveMachineVisuals(null, true), {
+      working: true,
+      powered: true,
+    });
+    assert.deepEqual(deriveMachineVisuals(null, false), {
+      working: false,
+      powered: false,
+    });
   });
 });
