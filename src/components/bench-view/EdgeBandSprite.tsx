@@ -1,17 +1,20 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import { Board, MaterialInstance } from "../../game/Materials";
-import { colorToNumber, mixColors } from "../../utils/colorUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
+import {
+  Board,
+  defaultBoardFace,
+  MaterialInstance,
+} from "../../game/Materials";
+import { edgeFill, woodArt } from "../material-sprites/woodFills";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
 
 const WEATHERED_GRAY = 0x9a9186;
 
 /**
  * A board seen edge-on for the block plane's edge work: the narrow strip
- * (thickness × length) the strokes are constrained to. Unjointed it's
- * weathered and saw-marked; the finished state shows the species' edge
- * color with clean grain lines — the same reveal the face gets.
+ * (thickness × length) the strokes are constrained to, windowed onto the
+ * board's own wood. Unjointed it hides under the weathered veil; the
+ * finished state shows the grain the plane brought up.
  */
 export const EdgeBandSprite: React.FC<{
   material: MaterialInstance;
@@ -26,29 +29,24 @@ export const EdgeBandSprite: React.FC<{
       const board = material as Board;
       const width = (board.thickness / 4) * PIXELS_PER_INCH;
       const height = board.length * PIXELS_PER_INCH;
-      const { secondary } = colorBySpecies[board.species];
-      const color = finished
-        ? colorToNumber(secondary)
-        : mixColors(secondary, WEATHERED_GRAY, 0.55);
-      g.rect(-width / 2, -height / 2, width, height).fill(color);
-      if (finished) {
-        // Straightened: crisp grain lines run the length
-        for (let i = 1; i < 3; i++) {
-          g.moveTo(-width / 2 + (width * i) / 3, -height / 2)
-            .lineTo(-width / 2 + (width * i) / 3, height / 2)
-            .stroke({
-              width: 0.5,
-              color: mixColors(secondary, 0x000000, 0.25),
-              alpha: 0.5,
-            });
-        }
-      } else {
-        // Rough: cross marks where the mill's saw chattered
-        for (let y = -height / 2 + 3; y < height / 2; y += 7) {
-          g.moveTo(-width / 2, y)
-            .lineTo(width / 2, y + 2)
-            .stroke({ width: 0.5, color: 0x000000, alpha: 0.12 });
-        }
+      const region =
+        board.face ?? defaultBoardFace(board.id, board.length, board.width);
+      const art = woodArt(board.species, region.seed, board.thickness);
+
+      g.rect(-width / 2, -height / 2, width, height);
+      g.fill(
+        edgeFill(
+          art,
+          region,
+          board.width,
+          board.thickness,
+          -width / 2,
+          -height / 2,
+        ),
+      );
+      if (!finished) {
+        g.rect(-width / 2, -height / 2, width, height);
+        g.fill({ color: WEATHERED_GRAY, alpha: 0.55 });
       }
     },
     [material, finished],

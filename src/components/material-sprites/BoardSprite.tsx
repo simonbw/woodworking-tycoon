@@ -10,10 +10,8 @@ import { lerp } from "../../utils/mathUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
-import {
-  BOARD_FACE_TEXTURES,
-  BOARD_ROUGHNESS_TEXTURES,
-} from "./boardFaceTextures";
+import { BOARD_ROUGHNESS_TEXTURES } from "./boardFaceTextures";
+import { faceFill, edgeFill, TURNED_AWAY_SHADE, woodArt } from "./woodFills";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;
@@ -173,95 +171,18 @@ export const BoardSprite: React.FC<
         g.fill({ color: 0x000000, alpha: 0.1 });
       }
 
-      const art = BOARD_FACE_TEXTURES[species];
-      // The seed picks which scan of the library (an independent
-      // stream, so the placement draws stay untouched)
-      const artRng = seededRandom(`${region.seed}/art`);
-      const faceTexture = Assets.get<Texture>(
-        art.faces[Math.floor(artRng() * art.faces.length)],
-      );
-
-      // The matrix maps texture pixels into local space (PIXI inverts
-      // it to build UVs): image x is across the plank, image y along
-      // the grain, drawn top-to-bottom like the board's length.
-      const sx =
-        (PIXELS_PER_INCH * BOARD_FACE_SCAN_WIDTH_IN) / faceTexture.source.width;
-      const sy =
-        (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) /
-        faceTexture.source.height;
+      const art = woodArt(species, region.seed, thickness);
       g.poly(silhouette.facePoly);
-      g.fill({
-        texture: faceTexture,
-        matrix: new Matrix(
-          sx,
-          0,
-          0,
-          sy,
-          -region.v * PIXELS_PER_INCH - width / 2,
-          -region.u * PIXELS_PER_INCH - height / 2,
-        ),
-        textureSpace: "global",
-      });
-
-      // The edge shares the face's lengthwise position either way, so a
-      // cut board's edge streaks continue across the seam too.
-      const edgeY = -region.u * PIXELS_PER_INCH - height / 2;
-      if (art.edges !== undefined && art.edgeSpanInches !== undefined) {
-        const edgeTexture = Assets.get<Texture>(
-          art.edges[Math.floor(artRng() * art.edges.length)],
-        );
-        const edgeV =
-          artRng() * Math.max(0, art.edgeSpanInches - thickness / 4);
-        const esx =
-          (PIXELS_PER_INCH * art.edgeSpanInches) / edgeTexture.source.width;
-        const esy =
-          (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) /
-          edgeTexture.source.height;
-        g.poly(silhouette.edgePoly);
-        g.fill({
-          texture: edgeTexture,
-          matrix: new Matrix(
-            esx,
-            0,
-            0,
-            esy,
-            width / 2 - edgeV * PIXELS_PER_INCH,
-            edgeY,
-          ),
-          textureSpace: "global",
-        });
-      } else {
-        // No edge strips for this species — carry the face scan around
-        // the corner, windowed at the wood just past the board's own
-        // width so the grain runs on rather than restarting. Pulled
-        // back when that would reach off the scan, which doesn't tile.
-        const edgeThickness = thickness / 4;
-        const edgeV = Math.max(
-          0,
-          Math.min(
-            region.v + boardWidth,
-            BOARD_FACE_SCAN_WIDTH_IN - edgeThickness,
-          ),
-        );
-        g.poly(silhouette.edgePoly);
-        g.fill({
-          texture: faceTexture,
-          matrix: new Matrix(
-            sx,
-            0,
-            0,
-            sy,
-            width / 2 - edgeV * PIXELS_PER_INCH,
-            edgeY,
-          ),
-          textureSpace: "global",
-        });
-      }
+      g.fill(faceFill(art, region, -width / 2, -height / 2));
+      g.poly(silhouette.edgePoly);
+      g.fill(
+        edgeFill(art, region, boardWidth, thickness, width / 2, -height / 2),
+      );
 
       // The edge turns away from the light — a touch darker than the
       // face, so the board still reads as having thickness
       g.poly(silhouette.edgePoly);
-      g.fill({ color: 0x000000, alpha: 0.22 });
+      g.fill(TURNED_AWAY_SHADE);
 
       // Weathering and finish read as veils over the real grain: the
       // gray lifts when milling reveals the wood, sanding brightens it

@@ -62,7 +62,12 @@ export const MaterialSprite: React.FC<{
       );
 
     case "panel":
-      return <PanelSprite panel={material} alpha={alpha} tint={tint} />;
+      return <PanelSprite
+          panel={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />;
 
     // Blueprint-assembled products draw from their bill of materials —
     // the same slots the bench view assembled them on
@@ -88,7 +93,12 @@ export const MaterialSprite: React.FC<{
       );
 
     case "endGrainSlice":
-      return <EndGrainSliceSprite slice={material} alpha={alpha} tint={tint} />;
+      return <EndGrainSliceSprite
+          slice={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />;
 
     case "tool":
       return <ToolItemSprite tool={material} alpha={alpha} tint={tint} />;
@@ -99,7 +109,12 @@ export const MaterialSprite: React.FC<{
     case "endGrainCuttingBoard":
     case "checkerboardCuttingBoard":
       return (
-        <CuttingBoardSprite material={material} alpha={alpha} tint={tint} />
+        <CuttingBoardSprite
+          material={material}
+          seed={material.id}
+          alpha={alpha}
+          tint={tint}
+        />
       );
 
     default:

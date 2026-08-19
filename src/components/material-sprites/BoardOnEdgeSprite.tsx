@@ -1,11 +1,9 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import { Board } from "../../game/Materials";
-import { colorToNumber, mixColors } from "../../utils/colorUtils";
+import { Board, defaultBoardFace } from "../../game/Materials";
 import { omitUndefined } from "../../utils/objectUtils";
-import { seededRandom } from "../../utils/randUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { edgeFill, faceFill, TURNED_AWAY_SHADE, woodArt } from "./woodFills";
 
 /** The gray of weathered, unmilled lumber — species color hides under it. */
 const WEATHERED_GRAY = 0x9a9186;
@@ -14,9 +12,10 @@ const WEATHERED_GRAY = 0x9a9186;
  * A board stood on its long edge, seen from above: the narrow edge face
  * (thickness × length) up, with a sliver of the board's wide face
  * showing down one side the way a standing rail leans its face into
- * view. Same milled-state language as BoardSprite — unjointed edges
- * weather gray, jointing reveals the species' edge color — and the same
- * seeding, so tipping a board up doesn't reroll its character.
+ * view. Both surfaces are windows onto the board's own scans, placed by
+ * its face region, so tipping a board up shows the same wood it showed
+ * lying down. Same milled-state language as BoardSprite: unjointed
+ * edges weather gray, jointing lifts the veil.
  */
 export const BoardOnEdgeSprite: React.FC<
   {
@@ -33,6 +32,7 @@ export const BoardOnEdgeSprite: React.FC<
     surface,
     jointedFaces,
     jointedEdges,
+    face,
   } = board;
 
   const draw = useCallback(
@@ -43,19 +43,11 @@ export const BoardOnEdgeSprite: React.FC<
       // The face leans a hair into view beside the edge — enough to read
       // "standing board", never wider than the edge itself.
       const lean = Math.min(width * 0.8, 3);
-      const rng = seededRandom(
-        seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`,
-      );
-
-      const { primary, secondary } = colorBySpecies[species];
-      const edgeColor =
-        jointedEdges > 0
-          ? colorToNumber(secondary)
-          : mixColors(secondary, WEATHERED_GRAY, 0.5);
-      const faceRevealed = jointedFaces > 0 || surface !== "rough";
-      const faceColor = faceRevealed
-        ? mixColors(primary, 0x000000, 0.25)
-        : mixColors(mixColors(primary, WEATHERED_GRAY, 0.62), 0x000000, 0.25);
+      const pieceSeed =
+        seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`;
+      const region =
+        face ?? defaultBoardFace(pieceSeed, boardLength, boardWidth);
+      const art = woodArt(species, region.seed, thickness);
 
       // A standing board throws a longer shadow than a lying one
       for (const shadowWidth of [1.5, 3]) {
@@ -69,35 +61,27 @@ export const BoardOnEdgeSprite: React.FC<
       }
 
       // The upturned edge face
-      g.rect(-width / 2, -height / 2, width, height).fill(edgeColor);
-      // The shaded sliver of wide face leaning into view
-      g.rect(width / 2, -height / 2, lean, height).fill(faceColor);
+      g.rect(-width / 2, -height / 2, width, height);
+      g.fill(
+        edgeFill(art, region, boardWidth, thickness, -width / 2, -height / 2),
+      );
 
-      if (jointedEdges > 0) {
-        // Straightened: crisp grain lines run the length
-        const lines = Math.max(1, Math.round(width / 3));
-        for (let i = 0; i < lines; i++) {
-          const x =
-            -width / 2 +
-            (width * (i + 0.5)) / lines +
-            (rng() * 2 - 1) * (width * 0.1);
-          g.moveTo(x, -height / 2 + 2)
-            .lineTo(x + (rng() * 2 - 1) * 1.5, height / 2 - 2)
-            .stroke({
-              width: 0.8,
-              color: mixColors(secondary, 0x000000, 0.25),
-              alpha: 0.45,
-            });
-        }
-      } else {
-        // Rough: cross marks where the mill's saw chattered
-        let y = -height / 2 + 3 + rng() * 5;
-        while (y < height / 2 - 3) {
-          g.moveTo(-width / 2, y)
-            .lineTo(width / 2, y + (rng() * 2 - 1) * 2)
-            .stroke({ width: 1, color: 0x000000, alpha: 0.12 });
-          y += 5 + rng() * 8;
-        }
+      // The sliver of wide face leaning into view beside it, shaded
+      // because it tips away from the light
+      g.rect(width / 2, -height / 2, lean, height);
+      g.fill(faceFill(art, region, width / 2, -height / 2));
+      g.rect(width / 2, -height / 2, lean, height);
+      g.fill(TURNED_AWAY_SHADE);
+
+      // Weathering lifts as milling reveals the wood, the same way it
+      // does on the face-up board
+      if (jointedEdges === 0) {
+        g.rect(-width / 2, -height / 2, width, height);
+        g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
+      }
+      if (jointedFaces === 0 && surface === "rough") {
+        g.rect(width / 2, -height / 2, lean, height);
+        g.fill({ color: WEATHERED_GRAY, alpha: 0.62 });
       }
     },
     [
@@ -108,6 +92,7 @@ export const BoardOnEdgeSprite: React.FC<
       surface,
       jointedFaces,
       jointedEdges,
+      face,
       seed,
     ],
   );

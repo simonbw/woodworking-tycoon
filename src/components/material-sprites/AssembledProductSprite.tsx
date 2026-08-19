@@ -124,6 +124,7 @@ const BlueprintPartsSprite: React.FC<{
                   thickness: part.thickness,
                   surface: part.surface ?? "sanded",
                 }}
+                seed={part.seed}
               />
             ) : slot.onEdge ? (
               // A rail stands on edge in the finished piece exactly as

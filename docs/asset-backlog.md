@@ -99,32 +99,32 @@ wiring: same path, same size, same component.
       draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
-                  filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
-                  close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
-                  edge sitting over the black shadow beneath reads as a hairline down
-                  every seam where two tables butt — which is the one place this art
-                  has to be precise, and the only place. (`-2x4-top` still carries a
-                  1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
-                  on one side, versus the 39–62% that was drawing a visible line —
-                  invisible in play. Not worth an export on its own; worth squaring up
-                  if that artboard is opened again.)
+                      filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
+                      close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
+                      edge sitting over the black shadow beneath reads as a hairline down
+                      every seam where two tables butt — which is the one place this art
+                      has to be precise, and the only place. (`-2x4-top` still carries a
+                      1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
+                      on one side, versus the 39–62% that was drawing a visible line —
+                      invisible in play. Not worth an export on its own; worth squaring up
+                      if that artboard is opened again.)
 
-                  Shadows and completes are centred on even canvases so no shadow core
-                  peeks out from under its own top.
+                      Shadows and completes are centred on even canvases so no shadow core
+                      peeks out from under its own top.
 
-                  Legs want to sit in from the corners so butted tables don't collide
-                  visually; a top texture that tiles horizontally reads best across a
-                  run. Vise and tool-drawer upgrades stay procedural overlays drawn on
-                  the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
+                      Legs want to sit in from the corners so butted tables don't collide
+                      visually; a top texture that tiles horizontally reads best across a
+                      run. Vise and tool-drawer upgrades stay procedural overlays drawn on
+                      the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
 
-                  These are deliberately **not** in `scripts/trim-images.ts`, and don't
-                  need to be: the tops are opaque corner to corner so there is nothing
-                  to trim, and while the shadows and completes do carry a transparent
-                  margin, trimming them would be harmless rather than helpful — the
-                  script keeps every pixel with any alpha (soft halos survive) and
-                  crops symmetrically about the canvas centre, which is the
-                  registration these rely on. It would save a couple of kilobytes and
-                  cost the ability to compare a top and its shadow by their canvases.
+                      These are deliberately **not** in `scripts/trim-images.ts`, and don't
+                      need to be: the tops are opaque corner to corner so there is nothing
+                      to trim, and while the shadows and completes do carry a transparent
+                      margin, trimming them would be harmless rather than helpful — the
+                      script keeps every pixel with any alpha (soft halos survive) and
+                      crops symmetrically about the canvas centre, which is the
+                      registration these rely on. It would save a couple of kilobytes and
+                      cost the ability to compare a top and its shadow by their canvases.
 
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
@@ -253,10 +253,16 @@ Decided — don't re-open these without a reason.
   grayscale wear maps multiplied over the face, fading as the board is
   milled. The weathered-gray veil and the sanded sheen stay procedural
   overlays on purpose — they're color states, not wood.
-- **On-edge boards, panels, sheet edges** — `OnEdgeBoardSprite`,
-  `PanelSprite`, and the sheets' lamination/crumble edge strips are still
-  fully procedural; the panel strips and on-edge boards are expected to
-  pick up the board scans' art in a later pass.
+- **Sheet edges** — the sheets' lamination/crumble edge strips are still
+  procedural: a plywood edge is a stack of plies, which is geometry
+  rather than a photograph. Everything wooden above them windows real
+  art through `woodFills.ts` — faces, edges, and sawn ends alike, on
+  boards lying flat, stood on edge, stood on end, glued into panels, and
+  built into cutting boards.
+- **Stock parked on racks** — `LumberShelfSprite` and
+  `StorageRackSprite` draw what's on the shelf as a few pixel-tall bars
+  in the species' color. They're tallies of what's stored, read from
+  across the shop, not surfaces anyone looks at.
 - **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
   `DustMotionLayer`. Per-frame effects; the dust layer already bakes its
   stamps into a single `RenderTexture`.

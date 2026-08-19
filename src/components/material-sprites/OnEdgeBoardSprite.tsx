@@ -1,36 +1,41 @@
 import { Graphics } from "pixi.js";
 import React, { useCallback } from "react";
-import { Board } from "../../game/Materials";
-import { colorToNumber, mixColors } from "../../utils/colorUtils";
+import { Board, defaultBoardFace } from "../../game/Materials";
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
-import { colorBySpecies } from "../shop-view/colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-view/shop-scale";
+import { edgeFill, woodArt } from "./woodFills";
 
 const WEATHERED_GRAY = 0x9a9186;
 
 /**
  * A board standing on edge (as it rides a jointer fence): seen from
- * above only the thin edge face shows — thickness wide, still wavy if
- * the edges haven't been jointed straight yet.
+ * above only the thin edge face shows — thickness wide, windowed onto
+ * the board's own wood, still wavy if the edges haven't been jointed
+ * straight yet.
  */
 export const OnEdgeBoardSprite: React.FC<{
   board: Omit<Board, "id" | "type">;
   seed?: string;
 }> = ({ board, seed }) => {
-  const { length, thickness, species, jointedEdges } = board;
+  const {
+    length,
+    width: boardWidth,
+    thickness,
+    species,
+    jointedEdges,
+    face,
+  } = board;
 
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
       const height = length * PIXELS_PER_INCH;
       const width = Math.max(3, (thickness * PIXELS_PER_INCH) / 4);
-      const rng = seededRandom(seed ?? `${species}-edge-${length}`);
-      const { secondary } = colorBySpecies[species];
-      const color =
-        jointedEdges > 0
-          ? colorToNumber(secondary)
-          : mixColors(secondary, WEATHERED_GRAY, 0.5);
+      const pieceSeed = seed ?? `${species}-edge-${length}`;
+      const rng = seededRandom(pieceSeed);
+      const region = face ?? defaultBoardFace(pieceSeed, length, boardWidth);
+      const art = woodArt(species, region.seed, thickness);
 
       // shadow
       g.rect(-width / 2 - 1.5, -height / 2 - 1.5, width + 3, height + 3);
@@ -46,14 +51,21 @@ export const OnEdgeBoardSprite: React.FC<{
         left.push([-width / 2 + (rng() * 2 - 1) * amp, y]);
         right.push([width / 2 + (rng() * 2 - 1) * amp, y]);
       }
-      g.poly([...left, ...right.reverse()].flat());
-      g.fill(color);
+      const edgePoly = [...left, ...right.reverse()].flat();
+      g.poly(edgePoly);
+      g.fill(
+        edgeFill(art, region, boardWidth, thickness, -width / 2, -height / 2),
+      );
+      if (jointedEdges === 0) {
+        g.poly(edgePoly);
+        g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
+      }
 
       // A darker seam where the face leans away toward the fence
       g.rect(width / 2 - 1, -height / 2, 1, height);
       g.fill({ color: 0x000000, alpha: 0.25 });
     },
-    [length, thickness, species, jointedEdges, seed],
+    [length, boardWidth, thickness, species, jointedEdges, face, seed],
   );
 
   return <pixiGraphics draw={draw} />;
