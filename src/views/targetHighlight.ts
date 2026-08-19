@@ -1,5 +1,6 @@
-import { Filter } from "pixi.js";
+import { Container, Filter } from "pixi.js";
 import { OutlineFilter, OutlineFilterOptions } from "pixi-filters/outline";
+import { Entity } from "../core/entity/Entity";
 import { CANVAS_RESOLUTION } from "./canvas-resolution";
 
 /**
@@ -70,3 +71,43 @@ export const TUTORIAL_HIGHLIGHT_FILTERS: Filter[] = [
     quality: 0.5,
   }),
 ];
+
+/**
+ * A view that draws more than one thing, naming the one a rim means. A
+ * machine parks its cast shadow and its cut spray beside the machine
+ * itself, and the truck's cargo rides beside its body; rimming the first
+ * drawable it happens to hold would trace the shadow.
+ */
+export interface HasHighlightRoot {
+  readonly highlightRoot: Container;
+}
+
+function hasHighlightRoot(value: object): value is HasHighlightRoot {
+  return "highlightRoot" in value;
+}
+
+/**
+ * The container a rim dresses for a sim entity: the drawable its view
+ * names, or its one sprite. Shared by both rims so the white targeting
+ * outline and the tutorial's orange always land on the same thing.
+ */
+export function viewHighlightRoot(entity: Entity): Container | null {
+  for (const child of entity.children ?? []) {
+    if (hasHighlightRoot(child)) return child.highlightRoot;
+    if (child.sprite) return child.sprite;
+    if (child.sprites?.length) return child.sprites[0];
+  }
+  return null;
+}
+
+/** The view of a given class drawing a sim entity, for the rims that
+ * dress a part of it — a piece on the stand, a piece in the bed. */
+export function findChildView<T>(
+  entity: Entity,
+  viewClass: abstract new (...args: never[]) => T,
+): T | null {
+  for (const child of entity.children ?? []) {
+    if (child instanceof viewClass) return child;
+  }
+  return null;
+}

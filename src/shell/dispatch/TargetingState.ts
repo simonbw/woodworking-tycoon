@@ -139,6 +139,16 @@ export class TargetingState extends BaseEntity implements Entity {
     this.offset += 1;
   }
 
+  /** Whether the keys are already aimed at this machine — what tells a
+   * click on it apart from a click that just picks it. */
+  isTargeted(candidate: Machine): boolean {
+    const targeted = this.targeted();
+    return (
+      targeted != null &&
+      machineStateKey(targeted.state) === machineStateKey(candidate.state)
+    );
+  }
+
   /** The cursor picking a machine outright (the pointing version of G). */
   setTarget(candidate: Machine): void {
     const machines = this.machines();

@@ -4,6 +4,7 @@ import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
+import { MaterialInstance } from "../game/Materials";
 import { ShopInfo as ShopInfoData } from "../game/ShopInfo";
 import { standRect } from "../game/stand";
 import { StandEntity } from "../sim/entities/StandEntity";
@@ -17,8 +18,11 @@ import { drawMaterialGlyph } from "./material-glyph";
  * the pieces set out. Where it sits — and the solid the walking body
  * bounces off — comes from standRect in stand.ts; this view only draws
  * onto that footprint. Procedural on purpose for now (see
- * docs/asset-backlog.md). Targeting and tutorial highlights are phase
- * 4/5.
+ * docs/asset-backlog.md).
+ *
+ * The rims dress two things here: the tabletop, when F would set work
+ * out on it, and a single piece on the table, when E would take that one
+ * back — so the stand reads like any other target (TargetHighlightView).
  */
 
 const TABLETOP = 0x8a6f4d;
@@ -37,6 +41,8 @@ export class StandView extends BaseEntity implements Entity {
   /** What was last drawn, so table/pieces only rebuild on change. */
   private drawnFor = "";
   private piecesFor = "";
+  /** Each piece's drawing, so a rim can find the one E would take. */
+  private pieceRoots = new Map<MaterialInstance, Container>();
 
   constructor(private stand: StandEntity) {
     super();
@@ -75,6 +81,18 @@ export class StandView extends BaseEntity implements Entity {
     this.sign.addChild(signBoard, signText);
     this.root.addChild(this.table, this.pieces, this.sign);
     this.sprite = this.root;
+  }
+
+  /** The tabletop — the container the highlight rims dress (never the
+   * sign, and never the merchandise, which rims on its own). */
+  get highlightRoot(): Container {
+    return this.table;
+  }
+
+  /** The drawing of one piece set out on the table, for the rim that
+   * says "this is the one E takes back". */
+  pieceRoot(material: MaterialInstance): Container | null {
+    return this.pieceRoots.get(material) ?? null;
   }
 
   private shopInfo(): ShopInfoData | undefined {
@@ -131,9 +149,11 @@ export class StandView extends BaseEntity implements Entity {
    * bed cargo — newest lands on top, matching what E takes back. */
   private rebuildPieces(width: number, height: number) {
     this.pieces.removeChildren().forEach((child) => child.destroy());
+    this.pieceRoots.clear();
     this.stand.pieces.forEach((material, i) => {
       const item = new Graphics();
       drawMaterialGlyph(item, material);
+      this.pieceRoots.set(material, item);
       item.position.set(
         width / 2 + (i % 2 === 0 ? -3 : 3),
         height / 2 + ((i % 3) - 1) * 12,

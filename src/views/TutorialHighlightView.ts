@@ -1,5 +1,4 @@
-import { Container, Filter } from "pixi.js";
-import { OutlineFilter } from "pixi-filters/outline";
+import { Container } from "pixi.js";
 import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
@@ -13,8 +12,10 @@ import { StandEntity } from "../sim/entities/StandEntity";
 import { TruckEntity } from "../sim/entities/TruckEntity";
 import { Broom } from "../sim/singletons/Broom";
 import { projectGameState } from "../sim/projection";
-import { MachineView } from "./MachineView";
-import { TruckView } from "./TruckView";
+import {
+  TUTORIAL_HIGHLIGHT_FILTERS,
+  viewHighlightRoot,
+} from "./targetHighlight";
 
 /**
  * What the guided opening points at in the world (see game/tutorial.ts) —
@@ -33,33 +34,6 @@ import { TruckView } from "./TruckView";
  * close the corner card points home, and the truck wears the same coach
  * outline so the card and the world agree.
  */
-const TUTORIAL_HIGHLIGHT_FILTERS: Filter[] = [
-  new OutlineFilter({
-    thickness: 2.5,
-    color: 0xf59e0b,
-    alpha: 0.9,
-    quality: 0.5,
-  }),
-  new OutlineFilter({
-    thickness: 2,
-    color: 0x1c1917,
-    alpha: 0.35,
-    quality: 0.5,
-  }),
-];
-
-/** A view's outermost drawable, wherever the view class parks it. */
-function viewRoot(entity: Entity): Container | null {
-  for (const child of entity.children ?? []) {
-    if (child instanceof MachineView || child instanceof TruckView) {
-      return child.highlightRoot;
-    }
-    if (child.sprite) return child.sprite;
-    if (child.sprites?.length) return child.sprites[0];
-  }
-  return null;
-}
-
 export class TutorialHighlightView extends BaseEntity implements Entity {
   persistenceLevel: number = Persistence.Permanent;
   pausable = false;
@@ -91,7 +65,7 @@ export class TutorialHighlightView extends BaseEntity implements Entity {
     // The stations the coach is sending the player to.
     for (const machine of game.entities.byConstructor(MachineEntity)) {
       if (coach.machineTypeIds.has(machine.state.machineTypeId)) {
-        this.dress(viewRoot(machine));
+        this.dress(viewHighlightRoot(machine));
       }
     }
 
@@ -100,23 +74,23 @@ export class TutorialHighlightView extends BaseEntity implements Entity {
     // step targets the bed).
     if (coach.truck !== null || homewardNudge !== null) {
       const truck = game.entities.tryGetSingleton(TruckEntity);
-      if (truck) this.dress(viewRoot(truck));
+      if (truck) this.dress(viewHighlightRoot(truck));
     }
 
     if (coach.stand) {
       const stand = game.entities.tryGetSingleton(StandEntity);
-      if (stand) this.dress(viewRoot(stand));
+      if (stand) this.dress(viewHighlightRoot(stand));
     }
 
     if (coach.broom) {
       const broom = game.entities.tryGetSingleton(Broom);
-      if (broom) this.dress(viewRoot(broom));
+      if (broom) this.dress(viewHighlightRoot(broom));
     }
 
     if (coach.matchesPile) {
       for (const pile of game.entities.byConstructor(MaterialPileEntity)) {
         if (coach.matchesPile(pile.material)) {
-          this.dress(viewRoot(pile));
+          this.dress(viewHighlightRoot(pile));
         }
       }
     }

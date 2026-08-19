@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite } from "pixi.js";
+import { Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
 import {
   cellToPixel,
   cellToPixelCenter,
@@ -10,6 +10,7 @@ import { Entity } from "../core/entity/Entity";
 import { GameSprite, loadGameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
 import { truckBedRect, truckParkedRect } from "../game/lot";
+import { MaterialInstance } from "../game/Materials";
 import { ShopInfo as ShopInfoData } from "../game/ShopInfo";
 import { Player } from "../sim/entities/Player";
 import {
@@ -32,10 +33,13 @@ import { createMaterialSprite } from "./material-sprites/MaterialSprite";
  * over it.
  *
  * While the player is away on a trip the truck went with them, so the
- * whole thing hides. The old shell's trip theater (the roll down the
- * driveway, truckStageStore's clock) is phase 6; until then parked/gone
- * follows `player.away` directly. Targeting and tutorial highlights are
- * phase 4/5.
+ * whole thing hides.
+ *
+ * Three things here can wear a rim, because three things can be what the
+ * keys act on: the whole body when E would open the cab, the cargo box
+ * alone when the bed itself is being loaded or unpacked, and a single
+ * piece of cargo when E would lift that piece back out
+ * (TargetHighlightView decides which).
  *
  * The art is a 400×600 top-down view drawn nose-up. Inside that canvas
  * the red body is 184 px wide, the mirrors reach 264, and the truck spans
@@ -53,12 +57,23 @@ const TRUCK_CANVAS_HEIGHT = TRUCK_CANVAS_WIDTH * (600 / 400);
  * (600 minus the 27 px nose margin minus the 562 px truck). */
 const TRUCK_TAIL_INSET = 11 / 600;
 
+/** The 400×600 art's canvas, in source pixels. */
+const TRUCK_SRC_WIDTH = 400;
+const TRUCK_SRC_HEIGHT = 600;
+
+/** The cargo box's pixels inside the art — rail to rail, tailgate to
+ * cab wall — so the bed can wear the targeting outline on its own. */
+const BED_FRAME = new Rectangle(124, 344, 276 - 124, 561 - 344);
+
 export class TruckView extends BaseEntity implements Entity {
   private body: Sprite & GameSprite;
+  private bedRim: Sprite & GameSprite;
   private cargo: Container & GameSprite;
 
   /** What the cargo was last built for, so it only rebuilds on change. */
   private builtFor = "";
+  /** Each loaded piece's drawing, so a rim can find the one E would lift. */
+  private cargoRoots = new Map<MaterialInstance, Container>();
 
   constructor(private truck: TruckEntity) {
     super();
@@ -69,15 +84,42 @@ export class TruckView extends BaseEntity implements Entity {
     this.body.height = TRUCK_CANVAS_HEIGHT;
     this.body.rotation = Math.PI;
 
+    // The bed cropped out of the same art, drawn over itself pixel for
+    // pixel — the outline shader rims a display object's silhouette, so
+    // scoping the rim to the bed takes a bed-shaped object to rim. It
+    // shows only while it's wearing one.
+    this.bedRim = new Sprite(
+      new Texture({ source: this.body.texture.source, frame: BED_FRAME }),
+    ) as Sprite & GameSprite;
+    this.bedRim.layerName = "environment";
+    this.bedRim.anchor.set(0.5, 0.5);
+    const srcToWorld = TRUCK_CANVAS_WIDTH / TRUCK_SRC_WIDTH;
+    this.bedRim.width = BED_FRAME.width * srcToWorld;
+    this.bedRim.height = BED_FRAME.height * srcToWorld;
+    this.bedRim.rotation = Math.PI;
+    this.bedRim.visible = false;
+
     this.cargo = new Container() as Container & GameSprite;
     this.cargo.layerName = "environment";
 
-    this.sprites = [this.body, this.cargo];
+    this.sprites = [this.body, this.bedRim, this.cargo];
   }
 
   /** The truck's body art — the container the highlight rims dress. */
   get highlightRoot(): Container {
     return this.body;
+  }
+
+  /** The cargo box on its own, for the rim that says the bed is what
+   * the keys act on. Hidden until something dresses it. */
+  get bedRimRoot(): Container {
+    return this.bedRim;
+  }
+
+  /** The drawing of one piece riding in the bed, for the rim that says
+   * "this is the one E lifts out". */
+  cargoRoot(material: MaterialInstance): Container | null {
+    return this.cargoRoots.get(material) ?? null;
   }
 
   private shopInfo(): ShopInfoData | undefined {
@@ -98,7 +140,12 @@ export class TruckView extends BaseEntity implements Entity {
     const onTheLot = stage !== "away";
     this.body.visible = onTheLot;
     this.cargo.visible = onTheLot;
-    if (!onTheLot) return;
+    if (!onTheLot) {
+      // The bed's rim shows itself only while it's dressed; a truck
+      // that isn't on the lot takes it with it.
+      this.bedRim.visible = false;
+      return;
+    }
 
     const rect = truckParkedRect(shopInfo);
     const centerX = cellToPixel((rect.min[0] + rect.max[0]) / 2);
@@ -114,6 +161,20 @@ export class TruckView extends BaseEntity implements Entity {
     const roll = theater ? driveOffset(theater) : 0;
     this.body.position.set(centerX, centerY + roll);
     this.cargo.position.set(0, roll);
+
+    // The bed crop rides exactly over its own pixels in the body art:
+    // the sprite is anchored at its center and turned 180°, so a
+    // source-pixel offset from the canvas center lands negated in the
+    // world.
+    const srcToWorld = TRUCK_CANVAS_WIDTH / TRUCK_SRC_WIDTH;
+    this.bedRim.position.set(
+      centerX -
+        (BED_FRAME.x + BED_FRAME.width / 2 - TRUCK_SRC_WIDTH / 2) * srcToWorld,
+      centerY +
+        roll -
+        (BED_FRAME.y + BED_FRAME.height / 2 - TRUCK_SRC_HEIGHT / 2) *
+          srcToWorld,
+    );
 
     const key = [
       `${shopInfo.size[0]}x${shopInfo.size[1]}`,
@@ -131,6 +192,7 @@ export class TruckView extends BaseEntity implements Entity {
    * ride behind the cab, stock toward the gate. */
   private rebuildCargo(shopInfo: ShopInfoData) {
     this.cargo.removeChildren().forEach((child) => child.destroy());
+    this.cargoRoots.clear();
 
     const bed = truckBedRect(shopInfo);
     const bedCenterX = cellToPixel((bed.min[0] + bed.max[0]) / 2);
@@ -154,6 +216,7 @@ export class TruckView extends BaseEntity implements Entity {
       // a pallet in the bed reads as a pallet, not a placeholder glyph.
       const item = new Container();
       item.addChild(createMaterialSprite(material));
+      this.cargoRoots.set(material, item);
       item.position.set(bedCenterX, bedCenterY + ((i % 3) - 1) * 6);
       item.angle = 90 + ((i * 7) % 21) - 10;
       this.cargo.addChild(item);
