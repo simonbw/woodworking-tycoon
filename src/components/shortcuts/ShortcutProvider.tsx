@@ -13,6 +13,7 @@ import {
   shortcutsForButton,
   shortcutsForEvent,
 } from "../../game/shortcuts";
+import { activatesFocusedControl, isEditable } from "../../utils/keyboardFocus";
 
 type Handler = (event: KeyboardEvent | MouseEvent) => void;
 
@@ -37,32 +38,6 @@ const shortcutContext = createContext<ShortcutContextValue | undefined>(
  * re-render when a dialog opens.
  */
 const modalOpenContext = createContext<boolean>(false);
-
-/** Typing in a field shouldn't drive the player around the shop. */
-function isEditable(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  return ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName);
-}
-
-/**
- * Keys the browser's own focus handling has first claim on whenever
- * something is focused. Stealing them would break keyboard navigation
- * outright: Space and Enter activate the focused control (Space runs the
- * machine you're at, so that's a live conflict, not a hypothetical one),
- * and Tab is how you reach a control in the first place — with focus
- * anywhere but the page body it must keep moving the focus ring rather
- * than opening a station sheet.
- */
-function activatesFocusedControl(event: KeyboardEvent): boolean {
-  const target = event.target;
-  if (!(target instanceof HTMLElement)) return false;
-  if (event.code === "Tab") {
-    return target !== document.body;
-  }
-  if (event.code !== "Space" && event.code !== "Enter") return false;
-  return ["BUTTON", "A", "SUMMARY"].includes(target.tagName);
-}
 
 /**
  * Owns the game's single keydown listener and routes each event to at most one

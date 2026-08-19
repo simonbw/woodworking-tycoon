@@ -9,6 +9,8 @@ import { MouseButtons } from "./MouseButtons";
 export class MouseManager {
   private buttons = [false, false, false, false, false, false];
   private _position: V2d = V(0, 0);
+  private boundOnMouseUp: (e: MouseEvent) => void;
+  private boundOnBlur: () => void;
 
   constructor(
     private view: HTMLElement,
@@ -17,13 +19,23 @@ export class MouseManager {
   ) {
     this.view.onclick = (e) => this.onClick(e);
     this.view.onmousedown = (e) => this.onMouseDown(e);
-    this.view.onmouseup = (e) => this.onMouseUp(e);
     this.view.onmousemove = (e) => this.onMouseMove(e);
     this.view.oncontextmenu = (e) => {
       e.preventDefault();
       this.onClick(e);
       return false;
     };
+
+    // A press that starts on the canvas can end anywhere — over a HUD
+    // card, off the edge of the window — and the button has to come up
+    // wherever it lands. Bound on the canvas alone it never would, and a
+    // bench stroke begun with the mouse would go on cutting forever.
+    this.boundOnMouseUp = (e) => this.onMouseUp(e);
+    this.boundOnBlur = () => this.releaseAllButtons();
+    window.addEventListener("mouseup", this.boundOnMouseUp);
+    // Released outside the window entirely, the mouseup is delivered to
+    // whatever took focus instead; losing focus is the only word we get.
+    window.addEventListener("blur", this.boundOnBlur);
   }
 
   /** Current mouse position in screen coordinates. */
@@ -100,9 +112,29 @@ export class MouseManager {
 
   private onMouseUp(event: MouseEvent): void {
     this.onInputActivity();
-    this.updatePosition(event);
-    this.buttons[event.button] = false;
-    switch (event.button) {
+    // offsetX/offsetY are only the canvas's coordinates when the release
+    // landed on the canvas; over a HUD card they'd be that card's, so
+    // the pointer keeps its last world position instead.
+    if (event.target === this.view) {
+      this.updatePosition(event);
+    }
+    this.releaseButton(event.button);
+  }
+
+  private releaseAllButtons(): void {
+    for (let button = 0; button < this.buttons.length; button++) {
+      this.releaseButton(button);
+    }
+  }
+
+  /**
+   * Lift one button, if it was down. A release the world never saw press
+   * — a click that began on a HUD control — stays the chrome's business.
+   */
+  private releaseButton(button: number): void {
+    if (!this.buttons[button]) return;
+    this.buttons[button] = false;
+    switch (button) {
       case MouseButtons.LEFT:
         this.dispatch("mouseUp", undefined as void);
         break;
@@ -118,8 +150,9 @@ export class MouseManager {
   destroy(): void {
     this.view.onclick = null;
     this.view.onmousedown = null;
-    this.view.onmouseup = null;
     this.view.onmousemove = null;
     this.view.oncontextmenu = null;
+    window.removeEventListener("mouseup", this.boundOnMouseUp);
+    window.removeEventListener("blur", this.boundOnBlur);
   }
 }

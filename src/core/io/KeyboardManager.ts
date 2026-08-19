@@ -10,6 +10,7 @@ export class KeyboardManager {
   private boundOnKeyDown: (e: KeyboardEvent) => void;
   private boundOnKeyUp: (e: KeyboardEvent) => void;
   private boundOnVisibilityChange: () => void;
+  private boundOnBlur: () => void;
 
   constructor(
     private dispatch: IoEventDispatch,
@@ -18,10 +19,16 @@ export class KeyboardManager {
     this.boundOnKeyDown = (e) => this.onKeyDown(e);
     this.boundOnKeyUp = (e) => this.onKeyUp(e);
     this.boundOnVisibilityChange = () => this.clearAllKeys();
+    this.boundOnBlur = () => this.clearAllKeys();
 
     document.addEventListener("keydown", this.boundOnKeyDown);
     document.addEventListener("keyup", this.boundOnKeyUp);
     document.addEventListener("visibilitychange", this.boundOnVisibilityChange);
+    // Clicking another window — a second monitor, the devtools pane —
+    // hides the release: the keyup lands over there. Without this a held
+    // W walks the player into the wall forever, and a held Space keeps
+    // feeding the saw.
+    window.addEventListener("blur", this.boundOnBlur);
   }
 
   /**
@@ -32,11 +39,14 @@ export class KeyboardManager {
   }
 
   /**
-   * Clears all key states and fires onKeyUp for each.
-   * Called when the page loses visibility to prevent stuck keys.
+   * Releases every key that's still down and dispatches its keyUp, so
+   * everything downstream — held movement, the operate flag, the wait
+   * key — sees the release it would otherwise never get. Called when the
+   * page is hidden or the window loses focus.
    */
   private clearAllKeys(): void {
-    for (const keyCode of this.keys.keys()) {
+    for (const [keyCode, down] of this.keys) {
+      if (!down) continue;
       this.keys.set(keyCode, false);
       this.dispatch("keyUp", { key: keyCode });
     }
@@ -93,5 +103,6 @@ export class KeyboardManager {
       "visibilitychange",
       this.boundOnVisibilityChange,
     );
+    window.removeEventListener("blur", this.boundOnBlur);
   }
 }

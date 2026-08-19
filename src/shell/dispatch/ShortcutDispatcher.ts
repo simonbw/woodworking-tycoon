@@ -21,8 +21,10 @@ import { rotateCarriedMachine } from "../../sim/commands/machine-commands";
 import { toggleCarryShopVac } from "../../sim/commands/cleaning-commands";
 import { setOperating, setWaiting } from "../../sim/commands/player-commands";
 import { canLeaveShop } from "../../sim/commands/trip-commands";
+import { MachineEntity } from "../../sim/entities/MachineEntity";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
+import { activatesFocusedControl, isEditable } from "../../utils/keyboardFocus";
 import { BenchDive } from "../scenes/bench/BenchDive";
 import { StoreSceneRoot } from "../scenes/StoreSceneRoot";
 import { ShellStore } from "../ShellStore";
@@ -42,6 +44,18 @@ function consume(event: KeyboardEvent): void {
   event.preventDefault();
   event.stopImmediatePropagation();
 }
+
+/**
+ * The keys the bench dive leaves live. Leaned over a bench the dive owns
+ * the keyboard, but the settings on the pulled drawing are still dialed
+ * from out here — the paper strip's chips name Z, X and R, and a chip
+ * names a live key (docs/floor-interaction.md).
+ */
+const BENCH_DIVE_SHORTCUTS: ReadonlySet<ShortcutId> = new Set([
+  "setting-down",
+  "setting-up",
+  "rotate-setting",
+]);
 
 /**
  * Keys to commands — the ShortcutDispatcher the migration plan calls
@@ -81,16 +95,41 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     return this.game.entities.getSingleton(TargetingState);
   }
 
+  /**
+   * The machine a key acts on: the bench being leaned over while a dive
+   * is open, otherwise the one the body is standing at. Leaned in, the
+   * bench in front of the player is the only thing the keys can mean,
+   * and the body is parked in its working stance anyway.
+   */
+  private activeTarget(): MachineEntity | null {
+    const bench = this.game.entities.tryGetSingleton(BenchDive)?.openBench();
+    return bench ?? this.targeting().targeted();
+  }
+
   @on("keyDown")
   onKeyDown({ key, event }: GameEventMap["keyDown"]) {
+    // The browser's keys stay the browser's. A shortcut with a modifier
+    // on it is a page command (Cmd+R reloads, Cmd+F finds), a press in a
+    // text field is typing, and Space, Enter and Tab belong to whatever
+    // control holds focus — the chrome sits over the floor, so a press
+    // aimed at a button must not also feed the machine underfoot. The
+    // DOM's ShortcutProvider asks the same questions of the same
+    // helpers; this listener runs first, so it has to ask them too.
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    // Escape still has to work from inside a field, so you can back out
+    // of whatever put you there.
+    if (isEditable(event.target) && key !== "Escape") return;
+    if (activatesFocusedControl({ code: key, target: event.target })) return;
+
     // An open dialog owns the keyboard (the old modal scope): no floor
     // key fires and no hold starts. Key *releases* still land below, so
     // a hold begun before the dialog opened can't stick.
     if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return;
 
     // Leaned over a bench, the dive owns the keys: Tab or Escape stands
-    // back up; the floor's verbs wait until then. (The dive's own
-    // gesture surfaces run on the pointer, not here.)
+    // back up, and Z/X/R still dial the drawing's settings; the rest of
+    // the floor's verbs wait until then. (The dive's own gesture
+    // surfaces run on the pointer, not here.)
     const dive = this.game.entities.tryGetSingleton(BenchDive);
     if (dive?.openBenchKey != null) {
       // Whatever the hands picked up off the rail — a tool, a clamp,
@@ -104,7 +143,9 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       if (key === "Tab" || key === "Escape") {
         dive.close();
         consume(event);
+        return;
       }
+      this.dispatchKey(key, event, BENCH_DIVE_SHORTCUTS);
       return;
     }
 
@@ -136,13 +177,32 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       return;
     }
 
-    // Held keys first — they're state, not shortcuts.
-    if (key === "Space") setOperating(this.game, true);
+    // Held keys first — they're state, not shortcuts. Claiming the key
+    // here matters even when no shortcut fires below: Space's default is
+    // to scroll the page, and the shop would slide out from under the
+    // player every time they held it at a machine that isn't running.
+    if (key === "Space") {
+      setOperating(this.game, true);
+      event.preventDefault();
+    }
     if (key === "KeyT") setWaiting(this.game, true);
 
+    this.dispatchKey(key, event);
+  }
+
+  /**
+   * Fire the first shortcut on this key that's in scope and enabled.
+   * `only` narrows the field to a named set — the bench dive's Z/X/R.
+   */
+  private dispatchKey(
+    key: string,
+    event: KeyboardEvent,
+    only?: ReadonlySet<ShortcutId>,
+  ): void {
     const defs = this.byCode.get(key);
     if (!defs) return;
     for (const def of defs) {
+      if (only && !only.has(def.id)) continue;
       if (def.requiresShift && !event.shiftKey) continue;
       if (def.scope !== "home" && def.scope !== "global") continue;
       if (!this.enabled(def.id)) continue;
@@ -164,7 +224,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     if (!game.entities.tryGetSingleton(Player)) return false;
     const gs = projectGameState(game);
     const targeting = this.targeting();
-    const targeted = targeting.targeted();
+    const targeted = this.activeTarget();
     const targetedView = targeted?.view();
 
     const present = !gs.player.away;
@@ -172,7 +232,15 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     const stationWorking =
       targetedView?.operationProgress.status === "inProgress";
     const sheetMachine = targeting.sheetMachine();
-    const leanedIn = sheetMachine != null && sheetMachine === targeted;
+    // Leaned in means the drawing and the bench top are in front of the
+    // player: either the station sheet is open on this machine, or the
+    // bench dive is.
+    const divedBench = this.game.entities
+      .tryGetSingleton(BenchDive)
+      ?.openBench();
+    const leanedIn =
+      (sheetMachine != null && sheetMachine === targeted) ||
+      (divedBench != null && divedBench === targeted);
     const floorControls =
       targetedView != null && hasFloorControls(targetedView.type);
     const settingKeysLive = floorControls || leanedIn;
@@ -254,7 +322,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
   private fire(id: ShortcutId, shift: boolean): void {
     const game = this.game;
     const targeting = this.targeting();
-    const targeted = targeting.targeted();
+    const targeted = this.activeTarget();
 
     switch (id) {
       case "vac-toggle":
