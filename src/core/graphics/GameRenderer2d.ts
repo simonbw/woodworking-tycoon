@@ -81,16 +81,19 @@ export class GameRenderer2d {
 
   /**
    * Gets the effective height of the renderer viewport in logical pixels.
+   * PIXI v8's renderer.width/height are already logical (the screen
+   * rect, not the canvas's physical pixels), so no resolution division —
+   * dividing again halved every screen measurement on hiDPI displays.
    */
   getHeight(): number {
-    return this.app.renderer.height / this.app.renderer.resolution;
+    return this.app.renderer.height;
   }
 
   /**
    * Gets the effective width of the renderer viewport in logical pixels.
    */
   getWidth(): number {
-    return this.app.renderer.width / this.app.renderer.resolution;
+    return this.app.renderer.width;
   }
 
   getSize(): V2d {

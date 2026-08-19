@@ -112,12 +112,11 @@ export class Camera2d extends BaseEntity implements Entity {
     this.z = smooth * this.z + (1 - smooth) * z;
   }
 
-  /** Returns [width, height] of the viewport in pixels */
+  /** Returns [width, height] of the viewport in logical pixels — the
+   * renderer's own logical size, so the camera and every view measure
+   * the screen the same way at any device pixel ratio. */
   getViewportSize(): V2d {
-    return V(
-      this.renderer.canvas.width / this.renderer.app.renderer.resolution,
-      this.renderer.canvas.height / this.renderer.app.renderer.resolution,
-    );
+    return this.renderer.getSize();
   }
 
   /**
