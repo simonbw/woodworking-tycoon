@@ -65,7 +65,7 @@ export function createMaterialSprite(
       return graphics((g) => drawSheetGood(g, material, material.id));
 
     case "panel":
-      return graphics((g) => drawPanel(g, material));
+      return graphics((g) => drawPanel(g, material, material.id));
 
     // Blueprint-assembled products draw from their bill of materials —
     // the same slots the bench view assembled them on
@@ -88,7 +88,7 @@ export function createMaterialSprite(
       });
 
     case "endGrainSlice":
-      return graphics((g) => drawEndGrainSlice(g, material));
+      return graphics((g) => drawEndGrainSlice(g, material, material.id));
 
     case "tool":
       return createToolItemSprite(material, { alpha, tint });
@@ -98,7 +98,7 @@ export function createMaterialSprite(
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
     case "checkerboardCuttingBoard":
-      return graphics((g) => drawCuttingBoard(g, material));
+      return graphics((g) => drawCuttingBoard(g, material, material.id));
 
     default:
       return graphics(drawDefaultPile);

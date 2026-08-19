@@ -11,45 +11,64 @@ import { Species } from "../../game/Materials";
  * The edge strips are full-length crops of straight, tight grain — the
  * across-the-rings face a board's edge shows. They share the face
  * window's lengthwise position, so a cut board's edge streaks continue
- * across the seam along with its face. A species without strips yet
- * draws its edge procedurally under the scanned face.
+ * across the seam along with its face. A species without strips windows
+ * its own face scan for the edge instead, darkened for the corner.
+ *
+ * The end crops are sawn crosscut faces, growth rings and all, for the
+ * pieces that show one (a board stood on its end).
  */
 export interface BoardFaceArt {
   /** One full-board scan per entry; the region's seed picks one. */
   readonly faces: ReadonlyArray<string>;
   /** Full-length edge strips; the seed picks one of these too. Absent
-   * until the species has edge art — the edge draws procedurally. */
+   * until the species has edge art — the face scan stands in. */
   readonly edges?: ReadonlyArray<string>;
   /** Inches of across-grain wood an edge strip spans. */
   readonly edgeSpanInches?: number;
+  /** Crosscut end faces; the seed picks one. */
+  readonly ends: ReadonlyArray<string>;
 }
+
+/** Inches of board width one end crop's full image spans; its height in
+ * inches follows from the image's own aspect. Sized so a wide board's
+ * end still fits inside one crop. */
+export const BOARD_END_SPAN_IN = 10;
 
 /** A species keeps its scans in its own folder, numbered from 1. The
  * folder is the species name lowercased (purpleHeart → purpleheart). */
-const scans = (species: Species, kind: "face" | "edge", count: number) =>
+const scans = (
+  species: Species,
+  kind: "face" | "edge" | "end",
+  count: number,
+) =>
   Array.from(
     { length: count },
     (_, i) => `/images/textures/${species.toLowerCase()}/${kind}-${i + 1}.jpg`,
   );
 
-const faceArt = (species: Species, count: number): BoardFaceArt => ({
-  faces: scans(species, "face", count),
+const art = (
+  species: Species,
+  faceCount: number,
+  endCount: number,
+): BoardFaceArt => ({
+  faces: scans(species, "face", faceCount),
+  ends: scans(species, "end", endCount),
 });
 
 export const BOARD_FACE_TEXTURES: Record<Species, BoardFaceArt> = {
-  pallet: faceArt("pallet", 9),
-  pine: faceArt("pine", 21),
-  poplar: faceArt("poplar", 10),
+  pallet: art("pallet", 9, 4),
+  pine: art("pine", 21, 4),
+  poplar: art("poplar", 10, 4),
   oak: {
-    faces: scans("oak", "face", 13),
+    ...art("oak", 13, 4),
     edges: scans("oak", "edge", 3),
     edgeSpanInches: 3,
   },
-  maple: faceArt("maple", 10),
-  cherry: faceArt("cherry", 12),
-  walnut: faceArt("walnut", 5),
-  mahogany: faceArt("mahogany", 11),
-  purpleHeart: faceArt("purpleHeart", 11),
+  maple: art("maple", 10, 4),
+  cherry: art("cherry", 12, 4),
+  walnut: art("walnut", 5, 8),
+  mahogany: art("mahogany", 11, 4),
+  purpleHeart: art("purpleHeart", 11, 4),
 };
 
 /**
@@ -66,9 +85,10 @@ export const BOARD_ROUGHNESS_TEXTURES: ReadonlyArray<string> = Array.from(
 );
 
 export const BOARD_FACE_TEXTURE_ASSETS = [
-  ...Object.values(BOARD_FACE_TEXTURES).flatMap((art) => [
-    ...art.faces,
-    ...(art.edges ?? []),
+  ...Object.values(BOARD_FACE_TEXTURES).flatMap((species) => [
+    ...species.faces,
+    ...(species.edges ?? []),
+    ...species.ends,
   ]),
   ...BOARD_ROUGHNESS_TEXTURES,
 ];

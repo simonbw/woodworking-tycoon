@@ -1,5 +1,4 @@
 import { Assets, Container, Graphics, Matrix, Texture } from "pixi.js";
-import { colorBySpecies } from "../colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import {
   Board,
@@ -7,14 +6,16 @@ import {
   BOARD_FACE_SCAN_WIDTH_IN,
   defaultBoardFace,
 } from "../../game/Materials";
-import { clipArcToRect } from "../../utils/arcClipping";
-import { colorToNumber, mixColors } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
+import { BOARD_ROUGHNESS_TEXTURES } from "./boardFaceTextures";
 import {
-  BOARD_FACE_TEXTURES,
-  BOARD_ROUGHNESS_TEXTURES,
-} from "./boardFaceTextures";
+  edgeFill,
+  endFill,
+  faceFill,
+  TURNED_AWAY_SHADE,
+  woodArt,
+} from "./woodFills";
 
 /**
  * The board renderers — the old BoardSprite / BoardOnEdgeSprite /
@@ -95,65 +96,16 @@ export function createBoardSprite(
     g.fill({ color: 0x000000, alpha: 0.1 });
   }
 
-  const art = BOARD_FACE_TEXTURES[species];
-  // The seed picks which scan of the library (an independent stream, so
-  // the placement draws stay untouched)
-  const artRng = seededRandom(`${region.seed}/art`);
-  const faceTexture = Assets.get<Texture>(
-    art.faces[Math.floor(artRng() * art.faces.length)],
-  );
-
-  // The matrix maps texture pixels into local space (PIXI inverts it to
-  // build UVs): image x is across the plank, image y along the grain,
-  // drawn top-to-bottom like the board's length.
-  const sx =
-    (PIXELS_PER_INCH * BOARD_FACE_SCAN_WIDTH_IN) / faceTexture.source.width;
-  const sy =
-    (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) / faceTexture.source.height;
+  const art = woodArt(species, region.seed, thickness);
   g.poly(silhouette.facePoly);
-  g.fill({
-    texture: faceTexture,
-    matrix: new Matrix(
-      sx,
-      0,
-      0,
-      sy,
-      -region.v * PIXELS_PER_INCH - width / 2,
-      -region.u * PIXELS_PER_INCH - height / 2,
-    ),
-    textureSpace: "global",
-  });
+  g.fill(faceFill(art, region, -width / 2, -height / 2));
+  g.poly(silhouette.edgePoly);
+  g.fill(edgeFill(art, region, board.width, thickness, width / 2, -height / 2));
 
-  if (art.edges !== undefined && art.edgeSpanInches !== undefined) {
-    // The edge strip shares the face's lengthwise position, so a cut
-    // board's edge streaks continue across the seam too.
-    const edgeTexture = Assets.get<Texture>(
-      art.edges[Math.floor(artRng() * art.edges.length)],
-    );
-    const edgeV = artRng() * Math.max(0, art.edgeSpanInches - thickness / 4);
-    const esx =
-      (PIXELS_PER_INCH * art.edgeSpanInches) / edgeTexture.source.width;
-    const esy =
-      (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) / edgeTexture.source.height;
-    g.poly(silhouette.edgePoly);
-    g.fill({
-      texture: edgeTexture,
-      matrix: new Matrix(
-        esx,
-        0,
-        0,
-        esy,
-        width / 2 - edgeV * PIXELS_PER_INCH,
-        -region.u * PIXELS_PER_INCH - height / 2,
-      ),
-      textureSpace: "global",
-    });
-  } else {
-    // No edge strips for this species yet — flat species color; the
-    // shared veil below weathers it until the edges are jointed
-    g.poly(silhouette.edgePoly);
-    g.fill(colorToNumber(colorBySpecies[species].secondary));
-  }
+  // The edge turns away from the light — a touch darker than the face,
+  // so the board still reads as having thickness
+  g.poly(silhouette.edgePoly);
+  g.fill(TURNED_AWAY_SHADE);
 
   // Weathering and finish read as veils over the real grain: the gray
   // lifts when milling reveals the wood, sanding brightens it
@@ -309,9 +261,10 @@ function boardSilhouette(board: BoardLook, seed: string) {
  * A board stood on its long edge, seen from above: the narrow edge face
  * (thickness × length) up, with a sliver of the board's wide face
  * showing down one side the way a standing rail leans its face into
- * view. Same milled-state language as createBoardSprite — unjointed edges
- * weather gray, jointing reveals the species' edge color — and the same
- * seeding, so tipping a board up doesn't reroll its character.
+ * view. Both surfaces are windows onto the board's own scans, placed by
+ * its face region, so tipping a board up shows the same wood it showed
+ * lying down. Same milled-state language as createBoardSprite:
+ * unjointed edges weather gray, jointing lifts the veil.
  */
 export function drawBoardOnEdge(
   g: Graphics,
@@ -326,6 +279,7 @@ export function drawBoardOnEdge(
     surface,
     jointedFaces,
     jointedEdges,
+    face,
   } = board;
 
   g.clear();
@@ -334,19 +288,10 @@ export function drawBoardOnEdge(
   // The face leans a hair into view beside the edge — enough to read
   // "standing board", never wider than the edge itself.
   const lean = Math.min(width * 0.8, 3);
-  const rng = seededRandom(
-    seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`,
-  );
-
-  const { primary, secondary } = colorBySpecies[species];
-  const edgeColor =
-    jointedEdges > 0
-      ? colorToNumber(secondary)
-      : mixColors(secondary, WEATHERED_GRAY, 0.5);
-  const faceRevealed = jointedFaces > 0 || surface !== "rough";
-  const faceColor = faceRevealed
-    ? mixColors(primary, 0x000000, 0.25)
-    : mixColors(mixColors(primary, WEATHERED_GRAY, 0.62), 0x000000, 0.25);
+  const pieceSeed =
+    seed ?? `${species}-${boardWidth}x${boardLength}x${thickness}`;
+  const region = face ?? defaultBoardFace(pieceSeed, boardLength, boardWidth);
+  const art = woodArt(species, region.seed, thickness);
 
   // A standing board throws a longer shadow than a lying one
   for (const shadowWidth of [1.5, 3]) {
@@ -360,48 +305,34 @@ export function drawBoardOnEdge(
   }
 
   // The upturned edge face
-  g.rect(-width / 2, -height / 2, width, height).fill(edgeColor);
-  // The shaded sliver of wide face leaning into view
-  g.rect(width / 2, -height / 2, lean, height).fill(faceColor);
+  g.rect(-width / 2, -height / 2, width, height);
+  g.fill(edgeFill(art, region, boardWidth, thickness, -width / 2, -height / 2));
 
-  if (jointedEdges > 0) {
-    // Straightened: crisp grain lines run the length
-    const lines = Math.max(1, Math.round(width / 3));
-    for (let i = 0; i < lines; i++) {
-      const x =
-        -width / 2 +
-        (width * (i + 0.5)) / lines +
-        (rng() * 2 - 1) * (width * 0.1);
-      g.moveTo(x, -height / 2 + 2)
-        .lineTo(x + (rng() * 2 - 1) * 1.5, height / 2 - 2)
-        .stroke({
-          width: 0.8,
-          color: mixColors(secondary, 0x000000, 0.25),
-          alpha: 0.45,
-        });
-    }
-  } else {
-    // Rough: cross marks where the mill's saw chattered
-    let y = -height / 2 + 3 + rng() * 5;
-    while (y < height / 2 - 3) {
-      g.moveTo(-width / 2, y)
-        .lineTo(width / 2, y + (rng() * 2 - 1) * 2)
-        .stroke({ width: 1, color: 0x000000, alpha: 0.12 });
-      y += 5 + rng() * 8;
-    }
+  // The sliver of wide face leaning into view beside it, shaded
+  // because it tips away from the light
+  g.rect(width / 2, -height / 2, lean, height);
+  g.fill(faceFill(art, region, width / 2, -height / 2));
+  g.rect(width / 2, -height / 2, lean, height);
+  g.fill(TURNED_AWAY_SHADE);
+
+  // Weathering lifts as milling reveals the wood, the same way it
+  // does on the face-up board
+  if (jointedEdges === 0) {
+    g.rect(-width / 2, -height / 2, width, height);
+    g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
+  }
+  if (jointedFaces === 0 && surface === "rough") {
+    g.rect(width / 2, -height / 2, lean, height);
+    g.fill({ color: WEATHERED_GRAY, alpha: 0.62 });
   }
 }
 
 /**
  * A board stood on its end, seen from above: nothing but the end grain —
  * the bare width × thickness cross-section a table leg presents while it
- * waits under a face-down top. Drawn darker than the face (end grain
- * drinks light) with a few growth arcs seeded off the piece's id, so
- * standing a board up doesn't reroll its character.
- *
- * The arcs are rings around a pith sitting off the face, the way a flatsawn
- * board's end reads, and they are clipped to the cut face — a ring only
- * exists where the saw exposed it.
+ * waits under a face-down top. A window onto a real crosscut photograph,
+ * placed by the piece's seed so standing a board up doesn't reroll its
+ * character, and shaded twice over because end grain drinks light.
  */
 export function drawBoardOnEnd(
   g: Graphics,
@@ -413,11 +344,7 @@ export function drawBoardOnEnd(
   g.clear();
   const w = boardWidth * PIXELS_PER_INCH;
   const h = (thickness / 4) * PIXELS_PER_INCH;
-  const rand = seededRandom(seed ?? "on-end");
-  const face = colorBySpecies[species].primary;
-  const endGrain = colorToNumber(mixColors(face, 0x000000, 0.25));
-  const ring = colorToNumber(mixColors(face, 0x000000, 0.45));
-  const cut = { x: -w / 2, y: -h / 2, width: w, height: h };
+  const pieceSeed = seed ?? "on-end";
 
   // shadow: the standing piece throws a slightly wider foot
   for (const spread of [1, 2]) {
@@ -425,37 +352,17 @@ export function drawBoardOnEnd(
     g.fill({ color: 0x000000, alpha: 0.12 });
   }
 
+  const art = woodArt(species, pieceSeed, thickness);
   g.rect(-w / 2, -h / 2, w, h);
-  g.fill(endGrain);
+  g.fill(endFill(art, pieceSeed, boardWidth, thickness / 4, -w / 2, -h / 2));
 
-  // Growth rings around a pith below the face, spaced so each one actually
-  // crosses the cut, then trimmed to the piece.
-  const pithX = (rand() - 0.5) * w * 2;
-  const pithY = h / 2 + w * (0.6 + rand() * 1.0);
-  const ringCount = Math.max(2, Math.min(5, Math.round(w / 6)));
-  for (let i = 0; i < ringCount; i++) {
-    const t = (i + 0.5 + (rand() - 0.5) * 0.5) / ringCount;
-    const crossingX = -w / 2 + t * w;
-    const radius = Math.hypot(crossingX - pithX, pithY);
-    const spans = clipArcToRect(
-      pithX,
-      pithY,
-      radius,
-      Math.PI,
-      Math.PI * 2,
-      cut,
-    );
-    for (const [from, to] of spans) {
-      g.moveTo(
-        pithX + radius * Math.cos(from),
-        pithY + radius * Math.sin(from),
-      );
-      g.arc(pithX, pithY, radius, from, to);
-      g.stroke({ color: ring, width: 1, alpha: 0.5 });
-    }
+  // End grain sits in shade against the faces around it
+  for (const _ of [0, 1]) {
+    g.rect(-w / 2, -h / 2, w, h);
+    g.fill(TURNED_AWAY_SHADE);
   }
 
   // a hairline rim so the block reads as a cut face, not a fill
   g.rect(-w / 2, -h / 2, w, h);
-  g.stroke({ color: ring, width: 1, alpha: 0.7 });
+  g.stroke({ color: 0x000000, width: 1, alpha: 0.35 });
 }

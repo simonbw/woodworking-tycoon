@@ -89,12 +89,16 @@ export function createAssembledProductSprite(
       // A glued-up part (a tray's bottom) draws as the panel it
       // is — the very stripes the player glued
       const g = slotContainer.addChild(new Graphics());
-      drawPanel(g, {
-        strips: part.strips,
-        length: part.length,
-        thickness: part.thickness,
-        surface: part.surface ?? "sanded",
-      });
+      drawPanel(
+        g,
+        {
+          strips: part.strips,
+          length: part.length,
+          thickness: part.thickness,
+          surface: part.surface ?? "sanded",
+        },
+        part.seed,
+      );
     } else if (slot.onEdge) {
       // A rail stands on edge in the finished piece exactly as
       // it stood while the slats were nailed across it
