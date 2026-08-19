@@ -45,13 +45,18 @@ import {
 import { setShoppingPosition } from "../../sim/commands/trip-commands";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
+import { FootstepSoundView, WalkingBody } from "../../views/FootstepSoundView";
+import { Game } from "../../core/Game";
 import { ShellStore } from "../ShellStore";
 import { SceneDirector } from "./SceneDirector";
-import { TripTheater } from "./TripTheater";
+import { TRIP_TRANSITIONS_DISABLED, TripTheater } from "./TripTheater";
 import { StoreActorsView } from "./store-views/StoreActorsView";
 import { StoreDaylightView } from "./store-views/StoreDaylightView";
 import { StoreEnvironmentView } from "./store-views/StoreEnvironmentView";
-import { StoreTruckView } from "./store-views/StoreTruckView";
+import {
+  STORE_DEPART_SECONDS,
+  StoreTruckView,
+} from "./store-views/StoreTruckView";
 import { StoreFixturesView } from "./store-views/StoreFixturesView";
 import { StoreMerchandiseView } from "./store-views/StoreMerchandiseView";
 
@@ -82,6 +87,8 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   private direction: Direction = 3;
   /** The last motion's continuous heading, for the cart's lead point. */
   private heading = Math.PI / 2;
+  /** Whether input carried the body anywhere this tick, for the steps. */
+  private moving = false;
   private lastReported = "";
 
   /** The ambient shoppers, stepped here so the walk treats them as
@@ -102,6 +109,11 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     return this.heading;
   }
 
+  /** Whether the body is being walked right now — what the steps hear. */
+  bodyMoving(): boolean {
+    return this.moving;
+  }
+
   private layoutCache: StoreLayout | null = null;
   /** What the cached layout was built for — the same slices the old
    * StoreView's memo keyed on (the floor only moves when stock moves). */
@@ -118,6 +130,25 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
 
   /** How long an armed "leave the cart behind?" waits before disarming. */
   private static readonly CONFIRM_TIMEOUT_S = 5;
+
+  /**
+   * Seconds since the register rang the cart up, or null while the
+   * truck just sits in its stall. Once it's running, the shopper is in
+   * the cab and the truck is the player on screen: the body and its
+   * flatbed step off the floor, nothing on the floor answers a key, and
+   * the head-home fade comes up under the roll.
+   */
+  private departSeconds: number | null = null;
+  /** Whether the fade home has been asked for yet. */
+  private headedHome = false;
+
+  /** How far into the pull-out the truck is, in seconds. */
+  departElapsed(): number | null {
+    return this.departSeconds;
+  }
+
+  /** When the head-home fade starts within the truck's pull-out. */
+  private static readonly DEPART_FADE_LEAD_S = 0.5;
 
   constructor() {
     super();
@@ -143,22 +174,29 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     return this.layoutCache;
   }
 
+  /** The drawn layers this root put up, torn down on each redress —
+   * the children that aren't drawings (the footsteps) stay put. */
+  private dressing: Entity[] = [];
+
   /** (Re)build the venue's drawn layers for a layout — on add, and
    * whenever the planogram moves (stock changes relayout the floor). */
   private dress(layout: StoreLayout): void {
-    while (this.children?.length) {
-      this.children[this.children.length - 1].destroy();
+    while (this.dressing.length) {
+      this.dressing.pop()?.destroy();
     }
-    this.addChild(new StoreEnvironmentView(layout));
-    this.addChild(new StoreFixturesView(layout));
-    this.addChild(new StoreMerchandiseView(layout));
-    this.addChild(new StoreActorsView());
-    this.addChild(new StoreTruckView(layout));
-    this.addChild(new StoreDaylightView(layout));
+    this.dressing = [
+      this.addChild(new StoreEnvironmentView(layout)),
+      this.addChild(new StoreFixturesView(layout)),
+      this.addChild(new StoreMerchandiseView(layout)),
+      this.addChild(new StoreActorsView()),
+      this.addChild(new StoreTruckView(layout)),
+      this.addChild(new StoreDaylightView(layout)),
+    ];
   }
 
   /** The resolver the keys and the chips share (store-interact.ts). */
   interact(): StoreInteract | null {
+    if (this.departSeconds !== null) return null;
     const layout = this.layout();
     if (!layout) return null;
     return resolveStoreInteract(projectGameState(this.game), layout);
@@ -233,13 +271,28 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     this.bump();
   }
 
-  /** The receipt's Buy: ring the cart up, then the drive home starts. */
+  /**
+   * The receipt's Buy: ring the cart up — the goods land in the truck's
+   * bed — then the truck pulls out of the stall and the screen heads
+   * home under it.
+   */
   buy(): void {
     if (!checkout(this.game)) return;
     this.checkoutOpen = false;
     this.bump();
-    // Dip to black over the store, then charge the drive: the
-    // destination is what fades out, not the shop (TripTheater).
+    if (TRIP_TRANSITIONS_DISABLED) {
+      this.headHome();
+      return;
+    }
+    this.departSeconds = 0;
+    this.headedHome = false;
+  }
+
+  /**
+   * Dip to black over the store, then charge the drive: the destination
+   * is what fades out, not the shop (TripTheater).
+   */
+  private headHome(): void {
     const director = this.game.entities.getSingleton(SceneDirector);
     const theater = this.game.entities.tryGetSingleton(TripTheater);
     if (theater) {
@@ -264,15 +317,7 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     }
     this.armedLeave = false;
     this.bump();
-    // Dip to black over the store, then charge the drive: the
-    // destination is what fades out, not the shop (TripTheater).
-    const director = this.game.entities.getSingleton(SceneDirector);
-    const theater = this.game.entities.tryGetSingleton(TripTheater);
-    if (theater) {
-      theater.headHome(() => director.requestDriveHome());
-    } else {
-      director.requestDriveHome();
-    }
+    this.headHome();
   }
 
   private bump(): void {
@@ -281,6 +326,10 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
 
   @on("add")
   onAdd() {
+    // The shopper's own steps, on the store's floor. Added outside
+    // `dress` so a relayout doesn't reset the walker's cadence, and
+    // after this root so each tick's sample sees the step just taken.
+    this.addChild(new FootstepSoundView(walkingShopper, Persistence.Level));
     const layout = this.layout();
     if (layout) this.dress(layout);
   }
@@ -294,8 +343,29 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   onTick(dt: number) {
     const player = this.game.entities.tryGetSingleton(Player);
     const layout = this.layout();
-    if (!player || player.away?.kind !== "shopping" || !layout) return;
+    if (!player || player.away?.kind !== "shopping" || !layout) {
+      this.moving = false;
+      return;
+    }
     const trip = player.away;
+
+    // The truck pulling out of the stall: the roll runs, and the fade
+    // home comes up under it half a second before the roll ends, so the
+    // screen goes black over a truck that is already moving. The body
+    // is in the cab by then, so the floor stops answering the keys
+    // (below) while the rest of the store carries on around it.
+    const departing = this.departSeconds !== null;
+    if (this.departSeconds !== null) {
+      this.departSeconds += dt;
+      if (
+        !this.headedHome &&
+        this.departSeconds >=
+          STORE_DEPART_SECONDS - StoreSceneRoot.DEPART_FADE_LEAD_S
+      ) {
+        this.headedHome = true;
+        this.headHome();
+      }
+    }
 
     // The armed "leave the cart behind?" disarms on its timeout, on
     // stepping away from the cab, or when the cart empties.
@@ -329,10 +399,12 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     // A DOM dialog owns the keyboard here exactly like at home.
     const modalOpen =
       this.game.entities.tryGetSingleton(ShellStore)?.modalOpen ?? false;
-    const input = modalOpen
-      ? ([0, 0] as Vector)
-      : this.game.io.getMovementVector();
-    if (input[0] !== 0 || input[1] !== 0) {
+    const input =
+      modalOpen || departing
+        ? ([0, 0] as Vector)
+        : this.game.io.getMovementVector();
+    this.moving = input[0] !== 0 || input[1] !== 0;
+    if (this.moving) {
       this.direction = directionFromInput(input, this.direction);
       this.heading = Math.atan2(input[1], input[0]);
       // The shoppers are solid, walking people, not scenery the body
@@ -400,6 +472,14 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
       camera.y = cellToPixel(this.position[1]);
     }
   }
+}
+
+/** The shopper walking the sales floor, for the footsteps to sample. */
+function walkingShopper(game: Game): WalkingBody | null {
+  const scene = game.entities.tryGetSingleton(StoreSceneRoot);
+  const position = scene?.bodyPosition();
+  if (!scene || !position) return null;
+  return { position: [position[0], position[1]], moving: scene.bodyMoving() };
 }
 
 /**

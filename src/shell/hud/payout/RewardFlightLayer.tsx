@@ -8,6 +8,7 @@ import { PayoutEvent } from "../../../game/PayoutEvent";
 import { playSound } from "../../../utils/sfx";
 import { PayoutBuffer } from "../../PayoutBuffer";
 import { useGame, useShellVersion, useShopState } from "../../useShell";
+import { useTruckStage } from "../trips/TripFade";
 
 /**
  * The payoff moment, ported to the engine shell. A piece selling off the
@@ -24,12 +25,11 @@ import { useGame, useShellVersion, useShopState } from "../../useShell";
  * flight is decoration over an already-settled state, so nothing here
  * can desync it.
  *
- * The flight waits for the player to be home: a sale can land while
- * they're out on a trip, when the readouts the chips aim at aren't on
- * screen. Nothing is dropped by waiting — the buffer simply keeps until
- * the shop is there to celebrate in. (The old layer also waited for the
- * truck's arrival roll; the roll's stage store arrives with phase 6's
- * trip theater.)
+ * The flight waits for the player to be home and the truck parked: a
+ * sale can land while they're out on a trip, when the readouts the
+ * chips aim at aren't on screen, and the arrival roll is still the
+ * trip. Nothing is dropped by waiting — the buffer simply keeps until
+ * the shop is there to celebrate in.
  */
 
 /** How many coins one payout throws. Bigger paydays throw more. */
@@ -114,8 +114,9 @@ export const RewardFlightLayer: React.FC = () => {
   const game = useGame();
   useShellVersion();
   const gameState = useShopState();
-  // Home and interactive: the readouts the chips aim at are on screen.
-  const home = !gameState.player.away;
+  // Home and interactive: the shop is on screen, the truck is in the
+  // driveway, and the readouts the chips aim at are where they'll land.
+  const home = useTruckStage() === "parked" && !gameState.player.away;
 
   const [flights, setFlights] = useState<ReadonlyArray<Flight>>([]);
   /**

@@ -7,6 +7,7 @@ import { on } from "../core/entity/handler";
 import { MaterialInstance } from "../game/Materials";
 import { headingForDirection } from "../game/player-motion";
 import { Player } from "../sim/entities/Player";
+import { TripTheater } from "../shell/scenes/TripTheater";
 import { CarriedMachineView } from "./CarriedMachineView";
 import { HeldBroomGraphics } from "./HeldBroomGraphics";
 import {
@@ -86,7 +87,11 @@ export class PlayerView extends BaseEntity implements Entity {
     this.root.rotation += delta * Math.min(1, dt * TURN_RATE);
 
     // Out of the shop entirely (a trip, home in bed): no body to draw.
-    this.root.visible = this.player.away === null;
+    // The arrival roll counts too — the player is still in the truck
+    // until it parks, and steps out when it does.
+    const arriving =
+      this.game.entities.tryGetSingleton(TripTheater)?.stage() === "arriving";
+    this.root.visible = this.player.away === null && !arriving;
 
     this.syncArms();
     this.heldBroom.update(dt, this.game, this.player, this.root.rotation);

@@ -165,8 +165,16 @@ export class StoreActorsView extends BaseEntity implements Entity {
       this.cart.visible = false;
       return;
     }
-    this.person.visible = true;
     this.syncCrowd(scene.shoppers);
+
+    // Once the register rings, the shopper is in the cab — the truck is
+    // the player on screen until the fade.
+    if (scene.departElapsed() !== null) {
+      this.person.visible = false;
+      this.cart.visible = false;
+      return;
+    }
+    this.person.visible = true;
 
     // The body: position from the continuous walk, rotation eased around
     // the shortest arc toward the facing (the shop body's exact motion).

@@ -27,6 +27,7 @@ import { projectGameState } from "../../sim/projection";
 import { activatesFocusedControl, isEditable } from "../../utils/keyboardFocus";
 import { BenchDive } from "../scenes/bench/BenchDive";
 import { StoreSceneRoot } from "../scenes/StoreSceneRoot";
+import { TripTheater } from "../scenes/TripTheater";
 import { ShellStore } from "../ShellStore";
 import { TargetingState } from "./TargetingState";
 
@@ -227,7 +228,13 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     const targeted = this.activeTarget();
     const targetedView = targeted?.view();
 
-    const present = !gs.player.away;
+    // On the shop floor and able to act: back from a trip, and the
+    // truck parked rather than still rolling up the driveway (the
+    // player is inside it until then).
+    const present =
+      !gs.player.away &&
+      (game.entities.tryGetSingleton(TripTheater)?.stage() ?? "parked") ===
+        "parked";
     const carrying = gs.player.carriedMachine != null;
     const stationWorking =
       targetedView?.operationProgress.status === "inProgress";

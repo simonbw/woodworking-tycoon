@@ -18,6 +18,7 @@ import {
   BASE_WALK_SPEED,
   cellCenter,
   directionFromInput,
+  headingForDirection,
   motionCell,
   stepPlayerMotion,
 } from "../../game/player-motion";
@@ -98,6 +99,14 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
   // ---- Transient input state (never serialized) ----
   /** The movement input driving the body, [-1..1] per axis. */
   moveInput: Vector = [0, 0];
+  /**
+   * The body's continuous facing, in radians — matching main's
+   * `playerMotion.heading`. Follows `moveInput` exactly (even
+   * off-axis, unlike the quantized `direction`), and holds the last
+   * heading walked while standing still, so a piece set down mid-diagonal
+   * keeps the angle it was carried at.
+   */
+  heading: number;
   /** Whether the operate key is held right now. */
   operating = false;
   /** Whether the wait key is held right now. */
@@ -112,7 +121,9 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
    */
   private speedPenalties = new Set<() => number>();
 
-  private unregisterSpenders: Array<() => void> = [];
+  /** What this player registered with TimeFlow — its spenders and the
+   * night's stop — dropped when the player leaves the world. */
+  private unregisterTimeFlow: Array<() => void> = [];
 
   constructor(data?: Partial<PlayerData>) {
     super();
@@ -121,6 +132,7 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
       ? [...data.position]
       : cellCenter(INITIAL_CELL);
     this.direction = data?.direction ?? 1;
+    this.heading = headingForDirection(this.direction);
     this.inventory = [...(data?.inventory ?? [])];
     this.carriedMachine = data?.carriedMachine ?? null;
     this.busyTicks = data?.busyTicks ?? 0;
@@ -164,7 +176,7 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
   onAfterAdded() {
     const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
     if (timeFlow) {
-      this.unregisterSpenders.push(
+      this.unregisterTimeFlow.push(
         timeFlow.registerSpender(
           () => this.busyTicks > 0 && this.away === null,
         ),
@@ -177,18 +189,18 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
             this.away?.kind === "scavenging" &&
             this.away.phase.kind === "searching",
         ),
+        timeFlow.registerStop(() => this.away?.kind === "home"),
       );
       timeFlow.setWaitingProvider(() => this.waiting);
-      timeFlow.setStopProvider(() => this.away?.kind === "home");
     }
   }
 
   @on("destroy")
   onDestroy() {
-    for (const unregister of this.unregisterSpenders) {
+    for (const unregister of this.unregisterTimeFlow) {
       unregister();
     }
-    this.unregisterSpenders = [];
+    this.unregisterTimeFlow = [];
   }
 
   @on("tick")
@@ -232,6 +244,9 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
     if (this.away === null) {
       const [ix, iy] = this.moveInput;
       if (ix !== 0 || iy !== 0) {
+        // You face the way you're pushing, even pinned against a
+        // machine — continuous, unlike the quantized `direction` below.
+        this.heading = Math.atan2(iy, ix);
         this.direction = directionFromInput(this.moveInput, this.direction);
         this.position = stepPlayerMotion(
           this.position,

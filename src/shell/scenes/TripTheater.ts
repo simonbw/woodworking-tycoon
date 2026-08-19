@@ -3,6 +3,7 @@ import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
 import { on } from "../../core/entity/handler";
 import { Player } from "../../sim/entities/Player";
+import { TimeFlow } from "../../sim/TimeFlow";
 import { playSound, preloadSound } from "../../utils/sfx";
 import { ShellStore } from "../ShellStore";
 
@@ -20,6 +21,14 @@ import { ShellStore } from "../ShellStore";
  * loaded mid-trip just opens on the destination with no performance.
  * The truck's view reads the stage for its roll, and the HUD's fade
  * reads the curtain.
+ *
+ * The one thing the theater does hold is the clock: no game time passes
+ * while the truck is rolling out or rolling in (it registers a TimeFlow
+ * stop for those two stages). A trip's legs are charged as whole
+ * minutes by the commands that start them, and forced minutes run
+ * through a stop — so the drive is paid for exactly once, and a
+ * scavenging run's first half-hour starts when its screen is up rather
+ * than while the truck is still on the driveway.
  */
 
 export type TruckStage = "parked" | "departing" | "away" | "arriving";
@@ -59,6 +68,13 @@ export class TripTheater extends BaseEntity implements Entity {
   /** A return held back until the screen is dark. */
   private pendingReturn: (() => void) | null = null;
   private pendingSeconds = 0;
+  /** The TimeFlow this theater's stop is registered with, and the way
+   * back off it. A shop is booted into the running game after this
+   * entity is standing, and booting another replaces the TimeFlow, so
+   * the registration is kept current from the tick rather than taken
+   * once on add. */
+  private heldFlow: TimeFlow | null = null;
+  private releaseHold: (() => void) | null = null;
 
   onAdd() {
     // The crank should land with the click, not a fetch later.
@@ -66,9 +82,21 @@ export class TripTheater extends BaseEntity implements Entity {
     preloadSound("truck-arrive");
   }
 
+  @on("destroy")
+  onDestroy() {
+    this.releaseHold?.();
+    this.releaseHold = null;
+    this.heldFlow = null;
+  }
+
   /** Where the truck is in its trip, as the presentation sees it. */
   stage(): TruckStage {
     return this.stageName;
+  }
+
+  /** Whether the curtain is holding the clock: the truck is rolling. */
+  holdsTheClock(): boolean {
+    return this.stageName === "departing" || this.stageName === "arriving";
   }
 
   /** How long the current stage has been running, in seconds. */
@@ -97,8 +125,19 @@ export class TripTheater extends BaseEntity implements Entity {
     this.bump();
   }
 
+  /** Keep the clock's hold pointed at the live TimeFlow. */
+  private trackTimeFlow(): void {
+    const timeFlow = this.game.entities.tryGetSingleton(TimeFlow) ?? null;
+    if (timeFlow === this.heldFlow) return;
+    this.releaseHold?.();
+    this.heldFlow = timeFlow;
+    this.releaseHold =
+      timeFlow?.registerStop(() => this.holdsTheClock()) ?? null;
+  }
+
   @on("tick")
   onTick(dt: number) {
+    this.trackTimeFlow();
     const away = this.game.entities.tryGetSingleton(Player)?.away != null;
     if (this.wasAway === null) {
       // First look (a fresh boot, or a save loaded mid-trip): take the

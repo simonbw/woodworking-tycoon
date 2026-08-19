@@ -1,7 +1,9 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { board } from "../../game/board-helpers";
 import { WALL_THICKNESS_CELLS } from "../../game/lot";
 import { PLAYER_RADIUS } from "../../game/player-motion";
+import { putDownHere } from "../commands/interact-commands";
 import { setMoveInput, setWaiting } from "../commands/player-commands";
 import { ShopDriver } from "../driver/ShopDriver";
 
@@ -57,6 +59,19 @@ describe("Player movement", () => {
     const driver = new ShopDriver();
     assert.deepStrictEqual(driver.player.cell, [6, 12]);
   });
+
+  it("keeps a continuous heading on a diagonal walk, not one of the four facings", () => {
+    const driver = new ShopDriver();
+    setMoveInput(driver.game, [1, 1]);
+    driver.stepEngine(10);
+    // Diagonal input is 45° off every quantized `Direction` heading
+    // (0, ±π/2, π).
+    assert.strictEqual(driver.player.heading, Math.PI / 4);
+    assert.ok(
+      ![0, -Math.PI / 2, Math.PI, Math.PI / 2].includes(driver.player.heading),
+      "heading isn't snapped to a 4-way facing",
+    );
+  });
 });
 
 describe("Player time wiring", () => {
@@ -97,6 +112,21 @@ describe("Player time wiring", () => {
     const driver = new ShopDriver();
     driver.player.away = { kind: "home" };
     assert.strictEqual(driver.timeFlow.resolveSpeed(), "stopped");
+  });
+});
+
+describe("Player set-down orientation", () => {
+  it("lands a piece carried diagonally at the diagonal angle, not snapped to a facing", () => {
+    const driver = new ShopDriver();
+    driver.player.inventory.push(board("pine", 24, 4, 1));
+    setMoveInput(driver.game, [1, 1]);
+    driver.stepEngine(10);
+    setMoveInput(driver.game, [0, 0]);
+
+    putDownHere(driver.game, null, false);
+
+    const pile = driver.piles.at(-1)!;
+    assert.strictEqual(pile.rotation, Math.PI / 4 + Math.PI / 2);
   });
 });
 

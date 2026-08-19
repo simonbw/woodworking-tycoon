@@ -36,6 +36,7 @@ import { Kbd, ShortcutKeys } from "../../../components/shortcuts/Kbd";
 import { useShortcut } from "../../../components/shortcuts/ShortcutProvider";
 import { Tooltip } from "../../../components/Tooltip";
 import { useGame, useShopState } from "../../useShell";
+import { useTruckStage } from "../trips/TripFade";
 import { useShellModalOpen, useTargeting } from "../useTargeting";
 import { OverlayFrameContext } from "./OverlayLayer";
 
@@ -76,9 +77,11 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
   const gameState = useShopState();
   const { machine: targetedMachine } = useTargeting();
   const frame = useContext(OverlayFrameContext);
+  const truckStage = useTruckStage();
 
   if (
     gameState.player.away ||
+    truckStage !== "parked" ||
     gameState.player.carriedMachine != null ||
     !atTruckBed(gameState.shopInfo, gameState.player.position)
   ) {
@@ -180,8 +183,12 @@ export const TruckPrompt: React.FC<{
 
   const { storeUnlocked, lumberyardUnlocked } = gameState.progression;
   const carried = gameState.player.carriedMachine ?? null;
+  // No chip, no card until the truck is actually sitting there — during
+  // the arrival roll the player is still inside it.
+  const truckStage = useTruckStage();
   const atCab =
     !gameState.player.away &&
+    truckStage === "parked" &&
     atTruckCab(gameState.shopInfo, gameState.player.position);
   const handsFree = canLeaveShop(gameState);
 

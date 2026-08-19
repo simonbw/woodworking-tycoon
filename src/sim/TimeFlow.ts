@@ -18,9 +18,11 @@ import { on } from "../core/entity/handler";
  *    scavenging run's search) register a *spender* — a callback that
  *    returns true while they're actively spending. Any true spender puts
  *    the clock at working pace.
- *  - The player's held wait key, the night state, and the hard stop
- *    (home in bed, or a trip's curtain) are provided by their owners via
- *    the provider setters.
+ *  - The player's held wait key and the night state are provided by
+ *    their owners via the provider setters.
+ *  - Whatever holds the world still — the player home in bed, a trip's
+ *    curtain while the truck rolls — registers a *stop* the same way a
+ *    spender registers, and any true stop freezes the clock.
  *
  * Each engine tick, TimeFlow resolves the speed with the same precedence
  * as the old `timeSpeed` — stopped > working > waiting > night-stop >
@@ -93,9 +95,9 @@ export class TimeFlow extends BaseEntity implements Entity {
   private forcedMinutes = 0;
 
   private spenders = new Set<BoolProvider>();
+  private stops = new Set<BoolProvider>();
   private waitingProvider: BoolProvider = () => false;
   private nightProvider: BoolProvider = () => false;
-  private stopProvider: BoolProvider = () => false;
   private waitHeldSeconds = 0;
 
   /**
@@ -119,11 +121,15 @@ export class TimeFlow extends BaseEntity implements Entity {
   }
 
   /**
-   * A hard stop that outranks everything: home in bed, where the
-   * overnight passes as one batch rather than a stream of live ticks.
+   * Register a callback that returns true while its owner is holding the
+   * world still — the player home in bed, where the overnight passes as
+   * one batch rather than a stream of live ticks, or a trip's curtain
+   * while the truck rolls out of the driveway and back in. A stop
+   * outranks every other pace. Returns an unregister function.
    */
-  setStopProvider(provider: BoolProvider): void {
-    this.stopProvider = provider;
+  registerStop(stop: BoolProvider): () => void {
+    this.stops.add(stop);
+    return () => this.stops.delete(stop);
   }
 
   /**
@@ -134,8 +140,10 @@ export class TimeFlow extends BaseEntity implements Entity {
    * night stops the clock and daytime creeps.
    */
   resolveSpeed(): TimeSpeed {
-    if (this.stopProvider()) {
-      return "stopped";
+    for (const stop of this.stops) {
+      if (stop()) {
+        return "stopped";
+      }
     }
     for (const spender of this.spenders) {
       if (spender()) {

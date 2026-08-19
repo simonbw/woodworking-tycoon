@@ -1,5 +1,5 @@
 import React from "react";
-import { TripTheater } from "../../scenes/TripTheater";
+import { TripTheater, TruckStage } from "../../scenes/TripTheater";
 import { useGame, useShellVersion } from "../../useShell";
 
 /**
@@ -26,11 +26,21 @@ export const TripFade: React.FC = () => {
   );
 };
 
-/** Whether the destination should be on screen yet. */
-export function useTripStaged(): boolean {
+/**
+ * Where the truck is in its trip, as React state. The shop is only
+ * itself again at "parked": through the rolls the player is still in
+ * the cab, so the chips, the keys, the body, and the sale's reward
+ * flight all wait on this.
+ */
+export function useTruckStage(): TruckStage {
   const game = useGame();
   useShellVersion();
-  return game.entities.tryGetSingleton(TripTheater)?.stage() !== "departing";
+  return game.entities.tryGetSingleton(TripTheater)?.stage() ?? "parked";
+}
+
+/** Whether the destination should be on screen yet. */
+export function useTripStaged(): boolean {
+  return useTruckStage() !== "departing";
 }
 
 /** Head home the way the theater wants: black first, then the return. */

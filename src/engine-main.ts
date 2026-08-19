@@ -38,7 +38,7 @@ import { preloadUiImages } from "./utils/uiImages";
 import { CameraRig } from "./views/CameraRig";
 import { CANVAS_RESOLUTION } from "./views/canvas-resolution";
 import { MousePicking } from "./views/MousePicking";
-import { FootstepSoundView } from "./views/FootstepSoundView";
+import { FootstepSoundView, walkingPlayer } from "./views/FootstepSoundView";
 import { MachineSoundView } from "./views/MachineSoundView";
 import { MovementInput } from "./views/MovementInput";
 import { SoundView } from "./views/SoundView";
@@ -93,7 +93,7 @@ async function main() {
   game.addEntity(new MovementInput());
   game.addEntity(new SoundView());
   game.addEntity(new MachineSoundView());
-  game.addEntity(new FootstepSoundView());
+  game.addEntity(new FootstepSoundView(walkingPlayer));
   game.addEntity(new TargetingState());
   game.addEntity(new ShortcutDispatcher());
   game.addEntity(new MousePicking());

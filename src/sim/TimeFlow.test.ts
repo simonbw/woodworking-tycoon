@@ -39,9 +39,32 @@ describe("TimeFlow speed", () => {
 
   it("stops while the player is home in bed", () => {
     const { timeFlow } = makeTimeFlow();
-    timeFlow.setStopProvider(() => true);
+    timeFlow.registerStop(() => true);
     timeFlow.registerSpender(() => true);
     assert.equal(timeFlow.resolveSpeed(), "stopped");
+  });
+
+  it("stops for any one of several holds", () => {
+    const { timeFlow } = makeTimeFlow();
+    let inBed = false;
+    let behindTheCurtain = false;
+    timeFlow.registerStop(() => inBed);
+    timeFlow.registerStop(() => behindTheCurtain);
+    timeFlow.registerSpender(() => true);
+    assert.equal(timeFlow.resolveSpeed(), "working");
+    behindTheCurtain = true;
+    assert.equal(timeFlow.resolveSpeed(), "stopped");
+    behindTheCurtain = false;
+    inBed = true;
+    assert.equal(timeFlow.resolveSpeed(), "stopped");
+  });
+
+  it("forgets an unregistered stop", () => {
+    const { timeFlow } = makeTimeFlow();
+    const unregister = timeFlow.registerStop(() => true);
+    assert.equal(timeFlow.resolveSpeed(), "stopped");
+    unregister();
+    assert.equal(timeFlow.resolveSpeed(), "idle");
   });
 
   it("spins under the held wait key", () => {
@@ -99,9 +122,21 @@ describe("TimeFlow gameDt", () => {
 
   it("gives nothing at a stop", () => {
     const { game, timeFlow } = makeTimeFlow();
-    timeFlow.setStopProvider(() => true);
+    timeFlow.registerStop(() => true);
     game.step(1);
     assert.equal(timeFlow.gameDt, 0);
+  });
+
+  it("serves forced minutes through a stop", () => {
+    // A charged leg — a store drive, the overnight batch — is booked in
+    // whole minutes by the command that starts it, and runs whatever
+    // the pace model says. That is what lets a trip's curtain hold the
+    // clock without swallowing the drive it covers.
+    const { game, timeFlow } = makeTimeFlow();
+    timeFlow.registerStop(() => true);
+    timeFlow.forceMinutes(30);
+    game.step(1);
+    assert.equal(timeFlow.wholeTicks, 30);
   });
 
   it("ramps the wait pace from a gentle spin to twice working pace", () => {

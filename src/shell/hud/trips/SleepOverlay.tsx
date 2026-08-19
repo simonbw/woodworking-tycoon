@@ -2,15 +2,13 @@ import React, { useEffect, useRef } from "react";
 import { TripOverlay } from "../../../components/trip/TripOverlay";
 import { beginWakeUp } from "../../../sim/commands/day-commands";
 import { useGame, useShopState } from "../../useShell";
+import { useTruckStage } from "./TripFade";
 
 /** How long the night card holds before morning comes on its own. */
 const NIGHT_BEAT_MS = 2200;
 
 /** The E2E build skips the beat the same way it skips the truck rolls. */
 const TRANSITIONS_DISABLED = Number(process.env.E2E_RENDER_FPS) > 0;
-
-/* The departure roll's stage gate rejoins with the trip theater; until
- * then the night card owns the screen the moment the trip starts. */
 
 /**
  * The night between days, shown while the player's away trip is the
@@ -23,7 +21,9 @@ export const SleepOverlay: React.FC = () => {
   const gameState = useShopState();
   const game = useGame();
   const asleep = gameState.player.away?.kind === "home";
-  const settled = true;
+  // The night starts once the truck is off the lot: the departure roll
+  // still has the shop on screen behind the card.
+  const settled = useTruckStage() === "away";
   const waking = useRef(false);
 
   useEffect(() => {

@@ -247,18 +247,15 @@ export function putDownHere(
   // The piece lands at the body's actual position and keeps the
   // orientation it was carried in — the person sprite draws a quarter
   // turn off the heading, so the same offset lays the piece down exactly
-  // as it looked in the arms.
+  // as it looked in the arms. `heading` is the body's continuous facing
+  // (unlike the quantized `direction`), so a piece dropped mid-diagonal
+  // keeps that angle instead of snapping to one of four.
   dropMaterial(
     game,
     shift ? [...inventory] : [inventory[0]],
     [...thePlayer.position],
-    headingOf(thePlayer) + Math.PI / 2,
+    thePlayer.heading + Math.PI / 2,
   );
-}
-
-import { headingForDirection } from "../../game/player-motion";
-function headingOf(thePlayer: Player): number {
-  return headingForDirection(thePlayer.direction);
 }
 
 /**

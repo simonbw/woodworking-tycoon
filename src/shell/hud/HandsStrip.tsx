@@ -6,7 +6,6 @@ import { holdingBroom } from "../../game/HeldTool";
 import { getMaterialFullName } from "../../game/material-helpers";
 import { MaterialInstance } from "../../game/Materials";
 import { HAND_CAPACITY } from "../../game/Person";
-import { headingForDirection } from "../../game/player-motion";
 import { canisterFillFraction, carryingShopVac } from "../../game/ShopVac";
 import { Vector } from "../../game/Vectors";
 import {
@@ -141,7 +140,7 @@ const HandSlot: React.FC<{
           // actual position, lying the way it was carried
           const player = game.entities.getSingleton(Player);
           const at: Vector = [...player.position];
-          const rotation = headingForDirection(player.direction) + Math.PI / 2;
+          const rotation = player.heading + Math.PI / 2;
           if (event.shiftKey) {
             dropMaterial(game, materials, at, rotation);
           } else {

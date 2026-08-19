@@ -17,9 +17,11 @@ import { StoreSceneRoot } from "../StoreSceneRoot";
  * The truck in its stall out front — the old StoreTruckSprite as an
  * entity view: the same art the driveway uses, turned nose-+x, with
  * whatever rides in the bed drawn lying in it — cargo hauled from home,
- * and the register's purchases the moment they're rung up. The pull-out
- * roll belongs to the trip theater (the phase-6 overlay work); until it
- * lands the truck sits parked, which is the old E2E build's behavior.
+ * and the register's purchases the moment they're rung up. When the
+ * trip ends at the register this is the sprite that pulls out of the
+ * stall while the screen heads home; the scene root runs that clock
+ * (`departElapsed`), the same way the driveway's roll rides the trip
+ * theater's.
  */
 
 /** The canvas maps 144" across the art's width, the same figure
@@ -33,6 +35,11 @@ const SRC_HEIGHT = 600;
 /** The cargo box's source pixels — rail to rail, tailgate to cab wall. */
 const BED_SRC = { x: 124, y: 344, width: 276 - 124, height: 561 - 344 };
 
+/** How long the pull-out takes, and how far it rolls (off the east edge
+ * of anything the camera frames). */
+export const STORE_DEPART_SECONDS = 1.6;
+const DEPART_TRAVEL_PX = 1400;
+
 export class StoreTruckView extends BaseEntity implements Entity {
   persistenceLevel: number = Persistence.Level;
   pausable = false;
@@ -41,12 +48,15 @@ export class StoreTruckView extends BaseEntity implements Entity {
   private cargo: Container & GameSprite;
   private shownCargoKey = "";
   private drawnVersion = -1;
+  /** Where the stall sits, so the roll can offset from it. */
+  private stallX: number;
 
   constructor(private layout: StoreLayout) {
     super();
     const stall = layout.truck;
     const centerX = cellToPixel((stall.min[0] + stall.max[0]) / 2);
     const centerY = cellToPixel((stall.min[1] + stall.max[1]) / 2);
+    this.stallX = centerX;
 
     this.truck = new Sprite(
       Texture.from("/images/pickup-truck.png"),
@@ -80,12 +90,24 @@ export class StoreTruckView extends BaseEntity implements Entity {
 
   @on("render")
   onRender() {
+    const scene = this.game.entities.tryGetSingleton(StoreSceneRoot);
+
+    // The pull-out, every frame it runs: eased in like the driveway
+    // roll — the idle settle, then away. The cargo container's children
+    // sit at world coordinates, so both nodes carry the same offset.
+    const departed = scene?.departElapsed() ?? null;
+    const roll =
+      departed === null
+        ? 0
+        : Math.min(1, departed / STORE_DEPART_SECONDS) ** 2 * DEPART_TRAVEL_PX;
+    this.truck.x = this.stallX + roll;
+    this.cargo.x = roll;
+
     const store = this.game.entities.tryGetSingleton(ShellStore);
     if (store && store.version === this.drawnVersion) return;
     this.drawnVersion = store?.version ?? -1;
 
     // The way home lights up while the shopper stands at the cab.
-    const scene = this.game.entities.tryGetSingleton(StoreSceneRoot);
     const interact = scene?.checkoutOpen ? null : scene?.interact();
     this.truck.filters =
       (interact?.atCab ?? false) ? TARGET_HIGHLIGHT_FILTERS : [];

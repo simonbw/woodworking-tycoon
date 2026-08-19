@@ -11,16 +11,14 @@ import { ScavengingTrip } from "../../../game/Person";
 import { formatDuration } from "../../../game/time";
 import { classNames } from "../../../utils/classNames";
 import { formatCount } from "../../../utils/formatNumber";
+import { MusicTrack, TRUCK_DRIVING_LOOP } from "../../../utils/musicTrack";
 import { seededRandom } from "../../../utils/randUtils";
 import { colorBySpecies } from "../../../views/colorBySpecies";
 import { TripOverlay } from "../../../components/trip/TripOverlay";
+import { TRIP_TRANSITIONS_DISABLED } from "../../scenes/TripTheater";
 import { useHeadHome } from "./TripFade";
 import { DayClock } from "../NavBar";
 import { useGame, useShopState } from "../../useShell";
-
-/* The departure fade and the driving sound rejoin with the trip theater
- * (TRIP_TRANSITIONS_DISABLED behavior until then). */
-const TRIP_TRANSITIONS_DISABLED = true;
 
 /**
  * The scavenging trip, shown while the player's away trip is a
@@ -98,6 +96,7 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
       // waiting on the call — a search in progress has no keys.
       onHeadHome={deciding ? backToShop : undefined}
     >
+      <DrivingSound driving={searching || leaving} />
       <header className="flex items-baseline justify-between">
         <h1 className="section-heading">Out scavenging for pallets</h1>
         <DayClock />
@@ -119,6 +118,47 @@ const ScavengeTrip: React.FC<{ trip: ScavengingTrip }> = ({ trip }) => {
       </div>
     </TripOverlay>
   );
+};
+
+// ---------------------------------------------------------------------------
+// The engine
+// ---------------------------------------------------------------------------
+
+/**
+ * The engine under a scavenging search. The half-hour between stops is
+ * spent driving, so it sounds like driving: the loop fades up as the
+ * search starts and back down when the truck parks at the decision —
+ * the same reading as the road and wheels going still (see
+ * `TruckDrawing`).
+ *
+ * Streamed rather than decoded, like the hold music, on the sfx bus
+ * (`musicTrack.ts`). Headless; mounted by the trip overlay, so the
+ * track is built the first time anyone actually goes scavenging and
+ * released when the trip ends.
+ */
+const DrivingSound: React.FC<{ driving: boolean }> = ({ driving }) => {
+  const paused = useGame().paused;
+  const trackRef = useRef<MusicTrack | null>(null);
+  // The pause menu stops the world, so it stops the truck too.
+  const playing = driving && !paused;
+
+  useEffect(() => {
+    if (!playing) {
+      trackRef.current?.setPlaying(false);
+      return;
+    }
+    trackRef.current ??= new MusicTrack(TRUCK_DRIVING_LOOP);
+    trackRef.current.setPlaying(true);
+  }, [playing]);
+
+  useEffect(() => {
+    return () => {
+      trackRef.current?.dispose();
+      trackRef.current = null;
+    };
+  }, []);
+
+  return null;
 };
 
 // ---------------------------------------------------------------------------
