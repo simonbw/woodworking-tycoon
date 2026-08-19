@@ -32,9 +32,12 @@ import { TimeFlow } from "../TimeFlow";
  * The street's slice of the sim tick — the old `standTickPass`, rehosted.
  * One pass per sim minute: customers stroll the sidewalk, one may stop at
  * a stocked stand and buy, and finished walkers step off the ends of the
- * block. Runs on the "street" layer, after the clock — night checks and
- * spawn ids read the advanced tick, exactly like the old pipeline where
- * the pass ran after the tick counter.
+ * block. Runs on the "street" layer, after the clock — each pass is told
+ * which minute it is simulating, and reads night and mints its ids from
+ * that, exactly like the old pipeline where the pass ran on the freshly
+ * advanced tick counter. The clock advances a whole engine tick's minutes
+ * in one go (a drive charges its leg all at once), so a pass that read
+ * the counter would treat every minute of a batch as the same one.
  *
  * The street rolls dice every minute — who walks by, who buys — and all
  * of them come from `game.random`, so a seeded driver lands the same
@@ -63,20 +66,35 @@ export class StreetSystem extends BaseEntity implements Entity {
   onTick() {
     const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
     const minutes = timeFlow?.wholeTicks ?? 0;
+    if (minutes === 0) {
+      return;
+    }
+    // The clock counted all of this engine tick's minutes before the
+    // street layer ran, so the batch's first minute is that many back.
+    const firstTick = this.game.entities.getSingleton(Clock).tick - minutes + 1;
     for (let i = 0; i < minutes; i++) {
-      this.minutePass();
+      this.minutePass(firstTick + i);
     }
   }
 
-  /** One sim minute of the street — the old standTickPass, line for line. */
-  private minutePass(): void {
+  /**
+   * One sim minute of the street — the old standTickPass, line for line.
+   * `tick` is the minute being simulated, which is the clock's own tick
+   * when a single minute passes and a minute of the batch otherwise.
+   */
+  private minutePass(tick: number): void {
     const game = this.game;
     const rng = game.random;
     const shopInfo = game.entities.getSingleton(ShopInfo).info;
     const clock = game.entities.getSingleton(Clock);
     const stand = game.entities.getSingleton(StandEntity);
     const progression = game.entities.getSingleton(Progression);
-    const customers = [...game.entities.byConstructor(CustomerEntity)];
+    // A destroyed entity leaves the list only at the end of the engine
+    // tick, so a batch of minutes still finds the walkers who stepped off
+    // the block during it. They have left the street.
+    const customers = [...game.entities.byConstructor(CustomerEntity)].filter(
+      (customer) => !customer.isDestroyed,
+    );
 
     const span = customerSpan(shopInfo);
     const frontage = standFrontage(shopInfo);
@@ -100,15 +118,14 @@ export class StreetSystem extends BaseEntity implements Entity {
             : customer.x > frontage.left)),
     );
     const spawning =
-      !clock.isNight() &&
+      !clock.isNightAt(tick) &&
       customers.length < MAX_CUSTOMERS &&
       ((firstSaleDue && !buyerEnRoute) || rng() < spawnChance);
     if (customers.length === 0 && !spawning) {
       return;
     }
 
-    let payout: { title: string; money: number; reputation: number } | null =
-      null;
+    const payouts: { title: string; money: number; reputation: number }[] = [];
     // How many customers remain on the street so far this pass — the old
     // rebuilt array's length, which the spawn id derives from.
     let remaining = 0;
@@ -138,11 +155,11 @@ export class StreetSystem extends BaseEntity implements Entity {
             reputation.reputation + reputationGain,
           );
           progression.salesCompleted += 1;
-          payout = {
+          payouts.push({
             title: getMaterialName(purchase),
             money: value,
             reputation: reputationGain,
-          };
+          });
         }
         customer.state = "leaving";
         customer.browseTicksLeft = 0;
@@ -173,8 +190,9 @@ export class StreetSystem extends BaseEntity implements Entity {
       game.addEntity(
         new CustomerEntity({
           // Derived the way the old pass derived it, so ids stay stable
-          // across the migration's parity checks.
-          id: `customer-${clock.tick}-${remaining}`,
+          // across the migration's parity checks — off this minute, not
+          // the counter, so a batch of minutes can't mint the id twice.
+          id: `customer-${tick}-${remaining}`,
           x: walkDirection === 1 ? span.left : span.right,
           walkDirection,
           state: "walking",
@@ -183,13 +201,13 @@ export class StreetSystem extends BaseEntity implements Entity {
       );
     }
 
-    if (payout) {
+    payouts.forEach((payout, index) => {
       game.dispatch("payout", {
         payout: {
-          // The old emitPayout's derivation, with its queue always empty
-          // here — sales are the only payout source and one lands per
-          // minute at most.
-          id: `payout-${clock.tick}-0-sale-${payout.title}`,
+          // The old emitPayout's derivation: this minute, and the sale's
+          // place among the minute's sales, so no two announcements of a
+          // batch of minutes share an id.
+          id: `payout-${tick}-${index}-sale-${payout.title}`,
           kind: "sale",
           title: payout.title,
           money: payout.money,
@@ -197,6 +215,6 @@ export class StreetSystem extends BaseEntity implements Entity {
           xp: 0,
         },
       });
-    }
+    });
   }
 }

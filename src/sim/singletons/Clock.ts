@@ -56,6 +56,16 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
     return this.tick - this.dayStartTick;
   }
 
+  /**
+   * The same question asked of a particular minute. A sim layer that
+   * runs many minutes in one engine tick has already watched the counter
+   * jump to the end of the batch, so it asks about the minute it is
+   * simulating rather than the one the clock now reads.
+   */
+  isNightAt(tick: number): boolean {
+    return tick - this.dayStartTick >= TICKS_PER_DAY;
+  }
+
   /** Where today stands, morning through night. */
   currentDayPhase(): DayPhase {
     return dayPhase(this.dayTicksSpent());
@@ -67,7 +77,7 @@ export class Clock extends BaseEntity implements Entity, SerializableEntity {
    * running (or the drive home) moves the world.
    */
   isNight(): boolean {
-    return this.dayTicksSpent() >= TICKS_PER_DAY;
+    return this.isNightAt(this.tick);
   }
 
   @on("afterAdded")

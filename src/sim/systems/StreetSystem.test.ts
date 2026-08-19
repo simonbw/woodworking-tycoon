@@ -10,6 +10,7 @@ import { getSellValue } from "../../game/material-values";
 import { FinishedProduct } from "../../game/Materials";
 import { PayoutEvent } from "../../game/PayoutEvent";
 import { roundToCents, saleReputationGain, standRect } from "../../game/stand";
+import { TICKS_PER_DAY } from "../../game/time";
 import { setOutAtStand, takeFromStand } from "../commands/stand-commands";
 import { CustomerEntity } from "../entities/CustomerEntity";
 import { ShopDriver } from "../driver/ShopDriver";
@@ -173,6 +174,64 @@ describe("the street", () => {
     assert.strictEqual(shop.progression.salesCompleted, 2);
     assert.deepStrictEqual(shop.stand.pieces, []);
     assert.strictEqual(shop.wallet.money, roundToCents(total));
+  });
+});
+
+describe("a batch of minutes charged to one engine tick", () => {
+  // A drive charges its whole leg at once, so the clock jumps the batch
+  // before the street runs a minute of it. Every minute still has to be
+  // simulated as itself.
+
+  it("lands the street where minute-by-minute ticking does", () => {
+    const minutes = 300;
+    const stocked = () => shopState({ stand: [shelf(), shelf()] });
+
+    const paced = new ShopDriver({ state: stocked() });
+    const pacedPayouts = recordPayouts(paced);
+    paced.tick(minutes);
+
+    const charged = new ShopDriver({ state: stocked() });
+    const chargedPayouts = recordPayouts(charged);
+    charged.forceTick(minutes);
+
+    assert.deepStrictEqual(chargedPayouts.events, pacedPayouts.events);
+    assert.strictEqual(
+      JSON.stringify(charged.save()),
+      JSON.stringify(paced.save()),
+    );
+  });
+
+  it("still spawns during the daylight minutes of a batch that runs into the night", () => {
+    // Five minutes of the day are left when the leg is charged, and the
+    // stocked stand is owed its first buyer: one of those five summons
+    // the walker, who buys once the walk and the browse are done.
+    const shop = new ShopDriver({
+      state: shopState({ tick: TICKS_PER_DAY - 5, stand: [shelf()] }),
+    });
+    shop.forceTick(300);
+    assert.strictEqual(shop.progression.salesCompleted, 1);
+  });
+
+  it("mints a distinct walker and payout for every minute of a whole day", () => {
+    // A repeated customer id throws out of the entity list, so a day's
+    // worth of minutes in one tick reaching the end is itself the check
+    // that no two minutes minted the same walker.
+    const shop = new ShopDriver({
+      state: shopState({ stand: [shelf(), shelf(), shelf(), shelf()] }),
+    });
+    const recorder = recordPayouts(shop);
+    shop.forceTick(TICKS_PER_DAY);
+    assert.ok(
+      shop.progression.salesCompleted > 1,
+      "a stocked stand should sell more than once in a day",
+    );
+    const ids = recorder.events.map((payout) => payout.id);
+    assert.strictEqual(
+      new Set(ids).size,
+      ids.length,
+      "every sale should announce itself under its own id",
+    );
+    assert.strictEqual(ids.length, shop.progression.salesCompleted);
   });
 });
 

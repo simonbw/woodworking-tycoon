@@ -157,6 +157,18 @@ export class ShopDriver {
   }
 
   /**
+   * Charge many game minutes to a single engine tick — the shape a trip
+   * takes in the shell, where a drive's whole leg is forced at once and
+   * every sim layer serves its minutes inside one tick. `tick` spreads
+   * the same minutes over engine ticks; the two must land the world in
+   * the same place.
+   */
+  forceTick(minutes: number): void {
+    this.timeFlow.forceMinutes(minutes);
+    this.game.step(1);
+  }
+
+  /**
    * Advance raw engine frames under the live pace model (movement and
    * real-time pacing tests; sim time accrues only as TimeFlow allows).
    */
