@@ -1,24 +1,27 @@
-import { Graphics } from "pixi.js";
+import { Assets, Graphics, Matrix, Texture } from "pixi.js";
 import { colorBySheetGoodKind, osbFlakeColors } from "../colorBySpecies";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import { SheetGood } from "../../game/Materials";
 import { mixColors } from "../../utils/colorUtils";
 import { clamp, lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
+import { SHEET_FACE_TEXTURES } from "./sheetFaceTextures";
 
 /** The sheet data the renderer reads — everything but identity. */
 export type SheetGoodLook = Omit<SheetGood, "id" | "type">;
 
 /**
- * A sheet good's kind is drawn, not labeled:
- * - Plywood shows rotary-cut cathedral grain, and the grades tell on
- *   themselves — A comes clean, B wears football patches, C is knotty.
- * - OSB is a mosaic of pressed strands over a darker base; particle
- *   board is a coarse two-tone speckle; MDF is nearly featureless.
- * - The edge is the other tell: plywood's laminations stripe it, the
- *   chip boards crumble into speckle, MDF stays solid.
- * All irregularity is seeded so a sheet never shimmers between renders,
- * and defect counts scale with area so offcuts aren't over-decorated.
+ * A sheet good's face is real art: a seamless photo tile per kind
+ * (sheetFaceTextures.ts), windowed by the piece's face region so a cut
+ * piece shows the very stretch of veneer it had before the cut — the
+ * fill matrix is the rendering half of the SheetFaceRegion contract
+ * (see sheetFacePoint in sheet-helpers.ts, which the matrix mirrors).
+ * Every kind has art now; the procedural faces below stay as the
+ * fallback for any future kind that ships before its texture.
+ *
+ * The edge face is still drawn: plywood's laminations stripe it, the
+ * chip boards crumble into speckle, MDF stays solid. Seeded, so a sheet
+ * never shimmers between renders.
  * The old SheetGoodSprite's draw callback as a plain function.
  */
 export function drawSheetGood(
@@ -26,16 +29,22 @@ export function drawSheetGood(
   sheet: SheetGoodLook,
   seed?: string,
 ): void {
-  const { width: sheetWidth, length: sheetLength, thickness, kind } = sheet;
+  const {
+    width: sheetWidth,
+    length: sheetLength,
+    thickness,
+    kind,
+    face,
+  } = sheet;
 
   g.clear();
-  // Unlike boards, a sheet's width AND length are both in feet
+  // Unlike boards, a sheet's width AND length are both in inches
   const width = sheetWidth * PIXELS_PER_INCH;
   const height = sheetLength * PIXELS_PER_INCH;
   const depth = (thickness * PIXELS_PER_INCH) / 4;
-  const rng = seededRandom(
-    seed ?? `${kind}-${sheetWidth}x${sheetLength}x${thickness}`,
-  );
+  const fallbackSeed =
+    seed ?? `${kind}-${sheetWidth}x${sheetLength}x${thickness}`;
+  const rng = seededRandom(fallbackSeed);
   const { primary, secondary } = colorBySheetGoodKind[kind];
   const squareFeet = sheetWidth * sheetLength;
 
@@ -48,6 +57,37 @@ export function drawSheetGood(
       height + shadowWidth * 2,
     );
     g.fill({ color: 0x000000, alpha: 0.1 });
+  }
+
+  const faceArt = SHEET_FACE_TEXTURES[kind];
+  if (faceArt) {
+    // The piece's window onto its source sheet's face, in inches
+    // (virgin default inlined — the renderer has no id to seed by
+    // beyond the seed argument). The source sheet itself sits at a
+    // seeded spot on the endless tiling art, so two sheets of one
+    // kind don't share a veneer.
+    const region = face ?? {
+      seed: fallbackSeed,
+      u: 0,
+      v: 0,
+      rotated: false,
+    };
+    const texture = Assets.get<Texture>(faceArt.src);
+    const baseRng = seededRandom(region.seed);
+    const uPx = (region.u + baseRng() * faceArt.spanInches) * PIXELS_PER_INCH;
+    const vPx = (region.v + baseRng() * faceArt.spanInches) * PIXELS_PER_INCH;
+    // Local px per texture px; the matrix maps texture pixels into
+    // this sprite's local space (PIXI inverts it to build UVs). The
+    // rotated case transposes the axes: image y is the veneer's
+    // grain (the source's u/length axis), image x runs across.
+    const scale = (PIXELS_PER_INCH * faceArt.spanInches) / texture.source.width;
+    const matrix = region.rotated
+      ? new Matrix(0, scale, scale, 0, -uPx - width / 2, -vPx - height / 2)
+      : new Matrix(scale, 0, 0, scale, -vPx - width / 2, -uPx - height / 2);
+    g.rect(-width / 2, -height / 2, width, height);
+    g.fill({ texture, matrix, textureSpace: "global" });
+    drawSheetEdge(g, sheet, rng);
+    return;
   }
 
   // main face — OSB's base darkens so the gaps between strands read
@@ -204,8 +244,21 @@ export function drawSheetGood(
     }
   }
 
-  // edge face: laminations stripe plywood, chip boards crumble into
-  // speckle, MDF stays solid
+  drawSheetEdge(g, sheet, rng);
+}
+
+/** The edge face: laminations stripe plywood, chip boards crumble into
+ * speckle, MDF stays solid. */
+function drawSheetEdge(
+  g: Graphics,
+  sheet: SheetGoodLook,
+  rng: () => number,
+): void {
+  const { kind } = sheet;
+  const width = sheet.width * PIXELS_PER_INCH;
+  const height = sheet.length * PIXELS_PER_INCH;
+  const depth = (sheet.thickness * PIXELS_PER_INCH) / 4;
+  const { primary, secondary } = colorBySheetGoodKind[kind];
   const isPlywood = kind.startsWith("plywood");
   g.rect(width / 2, -height / 2, depth, height);
   g.fill(isPlywood ? mixColors(primary, 0x000000, 0.15) : secondary);

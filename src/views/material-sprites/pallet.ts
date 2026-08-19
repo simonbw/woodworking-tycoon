@@ -1,4 +1,5 @@
 import { Container, Graphics } from "pixi.js";
+import { createBoardSprite } from "./board";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import {
   faceNails,
@@ -9,7 +10,6 @@ import {
 } from "../../game/bench-work/pallet-geometry";
 import { palletBoard } from "../../game/board-helpers";
 import { Pallet } from "../../game/Materials";
-import { drawBoard } from "./board";
 
 export type PalletLayer = "bottom" | "stringer" | "top";
 
@@ -80,15 +80,13 @@ export function createPalletSprite(
       slot.yIn * PIXELS_PER_INCH,
     );
     slotContainer.angle = slot.angleDeg;
-    const g = slotContainer.addChild(new Graphics());
-    drawBoard(
-      g,
-      palletStock,
-      `${pallet.id}:${slot.target.kind}-${slot.target.index}`,
+    slotContainer.addChild(
+      createBoardSprite(
+        palletStock,
+        `${pallet.id}:${slot.target.kind}-${slot.target.index}`,
+        { tint },
+      ),
     );
-    if (tint !== undefined) {
-      g.tint = tint;
-    }
   }
 
   // Nail heads at their crossings — pallet state, so a pried nail is

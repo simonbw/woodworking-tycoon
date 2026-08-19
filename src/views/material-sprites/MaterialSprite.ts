@@ -1,7 +1,7 @@
 import { Container, Graphics } from "pixi.js";
 import { FinishedProduct, MaterialInstance } from "../../game/Materials";
 import { createAssembledProductSprite } from "./assembledProduct";
-import { drawBoard, drawBoardOnEdge, drawBoardOnEnd } from "./board";
+import { createBoardSprite, drawBoardOnEdge, drawBoardOnEnd } from "./board";
 import { drawCuttingBoard } from "./cuttingBoard";
 import { createPalletSprite } from "./pallet";
 import { drawEndGrainSlice, drawPanel } from "./panel";
@@ -52,7 +52,7 @@ export function createMaterialSprite(
         ? graphics((g) => drawBoardOnEnd(g, material, material.id))
         : onEdge
           ? graphics((g) => drawBoardOnEdge(g, material, material.id))
-          : graphics((g) => drawBoard(g, material, material.id));
+          : createBoardSprite(material, material.id, { alpha, tint });
 
     case "pallet":
       return createPalletSprite(material, { alpha, tint });

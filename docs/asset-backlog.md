@@ -99,32 +99,32 @@ wiring: same path, same size, same component.
       draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
       **The top must be a hard-edged rect on exact integer pixel bounds,
-                  filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
-                  close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
-                  edge sitting over the black shadow beneath reads as a hairline down
-                  every seam where two tables butt — which is the one place this art
-                  has to be precise, and the only place. (`-2x4-top` still carries a
-                  1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
-                  on one side, versus the 39–62% that was drawing a visible line —
-                  invisible in play. Not worth an export on its own; worth squaring up
-                  if that artboard is opened again.)
+                          filling the artboard**: 192×192 and 384×192 (8 px/inch; ×4 for the
+                          close-ups). Both drawn tops measure exactly that. It matters because a half-transparent
+                          edge sitting over the black shadow beneath reads as a hairline down
+                          every seam where two tables butt — which is the one place this art
+                          has to be precise, and the only place. (`-2x4-top` still carries a
+                          1-px edge column at alpha 252, 241 on the close-up: a 1–5% softness
+                          on one side, versus the 39–62% that was drawing a visible line —
+                          invisible in play. Not worth an export on its own; worth squaring up
+                          if that artboard is opened again.)
 
-                  Shadows and completes are centred on even canvases so no shadow core
-                  peeks out from under its own top.
+                          Shadows and completes are centred on even canvases so no shadow core
+                          peeks out from under its own top.
 
-                  Legs want to sit in from the corners so butted tables don't collide
-                  visually; a top texture that tiles horizontally reads best across a
-                  run. Vise and tool-drawer upgrades stay procedural overlays drawn on
-                  the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
+                          Legs want to sit in from the corners so butted tables don't collide
+                          visually; a top texture that tiles horizontally reads best across a
+                          run. Vise and tool-drawer upgrades stay procedural overlays drawn on
+                          the front edge (`WorktableSprite`'s `drawUpgrades`), over the art.
 
-                  These are deliberately **not** in `scripts/trim-images.ts`, and don't
-                  need to be: the tops are opaque corner to corner so there is nothing
-                  to trim, and while the shadows and completes do carry a transparent
-                  margin, trimming them would be harmless rather than helpful — the
-                  script keeps every pixel with any alpha (soft halos survive) and
-                  crops symmetrically about the canvas centre, which is the
-                  registration these rely on. It would save a couple of kilobytes and
-                  cost the ability to compare a top and its shadow by their canvases.
+                          These are deliberately **not** in `scripts/trim-images.ts`, and don't
+                          need to be: the tops are opaque corner to corner so there is nothing
+                          to trim, and while the shadows and completes do carry a transparent
+                          margin, trimming them would be harmless rather than helpful — the
+                          script keeps every pixel with any alpha (soft halos survive) and
+                          crops symmetrically about the canvas centre, which is the
+                          registration these rely on. It would save a couple of kilobytes and
+                          cost the ability to compare a top and its shadow by their canvases.
 
 - [ ] Storage rack — `machine-sprites/StorageRackSprite.tsx`. Art for the
       empty rack; parked stock keeps its data-driven slat colors.
@@ -174,8 +174,8 @@ wiring: same path, same size, same component.
       shapes, the animation stays code.
 - [ ] Shop vac — `views/ShopVacView.ts`. Drum and casters as art; the
       hose stretches to the player's hand every frame and stays drawn.
-- [ ] Pallet — `material-sprites/PalletSprite.tsx`. Currently composed out of
-      `BoardSprite`s. (`static/images/pallet.png` exists but serves the
+- [ ] Pallet — `views/material-sprites/pallet.ts`. Currently composed out of
+      `createBoardSprite` boards. (`static/images/pallet.png` exists but serves the
       HTML UI's material widgets via `LOOSE_UI_IMAGES`, not the shop-view
       sprite.) Boards get pulled off one at a time, so the art has to
       survive a partially dismantled pallet — probably per-board art rather
@@ -229,8 +229,9 @@ and needs no flat art; the flat sprites they once used are deleted.)
 
 Decided — don't re-open these without a reason.
 
-- **Board and sheet silhouettes, textured faces** — `BoardSprite` and
-  `SheetGoodSprite` draw their outlines procedurally (dimensions vary
+- **Board and sheet silhouettes, textured faces** — `createBoardSprite`
+  and `drawSheetGood` (`views/material-sprites/`) draw their outlines
+  procedurally (dimensions vary
   continuously — wavy unjointed edges, miter skews, true scale against
   `PIXELS_PER_INCH`) and fill the faces from photography under
   `assets/textures/materials/` (all CC0 or homemade), processed by
@@ -250,8 +251,8 @@ Decided — don't re-open these without a reason.
   grayscale wear maps multiplied over the face, fading as the board is
   milled. The weathered-gray veil and the sanded sheen stay procedural
   overlays on purpose — they're color states, not wood.
-- **On-edge boards, panels, sheet edges** — `OnEdgeBoardSprite`,
-  `PanelSprite`, and the sheets' lamination/crumble edge strips are still
+- **On-edge boards, panels, sheet edges** — `drawBoardOnEdge`,
+  `drawPanel`, and the sheets' lamination/crumble edge strips are still
   fully procedural; the panel strips and on-edge boards are expected to
   pick up the board scans' art in a later pass.
 - **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
@@ -279,8 +280,8 @@ Decided — don't re-open these without a reason.
   renders directly.
 - **Edge band** — the plane's edge-on strip (`BenchStrokeView`). The block plane's edge-on
   view of a board: a strip of the species' edge color with grain/saw
-  marks, the same procedural language as `BoardSprite`, which owns the
-  faces.
+  marks, the same procedural language as the board renderers in
+  `views/material-sprites/board.ts`, which own the faces.
 - **Default material pile** — `DefaultMaterialPileSprite`. A black square,
   and now only ever reached by `UnknownMaterial` — the type-system escape
   hatch, which has nothing real to draw. Every product type has a sprite. If

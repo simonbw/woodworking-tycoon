@@ -6,7 +6,7 @@ import {
   productBlueprintFor,
 } from "../../game/bench-work/blueprint";
 import { AssembledPart, Board, FinishedProduct } from "../../game/Materials";
-import { drawBoard, drawBoardOnEdge } from "./board";
+import { createBoardSprite, drawBoardOnEdge } from "./board";
 import { drawPanel } from "./panel";
 
 /**
@@ -85,10 +85,10 @@ export function createAssembledProductSprite(
       slot.yIn * PIXELS_PER_INCH,
     );
     slotContainer.angle = slot.angleDeg;
-    const g = slotContainer.addChild(new Graphics());
     if (part.strips) {
       // A glued-up part (a tray's bottom) draws as the panel it
       // is — the very stripes the player glued
+      const g = slotContainer.addChild(new Graphics());
       drawPanel(g, {
         strips: part.strips,
         length: part.length,
@@ -98,15 +98,13 @@ export function createAssembledProductSprite(
     } else if (slot.onEdge) {
       // A rail stands on edge in the finished piece exactly as
       // it stood while the slats were nailed across it
+      const g = slotContainer.addChild(new Graphics());
       drawBoardOnEdge(g, board, part.seed);
       if (tint !== undefined) {
         g.tint = tint;
       }
     } else {
-      drawBoard(g, board, part.seed);
-      if (tint !== undefined) {
-        g.tint = tint;
-      }
+      slotContainer.addChild(createBoardSprite(board, part.seed, { tint }));
     }
   }
 
