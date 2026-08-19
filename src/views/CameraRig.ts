@@ -25,8 +25,10 @@ import { ShopInfo } from "../sim/singletons/ShopInfo";
 /** Ground kept visible around the shop when fitting, in world pixels. */
 export const LOT_APRON = PIXELS_PER_CELL * 3;
 
-/** How quickly the camera glides to its target, per second. */
-const FOLLOW_RATE = 5;
+/** How quickly the camera glides to its target, per second. Softer than
+ * the old shell's 5: crossing the doorway moves the target half a
+ * screen at once, and at the old rate the glide read as a lurch. */
+const FOLLOW_RATE = 2;
 
 export class CameraRig extends BaseEntity implements Entity {
   persistenceLevel: number = Persistence.Permanent;

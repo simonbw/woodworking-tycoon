@@ -21,7 +21,7 @@ import {
 } from "../shell/scenes/TripTheater";
 import { TruckEntity } from "../sim/entities/TruckEntity";
 import { ShopInfo } from "../sim/singletons/ShopInfo";
-import { drawMaterialGlyph } from "./material-glyph";
+import { createMaterialSprite } from "./material-sprites/MaterialSprite";
 
 /**
  * The truck parked in the driveway, backed in with the tailgate to the
@@ -108,10 +108,12 @@ export class TruckView extends BaseEntity implements Entity {
       tailgateY -
       TRUCK_CANVAS_HEIGHT * TRUCK_TAIL_INSET +
       TRUCK_CANVAS_HEIGHT / 2;
-    // The trip roll: the truck (cargo riding along) slides down the
-    // driveway on departure and backs up it on arrival.
+    // The trip roll: the truck slides down the driveway on departure
+    // and backs up it on arrival — and the cargo rides along, not
+    // waiting at the parking spot for the bed to arrive under it.
     const roll = theater ? driveOffset(theater) : 0;
     this.body.position.set(centerX, centerY + roll);
+    this.cargo.position.set(0, roll);
 
     const key = [
       `${shopInfo.size[0]}x${shopInfo.size[1]}`,
@@ -148,8 +150,10 @@ export class TruckView extends BaseEntity implements Entity {
     });
 
     this.truck.bed.forEach((material, i) => {
-      const item = new Graphics();
-      drawMaterialGlyph(item, material);
+      // The material's real sprite, exactly as it draws on the floor —
+      // a pallet in the bed reads as a pallet, not a placeholder glyph.
+      const item = new Container();
+      item.addChild(createMaterialSprite(material));
       item.position.set(bedCenterX, bedCenterY + ((i % 3) - 1) * 6);
       item.angle = 90 + ((i * 7) % 21) - 10;
       this.cargo.addChild(item);
