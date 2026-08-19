@@ -37,7 +37,7 @@ There are three test tiers — unit, sequence (`ShopDriver`), and fat Playwright
 
 The shop is an entity world drawn by an engine, with a DOM layer over it:
 
-- **The engine** (`src/core/`): entities, the tick/render split, the renderer, input, and sound. `src/engine-main.ts` boots it and puts the standing entities in place.
+- **The engine** (`src/core/`): entities, the tick/render split, the renderer, input, and sound. `src/engine-main.ts` boots it and puts the standing entities in place. Core imports nothing outside itself but its socket — `src/config` and `src/resources` (see `src/core/README.md`)
 - **The simulation** (`src/sim/`): the world itself — entities (`Player`, `MachineEntity`, `StandEntity`, …), the singletons that hold shop-wide state (`Wallet`, `Clock`, `Progression`, …), the systems that tick them, and `commands/`, the only way anything mutates. Saves are `sim/save/`.
 - **Shop state** (`src/game/GameState.ts`): the shape the game's pure helpers reason in — money, materials, machines, the stand's stock, a `ProgressionState` slice. `sim/projection.ts` reads the entity world out as one of these each time a helper needs it; `sim/save/fixture.ts` builds the world back from one.
 - **The pure game** (`src/game/`): registries (machines, tools, materials, plans) and the rules over them — every question about what a machine can do, what a piece is worth, or what a plan needs, answered without a renderer.

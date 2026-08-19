@@ -59,6 +59,47 @@ describe("sim/view import boundaries", () => {
     assert.deepEqual(offenders, []);
   });
 
+  it("keeps the engine importing only through its socket", () => {
+    // The engine (src/core) knows nothing about woodworking. Its only
+    // imports from outside itself are the two socket modules the game
+    // answers its questions through — see src/core/README.md.
+    const CORE = "src/core";
+    const SOCKET = ["src/config", "src/resources"];
+    for (const dir of [CORE, ...SOCKET]) {
+      assert.ok(
+        fs.existsSync(path.join(REPO_ROOT, dir)),
+        `${dir} is named by an import rule but doesn't exist`,
+      );
+    }
+    const allowed = [CORE, ...SOCKET].map((dir) => `${dir}/`);
+    const offenders = sourceFiles(CORE).flatMap((file) =>
+      importTargets(file)
+        .filter((target) => !allowed.some((dir) => target.startsWith(dir)))
+        .map((target) => `${file} → ${target}`),
+    );
+    assert.deepEqual(offenders, []);
+  });
+
+  it("keeps the socket to types and tables", () => {
+    // The socket modules answer the engine with types and tables, so
+    // they may import core (their tables are built from its types) and
+    // reach game code only as `import type` — a runtime import would
+    // drag game behavior into everything the engine touches.
+    const offenders = ["src/config", "src/resources"]
+      .flatMap(sourceFiles)
+      .flatMap((file) =>
+        runtimeImportTargets(file)
+          .filter(
+            (target) =>
+              !["src/core/", "src/config/", "src/resources/"].some((dir) =>
+                target.startsWith(dir),
+              ),
+          )
+          .map((target) => `${file} → ${target}`),
+      );
+    assert.deepEqual(offenders, []);
+  });
+
   it("holds the dispatcher and driver to the command surface", () => {
     // The input dispatcher contains no logic — only command calls — and
     // the new ShopDriver mutates the world through the same commands the
@@ -128,6 +169,25 @@ function importTargets(file: string): string[] {
   )) {
     const resolved = path
       .normalize(path.join(dir, match[1]))
+      .split(path.sep)
+      .join("/");
+    targets.push(resolved.endsWith(".ts") ? resolved : `${resolved}.ts`);
+  }
+  return targets;
+}
+
+/** Like importTargets, but only imports that exist at runtime — a
+ * whole-statement `import type` is erased by the compiler and may cross
+ * boundaries a value import may not. */
+function runtimeImportTargets(file: string): string[] {
+  const dir = path.dirname(file);
+  const targets: string[] = [];
+  for (const match of read(file).matchAll(
+    /^\s*import\s+(type\s+)?[^;]*?from\s+["'](\.[^"']*)["']/gm,
+  )) {
+    if (match[1]) continue;
+    const resolved = path
+      .normalize(path.join(dir, match[2]))
       .split(path.sep)
       .join("/");
     targets.push(resolved.endsWith(".ts") ? resolved : `${resolved}.ts`);
