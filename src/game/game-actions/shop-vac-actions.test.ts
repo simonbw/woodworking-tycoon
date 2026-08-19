@@ -4,17 +4,8 @@ import { dustTotal } from "../Dust";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { BASE_WALK_SPEED, playerWalkSpeed } from "../player-motion";
-import {
-  SHOP_VAC_CANISTER_CAPACITY,
-  SHOP_VAC_COST,
-  SHOP_VAC_EMPTY_RATE,
-} from "../ShopVac";
-import {
-  buyShopVacAction,
-  shopVacTickPass,
-  toggleCarryShopVacAction,
-  vacuumTickPass,
-} from "./shop-vac-actions";
+import { SHOP_VAC_CANISTER_CAPACITY, SHOP_VAC_EMPTY_RATE } from "../ShopVac";
+import { shopVacTickPass, vacuumTickPass } from "./shop-vac-actions";
 import { tickAction } from "./tickAction";
 
 /**
@@ -36,59 +27,6 @@ function draggingState(overrides: Partial<GameState> = {}): GameState {
     ...overrides,
   };
 }
-
-describe("buyShopVacAction", () => {
-  it("delivers the vac to the dropoff spot and takes the money", () => {
-    const result = buyShopVacAction()({
-      ...initialGameState,
-      money: SHOP_VAC_COST + 25,
-    });
-    assert.strictEqual(result.money, 25);
-    assert.deepStrictEqual(
-      result.shopVac?.position,
-      initialGameState.shopInfo.materialDropoffPosition,
-    );
-    assert.deepStrictEqual(result.shopVac?.canister, {});
-  });
-
-  it("refuses when broke or already owned", () => {
-    const broke = { ...initialGameState, money: SHOP_VAC_COST - 1 };
-    assert.strictEqual(buyShopVacAction()(broke), broke);
-    const owned = draggingState({ money: SHOP_VAC_COST });
-    assert.strictEqual(buyShopVacAction()(owned), owned);
-  });
-});
-
-describe("toggleCarryShopVacAction", () => {
-  it("grabs the vac when standing on it", () => {
-    const state = draggingState({
-      shopVac: { position: [2, 4], canister: {} },
-    });
-    const result = toggleCarryShopVacAction()(state);
-    assert.strictEqual(result.shopVac?.position, null);
-  });
-
-  it("parks it underfoot while dragging", () => {
-    const result = toggleCarryShopVacAction()(draggingState());
-    assert.deepStrictEqual(result.shopVac?.position, [2, 4]);
-  });
-
-  it("cannot grab from a distance", () => {
-    const state = draggingState({
-      shopVac: { position: [6, 8], canister: {} },
-    });
-    assert.strictEqual(toggleCarryShopVacAction()(state), state);
-  });
-
-  it("cannot grab the hose with the broom in hand", () => {
-    const state = draggingState({
-      shopVac: { position: [2, 4], canister: {} },
-      broomOwned: true,
-      broomPosition: null,
-    });
-    assert.strictEqual(toggleCarryShopVacAction()(state), state);
-  });
-});
 
 describe("vacuumTickPass", () => {
   it("pulls the swath into the canister — machine undersides included", () => {

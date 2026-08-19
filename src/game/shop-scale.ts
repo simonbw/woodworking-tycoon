@@ -6,7 +6,7 @@
  *
  * This is the game-logic side of the scale. Rendering constants
  * (pixels per inch, pixels per cell) live in
- * src/components/shop-view/shop-scale.tsx and derive from these.
+ * src/views/shop-scale.ts and derive from these.
  */
 export const INCHES_PER_FOOT = 12;
 

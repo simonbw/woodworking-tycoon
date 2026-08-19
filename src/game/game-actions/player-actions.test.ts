@@ -4,151 +4,10 @@ import { board, palletBoard } from "../board-helpers";
 import { assemblyFramePlacement, slotOnBench } from "../bench-work/assembly";
 import { benchTopSizeIn } from "../bench-work/bench-layout";
 import { RUSTIC_SHELF_BLUEPRINT } from "../bench-work/blueprint";
-import { GameState, MaterialPile } from "../GameState";
+import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
-import { HAND_CAPACITY } from "../Person";
 import { Machine, MachineState } from "../Machine";
-import {
-  dropMaterialAction,
-  operateMachineAction,
-  pickUpMaterialAction,
-  setMachineOperationAction,
-  setMachineSettingsAction,
-  toggleMachinePowerAction,
-} from "./player-actions";
-
-function stateWithPile(
-  pile: MaterialPile,
-  playerPosition: [number, number],
-): GameState {
-  return {
-    ...initialGameState,
-    player: { ...initialGameState.player, position: playerPosition },
-    materialPiles: [pile],
-  };
-}
-
-describe("pickUpMaterialAction", () => {
-  it("picks up from the cell the pile rests in", () => {
-    const pile: MaterialPile = {
-      material: board("pine", 96, 4, 1),
-      position: [1.5, 3.5],
-      rotation: 0,
-    };
-    const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 3]));
-    assert.strictEqual(result.materialPiles.length, 0);
-    assert.strictEqual(result.player.inventory.length, 1);
-  });
-
-  it("picks up a long board from anywhere along its length", () => {
-    const pile: MaterialPile = {
-      material: board("pine", 96, 4, 1),
-      position: [1.5, 3.5],
-      rotation: 0,
-    };
-    const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
-    assert.strictEqual(result.materialPiles.length, 0);
-    assert.strictEqual(result.player.inventory.length, 1);
-  });
-
-  it("refuses cells the board does not reach", () => {
-    // An 8' board centered at [1.5, 3.5] ends at y 7.5; [1, 8] is past it
-    const pile: MaterialPile = {
-      material: board("pine", 96, 4, 1),
-      position: [1.5, 3.5],
-      rotation: 0,
-    };
-    const result = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 8]));
-    assert.strictEqual(result.materialPiles.length, 1);
-    assert.strictEqual(result.player.inventory.length, 0);
-  });
-
-  it("keeps foot-long stock a close grab", () => {
-    // A 1' board's end reaches the shared cell line, so the cell straight
-    // ahead of it can still grab it — but a cell to the side, or two cells
-    // away, cannot.
-    const pile: MaterialPile = {
-      material: board("pine", 12, 4, 1),
-      position: [1.5, 3.5],
-      rotation: 0,
-    };
-    const ahead = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 2]));
-    assert.strictEqual(ahead.player.inventory.length, 1);
-    const sideways = pickUpMaterialAction([pile])(stateWithPile(pile, [0, 3]));
-    assert.strictEqual(sideways.materialPiles.length, 1);
-    assert.strictEqual(sideways.player.inventory.length, 0);
-    const far = pickUpMaterialAction([pile])(stateWithPile(pile, [1, 1]));
-    assert.strictEqual(far.materialPiles.length, 1);
-    assert.strictEqual(far.player.inventory.length, 0);
-  });
-
-  it("refuses a load bigger than the arm room left", () => {
-    // One free hand left; a two-pile grab doesn't fit and refuses whole
-    const piles: MaterialPile[] = [
-      { material: board("pine", 24, 4, 1), position: [1, 3], rotation: 0 },
-      { material: board("pine", 24, 4, 1), position: [1, 3], rotation: 0 },
-    ];
-    const carried = Array.from({ length: HAND_CAPACITY - 1 }, () =>
-      board("pine", 24, 4, 1),
-    );
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [1, 3],
-        inventory: carried,
-      },
-      materialPiles: piles,
-    };
-    const result = pickUpMaterialAction(piles)(state);
-    assert.strictEqual(result.materialPiles.length, 2);
-    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY - 1);
-  });
-
-  it("still takes a single piece into the last free hand", () => {
-    const pile: MaterialPile = {
-      material: board("pine", 24, 4, 1),
-      position: [1, 3],
-      rotation: 0,
-    };
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [1, 3],
-        inventory: Array.from({ length: HAND_CAPACITY - 1 }, () =>
-          board("pine", 24, 4, 1),
-        ),
-      },
-      materialPiles: [pile],
-    };
-    const result = pickUpMaterialAction([pile])(state);
-    assert.strictEqual(result.materialPiles.length, 0);
-    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY);
-  });
-
-  it("refuses any pickup once the hands are full", () => {
-    const pile: MaterialPile = {
-      material: board("pine", 24, 4, 1),
-      position: [1, 3],
-      rotation: 0,
-    };
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [1, 3],
-        inventory: Array.from({ length: HAND_CAPACITY }, () =>
-          board("pine", 24, 4, 1),
-        ),
-      },
-      materialPiles: [pile],
-    };
-    const result = pickUpMaterialAction([pile])(state);
-    assert.strictEqual(result.materialPiles.length, 1);
-    assert.strictEqual(result.player.inventory.length, HAND_CAPACITY);
-  });
-});
+import { operateMachineAction } from "./player-actions";
 
 /** An idle jointer; the stock rides in the player's hands (direct feed). */
 function jointer(overrides: Partial<MachineState> = {}): MachineState {
@@ -175,11 +34,6 @@ function jointer(overrides: Partial<MachineState> = {}): MachineState {
 const roughStock = () =>
   board("walnut", 48, 5, 4, "rough", { faces: 0, edges: 0 });
 
-function stateWithMachine(machine: MachineState): GameState {
-  return { ...initialGameState, machines: [machine] };
-}
-
-/** Like stateWithMachine, with materials in the player's hands. */
 /**
  * A machine with stock already set down on it. Direct-feed machines run
  * what's on the table, not what's in your hands — F puts it there, Space
@@ -196,24 +50,6 @@ function stagedOn(
 }
 
 describe("machine power switch", () => {
-  it("toggleMachinePowerAction flips the switch both ways", () => {
-    const state = stateWithMachine(jointer());
-    const on = toggleMachinePowerAction(new Machine(state.machines[0]))(state);
-    assert.strictEqual(on.machines[0].poweredOn, true);
-    const off = toggleMachinePowerAction(new Machine(on.machines[0]))(on);
-    assert.strictEqual(off.machines[0].poweredOn, false);
-  });
-
-  it("is a no-op on machines without a power switch", () => {
-    const bench = jointer({
-      machineTypeId: "workspace",
-      selectedOperationId: "dismantlePallet",
-    });
-    const state = stateWithMachine(bench);
-    const result = toggleMachinePowerAction(new Machine(bench))(state);
-    assert.strictEqual(result, state);
-  });
-
   it("operateMachineAction refuses while the machine is switched off", () => {
     const state = stagedOn(jointer(), [roughStock()]);
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
@@ -324,118 +160,6 @@ describe("direct feed (planer)", () => {
     const result = operateMachineAction(new Machine(state.machines[0]))(state);
     assert.strictEqual(result, state);
     assert.strictEqual(result.machines[0].inputMaterials.length, 1);
-  });
-});
-
-/** A jointer part-way through a pass, stock on the beds. */
-const working = (): MachineState =>
-  jointer({
-    operationProgress: {
-      status: "inProgress",
-      phaseIndex: 0,
-      ticksRemaining: 5,
-    },
-    processingMaterials: [roughStock()],
-    selectedParameters: { targetThickness: 4 },
-  });
-
-describe("settings lock while a station is working", () => {
-  it("setMachineSettingsAction refuses mid-operation", () => {
-    const state = stateWithMachine(working());
-    const result = setMachineSettingsAction(new Machine(state.machines[0]), {
-      targetThickness: 8,
-    })(state);
-    assert.strictEqual(result, state);
-  });
-
-  it("setMachineSettingsAction turns the knob once the machine is idle", () => {
-    const state = stateWithMachine(
-      jointer({ selectedParameters: { targetThickness: 4 } }),
-    );
-    const result = setMachineSettingsAction(new Machine(state.machines[0]), {
-      targetThickness: 8,
-    })(state);
-    assert.strictEqual(
-      result.machines[0].selectedParameters?.targetThickness,
-      8,
-    );
-  });
-
-  it("setMachineOperationAction refuses mid-operation", () => {
-    const state = stateWithMachine(working());
-    const machine = new Machine(state.machines[0]);
-    const other = machine.type.operations.find(
-      (operation) => operation.id !== machine.state.selectedOperationId,
-    )!;
-    const result = setMachineOperationAction(machine, other)(state);
-    assert.strictEqual(result, state);
-  });
-});
-
-describe("dropMaterialAction", () => {
-  it("drops carried stock as a pile underfoot", () => {
-    // Without an explicit landing point the piece rests at the center of
-    // the cell the player occupies (the keyboard layer passes the body's
-    // actual position instead).
-    const material = board("pine", 48, 4, 1);
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [5, 5],
-        inventory: [material],
-      },
-    };
-    const result = dropMaterialAction([material])(state);
-    assert.strictEqual(result.player.inventory.length, 0);
-    assert.deepStrictEqual(result.materialPiles.at(-1)?.position, [5.5, 5.5]);
-    assert.strictEqual(result.materialPiles.at(-1)?.rotation, 0);
-  });
-
-  it("drops at the landing point it is given", () => {
-    const material = board("pine", 48, 4, 1);
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [5, 5],
-        inventory: [material],
-      },
-    };
-    const result = dropMaterialAction([material], [5.2, 5.8])(state);
-    assert.deepStrictEqual(result.materialPiles.at(-1)?.position, [5.2, 5.8]);
-  });
-
-  it("keeps the orientation the piece was dropped in", () => {
-    const material = board("pine", 48, 4, 1);
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [5, 5],
-        inventory: [material],
-      },
-    };
-    const result = dropMaterialAction(
-      [material],
-      [5.5, 5.5],
-      Math.PI / 3,
-    )(state);
-    assert.strictEqual(result.materialPiles.at(-1)?.rotation, Math.PI / 3);
-  });
-
-  it("keeps stock in hand on the lot — no piles outdoors", () => {
-    const material = board("pine", 48, 4, 1);
-    const state: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        position: [6, 17],
-        inventory: [material],
-      },
-    };
-    const result = dropMaterialAction([material])(state);
-    assert.strictEqual(result, state);
   });
 });
 

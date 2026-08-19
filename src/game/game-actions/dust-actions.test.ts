@@ -2,14 +2,10 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { dustTotal } from "../Dust";
 import { GameState } from "../GameState";
-import { heldTool, holdingBroom } from "../HeldTool";
 import { initialGameState } from "../initialGameState";
-import { makePallet } from "../material-helpers";
 import {
   DUSTPAN_CAPACITY,
   DUSTPAN_EMPTY_RATE,
-  pickUpBroomAction,
-  putDownBroomAction,
   sweepTickPass,
 } from "./dust-actions";
 
@@ -33,61 +29,6 @@ function sweepingState(overrides: Partial<GameState> = {}): GameState {
     ...overrides,
   };
 }
-
-describe("pickUpBroomAction", () => {
-  it("takes the broom from an adjacent cell into the hands", () => {
-    const state: GameState = {
-      ...sweepingState(),
-      broomPosition: [6, 9],
-    };
-    const result = pickUpBroomAction()(state);
-    assert.strictEqual(result.broomPosition, null);
-    assert.strictEqual(holdingBroom(result), true);
-    assert.strictEqual(heldTool(result), "broom");
-  });
-
-  it("won't reach a broom more than a cell away", () => {
-    const state: GameState = { ...sweepingState(), broomPosition: [0, 0] };
-    assert.strictEqual(pickUpBroomAction()(state), state);
-  });
-
-  it("needs empty hands", () => {
-    const state: GameState = {
-      ...sweepingState(),
-      broomPosition: [6, 9],
-      player: {
-        ...sweepingState().player,
-        inventory: [makePallet()],
-      },
-    };
-    assert.strictEqual(pickUpBroomAction()(state), state);
-  });
-
-  it("can't pick up a broom the shop doesn't own yet", () => {
-    const state: GameState = {
-      ...sweepingState(),
-      broomOwned: false,
-      broomPosition: [6, 9],
-    };
-    assert.strictEqual(pickUpBroomAction()(state), state);
-  });
-});
-
-describe("putDownBroomAction", () => {
-  it("leans the broom where the player stands, pan contents and all", () => {
-    const result = putDownBroomAction()(
-      sweepingState({ dustpan: { walnut: 30 } }),
-    );
-    assert.deepStrictEqual(result.broomPosition, [6, 8]);
-    assert.strictEqual(heldTool(result), null);
-    assert.deepStrictEqual(result.dustpan, { walnut: 30 });
-  });
-
-  it("does nothing when the broom isn't in hand", () => {
-    const state: GameState = { ...sweepingState(), broomPosition: [3, 3] };
-    assert.strictEqual(putDownBroomAction()(state), state);
-  });
-});
 
 describe("sweepTickPass", () => {
   it("does nothing unless the operate key is held", () => {

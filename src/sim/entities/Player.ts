@@ -32,8 +32,8 @@ import { Clock } from "../singletons/Clock";
 import { TimeFlow } from "../TimeFlow";
 
 /**
- * The player, as a sim entity — exemplar #1 for the entity ports (see
- * MIGRATION.md phase 2).
+ * The player, as a sim entity — the first entity ported to the sim,
+ * establishing the pattern the rest followed.
  *
  * What it owns is the old world's `Person` slice plus the continuous
  * body the React hook (`useWalkingBody`) used to keep: the body is a

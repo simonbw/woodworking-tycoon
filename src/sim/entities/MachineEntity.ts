@@ -17,8 +17,8 @@ import {
 } from "../save/serialization";
 
 /**
- * A machine standing on the shop floor — exemplar #2 for the entity
- * ports (see MIGRATION.md phase 2).
+ * A machine standing on the shop floor — the second entity ported to
+ * the sim (after `Player`), establishing the pattern the rest followed.
  *
  * The entity owns its `MachineState` — the same data shape the old world
  * kept in `GameState.machines`, mutated in place through the command

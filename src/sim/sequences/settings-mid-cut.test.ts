@@ -10,9 +10,6 @@
  * commands that would move its settings, plan, tools, or upgrades all
  * refuse. These drive that through `ShopDriver`, so they go through the
  * same commands the keys and the station sheet do.
- *
- * (Rehosted from `src/game/sequences/settings-mid-cut.test.ts` onto the
- * entity-world driver — the parity spec for the sim.)
  */
 
 import assert from "node:assert";

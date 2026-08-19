@@ -16,10 +16,9 @@ import { projectGameState } from "../projection";
 import { MaterialPileEntity } from "./MaterialPileEntity";
 
 /**
- * The pile & truck-cargo port's contract, carried over from the old
- * transform tests (player-actions.test.ts, truck-actions.test.ts):
- * geometric reach, the hand cap, the no-piles-outdoors rule, the
- * at-the-bed rules, and byte-identical serialization.
+ * The pile & truck-cargo contract: geometric reach, the hand cap, the
+ * no-piles-outdoors rule, the at-the-bed rules, and byte-identical
+ * serialization.
  */
 
 /** Standing in the tailgate aisle, one step out the door. */

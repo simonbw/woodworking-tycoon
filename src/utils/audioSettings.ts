@@ -5,7 +5,7 @@
  * The audio graph (`audioBus.ts`) subscribes to it to set gain levels, and the
  * settings UI reads/writes it through the `useAudioSettings` hook. Preferences
  * live under their own `localStorage` key, deliberately separate from the game
- * save (`saveLoad.ts`): they are a per-device/user preference, not save data.
+ * save (`sim/save/`): they are a per-device/user preference, not save data.
  */
 
 export interface AudioSettings {

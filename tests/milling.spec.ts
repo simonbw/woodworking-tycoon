@@ -20,7 +20,7 @@ import { goToLumberyard, goToStore, leaveStore, shelfTag } from "./navigation";
  * different interface from the benches and containers in stations.spec.ts,
  * which is why they live in their own browser.
  *
- * What the cuts *produce* is checked in src/game/sequences/ — the milling
+ * What the cuts *produce* is checked in src/sim/sequences/ — the milling
  * chains, the mitred frame, the resaw. The assertions here are about the keys,
  * the scales, and the machine refusing to work until it's switched on.
  *

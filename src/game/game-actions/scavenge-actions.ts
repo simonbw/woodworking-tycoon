@@ -1,14 +1,11 @@
 import { initialPalletNails } from "../bench-work/pallet-geometry";
-import { GameAction, GameState } from "../GameState";
+import { GameState } from "../GameState";
 import { makeMaterial } from "../material-helpers";
 import { Pallet } from "../Materials";
-import { truckCabSideCell } from "../lot";
 import { ScavengeStopResult, ScavengingTrip } from "../Person";
 import { Tuple } from "../../utils/typeUtils";
 import { TICKS_PER_DAY } from "../time";
-import { dayTicksSpent, isNight } from "../time-flow";
-import { needsFirstPallet } from "../tutorial";
-import { canLeaveShop } from "./door-actions";
+import { dayTicksSpent } from "../time-flow";
 
 /**
  * The circuit, in driving order: every place in the neighborhood worth
@@ -34,7 +31,7 @@ const FULL_STOP_TICKS = 30;
  * six, so working on anything downstream of a pallet doesn't mean
  * waiting out the circuit every time.
  */
-export const DEV_STOP_TICKS = 10;
+const DEV_STOP_TICKS = 10;
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -149,100 +146,4 @@ export function keepScavengingBlock(
     return "outOfDaylight";
   }
   return null;
-}
-
-/**
- * Drive out to hunt for free pallets. Starts at the truck's cab like any
- * trip out of the shop, and heads straight into the first stop's search;
- * from there the trip runs on the player's calls (keep searching / head
- * home) until the drive home lands the haul in the truck's bed.
- */
-export function startScavengingAction(
-  rng: () => number = Math.random,
-): GameAction {
-  return (gameState) => {
-    if (!canLeaveShop(gameState)) {
-      console.warn("Can't leave the shop right now");
-      return gameState;
-    }
-    if (isNight(gameState)) {
-      console.warn("Shop's closed for the night — nowhere to go but home");
-      return gameState;
-    }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        away: {
-          kind: "scavenging",
-          startTick: gameState.tick,
-          stops: rollScavengeStops(rng, needsFirstPallet(gameState)),
-          stopsSearched: 0,
-          phase: {
-            kind: "searching",
-            doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
-          },
-        },
-      },
-    };
-  };
-}
-
-/**
- * Push on to the next stop — another hour spent. Refused (with a console
- * note, mirroring the other guarded verbs) when keepScavengingBlock says
- * why; the UI shows the same reason on the disabled button.
- */
-export function continueScavengingAction(): GameAction {
-  return (gameState) => {
-    const block = keepScavengingBlock(gameState);
-    if (block !== null) {
-      console.warn(`Can't keep scavenging: ${block}`);
-      return gameState;
-    }
-    const away = gameState.player.away as ScavengingTrip;
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        away: {
-          ...away,
-          phase: {
-            kind: "searching",
-            doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
-          },
-        },
-      },
-    };
-  };
-}
-
-/**
- * Call it and pull back into the shop — always on offer at a decision,
- * day or night (driving back after close is allowed; starting another
- * search is not), and free: the circuit loops back past the shop, so the
- * drive is already paid for in the stops. The haul lands in the truck's
- * bed to be unloaded at the tailgate, and the player steps out beside
- * the cab — the same arrival a shopping trip ends with.
- */
-export function headHomeFromScavengingAction(): GameAction {
-  return (gameState) => {
-    const away = gameState.player.away;
-    if (away?.kind !== "scavenging" || away.phase.kind !== "deciding") {
-      console.warn("Not at a scavenging decision — nothing to call");
-      return gameState;
-    }
-    return {
-      ...gameState,
-      truck: {
-        ...gameState.truck,
-        bed: [...gameState.truck.bed, ...scavengeLoot(away)],
-      },
-      player: {
-        ...gameState.player,
-        away: null,
-        position: truckCabSideCell(gameState.shopInfo),
-      },
-    };
-  };
 }

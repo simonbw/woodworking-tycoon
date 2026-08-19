@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { initialGameState } from "../initialGameState";
-import { clearPendingPayoutsAction, emitPayout } from "./payout-actions";
+import { emitPayout } from "./payout-actions";
 
 const sale = {
   kind: "sale" as const,
@@ -29,16 +29,5 @@ describe("payout announcements", () => {
     const twice = emitPayout(emitPayout(initialGameState, sale), sale);
     const [a, b] = twice.pendingPayouts ?? [];
     assert.notStrictEqual(a.id, b.id);
-  });
-
-  it("clears the queue once the flight layer has picked it up", () => {
-    const announced = emitPayout(initialGameState, sale);
-    const drained = clearPendingPayoutsAction(announced);
-    assert.deepStrictEqual(drained.pendingPayouts, []);
-  });
-
-  it("leaves an already-empty queue's identity alone", () => {
-    const state = clearPendingPayoutsAction(initialGameState);
-    assert.strictEqual(clearPendingPayoutsAction(state), state);
   });
 });

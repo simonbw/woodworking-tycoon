@@ -4,9 +4,6 @@
  * the same fence serves both — read in quarters one way, inches the
  * other. The resaw-shop fixture stocks the pockets with two milled 8/4
  * walnut blanks, one per cut.
- *
- * (Rehosted from `src/game/sequences/band-saw-orientation.test.ts` onto
- * the entity-world driver — the parity spec for the sim.)
  */
 
 import assert from "node:assert";

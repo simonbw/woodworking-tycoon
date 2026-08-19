@@ -10,9 +10,6 @@
  * `pattern-boards.spec.ts` used to do all of this through the browser at
  * about sixteen seconds a run — the longest test in the suite. It now checks
  * only the journal gating and the bench's recipe list.
- *
- * Rehosted from `src/game/sequences/pattern-boards-chain.test.ts` onto the
- * entity world's driver — the parity spec for the sim (MIGRATION.md phase 2).
  */
 
 import { describe, it } from "node:test";

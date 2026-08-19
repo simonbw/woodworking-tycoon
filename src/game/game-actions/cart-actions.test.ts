@@ -2,23 +2,10 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { CartLine, cartTotal, groupCartLines } from "../cart";
-import { CLAMP_COST } from "../Clamp";
-import { CONSUMABLE_TYPES } from "../Consumable";
 import { GameState } from "../GameState";
-import { BROOM_COST } from "../HeldTool";
 import { initialGameState } from "../initialGameState";
 import { MACHINE_TYPES } from "../Machine";
-import { SHOP_VAC_COST } from "../ShopVac";
-import {
-  addToCartAction,
-  canCheckOut,
-  checkoutAction,
-  clearCartAction,
-  currentCart,
-  removeFromCartAction,
-  takeCartAction,
-} from "./cart-actions";
-import { returnFromStoreAction } from "./door-actions";
+import { addToCartAction, currentCart } from "./cart-actions";
 
 // Prices come off the same registries the shelf tags read, because
 // that's the invariant worth protecting: some buy actions take the
@@ -31,20 +18,11 @@ const PINE: CartLine = {
   material: board("pine", 96, 4, 8, "smooth"),
   price: 20,
 };
-const NAILS: CartLine = {
-  kind: "consumablePack",
-  consumableId: "nails",
-  price: CONSUMABLE_TYPES.nails.packPrice,
-};
 const SAW: CartLine = {
   kind: "machine",
   machineTypeId: "miterSaw",
   price: MACHINE_TYPES.miterSaw.cost,
 };
-const CLAMP: CartLine = { kind: "clamp", price: CLAMP_COST };
-const BROOM: CartLine = { kind: "broom", price: BROOM_COST };
-const VAC: CartLine = { kind: "shopVac", price: SHOP_VAC_COST };
-
 /** A shop mid-trip, standing in an aisle with the given cart. */
 function atStore(money: number, cart: ReadonlyArray<CartLine> = []): GameState {
   return {
@@ -95,7 +73,6 @@ describe("addToCartAction", () => {
   it("lets the cart outrun the wallet — the register is what refuses", () => {
     const result = addToCartAction(SAW)(atStore(10));
     assert.strictEqual(cartOf(result).length, 1);
-    assert.strictEqual(canCheckOut(result), false);
   });
 
   it("refuses a second broom — there is only ever one to a shop", () => {
@@ -108,110 +85,5 @@ describe("addToCartAction", () => {
   it("does nothing when the player isn't at a store", () => {
     const home = initialGameState;
     assert.strictEqual(addToCartAction(PINE)(home), home);
-  });
-});
-
-describe("takeCartAction", () => {
-  it("takes a flatbed from the corral, once", () => {
-    const without: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        away: {
-          kind: "shopping",
-          store: "orangeBox",
-          cart: [],
-          hasCart: false,
-          position: [0, 0],
-          direction: 1,
-        },
-      },
-    };
-    const taken = takeCartAction()(without);
-    const away = taken.player.away;
-    assert.strictEqual(away?.kind === "shopping" && away.hasCart, true);
-    // Taking a second cart is taking the one you already have.
-    assert.strictEqual(takeCartAction()(taken), taken);
-  });
-
-  it("does nothing when the player isn't at a store", () => {
-    assert.strictEqual(takeCartAction()(initialGameState), initialGameState);
-  });
-});
-
-describe("removeFromCartAction / clearCartAction", () => {
-  it("puts one line back on the shelf", () => {
-    const state = atStore(100, [PINE, NAILS]);
-    const result = removeFromCartAction(0)(state);
-    assert.deepStrictEqual(
-      cartOf(result).map((line) => line.kind),
-      ["consumablePack"],
-    );
-  });
-
-  it("ignores an index that isn't in the cart", () => {
-    const state = atStore(100, [PINE]);
-    assert.strictEqual(removeFromCartAction(4)(state), state);
-  });
-
-  it("empties the whole cart", () => {
-    const result = clearCartAction()(atStore(100, [PINE, NAILS, SAW]));
-    assert.deepStrictEqual(cartOf(result), []);
-  });
-});
-
-describe("checkoutAction", () => {
-  it("rings every line up through its own buy action, then empties", () => {
-    const result = checkoutAction()(atStore(1000, [PINE, NAILS, SAW]));
-
-    // Each kind lands where that kind lands: stock in the bed, machines
-    // crated in the bed, supplies straight into the shop's stock
-    assert.strictEqual(result.truck.bed.length, 1);
-    assert.strictEqual(result.truck.bed[0].type, "board");
-    assert.deepStrictEqual(
-      result.truck.crates.map((crate) => crate.machineTypeId),
-      ["miterSaw"],
-    );
-    assert.strictEqual(
-      result.consumables.nails,
-      initialGameState.consumables.nails + CONSUMABLE_TYPES.nails.packSize,
-    );
-    assert.deepStrictEqual(cartOf(result), []);
-  });
-
-  it("takes exactly the total the cart was showing, kind by kind", () => {
-    // Every kind of line at once: whatever a buy action charges has to
-    // be the number the header quoted, or the store lies to the player.
-    const cart = [PINE, NAILS, SAW, CLAMP, BROOM, VAC];
-    const result = checkoutAction()(atStore(2000, cart));
-    assert.strictEqual(result.money, 2000 - cartTotal(cart));
-  });
-
-  it("refuses the whole cart when it outruns the wallet", () => {
-    const state = atStore(100, [PINE, SAW]);
-    const result = checkoutAction()(state);
-    assert.strictEqual(result.money, 100);
-    assert.strictEqual(result.truck.bed.length, 0);
-    assert.strictEqual(cartOf(result).length, 2);
-  });
-
-  it("takes a cart that costs exactly the wallet", () => {
-    const result = checkoutAction()(atStore(20, [PINE]));
-    assert.strictEqual(result.money, 0);
-    assert.strictEqual(result.truck.bed.length, 1);
-  });
-
-  it("does nothing when the player isn't at a store", () => {
-    const home = initialGameState;
-    assert.strictEqual(checkoutAction()(home), home);
-  });
-});
-
-describe("driving away", () => {
-  it("leaves an unpaid cart behind with the trip", () => {
-    const result = returnFromStoreAction(() => 0.5)(atStore(100, [PINE, SAW]));
-    assert.strictEqual(result.player.away, null);
-    assert.strictEqual(result.money, 100);
-    assert.strictEqual(result.truck.bed.length, 0);
   });
 });

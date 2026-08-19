@@ -6,9 +6,6 @@
  * an arbitrary strip count — plus the gates that guard the commit: the
  * clamp rack and the skills the composition demands.
  *
- * Rehosted from `src/game/sequences/glue-up-scene.test.ts` onto the
- * entity-world ShopDriver — the parity spec for the sim.
- *
  * The fixture stages three strips in the bench's bay and carries two
  * more, so a bare openShop already holds a three-strip run.
  */

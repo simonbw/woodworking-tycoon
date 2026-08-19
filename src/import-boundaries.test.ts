@@ -68,7 +68,7 @@ describe("sim/view import boundaries", () => {
     // Neither may lean on the old world's transform layer.
     const RULES: Array<{ dirs: string[]; allowed: RegExp[] }> = [
       {
-        dirs: ["src/sim/dispatch", "src/shell/dispatch"],
+        dirs: ["src/shell/dispatch"],
         allowed: [
           /^src\/sim\/commands\//,
           // Read-only surfaces for enablement checks and targeting:
@@ -94,6 +94,14 @@ describe("sim/view import boundaries", () => {
 
     const offenders: string[] = [];
     for (const { dirs, allowed } of RULES) {
+      // A directory that has moved would otherwise leave its rule
+      // guarding nothing, silently.
+      for (const dir of dirs) {
+        assert.ok(
+          fs.existsSync(path.join(REPO_ROOT, dir)),
+          `${dir} is named by an import rule but doesn't exist`,
+        );
+      }
       for (const file of dirs.flatMap(sourceFiles)) {
         for (const target of importTargets(file)) {
           const inSim = target.startsWith("src/sim/");

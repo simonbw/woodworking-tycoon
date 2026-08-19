@@ -10,10 +10,6 @@
  * the hands, and the pan really empties through the can. The sweeping
  * tutorial's card reads this same chain, so its frontier is asserted at
  * each stage the way sequences/tutorial.test.ts walks the opening.
- *
- * Rehosted from `src/game/sequences/cleaning-chain.test.ts` onto the
- * entity world's driver — same structure, same assertions; this file is
- * part of the migration's parity spec (MIGRATION.md phase 2).
  */
 
 import { describe, it } from "node:test";

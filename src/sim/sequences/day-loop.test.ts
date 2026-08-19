@@ -5,10 +5,6 @@
  * names); what belongs here is the rhythm — glue up in the evening and
  * it's dry in the morning, and a closed shop refuses the next cut but
  * never the one already running.
- *
- * Rehosted from `src/game/sequences/day-loop.test.ts` onto the entity
- * world's driver — same structure, same assertions; this file is part
- * of the migration's parity spec (MIGRATION.md phase 2).
  */
 
 import assert from "node:assert";

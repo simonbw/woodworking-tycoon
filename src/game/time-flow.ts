@@ -10,7 +10,7 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
 
 /**
  * The spend-to-advance clock: the day is a budget of working minutes,
- * and the clock's pace depends on what the player is doing. The Ticker
+ * and the clock's pace depends on what the player is doing. TimeFlow
  * asks this model how fast to feed ticks; the tick pipeline itself
  * never changes.
  *
@@ -24,10 +24,10 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  * deliberate close, not a metronome).
  *
  *  waiting — the wait key is held: time deliberately spent on nothing.
- *            The rate ramps up the longer the hold (see the Ticker's
- *            waitTicksPerSecond), topping out past working pace. The
- *            easy answer to a cure; every hour waited is an hour not
- *            worked.
+ *            The rate ramps up the longer the hold (see TimeFlow's
+ *            WAIT_START_PACE/WAIT_MAX_PACE/WAIT_RAMP_SECONDS), topping
+ *            out past working pace. The easy answer to a cure; every
+ *            hour waited is an hour not worked.
  *  working — time is being spent: attended machine work, a busy body
  *            (trudging, sweeping), or a scavenging run's search. Full
  *            pace, the familiar five minutes a second.
@@ -51,9 +51,9 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  *    overnight, 1440 to a calendar day) and phases. Everything the
  *    game quotes "in days" is denominated in calendar days, so
  *    "three days" means three mornings from now.
- *  - src/components/Ticker.tsx — the variable-rate loop, the wait
- *    ramp, and the action-answering cadence (milestone unlocks) that
- *    runs regardless of clock pace.
+ *  - src/sim/TimeFlow.ts — the variable-rate loop and the wait ramp;
+ *    src/sim/systems/MilestoneSystem.ts — the action-answering cadence
+ *    (milestone unlocks) that runs regardless of clock pace.
  *  - src/game/game-actions/door-actions.ts — trips charging for the
  *    drive, and the overnight running as one batch of ordinary ticks.
  *  - src/game/calendar.ts — the derived, presentation-only date.
@@ -61,7 +61,7 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  *    deliberately no wall clock.
  *  - src/game/daylight.ts — where the sun is, which the dial and the lit
  *    lot both read so they can never disagree.
- *  - src/game/sequences/day-loop.test.ts — the day loop's promises.
+ *  - src/sim/sequences/day-loop.test.ts — the day loop's promises.
  */
 export type TimeSpeed = "waiting" | "working" | "idle" | "stopped";
 

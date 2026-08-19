@@ -117,7 +117,7 @@ function advanceTickPass(): GameAction {
  * operation cell; hands-free phases (glue curing) run regardless, even
  * during away trips.
  */
-export function machineTickPass(): GameAction {
+function machineTickPass(): GameAction {
   return (gameState) => {
     const completions: OperationCompletion[] = [];
     const dustEmissions: Array<{

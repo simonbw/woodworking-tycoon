@@ -9,9 +9,6 @@
  *
  * `skills.spec.ts` keeps the journal: the starter certificates, the badge
  * counting unspent points, and the recipe that is absent until it's learned.
- *
- * (Rehosted from `src/game/sequences/two-tone-chain.test.ts` onto the
- * entity-world driver — the parity spec for the sim.)
  */
 
 import { describe, it } from "node:test";

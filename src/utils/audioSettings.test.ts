@@ -32,8 +32,8 @@ import {
 describe("audioSettings store", () => {
   beforeEach(() => {
     // Re-claim the global: the whole unit suite shares one process, and
-    // saveLoad.test.ts installs a stub of its own at import time. Whichever
-    // module happened to load last would otherwise own `localStorage` for
+    // another module may install a stub of its own at import time.
+    // Whichever loaded last would otherwise own `localStorage` for
     // everybody, and these tests would read and write someone else's map.
     (globalThis as unknown as { localStorage: MemStorage }).localStorage =
       storage;

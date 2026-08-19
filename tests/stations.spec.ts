@@ -36,7 +36,7 @@ import {
  *
  * The direct-feed machines themselves — power switches, settings scales, and
  * the stock deciding the cut — are milling.spec.ts. What the stations
- * *produce* is checked in src/game/sequences/: the recipes, the chains, and
+ * *produce* is checked in src/sim/sequences/: the recipes, the chains, and
  * the guided opening from a new save. The assertions here are about the
  * interface reaching them.
  *

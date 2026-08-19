@@ -6,9 +6,6 @@
  * seam commits after the pieces are slid onto one table
  * (gatherBenchPieces), which is what the view does when the last clamp
  * goes tight.
- *
- * Rehosted from `src/game/sequences/bench-group.test.ts` onto the
- * entity-world ShopDriver — the parity spec for the sim.
  */
 
 import { describe, it } from "node:test";

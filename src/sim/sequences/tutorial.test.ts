@@ -23,10 +23,6 @@ import { ShopDriver } from "../driver/ShopDriver";
  * The interesting assertion is the step id after each move. A box that
  * quietly fails to tick would leave the card repeating itself forever in a
  * shop where the work is already done.
- *
- * Rehosted from `src/game/sequences/tutorial.test.ts` onto the entity
- * world's driver — same structure, same assertions; this file is part
- * of the migration's parity spec (MIGRATION.md phase 2).
  */
 
 const WORKBENCH = "workspace";

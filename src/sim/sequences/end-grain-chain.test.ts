@@ -9,9 +9,6 @@
  *
  * `end-grain.spec.ts` used to answer all of that through the browser at
  * about ten seconds a run. It now only checks that the UI exposes the chain.
- *
- * Rehosted from `src/game/sequences/end-grain-chain.test.ts` onto the
- * entity world's driver — the parity spec for the sim (MIGRATION.md phase 2).
  */
 
 import { describe, it } from "node:test";

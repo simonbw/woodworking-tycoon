@@ -11,9 +11,6 @@
  *
  * `consumables.spec.ts` keeps the shortfall readout, the supply cabinet's
  * appearance, and the store aisle.
- *
- * Rehosted from `src/game/sequences/consumables-chain.test.ts` onto the
- * entity world's driver — the parity spec for the sim (MIGRATION.md phase 2).
  */
 
 import { describe, it } from "node:test";

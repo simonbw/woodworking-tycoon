@@ -109,9 +109,7 @@ import { TimeFlow } from "../TimeFlow";
  * Game booted from a fresh shop or a fixture save, advanced
  * synchronously, and inspected through its entities.
  *
- * This is the successor of `src/game/sequences/shop-driver.ts`. As phase
- * 2 of MIGRATION.md ports each system, this driver grows the same
- * job-level verbs the old one has (walkTo, mill, sellAtStand, …), each
+ * It offers job-level verbs (walkTo, mill, sellAtStand, …), each
  * implemented as calls into the command layer — the same surface the
  * input dispatcher uses, so a green sequence test vouches for what a
  * player can actually reach. Mutating the world any other way from a

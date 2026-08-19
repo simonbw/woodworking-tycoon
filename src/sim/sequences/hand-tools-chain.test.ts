@@ -8,9 +8,6 @@
  *
  * `hand-tools.spec.ts` keeps the tool wall, the two-slot rack, and the
  * parameter scales the cut is set up on.
- *
- * Rehosted from `src/game/sequences/hand-tools-chain.test.ts` onto the
- * entity-world ShopDriver — the parity spec for the sim.
  */
 
 import { describe, it } from "node:test";

@@ -9,9 +9,6 @@
  *
  * `cutting-board.spec.ts` keeps the store, the lumberyard, and the accessory rack;
  * the glue-sand-finish run that used to follow them lives here.
- *
- * Rehosted from `src/game/sequences/cutting-board-chain.test.ts` onto the
- * entity world's driver — the parity spec for the sim (MIGRATION.md phase 2).
  */
 
 import { describe, it } from "node:test";

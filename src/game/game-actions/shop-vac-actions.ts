@@ -9,19 +9,16 @@ import {
   SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
-import { holdingBroom } from "../HeldTool";
-import { isOutdoors } from "../lot";
 import {
   canisterRoom,
   carryingShopVac,
-  SHOP_VAC_COST,
   SHOP_VAC_EMPTY_RATE,
   SHOP_VAC_PASSIVE_RATE,
 } from "../ShopVac";
 import { personCanWork } from "../Person";
 import { DustSpecies } from "../Materials";
 import { nextToGarbageCan, sweepSwath } from "./dust-actions";
-import { chebyshevDistance, Vector, vectorEquals } from "../Vectors";
+import { vectorEquals } from "../Vectors";
 import { withXp } from "./skill-actions";
 
 /** Share of the underfoot cell's dust one suction tick takes. */
@@ -32,59 +29,6 @@ const VACUUM_CONE_RATE = 0.45;
 /** Suction ticks gathering less than this grant no XP (mirrors sweeping). */
 const XP_MINIMUM_GATHERED = 15;
 const VACUUM_XP = 1;
-
-/** Bought at the store; it's delivered to the material dropoff spot. */
-export function buyShopVacAction(): GameAction {
-  return (gameState) => {
-    if (gameState.shopVac !== null) {
-      console.warn("Already own a shop vac");
-      return gameState;
-    }
-    if (gameState.money < SHOP_VAC_COST) {
-      console.warn("Tried to buy the shop vac without enough money");
-      return gameState;
-    }
-    return {
-      ...gameState,
-      money: gameState.money - SHOP_VAC_COST,
-      shopVac: {
-        position: gameState.shopInfo.materialDropoffPosition,
-        canister: {},
-      },
-    };
-  };
-}
-
-/**
- * Grab the vac (standing on it) or park it right here (dragging it).
- * Anything else is a no-op — you can't grab what you're not next to.
- */
-export function toggleCarryShopVacAction(): GameAction {
-  return (gameState) => {
-    const vac = gameState.shopVac;
-    if (!vac) {
-      return gameState;
-    }
-    if (vac.position === null) {
-      // Keep dragging it on the lot — the vac parks on shop floor only
-      if (isOutdoors(gameState.shopInfo, gameState.player.position)) {
-        return gameState;
-      }
-      return {
-        ...gameState,
-        shopVac: { ...vac, position: gameState.player.position },
-      };
-    }
-    // The hose takes a hand — put the broom down before grabbing the vac
-    if (holdingBroom(gameState)) {
-      return gameState;
-    }
-    if (chebyshevDistance(vac.position, gameState.player.position) <= 1) {
-      return { ...gameState, shopVac: { ...vac, position: null } };
-    }
-    return gameState;
-  };
-}
 
 /**
  * One tick of suction, run from tickAction while the player holds the

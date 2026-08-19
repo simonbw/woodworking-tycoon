@@ -7,9 +7,6 @@
  * can't go through the table saw, whether the sawhorses take it, whether
  * the pieces that come off the circular saw reach the fence, and whether
  * what you end up holding is what a jig's blueprint asks for.
- *
- * (Rehosted from `src/game/sequences/sheet-breakdown-chain.test.ts` onto
- * the entity-world driver — the parity spec for the sim.)
  */
 
 import assert from "node:assert";
