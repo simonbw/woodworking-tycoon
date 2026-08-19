@@ -11,33 +11,45 @@ import { Species } from "../../game/Materials";
  * The edge strips are full-length crops of straight, tight grain — the
  * across-the-rings face a board's edge shows. They share the face
  * window's lengthwise position, so a cut board's edge streaks continue
- * across the seam along with its face.
- *
- * A species with no entry here draws the procedural face BoardSprite
- * has always drawn.
+ * across the seam along with its face. A species without strips yet
+ * draws its edge procedurally under the scanned face.
  */
 export interface BoardFaceArt {
   /** One full-board scan per entry; the region's seed picks one. */
   readonly faces: ReadonlyArray<string>;
-  /** Full-length edge strips; the seed picks one of these too. */
-  readonly edges: ReadonlyArray<string>;
+  /** Full-length edge strips; the seed picks one of these too. Absent
+   * until the species has edge art — the edge draws procedurally. */
+  readonly edges?: ReadonlyArray<string>;
   /** Inches of across-grain wood an edge strip spans. */
-  readonly edgeSpanInches: number;
+  readonly edgeSpanInches?: number;
 }
 
-/** A species keeps its scans in its own folder, numbered from 1. */
+/** A species keeps its scans in its own folder, numbered from 1. The
+ * folder is the species name lowercased (purpleHeart → purpleheart). */
 const scans = (species: Species, kind: "face" | "edge", count: number) =>
   Array.from(
     { length: count },
-    (_, i) => `/images/textures/${species}/${kind}-${i + 1}.jpg`,
+    (_, i) => `/images/textures/${species.toLowerCase()}/${kind}-${i + 1}.jpg`,
   );
 
-export const BOARD_FACE_TEXTURES: Partial<Record<Species, BoardFaceArt>> = {
+const faceArt = (species: Species, count: number): BoardFaceArt => ({
+  faces: scans(species, "face", count),
+});
+
+export const BOARD_FACE_TEXTURES: Record<Species, BoardFaceArt> = {
+  pallet: faceArt("pallet", 9),
+  pine: faceArt("pine", 21),
+  poplar: faceArt("poplar", 10),
   oak: {
     faces: scans("oak", "face", 13),
     edges: scans("oak", "edge", 3),
     edgeSpanInches: 3,
   },
+  maple: faceArt("maple", 10),
+  cherry: faceArt("cherry", 12),
+  walnut: faceArt("walnut", 5),
+  mahogany: faceArt("mahogany", 11),
+  purpleHeart: faceArt("purpleHeart", 11),
 };
 
 /**
@@ -56,7 +68,7 @@ export const BOARD_ROUGHNESS_TEXTURES: ReadonlyArray<string> = Array.from(
 export const BOARD_FACE_TEXTURE_ASSETS = [
   ...Object.values(BOARD_FACE_TEXTURES).flatMap((art) => [
     ...art.faces,
-    ...art.edges,
+    ...(art.edges ?? []),
   ]),
   ...BOARD_ROUGHNESS_TEXTURES,
 ];

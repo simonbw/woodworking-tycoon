@@ -33,19 +33,47 @@ interface Job {
   readonly maxSize?: number;
   /** JPEG quality, 0–100. */
   readonly quality?: number;
+  /** Degrees to rotate clockwise, for sources exported sideways — the
+   * game wants every board scan portrait, grain running down. */
+  readonly rotate?: number;
 }
 
-/** One full-board scan per file; shipped at source size — boards get
+/**
+ * One full-board scan per file, shipped at source size — boards get
  * looked at closely on the bench, and the scans are narrow enough that
- * the pixels are cheap. */
-const OAK_BOARDS: ReadonlyArray<Job> = Array.from({ length: 13 }, (_, i) => ({
-  source: `oak/board-oak-${i + 1}.jpg`,
-  out: `oak/face-${i + 1}.jpg`,
-}));
+ * the pixels are cheap. Sources are `<species>-board-N`; oak predates
+ * the cut-sheet exports and keeps its photo scans' extension.
+ */
+const boardScans = (
+  species: string,
+  count: number,
+  ext = "png",
+  extra: Partial<Job> = {},
+): ReadonlyArray<Job> =>
+  Array.from({ length: count }, (_, i) => ({
+    source: `${species}/${species}-board-${i + 1}.${ext}`,
+    out: `${species}/face-${i + 1}.jpg`,
+    ...extra,
+  }));
 
-/** Full-length edge strips, straight tight grain. */
+const ALL_BOARDS: ReadonlyArray<Job> = [
+  ...boardScans("pallet", 9),
+  ...boardScans("pine", 21),
+  // The first four poplar scans were exported sideways
+  ...boardScans("poplar", 10).map((job, i) =>
+    i < 4 ? { ...job, rotate: 90 } : job,
+  ),
+  ...boardScans("oak", 13, "jpg"),
+  ...boardScans("maple", 10),
+  ...boardScans("cherry", 12),
+  ...boardScans("walnut", 5),
+  ...boardScans("mahogany", 11),
+  ...boardScans("purpleheart", 11),
+];
+
+/** Full-length edge strips, straight tight grain — oak only so far. */
 const OAK_EDGES: ReadonlyArray<Job> = Array.from({ length: 3 }, (_, i) => ({
-  source: `oak/board-edge-oak-${i + 1}.jpg`,
+  source: `oak/oak-edge-${i + 1}.jpg`,
   out: `oak/edge-${i + 1}.jpg`,
 }));
 
@@ -62,7 +90,7 @@ const ROUGHNESS: ReadonlyArray<Job> = Array.from({ length: 5 }, (_, i) => ({
 const MANIFEST: ReadonlyArray<Job> = [
   // Sheet-good faces (SHEET_FACE_TEXTURES) — seamless square tiles
   {
-    source: "sheet-goods/face-birch-1.jpg",
+    source: "sheet-goods/plywood-birch-1.jpg",
     out: "sheet-goods/plywood-birch.jpg",
     maxSize: 2048,
   },
@@ -92,7 +120,7 @@ const MANIFEST: ReadonlyArray<Job> = [
     maxSize: 1024,
   },
   // Board faces and edges (BOARD_FACE_TEXTURES) — full-board scans
-  ...OAK_BOARDS,
+  ...ALL_BOARDS,
   ...OAK_EDGES,
   // Wear maps (BOARD_ROUGHNESS_TEXTURES)
   ...ROUGHNESS,
@@ -115,6 +143,9 @@ for (const job of MANIFEST) {
   ];
   if (job.maxSize !== undefined) {
     args.push("-Z", String(job.maxSize));
+  }
+  if (job.rotate !== undefined) {
+    args.push("-r", String(job.rotate));
   }
   execFileSync("sips", [...args, sourcePath, "--out", outPath], {
     stdio: ["ignore", "ignore", "inherit"],

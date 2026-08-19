@@ -6,7 +6,7 @@ import {
   BOARD_FACE_SCAN_WIDTH_IN,
   defaultBoardFace,
 } from "../../game/Materials";
-import { colorToNumber, mixColors } from "../../utils/colorUtils";
+import { colorToNumber } from "../../utils/colorUtils";
 import { lerp } from "../../utils/mathUtils";
 import { omitUndefined } from "../../utils/objectUtils";
 import { seededRandom } from "../../utils/randUtils";
@@ -22,10 +22,11 @@ const WEATHERED_GRAY = 0x9a9186;
 
 /**
  * A board's milled state is drawn, not labeled:
- * - Species with scan art (boardFaceTextures.ts) wear a window of a real
- *   plank photograph, placed by the board's face region so a cut piece
- *   keeps the very grain it was cut with; the rest draw the procedural
- *   face. The edge face works the same way from the edge strips.
+ * - Every species wears a window of a real plank photograph
+ *   (boardFaceTextures.ts), placed by the board's face region so a cut
+ *   piece keeps the very grain it was cut with. The edge face works the
+ *   same way from the edge strips where a species has them; the rest
+ *   draw the edge procedurally under the scanned face.
  * - Roughness is real too: a grayscale wear map multiplies over the face
  *   (white is clean wood, dark is scuffs and saw marks), windowed by the
  *   same region so a board's scars survive its cuts. Milling fades it —
@@ -162,17 +163,6 @@ export const BoardSprite: React.FC<
       g.clear();
       const { width, height, depth, amp, topSkew, bottomSkew } = silhouette;
 
-      const { primary, secondary } = colorBySpecies[species];
-      const faceColor = !colorRevealed
-        ? mixColors(primary, WEATHERED_GRAY, 0.62)
-        : surface === "sanded"
-          ? mixColors(primary, 0xffffff, 0.1)
-          : colorToNumber(primary);
-      const edgeColor =
-        jointedEdges > 0
-          ? colorToNumber(secondary)
-          : mixColors(secondary, WEATHERED_GRAY, 0.5);
-
       // shadow
       for (const shadowWidth of [1, 2]) {
         g.rect(
@@ -185,44 +175,43 @@ export const BoardSprite: React.FC<
       }
 
       const art = BOARD_FACE_TEXTURES[species];
-      if (art) {
-        // The seed picks which scan of the library (an independent
-        // stream, so the placement draws stay untouched)
-        const artRng = seededRandom(`${region.seed}/art`);
-        const faceTexture = Assets.get<Texture>(
-          art.faces[Math.floor(artRng() * art.faces.length)],
-        );
+      // The seed picks which scan of the library (an independent
+      // stream, so the placement draws stay untouched)
+      const artRng = seededRandom(`${region.seed}/art`);
+      const faceTexture = Assets.get<Texture>(
+        art.faces[Math.floor(artRng() * art.faces.length)],
+      );
+
+      // The matrix maps texture pixels into local space (PIXI inverts
+      // it to build UVs): image x is across the plank, image y along
+      // the grain, drawn top-to-bottom like the board's length.
+      const sx =
+        (PIXELS_PER_INCH * BOARD_FACE_SCAN_WIDTH_IN) / faceTexture.source.width;
+      const sy =
+        (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) /
+        faceTexture.source.height;
+      g.poly(silhouette.facePoly);
+      g.fill({
+        texture: faceTexture,
+        matrix: new Matrix(
+          sx,
+          0,
+          0,
+          sy,
+          -region.v * PIXELS_PER_INCH - width / 2,
+          -region.u * PIXELS_PER_INCH - height / 2,
+        ),
+        textureSpace: "global",
+      });
+
+      if (art.edges !== undefined && art.edgeSpanInches !== undefined) {
+        // The edge strip shares the face's lengthwise position, so a
+        // cut board's edge streaks continue across the seam too.
         const edgeTexture = Assets.get<Texture>(
           art.edges[Math.floor(artRng() * art.edges.length)],
         );
         const edgeV =
           artRng() * Math.max(0, art.edgeSpanInches - thickness / 4);
-
-        // The matrix maps texture pixels into local space (PIXI inverts
-        // it to build UVs): image x is across the plank, image y along
-        // the grain, drawn top-to-bottom like the board's length.
-        const sx =
-          (PIXELS_PER_INCH * BOARD_FACE_SCAN_WIDTH_IN) /
-          faceTexture.source.width;
-        const sy =
-          (PIXELS_PER_INCH * BOARD_FACE_SCAN_LENGTH_IN) /
-          faceTexture.source.height;
-        g.poly(silhouette.facePoly);
-        g.fill({
-          texture: faceTexture,
-          matrix: new Matrix(
-            sx,
-            0,
-            0,
-            sy,
-            -region.v * PIXELS_PER_INCH - width / 2,
-            -region.u * PIXELS_PER_INCH - height / 2,
-          ),
-          textureSpace: "global",
-        });
-
-        // The edge strip shares the face's lengthwise position, so a
-        // cut board's edge streaks continue across the seam too.
         const esx =
           (PIXELS_PER_INCH * art.edgeSpanInches) / edgeTexture.source.width;
         const esy =
@@ -241,61 +230,31 @@ export const BoardSprite: React.FC<
           ),
           textureSpace: "global",
         });
-
-        // Weathering and finish read as veils over the real grain: the
-        // gray lifts when milling reveals the wood, sanding brightens it
-        if (!colorRevealed) {
-          g.poly(silhouette.facePoly);
-          g.fill({ color: WEATHERED_GRAY, alpha: 0.62 });
-        } else if (surface === "sanded") {
-          g.poly(silhouette.facePoly);
-          g.fill({ color: 0xffffff, alpha: 0.1 });
-        }
-        if (jointedEdges === 0) {
-          g.poly(silhouette.edgePoly);
-          g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
-        }
       } else {
-        // main face: down the left edge, back up the right
-        g.poly(silhouette.facePoly);
-        g.fill(faceColor);
-
-        // edge face: the right edge extruded by the board's thickness
+        // No edge strips for this species yet — flat species color; the
+        // shared veil below weathers it until the edges are jointed
         g.poly(silhouette.edgePoly);
-        g.fill(edgeColor);
+        g.fill(colorToNumber(colorBySpecies[species].secondary));
+      }
+
+      // Weathering and finish read as veils over the real grain: the
+      // gray lifts when milling reveals the wood, sanding brightens it
+      if (!colorRevealed) {
+        g.poly(silhouette.facePoly);
+        g.fill({ color: WEATHERED_GRAY, alpha: 0.62 });
+      } else if (surface === "sanded") {
+        g.poly(silhouette.facePoly);
+        g.fill({ color: 0xffffff, alpha: 0.1 });
+      }
+      if (jointedEdges === 0) {
+        g.poly(silhouette.edgePoly);
+        g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
       }
 
       const inset = amp + 1.5;
       // Surface detail stays inside the mitered silhouette
       const detailTop = -height / 2 + Math.abs(topSkew);
       const detailBottom = height / 2 - Math.abs(bottomSkew);
-      if (surface !== "rough" && !art) {
-        // Long grain lines down the length — the scans carry their own,
-        // and rough faces leave the talking to the wear map
-        const rng = seededRandom(`${fallbackSeed}/grain`);
-        const grainLines = Math.max(1, Math.round(width / 8));
-        for (let i = 0; i < grainLines; i++) {
-          const x =
-            lerp(
-              -width / 2 + inset,
-              width / 2 - inset,
-              (i + 0.5) / grainLines,
-            ) +
-            (rng() * 2 - 1) * 1.5;
-          const wander = (rng() * 2 - 1) * 1.2;
-          g.moveTo(x, detailTop + 2);
-          g.bezierCurveTo(
-            x + wander,
-            -height / 6,
-            x - wander,
-            height / 6,
-            x + (rng() * 2 - 1) * 1.2,
-            detailBottom - 2,
-          );
-          g.stroke({ width: 1, color: secondary, alpha: 0.35 });
-        }
-      }
-
       if (surface === "sanded") {
         // Soft sheen band along one side of the face
         g.rect(
@@ -315,7 +274,6 @@ export const BoardSprite: React.FC<
       colorRevealed,
       jointedEdges,
       thickness,
-      fallbackSeed,
     ],
   );
 
