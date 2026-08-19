@@ -41,7 +41,7 @@ mini-aisles off aisle 1), full-size machine displays flanking aisle
 at the garage's own zoom (the camera pans both axes), and the front
 wall has separate entrance and exit openings with the wayfinding
 stenciled on the slab. The merchandise draws with the shop's own
-sprites (`StoreMerchandiseLayer`, cached as one texture because a
+sprites (`StoreMerchandiseView`, cached as one texture because a
 floor of procedural grain is heavy). The trip itself carries the
 shopper's cell (`ShoppingTrip.position` — `player.position` keeps
 meaning the cell underfoot back home), and the keys mirror the shop

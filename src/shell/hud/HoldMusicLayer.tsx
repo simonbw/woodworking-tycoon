@@ -19,9 +19,9 @@ import { useGame, useShopState } from "../useShell";
 /**
  * How long the wait must be held before the music starts arriving. A tap of
  * the wait key costs only a few minutes and shouldn't be scored; this is
- * comfortably longer than a tap and comfortably shorter than the Ticker's
- * five-second rate ramp, so the music comes in while the clock is still
- * winding up rather than after it has settled.
+ * comfortably longer than a tap and comfortably shorter than TimeFlow's
+ * five-second wait ramp (WAIT_RAMP_SECONDS), so the music comes in while
+ * the clock is still winding up rather than after it has settled.
  */
 const HOLD_BEFORE_MUSIC_MS = 900;
 

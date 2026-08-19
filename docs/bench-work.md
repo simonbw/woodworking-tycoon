@@ -37,7 +37,7 @@ per-operation scripts that compose it.
    tiebreak). The offer is pure and unit-tested (`bench-work/tool-work.ts`:
    held tool + piece + how it lies → operation), and the claim takes
    exactly the piece under the tool (`BenchToolClaim` in
-   `sim/commands/bench-commands.ts`, mirroring direct-feed's inferred
+   `sim/commands/machine-commands.ts`, mirroring direct-feed's inferred
    start — it works pieces out of the output bay too, so rework needs no
    restaging). Work lands _in place_: the mask, kerf, and finished piece
    render through the piece's persistent placement, and the finish commit
@@ -166,15 +166,15 @@ The bench view decides _when_; the actions in
 `sim/commands/machine-commands.ts` and `sim/commands/bench-commands.ts`
 decide _what_. Every interactive operation has two commit points:
 
-- **Start** (`operateMachineAction`, in `player-actions.ts`): claims
+- **Start** (`operateMachine`, in `machine-commands.ts`): claims
   inputs, spends `requiredConsumables`, ties up the clamps the stock's
   length derives.
-- **Finish** (`finishAttendedWorkAction`): `op.output(...)`, XP, sound
+- **Finish** (`finishAttendedWork`): `op.output(...)`, XP, sound
   events, granted machines/upgrades — or the handoff into a hands-free
   remainder (the glue cure's `machineTickPass` path).
 
 Between the two, resource-granting scripts dispatch incremental actions
-(per-nail salvage via `pryPalletNailAction`, throttled dust emission).
+(per-nail salvage via `pryPalletNail`, throttled dust emission).
 Operations declare their script via `Operation.interaction`, and the
 tick never advances a declared operation's attended phase. Dev builds
 expose the commits as `__START_OPERATION__` / `__FINISH_ATTENDED_WORK__`
@@ -207,14 +207,14 @@ is the pallet instance transforming nail by nail:
   two present boards — a pallet is one board repeated, and the two rows
   are directions, not sizes — so every nail is in two boards and joins
   exactly them. They render in both views from the same
-  geometry (`pallet-geometry.ts` / `PalletSprite`), so the shop floor
+  geometry (`pallet-geometry.ts` / `createPalletSprite`), so the shop floor
   shows the same half-pried pallet the bench view does.
 - Each face only presents its own side's nail heads. The pallet is a
   piece like any other — it drags, R turns it, F flips it — and flipping
   it over is how the bottom boards' nails come on offer.
 - Z-order is physical: freed boards are loose stock riding on top of
   the pallet, and a board dragged back onto its berth re-enters the
-  pallet's layer sandwich (`berthLayerOf` — a stringer slid home lies
+  pallet's layer sandwich (`palletBoardSlot`'s `layer` field — a stringer slid home lies
   under the deck again). E takes the piece under the pointer, not the
   first in the bay.
 - Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
@@ -241,14 +241,14 @@ with the shop itself, leaned into. One measured PIXI `Application` at
 device resolution draws the same concrete floor the shop view tiles and
 the _same bench_ the shop floor draws (`BenchDiveView`:
 `makeshift-bench@4x.png`, the starting bench's own drawing re-exported
-at 32 px/inch against the pipeline's 8; the `WorktableSprite` vectors
+at 32 px/inch against the pipeline's 8; the `WorktableArt` vectors
 for built tables) — the zoomed bench and the floor bench are one drawing
 at two zooms, both anchored on their canvas center so the close-up lands
 exactly over the shop's copy.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchDiveView`; a board flipped up on edge narrows to its thickness,
-`BoardOnEdgeSprite`). F is one verb with three stops on a board — flat,
+`drawBoardOnEdge`). F is one verb with three stops on a board — flat,
 up on its long edge, up on its end — and the scene tumbles it between
 them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
 cycle and interpolates the very footprints `placedPieceSize` declares,

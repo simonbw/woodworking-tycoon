@@ -35,7 +35,7 @@ _is_ the indicator.
 - Producing operations carry a hand-tagged `dustOutput` rate
   (units/tick), following a rough ladder: planer ≫ table saw ≈ jointer >
   miter saw > sanding > hand-tool ops. Untagged operations emit nothing.
-- Dust is emitted **per tick during attended phases** in `tickAction`
+- Dust is emitted **per tick during attended phases** in `MachineSystem`
   (dust builds while the cut happens, which is also what drives the
   particle visuals). Interactive bench strokes dispatch the same
   emission, throttled, so hand sanding dirties the floor too. Hands-free

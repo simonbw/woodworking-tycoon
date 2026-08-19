@@ -161,8 +161,8 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
  * keypress spreads open the trip card — the places to go, one row per
  * destination, each answering to its own number. Orange Box is always 1.
  *
- * The rows fire the trip commands directly (the store legs' drive
- * minutes and the away-side venues are phase 6 — see MIGRATION.md).
+ * The rows fire the trip commands directly, which charge the store
+ * legs' drive minutes and drive the away-side venues themselves.
  */
 export const TruckPrompt: React.FC<{
   canvasWidth: number;

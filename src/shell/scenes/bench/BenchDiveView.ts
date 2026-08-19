@@ -122,7 +122,8 @@ export class BenchDiveView extends BaseEntity implements Entity {
     // the bench's own footprint on the shop floor, and it eases up to
     // the full frame — the old shell's camera dive, carried by the one
     // container everything on the stage draws into. (The shop no longer
-    // swells pixel-locked behind it; see MIGRATION.md.)
+    // swells pixel-locked behind it, the way the old shell's camera
+    // dive did.)
     this.leanIn(dive.dive, stage);
 
     // The turn/flip springs run every frame, whether or not the sim

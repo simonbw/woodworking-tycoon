@@ -23,9 +23,8 @@ import { StatusText } from "./StatusText";
  * their contents (ContentsSheet).
  *
  * Benches have no card at all — their sheet is the full-window bench
- * view, which is phase 7 of the migration: until it lands, Tab at a
- * bench opens no surface here (the open/close state still tracks, so
- * the keys behave; see MIGRATION.md).
+ * view (BenchDiveView), so Tab at a bench opens no surface here (the
+ * open/close state still tracks, so the keys behave).
  *
  * The old component portaled to the body because it rendered from the
  * camera-pinned overlay; here it renders in the HUD root, which is
@@ -52,7 +51,8 @@ export const StationSheet: React.FC = () => {
     return null;
   }
 
-  // The bench view (the full-window work surface) is phase 7.
+  // The bench view (the full-window work surface) renders elsewhere
+  // (BenchDiveView).
   if (sheetIsBenchView(sheetMachine, gameState.progression)) {
     return null;
   }

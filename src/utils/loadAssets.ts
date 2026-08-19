@@ -26,7 +26,7 @@ const TOOL_ITEM_ASSETS = (Object.keys(TOOL_TYPES) as ToolId[])
 /**
  * The supply icons do the same on the store's shelves — a racking bay
  * with no world-size art shows its product's own icon
- * (StoreMerchandiseLayer), so PIXI needs those too.
+ * (StoreMerchandiseView), so PIXI needs those too.
  */
 const SUPPLY_SHELF_ASSETS = [
   ...(Object.keys(CONSUMABLE_TYPES) as ConsumableId[])
