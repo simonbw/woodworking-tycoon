@@ -7,10 +7,11 @@ import { carryingShopVac } from "../../game/ShopVac";
 import { Player } from "../entities/Player";
 import { TruckEntity } from "../entities/TruckEntity";
 import { projectGameState } from "../projection";
+import { emitSound } from "./sound";
 
 /**
- * Loading and unloading the truck's bed, ported from the old
- * `truck-actions.ts`. Everything here happens standing at the bed
+ * Loading and unloading the truck's bed. Everything here happens
+ * standing at the bed
  * (atTruckBed) — the tailgate aisle by the garage door or beside the
  * rails — with the same hand rules as the shop floor: a tool in hand
  * commits the hands, a crate takes genuinely empty ones, and the arms
@@ -25,10 +26,6 @@ function player(game: Game): Player {
 
 function truck(game: Game): TruckEntity {
   return game.entities.getSingleton(TruckEntity);
-}
-
-function emitSound(game: Game, kind: string): void {
-  game.dispatch("sound", { sound: { kind } as never });
 }
 
 /** Heave carried stock over the rail into the bed. */

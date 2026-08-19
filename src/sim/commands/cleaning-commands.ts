@@ -17,6 +17,7 @@ export { canVacuumAt } from "../../game/game-actions/shop-vac-actions";
 import { projectGameState } from "../projection";
 import { Broom } from "../singletons/Broom";
 import { Wallet } from "../singletons/Wallet";
+import { emitSound } from "./sound";
 
 /**
  * The cleaning command surface: every mutation input can make against
@@ -29,10 +30,6 @@ import { Wallet } from "../singletons/Wallet";
  * sweeping and suction, run by the CleaningSystem's tick passes at the
  * garbage can.
  */
-
-function emitSound(game: Game, kind: string): void {
-  game.dispatch("sound", { sound: { kind } as never });
-}
 
 /** Bought at the store; it arrives leaning at the material dropoff spot. */
 export function buyBroom(game: Game): boolean {

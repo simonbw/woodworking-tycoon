@@ -43,6 +43,7 @@ import { MachineEntity } from "../entities/MachineEntity";
 import { projectGameState } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
+import { emitSound } from "./sound";
 
 /**
  * The bench-work command surface — the old `operation-actions.ts` commit
@@ -59,10 +60,6 @@ import { DustLayer } from "../singletons/DustLayer";
  */
 
 export { palletPryTargetsLeft } from "../../game/game-actions/operation-actions";
-
-function emitSound(game: Game, kind: string): void {
-  game.dispatch("sound", { sound: { kind } as never });
-}
 
 /**
  * Whether this player position can legally commit hand work at this

@@ -11,6 +11,5 @@ may additionally read `save/`, `bootstrap`, and singleton classes for
 assertions). The pure resolvers (`interact.ts`, `store-interact.ts`) stay
 shared between the dispatcher and the hint chips.
 
-Commands land system by system in phase 2 of MIGRATION.md, alongside the
-sim entities they mutate. Until then this directory is the layout
-scaffold.
+Commands are organized system by system, one file alongside the sim
+entities each mutates.

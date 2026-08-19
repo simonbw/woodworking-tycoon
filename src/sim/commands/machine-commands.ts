@@ -48,6 +48,7 @@ import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
 import { projectGameState } from "../projection";
 import { Consumables } from "../singletons/Consumables";
+import { emitSound } from "./sound";
 import { applyCompletionGrants } from "../systems/grants";
 import { BenchToolClaim } from "../../game/game-actions/player-actions";
 
@@ -84,10 +85,6 @@ export function findMachineEntity(
 
 function player(game: Game): Player {
   return game.entities.getSingleton(Player);
-}
-
-function emitSound(game: Game, kind: string): void {
-  game.dispatch("sound", { sound: { kind } as never });
 }
 
 /** The player's hands are genuinely free: no machine, no boards, no vac. */

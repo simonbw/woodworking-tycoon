@@ -9,6 +9,7 @@ import { Vector } from "../../game/Vectors";
 import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
 import { projectGameState } from "../projection";
+import { emitSound } from "./sound";
 
 /**
  * Moving loose stock between the floor and the hands, ported from the
@@ -20,10 +21,6 @@ import { projectGameState } from "../projection";
 
 function player(game: Game): Player {
   return game.entities.getSingleton(Player);
-}
-
-function emitSound(game: Game, kind: string): void {
-  game.dispatch("sound", { sound: { kind } as never });
 }
 
 /** Pick piles up off the floor into the arms. */
