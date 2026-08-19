@@ -106,7 +106,10 @@ async function setCutLine(page: any, target: number) {
     const current = Number(await sawSetting(page, "cutPosition"));
     if (current === target) return;
     const key = current > target ? "z" : "x";
-    await pressKey(page, Math.abs(current - target) >= 12 ? `Shift+${key}` : key);
+    await pressKey(
+      page,
+      Math.abs(current - target) >= 12 ? `Shift+${key}` : key,
+    );
   }
   throw new Error(`could not slide the cut line to ${target}`);
 }
@@ -282,11 +285,9 @@ test.describe("Milling", () => {
         .last();
       // Dims tags hang under each standing board: size, then length
       await expect(roughRack.getByText(/4\/4×6"\s*8'/).first()).toBeVisible();
-      const roughWalnut = shelfTag(
-        page,
-        `Walnut 4/4 — 6" × 8' (rough sawn)`,
-        { within: roughRack },
-      );
+      const roughWalnut = shelfTag(page, `Walnut 4/4 — 6" × 8' (rough sawn)`, {
+        within: roughRack,
+      });
       await expect(roughWalnut).toBeVisible();
       // 4 board feet of walnut at the rough rack's 0.55 discount
       await expect(roughWalnut).toContainText("$26.40");
@@ -312,7 +313,9 @@ test.describe("Milling", () => {
         page.getByText(/On the floor: work here takes twice as long/),
       ).toBeVisible();
       // Switched off it takes nothing: no chip offering to place the board
-      await expect(page.getByTestId("machine-chips")).not.toContainText("place");
+      await expect(page.getByTestId("machine-chips")).not.toContainText(
+        "place",
+      );
       await switchOn(page);
       await expect(page.getByText("Jointer · on")).toBeVisible();
       // On, it offers to take the board out of our hands — the hands

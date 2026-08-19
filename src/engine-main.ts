@@ -34,6 +34,7 @@ import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
 import { loadFonts } from "./utils/loadFonts";
 import { CameraRig } from "./views/CameraRig";
+import { CANVAS_RESOLUTION } from "./views/canvas-resolution";
 import { MousePicking } from "./views/MousePicking";
 import { FootstepSoundView } from "./views/FootstepSoundView";
 import { MachineSoundView } from "./views/MachineSoundView";
@@ -61,7 +62,15 @@ async function main() {
   await Promise.all([loadAssets(), loadFonts()]);
 
   const game = new Game();
-  await game.init({ rendererOptions: { background: "#1f1c18" } });
+  await game.init({
+    rendererOptions: {
+      background: "#1f1c18",
+      // High-density displays render at their real pixel ratio (capped);
+      // the outline filters rasterize at the same number, or the rimmed
+      // object comes back blurry (see canvas-resolution.ts).
+      resolution: CANVAS_RESOLUTION,
+    },
+  });
 
   game.addEntity(new AutoPauser());
   game.addEntity(new CameraRig());

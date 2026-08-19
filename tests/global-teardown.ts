@@ -1,9 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { e2eBuildDir, outputDir } from '../playwright.config';
+import fs from "node:fs";
+import path from "node:path";
+import { e2eBuildDir, outputDir } from "../playwright.config";
 
 /** The one file Playwright leaves in an output directory when nothing failed. */
-const RUN_MARKER = '.last-run.json';
+const RUN_MARKER = ".last-run.json";
 
 /**
  * Take this run's scratch directories with us.

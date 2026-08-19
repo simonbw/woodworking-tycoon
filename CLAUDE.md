@@ -13,6 +13,7 @@ Woodworking Tycoon is an idle/simulation game built with React and TypeScript. T
 - **Type checking**: `npm run tsc`
 - **Regenerate machine collision boxes**: `npm run generate:collision-boxes` (run after changing machine sprite art; trims the exports first, then measures — see the header of `src/game/player-motion.ts`)
 - **Trim machine sprite exports**: `npm run trim:images` (crops each machine PNG's transparent margin symmetrically about the canvas center, so exports can use any canvas size; runs automatically as part of `generate:collision-boxes`)
+- **Regenerate material textures**: `npm run process:textures` (cuts the game-ready board/sheet face textures in `static/images/textures/` from the source photography in `assets/textures/materials/`; the manifest in `scripts/process-textures.ts` is the record of which source serves which texture)
 - **Code formatting**: `npm run format`
 - **All tests**: `npm run test` (runs unit then E2E)
 - **Unit tests only**: `npm run test:unit` (`tsx --test` against `src/**/*.test.ts`)

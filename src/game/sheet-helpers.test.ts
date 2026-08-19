@@ -2,7 +2,13 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { makeMaterial } from "./material-helpers";
 import { SheetGood } from "./Materials";
-import { cutSheet, isSheetGood, makeSheet } from "./sheet-helpers";
+import {
+  cutSheet,
+  isSheetGood,
+  makeSheet,
+  sheetFacePoint,
+  sheetFaceRegion,
+} from "./sheet-helpers";
 
 const sheet = (length: number, width: number): SheetGood =>
   makeMaterial<SheetGood>({
@@ -73,5 +79,106 @@ describe("makeSheet", () => {
     const [kept] = cutSheet(sheet(48, 24), 20, "length")
       .outputs as ReadonlyArray<SheetGood>;
     assert.deepStrictEqual([kept.length, kept.width], [24, 20]);
+  });
+});
+
+describe("sheet face regions", () => {
+  it("treats a virgin sheet as its own source, at the origin", () => {
+    const virgin = sheet(96, 48);
+    assert.deepStrictEqual(sheetFaceRegion(virgin), {
+      seed: virgin.id,
+      u: 0,
+      v: 0,
+      rotated: false,
+    });
+  });
+
+  it("starts the offcut's region where the blade fell", () => {
+    const input = sheet(96, 48);
+    const [kept, offcut] = cutSheet(input, 60, "length")
+      .outputs as ReadonlyArray<SheetGood>;
+    assert.deepStrictEqual(kept.face, {
+      seed: input.id,
+      u: 0,
+      v: 0,
+      rotated: false,
+    });
+    // The 36×48 offcut normalizes to 48×36 — turned, but still rooted
+    // at the 60-inch line
+    assert.deepStrictEqual(offcut.face, {
+      seed: input.id,
+      u: 60,
+      v: 0,
+      rotated: true,
+    });
+  });
+
+  it("advances a width cut across the source, not along it", () => {
+    const input = sheet(96, 48);
+    const [, offcut] = cutSheet(input, 18, "width")
+      .outputs as ReadonlyArray<SheetGood>;
+    assert.deepStrictEqual(offcut.face, {
+      seed: input.id,
+      u: 0,
+      v: 18,
+      rotated: false,
+    });
+  });
+
+  it("marks the piece normalization turned, and its veneer stays put", () => {
+    // 96×48 cut to 40 long: the 40×48 kept piece is stored as 48×40,
+    // a quarter turn against its source
+    const input = sheet(96, 48);
+    const [kept] = cutSheet(input, 40, "length")
+      .outputs as ReadonlyArray<SheetGood>;
+    assert.deepStrictEqual([kept.length, kept.width], [48, 40]);
+    assert.strictEqual(kept.face?.rotated, true);
+    // A point on the turned piece reads the source point the unturned
+    // piece would have: its width runs along the source's length
+    assert.deepStrictEqual(sheetFacePoint(kept.face, 30, 12), {
+      u: 12,
+      v: 30,
+    });
+  });
+
+  it("keeps the veneer unbroken across the cut line", () => {
+    const input = sheet(96, 48);
+    const parentFace = sheetFaceRegion(input);
+    const [, offcut] = cutSheet(input, 60, "length")
+      .outputs as ReadonlyArray<SheetGood>;
+    // The offcut's across-the-cut edge is the parent's 60-inch line;
+    // normalization turned the piece, so that edge is its width edge
+    // and the parent's across-axis is its length axis
+    for (const across of [0, 17, 48]) {
+      assert.deepStrictEqual(
+        sheetFacePoint(sheetFaceRegion(offcut), across, 0),
+        sheetFacePoint(parentFace, 60, across),
+      );
+    }
+  });
+
+  it("cuts a turned piece along the right source axis", () => {
+    // The turned kept piece from above: 48×40, its width lying along
+    // the source's length. Cutting its width moves along source u.
+    const input = sheet(96, 48);
+    const [kept] = cutSheet(input, 40, "length")
+      .outputs as ReadonlyArray<SheetGood>;
+    const [, offcut] = cutSheet(kept, 15, "width")
+      .outputs as ReadonlyArray<SheetGood>;
+    assert.deepStrictEqual(offcut.face, {
+      seed: input.id,
+      u: 15,
+      v: 0,
+      rotated: true,
+    });
+  });
+
+  it("remembers the original sheet through repeated cuts", () => {
+    const input = sheet(96, 48);
+    const [kept] = cutSheet(input, 60, "length")
+      .outputs as ReadonlyArray<SheetGood>;
+    const [grandchild] = cutSheet(kept, 20, "width")
+      .outputs as ReadonlyArray<SheetGood>;
+    assert.strictEqual(grandchild.face?.seed, input.id);
   });
 });

@@ -256,10 +256,14 @@ async function storePoints(page: any) {
   // suite the store's first mount (and its merchandise bake) can starve
   // rAF long enough that raf-polled waits give up on a store that's
   // merely slow.
-  await page.waitForFunction(() => (window as any).__STORE_POINTS__, undefined, {
-    timeout: 30000,
-    polling: 250,
-  });
+  await page.waitForFunction(
+    () => (window as any).__STORE_POINTS__,
+    undefined,
+    {
+      timeout: 30000,
+      polling: 250,
+    },
+  );
   return page.evaluate(() => (window as any).__STORE_POINTS__);
 }
 
@@ -402,7 +406,9 @@ export async function checkOutAndLeaveStore(
   if ((await shoppingAt(page)) === "orangeBox") {
     await standAtStoreRegister(page);
     await page.getByTestId("store-check-out").click({ force: true });
-    await page.getByTestId("store-checkout-modal").waitFor({ state: "visible" });
+    await page
+      .getByTestId("store-checkout-modal")
+      .waitFor({ state: "visible" });
     await page.getByTestId("store-buy").click({ force: true });
     await driveHome(page, returnTo);
     return;

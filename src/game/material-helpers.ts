@@ -48,6 +48,7 @@ import {
   Board,
   BOARD_DIMENSIONS,
   BoardDimension,
+  defaultBoardFace,
   DustSpecies,
   EndGrainSlice,
   endsLabel,
@@ -74,10 +75,20 @@ const makeId = idMaker();
 export function makeMaterial<T extends MaterialInstance>(
   materialInitializer: Omit<T, "id">,
 ): T {
-  return {
+  const material = {
     ...materialInitializer,
     id: `m-${makeId()}`,
-  } as T;
+  } as T & MaterialInstance;
+  // A board's face placement is pinned at mint time (see
+  // defaultBoardFace) — operations that re-mint a board under a fresh
+  // id must find it explicit, or they'd reroll its grain.
+  if (material.type === "board" && material.face === undefined) {
+    return {
+      ...material,
+      face: defaultBoardFace(material.id, material.length, material.width),
+    } as T;
+  }
+  return material as T;
 }
 
 /** A tool as a physical object — what the store hands over and a rack gives back. */

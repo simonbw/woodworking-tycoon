@@ -1,5 +1,27 @@
 import { Filter } from "pixi.js";
-import { OutlineFilter } from "pixi-filters/outline";
+import { OutlineFilter, OutlineFilterOptions } from "pixi-filters/outline";
+import { CANVAS_RESOLUTION } from "./canvas-resolution";
+
+/**
+ * An outline filter that rasterizes at the canvas's own resolution. A
+ * filter renders its target into an intermediate texture, and PIXI's
+ * default pins that texture at 1x — on a high-density display the
+ * filtered object came back CSS-stretched and blurry the moment the
+ * white rim appeared. "inherit" keeps the texture at the render
+ * target's resolution; thickness is measured in that texture's physical
+ * pixels (the shader divides by texture size), so it scales by the same
+ * resolution to keep the rim's on-screen weight.
+ */
+function crispOutline(
+  options: OutlineFilterOptions & { thickness: number },
+): OutlineFilter {
+  const filter = new OutlineFilter({
+    ...options,
+    thickness: options.thickness * CANVAS_RESOLUTION,
+  });
+  filter.resolution = "inherit";
+  return filter;
+}
 
 /**
  * The in-world targeting treatment, shared by everything the keyboard is
@@ -13,13 +35,13 @@ import { OutlineFilter } from "pixi-filters/outline";
  * instances can dress every highlighted object in a frame.
  */
 export const TARGET_HIGHLIGHT_FILTERS: Filter[] = [
-  new OutlineFilter({
+  crispOutline({
     thickness: 2.5,
     color: 0xffffff,
     alpha: 0.9,
     quality: 0.5,
   }),
-  new OutlineFilter({
+  crispOutline({
     thickness: 2,
     color: 0x1c1917,
     alpha: 0.35,
@@ -35,13 +57,13 @@ export const TARGET_HIGHLIGHT_FILTERS: Filter[] = [
  * because by then the tutorial's arrow has done its job.
  */
 export const TUTORIAL_HIGHLIGHT_FILTERS: Filter[] = [
-  new OutlineFilter({
+  crispOutline({
     thickness: 2.5,
     color: 0xf59e0b,
     alpha: 0.9,
     quality: 0.5,
   }),
-  new OutlineFilter({
+  crispOutline({
     thickness: 2,
     color: 0x1c1917,
     alpha: 0.35,

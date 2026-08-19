@@ -222,10 +222,7 @@ function coverSilhouette(silhouette: Silhouette): {
   const total = uncovered.flat().filter(Boolean).length;
   let remaining = total;
   const rects: GridRect[] = [];
-  while (
-    remaining > (1 - COVER_TARGET) * total &&
-    rects.length < MAX_BOXES
-  ) {
+  while (remaining > (1 - COVER_TARGET) * total && rects.length < MAX_BOXES) {
     const rect = largestRectangle(uncovered);
     if (rect === null) break;
     const area = (rect.x1 - rect.x0) * (rect.y1 - rect.y0);
