@@ -24,11 +24,10 @@ export const PauseMenu: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   }, [game]);
 
   const saveAndQuit = () => {
-    // Write the save now — the scheduled idle write may not be pending,
-    // and nothing after a reload could run it.
-    const saveManager = game.entities.getSingleton(SaveManager);
-    saveManager.schedule();
-    saveManager.flush();
+    // Write the save now — an idle write may not be pending, and nothing
+    // after a reload could run it. Flushing takes its own look at the
+    // world, so the last thing done before pausing is in the file.
+    game.entities.getSingleton(SaveManager).flush();
     // Transitional: boot lands back on the shop until the start menu
     // exists; reloading is the trip through it.
     window.location.reload();

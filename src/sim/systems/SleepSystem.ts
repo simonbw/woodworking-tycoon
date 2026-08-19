@@ -29,14 +29,23 @@ import { TimeFlow } from "../TimeFlow";
  *
  * It runs on the "main" layer, after every sim layer of the same engine
  * tick: a minute fed at the end of tick N is processed by the sim layers
- * during tick N+1, and the tick after the last minute has fully run,
- * the morning bookkeeping lands — the old wakeUpAction's postlude: a
- * fresh `dayStartTick`, the player back beside the truck's cab, `away`
- * cleared. (The day itself turned over in `beginWakeUp`, before the
- * night ran, matching the old action's order — night checks during the
- * batch still read the old `dayStartTick`, so a player who slept early
- * sees the tail of the day pass before the street empties, exactly as
- * the old batch did.)
+ * during tick N+1, and the tick after the last minute has fully run, the
+ * morning lands in one piece — the day number, a fresh `dayStartTick`,
+ * the player back beside the truck's cab, `away` cleared. Night checks
+ * during the batch read the old `dayStartTick`, so a player who slept
+ * early sees the tail of the day pass before the street empties, exactly
+ * as the old batch did.
+ *
+ * **The night is atomic.** Its own progress — how many minutes are left
+ * to feed — is deliberately not persisted, so the invariant that makes
+ * that safe is that no save is ever taken part-way through: the
+ * SaveManager holds writes while `overnightPending`, and every scrap of
+ * day-turnover bookkeeping happens in the single tick that ends the
+ * batch. A snapshot therefore shows one of exactly two shops — the
+ * evening before, asleep at home on day D, or the morning after, awake
+ * beside the cab on day D+1. Reloading the evening one simply runs the
+ * night again. Move any of that bookkeeping earlier and a crash or a
+ * closed tab mid-night costs a day and cures a second night's glue.
  *
  * Transient — never serialized; added per session by the bootstrap.
  */
@@ -74,9 +83,10 @@ export class SleepSystem extends BaseEntity implements Entity {
       return;
     }
     // The last minute has run through every sim layer this tick (the
-    // "main" layer comes after them all) — morning.
+    // "main" layer comes after them all) — morning, all of it at once.
     this.sleeping = false;
     const clock = this.game.entities.getSingleton(Clock);
+    clock.day += 1;
     clock.dayStartTick = clock.tick;
     const player = this.game.entities.getSingleton(Player);
     const shopInfo = this.game.entities.getSingleton(ShopInfo);

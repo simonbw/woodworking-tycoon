@@ -3,7 +3,6 @@ import { canLeaveShop } from "../../game/game-actions/door-actions";
 import { NIGHT_TICKS } from "../../game/time";
 import { Player } from "../entities/Player";
 import { projectGameState } from "../projection";
-import { Clock } from "../singletons/Clock";
 import { SleepSystem } from "../systems/SleepSystem";
 
 /**
@@ -19,6 +18,10 @@ import { SleepSystem } from "../systems/SleepSystem";
  * and queues the overnight on the SleepSystem, and the caller steps the
  * engine until the player is back beside the cab (see SleepSystem's
  * header for the mechanism, and ShopDriver.sleep for the loop).
+ *
+ * Because of that split, none of the night's bookkeeping happens here:
+ * the day number turns over with the rest of the morning, in the single
+ * tick that ends the batch. See SleepSystem's header for why.
  */
 
 /**
@@ -39,13 +42,16 @@ export function goHome(game: Game): boolean {
 }
 
 /**
- * Morning: turn the day over and queue the overnight batch. The night's
- * minutes then run through the ordinary tick pipeline — glue cures
- * finish, the street stays empty (nobody shops at night) — as the caller
- * steps the engine; when they're spent the SleepSystem pulls the truck
- * back in (player beside the cab, away cleared, fresh dayStartTick).
- * Attended work holds where it was left, same as stepping away from a
- * cut does — the player is away for every overnight minute.
+ * Morning: queue the overnight batch. The night's minutes then run
+ * through the ordinary tick pipeline — glue cures finish, the street
+ * stays empty (nobody shops at night) — as the caller steps the engine;
+ * when they're spent the SleepSystem turns the day over and pulls the
+ * truck back in (day+1, fresh dayStartTick, player beside the cab, away
+ * cleared). Attended work holds where it was left, same as stepping away
+ * from a cut does — the player is away for every overnight minute.
+ *
+ * Calling this twice for one night is refused, and it costs nothing but
+ * a warning: the batch already running owns the morning.
  */
 export function beginWakeUp(game: Game): boolean {
   const player = game.entities.getSingleton(Player);
@@ -58,9 +64,6 @@ export function beginWakeUp(game: Game): boolean {
     console.warn("The overnight is already running");
     return false;
   }
-  // The day turns over before the night runs — the old wakeUpAction's
-  // order.
-  game.entities.getSingleton(Clock).day += 1;
   sleepSystem.begin(NIGHT_TICKS);
   return true;
 }

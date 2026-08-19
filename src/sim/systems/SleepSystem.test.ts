@@ -16,6 +16,8 @@ import { NIGHT_TICKS, TICKS_PER_DAY } from "../../game/time";
 import { beginWakeUp, goHome } from "../commands/day-commands";
 import { ShopDriver } from "../driver/ShopDriver";
 import { CustomerEntity } from "../entities/CustomerEntity";
+import { SaveFile } from "../save/SaveFile";
+import { SaveManager } from "../save/SaveManager";
 
 /**
  * The day cycle on the new driver: goHome and beginWakeUp are the old
@@ -87,6 +89,31 @@ describe("sleeping through the night", () => {
       shop.player.cell,
       truckCabSideCell(shop.shopInfo.info),
     );
+  });
+
+  it("turns the day over with the morning, not before the night runs", () => {
+    const shop = new ShopDriver();
+    shop.standAtCab();
+    goHome(shop.game);
+
+    beginWakeUp(shop.game);
+    assert.strictEqual(shop.clock.day, 1);
+    shop.stepEngine(100);
+    assert.strictEqual(shop.clock.day, 1, "still the same night");
+    assert.deepStrictEqual(shop.player.away, { kind: "home" });
+
+    for (
+      let guard = 0;
+      guard < NIGHT_TICKS + 60 && shop.player.away !== null;
+      guard++
+    ) {
+      shop.stepEngine(1);
+    }
+    // Morning arrives whole: the day, the fresh budget, and the body
+    // back beside the cab, all in the one tick that ends the batch.
+    assert.strictEqual(shop.clock.day, 2);
+    assert.strictEqual(shop.clock.dayStartTick, shop.clock.tick);
+    assert.strictEqual(shop.player.away, null);
   });
 
   it("sleeps early too, leaving the rest of the day unspent", () => {
@@ -277,5 +304,61 @@ describe("serialization", () => {
     assert.strictEqual(reloaded.player.away, null);
     assert.strictEqual(reloaded.clock.day, 2);
     assert.strictEqual(reloaded.clock.tick, NIGHT_TICKS);
+  });
+
+  it("takes no snapshot part-way through a night", () => {
+    // The night is atomic with respect to saving: leave the tab
+    // mid-batch and the file still holds the evening, so the reload runs
+    // the night once and lands on the next morning — one day, one cure.
+    const shop = new ShopDriver();
+    const writes: SaveFile[] = [];
+    const manager = shop.game.addEntity(
+      new SaveManager({ write: (file) => writes.push(file) }),
+    );
+    shop.standAtCab();
+    goHome(shop.game);
+    manager.flush();
+    assert.strictEqual(writes.length, 1);
+
+    beginWakeUp(shop.game);
+    // Every frame of the batch offers the shell's hidden-tab flush.
+    for (let i = 0; i < NIGHT_TICKS / 2; i++) {
+      shop.stepEngine(1);
+      manager.flush();
+    }
+    assert.strictEqual(writes.length, 1, "the night wrote nothing");
+
+    const evening = writes[0];
+    const reloaded = new ShopDriver({ save: evening });
+    assert.deepStrictEqual(reloaded.player.away, { kind: "home" });
+    assert.strictEqual(reloaded.clock.day, 1);
+
+    assert.strictEqual(beginWakeUp(reloaded.game), true);
+    for (
+      let guard = 0;
+      guard < NIGHT_TICKS + 60 && reloaded.player.away !== null;
+      guard++
+    ) {
+      reloaded.stepEngine(1);
+    }
+    assert.strictEqual(reloaded.clock.day, 2);
+    assert.strictEqual(reloaded.clock.tick, NIGHT_TICKS);
+  });
+
+  it("saves the morning once the batch has finished", async () => {
+    const shop = new ShopDriver();
+    const writes: SaveFile[] = [];
+    shop.game.addEntity(
+      new SaveManager({ write: (file) => writes.push(file) }),
+    );
+    shop.sleep();
+    shop.stepEngine(30);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const last = writes[writes.length - 1];
+    const clock = last.singletons.clock as { day: number };
+    const player = last.singletons.player as { away: unknown };
+    assert.strictEqual(clock.day, 2);
+    assert.strictEqual(player.away, null);
   });
 });

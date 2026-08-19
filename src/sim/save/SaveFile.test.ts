@@ -1,6 +1,10 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { Game } from "../../core/Game";
+import { TICKS_PER_DAY } from "../../game/time";
+import { pickUpMachine } from "../commands/machine-commands";
 import { ShopDriver } from "../driver/ShopDriver";
+import { Clock } from "../singletons/Clock";
 import { SaveFile, serializeGame } from "./SaveFile";
 import { SaveManager } from "./SaveManager";
 
@@ -8,8 +12,12 @@ import { SaveManager } from "./SaveManager";
  * The phase-1 gate: the save path round-trips byte-identically on a
  * minimal shop, headless, and the driver boots and ticks
  * deterministically. Plus the SaveManager's coalescing promises, carried
- * over from src/game/autosave.test.ts's contract.
+ * over from src/game/autosave.test.ts's contract, and what makes a save
+ * owed in the first place.
  */
+
+/** Let a queued idle write run. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
 
 function mutatedShop(): ShopDriver {
   const driver = new ShopDriver({ seed: 7 });
@@ -56,6 +64,20 @@ describe("save round-trip", () => {
     const save = new ShopDriver().save();
     const future: SaveFile = { ...save, version: save.version + 1 };
     assert.throws(() => new ShopDriver({ save: future }), /newer/);
+  });
+
+  it("rejects a truncated save instead of crashing on the first tick", () => {
+    const save = new ShopDriver().save();
+    delete (save.singletons as Record<string, unknown>).clock;
+    assert.throws(() => new ShopDriver({ save }), /missing required.*clock/);
+  });
+
+  it("loads a shop that never bought a vac", () => {
+    // The vac is the one singleton a real shop can be without, so its
+    // absence must not read as a truncated file.
+    const save = new ShopDriver().save();
+    assert.ok(!("shopVac" in save.singletons));
+    assert.doesNotThrow(() => new ShopDriver({ save }));
   });
 });
 
@@ -122,10 +144,26 @@ describe("SaveManager", () => {
     assert.strictEqual(writes.length, 1);
   });
 
-  it("does nothing on flush when nothing is queued", () => {
+  it("writes nothing on a flush that has nothing new to say", () => {
     const { manager, writes } = makeManager();
     manager.flush();
-    assert.strictEqual(writes.length, 0);
+    manager.flush();
+    manager.flush();
+    assert.strictEqual(writes.length, 1);
+  });
+
+  it("flushes a change the periodic check has not seen yet", () => {
+    const { driver, manager, writes } = makeManager();
+    manager.flush();
+    driver.wallet.money = 999;
+    // No engine tick in between: the tab going hidden is exactly this
+    // case, and the flush has to look at the world itself.
+    manager.flush();
+    assert.strictEqual(writes.length, 2);
+    assert.strictEqual(
+      (writes[1].singletons.wallet as { money: number }).money,
+      999,
+    );
   });
 
   it("cancel drops a queued write", async () => {
@@ -133,6 +171,64 @@ describe("SaveManager", () => {
     manager.schedule();
     manager.cancel();
     await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.strictEqual(writes.length, 0);
+  });
+
+  it("saves work done at night, when the clock is standing still", async () => {
+    const { driver, manager, writes } = makeManager();
+    // Past closing: the clock resolves to stopped, so no engine tick
+    // from here on carries a sim minute.
+    driver.arrange((game) => {
+      const clock = game.entities.getSingleton(Clock);
+      clock.tick = clock.dayStartTick + TICKS_PER_DAY;
+    });
+    manager.flush();
+    assert.strictEqual(writes.length, 1);
+
+    const tickBefore = driver.clock.tick;
+    pickUpMachine(driver.game, driver.machine("lumberShelf"));
+    driver.stepEngine(30);
+    await settle();
+
+    assert.strictEqual(driver.timeFlow.resolveSpeed(), "stopped");
+    assert.strictEqual(driver.clock.tick, tickBefore);
+    assert.strictEqual(writes.length, 2);
+    const player = writes[1].singletons.player as {
+      carriedMachine: { machineTypeId: string } | null;
+    };
+    assert.strictEqual(player.carriedMachine?.machineTypeId, "lumberShelf");
+  });
+
+  it("writes once for a pause, then leaves the file alone", async () => {
+    const { driver, manager, writes } = makeManager();
+    manager.flush();
+    const beforePause = writes.length;
+
+    // The last thing done before the pause still belongs in the file...
+    driver.wallet.money = 500;
+    driver.game.pause();
+    driver.stepEngine(600);
+    await settle();
+    assert.strictEqual(writes.length, beforePause + 1);
+
+    // ...and a frozen world has nothing more to say, however long it
+    // sits there.
+    driver.stepEngine(600);
+    await settle();
+    assert.strictEqual(writes.length, beforePause + 1);
+  });
+
+  it("leaves the file alone while no shop is open", async () => {
+    // The start menu's world: entities standing by, no shop in them. A
+    // write here would replace a real save with an empty one.
+    const game = new Game({ headless: true });
+    const writes: SaveFile[] = [];
+    const manager = game.addEntity(
+      new SaveManager({ write: (file) => writes.push(file) }),
+    );
+    game.step(60);
+    manager.flush();
+    await settle();
     assert.strictEqual(writes.length, 0);
   });
 

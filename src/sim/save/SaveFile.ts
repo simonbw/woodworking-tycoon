@@ -1,6 +1,10 @@
 import { Persistence } from "../../config/constants";
 import { Game } from "../../core/Game";
-import { getSerializationSpec, isSerializableEntity } from "./serialization";
+import {
+  getSerializationSpec,
+  isSerializableEntity,
+  requiredSingletonTypes,
+} from "./serialization";
 
 /**
  * The save file: `{ version, singletons, entities }`, written from and
@@ -16,6 +20,14 @@ import { getSerializationSpec, isSerializableEntity } from "./serialization";
  * anything persisted changes, bump it and add a step to MIGRATIONS that
  * rewrites a file of the previous version; loading runs the chain
  * sequentially until the file is current.
+ *
+ * A file is only a shop if it carries every required singleton (the
+ * registry knows which those are). Loading checks that before it touches
+ * the world, so a truncated file is refused where the problem can be
+ * named rather than crashing on the first tick that reaches for a
+ * singleton that isn't there. The same check is what tells the autosave
+ * that a bare world — the start menu's, before a shop is booted — has
+ * nothing worth writing.
  */
 
 export const SAVE_VERSION = 1;
@@ -52,6 +64,17 @@ export function migrateSaveFile(file: SaveFile): SaveFile {
     );
   }
   return current;
+}
+
+/**
+ * The required singleton types this file is missing — empty for a file
+ * that describes a shop.
+ */
+export function missingRequiredSingletons(file: SaveFile): string[] {
+  // Storage hands back whatever was written, so treat a missing map as
+  // an empty one rather than throwing on the lookup.
+  const singletons = file.singletons ?? {};
+  return requiredSingletonTypes().filter((type) => !(type in singletons));
 }
 
 /**
@@ -103,9 +126,19 @@ export function serializeGame(game: Game): SaveFile {
  * everything at or below Game persistence (views follow their sim
  * entities down), then instantiates the file's records — singletons
  * first, then the entity array in file order.
+ *
+ * Both checks that can reject a file — the migration chain and the
+ * required singletons — run before the world is cleared, so a refused
+ * load leaves the shop that was already open untouched.
  */
 export function loadSaveFile(game: Game, file: SaveFile): void {
   const migrated = migrateSaveFile(file);
+  const missing = missingRequiredSingletons(migrated);
+  if (missing.length > 0) {
+    throw new Error(
+      `Save file is missing required records: ${missing.join(", ")}`,
+    );
+  }
 
   game.clearScene(Persistence.Game);
 

@@ -33,6 +33,8 @@ import { writeEngineSave } from "./shell/saveSlot";
 import { ShellStore } from "./shell/ShellStore";
 import { loadAssets } from "./utils/loadAssets";
 import { loadFonts } from "./utils/loadFonts";
+import { preloadSounds } from "./utils/soundAssets";
+import { preloadUiImages } from "./utils/uiImages";
 import { CameraRig } from "./views/CameraRig";
 import { CANVAS_RESOLUTION } from "./views/canvas-resolution";
 import { MousePicking } from "./views/MousePicking";
@@ -111,8 +113,18 @@ async function main() {
     new SaveManager({ write: writeEngineSave }),
   );
   // Because a save is always waiting, the write must land even when the
-  // tab goes away mid-idle.
-  window.addEventListener("pagehide", () => saveManager.flush());
+  // tab goes away mid-idle. `pagehide` covers the tab closing or
+  // navigating; a phone that evicts a backgrounded tab never fires it, so
+  // the tab going hidden saves too. The flush is synchronous and doesn't
+  // need a tick, so the AutoPauser freezing the world on the same event
+  // makes no difference to it.
+  const flushSave = () => saveManager.flush();
+  window.addEventListener("pagehide", flushSave);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      flushSave();
+    }
+  });
 
   // No shop boots here: the world stays empty (every input and view
   // entity stands down without a Player), so the HUD root shows the
@@ -125,6 +137,12 @@ async function main() {
 
   // The menu is the first real paint; the boot placeholder has done its job.
   document.getElementById("boot-loading")?.remove();
+
+  // The overlays' own images aren't on screen yet, and nothing can be heard
+  // before the first user gesture, so images and sounds warm in the
+  // background instead of holding up the first frame.
+  preloadUiImages();
+  preloadSounds();
 
   installTestHooks(game);
 }

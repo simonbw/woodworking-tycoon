@@ -1,4 +1,8 @@
-import { migrateSaveFile, SaveFile } from "../sim/save/SaveFile";
+import {
+  migrateSaveFile,
+  missingRequiredSingletons,
+  SaveFile,
+} from "../sim/save/SaveFile";
 import { getSerializationSpec } from "../sim/save/serialization";
 
 /**
@@ -67,14 +71,18 @@ export function deleteEngineSave(): void {
 
 /**
  * A dry run of `loadSaveFile`'s validation: the version must migrate to
- * current, and every record must be a registered type whose schema
- * accepts its data. Nothing is instantiated.
+ * current, the file must carry every required record, and every record
+ * must be a registered type whose schema accepts its data. Nothing is
+ * instantiated.
  */
 function isLoadable(file: SaveFile): boolean {
   let migrated: SaveFile;
   try {
     migrated = migrateSaveFile(file);
   } catch {
+    return false;
+  }
+  if (missingRequiredSingletons(migrated).length > 0) {
     return false;
   }
   const records = [

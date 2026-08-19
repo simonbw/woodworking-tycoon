@@ -63,6 +63,8 @@ export class ShopVacEntity
 registerSerializable({
   type: "shopVac",
   singleton: true,
+  // A shop without a vac is a shop; a save without one is complete.
+  optional: true,
   schema: shopVacSchema,
   fromJSON: (data) => new ShopVacEntity(data as ShopVacState),
 });
