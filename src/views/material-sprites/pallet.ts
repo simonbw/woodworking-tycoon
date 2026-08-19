@@ -63,8 +63,10 @@ export function createPalletSprite(
   // The very board prying frees (see pryPalletNailAction) — one piece of
   // stock for every berth, seeded below by the same slot id the freed
   // board inherits, so a pulled board keeps its exact grain lying in
-  // place.
-  const palletStock = palletBoard();
+  // place. The mint-time face placement is stripped: it's seeded by this
+  // throwaway instance's fresh id, and left on it would out-rank the
+  // slot seed and reroll every board's grain on every redraw.
+  const { face: _mintFace, ...palletStock } = palletBoard();
 
   const order = palletLayerOrder(flipped);
   const shown = layers ?? order;

@@ -256,6 +256,12 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
     );
   }
 
+  /** Whether a fastener is being driven right now — the tool cursor
+   * plays its tap while this holds. */
+  isDriving(): boolean {
+    return this.driving !== null;
+  }
+
   /** Whether the drawing's own driving tool is in hand. */
   private driverHeld(blueprint: ProductBlueprint): boolean {
     const tool = fastenerToolId(blueprint.fastenerConsumable);

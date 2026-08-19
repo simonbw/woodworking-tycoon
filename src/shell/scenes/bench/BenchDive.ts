@@ -213,6 +213,16 @@ export class BenchDive extends BaseEntity implements Entity {
 
   @on("tick")
   onTick(dt: number) {
+    // A held tool or clamp IS the pointer (the tool-icon cursor in
+    // BenchStageMarker, the glue view's clamp ghost) — the native arrow
+    // under it would read as two hands.
+    this.game.renderer?.setCursor(
+      this.openBenchKey !== null &&
+        (this.heldTool !== null || this.holdingClamp)
+        ? "none"
+        : "auto",
+    );
+
     // The lean-in runs on real time, like the truck's roll: forward
     // while a bench is open, backwards once the player stands up.
     const target = this.openBenchKey === null ? 0 : 1;

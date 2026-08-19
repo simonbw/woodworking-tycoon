@@ -4,7 +4,7 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
-import { StageFit } from "./stageMath";
+import { StageFit, stepTurnSpring } from "./stageMath";
 import { groupPieces } from "../../../game/bench-work/bench-group";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
@@ -46,6 +46,15 @@ export class BenchDiveView extends BaseEntity implements Entity {
   readonly frame = new Container();
   private tops = new Graphics();
   private pieces = new Container();
+
+  /**
+   * One holder per piece on the tops, kept across redraws so a turn or
+   * a tumble is motion on a standing sprite instead of a swap — R and F
+   * read as the piece being turned by hand (the old scene's spring).
+   * The sprite inside rebuilds only when the piece itself changes (a
+   * new material instance, or a tumble onto a different face).
+   */
+  private holders = new Map<string, PieceMotion>();
 
   private drawnKey: string | null = null;
 
@@ -95,7 +104,7 @@ export class BenchDiveView extends BaseEntity implements Entity {
   }
 
   @on("render")
-  onRender() {
+  onRender(dt: number) {
     const game = this.game;
     const renderer = game.renderer;
     const dive = game.entities.tryGetSingleton(BenchDive);
@@ -103,6 +112,7 @@ export class BenchDiveView extends BaseEntity implements Entity {
     if (!renderer || !dive || !stage) {
       this.root.visible = false;
       this.drawnKey = null;
+      this.clearHolders();
       return;
     }
     this.root.visible = true;
@@ -114,6 +124,12 @@ export class BenchDiveView extends BaseEntity implements Entity {
     // container everything on the stage draws into. (The shop no longer
     // swells pixel-locked behind it; see MIGRATION.md.)
     this.leanIn(dive.dive, stage);
+
+    // The turn/flip springs run every frame, whether or not the sim
+    // moved — that's the whole point of keeping the holders.
+    for (const motion of this.holders.values()) {
+      motion.step(dt);
+    }
 
     // Redraw when the sim moved or a different bench opened; the fit
     // also follows the window (cheap to recompute, compared each frame).
@@ -146,12 +162,13 @@ export class BenchDiveView extends BaseEntity implements Entity {
     const dragging = game.entities
       .tryGetSingleton(BenchArrangeView)
       ?.draggingId();
-    this.pieces.removeChildren().forEach((child) => child.destroy());
+    const lying: Array<{
+      material: MaterialInstance;
+      placement: BenchPlacement;
+    }> = [];
     for (const piece of groupPieces(group)) {
       if (piece.material.id === dragging) continue;
-      this.pieces.addChild(
-        pieceHolder(piece.material, piece.placement, stage.fit),
-      );
+      lying.push(piece);
     }
 
     // The piece a running job holds left the pile when the operation
@@ -163,10 +180,40 @@ export class BenchDiveView extends BaseEntity implements Entity {
       work?.script.kind === "stroke" ? work.script.workpiece : undefined;
     if (work && held) {
       const spot = workpieceSpot(group, work.machine, held);
-      if (spot) {
-        this.pieces.addChild(pieceHolder(held, spot.placement, stage.fit));
-      }
+      if (spot) lying.push({ material: held, placement: spot.placement });
     }
+
+    // Sync the holders: pieces come and go, standing holders retarget —
+    // the springs carry a changed angle or flip as motion.
+    const seen = new Set<string>();
+    for (const piece of lying) {
+      seen.add(piece.material.id);
+      let motion = this.holders.get(piece.material.id);
+      if (!motion) {
+        motion = new PieceMotion();
+        this.holders.set(piece.material.id, motion);
+        this.pieces.addChild(motion.holder);
+      }
+      motion.retarget(piece.material, piece.placement, stage.fit);
+    }
+    for (const [id, motion] of this.holders) {
+      if (seen.has(id)) continue;
+      motion.holder.destroy({ children: true });
+      this.holders.delete(id);
+    }
+    // Standing holders keep their mount order otherwise, and the stack's
+    // draw order has to match the layout's (pieceUnder reads it in
+    // reverse) — so re-stack to the group's order every redraw.
+    lying.forEach((piece, index) => {
+      const motion = this.holders.get(piece.material.id);
+      if (motion) this.pieces.setChildIndex(motion.holder, index);
+    });
+  }
+
+  private clearHolders(): void {
+    if (this.holders.size === 0) return;
+    this.pieces.removeChildren().forEach((child) => child.destroy());
+    this.holders.clear();
   }
 
   /**
@@ -212,24 +259,87 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-/** One piece, drawn where it lies on the stage. */
-function pieceHolder(
-  material: MaterialInstance,
-  placement: BenchPlacement,
-  fit: StageFit,
-): Container {
-  const holder = new Container();
-  const sprite = createMaterialSprite(material, {
-    onEdge: placement.onEdge,
-    onEnd: placement.onEnd,
-  });
-  sprite.scale.set(fit.spriteScale);
-  holder.addChild(sprite);
-  holder.position.set(
-    fit.originX + placement.xIn * fit.pxPerIn,
-    fit.originY + placement.yIn * fit.pxPerIn,
+/** Motion the player has asked not to see is pinned, not played. */
+function reducedMotion(): boolean {
+  return (
+    globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
   );
-  holder.angle = placement.angleDeg;
-  holder.scale.x = placement.flipped ? -1 : 1;
-  return holder;
+}
+
+/**
+ * One piece's standing holder: position tracks the layout directly, and
+ * the turn (R) and the face-for-face flip ease in on the spring — the
+ * old scene's TweenedTransform. A tumble onto a different face (flat →
+ * on edge → on end) is a different sprite, so it rebuilds and snaps;
+ * only same-face motion springs.
+ */
+class PieceMotion {
+  readonly holder = new Container();
+  private sprite: Container | null = null;
+  private spriteKey = "";
+  private spriteScale = 1;
+  private angle = 0;
+  private angleVelocity = 0;
+  private targetAngle = 0;
+  private flip = 1;
+  private flipVelocity = 0;
+  private targetFlip = 1;
+
+  retarget(
+    material: MaterialInstance,
+    placement: BenchPlacement,
+    fit: StageFit,
+  ): void {
+    const spriteKey = `${material.id}|${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}`;
+    const fresh = this.sprite === null;
+    if (spriteKey !== this.spriteKey) {
+      this.sprite?.destroy({ children: true });
+      this.sprite = createMaterialSprite(material, {
+        onEdge: placement.onEdge,
+        onEnd: placement.onEnd,
+      });
+      this.holder.addChild(this.sprite);
+      this.spriteKey = spriteKey;
+    }
+    this.spriteScale = fit.spriteScale;
+    this.holder.position.set(
+      fit.originX + placement.xIn * fit.pxPerIn,
+      fit.originY + placement.yIn * fit.pxPerIn,
+    );
+    this.targetAngle = placement.angleDeg;
+    this.targetFlip = placement.flipped ? -1 : 1;
+    if (fresh || reducedMotion()) {
+      // A piece that just appeared lies where it lies — only later
+      // gestures play as motion.
+      this.angle = this.targetAngle;
+      this.flip = this.targetFlip;
+      this.angleVelocity = 0;
+      this.flipVelocity = 0;
+    }
+    this.apply();
+  }
+
+  step(dt: number): void {
+    if (this.angle === this.targetAngle && this.flip === this.targetFlip) {
+      return;
+    }
+    [this.angle, this.angleVelocity] = stepTurnSpring(
+      this.angle,
+      this.angleVelocity,
+      this.targetAngle,
+      dt,
+    );
+    [this.flip, this.flipVelocity] = stepTurnSpring(
+      this.flip,
+      this.flipVelocity,
+      this.targetFlip,
+      dt,
+    );
+    this.apply();
+  }
+
+  private apply(): void {
+    this.holder.angle = this.angle;
+    this.holder.scale.set(this.flip * this.spriteScale, this.spriteScale);
+  }
 }

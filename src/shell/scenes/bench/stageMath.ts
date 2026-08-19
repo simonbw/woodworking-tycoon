@@ -109,3 +109,21 @@ export function dwellGain(
   const workBudget = (coveragePerSecond * Math.min(dtMs, 100)) / 1000;
   return Math.min(1, workBudget / padArea) / 2;
 }
+
+/**
+ * The tween the pieces turn with: the spring the old scene ran (tension
+ * 300, friction 26) — a hand turning the piece, no bounce. Steps one
+ * value toward its target and snaps when it's close enough to be done.
+ */
+export function stepTurnSpring(
+  value: number,
+  velocity: number,
+  target: number,
+  dt: number,
+): [number, number] {
+  const nextVelocity = velocity + (300 * (target - value) - 26 * velocity) * dt;
+  const next = value + nextVelocity * dt;
+  return Math.abs(target - next) < 0.01 && Math.abs(nextVelocity) < 0.05
+    ? [target, 0]
+    : [next, nextVelocity];
+}

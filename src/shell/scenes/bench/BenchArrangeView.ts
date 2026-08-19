@@ -41,6 +41,7 @@ import {
   pieceUnder,
   stagePointer,
 } from "./benchStage";
+import { stepTurnSpring } from "./stageMath";
 
 /**
  * The bare hands at the bench: dragging stock around the top, turning
@@ -81,6 +82,12 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   private drag: Drag | null = null;
   private hoveredId: string | null = null;
   private drawnDragId: string | null = null;
+  /** The carried piece's turn spring — R mid-drag reads as the hand
+   * turning it, the same motion the set-down pieces get. */
+  private carriedAngle = 0;
+  private carriedAngleVelocity = 0;
+  private carriedFlip = 1;
+  private carriedFlipVelocity = 0;
 
   constructor() {
     super();
@@ -307,7 +314,7 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   }
 
   @on("render")
-  onRender() {
+  onRender(dt: number) {
     const g = this.outline;
     g.clear();
     const stage = benchStage(this.game);
@@ -317,11 +324,15 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     }
     const { fit, group } = stage;
 
-    // The piece riding the hand, drawn where the hand has it.
+    // The piece riding the hand, drawn where the hand has it. The flip
+    // stop is part of the drawing (flat, on edge, on end are different
+    // sprites), so tumbling mid-drag rebuilds it.
     if (this.drag) {
       const piece = this.handPiece(group);
       if (piece) {
-        if (this.drawnDragId !== this.drag.materialId) {
+        const dragKey = `${this.drag.materialId}|${this.drag.placement.onEdge ? "e" : ""}${this.drag.placement.onEnd ? "n" : ""}`;
+        if (this.drawnDragId !== dragKey) {
+          const fresh = this.drawnDragId === null;
           this.clearCarried();
           const sprite = createMaterialSprite(piece.material, {
             onEdge: this.drag.placement.onEdge,
@@ -331,16 +342,35 @@ export class BenchArrangeView extends BaseEntity implements Entity {
           sprite.scale.set(fit.spriteScale);
           holder.addChild(sprite);
           this.carried.addChild(holder);
-          this.drawnDragId = this.drag.materialId;
+          this.drawnDragId = dragKey;
+          if (fresh) {
+            // Taken hold of where it lies: motion starts from rest.
+            this.carriedAngle = this.drag.placement.angleDeg;
+            this.carriedFlip = this.drag.placement.flipped ? -1 : 1;
+            this.carriedAngleVelocity = 0;
+            this.carriedFlipVelocity = 0;
+          }
         }
+        [this.carriedAngle, this.carriedAngleVelocity] = stepTurnSpring(
+          this.carriedAngle,
+          this.carriedAngleVelocity,
+          this.drag.placement.angleDeg,
+          dt,
+        );
+        [this.carriedFlip, this.carriedFlipVelocity] = stepTurnSpring(
+          this.carriedFlip,
+          this.carriedFlipVelocity,
+          this.drag.placement.flipped ? -1 : 1,
+          dt,
+        );
         const holder = this.carried.children[0];
         if (holder) {
           holder.position.set(
             fit.originX + this.drag.placement.xIn * fit.pxPerIn,
             fit.originY + this.drag.placement.yIn * fit.pxPerIn,
           );
-          holder.angle = this.drag.placement.angleDeg;
-          holder.scale.x = this.drag.placement.flipped ? -1 : 1;
+          holder.angle = this.carriedAngle;
+          holder.scale.x = this.carriedFlip;
         }
       }
       return;

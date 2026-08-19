@@ -10,6 +10,8 @@ import { BenchStrokeView } from "../../scenes/bench/BenchStrokeView";
 import { benchStage, benchWork } from "../../scenes/bench/benchStage";
 import { BlueprintSlot } from "../../../game/bench-work/blueprint";
 import { describeMaterialRequirement } from "../../../game/material-helpers";
+import { ToolId } from "../../../game/Tool";
+import { toolIconSrc } from "../../../utils/uiImages";
 
 /**
  * What the bench is doing, written onto the page. Nothing here is drawn
@@ -96,6 +98,42 @@ export const BenchStageMarker: React.FC = () => {
         data-clamps-placed={glue?.clampsSetOut()}
       />
       <SlotTag slot={assembly?.hoveredSlot() ?? null} />
+      <ToolCursor
+        tool={dive.heldTool}
+        prying={dive.prying !== null}
+        driving={assembly?.isDriving() ?? false}
+      />
+    </div>
+  );
+};
+
+/**
+ * The held tool riding the pointer — the hand IS the hammer while one
+ * is up off the rail. The native cursor hides under it (BenchDive owns
+ * that), and the icon swings while a nail is being pried and taps while
+ * a fastener drives, the old surface's own animations.
+ */
+const ToolCursor: React.FC<{
+  tool: ToolId | null;
+  prying: boolean;
+  driving: boolean;
+}> = ({ tool, prying, driving }) => {
+  const game = useGame();
+  if (!tool) return null;
+  const [x, y] = game.io.mousePosition;
+  return (
+    <div
+      className="pointer-events-none absolute left-0 top-0 z-10"
+      style={{ transform: `translate(${x - 12}px, ${y - 11}px)` }}
+    >
+      <img
+        src={toolIconSrc(tool)}
+        alt=""
+        draggable={false}
+        className={`size-12 select-none [image-rendering:pixelated] drop-shadow-[0_4px_5px_rgba(0,0,0,0.5)] ${
+          prying ? "bench-pry-swing" : driving ? "bench-drive-tap" : ""
+        }`}
+      />
     </div>
   );
 };
