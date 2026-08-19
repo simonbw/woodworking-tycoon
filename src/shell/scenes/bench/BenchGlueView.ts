@@ -22,6 +22,8 @@ import {
   CLAMP_SNAP_IN,
   detectGlueRun,
   GlueRun,
+  isClampOnRun,
+  pressClamp,
   SPREAD_COMPLETE,
   SPREAD_PER_SECOND,
 } from "../../../game/bench-work/glue-up";
@@ -395,8 +397,9 @@ export class BenchGlueView extends BaseEntity implements Entity {
 
   /**
    * The press does whatever the hand is holding: lays a bar down,
-   * or — bare-handed on a bar of a run that's ready — winds it tight.
-   * The last one tight is the commit.
+   * or — bare-handed on a bar holding a run that's ready — winds it
+   * tight. The last one tight is the commit; every other bare-handed
+   * press on a bar, including one lying off the run, picks it back up.
    */
   @on("mouseDown")
   onMouseDown() {
@@ -418,19 +421,21 @@ export class BenchGlueView extends BaseEntity implements Entity {
 
     const index = this.clampUnder(run, at.xIn, at.yIn);
     if (index === null) return;
-    if (run && this.ready(run)) {
-      const next = this.tightened + 1;
-      const onRun = clampsOnRun(run, this.clamps).length;
-      if (next >= onRun) {
+    const press = pressClamp(run, this.clamps, index, {
+      tightened: this.tightened,
+      seamsGlued: run ? this.seamsGlued(run) === run.seams.length : false,
+    });
+    if (run && press.kind !== "pickUp") {
+      if (press.kind === "commit") {
         this.commit(run);
         return;
       }
       playSound("glue-clamp", 0.5);
-      this.tightened = next;
+      this.tightened = press.tightened;
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
       return;
     }
-    // Not ready: the press picks the bar back up.
+    // Nothing to wind here: the press picks the bar back up.
     this.clamps.splice(index, 1);
     dive.setHolding("clamp");
     this.game.entities.tryGetSingleton(ShellStore)?.bump();
@@ -507,15 +512,15 @@ export class BenchGlueView extends BaseEntity implements Entity {
         drawClamp(g, ghost, fit, halfBar, "ghost");
       }
     }
-    this.clamps.forEach((clamp, index) => {
-      drawClamp(
-        g,
-        clamp,
-        fit,
-        halfBar,
-        index < this.tightened ? "tightened" : "placed",
-      );
-    });
+    // The bars wound home are the run's own, in the order they went
+    // out; a bar lying off the run never reads as tight.
+    let onRunSoFar = 0;
+    for (const clamp of this.clamps) {
+      const holds = run !== null && isClampOnRun(run, clamp);
+      const tight = holds && onRunSoFar < this.tightened;
+      if (holds) onRunSoFar += 1;
+      drawClamp(g, clamp, fit, halfBar, tight ? "tightened" : "placed");
+    }
     if (dive.holdingClamp) {
       const at = stagePointer(this.game, stage.fit);
       drawClamp(g, this.snapClamp(run, at.xIn, at.yIn), fit, halfBar, "held");

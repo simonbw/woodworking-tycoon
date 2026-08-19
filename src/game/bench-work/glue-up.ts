@@ -16,8 +16,9 @@ import { BenchPlacement } from "./bench-layout";
  * glueable stock sits in the clamps IS the glue-up, the same way the
  * stock on a direct-feed machine decides the cut. This module is the
  * pure geometry and inference under that: which lying pieces form a run,
- * which recipe the run amounts to (for XP, sounds, and the manual), and
- * how many clamps the run calls for.
+ * which recipe the run amounts to (for XP, sounds, and the manual), how
+ * many clamps the run calls for, and what a bare-handed press on a bar
+ * comes to (`pressClamp`).
  *
  * The recipes in benchOperations.ts keep their fixed shapes as the
  * canonical declarations (previews, the manual, the ShopDriver's legacy
@@ -469,28 +470,66 @@ export function clampGhosts(run: GlueRun): ReadonlyArray<ClampPlacement> {
   });
 }
 
-/** The placed clamps actually holding this run: lying across it, within
+/** Whether one placed clamp is holding this run: lying across it, within
  * its length, near enough to reach the stock. */
+export function isClampOnRun(run: GlueRun, clamp: ClampPlacement): boolean {
+  if (
+    !anglesParallel(clamp.angleDeg, run.angleDeg, CLAMP_ANGLE_TOLERANCE_DEG)
+  ) {
+    return false;
+  }
+  const local = inLocalFrame(
+    { xIn: run.center.xIn, yIn: run.center.yIn, angleDeg: run.angleDeg },
+    clamp.xIn,
+    clamp.yIn,
+  );
+  return (
+    Math.abs(local.yIn) <= run.lengthIn / 2 + 1 &&
+    Math.abs(local.xIn) <= run.spanIn / 2 + CLAMP_SNAP_IN
+  );
+}
+
+/** The placed clamps actually holding this run, in the order they were
+ * set out. */
 export function clampsOnRun(
   run: GlueRun,
   placed: ReadonlyArray<ClampPlacement>,
 ): ReadonlyArray<ClampPlacement> {
-  return placed.filter((clamp) => {
-    if (
-      !anglesParallel(clamp.angleDeg, run.angleDeg, CLAMP_ANGLE_TOLERANCE_DEG)
-    ) {
-      return false;
-    }
-    const local = inLocalFrame(
-      { xIn: run.center.xIn, yIn: run.center.yIn, angleDeg: run.angleDeg },
-      clamp.xIn,
-      clamp.yIn,
-    );
-    return (
-      Math.abs(local.yIn) <= run.lengthIn / 2 + 1 &&
-      Math.abs(local.xIn) <= run.spanIn / 2 + CLAMP_SNAP_IN
-    );
-  });
+  return placed.filter((clamp) => isClampOnRun(run, clamp));
+}
+
+/** What a bare-handed press on a set-out bar comes to. */
+export type ClampPress =
+  /** The bar comes back into the hand. */
+  | { readonly kind: "pickUp" }
+  /** The bar winds tight, and this many are now home. */
+  | { readonly kind: "tighten"; readonly tightened: number }
+  /** The last bar of the run: the cure starts. */
+  | { readonly kind: "commit" };
+
+/**
+ * What pressing the bar at `index` does. Winding is the run's own move:
+ * only a bar holding a run whose seams are all glued and whose clamp
+ * count is met winds tight, and the last one there starts the cure. Any
+ * other press — a bar lying off the run, a run still short of clamps or
+ * glue — picks the bar back up.
+ */
+export function pressClamp(
+  run: GlueRun | null,
+  placed: ReadonlyArray<ClampPlacement>,
+  index: number,
+  state: { readonly tightened: number; readonly seamsGlued: boolean },
+): ClampPress {
+  const clamp = placed[index];
+  if (!run || !clamp || !state.seamsGlued || !isClampOnRun(run, clamp)) {
+    return { kind: "pickUp" };
+  }
+  const onRun = clampsOnRun(run, placed).length;
+  if (onRun < clampsForGlueSpan(run.lengthIn)) return { kind: "pickUp" };
+  const tightened = state.tightened + 1;
+  return tightened >= onRun
+    ? { kind: "commit" }
+    : { kind: "tighten", tightened };
 }
 
 /** The strips of a run, concatenated in across order — what the panel
