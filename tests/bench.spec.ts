@@ -67,7 +67,10 @@ test.describe("Bench view", () => {
   test("hand work happens on the bench's zoomed work surface", async ({
     page,
   }) => {
-    test.setTimeout(900000);
+    // The suite's longest test, and the textured material faces (loaded
+    // and mipmapped on every page load) slowed the whole suite — 900s
+    // ran out mid-glue-up with nothing actually stuck.
+    test.setTimeout(1500000);
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
