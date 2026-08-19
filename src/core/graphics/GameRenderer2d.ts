@@ -54,7 +54,7 @@ export class GameRenderer2d {
       this.app.stage.addChild(layerInfo.container);
     }
 
-    window.addEventListener("resize", () => this.handleResize());
+    window.addEventListener("resize", this.handleResize);
   }
 
   async init(pixiOptions: GameRenderer2dOptions = {}) {
@@ -100,11 +100,11 @@ export class GameRenderer2d {
     return V(this.getWidth(), this.getHeight());
   }
 
-  handleResize() {
+  handleResize = () => {
     this.app.resizeTo = window;
     this.app.resize();
     this.onResize?.(this.getSize());
-  }
+  };
 
   hideCursor() {
     this.cursor = "none";
@@ -131,6 +131,7 @@ export class GameRenderer2d {
 
   /** Tear down the Pixi application and remove the canvas from the DOM. */
   destroy(): void {
+    window.removeEventListener("resize", this.handleResize);
     this.canvas.remove();
     this.app.destroy(false, { children: true });
   }

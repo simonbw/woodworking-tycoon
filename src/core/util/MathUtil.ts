@@ -126,9 +126,9 @@ export function polarToVec(theta: number, r: number): V2d {
 /** Checks if a polygon is oriented counter-clockwise */
 export function isCCW(points: readonly V2d[]): boolean {
   let total = 0;
-  for (let i = 1; i < points.length; i++) {
-    const [x1, y1] = points[i - 1];
-    const [x2, y2] = points[i];
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
     total += (x2 - x1) * (y2 + y1);
   }
   return total > 0;

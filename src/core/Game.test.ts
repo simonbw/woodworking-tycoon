@@ -85,3 +85,55 @@ describe("headless Game", () => {
     assert.notStrictEqual(runSimulation(42), runSimulation(43));
   });
 });
+
+class PauseWatcher extends BaseEntity implements Entity {
+  ticks = 0;
+  pauseCalls = 0;
+  unpauseCalls = 0;
+
+  constructor(pausable: boolean) {
+    super();
+    this.pausable = pausable;
+  }
+
+  @on("tick")
+  onTick() {
+    this.ticks += 1;
+  }
+
+  @on("pause")
+  onPause() {
+    this.pauseCalls += 1;
+  }
+
+  @on("unpause")
+  onUnpause() {
+    this.unpauseCalls += 1;
+  }
+}
+
+describe("Game pause/unpause", () => {
+  it("calls onPause/onUnpause on pausable entities too, and stops only their ticking", () => {
+    const game = new Game({ headless: true });
+    const pausable = game.addEntity(new PauseWatcher(true));
+    const unpausable = game.addEntity(new PauseWatcher(false));
+
+    game.pause();
+    assert.strictEqual(game.paused, true);
+    assert.strictEqual(pausable.pauseCalls, 1);
+    assert.strictEqual(unpausable.pauseCalls, 1);
+
+    game.step(5);
+    assert.strictEqual(pausable.ticks, 0, "pausable entity stops ticking");
+    assert.strictEqual(unpausable.ticks, 5, "unpausable entity keeps ticking");
+
+    game.unpause();
+    assert.strictEqual(game.paused, false);
+    assert.strictEqual(pausable.unpauseCalls, 1);
+    assert.strictEqual(unpausable.unpauseCalls, 1);
+
+    game.step(5);
+    assert.strictEqual(pausable.ticks, 5);
+    assert.strictEqual(unpausable.ticks, 10);
+  });
+});

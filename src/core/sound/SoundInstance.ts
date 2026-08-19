@@ -207,6 +207,12 @@ export class SoundInstance extends BaseEntity implements Entity {
     newNode.loop = this.sourceNode.loop;
     this.sourceNode = newNode;
     this.sourceNode.connect(this.panNode);
+    this.sourceNode.onended = () => {
+      if (!this.paused) {
+        this.destroy();
+      }
+    };
+    this.updatePlaybackRate();
     this.sourceNode.start(
       this.game.audio!.currentTime,
       clamp(startTime, 0, this.sourceNode.buffer!.duration),

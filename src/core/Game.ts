@@ -221,8 +221,11 @@ export class Game {
    */
   pause() {
     if (!this.paused) {
-      this.paused = true;
+      // Dispatch before flipping the flag: dispatch() filters pausable
+      // entities out of any event once `paused` is true, so setting it
+      // first would keep onPause() from ever reaching them.
       this.dispatch("pause", undefined);
+      this.paused = true;
     }
   }
 

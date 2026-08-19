@@ -237,7 +237,12 @@ class Timer extends BaseEntity implements Entity {
   @on("tick")
   onTick(dt: number) {
     this.timeRemaining -= dt;
-    const t = clamp(1.0 - this.timeRemaining / this.delay);
+    // An infinite delay (waitUntil's timer) never has real progress to
+    // report: timeRemaining stays Infinity until the predicate resolves it,
+    // and Infinity / Infinity is NaN rather than a meaningful fraction.
+    const t = Number.isFinite(this.delay)
+      ? clamp(1.0 - this.timeRemaining / this.delay)
+      : 0;
     this.duringEffect?.(dt, t);
     if (this.timeRemaining <= 0) {
       this.endEffect?.();
@@ -266,7 +271,10 @@ class RenderTimer extends BaseEntity implements Entity {
   @on("render")
   onRender(dt: number) {
     this.timeRemaining -= dt;
-    const t = clamp(1.0 - this.timeRemaining / this.delay);
+    // See Timer.onTick: an infinite delay has no real fraction to report.
+    const t = Number.isFinite(this.delay)
+      ? clamp(1.0 - this.timeRemaining / this.delay)
+      : 0;
     this.duringEffect?.(dt, t);
     if (this.timeRemaining <= 0) {
       this.endEffect?.();
