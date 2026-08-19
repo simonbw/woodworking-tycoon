@@ -7,6 +7,7 @@ import {
 import { Player } from "../../sim/entities/Player";
 import { TimeFlow } from "../../sim/TimeFlow";
 import { StoreId } from "../../game/lumberStock";
+import { websiteRequested } from "../../utils/urlFlags";
 import { DaylightView } from "../../views/DaylightView";
 import { DustMotionView } from "../../views/DustMotionView";
 import { EnvironmentView } from "../../views/EnvironmentView";
@@ -20,11 +21,14 @@ import { PowerCordView } from "../../views/PowerCordView";
  * player is — only the view side does: the shop's scenery and the sim
  * entities' paired views for the shop, the StoreSceneRoot's own tree
  * for the walkable Orange Box. The lumberyard stays a menu overlay, so
- * its trips keep the shop venue underneath.
+ * its trips keep the shop venue underneath — and so does the Orange Box
+ * under `?website`, where the storefront overlay takes the screen
+ * instead (see urlFlags.ts and issue #200).
  */
 export type Venue = "shop" | "orangeBox";
 
 export function currentVenue(game: Game): Venue {
+  if (websiteRequested()) return "shop";
   const away = game.entities.tryGetSingleton(Player)?.away;
   return away?.kind === "shopping" && away.store === "orangeBox"
     ? "orangeBox"

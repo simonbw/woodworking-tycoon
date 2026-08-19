@@ -7,7 +7,13 @@ import { OverlayFrameContext, OverlayLayer } from "./hud/overlay/OverlayLayer";
 import { BenchDive } from "./scenes/bench/BenchDive";
 import { BenchStageMarker } from "./hud/bench/BenchStageMarker";
 import { StoreOverlayBridge } from "./hud/store/StoreOverlayBridge";
-import { ShellProvider, useGame, useShopOpen, useShopState } from "./useShell";
+import { currentVenue } from "./scenes/venue";
+import {
+  ShellProvider,
+  useGame,
+  useShellVersion,
+  useShopOpen,
+} from "./useShell";
 
 /** The overlay only exists while a shop is live (a Player is in play);
  * which venue's overlay follows the canvas (the SceneDirector's swap).
@@ -20,7 +26,10 @@ const OverlayGate: React.FC = () => {
 
 const VenueOverlay: React.FC = () => {
   const game = useGame();
-  const gameState = useShopState();
+  // Subscribes this layer to state changes; the venue is read off the
+  // game rather than the projection, so it can't disagree with what the
+  // SceneDirector drew.
+  useShellVersion();
   // Leaned over a bench, the world's chips fold away: the dive draws
   // over the floor they annotate, and they'd be unreachable behind it
   // (the old HomePage's bench-dive fade). What stays is the marker
@@ -29,8 +38,7 @@ const VenueOverlay: React.FC = () => {
   if (game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null) {
     return <BenchStageMarker />;
   }
-  const away = gameState.player.away;
-  if (away?.kind === "shopping" && away.store === "orangeBox") {
+  if (currentVenue(game) === "orangeBox") {
     return <StoreOverlayBridge />;
   }
   return <OverlayLayer />;

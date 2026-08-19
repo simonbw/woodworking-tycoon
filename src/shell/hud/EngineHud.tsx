@@ -1,4 +1,5 @@
 import React from "react";
+import { websiteRequested } from "../../utils/urlFlags";
 import { useShopOpen } from "../useShell";
 import { HandsStrip } from "./HandsStrip";
 import { HoldMusicLayer } from "./HoldMusicLayer";
@@ -15,6 +16,7 @@ import { BenchToolRail } from "./bench/BenchToolRail";
 import { UnderBenchPanel } from "./bench/UnderBenchPanel";
 import { useBenchDiveActive } from "./bench/useBenchDive";
 import { StoreScreen } from "./store/StoreScreen";
+import { StoreTripOverlay } from "./store-page/StoreTripOverlay";
 import { LumberyardTripOverlay } from "./trips/LumberyardTripOverlay";
 import { ScavengeTripOverlay } from "./trips/ScavengeTripOverlay";
 import { SleepOverlay } from "./trips/SleepOverlay";
@@ -122,8 +124,8 @@ export const EngineHud: React.FC = () => {
         <UnderBenchPanel />
 
         {/* The away trips that cover the screen (each gates on its own
-          `player.away` kind): the lumberyard's storefront, the
-          scavenging circuit, and the night between days. The wrapper
+          `player.away` kind): the storefronts, the scavenging circuit,
+          and the night between days. The wrapper
           re-enables pointer events under HudRoot's inert sheet (the
           same seam the manual's modal crosses), without a box of its
           own. */}
@@ -154,6 +156,12 @@ const TripDestinations: React.FC = () => {
   if (!useTripStaged()) return null;
   return (
     <>
+      {/* The Orange Box is a walkable place (StoreSceneRoot, swapped in
+          by the SceneDirector); its storefront overlay takes the screen
+          instead under ?website, as the future Orange Box website — see
+          urlFlags.ts and issue #200. The same flag holds the venue at
+          the shop, so the two never both show. */}
+      {websiteRequested() && <StoreTripOverlay />}
       <LumberyardTripOverlay />
       <ScavengeTripOverlay />
       <SleepOverlay />
