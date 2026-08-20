@@ -1,7 +1,7 @@
-import { MachineId } from "../../game/Machine";
+import { MACHINE_TYPES, MachineId } from "../../game/Machine";
 
 /**
- * Worktable art, by machine type.
+ * Bench art, by machine type.
  *
  * Each table ships as three exports off one drawing:
  *
@@ -56,6 +56,34 @@ export function worktableArtSrc(
 ): string | null {
   const base = WORKTABLE_ART[machineId as MachineId];
   return base ? `/images/${base}-${layer}${zoomed ? "@4x" : ""}.png` : null;
+}
+
+/**
+ * The makeshift bench, which is not a worktable and ships as one
+ * flattened drawing rather than layers: the shop floor's copy
+ * (`SimpleStationArt`) and the close-up the bench view leans over.
+ */
+export const MAKESHIFT_BENCH_ART = "/images/makeshift-bench.png";
+export const MAKESHIFT_BENCH_CLOSE_UP = "/images/makeshift-bench@4x.png";
+
+/**
+ * The close-up art the bench view draws one table of the open run with:
+ * the same drawing the floor uses, off its `@4x` export. Tables carry a
+ * shadow layer of their own; the makeshift bench is a single flattened
+ * drawing and has none. Null for a bench with no art, which the view
+ * draws as a plain top instead.
+ */
+export function benchCloseUpArt(
+  machineId: string,
+): { top: string; shadow: string | null } | null {
+  const top = worktableArtSrc(machineId, "top", true);
+  if (top) {
+    return { top, shadow: worktableArtSrc(machineId, "shadow", true) };
+  }
+  if (machineId === MACHINE_TYPES.workspace.id) {
+    return { top: MAKESHIFT_BENCH_CLOSE_UP, shadow: null };
+  }
+  return null;
 }
 
 /** Every worktable art file, for the texture preloader. */

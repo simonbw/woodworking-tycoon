@@ -222,9 +222,10 @@ function rectCenter(rect: BenchTopRect): Vector {
  * How far a member is turned relative to the frame. Placements store an
  * angle in the machine's own unrotated frame; the frame faces the opened
  * bench, so a member turned the same way (always, for a lone bench)
- * needs no turn at all, and only a table pushed on at an angle does.
+ * needs no turn at all, and only a table pushed on at an angle does. The
+ * bench view turns that member's art by the same quarter turns.
  */
-function turnIntoFrame(
+export function turnIntoFrame(
   member: BenchGroupMember,
   group: Pick<BenchGroup, "alignment">,
 ): Direction {

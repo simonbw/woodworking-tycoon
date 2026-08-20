@@ -1,4 +1,8 @@
-import { worktableArtPaths } from "../views/machine-sprites/worktable-art";
+import {
+  MAKESHIFT_BENCH_ART,
+  MAKESHIFT_BENCH_CLOSE_UP,
+  worktableArtPaths,
+} from "../views/machine-sprites/worktable-art";
 import { BOARD_FACE_TEXTURE_ASSETS } from "../views/material-sprites/boardFaceTextures";
 import { SHEET_FACE_TEXTURE_ASSETS } from "../views/material-sprites/sheetFaceTextures";
 import { Assets } from "pixi.js";
@@ -67,9 +71,9 @@ export const TEXTURE_ASSETS = [
   "/images/operator-position.png",
   "/images/pickup-truck.png",
   "/images/workspace.png",
-  "/images/makeshift-bench.png",
-  // The bench view's close-up copy of the same art (see BenchSceneBackdrop)
-  "/images/makeshift-bench@4x.png",
+  MAKESHIFT_BENCH_ART,
+  // The bench view's close-up copy of the same art (see benchCloseUpArt)
+  MAKESHIFT_BENCH_CLOSE_UP,
   "/images/person.png",
   // Worktable tops, shadows, and their close-up copies — three layers per
   // table, and only for the tables that have art (see worktable-art.ts)

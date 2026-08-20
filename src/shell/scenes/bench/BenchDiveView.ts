@@ -4,7 +4,10 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
-import { groupPieces } from "../../../game/bench-work/bench-group";
+import {
+  groupPieces,
+  turnIntoFrame,
+} from "../../../game/bench-work/bench-group";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
 import { MaterialInstance } from "../../../game/Materials";
@@ -13,7 +16,12 @@ import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
 import { V } from "../../../core/Vector";
-import { PIXELS_PER_INCH } from "../../../views/shop-scale";
+import {
+  IMAGE_PIXELS_PER_INCH,
+  PIXELS_PER_INCH,
+} from "../../../views/shop-scale";
+import { artSprite } from "../../../views/machine-sprites/machine-art";
+import { benchCloseUpArt } from "../../../views/machine-sprites/worktable-art";
 import { BenchStage, benchStage } from "./benchStage";
 
 /**
@@ -43,7 +51,15 @@ export class BenchDiveView extends BaseEntity implements Entity {
    * picture rides one motion.
    */
   readonly frame = new Container();
-  private tops = new Graphics();
+  /**
+   * The run's tops, in three passes: every table's cast shadow first, so
+   * a neighbour's shadow never falls across the top butted against it,
+   * then the drawn top for any bench whose art hasn't been made yet,
+   * then the art itself.
+   */
+  private shadows = new Container();
+  private topRects = new Graphics();
+  private topArt = new Container();
   private pieces = new Container();
 
   /**
@@ -97,7 +113,7 @@ export class BenchDiveView extends BaseEntity implements Entity {
     this.root = new Container() as Container & GameSprite;
     this.root.layerName = "hud";
     this.root.visible = false;
-    this.frame.addChild(this.tops, this.pieces);
+    this.frame.addChild(this.shadows, this.topRects, this.topArt, this.pieces);
     this.root.addChild(this.backdrop, this.frame);
     this.sprite = this.root;
   }
@@ -145,15 +161,43 @@ export class BenchDiveView extends BaseEntity implements Entity {
       .rect(0, 0, renderer.getWidth(), renderer.getHeight())
       .fill({ color: BACKDROP, alpha: 0.86 });
 
-    // The run's tops, in frame inches.
-    this.tops.clear();
+    // The run's tops: the same drawing the shop floor puts under the
+    // player's feet, off its close-up export. The art covers the whole
+    // machine — the makeshift bench's buckets stick out past its
+    // plywood — so it hangs on the footprint's middle, which is where
+    // `member.rect` is centered, rather than being stretched to the
+    // top's own rectangle. A table pushed onto the run at an angle is
+    // turned into the frame by the quarter turns its placements take.
+    this.clearTops();
+    this.topRects.clear();
+    const artScale = fit.pxPerIn / IMAGE_PIXELS_PER_INCH;
     for (const member of group.members) {
-      const x = fit.originX + member.rect.xIn * fit.pxPerIn;
-      const y = fit.originY + member.rect.yIn * fit.pxPerIn;
-      const w = member.rect.widthIn * fit.pxPerIn;
-      const h = member.rect.heightIn * fit.pxPerIn;
-      this.tops.rect(x - 4, y - 4, w + 8, h + 8).fill(BENCH_EDGE);
-      this.tops.rect(x, y, w, h).fill(BENCH_WOOD);
+      const centerX =
+        fit.originX + (member.rect.xIn + member.rect.widthIn / 2) * fit.pxPerIn;
+      const centerY =
+        fit.originY +
+        (member.rect.yIn + member.rect.heightIn / 2) * fit.pxPerIn;
+      const art = benchCloseUpArt(member.machine.type.id);
+      if (!art) {
+        const x = fit.originX + member.rect.xIn * fit.pxPerIn;
+        const y = fit.originY + member.rect.yIn * fit.pxPerIn;
+        const w = member.rect.widthIn * fit.pxPerIn;
+        const h = member.rect.heightIn * fit.pxPerIn;
+        this.topRects.rect(x - 4, y - 4, w + 8, h + 8).fill(BENCH_EDGE);
+        this.topRects.rect(x, y, w, h).fill(BENCH_WOOD);
+        continue;
+      }
+      const angle = turnIntoFrame(member, group) * -90;
+      if (art.shadow) {
+        const shadow = artSprite(art.shadow, artScale);
+        shadow.position.set(centerX, centerY);
+        shadow.angle = angle;
+        this.shadows.addChild(shadow);
+      }
+      const top = artSprite(art.top, artScale);
+      top.position.set(centerX, centerY);
+      top.angle = angle;
+      this.topArt.addChild(top);
     }
 
     // Everything lying on the tops, where the layout says it lies —
@@ -208,6 +252,12 @@ export class BenchDiveView extends BaseEntity implements Entity {
    * view's hairline) that wants to follow its motion. */
   motionFor(materialId: string): PieceMotion | null {
     return this.holders.get(materialId) ?? null;
+  }
+
+  private clearTops(): void {
+    for (const container of [this.shadows, this.topArt]) {
+      container.removeChildren().forEach((child) => child.destroy());
+    }
   }
 
   private clearHolders(): void {

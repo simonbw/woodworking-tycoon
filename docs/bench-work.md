@@ -237,15 +237,17 @@ is the pallet instance transforming nail by nail:
 
 ## The bench view itself
 
-`src/shell/scenes/bench/` — Tab at a bench fills the whole window
-with the shop itself, leaned into. One measured PIXI `Application` at
-device resolution draws the same concrete floor the shop view tiles and
-the _same bench_ the shop floor draws (`BenchDiveView`:
-`makeshift-bench@4x.png`, the starting bench's own drawing re-exported
-at 32 px/inch against the pipeline's 8; the `WorktableArt` vectors
-for built tables) — the zoomed bench and the floor bench are one drawing
-at two zooms, both anchored on their canvas center so the close-up lands
-exactly over the shop's copy.
+`src/shell/scenes/bench/` — Tab at a bench dims the shop to a pool of
+light and leans over the bench in it, drawn on the engine's screen-space
+layer while the world behind keeps ticking. Every table in the run is the
+_same bench_ the shop floor draws, off its close-up export
+(`BenchDiveView` and `benchCloseUpArt`: `makeshift-bench@4x.png` for the
+starting bench, the worktable `-shadow@4x`/`-top@4x` layers for built
+tables, shadows in a pass under every top) — the zoomed bench and the
+floor bench are one drawing at two zooms, both anchored on their canvas
+center so the close-up lands exactly over the shop's copy. A table whose
+art hasn't been drawn yet gets a plain top instead, so art can land one
+table at a time.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchDiveView`; a board flipped up on edge narrows to its thickness,
