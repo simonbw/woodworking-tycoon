@@ -51,9 +51,11 @@ import { TimeFlow } from "../TimeFlow";
  *
  * The first sale ever is dealt, not rolled: until something has sold, a
  * stocked stand summons its customer immediately and the browse below
- * always buys, so the opening's "set it out at the stand" step pays off
- * while the player is still standing there. From the second sale on the
- * street runs on the dice.
+ * always buys. The buyer still walks the block in sim minutes, so the
+ * clock runs at working pace while that sale is pending (see timeSpeed
+ * in game/time-flow.ts) — the walk-up passes in seconds and the sale
+ * pays off while the player is still standing there. From the second
+ * sale on the street runs on the dice.
  *
  * Transient — never serialized; added per session by the bootstrap.
  */

@@ -2,11 +2,20 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { GameState } from "./GameState";
 import { initialGameState } from "./initialGameState";
+import { makeMaterial } from "./material-helpers";
+import { FinishedProduct } from "./Materials";
 import { TICKS_PER_DAY } from "./time";
 import { currentDayPhase, isNight, timeSpeed } from "./time-flow";
 
 function fresh(edit: Partial<GameState> = {}): GameState {
   return { ...initialGameState, ...edit };
+}
+
+function shelf(): FinishedProduct {
+  return makeMaterial<FinishedProduct>({
+    type: "rusticShelf",
+    species: "pallet",
+  });
 }
 
 function withPlayer(
@@ -96,6 +105,29 @@ describe("timeSpeed", () => {
     assert.equal(currentDayPhase(night), "night");
     assert.equal(timeSpeed(night), "stopped");
   });
+
+  it("spends time while the first sale is pending — the dealt buyer is walking up", () => {
+    assert.equal(timeSpeed(fresh({ stand: [shelf()] })), "working");
+  });
+
+  it("idles a stocked stand once the shop has sold before", () => {
+    assert.equal(
+      timeSpeed(
+        fresh({
+          stand: [shelf()],
+          progression: { ...initialGameState.progression, salesCompleted: 1 },
+        }),
+      ),
+      "idle",
+    );
+  });
+
+  it("stops a pending first sale at night — the sale waits for morning", () => {
+    assert.equal(
+      timeSpeed(fresh({ stand: [shelf()], tick: TICKS_PER_DAY })),
+      "stopped",
+    );
+  });
 });
 
 describe("timeSpeed precedence", () => {
@@ -103,6 +135,13 @@ describe("timeSpeed precedence", () => {
     assert.equal(
       timeSpeed(withPlayer({ waiting: true, busyTicks: 3 })),
       "working",
+    );
+  });
+
+  it("lets the wait key outrank the pending first sale — the hold can ramp past working pace", () => {
+    assert.equal(
+      timeSpeed(withPlayer({ waiting: true }, fresh({ stand: [shelf()] }))),
+      "waiting",
     );
   });
 });

@@ -148,9 +148,10 @@ describe("the milestone pass", () => {
     // No forced minutes — the idle creep hasn't accrued one yet.
     shop.stepEngine(1);
     assert.ok(shop.progression.storeUnlocked);
-    // The sale satisfies the whole first goal — the cumulative
-    // predicates walk the ratchet past all four of its boxes at once.
-    assert.strictEqual(shop.tutorials.tutorials.opening.step, 4);
+    // The sale satisfies the whole first goal and the sale gate after
+    // it — the cumulative predicates walk the ratchet past all five
+    // boxes at once.
+    assert.strictEqual(shop.tutorials.tutorials.opening.step, 5);
   });
 });
 
