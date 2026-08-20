@@ -91,4 +91,10 @@ export type CustomEvents = {
    * flags, manual articles, or the tutorial tracks.
    */
   progressionChanged: Record<string, never>;
+  /**
+   * The whole world was replaced in one stroke — a new game, a save
+   * load, or a test fixture. Listeners holding derived state treat it
+   * as "everything changed".
+   */
+  worldLoaded: Record<string, never>;
 };

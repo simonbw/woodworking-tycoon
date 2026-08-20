@@ -132,4 +132,9 @@ export function loadGameState(game: Game, state: GameState): void {
       `Fixture uses slices the entity world hasn't ported yet: ${unsupported.join(", ")}`,
     );
   }
+
+  // The one mutation that doesn't go through a command: everything
+  // changed at once, announced as such so live indexes and the shell
+  // drop whatever they had derived.
+  game.dispatch("worldLoaded", {});
 }

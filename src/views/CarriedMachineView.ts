@@ -5,6 +5,7 @@ import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
 import { CellMap } from "../game/CellMap";
+import { shopCellMap } from "../sim/commands/machine-commands";
 import { FeedRunRuler, feedRunRulers } from "../game/feed-clearance";
 import {
   canPlaceMachine,
@@ -141,7 +142,7 @@ export class CarriedMachineView extends BaseEntity implements Entity {
     const gameState = projectGameState(this.game);
     const placement = carriedMachinePlacement(gameState);
     if (!placement) return;
-    const cellMap = CellMap.fromGameState(gameState);
+    const cellMap = shopCellMap(this.game);
     if (!cellMap.has(placement.position)) return;
 
     const isValid = canPlaceMachine(

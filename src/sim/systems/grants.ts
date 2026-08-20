@@ -1,5 +1,4 @@
 import { Game } from "../../core/Game";
-import { CellMap } from "../../game/CellMap";
 import { addConsumables } from "../../game/Consumable";
 import { freshMachineState } from "../../game/game-actions/machine-actions";
 import { OperationCompletion } from "../../game/game-actions/operation-actions";
@@ -10,6 +9,7 @@ import { MachineCrateEntity } from "../entities/MachineCrateEntity";
 import { projectGameState } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { Progression } from "../singletons/Progression";
+import { ShopGrid } from "../singletons/ShopGrid";
 import { StorageUpgrades } from "../singletons/StorageUpgrades";
 
 /**
@@ -87,7 +87,7 @@ export function deliverMachineCrate(
 ): MachineCrateEntity {
   const gameState = projectGameState(game);
   const target = near ?? gameState.shopInfo.entrancePosition;
-  const cellMap = CellMap.fromGameState(gameState);
+  const cellMap = game.entities.getSingleton(ShopGrid).cellMap();
   const distance = (cell: Vector) =>
     Math.abs(cell[0] - target[0]) + Math.abs(cell[1] - target[1]);
   const openCells = cellMap

@@ -18,7 +18,10 @@ import {
   Vector,
   vectorKey,
 } from "../../game/Vectors";
-import { findMachineEntity } from "../../sim/commands/machine-commands";
+import {
+  findMachineEntity,
+  shopCellMap,
+} from "../../sim/commands/machine-commands";
 import { MachineEntity } from "../../sim/entities/MachineEntity";
 import { Player } from "../../sim/entities/Player";
 import { projectGameState } from "../../sim/projection";
@@ -100,10 +103,8 @@ export class TargetingState extends BaseEntity implements Entity {
   machines(): Machine[] {
     const gs = projectGameState(this.game);
     if (gs.player.away) return [];
-    return [
-      ...(CellMap.fromGameState(gs).at(gs.player.position)?.operableMachines ??
-        []),
-    ];
+    const cellMap = shopCellMap(this.game);
+    return [...(cellMap.at(gs.player.position)?.operableMachines ?? [])];
   }
 
   /** The machine the keys act on, as its live entity. */

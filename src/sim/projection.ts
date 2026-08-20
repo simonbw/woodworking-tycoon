@@ -1,5 +1,5 @@
 import { Game } from "../core/Game";
-import { GameState, MaterialPile } from "../game/GameState";
+import { GameState, MaterialPile, ProgressionState } from "../game/GameState";
 import { MachineState } from "../game/Machine";
 import { CustomerEntity } from "./entities/CustomerEntity";
 import { MachineCrateEntity } from "./entities/MachineCrateEntity";
@@ -44,8 +44,6 @@ export function projectGameState(game: Game): GameState {
   const consumables = game.entities.getSingleton(Consumables);
   const storage = game.entities.getSingleton(StorageUpgrades);
   const shopInfo = game.entities.getSingleton(ShopInfo);
-  const progression = game.entities.getSingleton(Progression);
-  const tutorials = game.entities.getSingleton(TutorialTracker);
   const dust = game.entities.tryGetSingleton(DustLayer);
   const stand = game.entities.tryGetSingleton(StandEntity);
 
@@ -93,18 +91,7 @@ export function projectGameState(game: Game): GameState {
       sweepAim: player.sweepAim,
     },
     storage: { upgrades: storage.upgrades },
-    progression: {
-      tutorials: tutorials.tutorials,
-      storeUnlocked: progression.storeUnlocked,
-      lumberyardUnlocked: progression.lumberyardUnlocked,
-      salesCompleted: progression.salesCompleted,
-      sweepingUnlocked: progression.sweepingUnlocked,
-      unlockedArticles: progression.unlockedArticles,
-      readArticles: progression.readArticles,
-      xp: progression.xp,
-      skillPoints: progression.skillPoints,
-      unlockedSkills: progression.unlockedSkills,
-    },
+    progression: projectProgression(game),
     stand: stand?.pieces ?? [],
     customers,
     dust: dust?.map ?? {},
@@ -112,5 +99,26 @@ export function projectGameState(game: Game): GameState {
     broomOwned: broom?.owned ?? false,
     broomPosition: broom?.position ?? null,
     dustpan: broom?.dustpan ?? {},
+  };
+}
+
+/**
+ * Just the progression slice, for readers that need nothing else — the
+ * same shape `projectGameState` embeds, without paying for the arrays.
+ */
+export function projectProgression(game: Game): ProgressionState {
+  const progression = game.entities.getSingleton(Progression);
+  const tutorials = game.entities.getSingleton(TutorialTracker);
+  return {
+    tutorials: tutorials.tutorials,
+    storeUnlocked: progression.storeUnlocked,
+    lumberyardUnlocked: progression.lumberyardUnlocked,
+    salesCompleted: progression.salesCompleted,
+    sweepingUnlocked: progression.sweepingUnlocked,
+    unlockedArticles: progression.unlockedArticles,
+    readArticles: progression.readArticles,
+    xp: progression.xp,
+    skillPoints: progression.skillPoints,
+    unlockedSkills: progression.unlockedSkills,
   };
 }

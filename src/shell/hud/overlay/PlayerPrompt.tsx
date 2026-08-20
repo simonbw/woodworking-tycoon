@@ -30,7 +30,8 @@ import {
   ReasonRow,
 } from "../../../components/shortcuts/HintList";
 import { ShortcutKeys } from "../../../components/shortcuts/Kbd";
-import { useShopState } from "../../useShell";
+import { shopCellMap } from "../../../sim/commands/machine-commands";
+import { useGame, useShopState } from "../../useShell";
 import { useTargeting } from "../useTargeting";
 import { CellAnchored, PointAnchored, PointMarker } from "./OverlayLayer";
 
@@ -42,7 +43,7 @@ import { CellAnchored, PointAnchored, PointMarker } from "./OverlayLayer";
  */
 export const PlayerPrompt: React.FC = () => {
   const gameState = useShopState();
-  const cellMap = CellMap.fromGameState(gameState);
+  const cellMap = shopCellMap(useGame());
   const { machine: targetedMachine, pileOffset } = useTargeting();
 
   if (gameState.player.away) return null;

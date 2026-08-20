@@ -4,7 +4,7 @@ import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
-import { CellMap } from "../game/CellMap";
+import { shopCellMap } from "../sim/commands/machine-commands";
 import { feedClearanceShortfall, feedLaneCells } from "../game/feed-clearance";
 import { findFeedableOperation } from "../game/machine-helpers";
 import { availableOperations } from "../game/skill-helpers";
@@ -88,7 +88,7 @@ export class FeedLaneView extends BaseEntity implements Entity {
         : gameState.player.inventory;
     if (stock.length === 0) return null;
 
-    const cellMap = CellMap.fromGameState(gameState);
+    const cellMap = shopCellMap(game);
     const match = findFeedableOperation(
       machine,
       availableOperations(machine, gameState.progression),

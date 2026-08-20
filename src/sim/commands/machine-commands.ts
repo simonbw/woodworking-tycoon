@@ -48,6 +48,7 @@ import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
 import { projectGameState } from "../projection";
 import { Consumables } from "../singletons/Consumables";
+import { ShopGrid } from "../singletons/ShopGrid";
 import { emitSound } from "./sound";
 import { applyCompletionGrants } from "../systems/grants";
 import { BenchToolClaim } from "../../game/bench-work/tool-work";
@@ -69,6 +70,14 @@ export {
   canPutDownCarriedMachine,
   explainUnpackRefusal,
 } from "../../game/game-actions/machine-actions";
+
+/**
+ * The live floor index, read through the command surface (the shell may
+ * not reach into `sim/singletons` — see import-boundaries.test.ts).
+ */
+export function shopCellMap(game: Game): CellMap {
+  return game.entities.getSingleton(ShopGrid).cellMap();
+}
 
 export function findMachineEntity(
   game: Game,
@@ -175,7 +184,7 @@ export function putDownCarriedMachine(game: Game): boolean {
         cell[1] === gameState.player.position[1],
     ) &&
     canPlaceMachine(
-      CellMap.fromGameState(gameState),
+      game.entities.getSingleton(ShopGrid).cellMap(),
       machineType,
       position,
       rotation,
@@ -539,7 +548,7 @@ export function operateMachine(
       feedClearanceShortfall(
         machine,
         match.materials,
-        CellMap.fromGameState(gameState),
+        game.entities.getSingleton(ShopGrid).cellMap(),
       )
     ) {
       console.warn("No room to run the stock through the machine");

@@ -2,23 +2,9 @@ import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
-import { clampsInUse } from "../game/Clamp";
-import { machineKey, MachineState } from "../game/Machine";
 import { vectorKey } from "../game/Vectors";
-import { MachineCrateEntity } from "../sim/entities/MachineCrateEntity";
-import { MachineEntity } from "../sim/entities/MachineEntity";
-import { MaterialPileEntity } from "../sim/entities/MaterialPileEntity";
 import { Player } from "../sim/entities/Player";
-import { ShopVacEntity } from "../sim/entities/ShopVacEntity";
-import { StandEntity } from "../sim/entities/StandEntity";
-import { TruckEntity } from "../sim/entities/TruckEntity";
-import { Broom } from "../sim/singletons/Broom";
 import { Clock } from "../sim/singletons/Clock";
-import { Consumables } from "../sim/singletons/Consumables";
-import { Progression } from "../sim/singletons/Progression";
-import { Reputation } from "../sim/singletons/Reputation";
-import { TutorialTracker } from "../sim/singletons/TutorialTracker";
-import { Wallet } from "../sim/singletons/Wallet";
 import { TargetingState } from "./dispatch/TargetingState";
 
 /**
@@ -26,9 +12,14 @@ import { TargetingState } from "./dispatch/TargetingState";
  * with autoRender=false, render on signals).
  *
  * The sim mutates imperatively, so nothing tells React "something
- * changed" for free. Each engine tick this entity folds the HUD-visible
- * surface — money, reputation, the clock, the hands, targeting, machine
- * states — into a cheap signature, and bumps a version when it moves.
+ * changed" for free — but every discrete mutation announces itself as a
+ * domain event (issue #230, phase 1), so this entity listens rather than
+ * diffing: any event marks a render pending, and the end of the tick
+ * delivers at most one bump. The only state still checked by value each
+ * tick is the continuous kind no event covers — the clock's minutes, the
+ * body's cell and facing, the held keys, the shopper's walk — folded
+ * into a signature of a dozen primitives (the old signature stringified
+ * the whole HUD surface, machines and piles included, every tick).
  * React roots subscribe via `useSyncExternalStore`; a version bump is
  * one root render, and a quiet frame is zero.
  */
@@ -40,8 +31,8 @@ export class ShellStore extends BaseEntity implements Entity {
   private listeners = new Set<() => void>();
   version = 0;
   private lastSignature = "";
-  /** The machine states as of the last render signal — see onAfterTick. */
-  private lastMachineStates: MachineState[] = [];
+  /** An event landed since the last render signal. */
+  private pendingBump = true;
 
   /**
    * Whether a DOM modal claims the keyboard. Mirrored from the
@@ -73,107 +64,89 @@ export class ShellStore extends BaseEntity implements Entity {
     }
   }
 
+  // Every domain event is a render-worthy fact; the payload doesn't
+  // matter here, only that something the DOM might show moved.
+  @on("machineAdded")
+  onMachineAdded() {
+    this.pendingBump = true;
+  }
+  @on("machineRemoved")
+  onMachineRemoved() {
+    this.pendingBump = true;
+  }
+  @on("machineStateChanged")
+  onMachineStateChanged() {
+    this.pendingBump = true;
+  }
+  @on("pilesChanged")
+  onPilesChanged() {
+    this.pendingBump = true;
+  }
+  @on("cratesChanged")
+  onCratesChanged() {
+    this.pendingBump = true;
+  }
+  @on("playerChanged")
+  onPlayerChanged() {
+    this.pendingBump = true;
+  }
+  @on("truckChanged")
+  onTruckChanged() {
+    this.pendingBump = true;
+  }
+  @on("standChanged")
+  onStandChanged() {
+    this.pendingBump = true;
+  }
+  @on("suppliesChanged")
+  onSuppliesChanged() {
+    this.pendingBump = true;
+  }
+  @on("cleaningChanged")
+  onCleaningChanged() {
+    this.pendingBump = true;
+  }
+  @on("progressionChanged")
+  onProgressionChanged() {
+    this.pendingBump = true;
+  }
+  @on("worldLoaded")
+  onWorldLoaded() {
+    this.pendingBump = true;
+  }
+
   @on("afterTick")
   onAfterTick() {
     const signature = this.signature();
-    // A machine's state object is replaced on every mutation (the
-    // commands' contract), so identity is the whole change signal —
-    // cheaper than describing a machine in the signature, and it catches
-    // the changes a description would miss (a plan pulled, a setting
-    // dialed) even when the clock is standing still.
-    const states = [...this.game.entities.byConstructor(MachineEntity)].map(
-      (machine) => machine.state,
-    );
-    const machinesMoved =
-      states.length !== this.lastMachineStates.length ||
-      states.some((state, index) => state !== this.lastMachineStates[index]);
-    if (signature !== this.lastSignature || machinesMoved) {
+    if (this.pendingBump || signature !== this.lastSignature) {
+      this.pendingBump = false;
       this.lastSignature = signature;
-      this.lastMachineStates = states;
       this.bump();
     }
   }
 
+  /** The continuous state no event covers, as a handful of primitives. */
   private signature(): string {
     const game = this.game;
     const player = game.entities.tryGetSingleton(Player);
     if (!player) return "empty";
     const clock = game.entities.tryGetSingleton(Clock);
-    const wallet = game.entities.tryGetSingleton(Wallet);
-    const reputation = game.entities.tryGetSingleton(Reputation);
-    const consumables = game.entities.tryGetSingleton(Consumables);
-    const progression = game.entities.tryGetSingleton(Progression);
-    const tutorials = game.entities.tryGetSingleton(TutorialTracker);
     const targeting = game.entities.tryGetSingleton(TargetingState);
-    const broom = game.entities.tryGetSingleton(Broom);
-    const shopVac = game.entities.tryGetSingleton(ShopVacEntity);
-    const stand = game.entities.tryGetSingleton(StandEntity);
-    const truck = game.entities.tryGetSingleton(TruckEntity);
-
-    const machines: string[] = [];
-    const machineStates: MachineState[] = [];
-    for (const machine of game.entities.byConstructor(MachineEntity)) {
-      // Object identity is the change signal: entity code replaces the
-      // state object on every mutation (the commands' contract).
-      machines.push(machineKey(machine.state));
-      machineStates.push(machine.state);
-    }
-    const pileCount = [...game.entities.byConstructor(MaterialPileEntity)]
-      .length;
-    const crateCount = [...game.entities.byConstructor(MachineCrateEntity)]
-      .length;
-
     return [
       clock?.tick,
       clock?.day,
-      wallet?.money,
-      reputation?.reputation,
-      player.inventory.length,
-      player.inventory[player.inventory.length - 1]?.id,
-      player.carriedMachine?.machineTypeId,
-      // The whole trip, not just its kind: a leg of scavenging that
-      // ends, a cart that gains a line, a stop's haul — all of it is
-      // what the trip's own screen draws, and none of it moves the
-      // clock, so a frozen clock would leave the screen stale.
-      player.away ? JSON.stringify(player.away) : "",
-      player.busyTicks > 0 ? "busy" : "",
       // The interaction UI reads reach and facing off the projection, so
       // crossing a cell line or turning must re-render the chips.
       vectorKey(player.cell),
       player.direction,
       player.operating,
       player.waiting,
-      broom ? `${broom.owned},${JSON.stringify(broom.position)}` : "",
-      shopVac ? JSON.stringify(shopVac.position) : "no-vac",
-      stand?.pieces.length,
-      truck ? `${truck.bed.length},${truck.crates.length}` : "",
-      pileCount,
-      crateCount,
-      consumables ? JSON.stringify(consumables.stock) : "",
-      consumables?.clamps,
-      // The supplies panel's rack count: clamps tied up in glue-ups
-      clampsInUse(machineStates),
-      // The hands strip's tool chips: broom in hand + dustpan fill,
-      // vac hose in hand + canister fill
-      broom
-        ? [
-            broom.owned,
-            broom.position?.join(",") ?? "hand",
-            JSON.stringify(broom.dustpan),
-          ].join("/")
+      player.busyTicks > 0 ? "busy" : "",
+      // The shopper's walk through the aisles is continuous motion (see
+      // trip-commands.setShoppingPosition); the shelf prompts follow it.
+      player.away?.kind === "shopping"
+        ? `${vectorKey(player.away.position)},${player.away.direction}`
         : "",
-      shopVac
-        ? [
-            shopVac.position?.join(",") ?? "hand",
-            JSON.stringify(shopVac.canister),
-          ].join("/")
-        : "",
-      progression?.xp,
-      progression?.skillPoints,
-      progression?.storeUnlocked,
-      progression?.unlockedArticles.length,
-      progression?.readArticles.length,
-      tutorials ? JSON.stringify(tutorials.tutorials) : "",
       targeting
         ? [
             targeting.targeted()?.state.machineTypeId ?? "",
@@ -183,7 +156,6 @@ export class ShellStore extends BaseEntity implements Entity {
             targeting.pileOffset,
           ].join(",")
         : "",
-      machines.join("|"),
     ].join("§");
   }
 }
