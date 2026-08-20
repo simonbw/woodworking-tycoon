@@ -120,6 +120,11 @@ export class DaylightView extends BaseEntity implements Entity {
   private originX = 0;
   private originY = 0;
 
+  /** Whether the current texture holds a real paint — a blank multiply
+   * mask would black the world out, so the sprite stays hidden until
+   * paint() reports success. */
+  private painted = false;
+
   constructor() {
     super();
     this.mask = new Sprite() as Sprite & GameSprite;
@@ -191,12 +196,13 @@ export class DaylightView extends BaseEntity implements Entity {
     return daylightAt(clock.dayTicksSpent() / TICKS_PER_DAY, clock.isNight());
   }
 
-  /** Paint the mask from the current eased values and composite it. */
-  private paint(width: number, height: number): void {
+  /** Paint the mask from the current eased values and composite it.
+   * Returns whether it painted; an early-out leaves the texture blank. */
+  private paint(width: number, height: number): boolean {
     const renderer = this.game.renderer?.app.renderer;
-    if (!renderer || !this.texture || !this.eased) return;
+    if (!renderer || !this.texture || !this.eased) return false;
     const shopInfo = this.game.entities.tryGetSingleton(ShopInfo)?.info;
-    if (!shopInfo) return;
+    if (!shopInfo) return false;
 
     const door = doorSpan(shopInfo);
     const now = this.eased;
@@ -299,6 +305,7 @@ export class DaylightView extends BaseEntity implements Entity {
       target: this.texture,
       clear: true,
     });
+    return true;
   }
 
   @on("render")
@@ -366,6 +373,7 @@ export class DaylightView extends BaseEntity implements Entity {
         height: texHeight,
       });
       this.mask.texture = this.texture;
+      this.painted = false;
       fresh = true;
     }
     const originMoved =
@@ -377,9 +385,12 @@ export class DaylightView extends BaseEntity implements Entity {
 
     // Repainting a settled mask every frame is a full-screen redraw for
     // nothing, and the light is settled the vast majority of the time.
-    if (fresh || originMoved || lightMoved) {
-      this.paint(cellToPixel(shopInfo.size[0]), cellToPixel(shopInfo.size[1]));
+    if (fresh || originMoved || lightMoved || !this.painted) {
+      this.painted = this.paint(
+        cellToPixel(shopInfo.size[0]),
+        cellToPixel(shopInfo.size[1]),
+      );
     }
-    this.mask.visible = true;
+    this.mask.visible = this.painted;
   }
 }
