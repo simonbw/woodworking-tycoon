@@ -12,7 +12,8 @@ import { Species } from "../../game/Materials";
  * across-the-rings face a board's edge shows. They share the face
  * window's lengthwise position, so a cut board's edge streaks continue
  * across the seam along with its face. A species without strips windows
- * its own face scan for the edge instead, darkened for the corner.
+ * its own face scan instead, compressed across the grain so it reads as
+ * edge grain (see edgeFill in woodFills.ts).
  *
  * The end crops are sawn crosscut faces, growth rings and all, for the
  * pieces that show one (a board stood on its end).

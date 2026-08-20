@@ -1,13 +1,8 @@
 import { Graphics } from "pixi.js";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import { defaultBoardFace, EndGrainSlice, Panel } from "../../game/Materials";
-import {
-  edgeFill,
-  endFill,
-  faceFill,
-  TURNED_AWAY_SHADE,
-  woodArt,
-} from "./woodFills";
+import { drawContactShadow } from "./contactShadow";
+import { endFill, faceFill, TURNED_AWAY_SHADE, woodArt } from "./woodFills";
 
 /** The panel data the renderer reads — everything but identity. */
 export type PanelLook = Omit<Panel, "id" | "type">;
@@ -27,32 +22,25 @@ export function drawPanel(g: Graphics, panel: PanelLook, seed?: string): void {
   const totalWidth =
     strips.reduce((sum, strip) => sum + strip.width, 0) * PIXELS_PER_INCH;
   const height = length * PIXELS_PER_INCH;
-  const depth = (thickness * PIXELS_PER_INCH) / 4;
   const panelSeed = seed ?? `panel-${strips.length}x${length}`;
 
-  // shadow
-  for (const shadowWidth of [1, 2]) {
-    g.rect(
-      -totalWidth / 2 - shadowWidth,
-      -height / 2 - shadowWidth,
-      totalWidth + depth + shadowWidth * 2,
-      height + shadowWidth * 2,
-    );
-    g.fill({ color: 0x000000, alpha: 0.1 });
-  }
+  drawContactShadow(
+    g,
+    -totalWidth / 2,
+    -height / 2,
+    totalWidth,
+    height,
+    thickness / 4,
+  );
 
   // strips, left to right in list order
   let x = -totalWidth / 2;
   let stripIndex = 0;
-  let lastArt = undefined;
-  let lastRegion = undefined;
   for (const strip of strips) {
     const stripWidth = strip.width * PIXELS_PER_INCH;
     const stripSeed = `${panelSeed}/strip-${stripIndex}`;
     const region = defaultBoardFace(stripSeed, length, strip.width);
     const art = woodArt(strip.species, region.seed, thickness);
-    lastArt = art;
-    lastRegion = region;
 
     if (grain === "end") {
       // Crosscut slices stood on end and glued: a brick of sawn
@@ -95,24 +83,6 @@ export function drawPanel(g: Graphics, panel: PanelLook, seed?: string): void {
     x += stripWidth;
     stripIndex++;
   }
-
-  // edge, taken from the last strip — the board that ended up there
-  if (lastArt !== undefined && lastRegion !== undefined) {
-    const lastStrip = strips[strips.length - 1];
-    g.rect(totalWidth / 2, -height / 2, depth, height);
-    g.fill(
-      edgeFill(
-        lastArt,
-        lastRegion,
-        lastStrip.width,
-        thickness,
-        totalWidth / 2,
-        -height / 2,
-      ),
-    );
-    g.rect(totalWidth / 2, -height / 2, depth, height);
-    g.fill(TURNED_AWAY_SHADE);
-  }
 }
 
 /**
@@ -135,9 +105,14 @@ export function drawEndGrainSlice(
   const height = heightIn * PIXELS_PER_INCH;
   const sliceSeed = seed ?? `slice-${strips.length}`;
 
-  // shadow
-  g.rect(-totalWidth / 2 - 1, -height / 2 - 1, totalWidth + 2, height + 2);
-  g.fill({ color: 0x000000, alpha: 0.1 });
+  drawContactShadow(
+    g,
+    -totalWidth / 2,
+    -height / 2,
+    totalWidth,
+    height,
+    thickness / 4,
+  );
 
   // pattern segments, left to right
   let x = -totalWidth / 2;
