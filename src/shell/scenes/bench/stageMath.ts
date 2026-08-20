@@ -114,6 +114,10 @@ export function dwellGain(
  * The tween the pieces turn with: the spring the old scene ran (tension
  * 300, friction 26) — a hand turning the piece, no bounce. Steps one
  * value toward its target and snaps when it's close enough to be done.
+ * The step is capped at 50ms: integrated forward-Euler, this spring
+ * diverges past a tenth of a second, so a long frame (tab switch,
+ * breakpoint, a starved renderer) plays less motion instead of
+ * exploding.
  */
 export function stepTurnSpring(
   value: number,
@@ -121,8 +125,10 @@ export function stepTurnSpring(
   target: number,
   dt: number,
 ): [number, number] {
-  const nextVelocity = velocity + (300 * (target - value) - 26 * velocity) * dt;
-  const next = value + nextVelocity * dt;
+  const step = Math.min(dt, 0.05);
+  const nextVelocity =
+    velocity + (300 * (target - value) - 26 * velocity) * step;
+  const next = value + nextVelocity * step;
   return Math.abs(target - next) < 0.01 && Math.abs(nextVelocity) < 0.05
     ? [target, 0]
     : [next, nextVelocity];

@@ -4,12 +4,11 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
-import { StageFit, stepTurnSpring } from "./stageMath";
 import { groupPieces } from "../../../game/bench-work/bench-group";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
 import { MaterialInstance } from "../../../game/Materials";
-import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
+import { PieceMotion } from "./PieceMotion";
 import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
@@ -50,9 +49,9 @@ export class BenchDiveView extends BaseEntity implements Entity {
   /**
    * One holder per piece on the tops, kept across redraws so a turn or
    * a tumble is motion on a standing sprite instead of a swap — R and F
-   * read as the piece being turned by hand (the old scene's spring).
-   * The sprite inside rebuilds only when the piece itself changes (a
-   * new material instance, or a tumble onto a different face).
+   * read as the piece being turned by hand (the old scene's spring and
+   * FlipTumble). The sprites inside rebuild only when the piece itself
+   * changes (a new material instance).
    */
   private holders = new Map<string, PieceMotion>();
 
@@ -164,9 +163,8 @@ export class BenchDiveView extends BaseEntity implements Entity {
     // surface draws it: the saw in two halves so the offcut can sag
     // open, stroke work as two surface states with the finished one
     // scratched in under the tool.
-    const dragging = game.entities
-      .tryGetSingleton(BenchArrangeView)
-      ?.draggingId();
+    const arrange = game.entities.tryGetSingleton(BenchArrangeView);
+    const dragging = arrange?.draggingId();
     const lying: Array<{
       material: MaterialInstance;
       placement: BenchPlacement;
@@ -183,7 +181,10 @@ export class BenchDiveView extends BaseEntity implements Entity {
       seen.add(piece.material.id);
       let motion = this.holders.get(piece.material.id);
       if (!motion) {
-        motion = new PieceMotion();
+        // A just-released piece keeps the holder that rode the hand, so
+        // the springs carry it from the drop point into its seat instead
+        // of it reappearing already there.
+        motion = arrange?.takeHandoff(piece.material.id) ?? new PieceMotion();
         this.holders.set(piece.material.id, motion);
         this.pieces.addChild(motion.holder);
       }
@@ -201,6 +202,12 @@ export class BenchDiveView extends BaseEntity implements Entity {
       const motion = this.holders.get(piece.material.id);
       if (motion) this.pieces.setChildIndex(motion.holder, index);
     });
+  }
+
+  /** The standing holder drawing this piece, for chrome (the arranging
+   * view's hairline) that wants to follow its motion. */
+  motionFor(materialId: string): PieceMotion | null {
+    return this.holders.get(materialId) ?? null;
   }
 
   private clearHolders(): void {
@@ -252,87 +259,3 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-/** Motion the player has asked not to see is pinned, not played. */
-function reducedMotion(): boolean {
-  return (
-    globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
-}
-
-/**
- * One piece's standing holder: position tracks the layout directly, and
- * the turn (R) and the face-for-face flip ease in on the spring — the
- * old scene's TweenedTransform. A tumble onto a different face (flat →
- * on edge → on end) is a different sprite, so it rebuilds and snaps;
- * only same-face motion springs.
- */
-class PieceMotion {
-  readonly holder = new Container();
-  private sprite: Container | null = null;
-  private spriteKey = "";
-  private spriteScale = 1;
-  private angle = 0;
-  private angleVelocity = 0;
-  private targetAngle = 0;
-  private flip = 1;
-  private flipVelocity = 0;
-  private targetFlip = 1;
-
-  retarget(
-    material: MaterialInstance,
-    placement: BenchPlacement,
-    fit: StageFit,
-  ): void {
-    const spriteKey = `${material.id}|${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}`;
-    const fresh = this.sprite === null;
-    if (spriteKey !== this.spriteKey) {
-      this.sprite?.destroy({ children: true });
-      this.sprite = createMaterialSprite(material, {
-        onEdge: placement.onEdge,
-        onEnd: placement.onEnd,
-      });
-      this.holder.addChild(this.sprite);
-      this.spriteKey = spriteKey;
-    }
-    this.spriteScale = fit.spriteScale;
-    this.holder.position.set(
-      fit.originX + placement.xIn * fit.pxPerIn,
-      fit.originY + placement.yIn * fit.pxPerIn,
-    );
-    this.targetAngle = placement.angleDeg;
-    this.targetFlip = placement.flipped ? -1 : 1;
-    if (fresh || reducedMotion()) {
-      // A piece that just appeared lies where it lies — only later
-      // gestures play as motion.
-      this.angle = this.targetAngle;
-      this.flip = this.targetFlip;
-      this.angleVelocity = 0;
-      this.flipVelocity = 0;
-    }
-    this.apply();
-  }
-
-  step(dt: number): void {
-    if (this.angle === this.targetAngle && this.flip === this.targetFlip) {
-      return;
-    }
-    [this.angle, this.angleVelocity] = stepTurnSpring(
-      this.angle,
-      this.angleVelocity,
-      this.targetAngle,
-      dt,
-    );
-    [this.flip, this.flipVelocity] = stepTurnSpring(
-      this.flip,
-      this.flipVelocity,
-      this.targetFlip,
-      dt,
-    );
-    this.apply();
-  }
-
-  private apply(): void {
-    this.holder.angle = this.angle;
-    this.holder.scale.set(this.flip * this.spriteScale, this.spriteScale);
-  }
-}

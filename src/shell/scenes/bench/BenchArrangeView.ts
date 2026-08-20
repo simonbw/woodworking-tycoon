@@ -30,7 +30,7 @@ import {
   takeOutputsFromMachine,
 } from "../../../sim/commands/machine-commands";
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
-import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
+import { PieceMotion } from "./PieceMotion";
 import { ShellStore } from "../../ShellStore";
 import { BenchAssemblyView } from "./BenchAssemblyView";
 import { BenchDive } from "./BenchDive";
@@ -41,7 +41,6 @@ import {
   pieceUnder,
   stagePointer,
 } from "./benchStage";
-import { stepTurnSpring } from "./stageMath";
 
 /**
  * The bare hands at the bench: dragging stock around the top, turning
@@ -81,13 +80,12 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   private carried = new Container();
   private drag: Drag | null = null;
   private hoveredId: string | null = null;
-  private drawnDragId: string | null = null;
-  /** The carried piece's turn spring — R mid-drag reads as the hand
-   * turning it, the same motion the set-down pieces get. */
-  private carriedAngle = 0;
-  private carriedAngleVelocity = 0;
-  private carriedFlip = 1;
-  private carriedFlipVelocity = 0;
+  /** The carried piece's holder — R and F mid-drag spring and tumble on
+   * it, the same motion the set-down pieces get. */
+  private carriedMotion: PieceMotion | null = null;
+  /** The holder of the last-released piece, waiting for the dive view
+   * to adopt it — the springs carry the drop into its seat. */
+  private handoff: { id: string; motion: PieceMotion } | null = null;
 
   constructor() {
     super();
@@ -106,6 +104,15 @@ export class BenchArrangeView extends BaseEntity implements Entity {
 
   draggingId(): string | null {
     return this.drag?.materialId ?? null;
+  }
+
+  /** The dive view collects the released piece's holder here, in-flight
+   * springs and all, when it takes over drawing the piece. */
+  takeHandoff(materialId: string): PieceMotion | null {
+    if (this.handoff?.id !== materialId) return null;
+    const motion = this.handoff.motion;
+    this.handoff = null;
+    return motion;
   }
 
   onAdd() {
@@ -220,6 +227,17 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   private commitDrag(): void {
     const drag = this.drag;
     this.drag = null;
+    // The carried holder rides on: the dive view adopts it for the
+    // piece it draws again now, so a drop that snaps into a seat
+    // springs there instead of reappearing already seated.
+    const motion = this.carriedMotion;
+    this.carriedMotion = null;
+    if (motion) {
+      this.carried.removeChild(motion.holder);
+      this.handoff?.motion.holder.destroy({ children: true });
+      this.handoff = drag ? { id: drag.materialId, motion } : null;
+      if (!this.handoff) motion.holder.destroy({ children: true });
+    }
     const stage = this.stage();
     if (!drag || !stage) return;
     // Released near a blueprint outline, the part settles onto it — a
@@ -324,64 +342,39 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     }
     const { fit, group } = stage;
 
-    // The piece riding the hand, drawn where the hand has it. The flip
-    // stop is part of the drawing (flat, on edge, on end are different
-    // sprites), so tumbling mid-drag rebuilds it.
+    // The piece riding the hand, drawn where the hand has it — position
+    // tracks the pointer directly, while R and F play on the holder's
+    // own springs, the same motion the set-down pieces get.
     if (this.drag) {
       const piece = this.handPiece(group);
       if (piece) {
-        const dragKey = `${this.drag.materialId}|${this.drag.placement.onEdge ? "e" : ""}${this.drag.placement.onEnd ? "n" : ""}`;
-        if (this.drawnDragId !== dragKey) {
-          const fresh = this.drawnDragId === null;
-          this.clearCarried();
-          const sprite = createMaterialSprite(piece.material, {
-            onEdge: this.drag.placement.onEdge,
-            onEnd: this.drag.placement.onEnd,
-          });
-          const holder = new Container();
-          sprite.scale.set(fit.spriteScale);
-          holder.addChild(sprite);
-          this.carried.addChild(holder);
-          this.drawnDragId = dragKey;
-          if (fresh) {
-            // Taken hold of where it lies: motion starts from rest.
-            this.carriedAngle = this.drag.placement.angleDeg;
-            this.carriedFlip = this.drag.placement.flipped ? -1 : 1;
-            this.carriedAngleVelocity = 0;
-            this.carriedFlipVelocity = 0;
-          }
+        if (!this.carriedMotion) {
+          // Taken hold of where it lies: motion starts from rest.
+          this.carriedMotion = new PieceMotion();
+          this.carried.addChild(this.carriedMotion.holder);
         }
-        [this.carriedAngle, this.carriedAngleVelocity] = stepTurnSpring(
-          this.carriedAngle,
-          this.carriedAngleVelocity,
-          this.drag.placement.angleDeg,
-          dt,
-        );
-        [this.carriedFlip, this.carriedFlipVelocity] = stepTurnSpring(
-          this.carriedFlip,
-          this.carriedFlipVelocity,
-          this.drag.placement.flipped ? -1 : 1,
-          dt,
-        );
-        const holder = this.carried.children[0];
-        if (holder) {
-          holder.position.set(
-            fit.originX + this.drag.placement.xIn * fit.pxPerIn,
-            fit.originY + this.drag.placement.yIn * fit.pxPerIn,
-          );
-          holder.angle = this.carriedAngle;
-          holder.scale.x = this.carriedFlip;
-        }
+        this.carriedMotion.retarget(piece.material, this.drag.placement, fit, {
+          snapPosition: true,
+        });
+        this.carriedMotion.step(dt);
       }
       return;
     }
     this.clearCarried();
 
-    // Idle: the piece the hand would take hold of wears a hairline.
+    // Idle: the piece the hand would take hold of wears a hairline. It
+    // reads the holder's motion, so it rides a tumbling board's swell
+    // and turns with the turn instead of jumping to the end state.
     const piece = this.handPiece(group);
     if (!piece) return;
-    const size = placedPieceSize(piece.material, piece.placement);
-    g.poly(pieceCorners(piece.placement, size, fit)).stroke({
+    const motion = this.game.entities
+      .tryGetSingleton(BenchDiveView)
+      ?.motionFor(piece.material.id);
+    const placement = motion?.apparentPlacement() ?? piece.placement;
+    const size =
+      motion?.apparentSizeIn() ??
+      placedPieceSize(piece.material, piece.placement);
+    g.poly(pieceCorners(placement, size, fit)).stroke({
       width: 2,
       color: HOVER,
       alpha: 0.5,
@@ -389,9 +382,9 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   }
 
   private clearCarried(): void {
-    if (this.drawnDragId === null) return;
-    this.carried.removeChildren().forEach((child) => child.destroy());
-    this.drawnDragId = null;
+    if (!this.carriedMotion) return;
+    this.carriedMotion.holder.destroy({ children: true });
+    this.carriedMotion = null;
   }
 }
 
