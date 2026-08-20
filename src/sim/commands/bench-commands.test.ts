@@ -15,7 +15,7 @@ import { benchPlacementFor } from "../../game/bench-work/bench-layout";
 import { palletSlotId } from "../../game/bench-work/pallet-geometry";
 import { clampsFree } from "../../game/Clamp";
 import { GameState } from "../../game/GameState";
-import { getMachines, MachineState } from "../../game/Machine";
+import { machineViews, MachineState } from "../../game/Machine";
 import { panelWidth } from "../../game/Materials";
 import { isPanel } from "../../game/panel-helpers";
 import { ShopDriver } from "../driver/ShopDriver";
@@ -412,7 +412,7 @@ describe("gathering across a bench group", () => {
     const allStates = () =>
       [...shop.game.entities.byConstructor(MachineEntity)].map((e) => e.state);
     const framePlacementOf = (owner: MachineEntity) => {
-      const group = benchGroupAt(getMachines(allStates()), owner.view());
+      const group = benchGroupAt(machineViews(allStates()), owner.view());
       const member = memberFor(group, owner.view())!;
       return placementInFrame(
         group,

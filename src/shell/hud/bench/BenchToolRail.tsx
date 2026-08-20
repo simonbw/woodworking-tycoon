@@ -7,7 +7,8 @@ import {
 import { useShortcut } from "../../../components/shortcuts/ShortcutProvider";
 import { benchGroupAt } from "../../../game/bench-work/bench-group";
 import { clampsFree } from "../../../game/Clamp";
-import { getMachines, machineKey } from "../../../game/Machine";
+import { machineKey } from "../../../game/Machine";
+import { floorMachines } from "../../../sim/entities/MachineEntity";
 import { ToolItem } from "../../../game/Materials";
 import { handSpaceLeft } from "../../../game/Person";
 import { ShortcutId } from "../../../game/shortcuts";
@@ -86,7 +87,7 @@ export const BenchToolRail: React.FC = () => {
     : [];
   // The rest of the run's tools, hung past the divider.
   const neighbourTools = machine
-    ? benchGroupAt(getMachines(gameState.machines), machine)
+    ? benchGroupAt(floorMachines(game), machine)
         .members.map((member) => member.machine)
         .filter(
           (member) =>

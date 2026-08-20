@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { initialGameState } from "./initialGameState";
-import { getMachines } from "./Machine";
+import { machineViews } from "./Machine";
 import { STARTER_SKILLS } from "./Skill";
 import {
   availableOperations,
@@ -37,7 +37,7 @@ describe("level curve", () => {
 });
 
 describe("availableOperations", () => {
-  const workspace = getMachines(initialGameState.machines)[0];
+  const workspace = machineViews(initialGameState.machines)[0];
 
   it("includes starter-skill recipes from the start", () => {
     const ids = availableOperations(
@@ -69,7 +69,7 @@ describe("availableOperations", () => {
 });
 
 describe("getOperationDuration", () => {
-  const workspace = getMachines(initialGameState.machines)[0];
+  const workspace = machineViews(initialGameState.machines)[0];
   const glueUp = workspace.operations.find((op) => op.id === "glueUpPanel")!;
 
   it("uses the base duration without the passive skill", () => {

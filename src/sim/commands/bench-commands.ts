@@ -31,7 +31,7 @@ import {
   prunedBenchLayout,
 } from "../../game/game-actions/operation-actions";
 import { GameState } from "../../game/GameState";
-import { getMachines, machineKey } from "../../game/Machine";
+import { machineKey } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { materialDustSpecies } from "../../game/material-helpers";
 import { MaterialInstance, PalletNail } from "../../game/Materials";
@@ -39,7 +39,7 @@ import {
   availableOperations,
   getOperationPhases,
 } from "../../game/skill-helpers";
-import { MachineEntity } from "../entities/MachineEntity";
+import { floorMachines, MachineEntity } from "../entities/MachineEntity";
 import { projectGameState } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
@@ -402,9 +402,8 @@ export function gatherBenchPieces(
   target: MachineEntity,
   pieceIds: ReadonlyArray<string>,
 ): boolean {
-  const gameState = projectGameState(game);
   const targetMachine = target.view();
-  const group = benchGroupAt(getMachines(gameState.machines), targetMachine);
+  const group = benchGroupAt(floorMachines(game), targetMachine);
   const onto = memberFor(group, targetMachine);
   if (!onto || group.members.length < 2) {
     return false;

@@ -3,7 +3,7 @@ import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
 import { on } from "../../core/entity/handler";
 import { CellMap } from "../../game/CellMap";
-import { MachineEntity } from "../entities/MachineEntity";
+import { floorMachines } from "../entities/MachineEntity";
 import { ShopInfo } from "./ShopInfo";
 
 /**
@@ -66,12 +66,8 @@ export class ShopGrid extends BaseEntity implements Entity {
         map.addCell([x, y]);
       }
     }
-    for (const entity of this.game.entities.byConstructor(MachineEntity)) {
-      // A hoisted machine leaves the entity list only at the end of the
-      // engine tick; a rebuild inside that tick must not index it, or
-      // the cached map would hold the ghost until the next mutation.
-      if (entity.isDestroyed) continue;
-      map.addMachine(entity.view());
+    for (const machine of floorMachines(this.game)) {
+      map.addMachine(machine);
     }
     return map;
   }

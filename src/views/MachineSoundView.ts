@@ -3,7 +3,8 @@ import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
 import { deriveMachineCutLoad } from "../game/cut-load";
-import { getMachines, machineKey } from "../game/Machine";
+import { machineKey } from "../game/Machine";
+import { floorMachines } from "../sim/entities/MachineEntity";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
 import { MACHINE_VOICES } from "../utils/machineVoices";
 import { MachineVoice } from "../utils/machineVoice";
@@ -37,7 +38,7 @@ export class MachineSoundView extends BaseEntity implements Entity {
     }
     const gameState = projectGameState(this.game);
     const seen = new Set<string>();
-    for (const machine of getMachines(gameState.machines)) {
+    for (const machine of floorMachines(this.game)) {
       const makeVoice = MACHINE_VOICES[machine.state.machineTypeId];
       if (!makeVoice) continue;
       const key = machineKey(machine.state);

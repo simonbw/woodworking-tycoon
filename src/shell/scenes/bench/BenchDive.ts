@@ -8,7 +8,10 @@ import { BenchScript, benchGroupWork } from "../../../game/bench-work/workpiece"
 import { projectProgression } from "../../../sim/projection";
 import { PalletNail } from "../../../game/Materials";
 import { ToolId } from "../../../game/Tool";
-import { MachineEntity } from "../../../sim/entities/MachineEntity";
+import {
+  floorMachines,
+  MachineEntity,
+} from "../../../sim/entities/MachineEntity";
 import { Player } from "../../../sim/entities/Player";
 import { ShellStore } from "../../ShellStore";
 import { fitToStage, StageFit, StageRect } from "./stageMath";
@@ -203,7 +206,7 @@ export class BenchDive extends BaseEntity implements Entity {
     const bench = this.displayedBench();
     if (!bench) return null;
     if (!this.runValid) {
-      const machines = this.floorMachines();
+      const machines = floorMachines(this.game);
       const key = machineKey(bench.state);
       const opened = machines.find(
         (machine) => machineKey(machine.state) === key,
@@ -306,15 +309,6 @@ export class BenchDive extends BaseEntity implements Entity {
     this.groupKeys = null;
   }
 
-  /** Every placed machine's live view, for the group walk. A hoisted
-   * machine stays in the entity list until the end of its tick; a
-   * rebuild inside that tick must not include it, or the cached run
-   * would hold the ghost until the next mutation. */
-  private floorMachines(): Machine[] {
-    return [...this.game.entities.byConstructor(MachineEntity)]
-      .filter((entity) => !entity.isDestroyed)
-      .map((entity) => entity.view());
-  }
 
   /** The opened bench's live entity, or null once it's out of reach. */
   openBench(): MachineEntity | null {
@@ -343,7 +337,7 @@ export class BenchDive extends BaseEntity implements Entity {
       return null;
     }
     if (this.groupKeysFor !== key) {
-      const machines = this.floorMachines();
+      const machines = floorMachines(this.game);
       const opened = machines.find(
         (machine) => machineKey(machine.state) === key,
       );

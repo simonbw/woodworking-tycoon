@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { CellMap } from "../CellMap";
 import { GameState } from "../GameState";
-import { getMachines, Machine, MachineState } from "../Machine";
+import { machineViews, Machine, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { resolveInteract } from "../interact";
 import { machineCanOperate, stageableMaterials } from "../machine-helpers";
@@ -50,7 +50,7 @@ function shopWithCan(
 }
 
 function theCan(gameState: GameState): Machine {
-  return getMachines(gameState.machines)[0];
+  return machineViews(gameState.machines)[0];
 }
 
 describe("garbage can", () => {

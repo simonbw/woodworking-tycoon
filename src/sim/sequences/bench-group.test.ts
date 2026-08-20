@@ -19,7 +19,7 @@ import {
   seatInGroup,
 } from "../../game/bench-work/bench-group";
 import { GameState } from "../../game/GameState";
-import { getMachines, MachineState } from "../../game/Machine";
+import { machineViews, MachineState } from "../../game/Machine";
 import { isPanel } from "../../game/panel-helpers";
 import { panelWidth } from "../../game/Materials";
 import { gatherBenchPieces } from "../commands/bench-commands";
@@ -90,7 +90,7 @@ function shopWithJoinedTables(): ShopDriver {
 describe("tables pushed together are one bench", () => {
   it("finds the run from the floor, and both tables' stock is on it", () => {
     const shop = shopWithJoinedTables();
-    const machines = getMachines(shop.shop.machines);
+    const machines = machineViews(shop.shop.machines);
     const left = machines.find(
       (m) => m.type.id === "worktable1x2" && m.position[0] === 5,
     )!;
@@ -112,7 +112,7 @@ describe("tables pushed together are one bench", () => {
 
   it("lets a piece lie past one table's edge onto the next", () => {
     const shop = shopWithJoinedTables();
-    const machines = getMachines(shop.shop.machines);
+    const machines = machineViews(shop.shop.machines);
     const left = machines.find(
       (m) => m.type.id === "worktable1x2" && m.position[0] === 5,
     )!;
@@ -138,7 +138,7 @@ describe("tables pushed together are one bench", () => {
 
   it("glues a run whose strips started on two different tables", () => {
     const shop = shopWithJoinedTables();
-    const machines = getMachines(shop.shop.machines);
+    const machines = machineViews(shop.shop.machines);
     const left = machines.find(
       (m) => m.type.id === "worktable1x2" && m.position[0] === 5,
     )!;
@@ -159,7 +159,7 @@ describe("tables pushed together are one bench", () => {
     );
 
     // Nothing moved an inch — same spot, bookkept by the left table now
-    const after = benchGroupAt(getMachines(shop.shop.machines), left);
+    const after = benchGroupAt(machineViews(shop.shop.machines), left);
     const afterMember = memberFor(after, left)!;
     console.log(
       "RAW",
@@ -190,7 +190,7 @@ describe("tables pushed together are one bench", () => {
     const shop = openShop(cuttingBoardShop).arrange((game) => {
       game.addEntity(new MachineEntity(table("worktable1x2", [5, 6])));
     });
-    const machines = getMachines(shop.shop.machines);
+    const machines = machineViews(shop.shop.machines);
     const lone = machines.find((m) => m.type.id === "worktable1x2")!;
     const group = benchGroupAt(machines, lone);
     const member = memberFor(group, lone)!;

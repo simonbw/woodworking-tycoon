@@ -1,12 +1,12 @@
 import { Game } from "../../core/Game";
 import { benchGroupAt } from "../../game/bench-work/bench-group";
 import { withValidSelectedOperation } from "../../game/game-actions/tool-actions";
-import { getMachines, machineKey } from "../../game/Machine";
+import { machineKey } from "../../game/Machine";
 import { makeToolItem } from "../../game/material-helpers";
 import { ToolItem } from "../../game/Materials";
 import { handSpaceLeft } from "../../game/Person";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
-import { MachineEntity } from "../entities/MachineEntity";
+import { floorMachines, MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
 import { findMachineEntity } from "./machine-commands";
 import { projectGameState } from "../projection";
@@ -138,8 +138,7 @@ export function gatherBenchTool(
 
   // Only within the run this table belongs to — a tool two benches over
   // across the shop stays where it hangs.
-  const gameState = projectGameState(game);
-  const group = benchGroupAt(getMachines(gameState.machines), machine);
+  const group = benchGroupAt(floorMachines(game), machine);
   const from = group.members
     .map((member) => member.machine)
     .filter(

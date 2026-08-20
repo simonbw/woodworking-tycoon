@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { initialGameState } from "../initialGameState";
-import { getMachines, MachineState } from "../Machine";
+import { machineViews, MachineState } from "../Machine";
 import { Panel } from "../Materials";
 import { makeMaterial } from "../material-helpers";
 import { BenchPlacement } from "./bench-layout";
@@ -33,7 +33,7 @@ function workspaceWith(overrides: Partial<MachineState>) {
     tools: [],
     ...overrides,
   };
-  return getMachines([state])[0];
+  return machineViews([state])[0];
 }
 
 function progressionWith(...skills: string[]) {

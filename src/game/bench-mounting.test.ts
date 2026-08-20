@@ -7,7 +7,7 @@ import {
   stationWorkSpeed,
 } from "./bench-mounting";
 import { GameState } from "./GameState";
-import { getMachines, Machine, MachineState } from "./Machine";
+import { machineViews, Machine, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
 
 function machineAt(
@@ -41,7 +41,7 @@ function shopWith(machines: ReadonlyArray<MachineState>): {
   machine: (typeId: string) => Machine;
 } {
   const gameState: GameState = { ...initialGameState, machines };
-  const views = getMachines(machines);
+  const views = machineViews(machines);
   return {
     gameState,
     machine: (typeId) => views.find((m) => m.type.id === typeId)!,

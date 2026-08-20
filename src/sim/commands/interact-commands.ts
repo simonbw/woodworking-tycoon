@@ -4,7 +4,6 @@ import { heldTool, holdingBroom } from "../../game/HeldTool";
 import { resolveInteract } from "../../game/interact";
 import { atTruckBed } from "../../game/lot";
 import {
-  getMachines,
   hasFloorControls,
   isSameMachine,
   Machine,

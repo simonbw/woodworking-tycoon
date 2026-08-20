@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { initialPalletNails } from "./bench-work/pallet-geometry";
 import {
-  getMachines,
+  machineViews,
   InputMaterialWithQuantity,
   Machine,
   MachineId,
@@ -497,7 +497,7 @@ describe("findFeedableOperation", () => {
 
 describe("stageableMaterials on a bench", () => {
   function bench(overrides: Partial<MachineState> = {}): Machine {
-    return getMachines([
+    return machineViews([
       {
         machineTypeId: "workspace",
         position: [1, 2],
@@ -552,7 +552,7 @@ describe("stageableMaterials on a bench", () => {
 
 describe("liveSettingParameter at a bench", () => {
   function bench(overrides: Partial<MachineState>): Machine {
-    return getMachines([
+    return machineViews([
       {
         machineTypeId: "workspace",
         position: [1, 2],

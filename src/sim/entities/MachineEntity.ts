@@ -1,4 +1,5 @@
 import { Persistence } from "../../config/constants";
+import { Game } from "../../core/Game";
 import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
 import { machineStateSchema } from "../../game/gameStateSchema";
@@ -42,16 +43,30 @@ export class MachineEntity
   tags = [SOLIDS_TAG];
   persistenceLevel: number = Persistence.Game;
 
-  state: MachineState;
+  private _state: MachineState;
+  private _view: Machine | null = null;
 
   constructor(state: MachineState) {
     super();
-    this.state = state;
+    this._state = state;
   }
 
-  /** The shared computed view over this machine's state. */
+  get state(): MachineState {
+    return this._state;
+  }
+
+  /** Every mutation replaces the state object (the commands' contract),
+   * so assignment is the one place the computed view goes stale. */
+  set state(next: MachineState) {
+    this._state = next;
+    this._view = null;
+  }
+
+  /** The computed view over this machine's state — one per state object
+   * (issue #230, phase 3: one machine, one object), rebuilt only when a
+   * command replaces the state. */
   view(): Machine {
-    return new Machine(this.state);
+    return (this._view ??= new Machine(this._state));
   }
 
   get type(): MachineType {
@@ -72,3 +87,14 @@ registerSerializable({
   schema: machineStateSchema,
   fromJSON: (data) => new MachineEntity(data as unknown as MachineState),
 });
+
+/**
+ * Every machine standing on the floor, as its cached view — the entity
+ * world's `getMachines`. Skips entities destroyed earlier in the same
+ * tick (they stay listed until the tick ends).
+ */
+export function floorMachines(game: Game): Machine[] {
+  return [...game.entities.byConstructor(MachineEntity)]
+    .filter((entity) => !entity.isDestroyed)
+    .map((entity) => entity.view());
+}

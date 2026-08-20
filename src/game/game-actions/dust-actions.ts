@@ -9,7 +9,7 @@ import {
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
 import { holdingBroom } from "../HeldTool";
-import { getMachines } from "../Machine";
+import { machineViews } from "../Machine";
 import { personCanWork } from "../Person";
 import { DustSpecies } from "../Materials";
 import {
@@ -112,7 +112,7 @@ export function nextToGarbageCan(
   gameState: GameState,
   position: Vector,
 ): boolean {
-  const garbageCells = getMachines(gameState.machines)
+  const garbageCells = machineViews(gameState.machines)
     .filter((machine) => machine.type.id === "garbageCan")
     .flatMap((machine) =>
       machine.type.cellsOccupied.map((cell) => machine.localToShop(cell)),

@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { GameState, MaterialPile } from "./GameState";
-import { getMachines, Machine, MachineState } from "./Machine";
+import { machineViews, Machine, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
 import {
   interactLabel,
@@ -64,7 +64,7 @@ function shopWithLoadedBench(...materialPiles: MaterialPile[]): GameState {
 }
 
 function theBench(gameState: GameState): Machine {
-  return getMachines(gameState.machines)[0];
+  return machineViews(gameState.machines)[0];
 }
 
 describe("resolveInteract", () => {
