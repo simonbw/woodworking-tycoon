@@ -6,7 +6,7 @@ import { on } from "../../core/entity/handler";
 import { MANUAL_ARTICLES } from "../../game/manual";
 import { UNLOCK_CONDITIONS } from "../../game/progression-helpers";
 import { advanceTutorials } from "../../game/tutorial";
-import { projectGameState } from "../projection";
+import { projectTutorialFacts } from "../projection";
 import { Progression } from "../singletons/Progression";
 import { TutorialTracker } from "../singletons/TutorialTracker";
 import { TimeFlow } from "../TimeFlow";
@@ -51,7 +51,7 @@ export class MilestoneSystem extends BaseEntity implements Entity {
       return;
     }
 
-    let gameState = projectGameState(this.game);
+    let gameState = projectTutorialFacts(this.game);
 
     let flagsChanged = false;
     for (const [flag, conditionMet] of Object.entries(UNLOCK_CONDITIONS)) {
@@ -66,7 +66,7 @@ export class MilestoneSystem extends BaseEntity implements Entity {
     // on a flag that flipped this very pass (e.g. sweeping) appears
     // immediately.
     if (flagsChanged) {
-      gameState = projectGameState(this.game);
+      gameState = projectTutorialFacts(this.game);
     }
     const newArticles = MANUAL_ARTICLES.filter(
       (article) =>
@@ -78,7 +78,7 @@ export class MilestoneSystem extends BaseEntity implements Entity {
         ...progression.unlockedArticles,
         ...newArticles,
       ];
-      gameState = projectGameState(this.game);
+      gameState = projectTutorialFacts(this.game);
     }
 
     // The coach walks forward over everything the shop already satisfies.

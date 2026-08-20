@@ -4,7 +4,10 @@ import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
 import { on } from "../../core/entity/handler";
 import { cellDust, dustSlowdown } from "../../game/Dust";
-import { sweepTickPass } from "../../game/game-actions/dust-actions";
+import {
+  CleaningWorld,
+  sweepTickPass,
+} from "../../game/game-actions/dust-actions";
 import {
   shopVacTickPass,
   vacuumTickPass,
@@ -13,12 +16,15 @@ import { heldTool } from "../../game/HeldTool";
 import { personCanWork } from "../../game/Person";
 import { SWEEPING_PENALTY } from "../../game/player-motion";
 import { SHOP_VAC_DRAG_PENALTY } from "../../game/ShopVac";
+import { cleaningGear } from "../commands/cleaning-commands";
 import { Player } from "../entities/Player";
 import { ShopVacEntity } from "../entities/ShopVacEntity";
-import { projectGameState } from "../projection";
+import { machineStatesNow } from "../machine-reads";
+import { projectPerson, projectProgression } from "../projection";
 import { Broom } from "../singletons/Broom";
 import { DustLayer } from "../singletons/DustLayer";
 import { Progression } from "../singletons/Progression";
+import { ShopInfo } from "../singletons/ShopInfo";
 import { TimeFlow } from "../TimeFlow";
 
 /**
@@ -97,17 +103,35 @@ export class CleaningSystem extends BaseEntity implements Entity {
    * tool in hand and the player free to work.
    */
   heldToolSpendsTime(): boolean {
-    const gameState = projectGameState(this.game);
+    const player = this.game.entities.getSingleton(Player);
     return (
-      gameState.player.operating === true &&
-      heldTool(gameState) !== null &&
-      personCanWork(gameState.player)
+      player.operating === true &&
+      heldTool(cleaningGear(this.game)) !== null &&
+      personCanWork(player)
     );
+  }
+
+  /** The passes' world, assembled from the live singletons. */
+  private world(): CleaningWorld {
+    const game = this.game;
+    const broom = game.entities.tryGetSingleton(Broom);
+    const vac = game.entities.tryGetSingleton(ShopVacEntity);
+    return {
+      player: projectPerson(game),
+      machines: machineStatesNow(game),
+      shopInfo: game.entities.getSingleton(ShopInfo).info,
+      dust: game.entities.tryGetSingleton(DustLayer)?.map ?? {},
+      dustpan: broom?.dustpan ?? {},
+      broomOwned: broom?.owned ?? false,
+      broomPosition: broom?.position ?? null,
+      shopVac: vac?.view() ?? null,
+      progression: projectProgression(game),
+    };
   }
 
   /** One sim minute of cleaning: the three old passes, written back. */
   private minutePass(): void {
-    const before = projectGameState(this.game);
+    const before = this.world();
     const after = shopVacTickPass()(vacuumTickPass()(sweepTickPass()(before)));
     if (after === before) {
       return;

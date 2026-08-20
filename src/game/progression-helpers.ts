@@ -1,5 +1,5 @@
 import { dustTotal } from "./Dust";
-import { GameState } from "./GameState";
+import { TutorialFacts } from "./GameState";
 import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import { MachineId, MachineState } from "./Machine";
 import { MaterialInstance } from "./Materials";
@@ -12,7 +12,7 @@ import { ToolId } from "./Tool";
 export const DUST_TUTORIAL_THRESHOLD = 60;
 
 export function ownsMachine(
-  gameState: GameState,
+  gameState: TutorialFacts,
   machineId: MachineId,
 ): boolean {
   return (
@@ -49,7 +49,7 @@ function machineToolIds(machine: MachineState): ReadonlyArray<ToolId> {
  * and output bays, the arms, floor piles, the truck's bed, and machines
  * mid-carry or still crated.
  */
-export function ownedToolIds(gameState: GameState): ReadonlyArray<ToolId> {
+export function ownedToolIds(gameState: TutorialFacts): ReadonlyArray<ToolId> {
   return [
     ...gameState.machines.flatMap(machineToolIds),
     ...gameState.machineCrates.flatMap((crate) =>
@@ -64,7 +64,7 @@ export function ownedToolIds(gameState: GameState): ReadonlyArray<ToolId> {
   ];
 }
 
-export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
+export function ownsTool(gameState: TutorialFacts, toolId: ToolId): boolean {
   return ownedToolIds(gameState).includes(toolId);
 }
 
@@ -77,7 +77,7 @@ export function ownsTool(gameState: GameState, toolId: ToolId): boolean {
  */
 export const UNLOCK_CONDITIONS: Record<
   "storeUnlocked" | "lumberyardUnlocked" | "sweepingUnlocked",
-  (gameState: GameState) => boolean
+  (gameState: TutorialFacts) => boolean
 > = {
   // The first stand sale is the first payday — money in the pocket is
   // what makes a trip to the store worth taking

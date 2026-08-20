@@ -175,7 +175,7 @@ export class TargetingState extends BaseEntity implements Entity {
       (candidate) => candidate.material.id === pile.material.id,
     );
     if (!match) return;
-    const offset = offsetForSource(gs, targetedView, {
+    const offset = offsetForSource(gs, shopCellMap(this.game), targetedView, {
       kind: "floor-pile",
       pile: match,
     });
@@ -237,7 +237,7 @@ export class TargetingState extends BaseEntity implements Entity {
 
     // The rummage ring starts over when its entries change.
     const targetedView = this.targeted()?.view();
-    const sourcesKey = materialSources(gs, targetedView)
+    const sourcesKey = materialSources(gs, shopCellMap(this.game), targetedView)
       .map(materialSourceKey)
       .join("|");
     if (sourcesKey !== this.lastSourcesKey) {
@@ -248,7 +248,9 @@ export class TargetingState extends BaseEntity implements Entity {
     // The floor card belongs to what's in reach.
     if (
       this.floorSheetOpen &&
-      !materialSources(gs, targetedView).some((s) => s.kind === "floor-pile")
+      !materialSources(gs, shopCellMap(this.game), targetedView).some(
+        (s) => s.kind === "floor-pile",
+      )
     ) {
       this.floorSheetOpen = false;
     }

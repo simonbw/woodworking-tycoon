@@ -2,7 +2,8 @@ import { Game } from "../../core/Game";
 import { canLeaveShop } from "../../game/game-actions/door-actions";
 import { NIGHT_TICKS } from "../../game/time";
 import { Player } from "../entities/Player";
-import { projectGameState } from "../projection";
+import { projectPerson } from "../projection";
+import { ShopInfo } from "../singletons/ShopInfo";
 import { SleepSystem } from "../systems/SleepSystem";
 
 /**
@@ -30,8 +31,11 @@ import { SleepSystem } from "../systems/SleepSystem";
  * shoulders (the old canLeaveShop, shared).
  */
 export function goHome(game: Game): boolean {
-  const gameState = projectGameState(game);
-  if (!canLeaveShop(gameState)) {
+  const facts = {
+    player: projectPerson(game),
+    shopInfo: game.entities.getSingleton(ShopInfo).info,
+  };
+  if (!canLeaveShop(facts)) {
     console.warn("Can't leave the shop right now");
     return false;
   }

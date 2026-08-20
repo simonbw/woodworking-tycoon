@@ -1,6 +1,8 @@
-import { GameState } from "../GameState";
+import { ProgressionState } from "../GameState";
 import { atTruckCab } from "../lot";
 import { StoreId } from "../lumberStock";
+import { Person } from "../Person";
+import { ShopInfo } from "../ShopInfo";
 
 /**
  * The rules that gate leaving the lot: where a trip may start, which
@@ -13,19 +15,27 @@ import { StoreId } from "../lumberStock";
  * climb in, and pick a destination (the store, a scavenging run). One
  * trip at a time, and not with a machine over your shoulders.
  */
-export function canLeaveShop(gameState: GameState): boolean {
+export interface LeaveShopFacts {
+  readonly player: Pick<Person, "away" | "carriedMachine" | "position">;
+  readonly shopInfo: ShopInfo;
+}
+
+export function canLeaveShop(facts: LeaveShopFacts): boolean {
   return (
-    !gameState.player.away &&
-    !gameState.player.carriedMachine &&
-    atTruckCab(gameState.shopInfo, gameState.player.position)
+    !facts.player.away &&
+    !facts.player.carriedMachine &&
+    atTruckCab(facts.shopInfo, facts.player.position)
   );
 }
 
 /** Whether the player has heard of this store yet. */
-export function storeUnlocked(gameState: GameState, store: StoreId): boolean {
+export function storeUnlocked(
+  progression: Pick<ProgressionState, "storeUnlocked" | "lumberyardUnlocked">,
+  store: StoreId,
+): boolean {
   return store === "orangeBox"
-    ? gameState.progression.storeUnlocked
-    : gameState.progression.lumberyardUnlocked;
+    ? progression.storeUnlocked
+    : progression.lumberyardUnlocked;
 }
 
 /**

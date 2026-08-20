@@ -1,4 +1,4 @@
-import { GameState, ProgressionState } from "./GameState";
+import { ProgressionState, TutorialFacts } from "./GameState";
 import { LUMBERYARD_MIN_REPUTATION } from "./lumberStock";
 import type { MachineId } from "./Machine";
 import { ownedToolIds, ownsMachine, ownsTool } from "./progression-helpers";
@@ -33,11 +33,11 @@ export interface ManualArticleDef {
   readonly tab?: string;
   readonly category: ManualCategory;
   /** When the article reveals itself. Checked after every milestone-worthy action. */
-  readonly unlocked: (gameState: GameState) => boolean;
+  readonly unlocked: (gameState: TutorialFacts) => boolean;
 }
 
 /** The starter hammer is mounted from minute one; it teaches nothing. */
-function ownsBoughtTool(gameState: GameState): boolean {
+function ownsBoughtTool(gameState: TutorialFacts): boolean {
   return ownedToolIds(gameState).some((toolId) => toolId !== "hammer");
 }
 
@@ -73,7 +73,7 @@ const defs = [
     // lumberyard opening its gate — or the first machine/tool that does the
     // truing. Same reputation the yard flag keys off, so they land together;
     // checked directly so pre-flag saves migrate with the article earned.
-    unlocked: (gameState: GameState) =>
+    unlocked: (gameState: TutorialFacts) =>
       gameState.reputation >= LUMBERYARD_MIN_REPUTATION ||
       ownsMachine(gameState, "jointer") ||
       ownsMachine(gameState, "lunchboxPlaner") ||
@@ -86,7 +86,7 @@ const defs = [
     category: "The Craft",
     // Arrives with the first sheet in the shop, or with the horses that
     // break one down — either way, when there's something to cut.
-    unlocked: (gameState: GameState) =>
+    unlocked: (gameState: TutorialFacts) =>
       ownsMachine(gameState, "sawhorses") ||
       gameState.player.inventory.some((m) => m.type === "plywood") ||
       gameState.materialPiles.some((pile) => pile.material.type === "plywood"),
@@ -98,7 +98,7 @@ const defs = [
     category: "The Craft",
     // The bench starts teaching when its first extra gear arrives: a bought
     // tool, a clamp, or a bottle of finish.
-    unlocked: (gameState: GameState) =>
+    unlocked: (gameState: TutorialFacts) =>
       ownsBoughtTool(gameState) ||
       gameState.clamps > 0 ||
       gameState.consumables.mineralOil > 0,
@@ -111,7 +111,7 @@ const defs = [
     // Carrying is never locked; the article arrives with the first machine
     // worth arranging — a crate in the bed or on the floor, or anything
     // bought beyond the starting loadout (bench, garbage can, lumber shelf).
-    unlocked: (gameState: GameState) =>
+    unlocked: (gameState: TutorialFacts) =>
       gameState.machineCrates.length > 0 ||
       gameState.truck.crates.length > 0 ||
       gameState.player.carriedMachine != null ||
@@ -129,7 +129,7 @@ const defs = [
     category: "The Shop",
     // The first cleaning tool bought, or the floor getting dusty enough
     // that the one-time sweeping note goes up — whichever comes first.
-    unlocked: (gameState: GameState) =>
+    unlocked: (gameState: TutorialFacts) =>
       gameState.broomOwned ||
       gameState.shopVac !== null ||
       gameState.progression.sweepingUnlocked,
@@ -147,7 +147,7 @@ const defs = [
     title: "Skills & XP",
     category: "Business",
     // The first skill point lands at level 2.
-    unlocked: (gameState: GameState) =>
+    unlocked: (gameState: TutorialFacts) =>
       levelForXp(gameState.progression.xp) >= 2,
   },
 ] as const;
@@ -189,7 +189,7 @@ export function getArticle(id: ManualArticleId): ManualArticleDef {
 /** Articles whose condition is met right now — the migration seed, and the
  * milestone check's candidate list. */
 export function articlesUnlockedFor(
-  gameState: GameState,
+  gameState: TutorialFacts,
 ): ReadonlyArray<ManualArticleId> {
   return MANUAL_ARTICLES.filter((article) => article.unlocked(gameState)).map(
     (article) => article.id,

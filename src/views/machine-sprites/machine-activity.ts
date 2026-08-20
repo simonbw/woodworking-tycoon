@@ -1,12 +1,9 @@
 import { Game } from "../../core/Game";
-import { stationWorkSpeed } from "../../game/bench-mounting";
-import { machineDustMultiplier } from "../../game/Dust";
 import { Machine, machineKey, OperationPhase } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { deriveMachineVisuals } from "../../game/machine-sound-helpers";
-import { getOperationPhases } from "../../game/skill-helpers";
+import { operationPhasesNow } from "../../sim/machine-reads";
 import { Player } from "../../sim/entities/Player";
-import { projectGameState } from "../../sim/projection";
 import { getAudiblePhase } from "../../utils/machineSoundState";
 import { machineHasVoice } from "../../utils/machineVoices";
 
@@ -63,13 +60,7 @@ export function computeMachineActivity(
     return visuals.powered ? { ...IDLE_ACTIVITY, ...visuals } : IDLE_ACTIVITY;
   }
 
-  const gameState = projectGameState(game);
-  const phases = getOperationPhases(
-    operation,
-    gameState.progression,
-    machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-    stationWorkSpeed(machine, gameState),
-  );
+  const phases = operationPhasesNow(game, machine, operation);
 
   // Same rule the tick uses: standing there isn't enough, you have to be
   // holding the operate key too.

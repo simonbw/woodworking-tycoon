@@ -9,7 +9,7 @@ import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { floorMachines, MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
 import { findMachineEntity } from "./machine-commands";
-import { projectGameState } from "../projection";
+import { projectPerson } from "../projection";
 
 /**
  * Mounting and unmounting handheld tools. A loose tool is a physical
@@ -37,9 +37,8 @@ export function mountTool(
   entity: MachineEntity,
   tool: ToolItem,
 ): boolean {
-  const gameState = projectGameState(game);
   const machine = entity.view();
-  if (!gameState.player.inventory.some((item) => item === tool)) {
+  if (!player(game).inventory.some((item) => item === tool)) {
     console.warn(`Tried to mount ${tool.toolId} without carrying it`);
     return false;
   }
@@ -76,7 +75,6 @@ export function unmountTool(
   entity: MachineEntity,
   toolId: ToolId,
 ): boolean {
-  const gameState = projectGameState(game);
   const toolIndex = entity.state.tools.indexOf(toolId);
   if (toolIndex === -1) {
     console.warn(`Tried to unmount ${toolId} but it's not mounted`);
@@ -88,7 +86,7 @@ export function unmountTool(
     return false;
   }
   // The tool comes off into the arms, so they need room for it
-  if (handSpaceLeft(gameState.player) < 1) {
+  if (handSpaceLeft(projectPerson(game)) < 1) {
     console.warn("Can't unmount a tool with full hands");
     return false;
   }

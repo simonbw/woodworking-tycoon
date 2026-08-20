@@ -17,7 +17,10 @@ import {
   putDownHere,
   stepMachineSetting,
 } from "../../sim/commands/interact-commands";
-import { rotateCarriedMachine } from "../../sim/commands/machine-commands";
+import {
+  rotateCarriedMachine,
+  shopCellMap,
+} from "../../sim/commands/machine-commands";
 import { toggleCarryShopVac } from "../../sim/commands/cleaning-commands";
 import { setOperating, setWaiting } from "../../sim/commands/player-commands";
 import { canLeaveShop } from "../../sim/commands/trip-commands";
@@ -311,6 +314,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
         if (rotateLive) return false;
         const interactNow = resolveInteract(
           gs,
+          shopCellMap(game),
           targetedView,
           targeting.pileOffset,
         );
@@ -318,7 +322,10 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
           interactNow?.kind === "take-outputs" ||
           interactNow?.kind === "take-inputs" ||
           interactNow?.kind === "pick-up-floor";
-        return rummageLive && materialSources(gs, targetedView).length > 1;
+        return (
+          rummageLive &&
+          materialSources(gs, shopCellMap(game), targetedView).length > 1
+        );
       }
       default:
         return false;

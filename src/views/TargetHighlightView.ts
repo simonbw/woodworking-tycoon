@@ -8,6 +8,7 @@ import { atTruckBed } from "../game/lot";
 import { GameState } from "../game/GameState";
 import { atStand, isSellable } from "../game/stand";
 import { TargetingState } from "../shell/dispatch/TargetingState";
+import { shopCellMap } from "../sim/commands/machine-commands";
 import { TripTheater } from "../shell/scenes/TripTheater";
 import { MaterialPileEntity } from "../sim/entities/MaterialPileEntity";
 import { Player } from "../sim/entities/Player";
@@ -58,7 +59,12 @@ export class TargetHighlightView extends BaseEntity implements Entity {
     const targeted = targeting.targeted();
     if (targeted) this.dress(viewHighlightRoot(targeted));
 
-    const action = resolveInteract(gs, targeted?.view(), targeting.pileOffset);
+    const action = resolveInteract(
+      gs,
+      shopCellMap(this.game),
+      targeted?.view(),
+      targeting.pileOffset,
+    );
 
     // …the pile E would pick up…
     if (action?.kind === "pick-up-floor") {

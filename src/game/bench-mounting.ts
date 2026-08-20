@@ -33,12 +33,11 @@ export const FLOOR_WORK_PENALTY = 2;
  */
 export function isMountedOnWorktable(
   machine: Machine,
-  gameState: GameState,
+  cellMap: CellMap,
 ): boolean {
   if (!machine.type.benchtop) {
     return false;
   }
-  const cellMap = CellMap.fromGameState(gameState);
   return machine.type.cellsOccupied.every((relativeCell) => {
     const position: Vector = translateVec(
       rotateVec(relativeCell, machine.rotation),
@@ -54,10 +53,10 @@ export function isMountedOnWorktable(
  */
 export function isBenchtopOnFloor(
   machine: Machine,
-  gameState: GameState,
+  cellMap: CellMap,
 ): boolean {
   return (
-    Boolean(machine.type.benchtop) && !isMountedOnWorktable(machine, gameState)
+    Boolean(machine.type.benchtop) && !isMountedOnWorktable(machine, cellMap)
   );
 }
 
@@ -69,11 +68,8 @@ export function isBenchtopOnFloor(
  * `Machine.workSpeed`, the way dust slowdown comes through
  * machineDustMultiplier.
  */
-export function stationWorkSpeed(
-  machine: Machine,
-  gameState: GameState,
-): number {
-  return isBenchtopOnFloor(machine, gameState)
+export function stationWorkSpeed(machine: Machine, cellMap: CellMap): number {
+  return isBenchtopOnFloor(machine, cellMap)
     ? machine.workSpeed / FLOOR_WORK_PENALTY
     : machine.workSpeed;
 }

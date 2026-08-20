@@ -1,7 +1,7 @@
 import { Game } from "../../core/Game";
 import { canPickUpMachine } from "../../game/game-actions/machine-actions";
 import { heldTool, holdingBroom } from "../../game/HeldTool";
-import { resolveInteract } from "../../game/interact";
+import { InteractFacts, resolveInteract } from "../../game/interact";
 import { atTruckBed } from "../../game/lot";
 import {
   hasFloorControls,
@@ -19,13 +19,19 @@ import { handSpaceLeft } from "../../game/Person";
 import { atStand, isSellable } from "../../game/stand";
 import { availableOperations } from "../../game/skill-helpers";
 import { chebyshevDistance } from "../../game/Vectors";
+import { MachineCrateEntity } from "../entities/MachineCrateEntity";
 import { MachineEntity } from "../entities/MachineEntity";
 import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
-import { projectGameState } from "../projection";
-import { pickUpBroom, putDownBroom } from "./cleaning-commands";
+import { StandEntity } from "../entities/StandEntity";
+import { TruckEntity } from "../entities/TruckEntity";
+import { projectPerson, projectProgression } from "../projection";
+import { ShopInfo } from "../singletons/ShopInfo";
+import { cleaningGear, pickUpBroom, putDownBroom } from "./cleaning-commands";
 import {
+  carryFacts,
   findMachineEntity,
+  shopCellMap,
   moveMaterialsToMachine,
   operateMachine,
   pickUpCrate,
@@ -64,6 +70,20 @@ function player(game: Game): Player {
   return game.entities.getSingleton(Player);
 }
 
+/** The interact resolvers' read, off the live entities. */
+function interactFacts(game: Game): InteractFacts {
+  return {
+    ...cleaningGear(game),
+    player: projectPerson(game),
+    materialPiles: [...game.entities.byConstructor(MaterialPileEntity)]
+      .filter((entity) => !entity.isDestroyed)
+      .map((entity) => entity.pile),
+    truck: { bed: game.entities.getSingleton(TruckEntity).bed },
+    stand: game.entities.tryGetSingleton(StandEntity)?.pieces ?? [],
+    shopInfo: game.entities.getSingleton(ShopInfo).info,
+  };
+}
+
 /**
  * The B key's three-way toggle: put down what's carried, else unpack the
  * crate underfoot (or at the truck's bed), else hoist the targeted
@@ -73,27 +93,29 @@ export function carryMachineToggle(
   game: Game,
   targeted: MachineEntity | null,
 ): void {
-  const gs = projectGameState(game);
   const thePlayer = player(game);
   if (thePlayer.carriedMachine) {
     putDownCarriedMachine(game);
     return;
   }
-  const crateUnderfoot = gs.machineCrates.some(
-    (crate) => chebyshevDistance(crate.position, gs.player.position) <= 1,
+  const crateUnderfoot = [
+    ...game.entities.byConstructor(MachineCrateEntity),
+  ].some(
+    (crate) =>
+      !crate.isDestroyed &&
+      chebyshevDistance(crate.position, thePlayer.cell) <= 1,
   );
   if (crateUnderfoot) {
     pickUpCrate(game);
     return;
   }
-  if (
-    gs.truck.crates.length > 0 &&
-    atTruckBed(gs.shopInfo, gs.player.position)
-  ) {
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
+  const truck = game.entities.getSingleton(TruckEntity);
+  if (truck.crates.length > 0 && atTruckBed(shopInfo, thePlayer.cell)) {
     takeCrateFromTruck(game);
     return;
   }
-  if (targeted && canPickUpMachine(gs, targeted.state)) {
+  if (targeted && canPickUpMachine(carryFacts(game), targeted.state)) {
     pickUpMachine(game, targeted);
   }
 }
@@ -110,9 +132,14 @@ export function interactHere(
   pileOffset: number,
   shift: boolean,
 ): "truck-cab" | null {
-  const gs = projectGameState(game);
+  const gs = interactFacts(game);
   const targetedView = targeted ? targeted.view() : undefined;
-  const action = resolveInteract(gs, targetedView, pileOffset);
+  const action = resolveInteract(
+    gs,
+    shopCellMap(game),
+    targetedView,
+    pileOffset,
+  );
   if (!action) return null;
   const space = handSpaceLeft(gs.player);
   switch (action.kind) {
@@ -192,23 +219,23 @@ export function putDownHere(
   targeted: MachineEntity | null,
   shift: boolean,
 ): void {
-  const gs = projectGameState(game);
   const thePlayer = player(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
   const inventory = thePlayer.inventory;
   if (inventory.length === 0) {
     // Empty-handed except for the broom: F leans it right here
-    if (holdingBroom(gs)) putDownBroom(game);
+    if (holdingBroom(cleaningGear(game))) putDownBroom(game);
     return;
   }
 
   // At the truck's bed, F loads over the rail instead of dropping
-  if (atTruckBed(gs.shopInfo, gs.player.position)) {
+  if (atTruckBed(shopInfo, thePlayer.cell)) {
     loadTruckBed(game, shift ? [...inventory] : [inventory[0]]);
     return;
   }
 
   // At the for-sale stand, F sets sellable work out on the table
-  if (atStand(gs.shopInfo, gs.player.position)) {
+  if (atStand(shopInfo, thePlayer.cell)) {
     const sellable = inventory.filter(isSellable);
     if (sellable.length > 0) {
       setOutAtStand(game, shift ? sellable : [sellable[0]]);
@@ -220,7 +247,7 @@ export function putDownHere(
     const stageable = stageableMaterials(
       targeted.view(),
       inventory,
-      gs.progression,
+      projectProgression(game),
     );
     if (stageable.length > 0) {
       const staged = shift ? stageable : [stageable[0]];
@@ -232,7 +259,7 @@ export function putDownHere(
         const restaged = targeted.view();
         const match = findFeedableOperation(
           restaged,
-          availableOperations(restaged, projectGameState(game).progression),
+          availableOperations(restaged, projectProgression(game)),
           restaged.inputMaterials,
         );
         if (match?.operation.powerFeed === true) {
@@ -265,7 +292,7 @@ export function operateTargeted(
   game: Game,
   targeted: MachineEntity | null,
 ): void {
-  if (heldTool(projectGameState(game)) !== null) return;
+  if (heldTool(cleaningGear(game)) !== null) return;
   if (!targeted) return;
   operateMachine(game, targeted);
 }
@@ -283,11 +310,10 @@ export function stepMachineSetting(
   coarse = false,
 ): void {
   if (!targeted) return;
-  const gs = projectGameState(game);
   const machine = targeted.view();
 
   const directFeed = machine.type.directFeed === true;
-  const found = liveSettingParameter(machine, gs.progression, kind);
+  const found = liveSettingParameter(machine, projectProgression(game), kind);
   if (!found) return;
   const { operation, parameter: param } = found;
 

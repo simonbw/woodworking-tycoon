@@ -40,9 +40,11 @@ import {
   getOperationPhases,
 } from "../../game/skill-helpers";
 import { floorMachines, MachineEntity } from "../entities/MachineEntity";
-import { projectGameState } from "../projection";
+import { machineStatesNow, operationPhasesNow } from "../machine-reads";
+import { projectPerson, projectProgression } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
+import { ShopInfo } from "../singletons/ShopInfo";
 import { emitSound } from "./sound";
 
 /**
@@ -63,11 +65,12 @@ export { palletPryTargetsLeft } from "../../game/game-actions/operation-actions"
  * Whether this player position can legally commit hand work at this
  * machine right now — standing in the operator's apron, not away.
  */
-function attends(gameState: GameState, entity: MachineEntity): boolean {
+function attends(game: Game, entity: MachineEntity): boolean {
+  const person = projectPerson(game);
   return playerAttendsMachine(
     entity.view(),
-    gameState.player.position,
-    gameState.player.away !== null,
+    person.position,
+    person.away !== null,
   );
 }
 
@@ -79,12 +82,11 @@ function attends(gameState: GameState, entity: MachineEntity): boolean {
  * driver may not read the old transform layer.)
  */
 export function benchOffersPry(game: Game, entity: MachineEntity): boolean {
-  const gameState = projectGameState(game);
   const machine = entity.view();
   return (
     machine.operationProgress.status !== "inProgress" &&
     palletPryTargetsLeft(machine) > 0 &&
-    availableOperations(machine, gameState.progression).some(
+    availableOperations(machine, projectProgression(game)).some(
       (op) => op.interaction?.kind === "pry",
     )
   );
@@ -108,19 +110,18 @@ export function pryPalletNail(
   entity: MachineEntity,
   target?: PalletNail,
 ): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   if (machineState.operationProgress.status === "inProgress") {
     console.warn("The bench is mid-operation — no room to pry");
     return false;
   }
-  if (!attends(gameState, entity)) {
+  if (!attends(game, entity)) {
     console.warn("Can't pry a nail from across the shop");
     return false;
   }
   const live = entity.view();
   if (
-    !availableOperations(live, gameState.progression).some(
+    !availableOperations(live, projectProgression(game)).some(
       (op) => op.id === "dismantlePallet",
     )
   ) {
@@ -228,13 +229,12 @@ export function startGlueUp(
   entity: MachineEntity,
   pieceIds: ReadonlyArray<string>,
 ): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   if (machineState.operationProgress.status === "inProgress") {
     console.warn("The bench is mid-operation — no room for a glue-up");
     return false;
   }
-  if (!attends(gameState, entity)) {
+  if (!attends(game, entity)) {
     console.warn("Can't tighten clamps from across the shop");
     return false;
   }
@@ -285,7 +285,7 @@ export function startGlueUp(
     return false;
   }
   const live = entity.view();
-  const operation = availableOperations(live, gameState.progression).find(
+  const operation = availableOperations(live, projectProgression(game)).find(
     (op) => op.id === operationId,
   );
   if (!operation) {
@@ -295,18 +295,15 @@ export function startGlueUp(
   // Clamps are borrowed, not spent: this operation starting IS the
   // checkout (the count in use is derived — see Clamp.ts), and the cure
   // finishing is the return.
+  const consumables = game.entities.getSingleton(Consumables);
   if (
-    clampsFor(operation, run) > clampsFree(gameState.clamps, gameState.machines)
+    clampsFor(operation, run) >
+    clampsFree(consumables.clamps, machineStatesNow(game))
   ) {
     console.warn("Not enough free clamps for a run this long");
     return false;
   }
-  const [firstPhase] = getOperationPhases(
-    operation,
-    gameState.progression,
-    machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-    stationWorkSpeed(live, gameState),
-  );
+  const [firstPhase] = operationPhasesNow(game, live, operation);
   entity.state = {
     ...machineState,
     selectedOperationId: operationId,
@@ -502,7 +499,6 @@ export function gatherBenchPieces(
  * way. Writes straight onto the DustLayer singleton.
  */
 export function emitBenchDust(game: Game, entity: MachineEntity): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   const live = entity.view();
   const operation = live.operations.find(
@@ -527,7 +523,7 @@ export function emitBenchDust(game: Game, entity: MachineEntity): boolean {
     live,
     species,
     dustOutput * deriveMachineCutLoad(live) * ticksPerEmission,
-    gameState.shopInfo.size,
+    game.entities.getSingleton(ShopInfo).info.size,
   );
   return true;
 }

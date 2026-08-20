@@ -113,8 +113,8 @@ describe("garbage can", () => {
 
   it("never answers the interact key — it is opened, not reached into", () => {
     const gameState = shopWithCan([board("pine", 12, 2, 1)]);
-    assert.strictEqual(resolveInteract(gameState, theCan(gameState)), null);
-    assert.strictEqual(resolveInteract(gameState, undefined), null);
+    assert.strictEqual(resolveInteract(gameState, CellMap.fromGameState(gameState), theCan(gameState)), null);
+    assert.strictEqual(resolveInteract(gameState, CellMap.fromGameState(gameState), undefined), null);
   });
 
   it("leaves the floor to the interact key even while you face it", () => {
@@ -127,7 +127,7 @@ describe("garbage can", () => {
       ],
     };
 
-    assert.deepStrictEqual(resolveInteract(gameState, theCan(gameState)), {
+    assert.deepStrictEqual(resolveInteract(gameState, CellMap.fromGameState(gameState), theCan(gameState)), {
       kind: "pick-up-floor",
       piles: gameState.materialPiles,
       target: gameState.materialPiles[0],

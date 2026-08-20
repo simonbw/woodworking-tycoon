@@ -12,7 +12,8 @@ import {
   ReasonRow,
 } from "../../../components/shortcuts/HintList";
 import { ShortcutKeys } from "../../../components/shortcuts/Kbd";
-import { useShopState } from "../../useShell";
+import { shopCellMap } from "../../../sim/commands/machine-commands";
+import { useGame, useShopState } from "../../useShell";
 import { useTargeting } from "../useTargeting";
 import { OverlayFrameContext } from "./OverlayLayer";
 
@@ -24,6 +25,7 @@ import { OverlayFrameContext } from "./OverlayLayer";
 export const StandPrompt: React.FC<{ canvasWidth: number }> = ({
   canvasWidth,
 }) => {
+  const game = useGame();
   const gameState = useShopState();
   const { machine: targetedMachine } = useTargeting();
   const frame = useContext(OverlayFrameContext);
@@ -36,7 +38,11 @@ export const StandPrompt: React.FC<{ canvasWidth: number }> = ({
     return null;
   }
 
-  const interact = resolveInteract(gameState, targetedMachine);
+  const interact = resolveInteract(
+    gameState,
+    shopCellMap(game),
+    targetedMachine,
+  );
   const sellableInHand = gameState.player.inventory.some(isSellable);
 
   const rows: React.ReactNode[] = [];

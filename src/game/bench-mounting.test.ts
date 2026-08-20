@@ -6,6 +6,7 @@ import {
   isMountedOnWorktable,
   stationWorkSpeed,
 } from "./bench-mounting";
+import { CellMap } from "./CellMap";
 import { GameState } from "./GameState";
 import { machineViews, Machine, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
@@ -35,15 +36,17 @@ function machineAt(
   };
 }
 
-/** The state plus a lookup of the placed machine view by type id. */
+/** The floor's cell map plus a lookup of the placed machine view. */
 function shopWith(machines: ReadonlyArray<MachineState>): {
   gameState: GameState;
+  cellMap: CellMap;
   machine: (typeId: string) => Machine;
 } {
   const gameState: GameState = { ...initialGameState, machines };
   const views = machineViews(machines);
   return {
     gameState,
+    cellMap: CellMap.fromGameState(gameState),
     machine: (typeId) => views.find((m) => m.type.id === typeId)!,
   };
 }
@@ -63,8 +66,8 @@ describe("benchtop mounting", () => {
       ...run,
       machineAt("miterSaw", [1, 1]),
     ]);
-    assert.ok(isMountedOnWorktable(machine("miterSaw"), gameState));
-    assert.ok(!isBenchtopOnFloor(machine("miterSaw"), gameState));
+    assert.ok(isMountedOnWorktable(machine("miterSaw"), CellMap.fromGameState(gameState)));
+    assert.ok(!isBenchtopOnFloor(machine("miterSaw"), CellMap.fromGameState(gameState)));
   });
 
   it("counts a machine straddling the seam between two tables as mounted", () => {
@@ -75,14 +78,14 @@ describe("benchtop mounting", () => {
       ...run,
       machineAt("miterSaw", [4, 1]),
     ]);
-    assert.ok(isMountedOnWorktable(machine("miterSaw"), gameState));
-    assert.ok(!isBenchtopOnFloor(machine("miterSaw"), gameState));
+    assert.ok(isMountedOnWorktable(machine("miterSaw"), CellMap.fromGameState(gameState)));
+    assert.ok(!isBenchtopOnFloor(machine("miterSaw"), CellMap.fromGameState(gameState)));
   });
 
   it("counts a benchtop machine on bare floor as not mounted", () => {
     const { gameState, machine } = shopWith([machineAt("miterSaw", [6, 6])]);
-    assert.ok(!isMountedOnWorktable(machine("miterSaw"), gameState));
-    assert.ok(isBenchtopOnFloor(machine("miterSaw"), gameState));
+    assert.ok(!isMountedOnWorktable(machine("miterSaw"), CellMap.fromGameState(gameState)));
+    assert.ok(isBenchtopOnFloor(machine("miterSaw"), CellMap.fromGameState(gameState)));
   });
 
   it("does not count a machine half off the table as mounted", () => {
@@ -92,18 +95,18 @@ describe("benchtop mounting", () => {
       ...run,
       machineAt("miterSaw", [5, 1]),
     ]);
-    assert.ok(!isMountedOnWorktable(machine("miterSaw"), gameState));
-    assert.ok(isBenchtopOnFloor(machine("miterSaw"), gameState));
+    assert.ok(!isMountedOnWorktable(machine("miterSaw"), CellMap.fromGameState(gameState)));
+    assert.ok(isBenchtopOnFloor(machine("miterSaw"), CellMap.fromGameState(gameState)));
   });
 
   it("leaves floor-standing machines alone", () => {
     // The band saw belongs on the floor: no penalty, and it is never
     // "mounted" however it's placed.
     const { gameState, machine } = shopWith([machineAt("bandSaw", [6, 6])]);
-    assert.ok(!isMountedOnWorktable(machine("bandSaw"), gameState));
-    assert.ok(!isBenchtopOnFloor(machine("bandSaw"), gameState));
+    assert.ok(!isMountedOnWorktable(machine("bandSaw"), CellMap.fromGameState(gameState)));
+    assert.ok(!isBenchtopOnFloor(machine("bandSaw"), CellMap.fromGameState(gameState)));
     assert.strictEqual(
-      stationWorkSpeed(machine("bandSaw"), gameState),
+      stationWorkSpeed(machine("bandSaw"), CellMap.fromGameState(gameState)),
       machine("bandSaw").workSpeed,
     );
   });
@@ -116,8 +119,8 @@ describe("the floor penalty", () => {
     const onFloor = shopWith([machineAt("miterSaw", [6, 6])]);
     const mounted = shopWith([table, machineAt("miterSaw", [1, 1])]);
     assert.strictEqual(
-      stationWorkSpeed(mounted.machine("miterSaw"), mounted.gameState) /
-        stationWorkSpeed(onFloor.machine("miterSaw"), onFloor.gameState),
+      stationWorkSpeed(mounted.machine("miterSaw"), mounted.cellMap) /
+        stationWorkSpeed(onFloor.machine("miterSaw"), onFloor.cellMap),
       FLOOR_WORK_PENALTY,
     );
   });
@@ -128,7 +131,7 @@ describe("the floor penalty", () => {
       machineAt("miterSaw", [1, 1]),
     ]);
     assert.strictEqual(
-      stationWorkSpeed(machine("miterSaw"), gameState),
+      stationWorkSpeed(machine("miterSaw"), CellMap.fromGameState(gameState)),
       machine("miterSaw").workSpeed,
     );
   });
@@ -142,8 +145,8 @@ describe("the floor penalty", () => {
       machineAt("miterSaw", [1, 1]),
     ]);
     assert.strictEqual(
-      stationWorkSpeed(upgraded.machine("miterSaw"), upgraded.gameState),
-      stationWorkSpeed(bare.machine("miterSaw"), bare.gameState),
+      stationWorkSpeed(upgraded.machine("miterSaw"), upgraded.cellMap),
+      stationWorkSpeed(bare.machine("miterSaw"), bare.cellMap),
     );
   });
 });

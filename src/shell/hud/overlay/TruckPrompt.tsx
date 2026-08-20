@@ -17,7 +17,10 @@ import {
   truckCabRect,
 } from "../../../game/lot";
 import { MACHINE_TYPES } from "../../../game/Machine";
-import { explainUnpackRefusal } from "../../../sim/commands/machine-commands";
+import {
+  explainUnpackRefusal,
+  shopCellMap,
+} from "../../../sim/commands/machine-commands";
 import {
   interactLabel,
   resolveInteract,
@@ -74,6 +77,7 @@ interface TruckRow {
 export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
   canvasWidth,
 }) => {
+  const game = useGame();
   const gameState = useShopState();
   const { machine: targetedMachine } = useTargeting();
   const frame = useContext(OverlayFrameContext);
@@ -88,7 +92,11 @@ export const TruckBedPrompt: React.FC<{ canvasWidth: number }> = ({
     return null;
   }
 
-  const interact = resolveInteract(gameState, targetedMachine);
+  const interact = resolveInteract(
+    gameState,
+    shopCellMap(game),
+    targetedMachine,
+  );
   const holding = gameState.player.inventory.length > 0;
 
   const rows: React.ReactNode[] = [];
@@ -328,7 +336,11 @@ export const TruckPrompt: React.FC<{
   // resolves at all, so the chip carries the reason instead: the card's
   // own "set it down first" advice, brought out where it can be read.
   if (!truckMenuOpen) {
-    const interact = resolveInteract(gameState, targetedMachine);
+    const interact = resolveInteract(
+      gameState,
+      shopCellMap(game),
+      targetedMachine,
+    );
     if (interact?.kind !== "truck-cab" && !carried) {
       return null;
     }

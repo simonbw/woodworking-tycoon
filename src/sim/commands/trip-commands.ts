@@ -2,6 +2,7 @@ import { Game } from "../../core/Game";
 import {
   canLeaveShop,
   DRIVE_TICKS_ONE_WAY,
+  LeaveShopFacts,
   storeUnlocked,
 } from "../../game/game-actions/door-actions";
 import {
@@ -20,9 +21,17 @@ import { isNight } from "../../game/time-flow";
 import { needsFirstPallet } from "../../game/tutorial";
 import { Direction, Vector } from "../../game/Vectors";
 import { Player } from "../entities/Player";
+import { ShopVacEntity } from "../entities/ShopVacEntity";
 import { TruckEntity } from "../entities/TruckEntity";
+import { Broom } from "../singletons/Broom";
+import { Clock } from "../singletons/Clock";
+import { Reputation } from "../singletons/Reputation";
 import { ShopInfo } from "../singletons/ShopInfo";
-import { projectGameState } from "../projection";
+import {
+  projectPerson,
+  projectProgression,
+  projectTutorialFacts,
+} from "../projection";
 
 /**
  * The trip command surface: leaving the shop through the truck's cab, on
@@ -65,6 +74,14 @@ function player(game: Game): Player {
   return game.entities.getSingleton(Player);
 }
 
+/** What the leaving guard reads, off the live entities. */
+function leaveFacts(game: Game): LeaveShopFacts {
+  return {
+    player: projectPerson(game),
+    shopInfo: game.entities.getSingleton(ShopInfo).info,
+  };
+}
+
 /** Where the player lands stepping out of the truck after any trip. */
 function stepOutAtCab(game: Game): void {
   const shopInfo = game.entities.getSingleton(ShopInfo);
@@ -87,23 +104,23 @@ export function startScavenging(
   game: Game,
   rng: () => number = game.random,
 ): boolean {
-  const gameState = projectGameState(game);
-  if (!canLeaveShop(gameState)) {
+  const clock = game.entities.getSingleton(Clock);
+  if (!canLeaveShop(leaveFacts(game))) {
     console.warn("Can't leave the shop right now");
     return false;
   }
-  if (isNight(gameState)) {
+  if (isNight(clock)) {
     console.warn("Shop's closed for the night — nowhere to go but home");
     return false;
   }
   player(game).away = {
     kind: "scavenging",
-    startTick: gameState.tick,
-    stops: rollScavengeStops(rng, needsFirstPallet(gameState)),
+    startTick: clock.tick,
+    stops: rollScavengeStops(rng, needsFirstPallet(projectTutorialFacts(game))),
     stopsSearched: 0,
     phase: {
       kind: "searching",
-      doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
+      doneTick: clock.tick + SCAVENGE_STOP_TICKS,
     },
   };
   game.dispatch("playerChanged", {});
@@ -117,19 +134,23 @@ export function startScavenging(
  * disabled button.
  */
 export function continueScavenging(game: Game): boolean {
-  const gameState = projectGameState(game);
-  const block = keepScavengingBlock(gameState);
+  const clock = game.entities.getSingleton(Clock);
+  const thePlayer = player(game);
+  const block = keepScavengingBlock({
+    player: thePlayer,
+    tick: clock.tick,
+    dayStartTick: clock.dayStartTick,
+  });
   if (block !== null) {
     console.warn(`Can't keep scavenging: ${block}`);
     return false;
   }
-  const thePlayer = player(game);
   const away = thePlayer.away as ScavengingTrip;
   thePlayer.away = {
     ...away,
     phase: {
       kind: "searching",
-      doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
+      doneTick: clock.tick + SCAVENGE_STOP_TICKS,
     },
   };
   game.dispatch("playerChanged", {});
@@ -170,22 +191,25 @@ export function headHomeFromScavenging(game: Game): boolean {
  * thinking time, nearly free — and comes home via `returnFromStore`.
  */
 export function goToStore(game: Game, store: StoreId): boolean {
-  const gameState = projectGameState(game);
-  if (!storeUnlocked(gameState, store)) {
+  if (!storeUnlocked(projectProgression(game), store)) {
     console.warn("That store is not unlocked yet");
     return false;
   }
-  if (!canLeaveShop(gameState)) {
+  if (!canLeaveShop(leaveFacts(game))) {
     console.warn("Can't leave the shop right now");
     return false;
   }
-  if (isNight(gameState)) {
+  if (isNight(game.entities.getSingleton(Clock))) {
     console.warn("Shop's closed for the night — nowhere to go but home");
     return false;
   }
   // The trip arrives beside the truck's cab in the store's lot, the
   // mirror of stepping out beside it back home.
-  const spawn = storeLayout(store, gameState).spawn;
+  const spawn = storeLayout(store, {
+    reputation: game.entities.getSingleton(Reputation).reputation,
+    broomOwned: game.entities.tryGetSingleton(Broom)?.owned ?? false,
+    shopVac: game.entities.tryGetSingleton(ShopVacEntity) ?? null,
+  }).spawn;
   player(game).away = {
     kind: "shopping",
     store,

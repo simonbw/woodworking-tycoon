@@ -12,7 +12,7 @@ import { MaterialInstance } from "../../game/Materials";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
 import { UPGRADE_TYPES, UpgradeId } from "../../game/Upgrade";
 import { TruckEntity } from "../entities/TruckEntity";
-import { projectGameState } from "../projection";
+import { projectProgression } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { StorageUpgrades } from "../singletons/StorageUpgrades";
 import { Wallet } from "../singletons/Wallet";
@@ -108,9 +108,7 @@ export function buyMachine(
   wallet.money -= price;
   game.entities
     .getSingleton(TruckEntity)
-    .crates.push(
-      freshMachineState(machineTypeId, projectGameState(game).progression),
-    );
+    .crates.push(freshMachineState(machineTypeId, projectProgression(game)));
   game.dispatch("progressionChanged", {});
   game.dispatch("truckChanged", {});
   // Buying gear can reveal manual articles that key on what the shop owns

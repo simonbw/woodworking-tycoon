@@ -17,7 +17,7 @@ export const HAND_CAPACITY = 4;
  * an arranged test state) holding more than the cap isn't corrected, it
  * just can't pick anything else up.
  */
-export function handSpaceLeft(person: Person): number {
+export function handSpaceLeft(person: Pick<Person, "inventory">): number {
   return Math.max(0, HAND_CAPACITY - person.inventory.length);
 }
 
@@ -155,6 +155,8 @@ export type HomeTrip = {
  * stored — the sim systems consult this instead of a persisted flag
  * that would go stale.
  */
-export function personCanWork(person: Person): boolean {
+export function personCanWork(
+  person: Pick<Person, "away" | "busyTicks">,
+): boolean {
   return person.away === null && person.busyTicks === 0;
 }

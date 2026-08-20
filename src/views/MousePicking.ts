@@ -11,7 +11,10 @@ import {
   divesToBench,
   hasStationSheet,
 } from "../components/station/station-helpers";
-import { findMachineEntity } from "../sim/commands/machine-commands";
+import {
+  findMachineEntity,
+  shopCellMap,
+} from "../sim/commands/machine-commands";
 import { TargetingState } from "../shell/dispatch/TargetingState";
 import { BenchDive } from "../shell/scenes/bench/BenchDive";
 import { ShellStore } from "../shell/ShellStore";
@@ -64,7 +67,11 @@ export class MousePicking extends BaseEntity implements Entity {
     const cursor = this.cursorWorld;
     if (!cursor) return null;
     const targeting = this.targeting();
-    const piles = materialSources(gs, targeting.targeted()?.view())
+    const piles = materialSources(
+      gs,
+      shopCellMap(this.game),
+      targeting.targeted()?.view(),
+    )
       .filter((source) => source.kind === "floor-pile")
       .map((source) => source.pile);
     return pickUnderCursor(cursor, piles, targeting.machines());

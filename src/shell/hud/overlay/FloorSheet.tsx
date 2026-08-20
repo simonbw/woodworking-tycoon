@@ -3,6 +3,7 @@ import { MaterialPile } from "../../../game/GameState";
 import { resolveInteract } from "../../../game/interact";
 import { getMaterialFullName } from "../../../game/material-helpers";
 import { handSpaceLeft } from "../../../game/Person";
+import { shopCellMap } from "../../../sim/commands/machine-commands";
 import { pickUpMaterial } from "../../../sim/commands/pile-commands";
 import { MaterialPileEntity } from "../../../sim/entities/MaterialPileEntity";
 import { formatCount } from "../../../utils/formatNumber";
@@ -39,7 +40,12 @@ export const FloorSheet: React.FC = () => {
     setPileTarget,
   } = useTargeting();
 
-  const interact = resolveInteract(gameState, targetedMachine, pileOffset);
+  const interact = resolveInteract(
+    gameState,
+    shopCellMap(game),
+    targetedMachine,
+    pileOffset,
+  );
   const piles = interact?.kind === "pick-up-floor" ? interact.piles : [];
   const target = interact?.kind === "pick-up-floor" ? interact.target : null;
 

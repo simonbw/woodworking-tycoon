@@ -2,7 +2,7 @@ import { initialPalletNails } from "./bench-work/pallet-geometry";
 import { GameState } from "./GameState";
 import { makeMaterial } from "./material-helpers";
 import { Pallet } from "./Materials";
-import { ScavengeStopResult, ScavengingTrip } from "./Person";
+import { Person, ScavengeStopResult, ScavengingTrip } from "./Person";
 import { Tuple } from "../utils/typeUtils";
 import { TICKS_PER_DAY } from "./time";
 import { dayTicksSpent } from "./time-flow";
@@ -141,17 +141,23 @@ export function scavengeLoot(trip: ScavengingTrip): ReadonlyArray<Pallet> {
 export type KeepScavengingBlock =
   "notDeciding" | "outOfStops" | "outOfDaylight";
 
+export interface KeepScavengingFacts {
+  readonly player: Pick<Person, "away">;
+  readonly tick: number;
+  readonly dayStartTick: number;
+}
+
 export function keepScavengingBlock(
-  gameState: GameState,
+  facts: KeepScavengingFacts,
 ): KeepScavengingBlock | null {
-  const away = gameState.player.away;
+  const away = facts.player.away;
   if (away?.kind !== "scavenging" || away.phase.kind !== "deciding") {
     return "notDeciding";
   }
   if (away.stopsSearched >= away.stops.length) {
     return "outOfStops";
   }
-  if (dayTicksSpent(gameState) + SCAVENGE_STOP_TICKS > TICKS_PER_DAY) {
+  if (dayTicksSpent(facts) + SCAVENGE_STOP_TICKS > TICKS_PER_DAY) {
     return "outOfDaylight";
   }
   return null;

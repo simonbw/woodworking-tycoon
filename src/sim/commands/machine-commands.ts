@@ -1,24 +1,21 @@
 import { Game } from "../../core/Game";
-import { stationWorkSpeed } from "../../game/bench-mounting";
 import { CellMap } from "../../game/CellMap";
 import { clampsFor, clampsFree } from "../../game/Clamp";
 import { hasConsumables, subtractConsumables } from "../../game/Consumable";
-import { machineDustMultiplier } from "../../game/Dust";
 import { feedClearanceShortfall } from "../../game/feed-clearance";
 import {
   canPickUpMachine,
   canPlaceMachine,
   carriedMachinePlacement,
+  CarryFacts,
   getMachineOccupiedCells,
 } from "../../game/game-actions/machine-actions";
 import { completeOperation } from "../../game/game-actions/operation-actions";
-import { GameState } from "../../game/GameState";
 import { heldTool } from "../../game/HeldTool";
 import {
   defaultParametersFor,
   isBenchType,
   isSameMachine,
-  Machine,
   MachineState,
   Operation,
   ParameterValues,
@@ -28,7 +25,6 @@ import {
   findFeedableOperation,
   machineCanOperate,
   playerAttendsMachine,
-  shopSupply,
 } from "../../game/machine-helpers";
 import { materialMeetsInput } from "../../game/material-helpers";
 import { MaterialInstance } from "../../game/Materials";
@@ -36,19 +32,23 @@ import { handSpaceLeft } from "../../game/Person";
 import { productBlueprintFor } from "../../game/bench-work/blueprint";
 import { seatedAssemblyPieces } from "../../game/bench-work/assembly";
 import { unlockedBenchPlans } from "../../game/bench-work/plan-registry";
-import {
-  availableOperations,
-  getOperationPhases,
-} from "../../game/skill-helpers";
+import { availableOperations } from "../../game/skill-helpers";
 import { isNight } from "../../game/time-flow";
 import { carryingShopVac } from "../../game/ShopVac";
 import { chebyshevDistance, Direction } from "../../game/Vectors";
 import { MachineCrateEntity } from "../entities/MachineCrateEntity";
 import { MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
-import { projectGameState } from "../projection";
+import {
+  machineStatesNow,
+  operationPhasesNow,
+  shopSupplyNow,
+} from "../machine-reads";
+import { projectPerson, projectProgression } from "../projection";
+import { Clock } from "../singletons/Clock";
 import { Consumables } from "../singletons/Consumables";
 import { ShopGrid } from "../singletons/ShopGrid";
+import { cleaningGear } from "./cleaning-commands";
 import { emitSound } from "./sound";
 import { applyCompletionGrants } from "../systems/grants";
 import { BenchToolClaim } from "../../game/bench-work/tool-work";
@@ -95,12 +95,22 @@ function player(game: Game): Player {
   return game.entities.getSingleton(Player);
 }
 
+/** The carrying rules' read, off the live entities. */
+export function carryFacts(game: Game): CarryFacts {
+  return {
+    machines: machineStatesNow(game),
+    player: player(game),
+    shopVac: cleaningGear(game).shopVac,
+  };
+}
+
 /** The player's hands are genuinely free: no machine, no boards, no vac. */
-function handsFree(gameState: GameState): boolean {
+function handsFreeNow(game: Game): boolean {
+  const thePlayer = player(game);
   return (
-    gameState.player.carriedMachine == null &&
-    gameState.player.inventory.length === 0 &&
-    !carryingShopVac(gameState)
+    thePlayer.carriedMachine == null &&
+    thePlayer.inventory.length === 0 &&
+    !carryingShopVac(cleaningGear(game))
   );
 }
 
@@ -115,11 +125,10 @@ export function machineCanOperateNow(
   game: Game,
   entity: MachineEntity,
 ): boolean {
-  const gameState = projectGameState(game);
   return machineCanOperate(
     entity.view(),
-    shopSupply(gameState),
-    gameState.progression,
+    shopSupplyNow(game),
+    projectProgression(game),
   );
 }
 
@@ -129,8 +138,7 @@ export function machineCanOperateNow(
 
 /** Hoists a placed machine onto the player's shoulders. */
 export function pickUpMachine(game: Game, entity: MachineEntity): boolean {
-  const gameState = projectGameState(game);
-  if (!canPickUpMachine(gameState, entity.state)) {
+  if (!canPickUpMachine(carryFacts(game), entity.state)) {
     console.warn("Tried to pick up a machine that can't be carried");
     return false;
   }
@@ -144,7 +152,6 @@ export function pickUpMachine(game: Game, entity: MachineEntity): boolean {
 
 /** Unpacks the crate at hand (underfoot or a neighboring cell). */
 export function pickUpCrate(game: Game): boolean {
-  const gameState = projectGameState(game);
   const thePlayer = player(game);
   let crate: MachineCrateEntity | null = null;
   for (const candidate of game.entities.byConstructor(MachineCrateEntity)) {
@@ -153,7 +160,7 @@ export function pickUpCrate(game: Game): boolean {
       break;
     }
   }
-  if (!crate || !handsFree(gameState)) {
+  if (!crate || !handsFreeNow(game)) {
     console.warn("No crate underfoot, or hands are full");
     return false;
   }
@@ -167,10 +174,10 @@ export function pickUpCrate(game: Game): boolean {
 
 /** Sets the carried machine down with its operator cell underfoot. */
 export function putDownCarriedMachine(game: Game): boolean {
-  const gameState = projectGameState(game);
   const thePlayer = player(game);
+  const person = projectPerson(game);
   const carried = thePlayer.carriedMachine;
-  const placement = carriedMachinePlacement(gameState);
+  const placement = carriedMachinePlacement({ player: person });
   if (!carried || !placement) {
     console.warn("No machine on the shoulders to set down");
     return false;
@@ -180,8 +187,7 @@ export function putDownCarriedMachine(game: Game): boolean {
   const fits =
     !occupied.some(
       (cell) =>
-        cell[0] === gameState.player.position[0] &&
-        cell[1] === gameState.player.position[1],
+        cell[0] === person.position[0] && cell[1] === person.position[1],
     ) &&
     canPlaceMachine(
       game.entities.getSingleton(ShopGrid).cellMap(),
@@ -260,13 +266,12 @@ function takeFromBay(
   entity: MachineEntity,
   bay: "inputMaterials" | "outputMaterials" | "storedMaterials",
 ): boolean {
-  const gameState = projectGameState(game);
   const thePlayer = player(game);
-  if (heldTool(gameState) !== null) {
+  if (heldTool(cleaningGear(game)) !== null) {
     console.warn("Tried to take materials while holding a tool");
     return false;
   }
-  if (materials.length > handSpaceLeft(gameState.player)) {
+  if (materials.length > handSpaceLeft(projectPerson(game))) {
     console.warn("Tried to take more than the hands can carry");
     return false;
   }
@@ -355,16 +360,16 @@ export function setMachineOperation(
   operation: Operation,
   parameters?: ParameterValues,
 ): boolean {
-  const gameState = projectGameState(game);
+  const progression = projectProgression(game);
   const machine = entity.view();
   const isBenchPlan =
     isBenchType(machine.type) &&
-    unlockedBenchPlans(gameState.progression).some(
+    unlockedBenchPlans(progression).some(
       (plan) => plan.operation === operation,
     );
   if (
     !isBenchPlan &&
-    !availableOperations(machine, gameState.progression).includes(operation)
+    !availableOperations(machine, progression).includes(operation)
   ) {
     throw new Error("Tried to set machine operation to invalid operation");
   }
@@ -440,7 +445,7 @@ export function operateMachine(
   entity: MachineEntity,
   toolClaim?: BenchToolClaim,
 ): boolean {
-  const gameState = projectGameState(game);
+  const progression = projectProgression(game);
   const machine = entity.view();
   const machineState = entity.state;
 
@@ -448,7 +453,7 @@ export function operateMachine(
     console.warn("Machine is already operating");
     return false;
   }
-  if (isNight(gameState)) {
+  if (isNight(game.entities.getSingleton(Clock))) {
     console.warn("Shop's closed for the night");
     return false;
   }
@@ -463,12 +468,7 @@ export function operateMachine(
     operation: Operation,
     updates: Partial<MachineState>,
   ) => {
-    const [firstPhase] = getOperationPhases(
-      operation,
-      gameState.progression,
-      machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-      stationWorkSpeed(machine, gameState),
-    );
+    const [firstPhase] = operationPhasesNow(game, machine, operation);
     entity.state = {
       ...machineState,
       ...updates,
@@ -482,7 +482,7 @@ export function operateMachine(
   };
 
   if (toolClaim) {
-    const operation = availableOperations(machine, gameState.progression).find(
+    const operation = availableOperations(machine, progression).find(
       (op) => op.id === toolClaim.operationId,
     );
     const material = [
@@ -506,12 +506,12 @@ export function operateMachine(
       return false;
     }
     const consumableCosts = operation.requiredConsumables ?? [];
-    if (!hasConsumables(gameState.consumables, consumableCosts)) {
+    if (!hasConsumables(consumables.stock, consumableCosts)) {
       console.warn("Tried to perform operation without required supplies");
       return false;
     }
     if (
-      clampsFor(operation) > clampsFree(gameState.clamps, gameState.machines)
+      clampsFor(operation) > clampsFree(consumables.clamps, machineStatesNow(game))
     ) {
       console.warn("Tried to perform operation without enough free clamps");
       return false;
@@ -537,7 +537,7 @@ export function operateMachine(
   if (machine.type.directFeed) {
     const match = findFeedableOperation(
       machine,
-      availableOperations(machine, gameState.progression),
+      availableOperations(machine, progression),
       machineState.inputMaterials,
     );
     if (!match) {
@@ -555,13 +555,13 @@ export function operateMachine(
       return false;
     }
     const consumableCosts = match.operation.requiredConsumables ?? [];
-    if (!hasConsumables(gameState.consumables, consumableCosts)) {
+    if (!hasConsumables(consumables.stock, consumableCosts)) {
       console.warn("Tried to perform operation without required supplies");
       return false;
     }
     if (
       clampsFor(match.operation) >
-      clampsFree(gameState.clamps, gameState.machines)
+      clampsFree(consumables.clamps, machineStatesNow(game))
     ) {
       console.warn("Tried to perform operation without enough free clamps");
       return false;
@@ -654,13 +654,13 @@ export function operateMachine(
   }
 
   const consumableCosts = selectedOperation.requiredConsumables ?? [];
-  if (!hasConsumables(gameState.consumables, consumableCosts)) {
+  if (!hasConsumables(consumables.stock, consumableCosts)) {
     console.warn("Tried to perform operation without required supplies");
     return false;
   }
   if (
     clampsFor(selectedOperation, materialsToConsume) >
-    clampsFree(gameState.clamps, gameState.machines)
+    clampsFree(consumables.clamps, machineStatesNow(game))
   ) {
     console.warn("Tried to perform operation without enough free clamps");
     return false;
@@ -684,7 +684,6 @@ export function operateMachine(
  * phase and hands the rest to the tick.
  */
 export function finishAttendedWork(game: Game, entity: MachineEntity): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   if (machineState.operationProgress.status !== "inProgress") {
     console.warn("No interactive work in progress to finish");
@@ -698,23 +697,13 @@ export function finishAttendedWork(game: Game, entity: MachineEntity): boolean {
     console.warn("The running operation has no interactive script");
     return false;
   }
-  if (
-    !playerAttendsMachine(
-      live,
-      gameState.player.position,
-      gameState.player.away !== null,
-    )
-  ) {
+  const person = projectPerson(game);
+  if (!playerAttendsMachine(live, person.position, person.away !== null)) {
     console.warn("Can't finish hand work from across the shop");
     return false;
   }
 
-  const phases = getOperationPhases(
-    operation,
-    gameState.progression,
-    machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-    stationWorkSpeed(live, gameState),
-  );
+  const phases = operationPhasesNow(game, live, operation);
   const { phaseIndex } = machineState.operationProgress;
   if (phases[Math.min(phaseIndex, phases.length - 1)].attended === false) {
     console.warn("The hands-free phase finishes on its own — let it cure");

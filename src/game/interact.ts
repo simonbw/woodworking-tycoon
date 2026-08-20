@@ -1,13 +1,14 @@
 import { CellMap } from "./CellMap";
-import { GameState, MaterialPile } from "./GameState";
-import { heldTool } from "./HeldTool";
+import { MaterialPile } from "./GameState";
+import { CleaningGear, heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
 import { atStand } from "./stand";
 import { Machine, machineKey } from "./Machine";
 import { getMaterialName } from "./material-helpers";
 import { MaterialInstance } from "./Materials";
-import { handSpaceLeft } from "./Person";
+import { handSpaceLeft, Person } from "./Person";
 import { pileWithinReach } from "./pile-helpers";
+import { ShopInfo } from "./ShopInfo";
 import { chebyshevDistance } from "./Vectors";
 import { mod } from "../utils/mathUtils";
 
@@ -69,6 +70,24 @@ export function materialSourceKey(source: MaterialSource): string {
   }
 }
 
+
+/**
+ * What the interact resolvers read — a structural slice of `GameState`
+ * (issue #230, phase 4). The floor's cell index travels alongside as an
+ * explicit `CellMap` argument: snapshot holders build one with
+ * `CellMap.fromGameState`, live callers pass the ShopGrid's.
+ */
+export interface InteractFacts extends CleaningGear {
+  readonly player: Pick<
+    Person,
+    "away" | "carriedMachine" | "position" | "inventory"
+  >;
+  readonly materialPiles: ReadonlyArray<MaterialPile>;
+  readonly truck: { readonly bed: ReadonlyArray<MaterialInstance> };
+  readonly stand: ReadonlyArray<MaterialInstance>;
+  readonly shopInfo: ShopInfo;
+}
+
 /**
  * Why the material verbs (take, pick up) are off right now: a tool
  * committing the hands, or arms already at capacity. Null when the hands
@@ -76,7 +95,7 @@ export function materialSourceKey(source: MaterialSource): string {
  * they can't offer, so a full-handed player standing over stock reads
  * "arms full" instead of silence.
  */
-export function takeBlockedReason(gameState: GameState): string | null {
+export function takeBlockedReason(gameState: InteractFacts): string | null {
   switch (heldTool(gameState)) {
     case "broom":
       return "put the broom down first";
@@ -95,7 +114,8 @@ export function takeBlockedReason(gameState: GameState): string | null {
  * can sit where the verb would have.
  */
 export function materialSources(
-  gameState: GameState,
+  gameState: InteractFacts,
+  cellMap: CellMap,
   targetedMachine: Machine | undefined,
   ignoreHands = false,
 ): ReadonlyArray<MaterialSource> {
@@ -108,7 +128,6 @@ export function materialSources(
   // verbs aside: the chip never offers a pickup the action would refuse.
   if (!ignoreHands && takeBlockedReason(gameState) !== null) return [];
 
-  const cellMap = CellMap.fromGameState(gameState);
   const cell = cellMap.at(gameState.player.position);
 
   const candidates = dedupeMachines(
@@ -167,11 +186,12 @@ export function materialSources(
  * pieces alone. `null` when that source isn't in reach at all.
  */
 export function offsetForSource(
-  gameState: GameState,
+  gameState: InteractFacts,
+  cellMap: CellMap,
   targetedMachine: Machine | undefined,
   source: MaterialSource,
 ): number | null {
-  const sources = materialSources(gameState, targetedMachine);
+  const sources = materialSources(gameState, cellMap, targetedMachine);
   const piles = sources.filter((entry) => entry.kind === "floor-pile");
   const ring = sources.length > piles.length ? sources : piles;
   const key = materialSourceKey(source);
@@ -181,7 +201,9 @@ export function offsetForSource(
 
 /** The leaning broom is a step away — where the pick-up offer (or the
  * note explaining why the hands can't take it) belongs. */
-export function broomWithinReach(gameState: GameState): boolean {
+export function broomWithinReach(
+  gameState: Pick<InteractFacts, "broomOwned" | "broomPosition" | "player">,
+): boolean {
   return (
     gameState.broomOwned &&
     gameState.broomPosition !== null &&
@@ -200,7 +222,8 @@ function dedupeMachines(machines: ReadonlyArray<Machine>): Machine[] {
 }
 
 export function resolveInteract(
-  gameState: GameState,
+  gameState: InteractFacts,
+  cellMap: CellMap,
   targetedMachine: Machine | undefined,
   sourceOffset = 0,
 ): InteractAction | null {
@@ -208,7 +231,7 @@ export function resolveInteract(
     return null;
   }
 
-  const sources = materialSources(gameState, targetedMachine);
+  const sources = materialSources(gameState, cellMap, targetedMachine);
   const piles = sources
     .filter((source) => source.kind === "floor-pile")
     .map((source) => source.pile);

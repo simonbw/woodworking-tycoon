@@ -187,3 +187,31 @@ export interface GameState {
    */
   readonly pendingPayouts?: ReadonlyArray<PayoutEvent>;
 }
+
+/**
+ * What the tutorial, unlock, and manual predicates read (issue #230,
+ * phase 4): the "assorted facts" slice of the shop — what it owns, what
+ * it has earned, what the player carries — structurally a subset of
+ * `GameState`, so a snapshot passes as-is while the sim assembles it
+ * from singleton reads (`projectTutorialFacts` in sim/projection.ts)
+ * without paying for the full projection. The clock, the customers, the
+ * shop's geometry, and the body's motion are deliberately absent: no
+ * predicate reads them.
+ */
+export interface TutorialFacts {
+  readonly money: number;
+  readonly reputation: number;
+  readonly clamps: number;
+  readonly consumables: ConsumableStock;
+  readonly materialPiles: ReadonlyArray<MaterialPile>;
+  readonly machines: ReadonlyArray<MachineState>;
+  readonly machineCrates: ReadonlyArray<MachineCrate>;
+  readonly truck: TruckState;
+  readonly player: Pick<Person, "inventory" | "away" | "carriedMachine">;
+  readonly progression: ProgressionState;
+  readonly stand: ReadonlyArray<MaterialInstance>;
+  readonly dust: DustMap;
+  readonly shopVac: ShopVacState | null;
+  readonly broomOwned: boolean;
+  readonly dustpan: SpeciesAmounts;
+}

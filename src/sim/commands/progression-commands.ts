@@ -3,7 +3,7 @@ import { TutorialTrackId } from "../../game/GameState";
 import { ManualArticleId } from "../../game/manual";
 import { SKILL_TYPES, SkillId } from "../../game/Skill";
 import { hasSkill } from "../../game/skill-helpers";
-import { projectGameState } from "../projection";
+import { projectProgression } from "../projection";
 import { Progression } from "../singletons/Progression";
 import { TutorialTracker } from "../singletons/TutorialTracker";
 
@@ -47,22 +47,18 @@ export function dismissTutorial(game: Game, trackId: TutorialTrackId): void {
 
 /** Spends one skill point to unlock a skill whose prerequisites are met. */
 export function spendSkillPoint(game: Game, skillId: SkillId): boolean {
-  const gameState = projectGameState(game);
+  const current = projectProgression(game);
   const skill = SKILL_TYPES[skillId];
 
-  if (hasSkill(gameState.progression, skillId)) {
+  if (hasSkill(current, skillId)) {
     console.warn(`Skill ${skillId} is already unlocked`);
     return false;
   }
-  if (gameState.progression.skillPoints < 1) {
+  if (current.skillPoints < 1) {
     console.warn("No skill points to spend");
     return false;
   }
-  if (
-    !skill.requires.every((required) =>
-      hasSkill(gameState.progression, required),
-    )
-  ) {
+  if (!skill.requires.every((required) => hasSkill(current, required))) {
     console.warn(`Skill ${skillId} is missing prerequisites`);
     return false;
   }

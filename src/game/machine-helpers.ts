@@ -23,6 +23,7 @@ import {
   StockOrientation,
 } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
+import { Person } from "./Person";
 import { selectedBenchPlan } from "./bench-work/tool-work";
 import { isBoard } from "./board-helpers";
 import {
@@ -179,17 +180,17 @@ export function playerAttendsMachine(
 export function operationAttendanceSatisfied(
   machine: Machine,
   operation: Operation,
-  gameState: GameState,
+  attending: Pick<Person, "position" | "away" | "operating">,
 ): boolean {
   const interactive = operation.interaction != null;
   return (
     !interactive &&
     ((playerAttendsMachine(
       machine,
-      gameState.player.position,
-      gameState.player.away !== null,
+      attending.position,
+      attending.away !== null,
     ) &&
-      gameState.player.operating === true) ||
+      attending.operating === true) ||
       operation.powerFeed === true) &&
     machine.isPowered
   );

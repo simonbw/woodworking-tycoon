@@ -31,8 +31,15 @@ export const SHOP_VAC_DRAG_PENALTY = 1;
  * a full canister is a real pour, not a blink. */
 export const SHOP_VAC_EMPTY_RATE = 30;
 
-export function carryingShopVac(gameState: GameState): boolean {
-  return gameState.shopVac !== null && gameState.shopVac.position === null;
+/** What `carryingShopVac` actually reads — a structural slice of
+ * `GameState`, so snapshot holders pass the state itself and the sim
+ * assembles the slice from the vac entity (issue #230, phase 4). */
+export interface ShopVacCarry {
+  readonly shopVac: Pick<ShopVacState, "position"> | null;
+}
+
+export function carryingShopVac(facts: ShopVacCarry): boolean {
+  return facts.shopVac !== null && facts.shopVac.position === null;
 }
 
 export function canisterRoom(vac: ShopVacState): number {

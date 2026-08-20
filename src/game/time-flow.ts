@@ -1,4 +1,5 @@
 import { stationWorkSpeed } from "./bench-mounting";
+import { CellMap } from "./CellMap";
 import { machineDustMultiplier } from "./Dust";
 import { GameState } from "./GameState";
 import { heldTool } from "./HeldTool";
@@ -65,14 +66,21 @@ import { dayPhase, DayPhase, TICKS_PER_DAY } from "./time";
  */
 export type TimeSpeed = "waiting" | "working" | "idle" | "stopped";
 
+/** What the clock questions actually read — a structural slice of
+ * `GameState` that the Clock singleton also satisfies. */
+export interface ClockFacts {
+  readonly tick: number;
+  readonly dayStartTick: number;
+}
+
 /** How many of today's working minutes have been spent. */
-export function dayTicksSpent(gameState: GameState): number {
-  return gameState.tick - gameState.dayStartTick;
+export function dayTicksSpent(clock: ClockFacts): number {
+  return clock.tick - clock.dayStartTick;
 }
 
 /** Where today stands, morning through night. */
-export function currentDayPhase(gameState: GameState): DayPhase {
-  return dayPhase(dayTicksSpent(gameState));
+export function currentDayPhase(clock: ClockFacts): DayPhase {
+  return dayPhase(dayTicksSpent(clock));
 }
 
 /**
@@ -81,8 +89,8 @@ export function currentDayPhase(gameState: GameState): DayPhase {
  * the day just doesn't end until you drive home), but nothing new
  * starts and idle time stops passing.
  */
-export function isNight(gameState: GameState): boolean {
-  return dayTicksSpent(gameState) >= TICKS_PER_DAY;
+export function isNight(clock: ClockFacts): boolean {
+  return dayTicksSpent(clock) >= TICKS_PER_DAY;
 }
 
 /**
@@ -103,14 +111,14 @@ function machineSpendsTime(gameState: GameState, machine: Machine): boolean {
   if (!operation) {
     return false;
   }
-  if (!operationAttendanceSatisfied(machine, operation, gameState)) {
+  if (!operationAttendanceSatisfied(machine, operation, gameState.player)) {
     return false;
   }
   const phases = getOperationPhases(
     operation,
     gameState.progression,
     machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-    stationWorkSpeed(machine, gameState),
+    stationWorkSpeed(machine, CellMap.fromGameState(gameState)),
   );
   const { phaseIndex, ticksRemaining } = machineState.operationProgress;
   const phase =

@@ -8,7 +8,9 @@ import { cellCenter } from "../../game/player-motion";
 import { Vector } from "../../game/Vectors";
 import { MaterialPileEntity } from "../entities/MaterialPileEntity";
 import { Player } from "../entities/Player";
-import { projectGameState } from "../projection";
+import { projectPerson } from "../projection";
+import { ShopInfo } from "../singletons/ShopInfo";
+import { cleaningGear } from "./cleaning-commands";
 import { emitSound } from "./sound";
 
 /**
@@ -27,17 +29,17 @@ export function pickUpMaterial(
   game: Game,
   piles: ReadonlyArray<MaterialPileEntity>,
 ): boolean {
-  const gameState = projectGameState(game);
+  const person = projectPerson(game);
   // A tool in hand commits the hands — lean the broom (or park the
   // vac) before picking stock up. Enforced here, not just in the
   // keyboard layer, so sequence tests obey the same physics.
-  if (heldTool(gameState) !== null) {
+  if (heldTool(cleaningGear(game)) !== null) {
     console.warn("Tried to pick up material while holding a tool");
     return false;
   }
   // The arms hold HAND_CAPACITY pieces; a load that doesn't fit is
   // refused whole, the same way a machine's bay refuses an overfill.
-  if (piles.length > handSpaceLeft(gameState.player)) {
+  if (piles.length > handSpaceLeft(person)) {
     console.warn("Tried to pick up more than the hands can carry");
     return false;
   }
@@ -45,7 +47,7 @@ export function pickUpMaterial(
     // Reach is geometric: the piece's resting footprint must come within
     // arm's reach of the player's cell (see pileWithinReach), so long
     // stock is grabbable anywhere along its length.
-    if (!pileWithinReach(pile.pile, gameState.player.position)) {
+    if (!pileWithinReach(pile.pile, person.position)) {
       console.warn("Tried to pick up material from wrong position");
       return false;
     }
@@ -79,25 +81,25 @@ export function dropMaterial(
   at?: Vector,
   rotation: number = 0,
 ): boolean {
-  const gameState = projectGameState(game);
-  const position = at ?? cellCenter(gameState.player.position);
+  const thePlayer = player(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
+  const position = at ?? cellCenter(thePlayer.cell);
   // Piles live on the shop floor; the lot is walkable ground and nothing
   // else. What's carried stays in hand until the player is back inside
   // (or at the truck's bed, where F loads instead).
   if (
-    isOutdoors(gameState.shopInfo, gameState.player.position) ||
-    position[1] >= gameState.shopInfo.size[1]
+    isOutdoors(shopInfo, thePlayer.cell) ||
+    position[1] >= shopInfo.size[1]
   ) {
     console.warn("Tried to drop material outside the shop");
     return false;
   }
   for (const material of materials) {
-    if (!gameState.player.inventory.some((item) => item === material)) {
+    if (!thePlayer.inventory.some((item) => item === material)) {
       console.warn("Tried to drop material not in inventory");
       return false;
     }
   }
-  const thePlayer = player(game);
   thePlayer.inventory = thePlayer.inventory.filter(
     (item) => !materials.includes(item),
   );

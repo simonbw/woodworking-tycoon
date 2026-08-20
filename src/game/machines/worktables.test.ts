@@ -177,7 +177,7 @@ describe("moving and removing tables", () => {
 
   it("reports machines mounted on a table", () => {
     const state = stateWith({ machines: [table, saw] });
-    assert.strictEqual(machinesMountedOnTable(state, 0).length, 1);
-    assert.strictEqual(machinesMountedOnTable(state, 1).length, 0);
+    assert.strictEqual(machinesMountedOnTable(state.machines, 0).length, 1);
+    assert.strictEqual(machinesMountedOnTable(state.machines, 1).length, 0);
   });
 });

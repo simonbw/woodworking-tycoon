@@ -1,9 +1,7 @@
-import { stationWorkSpeed } from "../../../game/bench-mounting";
-import { machineDustMultiplier } from "../../../game/Dust";
 import { Machine } from "../../../game/Machine";
-import { getOperationPhases } from "../../../game/skill-helpers";
 import { OperationPhase } from "../../../game/Machine";
-import { useShopState } from "../../useShell";
+import { operationPhasesNow } from "../../../sim/machine-reads";
+import { useGame } from "../../useShell";
 
 /**
  * Live progress of a machine's selected operation, derived once and
@@ -26,18 +24,11 @@ export interface OperationProgressView {
 }
 
 export function useOperationProgress(machine: Machine): OperationProgressView {
-  const gameState = useShopState();
+  const game = useGame();
 
   const operation = machine.selectedOperationOrNull;
   const isOperating = machine.operationProgress.status === "inProgress";
-  const phases = operation
-    ? getOperationPhases(
-        operation,
-        gameState.progression,
-        machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-        stationWorkSpeed(machine, gameState),
-      )
-    : [];
+  const phases = operation ? operationPhasesNow(game, machine, operation) : [];
 
   const { phaseIndex, ticksRemaining } = machine.operationProgress;
   const currentPhase = isOperating
