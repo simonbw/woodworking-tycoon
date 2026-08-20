@@ -1,6 +1,5 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
 import { GameState } from "../GameState";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
@@ -13,21 +12,13 @@ import {
   standFrontage,
   standRect,
 } from "../stand";
-import {
-  setOutAtStandAction,
-  standTickPass,
-  takeFromStandAction,
-} from "./stand-actions";
+import { standTickPass } from "./stand-actions";
 
 function shelf(): FinishedProduct {
   return makeMaterial<FinishedProduct>({
     type: "rusticShelf",
     species: "pallet",
   });
-}
-
-function rawBoard() {
-  return board();
 }
 
 /** The player standing beside the table, holding the given pieces. */
@@ -55,54 +46,6 @@ function tape(values: number[], rest = 0.99): () => number {
   let i = 0;
   return () => (i < values.length ? values[i++] : rest);
 }
-
-describe("setting work out", () => {
-  it("moves sellable pieces from the arms to the table", () => {
-    const piece = shelf();
-    const result = setOutAtStandAction([piece])(atTheStand([piece]));
-    assert.deepStrictEqual(result.stand, [piece]);
-    assert.deepStrictEqual(result.player.inventory, []);
-  });
-
-  it("refuses raw stock", () => {
-    const board = rawBoard();
-    const state = atTheStand([board]);
-    assert.strictEqual(setOutAtStandAction([board])(state), state);
-  });
-
-  it("refuses away from the stand", () => {
-    const piece = shelf();
-    const state: GameState = {
-      ...atTheStand([piece]),
-      player: {
-        ...atTheStand([piece]).player,
-        position: [2, 2],
-      },
-    };
-    assert.strictEqual(setOutAtStandAction([piece])(state), state);
-  });
-});
-
-describe("taking work back", () => {
-  it("returns the newest piece first", () => {
-    const first = shelf();
-    const second = shelf();
-    const state = atTheStand([], { stand: [first, second] });
-    const result = takeFromStandAction()(state);
-    assert.deepStrictEqual(result.player.inventory, [second]);
-    assert.deepStrictEqual(result.stand, [first]);
-  });
-
-  it("takes no more than the hands can hold", () => {
-    const pieces = [shelf(), shelf(), shelf()];
-    const held = [shelf(), shelf(), shelf()];
-    const state = atTheStand(held, { stand: pieces });
-    const result = takeFromStandAction(3)(state);
-    // Four is the cap and three are already in hand.
-    assert.strictEqual(result.player.inventory.length, 4);
-    assert.strictEqual(result.stand.length, 2);
-  });
-});
 
 describe("the street pass", () => {
   it("does nothing on a quiet street without burning state identity", () => {

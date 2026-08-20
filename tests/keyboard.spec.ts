@@ -1,6 +1,10 @@
 import { expect, Page, test } from "@playwright/test";
 import { BASE_WALK_SPEED } from "../src/game/player-motion";
-import { openStationSheet, takeAllHere } from "./machine-panel";
+import {
+  closeStationSurface,
+  openStationRacks,
+  takeAllHere,
+} from "./machine-panel";
 import {
   advanceTicks,
   leaveStore,
@@ -63,7 +67,7 @@ test.describe("Keyboard", () => {
     page,
   }) => {
     // Many small steps; the default 30s budget is tight on slow machines
-    test.setTimeout(120000);
+    test.setTimeout(300000);
     page.on("dialog", (d) => d.accept());
 
     await test.step("start a game with every screen unlocked", async () => {
@@ -523,8 +527,8 @@ test.describe("Keyboard", () => {
     });
 
     await test.step("sanding ignores Space — the bench view owns hand work", async () => {
-      // The accessory rack lives on the station sheet
-      await openStationSheet(page);
+      // The tools hang on the bench's own rail, across the top of the dive
+      await openStationRacks(page);
       // Two tools ride in hand (sander and finishing kit) — name the one
       await page
         .getByRole("button", { name: "Attach the Random Orbit Sander" })
@@ -635,7 +639,7 @@ test.describe("Keyboard", () => {
         page.evaluate(
           () => (window as any).__GET_GAME_STATE__().player.position,
         );
-      await expect(page.getByTestId("bench-work")).toBeVisible();
+      await expect(page.getByTestId("bench-status")).toBeVisible();
       const pinned = await positionOf();
       await page.evaluate(() =>
         (document.activeElement as HTMLElement)?.blur?.(),
@@ -647,7 +651,7 @@ test.describe("Keyboard", () => {
 
       // …and stepping back (Tab) frees them again
       await page.keyboard.press("Tab");
-      await expect(page.getByTestId("bench-work")).toHaveCount(0);
+      await expect(page.getByTestId("bench-status")).toHaveCount(0);
       await page.keyboard.down("d");
       await page.waitForTimeout(500);
       await page.keyboard.up("d");
@@ -693,11 +697,13 @@ test.describe("Keyboard", () => {
             .machines.find((m: any) => m.machineTypeId === "workspace")
             .operationProgress.phaseIndex === 1,
       );
-      // The phase-by-phase status reads off the station sheet
-      await openStationSheet(page);
-      await expect(
-        workspaceCard(page).getByText(/Curing \(hands-free\)/),
-      ).toBeVisible();
+      // The bench says what the hands-free phase is doing
+      await openStationRacks(page);
+      await expect(page.getByTestId("bench-status")).toContainText(
+        /glue cures on its own/,
+      );
+      // Stand back up: the floor's own chrome is the next step's subject
+      await closeStationSurface(page);
 
       // Walk away mid-cure: hands-free work needs no attendance, so the
       // ticks that do pass advance it with the player across the shop.

@@ -3,7 +3,7 @@
 Everything the shop brings home rides in the truck — the
 pickup backed up to the garage door on the walkable lot outside
 (`TruckPrompt`; lot geometry in `src/game/lot.ts`, and the camera
-follows the player out — `shop-view/CameraLayer`). This is the
+follows the player out — `src/views/CameraRig.ts`). This is the
 cross-cutting doc for the trip system, which spans the cab menu, the
 per-destination overlays, and the departure staging. Trips go out for
 shopping and scavenging; finished work never rides along — it sells
@@ -14,7 +14,7 @@ off the for-sale stand (`src/game/stand.ts`).
 `GameState.truck` is the bed's contents. Purchases and scavenged
 pallets ride home in it and are lifted out at the tailgate. Bought
 machines arrive crated in the bed the same way (see
-`src/game/game-actions/machine-actions.ts`) — the player carries them
+`src/sim/commands/machine-commands.ts`) — the player carries them
 into place; there is no separate layout editor.
 
 ## The cab menu
@@ -30,7 +30,7 @@ permitting.
 ## The Orange Box is a place you walk
 
 A trip to the store swaps the canvas from the shop to the store
-(`HomePage` → `components/store-view/StoreView`): the same walking
+(`shell/scenes/SceneDirector.ts` → `shell/scenes/StoreSceneRoot.ts`): the same walking
 body, camera, and canvas machinery drawing a different venue. The
 floor plan is a planogram generated from the registries
 (`src/game/store-layout.ts`), laid out in aisles: lumber and sheet
@@ -41,7 +41,7 @@ mini-aisles off aisle 1), full-size machine displays flanking aisle
 at the garage's own zoom (the camera pans both axes), and the front
 wall has separate entrance and exit openings with the wayfinding
 stenciled on the slab. The merchandise draws with the shop's own
-sprites (`StoreMerchandiseLayer`, cached as one texture because a
+sprites (`StoreMerchandiseView`, cached as one texture because a
 floor of procedural grain is heavy). The trip itself carries the
 shopper's cell (`ShoppingTrip.position` — `player.position` keeps
 meaning the cell underfoot back home), and the keys mirror the shop
@@ -52,16 +52,13 @@ a cart you're pushing: the trip starts cartless, and E at the corral
 of orange flatbeds by the entrance (`ShoppingTrip.hasCart`,
 `takeCartAction`) is the first stop. The flatbed's deck carries the
 load at world size, biggest pieces on the bottom
-(`StorePushCartSprite`). Outside, the lot runs the shop's own
-day/night model as a multiply mask (`StoreDaylightLayer`); the sales
+(`shell/scenes/store-views/flatbed.ts`). Outside, the lot runs the shop's own
+day/night model as a multiply mask (`shell/scenes/store-views/StoreDaylightView.ts`); the sales
 floor stays lit at every hour. How long a trip takes is how long you
 browse — the clock idles along under it (`time-flow.ts`).
 
 The lumberyard is still a menu overlay; it becomes the second walkable
 venue by running the same planogram generator with its own channels.
-The store's old menu overlay survives behind the `?website` URL flag
-as the future Orange Box website (issue #200) and is otherwise
-unreachable.
 
 ## A shopping trip ends at a register
 
@@ -69,7 +66,7 @@ Shelves fill a cart rather than transacting a tile at a time: the cart
 hangs off the `shopping` trip itself (`ShoppingTrip.cart`), so driving
 away is what empties it. The line shapes are in `src/game/cart.ts` and
 the fold through the ordinary buy actions is in
-`src/game/game-actions/cart-actions.ts` — those buy actions still own
+`src/sim/commands/cart-commands.ts` — those commands still own
 where a purchase lands, and the cart only decides when. At the
 walkable store the register opens a receipt card
 (`StoreCheckoutModal`): Buy pays, the goods land in the bed, and the
@@ -81,12 +78,12 @@ pays and drives home in one press.
 ## Departure and arrival staging
 
 Trips open and close with a pure-presentation departure/arrival
-performance: `truckStageStore` + `shop-view/TripTransitionLayer`, scored
-by the `truck-start`/`truck-arrive` clips. Nothing about the trip's
-state lives in the staging — it is a curtain, not a phase.
+performance: `shell/scenes/TripTheater.ts` holds the stage clock and the
+curtain, scored by the `truck-start`/`truck-arrive` clips. Nothing about
+the trip's state lives in the staging — it is a curtain, not a phase.
 
-Because it is a curtain, no game time passes behind it: the `Ticker`
-holds the clock while one is playing. What a trip costs is booked
+Because it is a curtain, no game time passes behind it: the clock is
+held while one is playing. What a trip costs is booked
 explicitly by its actions, so a curtain that also spent minutes would
 charge the drive twice — and a leg timed from the moment `away` flips
 would be half over before its overlay reached the screen.

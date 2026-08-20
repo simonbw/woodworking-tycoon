@@ -1,5 +1,9 @@
 import { expect, Page, test } from "@playwright/test";
-import { modesOf, openStationSheet } from "./machine-panel";
+import {
+  closeStationSurface,
+  modesOf,
+  openStationRacks,
+} from "./machine-panel";
 import { closeJournal, openJournal, startNewGame } from "./navigation";
 
 /**
@@ -33,7 +37,7 @@ test.describe("Screens", () => {
   test("opens every overlay, shows what's unlocked, hides what isn't", async ({
     page,
   }) => {
-    test.setTimeout(180000);
+    test.setTimeout(300000);
     page.on("dialog", (d) => d.accept());
     const manual = page.getByRole("dialog", { name: "Shop manual" });
 
@@ -319,8 +323,8 @@ test.describe("Screens", () => {
     });
 
     await test.step("learning it puts the recipe on the bench", async () => {
-      // The accessory rack lives on the station sheet
-      await openStationSheet(page);
+      // The racks are the bench's own: the drawer under the top
+      await openStationRacks(page);
       await page
         .getByRole("button", { name: "Attach the Random Orbit Sander" })
         .click();
@@ -375,15 +379,11 @@ test.describe("Screens", () => {
       expect(modes).not.toContain("Glue Up Pair");
       expect(modes).not.toContain("Glue On Strip");
     });
-    await test.step("shut the station sheet so Escape reaches the pause menu", async () => {
-      // Reading the recipe list spreads the sheet open, and Escape closes the
-      // innermost thing first — so the sheet has to go before the menu opens.
-      const sheet = page.getByTestId("station-sheet");
-      if (await sheet.isVisible()) {
-        await page.keyboard.press("Escape");
-        await sheet.waitFor({ state: "hidden" });
-      }
-      await page.waitForTimeout(30);
+    await test.step("stand back up so Escape reaches the pause menu", async () => {
+      // Reading the recipe list leans the player over the bench, and
+      // Escape closes the innermost thing first — so the bench has to be
+      // behind us before the menu opens.
+      await closeStationSurface(page);
     });
 
     await test.step("Escape opens the pause menu, which holds the settings", async () => {

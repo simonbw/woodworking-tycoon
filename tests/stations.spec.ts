@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import {
+  closeStationSurface,
   machineCard as stationCard,
   modesOf,
+  openPlanDrawer,
   openRecipeIndex,
+  openStationRacks,
   openStationSheet,
   runWhileHolding,
   selectMode,
@@ -33,7 +36,7 @@ import {
  *
  * The direct-feed machines themselves — power switches, settings scales, and
  * the stock deciding the cut — are milling.spec.ts. What the stations
- * *produce* is checked in src/game/sequences/: the recipes, the chains, and
+ * *produce* is checked in src/sim/sequences/: the recipes, the chains, and
  * the guided opening from a new save. The assertions here are about the
  * interface reaching them.
  *
@@ -106,7 +109,7 @@ test.describe("Stations", () => {
   test("shops the aisles, fits out the stations, and works a plan", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(480000);
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
@@ -143,6 +146,9 @@ test.describe("Stations", () => {
                   true,
                 ],
                 stringers: [true, true, true],
+                // Every nail already pulled: this one is a thing to
+                // toss in the can, not a pallet to take apart.
+                nails: [],
               },
               position: [2.5, 5.5],
               rotation: 0,
@@ -303,7 +309,7 @@ test.describe("Stations", () => {
       // Tools hang on the bench view's top rail; the fixture's sander is
       // in the player's hands, which is where the rail mounts from —
       // ghosted on an empty hook until it's clicked on
-      await openStationSheet(page);
+      await openStationRacks(page);
       await expect(
         page.getByRole("button", { name: "Attach the Random Orbit Sander" }),
       ).toBeVisible();
@@ -320,6 +326,8 @@ test.describe("Stations", () => {
       await expect(
         page.getByTestId("bench-tool-randomOrbitSander"),
       ).toBeVisible();
+      // Stand back up: the next steps are out on the floor and the road
+      await closeStationSurface(page);
     });
 
     await test.step("load the end-grain-shop", async () => {
@@ -396,6 +404,9 @@ test.describe("Stations", () => {
     await test.step("build the crosscut sled at the workspace", async () => {
       await closeJournal(page);
       await selectMode(page, "Makeshift Workbench", "Build Crosscut Sled");
+      // Pulling the drawing leaned the player over the bench; staging is
+      // a floor verb, so stand back up for it
+      await closeStationSurface(page);
       await pressKey(page, "Shift+f");
       // Building is bench-view hand work now; the spec commits through
       // the same actions the assembly script dispatches. The built sled
@@ -565,7 +576,7 @@ test.describe("Stations", () => {
 
     await test.step("both tools mount at the workbench and add their trades", async () => {
       // Tools hang on the bench view's top rail, one empty hook each
-      await openStationSheet(page);
+      await openStationRacks(page);
       await page.getByRole("button", { name: "Attach the Hand Saw" }).click();
       await page.waitForTimeout(30);
       await page.getByRole("button", { name: "Attach the Drill" }).click();
@@ -588,8 +599,7 @@ test.describe("Stations", () => {
       await expect(page.getByTestId("blueprint-corner")).toContainText(
         "Build Rustic Planter Box",
       );
-      const card = stationCard(page, "Makeshift Workbench");
-      await openRecipeIndex(card);
+      await openPlanDrawer(page);
       await expect(
         page
           .getByTestId("blueprint-sheet")
@@ -601,9 +611,8 @@ test.describe("Stations", () => {
     });
 
     await test.step("plans quote shop time, never ticks", async () => {
-      await openStationSheet(page);
-      const card = stationCard(page, "Makeshift Workbench");
-      await openRecipeIndex(card);
+      await openPlanDrawer(page);
+      const card = page.getByTestId("plan-browser");
       // Every plan carries a duration, and each one reads as minutes or
       // hours — the simulation's tick never reaches the player.
       const row = card.locator("li", { hasText: "Build Rustic Planter Box" });

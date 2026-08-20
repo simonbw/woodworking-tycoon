@@ -2,21 +2,26 @@
 
 How the player targets and acts on things in the shop view — the
 highlight, the hint chips, the station sheets, and the mouse's role.
-This is the cross-cutting doc for a system that spans the DOM overlay
-(`src/components/shop-overlay/`), the station chrome
-(`src/components/station/`), the shortcut registry
-(`src/game/shortcuts.ts`), and the shop view's hit-testing. The bench
+This is the cross-cutting doc for a system that spans the world-pinned
+DOM overlay (`src/shell/hud/overlay/`), the station chrome
+(`src/shell/hud/station/`), the keys (`src/game/shortcuts.ts` for the
+registry, `src/shell/dispatch/` for what answers them), and the
+canvas-side hit-testing (`src/views/MousePicking.ts`). The bench
 view's pointer-as-hand interaction is its own system — see
 `docs/bench-work.md`.
 
 ## Standing at things
 
 The machine the player stands at is highlighted in the shop view (an
-amber outline shader, `shop-view/targetHighlight.ts`) and wears hint
+amber outline shader, `src/views/TargetHighlightView.ts`) and wears hint
 chips naming its live keys (E interacts, F sets stock down, hold Space
 to run a power machine, Z/X and R for its settings). The pile E would
-pick up wears the same outline with its own `[E] pick up` chip. A hint
-cluster follows the player for the remaining floor verbs.
+pick up wears the same outline with its own `[E] pick up` chip. So do
+the stand and the truck, aimed at whatever the keys would move: the
+table when F would set work out on it, the cargo box when the bed is
+what's being loaded or unpacked, the whole truck when E would open the
+cab, and a single piece on its own when E would take that one back. A
+hint cluster follows the player for the remaining floor verbs.
 
 Which of those a station actually wears depends on whether it's worked
 from the floor at all (`Machine.hasFloorControls`). A direct-feed machine
@@ -44,16 +49,20 @@ already reach:
 
 - Hovering a reachable machine or a piece of stock in reach makes it
   the target (the pointing version of the G/R cycle keys).
+- Left-click on a station makes it the target too, and clicking the one
+  already targeted opens it — its sheet, or the lean over a bench's work
+  surface.
 - Right-click opens whatever is under it: a station's sheet, or a card
-  listing every piece in reach (`shop-overlay/FloorSheet.tsx`), since a
+  listing every piece in reach (`shell/hud/overlay/FloorSheet.tsx`), since a
   stack is otherwise opaque from above.
 - In the bench view, where the pointer _is_ the hand, right-click
   instead puts back whatever it's holding.
 
-Machines are hit-tested through invisible footprint shapes drawn under
-the loose stock (`shop-view/MachineHitTargets.tsx`) — texture art has
-no geometry to test against, and a board lying across a machine should
-outrank it.
+Machines are hit-tested against their footprints rather than their art
+(`src/views/MousePicking.ts`), because texture art has no geometry to
+test against. The floor's loose stock is tested first, and a hit there
+ends the search: a board lying across a machine's footprint is what
+you're pointing at, not the machine beneath it.
 
 ## Bindings teach themselves
 

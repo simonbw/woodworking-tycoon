@@ -83,7 +83,7 @@ Operations run as a list of **phases**, each `{ name, duration,
 attended }`. An op that declares no phases is one attended stretch of
 hand work — the default.
 
-The rules (in `tickAction`):
+The rules (in `src/sim/systems/MachineSystem.ts`):
 
 1. An **attended** phase only ticks while the player stands at the
    machine's operation cell (and isn't away). Otherwise it pauses —

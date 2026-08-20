@@ -52,10 +52,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Default is half the cores, which was right when each worker pegged a
-  // core rendering. With the render loop capped (see webServer below) a
-  // worker is mostly idle, so more of them pack the suite tighter.
-  workers: process.env.CI ? 1 : "80%",
+  // One at a time. Every Playwright action against this game waits for a
+  // frame, and headless Chromium draws the shop without a GPU: two specs
+  // at once halve each other's frame rate, which turns each action's wait
+  // into a stall and pushes the fat specs past budgets that are generous
+  // when they run alone. Serial is slower on the wall clock and much
+  // steadier — and the specs are what a change is judged by.
+  workers: 1,
   reporter: "list",
   outputDir,
   globalTeardown: "./tests/global-teardown.ts",

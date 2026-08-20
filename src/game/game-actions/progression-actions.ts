@@ -1,4 +1,4 @@
-import { GameAction, TutorialTrackId } from "../GameState";
+import { GameAction } from "../GameState";
 import { ManualArticleId, MANUAL_ARTICLES } from "../manual";
 import { UNLOCK_CONDITIONS } from "../progression-helpers";
 import { advanceTutorials } from "../tutorial";
@@ -17,24 +17,6 @@ export function markArticlesReadAction(
       progression: {
         ...gameState.progression,
         readArticles: [...gameState.progression.readArticles, ...unread],
-      },
-    };
-  };
-}
-
-/** The player retired a tutorial card early. One way, like an unlock. */
-export function dismissTutorialAction(trackId: TutorialTrackId): GameAction {
-  return (gameState) => {
-    const progress = gameState.progression.tutorials[trackId];
-    if (progress.dismissed) return gameState;
-    return {
-      ...gameState,
-      progression: {
-        ...gameState.progression,
-        tutorials: {
-          ...gameState.progression.tutorials,
-          [trackId]: { ...progress, dismissed: true },
-        },
       },
     };
   };

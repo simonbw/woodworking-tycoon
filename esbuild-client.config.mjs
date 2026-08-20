@@ -100,7 +100,10 @@ process.on("exit", (code) => {
 
 const context = await esbuild
   .context({
-    entryPoints: ["src/index.tsx", "src/styles/index.css"],
+    entryPoints: [
+      "src/engine-main.ts",
+      "src/styles/index.css",
+    ],
     bundle: true,
     minify,
     sourcemap,

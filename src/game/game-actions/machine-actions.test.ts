@@ -5,15 +5,10 @@ import { GameState } from "../GameState";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import {
-  canPutDownCarriedMachine,
-  carriedMachinePlacement,
   deliverMachineCrate,
   explainUnpackRefusal,
   freshMachineState,
-  pickUpCrateAction,
   pickUpMachineAction,
-  putDownCarriedMachineAction,
-  rotateCarriedMachineAction,
 } from "./machine-actions";
 import { BASE_WALK_SPEED, playerWalkSpeed } from "../player-motion";
 
@@ -89,36 +84,12 @@ describe("pickUpMachineAction", () => {
   });
 });
 
-describe("pickUpCrateAction", () => {
-  it("unpacks the crate underfoot into the player's arms", () => {
-    const machine = freshMachineState("miterSaw", initialGameState.progression);
-    const state = stateWith({
-      machineCrates: [{ machine, position: [2, 5] }],
-      player: { ...initialGameState.player, position: [2, 5] },
-    });
-    const result = pickUpCrateAction()(state);
-    assert.strictEqual(result.machineCrates.length, 0);
-    assert.strictEqual(result.player.carriedMachine, machine);
-  });
-
-  it("does nothing without a crate underfoot", () => {
-    const machine = freshMachineState("miterSaw", initialGameState.progression);
-    const state = stateWith({
-      machineCrates: [{ machine, position: [2, 5] }],
-      player: { ...initialGameState.player, position: [0, 0] },
-    });
-    assert.strictEqual(pickUpCrateAction()(state), state);
-  });
-});
-
 describe("explainUnpackRefusal", () => {
   it("has nothing to say with empty hands", () => {
     assert.strictEqual(explainUnpackRefusal(initialGameState), null);
   });
 
   it("agrees with the action about an armload", () => {
-    // The same test the unpack actions run, so the chip's reason and the
-    // key's refusal can never drift apart.
     const holding = stateWith({
       player: { ...initialGameState.player, inventory: [board("pine", 12)] },
     });
@@ -126,7 +97,6 @@ describe("explainUnpackRefusal", () => {
       explainUnpackRefusal(holding),
       "empty your hands to unpack",
     );
-    assert.strictEqual(pickUpCrateAction()(holding), holding);
   });
 
   it("names the vac when it's the thing in hand", () => {
@@ -135,78 +105,6 @@ describe("explainUnpackRefusal", () => {
       explainUnpackRefusal(dragging),
       "set the vac down to unpack",
     );
-  });
-});
-
-describe("putting the carried machine down", () => {
-  const carryingState = (
-    carried: MachineState,
-    playerOverrides: Partial<GameState["player"]> = {},
-  ) =>
-    stateWith({
-      machines: [],
-      player: {
-        ...initialGameState.player,
-        position: [5, 5],
-        direction: 0,
-        carriedMachine: carried,
-        ...playerOverrides,
-      },
-    });
-
-  it("anchors the machine so the player stands at its operator cell", () => {
-    // The miter saw's operator cell is [0, 2] machine-local; at rotation 0
-    // the anchor lands two cells above the player (y - 2).
-    const result = putDownCarriedMachineAction()(
-      carryingState(machineAt("miterSaw", [0, 0])),
-    );
-    assert.strictEqual(result.player.carriedMachine, null);
-    assert.strictEqual(result.machines.length, 1);
-    assert.deepStrictEqual(result.machines[0].position, [5, 3]);
-  });
-
-  it("rotating spins the landing spot around the player", () => {
-    const rotated = rotateCarriedMachineAction()(
-      carryingState(machineAt("miterSaw", [0, 0])),
-    );
-    assert.strictEqual(rotated.player.carriedMachine?.rotation, 1);
-    const placement = carriedMachinePlacement(rotated);
-    // Operator offset [0,2] rotated once becomes [2,0]: anchor sits left
-    assert.deepStrictEqual(placement?.position, [3, 5]);
-  });
-
-  it("machines without an operator cell land on the faced cell", () => {
-    const result = putDownCarriedMachineAction()(
-      carryingState(machineAt("garbageCan", [0, 0])),
-    );
-    // Facing direction 0 is +x
-    assert.deepStrictEqual(result.machines[0].position, [6, 5]);
-  });
-
-  it("refuses when the landing cells are blocked", () => {
-    const blocker = machineAt("garbageCan", [4, 2]);
-    const state = {
-      ...carryingState(machineAt("miterSaw", [0, 0])),
-      machines: [blocker],
-    };
-    assert.strictEqual(canPutDownCarriedMachine(state), false);
-    assert.strictEqual(putDownCarriedMachineAction()(state), state);
-  });
-
-  it("sets a benchtop machine down onto free worktable cells", () => {
-    // Two tables pushed into one run spanning [1..6, 2..3]: the saw's
-    // whole 3×2 footprint lands on the shared tabletop — straddling the
-    // seam — with the player at its operator cell
-    const state = {
-      ...carryingState(machineAt("miterSaw", [0, 0])),
-      machines: [
-        machineAt("worktable1x2", [1, 2]),
-        machineAt("worktable1x1", [5, 2]),
-      ],
-    };
-    const result = putDownCarriedMachineAction()(state);
-    assert.strictEqual(result.machines.length, 3);
-    assert.deepStrictEqual(result.machines[2].position, [5, 3]);
   });
 });
 

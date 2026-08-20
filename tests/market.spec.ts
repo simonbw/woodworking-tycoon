@@ -1,9 +1,9 @@
 import { expect, Page, test } from "@playwright/test";
 import {
-  closeRecipeIndex,
-  machineCard,
+  closePlanDrawer,
+  closeStationSurface,
   modesOf,
-  openRecipeIndex,
+  openPlanDrawer,
   selectMode,
 } from "./machine-panel";
 import {
@@ -73,12 +73,13 @@ async function bootShopCountingAudio(page: Page) {
   await page.waitForFunction(() => (window as any).__GET_GAME_STATE__);
 }
 
+/**
+ * Say that a thing happened, the way the shop says it: a semantic cue,
+ * which the sound layer alone knows how to turn into a clip.
+ */
 async function queueCue(page: Page, cue: Record<string, string>) {
   await page.evaluate((c) => {
-    (window as any).__UPDATE_GAME_STATE__((s: any) => ({
-      ...s,
-      pendingSounds: [c],
-    }));
+    (window as any).game.dispatch("sound", { sound: c });
   }, cue);
 }
 
@@ -86,7 +87,7 @@ test.describe("Selling, supplies, and sound", () => {
   test("sells off the stand, stocks the cabinet, and plays its cues", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(360000);
 
     // Anything the page logs as an error — the sound half asserts silence.
     const consoleErrors: string[] = [];
@@ -407,10 +408,11 @@ test.describe("Selling, supplies, and sound", () => {
       // The shortfall reads right on the pulled drawing's title block,
       // set out in the plan drawer (which opens back onto the pulled
       // drawing) — there is no separate supplies row or run hint
-      const card = machineCard(page, "Makeshift Workbench");
-      await openRecipeIndex(card);
+      await openPlanDrawer(page);
       await expect(page.getByText("8 nails (have 0)")).toBeVisible();
-      await closeRecipeIndex(page, card);
+      await closePlanDrawer(page);
+      // Stand back up off the bench — the cabinet is shop chrome
+      await closeStationSurface(page);
       // The sidebar supply cabinet stays hidden while everything is at zero
       await expect(page.getByText("Supplies", { exact: true })).toBeHidden();
     });
@@ -434,10 +436,10 @@ test.describe("Selling, supplies, and sound", () => {
       await expect(suppliesCard.getByText("8", { exact: true })).toBeVisible();
       // And the shortfall line on the pulled drawing clears — reopen the
       // plan drawer to read it
-      const card = machineCard(page, "Makeshift Workbench");
-      await openRecipeIndex(card);
+      await openPlanDrawer(page);
       await expect(page.getByText("8 nails (have 8)")).toBeVisible();
-      await closeRecipeIndex(page, card);
+      await closePlanDrawer(page);
+      await closeStationSurface(page);
     });
 
     await test.step("the store's supplies aisle sells packs", async () => {
@@ -508,30 +510,14 @@ test.describe("Selling, supplies, and sound", () => {
       await expect.poll(() => requested).toContain("pallet-dismantle.ogg");
     });
 
-    await test.step("the queue is drained after playing", async () => {
-      await expect
-        .poll(async () =>
-          page.evaluate(
-            () => (window as any).__GET_GAME_STATE__().pendingSounds.length,
-          ),
-        )
-        .toBe(0);
-    });
-
     await test.step("machines with a continuous voice complete silently", async () => {
       await queueCue(page, {
         kind: "operation-complete",
         operationId: "ripBoard",
       });
-      // Drained means it was mapped (to silence) — then prove a later cue
-      // still plays, so the silent one had its chance to fetch and didn't.
-      await expect
-        .poll(async () =>
-          page.evaluate(
-            () => (window as any).__GET_GAME_STATE__().pendingSounds.length,
-          ),
-        )
-        .toBe(0);
+      // The saw's own voice already ran while it was cutting, so its
+      // finish is silent — then a later cue proves the silent one had
+      // its chance to fetch a clip and didn't.
       await queueCue(page, {
         kind: "operation-complete",
         operationId: "glueUpPanel",

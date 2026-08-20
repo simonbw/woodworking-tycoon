@@ -12,6 +12,7 @@ import {
   concatenatedStrips,
   detectGlueRun,
   inferGlueOperationId,
+  pressClamp,
 } from "./glue-up";
 
 /** A prepped 24"×2" maple strip, glue-ready. */
@@ -211,6 +212,74 @@ describe("clamp geometry", () => {
     const skewed = { ...on, angleDeg: 45 };
     const past = { ...on, yIn: run.center.yIn + run.lengthIn };
     assert.strictEqual(clampsOnRun(run, [on, skewed, past]).length, 1);
+  });
+});
+
+describe("pressClamp", () => {
+  /** A two-strip run with its clamps on the ghosts and every seam
+   * glued — one more press and the cure starts. */
+  function readyRun() {
+    const run = detectGlueRun(laidRow([strip(), strip()])).run!;
+    return { run, clamps: [...clampGhosts(run)] };
+  }
+
+  /** A bar set out well clear of the run, on bare bench. */
+  function stray(run: ReturnType<typeof readyRun>["run"]) {
+    return { xIn: run.center.xIn + 40, yIn: run.center.yIn, angleDeg: 0 };
+  }
+
+  it("winds the run's own bars, the last one starting the cure", () => {
+    const { run, clamps } = readyRun();
+    assert.deepStrictEqual(
+      pressClamp(run, clamps, 0, { tightened: 0, seamsGlued: true }),
+      { kind: "tighten", tightened: 1 },
+    );
+    assert.deepStrictEqual(
+      pressClamp(run, clamps, 1, { tightened: 1, seamsGlued: true }),
+      { kind: "commit" },
+    );
+  });
+
+  it("a bar lying off the run comes back into the hand", () => {
+    const { run, clamps } = readyRun();
+    const withStray = [...clamps, stray(run)];
+    assert.deepStrictEqual(
+      pressClamp(run, withStray, 2, { tightened: 0, seamsGlued: true }),
+      { kind: "pickUp" },
+    );
+    // And it never counts toward the cure, however many times it's
+    // pressed — the run's own bars are the only ones that wind
+    assert.deepStrictEqual(
+      pressClamp(run, withStray, 2, { tightened: 1, seamsGlued: true }),
+      { kind: "pickUp" },
+    );
+  });
+
+  it("picks the bar back up while a seam is still dry", () => {
+    const { run, clamps } = readyRun();
+    assert.deepStrictEqual(
+      pressClamp(run, clamps, 0, { tightened: 0, seamsGlued: false }),
+      { kind: "pickUp" },
+    );
+  });
+
+  it("picks the bar back up while the run is short of clamps", () => {
+    const { run, clamps } = readyRun();
+    assert.deepStrictEqual(
+      pressClamp(run, [clamps[0]], 0, { tightened: 0, seamsGlued: true }),
+      { kind: "pickUp" },
+    );
+  });
+
+  it("picks the bar back up when no run lies there at all", () => {
+    const { run, clamps } = readyRun();
+    assert.deepStrictEqual(
+      pressClamp(null, [...clamps, stray(run)], 2, {
+        tightened: 0,
+        seamsGlued: false,
+      }),
+      { kind: "pickUp" },
+    );
   });
 });
 

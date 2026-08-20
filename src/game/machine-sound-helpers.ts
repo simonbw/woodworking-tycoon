@@ -73,3 +73,34 @@ export function deriveMachineSoundPhase(
     ? "cutting"
     : "running";
 }
+
+/** What a machine's art shows: blade motion, and chips coming off the cut. */
+export interface MachineVisuals {
+  /** The machine is biting wood — drive cut particles from this. */
+  readonly working: boolean;
+  /** The motor is turning — drive animation/shake from this. */
+  readonly powered: boolean;
+}
+
+/**
+ * What the eye shows, given what the ear hears.
+ *
+ * A machine with a continuous voice takes both from its audible phase, so
+ * the blade is already spinning through the spin-up and keeps spinning
+ * through the coast-down — neither of which the shop's own state knows
+ * about, since the lead-in/lead-out sequencing lives in wall-clock time
+ * inside the voice. Pass `null` for a machine with no voice and both
+ * follow the operation itself.
+ */
+export function deriveMachineVisuals(
+  audiblePhase: MachineSoundPhase | null,
+  operationWorking: boolean,
+): MachineVisuals {
+  if (audiblePhase === null) {
+    return { working: operationWorking, powered: operationWorking };
+  }
+  return {
+    working: audiblePhase === "cutting",
+    powered: audiblePhase !== "off",
+  };
+}

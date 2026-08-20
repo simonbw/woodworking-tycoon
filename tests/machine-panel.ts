@@ -42,6 +42,64 @@ export async function openStationSheet(page: any) {
 }
 
 /**
+ * Tab at whatever the player is standing at, and say what answered: a
+ * bench leans the player over its work surface, where the plans and the
+ * racks hang on the bench's own chrome, and every other machine spreads
+ * its sheet. No-op if one of the two is already up.
+ */
+export async function openStationSurface(
+  page: any,
+): Promise<"sheet" | "bench"> {
+  if (await page.getByTestId("station-sheet").isVisible()) return "sheet";
+  if (await page.getByTestId("bench-tool-rail").isVisible()) return "bench";
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  await page.keyboard.press("Tab");
+  const sheet = page.getByTestId("station-sheet");
+  const rail = page.getByTestId("bench-tool-rail");
+  await Promise.race([
+    sheet.waitFor({ state: "visible" }),
+    rail.waitFor({ state: "visible" }),
+  ]);
+  await page.waitForTimeout(30);
+  return (await sheet.isVisible()) ? "sheet" : "bench";
+}
+
+/**
+ * Where the tool, upgrade, and shelf racks are: on the station sheet, or
+ * — at a bench — on the bench's own chrome. Tools hang on the rail
+ * across the top, which the dive already puts up; a bench with a shelf
+ * or upgrade slots keeps those in the drawer under the top, so that gets
+ * pulled open too. Leaves them all on screen.
+ */
+export async function openStationRacks(page: any) {
+  if ((await openStationSurface(page)) === "sheet") return;
+  const drawer = page.getByTestId("under-bench");
+  if ((await drawer.count()) === 0) return;
+  if (!(await drawer.evaluate((node: any) => node.open))) {
+    await drawer.locator("summary").click();
+    await page.waitForTimeout(30);
+  }
+}
+
+/**
+ * Put away whatever Tab opened — the sheet, or the bench the player is
+ * leaned over — so the next Escape reaches the pause menu. Escape closes
+ * the innermost thing first, and at a bench it empties the hands before
+ * it stands the player up, so this presses until the surface is gone.
+ */
+export async function closeStationSurface(page: any) {
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
+  const sheet = page.getByTestId("station-sheet");
+  const rail = page.getByTestId("bench-tool-rail");
+  for (let press = 0; press < 3; press++) {
+    if (!(await sheet.isVisible()) && !(await rail.isVisible())) break;
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(80);
+  }
+  await page.waitForTimeout(30);
+}
+
+/**
  * Run the machine the player is standing at: hold the operate key until
  * `isDone` reports the work finished, then let go.
  *
@@ -140,9 +198,16 @@ export async function selectMode(
   machineName: string,
   label: string,
 ) {
-  await openStationSheet(page);
-  const card = machineCard(page, machineName);
-  await openRecipeIndex(card);
+  const bench = (await openStationSurface(page)) === "bench";
+  if (bench) {
+    await openPlanDrawer(page);
+  }
+  const card = bench
+    ? page.getByTestId("plan-browser")
+    : machineCard(page, machineName);
+  if (!bench) {
+    await openRecipeIndex(card);
+  }
   await card
     .locator("[data-mode-option]")
     .filter({ hasText: new RegExp(`^${escapeRegExp(label)}$`) })
@@ -170,13 +235,41 @@ export async function modesOf(
   page: any,
   machineName: string,
 ): Promise<string[]> {
-  await openStationSheet(page);
+  if ((await openStationSurface(page)) === "bench") {
+    await openPlanDrawer(page);
+    const modes = await page
+      .getByTestId("plan-browser")
+      .locator("[data-mode-option]")
+      .allTextContents();
+    await closePlanDrawer(page);
+    return modes;
+  }
   const card = machineCard(page, machineName);
   await openRecipeIndex(card);
   const modes = await card.locator("[data-mode-option]").allTextContents();
   // Leave the drawer closed the way we found it
   await closeRecipeIndex(page, card);
   return modes;
+}
+
+/** Spread the bench's plan drawer open from the pile in the corner,
+ * leaning the player over the bench first if they're standing up. */
+export async function openPlanDrawer(page: any) {
+  const browser = page.getByTestId("plan-browser");
+  if (await browser.isVisible()) return;
+  await openStationSurface(page);
+  await page.getByTestId("blueprint-corner").click();
+  await browser.waitFor({ state: "visible" });
+  await page.waitForTimeout(30);
+}
+
+/** Fold the drawer back up, leaving whatever is pulled pulled. */
+export async function closePlanDrawer(page: any) {
+  const browser = page.getByTestId("plan-browser");
+  if (!(await browser.isVisible())) return;
+  await page.keyboard.press("Escape");
+  await browser.waitFor({ state: "hidden" });
+  await page.waitForTimeout(30);
 }
 
 /** Set a parameter by clicking its detent on the station sheet's scale. */

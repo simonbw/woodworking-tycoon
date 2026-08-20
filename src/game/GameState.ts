@@ -177,13 +177,13 @@ export interface GameState {
   /**
    * Transient queue of sound cues emitted by the action(s) that produced this
    * state, drained by `GameSoundLayer` each render. Optional and never
-   * persisted (stripped in `saveLoad`); treat a missing value as empty.
+   * persisted; treat a missing value as empty.
    */
   readonly pendingSounds?: ReadonlyArray<SoundEvent>;
   /**
    * Transient queue of completed sales, drained by `RewardFlightLayer`
    * to fly the rewards to their readouts. Optional and never persisted
-   * (stripped in `saveLoad`); treat a missing value as empty.
+   * treat a missing value as empty.
    */
   readonly pendingPayouts?: ReadonlyArray<PayoutEvent>;
 }

@@ -1,0 +1,84 @@
+import { Graphics } from "pixi.js";
+import { colorBySheetGoodKind, osbFlakeColors } from "../colorBySpecies";
+import { PIXELS_PER_CELL } from "../shop-scale";
+import { Machine } from "../../game/Machine";
+import { colorToNumber, mixColors } from "../../utils/colorUtils";
+import { seededRandom } from "../../utils/randUtils";
+import { MachineArtBase } from "./machine-art";
+import { storedStockColor } from "./stored-stock-color";
+
+/**
+ * The storage rack — the old `StorageRackSprite`: an OSB deck on corner
+ * posts, drawn from above. Parked stock (storedMaterials) piles up as
+ * slats across the deck, so a loaded rack looks loaded from across the
+ * shop.
+ */
+export class StorageRackArt extends MachineArtBase {
+  private readonly graphics = new Graphics();
+
+  constructor() {
+    super();
+    // Centered on the 2×2-ft footprint, half a cell past the origin center.
+    this.graphics.position.set(PIXELS_PER_CELL * 0.5, PIXELS_PER_CELL * 0.5);
+    this.root.addChild(this.graphics);
+  }
+
+  rebuild(machine: Machine): void {
+    const stored = machine.storedMaterials;
+    const g = this.graphics;
+    g.clear();
+    const half = PIXELS_PER_CELL * 0.94;
+    const size = half * 2;
+    const rng = seededRandom("storage-rack");
+
+    // Drop shadow toward the lower right
+    g.roundRect(-half + 4, -half + 5, size, size, 5);
+    g.fill({ color: 0x000000, alpha: 0.18 });
+
+    // Corner posts peeking out from under the deck
+    const post = PIXELS_PER_CELL * 0.31;
+    for (const [px, py] of [
+      [-half + 1, -half + 1],
+      [half - post - 1, -half + 1],
+      [-half + 1, half - post - 1],
+      [half - post - 1, half - post - 1],
+    ]) {
+      g.rect(px - 1.5, py - 1.5, post + 3, post + 3);
+      g.fill({ color: 0x5c3b1e });
+    }
+
+    // The OSB deck, strands and all, inset so the posts peek out
+    const deckInset = 4;
+    const deck = half - deckInset;
+    const deckBase = mixColors(colorBySheetGoodKind.osb.primary, 0x000000, 0.2);
+    g.roundRect(-deck, -deck, deck * 2, deck * 2, 4);
+    g.fill(deckBase);
+    for (let i = 0; i < 70; i++) {
+      const cx = -deck + 3 + rng() * (deck * 2 - 6);
+      const cy = -deck + 3 + rng() * (deck * 2 - 6);
+      const w = 3 + rng() * 5;
+      const h = 1.5 + rng() * 2;
+      g.rect(cx - w / 2, cy - h / 2, w, h);
+      g.fill({
+        color: colorToNumber(
+          osbFlakeColors[Math.floor(rng() * osbFlakeColors.length)],
+        ),
+        alpha: 0.85,
+      });
+    }
+    g.roundRect(-deck, -deck, deck * 2, deck * 2, 4);
+    g.stroke({ width: 2, color: 0x6b4a26 });
+
+    // Parked stock stacks up as slats across the deck
+    const slots = Math.min(stored.length, 8);
+    for (let i = 0; i < slots; i++) {
+      const slatLength = size * (0.62 + rng() * 0.2);
+      const y = -half + 8 + (i * (size - 18)) / 8;
+      const x = -slatLength / 2 + (rng() * 2 - 1) * 4;
+      g.rect(x, y, slatLength, 5);
+      g.fill(storedStockColor(stored[i]));
+      g.rect(x, y, slatLength, 5);
+      g.stroke({ width: 1, color: 0x000000, alpha: 0.25 });
+    }
+  }
+}

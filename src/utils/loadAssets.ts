@@ -1,6 +1,6 @@
-import { worktableArtPaths } from "../components/machine-sprites/worktable-art";
-import { BOARD_FACE_TEXTURE_ASSETS } from "../components/material-sprites/boardFaceTextures";
-import { SHEET_FACE_TEXTURE_ASSETS } from "../components/material-sprites/sheetFaceTextures";
+import { worktableArtPaths } from "../views/machine-sprites/worktable-art";
+import { BOARD_FACE_TEXTURE_ASSETS } from "../views/material-sprites/boardFaceTextures";
+import { SHEET_FACE_TEXTURE_ASSETS } from "../views/material-sprites/sheetFaceTextures";
 import { Assets } from "pixi.js";
 import { CONSUMABLE_TYPES, ConsumableId } from "../game/Consumable";
 import { TOOL_TYPES, ToolId } from "../game/Tool";
@@ -26,7 +26,7 @@ const TOOL_ITEM_ASSETS = (Object.keys(TOOL_TYPES) as ToolId[])
 /**
  * The supply icons do the same on the store's shelves — a racking bay
  * with no world-size art shows its product's own icon
- * (StoreMerchandiseLayer), so PIXI needs those too.
+ * (StoreMerchandiseView), so PIXI needs those too.
  */
 const SUPPLY_SHELF_ASSETS = [
   ...(Object.keys(CONSUMABLE_TYPES) as ConsumableId[])

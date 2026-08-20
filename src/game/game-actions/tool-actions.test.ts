@@ -6,13 +6,8 @@ import { makeToolItem } from "../material-helpers";
 import { ToolItem } from "../Materials";
 import { ToolId } from "../Tool";
 import { initialGameState } from "../initialGameState";
-import {
-  buyToolAction,
-  gatherBenchToolAction,
-  mountToolAction,
-  unmountToolAction,
-} from "./tool-actions";
-import { freshMachineState, pickUpMachineAction } from "./machine-actions";
+import { mountToolAction } from "./tool-actions";
+import { pickUpMachineAction } from "./machine-actions";
 
 function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
@@ -55,23 +50,6 @@ function carriedTool(gameState: GameState, toolId: ToolId): ToolItem {
 function workspaceOf(gameState: GameState): Machine {
   return getMachines(gameState.machines)[0];
 }
-
-describe("buyToolAction", () => {
-  it("deducts the cost and lands the tool in the truck's bed", () => {
-    const result = buyToolAction("sandingBlock")(stateWith({ money: 50 }));
-    assert.strictEqual(result.money, 40);
-    assert.strictEqual(result.truck.bed.length, 1);
-    const bought = result.truck.bed[0];
-    assert.strictEqual(bought.type, "tool");
-    assert.strictEqual((bought as ToolItem).toolId, "sandingBlock");
-  });
-
-  it("does nothing when the player cannot afford it", () => {
-    const state = stateWith({ money: 5 });
-    const result = buyToolAction("randomOrbitSander")(state);
-    assert.strictEqual(result, state);
-  });
-});
 
 describe("mountToolAction", () => {
   it("moves the tool from the hands into the station's slots", () => {
@@ -165,145 +143,6 @@ describe("mountToolAction refuses while the station is mid-operation", () => {
     };
     const tool = carriedTool(state, "sandingBlock");
     const result = mountToolAction(workspaceOf(state), tool)(state);
-    assert.strictEqual(result, state);
-  });
-});
-
-describe("unmountToolAction", () => {
-  it("puts the tool into the player's hands", () => {
-    const state = toolState(initialGameState, [], ["sandingBlock"]);
-    const result = unmountToolAction(workspaceOf(state), "sandingBlock")(state);
-    assert.deepStrictEqual(result.machines[0].tools, []);
-    const held = carriedTool(result, "sandingBlock");
-    assert.strictEqual(held.type, "tool");
-  });
-
-  it("refuses when the hands are full", () => {
-    const base = toolState(initialGameState, [], ["sandingBlock"]);
-    const state: GameState = {
-      ...base,
-      player: {
-        ...base.player,
-        // A full armload of stock leaves no room for the tool
-        inventory: ["a", "b", "c", "d"].map((id) => ({
-          id,
-          type: "unknown",
-        })),
-      },
-    };
-    const result = unmountToolAction(workspaceOf(state), "sandingBlock")(state);
-    assert.strictEqual(result, state);
-  });
-
-  it("resets the selected operation if it belonged to the removed tool", () => {
-    const base = toolState(initialGameState, [], ["sandingBlock"]);
-    const state: GameState = {
-      ...base,
-      machines: base.machines.map((machine, index) =>
-        index === 0
-          ? { ...machine, selectedOperationId: "blockSandBoard" }
-          : machine,
-      ),
-    };
-    const result = unmountToolAction(workspaceOf(state), "sandingBlock")(state);
-    assert.strictEqual(
-      result.machines[0].selectedOperationId,
-      "dismantlePallet",
-    );
-  });
-
-  it("refuses while the station is mid-operation", () => {
-    const base = toolState(initialGameState, [], ["sandingBlock"]);
-    const state: GameState = {
-      ...base,
-      machines: base.machines.map((machine, index) =>
-        index === 0
-          ? ({
-              ...machine,
-              operationProgress: {
-                status: "inProgress",
-                phaseIndex: 0,
-                ticksRemaining: 5,
-              },
-            } as MachineState)
-          : machine,
-      ),
-    };
-    const result = unmountToolAction(workspaceOf(state), "sandingBlock")(state);
-    assert.strictEqual(result, state);
-  });
-});
-
-describe("gatherBenchToolAction", () => {
-  // A run of two tables pushed edge to edge, plus a third standing alone
-  // across the shop. The hammer hangs on the small table in the run.
-  function runState(
-    overrides: {
-      targetTools?: ToolId[];
-      targetProgress?: MachineState["operationProgress"];
-    } = {},
-  ): GameState {
-    const target: MachineState = {
-      ...freshMachineState("worktable1x2", initialGameState.progression),
-      position: [1, 1],
-      tools: overrides.targetTools ?? [],
-      operationProgress:
-        overrides.targetProgress ??
-        freshMachineState("worktable1x2", initialGameState.progression)
-          .operationProgress,
-    };
-    const neighbour: MachineState = {
-      ...freshMachineState("worktable1x1", initialGameState.progression),
-      position: [5, 1],
-      tools: ["hammer"],
-    };
-    const stray: MachineState = {
-      ...freshMachineState("worktable1x1", initialGameState.progression),
-      position: [10, 10],
-      tools: ["sandingBlock"],
-    };
-    return stateWith({ machines: [target, neighbour, stray] });
-  }
-
-  function targetOf(gameState: GameState): Machine {
-    return getMachines(gameState.machines)[0];
-  }
-
-  it("slides the tool from the neighbouring table onto this one", () => {
-    const state = runState();
-    const result = gatherBenchToolAction(targetOf(state), "hammer")(state);
-    assert.deepStrictEqual(result.machines[0].tools, ["hammer"]);
-    assert.deepStrictEqual(result.machines[1].tools, []);
-  });
-
-  it("leaves a tool on a table outside the run where it hangs", () => {
-    const state = runState();
-    const result = gatherBenchToolAction(
-      targetOf(state),
-      "sandingBlock",
-    )(state);
-    assert.strictEqual(result, state);
-    assert.deepStrictEqual(result.machines[2].tools, ["sandingBlock"]);
-  });
-
-  it("refuses when this table's rack is full", () => {
-    // The full-size table has four slots
-    const state = runState({
-      targetTools: ["sandingBlock", "handSaw", "drill", "handPlane"],
-    });
-    const result = gatherBenchToolAction(targetOf(state), "hammer")(state);
-    assert.strictEqual(result, state);
-  });
-
-  it("refuses while this table is mid-operation", () => {
-    const state = runState({
-      targetProgress: {
-        status: "inProgress",
-        phaseIndex: 0,
-        ticksRemaining: 5,
-      },
-    });
-    const result = gatherBenchToolAction(targetOf(state), "hammer")(state);
     assert.strictEqual(result, state);
   });
 });

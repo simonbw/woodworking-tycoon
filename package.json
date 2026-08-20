@@ -15,7 +15,8 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "tsx --test --experimental-test-isolation=none 'src/**/*.test.ts'",
     "test:e2e": "npx playwright test",
-    "test:headed": "npx playwright test --headed"
+    "test:headed": "npx playwright test --headed",
+    "generate:resources": "npx tsx scripts/generate-resources.ts"
   },
   "repository": {
     "type": "git",
@@ -41,7 +42,6 @@
   "dependencies": {
     "@floating-ui/react": "^0.27.20",
     "@headlessui/tailwindcss": "^0.2.2",
-    "@pixi/react": "^8.0.3",
     "@tailwindcss/typography": "^0.5.19",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

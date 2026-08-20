@@ -1,8 +1,8 @@
 /**
  * Debug/preview switches carried in the URL's query string. These are
  * deliberately not player-facing — nothing in the game links to them —
- * they exist so a hidden surface can still be looked at (see the
- * `?collision` painter in CollisionDebugLayer for the same idiom).
+ * they exist so a hidden surface can still be looked at (see the `?seed`
+ * and `?goal` switches in randUtils.ts for the same idiom).
  */
 
 /**

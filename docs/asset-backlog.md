@@ -29,7 +29,7 @@ commit that lands the asset.
    boxes for image-based machines are measured from the art; procedurally
    drawn machines carry hand-set boxes that the generator ignores, so a
    machine changes hands between the two the moment it gets a sprite (see
-   `docs/continuous-movement.md`).
+   `src/game/player-motion.ts`).
 5. Tick the box below.
 
 Objects whose contents vary (a rack of stock, a can of scrap) generally want
@@ -94,7 +94,7 @@ wiring: same path, same size, same component.
       one drawing, plus an `@4x` close-up of each at 32 px/inch: - `-top` — the laminated top, filling the footprint edge to edge. - `-shadow` — the cast shadow, on a wider canvas so it can bleed.
       Drawn in a pass of its own _under every table's top_
       (`WorktableShadowLayer` in ShopView, and both passes in
-      `BenchSceneBackdrop`), because tables get pushed together and a
+      `BenchDiveView`), because tables get pushed together and a
       neighbour's shadow falling across the top butted against it would
       draw the very seam a flush top is avoiding. - `-complete` — the two flattened, used for `MACHINE_ICON_SRC`.
 
@@ -151,64 +151,64 @@ wiring: same path, same size, same component.
 - [ ] Table saw jigs — `SledSprite` in
       `machine-sprites/JobsiteTableSawSprite.tsx`. The crosscut sled and
       the straight-line sled are shop-built jigs sitting on the saw.
-- [ ] Dust bag — `DustBagSprite` in `shop-view/MachineSprite.tsx`.
+- [ ] Dust bag — the dust bag in `views/MachineView.ts`.
 
 ### Props and fixtures
 
-- [ ] Machine crate — `shop-view/MachineCrateSprite.tsx`.
-- [ ] For-sale stand — `shop-view/StandSprite.tsx`. The little table and
+- [ ] Machine crate — `views/MachineCrateView.ts`.
+- [ ] For-sale stand — `views/StandView.ts`. The little table and
       hand-written FOR SALE sign in the grass at the end of the driveway.
       Pieces set out on it keep rendering through `MaterialSprite`, so the
       art is the bare table and sign — and it has to read as empty when
       nothing is out.
-- [ ] Customers — `shop-view/CustomerLayer.tsx`. The passersby on the
+- [ ] Customers — `views/CustomerView.ts`. The passersby on the
       sidewalk line are simple circles, deliberately plain for now; art
       would be a small set of top-down walkers, drawn to the player
       sprite's scale and style.
-- [ ] Broom (resting) — `shop-view/BroomSprite.tsx`. Leans wherever it was
+- [ ] Broom (resting) — `views/BroomView.ts`. Leans wherever it was
       set down; the tutorial points at it.
-- [ ] Broom + dustpan (in hand) — `shop-view/HeldBroomSprite.tsx`.
+- [ ] Broom + dustpan (in hand) — `views/HeldBroomGraphics.ts`.
       Top-down handle + bristle bar + hip-riding dustpan (with a fill
       readout) drawn in the player's rotated frame, with the stroke sway
       animated procedurally; art would replace the handle/bar/pan
       shapes, the animation stays code.
-- [ ] Shop vac — `shop-view/ShopVacSprite.tsx`. Drum and casters as art; the
+- [ ] Shop vac — `views/ShopVacView.ts`. Drum and casters as art; the
       hose stretches to the player's hand every frame and stays drawn.
-- [ ] Pallet — `material-sprites/PalletSprite.tsx`. Currently composed out of
-      `BoardSprite`s. (`static/images/pallet.png` exists but serves the
+- [ ] Pallet — `views/material-sprites/pallet.ts`. Currently composed out of
+      `createBoardSprite` boards. (`static/images/pallet.png` exists but serves the
       HTML UI's material widgets via `LOOSE_UI_IMAGES`, not the shop-view
       sprite.) Boards get pulled off one at a time, so the art has to
       survive a partially dismantled pallet — probably per-board art rather
       than one whole-pallet sprite.
-- [ ] Floor tiles — `shop-view/FloorTileSprite.tsx`. Flat zinc rects under
+- [ ] Floor tiles — `views/FloorView.ts`. Flat zinc rects under
       the concrete floor texture; likely folds into the floor art rather than
       becoming its own asset.
-- [x] The lot — `shop-view/EnvironmentLayer.tsx`. The lawn tiles
+- [x] The lot — `views/EnvironmentView.ts`. The lawn tiles
       `grass.png` (tinted down to sit in the shop's palette) across the
       viewport, and the driveway tiles `asphalt.png` instead of borrowing
       the interior concrete. Both are photographic 2048² tiles scaled so
       one repeat covers a believable stretch of lot.
-- [ ] Walls and garage door — `shop-view/EnvironmentLayer.tsx`. The stud
+- [ ] Walls and garage door — `views/EnvironmentView.ts`. The stud
       walls, jambs, and threshold are flat bands. Art could carry siding,
       corner trim, and door tracks — but it has to follow an arbitrary shop
       footprint, so tiling strips rather than one sprite.
-- [ ] Store racking and counter — `store-view/StoreFixturesLayer.tsx`. The
+- [ ] Store racking and counter — `shell/scenes/store-views/StoreFixturesView.ts`. The
       big-box shelf bays, machine display pads, and checkout counter are
       rects on the planogram's footprints (the lumber and sheet piles
       already draw with the shop's own material sprites —
       `StoreMerchandiseLayer.tsx`). The fixture wants art with the DOM
       shelf tags still laid on top; sizes come from
       `game/store-layout.ts`, so tiling bay strips rather than one sprite.
-- [ ] Storefront and lot — `store-view/StoreEnvironmentLayer.tsx`. Wall
+- [ ] Storefront and lot — `shell/scenes/store-views/StoreEnvironmentView.ts`. Wall
       bands, glass panes, sidewalk, and stall paint, all flat fills on an
       arbitrary generated footprint — tiling strips, like the shop's walls.
-- [ ] Other shoppers — `store-view/StoreShopperLayer.tsx`. The same
+- [ ] Other shoppers — `shell/scenes/store-views/StoreActorsView.ts`. The same
       circle-people as the sidewalk's customers; whatever art the customers
       get should walk the aisles too.
-- [ ] Shopping cart — `store-view/StorePushCartSprite.tsx`. Basket, handle,
+- [ ] Shopping cart — `shell/scenes/store-views/flatbed.ts`. Basket, handle,
       and parcels as rounded rects; wants a real cart with the parcels
       still drawn in it.
-- [x] The light — `shop-view/DaylightLayer.tsx`. Procedural on purpose,
+- [x] The light — `views/DaylightView.ts`. Procedural on purpose,
       and not art at all: one offscreen light mask, painted from the sun in
       `game/daylight.ts` and multiplied over the scene once. The building's
       shadow is a hard-edged slab subtracted from it; the lamp pool and the
@@ -229,8 +229,9 @@ and needs no flat art; the flat sprites they once used are deleted.)
 
 Decided — don't re-open these without a reason.
 
-- **Board and sheet silhouettes, textured faces** — `BoardSprite` and
-  `SheetGoodSprite` draw their outlines procedurally (dimensions vary
+- **Board and sheet silhouettes, textured faces** — `createBoardSprite`
+  and `drawSheetGood` (`views/material-sprites/`) draw their outlines
+  procedurally (dimensions vary
   continuously — wavy unjointed edges, miter skews, true scale against
   `PIXELS_PER_INCH`) and fill the faces from photography under
   `assets/textures/materials/` (all CC0 or homemade), processed by
@@ -259,37 +260,33 @@ Decided — don't re-open these without a reason.
   art through `woodFills.ts` — faces, edges, and sawn ends alike, on
   boards lying flat, stood on edge, stood on end, glued into panels, and
   built into cutting boards.
-- **Stock parked on racks** — `LumberShelfSprite` and
-  `StorageRackSprite` draw what's on the shelf as a few pixel-tall bars
+- **Stock parked on racks** — `LumberShelfArt` and
+  `StorageRackArt` draw what's on the shelf as a few pixel-tall bars
   in the species' color. They're tallies of what's stored, read from
   across the shop, not surfaces anyone looks at.
-- **Cut particles and the dust layers** — `CutParticles`, `DustLayer`,
-  `DustMotionLayer`. Per-frame effects; the dust layer already bakes its
+- **Cut particles and the dust layers** — `CutParticleEmitter`, `DustView`,
+  `DustMotionView`. Per-frame effects; the dust layer already bakes its
   stamps into a single `RenderTexture`.
 - **Feeding masks** — `FeedingBoard`. The two `Graphics` there are masks for
   the infeed/outfeed reveal and never render.
 - **Selection highlight** — `TARGET_HIGHLIGHT_FILTERS` in
-  `shop-view/targetHighlight.ts`, an outline shader (`pixi-filters`) hugging
+  `views/targetHighlight.ts`, an outline shader (`pixi-filters`) hugging
   the target's silhouette. Worn by the targeted machine and by the pile E
   would pick up. UI drawn on the canvas, not art.
 - **Kerf lines** — the cut lines in `JobsiteTableSawSprite` and
   `MiterSawSprite`, which track the animated blade.
 - **Power cords and wall outlets** — `PowerCordLayer`
-  (`shop-view/power-cords.ts`). Every cord is a hash-seeded curve that
+  (`views/power-cords.ts`). Every cord is a hash-seeded curve that
   re-routes to the nearest outlet whenever a machine moves; no fixed asset
   can follow that. The outlet plates are a few rectangles at outlet size.
 - **Collision debug overlay** — `CollisionDebugLayer`. Dev-only, `?collision`.
 - **Bench-view overlays** — the nail markers, pry-bar lever, glue beads,
   clamp bars, ghost outlines, fastener heads, and cut/kerf lines in
-  `src/components/bench-view/` (`BenchScene`, `GlueUpLayer`,
-  `SawSurface`). Interaction UI drawn over the real material sprites at
-  zoom — markers and state readouts, not art. The
-  scratch-off brush in `StrokeSurface` is a mask stamped into a
-  `RenderTexture` and never renders directly.
-- **Edge band** — `bench-view/EdgeBandSprite`. The block plane's edge-on
-  view of a board: a strip of the species' edge color with grain/saw
-  marks, the same procedural language as `BoardSprite`, which owns the
-  faces.
+  `src/shell/scenes/bench/` (`BenchDiveView`, `BenchGlueView`,
+  `BenchSawView`). Interaction UI drawn over the real material sprites at
+  zoom — markers and state readouts, not art. The scratch-off brush in
+  `BenchStrokeView` is a mask stamped into a `RenderTexture` and never
+  renders directly.
 - **Default material pile** — `DefaultMaterialPileSprite`. A black square,
   and now only ever reached by `UnknownMaterial` — the type-system escape
   hatch, which has nothing real to draw. Every product type has a sprite. If

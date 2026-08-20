@@ -7,7 +7,7 @@ import { MachineId } from "./Machine";
  * This is the bridge that lets state transitions — an operation finishing on a
  * tick, a material changing hands — play sounds without the reducers
  * themselves touching the DOM or Web Audio. The queue is transient and never
- * persisted to the save (see `saveLoad.ts`). (Stand sales don't come through
+ * persisted to the save (see `sim/save/`). (Stand sales don't come through
  * here: their cha-ching belongs to the reward flight, which plays it when the
  * first coin lands — see RewardFlightLayer.)
  */

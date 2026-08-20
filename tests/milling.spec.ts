@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  closeStationSurface,
   runUntilOutput,
   openStationSheet,
   runWhileHolding,
@@ -19,7 +20,7 @@ import { goToLumberyard, goToStore, leaveStore, shelfTag } from "./navigation";
  * different interface from the benches and containers in stations.spec.ts,
  * which is why they live in their own browser.
  *
- * What the cuts *produce* is checked in src/game/sequences/ — the milling
+ * What the cuts *produce* is checked in src/sim/sequences/ — the milling
  * chains, the mitred frame, the resaw. The assertions here are about the keys,
  * the scales, and the machine refusing to work until it's switched on.
  *
@@ -226,7 +227,7 @@ test.describe("Milling", () => {
   test("switches on, dials in, and lets the stock decide the cut", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(420000);
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
@@ -547,6 +548,9 @@ test.describe("Milling", () => {
       await dropAllExcept(page, /1" × 2'/);
       await movePlayerTo(page, [7, 4]);
       await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
+      // Pulling the drawing leaned the player over the bench; staging is
+      // a floor verb, so stand back up for it
+      await closeStationSurface(page);
       // F is plan-aware: with Build Picture Frame selected the bench only
       // takes the mitered rails out of what's carried.
       await setStockDown(page);

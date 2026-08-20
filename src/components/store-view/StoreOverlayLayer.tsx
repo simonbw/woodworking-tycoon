@@ -4,7 +4,7 @@ import { ShelfBay, StoreLayout, StoreRect } from "../../game/store-layout";
 import { StoreInteract } from "../../game/store-interact";
 import { formatMoney } from "../../utils/formatNumber";
 import { classNames } from "../../utils/classNames";
-import { PIXELS_PER_CELL } from "../shop-view/shop-scale";
+import { PIXELS_PER_CELL } from "../../views/shop-scale";
 import { HintList, HintRow } from "../shortcuts/HintList";
 import { ShortcutKeys } from "../shortcuts/Kbd";
 import { Tooltip } from "../Tooltip";

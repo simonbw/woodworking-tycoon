@@ -1,4 +1,4 @@
-import { GameAction, GameState } from "../GameState";
+import { GameState } from "../GameState";
 import { PayoutEvent } from "../PayoutEvent";
 
 /**
@@ -6,7 +6,7 @@ import { PayoutEvent } from "../PayoutEvent";
  * celebrate" keeps a constant identity across states, so the drain effect
  * (keyed on the queue) doesn't re-fire on every unrelated render.
  */
-export const NO_PAYOUTS: ReadonlyArray<PayoutEvent> = [];
+const NO_PAYOUTS: ReadonlyArray<PayoutEvent> = [];
 
 /**
  * Append a payout announcement to the queue.
@@ -35,12 +35,3 @@ export function emitPayout(
     ],
   };
 }
-
-/**
- * Empty the queue once the flight layer has picked it up. Returns the same
- * state untouched when already empty, so the drain doesn't churn renders.
- */
-export const clearPendingPayoutsAction: GameAction = (gameState) =>
-  gameState.pendingPayouts && gameState.pendingPayouts.length > 0
-    ? { ...gameState, pendingPayouts: NO_PAYOUTS }
-    : gameState;

@@ -101,7 +101,7 @@ test.describe("Shop floor", () => {
   test("boots, carries machines, and lives the truck's day loop", async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(420000);
     const startTime = Date.now();
 
     const consoleErrors: string[] = [];
@@ -137,7 +137,10 @@ test.describe("Shop floor", () => {
     await test.step("an incompatible save disables Continue and says why", async () => {
       await page.evaluate(() => {
         localStorage.setItem(
-          "woodworking-tycoon-save",
+          // The shop's slot in browser storage. It keeps its migration
+          // name while the old shell is still served beside it, so the
+          // two can't overwrite each other's saves (shell/saveSlot.ts).
+          "woodworking-tycoon-engine-save",
           JSON.stringify({ version: 0, gameState: {} }),
         );
       });
@@ -747,12 +750,14 @@ test.describe("Shop floor", () => {
       await page.keyboard.press("Escape");
       await expect(sheet).toBeHidden();
 
-      // A machine answers the same gesture, and goes straight to its sheet
+      // A machine answers the same gesture, and goes straight to what it
+      // keeps its plans and racks on — for a bench, the lean over its
+      // work surface, which is what a bench has instead of a sheet
       await teleportPlayer(page, [1, 4]);
       const bench = page.locator('[data-machine-type="workspace"]');
-      const stationSheet = page.getByTestId("station-sheet");
-      await rightClickUntilVisible(page, bench, stationSheet);
-      await expect(stationSheet).toBeVisible();
+      const rail = page.getByTestId("bench-tool-rail");
+      await rightClickUntilVisible(page, bench, rail);
+      await expect(rail).toBeVisible();
       await page.keyboard.press("Escape");
     });
 

@@ -2,11 +2,11 @@
  * The shop's physical scale. One grid cell is one square foot of floor —
  * the grid exists for machine placement and cell-based bookkeeping (dust,
  * piles, targeting); the player's body moves continuously through it (see
- * docs/continuous-movement.md).
+ * the header of `player-motion.ts`).
  *
  * This is the game-logic side of the scale. Rendering constants
  * (pixels per inch, pixels per cell) live in
- * src/components/shop-view/shop-scale.tsx and derive from these.
+ * src/views/shop-scale.ts and derive from these.
  */
 export const INCHES_PER_FOOT = 12;
 

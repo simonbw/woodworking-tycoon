@@ -9,7 +9,6 @@ import {
   MachineType,
 } from "../Machine";
 import {
-  chebyshevDistance,
   Direction,
   rotateVec,
   scaleVec,
@@ -105,20 +104,6 @@ export function getMachineOccupiedCells(
   rotation: Direction,
 ): Vector[] {
   return machineType.cellsOccupied.map((relativeCell) =>
-    translateVec(rotateVec(relativeCell, rotation), position),
-  );
-}
-
-/**
- * Gets all free cells needed by a machine at the given position and rotation
- * Useful for highlighting during placement preview
- */
-export function getMachineFreeCells(
-  machineType: MachineType,
-  position: Vector,
-  rotation: Direction,
-): Vector[] {
-  return machineType.freeCellsNeeded.map((relativeCell) =>
     translateVec(rotateVec(relativeCell, rotation), position),
   );
 }
@@ -302,29 +287,6 @@ export function pickUpMachineAction(machineState: MachineState): GameAction {
 
 /** Unpacks the crate at hand (underfoot or a neighboring cell — the body
  * is bigger than a 1-ft cell) straight into the player's arms. */
-export function pickUpCrateAction(): GameAction {
-  return (gameState) => {
-    const crate = gameState.machineCrates.find(
-      (candidate) =>
-        chebyshevDistance(candidate.position, gameState.player.position) <= 1,
-    );
-    if (!crate || !handsFree(gameState)) {
-      console.warn("No crate underfoot, or hands are full");
-      return gameState;
-    }
-    return emitSound(
-      {
-        ...gameState,
-        machineCrates: gameState.machineCrates.filter(
-          (candidate) => candidate !== crate,
-        ),
-        player: { ...gameState.player, carriedMachine: crate.machine },
-      },
-      { kind: "material-pickup" },
-    );
-  };
-}
-
 /**
  * Where the carried machine would land if set down right now: anchored so
  * the player is standing at its operator cell — you place a machine by
@@ -370,44 +332,4 @@ export function canPutDownCarriedMachine(gameState: GameState): boolean {
       rotation,
     )
   );
-}
-
-/** Sets the carried machine down with its operator cell underfoot. */
-export function putDownCarriedMachineAction(): GameAction {
-  return (gameState) => {
-    const carried = gameState.player.carriedMachine;
-    if (!carried || !canPutDownCarriedMachine(gameState)) {
-      console.warn("No room to set the machine down here");
-      return gameState;
-    }
-    const { position, rotation } = carriedMachinePlacement(gameState)!;
-    return emitSound(
-      {
-        ...gameState,
-        machines: [...gameState.machines, { ...carried, position, rotation }],
-        player: { ...gameState.player, carriedMachine: null },
-      },
-      { kind: "material-drop" },
-    );
-  };
-}
-
-/** Spins the carried machine a quarter turn around the player. */
-export function rotateCarriedMachineAction(): GameAction {
-  return (gameState) => {
-    const carried = gameState.player.carriedMachine;
-    if (!carried) {
-      return gameState;
-    }
-    return {
-      ...gameState,
-      player: {
-        ...gameState.player,
-        carriedMachine: {
-          ...carried,
-          rotation: ((carried.rotation + 1) % 4) as Direction,
-        },
-      },
-    };
-  };
 }

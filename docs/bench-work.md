@@ -3,8 +3,8 @@
 How interactive hand work works — the zoomed bench view where materials
 and tools are manipulated directly — and how to add a new kind of it.
 This is the cross-cutting doc for a system that spans the engine
-(`src/game/bench-work/`), the view (`src/components/bench-view/`), and
-the commit actions (`src/game/game-actions/operation-actions.ts`).
+(`src/game/bench-work/`), the scene (`src/shell/scenes/bench/`), and
+the commands it commits through (`src/sim/commands/`).
 Single-module details live at their modules: blueprints in
 `bench-work/blueprint.ts`, bench groups in `bench-work/bench-group.ts`,
 glue-ups in `bench-work/glue-up.ts`, the tool-first offer in
@@ -37,7 +37,7 @@ per-operation scripts that compose it.
    tiebreak). The offer is pure and unit-tested (`bench-work/tool-work.ts`:
    held tool + piece + how it lies → operation), and the claim takes
    exactly the piece under the tool (`BenchToolClaim` in
-   `game-actions/player-actions.ts`, mirroring direct-feed's inferred
+   `sim/commands/machine-commands.ts`, mirroring direct-feed's inferred
    start — it works pieces out of the output bay too, so rework needs no
    restaging). Work lands _in place_: the mask, kerf, and finished piece
    render through the piece's persistent placement, and the finish commit
@@ -134,7 +134,7 @@ speclet.
 
 `src/game/bench-work/coverage.ts` (the accumulation grid, the completion
 threshold, the saw's kerf mask) with the RenderTexture scratch-off in
-`src/components/bench-view/StrokeSurface.tsx`:
+`src/shell/scenes/bench/StrokeReveal.ts`, which the stroke view drives:
 
 - **Visual layer**: the workpiece draws its two surface states stacked,
   the upper erased through a PIXI `RenderTexture`. Each frame of active
@@ -163,18 +163,18 @@ marked line, deepened by push–pull strokes).
 ## The commit-action split
 
 The bench view decides _when_; the actions in
-`game-actions/operation-actions.ts` and `game-actions/player-actions.ts`
+`sim/commands/machine-commands.ts` and `sim/commands/bench-commands.ts`
 decide _what_. Every interactive operation has two commit points:
 
-- **Start** (`operateMachineAction`, in `player-actions.ts`): claims
+- **Start** (`operateMachine`, in `machine-commands.ts`): claims
   inputs, spends `requiredConsumables`, ties up the clamps the stock's
   length derives.
-- **Finish** (`finishAttendedWorkAction`): `op.output(...)`, XP, sound
+- **Finish** (`finishAttendedWork`): `op.output(...)`, XP, sound
   events, granted machines/upgrades — or the handoff into a hands-free
   remainder (the glue cure's `machineTickPass` path).
 
 Between the two, resource-granting scripts dispatch incremental actions
-(per-nail salvage via `pryPalletNailAction`, throttled dust emission).
+(per-nail salvage via `pryPalletNail`, throttled dust emission).
 Operations declare their script via `Operation.interaction`, and the
 tick never advances a declared operation's attended phase. Dev builds
 expose the commits as `__START_OPERATION__` / `__FINISH_ATTENDED_WORK__`
@@ -187,7 +187,7 @@ station the whole time — the planer keeps power-feeding, glue keeps
 curing, dust keeps settling. Movement keys are pinned until Tab steps
 back, and opening the view walks the body into the standard working
 stance — centered on the bench's operation cell, squared up to the top
-(`workStance` in `player-motion.ts`, stepped by `PlayerMotionLayer`) —
+(`workStance` in `player-motion.ts`, walked by `MovementInput`) —
 so the dive's zoomed-in look always finds the woodworker standing at
 the bench the way a person works at one. **Dust and foley don't wait for the commit**: active stroking
 dispatches a throttled dust-emission action so the dust simulation stays
@@ -207,14 +207,14 @@ is the pallet instance transforming nail by nail:
   two present boards — a pallet is one board repeated, and the two rows
   are directions, not sizes — so every nail is in two boards and joins
   exactly them. They render in both views from the same
-  geometry (`pallet-geometry.ts` / `PalletSprite`), so the shop floor
+  geometry (`pallet-geometry.ts` / `createPalletSprite`), so the shop floor
   shows the same half-pried pallet the bench view does.
 - Each face only presents its own side's nail heads. The pallet is a
   piece like any other — it drags, R turns it, F flips it — and flipping
   it over is how the bottom boards' nails come on offer.
 - Z-order is physical: freed boards are loose stock riding on top of
   the pallet, and a board dragged back onto its berth re-enters the
-  pallet's layer sandwich (`berthLayerOf` — a stringer slid home lies
+  pallet's layer sandwich (`palletBoardSlot`'s `layer` field — a stringer slid home lies
   under the deck again). E takes the piece under the pointer, not the
   first in the bay.
 - Each pry is an action: the nail leaves `Pallet.nails`, `+1 nail` to
@@ -228,7 +228,7 @@ is the pallet instance transforming nail by nail:
   the _bench_, never the pallet — the anchor holds still when the
   pallet is dragged or turned mid-dismantle. The commit writes the
   landing spot; the walk from the berth is the bench view's entrance
-  tween (`BenchScene`), skipped under reduced motion. Mid-job you hold
+  tween (`BenchArrangeView`), skipped under reduced motion. Mid-job you hold
   a genuinely half-stripped pallet plus a pile of boards, all real
   state: refresh mid-dismantle and you resume at the exact nail you
   left, not because mini-game state was saved, but because every pull
@@ -236,19 +236,19 @@ is the pallet instance transforming nail by nail:
 
 ## The bench view itself
 
-`src/components/bench-view/` — Tab at a bench fills the whole window
+`src/shell/scenes/bench/` — Tab at a bench fills the whole window
 with the shop itself, leaned into. One measured PIXI `Application` at
 device resolution draws the same concrete floor the shop view tiles and
-the _same bench_ the shop floor draws (`BenchSceneBackdrop`:
+the _same bench_ the shop floor draws (`BenchDiveView`:
 `makeshift-bench@4x.png`, the starting bench's own drawing re-exported
-at 32 px/inch against the pipeline's 8; the `WorktableSprite` vectors
+at 32 px/inch against the pipeline's 8; the `WorktableArt` vectors
 for built tables) — the zoomed bench and the floor bench are one drawing
 at two zooms, both anchored on their canvas center so the close-up lands
 exactly over the shop's copy.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
-says (`BenchScene`; a board flipped up on edge narrows to its thickness,
-`BoardOnEdgeSprite`). F is one verb with three stops on a board — flat,
+says (`BenchDiveView`; a board flipped up on edge narrows to its thickness,
+`drawBoardOnEdge`). F is one verb with three stops on a board — flat,
 up on its long edge, up on its end — and the scene tumbles it between
 them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
 cycle and interpolates the very footprints `placedPieceSize` declares,
@@ -258,7 +258,7 @@ can't be reached by three honest single-axis tips, and why the leftover
 quarter turn is spent inside the leg instead of on `angleDeg`). The key
 hint names the stop F reaches next, so the cycle isn't something a
 player has to discover by surprise. Stroke and saw work runs on those very pieces in
-place (`StrokeSurface` / `SawSurface` mount over the scene at the
+place (`BenchStrokeView` / `BenchSawView` draw over the stage at the
 piece's placement — no takeover surface exists). The chrome floats:
 nameplate top-left, instruction + key hints bottom-center, the plan
 picker as a diegetic pile of blueprint sheets bottom-right
@@ -282,18 +282,15 @@ the rail shows the whole run's tools, and taking a neighbour's slides it
 onto the working table's rack first (`gatherBenchToolAction`), so an
 operation still resolves tools off one machine's state.
 
-Opening and closing are performed by a camera dive
-(`shop-view/BenchDiveLayer.tsx`), pure presentation: the shop's world
-container swells about the bench while the scene lands on its
-footprint, one similarity ramp applied to both halves in one tick —
-everything draws in the shop's single canvas, the scene as a
-screen-space container above the world (`BenchWorkSurface` publishes
-the subtree through `bench-view/benchSceneSlot.ts`; the DOM chrome and
-pointer handling stay in the portaled sheet). The zoomed live shop
-remains the backdrop the whole time the view is open — the scene paints
-no floor of its own and no vignette. Once the dive lands, the shop
-hides its own copies of that bench's stock
-(`setLeanedBench`/`useLeanedBenchKey`) so the scene's live versions
+Opening and closing are performed by a lean-in (`BenchDive`'s ramp,
+carried by `BenchDiveView`), pure presentation: the whole stage starts
+on the bench's own footprint out on the shop floor and eases up to the
+frame, one container's motion — everything draws in the shop's single
+canvas, the stage as a screen-space container above the world, with the
+chrome in the HUD above that. The live shop stays the backdrop the whole
+time the view is open — the stage paints no floor of its own and no
+vignette. Once the dive lands, the shop hides its own copies of that
+bench's stock so the stage's live versions
 don't ghost against static ones. Tab-Tab mid-flight rolls the ramp
 back. `prefers-reduced-motion` snaps straight to the end states — which
 is also how the E2E suite runs (`reducedMotion: "reduce"` in the

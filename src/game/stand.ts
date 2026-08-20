@@ -24,7 +24,7 @@ import { TRUCK_BODY_WIDTH } from "./lot";
  * ShopInfo the way lot.ts derives the truck's), what it accepts, what a
  * sale pays, and the customers' walking/browsing constants. The per-tick
  * simulation lives in game-actions/stand-actions.ts; the sprites in
- * components/shop-view/StandSprite.tsx and CustomerLayer.tsx.
+ * views/StandView.ts and views/CustomerView.ts.
  *
  * The rates below are deliberately fixed — customer frequency, spend,
  * and taste becoming variable (reputation, how nice the stand looks) is
@@ -32,7 +32,7 @@ import { TRUCK_BODY_WIDTH } from "./lot";
  */
 
 /** A passerby on the sidewalk line. Spawned, walked, and retired by
- * standTickPass; drawn by CustomerLayer as a simple circle. */
+ * standTickPass; drawn by CustomerView as a simple circle. */
 export interface Customer {
   readonly id: string;
   /** Continuous x in cell coordinates; y is always the sidewalk line. */

@@ -35,7 +35,7 @@ _is_ the indicator.
 - Producing operations carry a hand-tagged `dustOutput` rate
   (units/tick), following a rough ladder: planer ≫ table saw ≈ jointer >
   miter saw > sanding > hand-tool ops. Untagged operations emit nothing.
-- Dust is emitted **per tick during attended phases** in `tickAction`
+- Dust is emitted **per tick during attended phases** in `MachineSystem`
   (dust builds while the cut happens, which is also what drives the
   particle visuals). Interactive bench strokes dispatch the same
   emission, throttled, so hand sanding dirties the floor too. Hands-free
@@ -140,7 +140,7 @@ that chore arrives with the central collector (issue #113).
 ## Rendering
 
 - **Particle layer** (`CutParticles`,
-  `src/components/machine-sprites/CutParticles.tsx`): an imperative
+  `src/views/machine-sprites/CutParticleEmitter.ts`): an imperative
   particle pool inside `useTick` drawing to one `pixiGraphics` — no
   per-particle React. Species-colored chips spray while the machine
   works; saws throw fast dust flecks, jointer/planer throw tumbling
@@ -149,7 +149,7 @@ that chore arrives with the central collector (issue #113).
   container, so settle positions convert to shop space (`toGlobal` at
   stamp time).
 - **Floor bake** (`DustLayer` + `dustStampBus`,
-  `src/components/shop-view/`): settling chips come to rest and bake
+  `src/views/DustView.ts`): settling chips come to rest and bake
   into a shop-sized `RenderTexture` where they stopped — the chip you
   watched fly _is_ the smudge it left, at constant render cost
   regardless of filth. On load the texture is rebuilt from
@@ -158,9 +158,10 @@ that chore arrives with the central collector (issue #113).
   the texture is an exact picture of the ledger and cleaning visibly
   thins it. Particles stay purely cosmetic: state is authoritative,
   and a landing only animates the ledger entry arriving.
-- `DustMotionLayer` is the motion between the ledger entries: cells that
-  lose dust throw pale flecks that fly into the broom head or the
-  nozzle, and emptying pours a stream into the can.
+- `DustMotionView` (`src/views/DustMotionView.ts`) is the motion between
+  the ledger entries: cells that lose dust throw pale flecks that fly
+  into the broom head or the nozzle, and emptying pours a stream into
+  the can.
 
 ## Disclosure & tutorial
 

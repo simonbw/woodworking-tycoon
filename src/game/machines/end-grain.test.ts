@@ -6,7 +6,6 @@ import { GameState } from "../GameState";
 import { getMachines, Operation, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { mountToolAction } from "../game-actions/tool-actions";
-import { tickAction } from "../game-actions/tickAction";
 import { finishAttendedWorkAction } from "../game-actions/operation-actions";
 import {
   isFinishedProduct,

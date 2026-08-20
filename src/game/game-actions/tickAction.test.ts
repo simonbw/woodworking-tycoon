@@ -3,14 +3,12 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { cellDust } from "../Dust";
 import { GameState } from "../GameState";
-import { initialPalletNails } from "../bench-work/pallet-geometry";
 import { MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { makeMaterial } from "../material-helpers";
-import { FinishedProduct, Pallet } from "../Materials";
+import { FinishedProduct } from "../Materials";
 import { ScavengingTrip } from "../Person";
 import { GLUE_CURE_TICKS } from "../machines/workspace";
-import { panel } from "../panel-helpers";
 import { tickAction } from "./tickAction";
 
 /** The fixture workspace sits at [1,2] rotation 0 — its operation cell. */
@@ -107,42 +105,9 @@ function attendingStateWith(overrides: Partial<GameState>): GameState {
   });
 }
 
-/** A pallet with a single deck board left, so dismantling finishes it. */
-function nearlyDismantledPallet(): Pallet {
-  const deckBoards = [
-    true,
-    ...(Array(10).fill(false) as boolean[]),
-  ] as Pallet["deckBoards"];
-  return makeMaterial<Pallet>({
-    type: "pallet",
-    deckBoards,
-    stringers: [true, true, true],
-    nails: initialPalletNails(deckBoards, [true, true, true]),
-  });
-}
-
 /** Five smooth maple strips, mid-glue-up. */
 function glueStrips() {
   return Array.from({ length: 5 }, () => board("maple", 24, 2, 4, "smooth"));
-}
-
-/**
- * A sanded 10"-wide maple panel — a finished cutting board's blank. The
- * finish recipes are the bench's remaining legacy (attended-tick) hand
- * work, so they are the guinea pigs for generic tick mechanics now that
- * dismantling, sanding, gluing and assembly commit through the bench
- * view's actions instead.
- */
-function sandedPanel() {
-  return panel(
-    Array.from({ length: 5 }, () => ({
-      species: "maple" as const,
-      width: 2 as const,
-    })),
-    24,
-    4,
-    "sanded",
-  );
 }
 
 describe("tickAction", () => {

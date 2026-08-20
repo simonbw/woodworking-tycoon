@@ -1,10 +1,7 @@
 import { GameAction, GameState } from "../GameState";
 import { getMaterialName } from "../material-helpers";
 import { getSellValue } from "../material-values";
-import { MaterialInstance } from "../Materials";
-import { handSpaceLeft } from "../Person";
 import {
-  atStand,
   Customer,
   customerSpan,
   CUSTOMER_BROWSE_TICKS,
@@ -12,7 +9,6 @@ import {
   CUSTOMER_SPAWN_CHANCE_EMPTY,
   CUSTOMER_SPAWN_CHANCE_STOCKED,
   CUSTOMER_SPEED,
-  isSellable,
   MAX_CUSTOMERS,
   pickPurchase,
   roundToCents,
@@ -22,89 +18,6 @@ import {
 } from "../stand";
 import { isNight } from "../time-flow";
 import { emitPayout } from "./payout-actions";
-
-/**
- * Sets pieces from the arms out on the stand, the way the truck's bed
- * loads: one per press, an armful with Shift. Only sellable pieces go
- * out — raw stock stays in hand. The chip never offers an unsellable
- * piece, but the action enforces both rules anyway because where and
- * what the stand sells is a game rule.
- */
-export function setOutAtStandAction(
-  materials: ReadonlyArray<MaterialInstance>,
-): GameAction {
-  return (gameState) => {
-    if (!atStand(gameState.shopInfo, gameState.player.position)) {
-      console.warn("Tried to set out pieces away from the stand");
-      return gameState;
-    }
-    if (materials.length === 0) {
-      console.warn("Tried to set out nothing");
-      return gameState;
-    }
-    if (
-      !materials.every((material) =>
-        gameState.player.inventory.some((item) => item === material),
-      )
-    ) {
-      console.warn("Tried to set out material not in inventory");
-      return gameState;
-    }
-    if (!materials.every(isSellable)) {
-      console.warn("Tried to set out something nobody would pay for");
-      return gameState;
-    }
-    return {
-      ...gameState,
-      stand: [...gameState.stand, ...materials],
-      player: {
-        ...gameState.player,
-        inventory: gameState.player.inventory.filter(
-          (item) => !materials.includes(item),
-        ),
-      },
-    };
-  };
-}
-
-/**
- * Takes pieces back off the stand into the arms — the newest set out
- * first, as many as asked for, capped by what the hands can still hold.
- */
-export function takeFromStandAction(count = 1): GameAction {
-  return (gameState) => {
-    if (!atStand(gameState.shopInfo, gameState.player.position)) {
-      console.warn("Tried to take from the stand out of reach");
-      return gameState;
-    }
-    const taken = Math.min(
-      count,
-      gameState.stand.length,
-      handSpaceLeft(gameState.player),
-    );
-    if (taken <= 0) {
-      console.warn("Tried to take from the stand with full hands");
-      return gameState;
-    }
-    const kept = gameState.stand.slice(0, gameState.stand.length - taken);
-    const returned = gameState.stand.slice(gameState.stand.length - taken);
-    return {
-      ...gameState,
-      stand: kept,
-      player: {
-        ...gameState.player,
-        inventory: [...gameState.player.inventory, ...returned],
-      },
-    };
-  };
-}
-
-/** What a plain press takes back: the newest piece set out. */
-export function standTopItem(
-  stand: ReadonlyArray<MaterialInstance>,
-): MaterialInstance | undefined {
-  return stand[stand.length - 1];
-}
 
 /**
  * The per-tick street pass, run by tickAction: customers stroll the

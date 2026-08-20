@@ -6,14 +6,11 @@ import {
   dustTotal,
   inBounds,
   MutableSpeciesAmounts,
-  SpeciesAmounts,
 } from "../Dust";
 import { GameAction, GameState } from "../GameState";
-import { BROOM_COST, holdingBroom } from "../HeldTool";
-import { isOutdoors } from "../lot";
+import { holdingBroom } from "../HeldTool";
 import { getMachines } from "../Machine";
 import { personCanWork } from "../Person";
-import { carryingShopVac } from "../ShopVac";
 import { DustSpecies } from "../Materials";
 import {
   chebyshevDistance,
@@ -24,7 +21,6 @@ import {
   Vector,
 } from "../Vectors";
 import { CellMap } from "../CellMap";
-import { emitSound } from "./sound-actions";
 import { withXp } from "./skill-actions";
 
 /** Share of a swath cell's dust one tick of sweeping gathers. */
@@ -37,7 +33,7 @@ const UNDER_MACHINE_RATE = 0.3;
  * cells at once and the pan fills in a blink. The take scales down
  * proportionally across the swath, so the whole patch thins together.
  */
-export const SWEEP_TICK_CAP = 8;
+const SWEEP_TICK_CAP = 8;
 /** Below this a cell counts as clean and its key is dropped. */
 const CLEAN_EPSILON = 0.05;
 /** Craft XP per heavy sweeping tick — shopkeeping feeds progression. */
@@ -121,81 +117,13 @@ export function nextToGarbageCan(
 }
 
 /** Room left in the dustpan, in dust units. */
-export function dustpanRoom(gameState: GameState): number {
+function dustpanRoom(gameState: GameState): number {
   return Math.max(0, DUSTPAN_CAPACITY - dustTotal(gameState.dustpan));
 }
 
 /** How full the dustpan is, 0–1. Drives the hands-strip readout. */
 export function dustpanFillFraction(gameState: GameState): number {
   return Math.min(1, dustTotal(gameState.dustpan) / DUSTPAN_CAPACITY);
-}
-
-/** Bought at the store; it arrives leaning at the material dropoff spot. */
-export function buyBroomAction(): GameAction {
-  return (gameState) => {
-    if (gameState.broomOwned) {
-      console.warn("Already own a broom");
-      return gameState;
-    }
-    if (gameState.money < BROOM_COST) {
-      console.warn("Tried to buy the broom without enough money");
-      return gameState;
-    }
-    return {
-      ...gameState,
-      money: gameState.money - BROOM_COST,
-      broomOwned: true,
-      broomPosition: gameState.shopInfo.materialDropoffPosition,
-    };
-  };
-}
-
-/**
- * Take the broom off the floor and into the hands. Committing: with the
- * broom in hand the player can't pick up stock, run a machine, or grab
- * the vac — Space belongs to sweeping until the broom is set down (F).
- */
-export function pickUpBroomAction(): GameAction {
-  return (gameState) => {
-    if (!gameState.broomOwned) {
-      return gameState;
-    }
-    if (
-      gameState.broomPosition === null ||
-      chebyshevDistance(gameState.broomPosition, gameState.player.position) > 1
-    ) {
-      return gameState;
-    }
-    if (
-      !personCanWork(gameState.player) ||
-      gameState.player.carriedMachine != null ||
-      gameState.player.inventory.length > 0 ||
-      carryingShopVac(gameState)
-    ) {
-      return gameState;
-    }
-    return emitSound(
-      { ...gameState, broomPosition: null },
-      { kind: "material-pickup" },
-    );
-  };
-}
-
-/** Lean the broom on the floor right here — pan contents and all. */
-export function putDownBroomAction(): GameAction {
-  return (gameState) => {
-    if (!holdingBroom(gameState) || gameState.player.away !== null) {
-      return gameState;
-    }
-    // The broom stays in hand on the lot — it leans on shop floor, not lawn
-    if (isOutdoors(gameState.shopInfo, gameState.player.position)) {
-      return gameState;
-    }
-    return emitSound(
-      { ...gameState, broomPosition: gameState.player.position },
-      { kind: "material-drop" },
-    );
-  };
 }
 
 /**

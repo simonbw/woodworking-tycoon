@@ -1,6 +1,6 @@
 import React from "react";
 import { SheetGoodKind } from "../../game/Materials";
-import { colorBySheetGoodKind } from "../shop-view/colorBySpecies";
+import { colorBySheetGoodKind } from "../../views/colorBySpecies";
 
 /**
  * A sheet seen face-on with its edge showing, drawn small for the store
