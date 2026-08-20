@@ -39,8 +39,7 @@ const isMiteredTwelve = (m: MaterialInstance) =>
 
 /** What the opening's card is telling the player to do right now. */
 function step(shop: ShopDriver): TutorialStepId | undefined {
-  // One engine frame runs the milestone pass (the old
-  // checkProgressionMilestonesAction) over the world as it stands.
+  // One engine frame runs the milestone pass over the world as it stands.
   shop.stepEngine(1);
   return currentTutorialStep(shop.shop, "opening")?.id;
 }

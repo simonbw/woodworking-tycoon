@@ -142,10 +142,10 @@ export class ShopDriver {
   }
 
   /**
-   * Advance the world by whole game minutes — the old tickAction unit,
-   * which is what every sequence test thinks in. Each minute is forced
-   * through TimeFlow one engine tick at a time so the per-minute
-   * interleaving of the sim layers matches the old pipeline exactly.
+   * Advance the world by whole game minutes — the unit every sequence
+   * test thinks in. Each minute is forced through TimeFlow one engine
+   * tick at a time, so the sim layers interleave once per minute in the
+   * order `config/tickLayers.ts` sets.
    */
   tick(ticks: number = 1): void {
     for (let i = 0; i < ticks; i++) {

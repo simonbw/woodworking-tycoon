@@ -106,7 +106,9 @@ describe("sim/view import boundaries", () => {
     // dispatcher uses. Their imports into src/sim must resolve into the
     // command layer; the driver may additionally read the save plumbing,
     // the bootstrap, and singleton classes for its assertion surface.
-    // Neither may lean on the old world's transform layer.
+    // Neither reaches into `src/game/game-actions` for the pure rules
+    // either — the command files re-export the ones they need, so there
+    // is one seam rather than two.
     const RULES: Array<{ dirs: string[]; allowed: RegExp[] }> = [
       {
         dirs: ["src/shell/dispatch"],
@@ -146,11 +148,11 @@ describe("sim/view import boundaries", () => {
       for (const file of dirs.flatMap(sourceFiles)) {
         for (const target of importTargets(file)) {
           const inSim = target.startsWith("src/sim/");
-          const inOldActions = target.startsWith("src/game/game-actions");
+          const inRuleModules = target.startsWith("src/game/game-actions");
           if (inSim && !allowed.some((pattern) => pattern.test(target))) {
             offenders.push(`${file} → ${target}`);
           }
-          if (inOldActions) {
+          if (inRuleModules) {
             offenders.push(`${file} → ${target}`);
           }
         }

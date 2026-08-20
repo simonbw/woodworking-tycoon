@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { SCAVENGE_STOP_TICKS } from "./game-actions/scavenge-actions";
+import { SCAVENGE_STOP_TICKS } from "./scavenge";
 import { GLUE_CURE_TICKS } from "./machines/benchOperations";
 import {
   dayPhase,

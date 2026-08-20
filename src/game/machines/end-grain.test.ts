@@ -2,15 +2,10 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { TOOL_TYPES } from "../Tool";
 import { board, palletBoard } from "../board-helpers";
-import { GameState } from "../GameState";
-import { getMachines, Operation, MachineState } from "../Machine";
-import { initialGameState } from "../initialGameState";
-import { mountToolAction } from "../game-actions/tool-actions";
-import { finishAttendedWorkAction } from "../game-actions/operation-actions";
+import { Operation } from "../Machine";
 import {
   isFinishedProduct,
   makeMaterial,
-  makeToolItem,
   materialMeetsInput,
 } from "../material-helpers";
 import { getSellValue } from "../material-values";
@@ -226,73 +221,16 @@ describe("planer vs end grain", () => {
   });
 });
 
+/**
+ * Building the sled and bolting it to the saw is a whole run, driven in
+ * `sim/sequences/end-grain-chain.test.ts`; a station refusing a tool it
+ * can't take is `sim/commands/tool-commands.test.ts`. What's left here is
+ * the registry claim both of those rest on.
+ */
 describe("shop-made tooling", () => {
-  function sledBuildState(): GameState {
-    const machine: MachineState = {
-      ...initialGameState.machines[0],
-      selectedOperationId: "buildCrosscutSled",
-      processingMaterials: [plywood(), palletBoard(), palletBoard()],
-      operationProgress: {
-        status: "inProgress",
-        phaseIndex: 0,
-        ticksRemaining: 1,
-      },
-    };
-    return {
-      ...initialGameState,
-      machines: [machine],
-      player: {
-        ...initialGameState.player,
-        position: [1, 3],
-        operating: true,
-      },
-    };
-  }
-
-  it("finishing the sled recipe lands the sled in the output bay", () => {
-    // Assembly is bench-view hand work: the build resolves through the
-    // same finish commit the mini-game dispatches, not a tick.
-    const state = sledBuildState();
-    const result = finishAttendedWorkAction(getMachines(state.machines)[0])(
-      state,
-    );
-    const outputs = result.machines[0].outputMaterials;
-    assert.strictEqual(outputs.length, 1);
-    const sled = outputs[0];
-    assert.ok(sled.type === "tool" && sled.toolId === "crosscutSled");
-    // Tooling is not a product: no craft XP
-    assert.strictEqual(result.progression.xp, 0);
-  });
-
   it("the sled only mounts on the table saw", () => {
-    const sledInHand = makeToolItem("crosscutSled");
-    const withSled: GameState = {
-      ...initialGameState,
-      player: {
-        ...initialGameState.player,
-        inventory: [...initialGameState.player.inventory, sledInHand],
-      },
-    };
-    // Workspace (machine 0) refuses it
-    const workspaceMachine = getMachines(withSled.machines)[0];
-    const refused = mountToolAction(workspaceMachine, sledInHand)(withSled);
-    assert.strictEqual(refused, withSled);
-
-    // A table saw accepts it
-    const sawState: GameState = {
-      ...withSled,
-      machines: [
-        {
-          ...withSled.machines[0],
-          machineTypeId: "jobsiteTableSaw",
-          selectedOperationId: "ripBoard",
-          // The starter hammer stays at the bench — the saw's slot is free
-          tools: [],
-        },
-      ],
-    };
-    const saw = getMachines(sawState.machines)[0];
-    const mounted = mountToolAction(saw, sledInHand)(sawState);
-    assert.deepStrictEqual(mounted.machines[0].tools, ["crosscutSled"]);
+    assert.deepStrictEqual(crosscutSled.compatibleMachines, [
+      "jobsiteTableSaw",
+    ]);
   });
 });

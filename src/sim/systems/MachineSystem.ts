@@ -24,8 +24,8 @@ import { TimeFlow } from "../TimeFlow";
 import { applyCompletionGrants } from "./grants";
 
 /**
- * The machines' slice of the sim tick — the old `machineTickPass`,
- * rehosted. One pass per sim minute over every machine entity: every
+ * The machines' slice of the sim tick. One pass per sim minute over
+ * every machine entity: every
  * in-progress operation advances (or waits for the player), sheds dust,
  * and on completion delivers outputs and grants through the shared
  * completion commit. Attended phases only tick while the player stands

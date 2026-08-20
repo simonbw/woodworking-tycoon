@@ -8,15 +8,16 @@ import { initialGameState } from "../initialGameState";
 import { resolveInteract } from "../interact";
 import { machineCanOperate, stageableMaterials } from "../machine-helpers";
 import { MaterialInstance } from "../Materials";
-import {
-  moveMaterialsToMachineAction,
-  operateMachineAction,
-  setOperatingAction,
-  takeInputsFromMachineAction,
-} from "../game-actions/player-actions";
-import { tickAction } from "../game-actions/tickAction";
 import { Vector, vectorKey } from "../Vectors";
 import { GARBAGE_CAN_CAPACITY } from "./garbageCan";
+
+/**
+ * What the can is: its reach, what it will take, and the fact that it
+ * answers no key of its own. Working it — tossing stock in, taking it
+ * back out, and holding the trigger to haul a piece to the curb — is
+ * driven through the live commands in
+ * `sim/commands/machine-commands.test.ts`.
+ */
 
 /** A shop with one can in the middle of the floor, player beside it. */
 function shopWithCan(
@@ -110,58 +111,6 @@ describe("garbage can", () => {
     );
   });
 
-  it("gives back what was tossed in — nothing is gone until it is emptied", () => {
-    const offcut = board("pine", 24, 4, 1);
-    let gameState: GameState = {
-      ...shopWithCan(),
-      player: { ...shopWithCan().player, inventory: [offcut] },
-    };
-
-    gameState = moveMaterialsToMachineAction(
-      [offcut],
-      theCan(gameState),
-    )(gameState);
-    assert.deepStrictEqual(gameState.player.inventory, []);
-    assert.deepStrictEqual(theCan(gameState).inputMaterials, [offcut]);
-
-    gameState = takeInputsFromMachineAction(
-      [offcut],
-      theCan(gameState),
-    )(gameState);
-    assert.deepStrictEqual(gameState.player.inventory, [offcut]);
-    assert.deepStrictEqual(theCan(gameState).inputMaterials, []);
-  });
-
-  it("destroys one piece per run of Empty, leaving the rest", () => {
-    const kept = board("oak", 36, 5, 1);
-    let gameState = shopWithCan([board("pine", 12, 2, 1), kept]);
-
-    gameState = operateMachineAction(theCan(gameState))(gameState);
-    gameState = setOperatingAction(true)(gameState);
-    assert.strictEqual(
-      theCan(gameState).operationProgress.status,
-      "inProgress",
-    );
-
-    let ticks = 0;
-    for (let i = 0; i < 30; i++) {
-      if (theCan(gameState).operationProgress.status !== "inProgress") break;
-      gameState = tickAction(gameState);
-      ticks++;
-    }
-
-    assert.strictEqual(
-      theCan(gameState).operationProgress.status,
-      "notStarted",
-    );
-    // Hauling a piece to the curb is a hold worth a second or more, not a
-    // tap — a full can should feel like an errand.
-    assert.ok(ticks >= 5, `emptying one piece took only ${ticks} ticks`);
-    assert.deepStrictEqual(theCan(gameState).inputMaterials, [kept]);
-    assert.deepStrictEqual(theCan(gameState).outputMaterials, []);
-    assert.deepStrictEqual(gameState.player.inventory, []);
-  });
-
   it("never answers the interact key — it is opened, not reached into", () => {
     const gameState = shopWithCan([board("pine", 12, 2, 1)]);
     assert.strictEqual(resolveInteract(gameState, theCan(gameState)), null);
@@ -183,12 +132,6 @@ describe("garbage can", () => {
       piles: gameState.materialPiles,
       target: gameState.materialPiles[0],
     });
-  });
-
-  it("will not run when there is nothing in it", () => {
-    const gameState = shopWithCan();
-    const after = operateMachineAction(theCan(gameState))(gameState);
-    assert.strictEqual(theCan(after).operationProgress.status, "notStarted");
   });
 
   it("reports whether it can run without choking on its take-anything recipe", () => {

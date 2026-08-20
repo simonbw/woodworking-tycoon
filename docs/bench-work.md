@@ -171,7 +171,7 @@ decide _what_. Every interactive operation has two commit points:
   length derives.
 - **Finish** (`finishAttendedWork`): `op.output(...)`, XP, sound
   events, granted machines/upgrades — or the handoff into a hands-free
-  remainder (the glue cure's `machineTickPass` path).
+  remainder (the glue cure's `MachineSystem` path).
 
 Between the two, resource-granting scripts dispatch incremental actions
 (per-nail salvage via `pryPalletNail`, throttled dust emission).

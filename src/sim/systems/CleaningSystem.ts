@@ -26,7 +26,7 @@ import { TimeFlow } from "../TimeFlow";
  * suction, and the vac's passive trickle, in the old pipeline's order
  * (sweep → vacuum → shopVac), one pass per sim minute on the "cleaning"
  * layer — before machines emit this minute's dust, so cleaning always
- * clears the floor as of last minute, exactly like `tickAction`.
+ * clears the floor as of last minute.
  *
  * Unlike the MachineSystem (whose state lives spread across per-machine
  * entities), the cleaning passes read and write a handful of singleton

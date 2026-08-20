@@ -7,14 +7,12 @@ import { SleepSystem } from "../systems/SleepSystem";
 
 /**
  * The day cycle's command surface: driving home for the night and waking
- * up the next morning, ported from the old `door-actions.ts`
- * (`goHomeAction` / `wakeUpAction`). Refusals log and return false,
- * matching the old actions' quiet-refusal contract.
+ * up the next morning. A refusal logs and returns false.
  *
- * Waking is the one command that can't finish inside the call: the old
- * wakeUpAction ran the whole overnight as NIGHT_TICKS sequential
- * tickActions, and in the new world sim minutes only pass through engine
- * ticks — which a command must never drive. So `beginWakeUp` validates
+ * Waking is the one command that can't finish inside the call: the whole
+ * overnight is NIGHT_TICKS sim minutes, and sim minutes only pass through
+ * engine ticks — which a command must never drive. So `beginWakeUp`
+ * validates
  * and queues the overnight on the SleepSystem, and the caller steps the
  * engine until the player is back beside the cab (see SleepSystem's
  * header for the mechanism, and ShopDriver.sleep for the loop).

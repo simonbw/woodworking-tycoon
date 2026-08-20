@@ -1,31 +1,24 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "../board-helpers";
 import { CellMap } from "../CellMap";
 import { GameState } from "../GameState";
-import {
-  Machine,
-  MACHINE_TYPES,
-  Operation,
-  MachineState,
-  getMachines,
-} from "../Machine";
+import { MACHINE_TYPES, Operation, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
-import { makeMaterial } from "../material-helpers";
-import { SheetGood } from "../Materials";
 import {
   canPlaceMachine,
   machinesMountedOnTable,
-  pickUpMachineAction,
 } from "../game-actions/machine-actions";
-import {
-  stowMaterialsInMachineAction,
-  takeStoredMaterialsFromMachineAction,
-} from "../game-actions/player-actions";
-import { finishAttendedWorkAction } from "../game-actions/operation-actions";
 import { getOperationPhases } from "../skill-helpers";
 import { workspace } from "./workspace";
 import { worktable1x1, worktable1x2 } from "./worktables";
+
+/**
+ * What a worktable is: the recipes that build one, the stats it beats the
+ * makeshift bench with, and the placement rules that let benchtop
+ * machines stand on it. Carrying a table, its shelf, and the crate a
+ * finished build lands in are driven through the live commands in
+ * `sim/commands/machine-commands.test.ts`.
+ */
 
 function machineAt(
   machineTypeId: MachineState["machineTypeId"],
@@ -56,16 +49,6 @@ function stateWith(overrides: Partial<GameState>): GameState {
   return { ...initialGameState, ...overrides };
 }
 
-function plywoodSheet(): SheetGood {
-  return makeMaterial<SheetGood>({
-    type: "plywood",
-    kind: "plywoodB",
-    length: 48,
-    width: 48,
-    thickness: 2,
-  });
-}
-
 describe("worktable build recipes", () => {
   const buildSmall = workspace.operations.find(
     (op) => op.id === "build-worktable1x1",
@@ -86,48 +69,6 @@ describe("worktable build recipes", () => {
     const result = buildSmall.output([], {});
     assert.deepStrictEqual(result.outputs, []);
     assert.deepStrictEqual(result.machineOutputs, ["worktable1x1"]);
-  });
-
-  it("delivers the finished table to machine storage on completion", () => {
-    const machine = machineAt("workspace", [1, 2], {
-      selectedOperationId: "build-worktable1x1",
-      processingMaterials: [
-        plywoodSheet(),
-        board("pallet", 48, 6, 6),
-        board("pallet", 48, 6, 6),
-        board("pallet", 48, 6, 6),
-      ],
-      operationProgress: {
-        status: "inProgress",
-        phaseIndex: 0,
-        ticksRemaining: 1,
-      },
-    });
-    const state = stateWith({
-      machines: [machine],
-      // The workspace operation cell for position [1,2] rotation 0
-      player: {
-        ...initialGameState.player,
-        position: [1, 4],
-        operating: true,
-      },
-    });
-
-    // Assembly commits through the bench view's finish action now
-    const result = finishAttendedWorkAction(getMachines(state.machines)[0])(
-      state,
-    );
-    // The finished table lands crated at the bench's operator cell
-    assert.strictEqual(result.machineCrates.length, 1);
-    assert.strictEqual(
-      result.machineCrates[0].machine.machineTypeId,
-      "worktable1x1",
-    );
-    assert.deepStrictEqual(result.machineCrates[0].position, [1, 4]);
-    assert.strictEqual(
-      result.machines[0].operationProgress.status,
-      "notStarted",
-    );
   });
 });
 
@@ -238,57 +179,5 @@ describe("moving and removing tables", () => {
     const state = stateWith({ machines: [table, saw] });
     assert.strictEqual(machinesMountedOnTable(state, 0).length, 1);
     assert.strictEqual(machinesMountedOnTable(state, 1).length, 0);
-  });
-
-  it("refuses to pick up a table with a machine mounted", () => {
-    const state = stateWith({ machines: [table, saw] });
-    assert.strictEqual(pickUpMachineAction(table)(state), state);
-  });
-
-  it("keeps shelf stock aboard when a table is carried", () => {
-    const stocked = machineAt("worktable1x1", [2, 2], {
-      storedMaterials: [board("maple", 24, 2, 4)],
-    });
-    const state = stateWith({ machines: [stocked], materialPiles: [] });
-    const result = pickUpMachineAction(stocked)(state);
-    assert.strictEqual(result.machines.length, 0);
-    assert.strictEqual(result.materialPiles.length, 0);
-    assert.strictEqual(
-      result.player.carriedMachine?.storedMaterials?.length,
-      1,
-    );
-  });
-});
-
-describe("the shelf", () => {
-  it("stows carried materials up to capacity and takes them back", () => {
-    const stock = Array.from({ length: 4 }, () => board("maple", 24, 2, 4));
-    const table = machineAt("worktable1x1", [2, 2]);
-    const state = stateWith({
-      machines: [table],
-      player: { ...initialGameState.player, inventory: stock },
-    });
-    const machineView = new Machine(table);
-
-    // worktable1x1 holds 3 — stowing all 4 is refused outright
-    assert.strictEqual(
-      stowMaterialsInMachineAction(stock, machineView)(state),
-      state,
-    );
-
-    const stowed = stowMaterialsInMachineAction(
-      stock.slice(0, 3),
-      machineView,
-    )(state);
-    assert.strictEqual(stowed.machines[0].storedMaterials?.length, 3);
-    assert.strictEqual(stowed.player.inventory.length, 1);
-
-    const shelfView = new Machine(stowed.machines[0]);
-    const taken = takeStoredMaterialsFromMachineAction(
-      [stowed.machines[0].storedMaterials![0]],
-      shelfView,
-    )(stowed);
-    assert.strictEqual(taken.machines[0].storedMaterials?.length, 2);
-    assert.strictEqual(taken.player.inventory.length, 2);
   });
 });

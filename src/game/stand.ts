@@ -23,7 +23,7 @@ import { TRUCK_BODY_WIDTH } from "./lot";
  * This module owns the model: the stand's geometry (derived from
  * ShopInfo the way lot.ts derives the truck's), what it accepts, what a
  * sale pays, and the customers' walking/browsing constants. The per-tick
- * simulation lives in game-actions/stand-actions.ts; the sprites in
+ * simulation lives in sim/systems/StreetSystem.ts; the sprites in
  * views/StandView.ts and views/CustomerView.ts.
  *
  * The rates below are deliberately fixed — customer frequency, spend,
@@ -32,7 +32,7 @@ import { TRUCK_BODY_WIDTH } from "./lot";
  */
 
 /** A passerby on the sidewalk line. Spawned, walked, and retired by
- * standTickPass; drawn by CustomerView as a simple circle. */
+ * the StreetSystem; drawn by CustomerView as a simple circle. */
 export interface Customer {
   readonly id: string;
   /** Continuous x in cell coordinates; y is always the sidewalk line. */

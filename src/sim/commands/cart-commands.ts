@@ -14,14 +14,12 @@ import {
 } from "./store-commands";
 
 /**
- * The cart's verbs, ported from the old `cart-actions.ts`: picking things
- * off the shelf, putting them back, and the one moment money changes
- * hands.
+ * The cart's verbs: picking things off the shelf, putting them back, and
+ * the one moment money changes hands.
  *
- * The arrangement carries over whole: the purchase commands (see
- * store-commands.ts, plus the broom's and the vac's in
- * cleaning-commands.ts) still own what a purchase *does*, and checkout is
- * a fold of the cart through exactly those commands. Nothing here
+ * The purchase commands (see store-commands.ts, plus the broom's and the
+ * vac's in cleaning-commands.ts) own what a purchase *does*, and checkout
+ * is a fold of the cart through exactly those commands. Nothing here
  * duplicates a price, a destination, or a milestone check.
  *
  * A cart may exceed the wallet — the register is what refuses, not the

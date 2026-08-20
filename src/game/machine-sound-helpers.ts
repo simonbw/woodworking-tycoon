@@ -60,7 +60,7 @@ export function deriveMachineSoundPhase(
     return idle;
   }
 
-  // Same rule the tick uses (see `tickAction`): an attended phase only bites
+  // Same rule the tick uses (see MachineSystem): an attended phase only bites
   // wood while the player stands there *holding the operate key*. Let go of
   // Space at the jointer and the blade is still spinning, but nothing is
   // being fed through it — so the cut sound (and the sawdust the sprites

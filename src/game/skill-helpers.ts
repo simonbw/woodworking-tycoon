@@ -1,4 +1,4 @@
-import { ProgressionState } from "./GameState";
+import { GameState, ProgressionState } from "./GameState";
 import { Machine, Operation, OperationPhase } from "./Machine";
 import { SkillId } from "./Skill";
 
@@ -10,6 +10,28 @@ import { SkillId } from "./Skill";
  */
 export function xpCostOfLevel(level: number): number {
   return 10 + (level - 1) * 20;
+}
+
+/**
+ * Adds craft XP to a shop snapshot, converting any level-ups into skill
+ * points. Used by the cleaning passes, which work over a projection of
+ * the world; the entity world's own award is `sim/systems/grants.ts`.
+ */
+export function withXp(gameState: GameState, amount: number): GameState {
+  if (amount <= 0) {
+    return gameState;
+  }
+  const { progression } = gameState;
+  const newXp = progression.xp + amount;
+  const levelsGained = levelForXp(newXp) - levelForXp(progression.xp);
+  return {
+    ...gameState,
+    progression: {
+      ...progression,
+      xp: newXp,
+      skillPoints: progression.skillPoints + levelsGained,
+    },
+  };
 }
 
 /** The level a player with this much lifetime XP has reached (starts at 1). */

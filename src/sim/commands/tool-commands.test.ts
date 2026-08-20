@@ -9,6 +9,7 @@ import { MaterialInstance, ToolItem } from "../../game/Materials";
 import { ToolId } from "../../game/Tool";
 import { UpgradeId } from "../../game/Upgrade";
 import { ShopDriver } from "../driver/ShopDriver";
+import { pickUpMachine } from "./machine-commands";
 import { dropMaterial } from "./pile-commands";
 import { mountTool, unmountTool } from "./tool-commands";
 import { installUpgrade, uninstallUpgrade } from "./upgrade-commands";
@@ -28,13 +29,14 @@ const IN_PROGRESS: MachineState["operationProgress"] = {
   ticksRemaining: 5,
 };
 
-/** A 2'×2' worktable standing clear of the fixture's workspace. */
-function worktableAt(
+/** A bare machine of the given kind, standing clear of everything else. */
+function machineAt(
+  machineTypeId: MachineState["machineTypeId"],
   position: [number, number],
   overrides: Partial<MachineState> = {},
 ): MachineState {
   return {
-    machineTypeId: "worktable1x1",
+    machineTypeId,
     position,
     rotation: 0,
     inputMaterials: [],
@@ -54,6 +56,14 @@ function worktableAt(
   };
 }
 
+/** A 2'×2' worktable standing clear of the fixture's workspace. */
+function worktableAt(
+  position: [number, number],
+  overrides: Partial<MachineState> = {},
+): MachineState {
+  return machineAt("worktable1x1", position, overrides);
+}
+
 /**
  * The hand-tools fixture, restaged for the mount/unmount trade: the
  * workspace plus a worktable, with the loose tools and upgrades wherever
@@ -66,6 +76,7 @@ function toolShop(
     bed?: MaterialInstance[];
     workspace?: Partial<MachineState>;
     worktable?: Partial<MachineState>;
+    extraMachines?: MachineState[];
     storageUpgrades?: UpgradeId[];
   } = {},
 ): GameState {
@@ -79,6 +90,7 @@ function toolShop(
     machines: [
       { ...handToolsShop.machines[0], ...overrides.workspace },
       worktableAt([6, 6], overrides.worktable),
+      ...(overrides.extraMachines ?? []),
     ],
     truck: { bed: overrides.bed ?? [], crates: [] },
     storage: { upgrades: overrides.storageUpgrades ?? [] },
@@ -212,10 +224,13 @@ describe("mounting and unmounting tools", () => {
     assert.strictEqual(shop.inventory.length, 1);
   });
 
-  it("refuses a tool that doesn't mount on this machine", () => {
+  it("refuses a tool that doesn't mount on this machine, and takes it on one that does", () => {
     // The dust bag's compatible list names dusty machines, not benches
     const shop = new ShopDriver({
-      state: toolShop({ inventory: [makeToolItem("dustBag")] }),
+      state: toolShop({
+        inventory: [makeToolItem("dustBag")],
+        extraMachines: [machineAt("lunchboxPlaner", [3, 10])],
+      }),
     });
     const refused = mountTool(
       shop.game,
@@ -224,6 +239,26 @@ describe("mounting and unmounting tools", () => {
     );
     assert.strictEqual(refused, false);
     assert.deepStrictEqual(shop.machine("workspace").state.tools, []);
+
+    // The planer is on the list
+    assert.ok(
+      mountTool(
+        shop.game,
+        shop.machine("lunchboxPlaner"),
+        carriedTool(shop, "dustBag"),
+      ),
+    );
+    assert.deepStrictEqual(shop.machine("lunchboxPlaner").state.tools, [
+      "dustBag",
+    ]);
+  });
+
+  it("carries a station's mounted tools with it when the station is lifted", () => {
+    const shop = new ShopDriver({
+      state: toolShop({ workspace: { tools: ["sandingBlock"] } }),
+    });
+    assert.ok(pickUpMachine(shop.game, shop.machine("workspace")));
+    assert.deepStrictEqual(shop.player.carriedMachine?.tools, ["sandingBlock"]);
   });
 
   it("refuses to mount a tool that isn't in the hands", () => {

@@ -1,7 +1,7 @@
 import React from "react";
 import { StoreCheckoutModal } from "../../../components/store-view/StoreCheckoutModal";
 import { cartTotal } from "../../../game/cart";
-import { currentCart } from "../../../game/game-actions/cart-actions";
+import { currentCart } from "../../../game/cart";
 import { StoreSceneRoot } from "../../scenes/StoreSceneRoot";
 import { useGame, useShellVersion, useShopState } from "../../useShell";
 import { StoreCartReadout } from "./StoreCart";

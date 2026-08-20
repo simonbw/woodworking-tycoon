@@ -1,4 +1,4 @@
-import { GameAction, GameState, ProgressionState } from "../GameState";
+import { GameState, ProgressionState } from "../GameState";
 import {
   defaultParametersFor,
   isSameMachine,
@@ -19,7 +19,15 @@ import {
 } from "../Vectors";
 import { CellMap } from "../CellMap";
 import { carryingShopVac } from "../ShopVac";
-import { emitSound } from "./sound-actions";
+
+/**
+ * The rules of where a machine may stand and when it may be lifted: what
+ * a machine type occupies, whether a spot will take it, what a fresh one
+ * looks like, and the guards on hoisting and setting down.
+ *
+ * All pure reads over a shop snapshot; the commands in
+ * `sim/commands/machine-commands.ts` drive them.
+ */
 
 /**
  * Validates whether a machine can be placed at the given position and
@@ -174,36 +182,6 @@ export function freshMachineState(
   };
 }
 
-/**
- * Lands a machine crate on the open floor nearest `near` (walkable, no
- * crate there yet), falling back to sharing a cell when the shop is that
- * full. Purchases pass the entrance; build recipes pass the bench.
- */
-export function deliverMachineCrate(
-  gameState: GameState,
-  machine: MachineState,
-  near: Vector = gameState.shopInfo.entrancePosition,
-): GameState {
-  const cellMap = CellMap.fromGameState(gameState);
-  const distance = (cell: Vector) =>
-    Math.abs(cell[0] - near[0]) + Math.abs(cell[1] - near[1]);
-  const openCells = cellMap
-    .getFreeCells()
-    .map((cell) => cell.position)
-    .filter(
-      (position) =>
-        !gameState.machineCrates.some((crate) =>
-          vectorEquals(crate.position, position),
-        ),
-    )
-    .sort((a, b) => distance(a) - distance(b));
-  const position = openCells[0] ?? near;
-  return {
-    ...gameState,
-    machineCrates: [...gameState.machineCrates, { machine, position }],
-  };
-}
-
 /** The player's hands are genuinely free: no machine, no boards, no vac. */
 function handsFree(gameState: GameState): boolean {
   return (
@@ -215,7 +193,7 @@ function handsFree(gameState: GameState): boolean {
 
 /**
  * Why the crate at hand can't be hoisted right now, for the chip to say
- * in place of "unpack" — the same test the unpack actions run (here and
+ * in place of "unpack" — the same test the unpack commands run (here and
  * at the truck's bed), so the chip and the key always agree. Null when
  * unpacking would work; the carried-machine case never asks (no chips
  * show with a machine on the shoulders).
@@ -265,28 +243,6 @@ export function canPickUpMachine(
   );
 }
 
-/** Hoists a placed machine onto the player's shoulders. */
-export function pickUpMachineAction(machineState: MachineState): GameAction {
-  return (gameState) => {
-    if (!canPickUpMachine(gameState, machineState)) {
-      console.warn("Tried to pick up a machine that can't be carried");
-      return gameState;
-    }
-    return emitSound(
-      {
-        ...gameState,
-        machines: gameState.machines.filter(
-          (m) => !isSameMachine(m, machineState),
-        ),
-        player: { ...gameState.player, carriedMachine: machineState },
-      },
-      { kind: "material-pickup" },
-    );
-  };
-}
-
-/** Unpacks the crate at hand (underfoot or a neighboring cell — the body
- * is bigger than a 1-ft cell) straight into the player's arms. */
 /**
  * Where the carried machine would land if set down right now: anchored so
  * the player is standing at its operator cell — you place a machine by

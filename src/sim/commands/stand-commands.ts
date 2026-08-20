@@ -7,11 +7,10 @@ import { StandEntity } from "../entities/StandEntity";
 import { projectGameState } from "../projection";
 
 /**
- * The stand command surface: setting pieces out and taking them back,
- * ported from the old `stand-actions.ts` actions. Each command validates
- * through the shared helpers (against a projection snapshot), then writes
- * onto the entities; refusals log and return false, matching the old
- * actions' quiet-refusal contract. Selling is not a command — customers
+ * The stand command surface: setting pieces out and taking them back.
+ * Each command validates through the shared helpers in `game/stand.ts`
+ * (against a projection snapshot), then writes onto the entities; a
+ * refusal logs and returns false. Selling is not a command — customers
  * do that, in the StreetSystem.
  */
 

@@ -7,7 +7,7 @@ import { levelForXp } from "./skill-helpers";
 /**
  * The shop manual: the reference binder behind the `?` button. Each article
  * declares the condition that reveals it, mirroring UNLOCK_CONDITIONS —
- * checkProgressionMilestonesAction records newly met ones in
+ * the MilestoneSystem records newly met ones in
  * `ProgressionState.unlockedArticles`, so unlocks are one-way even if the
  * condition later becomes false (e.g. a sold machine). Locked articles are
  * hidden entirely, per the progressive-disclosure rule.

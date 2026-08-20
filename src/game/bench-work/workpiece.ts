@@ -83,7 +83,7 @@ export function pryTargets(pallet: Pallet): ReadonlyArray<PalletNail> {
 export interface StrokeScript {
   /** Coverage work over a face or edge band; `started` false means the
    * first gesture starts the operation (claiming the piece) through
-   * operateMachineAction, true means the mask (re)starts from zero. */
+   * `operateMachine`, true means the mask (re)starts from zero. */
   readonly kind: "stroke";
   readonly operation: Operation;
   readonly interaction: Extract<OperationInteraction, { kind: "stroke" }>;

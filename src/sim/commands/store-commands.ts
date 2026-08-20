@@ -19,15 +19,14 @@ import { Wallet } from "../singletons/Wallet";
 import { MilestoneSystem } from "../systems/MilestoneSystem";
 
 /**
- * The purchase command surface — the old `store-actions.ts` buys plus the
- * tool wall's and the upgrade shelf's, ported. These are what a purchase
- * *does*: money out of the Wallet, the goods to where they land (physical
- * things into the truck's bed, machines crated beside them, supplies and
- * upgrades straight into the shop's stock). Both storefronts ring up
- * through them — the walkable store's register folds its cart through
- * exactly these (see cart-commands.ts), and the lumberyard's menu overlay
- * calls them directly. Refusals log and return false, matching the old
- * actions' quiet-refusal contract.
+ * The purchase command surface: every buy the shelves, the tool wall,
+ * and the upgrade rack offer. These are what a purchase *does*: money out
+ * of the Wallet, the goods to where they land (physical things into the
+ * truck's bed, machines crated beside them, supplies and upgrades
+ * straight into the shop's stock). Both storefronts ring up through them
+ * — the walkable store's register folds its cart through exactly these
+ * (see cart-commands.ts), and the lumberyard's menu overlay calls them
+ * directly. A refusal logs and returns false.
  */
 
 /**

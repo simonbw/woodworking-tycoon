@@ -15,10 +15,9 @@ import { DustLayer } from "../singletons/DustLayer";
 import { grantXp } from "./grants";
 
 /**
- * The milestone pass on the new driver: the one-way unlock flags, the
- * manual's article reveals, and the tutorial ratchet — the old
- * `checkProgressionMilestonesAction` and skill actions' expectations,
- * evaluated against the projection and written onto the singletons.
+ * The milestone pass: the one-way unlock flags, the manual's article
+ * reveals, and the tutorial ratchet, evaluated against the projection
+ * and written onto the singletons.
  *
  * Arrangement writes singletons directly (dust on the DustLayer, sales
  * on Progression) because the systems that would earn them — the stand,

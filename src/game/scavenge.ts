@@ -1,11 +1,20 @@
-import { initialPalletNails } from "../bench-work/pallet-geometry";
-import { GameState } from "../GameState";
-import { makeMaterial } from "../material-helpers";
-import { Pallet } from "../Materials";
-import { ScavengeStopResult, ScavengingTrip } from "../Person";
-import { Tuple } from "../../utils/typeUtils";
-import { TICKS_PER_DAY } from "../time";
-import { dayTicksSpent } from "../time-flow";
+import { initialPalletNails } from "./bench-work/pallet-geometry";
+import { GameState } from "./GameState";
+import { makeMaterial } from "./material-helpers";
+import { Pallet } from "./Materials";
+import { ScavengeStopResult, ScavengingTrip } from "./Person";
+import { Tuple } from "../utils/typeUtils";
+import { TICKS_PER_DAY } from "./time";
+import { dayTicksSpent } from "./time-flow";
+
+/**
+ * The rules of a scavenging run: where the circuit goes, how long a stop
+ * takes, what a stop turns up, and when the shop may search another one.
+ *
+ * Everything here is a pure reading of the trip and the shop around it.
+ * Driving out, spending the minutes, and landing the haul in the truck's
+ * bed belong to `sim/commands/trip-commands.ts`, which calls these.
+ */
 
 /**
  * The circuit, in driving order: every place in the neighborhood worth
@@ -41,7 +50,7 @@ const IS_DEV = process.env.NODE_ENV === "development";
  * runners (where it is unset) both keep the real half-hour.
  *
  * There is no matching drive home: calling it good enough drops the
- * player back at the shop for free (see headHomeFromScavengingAction) —
+ * player back at the shop for free (see headHomeFromScavenging) —
  * the circuit runs out from the shop and back, so the drive is already
  * paid for in each stop.
  */

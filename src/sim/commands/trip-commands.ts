@@ -10,7 +10,7 @@ import {
   scavengeLoot,
   SCAVENGE_STOP_NAMES,
   SCAVENGE_STOP_TICKS,
-} from "../../game/game-actions/scavenge-actions";
+} from "../../game/scavenge";
 import { truckCabSideCell } from "../../game/lot";
 import { StoreId } from "../../game/lumberStock";
 import { ScavengingTrip } from "../../game/Person";
@@ -25,42 +25,41 @@ import { ShopInfo } from "../singletons/ShopInfo";
 import { projectGameState } from "../projection";
 
 /**
- * The trip command surface: leaving the shop through the truck's cab,
- * ported from the old `scavenge-actions.ts` and `door-actions.ts` (the
- * store legs; going home for the night belongs to the day-cycle port).
- * Each command validates through the same shared helpers over a
- * projection snapshot, then writes onto the entities; refusals log and
- * return false, matching the old actions' quiet-refusal contract.
+ * The trip command surface: leaving the shop through the truck's cab, on
+ * a scavenging circuit or a store run. Going home for the night belongs
+ * to the day-cycle commands. Each command validates through the pure
+ * rules in `game/scavenge.ts` and `game/game-actions/door-actions.ts`
+ * over a projection snapshot, then writes onto the entities; a refusal
+ * logs and returns false.
  *
- * How the legs charge their minutes differs by trip, exactly as before:
+ * How the legs charge their minutes differs by trip:
  *
  *  - A scavenging search carries its own timer (`doneTick`), and the
  *    half-hour is spent through the live pace model — the Player entity
  *    registers a TimeFlow spender for `searching`, so the clock runs at
- *    working pace until the stop's reveal (which lives in the Player's
- *    tick, the old playerTickPass's away leg). Heading home is free.
- *  - A store run charges DRIVE_TICKS_ONE_WAY minutes per leg. The old
- *    actions ran those ticks inside themselves; commands never advance
- *    the sim, so here the caller drives them through TimeFlow — the
- *    driver's goShopping/comeHome tick them around these commands, and
- *    the store venue (phase 6) forces them the same way. `goToStore` is
- *    called before its leg (the drive out runs with the trip underway)
- *    and `returnFromStore` after its leg (the drive home runs before the
- *    player steps out), preserving the old ordering exactly.
+ *    working pace until the stop's reveal (which the Player's own tick
+ *    performs). Heading home is free.
+ *  - A store run charges DRIVE_TICKS_ONE_WAY minutes per leg. Commands
+ *    never advance the sim, so the caller drives those ticks through
+ *    TimeFlow — the driver's goShopping/comeHome tick them around these
+ *    commands, and the store venue forces them the same way. `goToStore`
+ *    is called before its leg (the drive out runs with the trip
+ *    underway) and `returnFromStore` after its leg (the drive home runs
+ *    before the player steps out).
  */
 
-// The trip constants, re-exported so the driver (whose import boundary
-// keeps it off the old transform layer) reads them through the commands.
+// The trip constants, re-exported so the driver reads them through the
+// command surface rather than reaching into the rule modules.
 export { DRIVE_TICKS_ONE_WAY, SCAVENGE_STOP_NAMES, SCAVENGE_STOP_TICKS };
 
 // The leaving guard, re-exported the same way for the shell's trip card
-// and the dispatcher (their import rules keep them off the old actions).
+// and the dispatcher.
 export { canLeaveShop };
 
 // The scavenging trip's pure reads, re-exported for the trip overlay
-// (the same seam): why another search is refused, and what the circuit
-// has in the truck so far.
-export { keepScavengingBlock, scavengeLoot };
+// (the same seam): why another search is refused, what the circuit has
+// in the truck so far, and the roll that lays the circuit out.
+export { keepScavengingBlock, rollScavengeStops, scavengeLoot };
 
 function player(game: Game): Player {
   return game.entities.getSingleton(Player);

@@ -29,7 +29,7 @@ import { Wallet } from "../singletons/Wallet";
 import { TimeFlow } from "../TimeFlow";
 
 /**
- * The street's slice of the sim tick — the old `standTickPass`, rehosted.
+ * The street's slice of the sim tick.
  * One pass per sim minute: customers stroll the sidewalk, one may stop at
  * a stocked stand and buy, and finished walkers step off the ends of the
  * block. Runs on the "street" layer, after the clock — each pass is told
@@ -78,7 +78,7 @@ export class StreetSystem extends BaseEntity implements Entity {
   }
 
   /**
-   * One sim minute of the street — the old standTickPass, line for line.
+   * One sim minute of the street.
    * `tick` is the minute being simulated, which is the clock's own tick
    * when a single minute passes and a minute of the batch otherwise.
    */
@@ -204,7 +204,7 @@ export class StreetSystem extends BaseEntity implements Entity {
     payouts.forEach((payout, index) => {
       game.dispatch("payout", {
         payout: {
-          // The old emitPayout's derivation: this minute, and the sale's
+          // Derived, not minted from a counter: this minute, and the sale's
           // place among the minute's sales, so no two announcements of a
           // batch of minutes share an id.
           id: `payout-${tick}-${index}-sale-${payout.title}`,

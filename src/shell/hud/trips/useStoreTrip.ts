@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CartLine, cartCountOf, cartTotal } from "../../../game/cart";
-import { currentCart } from "../../../game/game-actions/cart-actions";
+import { currentCart } from "../../../game/cart";
 import { checkout } from "../../../sim/commands/cart-commands";
 import { SceneDirector } from "../../scenes/SceneDirector";
 import { useGame, useShopState } from "../../useShell";

@@ -1,5 +1,5 @@
 import { cartCountOf, cartLineKey, cartTotal } from "./cart";
-import { currentCart } from "./game-actions/cart-actions";
+import { currentCart } from "./cart";
 import { GameState } from "./GameState";
 import {
   ShelfBay,

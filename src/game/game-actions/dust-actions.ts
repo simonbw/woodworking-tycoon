@@ -21,7 +21,15 @@ import {
   Vector,
 } from "../Vectors";
 import { CellMap } from "../CellMap";
-import { withXp } from "./skill-actions";
+import { withXp } from "../skill-helpers";
+
+/**
+ * The broom's minute of work: what a stroke reaches, what it gathers into
+ * the dustpan, and where the pan empties. A pure pass over a shop
+ * snapshot, plus the reads the chips and the hands strip make of it; the
+ * CleaningSystem runs the pass once per sim minute and writes the slices
+ * it owns back onto its singletons.
+ */
 
 /** Share of a swath cell's dust one tick of sweeping gathers. */
 const SWEEP_RATE = 0.9;
@@ -127,9 +135,9 @@ export function dustpanFillFraction(gameState: GameState): number {
 }
 
 /**
- * One tick of broom-and-dustpan work, run from tickAction while the
- * player holds the operate key with the broom in hand — the same
- * held-Space idiom as pushing stock through a machine, with no
+ * One tick of broom-and-dustpan work, run while the player holds the
+ * operate key with the broom in hand — the same held-Space idiom as
+ * pushing stock through a machine, with no
  * busyTicks freeze: walking and sweeping happen together.
  *
  * Each tick the broom gathers most of the dust in its swath straight

@@ -1,9 +1,5 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import {
-  checkProgressionMilestonesAction,
-  markArticlesReadAction,
-} from "./game-actions/progression-actions";
 import { GameState } from "./GameState";
 import { initialGameState } from "./initialGameState";
 import { makeToolItem } from "./material-helpers";
@@ -93,55 +89,6 @@ describe("manual article unlock conditions", () => {
   });
 });
 
-describe("checkProgressionMilestonesAction manual unlocks", () => {
-  it("records newly met articles and keeps them one-way", () => {
-    const withOil: GameState = {
-      ...initialGameState,
-      consumables: { ...initialGameState.consumables, mineralOil: 16 },
-    };
-    const after = checkProgressionMilestonesAction()(withOil);
-    assert.ok(after.progression.unlockedArticles.includes("workbenches"));
-
-    // Condition gone (oil used up), unlock stays.
-    const oilGone = checkProgressionMilestonesAction()({
-      ...after,
-      consumables: { ...after.consumables, mineralOil: 0 },
-    });
-    assert.ok(oilGone.progression.unlockedArticles.includes("workbenches"));
-  });
-
-  it("never duplicates an already-unlocked article", () => {
-    const once = checkProgressionMilestonesAction()(initialGameState);
-    const twice = checkProgressionMilestonesAction()(once);
-    const ids = twice.progression.unlockedArticles;
-    assert.strictEqual(new Set(ids).size, ids.length);
-  });
-
-  it("unlocks an article gated on a flag flipped in the same pass", () => {
-    // Enough floor dust flips sweepingUnlocked, whose article must not lag
-    // a pass behind.
-    const dusty: GameState = {
-      ...initialGameState,
-      dust: { "1,1": { pine: 80 } },
-    };
-    const after = checkProgressionMilestonesAction()(dusty);
-    assert.ok(after.progression.sweepingUnlocked);
-    assert.ok(after.progression.unlockedArticles.includes("dust"));
-  });
-});
-
-describe("markArticlesReadAction", () => {
-  it("appends only unread articles and no-ops when nothing is new", () => {
-    const once = markArticlesReadAction(["welcome"])(initialGameState);
-    assert.deepStrictEqual(once.progression.readArticles, ["welcome"]);
-
-    const again = markArticlesReadAction(["welcome"])(once);
-    assert.strictEqual(again, once);
-
-    const both = markArticlesReadAction(["welcome", "controls"])(once);
-    assert.deepStrictEqual(both.progression.readArticles, [
-      "welcome",
-      "controls",
-    ]);
-  });
-});
+// The pass that writes these unlocks onto a running shop, and the manual's
+// read-markers, are exercised against the live command surface in
+// src/sim/systems/MilestoneSystem.test.ts.

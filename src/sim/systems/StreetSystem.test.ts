@@ -16,11 +16,10 @@ import { CustomerEntity } from "../entities/CustomerEntity";
 import { ShopDriver } from "../driver/ShopDriver";
 
 /**
- * The street on the new driver: the StandEntity holds what's set out, one
- * CustomerEntity per passerby, and the StreetSystem runs the old
- * standTickPass minute for minute off the game's seeded rng — so a
- * stocked stand sells, a sale pays exactly what the old reducer paid,
- * and the same seed lands the same buyers every run.
+ * The street: the StandEntity holds what's set out, one CustomerEntity
+ * per passerby, and the StreetSystem walks them minute for minute off
+ * the game's seeded rng — so a stocked stand sells, a sale pays fair
+ * value, and the same seed lands the same buyers every run.
  */
 
 function shelf(): FinishedProduct {
@@ -160,6 +159,67 @@ describe("the street", () => {
     shop.tick(50);
     assert.strictEqual(customerCount(shop), 0);
     assert.strictEqual(shop.progression.salesCompleted, 0);
+  });
+
+  it("lets a browser walk away empty-handed", () => {
+    // A shop with a sale behind it browses on the dice, and this seed's
+    // roll comes up cold: the shelf stays on the table.
+    const piece = shelf();
+    const shop = new ShopDriver({
+      seed: 5,
+      state: shopState({
+        stand: [piece],
+        customers: [
+          {
+            id: "customer-test",
+            x: 2,
+            walkDirection: 1,
+            state: "browsing",
+            browseTicksLeft: 1,
+          },
+        ],
+        progression: { ...initialGameState.progression, salesCompleted: 1 },
+      }),
+    });
+    const recorder = recordPayouts(shop);
+    shop.tick(1);
+    assert.deepStrictEqual(shop.stand.pieces, [piece]);
+    assert.strictEqual(shop.wallet.money, initialGameState.money);
+    assert.strictEqual(shop.progression.salesCompleted, 1);
+    assert.deepStrictEqual(recorder.events, []);
+    // They move along either way and don't stop again
+    assert.deepStrictEqual(
+      [...shop.game.entities.byConstructor(CustomerEntity)].map((c) => c.state),
+      ["leaving"],
+    );
+  });
+
+  it("summons the first buyer at once, and only that one", () => {
+    // The first-ever sale is dealt, not rolled: stocking the table
+    // summons a customer on the very first minute, and no second one
+    // while that walker could still make the sale.
+    const shop = new ShopDriver({
+      seed: 2,
+      state: shopState({ stand: [shelf()] }),
+    });
+    shop.tick(1);
+    assert.strictEqual(customerCount(shop), 1);
+    shop.tick(6);
+    assert.strictEqual(customerCount(shop), 1);
+  });
+
+  it("stops summoning once the shop has sold something", () => {
+    // Same seed, same stocked table — with a sale behind it the street
+    // waits on the dice instead, and nobody appears on the first minute.
+    const shop = new ShopDriver({
+      seed: 2,
+      state: shopState({
+        stand: [shelf()],
+        progression: { ...initialGameState.progression, salesCompleted: 1 },
+      }),
+    });
+    shop.tick(1);
+    assert.strictEqual(customerCount(shop), 0);
   });
 
   it("sells several pieces within awaitSales, dice and all", () => {

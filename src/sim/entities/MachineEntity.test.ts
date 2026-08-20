@@ -7,11 +7,9 @@ import { DustLayer } from "../singletons/DustLayer";
 
 /**
  * Exemplar #2's contract: machine entities own their MachineState, the
- * MachineSystem advances operations one sim minute at a time exactly
- * like the old machineTickPass (attendance, phase boundaries, dust,
- * completion grants), and the commands enforce the same refusals the old
- * actions did. Driven through the resaw fixture the old sequence tier
- * uses.
+ * MachineSystem advances operations one sim minute at a time (attendance,
+ * phase boundaries, dust, completion grants), and the commands enforce
+ * the refusals. Driven through the resaw fixture the sequence tier uses.
  */
 
 const BAND_SAW = "bandSaw";

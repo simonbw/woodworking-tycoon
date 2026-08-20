@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from "react";
 import { StoreOverlayLayer } from "../../../components/store-view/StoreOverlayLayer";
 import { cartCountOf } from "../../../game/cart";
-import { currentCart } from "../../../game/game-actions/cart-actions";
+import { currentCart } from "../../../game/cart";
 import { tutorialTargets } from "../tutorial/tutorialTargets";
 import { StoreSceneRoot } from "../../scenes/StoreSceneRoot";
 import { useGame, useShopState } from "../../useShell";

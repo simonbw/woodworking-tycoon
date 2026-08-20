@@ -19,7 +19,14 @@ import { personCanWork } from "../Person";
 import { DustSpecies } from "../Materials";
 import { nextToGarbageCan, sweepSwath } from "./dust-actions";
 import { vectorEquals } from "../Vectors";
-import { withXp } from "./skill-actions";
+import { withXp } from "../skill-helpers";
+
+/**
+ * The shop vac's minute of work: the hose's suction, and the passive
+ * trickle a running vac pulls in on its own. Both are pure passes over a
+ * shop snapshot; the CleaningSystem runs them once per sim minute and
+ * writes the slices they own back onto its singletons.
+ */
 
 /** Share of the underfoot cell's dust one suction tick takes. */
 const VACUUM_UNDERFOOT_RATE = 0.9;
@@ -31,8 +38,8 @@ const XP_MINIMUM_GATHERED = 15;
 const VACUUM_XP = 1;
 
 /**
- * One tick of suction, run from tickAction while the player holds the
- * operate key with the hose in hand — the same held-Space idiom as the
+ * One tick of suction, run while the player holds the operate key with
+ * the hose in hand — the same held-Space idiom as the
  * broom, with the vac's own shape: the same swath of cells, machine
  * undersides very much included, cleaned to zero instead of pushed into
  * a pile. Dust goes into the canister until it's full; a full canister

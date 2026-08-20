@@ -1,8 +1,8 @@
 /**
  * The consumables loop: a pallet pays for the shelf it becomes.
  *
- * `game-actions/consumables.test.ts` covers the accounting one operation at a
- * time. The loop is the point here — a part-stripped pallet (five deck
+ * The accounting of one operation at a time lives in the tests below it;
+ * the loop is the point here — a part-stripped pallet (five deck
  * boards on three stringers) holds fifteen nails, one per crossing, and
  * a rustic shelf costs eight of them (one per fastener its blueprint
  * derives): the pallet pays for its own shelf with nails to spare. If
@@ -84,8 +84,9 @@ describe("consumables loop", () => {
     assert.throws(() => shop.run(WORKBENCH), /would not start/);
   });
 
-  it("a wipe-down spends 4 oz and leaves the board oiled", () => {
-    const shop = new ShopDriver({ state: consumablesShop }).arrange((game) => {
+  /** The fixture's cutting board, with the bay cleared of the pallet. */
+  function oilingShop(): ShopDriver {
+    return new ShopDriver({ state: consumablesShop }).arrange((game) => {
       // A bottle off the store's supplies aisle, which the spec still buys
       const consumables = game.entities.getSingleton(Consumables);
       consumables.stock = { ...consumables.stock, mineralOil: 16 };
@@ -95,6 +96,10 @@ describe("consumables loop", () => {
         machine.state = { ...machine.state, inputMaterials: [] };
       }
     });
+  }
+
+  it("a wipe-down spends 4 oz and leaves the board oiled", () => {
+    const shop = oilingShop();
 
     shop.make(WORKBENCH, "oilCuttingBoard", isCuttingBoard);
 
@@ -103,5 +108,21 @@ describe("consumables loop", () => {
     assert.equal((board as { finish: string }).finish, "mineralOil");
     // The row the manifest shows it under once it's been wiped down
     assert.equal(getMaterialFullName(board), "Oiled Simple cutting board");
+  });
+
+  it("won't oil a board twice", () => {
+    const shop = oilingShop();
+    shop.make(WORKBENCH, "oilCuttingBoard", isCuttingBoard);
+
+    // Back on the bench with oil still in the cabinet: the wipe-down
+    // has nothing left to do to it.
+    shop
+      .standAtOperatorCell(WORKBENCH)
+      .select(WORKBENCH, "oilCuttingBoard")
+      .load(WORKBENCH, isCuttingBoard);
+    assert.equal(shop.shop.consumables.mineralOil, 12);
+    assert.equal(shop.canOperate(WORKBENCH), false);
+    assert.throws(() => shop.run(WORKBENCH), /would not start/);
+    assert.equal(shop.shop.consumables.mineralOil, 12);
   });
 });

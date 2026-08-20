@@ -2,10 +2,12 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { initialGameState } from "./initialGameState";
 import {
+  atTruckCab,
   isOutdoors,
   lotSize,
   TRUCK_BODY_WIDTH,
   TRUCK_LENGTH,
+  truckCabSideCell,
   truckParkedRect,
   wallSolids,
 } from "./lot";
@@ -60,6 +62,24 @@ describe("lot geometry", () => {
     // The gap is the 8-ft door, centered on the 12-ft wall
     assert.strictEqual(left.max[0], 2);
     assert.strictEqual(right.min[0], 10);
+  });
+
+  it("counts the driver's door and the cell beside it as at the cab", () => {
+    // Trips start here, so the zone is an arm's reach around the door
+    // rather than one exact cell (see canLeaveShop).
+    const [cx, cy] = truckCabSideCell(initialGameState.shopInfo);
+    assert.ok(atTruckCab(initialGameState.shopInfo, [cx, cy]));
+    assert.ok(atTruckCab(initialGameState.shopInfo, [cx, cy - 1]));
+  });
+
+  it("does not count the shop's own doorway as at the cab", () => {
+    assert.strictEqual(
+      atTruckCab(
+        initialGameState.shopInfo,
+        initialGameState.shopInfo.entrancePosition,
+      ),
+      false,
+    );
   });
 });
 

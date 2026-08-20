@@ -78,10 +78,9 @@ export class TimeFlow extends BaseEntity implements Entity {
   gameDt = 0;
   /**
    * Whole game minutes ("sim ticks") the quantized sim layers should
-   * process this engine tick. The old world ran everything as one-minute
-   * `tickAction`s; the new sim entities keep that quantization by
-   * looping `wholeTicks` times inside their engine tick, which is also
-   * how deep fast-forward substeps instead of tunneling. Usually 0, and
+   * process this engine tick. The sim runs on one-minute steps: its
+   * entities loop `wholeTicks` times inside their engine tick, which is
+   * also how deep fast-forward substeps instead of tunneling. Usually 0, and
    * 1 when the minute accumulator carries; forced minutes (the driver's
    * `tick(n)`, the overnight batch) can make it large.
    */

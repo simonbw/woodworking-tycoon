@@ -141,9 +141,9 @@ export type ShoppingTrip = {
 };
 
 /**
- * Gone home for the night. Ends via wakeUpAction, which runs the
- * overnight in one batch and puts the player back beside the cab the
- * next morning (see door-actions.ts).
+ * Gone home for the night. Ends via `beginWakeUp`, which hands the
+ * overnight to the SleepSystem and puts the player back beside the cab
+ * the next morning (see sim/commands/day-commands.ts).
  */
 export type HomeTrip = {
   readonly kind: "home";
@@ -152,8 +152,8 @@ export type HomeTrip = {
 /**
  * Whether the person is free to start work right now: in the shop and not
  * still occupied by their last action (trudging, sweeping). Derived, never
- * stored — tickAction and the cleaning tick passes consult this instead
- * of a persisted flag that would go stale.
+ * stored — the sim systems consult this instead of a persisted flag
+ * that would go stale.
  */
 export function personCanWork(person: Person): boolean {
   return person.away === null && person.busyTicks === 0;

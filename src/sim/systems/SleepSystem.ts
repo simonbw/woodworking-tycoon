@@ -11,8 +11,8 @@ import { ShopInfo } from "../singletons/ShopInfo";
 import { TimeFlow } from "../TimeFlow";
 
 /**
- * The overnight batch — the new-world spelling of the old
- * `wakeUpAction`'s loop of NIGHT_TICKS sequential tickActions.
+ * The overnight batch: the NIGHT_TICKS sim minutes between driving home
+ * and waking up, run one minute at a time.
  *
  * Commands must never drive the engine (`game.step` from inside a
  * command would re-enter the tick), so waking up is split in two: the
@@ -22,8 +22,8 @@ import { TimeFlow } from "../TimeFlow";
  * this system feeds `TimeFlow.forceMinutes(1)` once per engine tick —
  * one sim minute per engine tick, so the per-minute interleaving of the
  * sim layers (player → cleaning → machines → clock → street →
- * milestones) matches the old pipeline's one-tickAction-at-a-time batch
- * exactly. `forceMinutes` bypasses the pace model on purpose: the
+ * milestones) is the same overnight as it is by day. `forceMinutes`
+ * bypasses the pace model on purpose: the
  * player home in bed is TimeFlow's hard stop, and the overnight is
  * precisely the minutes that pass anyway.
  *

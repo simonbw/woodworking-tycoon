@@ -7,6 +7,7 @@ import {
   availableOperations,
   getOperationDuration,
   levelForXp,
+  withXp,
   xpCostOfLevel,
   xpProgress,
 } from "./skill-helpers";
@@ -96,5 +97,31 @@ describe("getOperationDuration", () => {
       getOperationDuration(glueUp, initialGameState.progression, 2.5),
       Math.round(clamp.duration * 2.5) + cure.duration,
     );
+  });
+});
+
+describe("withXp", () => {
+  it("accumulates xp", () => {
+    const belowFirstLevel = xpCostOfLevel(1) - 1;
+    const result = withXp(initialGameState, belowFirstLevel);
+    assert.strictEqual(result.progression.xp, belowFirstLevel);
+    assert.strictEqual(result.progression.skillPoints, 0);
+  });
+
+  it("grants a skill point on level up", () => {
+    const result = withXp(initialGameState, xpCostOfLevel(1));
+    assert.strictEqual(result.progression.skillPoints, 1);
+  });
+
+  it("grants multiple points when a big award crosses several levels", () => {
+    const result = withXp(
+      initialGameState,
+      xpCostOfLevel(1) + xpCostOfLevel(2),
+    );
+    assert.strictEqual(result.progression.skillPoints, 2);
+  });
+
+  it("does nothing for zero xp", () => {
+    assert.strictEqual(withXp(initialGameState, 0), initialGameState);
   });
 });

@@ -1,18 +1,18 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { board } from "./board-helpers";
-import { GameState } from "./GameState";
-import { Machine, Operation, MachineState, getMachines } from "./Machine";
+import { Machine, Operation, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
-import {
-  buyUpgradeAction,
-  installUpgradeAction,
-  uninstallUpgradeAction,
-} from "./game-actions/upgrade-actions";
-import { finishAttendedWorkAction } from "./game-actions/operation-actions";
 import { getOperationPhases } from "./skill-helpers";
 import { workspace } from "./machines/workspace";
 import { worktable1x1, worktable1x2 } from "./machines/worktables";
+
+/**
+ * What an upgrade does to the station it's bolted to. Buying one,
+ * installing it, and taking it back off are driven through the live
+ * commands in `sim/commands/store-commands.test.ts` and
+ * `sim/commands/tool-commands.test.ts`; a bench-built upgrade landing in
+ * storage is `sim/commands/machine-commands.test.ts`.
+ */
 
 function tableAt(
   position: [number, number],
@@ -39,9 +39,14 @@ function tableAt(
   };
 }
 
-function stateWith(overrides: Partial<GameState>): GameState {
-  return { ...initialGameState, ...overrides };
-}
+describe("upgrade slots", () => {
+  it("come with the worktables, one per foot of bench", () => {
+    assert.strictEqual(worktable1x1.upgradeSlots, 1);
+    assert.strictEqual(worktable1x2.upgradeSlots, 2);
+    // The makeshift bench takes none — nothing to bolt an upgrade to
+    assert.ok(!workspace.upgradeSlots);
+  });
+});
 
 describe("upgrade effects on the Machine view", () => {
   it("vise multiplies work speed; drawers add slots; shelf adds spaces", () => {
@@ -83,120 +88,5 @@ describe("upgrade effects on the Machine view", () => {
     assert.ok(fast[0].duration < plain[0].duration);
     // The hands-free cure is untouched by workholding
     assert.strictEqual(fast[1].duration, plain[1].duration);
-  });
-});
-
-describe("buy / install / uninstall", () => {
-  it("buying a vise moves money into upgrade storage", () => {
-    const state = stateWith({ money: 100 });
-    const result = buyUpgradeAction("vise")(state);
-    assert.strictEqual(result.money, 20);
-    assert.deepStrictEqual(result.storage.upgrades, ["vise"]);
-    // Can't afford a second
-    assert.strictEqual(buyUpgradeAction("vise")(result), result);
-  });
-
-  it("installs from storage into a free slot, refuses when full", () => {
-    const table = tableAt([2, 2]);
-    const state = stateWith({
-      machines: [table],
-      storage: {
-        ...initialGameState.storage,
-        upgrades: ["vise", "toolDrawers"],
-      },
-    });
-    const view = new Machine(table);
-    const installed = installUpgradeAction(view, "vise")(state);
-    assert.deepStrictEqual(installed.machines[0].upgrades, ["vise"]);
-    assert.deepStrictEqual(installed.storage.upgrades, ["toolDrawers"]);
-
-    // worktable1x1 has a single upgrade slot
-    assert.strictEqual(worktable1x1.upgradeSlots, 1);
-    const full = installUpgradeAction(
-      new Machine(installed.machines[0]),
-      "toolDrawers",
-    )(installed);
-    assert.strictEqual(full, installed);
-  });
-
-  it("refuses to install on a station without upgrade slots", () => {
-    const bench = tableAt([1, 2], { machineTypeId: "workspace" });
-    const state = stateWith({
-      machines: [bench],
-      storage: { ...initialGameState.storage, upgrades: ["vise"] },
-    });
-    assert.strictEqual(
-      installUpgradeAction(new Machine(bench), "vise")(state),
-      state,
-    );
-  });
-
-  it("uninstall returns the upgrade to storage", () => {
-    const table = tableAt([2, 2], { upgrades: ["vise"] });
-    const state = stateWith({ machines: [table] });
-    const result = uninstallUpgradeAction(new Machine(table), "vise")(state);
-    assert.deepStrictEqual(result.machines[0].upgrades, []);
-    assert.deepStrictEqual(result.storage.upgrades, ["vise"]);
-  });
-
-  it("won't strand tools or shelf stock past the reduced capacity", () => {
-    // 1x2 table: 4 base tool slots, 6 base shelf spaces, 2 upgrade slots
-    assert.strictEqual(worktable1x2.upgradeSlots, 2);
-    const overloaded = tableAt([2, 2], {
-      machineTypeId: "worktable1x2",
-      upgrades: ["toolDrawers", "materialShelf"],
-      tools: [
-        "hammer",
-        "sandingBlock",
-        "handPlane",
-        "randomOrbitSander",
-        "dustBag",
-      ],
-      storedMaterials: Array.from({ length: 8 }, () =>
-        board("maple", 24, 2, 4),
-      ),
-    });
-    const state = stateWith({ machines: [overloaded] });
-    const view = new Machine(overloaded);
-    // 5 tools mounted > 4 slots without drawers; 8 stored > 6 without shelf
-    assert.strictEqual(
-      uninstallUpgradeAction(view, "toolDrawers")(state),
-      state,
-    );
-    assert.strictEqual(
-      uninstallUpgradeAction(view, "materialShelf")(state),
-      state,
-    );
-  });
-});
-
-describe("shop-built upgrades", () => {
-  it("bench recipes deliver drawers and shelves to upgrade storage", () => {
-    const bench = tableAt([1, 2], {
-      machineTypeId: "workspace",
-      selectedOperationId: "buildMaterialShelf",
-      processingMaterials: [
-        board("pallet", 36, 4, 2),
-        board("pallet", 36, 4, 2),
-      ],
-      operationProgress: {
-        status: "inProgress",
-        phaseIndex: 0,
-        ticksRemaining: 1,
-      },
-    });
-    const state = stateWith({
-      machines: [bench],
-      player: {
-        ...initialGameState.player,
-        position: [1, 3],
-        operating: true,
-      },
-    });
-    // Assembly commits through the bench view's finish action now
-    const result = finishAttendedWorkAction(getMachines(state.machines)[0])(
-      state,
-    );
-    assert.deepStrictEqual(result.storage.upgrades, ["materialShelf"]);
   });
 });

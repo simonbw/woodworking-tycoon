@@ -12,9 +12,8 @@ import { TutorialTracker } from "../singletons/TutorialTracker";
 import { TimeFlow } from "../TimeFlow";
 
 /**
- * The milestone pass — the old `checkProgressionMilestonesAction`,
- * rehosted on the "milestones" layer so it sees the finished tick.
- * Applies any unlock whose condition is now met (UNLOCK_CONDITIONS:
+ * The milestone pass, on the "milestones" layer so it sees the finished
+ * tick. Applies any unlock whose condition is now met (UNLOCK_CONDITIONS:
  * store on the first sale, lumberyard on reputation, sweeping on a dusty
  * floor), records newly met manual articles, and walks the tutorial
  * tracks' ratchets forward over everything the shop already satisfies.
@@ -22,12 +21,10 @@ import { TimeFlow } from "../TimeFlow";
  * evaluates them against the projection and writes the results onto the
  * singletons.
  *
- * Cadence: the old world ran the action twice — as the last pass of
- * every tickAction (per sim minute) and on a real-time interval from the
- * Ticker, so unlocks answered player actions even while the clock crept.
- * Here the minute loop keeps tick parity, and the unconditional pass at
- * 60 engine ticks a second is the real-time cadence. The pass writes
- * nothing when nothing is newly met — the old action's short-circuit.
+ * Cadence: the pass runs twice over — once per sim minute, and again
+ * unconditionally at 60 engine ticks a second, so unlocks answer player
+ * actions even while the clock creeps. It writes nothing when nothing is
+ * newly met.
  *
  * Transient — never serialized; added per session by the bootstrap.
  */

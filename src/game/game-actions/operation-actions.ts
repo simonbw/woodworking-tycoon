@@ -1,23 +1,10 @@
-import { stationWorkSpeed } from "../bench-mounting";
-import { addConsumables, ConsumableAmount } from "../Consumable";
-import { machineDustMultiplier } from "../Dust";
-import { GameAction, GameState } from "../GameState";
-import {
-  isSameMachine,
-  Machine,
-  MachineId,
-  MachineState,
-  Operation,
-} from "../Machine";
+import { ConsumableAmount } from "../Consumable";
+import { Machine, MachineId, MachineState, Operation } from "../Machine";
 import { isFinishedProduct } from "../material-helpers";
 import { getSellValue } from "../material-values";
-import { playerAttendsMachine } from "../machine-helpers";
-import { getOperationPhases } from "../skill-helpers";
 import { SoundEvent } from "../SoundEvent";
 import { UpgradeId } from "../Upgrade";
 import { Vector } from "../Vectors";
-import { deliverMachineCrate, freshMachineState } from "./machine-actions";
-import { withXp } from "./skill-actions";
 import { MaterialInstance } from "../Materials";
 import {
   BenchPlacement,
@@ -25,15 +12,17 @@ import {
 } from "../bench-work/bench-layout";
 
 /**
- * The commit-action split (see docs/bench-work.md): the bench view
- * decides *when*, these actions decide *what*. Starting an operation is
- * still `operateMachineAction` — it claims inputs, spends supplies, and
- * checks the clamp rack exactly as before. Finishing is here: the
- * completion block that used to live only at the bottom of
- * `machineTickPass`, extracted so the bench view (and the ShopDriver) can
- * dispatch it when interactive hand work is done. `machineTickPass` calls
- * the same helpers, so a tick-completed cut and a hand-finished sanding
- * pass are indistinguishable in what they do to the shop.
+ * What a finished operation does to the shop, worked out as pure rules
+ * (see docs/bench-work.md for the split: the bench view decides *when*,
+ * these decide *what*).
+ *
+ * `completeOperation` stages a completion — the machine after the work
+ * comes off, plus everything the operation earned — without touching the
+ * world. Landing that staged batch belongs to `sim/systems/grants.ts`.
+ * Both the machine tick (`sim/systems/MachineSystem.ts`) and the bench
+ * view's finish commit (`sim/commands/machine-commands.ts`) run this same
+ * function, so a tick-completed cut and a hand-finished sanding pass are
+ * indistinguishable in what they do to the shop.
  */
 
 /** Everything one finished operation does to the shop, staged. */
@@ -203,168 +192,6 @@ function inheritedBenchLayout(
     runIn += outputLength ?? 0;
   }
   return layout;
-}
-
-/**
- * Land every grant a batch of completions carries: sounds, upgrades,
- * crated machines, salvaged supplies, XP. The machines themselves must
- * already be swapped into `gameState.machines` by the caller (the tick
- * updates all of them in one map; the bench view swaps just one).
- */
-export function applyCompletionGrants(
-  gameState: GameState,
-  completions: ReadonlyArray<OperationCompletion>,
-): GameState {
-  const soundEvents = completions.flatMap((c) => c.soundEvents);
-  const upgradesGranted = completions.flatMap((c) => c.upgradesGranted);
-  const machinesGranted = completions.flatMap((c) => c.machinesGranted);
-  const consumablesGranted = completions.flatMap((c) => c.consumablesGranted);
-  const xpEarned = completions.reduce((sum, c) => sum + c.xp, 0);
-
-  // Only override pendingSounds when there's something to add, so quiet
-  // ticks keep the queue's reference stable and don't re-trigger the
-  // sound drain.
-  const nextState =
-    soundEvents.length > 0
-      ? {
-          ...gameState,
-          pendingSounds: [...(gameState.pendingSounds ?? []), ...soundEvents],
-        }
-      : gameState;
-
-  let withUpgrades: GameState =
-    upgradesGranted.length > 0
-      ? {
-          ...nextState,
-          storage: {
-            ...nextState.storage,
-            upgrades: [...nextState.storage.upgrades, ...upgradesGranted],
-          },
-        }
-      : nextState;
-
-  // Shop-built machines land crated beside the bench that made them
-  for (const granted of machinesGranted) {
-    withUpgrades = deliverMachineCrate(
-      withUpgrades,
-      freshMachineState(granted.machineTypeId, withUpgrades.progression),
-      granted.near,
-    );
-  }
-
-  const withConsumables =
-    consumablesGranted.length > 0
-      ? {
-          ...withUpgrades,
-          consumables: addConsumables(
-            withUpgrades.consumables,
-            consumablesGranted,
-          ),
-        }
-      : withUpgrades;
-
-  return withXp(withConsumables, xpEarned);
-}
-
-/** The machine's live state by identity, or null if it left the floor. */
-function findMachineState(
-  gameState: GameState,
-  machine: Machine,
-): MachineState | null {
-  return (
-    gameState.machines.find((m) => isSameMachine(m, machine.state)) ?? null
-  );
-}
-
-/**
- * Whether this player position can legally commit hand work at this
- * machine right now — standing in the operator's apron, not away.
- */
-function attends(gameState: GameState, machineState: MachineState): boolean {
-  return playerAttendsMachine(
-    new Machine(machineState),
-    gameState.player.position,
-    gameState.player.away !== null,
-  );
-}
-
-/**
- * The bench view's finish commit: the interactive script is done, so the
- * attended phase resolves. For a single-phase operation (sanding, a hand
- * saw cut, assembly) that is the completion itself; for one with a
- * hands-free remainder (a glue-up's cure) it enters the next phase and
- * hands the rest to the tick, exactly as an attended tick-boundary would.
- *
- * Guarded like the tick: the operation must be in progress, interactive,
- * and the player standing at the station — the bench view can only be
- * open there, and the ShopDriver walks there first.
- */
-export function finishAttendedWorkAction(machine: Machine): GameAction {
-  return (gameState) => {
-    const machineState = findMachineState(gameState, machine);
-    if (
-      !machineState ||
-      machineState.operationProgress.status !== "inProgress"
-    ) {
-      console.warn("No interactive work in progress to finish");
-      return gameState;
-    }
-    const live = new Machine(machineState);
-    const operation = live.operations.find(
-      (op) => op.id === machineState.selectedOperationId,
-    );
-    if (!operation?.interaction) {
-      console.warn("The running operation has no interactive script");
-      return gameState;
-    }
-    if (!attends(gameState, machineState)) {
-      console.warn("Can't finish hand work from across the shop");
-      return gameState;
-    }
-
-    const phases = getOperationPhases(
-      operation,
-      gameState.progression,
-      machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-      stationWorkSpeed(live, gameState),
-    );
-    const { phaseIndex } = machineState.operationProgress;
-    if (phases[Math.min(phaseIndex, phases.length - 1)].attended === false) {
-      console.warn("The hands-free phase finishes on its own — let it cure");
-      return gameState;
-    }
-
-    // A hands-free remainder (the cure) picks up where the hands left off
-    if (phaseIndex < phases.length - 1) {
-      const nextPhase = phases[phaseIndex + 1];
-      return {
-        ...gameState,
-        machines: gameState.machines.map((m) =>
-          isSameMachine(m, machineState)
-            ? {
-                ...m,
-                operationProgress: {
-                  status: "inProgress" as const,
-                  phaseIndex: phaseIndex + 1,
-                  ticksRemaining: nextPhase.duration,
-                },
-              }
-            : m,
-        ),
-      };
-    }
-
-    const completion = completeOperation(machineState);
-    return applyCompletionGrants(
-      {
-        ...gameState,
-        machines: gameState.machines.map((m) =>
-          isSameMachine(m, machineState) ? completion.machine : m,
-        ),
-      },
-      [completion],
-    );
-  };
 }
 
 /** The layout with entries for departed pieces dropped. */

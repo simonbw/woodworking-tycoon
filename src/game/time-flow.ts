@@ -123,8 +123,8 @@ function machineSpendsTime(gameState: GameState, machine: Machine): boolean {
 /** How fast the clock should run right now. */
 export function timeSpeed(gameState: GameState): TimeSpeed {
   const away = gameState.player.away;
-  // Home in bed: the overnight passes as one batch in wakeUpAction, not
-  // as a stream of live ticks.
+  // Home in bed: the overnight passes as one batch on the SleepSystem,
+  // not as a stream of live ticks.
   if (away?.kind === "home") {
     return "stopped";
   }

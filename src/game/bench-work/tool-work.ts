@@ -16,9 +16,21 @@ import { benchPlanForOperationId } from "./plan-registry";
  * the board it's over, the saw marks the board it's over, and how the
  * piece lies chooses between a plane's jobs (flat offers the face, stood
  * on edge offers the edge). Pure and unit-tested, like workpiece.ts, so
- * the view and the claim in operateMachineAction can never disagree
+ * the view and the claim `operateMachine` receives can never disagree
  * about what a tool offers.
  */
+
+/**
+ * A tool-first start from the bench view: the held tool applied to the
+ * very piece under it. Names the operation (chosen by tool + piece, see
+ * `toolOperationFor` below), the one material to claim, and any
+ * parameters the gesture itself decided (the saw's mark).
+ */
+export interface BenchToolClaim {
+  readonly operationId: string;
+  readonly materialId: string;
+  readonly parameters?: ParameterValues;
+}
 
 /**
  * The interaction kinds that are tool work rather than a plan: the piece
@@ -36,7 +48,7 @@ export function isToolWork(operation: Operation): boolean {
 /**
  * The plan a bench has pulled off its blueprint pile, or null.
  * `selectedOperationId` doubles as the record of the last tool work
- * claimed (operateMachineAction writes it), so it only names a plan when
+ * claimed (`operateMachine` writes it), so it only names a plan when
  * it names an assembly build — a bench that just crosscut a board has no
  * drawing out, whatever the id says. Old saves may carry a stale one.
  *

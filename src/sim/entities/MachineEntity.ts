@@ -28,7 +28,7 @@ import {
  * old world and reachable here through `view()`.
  *
  * Operations advance in the MachineSystem (one pass per sim minute over
- * every machine, exactly the old `machineTickPass`), not per-entity —
+ * every machine), not per-entity —
  * attendance, dust multipliers, and completion grants read a consistent
  * pre-minute snapshot that way. The progress model stays the serialized
  * `operationProgress` state machine rather than a live coroutine: a save

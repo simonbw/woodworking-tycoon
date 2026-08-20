@@ -208,11 +208,10 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
     const timeFlow = this.game.entities.tryGetSingleton(TimeFlow);
 
     // A scavenging search that has run its half-hour reveals its stop
-    // and parks the trip at a decision — the old playerTickPass's away
-    // leg. The clock layer runs after the player's, so `clock.tick` here
-    // is the pre-advance tick the old pass compared doneTick against; the
-    // reveal lands on the same sim minute it always did. A find was
-    // loaded on the spot — the thud is worth hearing.
+    // and parks the trip at a decision. The clock layer runs after the
+    // player's, so `clock.tick` here is the pre-advance tick doneTick is
+    // compared against. A find was loaded on the spot — the thud is worth
+    // hearing.
     const clock = this.game.entities.tryGetSingleton(Clock);
     if (
       timeFlow &&
@@ -233,9 +232,8 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
       }
     }
 
-    // Busy time burns one minute per sim tick, exactly like the old
-    // world's playerTickPass; it doesn't burn while away (a sweep waits
-    // where it was left).
+    // Busy time burns one minute per sim tick; it doesn't burn while
+    // away (a sweep waits where it was left).
     if (timeFlow && this.busyTicks > 0 && this.away === null) {
       this.busyTicks = Math.max(0, this.busyTicks - timeFlow.wholeTicks);
     }

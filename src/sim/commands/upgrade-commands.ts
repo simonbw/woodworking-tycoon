@@ -4,14 +4,11 @@ import { MachineEntity } from "../entities/MachineEntity";
 import { StorageUpgrades } from "../singletons/StorageUpgrades";
 
 /**
- * Installing and uninstalling worktable upgrades, ported from the old
- * `upgrade-actions.ts` (`installUpgradeAction` / `uninstallUpgradeAction`).
- * Uninstalled upgrades live in the StorageUpgrades singleton (the old
- * `GameState.storage.upgrades`); installed ones ride on their station's
- * MachineState, and their effects fold into the Machine view's computed
- * stats. Same guards, same quiet-refusal contract as the old actions —
- * refusals log and return false. Neither old action queued a sound, so
- * neither command emits one. (Buying upgrades is the store port's scope.)
+ * Installing and uninstalling worktable upgrades. Uninstalled upgrades
+ * live in the StorageUpgrades singleton; installed ones ride on their
+ * station's MachineState, and their effects fold into the Machine view's
+ * computed stats. A refusal logs and returns false, and neither command
+ * emits a sound. Buying an upgrade belongs to store-commands.ts.
  */
 
 /**

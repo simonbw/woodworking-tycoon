@@ -11,7 +11,6 @@ import {
   stockTravelLength,
 } from "./feed-clearance";
 import { freshMachineState } from "./game-actions/machine-actions";
-import { operateMachineAction } from "./game-actions/player-actions";
 import { GameState } from "./GameState";
 import { Machine, MachineState } from "./Machine";
 import { machineCanOperate, NO_SUPPLY, shopSupply } from "./machine-helpers";
@@ -215,6 +214,11 @@ describe("feedRunRulers", () => {
   });
 });
 
+/**
+ * The rule's last mile — a direct-feed machine refusing the trigger when
+ * the lane is short — is driven through the live command in
+ * `sim/commands/machine-commands.test.ts`.
+ */
 describe("clearance in operability", () => {
   const stagedSaw = (position: [number, number]) =>
     machineAt("jobsiteTableSaw", position, {
@@ -233,24 +237,6 @@ describe("clearance in operability", () => {
     assert.strictEqual(
       machineCanOperate(saw, NO_SUPPLY, state.progression),
       true,
-    );
-  });
-
-  it("keeps operateMachineAction from starting a cut without room", () => {
-    const cramped = shopWith(stagedSaw([6, 9]));
-    const refused = operateMachineAction(new Machine(cramped.machines[0]))(
-      cramped,
-    );
-    assert.strictEqual(
-      refused.machines[0].operationProgress.status,
-      "notStarted",
-    );
-
-    const roomy = shopWith(stagedSaw([6, 8]));
-    const running = operateMachineAction(new Machine(roomy.machines[0]))(roomy);
-    assert.strictEqual(
-      running.machines[0].operationProgress.status,
-      "inProgress",
     );
   });
 });

@@ -12,11 +12,10 @@ import { projectGameState } from "../projection";
 import { emitSound } from "./sound";
 
 /**
- * Moving loose stock between the floor and the hands, ported from the
- * old `pickUpMaterialAction` / `dropMaterialAction` (player-actions.ts).
- * Each command validates through the same shared helpers the old world
- * used, against a projection snapshot, then writes onto the entities.
- * Refusals log and return false, matching the old quiet-refusal contract.
+ * Moving loose stock between the floor and the hands. Each command
+ * validates through the shared material helpers, against a projection
+ * snapshot, then writes onto the entities. A refusal logs and returns
+ * false.
  */
 
 function player(game: Game): Player {

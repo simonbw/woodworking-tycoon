@@ -169,7 +169,7 @@ export function playerAttendsMachine(
  * planer) pull the stock through on their own: neither the player's
  * whereabouts nor their grip matters, but the switch still does.
  * Interactive operations never tick their attended work at all — the
- * bench view performs it and commits through finishAttendedWorkAction
+ * bench view performs it and commits through `finishAttendedWork`
  * (see docs/bench-work.md).
  *
  * Shared between the tick pipeline (which advances the work) and the

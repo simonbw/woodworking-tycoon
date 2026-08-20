@@ -4,8 +4,8 @@
  * dust into the dustpan with held-Space strokes, and pour the pan out
  * at the garbage can.
  *
- * `dust-actions.test.ts` covers each rule (rates, the film, the pan
- * cap); the point of running them in order is that the chain has no
+ * `systems/CleaningSystem.test.ts` covers each rule (rates, the film, the
+ * pan cap); the point of running them in order is that the chain has no
  * gaps — the unlock really fires from milling, the broom really commits
  * the hands, and the pan really empties through the can. The sweeping
  * tutorial's card reads this same chain, so its frontier is asserted at

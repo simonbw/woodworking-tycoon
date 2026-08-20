@@ -147,7 +147,7 @@ export interface GameState {
   /**
    * The people out walking past the lot right now. They stroll the
    * sidewalk line below the driveway, pause at a stocked stand, and
-   * sometimes buy — see standTickPass in game-actions/stand-actions.ts.
+   * sometimes buy — see sim/systems/StreetSystem.ts.
    */
   readonly customers: ReadonlyArray<Customer>;
   /**

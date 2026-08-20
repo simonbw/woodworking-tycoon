@@ -12,9 +12,9 @@ const TRANSITIONS_DISABLED = Number(process.env.E2E_RENDER_FPS) > 0;
 
 /**
  * The night between days, shown while the player's away trip is the
- * drive home (see TruckPrompt / goHomeAction). There is nothing to do
- * at home — that's the point — so the card holds for a beat and morning
- * arrives on its own: wakeUpAction runs the whole overnight in one
+ * drive home (see TruckPrompt / `goHome`). There is nothing to do at
+ * home — that's the point — so the card holds for a beat and morning
+ * arrives on its own: the SleepSystem runs the whole overnight in one
  * batch, and the arrival roll brings the truck back up the driveway.
  */
 export const SleepOverlay: React.FC = () => {

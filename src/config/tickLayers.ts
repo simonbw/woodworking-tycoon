@@ -2,10 +2,10 @@
  * The layers that entities tick in, processed in order within each tick.
  *
  * The sim layers (player → cleaning → machines → clock → street →
- * milestones) encode the update ordering the old world documented in
- * `game-actions/tickAction.ts`: the player acts first, cleaning reacts to
- * what the player stirred up, machines run their operations, the clock
- * advances, the street (customers, stand) reacts, and milestone checks see
+ * milestones) encode the update ordering the sim systems depend on: the
+ * player acts first, the CleaningSystem reacts to what the player stirred
+ * up, the MachineSystem runs its operations, the clock advances, the
+ * StreetSystem (customers, stand) reacts, and the MilestoneSystem sees
  * the finished tick.
  */
 export const TICK_LAYERS = [

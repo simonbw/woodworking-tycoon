@@ -61,6 +61,21 @@ describe("getSellValue", () => {
       8 * SPECIES_VALUE_MULTIPLIER.maple,
     );
   });
+
+  it("pays a quarter more for a board that has been oiled", () => {
+    const raw = makeMaterial<FinishedProduct>({
+      type: "simpleCuttingBoard",
+      species: "maple",
+    });
+    const oiled = makeMaterial<FinishedProduct>({
+      type: "simpleCuttingBoard",
+      species: "maple",
+      finish: "mineralOil",
+    });
+    // Maple simple cutting board: 8 x 3 = 24 raw, x1.25 oiled
+    assert.strictEqual(getSellValue(raw), 24);
+    assert.strictEqual(getSellValue(oiled), 30);
+  });
 });
 
 describe("getBoardBuyPrice", () => {

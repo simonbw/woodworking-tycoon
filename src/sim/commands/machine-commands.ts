@@ -50,7 +50,7 @@ import { projectGameState } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { emitSound } from "./sound";
 import { applyCompletionGrants } from "../systems/grants";
-import { BenchToolClaim } from "../../game/game-actions/player-actions";
+import { BenchToolClaim } from "../../game/bench-work/tool-work";
 
 /**
  * The machine command surface: every mutation input can make against a
@@ -62,9 +62,8 @@ import { BenchToolClaim } from "../../game/game-actions/player-actions";
  * backstop.
  */
 
-// Pure read helpers re-exported so the shell (whose import rule keeps it
-// off the old transform layer) reads them through the command surface,
-// the way trip-commands re-exports its constants.
+// Pure read helpers re-exported so the shell reads them through the
+// command surface, the way trip-commands re-exports its constants.
 export {
   canPickUpMachine,
   canPutDownCarriedMachine,
@@ -404,10 +403,9 @@ export function setMachineSettings(
 // ---------------------------------------------------------------------
 
 /**
- * Start an operation — the old `operateMachineAction`, all three
- * branches: a bench tool claim, a direct-feed match, or the selected
- * operation consuming from the input bay (with the blueprint seating
- * rules).
+ * Start an operation, in all three branches: a bench tool claim, a
+ * direct-feed match, or the selected operation consuming from the input
+ * bay (with the blueprint seating rules).
  */
 export function operateMachine(
   game: Game,
@@ -642,7 +640,7 @@ export function operateMachine(
 }
 
 /**
- * The bench view's finish commit — the old `finishAttendedWorkAction`.
+ * The bench view's finish commit.
  * For a single-phase operation that is the completion itself; for one
  * with a hands-free remainder (a glue-up's cure) it enters the next
  * phase and hands the rest to the tick.
@@ -704,7 +702,6 @@ export function finishAttendedWork(game: Game, entity: MachineEntity): boolean {
   return true;
 }
 
-// Pure factory re-exported so engine-world files never lean on the old
-// transform layer directly (the same seam the other command files give
-// their read helpers) — the store's display models are built from it.
+// Pure factory re-exported through the same seam the other command files
+// give their read helpers — the store's display models are built from it.
 export { freshMachineState } from "../../game/game-actions/machine-actions";

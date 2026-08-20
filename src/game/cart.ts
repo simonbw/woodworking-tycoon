@@ -1,4 +1,5 @@
 import { ConsumableId } from "./Consumable";
+import { GameState } from "./GameState";
 import { MachineId } from "./Machine";
 import { MaterialInstance } from "./Materials";
 import { UpgradeId } from "./Upgrade";
@@ -9,10 +10,14 @@ import { UpgradeId } from "./Upgrade";
  *
  * Nothing here transacts. A line is a note of what the register will be
  * asked to ring up, and every kind of line maps to exactly one of the
- * buy actions the store already had — which is the point of the split:
- * the buy actions stay the one place that knows what a purchase *does*
- * (into the bed, into a crate, into the shop's supply), and the cart
- * only decides *when*. See game-actions/cart-actions.ts for the fold.
+ * store's buy commands — which is the point of the split: the buy
+ * commands (`sim/commands/store-commands.ts`) stay the one place that
+ * knows what a purchase *does* (into the bed, into a crate, into the
+ * shop's supply), and the cart only decides *when*.
+ *
+ * A cart may exceed the wallet — the register is what refuses, not the
+ * shelf, the same way it works in a real store (the store's total goes
+ * red and Check Out greys out).
  *
  * The cart hangs off the trip itself (see ShoppingTrip in Person.ts), so
  * driving away is what empties it — there is no cart to clean up once
@@ -47,6 +52,15 @@ export type CartLine =
   | { readonly kind: "clamp"; readonly price: number }
   | { readonly kind: "broom"; readonly price: number }
   | { readonly kind: "shopVac"; readonly price: number };
+
+/** The cart of the trip in progress, or null when the player isn't shopping. */
+export function currentCart(
+  gameState: GameState,
+): ReadonlyArray<CartLine> | null {
+  return gameState.player.away?.kind === "shopping"
+    ? gameState.player.away.cart
+    : null;
+}
 
 /** Kinds the shop can only ever own one of — two in a cart is a mistake. */
 const ONE_TO_A_SHOP: ReadonlyArray<CartLine["kind"]> = ["broom", "shopVac"];

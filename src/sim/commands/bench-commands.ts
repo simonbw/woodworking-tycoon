@@ -46,17 +46,15 @@ import { DustLayer } from "../singletons/DustLayer";
 import { emitSound } from "./sound";
 
 /**
- * The bench-work command surface — the old `operation-actions.ts` commit
- * actions, rehosted onto entities. The commit-action split holds (see
+ * The bench-work command surface. The commit split holds (see
  * docs/bench-work.md): the bench view (and the ShopDriver) decides
- * *when*, these commands decide *what*. Each validates through the same
- * shared helpers over a projection snapshot, then writes onto the
- * entities; refusals log and return false, matching the old actions'
- * quiet-refusal contract. The bench-work engine itself
- * (`src/game/bench-work/`) is pure and shared, never forked.
+ * *when*, these commands decide *what*. Each validates through the
+ * shared rules over a projection snapshot, then writes onto the
+ * entities; a refusal logs and returns false. The bench-work engine
+ * itself (`src/game/bench-work/`) is pure and shared, never forked.
  *
  * `finishAttendedWork` — the finish commit these commands pair with —
- * already lives in machine-commands.ts.
+ * lives in machine-commands.ts.
  */
 
 export { palletPryTargetsLeft } from "../../game/game-actions/operation-actions";
@@ -470,11 +468,11 @@ export function gatherBenchPieces(
 }
 
 /**
- * One throttled emission of hand-work dust — the old
- * `emitBenchDustAction`: what the tick would have shed over the
- * equivalent stretch of attended machine time (dustOutput is per tick at
- * 5 ticks/second, scaled by the cut load the way machineTickPass scales
- * it). The bench view calls this about twice a second while the tool is
+ * One throttled emission of hand-work dust: what the tick would have
+ * shed over the equivalent stretch of attended machine time (dustOutput
+ * is per tick at 5 ticks/second, scaled by the cut load the way the
+ * MachineSystem scales it). The bench view calls this about twice a
+ * second while the tool is
  * moving; sanding a whole board sheds roughly the same total mess either
  * way. Writes straight onto the DustLayer singleton.
  */

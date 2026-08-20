@@ -306,7 +306,7 @@ describe("the finishing kit, tool-first", () => {
 
 describe("selectedBenchPlan", () => {
   it("is null for tool work — the last cut isn't a drawing off the pile", () => {
-    // operateMachineAction records the tool operation it claimed in
+    // operateMachine records the tool operation it claimed in
     // selectedOperationId, so the id names the last pass, not a plan.
     assert.strictEqual(
       selectedBenchPlan(

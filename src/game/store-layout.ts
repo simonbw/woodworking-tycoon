@@ -63,7 +63,7 @@ import { Direction, Vector } from "./Vectors";
  * earned yet.
  *
  * Nothing here transacts. The cart lines a bay hands out map onto the
- * same buy actions the cart has always folded through (cart-actions.ts);
+ * same buy commands the register rings up (sim/commands/store-commands.ts);
  * a shelf is only a place to stand while adding one.
  */
 

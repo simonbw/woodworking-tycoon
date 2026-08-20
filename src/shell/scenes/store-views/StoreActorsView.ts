@@ -15,7 +15,7 @@ import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
 import { CartLine } from "../../../game/cart";
-import { currentCart } from "../../../game/game-actions/cart-actions";
+import { currentCart } from "../../../game/cart";
 import { headingForDirection } from "../../../game/player-motion";
 import { Player } from "../../../sim/entities/Player";
 import { projectGameState } from "../../../sim/projection";

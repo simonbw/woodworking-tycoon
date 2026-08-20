@@ -3,6 +3,12 @@ import { atTruckCab } from "../lot";
 import { StoreId } from "../lumberStock";
 
 /**
+ * The rules that gate leaving the lot: where a trip may start, which
+ * storefronts the player has heard of, and what a drive costs in shop
+ * minutes. The trips themselves are `sim/commands/trip-commands.ts`.
+ */
+
+/**
  * Leaving the shop happens at the truck's cab: walk out to the driveway,
  * climb in, and pick a destination (the store, a scavenging run). One
  * trip at a time, and not with a machine over your shoulders.

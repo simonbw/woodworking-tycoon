@@ -20,10 +20,10 @@ import { SaveFile } from "../save/SaveFile";
 import { SaveManager } from "../save/SaveManager";
 
 /**
- * The day cycle on the new driver: goHome and beginWakeUp are the old
- * door-actions' goHomeAction/wakeUpAction, with the overnight batch
- * rehosted on the SleepSystem — one sim minute per engine tick through
- * the ordinary layer pipeline, then the morning bookkeeping. Sleeping
+ * The day cycle: `goHome` parks the player at home and `beginWakeUp`
+ * hands the night to the SleepSystem — one sim minute per engine tick
+ * through the ordinary layer pipeline, then the morning bookkeeping.
+ * Sleeping
  * turns the day over, the overnight genuinely runs the world (cures
  * finish, a mid-browse customer still buys), and the same seed lands
  * the same night every run.
@@ -119,8 +119,7 @@ describe("sleeping through the night", () => {
   it("sleeps early too, leaving the rest of the day unspent", () => {
     // Always on offer — a noon bedtime just runs the same batch, and the
     // clock arithmetic means the batch's first stretch is still "day"
-    // (dayStartTick doesn't move until morning), exactly like the old
-    // wakeUpAction's loop.
+    // (dayStartTick doesn't move until morning).
     const shop = new ShopDriver();
     shop.sleep();
     assert.strictEqual(shop.clock.day, 2);
@@ -191,7 +190,7 @@ describe("sleeping through the night", () => {
   });
 
   it("lets a mid-browse customer buy overnight, and spawns nobody new", () => {
-    // The old standTickPass's night gate blocks spawning only — someone
+    // The street's night gate blocks spawning only — someone
     // already at the table finishes their browse and can still buy. From
     // close onward the whole batch is night, so nobody else shows up.
     const frontage = standFrontage(initialGameState.shopInfo);

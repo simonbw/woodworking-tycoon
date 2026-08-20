@@ -14,7 +14,7 @@ import {
   withinStoreReach,
 } from "./store-layout";
 import { resolveStoreInteract, cartIndexToReturn } from "./store-interact";
-import { addToCartAction } from "./game-actions/cart-actions";
+import { CartLine } from "./cart";
 import { StoreId, unlockedLumberChannels } from "./lumberStock";
 import { SHEET_SIZES, unlockedSheetSkus } from "./sheetStock";
 import { Vector } from "./Vectors";
@@ -295,7 +295,11 @@ describe("storeLayout", () => {
 });
 
 describe("resolveStoreInteract", () => {
-  function shoppingAt(position: Vector, money = 500): GameState {
+  function shoppingAt(
+    position: Vector,
+    money = 500,
+    cart: ReadonlyArray<CartLine> = [],
+  ): GameState {
     const base = stateWith({ money });
     return {
       ...base,
@@ -304,7 +308,7 @@ describe("resolveStoreInteract", () => {
         away: {
           kind: "shopping",
           store: "orangeBox",
-          cart: [],
+          cart,
           hasCart: true,
           position,
           direction: 1,
@@ -346,8 +350,9 @@ describe("resolveStoreInteract", () => {
   });
 
   it("counts the bay's product in the cart and finds the line to return", () => {
-    let state = shoppingAt(fixtureStandCell(sawBay));
-    state = addToCartAction(sawBay.product.line)(state);
+    const state = shoppingAt(fixtureStandCell(sawBay), 500, [
+      sawBay.product.line,
+    ]);
     const interact = resolveStoreInteract(state, layout);
     assert.strictEqual(interact?.inCart, 1);
     assert.strictEqual(cartIndexToReturn(state, sawBay), 0);
@@ -364,13 +369,14 @@ describe("resolveStoreInteract", () => {
       false,
     );
 
-    let carted = addToCartAction(sawBay.product.line)(atRegister);
+    const carted = shoppingAt(registerStandCell(layout), 500, [
+      sawBay.product.line,
+    ]);
     assert.strictEqual(resolveStoreInteract(carted, layout)?.canCheckOut, true);
-    carted = { ...carted, money: 1 };
-    assert.strictEqual(
-      resolveStoreInteract(carted, layout)?.canCheckOut,
-      false,
-    );
+    const broke = shoppingAt(registerStandCell(layout), 1, [
+      sawBay.product.line,
+    ]);
+    assert.strictEqual(resolveStoreInteract(broke, layout)?.canCheckOut, false);
   });
 
   it("finds the cab from the spawn cell", () => {

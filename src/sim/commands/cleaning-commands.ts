@@ -6,8 +6,8 @@ import { carryingShopVac, SHOP_VAC_COST } from "../../game/ShopVac";
 import { chebyshevDistance } from "../../game/Vectors";
 import { ShopVacEntity } from "../entities/ShopVacEntity";
 
-// Pure read helpers re-exported so the shell (whose import rule keeps it
-// off the old transform layer) reads them through the command surface.
+// Pure read helpers re-exported so the shell reads them through the
+// command surface rather than reaching into the rule modules.
 export {
   canSweepAt,
   dustpanFillFraction,
@@ -21,11 +21,10 @@ import { emitSound } from "./sound";
 
 /**
  * The cleaning command surface: every mutation input can make against
- * the broom and the shop vac, ported from the old `dust-actions.ts` /
- * `shop-vac-actions.ts` actions. Each command validates through the same
- * shared helpers over a projection snapshot, then writes onto the
- * entities; refusals log and return false, matching the old actions'
- * quiet-refusal contract. Emptying the dustpan and the vac canister are
+ * the broom and the shop vac. Each command validates through the shared
+ * rules in `game/game-actions/dust-actions.ts` and `shop-vac-actions.ts`
+ * over a projection snapshot, then writes onto the entities; a refusal
+ * logs and returns false. Emptying the dustpan and the vac canister are
  * deliberately not commands — they're the same held-operate verb as
  * sweeping and suction, run by the CleaningSystem's tick passes at the
  * garbage can.

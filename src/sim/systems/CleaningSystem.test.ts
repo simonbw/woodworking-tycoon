@@ -18,19 +18,17 @@ import {
 import { ShopDriver } from "../driver/ShopDriver";
 
 /**
- * The cleaning system's contract, ported from the old world's promises
- * (`dust-actions.test.ts`, `shop-vac-actions.test.ts`, and the core of
- * `sequences/cleaning-chain.test.ts`): sweeping gathers the swath into
+ * The cleaning system's whole contract: sweeping gathers the swath into
  * the dustpan paced by the stroke cap and slows the walk, the pan and
  * the vac canister cap out and empty a chunk per held tick at the
  * garbage can, the vac trickles underfoot while dragged, held tool work
  * spends the player's time, and the whole slice round-trips through the
- * save file byte-identically.
+ * save file byte-identically. `sequences/cleaning-chain.test.ts` runs
+ * the same rules in order, from the mess to the curb.
  *
- * Numbers follow the old `tickAction` pipeline (sweep → vacuum → shop
- * vac in one minute), not the isolated per-pass unit tests — where a
- * minute runs both the suction and the trickle, the expectation composes
- * them, exactly as the old full tick did.
+ * Numbers follow the sim minute as a whole (sweep → vacuum → shop vac),
+ * not one pass in isolation — where a minute runs both the suction and
+ * the trickle, the expectation composes them.
  */
 
 const close = (a: number, b: number, message?: string) =>
@@ -89,6 +87,45 @@ describe("sweeping", () => {
     shop.tick(1);
     close(shop.dustLayer.map["7,8"]?.walnut ?? 0, 10);
     assert.deepStrictEqual(shop.broom.dustpan, {});
+  });
+
+  it("does nothing without the broom in hand", () => {
+    // Leaning against the wall a cell away: the hold sweeps nothing.
+    const shop = sweepingShop({
+      dust: { "7,8": { walnut: 10 } },
+      broomPosition: [6, 9],
+    });
+    shop.holdOperate(true).tick(1);
+    close(shop.dustLayer.map["7,8"]?.walnut ?? 0, 10);
+    assert.deepStrictEqual(shop.broom.dustpan, {});
+  });
+
+  it("sweeps the cell underfoot too", () => {
+    const shop = sweepingShop({ dust: { "6,8": { walnut: 10 } } });
+    shop.holdOperate(true).tick(1);
+    // One 10-unit cell: the stroke wants 9, the cap allows 8
+    close(shop.dustLayer.map["6,8"]?.walnut ?? 0, 2);
+    close(dustTotal(shop.broom.dustpan), 8);
+  });
+
+  it("leaves dust behind the player alone", () => {
+    // Facing +x from [6,8]: the stroke pushes forward, never backward.
+    const shop = sweepingShop({ dust: { "4,8": { walnut: 10 } } });
+    shop.holdOperate(true).tick(1);
+    close(shop.dustLayer.map["4,8"]?.walnut ?? 0, 10);
+    assert.deepStrictEqual(shop.broom.dustpan, {});
+  });
+
+  it("empties the pan rather than sweeping when both apply", () => {
+    const shop = sweepingShop({
+      dust: { "2,13": { pine: 10 } },
+      dustpan: { walnut: 50 },
+      player: { ...initialGameState.player, position: [2, 13], direction: 0 },
+    });
+    shop.holdOperate(true).tick(1);
+    assert.ok(dustTotal(shop.broom.dustpan) < 50);
+    // The floor is untouched while the pour happens
+    close(shop.dustLayer.map["2,13"]?.pine ?? 0, 10);
   });
 
   it("does nothing while the player is still busy", () => {
@@ -189,8 +226,8 @@ describe("the shop vac", () => {
     shop.holdOperate(true).tick(1);
     // Suction: underfoot at the strong rate (10 → 1), under the
     // workspace at the cone rate (10 → 5.5); the passive trickle in the
-    // same minute then drinks the last unit underfoot — exactly what
-    // the old tickAction's vacuum-then-trickle order did.
+    // same minute then drinks the last unit underfoot, which is what
+    // the vacuum-then-trickle order gives.
     assert.strictEqual(shop.dustLayer.map["2,4"], undefined);
     close(shop.dustLayer.map["2,2"]?.pine ?? 0, 5.5);
     close(dustTotal(shop.shopVac!.canister), 14.5);
@@ -224,6 +261,20 @@ describe("the shop vac", () => {
     });
     shop.holdOperate(true).tick(1);
     close(shop.dustLayer.map["2,4"]?.walnut ?? 0, 10);
+  });
+
+  it("stops taking at the canister's capacity", () => {
+    const shop = draggingShop({
+      dust: { "2,4": { walnut: 10 } },
+      shopVac: {
+        position: null,
+        canister: { oak: SHOP_VAC_CANISTER_CAPACITY - 3 },
+      },
+    });
+    shop.holdOperate(true).tick(1);
+    close(dustTotal(shop.shopVac!.canister), SHOP_VAC_CANISTER_CAPACITY);
+    // The three units that fit came off the floor; the rest stayed
+    close(shop.dustLayer.map["2,4"]?.walnut ?? 0, 7);
   });
 
   it("the same hold empties the canister beside the garbage can", () => {

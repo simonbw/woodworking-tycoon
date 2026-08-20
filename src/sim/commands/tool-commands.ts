@@ -12,15 +12,14 @@ import { findMachineEntity } from "./machine-commands";
 import { projectGameState } from "../projection";
 
 /**
- * Mounting and unmounting handheld tools, ported from the old
- * `tool-actions.ts` (`mountToolAction` / `unmountToolAction`). A loose
- * tool is a physical thing — a MaterialInstance of kind "tool" carried in
- * the arms, dropped into floor piles, hauled in the truck's bed — so the
- * mount/unmount trade happens between the hands and the station's rack.
- * Each command validates against a projection snapshot with the same
- * guards the old actions had, then writes onto the entities. Refusals log
- * and return false, matching the old quiet-refusal contract. Neither old
- * action queued a sound, so neither command emits one.
+ * Mounting and unmounting handheld tools. A loose tool is a physical
+ * thing — a MaterialInstance of kind "tool" carried in the arms, dropped
+ * into floor piles, hauled in the truck's bed — so the mount/unmount
+ * trade happens between the hands and the station's rack. Each command
+ * validates against a projection snapshot, then writes onto the entities,
+ * keeping the rail's selected operation valid through
+ * `withValidSelectedOperation`. A refusal logs and returns false, and
+ * neither command emits a sound.
  */
 
 function player(game: Game): Player {
