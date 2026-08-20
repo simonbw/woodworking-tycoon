@@ -58,6 +58,10 @@ export default defineConfig({
   // into a stall and pushes the fat specs past budgets that are generous
   // when they run alone. Serial is slower on the wall clock and much
   // steadier — and the specs are what a change is judged by.
+  // Re-measured after issue #230 removed the per-question derivation
+  // cost: --workers=4 still ran every spec 2x slower under contention
+  // and saved barely a minute of wall clock. The bottleneck is the
+  // browsers' shared CPU, so one worker stays.
   workers: 1,
   reporter: "list",
   outputDir,

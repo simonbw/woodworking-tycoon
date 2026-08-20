@@ -37,8 +37,6 @@ export type MachineCrate = {
   readonly position: Vector;
 };
 
-export type GameAction = (gameState: GameState) => GameState;
-
 /**
  * What's riding in the truck's bed. Purchases and scavenged loot come
  * home here instead of materializing on the shop floor. Loaded and
