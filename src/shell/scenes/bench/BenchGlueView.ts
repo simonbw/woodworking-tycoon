@@ -34,7 +34,9 @@ import {
   gatherBenchPieces,
   startGlueUp,
 } from "../../../sim/commands/bench-commands";
-import { projectGameState } from "../../../sim/projection";
+import { machineStatesNow } from "../../../sim/machine-reads";
+import { projectProgression } from "../../../sim/projection";
+import { Consumables } from "../../../sim/singletons/Consumables";
 import { playSound } from "../../../utils/sfx";
 import { ShellStore } from "../../ShellStore";
 import { BenchDive } from "./BenchDive";
@@ -190,7 +192,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
     const opened = openBenchGroup(this.game)?.opened;
     if (!dive || dive.openBenchKey === null || !opened) return false;
     if (opened.operationProgress.status === "inProgress") return false;
-    const progression = projectGameState(this.game).progression;
+    const progression = projectProgression(this.game);
     const knowsGlue = availableOperations(opened, progression).some(
       (operation) => operation.interaction?.kind === "glue",
     );
@@ -219,15 +221,16 @@ export class BenchGlueView extends BaseEntity implements Entity {
     // run — no grayed-out tease.
     const known = availableOperations(
       opened,
-      projectGameState(this.game).progression,
+      projectProgression(this.game),
     ).some((operation) => operation.id === detected.run!.operationId);
     return known ? detected.run : null;
   }
 
   /** Free bars on the rack, minus the ones already set out. */
   private clampsAvailable(): number {
-    const gs = projectGameState(this.game);
-    return Math.max(0, clampsFree(gs.clamps, gs.machines) - this.clamps.length);
+    const consumables = this.game.entities.getSingleton(Consumables);
+    const free = clampsFree(consumables.clamps, machineStatesNow(this.game));
+    return Math.max(0, free - this.clamps.length);
   }
 
   private seamsGlued(run: GlueRun): number {

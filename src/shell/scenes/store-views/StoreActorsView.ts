@@ -18,7 +18,7 @@ import { CartLine } from "../../../game/cart";
 import { currentCart } from "../../../game/cart";
 import { headingForDirection } from "../../../game/player-motion";
 import { Player } from "../../../sim/entities/Player";
-import { projectGameState } from "../../../sim/projection";
+
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
 import { StoreSceneRoot } from "../StoreSceneRoot";
 import { drawFlatbed, drawFlatbedHandle, KRAFT, KRAFT_EDGE } from "./flatbed";
@@ -231,8 +231,8 @@ export class StoreActorsView extends BaseEntity implements Entity {
     // The load: biggest footprint on the bottom, smallest on top — a
     // stable sort on the line's place in the cart keeps the pile from
     // reshuffling as things are added around it.
-    const gameState = projectGameState(this.game);
-    const cart = currentCart(gameState) ?? [];
+    const cart =
+      currentCart({ player: this.game.entities.getSingleton(Player) }) ?? [];
     const key = cart
       .map((line) => (line.kind === "material" ? line.material.id : line.kind))
       .join("|");

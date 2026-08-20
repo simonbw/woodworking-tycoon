@@ -8,7 +8,7 @@ import { floorMachines } from "../sim/entities/MachineEntity";
 import { deriveMachineSoundPhase } from "../game/machine-sound-helpers";
 import { MACHINE_VOICES } from "../utils/machineVoices";
 import { MachineVoice } from "../utils/machineVoice";
-import { projectGameState } from "../sim/projection";
+import { projectPerson, projectProgression } from "../sim/projection";
 import { Player } from "../sim/entities/Player";
 
 /**
@@ -36,7 +36,8 @@ export class MachineSoundView extends BaseEntity implements Entity {
       this.silenceAll();
       return;
     }
-    const gameState = projectGameState(this.game);
+    const person = projectPerson(this.game);
+    const progression = projectProgression(this.game);
     const seen = new Set<string>();
     for (const machine of floorMachines(this.game)) {
       const makeVoice = MACHINE_VOICES[machine.state.machineTypeId];
@@ -51,10 +52,10 @@ export class MachineSoundView extends BaseEntity implements Entity {
       voice.setPhase(
         deriveMachineSoundPhase(
           machine,
-          gameState.player.position,
-          gameState.player.away !== null,
-          gameState.player.operating === true,
-          gameState.progression,
+          person.position,
+          person.away !== null,
+          person.operating === true,
+          progression,
         ),
         deriveMachineCutLoad(machine),
       );

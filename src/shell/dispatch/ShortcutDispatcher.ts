@@ -12,6 +12,7 @@ import { ShortcutDef, ShortcutId, SHORTCUTS } from "../../game/shortcuts";
 import { hasStationSheet } from "../../components/station/station-helpers";
 import {
   carryMachineToggle,
+  interactFacts,
   interactHere,
   operateTargeted,
   putDownHere,
@@ -21,12 +22,15 @@ import {
   rotateCarriedMachine,
   shopCellMap,
 } from "../../sim/commands/machine-commands";
-import { toggleCarryShopVac } from "../../sim/commands/cleaning-commands";
+import {
+  cleaningGear,
+  toggleCarryShopVac,
+} from "../../sim/commands/cleaning-commands";
 import { setOperating, setWaiting } from "../../sim/commands/player-commands";
-import { canLeaveShop } from "../../sim/commands/trip-commands";
+import { canLeaveShopNow } from "../../sim/commands/trip-commands";
 import { MachineEntity } from "../../sim/entities/MachineEntity";
 import { Player } from "../../sim/entities/Player";
-import { projectGameState } from "../../sim/projection";
+import { projectProgression } from "../../sim/projection";
 import { activatesFocusedControl, isEditable } from "../../utils/keyboardFocus";
 import { BenchDive } from "../scenes/bench/BenchDive";
 import { StoreSceneRoot } from "../scenes/StoreSceneRoot";
@@ -225,8 +229,9 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
   /** The old component's `enabled` guards, per shortcut. */
   private enabled(id: ShortcutId): boolean {
     const game = this.game;
-    if (!game.entities.tryGetSingleton(Player)) return false;
-    const gs = projectGameState(game);
+    const player = game.entities.tryGetSingleton(Player);
+    if (!player) return false;
+    const progression = projectProgression(game);
     const targeting = this.targeting();
     const targeted = this.activeTarget();
     const targetedView = targeted?.view();
@@ -235,10 +240,10 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
     // truck parked rather than still rolling up the driveway (the
     // player is inside it until then).
     const present =
-      !gs.player.away &&
+      !player.away &&
       (game.entities.tryGetSingleton(TripTheater)?.stage() ?? "parked") ===
         "parked";
-    const carrying = gs.player.carriedMachine != null;
+    const carrying = player.carriedMachine != null;
     const stationWorking =
       targetedView?.operationProgress.status === "inProgress";
     const sheetMachine = targeting.sheetMachine();
@@ -284,7 +289,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
         // key, and the DOM listener runs after this one. With full hands
         // nothing on the card can run, so E is the interact key again
         // and folds the card (below).
-        if (targeting.truckMenuOpen && canLeaveShop(gs)) return false;
+        if (targeting.truckMenuOpen && canLeaveShopNow(game)) return false;
         return present && !carrying;
       case "put-down":
         return present && !carrying;
@@ -302,7 +307,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
           !stationWorking &&
           targetedView != null &&
           settingKeysLive &&
-          liveSettingParameter(targetedView, gs.progression, "rotate") != null
+          liveSettingParameter(targetedView, progression, "rotate") != null
         );
       case "cycle-pile": {
         if (!(present && !carrying)) return false;
@@ -310,10 +315,11 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
           targetedView != null &&
           settingKeysLive &&
           !stationWorking &&
-          liveSettingParameter(targetedView, gs.progression, "rotate") != null;
+          liveSettingParameter(targetedView, progression, "rotate") != null;
         if (rotateLive) return false;
+        const facts = interactFacts(game);
         const interactNow = resolveInteract(
-          gs,
+          facts,
           shopCellMap(game),
           targetedView,
           targeting.pileOffset,
@@ -324,7 +330,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
           interactNow?.kind === "pick-up-floor";
         return (
           rummageLive &&
-          materialSources(gs, shopCellMap(game), targetedView).length > 1
+          materialSources(facts, shopCellMap(game), targetedView).length > 1
         );
       }
       default:
@@ -368,7 +374,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
         // player path to hand work). A container bench — a garbage can,
         // a rack — has no work surface, so it keeps its sheet.
         const view = targeted?.view();
-        if (view && divesToBench(view, projectGameState(game).progression)) {
+        if (view && divesToBench(view, projectProgression(game))) {
           this.game.entities.tryGetSingleton(BenchDive)?.open(targeted!);
           return;
         }
@@ -397,7 +403,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       case "operate-machine": {
         // A tool in hand owns the hold: the press mustn't also start the
         // machine underfoot (the held flag is already set).
-        if (heldTool(projectGameState(game)) !== null) return;
+        if (heldTool(cleaningGear(game)) !== null) return;
         operateTargeted(game, targeted);
         return;
       }

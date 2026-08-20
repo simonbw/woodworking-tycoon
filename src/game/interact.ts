@@ -3,7 +3,7 @@ import { MaterialPile } from "./GameState";
 import { CleaningGear, heldTool } from "./HeldTool";
 import { atTruckBed, atTruckCab } from "./lot";
 import { atStand } from "./stand";
-import { Machine, machineKey } from "./Machine";
+import { Machine, machineKey, MachineState } from "./Machine";
 import { getMaterialName } from "./material-helpers";
 import { MaterialInstance } from "./Materials";
 import { handSpaceLeft, Person } from "./Person";
@@ -83,7 +83,10 @@ export interface InteractFacts extends CleaningGear {
     "away" | "carriedMachine" | "position" | "inventory"
   >;
   readonly materialPiles: ReadonlyArray<MaterialPile>;
-  readonly truck: { readonly bed: ReadonlyArray<MaterialInstance> };
+  readonly truck: {
+    readonly bed: ReadonlyArray<MaterialInstance>;
+    readonly crates: ReadonlyArray<MachineState>;
+  };
   readonly stand: ReadonlyArray<MaterialInstance>;
   readonly shopInfo: ShopInfo;
 }

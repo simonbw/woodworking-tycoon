@@ -10,7 +10,7 @@ import { ShopInfo } from "../singletons/ShopInfo";
 /**
  * The stand command surface: setting pieces out and taking them back.
  * Each command validates through the shared helpers in `game/stand.ts`
- * (against a projection snapshot), then writes onto the entities; a
+ * against the live entities, then writes onto them; a
  * refusal logs and returns false. Selling is not a command — customers
  * do that, in the StreetSystem.
  */

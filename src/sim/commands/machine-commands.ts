@@ -56,9 +56,10 @@ import { BenchToolClaim } from "../../game/bench-work/tool-work";
 /**
  * The machine command surface: every mutation input can make against a
  * machine, ported from the old machine/player/operation actions. Each
- * command validates through the same shared helpers the old world used
- * (against a projection snapshot), then writes onto the entities.
- * Refusals log and return false, matching the old actions' quiet-refusal
+ * command validates through the shared pure helpers — handed the narrow
+ * slices they read, assembled from the live entities — then writes onto
+ * the entities and announces the fact (see CustomEvent.ts). Refusals
+ * log and return false, matching the old actions' quiet-refusal
  * contract — the dispatcher's chips explain; the command is the
  * backstop.
  */

@@ -28,18 +28,19 @@ import { Wallet } from "./singletons/Wallet";
 /**
  * A read-only `GameState` assembled from the entity world.
  *
- * The migration's contract is that registries and pure helpers are
- * shared between both worlds, never forked — and nearly every old helper
- * (attendance, dust multipliers, cell maps, clamp counts) reads a
- * `GameState`. This projection is the bridge: commands and systems build
- * one, hand it to the shared helpers, and write their results back onto
- * the entities. It is a snapshot for reading, never a place to write —
- * there is deliberately no way to load one back in.
+ * Since issue #230 the full projection lives at the serialization
+ * boundary, where a snapshot is genuinely the product: the save file
+ * (sim/save), the fixture loader's inverse, the ShopDriver's assertion
+ * surface, the dev/test hooks, and the DOM's `useShopState` (one
+ * assembly per render signal). Runtime code asks the entities that hold
+ * the state — commands, systems, and views read the slice projections
+ * below (`projectPerson`, `projectProgression`, `projectTutorialFacts`,
+ * `projectShopInfo`) or the singletons directly, and the pure helpers
+ * take what they read. It is a snapshot for reading, never a place to
+ * write — there is deliberately no way to load one back in.
  *
- * Slices whose systems haven't been ported yet project as their empty
- * initial values; each system's port claims its slice. The machine
- * array's order is entity insertion order, which the save file preserves,
- * so projections are deterministic across save/load.
+ * The machine array's order is entity insertion order, which the save
+ * file preserves, so projections are deterministic across save/load.
  */
 export function projectGameState(game: Game): GameState {
   const player = game.entities.getSingleton(Player);
@@ -157,6 +158,11 @@ export function projectPerson(game: Game): GameState["player"] {
     waiting: player.waiting,
     sweepAim: player.sweepAim,
   };
+}
+
+/** The shop's fixed geometry, for readers that need nothing else. */
+export function projectShopInfo(game: Game): GameState["shopInfo"] {
+  return game.entities.getSingleton(ShopInfo).info;
 }
 
 /**

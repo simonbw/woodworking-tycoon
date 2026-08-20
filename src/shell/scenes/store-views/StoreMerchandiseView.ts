@@ -23,7 +23,7 @@ import { drawCrate } from "../../../views/MachineCrateView";
 import { createMachineArt } from "../../../views/machine-sprites/create-machine-art";
 import { IDLE_ACTIVITY } from "../../../views/machine-sprites/machine-activity";
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
-import { projectGameState } from "../../../sim/projection";
+import { projectProgression } from "../../../sim/projection";
 import { ShellStore } from "../../ShellStore";
 import { StoreSceneRoot } from "../StoreSceneRoot";
 
@@ -320,7 +320,7 @@ export class StoreMerchandiseView extends BaseEntity implements Entity {
   }
 
   private progression(): ProgressionState {
-    return projectGameState(this.game).progression;
+    return projectProgression(this.game);
   }
 
   @on("render")

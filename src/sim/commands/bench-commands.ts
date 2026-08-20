@@ -51,7 +51,7 @@ import { emitSound } from "./sound";
  * The bench-work command surface. The commit split holds (see
  * docs/bench-work.md): the bench view (and the ShopDriver) decides
  * *when*, these commands decide *what*. Each validates through the
- * shared rules over a projection snapshot, then writes onto the
+ * shared rules over the live entities, then writes onto the
  * entities; a refusal logs and returns false. The bench-work engine
  * itself (`src/game/bench-work/`) is pure and shared, never forked.
  *

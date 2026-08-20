@@ -16,7 +16,7 @@ import { projectPerson } from "../projection";
  * thing — a MaterialInstance of kind "tool" carried in the arms, dropped
  * into floor piles, hauled in the truck's bed — so the mount/unmount
  * trade happens between the hands and the station's rack. Each command
- * validates against a projection snapshot, then writes onto the entities,
+ * validates against the live entities, then writes onto them,
  * keeping the rail's selected operation valid through
  * `withValidSelectedOperation`. A refusal logs and returns false, and
  * neither command emits a sound.

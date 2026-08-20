@@ -38,7 +38,7 @@ import {
  * a scavenging circuit or a store run. Going home for the night belongs
  * to the day-cycle commands. Each command validates through the pure
  * rules in `game/scavenge.ts` and `game/game-actions/door-actions.ts`
- * over a projection snapshot, then writes onto the entities; a refusal
+ * over the live entities, then writes onto them; a refusal
  * logs and returns false.
  *
  * How the legs charge their minutes differs by trip:
@@ -80,6 +80,12 @@ function leaveFacts(game: Game): LeaveShopFacts {
     player: projectPerson(game),
     shopInfo: game.entities.getSingleton(ShopInfo).info,
   };
+}
+
+/** The leaving guard, asked of the live entities — for the dispatcher
+ * and the trip card, which hold a `Game` rather than a snapshot. */
+export function canLeaveShopNow(game: Game): boolean {
+  return canLeaveShop(leaveFacts(game));
 }
 
 /** Where the player lands stepping out of the truck after any trip. */

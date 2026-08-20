@@ -11,7 +11,8 @@ import { Player } from "../sim/entities/Player";
 import { StandEntity } from "../sim/entities/StandEntity";
 import { TruckEntity } from "../sim/entities/TruckEntity";
 import { Broom } from "../sim/singletons/Broom";
-import { projectGameState } from "../sim/projection";
+import { projectTutorialFacts } from "../sim/projection";
+import { Clock } from "../sim/singletons/Clock";
 import {
   TUTORIAL_HIGHLIGHT_FILTERS,
   viewHighlightRoot,
@@ -53,14 +54,17 @@ export class TutorialHighlightView extends BaseEntity implements Entity {
 
     const game = this.game;
     if (!game.entities.tryGetSingleton(Player)) return;
-    const gs = projectGameState(game);
+    const gs = projectTutorialFacts(game);
     if (gs.player.away) return;
 
     const coach = tutorialTargets(gs);
 
     // At close the corner card points home (see NightfallCard), and the
     // truck wears the same coach outline so the card and the world agree.
-    const homewardNudge = isNight(gs) && !gs.player.away ? "truck" : null;
+    const homewardNudge =
+      isNight(game.entities.getSingleton(Clock)) && !gs.player.away
+        ? "truck"
+        : null;
 
     // The stations the coach is sending the player to.
     for (const machine of game.entities.byConstructor(MachineEntity)) {

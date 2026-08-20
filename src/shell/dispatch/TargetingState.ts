@@ -18,13 +18,14 @@ import {
   Vector,
   vectorKey,
 } from "../../game/Vectors";
+import { interactFacts } from "../../sim/commands/interact-commands";
 import {
   findMachineEntity,
   shopCellMap,
 } from "../../sim/commands/machine-commands";
 import { MachineEntity } from "../../sim/entities/MachineEntity";
 import { Player } from "../../sim/entities/Player";
-import { projectGameState } from "../../sim/projection";
+import { projectShopInfo } from "../../sim/projection";
 
 /**
  * Which machine on the player's square the keyboard acts on, which
@@ -101,22 +102,18 @@ export class TargetingState extends BaseEntity implements Entity {
 
   /** The operable machines on the player's square, facing-first order. */
   machines(): Machine[] {
-    const gs = projectGameState(this.game);
-    if (gs.player.away) return [];
+    const player = this.game.entities.getSingleton(Player);
+    if (player.away) return [];
     const cellMap = shopCellMap(this.game);
-    return [...(cellMap.at(gs.player.position)?.operableMachines ?? [])];
+    return [...(cellMap.at(player.cell)?.operableMachines ?? [])];
   }
 
   /** The machine the keys act on, as its live entity. */
   targeted(): MachineEntity | null {
     const machines = this.machines();
     if (machines.length === 0) return null;
-    const gs = projectGameState(this.game);
-    const index = facingIndex(
-      machines,
-      gs.player.position,
-      gs.player.direction,
-    );
+    const player = this.game.entities.getSingleton(Player);
+    const index = facingIndex(machines, player.cell, player.direction);
     const machine = machines[(index + this.offset) % machines.length];
     return findMachineEntity(this.game, machine.state);
   }
@@ -132,8 +129,10 @@ export class TargetingState extends BaseEntity implements Entity {
 
   get truckMenuOpen(): boolean {
     if (!this.truckMenuOpenRaw) return false;
-    const gs = projectGameState(this.game);
-    return !gs.player.away && atTruckCab(gs.shopInfo, gs.player.position);
+    const player = this.game.entities.getSingleton(Player);
+    return (
+      !player.away && atTruckCab(projectShopInfo(this.game), player.cell)
+    );
   }
 
   cycleTarget(): void {
@@ -157,19 +156,15 @@ export class TargetingState extends BaseEntity implements Entity {
       (m) => machineStateKey(m.state) === machineStateKey(candidate.state),
     );
     if (index === -1) return;
-    const gs = projectGameState(this.game);
-    const defaultIndex = facingIndex(
-      machines,
-      gs.player.position,
-      gs.player.direction,
-    );
+    const player = this.game.entities.getSingleton(Player);
+    const defaultIndex = facingIndex(machines, player.cell, player.direction);
     const len = machines.length;
     this.offset = (((index - defaultIndex) % len) + len) % len;
   }
 
   /** The cursor picking a floor piece outright (the pointing R). */
   setPileTarget(pile: { material: { id: string } }): void {
-    const gs = projectGameState(this.game);
+    const gs = interactFacts(this.game);
     const targetedView = this.targeted()?.view();
     const match = gs.materialPiles.find(
       (candidate) => candidate.material.id === pile.material.id,
@@ -221,17 +216,18 @@ export class TargetingState extends BaseEntity implements Entity {
 
   @on("tick")
   onTick() {
-    if (!this.game.entities.tryGetSingleton(Player)) return;
-    const gs = projectGameState(this.game);
+    const player = this.game.entities.tryGetSingleton(Player);
+    if (!player) return;
+    const gs = interactFacts(this.game);
 
     // A manual target pick lasts until the player moves or turns.
-    const positionKey = vectorKey(gs.player.position);
+    const positionKey = vectorKey(player.cell);
     if (
       positionKey !== this.lastPositionKey ||
-      gs.player.direction !== this.lastDirection
+      player.direction !== this.lastDirection
     ) {
       this.lastPositionKey = positionKey;
-      this.lastDirection = gs.player.direction;
+      this.lastDirection = player.direction;
       this.offset = 0;
     }
 
@@ -260,8 +256,8 @@ export class TargetingState extends BaseEntity implements Entity {
     if (
       this.sheetKey != null &&
       (this.sheetMachine() == null ||
-        gs.player.away != null ||
-        gs.player.carriedMachine != null)
+        player.away != null ||
+        player.carriedMachine != null)
     ) {
       this.sheetKey = undefined;
     }
@@ -269,7 +265,7 @@ export class TargetingState extends BaseEntity implements Entity {
     // The trip card belongs to the cab.
     if (
       this.truckMenuOpenRaw &&
-      (gs.player.away != null || !atTruckCab(gs.shopInfo, gs.player.position))
+      (player.away != null || !atTruckCab(gs.shopInfo, player.cell))
     ) {
       this.truckMenuOpenRaw = false;
     }

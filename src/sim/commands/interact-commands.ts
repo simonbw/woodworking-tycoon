@@ -71,14 +71,16 @@ function player(game: Game): Player {
 }
 
 /** The interact resolvers' read, off the live entities. */
-function interactFacts(game: Game): InteractFacts {
+export function interactFacts(game: Game): InteractFacts {
   return {
     ...cleaningGear(game),
     player: projectPerson(game),
     materialPiles: [...game.entities.byConstructor(MaterialPileEntity)]
       .filter((entity) => !entity.isDestroyed)
       .map((entity) => entity.pile),
-    truck: { bed: game.entities.getSingleton(TruckEntity).bed },
+    truck: (({ bed, crates }) => ({ bed, crates }))(
+      game.entities.getSingleton(TruckEntity),
+    ),
     stand: game.entities.tryGetSingleton(StandEntity)?.pieces ?? [],
     shopInfo: game.entities.getSingleton(ShopInfo).info,
   };
