@@ -82,6 +82,8 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
   private driving: { fastener: BlueprintFastener; secondsLeft: number } | null =
     null;
   private hovered: BlueprintFastener | null = null;
+  /** The outline a dragged part would settle on, updated each tick. */
+  private snapSlot: string | null = null;
 
   constructor() {
     super();
@@ -130,6 +132,14 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
       xIn: build.productPlacement.xIn - build.blueprint.widthIn / 2,
       yIn: build.productPlacement.yIn - build.blueprint.heightIn / 2,
     };
+  }
+
+  /**
+   * The empty outline a dragged part would settle on if it were let go
+   * now — the one the view lights up. Null with nothing in hand.
+   */
+  snapCandidate(): string | null {
+    return this.snapSlot;
   }
 
   /**
@@ -302,6 +312,20 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
     return fastenedPieceIds(build.seated, this.driven);
   }
 
+  /** Recompute which outline is lit, and tell the chrome when it moves. */
+  private updateSnapCandidate(
+    build: ReturnType<BenchAssemblyView["build"]>,
+  ): void {
+    const dragging = this.game.entities
+      .tryGetSingleton(BenchArrangeView)
+      ?.draggingId();
+    const next = build && dragging ? this.snapSlotFor(build, dragging) : null;
+    if (next === this.snapSlot) return;
+    this.snapSlot = next;
+    // The stage marker publishes the lit outline, so a move is a redraw.
+    this.game.entities.tryGetSingleton(ShellStore)?.bump();
+  }
+
   @on("tick")
   onTick(dt: number) {
     if (this.driving) {
@@ -309,6 +333,9 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
       if (this.driving.secondsLeft <= 0) this.driving = null;
     }
     const build = this.build();
+    // Before the guards below: a part is dragged with the hands free, so
+    // no driver is held and the fastener half of this tick stands down.
+    this.updateSnapCandidate(build);
     if (!build) {
       // A drawing put away (or a build committed) starts the next one
       // with an empty schedule.
@@ -413,12 +440,9 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
     const stage = benchStage(this.game);
     if (!build || !stage) return;
     const fit = stage.fit;
-    const dragging = this.game.entities
-      .tryGetSingleton(BenchArrangeView)
-      ?.draggingId();
 
     // The empty outlines, and the one a dragged part would settle on.
-    const candidate = dragging ? this.snapSlotFor(build, dragging) : null;
+    const candidate = this.snapCandidate();
     for (const slot of build.blueprint.slots) {
       if (build.seated.has(slot.id)) continue;
       const seat = slotOnBench(build.blueprint, build.productPlacement, slot);
@@ -489,6 +513,11 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
       (candidate) => candidate.material.id === materialId,
     );
     if (!piece) return null;
+    // Follow the hand, not the sim: nothing writes the piece's placement
+    // until it is set down, so the committed one is where it was picked up.
+    const placement =
+      this.game.entities.tryGetSingleton(BenchArrangeView)?.dragPlacement() ??
+      piece.placement;
     const taken = new Set(
       [...build.seated.entries()]
         .filter(([, id]) => id !== materialId)
@@ -499,7 +528,7 @@ export class BenchAssemblyView extends BaseEntity implements Entity {
         build.blueprint,
         build.productPlacement,
         piece.material,
-        piece.placement,
+        placement,
         taken,
       )?.slotId ?? null
     );

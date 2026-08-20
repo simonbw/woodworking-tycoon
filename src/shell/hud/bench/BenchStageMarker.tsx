@@ -86,6 +86,7 @@ export const BenchStageMarker: React.FC = () => {
         data-seated={build ? build.seated : undefined}
         data-driven={build ? build.driven : undefined}
         data-hovered={arrange?.handPieceId() ?? ""}
+        data-snap-candidate={assembly?.snapCandidate() ?? ""}
         data-work-hover={stroke?.hoveredOperationId() ?? ""}
         data-glue-run={glueRun ? glueRun.pieces : undefined}
         data-glue-op={glueRun ? glueRun.operationId : undefined}

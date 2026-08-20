@@ -44,6 +44,9 @@ export class PieceMotion {
   /** The tumble's three stop sprites, only for a board that tumbles. */
   private stopSprites: Container[] | null = null;
   private spriteKey = "";
+  /** The instance the mounted sprites were drawn from, compared by
+   * reference — see the note in `retarget`. */
+  private drawn: MaterialInstance | null = null;
   private material: MaterialInstance | null = null;
   private placement: BenchPlacement | null = null;
   private originX = 0;
@@ -78,12 +81,18 @@ export class PieceMotion {
   ): void {
     // A tumbling board keeps one holder across all three stops (the
     // tumble is the motion between them); everything else redraws when
-    // its standing changes.
+    // its standing changes, face-down included — a pallet turned over
+    // reorders its layers and shows the other nail heads.
+    //
+    // Materials are immutable, so a different instance is a different
+    // drawing — compare by reference, not by id. Prying a nail out of a
+    // pallet writes a new instance under the same id, and only the
+    // reference compare notices.
     const spriteKey = tumbles(material)
-      ? material.id
-      : `${material.id}|${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}`;
-    const fresh = this.spriteKey === "";
-    if (spriteKey !== this.spriteKey) {
+      ? ""
+      : `${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}${placement.flipped ? "f" : ""}`;
+    const fresh = this.drawn === null;
+    if (material !== this.drawn || spriteKey !== this.spriteKey) {
       this.holder
         .removeChildren()
         .forEach((child) => child.destroy({ children: true }));
@@ -102,10 +111,12 @@ export class PieceMotion {
           createMaterialSprite(material, {
             onEdge: placement.onEdge,
             onEnd: placement.onEnd,
+            flipped: placement.flipped,
           }),
         );
       }
       this.spriteKey = spriteKey;
+      this.drawn = material;
     }
     this.material = material;
     this.placement = placement;
