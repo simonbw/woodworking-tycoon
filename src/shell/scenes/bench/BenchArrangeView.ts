@@ -20,6 +20,7 @@ import {
   tumbles,
 } from "../../../game/bench-work/flip-cycle";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
+import { MaterialInstance } from "../../../game/Materials";
 import {
   arrangeBenchMaterial,
   gatherBenchPieces,
@@ -81,7 +82,8 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   private carried = new Container();
   private drag: Drag | null = null;
   private hoveredId: string | null = null;
-  private drawnDragId: string | null = null;
+  private drawnDragMaterial: MaterialInstance | null = null;
+  private drawnDragKey: string | null = null;
   /** The carried piece's turn spring — R mid-drag reads as the hand
    * turning it, the same motion the set-down pieces get. */
   private carriedAngle = 0;
@@ -325,24 +327,31 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     const { fit, group } = stage;
 
     // The piece riding the hand, drawn where the hand has it. The flip
-    // stop is part of the drawing (flat, on edge, on end are different
-    // sprites), so tumbling mid-drag rebuilds it.
+    // stop is part of the drawing (flat, on edge, on end, and face-down
+    // are different sprites), so tumbling mid-drag rebuilds it — as does
+    // a different material instance, since materials are immutable and
+    // the same id can carry new contents.
     if (this.drag) {
       const piece = this.handPiece(group);
       if (piece) {
-        const dragKey = `${this.drag.materialId}|${this.drag.placement.onEdge ? "e" : ""}${this.drag.placement.onEnd ? "n" : ""}`;
-        if (this.drawnDragId !== dragKey) {
-          const fresh = this.drawnDragId === null;
+        const dragKey = `${this.drag.placement.onEdge ? "e" : ""}${this.drag.placement.onEnd ? "n" : ""}${this.drag.placement.flipped ? "f" : ""}`;
+        if (
+          this.drawnDragKey !== dragKey ||
+          this.drawnDragMaterial !== piece.material
+        ) {
+          const fresh = this.drawnDragKey === null;
           this.clearCarried();
           const sprite = createMaterialSprite(piece.material, {
             onEdge: this.drag.placement.onEdge,
             onEnd: this.drag.placement.onEnd,
+            flipped: this.drag.placement.flipped,
           });
           const holder = new Container();
           sprite.scale.set(fit.spriteScale);
           holder.addChild(sprite);
           this.carried.addChild(holder);
-          this.drawnDragId = dragKey;
+          this.drawnDragMaterial = piece.material;
+          this.drawnDragKey = dragKey;
           if (fresh) {
             // Taken hold of where it lies: motion starts from rest.
             this.carriedAngle = this.drag.placement.angleDeg;
@@ -389,9 +398,10 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   }
 
   private clearCarried(): void {
-    if (this.drawnDragId === null) return;
+    if (this.drawnDragKey === null) return;
     this.carried.removeChildren().forEach((child) => child.destroy());
-    this.drawnDragId = null;
+    this.drawnDragMaterial = null;
+    this.drawnDragKey = null;
   }
 }
 

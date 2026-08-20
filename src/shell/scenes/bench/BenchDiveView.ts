@@ -262,14 +262,16 @@ function reducedMotion(): boolean {
 /**
  * One piece's standing holder: position tracks the layout directly, and
  * the turn (R) and the face-for-face flip ease in on the spring — the
- * old scene's TweenedTransform. A tumble onto a different face (flat →
- * on edge → on end) is a different sprite, so it rebuilds and snaps;
- * only same-face motion springs.
+ * old scene's TweenedTransform. Which face is up is part of the drawing
+ * (flat, on edge, on end, and face-down are different sprites), so a
+ * tumble rebuilds it; the turn and the flip still spring around the
+ * rebuilt sprite.
  */
 class PieceMotion {
   readonly holder = new Container();
   private sprite: Container | null = null;
-  private spriteKey = "";
+  private drawn: MaterialInstance | null = null;
+  private drawnKey = "";
   private spriteScale = 1;
   private angle = 0;
   private angleVelocity = 0;
@@ -283,16 +285,22 @@ class PieceMotion {
     placement: BenchPlacement,
     fit: StageFit,
   ): void {
-    const spriteKey = `${material.id}|${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}`;
+    // Materials are immutable, so a different instance is a different
+    // drawing — compare by reference, not by id. Prying a nail out of a
+    // pallet writes a new instance under the same id, and only the
+    // reference compare notices.
+    const drawnKey = `${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}${placement.flipped ? "f" : ""}`;
     const fresh = this.sprite === null;
-    if (spriteKey !== this.spriteKey) {
+    if (material !== this.drawn || drawnKey !== this.drawnKey) {
       this.sprite?.destroy({ children: true });
       this.sprite = createMaterialSprite(material, {
         onEdge: placement.onEdge,
         onEnd: placement.onEnd,
+        flipped: placement.flipped,
       });
       this.holder.addChild(this.sprite);
-      this.spriteKey = spriteKey;
+      this.drawn = material;
+      this.drawnKey = drawnKey;
     }
     this.spriteScale = fit.spriteScale;
     this.holder.position.set(
