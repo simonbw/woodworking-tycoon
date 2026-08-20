@@ -113,7 +113,7 @@ test.describe("Stations", () => {
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(150);
 
     // Where the store trip returns the player to.
     let afterStore: [number, number] | undefined;
@@ -297,6 +297,34 @@ test.describe("Stations", () => {
       await expect(page.getByText("S2S Rack")).toBeVisible();
       // ...but the rough rack (22) doesn't exist yet — not even greyed out
       await expect(page.getByText("Rough Rack")).not.toBeVisible();
+
+      // With the reputation earned, the rack is on the wall mid-visit —
+      // rough walnut at the deepest discount in town, the milled state
+      // said once in the channel-name tooltip. (Which channels exist at
+      // which tier is lumberStock's unit-tested business; this is the
+      // menu showing them.)
+      await page.evaluate(() => {
+        (window as any).__UPDATE_GAME_STATE__((state: any) => ({
+          ...state,
+          reputation: 48,
+        }));
+      });
+      await expect(page.getByText("Rough Rack")).toBeVisible();
+      const roughRack = page
+        .locator("div")
+        .filter({ has: page.getByText("Rough Rack", { exact: true }) })
+        .filter({ has: page.locator("li") })
+        .last();
+      const roughWalnut = shelfTag(page, `Walnut 4/4 — 6" × 8' (rough sawn)`, {
+        within: roughRack,
+      });
+      await expect(roughWalnut).toBeVisible();
+      // 4 board feet of walnut at the rough rack's 0.55 discount
+      await expect(roughWalnut).toContainText("$26.40");
+      await page.getByText("Rough Rack", { exact: true }).hover();
+      await expect(
+        page.getByText(/rough sawn — Straight off the mill/),
+      ).toBeVisible();
       await leaveStore(page, returnTo);
     });
 

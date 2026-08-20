@@ -52,17 +52,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // One at a time. Every Playwright action against this game waits for a
-  // frame, and headless Chromium draws the shop without a GPU: two specs
-  // at once halve each other's frame rate, which turns each action's wait
-  // into a stall and pushes the fat specs past budgets that are generous
-  // when they run alone. Serial is slower on the wall clock and much
-  // steadier — and the specs are what a change is judged by.
-  // Re-measured after issue #230 removed the per-question derivation
-  // cost: --workers=4 still ran every spec 2x slower under contention
-  // and saved barely a minute of wall clock. The bottleneck is the
-  // browsers' shared CPU, so one worker stays.
-  workers: 1,
+  // Parallel since the render fix (see E2E_RENDER_FPS below): with the
+  // canvas rasterizing at 0.25 resolution, headless browsers no longer
+  // saturate a core each, and specs running together cost each other
+  // ~1.5-2x instead of stalling — a wall-clock win worth the contention.
+  // The count is capped rather than unbounded so the slowest spec isn't
+  // running against six neighbors at once.
+  workers: 4,
   reporter: "list",
   outputDir,
   globalTeardown: "./tests/global-teardown.ts",
@@ -96,12 +92,19 @@ export default defineConfig({
   webServer: {
     // Four deliberate differences from a plain `npm run dev`:
     //
-    // E2E_RENDER_FPS caps the shop's render loop (and, in ShopView, shrinks
-    // what it rasterizes). Headless Chromium runs rAF flat out with no GPU
-    // behind it, and a loop that never yields keeps the main thread busy
-    // enough that every Playwright round-trip queues behind a frame — 13ms
-    // against 0.8ms, paid on every click and assertion. Ten is the floor:
-    // below it the motion layer's delta clamp slows walking down. See ShopView.
+    // E2E_RENDER_FPS marks the build as a test build and caps the raster
+    // rate. Headless Chromium draws in software (no GPU), so a full-res
+    // frame costs ~250ms and every Playwright round-trip queues behind
+    // it; the test build instead rasterizes at 0.25 resolution (see
+    // engine-main.ts — nothing in the specs reads pixels) and dispatches
+    // the render events every frame so views and the DOM overlays stay
+    // fresh (see Game.loop). At low resolution drawing is cheap, and
+    // *some* drawing is required: a page that never commits a frame gets
+    // its rAF throttled by Chromium and the whole game loop crawls.
+    // Measured on bench.spec: 60fps/0.25res 35s, vs 231s for the old
+    // full-res 10fps cap, vs 4.3m rastering never. Thirty is the default
+    // because under parallel workers the halved draw load shortens the
+    // whole suite's wall (59s vs 72s at sixty, measured).
     //
     // ES_BUILD_MINIFY/ES_BUILD_SOURCEMAP: every spec opens a fresh page, so
     // the suite fetches and compiles the whole bundle 19 times over. Nobody
@@ -117,7 +120,7 @@ export default defineConfig({
     // not forward Playwright's SIGTERM: the build script never got to
     // dispose esbuild's service child, which outlived it still holding this
     // port and serving a stale bundle.
-    command: `E2E_RENDER_FPS=10 ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=${e2eBuildDir} ES_BUILD_DEV_PORT=${port} node esbuild-client.config.mjs --dev`,
+    command: `E2E_RENDER_FPS=${process.env.E2E_RENDER_FPS ?? 30} ES_BUILD_MINIFY=true ES_BUILD_SOURCEMAP=false ES_BUILD_OUTDIR=${e2eBuildDir} ES_BUILD_DEV_PORT=${port} node esbuild-client.config.mjs --dev`,
     url: baseURL,
     // Always start our own. A freshly allocated port has nothing to reuse,
     // but E2E_PORT can pin one — and reuse would then attach to whatever

@@ -110,7 +110,7 @@ test.describe("Selling, supplies, and sound", () => {
       await page.keyboard.press("Escape");
       await manual.waitFor({ state: "detached" });
     }
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(150);
 
     await test.step("hand the player a shelf and a raw board", async () => {
       await page.evaluate(() => {

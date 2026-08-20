@@ -443,15 +443,21 @@ export class Game {
     );
     this.timeToSimulate = this.advance(this.timeToSimulate);
 
-    // A capped render rate (test builds) skips draws, never sim time: the
-    // loop keeps advancing every frame and hands the thread back between
-    // the frames it doesn't draw.
-    if (
-      this.renderFpsCap === null ||
-      time - this.lastRenderTime >= 1000 / this.renderFpsCap
-    ) {
-      this.lastRenderTime = time;
-      this.render(renderDt);
+    // A capped render rate (test builds) skips rasterization, never sim
+    // time or the render-event dispatch: views and the DOM overlays keep
+    // riding every frame, and only the expensive draw is skipped.
+    if (this.renderer) {
+      this.cleanupEntities();
+      this.dispatch("render", renderDt);
+      this.dispatch("lateRender", renderDt);
+      this.cleanupEntities();
+      if (
+        this.renderFpsCap === null ||
+        time - this.lastRenderTime >= 1000 / this.renderFpsCap
+      ) {
+        this.lastRenderTime = time;
+        this.renderer.render();
+      }
     }
 
     // Request next frame at END to prevent concurrent loops
