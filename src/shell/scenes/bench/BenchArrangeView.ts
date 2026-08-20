@@ -110,6 +110,13 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     return this.drag?.materialId ?? null;
   }
 
+  /** Where the hand has the dragged piece right now. The sim keeps the
+   * placement it was picked up from until release, so anything that has
+   * to follow the piece mid-drag reads this instead. */
+  dragPlacement(): BenchPlacement | null {
+    return this.drag?.placement ?? null;
+  }
+
   onAdd() {
     // Draw into the dive's own frame, so the lean-in carries every
     // surface on the stage as one picture.
