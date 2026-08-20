@@ -68,6 +68,7 @@ per-operation scripts that compose it.
    it is a table you set stock on, take stock off, and carry, plus the
    one door in. Q survives as the bench view's own key, opening the plan
    drawer with the bench in front of you.
+
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,
@@ -248,7 +249,11 @@ exactly over the shop's copy.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchDiveView`; a board flipped up on edge narrows to its thickness,
-`drawBoardOnEdge`). F is one verb with three stops on a board — flat,
+`drawBoardOnEdge`). Which piece lies over which is the bay arrays' own
+order (`groupPieces`), which the view draws in and `pieceUnder`
+hit-tests in reverse, and every way a piece arrives on a table appends
+to them — so the last thing set down is the piece the hand finds first.
+F is one verb with three stops on a board — flat,
 up on its long edge, up on its end — and the scene tumbles it between
 them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
 cycle and interpolates the very footprints `placedPieceSize` declares,
