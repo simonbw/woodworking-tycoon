@@ -120,6 +120,22 @@ function machineSpendsTime(gameState: GameState, machine: Machine): boolean {
   return phase != null && phase.attended;
 }
 
+/**
+ * Whether the shop's very first sale is pending: something is out on the
+ * stand and nothing has ever sold. That sale is dealt, not rolled — the
+ * street summons the buyer immediately and the browse always buys (see
+ * StreetSystem) — but the walk to the stand still takes sim minutes, so
+ * while it's pending the clock runs at working pace rather than leaving
+ * the player to wait out the stroll at the idle creep. A scripted beat,
+ * not an economy: from the second sale on the street runs on dice and
+ * spends nothing.
+ */
+function firstSalePending(gameState: GameState): boolean {
+  return (
+    gameState.progression.salesCompleted === 0 && gameState.stand.length > 0
+  );
+}
+
 /** How fast the clock should run right now. */
 export function timeSpeed(gameState: GameState): TimeSpeed {
   const away = gameState.player.away;
@@ -159,6 +175,12 @@ export function timeSpeed(gameState: GameState): TimeSpeed {
   // budget is spent and there's nothing left to give.
   if (gameState.player.waiting === true && !isNight(gameState)) {
     return "waiting";
+  }
+  // The dealt first buyer's walk-up (see firstSalePending). Below the
+  // wait key so a held wait can still ramp past working pace; never at
+  // night, when the street is empty and the sale waits for morning.
+  if (firstSalePending(gameState) && !isNight(gameState)) {
+    return "working";
   }
   return isNight(gameState) ? "stopped" : "idle";
 }

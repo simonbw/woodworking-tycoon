@@ -330,6 +330,14 @@ export function startGlueUp(
  * `arrangeBenchMaterialAction`). The arrangement is real state (see
  * bench-work/bench-layout.ts), so it survives closing the view and shows
  * on the shop floor too.
+ *
+ * The piece also comes to rest on top of whatever it overlaps: a bay's
+ * array order is the order the bench draws and hit-tests in
+ * (bench-work/bench-group.ts), so the handled piece moves to the end of
+ * the bay it sits in. Every other way a piece lands on a table appends
+ * to those arrays already — pieces slid over from the next table,
+ * freshly staged stock, boards freed from a pallet — so the rule holds
+ * everywhere: the last thing set down lies over what was there.
  */
 export function arrangeBenchMaterial(
   game: Game,
@@ -340,19 +348,31 @@ export function arrangeBenchMaterial(
   const machineState = entity.state;
   // Finished work lies on the bench too until it's taken, so outputs
   // arrange the same way staged stock does.
-  const onBench = [
-    ...machineState.inputMaterials,
-    ...machineState.outputMaterials,
-  ];
-  if (!onBench.some((material) => material.id === materialId)) {
+  const inBay = (materials: ReadonlyArray<MaterialInstance>) =>
+    materials.some((material) => material.id === materialId);
+  if (
+    !inBay(machineState.inputMaterials) &&
+    !inBay(machineState.outputMaterials)
+  ) {
     return false;
   }
+  const onTop = (materials: ReadonlyArray<MaterialInstance>) =>
+    inBay(materials)
+      ? [
+          ...materials.filter((material) => material.id !== materialId),
+          ...materials.filter((material) => material.id === materialId),
+        ]
+      : materials;
+  const inputMaterials = onTop(machineState.inputMaterials);
+  const outputMaterials = onTop(machineState.outputMaterials);
   entity.state = {
     ...machineState,
+    inputMaterials,
+    outputMaterials,
     benchLayout: {
       ...prunedBenchLayout(machineState.benchLayout, [
-        ...machineState.inputMaterials,
-        ...machineState.outputMaterials,
+        ...inputMaterials,
+        ...outputMaterials,
       ]),
       [materialId]: placement,
     },

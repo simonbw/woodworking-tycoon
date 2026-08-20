@@ -228,7 +228,14 @@ const StepBody: React.FC<{ step: TutorialStepId }> = ({ step }) => {
           The for-sale stand at the end of the driveway is where work gets sold.
           Pick the shelf up with <ShortcutKeys shortcut="pick-up" />, carry it
           down, and set it out with <ShortcutKeys shortcut="put-down" />.
-          Someone walking by will buy it before long.
+        </p>
+      );
+    case "firstSale":
+      return (
+        <p>
+          Someone walking by will stop at the stand and buy the shelf. Buyers
+          come by in daylight — if the day is already over, drive home and
+          sleep, and the first sale comes in the morning.
         </p>
       );
     case "learnSkill":

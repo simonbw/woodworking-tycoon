@@ -985,13 +985,18 @@ test.describe("Bench view", () => {
         .toBe(true);
 
       // The one real snap-drag: the tipped board onto shelf-1's outline
-      // (product (18,30) → bench (20,27)).
+      // (product (18,30) → bench (20,27)). The lit outline follows the
+      // hand on the way there — the board starts too far out to reach
+      // any outline, and shelf-1 lights only once it is carried over.
       const seat = await inchPoint(page, 20, 27);
       await page.mouse.move(from.x, from.y);
       await page.mouse.down();
+      await expect(stage).toHaveAttribute("data-snap-candidate", "");
       await page.mouse.move(seat.x + 4, seat.y - 3, { steps: 12 });
+      await expect(stage).toHaveAttribute("data-snap-candidate", "shelf-1");
       await page.mouse.up();
       await expect(stage).toHaveAttribute("data-seated", "6");
+      await expect(stage).toHaveAttribute("data-snap-candidate", "");
 
       // The hammer drives one nail per lit crossing; the eighth commits
       // the whole build — nails spent, the shelf lying where it was built.

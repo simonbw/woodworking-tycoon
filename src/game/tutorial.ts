@@ -45,6 +45,7 @@ export const TUTORIAL_STEP_IDS = [
   "dismantle",
   "buildShelf",
   "sellShelf",
+  "firstSale",
   "learnSkill",
   "goToStore",
   "grabCart",
@@ -303,13 +304,15 @@ const OPENING_GOALS: ReadonlyArray<TutorialGoal> = [
           hasShelf(gameState) || soldFirstPiece(gameState),
       },
       {
-        // Satisfied by the sale, not the set-out: the next goal starts at
-        // the store, and the store is what the first sale unlocks — so
-        // the list holds here until the money exists to spend.
+        // Satisfied by exactly what the label says: the shelf is out on
+        // the stand. Transient (it can be taken back), but the walk
+        // ratchets past it the tick it first holds; the sale keeps it
+        // satisfied in a shop reloaded after the shelf sold.
         id: "sellShelf",
         label: "Set it out at the stand",
         targets: [{ kind: "stand" }],
-        satisfied: soldFirstPiece,
+        satisfied: (gameState) =>
+          gameState.stand.some(isRusticShelf) || soldFirstPiece(gameState),
       },
     ],
   },
@@ -317,6 +320,18 @@ const OPENING_GOALS: ReadonlyArray<TutorialGoal> = [
     id: "birdhouse",
     title: "Build a birdhouse",
     steps: [
+      {
+        // The sale gate, worn honestly as its own box: the rest of this
+        // goal starts at the store, and the store is what the first sale
+        // unlocks — so the list holds here until the money exists to
+        // spend. The wait is short: while the first sale is pending the
+        // clock runs at working pace (see timeSpeed in time-flow.ts), so
+        // the dealt buyer's stroll to the stand passes in seconds.
+        id: "firstSale",
+        label: "Wait for your first sale",
+        targets: [{ kind: "stand" }],
+        satisfied: soldFirstPiece,
+      },
       {
         id: "learnSkill",
         label: "Research Rustic Projects",
