@@ -28,6 +28,7 @@ export function markArticlesRead(
     return;
   }
   progression.readArticles = [...progression.readArticles, ...unread];
+  game.dispatch("progressionChanged", {});
 }
 
 /** The player retired a tutorial card early. One way, like an unlock. */
@@ -41,6 +42,7 @@ export function dismissTutorial(game: Game, trackId: TutorialTrackId): void {
     ...tracker.tutorials,
     [trackId]: { ...progress, dismissed: true },
   };
+  game.dispatch("progressionChanged", {});
 }
 
 /** Spends one skill point to unlock a skill whose prerequisites are met. */
@@ -68,5 +70,6 @@ export function spendSkillPoint(game: Game, skillId: SkillId): boolean {
   const progression = game.entities.getSingleton(Progression);
   progression.skillPoints -= 1;
   progression.unlockedSkills = [...progression.unlockedSkills, skillId];
+  game.dispatch("progressionChanged", {});
   return true;
 }

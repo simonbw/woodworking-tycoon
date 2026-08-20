@@ -49,6 +49,8 @@ export function loadTruckBed(
     (item) => !materials.includes(item),
   );
   truck(game).bed.push(...materials);
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-drop");
   return true;
 }
@@ -81,6 +83,8 @@ export function takeFromTruckBed(
   const thePlayer = player(game);
   thePlayer.inventory = [...thePlayer.inventory, ...materials];
   theTruck.bed = theTruck.bed.filter((item) => !materials.includes(item));
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -116,5 +120,7 @@ export function takeCrateFromTruck(
   }
   theTruck.crates = theTruck.crates.filter((candidate) => candidate !== crate);
   player(game).carriedMachine = crate;
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }

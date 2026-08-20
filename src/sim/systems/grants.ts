@@ -33,6 +33,7 @@ export function applyCompletionGrants(
   if (upgradesGranted.length > 0) {
     const storage = game.entities.getSingleton(StorageUpgrades);
     storage.upgrades.push(...upgradesGranted);
+    game.dispatch("suppliesChanged", {});
   }
 
   for (const completion of completions) {
@@ -52,6 +53,7 @@ export function applyCompletionGrants(
   if (consumablesGranted.length > 0) {
     const consumables = game.entities.getSingleton(Consumables);
     consumables.stock = addConsumables(consumables.stock, consumablesGranted);
+    game.dispatch("suppliesChanged", {});
   }
 
   grantXp(
@@ -70,6 +72,7 @@ export function grantXp(game: Game, amount: number): void {
   const levelsGained = levelForXp(newXp) - levelForXp(progression.xp);
   progression.xp = newXp;
   progression.skillPoints += levelsGained;
+  game.dispatch("progressionChanged", {});
 }
 
 /**
@@ -98,5 +101,7 @@ export function deliverMachineCrate(
     )
     .sort((a, b) => distance(a) - distance(b));
   const position = openCells[0] ?? target;
-  return game.addEntity(new MachineCrateEntity(machine, position));
+  const crate = game.addEntity(new MachineCrateEntity(machine, position));
+  game.dispatch("cratesChanged", {});
+  return crate;
 }

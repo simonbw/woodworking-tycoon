@@ -157,6 +157,8 @@ export class StreetSystem extends BaseEntity implements Entity {
             reputation.reputation + reputationGain,
           );
           progression.salesCompleted += 1;
+          game.dispatch("standChanged", {});
+          game.dispatch("progressionChanged", {});
           payouts.push({
             title: getMaterialName(purchase),
             money: value,

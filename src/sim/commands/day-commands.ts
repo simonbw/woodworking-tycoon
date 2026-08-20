@@ -36,6 +36,7 @@ export function goHome(game: Game): boolean {
     return false;
   }
   game.entities.getSingleton(Player).away = { kind: "home" };
+  game.dispatch("playerChanged", {});
   return true;
 }
 

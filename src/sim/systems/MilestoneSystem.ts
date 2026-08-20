@@ -84,8 +84,14 @@ export class MilestoneSystem extends BaseEntity implements Entity {
     // The coach walks forward over everything the shop already satisfies.
     // This pass runs every tick, so no command has to know it exists.
     const tutorials = advanceTutorials(gameState);
+    let tutorialsChanged = false;
     if (tutorials !== gameState.progression.tutorials) {
       tracker.tutorials = { ...tutorials };
+      tutorialsChanged = true;
+    }
+
+    if (flagsChanged || newArticles.length > 0 || tutorialsChanged) {
+      this.game.dispatch("progressionChanged", {});
     }
   }
 }

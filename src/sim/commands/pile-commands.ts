@@ -58,6 +58,8 @@ export function pickUpMaterial(
   for (const pile of piles) {
     pile.destroy();
   }
+  game.dispatch("pilesChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -102,6 +104,8 @@ export function dropMaterial(
   for (const material of materials) {
     game.addEntity(new MaterialPileEntity(material, position, rotation));
   }
+  game.dispatch("pilesChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-drop");
   return true;
 }

@@ -56,6 +56,8 @@ export function setOutAtStand(
   thePlayer.inventory = thePlayer.inventory.filter(
     (item) => !materials.includes(item),
   );
+  game.dispatch("standChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -84,5 +86,7 @@ export function takeFromStand(game: Game, count = 1): boolean {
   const thePlayer = player(game);
   stand.pieces = kept;
   thePlayer.inventory = [...thePlayer.inventory, ...returned];
+  game.dispatch("standChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }

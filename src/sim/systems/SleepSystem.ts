@@ -92,5 +92,6 @@ export class SleepSystem extends BaseEntity implements Entity {
     const shopInfo = this.game.entities.getSingleton(ShopInfo);
     player.away = null;
     player.position = cellCenter(truckCabSideCell(shopInfo.info));
+    this.game.dispatch("playerChanged", {});
   }
 }

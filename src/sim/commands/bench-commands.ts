@@ -179,6 +179,7 @@ export function pryPalletNail(
   consumables.stock = addConsumables(consumables.stock, [
     { id: "nails", amount: 1 },
   ]);
+  game.dispatch("suppliesChanged", {});
 
   // Freed boards stay right on the bench: loose stock the next plan can
   // claim, or E takes back into the arms — tossed onto the pile in the
@@ -205,6 +206,7 @@ export function pryPalletNail(
       ),
     },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   // The nail's own creak-and-pop; a board settling is part of it.
   emitSound(game, "nail-pry");
   return true;
@@ -321,6 +323,7 @@ export function startGlueUp(
       ticksRemaining: firstPhase.duration,
     },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -377,6 +380,7 @@ export function arrangeBenchMaterial(
       [materialId]: placement,
     },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -463,6 +467,7 @@ export function gatherBenchPieces(
           ...arrivals,
         },
       };
+      game.dispatch("machineStateChanged", { machine: entity });
       continue;
     }
     if (!strippedFrom.has(machineKey(entity.state))) {
@@ -483,6 +488,7 @@ export function gatherBenchPieces(
         ...outputMaterials,
       ]),
     };
+    game.dispatch("machineStateChanged", { machine: entity });
   }
   return true;
 }

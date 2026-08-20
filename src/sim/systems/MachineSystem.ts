@@ -150,6 +150,7 @@ export class MachineSystem extends BaseEntity implements Entity {
             ticksRemaining: nextPhase.duration,
           },
         };
+        this.game.dispatch("machineStateChanged", { machine: entity });
         continue;
       }
 
@@ -194,6 +195,7 @@ export class MachineSystem extends BaseEntity implements Entity {
             ticksRemaining: newTicksRemaining,
           },
         };
+        this.game.dispatch("machineStateChanged", { machine: entity });
         continue;
       }
 
@@ -216,6 +218,7 @@ export class MachineSystem extends BaseEntity implements Entity {
                 ticksRemaining: 0,
               },
         };
+        this.game.dispatch("machineStateChanged", { machine: entity });
         continue;
       }
 
@@ -224,6 +227,7 @@ export class MachineSystem extends BaseEntity implements Entity {
       const completion = completeOperation(machineState);
       completions.push(completion);
       entity.state = completion.machine;
+      this.game.dispatch("machineStateChanged", { machine: entity });
     }
 
     // Dust lands after every machine has advanced, like the old pass.

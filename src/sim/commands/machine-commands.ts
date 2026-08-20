@@ -127,6 +127,8 @@ export function pickUpMachine(game: Game, entity: MachineEntity): boolean {
   }
   player(game).carriedMachine = entity.state;
   entity.destroy();
+  game.dispatch("machineRemoved", { machine: entity });
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -148,6 +150,8 @@ export function pickUpCrate(game: Game): boolean {
   }
   thePlayer.carriedMachine = crate.machine;
   crate.destroy();
+  game.dispatch("cratesChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -180,8 +184,12 @@ export function putDownCarriedMachine(game: Game): boolean {
     console.warn("No room to set the machine down here");
     return false;
   }
-  game.addEntity(new MachineEntity({ ...carried, position, rotation }));
+  const placed = game.addEntity(
+    new MachineEntity({ ...carried, position, rotation }),
+  );
   thePlayer.carriedMachine = null;
+  game.dispatch("machineAdded", { machine: placed });
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-drop");
   return true;
 }
@@ -197,6 +205,7 @@ export function rotateCarriedMachine(game: Game): void {
     ...carried,
     rotation: ((carried.rotation + 1) % 4) as Direction,
   };
+  game.dispatch("playerChanged", {});
 }
 
 // ---------------------------------------------------------------------
@@ -230,6 +239,8 @@ export function moveMaterialsToMachine(
     ...machineState,
     inputMaterials: [...machineState.inputMaterials, ...materials],
   };
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-drop");
   return true;
 }
@@ -262,6 +273,8 @@ function takeFromBay(
     ...entity.state,
     [bay]: source.filter((item) => !materials.includes(item)),
   };
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -317,6 +330,8 @@ export function stowMaterialsInMachine(
     ...entity.state,
     storedMaterials: [...(entity.state.storedMaterials ?? []), ...materials],
   };
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-drop");
   return true;
 }
@@ -353,6 +368,7 @@ export function setMachineOperation(
     selectedOperationId: operation.id,
     selectedParameters: parameters,
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -369,6 +385,7 @@ export function clearMachineOperation(
     selectedOperationId: "none",
     selectedParameters: undefined,
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -380,6 +397,7 @@ export function toggleMachinePower(game: Game, entity: MachineEntity): void {
     ...entity.state,
     poweredOn: !(entity.state.poweredOn ?? false),
   };
+  game.dispatch("machineStateChanged", { machine: entity });
 }
 
 export function setMachineSettings(
@@ -395,6 +413,7 @@ export function setMachineSettings(
     ...entity.state,
     selectedParameters: { ...entity.state.selectedParameters, ...settings },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -450,6 +469,7 @@ export function operateMachine(
         ticksRemaining: firstPhase.duration,
       },
     };
+    game.dispatch("machineStateChanged", { machine: entity });
   };
 
   if (toolClaim) {
@@ -488,6 +508,9 @@ export function operateMachine(
       return false;
     }
     consumables.stock = subtractConsumables(consumables.stock, consumableCosts);
+    if (consumableCosts.length > 0) {
+      game.dispatch("suppliesChanged", {});
+    }
     startPhases(operation, {
       selectedOperationId: operation.id,
       selectedParameters: parameters,
@@ -535,6 +558,9 @@ export function operateMachine(
       return false;
     }
     consumables.stock = subtractConsumables(consumables.stock, consumableCosts);
+    if (consumableCosts.length > 0) {
+      game.dispatch("suppliesChanged", {});
+    }
     startPhases(match.operation, {
       selectedOperationId: match.operation.id,
       selectedParameters: match.parameters,
@@ -632,6 +658,9 @@ export function operateMachine(
   }
 
   consumables.stock = subtractConsumables(consumables.stock, consumableCosts);
+  if (consumableCosts.length > 0) {
+    game.dispatch("suppliesChanged", {});
+  }
   startPhases(selectedOperation, {
     inputMaterials: inventory,
     processingMaterials: materialsToConsume,
@@ -693,11 +722,13 @@ export function finishAttendedWork(game: Game, entity: MachineEntity): boolean {
         ticksRemaining: nextPhase.duration,
       },
     };
+    game.dispatch("machineStateChanged", { machine: entity });
     return true;
   }
 
   const completion = completeOperation(machineState);
   entity.state = completion.machine;
+  game.dispatch("machineStateChanged", { machine: entity });
   applyCompletionGrants(game, [completion]);
   return true;
 }

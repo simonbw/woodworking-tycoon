@@ -46,6 +46,8 @@ export function buyMaterial(
   }
   wallet.money -= price;
   game.entities.getSingleton(TruckEntity).bed.push(material);
+  game.dispatch("progressionChanged", {});
+  game.dispatch("truckChanged", {});
   return true;
 }
 
@@ -65,6 +67,8 @@ export function buyConsumablePack(
   consumables.stock = addConsumables(consumables.stock, [
     { id: consumableId, amount: packSize },
   ]);
+  game.dispatch("progressionChanged", {});
+  game.dispatch("suppliesChanged", {});
   return true;
 }
 
@@ -81,6 +85,8 @@ export function buyClamp(game: Game): boolean {
   }
   wallet.money -= CLAMP_COST;
   game.entities.getSingleton(Consumables).clamps += 1;
+  game.dispatch("progressionChanged", {});
+  game.dispatch("suppliesChanged", {});
   return true;
 }
 
@@ -105,6 +111,8 @@ export function buyMachine(
     .crates.push(
       freshMachineState(machineTypeId, projectGameState(game).progression),
     );
+  game.dispatch("progressionChanged", {});
+  game.dispatch("truckChanged", {});
   // Buying gear can reveal manual articles that key on what the shop owns
   // (see MANUAL_ARTICLES) — the old action ran the milestone check right
   // here, so the pass runs synchronously rather than waiting a tick.
@@ -132,5 +140,7 @@ export function buyUpgrade(game: Game, upgradeId: UpgradeId): boolean {
   }
   wallet.money -= cost;
   game.entities.getSingleton(StorageUpgrades).upgrades.push(upgradeId);
+  game.dispatch("progressionChanged", {});
+  game.dispatch("suppliesChanged", {});
   return true;
 }

@@ -106,6 +106,7 @@ export function startScavenging(
       doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
     },
   };
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -131,6 +132,7 @@ export function continueScavenging(game: Game): boolean {
       doneTick: gameState.tick + SCAVENGE_STOP_TICKS,
     },
   };
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -152,6 +154,8 @@ export function headHomeFromScavenging(game: Game): boolean {
   game.entities.getSingleton(TruckEntity).bed.push(...scavengeLoot(away));
   thePlayer.away = null;
   stepOutAtCab(game);
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -190,13 +194,16 @@ export function goToStore(game: Game, store: StoreId): boolean {
     position: spawn.cell,
     direction: spawn.direction,
   };
+  game.dispatch("playerChanged", {});
   return true;
 }
 
 /**
  * Bookkeeping for the store floor's walk: the shopper's cell and facing,
  * written by the store view the way the shop floor's body writes the
- * player's. No-op off a shopping trip.
+ * player's. No-op off a shopping trip. Deliberately announces nothing:
+ * this is the body's continuous motion, not a discrete mutation (see
+ * CustomEvent.ts).
  */
 export function setShoppingPosition(
   game: Game,
@@ -225,5 +232,6 @@ export function returnFromStore(game: Game): boolean {
   }
   thePlayer.away = null;
   stepOutAtCab(game);
+  game.dispatch("playerChanged", {});
   return true;
 }

@@ -45,6 +45,8 @@ export function buyBroom(game: Game): boolean {
   const broom = game.entities.getSingleton(Broom);
   broom.owned = true;
   broom.position = [...gameState.shopInfo.materialDropoffPosition];
+  game.dispatch("progressionChanged", {});
+  game.dispatch("cleaningChanged", {});
   return true;
 }
 
@@ -73,6 +75,7 @@ export function pickUpBroom(game: Game): boolean {
     return false;
   }
   game.entities.getSingleton(Broom).position = null;
+  game.dispatch("cleaningChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -88,6 +91,7 @@ export function putDownBroom(game: Game): boolean {
     return false;
   }
   game.entities.getSingleton(Broom).position = [...gameState.player.position];
+  game.dispatch("cleaningChanged", {});
   emitSound(game, "material-drop");
   return true;
 }
@@ -110,6 +114,8 @@ export function buyShopVac(game: Game): boolean {
       canister: {},
     }),
   );
+  game.dispatch("progressionChanged", {});
+  game.dispatch("cleaningChanged", {});
   return true;
 }
 
@@ -129,6 +135,7 @@ export function toggleCarryShopVac(game: Game): boolean {
       return false;
     }
     vac.position = [...gameState.player.position];
+    game.dispatch("cleaningChanged", {});
     return true;
   }
   // The hose takes a hand — put the broom down before grabbing the vac
@@ -137,6 +144,7 @@ export function toggleCarryShopVac(game: Game): boolean {
   }
   if (chebyshevDistance(vac.position, gameState.player.position) <= 1) {
     vac.position = null;
+    game.dispatch("cleaningChanged", {});
     return true;
   }
   return false;

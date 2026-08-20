@@ -123,6 +123,7 @@ export class CleaningSystem extends BaseEntity implements Entity {
       const broom = this.game.entities.tryGetSingleton(Broom);
       if (broom) {
         broom.dustpan = after.dustpan;
+        this.game.dispatch("cleaningChanged", {});
       }
     }
     if (after.shopVac !== before.shopVac && after.shopVac) {
@@ -130,6 +131,7 @@ export class CleaningSystem extends BaseEntity implements Entity {
       if (vac) {
         vac.position = after.shopVac.position;
         vac.canister = after.shopVac.canister;
+        this.game.dispatch("cleaningChanged", {});
       }
     }
     if (after.progression !== before.progression) {
@@ -138,6 +140,7 @@ export class CleaningSystem extends BaseEntity implements Entity {
       const progression = this.game.entities.getSingleton(Progression);
       progression.xp = after.progression.xp;
       progression.skillPoints = after.progression.skillPoints;
+      this.game.dispatch("progressionChanged", {});
     }
   }
 

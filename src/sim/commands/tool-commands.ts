@@ -65,6 +65,8 @@ export function mountTool(
     ...entity.state,
     tools: [...entity.state.tools, tool.toolId],
   });
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -100,6 +102,8 @@ export function unmountTool(
       ...entity.state.tools.slice(toolIndex + 1),
     ],
   });
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -164,5 +168,7 @@ export function gatherBenchTool(
     ...target.state,
     tools: [...target.state.tools, toolId],
   });
+  game.dispatch("machineStateChanged", { machine: fromEntity });
+  game.dispatch("machineStateChanged", { machine: target });
   return true;
 }

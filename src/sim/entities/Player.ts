@@ -227,6 +227,7 @@ export class Player extends BaseEntity implements Entity, SerializableEntity {
         stopsSearched: this.away.stopsSearched + 1,
         phase: { kind: "deciding" },
       };
+      this.game.dispatch("playerChanged", {});
       if (stop?.pallet) {
         this.game.dispatch("sound", { sound: { kind: "pallet-load" } });
       }

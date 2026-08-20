@@ -63,6 +63,7 @@ function withCart(game: Game, cart: ReadonlyArray<CartLine>): void {
     return;
   }
   thePlayer.away = { ...thePlayer.away, cart };
+  game.dispatch("playerChanged", {});
 }
 
 /** Pull a flatbed from the corral by the entrance. No-op off a shopping
@@ -74,6 +75,7 @@ export function takeCart(game: Game): boolean {
     return false;
   }
   thePlayer.away = { ...away, hasCart: true };
+  game.dispatch("playerChanged", {});
   return true;
 }
 
