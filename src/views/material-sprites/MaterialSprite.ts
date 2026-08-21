@@ -77,7 +77,9 @@ export function createMaterialSprite(
     const shadowG = new Graphics();
     shadowG.label = MATERIAL_SHADOW_LABEL;
     drawMaterialShadow(shadowG, material, { onEdge, onEnd });
-    if (alpha !== undefined) shadowG.alpha = alpha;
+    // The shadow's own alpha carries its height-faded darkness
+    // (drawContactShadow), so a ghost's translucency multiplies in.
+    if (alpha !== undefined) shadowG.alpha *= alpha;
     root.addChild(shadowG);
   }
   const art = createMaterialArt(material, options);

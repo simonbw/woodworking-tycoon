@@ -32,7 +32,6 @@ export interface ShadowLook {
   readonly widthPx: number;
   readonly heightPx: number;
   readonly standInches: number;
-  readonly radius?: number;
 }
 
 /** The shadow a material would throw as placed — for callers that
@@ -69,7 +68,7 @@ export function drawMaterialShadow(
     widthPx,
     heightPx,
     look.standInches,
-    { radius: look.radius, liftInches: carry.liftInches },
+    { liftInches: carry.liftInches },
   );
 }
 
@@ -143,13 +142,13 @@ function shadowLook(
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
     case "checkerboardCuttingBoard": {
-      // An inch of cutting board off the bench, rounded like its corners
+      // An inch of cutting board off the bench — the penumbra rounds
+      // the corners on its own
       const footprint = CUTTING_BOARD_FOOTPRINTS[material.type];
       return {
         widthPx: footprint.widthIn * PIXELS_PER_INCH,
         heightPx: footprint.heightIn * PIXELS_PER_INCH,
         standInches: 1,
-        radius: 2 * PIXELS_PER_INCH,
       };
     }
 
