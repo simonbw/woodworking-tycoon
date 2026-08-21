@@ -3,8 +3,14 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { initialGameState } from "../initialGameState";
 import { machineViews, MachineState } from "../Machine";
-import { Pallet } from "../Materials";
+import {
+  CUTTING_BOARD_FOOTPRINTS,
+  FINISHED_PRODUCT_TYPES,
+  MaterialInstance,
+  Pallet,
+} from "../Materials";
 import { initialPalletNails } from "./pallet-geometry";
+import { productBlueprintFor } from "./blueprint";
 import {
   benchScriptFor,
   pieceSize,
@@ -83,6 +89,32 @@ describe("workpiece geometry", () => {
     assert.deepStrictEqual(pieceSize(board("pine", 36, 4, 1)), {
       widthIn: 4,
       heightIn: 36,
+    });
+  });
+
+  it("every finished product has a real footprint, never the fallback", () => {
+    // A product hit-tests exactly where its sprite draws: assembled
+    // pieces read their blueprint's box, machine-made ones the shared
+    // footprint declaration. A type covered by neither would fall to the
+    // 10×10 fallback and be grabbable on a fraction of its visible area.
+    for (const type of FINISHED_PRODUCT_TYPES) {
+      const declared =
+        productBlueprintFor(type) ?? CUTTING_BOARD_FOOTPRINTS[type as never];
+      assert.ok(declared, `${type} has no declared footprint`);
+    }
+  });
+
+  it("an assembled product's footprint is its blueprint's box", () => {
+    const blueprint = productBlueprintFor("rusticShelf");
+    assert.ok(blueprint);
+    const shelf = {
+      id: "shelf1",
+      type: "rusticShelf",
+      species: "pine",
+    } as MaterialInstance;
+    assert.deepStrictEqual(pieceSize(shelf), {
+      widthIn: blueprint.widthIn,
+      heightIn: blueprint.heightIn,
     });
   });
 

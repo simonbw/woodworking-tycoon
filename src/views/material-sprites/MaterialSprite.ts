@@ -1,5 +1,9 @@
 import { Container, Graphics } from "pixi.js";
-import { FinishedProduct, MaterialInstance } from "../../game/Materials";
+import {
+  CuttingBoardType,
+  FinishedProduct,
+  MaterialInstance,
+} from "../../game/Materials";
 import { createAssembledProductSprite } from "./assembledProduct";
 import { createBoardSprite, drawBoardOnEdge, drawBoardOnEnd } from "./board";
 import { drawCuttingBoard } from "./cuttingBoard";
@@ -97,8 +101,13 @@ export function createMaterialSprite(
     case "stripedCuttingBoard":
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
-    case "checkerboardCuttingBoard":
-      return graphics((g) => drawCuttingBoard(g, material, material.id));
+    case "checkerboardCuttingBoard": {
+      // The switch guarantees the narrowing TS won't carry into the object
+      const cuttingBoard = material as FinishedProduct & {
+        type: CuttingBoardType;
+      };
+      return graphics((g) => drawCuttingBoard(g, cuttingBoard, material.id));
+    }
 
     default:
       return graphics(drawDefaultPile);

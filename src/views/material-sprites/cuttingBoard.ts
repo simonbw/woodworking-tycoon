@@ -1,6 +1,8 @@
 import { FillInput, Graphics } from "pixi.js";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import {
+  CUTTING_BOARD_FOOTPRINTS,
+  CuttingBoardType,
   defaultBoardFace,
   FinishedProduct,
   Species,
@@ -49,14 +51,16 @@ function accentStripes(type: FinishedProduct["type"]): [number, number][] {
  */
 export function drawCuttingBoard(
   g: Graphics,
-  material: FinishedProduct,
+  material: FinishedProduct & { type: CuttingBoardType },
   seed?: string,
 ): void {
   const { type, species, accentSpecies } = material;
 
   g.clear();
-  const widthInches = type === "sunriseCuttingBoard" ? 12 : 10;
-  const lengthInches = 16;
+  // The board's frame comes from the shared footprint declaration, so
+  // the drawing and the bench's hit box can never disagree
+  const { widthIn: widthInches, heightIn: lengthInches } =
+    CUTTING_BOARD_FOOTPRINTS[type];
   const width = widthInches * PIXELS_PER_INCH;
   const height = lengthInches * PIXELS_PER_INCH;
   const radius = 2 * PIXELS_PER_INCH;

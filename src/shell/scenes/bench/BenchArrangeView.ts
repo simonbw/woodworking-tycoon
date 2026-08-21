@@ -1,4 +1,4 @@
-import { Container, Graphics } from "pixi.js";
+import { Container } from "pixi.js";
 import { Persistence } from "../../../config/constants";
 import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity, GameEventMap } from "../../../core/entity/Entity";
@@ -19,7 +19,6 @@ import {
   nextFlipStop,
   tumbles,
 } from "../../../game/bench-work/flip-cycle";
-import { placedPieceSize } from "../../../game/bench-work/workpiece";
 import {
   arrangeBenchMaterial,
   gatherBenchPieces,
@@ -35,12 +34,7 @@ import { ShellStore } from "../../ShellStore";
 import { BenchAssemblyView } from "./BenchAssemblyView";
 import { BenchDive } from "./BenchDive";
 import { BenchDiveView } from "./BenchDiveView";
-import {
-  benchStage,
-  pieceCorners,
-  pieceUnder,
-  stagePointer,
-} from "./benchStage";
+import { benchStage, pieceUnder, stagePointer } from "./benchStage";
 
 /**
  * The bare hands at the bench: dragging stock around the top, turning
@@ -60,8 +54,6 @@ import {
  * owns the pointer then.
  */
 
-const HOVER = 0xf5efe3;
-
 interface Drag {
   readonly materialId: string;
   /** Live placement in the run's frame, committed on release. */
@@ -76,7 +68,6 @@ export class BenchArrangeView extends BaseEntity implements Entity {
   pausable = false;
 
   private root: Container & GameSprite;
-  private outline = new Graphics();
   private carried = new Container();
   private drag: Drag | null = null;
   private hoveredId: string | null = null;
@@ -91,7 +82,7 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     super();
     this.root = new Container() as Container & GameSprite;
     this.root.layerName = "hud";
-    this.root.addChild(this.outline, this.carried);
+    this.root.addChild(this.carried);
     this.sprite = this.root;
   }
 
@@ -340,8 +331,6 @@ export class BenchArrangeView extends BaseEntity implements Entity {
 
   @on("render")
   onRender(dt: number) {
-    const g = this.outline;
-    g.clear();
     const stage = benchStage(this.game);
     if (!stage || !this.handsFree()) {
       this.clearCarried();
@@ -351,13 +340,16 @@ export class BenchArrangeView extends BaseEntity implements Entity {
 
     // The piece riding the hand, drawn where the hand has it — position
     // tracks the pointer directly, while R and F play on the holder's
-    // own springs, the same motion the set-down pieces get.
+    // own springs, the same motion the set-down pieces get. It stays lit
+    // the way it was under the hover, so grabbing doesn't put it out.
+    // (The idle hover light itself rides the dive view's holders.)
     if (this.drag) {
       const piece = this.handPiece(group);
       if (piece) {
         if (!this.carriedMotion) {
           // Taken hold of where it lies: motion starts from rest.
           this.carriedMotion = new PieceMotion();
+          this.carriedMotion.setLit(true);
           this.carried.addChild(this.carriedMotion.holder);
         }
         this.carriedMotion.retarget(piece.material, this.drag.placement, fit, {
@@ -368,24 +360,6 @@ export class BenchArrangeView extends BaseEntity implements Entity {
       return;
     }
     this.clearCarried();
-
-    // Idle: the piece the hand would take hold of wears a hairline. It
-    // reads the holder's motion, so it rides a tumbling board's swell
-    // and turns with the turn instead of jumping to the end state.
-    const piece = this.handPiece(group);
-    if (!piece) return;
-    const motion = this.game.entities
-      .tryGetSingleton(BenchDiveView)
-      ?.motionFor(piece.material.id);
-    const placement = motion?.apparentPlacement() ?? piece.placement;
-    const size =
-      motion?.apparentSizeIn() ??
-      placedPieceSize(piece.material, piece.placement);
-    g.poly(pieceCorners(placement, size, fit)).stroke({
-      width: 2,
-      color: HOVER,
-      alpha: 0.5,
-    });
   }
 
   private clearCarried(): void {
