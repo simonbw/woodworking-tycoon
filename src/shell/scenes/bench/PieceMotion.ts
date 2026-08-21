@@ -284,9 +284,10 @@ export class PieceMotion {
     // The lift rides the sprites' layers, under whatever scale the
     // tumble puts on their roots: the wood grows a hair, and the shadow
     // pool spreads by an even margin all around — height, read from
-    // above. The margin is per-axis scale off the shadow's own bounds,
-    // so a long board's shadow widens the same few px at its edges as
-    // past its ends.
+    // above. "Even" is measured from the wood's edge, and the wood's
+    // own growth is proportional — it covers more shadow past a long
+    // board's ends than along its edges — so each axis of the shadow
+    // grows by what the art covers there plus the same visible fringe.
     const lift = 1 + this.liftPhase * (CARRIED_LIFT - 1);
     const growPx = this.liftPhase * CARRIED_SHADOW_GROW_PX;
     for (const sprite of this.holder.children) {
@@ -296,9 +297,12 @@ export class PieceMotion {
       if (!shadow) continue;
       const bounds = shadow.getLocalBounds();
       if (growPx > 0 && bounds.width > 0 && bounds.height > 0) {
+        const artBounds = art?.getLocalBounds();
+        const coveredX = (artBounds?.width ?? 0) * (lift - 1);
+        const coveredY = (artBounds?.height ?? 0) * (lift - 1);
         shadow.scale.set(
-          (bounds.width + growPx * 2) / bounds.width,
-          (bounds.height + growPx * 2) / bounds.height,
+          (bounds.width + coveredX + growPx * 2) / bounds.width,
+          (bounds.height + coveredY + growPx * 2) / bounds.height,
         );
       } else {
         shadow.scale.set(1);
