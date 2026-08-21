@@ -49,17 +49,27 @@ export function drawMaterialShadow(
   g: Graphics,
   material: MaterialInstance,
   placement: { onEdge?: boolean; onEnd?: boolean } = {},
+  carry: {
+    /** Inches the hand holds the piece off the surface. */
+    liftInches?: number;
+    /** The art's own carry growth, so the pool tracks the lifted
+     * wood's footprint and the penumbra stays even around it. */
+    footprintScale?: number;
+  } = {},
 ): void {
   const look = shadowLook(material, placement);
   if (!look) return;
+  const scale = carry.footprintScale ?? 1;
+  const widthPx = look.widthPx * scale;
+  const heightPx = look.heightPx * scale;
   drawContactShadow(
     g,
-    -look.widthPx / 2,
-    -look.heightPx / 2,
-    look.widthPx,
-    look.heightPx,
+    -widthPx / 2,
+    -heightPx / 2,
+    widthPx,
+    heightPx,
     look.standInches,
-    { radius: look.radius },
+    { radius: look.radius, liftInches: carry.liftInches },
   );
 }
 

@@ -10,16 +10,16 @@ import {
   tumbles,
 } from "../../../game/bench-work/flip-cycle";
 import { MaterialInstance } from "../../../game/Materials";
-import {
-  drawContactShadow,
-  SHADOW_PX_PER_STAND_INCH,
-} from "../../../views/material-sprites/contactShadow";
+import { drawContactShadow } from "../../../views/material-sprites/contactShadow";
 import {
   createMaterialSprite,
   materialSpriteArt,
   materialSpriteShadow,
 } from "../../../views/material-sprites/MaterialSprite";
-import { materialShadowLook } from "../../../views/material-sprites/materialShadow";
+import {
+  drawMaterialShadow,
+  materialShadowLook,
+} from "../../../views/material-sprites/materialShadow";
 import { PIXELS_PER_INCH } from "../../../views/shop-scale";
 import { TARGET_HIGHLIGHT_FILTERS } from "../../../views/targetHighlight";
 import { lerp } from "../../../utils/mathUtils";
@@ -86,6 +86,12 @@ export class PieceMotion {
   private stopSprites: Container[] | null = null;
   /** Their one shared shadow, under them all — see the mount note. */
   private tumbleShadow: Graphics | null = null;
+  /** How the piece lies, kept for the carry's shadow redraws. */
+  private placementFlags: { onEdge?: boolean; onEnd?: boolean } = {};
+  /** The lift the mounted shadow was last drawn at — the carry redraws
+   * it (scaling would stretch the penumbra band unevenly), and at rest
+   * nothing redraws at all. */
+  private drawnLiftPhase = 0;
   private spriteKey = "";
   /** The instance the mounted sprites were drawn from, compared by
    * reference — see the note in `retarget`. */
@@ -168,10 +174,12 @@ export class PieceMotion {
       }
       this.spriteKey = spriteKey;
       this.drawn = material;
-      // The light lives on the sprites' art layers now, so a rebuild
-      // has to dress the fresh ones.
+      // Fresh sprites carry base-state shadows and no filters: dress
+      // the art, and let the next apply redraw a mid-carry shadow.
+      this.drawnLiftPhase = 0;
       this.applyLit();
     }
+    this.placementFlags = { onEdge: placement.onEdge, onEnd: placement.onEnd };
     this.material = material;
     this.originX = fit.originX;
     this.originY = fit.originY;
@@ -301,31 +309,27 @@ export class PieceMotion {
     this.holder.angle = this.angle;
     this.holder.scale.set(this.flip * this.spriteScale, this.spriteScale);
     // The lift rides the sprites' layers, under whatever scale the
-    // tumble puts on their roots: the wood grows a hair, and the shadow
-    // pool spreads by an even margin all around — height, read from
-    // above. "Even" is measured from the wood's edge, and the wood's
-    // own growth is proportional — it covers more shadow past a long
-    // board's ends than along its edges — so each axis of the shadow
-    // grows by what the art covers there plus the same visible fringe.
+    // tumble puts on their roots: the wood grows a hair, and its shadow
+    // is redrawn at the lifted footprint with the carry's inches — the
+    // one height rule in contactShadow.ts spreads, fades, and softens
+    // the pool, and redrawing keeps the penumbra band even where
+    // scaling would stretch it.
     const lift = 1 + this.liftPhase * (CARRIED_LIFT - 1);
     const liftInches = this.liftPhase * CARRIED_LIFT_INCHES;
-    const growPx = liftInches * SHADOW_PX_PER_STAND_INCH;
     for (const sprite of this.holder.children) {
       const art = materialSpriteArt(sprite);
       if (art) art.scale.set(lift);
-      const shadow = materialSpriteShadow(sprite);
-      if (!shadow) continue;
-      const bounds = shadow.getLocalBounds();
-      if (growPx > 0 && bounds.width > 0 && bounds.height > 0) {
-        const artBounds = art?.getLocalBounds();
-        const coveredX = (artBounds?.width ?? 0) * (lift - 1);
-        const coveredY = (artBounds?.height ?? 0) * (lift - 1);
-        shadow.scale.set(
-          (bounds.width + coveredX + growPx * 2) / bounds.width,
-          (bounds.height + coveredY + growPx * 2) / bounds.height,
-        );
-      } else {
-        shadow.scale.set(1);
+    }
+    if (this.liftPhase !== this.drawnLiftPhase && this.material) {
+      this.drawnLiftPhase = this.liftPhase;
+      for (const sprite of this.holder.children) {
+        const shadow = materialSpriteShadow(sprite);
+        if (!(shadow instanceof Graphics)) continue;
+        shadow.clear();
+        drawMaterialShadow(shadow, this.material, this.placementFlags, {
+          liftInches,
+          footprintScale: lift,
+        });
       }
     }
     if (!this.stopSprites || !this.material) return;
