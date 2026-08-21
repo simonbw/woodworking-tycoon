@@ -1,4 +1,4 @@
-import { Container } from "pixi.js";
+import { ColorMatrixFilter, Container, Filter } from "pixi.js";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import {
   advanceFlipPhase,
@@ -9,10 +9,23 @@ import {
   tumbleFrame,
   tumbles,
 } from "../../../game/bench-work/flip-cycle";
-import { placedPieceSize } from "../../../game/bench-work/workpiece";
 import { MaterialInstance } from "../../../game/Materials";
 import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
+import { TARGET_HIGHLIGHT_FILTERS } from "../../../views/targetHighlight";
 import { StageFit, stepTurnSpring } from "./stageMath";
+
+/**
+ * The piece the hand is on, lit up: the shop's white targeting rim —
+ * hugging the real alpha silhouette, wavy edges, miters and all, the
+ * same treatment the floor gives the pile E would take — plus a lift in
+ * brightness, because a rim alone gets lost against the busy grain. The
+ * brightness is a filter rather than a tint: a Container tint multiplies,
+ * so it can only darken. Shared instances, like the rim's own — pixi
+ * filters hold no per-object state.
+ */
+const LIT_BRIGHTNESS = new ColorMatrixFilter();
+LIT_BRIGHTNESS.brightness(1.15, false);
+const LIT_FILTERS: Filter[] = [...TARGET_HIGHLIGHT_FILTERS, LIT_BRIGHTNESS];
 
 /** Motion the player has asked not to see is pinned, not played — which
  * is also how the E2E suite runs, so its assertions land on end states. */
@@ -41,6 +54,7 @@ function reducedMotion(): boolean {
  */
 export class PieceMotion {
   readonly holder = new Container();
+  private lit = false;
   /** The tumble's three stop sprites, only for a board that tumbles. */
   private stopSprites: Container[] | null = null;
   private spriteKey = "";
@@ -48,7 +62,6 @@ export class PieceMotion {
    * reference — see the note in `retarget`. */
   private drawn: MaterialInstance | null = null;
   private material: MaterialInstance | null = null;
-  private placement: BenchPlacement | null = null;
   private originX = 0;
   private originY = 0;
   private pxPerIn = 1;
@@ -119,7 +132,6 @@ export class PieceMotion {
       this.drawn = material;
     }
     this.material = material;
-    this.placement = placement;
     this.originX = fit.originX;
     this.originY = fit.originY;
     this.pxPerIn = fit.pxPerIn;
@@ -155,6 +167,13 @@ export class PieceMotion {
       this.yVelocity = 0;
     }
     this.apply();
+  }
+
+  /** Light the piece up (or put it out) — the hand is on it. */
+  setLit(lit: boolean): void {
+    if (lit === this.lit) return;
+    this.lit = lit;
+    this.holder.filters = lit ? LIT_FILTERS : [];
   }
 
   step(dt: number): void {
@@ -198,32 +217,6 @@ export class PieceMotion {
       this.phase + Math.min(dt, 0.05) / FLIP_LEG_SECONDS,
     );
     this.apply();
-  }
-
-  /** Where the piece appears right now — the sprung position and angle
-   * on the committed placement, for chrome that follows the motion. */
-  apparentPlacement(): BenchPlacement | null {
-    if (!this.placement) return null;
-    return {
-      ...this.placement,
-      xIn: this.xIn,
-      yIn: this.yIn,
-      angleDeg: this.angle,
-    };
-  }
-
-  /** The footprint the piece appears to cover right now, mid-tumble
-   * swell included, in inches. */
-  apparentSizeIn(): { widthIn: number; heightIn: number } | null {
-    if (!this.material || !this.placement) return null;
-    if (!tumbles(this.material)) {
-      return placedPieceSize(this.material, this.placement);
-    }
-    const frame = tumbleFrame(this.material, this.phase);
-    return {
-      widthIn: frame.widthIn * frame.lift,
-      heightIn: frame.heightIn * frame.lift,
-    };
   }
 
   private apply(): void {

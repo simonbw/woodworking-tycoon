@@ -142,8 +142,13 @@ export class BenchDiveView extends BaseEntity implements Entity {
     this.leanIn(dive.dive, stage);
 
     // The turn/flip springs run every frame, whether or not the sim
-    // moved — that's the whole point of keeping the holders.
-    for (const motion of this.holders.values()) {
+    // moved — that's the whole point of keeping the holders. The piece
+    // the hand is on lights up on its holder, so the glow hugs the
+    // sprite's real silhouette and rides every spring with it.
+    const handId =
+      game.entities.tryGetSingleton(BenchArrangeView)?.handPieceId() ?? null;
+    for (const [id, motion] of this.holders) {
+      motion.setLit(id === handId);
       motion.step(dt);
     }
 
@@ -246,12 +251,6 @@ export class BenchDiveView extends BaseEntity implements Entity {
       const motion = this.holders.get(piece.material.id);
       if (motion) this.pieces.setChildIndex(motion.holder, index);
     });
-  }
-
-  /** The standing holder drawing this piece, for chrome (the arranging
-   * view's hairline) that wants to follow its motion. */
-  motionFor(materialId: string): PieceMotion | null {
-    return this.holders.get(materialId) ?? null;
   }
 
   private clearTops(): void {

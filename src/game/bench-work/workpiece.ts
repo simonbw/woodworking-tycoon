@@ -7,6 +7,7 @@ import {
 import { ProgressionState } from "../GameState";
 import {
   Board,
+  CUTTING_BOARD_FOOTPRINTS,
   MaterialInstance,
   Pallet,
   PalletNail,
@@ -327,14 +328,20 @@ export function pieceSize(material: MaterialInstance): WorkSurfaceSize {
     case "sunriseCuttingBoard":
     case "endGrainCuttingBoard":
     case "checkerboardCuttingBoard":
-      // The face CuttingBoardSprite draws, so the oil wipe covers
-      // exactly the board on the bench
-      return {
-        widthIn: material.type === "sunriseCuttingBoard" ? 12 : 10,
-        heightIn: 16,
-      };
-    default:
+      // The declaration drawCuttingBoard draws from, so the oil wipe and
+      // the grab cover exactly the board on the bench
+      return CUTTING_BOARD_FOOTPRINTS[material.type];
+    case "tool":
       return { widthIn: 10, heightIn: 10 };
+    default: {
+      // A blueprint-assembled product's footprint is its blueprint's box
+      // — the very frame assembledProduct.ts draws.
+      const blueprint = productBlueprintFor(material.type);
+      if (blueprint) {
+        return { widthIn: blueprint.widthIn, heightIn: blueprint.heightIn };
+      }
+      return { widthIn: 10, heightIn: 10 };
+    }
   }
 }
 

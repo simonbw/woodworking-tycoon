@@ -438,6 +438,25 @@ export const FINISHED_PRODUCT_TYPES = [
 export type FinishedProductType = (typeof FINISHED_PRODUCT_TYPES)[number];
 
 /**
+ * The bench footprint of each machine-made product, in inches — the one
+ * declaration both the sprite's frame (drawCuttingBoard) and the bench's
+ * hit box (pieceSize) draw from, so a piece is grabbable exactly where
+ * it shows. Blueprint-assembled products don't appear here: their
+ * blueprint's box is their footprint, by the same rule.
+ */
+export const CUTTING_BOARD_FOOTPRINTS = {
+  simpleCuttingBoard: { widthIn: 10, heightIn: 16 },
+  stripedCuttingBoard: { widthIn: 10, heightIn: 16 },
+  sunriseCuttingBoard: { widthIn: 12, heightIn: 16 },
+  endGrainCuttingBoard: { widthIn: 10, heightIn: 16 },
+  checkerboardCuttingBoard: { widthIn: 10, heightIn: 16 },
+} as const satisfies Partial<
+  Record<FinishedProductType, { widthIn: number; heightIn: number }>
+>;
+
+export type CuttingBoardType = keyof typeof CUTTING_BOARD_FOOTPRINTS;
+
+/**
  * One board in an assembled product's bill of materials: which blueprint
  * slot it fills, the stock it was (Board units: width in inches, length
  * in inches, thickness in quarters), and the grain seed it keeps — the
