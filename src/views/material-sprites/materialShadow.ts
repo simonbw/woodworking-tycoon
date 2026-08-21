@@ -32,7 +32,6 @@ export interface ShadowLook {
   readonly widthPx: number;
   readonly heightPx: number;
   readonly standInches: number;
-  readonly alpha?: number;
   readonly radius?: number;
 }
 
@@ -60,7 +59,7 @@ export function drawMaterialShadow(
     look.widthPx,
     look.heightPx,
     look.standInches,
-    { alpha: look.alpha, radius: look.radius },
+    { radius: look.radius },
   );
 }
 
@@ -77,17 +76,15 @@ function shadowLook(
           widthPx: b.width * PIXELS_PER_INCH,
           heightPx: (b.thickness / 4) * PIXELS_PER_INCH,
           standInches: b.length,
-          alpha: 0.18,
         };
       }
       if (placement.onEdge) {
         // A standing board stands its whole width off the bench, and
-        // the shadow says so — far wider than any lying board's
+        // the shadow says so — wider than the same board's lying rim
         return {
           widthPx: (b.thickness / 4) * PIXELS_PER_INCH,
           heightPx: b.length * PIXELS_PER_INCH,
           standInches: b.width,
-          alpha: 0.18,
         };
       }
       return {

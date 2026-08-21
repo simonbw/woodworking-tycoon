@@ -11,8 +11,8 @@ import {
 } from "../../../game/bench-work/flip-cycle";
 import { MaterialInstance } from "../../../game/Materials";
 import {
-  CONTACT_SHADOW_ALPHA,
   drawContactShadow,
+  SHADOW_PX_PER_STAND_INCH,
 } from "../../../views/material-sprites/contactShadow";
 import {
   createMaterialSprite,
@@ -41,11 +41,11 @@ const LIT_FILTERS: Filter[] = [...TARGET_HIGHLIGHT_FILTERS, LIT_BRIGHTNESS];
 /** How much a carried piece grows toward the eye — just enough to read
  * as coming off the surface. */
 const CARRIED_LIFT = 1.04;
-/** How far the shadow's rim spreads while carried, in sprite px —
- * an equal fringe on every side, like the drawn spread itself, not a
- * scale-up of the silhouette (which would give a long board a huge
- * shadow past its ends and almost none along its edges). */
-const CARRIED_SHADOW_GROW_PX = 4;
+/** How high the hand holds a carried piece off the bench. The shadow
+ * follows the one rule in contactShadow.ts — every inch of height buys
+ * the same rim, evenly all around — so carrying adds these inches to
+ * however the piece already stands. */
+const CARRIED_LIFT_INCHES = 2.5;
 
 /** Motion the player has asked not to see is pinned, not played — which
  * is also how the E2E suite runs, so its assertions land on end states. */
@@ -308,7 +308,8 @@ export class PieceMotion {
     // board's ends than along its edges — so each axis of the shadow
     // grows by what the art covers there plus the same visible fringe.
     const lift = 1 + this.liftPhase * (CARRIED_LIFT - 1);
-    const growPx = this.liftPhase * CARRIED_SHADOW_GROW_PX;
+    const liftInches = this.liftPhase * CARRIED_LIFT_INCHES;
+    const growPx = liftInches * SHADOW_PX_PER_STAND_INCH;
     for (const sprite of this.holder.children) {
       const art = materialSpriteArt(sprite);
       if (art) art.scale.set(lift);
@@ -331,10 +332,11 @@ export class PieceMotion {
     const frame = tumbleFrame(this.material, this.phase);
     // The tumble's one shadow, redrawn at the very footprint the board
     // is passing through (matched to the art's lift and bounce so the
-    // fringe stays even), its spread and darkness blending between the
-    // stop being left and the one being arrived at — a board tipping
-    // onto its edge watches its shadow widen into the standing spread
-    // instead of two baked shadows smearing through the crossfade.
+    // fringe stays even), its spread blending between the stand heights
+    // of the stop being left and the one being arrived at — a board
+    // tipping onto its edge watches its shadow widen into the standing
+    // spread instead of two baked shadows smearing through the
+    // crossfade.
     if (this.tumbleShadow) {
       const from = materialShadowLook(
         this.material,
@@ -353,14 +355,7 @@ export class PieceMotion {
           w,
           h,
           lerp(from.standInches, to.standInches, frame.fade),
-          {
-            alpha: lerp(
-              from.alpha ?? CONTACT_SHADOW_ALPHA,
-              to.alpha ?? CONTACT_SHADOW_ALPHA,
-              frame.fade,
-            ),
-            extraSpreadPx: growPx,
-          },
+          { liftInches },
         );
       }
     }
