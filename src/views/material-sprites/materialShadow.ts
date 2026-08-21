@@ -31,9 +31,6 @@ import { drawContactShadow } from "./contactShadow";
 export interface ShadowLook {
   readonly widthPx: number;
   readonly heightPx: number;
-  /** Extra spread past the right edge — the standing board's face
-   * sliver leans that way (drawBoardOnEdge). */
-  readonly widenPx?: number;
   readonly standInches: number;
   readonly alpha?: number;
   readonly radius?: number;
@@ -60,7 +57,7 @@ export function drawMaterialShadow(
     g,
     -look.widthPx / 2,
     -look.heightPx / 2,
-    look.widthPx + (look.widenPx ?? 0),
+    look.widthPx,
     look.heightPx,
     look.standInches,
     { alpha: look.alpha, radius: look.radius },
@@ -86,11 +83,9 @@ function shadowLook(
       if (placement.onEdge) {
         // A standing board stands its whole width off the bench, and
         // the shadow says so — far wider than any lying board's
-        const edgePx = (b.thickness / 4) * PIXELS_PER_INCH;
         return {
-          widthPx: edgePx,
+          widthPx: (b.thickness / 4) * PIXELS_PER_INCH,
           heightPx: b.length * PIXELS_PER_INCH,
-          widenPx: Math.min(edgePx * 0.8, 3),
           standInches: b.width,
           alpha: 0.18,
         };
