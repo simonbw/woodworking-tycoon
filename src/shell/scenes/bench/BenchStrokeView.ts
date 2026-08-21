@@ -29,7 +29,7 @@ import {
   finishAttendedWork,
   operateMachine,
 } from "../../../sim/commands/machine-commands";
-import { projectGameState } from "../../../sim/projection";
+import { projectProgression } from "../../../sim/projection";
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { ShellStore } from "../../ShellStore";
 import { BenchDustThrottle } from "./benchDust";
@@ -174,7 +174,7 @@ export class BenchStrokeView extends BaseEntity implements Entity {
     if (!dive?.heldTool || !opened) return null;
     const operation = toolOperationFor(
       opened,
-      projectGameState(this.game).progression,
+      projectProgression(this.game),
       dive.heldTool,
       piece.material,
       piece.placement,

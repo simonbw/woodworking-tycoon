@@ -4,7 +4,8 @@ import { Machine, machineKey } from "../../../game/Machine";
 import { Vector, rotateVec, translateVec } from "../../../game/Vectors";
 import { PIXELS_PER_CELL } from "../../../views/shop-scale";
 import { MachineChips, OutfeedChips } from "../station/MachineChips";
-import { useShopState } from "../../useShell";
+import { shopCellMap } from "../../../sim/commands/machine-commands";
+import { useGame, useShopState } from "../../useShell";
 import { useTargeting } from "../useTargeting";
 import { StandPrompt } from "./StandPrompt";
 import { TruckBedPrompt, TruckPrompt } from "./TruckPrompt";
@@ -44,7 +45,7 @@ export const OverlayFrameContext = createContext<OverlayFrame>({
 export const OverlayLayer: React.FC = () => {
   const gameState = useShopState();
   const frame = useContext(OverlayFrameContext);
-  const cellMap = CellMap.fromGameState(gameState);
+  const cellMap = shopCellMap(useGame());
   const {
     machine: targetedMachine,
     machines: reachableMachines,

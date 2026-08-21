@@ -4,17 +4,24 @@ import { BaseEntity } from "../../../core/entity/BaseEntity";
 import { Entity } from "../../../core/entity/Entity";
 import { GameSprite } from "../../../core/entity/GameSprite";
 import { on } from "../../../core/entity/handler";
-import { StageFit, stepTurnSpring } from "./stageMath";
-import { groupPieces } from "../../../game/bench-work/bench-group";
+import {
+  groupPieces,
+  turnIntoFrame,
+} from "../../../game/bench-work/bench-group";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import { placedPieceSize } from "../../../game/bench-work/workpiece";
 import { MaterialInstance } from "../../../game/Materials";
-import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
+import { PieceMotion } from "./PieceMotion";
 import { ShellStore } from "../../ShellStore";
 import { BenchArrangeView } from "./BenchArrangeView";
 import { BenchDive } from "./BenchDive";
 import { V } from "../../../core/Vector";
-import { PIXELS_PER_INCH } from "../../../views/shop-scale";
+import {
+  IMAGE_PIXELS_PER_INCH,
+  PIXELS_PER_INCH,
+} from "../../../views/shop-scale";
+import { artSprite } from "../../../views/machine-sprites/machine-art";
+import { benchCloseUpArt } from "../../../views/machine-sprites/worktable-art";
 import { BenchStage, benchStage } from "./benchStage";
 
 /**
@@ -44,15 +51,23 @@ export class BenchDiveView extends BaseEntity implements Entity {
    * picture rides one motion.
    */
   readonly frame = new Container();
-  private tops = new Graphics();
+  /**
+   * The run's tops, in three passes: every table's cast shadow first, so
+   * a neighbour's shadow never falls across the top butted against it,
+   * then the drawn top for any bench whose art hasn't been made yet,
+   * then the art itself.
+   */
+  private shadows = new Container();
+  private topRects = new Graphics();
+  private topArt = new Container();
   private pieces = new Container();
 
   /**
    * One holder per piece on the tops, kept across redraws so a turn or
    * a tumble is motion on a standing sprite instead of a swap — R and F
-   * read as the piece being turned by hand (the old scene's spring).
-   * The sprite inside rebuilds only when the piece itself changes (a
-   * new material instance, or a tumble onto a different face).
+   * read as the piece being turned by hand (the old scene's spring and
+   * FlipTumble). The sprites inside rebuild only when the piece itself
+   * changes (a new material instance).
    */
   private holders = new Map<string, PieceMotion>();
 
@@ -98,7 +113,7 @@ export class BenchDiveView extends BaseEntity implements Entity {
     this.root = new Container() as Container & GameSprite;
     this.root.layerName = "hud";
     this.root.visible = false;
-    this.frame.addChild(this.tops, this.pieces);
+    this.frame.addChild(this.shadows, this.topRects, this.topArt, this.pieces);
     this.root.addChild(this.backdrop, this.frame);
     this.sprite = this.root;
   }
@@ -146,15 +161,43 @@ export class BenchDiveView extends BaseEntity implements Entity {
       .rect(0, 0, renderer.getWidth(), renderer.getHeight())
       .fill({ color: BACKDROP, alpha: 0.86 });
 
-    // The run's tops, in frame inches.
-    this.tops.clear();
+    // The run's tops: the same drawing the shop floor puts under the
+    // player's feet, off its close-up export. The art covers the whole
+    // machine — the makeshift bench's buckets stick out past its
+    // plywood — so it hangs on the footprint's middle, which is where
+    // `member.rect` is centered, rather than being stretched to the
+    // top's own rectangle. A table pushed onto the run at an angle is
+    // turned into the frame by the quarter turns its placements take.
+    this.clearTops();
+    this.topRects.clear();
+    const artScale = fit.pxPerIn / IMAGE_PIXELS_PER_INCH;
     for (const member of group.members) {
-      const x = fit.originX + member.rect.xIn * fit.pxPerIn;
-      const y = fit.originY + member.rect.yIn * fit.pxPerIn;
-      const w = member.rect.widthIn * fit.pxPerIn;
-      const h = member.rect.heightIn * fit.pxPerIn;
-      this.tops.rect(x - 4, y - 4, w + 8, h + 8).fill(BENCH_EDGE);
-      this.tops.rect(x, y, w, h).fill(BENCH_WOOD);
+      const centerX =
+        fit.originX + (member.rect.xIn + member.rect.widthIn / 2) * fit.pxPerIn;
+      const centerY =
+        fit.originY +
+        (member.rect.yIn + member.rect.heightIn / 2) * fit.pxPerIn;
+      const art = benchCloseUpArt(member.machine.type.id);
+      if (!art) {
+        const x = fit.originX + member.rect.xIn * fit.pxPerIn;
+        const y = fit.originY + member.rect.yIn * fit.pxPerIn;
+        const w = member.rect.widthIn * fit.pxPerIn;
+        const h = member.rect.heightIn * fit.pxPerIn;
+        this.topRects.rect(x - 4, y - 4, w + 8, h + 8).fill(BENCH_EDGE);
+        this.topRects.rect(x, y, w, h).fill(BENCH_WOOD);
+        continue;
+      }
+      const angle = turnIntoFrame(member, group) * -90;
+      if (art.shadow) {
+        const shadow = artSprite(art.shadow, artScale);
+        shadow.position.set(centerX, centerY);
+        shadow.angle = angle;
+        this.shadows.addChild(shadow);
+      }
+      const top = artSprite(art.top, artScale);
+      top.position.set(centerX, centerY);
+      top.angle = angle;
+      this.topArt.addChild(top);
     }
 
     // Everything lying on the tops, where the layout says it lies —
@@ -164,9 +207,8 @@ export class BenchDiveView extends BaseEntity implements Entity {
     // surface draws it: the saw in two halves so the offcut can sag
     // open, stroke work as two surface states with the finished one
     // scratched in under the tool.
-    const dragging = game.entities
-      .tryGetSingleton(BenchArrangeView)
-      ?.draggingId();
+    const arrange = game.entities.tryGetSingleton(BenchArrangeView);
+    const dragging = arrange?.draggingId();
     const lying: Array<{
       material: MaterialInstance;
       placement: BenchPlacement;
@@ -183,7 +225,10 @@ export class BenchDiveView extends BaseEntity implements Entity {
       seen.add(piece.material.id);
       let motion = this.holders.get(piece.material.id);
       if (!motion) {
-        motion = new PieceMotion();
+        // A just-released piece keeps the holder that rode the hand, so
+        // the springs carry it from the drop point into its seat instead
+        // of it reappearing already there.
+        motion = arrange?.takeHandoff(piece.material.id) ?? new PieceMotion();
         this.holders.set(piece.material.id, motion);
         this.pieces.addChild(motion.holder);
       }
@@ -201,6 +246,18 @@ export class BenchDiveView extends BaseEntity implements Entity {
       const motion = this.holders.get(piece.material.id);
       if (motion) this.pieces.setChildIndex(motion.holder, index);
     });
+  }
+
+  /** The standing holder drawing this piece, for chrome (the arranging
+   * view's hairline) that wants to follow its motion. */
+  motionFor(materialId: string): PieceMotion | null {
+    return this.holders.get(materialId) ?? null;
+  }
+
+  private clearTops(): void {
+    for (const container of [this.shadows, this.topArt]) {
+      container.removeChildren().forEach((child) => child.destroy());
+    }
   }
 
   private clearHolders(): void {
@@ -250,97 +307,4 @@ export class BenchDiveView extends BaseEntity implements Entity {
 /** The cubic the dive rides, the old scene's own easing. */
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-/** Motion the player has asked not to see is pinned, not played. */
-function reducedMotion(): boolean {
-  return (
-    globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
-}
-
-/**
- * One piece's standing holder: position tracks the layout directly, and
- * the turn (R) and the face-for-face flip ease in on the spring — the
- * old scene's TweenedTransform. Which face is up is part of the drawing
- * (flat, on edge, on end, and face-down are different sprites), so a
- * tumble rebuilds it; the turn and the flip still spring around the
- * rebuilt sprite.
- */
-class PieceMotion {
-  readonly holder = new Container();
-  private sprite: Container | null = null;
-  private drawn: MaterialInstance | null = null;
-  private drawnKey = "";
-  private spriteScale = 1;
-  private angle = 0;
-  private angleVelocity = 0;
-  private targetAngle = 0;
-  private flip = 1;
-  private flipVelocity = 0;
-  private targetFlip = 1;
-
-  retarget(
-    material: MaterialInstance,
-    placement: BenchPlacement,
-    fit: StageFit,
-  ): void {
-    // Materials are immutable, so a different instance is a different
-    // drawing — compare by reference, not by id. Prying a nail out of a
-    // pallet writes a new instance under the same id, and only the
-    // reference compare notices.
-    const drawnKey = `${placement.onEdge ? "e" : ""}${placement.onEnd ? "n" : ""}${placement.flipped ? "f" : ""}`;
-    const fresh = this.sprite === null;
-    if (material !== this.drawn || drawnKey !== this.drawnKey) {
-      this.sprite?.destroy({ children: true });
-      this.sprite = createMaterialSprite(material, {
-        onEdge: placement.onEdge,
-        onEnd: placement.onEnd,
-        flipped: placement.flipped,
-      });
-      this.holder.addChild(this.sprite);
-      this.drawn = material;
-      this.drawnKey = drawnKey;
-    }
-    this.spriteScale = fit.spriteScale;
-    this.holder.position.set(
-      fit.originX + placement.xIn * fit.pxPerIn,
-      fit.originY + placement.yIn * fit.pxPerIn,
-    );
-    this.targetAngle = placement.angleDeg;
-    this.targetFlip = placement.flipped ? -1 : 1;
-    if (fresh || reducedMotion()) {
-      // A piece that just appeared lies where it lies — only later
-      // gestures play as motion.
-      this.angle = this.targetAngle;
-      this.flip = this.targetFlip;
-      this.angleVelocity = 0;
-      this.flipVelocity = 0;
-    }
-    this.apply();
-  }
-
-  step(dt: number): void {
-    if (this.angle === this.targetAngle && this.flip === this.targetFlip) {
-      return;
-    }
-    [this.angle, this.angleVelocity] = stepTurnSpring(
-      this.angle,
-      this.angleVelocity,
-      this.targetAngle,
-      dt,
-    );
-    [this.flip, this.flipVelocity] = stepTurnSpring(
-      this.flip,
-      this.flipVelocity,
-      this.targetFlip,
-      dt,
-    );
-    this.apply();
-  }
-
-  private apply(): void {
-    this.holder.angle = this.angle;
-    this.holder.scale.set(this.flip * this.spriteScale, this.spriteScale);
-  }
 }

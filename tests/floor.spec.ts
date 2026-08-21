@@ -571,7 +571,7 @@ test.describe("Shop floor", () => {
       await page.goto("/");
       await startNewGame(page);
       await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(150);
     });
 
     await test.step("a fresh cab offers scavenging and home, not the store", async () => {
@@ -637,8 +637,12 @@ test.describe("Shop floor", () => {
       );
       const dateBefore = await page.getByTestId("day-date").textContent();
       await pressTruckRow(page, "Home");
-      // The overnight runs as one batch; morning is a new day with a
-      // fresh budget, the player back beside the cab
+      // The overnight runs as one batch, one sim minute per engine tick
+      // — NIGHT_TICKS of them, which the frame loop would take real
+      // seconds to serve. Step the engine through the night directly;
+      // morning is a new day with a fresh budget, the player back
+      // beside the cab. (The slack matches ShopDriver.sleep's guard.)
+      await page.evaluate(() => (window as any).__STEP_ENGINE__(900));
       await page.waitForFunction(
         (before: number) =>
           (window as any).__GET_GAME_STATE__().day === before + 1 &&

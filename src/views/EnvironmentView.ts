@@ -62,6 +62,7 @@ export class EnvironmentView extends BaseEntity implements Entity {
     this.lawn.tileScale.set(LAWN_TILE_SCALE);
     this.lawn.tint = LAWN_TINT;
     this.lawn.layerName = "environment";
+    this.lawn.visible = false;
 
     this.driveway = new TilingSprite({
       texture: Texture.from("/images/asphalt.png"),
@@ -69,6 +70,7 @@ export class EnvironmentView extends BaseEntity implements Entity {
     this.driveway.tileScale.set(DRIVEWAY_TILE_SCALE);
     this.driveway.tint = DRIVEWAY_TINT;
     this.driveway.layerName = "environment";
+    this.driveway.visible = false;
 
     this.building = new Graphics() as Graphics & GameSprite;
     this.building.layerName = "environment";
@@ -152,6 +154,7 @@ export class EnvironmentView extends BaseEntity implements Entity {
     this.lawn.width = right - left;
     this.lawn.height = bottom - top;
     this.lawn.tilePosition.set(-left, -top);
+    this.lawn.visible = true;
 
     const height = cellToPixel(shopInfo.size[1]);
     const { left: doorLeft, right: doorRight } = doorSpan(shopInfo);

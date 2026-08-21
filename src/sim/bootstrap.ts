@@ -22,6 +22,7 @@ import { ShopInfo } from "./singletons/ShopInfo";
 import { StorageUpgrades } from "./singletons/StorageUpgrades";
 import { TutorialTracker } from "./singletons/TutorialTracker";
 import { DustLayer } from "./singletons/DustLayer";
+import { ShopGrid } from "./singletons/ShopGrid";
 import { Wallet } from "./singletons/Wallet";
 import { CleaningSystem } from "./systems/CleaningSystem";
 import { MachineSystem } from "./systems/MachineSystem";
@@ -49,6 +50,7 @@ export function addSessionSingletons(game: Game): void {
   game.addEntity(new MilestoneSystem());
   game.addEntity(new SleepSystem());
   game.addEntity(new StreetSystem());
+  game.addEntity(new ShopGrid());
 }
 
 /** Add a fresh shop's persistent singletons (a brand-new game). */

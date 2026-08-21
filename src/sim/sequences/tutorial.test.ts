@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { hasOneMiteredEnd } from "../../game/board-helpers";
 import { initialGameState } from "../../game/initialGameState";
 import { Board, MaterialInstance } from "../../game/Materials";
+import { timeSpeed } from "../../game/time-flow";
 import { TOOL_TYPES } from "../../game/Tool";
 import {
   currentTutorialGoalView,
@@ -136,12 +137,22 @@ describe("the guided opening", () => {
     shop.putEverythingDown().setOut(isRusticShelf);
     assert.strictEqual(
       step(shop),
-      "sellShelf",
-      "set out is not sold — the box holds until the money exists",
+      "firstSale",
+      "set out ticks its own box — the sale gate is the next goal's first step",
+    );
+    assert.strictEqual(
+      timeSpeed(shop.shop),
+      "working",
+      "the pending first sale spends time, so the buyer walks up in seconds",
     );
 
     shop.awaitSales(1);
     assert.strictEqual(step(shop), "learnSkill", "the shelf sold");
+    assert.strictEqual(
+      timeSpeed(shop.shop),
+      "idle",
+      "the clock hands back to the idle creep once the sale lands",
+    );
     assert.ok(
       shop.shop.progression.storeUnlocked,
       "the first sale opened the store",

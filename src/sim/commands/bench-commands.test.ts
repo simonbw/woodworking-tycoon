@@ -15,7 +15,7 @@ import { benchPlacementFor } from "../../game/bench-work/bench-layout";
 import { palletSlotId } from "../../game/bench-work/pallet-geometry";
 import { clampsFree } from "../../game/Clamp";
 import { GameState } from "../../game/GameState";
-import { getMachines, MachineState } from "../../game/Machine";
+import { machineViews, MachineState } from "../../game/Machine";
 import { panelWidth } from "../../game/Materials";
 import { isPanel } from "../../game/panel-helpers";
 import { ShopDriver } from "../driver/ShopDriver";
@@ -281,6 +281,74 @@ describe("arranging the bench top", () => {
     );
     assert.strictEqual(bench.state, before);
   });
+
+  it("leaves the piece it just set down on top of the pile", () => {
+    const under = benchWorkShop.machines[0].inputMaterials[0];
+    const over = { ...under, id: "fx-bench-board-2" };
+    const state: GameState = {
+      ...benchWorkShop,
+      machines: [
+        { ...benchWorkShop.machines[0], inputMaterials: [under, over] },
+      ],
+    };
+    const shop = new ShopDriver({ state });
+    const bench = shop.machine(WORKBENCH);
+    assert.deepStrictEqual(
+      bench.state.inputMaterials.map((material) => material.id),
+      [under.id, over.id],
+      "the second board starts on top",
+    );
+    assert.strictEqual(
+      arrangeBenchMaterial(shop.game, bench, under.id, {
+        xIn: 12,
+        yIn: 12,
+        angleDeg: 0,
+        flipped: false,
+      }),
+      true,
+    );
+    assert.deepStrictEqual(
+      bench.state.inputMaterials.map((material) => material.id),
+      [over.id, under.id],
+      "the board that was moved is now the last one down",
+    );
+  });
+
+  it("keeps finished work in its own bay when it is set down", () => {
+    const board = benchWorkShop.machines[0].inputMaterials[0];
+    const done = { ...board, id: "fx-bench-done" };
+    const other = { ...board, id: "fx-bench-done-2" };
+    const state: GameState = {
+      ...benchWorkShop,
+      machines: [
+        {
+          ...benchWorkShop.machines[0],
+          inputMaterials: [board],
+          outputMaterials: [done, other],
+        },
+      ],
+    };
+    const shop = new ShopDriver({ state });
+    const bench = shop.machine(WORKBENCH);
+    assert.strictEqual(
+      arrangeBenchMaterial(shop.game, bench, done.id, {
+        xIn: 4,
+        yIn: 4,
+        angleDeg: 0,
+        flipped: false,
+      }),
+      true,
+    );
+    assert.deepStrictEqual(
+      bench.state.inputMaterials.map((material) => material.id),
+      [board.id],
+      "staged stock is untouched",
+    );
+    assert.deepStrictEqual(
+      bench.state.outputMaterials.map((material) => material.id),
+      [other.id, done.id],
+    );
+  });
 });
 
 /** A shop-built table, dropped straight onto the floor. */
@@ -344,7 +412,7 @@ describe("gathering across a bench group", () => {
     const allStates = () =>
       [...shop.game.entities.byConstructor(MachineEntity)].map((e) => e.state);
     const framePlacementOf = (owner: MachineEntity) => {
-      const group = benchGroupAt(getMachines(allStates()), owner.view());
+      const group = benchGroupAt(machineViews(allStates()), owner.view());
       const member = memberFor(group, owner.view())!;
       return placementInFrame(
         group,

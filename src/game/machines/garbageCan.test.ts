@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { board } from "../board-helpers";
 import { CellMap } from "../CellMap";
 import { GameState } from "../GameState";
-import { getMachines, Machine, MachineState } from "../Machine";
+import { machineViews, Machine, MachineState } from "../Machine";
 import { initialGameState } from "../initialGameState";
 import { resolveInteract } from "../interact";
 import { machineCanOperate, stageableMaterials } from "../machine-helpers";
@@ -50,7 +50,7 @@ function shopWithCan(
 }
 
 function theCan(gameState: GameState): Machine {
-  return getMachines(gameState.machines)[0];
+  return machineViews(gameState.machines)[0];
 }
 
 describe("garbage can", () => {
@@ -113,8 +113,8 @@ describe("garbage can", () => {
 
   it("never answers the interact key — it is opened, not reached into", () => {
     const gameState = shopWithCan([board("pine", 12, 2, 1)]);
-    assert.strictEqual(resolveInteract(gameState, theCan(gameState)), null);
-    assert.strictEqual(resolveInteract(gameState, undefined), null);
+    assert.strictEqual(resolveInteract(gameState, CellMap.fromGameState(gameState), theCan(gameState)), null);
+    assert.strictEqual(resolveInteract(gameState, CellMap.fromGameState(gameState), undefined), null);
   });
 
   it("leaves the floor to the interact key even while you face it", () => {
@@ -127,7 +127,7 @@ describe("garbage can", () => {
       ],
     };
 
-    assert.deepStrictEqual(resolveInteract(gameState, theCan(gameState)), {
+    assert.deepStrictEqual(resolveInteract(gameState, CellMap.fromGameState(gameState), theCan(gameState)), {
       kind: "pick-up-floor",
       piles: gameState.materialPiles,
       target: gameState.materialPiles[0],

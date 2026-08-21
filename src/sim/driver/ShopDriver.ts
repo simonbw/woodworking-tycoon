@@ -196,6 +196,9 @@ export class ShopDriver {
    */
   arrange(edit: (game: Game) => void): this {
     edit(this.game);
+    // The backdoor bypasses the commands, so nothing announced whatever
+    // it changed — tell the live indexes to drop what they had derived.
+    this.game.dispatch("worldLoaded", {});
     return this;
   }
 

@@ -1,4 +1,4 @@
-import { GameState } from "../../../game/GameState";
+import { TutorialFacts } from "../../../game/GameState";
 import { MachineId } from "../../../game/Machine";
 import { MaterialInstance } from "../../../game/Materials";
 import {
@@ -41,7 +41,9 @@ const NOTHING: TutorialWorldTargets = {
   domIds: [],
 };
 
-export function tutorialTargets(gameState: GameState): TutorialWorldTargets {
+export function tutorialTargets(
+  gameState: TutorialFacts,
+): TutorialWorldTargets {
   const steps = activeTutorialSteps(gameState);
   if (steps.length === 0) return NOTHING;
 

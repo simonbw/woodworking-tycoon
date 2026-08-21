@@ -139,3 +139,16 @@ describe("machine operations on the new driver", () => {
     assert.strictEqual(reloaded.player.operating, false);
   });
 });
+
+describe("the entity-owned machine view (issue #230, phase 3)", () => {
+  it("hands back one view per state object, replaced on mutation", () => {
+    const shop = new ShopDriver({ state: resawShop });
+    const entity = shop.machine(BAND_SAW);
+    const view = entity.view();
+    assert.strictEqual(entity.view(), view, "same state, same view");
+    entity.state = { ...entity.state, poweredOn: true };
+    const next = entity.view();
+    assert.notStrictEqual(next, view, "a replaced state replaces the view");
+    assert.strictEqual(next.isPowered, true);
+  });
+});

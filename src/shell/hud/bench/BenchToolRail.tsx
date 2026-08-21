@@ -7,7 +7,8 @@ import {
 import { useShortcut } from "../../../components/shortcuts/ShortcutProvider";
 import { benchGroupAt } from "../../../game/bench-work/bench-group";
 import { clampsFree } from "../../../game/Clamp";
-import { getMachines, machineKey } from "../../../game/Machine";
+import { machineKey } from "../../../game/Machine";
+import { floorMachines } from "../../../sim/entities/MachineEntity";
 import { ToolItem } from "../../../game/Materials";
 import { handSpaceLeft } from "../../../game/Person";
 import { ShortcutId } from "../../../game/shortcuts";
@@ -18,7 +19,9 @@ import {
   mountTool,
   unmountTool,
 } from "../../../sim/commands/tool-commands";
-import { projectGameState } from "../../../sim/projection";
+import { machineStatesNow } from "../../../sim/machine-reads";
+import { projectPerson, projectProgression } from "../../../sim/projection";
+import { Consumables } from "../../../sim/singletons/Consumables";
 import { toolIconSrc } from "../../../utils/uiImages";
 import { BenchDive } from "../../scenes/bench/BenchDive";
 import { useGame, useShellVersion } from "../../useShell";
@@ -63,7 +66,7 @@ export const BenchToolRail: React.FC = () => {
   const dive = game.entities.tryGetSingleton(BenchDive);
   const bench = dive?.openBench();
 
-  const gameState = projectGameState(game);
+  const person = projectPerson(game);
   const machine = bench?.view();
   const tools = machine?.state.tools ?? [];
   const toolSlots = machine?.toolSlots ?? 0;
@@ -72,10 +75,10 @@ export const BenchToolRail: React.FC = () => {
   // the running job is off it.
   const working = machine?.operationProgress.status === "inProgress";
   // A removed tool lands in the arms, so they need a slot free for it.
-  const handsFull = handSpaceLeft(gameState.player) < 1;
+  const handsFull = handSpaceLeft(person) < 1;
   // What's carried is what can go on the rail.
   const mountable = machine
-    ? gameState.player.inventory
+    ? person.inventory
         .filter((item): item is ToolItem => item.type === "tool")
         .filter((tool) => {
           const compatible = TOOL_TYPES[tool.toolId].compatibleMachines;
@@ -86,7 +89,7 @@ export const BenchToolRail: React.FC = () => {
     : [];
   // The rest of the run's tools, hung past the divider.
   const neighbourTools = machine
-    ? benchGroupAt(getMachines(gameState.machines), machine)
+    ? benchGroupAt(floorMachines(game), machine)
         .members.map((member) => member.machine)
         .filter(
           (member) =>
@@ -128,10 +131,14 @@ export const BenchToolRail: React.FC = () => {
 
   if (!dive || !bench || !machine) return null;
 
-  const glue = availableOperations(machine, gameState.progression).some(
+  const glue = availableOperations(machine, projectProgression(game)).some(
     (operation) => operation.interaction?.kind === "glue",
   );
-  const clampsAvailable = clampsFree(gameState.clamps, gameState.machines);
+  const consumables = game.entities.getSingleton(Consumables);
+  const clampsAvailable = clampsFree(
+    consumables.clamps,
+    machineStatesNow(game),
+  );
   if (toolSlots === 0 && !glue) return null;
 
   return (

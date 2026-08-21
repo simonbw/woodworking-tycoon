@@ -4,19 +4,22 @@ import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
-import { materialSources } from "../game/interact";
-import { GameState } from "../game/GameState";
+import { InteractFacts, materialSources } from "../game/interact";
+import { projectProgression } from "../sim/projection";
 import { Vector } from "../game/Vectors";
 import {
   divesToBench,
   hasStationSheet,
 } from "../components/station/station-helpers";
-import { findMachineEntity } from "../sim/commands/machine-commands";
+import {
+  findMachineEntity,
+  shopCellMap,
+} from "../sim/commands/machine-commands";
 import { TargetingState } from "../shell/dispatch/TargetingState";
 import { BenchDive } from "../shell/scenes/bench/BenchDive";
 import { ShellStore } from "../shell/ShellStore";
 import { Player } from "../sim/entities/Player";
-import { projectGameState } from "../sim/projection";
+import { interactFacts } from "../sim/commands/interact-commands";
 
 /**
  * The mouse as the eye (docs/floor-interaction.md): the cursor never
@@ -60,18 +63,22 @@ export class MousePicking extends BaseEntity implements Entity {
    * interact resolver, newest-dropped first — the order they're drawn
    * in — so the first one the cursor lands on is the top of the stack.
    */
-  private pick(gs: GameState): FloorPick | null {
+  private pick(gs: InteractFacts): FloorPick | null {
     const cursor = this.cursorWorld;
     if (!cursor) return null;
     const targeting = this.targeting();
-    const piles = materialSources(gs, targeting.targeted()?.view())
+    const piles = materialSources(
+      gs,
+      shopCellMap(this.game),
+      targeting.targeted()?.view(),
+    )
       .filter((source) => source.kind === "floor-pile")
       .map((source) => source.pile);
     return pickUnderCursor(cursor, piles, targeting.machines());
   }
 
   /** The world the cursor is picking in, or null while it can't pick. */
-  private pickableState(): GameState | null {
+  private pickableState(): InteractFacts | null {
     if (!this.game.entities.tryGetSingleton(Player)) return null;
     if (this.game.entities.tryGetSingleton(ShellStore)?.modalOpen) return null;
     // Leaned over a bench the pointer is a hand on the work surface,
@@ -79,7 +86,7 @@ export class MousePicking extends BaseEntity implements Entity {
     if (this.game.entities.tryGetSingleton(BenchDive)?.openBenchKey != null) {
       return null;
     }
-    const gs = projectGameState(this.game);
+    const gs = interactFacts(this.game);
     return gs.player.away ? null : gs;
   }
 
@@ -135,7 +142,7 @@ export class MousePicking extends BaseEntity implements Entity {
       targeting.setTarget(machine);
       return;
     }
-    if (divesToBench(machine, gs.progression)) {
+    if (divesToBench(machine, projectProgression(this.game))) {
       const entity = findMachineEntity(this.game, machine.state);
       if (entity) this.game.entities.tryGetSingleton(BenchDive)?.open(entity);
       return;
@@ -163,7 +170,7 @@ export class MousePicking extends BaseEntity implements Entity {
     // surface, which is what a bench has instead of a sheet (the same
     // thing Tab opens there).
     const machine = pick.machine;
-    if (divesToBench(machine, gs.progression)) {
+    if (divesToBench(machine, projectProgression(this.game))) {
       const entity = findMachineEntity(this.game, machine.state);
       if (entity) {
         this.targeting().setTarget(machine);

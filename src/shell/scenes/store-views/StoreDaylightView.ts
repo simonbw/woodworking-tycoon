@@ -57,6 +57,11 @@ export class StoreDaylightView extends BaseEntity implements Entity {
   private originX = 0;
   private originY = 0;
 
+  /** Whether the current texture holds a real paint — a blank multiply
+   * mask would black the world out, so the sprite stays hidden until
+   * paint() reports success. */
+  private painted = false;
+
   constructor(private layout: StoreLayout) {
     super();
     this.mask = new Sprite() as Sprite & GameSprite;
@@ -87,9 +92,9 @@ export class StoreDaylightView extends BaseEntity implements Entity {
     return daylightAt(clock.dayTicksSpent() / TICKS_PER_DAY, clock.isNight());
   }
 
-  private paint(): void {
+  private paint(): boolean {
     const renderer = this.game.renderer?.app.renderer;
-    if (!renderer || !this.texture || !this.eased) return;
+    if (!renderer || !this.texture || !this.eased) return false;
     const now = this.eased;
     const texWidth = this.texture.width;
     const texHeight = this.texture.height;
@@ -134,6 +139,7 @@ export class StoreDaylightView extends BaseEntity implements Entity {
       target: this.texture,
       clear: true,
     });
+    return true;
   }
 
   @on("render")
@@ -191,6 +197,7 @@ export class StoreDaylightView extends BaseEntity implements Entity {
         height: texHeight,
       });
       this.mask.texture = this.texture;
+      this.painted = false;
       fresh = true;
     }
     const originMoved =
@@ -200,9 +207,9 @@ export class StoreDaylightView extends BaseEntity implements Entity {
     this.originY = viewport.top;
     this.mask.position.set(this.originX, this.originY);
 
-    if (fresh || originMoved || lightMoved) {
-      this.paint();
+    if (fresh || originMoved || lightMoved || !this.painted) {
+      this.painted = this.paint();
     }
-    this.mask.visible = true;
+    this.mask.visible = this.painted;
   }
 }

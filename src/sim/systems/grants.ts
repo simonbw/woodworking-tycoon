@@ -1,5 +1,4 @@
 import { Game } from "../../core/Game";
-import { CellMap } from "../../game/CellMap";
 import { addConsumables } from "../../game/Consumable";
 import { freshMachineState } from "../../game/game-actions/machine-actions";
 import { OperationCompletion } from "../../game/game-actions/operation-actions";
@@ -7,9 +6,11 @@ import { levelForXp } from "../../game/skill-helpers";
 import { Vector, vectorEquals } from "../../game/Vectors";
 import { MachineState } from "../../game/Machine";
 import { MachineCrateEntity } from "../entities/MachineCrateEntity";
-import { projectGameState } from "../projection";
+import { projectProgression } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { Progression } from "../singletons/Progression";
+import { ShopGrid } from "../singletons/ShopGrid";
+import { ShopInfo } from "../singletons/ShopInfo";
 import { StorageUpgrades } from "../singletons/StorageUpgrades";
 
 /**
@@ -33,16 +34,14 @@ export function applyCompletionGrants(
   if (upgradesGranted.length > 0) {
     const storage = game.entities.getSingleton(StorageUpgrades);
     storage.upgrades.push(...upgradesGranted);
+    game.dispatch("suppliesChanged", {});
   }
 
   for (const completion of completions) {
     for (const granted of completion.machinesGranted) {
       deliverMachineCrate(
         game,
-        freshMachineState(
-          granted.machineTypeId,
-          projectGameState(game).progression,
-        ),
+        freshMachineState(granted.machineTypeId, projectProgression(game)),
         granted.near,
       );
     }
@@ -52,6 +51,7 @@ export function applyCompletionGrants(
   if (consumablesGranted.length > 0) {
     const consumables = game.entities.getSingleton(Consumables);
     consumables.stock = addConsumables(consumables.stock, consumablesGranted);
+    game.dispatch("suppliesChanged", {});
   }
 
   grantXp(
@@ -70,6 +70,7 @@ export function grantXp(game: Game, amount: number): void {
   const levelsGained = levelForXp(newXp) - levelForXp(progression.xp);
   progression.xp = newXp;
   progression.skillPoints += levelsGained;
+  game.dispatch("progressionChanged", {});
 }
 
 /**
@@ -82,9 +83,12 @@ export function deliverMachineCrate(
   machine: MachineState,
   near?: Vector,
 ): MachineCrateEntity {
-  const gameState = projectGameState(game);
-  const target = near ?? gameState.shopInfo.entrancePosition;
-  const cellMap = CellMap.fromGameState(gameState);
+  const target =
+    near ?? game.entities.getSingleton(ShopInfo).info.entrancePosition;
+  const crates = [...game.entities.byConstructor(MachineCrateEntity)].filter(
+    (crate) => !crate.isDestroyed,
+  );
+  const cellMap = game.entities.getSingleton(ShopGrid).cellMap();
   const distance = (cell: Vector) =>
     Math.abs(cell[0] - target[0]) + Math.abs(cell[1] - target[1]);
   const openCells = cellMap
@@ -92,11 +96,11 @@ export function deliverMachineCrate(
     .map((cell) => cell.position)
     .filter(
       (position) =>
-        !gameState.machineCrates.some((crate) =>
-          vectorEquals(crate.position, position),
-        ),
+        !crates.some((crate) => vectorEquals(crate.position, position)),
     )
     .sort((a, b) => distance(a) - distance(b));
   const position = openCells[0] ?? target;
-  return game.addEntity(new MachineCrateEntity(machine, position));
+  const crate = game.addEntity(new MachineCrateEntity(machine, position));
+  game.dispatch("cratesChanged", {});
+  return crate;
 }

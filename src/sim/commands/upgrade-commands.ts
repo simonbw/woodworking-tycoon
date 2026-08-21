@@ -47,6 +47,8 @@ export function installUpgrade(
     ...entity.state,
     upgrades: [...(entity.state.upgrades ?? []), upgradeId],
   };
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("suppliesChanged", {});
   return true;
 }
 
@@ -93,5 +95,7 @@ export function uninstallUpgrade(
       (_, index) => index !== upgradeIndex,
     ),
   };
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("suppliesChanged", {});
   return true;
 }

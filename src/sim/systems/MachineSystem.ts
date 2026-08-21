@@ -3,23 +3,22 @@ import { TickLayerName } from "../../config/tickLayers";
 import { BaseEntity } from "../../core/entity/BaseEntity";
 import { Entity } from "../../core/entity/Entity";
 import { on } from "../../core/entity/handler";
-import { stationWorkSpeed } from "../../game/bench-mounting";
 import { deriveMachineCutLoad } from "../../game/cut-load";
 import { emitMachineDust, machineDustMultiplier } from "../../game/Dust";
 import {
   completeOperation,
   OperationCompletion,
 } from "../../game/game-actions/operation-actions";
-import { GameState } from "../../game/GameState";
 import { Machine } from "../../game/Machine";
 import { operationAttendanceSatisfied } from "../../game/machine-helpers";
 import { materialDustSpecies } from "../../game/material-helpers";
 import { DustSpecies } from "../../game/Materials";
-import { getOperationPhases } from "../../game/skill-helpers";
 import { DUST_BAG_CAPTURE } from "../../game/tools/dustBag";
 import { MachineEntity } from "../entities/MachineEntity";
-import { projectGameState } from "../projection";
+import { operationPhasesNow } from "../machine-reads";
+import { projectPerson } from "../projection";
 import { DustLayer } from "../singletons/DustLayer";
+import { ShopInfo } from "../singletons/ShopInfo";
 import { TimeFlow } from "../TimeFlow";
 import { applyCompletionGrants } from "./grants";
 
@@ -76,21 +75,54 @@ export class MachineSystem extends BaseEntity implements Entity {
    * tick — the old `machineSpendsTime`, over every machine.
    */
   anyMachineSpendsTime(): boolean {
-    const gameState = projectGameState(this.game);
     for (const entity of this.game.entities.byConstructor(MachineEntity)) {
-      if (machineSpendsTime(gameState, entity.view())) {
+      if (this.machineSpendsTime(entity.view())) {
         return true;
       }
     }
     return false;
   }
 
-  /** One sim minute of machine work, over every machine on the floor. */
+  /**
+   * Whether this machine is actively consuming the player's time this
+   * tick — ported from `src/game/time-flow.ts`, off the live entities.
+   */
+  private machineSpendsTime(machine: Machine): boolean {
+    const machineState = machine.state;
+    if (machineState.operationProgress.status !== "inProgress") {
+      return false;
+    }
+    const operation = machine.operations.find(
+      (op) => op.id === machineState.selectedOperationId,
+    );
+    if (!operation) {
+      return false;
+    }
+    if (
+      !operationAttendanceSatisfied(
+        machine,
+        operation,
+        projectPerson(this.game),
+      )
+    ) {
+      return false;
+    }
+    const phases = operationPhasesNow(this.game, machine, operation);
+    const { phaseIndex, ticksRemaining } = machineState.operationProgress;
+    const phase =
+      ticksRemaining === 0
+        ? phases[phaseIndex + 1]
+        : phases[Math.min(phaseIndex, phases.length - 1)];
+    return phase != null && phase.attended;
+  }
+
+  /** One sim minute of machine work, over every machine on the floor.
+   * Dust lands after every machine has advanced, so the multipliers and
+   * phase durations every machine reads are as of the minute's start —
+   * the same consistency the old pass got from one snapshot. */
   private minutePass(): void {
-    // One consistent pre-minute snapshot: attendance, dust multipliers,
-    // and phase durations all read the world as of the minute's start,
-    // exactly like the old pass's single gameState argument.
-    const gameState = projectGameState(this.game);
+    const person = projectPerson(this.game);
+    const shopSize = this.game.entities.getSingleton(ShopInfo).info.size;
     const completions: OperationCompletion[] = [];
     const dustEmissions: Array<{
       machine: Machine;
@@ -117,20 +149,15 @@ export class MachineSystem extends BaseEntity implements Entity {
       }
 
       const dustMultiplier = machineDustMultiplier(
-        gameState.dust,
+        this.game.entities.tryGetSingleton(DustLayer)?.map ?? {},
         machine,
-        gameState.shopInfo.size,
+        shopSize,
       );
-      const phases = getOperationPhases(
-        selectedOperation,
-        gameState.progression,
-        dustMultiplier,
-        stationWorkSpeed(machine, gameState),
-      );
+      const phases = operationPhasesNow(this.game, machine, selectedOperation);
       const attended = operationAttendanceSatisfied(
         machine,
         selectedOperation,
-        gameState,
+        person,
       );
       const { phaseIndex, ticksRemaining } = machineState.operationProgress;
 
@@ -150,6 +177,7 @@ export class MachineSystem extends BaseEntity implements Entity {
             ticksRemaining: nextPhase.duration,
           },
         };
+        this.game.dispatch("machineStateChanged", { machine: entity });
         continue;
       }
 
@@ -194,6 +222,7 @@ export class MachineSystem extends BaseEntity implements Entity {
             ticksRemaining: newTicksRemaining,
           },
         };
+        this.game.dispatch("machineStateChanged", { machine: entity });
         continue;
       }
 
@@ -216,6 +245,7 @@ export class MachineSystem extends BaseEntity implements Entity {
                 ticksRemaining: 0,
               },
         };
+        this.game.dispatch("machineStateChanged", { machine: entity });
         continue;
       }
 
@@ -224,6 +254,7 @@ export class MachineSystem extends BaseEntity implements Entity {
       const completion = completeOperation(machineState);
       completions.push(completion);
       entity.state = completion.machine;
+      this.game.dispatch("machineStateChanged", { machine: entity });
     }
 
     // Dust lands after every machine has advanced, like the old pass.
@@ -237,7 +268,7 @@ export class MachineSystem extends BaseEntity implements Entity {
             emission.machine,
             emission.species,
             emission.amount,
-            gameState.shopInfo.size,
+            shopSize,
           );
         }
         dustLayer.map = dust;
@@ -250,34 +281,3 @@ export class MachineSystem extends BaseEntity implements Entity {
   }
 }
 
-/**
- * Whether this machine is actively consuming the player's time this
- * tick — ported verbatim from `src/game/time-flow.ts`.
- */
-function machineSpendsTime(gameState: GameState, machine: Machine): boolean {
-  const machineState = machine.state;
-  if (machineState.operationProgress.status !== "inProgress") {
-    return false;
-  }
-  const operation = machine.operations.find(
-    (op) => op.id === machineState.selectedOperationId,
-  );
-  if (!operation) {
-    return false;
-  }
-  if (!operationAttendanceSatisfied(machine, operation, gameState)) {
-    return false;
-  }
-  const phases = getOperationPhases(
-    operation,
-    gameState.progression,
-    machineDustMultiplier(gameState.dust, machine, gameState.shopInfo.size),
-    stationWorkSpeed(machine, gameState),
-  );
-  const { phaseIndex, ticksRemaining } = machineState.operationProgress;
-  const phase =
-    ticksRemaining === 0
-      ? phases[phaseIndex + 1]
-      : phases[Math.min(phaseIndex, phases.length - 1)];
-  return phase != null && phase.attended;
-}

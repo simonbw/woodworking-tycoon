@@ -17,7 +17,9 @@ export function xpCostOfLevel(level: number): number {
  * points. Used by the cleaning passes, which work over a projection of
  * the world; the entity world's own award is `sim/systems/grants.ts`.
  */
-export function withXp(gameState: GameState, amount: number): GameState {
+export function withXp<
+  T extends { readonly progression: ProgressionState },
+>(gameState: T, amount: number): T {
   if (amount <= 0) {
     return gameState;
   }

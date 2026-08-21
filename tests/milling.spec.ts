@@ -1,14 +1,6 @@
 import { test, expect } from "@playwright/test";
-import {
-  closeStationSurface,
-  runUntilOutput,
-  openStationSheet,
-  runWhileHolding,
-  selectMode,
-  takeAllHere,
-} from "./machine-panel";
+import { runUntilOutput, openStationSheet, takeAllHere } from "./machine-panel";
 import { pumpTicks, startNewGame } from "./navigation";
-import { goToLumberyard, goToStore, leaveStore, shelfTag } from "./navigation";
 
 /**
  * The direct-feed machines, and the stock that decides what they do.
@@ -20,9 +12,12 @@ import { goToLumberyard, goToStore, leaveStore, shelfTag } from "./navigation";
  * different interface from the benches and containers in stations.spec.ts,
  * which is why they live in their own browser.
  *
- * What the cuts *produce* is checked in src/sim/sequences/ — the milling
- * chains, the mitred frame, the resaw. The assertions here are about the keys,
- * the scales, and the machine refusing to work until it's switched on.
+ * What the cuts *produce* is checked below the browser — the milling and
+ * resaw rules in src/game/machines/*.test.ts (miter cuts, kerf, detents,
+ * the frame), the chains in src/sim/sequences/. The store racks' contents
+ * and gating are stations.spec.ts's trips. The assertions here are about
+ * the keys, the scales, and the machine refusing to work until it's
+ * switched on.
  *
  * One browser, three fixtures. Each half swaps the shop under it.
  */
@@ -87,15 +82,6 @@ async function settingOf(page: any, machineTypeId: string, param: string) {
 
 const sawSetting = (page: any, key: string) => settingOf(page, "miterSaw", key);
 
-/** R / Shift+R — swing the miter saw's head to an angle stop. */
-async function setAngle(page: any, target: number) {
-  for (let i = 0; i < 16; i++) {
-    if ((await sawSetting(page, "angle")) === target) return;
-    await pressKey(page, target < 0 ? "Shift+r" : "r");
-  }
-  throw new Error(`could not swing the head to ${target}`);
-}
-
 /**
  * Z/X — slide the miter saw's cut line to a mark: the marks are an inch
  * apart, so shift (a foot a press) covers the distance and bare presses
@@ -147,28 +133,6 @@ async function dropEverything(page: any) {
   }
 }
 
-/**
- * Set down every carried board except the slots matching `keep`. F stages
- * the first thing in hand the machine will take, so a step that means a
- * particular board has to be holding only that board.
- */
-async function dropAllExcept(page: any, keep: RegExp) {
-  for (let i = 0; i < 12; i++) {
-    const slots = handSlot(page, /Walnut/);
-    const count = await slots.count();
-    let dropped = false;
-    for (let r = 0; r < count; r++) {
-      const slot = slots.nth(r);
-      if (keep.test((await slot.textContent()) ?? "")) continue;
-      await slot.click({ modifiers: ["Shift"] });
-      await page.waitForTimeout(30);
-      dropped = true;
-      break;
-    }
-    if (!dropped) return;
-  }
-}
-
 /** Drive the clock until some board in the world matches. */
 async function waitForBoard(
   page: any,
@@ -208,21 +172,6 @@ async function runUntilBoard(page: any, predicate: string, timeout = 20000) {
   }
 }
 
-/** Anything anywhere in the world, as plain data — for the miter saw's ends. */
-const anyMaterialMatches = (pred: string) => {
-  const state = (window as any).__GET_GAME_STATE__();
-  const all = [
-    ...state.player.inventory,
-    ...state.machines.flatMap((m: any) => [
-      ...m.inputMaterials,
-      ...m.processingMaterials,
-      ...m.outputMaterials,
-    ]),
-  ];
-  // eslint-disable-next-line no-new-func
-  return all.some(new Function("m", `return ${pred}`) as any);
-};
-
 test.describe("Milling", () => {
   test("switches on, dials in, and lets the stock decide the cut", async ({
     page,
@@ -231,7 +180,7 @@ test.describe("Milling", () => {
     await page.goto("/");
     await startNewGame(page);
     await page.waitForFunction(() => (window as any).__UPDATE_GAME_STATE__);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(150);
 
     await test.step("load the milling-shop", async () => {
       await page.evaluate(() => {
@@ -247,56 +196,6 @@ test.describe("Milling", () => {
           .filter({ hasText: "rough sawn" })
           .first(),
       ).toBeVisible();
-    });
-
-    await test.step("Orange Box: only ready-to-use lumber on its racks", async () => {
-      const returnTo = await goToStore(page);
-      // The channels are floor piles now, not labeled racks — a
-      // channel's name finds its front pile, and a channel this store
-      // doesn't carry finds nothing.
-      await page.waitForFunction(() => (window as any).__FIND_SHELF__);
-      const stocks = (name: string) =>
-        page.evaluate(
-          (channel: string) => (window as any).__FIND_SHELF__(channel) != null,
-          name,
-        );
-      expect(await stocks("Construction Lumber")).toBe(true);
-      expect(await stocks("S4S Hardwood Rack")).toBe(true);
-      // Anything milled short of S4S moved across town to the lumberyard
-      expect(await stocks("S2S Rack")).toBe(false);
-      expect(await stocks("Rough Rack")).toBe(false);
-      await leaveStore(page, returnTo);
-    });
-
-    await test.step("lumberyard: both channels open at 48 reputation", async () => {
-      const returnTo = await goToLumberyard(page);
-      await expect(
-        page.getByRole("img", { name: "Sawyer & Sons" }),
-      ).toBeVisible();
-      await expect(page.getByText("S2S Rack")).toBeVisible();
-      await expect(page.getByText("Rough Rack")).toBeVisible();
-      // Rough walnut sells at the deepest discount in town. Every
-      // species hangs in the rack at once — boards carry no species text,
-      // so the board button's accessible name is its identity.
-      const roughRack = page
-        .locator("div")
-        .filter({ has: page.getByText("Rough Rack", { exact: true }) })
-        .filter({ has: page.locator("li") })
-        .last();
-      // Dims tags hang under each standing board: size, then length
-      await expect(roughRack.getByText(/4\/4×6"\s*8'/).first()).toBeVisible();
-      const roughWalnut = shelfTag(page, `Walnut 4/4 — 6" × 8' (rough sawn)`, {
-        within: roughRack,
-      });
-      await expect(roughWalnut).toBeVisible();
-      // 4 board feet of walnut at the rough rack's 0.55 discount
-      await expect(roughWalnut).toContainText("$26.40");
-      // The milled state moved into the channel-name tooltip — say it once
-      await page.getByText("Rough Rack", { exact: true }).hover();
-      await expect(
-        page.getByText(/rough sawn — Straight off the mill/),
-      ).toBeVisible();
-      await leaveStore(page, returnTo);
     });
 
     await test.step("power switch: no cut until the jointer is switched on", async () => {
@@ -500,105 +399,6 @@ test.describe("Milling", () => {
       expect(Number(await sawSetting(page, "cutPosition"))).toBe(24);
     });
 
-    await test.step("first cut: 45° at the 5' mark makes a 5' and a 3' piece", async () => {
-      // The board is already on the table from the step above — the
-      // settings move what's on the saw, not a ghost of what's in hand
-      await setAngle(page, 45);
-      await setCutLine(page, 60);
-      await runWhileHolding(
-        page,
-        anyMaterialMatches,
-        "m.type === 'board' && m.length === 60 && m.ends && m.ends.right.kind === 'mitered' && m.ends.left.kind === 'square'",
-      );
-      // Cut pieces stay on the saw table until collected. Park the
-      // carried rail first so the armful is exactly the two cut pieces.
-      await dropEverything(page);
-      await takeAllHere(page);
-      await expect(
-        handSlot(page, "Walnut 1/4 — 1\" × 5'")
-          .filter({ hasText: "45° one end" })
-          .first(),
-      ).toBeVisible();
-    });
-
-    await test.step("second cut: swing to -45 for the mirrored miter", async () => {
-      // The other end of a frame rail leans the other way — that's what
-      // the saw's negative stops are for. Same 45° magnitude, mirrored:
-      // the piece right of the 3' line carries -45/+45 ends at 2' long.
-      // The 5' half-mitered piece is the one this cut is about, so put the
-      // rest down first — F takes whatever is first in hand
-      await dropAllExcept(page, /1" × 5'/);
-      await setStockDown(page);
-      await setAngle(page, -45);
-      await setCutLine(page, 36);
-      await runWhileHolding(
-        page,
-        anyMaterialMatches,
-        "m.type === 'board' && m.length === 24 && m.ends && m.ends.left.kind === 'mitered' && m.ends.right.kind === 'mitered'",
-      );
-      await takeAllHere(page);
-    });
-
-    await test.step("four rails and four nails become a walnut picture frame", async () => {
-      // The bench is the other half of a milling job: the saw makes the
-      // rails, a plan on the workbench assembles them. Four rails and two
-      // hands means ferrying: stage what's carried, then fetch the rest
-      // an armful at a time — the rail parked at the saw, then the pair
-      // piled mid-floor.
-      await dropAllExcept(page, /1" × 2'/);
-      await movePlayerTo(page, [7, 4]);
-      await selectMode(page, "Makeshift Workbench", "Build Picture Frame");
-      // Pulling the drawing leaned the player over the bench; staging is
-      // a floor verb, so stand back up for it
-      await closeStationSurface(page);
-      // F is plan-aware: with Build Picture Frame selected the bench only
-      // takes the mitered rails out of what's carried.
-      await setStockDown(page);
-      await movePlayerTo(page, [2, 4]);
-      // The rail parked before the first cut lies under the two offcuts
-      // dropped since (E takes the top of the pile), so take the whole
-      // armful — the plan-aware bench keeps only the rail.
-      await takeAllHere(page);
-      await movePlayerTo(page, [7, 4]);
-      await setStockDown(page);
-      await movePlayerTo(page, [5, 4]);
-      await takeAllHere(page); // the fixture's floor pair, one armful
-      await movePlayerTo(page, [7, 4]);
-      await setStockDown(page);
-      await setStockDown(page);
-      // Assembly is bench-view hand work now; commit through the same
-      // actions the mini-game dispatches (snap the rails, drive the
-      // brads) — this spec's business is the milling chain, not the feel.
-      await page.evaluate(() => {
-        const i = (window as any)
-          .__GET_GAME_STATE__()
-          .machines.findIndex((m: any) => m.machineTypeId === "workspace");
-        (window as any).__START_OPERATION__(i);
-        (window as any).__FINISH_ATTENDED_WORK__(i);
-      });
-      await page.waitForFunction(() => {
-        const state = (window as any).__GET_GAME_STATE__();
-        const all = [
-          ...state.player.inventory,
-          ...state.machines.flatMap((m: any) => [
-            ...m.inputMaterials,
-            ...m.processingMaterials,
-            ...m.outputMaterials,
-          ]),
-        ];
-        return all.some((m: any) => m.type === "pictureFrame");
-      });
-      // The bench has no Take All button — finished work lies on the
-      // bench top, and the interact key sweeps it into the arms.
-      await takeAllHere(page);
-      await expect(page.getByText("Picture Frame").first()).toBeVisible();
-      // The brads came out of the shop stock
-      const nails = await page.evaluate(
-        () => (window as any).__GET_GAME_STATE__().consumables.nails,
-      );
-      expect(nails).toBe(6);
-    });
-
     await test.step("load the resaw-shop", async () => {
       await page.evaluate(() => {
         const fixtures = (window as any).__TEST_FIXTURES__;
@@ -680,30 +480,6 @@ test.describe("Milling", () => {
       await expect(page.getByText("target width:")).toHaveCount(0);
       await expect(page.getByText("fence:")).toBeVisible();
       await expect(page.getByText("on edge", { exact: false })).toBeVisible();
-    });
-
-    await test.step("the table saw pays a kerf the band saw didn't", async () => {
-      // Park the band saw's halves and fetch the untouched blank left by
-      // the band saw — capped hands mean the swap takes a walk
-      await dropEverything(page);
-      await movePlayerTo(page, [2, 9]);
-      await pressKey(page, "e");
-      await movePlayerTo(page, [8, 9]);
-      await setStockDown(page);
-      await runUntilOutput(
-        page,
-        "(m) => m.type === 'board' && m.thickness === 3",
-      );
-      // Feed-through machine: the pieces are waiting at the outfeed
-      await movePlayerTo(page, [8, 5]);
-      await takeAllHere(page);
-      const thicknesses = (await boardsInHand(page))
-        .map((b: any) => b.thickness)
-        .sort();
-      // Where the band saw split its blank clean in two, this saw kept a
-      // 4/4 and left only a 3/4 offcut — the missing quarter inch is the
-      // kerf, gone as dust
-      expect(thicknesses).toEqual([3, 4]);
     });
 
     await test.step("a sheet on the table reads the fence in inches", async () => {

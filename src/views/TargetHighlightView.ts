@@ -3,17 +3,22 @@ import { Persistence } from "../config/constants";
 import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { on } from "../core/entity/handler";
-import { InteractAction, resolveInteract } from "../game/interact";
+import {
+  InteractAction,
+  InteractFacts,
+  resolveInteract,
+} from "../game/interact";
 import { atTruckBed } from "../game/lot";
-import { GameState } from "../game/GameState";
+
 import { atStand, isSellable } from "../game/stand";
 import { TargetingState } from "../shell/dispatch/TargetingState";
+import { shopCellMap } from "../sim/commands/machine-commands";
 import { TripTheater } from "../shell/scenes/TripTheater";
 import { MaterialPileEntity } from "../sim/entities/MaterialPileEntity";
 import { Player } from "../sim/entities/Player";
 import { StandEntity } from "../sim/entities/StandEntity";
 import { TruckEntity } from "../sim/entities/TruckEntity";
-import { projectGameState } from "../sim/projection";
+import { interactFacts } from "../sim/commands/interact-commands";
 import { StandView } from "./StandView";
 import {
   findChildView,
@@ -51,14 +56,19 @@ export class TargetHighlightView extends BaseEntity implements Entity {
     if (!game.entities.tryGetSingleton(Player)) return;
     const targeting = game.entities.tryGetSingleton(TargetingState);
     if (!targeting) return;
-    const gs = projectGameState(game);
+    const gs = interactFacts(game);
     if (gs.player.away) return;
 
     // …and dress this frame's: the targeted machine…
     const targeted = targeting.targeted();
     if (targeted) this.dress(viewHighlightRoot(targeted));
 
-    const action = resolveInteract(gs, targeted?.view(), targeting.pileOffset);
+    const action = resolveInteract(
+      gs,
+      shopCellMap(this.game),
+      targeted?.view(),
+      targeting.pileOffset,
+    );
 
     // …the pile E would pick up…
     if (action?.kind === "pick-up-floor") {
@@ -78,7 +88,7 @@ export class TargetHighlightView extends BaseEntity implements Entity {
    * The stand: the table lights when F would set work out on it, and the
    * piece E would take back lights on its own the way a floor pile does.
    */
-  private dressStand(gs: GameState, action: InteractAction | null): void {
+  private dressStand(gs: InteractFacts, action: InteractAction | null): void {
     const stand = this.game.entities.tryGetSingleton(StandEntity);
     if (!stand) return;
     const atStandNow =
@@ -101,7 +111,7 @@ export class TargetHighlightView extends BaseEntity implements Entity {
    * crate hoisting out of it — and the whole body lights when E would
    * open the cab.
    */
-  private dressTruck(gs: GameState, action: InteractAction | null): void {
+  private dressTruck(gs: InteractFacts, action: InteractAction | null): void {
     const truck = this.game.entities.tryGetSingleton(TruckEntity);
     if (!truck) return;
     const view = findChildView(truck, TruckView);

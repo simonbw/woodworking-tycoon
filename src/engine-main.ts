@@ -70,7 +70,10 @@ async function main() {
       // High-density displays render at their real pixel ratio (capped);
       // the outline filters rasterize at the same number, or the rimmed
       // object comes back blurry (see canvas-resolution.ts).
-      resolution: CANVAS_RESOLUTION,
+      // E2E builds (marked by E2E_RENDER_FPS) rasterize tiny instead:
+      // headless Chromium draws in software, and nothing reads pixels.
+      resolution:
+        Number(process.env.E2E_RENDER_FPS) > 0 ? 0.25 : CANVAS_RESOLUTION,
     },
   });
 
@@ -168,6 +171,7 @@ function installTestHooks(game: Game) {
     __GET_SAVE__: () => SaveFile;
     __LOAD_SAVE__: (save: SaveFile) => void;
     __ADVANCE_TICKS__: (ticks: number) => void;
+    __STEP_ENGINE__: (ticks: number) => void;
     __SET_PAUSED__: (paused: boolean) => void;
     __START_OPERATION__: (machineIndex: number) => void;
     __FINISH_ATTENDED_WORK__: (machineIndex: number) => void;
@@ -198,6 +202,11 @@ function installTestHooks(game: Game) {
     }
   };
   hooks.__SET_PAUSED__ = (paused) => (paused ? game.pause() : game.unpause());
+  // Raw engine ticks with no forced minutes — the driver's stepEngine.
+  // The overnight batch (SleepSystem) feeds itself one minute per engine
+  // tick, so a spec that just slept steps the night through here instead
+  // of waiting NIGHT_TICKS of real frames out on the wall clock.
+  hooks.__STEP_ENGINE__ = (ticks) => game.step(ticks);
 
   // The bench's commits, by the machine's place in the shop-state list:
   // hand work finishes through the same commands the gestures dispatch

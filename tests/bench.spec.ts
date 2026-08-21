@@ -79,7 +79,7 @@ test.describe("Bench view", () => {
         () => window.__TEST_FIXTURES__["bench-work-shop"],
       );
     });
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(100);
 
     const machineState = () =>
       page.evaluate(() => {
@@ -109,7 +109,7 @@ test.describe("Bench view", () => {
       await expect(page.getByTestId("machine-chips")).toContainText("use");
       await blur();
       await page.keyboard.down("Space");
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(200);
       await page.keyboard.up("Space");
       expect((await machineState()).status).toBe("notStarted");
     });
@@ -469,9 +469,9 @@ test.describe("Bench view", () => {
         expect.objectContaining({ type: "board" }),
       );
       for (const yIn of [17, 33]) {
-        // One pull per lever: presses inside PRY_MS are deliberately
-        // ignored, so give each one its beat before the next
-        await page.waitForTimeout(400);
+        // One pull per lever: presses inside the 0.22s lever animation
+        // are deliberately ignored, so give each one its beat
+        await page.waitForTimeout(250);
         const at = await palletPoint(page, 17, yIn);
         await page.mouse.click(at.x, at.y);
       }
@@ -540,7 +540,7 @@ test.describe("Bench view", () => {
         .toBe(true);
       await page.getByTestId("bench-tool-hammer").click();
       // Bottom board 0's crossing at local (6.33, 1) mirrors to (27.67, 1)
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(250);
       const bottomNail = await palletPoint(page, 34 - 6.33, 1);
       await page.mouse.click(bottomNail.x, bottomNail.y);
       await expect
@@ -985,13 +985,18 @@ test.describe("Bench view", () => {
         .toBe(true);
 
       // The one real snap-drag: the tipped board onto shelf-1's outline
-      // (product (18,30) → bench (20,27)).
+      // (product (18,30) → bench (20,27)). The lit outline follows the
+      // hand on the way there — the board starts too far out to reach
+      // any outline, and shelf-1 lights only once it is carried over.
       const seat = await inchPoint(page, 20, 27);
       await page.mouse.move(from.x, from.y);
       await page.mouse.down();
+      await expect(stage).toHaveAttribute("data-snap-candidate", "");
       await page.mouse.move(seat.x + 4, seat.y - 3, { steps: 12 });
+      await expect(stage).toHaveAttribute("data-snap-candidate", "shelf-1");
       await page.mouse.up();
       await expect(stage).toHaveAttribute("data-seated", "6");
+      await expect(stage).toHaveAttribute("data-snap-candidate", "");
 
       // The hammer drives one nail per lit crossing; the eighth commits
       // the whole build — nails spent, the shelf lying where it was built.
@@ -1013,7 +1018,8 @@ test.describe("Bench view", () => {
       for (const [fx, fy] of crossings) {
         const p = await inchPoint(page, productX + fx, productY + fy);
         await page.mouse.click(p.x, p.y);
-        await page.waitForTimeout(400);
+        // The drive animation is 0.24s; presses inside it are ignored
+        await page.waitForTimeout(280);
       }
       const built = await page.evaluate(() => {
         const state = window.__GET_GAME_STATE__();
@@ -1149,7 +1155,8 @@ test.describe("Bench view", () => {
       ]) {
         const p = await inchPoint(page, productX + fx, productY + fy);
         await page.mouse.click(p.x, p.y);
-        await page.waitForTimeout(400);
+        // The drive animation is 0.24s; presses inside it are ignored
+        await page.waitForTimeout(280);
       }
       const built = await page.evaluate(() => {
         const state = window.__GET_GAME_STATE__();
@@ -1181,7 +1188,7 @@ test.describe("Bench view", () => {
         presses++
       ) {
         await page.keyboard.press("Escape");
-        await page.waitForTimeout(600);
+        await page.waitForTimeout(300);
       }
       await expect(page.getByTestId("bench-stage")).toHaveCount(0);
       const resume = page.getByRole("button", { name: "Resume" });
@@ -1222,7 +1229,7 @@ test.describe("Bench view", () => {
           },
         }));
       });
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(100);
       await blur();
       await page.keyboard.press("Tab");
       // The working table's own tool hangs on its hook; the neighbour's

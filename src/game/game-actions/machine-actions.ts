@@ -1,4 +1,6 @@
-import { GameState, ProgressionState } from "../GameState";
+import { ProgressionState } from "../GameState";
+import { Person } from "../Person";
+import { ShopVacCarry } from "../ShopVac";
 import {
   defaultParametersFor,
   isSameMachine,
@@ -122,10 +124,10 @@ export function getMachineOccupiedCells(
  * first.
  */
 export function machinesMountedOnTable(
-  gameState: GameState,
+  machines: ReadonlyArray<MachineState>,
   tableIndex: number,
 ): ReadonlyArray<MachineState> {
-  const table = gameState.machines[tableIndex];
+  const table = machines[tableIndex];
   const tableType = MACHINE_TYPES[table.machineTypeId];
   if (!tableType.worktable) {
     return [];
@@ -135,7 +137,7 @@ export function machinesMountedOnTable(
     table.position,
     table.rotation,
   ).map(vectorKey);
-  return gameState.machines.filter((machine, index) => {
+  return machines.filter((machine, index) => {
     if (index === tableIndex) {
       return false;
     }
@@ -182,12 +184,18 @@ export function freshMachineState(
   };
 }
 
+/** What the carrying rules read — a structural slice of `GameState`. */
+export interface CarryFacts extends ShopVacCarry {
+  readonly machines: ReadonlyArray<MachineState>;
+  readonly player: Pick<Person, "carriedMachine" | "inventory">;
+}
+
 /** The player's hands are genuinely free: no machine, no boards, no vac. */
-function handsFree(gameState: GameState): boolean {
+function handsFree(facts: CarryFacts): boolean {
   return (
-    gameState.player.carriedMachine == null &&
-    gameState.player.inventory.length === 0 &&
-    !carryingShopVac(gameState)
+    facts.player.carriedMachine == null &&
+    facts.player.inventory.length === 0 &&
+    !carryingShopVac(facts)
   );
 }
 
@@ -198,11 +206,11 @@ function handsFree(gameState: GameState): boolean {
  * unpacking would work; the carried-machine case never asks (no chips
  * show with a machine on the shoulders).
  */
-export function explainUnpackRefusal(gameState: GameState): string | null {
-  if (carryingShopVac(gameState)) {
+export function explainUnpackRefusal(facts: CarryFacts): string | null {
+  if (carryingShopVac(facts)) {
     return "set the vac down to unpack";
   }
-  if (gameState.player.inventory.length > 0) {
+  if (facts.player.inventory.length > 0) {
     return "empty your hands to unpack";
   }
   return null;
@@ -226,20 +234,20 @@ export function explainUnpackRefusal(gameState: GameState): string | null {
  * machines the player is standing at.
  */
 export function canPickUpMachine(
-  gameState: GameState,
+  facts: CarryFacts,
   machineState: MachineState,
 ): boolean {
-  const machineIndex = gameState.machines.findIndex((m) =>
+  const machineIndex = facts.machines.findIndex((m) =>
     isSameMachine(m, machineState),
   );
   return (
-    handsFree(gameState) &&
+    handsFree(facts) &&
     machineIndex !== -1 &&
     machineState.operationProgress.status !== "inProgress" &&
     machineState.inputMaterials.length === 0 &&
     machineState.processingMaterials.length === 0 &&
     machineState.outputMaterials.length === 0 &&
-    machinesMountedOnTable(gameState, machineIndex).length === 0
+    machinesMountedOnTable(facts.machines, machineIndex).length === 0
   );
 }
 
@@ -250,10 +258,15 @@ export function canPickUpMachine(
  * genuinely reachable. Machines with no operator cell (the garbage can)
  * land on the cell the player faces instead.
  */
+/** What the set-down placement reads — a structural slice of `GameState`. */
+export interface PlacementFacts {
+  readonly player: Pick<Person, "carriedMachine" | "position" | "direction">;
+}
+
 export function carriedMachinePlacement(
-  gameState: GameState,
+  facts: PlacementFacts,
 ): { machineType: MachineType; position: Vector; rotation: Direction } | null {
-  const carried = gameState.player.carriedMachine;
+  const carried = facts.player.carriedMachine;
   if (!carried) {
     return null;
   }
@@ -261,31 +274,29 @@ export function carriedMachinePlacement(
   const rotation = carried.rotation;
   const position = machineType.operationPosition
     ? translateVec(
-        gameState.player.position,
+        facts.player.position,
         scaleVec(rotateVec(machineType.operationPosition, rotation), -1),
       )
     : translateVec(
-        gameState.player.position,
-        rotateVec([1, 0], gameState.player.direction),
+        facts.player.position,
+        rotateVec([1, 0], facts.player.direction),
       );
   return { machineType, position, rotation };
 }
 
 /** Whether the carried machine fits where it would land right now. */
-export function canPutDownCarriedMachine(gameState: GameState): boolean {
-  const placement = carriedMachinePlacement(gameState);
+export function canPutDownCarriedMachine(
+  facts: PlacementFacts,
+  cellMap: CellMap,
+): boolean {
+  const placement = carriedMachinePlacement(facts);
   if (!placement) {
     return false;
   }
   const { machineType, position, rotation } = placement;
   const occupied = getMachineOccupiedCells(machineType, position, rotation);
   return (
-    !occupied.some((cell) => vectorEquals(cell, gameState.player.position)) &&
-    canPlaceMachine(
-      CellMap.fromGameState(gameState),
-      machineType,
-      position,
-      rotation,
-    )
+    !occupied.some((cell) => vectorEquals(cell, facts.player.position)) &&
+    canPlaceMachine(cellMap, machineType, position, rotation)
   );
 }

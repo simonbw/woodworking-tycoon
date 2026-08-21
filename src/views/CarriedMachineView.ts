@@ -5,6 +5,7 @@ import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
 import { CellMap } from "../game/CellMap";
+import { shopCellMap } from "../sim/commands/machine-commands";
 import { FeedRunRuler, feedRunRulers } from "../game/feed-clearance";
 import {
   canPlaceMachine,
@@ -13,7 +14,7 @@ import {
 import { Machine, MachineState, MACHINE_TYPES } from "../game/Machine";
 import { Vector } from "../game/Vectors";
 import { Player } from "../sim/entities/Player";
-import { projectGameState } from "../sim/projection";
+import { projectPerson } from "../sim/projection";
 import { createMachineArt } from "./machine-sprites/create-machine-art";
 import { IDLE_ACTIVITY } from "./machine-sprites/machine-activity";
 import {
@@ -138,10 +139,11 @@ export class CarriedMachineView extends BaseEntity implements Entity {
     );
 
     // The ghost of where the machine would land, and its feed rulers
-    const gameState = projectGameState(this.game);
-    const placement = carriedMachinePlacement(gameState);
+    const placement = carriedMachinePlacement({
+      player: projectPerson(this.game),
+    });
     if (!placement) return;
-    const cellMap = CellMap.fromGameState(gameState);
+    const cellMap = shopCellMap(this.game);
     if (!cellMap.has(placement.position)) return;
 
     const isValid = canPlaceMachine(

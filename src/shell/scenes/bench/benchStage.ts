@@ -1,4 +1,4 @@
-import { fitToStage, StageFit, StageRect } from "./stageMath";
+import { StageFit } from "./stageMath";
 import { Game } from "../../../core/Game";
 import {
   BenchPlacement,
@@ -8,81 +8,41 @@ import {
 } from "../../../game/bench-work/bench-layout";
 import {
   BenchGroup,
-  benchGroupAt,
   GroupPiece,
   groupPieces,
   placementInFrame,
 } from "../../../game/bench-work/bench-group";
-import {
-  BenchScript,
-  benchGroupWork,
-  placedPieceSize,
-} from "../../../game/bench-work/workpiece";
-import { getMachines, Machine, machineKey } from "../../../game/Machine";
+import { BenchScript, placedPieceSize } from "../../../game/bench-work/workpiece";
+import { Machine, machineKey } from "../../../game/Machine";
 import { MaterialInstance } from "../../../game/Materials";
-import { projectGameState } from "../../../sim/projection";
-import { BenchDive } from "./BenchDive";
+import { BenchDive, BenchStage } from "./BenchDive";
 
 /**
  * The opened bench: its run, and where that run lands on screen.
  *
- * Deliberately not cached on the view: the gesture surfaces read this
- * during the tick, and a render-time cache is one frame stale — which
- * is exactly the frame a press lands in. A press claims the workpiece
- * into the operation, and a stale run still shows it lying on the pile.
- * Reading it fresh also keeps what a gesture points at and what the
- * view drew from drifting apart when the window changes size.
+ * The run, the fit, and the live script are owned and cached by the
+ * `BenchDive` entity, dropped the moment a domain event says their
+ * inputs moved (issue #230, phase 2) — dispatch is synchronous, so a
+ * press's own commit invalidates before the next read, and a stale run
+ * can never show a claimed workpiece still lying on the pile. These
+ * free functions are the read surface the gesture code and the views
+ * share; they delegate to the dive.
  */
 
-/** The screen the run is fitted into, inset for the dive's chrome: the
- * tool rail across the top, the status line along the bottom, a margin
- * at the sides. The top band clears the rail's full height (the top bar
- * it hangs under, plus its own row of hooks) — wood framed up under the
- * rail would be wood the hand can't reach, since the rail catches the
- * pointer first. */
-const TOP_CHROME_PX = 232;
-const BOTTOM_CHROME_PX = 96;
-const SIDE_CHROME_PX = 24;
+export type { BenchStage } from "./BenchDive";
 
-export interface BenchStage {
-  readonly group: BenchGroup;
-  readonly opened: Machine;
-  /** Inches to screen pixels, for the stage between the chrome bands. */
-  readonly fit: StageFit;
-}
-
-/** The opened bench's run, or null when nobody is leaned over one. */
+/** The opened bench's run, or null when nobody is leaned over one.
+ * The displayed bench, not the open one: the picture keeps the bench
+ * through the roll-back after the player has stood up. */
 export function openBenchGroup(
   game: Game,
 ): { group: BenchGroup; opened: Machine } | null {
-  const dive = game.entities.tryGetSingleton(BenchDive);
-  // The displayed bench, not the open one: the picture keeps the bench
-  // through the roll-back after the player has stood up.
-  const bench = dive?.displayedBench();
-  if (!bench) return null;
-  const machines = getMachines(projectGameState(game).machines);
-  const key = machineKey(bench.state);
-  const opened = machines.find((machine) => machineKey(machine.state) === key);
-  if (!opened) return null;
-  return { group: benchGroupAt(machines, opened), opened };
+  return game.entities.tryGetSingleton(BenchDive)?.run() ?? null;
 }
 
 /** That run plus its place on screen (null with no renderer). */
 export function benchStage(game: Game): BenchStage | null {
-  const renderer = game.renderer;
-  const run = openBenchGroup(game);
-  if (!renderer || !run) return null;
-  const stage: StageRect = {
-    x: SIDE_CHROME_PX,
-    y: TOP_CHROME_PX,
-    width: renderer.getWidth() - SIDE_CHROME_PX * 2,
-    height: renderer.getHeight() - TOP_CHROME_PX - BOTTOM_CHROME_PX,
-  };
-  const fit = fitToStage(
-    { widthIn: run.group.widthIn, heightIn: run.group.heightIn },
-    stage,
-  );
-  return { group: run.group, opened: run.opened, fit };
+  return game.entities.tryGetSingleton(BenchDive)?.stage() ?? null;
 }
 
 /**
@@ -116,14 +76,7 @@ export function stagePointer(
 export function benchWork(
   game: Game,
 ): { machine: Machine; script: BenchScript } | null {
-  const run = openBenchGroup(game);
-  if (!run) return null;
-  const work = benchGroupWork(
-    run.group.members,
-    run.opened,
-    projectGameState(game).progression,
-  );
-  return work.script ? { machine: work.machine, script: work.script } : null;
+  return game.entities.tryGetSingleton(BenchDive)?.work() ?? null;
 }
 
 /** Where a piece lies and how big it is, in the run's frame. */

@@ -1,5 +1,5 @@
 import { GameState } from "./GameState";
-import { CollisionShape, getMachines, Machine } from "./Machine";
+import { CollisionShape, machineViews, Machine } from "./Machine";
 import { lotSize, truckSolid, wallSolids } from "./lot";
 import { standSolid } from "./stand";
 import { CollisionWorld, Solid, SolidBox } from "./player-motion";
@@ -97,7 +97,7 @@ export function collisionWorld(gameState: GameState): CollisionWorld {
       ...wallSolids(gameState.shopInfo),
       ...(gameState.player.away ? [] : [truckSolid(gameState.shopInfo)]),
       standSolid(gameState.shopInfo),
-      ...shopSolids(getMachines(gameState.machines)),
+      ...shopSolids(machineViews(gameState.machines)),
     ],
   };
 }

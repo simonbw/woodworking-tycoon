@@ -1,4 +1,3 @@
-import { LRUCache } from "typescript-lru-cache";
 import type { BenchPlacement } from "./bench-work/bench-layout";
 import type { ConsumableAmount } from "./Consumable";
 import { FinishedProductType, MaterialInstance } from "./Materials";
@@ -673,6 +672,18 @@ export function machineKey(state: MachineState): string {
 }
 
 /**
+ * Plain construction of the computed views over a snapshot's machine
+ * states — no cache (the entity world's live, cached views come from
+ * `floorMachines` in sim/entities/MachineEntity.ts; this is for code
+ * that only has a `GameState`).
+ */
+export function machineViews(
+  machineStates: ReadonlyArray<MachineState>,
+): Machine[] {
+  return machineStates.map((state) => new Machine(state));
+}
+
+/**
  * Machine view class - provides convenient access to MachineType and operations
  * Similar to CellMap pattern - a computed view over the raw state
  */
@@ -858,24 +869,3 @@ export class Machine {
   }
 }
 
-// Keep computed machines array for game states
-const machinesCache = new LRUCache<
-  ReadonlyArray<MachineState>,
-  ReadonlyArray<Machine>
->({
-  maxSize: 100,
-});
-
-/**
- * Converts MachineState[] to Machine[] with caching
- * Similar to CellMap.fromGameState pattern
- */
-export function getMachines(
-  machineStates: ReadonlyArray<MachineState>,
-): ReadonlyArray<Machine> {
-  if (!machinesCache.has(machineStates)) {
-    const machines = machineStates.map((state) => new Machine(state));
-    machinesCache.set(machineStates, machines);
-  }
-  return machinesCache.get(machineStates)!;
-}

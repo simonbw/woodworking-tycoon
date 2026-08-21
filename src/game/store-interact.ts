@@ -1,5 +1,6 @@
 import { cartCountOf, cartLineKey, cartTotal } from "./cart";
 import { currentCart } from "./cart";
+import { Person } from "./Person";
 import { GameState } from "./GameState";
 import {
   ShelfBay,
@@ -55,8 +56,14 @@ function distanceToRect(
  * Resolve the store floor under the shopper. Null when the player isn't
  * on a walkable store trip at all.
  */
+/** What the store resolver reads — a structural slice of `GameState`. */
+export interface StoreInteractFacts {
+  readonly money: number;
+  readonly player: Pick<Person, "away">;
+}
+
 export function resolveStoreInteract(
-  gameState: GameState,
+  gameState: StoreInteractFacts,
   layout: StoreLayout,
 ): StoreInteract | null {
   const away = gameState.player.away;
@@ -100,7 +107,7 @@ export function resolveStoreInteract(
  * keep their places. Null when none of it is in the cart.
  */
 export function cartIndexToReturn(
-  gameState: GameState,
+  gameState: Pick<StoreInteractFacts, "player">,
   bay: ShelfBay,
 ): number | null {
   const cart = currentCart(gameState) ?? [];

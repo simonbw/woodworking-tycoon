@@ -286,7 +286,7 @@ export function upgradesForSale() {
 
 /** The tool wall's products, in walk order: tools, then upgrades, then
  * the one-to-a-shop gear (absent once the shop owns one). */
-function toolWallProducts(gameState: GameState): ShelfProduct[] {
+function toolWallProducts(gameState: StoreStockFacts): ShelfProduct[] {
   const products: ShelfProduct[] = toolsForSale().map((tool) => ({
     name: tool.name,
     description: tool.description,
@@ -386,7 +386,18 @@ export function pileSheet(
  * what keeps the two stores from drifting apart the day the lumberyard
  * becomes walkable too.
  */
-export function storeLayout(store: StoreId, gameState: GameState): StoreLayout {
+/** What the planogram actually reads: the reputation gates, and which
+ * one-to-a-shop gear is already owned. A structural slice of GameState. */
+export interface StoreStockFacts {
+  readonly reputation: number;
+  readonly broomOwned: boolean;
+  readonly shopVac: object | null;
+}
+
+export function storeLayout(
+  store: StoreId,
+  gameState: StoreStockFacts,
+): StoreLayout {
   const fixtures: StoreFixture[] = [];
   const decals: FloorDecal[] = [];
   const decor: StoreDecor[] = [];

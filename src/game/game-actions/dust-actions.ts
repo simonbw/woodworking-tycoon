@@ -6,10 +6,13 @@ import {
   dustTotal,
   inBounds,
   MutableSpeciesAmounts,
+  SpeciesAmounts,
 } from "../Dust";
-import { GameAction, GameState } from "../GameState";
-import { holdingBroom } from "../HeldTool";
-import { getMachines } from "../Machine";
+import { ProgressionState } from "../GameState";
+import { CleaningGear, holdingBroom } from "../HeldTool";
+import { Person } from "../Person";
+import { ShopVacState } from "../ShopVac";
+import { machineViews, MachineState } from "../Machine";
 import { personCanWork } from "../Person";
 import { DustSpecies } from "../Materials";
 import {
@@ -30,6 +33,31 @@ import { withXp } from "../skill-helpers";
  * CleaningSystem runs the pass once per sim minute and writes the slices
  * it owns back onto its singletons.
  */
+
+
+/**
+ * What the cleaning passes read and rewrite (issue #230, phase 4): a
+ * structural slice of `GameState`, so a snapshot passes as-is while the
+ * CleaningSystem assembles it from the live singletons and writes the
+ * changed slices (dust, dustpan, the vac, xp) back onto them. Passes
+ * return a new world by spread, exactly as they returned a new
+ * GameState.
+ */
+export interface CleaningWorld extends CleaningGear {
+  readonly player: Pick<
+    Person,
+    "position" | "direction" | "operating" | "away" | "busyTicks" | "sweepAim"
+  >;
+  readonly machines: ReadonlyArray<MachineState>;
+  readonly shopInfo: { readonly size: [number, number] };
+  readonly dust: DustMap;
+  readonly dustpan: SpeciesAmounts;
+  readonly progression: ProgressionState;
+  readonly shopVac: ShopVacState | null;
+}
+
+/** One cleaning pass over that world. */
+export type CleaningPass = (world: CleaningWorld) => CleaningWorld;
 
 /** Share of a swath cell's dust one tick of sweeping gathers. */
 const SWEEP_RATE = 0.9;
@@ -109,10 +137,10 @@ export function sweepSwath(position: Vector, direction: Direction): Vector[] {
 /** Whether this position touches the garbage can — where the dustpan
  * and the vac canister both empty. */
 export function nextToGarbageCan(
-  gameState: GameState,
+  gameState: CleaningWorld,
   position: Vector,
 ): boolean {
-  const garbageCells = getMachines(gameState.machines)
+  const garbageCells = machineViews(gameState.machines)
     .filter((machine) => machine.type.id === "garbageCan")
     .flatMap((machine) =>
       machine.type.cellsOccupied.map((cell) => machine.localToShop(cell)),
@@ -125,12 +153,14 @@ export function nextToGarbageCan(
 }
 
 /** Room left in the dustpan, in dust units. */
-function dustpanRoom(gameState: GameState): number {
+function dustpanRoom(gameState: CleaningWorld): number {
   return Math.max(0, DUSTPAN_CAPACITY - dustTotal(gameState.dustpan));
 }
 
 /** How full the dustpan is, 0–1. Drives the hands-strip readout. */
-export function dustpanFillFraction(gameState: GameState): number {
+export function dustpanFillFraction(
+  gameState: Pick<CleaningWorld, "dustpan">,
+): number {
   return Math.min(1, dustTotal(gameState.dustpan) / DUSTPAN_CAPACITY);
 }
 
@@ -146,7 +176,7 @@ export function dustpanFillFraction(gameState: GameState): number {
  * the garbage can, pours it out a chunk per tick (the vac canister's
  * idiom, at a fifth the size and five times the trips).
  */
-export function sweepTickPass(): GameAction {
+export function sweepTickPass(): CleaningPass {
   return (gameState) => {
     if (
       !holdingBroom(gameState) ||
@@ -249,7 +279,7 @@ export function sweepTickPass(): GameAction {
 }
 
 /** True when there's anything the broom in hand could sweep from here. */
-export function canSweepAt(gameState: GameState): boolean {
+export function canSweepAt(gameState: CleaningWorld): boolean {
   return sweepSwath(gameState.player.position, gameState.player.direction).some(
     (cell) => cellDust(gameState.dust, cell) > CLEAN_EPSILON,
   );

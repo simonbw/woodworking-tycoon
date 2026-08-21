@@ -68,6 +68,7 @@ per-operation scripts that compose it.
    it is a table you set stock on, take stock off, and carry, plus the
    one door in. Q survives as the bench view's own key, opening the plan
    drawer with the bench in front of you.
+
 2. **Performance affects speed, never quality.** A sloppy pass takes more
    strokes; it never produces a worse board. Outputs are computed from
    inputs and parameters (`Operation.output`), so material identity,
@@ -236,19 +237,25 @@ is the pallet instance transforming nail by nail:
 
 ## The bench view itself
 
-`src/shell/scenes/bench/` — Tab at a bench fills the whole window
-with the shop itself, leaned into. One measured PIXI `Application` at
-device resolution draws the same concrete floor the shop view tiles and
-the _same bench_ the shop floor draws (`BenchDiveView`:
-`makeshift-bench@4x.png`, the starting bench's own drawing re-exported
-at 32 px/inch against the pipeline's 8; the `WorktableArt` vectors
-for built tables) — the zoomed bench and the floor bench are one drawing
-at two zooms, both anchored on their canvas center so the close-up lands
-exactly over the shop's copy.
+`src/shell/scenes/bench/` — Tab at a bench dims the shop to a pool of
+light and leans over the bench in it, drawn on the engine's screen-space
+layer while the world behind keeps ticking. Every table in the run is the
+_same bench_ the shop floor draws, off its close-up export
+(`BenchDiveView` and `benchCloseUpArt`: `makeshift-bench@4x.png` for the
+starting bench, the worktable `-shadow@4x`/`-top@4x` layers for built
+tables, shadows in a pass under every top) — the zoomed bench and the
+floor bench are one drawing at two zooms, both anchored on their canvas
+center so the close-up lands exactly over the shop's copy. A table whose
+art hasn't been drawn yet gets a plain top instead, so art can land one
+table at a time.
 
 The bench's contents lie on it exactly where `MachineState.benchLayout`
 says (`BenchDiveView`; a board flipped up on edge narrows to its thickness,
-`drawBoardOnEdge`). F is one verb with three stops on a board — flat,
+`drawBoardOnEdge`). Which piece lies over which is the bay arrays' own
+order (`groupPieces`), which the view draws in and `pieceUnder`
+hit-tests in reverse, and every way a piece arrives on a table appends
+to them — so the last thing set down is the piece the hand finds first.
+F is one verb with three stops on a board — flat,
 up on its long edge, up on its end — and the scene tumbles it between
 them rather than swapping sprites: `bench-work/flip-cycle.ts` owns the
 cycle and interpolates the very footprints `placedPieceSize` declares,

@@ -14,7 +14,10 @@ import {
   operationParameters,
 } from "../../../game/Machine";
 import { isBenchtopOnFloor } from "../../../game/bench-mounting";
-import { canPickUpMachine } from "../../../sim/commands/machine-commands";
+import {
+  canPickUpMachine,
+  shopCellMap,
+} from "../../../sim/commands/machine-commands";
 import { heldTool } from "../../../game/HeldTool";
 import {
   explainFeedRefusal,
@@ -70,6 +73,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const targeted = isTargeted(machine);
   const interact = resolveInteract(
     gameState,
+    shopCellMap(game),
     machine,
     targeted ? pileOffset : 0,
   );
@@ -87,7 +91,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   const blockedTakeHere =
     takeBlocked != null &&
     interactHere == null &&
-    materialSources(gameState, machine, true).some(
+    materialSources(gameState, shopCellMap(game), machine, true).some(
       (source) =>
         source.kind !== "floor-pile" &&
         isSameMachine(source.machine.state, machine.state),
@@ -100,7 +104,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
     targeted &&
     (interactHere?.kind === "take-inputs" ||
       interactHere?.kind === "take-outputs") &&
-    materialSources(gameState, machine).length > 1 &&
+    materialSources(gameState, shopCellMap(game), machine).length > 1 &&
     liveSettingParameter(machine, gameState.progression, "rotate") == null;
 
   // The F chip: what the machine would take out of our hands if we set it
@@ -161,7 +165,7 @@ export const MachineChips: React.FC<{ machine: Machine }> = ({ machine }) => {
   // A benchtop machine sitting on the ground works, badly — say why the
   // cut is slow right where the player is standing to make it (see
   // bench-mounting.ts).
-  const onFloor = isBenchtopOnFloor(machine, gameState);
+  const onFloor = isBenchtopOnFloor(machine, shopCellMap(game));
 
   // What the station says it's doing: its own word for the job when it has
   // one ("emptying" at the garbage can), the generic motor otherwise.

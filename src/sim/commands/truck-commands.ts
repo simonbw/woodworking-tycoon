@@ -6,7 +6,9 @@ import { handSpaceLeft } from "../../game/Person";
 import { carryingShopVac } from "../../game/ShopVac";
 import { Player } from "../entities/Player";
 import { TruckEntity } from "../entities/TruckEntity";
-import { projectGameState } from "../projection";
+import { projectPerson } from "../projection";
+import { ShopInfo } from "../singletons/ShopInfo";
+import { cleaningGear } from "./cleaning-commands";
 import { emitSound } from "./sound";
 
 /**
@@ -33,22 +35,24 @@ export function loadTruckBed(
   game: Game,
   materials: ReadonlyArray<MaterialInstance>,
 ): boolean {
-  const gameState = projectGameState(game);
-  if (!atTruckBed(gameState.shopInfo, gameState.player.position)) {
+  const thePlayer = player(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
+  if (!atTruckBed(shopInfo, thePlayer.cell)) {
     console.warn("Tried to load the truck from away from the bed");
     return false;
   }
   for (const material of materials) {
-    if (!gameState.player.inventory.some((item) => item === material)) {
+    if (!thePlayer.inventory.some((item) => item === material)) {
       console.warn("Tried to load material not in inventory");
       return false;
     }
   }
-  const thePlayer = player(game);
   thePlayer.inventory = thePlayer.inventory.filter(
     (item) => !materials.includes(item),
   );
   truck(game).bed.push(...materials);
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-drop");
   return true;
 }
@@ -58,16 +62,17 @@ export function takeFromTruckBed(
   game: Game,
   materials: ReadonlyArray<MaterialInstance>,
 ): boolean {
-  const gameState = projectGameState(game);
-  if (!atTruckBed(gameState.shopInfo, gameState.player.position)) {
+  const person = projectPerson(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
+  if (!atTruckBed(shopInfo, person.position)) {
     console.warn("Tried to unload the truck from away from the bed");
     return false;
   }
-  if (heldTool(gameState) !== null) {
+  if (heldTool(cleaningGear(game)) !== null) {
     console.warn("Tried to unload the truck while holding a tool");
     return false;
   }
-  if (materials.length > handSpaceLeft(gameState.player)) {
+  if (materials.length > handSpaceLeft(person)) {
     console.warn("Tried to take more than the hands can carry");
     return false;
   }
@@ -81,6 +86,8 @@ export function takeFromTruckBed(
   const thePlayer = player(game);
   thePlayer.inventory = [...thePlayer.inventory, ...materials];
   theTruck.bed = theTruck.bed.filter((item) => !materials.includes(item));
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   emitSound(game, "material-pickup");
   return true;
 }
@@ -94,7 +101,8 @@ export function takeCrateFromTruck(
   game: Game,
   machineTypeId?: string,
 ): boolean {
-  const gameState = projectGameState(game);
+  const thePlayer = player(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
   const theTruck = truck(game);
   const crate =
     machineTypeId === undefined
@@ -102,19 +110,21 @@ export function takeCrateFromTruck(
       : theTruck.crates.find(
           (candidate) => candidate.machineTypeId === machineTypeId,
         );
-  if (!crate || !atTruckBed(gameState.shopInfo, gameState.player.position)) {
+  if (!crate || !atTruckBed(shopInfo, thePlayer.cell)) {
     console.warn("No crate in the bed, or too far from it");
     return false;
   }
   const handsFree =
-    gameState.player.carriedMachine == null &&
-    gameState.player.inventory.length === 0 &&
-    !carryingShopVac(gameState);
+    thePlayer.carriedMachine == null &&
+    thePlayer.inventory.length === 0 &&
+    !carryingShopVac(cleaningGear(game));
   if (!handsFree) {
     console.warn("Hands are full");
     return false;
   }
   theTruck.crates = theTruck.crates.filter((candidate) => candidate !== crate);
   player(game).carriedMachine = crate;
+  game.dispatch("truckChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }

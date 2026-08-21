@@ -4,12 +4,13 @@ import { handSpaceLeft } from "../../game/Person";
 import { atStand, isSellable } from "../../game/stand";
 import { Player } from "../entities/Player";
 import { StandEntity } from "../entities/StandEntity";
-import { projectGameState } from "../projection";
+import { projectPerson } from "../projection";
+import { ShopInfo } from "../singletons/ShopInfo";
 
 /**
  * The stand command surface: setting pieces out and taking them back.
  * Each command validates through the shared helpers in `game/stand.ts`
- * (against a projection snapshot), then writes onto the entities; a
+ * against the live entities, then writes onto them; a
  * refusal logs and returns false. Selling is not a command — customers
  * do that, in the StreetSystem.
  */
@@ -29,8 +30,9 @@ export function setOutAtStand(
   game: Game,
   materials: ReadonlyArray<MaterialInstance>,
 ): boolean {
-  const gameState = projectGameState(game);
-  if (!atStand(gameState.shopInfo, gameState.player.position)) {
+  const thePlayer = player(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
+  if (!atStand(shopInfo, thePlayer.cell)) {
     console.warn("Tried to set out pieces away from the stand");
     return false;
   }
@@ -40,7 +42,7 @@ export function setOutAtStand(
   }
   if (
     !materials.every((material) =>
-      gameState.player.inventory.some((item) => item === material),
+      thePlayer.inventory.some((item) => item === material),
     )
   ) {
     console.warn("Tried to set out material not in inventory");
@@ -51,11 +53,12 @@ export function setOutAtStand(
     return false;
   }
   const stand = game.entities.getSingleton(StandEntity);
-  const thePlayer = player(game);
   stand.pieces = [...stand.pieces, ...materials];
   thePlayer.inventory = thePlayer.inventory.filter(
     (item) => !materials.includes(item),
   );
+  game.dispatch("standChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -64,17 +67,14 @@ export function setOutAtStand(
  * first, as many as asked for, capped by what the hands can still hold.
  */
 export function takeFromStand(game: Game, count = 1): boolean {
-  const gameState = projectGameState(game);
-  if (!atStand(gameState.shopInfo, gameState.player.position)) {
+  const person = projectPerson(game);
+  const shopInfo = game.entities.getSingleton(ShopInfo).info;
+  if (!atStand(shopInfo, person.position)) {
     console.warn("Tried to take from the stand out of reach");
     return false;
   }
   const stand = game.entities.getSingleton(StandEntity);
-  const taken = Math.min(
-    count,
-    stand.pieces.length,
-    handSpaceLeft(gameState.player),
-  );
+  const taken = Math.min(count, stand.pieces.length, handSpaceLeft(person));
   if (taken <= 0) {
     console.warn("Tried to take from the stand with full hands");
     return false;
@@ -84,5 +84,7 @@ export function takeFromStand(game: Game, count = 1): boolean {
   const thePlayer = player(game);
   stand.pieces = kept;
   thePlayer.inventory = [...thePlayer.inventory, ...returned];
+  game.dispatch("standChanged", {});
+  game.dispatch("playerChanged", {});
   return true;
 }

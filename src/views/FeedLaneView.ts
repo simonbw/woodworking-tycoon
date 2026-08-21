@@ -4,14 +4,14 @@ import { BaseEntity } from "../core/entity/BaseEntity";
 import { Entity } from "../core/entity/Entity";
 import { GameSprite } from "../core/entity/GameSprite";
 import { on } from "../core/entity/handler";
-import { CellMap } from "../game/CellMap";
+import { shopCellMap } from "../sim/commands/machine-commands";
 import { feedClearanceShortfall, feedLaneCells } from "../game/feed-clearance";
 import { findFeedableOperation } from "../game/machine-helpers";
 import { availableOperations } from "../game/skill-helpers";
 import { Vector } from "../game/Vectors";
 import { TargetingState } from "../shell/dispatch/TargetingState";
 import { Player } from "../sim/entities/Player";
-import { projectGameState } from "../sim/projection";
+import { projectProgression } from "../sim/projection";
 import { PIXELS_PER_CELL } from "./shop-scale";
 
 /**
@@ -79,19 +79,19 @@ export class FeedLaneView extends BaseEntity implements Entity {
     if (!targeted || !targeted.type.feedsThrough) return null;
 
     const machine = targeted.view();
-    const gameState = projectGameState(game);
-    if (gameState.player.away) return null;
+    const player = game.entities.getSingleton(Player);
+    if (player.away) return null;
 
     const stock =
       machine.inputMaterials.length > 0
         ? machine.inputMaterials
-        : gameState.player.inventory;
+        : player.inventory;
     if (stock.length === 0) return null;
 
-    const cellMap = CellMap.fromGameState(gameState);
+    const cellMap = shopCellMap(game);
     const match = findFeedableOperation(
       machine,
-      availableOperations(machine, gameState.progression),
+      availableOperations(machine, projectProgression(game)),
       stock,
     );
     if (!match) return null;

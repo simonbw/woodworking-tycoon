@@ -1,7 +1,7 @@
 import { PALLET_BOARD_LENGTH_IN } from "./bench-work/pallet-geometry";
 import { hasOneMiteredEnd, isBoard } from "./board-helpers";
 import { dustTotal } from "./Dust";
-import { GameState, TutorialTrackId, TutorialTrackProgress } from "./GameState";
+import { TutorialFacts, TutorialTrackId, TutorialTrackProgress } from "./GameState";
 import { MachineId } from "./Machine";
 import { Board, MaterialInstance } from "./Materials";
 import { formatMoney } from "../utils/formatNumber";
@@ -45,6 +45,7 @@ export const TUTORIAL_STEP_IDS = [
   "dismantle",
   "buildShelf",
   "sellShelf",
+  "firstSale",
   "learnSkill",
   "goToStore",
   "grabCart",
@@ -106,7 +107,7 @@ export interface TutorialStep {
   /** What lights up while this step is the first unchecked box. */
   readonly targets: ReadonlyArray<TutorialTarget>;
   /** True once the player has done the thing. Never un-satisfies. */
-  readonly satisfied: (gameState: GameState) => boolean;
+  readonly satisfied: (gameState: TutorialFacts) => boolean;
 }
 
 /** One entry on the to-do list: a goal and the steps that achieve it. */
@@ -128,7 +129,7 @@ export interface TutorialGoal {
  * care that it's still lying in the bench's output bay.
  */
 export function shopMaterials(
-  gameState: GameState,
+  gameState: TutorialFacts,
 ): ReadonlyArray<MaterialInstance> {
   return [
     ...gameState.player.inventory,
@@ -161,7 +162,7 @@ const isFullPalletBoard = (material: MaterialInstance): boolean =>
   (material as Board).length >= PALLET_BOARD_LENGTH_IN;
 
 const countOf = (
-  gameState: GameState,
+  gameState: TutorialFacts,
   match: (material: MaterialInstance) => boolean,
 ): number => shopMaterials(gameState).filter(match).length;
 
@@ -183,16 +184,16 @@ const BIRDHOUSE_TWELVES_COUNT = 4;
 const BIRDHOUSE_SIDES_COUNT = 2;
 const BIRDHOUSE_BOARDS_NEEDED = 2;
 
-const hasShelfParts = (gameState: GameState) =>
+const hasShelfParts = (gameState: TutorialFacts) =>
   countOf(gameState, isPalletBoard) >= SHELF_BOARD_COUNT;
 
-const hasShelf = (gameState: GameState) =>
+const hasShelf = (gameState: TutorialFacts) =>
   countOf(gameState, isRusticShelf) > 0;
 
-const hasBirdhouse = (gameState: GameState) =>
+const hasBirdhouse = (gameState: TutorialFacts) =>
   countOf(gameState, isBirdhouse) > 0;
 
-const soldFirstPiece = (gameState: GameState) =>
+const soldFirstPiece = (gameState: TutorialFacts) =>
   gameState.progression.salesCompleted > 0;
 
 /**
@@ -202,7 +203,7 @@ const soldFirstPiece = (gameState: GameState) =>
  * trip plants its find at the first stop, so the trip the card points
  * at can't come home empty.
  */
-export const needsFirstPallet = (gameState: GameState): boolean =>
+export const needsFirstPallet = (gameState: TutorialFacts): boolean =>
   countOf(gameState, isPallet) === 0 &&
   !hasShelfParts(gameState) &&
   !hasShelf(gameState) &&
@@ -211,7 +212,7 @@ export const needsFirstPallet = (gameState: GameState): boolean =>
 const isBirdhousePartStock = (material: MaterialInstance): material is Board =>
   isPalletBoard(material) && isBoard(material);
 
-const hasBirdhouseParts = (gameState: GameState): boolean => {
+const hasBirdhouseParts = (gameState: TutorialFacts): boolean => {
   const parts = shopMaterials(gameState).filter(isBirdhousePartStock);
   const twelves = parts.filter(
     (board) => board.length === BIRDHOUSE_PART_LENGTH_IN,
@@ -230,7 +231,7 @@ const hasBirdhouseParts = (gameState: GameState): boolean => {
 /** Enough wood on hand for the birdhouse's cut list, in any state of
  * progress: a whole pallet, enough uncut boards, the parts themselves, or
  * the finished piece. */
-const hasBirdhouseWood = (gameState: GameState): boolean =>
+const hasBirdhouseWood = (gameState: TutorialFacts): boolean =>
   countOf(gameState, isPallet) > 0 ||
   countOf(gameState, isFullPalletBoard) >= BIRDHOUSE_BOARDS_NEEDED ||
   hasBirdhouseParts(gameState) ||
@@ -239,25 +240,25 @@ const hasBirdhouseWood = (gameState: GameState): boolean =>
 const isHandSawItem = (material: MaterialInstance) =>
   material.type === "tool" && material.toolId === "handSaw";
 
-const shoppingCart = (gameState: GameState) =>
+const shoppingCart = (gameState: TutorialFacts) =>
   gameState.player.away?.kind === "shopping"
     ? gameState.player.away.cart
     : null;
 
-const sawInCart = (gameState: GameState): boolean =>
+const sawInCart = (gameState: TutorialFacts): boolean =>
   (shoppingCart(gameState) ?? []).some(
     (line) => line.kind === "material" && isHandSawItem(line.material),
   );
 
-const hasSaw = (gameState: GameState) => ownsTool(gameState, "handSaw");
+const hasSaw = (gameState: TutorialFacts) => ownsTool(gameState, "handSaw");
 
-const sawMounted = (gameState: GameState) =>
+const sawMounted = (gameState: TutorialFacts) =>
   gameState.machines.some((machine) => machine.tools.includes("handSaw"));
 
 /** The savings goal that ends the opening. */
 export const TUTORIAL_MONEY_GOAL = 300;
 
-const reachedMoneyGoal = (gameState: GameState) =>
+const reachedMoneyGoal = (gameState: TutorialFacts) =>
   gameState.money >= TUTORIAL_MONEY_GOAL;
 
 // ---------------------------------------------------------------------------
@@ -303,13 +304,15 @@ const OPENING_GOALS: ReadonlyArray<TutorialGoal> = [
           hasShelf(gameState) || soldFirstPiece(gameState),
       },
       {
-        // Satisfied by the sale, not the set-out: the next goal starts at
-        // the store, and the store is what the first sale unlocks — so
-        // the list holds here until the money exists to spend.
+        // Satisfied by exactly what the label says: the shelf is out on
+        // the stand. Transient (it can be taken back), but the walk
+        // ratchets past it the tick it first holds; the sale keeps it
+        // satisfied in a shop reloaded after the shelf sold.
         id: "sellShelf",
         label: "Set it out at the stand",
         targets: [{ kind: "stand" }],
-        satisfied: soldFirstPiece,
+        satisfied: (gameState) =>
+          gameState.stand.some(isRusticShelf) || soldFirstPiece(gameState),
       },
     ],
   },
@@ -317,6 +320,18 @@ const OPENING_GOALS: ReadonlyArray<TutorialGoal> = [
     id: "birdhouse",
     title: "Build a birdhouse",
     steps: [
+      {
+        // The sale gate, worn honestly as its own box: the rest of this
+        // goal starts at the store, and the store is what the first sale
+        // unlocks — so the list holds here until the money exists to
+        // spend. The wait is short: while the first sale is pending the
+        // clock runs at working pace (see timeSpeed in time-flow.ts), so
+        // the dealt buyer's stroll to the stand passes in seconds.
+        id: "firstSale",
+        label: "Wait for your first sale",
+        targets: [{ kind: "stand" }],
+        satisfied: soldFirstPiece,
+      },
       {
         id: "learnSkill",
         label: "Research Rustic Projects",
@@ -463,7 +478,7 @@ export interface TutorialTrack {
   readonly id: TutorialTrackId;
   /** Whether the card has gone up yet. Reads a one-way condition, so a
    * begun track never un-begins. */
-  readonly begun: (gameState: GameState) => boolean;
+  readonly begun: (gameState: TutorialFacts) => boolean;
   readonly goals: ReadonlyArray<TutorialGoal>;
 }
 
@@ -497,7 +512,7 @@ const STEPS_BY_TRACK: Readonly<
  * lesson, and the card skips what they've shown they know.
  */
 export function advanceTutorials(
-  gameState: GameState,
+  gameState: TutorialFacts,
 ): Readonly<Record<TutorialTrackId, TutorialTrackProgress>> {
   let tutorials = gameState.progression.tutorials;
   for (const track of TUTORIAL_TRACKS) {
@@ -517,7 +532,7 @@ export function advanceTutorials(
 /** The step a track's coach is on, or null while its card isn't up —
  * not begun yet, skipped, or every box ticked. */
 export function currentTutorialStep(
-  gameState: GameState,
+  gameState: TutorialFacts,
   trackId: TutorialTrackId,
 ): TutorialStep | null {
   const track = TUTORIAL_TRACKS.find((t) => t.id === trackId);
@@ -545,7 +560,7 @@ export interface TutorialGoalView {
  * predicate holds, so work done ahead of the coach shows up immediately.
  */
 export function currentTutorialGoalView(
-  gameState: GameState,
+  gameState: TutorialFacts,
   trackId: TutorialTrackId,
 ): TutorialGoalView | null {
   const step = currentTutorialStep(gameState, trackId);
@@ -567,7 +582,7 @@ export function currentTutorialGoalView(
 /** Every card on the wall right now, in track order — the opening on
  * top, lessons that begin later beneath it. */
 export function tutorialViews(
-  gameState: GameState,
+  gameState: TutorialFacts,
 ): ReadonlyArray<TutorialGoalView> {
   return TUTORIAL_TRACKS.flatMap((track) => {
     const view = currentTutorialGoalView(gameState, track.id);
@@ -578,7 +593,7 @@ export function tutorialViews(
 /** The current step of every up card — everything the coach is pointing
  * at, across all tracks. */
 export function activeTutorialSteps(
-  gameState: GameState,
+  gameState: TutorialFacts,
 ): ReadonlyArray<TutorialStep> {
   return TUTORIAL_TRACKS.flatMap((track) => {
     const step = currentTutorialStep(gameState, track.id);

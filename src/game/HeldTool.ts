@@ -1,5 +1,5 @@
-import type { GameState } from "./GameState";
-import { carryingShopVac } from "./ShopVac";
+import { carryingShopVac, ShopVacCarry } from "./ShopVac";
+import type { Vector } from "./Vectors";
 
 /**
  * Handheld tools the player works by holding the operate key — the same
@@ -21,15 +21,24 @@ export const BROOM_COST = 15;
 /** What it's called on the shelf tag, and on the cart's receipt. */
 export const BROOM_NAME = "Shop Broom";
 
-export function holdingBroom(gameState: GameState): boolean {
-  return gameState.broomOwned && gameState.broomPosition === null;
+/** What the held-tool questions actually read — a structural slice of
+ * `GameState`, so snapshot holders pass the state itself and the sim
+ * assembles the slice from the broom and vac entities (see
+ * `cleaningGear` in sim/commands/cleaning-commands.ts). */
+export interface CleaningGear extends ShopVacCarry {
+  readonly broomOwned: boolean;
+  readonly broomPosition: Vector | null;
 }
 
-export function heldTool(gameState: GameState): HeldToolId | null {
-  if (holdingBroom(gameState)) {
+export function holdingBroom(gear: CleaningGear): boolean {
+  return gear.broomOwned && gear.broomPosition === null;
+}
+
+export function heldTool(gear: CleaningGear): HeldToolId | null {
+  if (holdingBroom(gear)) {
     return "broom";
   }
-  if (carryingShopVac(gameState)) {
+  if (carryingShopVac(gear)) {
     return "vacHose";
   }
   return null;

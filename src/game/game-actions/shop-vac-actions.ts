@@ -8,7 +8,7 @@ import {
   MutableSpeciesAmounts,
   SpeciesAmounts,
 } from "../Dust";
-import { GameAction, GameState } from "../GameState";
+import { CleaningPass, CleaningWorld } from "./dust-actions";
 import {
   canisterRoom,
   carryingShopVac,
@@ -49,7 +49,7 @@ const VACUUM_XP = 1;
  * instead, a chunk per tick — the trip is the chore, and the emptying
  * is deliberately a moment rather than a silent side effect.
  */
-export function vacuumTickPass(): GameAction {
+export function vacuumTickPass(): CleaningPass {
   return (gameState) => {
     const vac = gameState.shopVac;
     if (
@@ -139,7 +139,7 @@ export function vacuumTickPass(): GameAction {
  * deliberate hold at the garbage can (vacuumTickPass), not a side
  * effect of walking past it.
  */
-export function shopVacTickPass(): GameAction {
+export function shopVacTickPass(): CleaningPass {
   return (gameState) => {
     const vac = gameState.shopVac;
     if (!vac || !carryingShopVac(gameState) || gameState.player.away) {
@@ -205,7 +205,7 @@ function moveDustToCanister(
 }
 
 /** Anything a suction tick from here could pick up? Drives the hint. */
-export function canVacuumAt(gameState: GameState): boolean {
+export function canVacuumAt(gameState: CleaningWorld): boolean {
   return sweepSwath(gameState.player.position, gameState.player.direction).some(
     (cell) => cellDust(gameState.dust, cell) > 0.05,
   );

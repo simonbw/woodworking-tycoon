@@ -1,22 +1,22 @@
 import { Game } from "../../core/Game";
 import { benchGroupAt } from "../../game/bench-work/bench-group";
 import { withValidSelectedOperation } from "../../game/game-actions/tool-actions";
-import { getMachines, machineKey } from "../../game/Machine";
+import { machineKey } from "../../game/Machine";
 import { makeToolItem } from "../../game/material-helpers";
 import { ToolItem } from "../../game/Materials";
 import { handSpaceLeft } from "../../game/Person";
 import { TOOL_TYPES, ToolId } from "../../game/Tool";
-import { MachineEntity } from "../entities/MachineEntity";
+import { floorMachines, MachineEntity } from "../entities/MachineEntity";
 import { Player } from "../entities/Player";
 import { findMachineEntity } from "./machine-commands";
-import { projectGameState } from "../projection";
+import { projectPerson } from "../projection";
 
 /**
  * Mounting and unmounting handheld tools. A loose tool is a physical
  * thing — a MaterialInstance of kind "tool" carried in the arms, dropped
  * into floor piles, hauled in the truck's bed — so the mount/unmount
  * trade happens between the hands and the station's rack. Each command
- * validates against a projection snapshot, then writes onto the entities,
+ * validates against the live entities, then writes onto them,
  * keeping the rail's selected operation valid through
  * `withValidSelectedOperation`. A refusal logs and returns false, and
  * neither command emits a sound.
@@ -37,9 +37,8 @@ export function mountTool(
   entity: MachineEntity,
   tool: ToolItem,
 ): boolean {
-  const gameState = projectGameState(game);
   const machine = entity.view();
-  if (!gameState.player.inventory.some((item) => item === tool)) {
+  if (!player(game).inventory.some((item) => item === tool)) {
     console.warn(`Tried to mount ${tool.toolId} without carrying it`);
     return false;
   }
@@ -65,6 +64,8 @@ export function mountTool(
     ...entity.state,
     tools: [...entity.state.tools, tool.toolId],
   });
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -74,7 +75,6 @@ export function unmountTool(
   entity: MachineEntity,
   toolId: ToolId,
 ): boolean {
-  const gameState = projectGameState(game);
   const toolIndex = entity.state.tools.indexOf(toolId);
   if (toolIndex === -1) {
     console.warn(`Tried to unmount ${toolId} but it's not mounted`);
@@ -86,7 +86,7 @@ export function unmountTool(
     return false;
   }
   // The tool comes off into the arms, so they need room for it
-  if (handSpaceLeft(gameState.player) < 1) {
+  if (handSpaceLeft(projectPerson(game)) < 1) {
     console.warn("Can't unmount a tool with full hands");
     return false;
   }
@@ -100,6 +100,8 @@ export function unmountTool(
       ...entity.state.tools.slice(toolIndex + 1),
     ],
   });
+  game.dispatch("machineStateChanged", { machine: entity });
+  game.dispatch("playerChanged", {});
   return true;
 }
 
@@ -134,8 +136,7 @@ export function gatherBenchTool(
 
   // Only within the run this table belongs to — a tool two benches over
   // across the shop stays where it hangs.
-  const gameState = projectGameState(game);
-  const group = benchGroupAt(getMachines(gameState.machines), machine);
+  const group = benchGroupAt(floorMachines(game), machine);
   const from = group.members
     .map((member) => member.machine)
     .filter(
@@ -164,5 +165,7 @@ export function gatherBenchTool(
     ...target.state,
     tools: [...target.state.tools, toolId],
   });
+  game.dispatch("machineStateChanged", { machine: fromEntity });
+  game.dispatch("machineStateChanged", { machine: target });
   return true;
 }

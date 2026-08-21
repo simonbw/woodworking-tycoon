@@ -11,6 +11,7 @@ import {
   MachineArtBase,
 } from "./machine-art";
 import { StagedMaterials } from "./staged-materials";
+import { MAKESHIFT_BENCH_ART } from "./worktable-art";
 
 /**
  * The stations whose art is just a body with staged stock on top: the
@@ -36,7 +37,7 @@ export class SimpleStationArt extends MachineArtBase {
 
   private buildBody(machine: Machine): Container {
     if (machine.type.id === MACHINE_TYPES.workspace.id) {
-      return artSprite("/images/makeshift-bench.png");
+      return artSprite(MAKESHIFT_BENCH_ART);
     }
     const g = new Graphics();
     g.rect(

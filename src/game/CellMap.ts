@@ -1,6 +1,5 @@
 import { LRUCache } from "typescript-lru-cache";
-import { GameState } from "./GameState";
-import { getMachines, Machine } from "./Machine";
+import { Machine, MachineState } from "./Machine";
 import { Vector, rotateVec, translateVec, vectorKey } from "./Vectors";
 
 /**
@@ -35,8 +34,15 @@ type MutableCellInfo = {
   readonly outputMachines: Machine[];
 };
 
+/** What building a map from a snapshot actually reads — a structural
+ * slice of `GameState`. */
+export interface CellMapFacts {
+  readonly shopInfo: { readonly size: [number, number] };
+  readonly machines: ReadonlyArray<MachineState>;
+}
+
 // Keep computed cell maps for game states.
-const cellMapCache = new LRUCache<GameState, CellMap>({
+const cellMapCache = new LRUCache<CellMapFacts, CellMap>({
   maxSize: 100,
 });
 
@@ -44,7 +50,7 @@ export class CellMap {
   private _cells: CellInfo[];
   private _map = new Map<string, CellInfo>();
 
-  static fromGameState(gameState: GameState): CellMap {
+  static fromGameState(gameState: CellMapFacts): CellMap {
     if (!cellMapCache.has(gameState)) {
       const cellMap = new CellMap();
 
@@ -55,9 +61,8 @@ export class CellMap {
         }
       }
 
-      const machines = getMachines(gameState.machines);
-      for (const machine of machines) {
-        cellMap.addMachine(machine);
+      for (const state of gameState.machines) {
+        cellMap.addMachine(new Machine(state));
       }
 
       cellMapCache.set(gameState, cellMap);
@@ -112,7 +117,10 @@ export class CellMap {
       translateVec(rotateVec(cell, machine.rotation), machine.position),
     );
     for (const position of machineCells) {
-      const cell = this._at(position)!;
+      // Cells outside the indexed floor are skipped, like the zone loops
+      // below — a footprint can hang past an edge in test fixtures.
+      const cell = this._at(position);
+      if (!cell) continue;
       // A benchtop machine mounted on a worktable shares the table's cell:
       // the machine goes on top, the table underneath. Machines can be
       // added in either order (gameState.machines is unordered).

@@ -1,4 +1,5 @@
 import { ConsumableId } from "./Consumable";
+import { Person } from "./Person";
 import { GameState } from "./GameState";
 import { MachineId } from "./Machine";
 import { MaterialInstance } from "./Materials";
@@ -54,9 +55,9 @@ export type CartLine =
   | { readonly kind: "shopVac"; readonly price: number };
 
 /** The cart of the trip in progress, or null when the player isn't shopping. */
-export function currentCart(
-  gameState: GameState,
-): ReadonlyArray<CartLine> | null {
+export function currentCart(gameState: {
+  readonly player: Pick<Person, "away">;
+}): ReadonlyArray<CartLine> | null {
   return gameState.player.away?.kind === "shopping"
     ? gameState.player.away.cart
     : null;

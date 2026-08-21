@@ -30,7 +30,8 @@ import {
   ReasonRow,
 } from "../../../components/shortcuts/HintList";
 import { ShortcutKeys } from "../../../components/shortcuts/Kbd";
-import { useShopState } from "../../useShell";
+import { shopCellMap } from "../../../sim/commands/machine-commands";
+import { useGame, useShopState } from "../../useShell";
 import { useTargeting } from "../useTargeting";
 import { CellAnchored, PointAnchored, PointMarker } from "./OverlayLayer";
 
@@ -42,7 +43,7 @@ import { CellAnchored, PointAnchored, PointMarker } from "./OverlayLayer";
  */
 export const PlayerPrompt: React.FC = () => {
   const gameState = useShopState();
-  const cellMap = CellMap.fromGameState(gameState);
+  const cellMap = shopCellMap(useGame());
   const { machine: targetedMachine, pileOffset } = useTargeting();
 
   if (gameState.player.away) return null;
@@ -67,7 +68,7 @@ export const PlayerPrompt: React.FC = () => {
   // machine and the door.
   const interact = carried
     ? null
-    : resolveInteract(gameState, targetedMachine, pileOffset);
+    : resolveInteract(gameState, cellMap, targetedMachine, pileOffset);
 
   // Where the pickup chip would land if the hands were free: the top of
   // the reachable ring's floor pieces. The chip still shows there, naming
@@ -75,7 +76,7 @@ export const PlayerPrompt: React.FC = () => {
   const takeBlocked = carried ? null : takeBlockedReason(gameState);
   const blockedPile =
     takeBlocked != null
-      ? (materialSources(gameState, targetedMachine, true).find(
+      ? (materialSources(gameState, cellMap, targetedMachine, true).find(
           (source) => source.kind === "floor-pile",
         )?.pile ?? null)
       : null;
@@ -103,7 +104,7 @@ export const PlayerPrompt: React.FC = () => {
         rotate
       </HintRow>,
     );
-    if (!canPutDownCarriedMachine(gameState)) {
+    if (!canPutDownCarriedMachine(gameState, cellMap)) {
       rows.push(
         <HintRow key="no-room" className="text-store-orange/90">
           no room here
@@ -268,7 +269,7 @@ export const PlayerPrompt: React.FC = () => {
         <PickupChip
           piles={interact.piles}
           target={interact.target}
-          sourceCount={materialSources(gameState, targetedMachine).length}
+          sourceCount={materialSources(gameState, cellMap, targetedMachine).length}
           rotateSettingLive={rotateSettingLive}
         />
       )}

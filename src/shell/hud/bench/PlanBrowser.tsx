@@ -26,6 +26,7 @@ import { MachineManualLink } from "../station/racks";
 import {
   clearMachineOperation,
   setMachineOperation,
+  shopCellMap,
 } from "../../../sim/commands/machine-commands";
 import { MachineEntity } from "../../../sim/entities/MachineEntity";
 import { useGame, useShopState } from "../../useShell";
@@ -85,7 +86,7 @@ export const PlanBrowser: React.FC<{
     machine,
     gameState.shopInfo.size,
   );
-  const workSpeed = stationWorkSpeed(machine, gameState);
+  const workSpeed = stationWorkSpeed(machine, shopCellMap(game));
 
   const pull = (plan: BenchPlan) => {
     if (working) return;

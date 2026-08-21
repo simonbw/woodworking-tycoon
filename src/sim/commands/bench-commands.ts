@@ -31,7 +31,7 @@ import {
   prunedBenchLayout,
 } from "../../game/game-actions/operation-actions";
 import { GameState } from "../../game/GameState";
-import { getMachines, machineKey } from "../../game/Machine";
+import { machineKey } from "../../game/Machine";
 import { playerAttendsMachine } from "../../game/machine-helpers";
 import { materialDustSpecies } from "../../game/material-helpers";
 import { MaterialInstance, PalletNail } from "../../game/Materials";
@@ -39,17 +39,19 @@ import {
   availableOperations,
   getOperationPhases,
 } from "../../game/skill-helpers";
-import { MachineEntity } from "../entities/MachineEntity";
-import { projectGameState } from "../projection";
+import { floorMachines, MachineEntity } from "../entities/MachineEntity";
+import { machineStatesNow, operationPhasesNow } from "../machine-reads";
+import { projectPerson, projectProgression } from "../projection";
 import { Consumables } from "../singletons/Consumables";
 import { DustLayer } from "../singletons/DustLayer";
+import { ShopInfo } from "../singletons/ShopInfo";
 import { emitSound } from "./sound";
 
 /**
  * The bench-work command surface. The commit split holds (see
  * docs/bench-work.md): the bench view (and the ShopDriver) decides
  * *when*, these commands decide *what*. Each validates through the
- * shared rules over a projection snapshot, then writes onto the
+ * shared rules over the live entities, then writes onto the
  * entities; a refusal logs and returns false. The bench-work engine
  * itself (`src/game/bench-work/`) is pure and shared, never forked.
  *
@@ -63,11 +65,12 @@ export { palletPryTargetsLeft } from "../../game/game-actions/operation-actions"
  * Whether this player position can legally commit hand work at this
  * machine right now — standing in the operator's apron, not away.
  */
-function attends(gameState: GameState, entity: MachineEntity): boolean {
+function attends(game: Game, entity: MachineEntity): boolean {
+  const person = projectPerson(game);
   return playerAttendsMachine(
     entity.view(),
-    gameState.player.position,
-    gameState.player.away !== null,
+    person.position,
+    person.away !== null,
   );
 }
 
@@ -79,12 +82,11 @@ function attends(gameState: GameState, entity: MachineEntity): boolean {
  * driver may not read the old transform layer.)
  */
 export function benchOffersPry(game: Game, entity: MachineEntity): boolean {
-  const gameState = projectGameState(game);
   const machine = entity.view();
   return (
     machine.operationProgress.status !== "inProgress" &&
     palletPryTargetsLeft(machine) > 0 &&
-    availableOperations(machine, gameState.progression).some(
+    availableOperations(machine, projectProgression(game)).some(
       (op) => op.interaction?.kind === "pry",
     )
   );
@@ -108,19 +110,18 @@ export function pryPalletNail(
   entity: MachineEntity,
   target?: PalletNail,
 ): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   if (machineState.operationProgress.status === "inProgress") {
     console.warn("The bench is mid-operation — no room to pry");
     return false;
   }
-  if (!attends(gameState, entity)) {
+  if (!attends(game, entity)) {
     console.warn("Can't pry a nail from across the shop");
     return false;
   }
   const live = entity.view();
   if (
-    !availableOperations(live, gameState.progression).some(
+    !availableOperations(live, projectProgression(game)).some(
       (op) => op.id === "dismantlePallet",
     )
   ) {
@@ -179,6 +180,7 @@ export function pryPalletNail(
   consumables.stock = addConsumables(consumables.stock, [
     { id: "nails", amount: 1 },
   ]);
+  game.dispatch("suppliesChanged", {});
 
   // Freed boards stay right on the bench: loose stock the next plan can
   // claim, or E takes back into the arms — tossed onto the pile in the
@@ -205,6 +207,7 @@ export function pryPalletNail(
       ),
     },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   // The nail's own creak-and-pop; a board settling is part of it.
   emitSound(game, "nail-pry");
   return true;
@@ -226,13 +229,12 @@ export function startGlueUp(
   entity: MachineEntity,
   pieceIds: ReadonlyArray<string>,
 ): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   if (machineState.operationProgress.status === "inProgress") {
     console.warn("The bench is mid-operation — no room for a glue-up");
     return false;
   }
-  if (!attends(gameState, entity)) {
+  if (!attends(game, entity)) {
     console.warn("Can't tighten clamps from across the shop");
     return false;
   }
@@ -283,7 +285,7 @@ export function startGlueUp(
     return false;
   }
   const live = entity.view();
-  const operation = availableOperations(live, gameState.progression).find(
+  const operation = availableOperations(live, projectProgression(game)).find(
     (op) => op.id === operationId,
   );
   if (!operation) {
@@ -293,18 +295,15 @@ export function startGlueUp(
   // Clamps are borrowed, not spent: this operation starting IS the
   // checkout (the count in use is derived — see Clamp.ts), and the cure
   // finishing is the return.
+  const consumables = game.entities.getSingleton(Consumables);
   if (
-    clampsFor(operation, run) > clampsFree(gameState.clamps, gameState.machines)
+    clampsFor(operation, run) >
+    clampsFree(consumables.clamps, machineStatesNow(game))
   ) {
     console.warn("Not enough free clamps for a run this long");
     return false;
   }
-  const [firstPhase] = getOperationPhases(
-    operation,
-    gameState.progression,
-    machineDustMultiplier(gameState.dust, live, gameState.shopInfo.size),
-    stationWorkSpeed(live, gameState),
-  );
+  const [firstPhase] = operationPhasesNow(game, live, operation);
   entity.state = {
     ...machineState,
     selectedOperationId: operationId,
@@ -321,6 +320,7 @@ export function startGlueUp(
       ticksRemaining: firstPhase.duration,
     },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -330,6 +330,14 @@ export function startGlueUp(
  * `arrangeBenchMaterialAction`). The arrangement is real state (see
  * bench-work/bench-layout.ts), so it survives closing the view and shows
  * on the shop floor too.
+ *
+ * The piece also comes to rest on top of whatever it overlaps: a bay's
+ * array order is the order the bench draws and hit-tests in
+ * (bench-work/bench-group.ts), so the handled piece moves to the end of
+ * the bay it sits in. Every other way a piece lands on a table appends
+ * to those arrays already — pieces slid over from the next table,
+ * freshly staged stock, boards freed from a pallet — so the rule holds
+ * everywhere: the last thing set down lies over what was there.
  */
 export function arrangeBenchMaterial(
   game: Game,
@@ -340,23 +348,36 @@ export function arrangeBenchMaterial(
   const machineState = entity.state;
   // Finished work lies on the bench too until it's taken, so outputs
   // arrange the same way staged stock does.
-  const onBench = [
-    ...machineState.inputMaterials,
-    ...machineState.outputMaterials,
-  ];
-  if (!onBench.some((material) => material.id === materialId)) {
+  const inBay = (materials: ReadonlyArray<MaterialInstance>) =>
+    materials.some((material) => material.id === materialId);
+  if (
+    !inBay(machineState.inputMaterials) &&
+    !inBay(machineState.outputMaterials)
+  ) {
     return false;
   }
+  const onTop = (materials: ReadonlyArray<MaterialInstance>) =>
+    inBay(materials)
+      ? [
+          ...materials.filter((material) => material.id !== materialId),
+          ...materials.filter((material) => material.id === materialId),
+        ]
+      : materials;
+  const inputMaterials = onTop(machineState.inputMaterials);
+  const outputMaterials = onTop(machineState.outputMaterials);
   entity.state = {
     ...machineState,
+    inputMaterials,
+    outputMaterials,
     benchLayout: {
       ...prunedBenchLayout(machineState.benchLayout, [
-        ...machineState.inputMaterials,
-        ...machineState.outputMaterials,
+        ...inputMaterials,
+        ...outputMaterials,
       ]),
       [materialId]: placement,
     },
   };
+  game.dispatch("machineStateChanged", { machine: entity });
   return true;
 }
 
@@ -378,9 +399,8 @@ export function gatherBenchPieces(
   target: MachineEntity,
   pieceIds: ReadonlyArray<string>,
 ): boolean {
-  const gameState = projectGameState(game);
   const targetMachine = target.view();
-  const group = benchGroupAt(getMachines(gameState.machines), targetMachine);
+  const group = benchGroupAt(floorMachines(game), targetMachine);
   const onto = memberFor(group, targetMachine);
   if (!onto || group.members.length < 2) {
     return false;
@@ -443,6 +463,7 @@ export function gatherBenchPieces(
           ...arrivals,
         },
       };
+      game.dispatch("machineStateChanged", { machine: entity });
       continue;
     }
     if (!strippedFrom.has(machineKey(entity.state))) {
@@ -463,6 +484,7 @@ export function gatherBenchPieces(
         ...outputMaterials,
       ]),
     };
+    game.dispatch("machineStateChanged", { machine: entity });
   }
   return true;
 }
@@ -477,7 +499,6 @@ export function gatherBenchPieces(
  * way. Writes straight onto the DustLayer singleton.
  */
 export function emitBenchDust(game: Game, entity: MachineEntity): boolean {
-  const gameState = projectGameState(game);
   const machineState = entity.state;
   const live = entity.view();
   const operation = live.operations.find(
@@ -502,7 +523,7 @@ export function emitBenchDust(game: Game, entity: MachineEntity): boolean {
     live,
     species,
     dustOutput * deriveMachineCutLoad(live) * ticksPerEmission,
-    gameState.shopInfo.size,
+    game.entities.getSingleton(ShopInfo).info.size,
   );
   return true;
 }

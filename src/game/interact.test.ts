@@ -1,8 +1,9 @@
 import assert from "node:assert";
+import { CellMap } from "./CellMap";
 import { describe, it } from "node:test";
 import { board } from "./board-helpers";
 import { GameState, MaterialPile } from "./GameState";
-import { getMachines, Machine, MachineState } from "./Machine";
+import { machineViews, Machine, MachineState } from "./Machine";
 import { initialGameState } from "./initialGameState";
 import {
   interactLabel,
@@ -64,7 +65,7 @@ function shopWithLoadedBench(...materialPiles: MaterialPile[]): GameState {
 }
 
 function theBench(gameState: GameState): Machine {
-  return getMachines(gameState.machines)[0];
+  return machineViews(gameState.machines)[0];
 }
 
 describe("resolveInteract", () => {
@@ -75,8 +76,10 @@ describe("resolveInteract", () => {
     const first = pileAt([5.5, 5.5]);
     const second = pileAt([5.5, 5.5]);
     const elsewhere = pileAt([8.5, 8.5]);
+    const shop = shopWithPiles(first, second, elsewhere);
     const action = resolveInteract(
-      shopWithPiles(first, second, elsewhere),
+      shop,
+      CellMap.fromGameState(shop),
       undefined,
     );
     assert.strictEqual(action?.kind, "pick-up-floor");
@@ -90,7 +93,7 @@ describe("resolveInteract", () => {
     const top = pileAt([5.5, 5.5]);
     const state = shopWithPiles(bottom, middle, top);
     const targetAt = (offset: number) => {
-      const action = resolveInteract(state, undefined, offset);
+      const action = resolveInteract(state, CellMap.fromGameState(state), undefined, offset);
       assert.strictEqual(action?.kind, "pick-up-floor");
       return action.target;
     };
@@ -105,7 +108,8 @@ describe("resolveInteract", () => {
     // An 8' board centered two cells away still lies across the player's
     // cell — the pile E grabs isn't necessarily centered underfoot.
     const overhanging = pileAt([5.5, 7.5], 96);
-    const action = resolveInteract(shopWithPiles(overhanging), undefined);
+    const shop = shopWithPiles(overhanging);
+    const action = resolveInteract(shop, CellMap.fromGameState(shop), undefined);
     assert.strictEqual(action?.kind, "pick-up-floor");
     assert.strictEqual(action.piles[0], overhanging);
   });
@@ -124,14 +128,12 @@ describe("resolveInteract", () => {
         ),
       },
     };
-    assert.strictEqual(resolveInteract(fullHanded, undefined), null);
+    assert.strictEqual(resolveInteract(fullHanded, CellMap.fromGameState(fullHanded), undefined), null);
   });
 
   it("offers nothing on a bare cell", () => {
-    const action = resolveInteract(
-      shopWithPiles(pileAt([8.5, 8.5])),
-      undefined,
-    );
+    const shop = shopWithPiles(pileAt([8.5, 8.5]));
+    const action = resolveInteract(shop, CellMap.fromGameState(shop), undefined);
     assert.strictEqual(action, null);
   });
 
@@ -143,10 +145,10 @@ describe("resolveInteract", () => {
     const state = shopWithLoadedBench(beside);
     const bench = theBench(state);
 
-    const first = resolveInteract(state, bench, 0);
+    const first = resolveInteract(state, CellMap.fromGameState(state), bench, 0);
     assert.strictEqual(first?.kind, "take-inputs");
 
-    const second = resolveInteract(state, bench, 1);
+    const second = resolveInteract(state, CellMap.fromGameState(state), bench, 1);
     assert.strictEqual(second?.kind, "pick-up-floor");
     assert.strictEqual(second.target, beside);
   });
@@ -157,10 +159,10 @@ describe("resolveInteract", () => {
     const bench = theBench(state);
 
     // Two sources — bench stock, one pile — so offset 2 is home again
-    assert.strictEqual(resolveInteract(state, bench, 2)?.kind, "take-inputs");
+    assert.strictEqual(resolveInteract(state, CellMap.fromGameState(state), bench, 2)?.kind, "take-inputs");
     // Shift-R from the top steps backwards onto the floor
     assert.strictEqual(
-      resolveInteract(state, bench, -1)?.kind,
+      resolveInteract(state, CellMap.fromGameState(state), bench, -1)?.kind,
       "pick-up-floor",
     );
   });
@@ -212,8 +214,8 @@ describe("takeBlockedReason", () => {
     // have been — on the piece the free-handed press would grab.
     const underfoot = pileAt([5.5, 5.5]);
     const state = fullHanded(shopWithPiles(underfoot));
-    assert.strictEqual(materialSources(state, undefined).length, 0);
-    const ignoring = materialSources(state, undefined, true);
+    assert.strictEqual(materialSources(state, CellMap.fromGameState(state), undefined).length, 0);
+    const ignoring = materialSources(state, CellMap.fromGameState(state), undefined, true);
     assert.strictEqual(ignoring.length, 1);
     assert.strictEqual(ignoring[0].kind, "floor-pile");
   });
@@ -248,12 +250,12 @@ describe("offsetForSource", () => {
     machine: Machine | undefined,
     pile: MaterialPile,
   ) {
-    const offset = offsetForSource(gameState, machine, {
+    const offset = offsetForSource(gameState, CellMap.fromGameState(gameState), machine, {
       kind: "floor-pile",
       pile,
     });
     assert.notStrictEqual(offset, null, "expected the piece to be in reach");
-    const action = resolveInteract(gameState, machine, offset!);
+    const action = resolveInteract(gameState, CellMap.fromGameState(gameState), machine, offset!);
     assert.strictEqual(action?.kind, "pick-up-floor");
     return action.target;
   }
@@ -278,7 +280,7 @@ describe("offsetForSource", () => {
     const state = shopWithLoadedBench(onTheFloor);
     const bench = theBench(state);
     // The bench's own stock goes first, so a plain press takes that
-    assert.strictEqual(resolveInteract(state, bench, 0)?.kind, "take-inputs");
+    assert.strictEqual(resolveInteract(state, CellMap.fromGameState(state), bench, 0)?.kind, "take-inputs");
     // ...and pointing at the floor piece still lands on it
     assert.strictEqual(aimAt(state, bench, onTheFloor), onTheFloor);
   });
@@ -286,8 +288,9 @@ describe("offsetForSource", () => {
   it("refuses a piece that isn't within reach", () => {
     const near = pileAt([5.5, 5.5]);
     const across = pileAt([12.5, 12.5]);
+    const shop = shopWithPiles(near, across);
     assert.strictEqual(
-      offsetForSource(shopWithPiles(near, across), undefined, {
+      offsetForSource(shop, CellMap.fromGameState(shop), undefined, {
         kind: "floor-pile",
         pile: across,
       }),

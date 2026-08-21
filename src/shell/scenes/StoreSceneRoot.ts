@@ -44,7 +44,7 @@ import {
 } from "../../sim/commands/cart-commands";
 import { setShoppingPosition } from "../../sim/commands/trip-commands";
 import { Player } from "../../sim/entities/Player";
-import { projectGameState } from "../../sim/projection";
+
 import { FootstepSoundView, WalkingBody } from "../../views/FootstepSoundView";
 import { Game } from "../../core/Game";
 import { ShellStore } from "../ShellStore";
@@ -58,6 +58,10 @@ import {
   StoreTruckView,
 } from "./store-views/StoreTruckView";
 import { StoreFixturesView } from "./store-views/StoreFixturesView";
+import { ShopVacEntity } from "../../sim/entities/ShopVacEntity";
+import { Broom } from "../../sim/singletons/Broom";
+import { Wallet } from "../../sim/singletons/Wallet";
+import { Reputation } from "../../sim/singletons/Reputation";
 import { StoreMerchandiseView } from "./store-views/StoreMerchandiseView";
 
 /**
@@ -158,15 +162,19 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   layout(): StoreLayout | null {
     const player = this.game.entities.tryGetSingleton(Player);
     if (player?.away?.kind !== "shopping") return null;
-    const gameState = projectGameState(this.game);
+    const stock = {
+      reputation: this.game.entities.getSingleton(Reputation).reputation,
+      broomOwned: this.game.entities.tryGetSingleton(Broom)?.owned ?? false,
+      shopVac: this.game.entities.tryGetSingleton(ShopVacEntity) ?? null,
+    };
     const key = [
       player.away.store,
-      gameState.reputation,
-      gameState.broomOwned,
-      gameState.shopVac != null,
+      stock.reputation,
+      stock.broomOwned,
+      stock.shopVac != null,
     ].join(",");
     if (!this.layoutCache || key !== this.layoutKey) {
-      this.layoutCache = storeLayout(player.away.store, gameState);
+      this.layoutCache = storeLayout(player.away.store, stock);
       this.layoutKey = key;
       if (this.isAdded) this.dress(this.layoutCache);
       publishStoreHooks(this.layoutCache);
@@ -199,7 +207,13 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
     if (this.departSeconds !== null) return null;
     const layout = this.layout();
     if (!layout) return null;
-    return resolveStoreInteract(projectGameState(this.game), layout);
+    return resolveStoreInteract(
+      {
+        money: this.game.entities.getSingleton(Wallet).money,
+        player: this.game.entities.getSingleton(Player),
+      },
+      layout,
+    );
   }
 
   // ---- The store floor's keys (dispatched by ShortcutDispatcher) ----
@@ -254,7 +268,10 @@ export class StoreSceneRoot extends BaseEntity implements Entity {
   }
 
   returnToBay(bay: ShelfBay): void {
-    const index = cartIndexToReturn(projectGameState(this.game), bay);
+    const index = cartIndexToReturn(
+      { player: this.game.entities.getSingleton(Player) },
+      bay,
+    );
     if (index !== null) {
       removeFromCart(this.game, index);
       this.bump();

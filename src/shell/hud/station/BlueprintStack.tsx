@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { stationWorkSpeed } from "../../../game/bench-mounting";
+import { shopCellMap } from "../../../sim/commands/machine-commands";
 import { clampsFor, clampsFree } from "../../../game/Clamp";
 import { consumableLabel } from "../../../game/Consumable";
 import {
@@ -24,7 +25,7 @@ import { describeOperationIO } from "../../../game/operation-helpers";
 import { getOperationDuration } from "../../../game/skill-helpers";
 import { formatDuration } from "../../../game/time";
 import { TOOL_TYPES } from "../../../game/Tool";
-import { useShopState } from "../../useShell";
+import { useGame, useShopState } from "../../useShell";
 
 /**
  * One shop drawing, pulled from the bench's blueprint pile (see
@@ -96,6 +97,7 @@ export const BlueprintSheet: React.FC<{
   note?: string;
 }> = ({ operation, machine, locked, readiness, note }) => {
   const gameState = useShopState();
+  const game = useGame();
   const io = useMemo(() => describeOperationIO(operation), [operation]);
   const blueprint =
     operation.interaction?.kind === "assembly"
@@ -191,7 +193,7 @@ export const BlueprintSheet: React.FC<{
                     operation,
                     gameState.progression,
                     dustMultiplier,
-                    stationWorkSpeed(machine, gameState),
+                    stationWorkSpeed(machine, shopCellMap(game)),
                   ),
                 )}
               </span>
