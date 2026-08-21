@@ -106,13 +106,19 @@ export function faceFill(
   };
 }
 
+/** How much the face scan squeezes across the grain when it stands in
+ * for a missing edge strip: the face's cathedrals compress into the
+ * straight, tight streaks a real edge shows. */
+const EDGE_GRAIN_COMPRESSION = 3;
+
 /**
  * The narrow edge: the species' straight-grain strip where it has one,
  * otherwise the face scan carried around the corner from the wood just
- * past the piece's own width — pulled back when that would reach off
- * the scan, which doesn't tile. Either way it shares the face window's
- * lengthwise position, so a cut piece's edge streaks continue across
- * the seam along with its face.
+ * past the piece's own width, compressed across the grain so it reads
+ * as edge grain rather than a second face — pulled back when the window
+ * would reach off the scan, which doesn't tile. Either way it shares
+ * the face window's lengthwise position, so a cut piece's edge streaks
+ * continue across the seam along with its face.
  */
 export function edgeFill(
   art: WoodArt,
@@ -137,21 +143,28 @@ export function edgeFill(
       textureSpace: "global",
     };
   }
+  // The squeeze eases off for thick stock whose window would otherwise
+  // reach off the scan
+  const thicknessIn = thicknessQuarters / 4;
+  const compression = Math.min(
+    EDGE_GRAIN_COMPRESSION,
+    BOARD_FACE_SCAN_WIDTH_IN / thicknessIn,
+  );
   const v = Math.max(
     0,
     Math.min(
       region.v + widthIn,
-      BOARD_FACE_SCAN_WIDTH_IN - thicknessQuarters / 4,
+      BOARD_FACE_SCAN_WIDTH_IN - thicknessIn * compression,
     ),
   );
   return {
     texture: art.face,
     matrix: scanMatrix(
       art.face,
-      BOARD_FACE_SCAN_WIDTH_IN,
+      BOARD_FACE_SCAN_WIDTH_IN / compression,
       BOARD_FACE_SCAN_LENGTH_IN,
       region.u,
-      v,
+      v / compression,
       originX,
       originY,
     ),
@@ -195,7 +208,7 @@ export function endFill(
 
 /**
  * How much darker a surface turning away from the light sits than the
- * face beside it. An edge gets one coat, an end two — end grain drinks
- * light — and that shading is what gives a piece thickness from above.
+ * lit face beside it: one coat for the sliver of face leaning in beside
+ * a standing board's edge, two for end grain, which drinks light.
  */
 export const TURNED_AWAY_SHADE = { color: 0x000000, alpha: 0.22 } as const;

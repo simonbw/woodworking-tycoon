@@ -1,5 +1,6 @@
 import { Assets, Graphics, Matrix, Texture } from "pixi.js";
 import { colorBySheetGoodKind, osbFlakeColors } from "../colorBySpecies";
+import { drawContactShadow } from "./contactShadow";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import { SheetGood } from "../../game/Materials";
 import { mixColors } from "../../utils/colorUtils";
@@ -19,9 +20,9 @@ export type SheetGoodLook = Omit<SheetGood, "id" | "type">;
  * Every kind has art now; the procedural faces below stay as the
  * fallback for any future kind that ships before its texture.
  *
- * The edge face is still drawn: plywood's laminations stripe it, the
- * chip boards crumble into speckle, MDF stays solid. Seeded, so a sheet
- * never shimmers between renders.
+ * Seen from above, a sheet is nothing but its face — thickness reads
+ * through the contact shadow's spread, not a drawn edge. Seeded, so a
+ * sheet never shimmers between renders.
  * The old SheetGoodSprite's draw callback as a plain function.
  */
 export function drawSheetGood(
@@ -41,23 +42,13 @@ export function drawSheetGood(
   // Unlike boards, a sheet's width AND length are both in inches
   const width = sheetWidth * PIXELS_PER_INCH;
   const height = sheetLength * PIXELS_PER_INCH;
-  const depth = (thickness * PIXELS_PER_INCH) / 4;
   const fallbackSeed =
     seed ?? `${kind}-${sheetWidth}x${sheetLength}x${thickness}`;
   const rng = seededRandom(fallbackSeed);
   const { primary, secondary } = colorBySheetGoodKind[kind];
   const squareFeet = sheetWidth * sheetLength;
 
-  // shadow
-  for (const shadowWidth of [1, 2]) {
-    g.rect(
-      -width / 2 - shadowWidth,
-      -height / 2 - shadowWidth,
-      width + depth + shadowWidth * 2,
-      height + shadowWidth * 2,
-    );
-    g.fill({ color: 0x000000, alpha: 0.1 });
-  }
+  drawContactShadow(g, -width / 2, -height / 2, width, height, thickness / 4);
 
   const faceArt = SHEET_FACE_TEXTURES[kind];
   if (faceArt) {
@@ -86,7 +77,6 @@ export function drawSheetGood(
       : new Matrix(scale, 0, 0, scale, -vPx - width / 2, -uPx - height / 2);
     g.rect(-width / 2, -height / 2, width, height);
     g.fill({ texture, matrix, textureSpace: "global" });
-    drawSheetEdge(g, sheet, rng);
     return;
   }
 
@@ -241,42 +231,6 @@ export function drawSheetGood(
           alpha: 0.5,
         });
       }
-    }
-  }
-
-  drawSheetEdge(g, sheet, rng);
-}
-
-/** The edge face: laminations stripe plywood, chip boards crumble into
- * speckle, MDF stays solid. */
-function drawSheetEdge(
-  g: Graphics,
-  sheet: SheetGoodLook,
-  rng: () => number,
-): void {
-  const { kind } = sheet;
-  const width = sheet.width * PIXELS_PER_INCH;
-  const height = sheet.length * PIXELS_PER_INCH;
-  const depth = (sheet.thickness * PIXELS_PER_INCH) / 4;
-  const { primary, secondary } = colorBySheetGoodKind[kind];
-  const isPlywood = kind.startsWith("plywood");
-  g.rect(width / 2, -height / 2, depth, height);
-  g.fill(isPlywood ? mixColors(primary, 0x000000, 0.15) : secondary);
-  if (isPlywood) {
-    for (let i = 1; i < depth; i += 2) {
-      g.rect(width / 2 + i, -height / 2, 1, height);
-      g.fill(mixColors(secondary, 0x000000, 0.25));
-    }
-  } else if (kind !== "mdf") {
-    const dots = Math.round(height / 4);
-    for (let i = 0; i < dots; i++) {
-      g.rect(
-        width / 2 + rng() * Math.max(0, depth - 1),
-        -height / 2 + rng() * (height - 1),
-        1,
-        1,
-      );
-      g.fill({ color: mixColors(secondary, 0x000000, 0.3), alpha: 0.6 });
     }
   }
 }

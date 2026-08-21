@@ -9,6 +9,7 @@ import {
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { BOARD_ROUGHNESS_TEXTURES } from "./boardFaceTextures";
+import { drawContactShadow } from "./contactShadow";
 import {
   edgeFill,
   endFill,
@@ -38,9 +39,12 @@ export interface BoardSpriteOptions {
  * A board's milled state is drawn, not labeled:
  * - Every species wears a window of a real plank photograph
  *   (boardFaceTextures.ts), placed by the board's face region so a cut
- *   piece keeps the very grain it was cut with. The edge face works the
- *   same way from the edge strips where a species has them; the rest
- *   draw the edge procedurally under the scanned face.
+ *   piece keeps the very grain it was cut with.
+ * - Seen from above, a lying board is nothing but its face — thickness
+ *   reads through the contact shadow's spread, not a drawn edge strip.
+ *   The edge face only shows on a board actually stood on it
+ *   (drawBoardOnEdge), which is what keeps the two orientations
+ *   distinct at a glance.
  * - Roughness is real too: a grayscale wear map multiplies over the face
  *   (white is clean wood, dark is scuffs and saw marks), windowed by the
  *   same region so a board's scars survive its cuts. Milling fades it —
@@ -49,8 +53,8 @@ export interface BoardSpriteOptions {
  * - Unjointed faces on rough stock additionally hide under a
  *   weathered-gray veil; jointing (or sanding) lifts it and the same
  *   grain comes up in color.
- * - Unjointed long edges are wavy; jointing snaps them straight (right
- *   edge first — it carries the visible edge face).
+ * - Unjointed long edges are wavy; jointing snaps them straight, right
+ *   edge first.
  * - Sanded adds a lighter tone and a sheen band.
  * - Mitered ends draw as diagonals: the left end is the sprite's top, the
  *   right end its bottom, and the angle sets the diagonal's run.
@@ -64,7 +68,7 @@ export function createBoardSprite(
   seed?: string,
   options: BoardSpriteOptions = {},
 ): Container {
-  const { thickness, species, surface, jointedFaces, jointedEdges } = board;
+  const { thickness, species, surface, jointedFaces } = board;
   const { alpha, tint } = options;
 
   const fallbackSeed =
@@ -78,34 +82,18 @@ export function createBoardSprite(
     board.face ?? defaultBoardFace(fallbackSeed, board.length, board.width);
 
   const silhouette = boardSilhouette(board, fallbackSeed);
-  const { width, height, depth, amp, topSkew, bottomSkew } = silhouette;
+  const { width, height, amp, topSkew, bottomSkew } = silhouette;
 
   const root = new Container();
   if (alpha !== undefined) root.alpha = alpha;
   const g = root.addChild(new Graphics());
   if (tint !== undefined) g.tint = tint;
 
-  // shadow
-  for (const shadowWidth of [1, 2]) {
-    g.rect(
-      -width / 2 - shadowWidth,
-      -height / 2 - shadowWidth,
-      width + depth + shadowWidth * 2,
-      height + shadowWidth * 2,
-    );
-    g.fill({ color: 0x000000, alpha: 0.1 });
-  }
+  drawContactShadow(g, -width / 2, -height / 2, width, height, thickness / 4);
 
   const art = woodArt(species, region.seed, thickness);
   g.poly(silhouette.facePoly);
   g.fill(faceFill(art, region, -width / 2, -height / 2));
-  g.poly(silhouette.edgePoly);
-  g.fill(edgeFill(art, region, board.width, thickness, width / 2, -height / 2));
-
-  // The edge turns away from the light — a touch darker than the face,
-  // so the board still reads as having thickness
-  g.poly(silhouette.edgePoly);
-  g.fill(TURNED_AWAY_SHADE);
 
   // Weathering and finish read as veils over the real grain: the gray
   // lifts when milling reveals the wood, sanding brightens it
@@ -115,10 +103,6 @@ export function createBoardSprite(
   } else if (surface === "sanded") {
     g.poly(silhouette.facePoly);
     g.fill({ color: 0xffffff, alpha: 0.1 });
-  }
-  if (jointedEdges === 0) {
-    g.poly(silhouette.edgePoly);
-    g.fill({ color: WEATHERED_GRAY, alpha: 0.5 });
   }
 
   const inset = amp + 1.5;
@@ -138,10 +122,8 @@ export function createBoardSprite(
 
   // How hard the wear map presses: full on unmilled stock, half once
   // milling has revealed the color, gone when the surface is smooth.
-  // Edges wear until they're jointed.
   const faceWear = !colorRevealed ? 1 : surface === "rough" ? 0.5 : 0;
-  const edgeWear = jointedEdges === 0 ? 0.8 : 0;
-  if (faceWear > 0 || edgeWear > 0) {
+  if (faceWear > 0) {
     const wear = root.addChild(new Graphics());
     wear.blendMode = "multiply";
     if (tint !== undefined) wear.tint = tint;
@@ -163,15 +145,8 @@ export function createBoardSprite(
       -region.v * PIXELS_PER_INCH - width / 2,
       -region.u * PIXELS_PER_INCH - height / 2,
     );
-    if (faceWear > 0) {
-      wear.poly(silhouette.facePoly);
-      wear.fill({ texture, matrix, textureSpace: "global", alpha: faceWear });
-    }
-    if (edgeWear > 0) {
-      // Same window as the face — the wear wraps the corner
-      wear.poly(silhouette.edgePoly);
-      wear.fill({ texture, matrix, textureSpace: "global", alpha: edgeWear });
-    }
+    wear.poly(silhouette.facePoly);
+    wear.fill({ texture, matrix, textureSpace: "global", alpha: faceWear });
   }
 
   return root;
@@ -179,14 +154,12 @@ export function createBoardSprite(
 
 /**
  * The board's outline, shared by the base and wear layers: wavy
- * unjointed edges (seeded so they never shimmer), miter skews, and the
- * edge face's extrusion.
+ * unjointed edges (seeded so they never shimmer) and miter skews.
  */
 function boardSilhouette(board: BoardLook, seed: string) {
   const { jointedEdges, ends } = board;
   const width = board.width * PIXELS_PER_INCH;
   const height = board.length * PIXELS_PER_INCH;
-  const depth = (board.thickness * PIXELS_PER_INCH) / 4;
   const rng = seededRandom(seed);
 
   // Mitered ends slant across the face by the angle's SIGNED run —
@@ -245,15 +218,10 @@ function boardSilhouette(board: BoardLook, seed: string) {
   return {
     width,
     height,
-    depth,
     amp,
     topSkew,
     bottomSkew,
     facePoly: [...leftEdge, ...[...rightEdge].reverse()].flat(),
-    edgePoly: [
-      ...rightEdge,
-      ...[...rightEdge].reverse().map(([x, y]) => [x + depth, y]),
-    ].flat(),
   };
 }
 
@@ -293,16 +261,11 @@ export function drawBoardOnEdge(
   const region = face ?? defaultBoardFace(pieceSeed, boardLength, boardWidth);
   const art = woodArt(species, region.seed, thickness);
 
-  // A standing board throws a longer shadow than a lying one
-  for (const shadowWidth of [1.5, 3]) {
-    g.rect(
-      -width / 2 - shadowWidth,
-      -height / 2 - shadowWidth,
-      width + lean + shadowWidth * 2,
-      height + shadowWidth * 2,
-    );
-    g.fill({ color: 0x000000, alpha: 0.12 });
-  }
+  // A standing board stands its whole width off the bench, and the
+  // shadow says so — far wider than any lying board's
+  drawContactShadow(g, -width / 2, -height / 2, width + lean, height, boardWidth, {
+    alpha: 0.12,
+  });
 
   // The upturned edge face
   g.rect(-width / 2, -height / 2, width, height);
@@ -370,18 +333,15 @@ export function drawBoardOnEnd(
   board: BoardLook,
   seed?: string,
 ): void {
-  const { width: boardWidth, thickness, species } = board;
+  const { width: boardWidth, length, thickness, species } = board;
 
   g.clear();
   const w = boardWidth * PIXELS_PER_INCH;
   const h = (thickness / 4) * PIXELS_PER_INCH;
   const pieceSeed = seed ?? "on-end";
 
-  // shadow: the standing piece throws a slightly wider foot
-  for (const spread of [1, 2]) {
-    g.rect(-w / 2 - spread, -h / 2 - spread, w + spread * 2, h + spread * 2);
-    g.fill({ color: 0x000000, alpha: 0.12 });
-  }
+  // The tallest a board can stand — the shadow spreads to its cap
+  drawContactShadow(g, -w / 2, -h / 2, w, h, length, { alpha: 0.12 });
 
   const art = woodArt(species, pieceSeed, thickness);
   g.rect(-w / 2, -h / 2, w, h);
