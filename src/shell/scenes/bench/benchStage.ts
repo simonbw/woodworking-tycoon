@@ -12,7 +12,10 @@ import {
   groupPieces,
   placementInFrame,
 } from "../../../game/bench-work/bench-group";
-import { BenchScript, placedPieceSize } from "../../../game/bench-work/workpiece";
+import {
+  BenchScript,
+  placedPieceSize,
+} from "../../../game/bench-work/workpiece";
 import { Machine, machineKey } from "../../../game/Machine";
 import { MaterialInstance } from "../../../game/Materials";
 import { BenchDive, BenchStage } from "./BenchDive";
@@ -138,8 +141,10 @@ export function pieceUnder(
   yIn: number,
 ): GroupPiece | null {
   // Last drawn wins, so the piece on top of a stack takes the gesture.
+  // The pallet is a piece like any other (docs/bench-work.md): it
+  // hit-tests at its footprint, so bare hands can grab and turn it —
+  // freed boards lie later in the bays, so they still win over it.
   for (const piece of [...groupPieces(group)].reverse()) {
-    if (piece.material.type === "pallet") continue;
     const size = placedPieceSize(piece.material, piece.placement);
     const local = benchPointInFrame(piece.placement, size, xIn, yIn);
     if (

@@ -7,7 +7,6 @@ import {
   FinishedProduct,
   Species,
 } from "../../game/Materials";
-import { drawContactShadow } from "./contactShadow";
 import { endFill, faceFill, TURNED_AWAY_SHADE, woodArt } from "./woodFills";
 
 /** Accent stripes for each board tier, as [offset, width] in inches. */
@@ -66,9 +65,6 @@ export function drawCuttingBoard(
   const radius = 2 * PIXELS_PER_INCH;
   const boardSeed = seed ?? `${type}-${species}`;
   const isEndGrain = type === "endGrainCuttingBoard";
-
-  // An inch of cutting board off the bench
-  drawContactShadow(g, -width / 2, -height / 2, width, height, 1, { radius });
 
   // One window per wood, so the two species keep their own grain
   const woodFor = (which: Species, tag: string) => {

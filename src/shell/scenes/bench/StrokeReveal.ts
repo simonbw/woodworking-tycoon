@@ -229,5 +229,8 @@ function surfaceSprite(
   return createMaterialSprite(material, {
     onEdge: placement.onEdge,
     onEnd: placement.onEnd,
+    // The finished state stacks over the unfinished one, which already
+    // casts the piece's one shadow — a second copy would darken it.
+    shadow: !finished,
   });
 }

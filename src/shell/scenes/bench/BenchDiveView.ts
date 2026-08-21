@@ -232,8 +232,10 @@ export class BenchDiveView extends BaseEntity implements Entity {
       if (!motion) {
         // A just-released piece keeps the holder that rode the hand, so
         // the springs carry it from the drop point into its seat instead
-        // of it reappearing already there.
+        // of it reappearing already there — settling back down out of
+        // the carry's lift on the way.
         motion = arrange?.takeHandoff(piece.material.id) ?? new PieceMotion();
+        motion.setCarried(false);
         this.holders.set(piece.material.id, motion);
         this.pieces.addChild(motion.holder);
       }

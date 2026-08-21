@@ -1,6 +1,5 @@
 import { Assets, Graphics, Matrix, Texture } from "pixi.js";
 import { colorBySheetGoodKind, osbFlakeColors } from "../colorBySpecies";
-import { drawContactShadow } from "./contactShadow";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import { SheetGood } from "../../game/Materials";
 import { mixColors } from "../../utils/colorUtils";
@@ -47,8 +46,6 @@ export function drawSheetGood(
   const rng = seededRandom(fallbackSeed);
   const { primary, secondary } = colorBySheetGoodKind[kind];
   const squareFeet = sheetWidth * sheetLength;
-
-  drawContactShadow(g, -width / 2, -height / 2, width, height, thickness / 4);
 
   const faceArt = SHEET_FACE_TEXTURES[kind];
   if (faceArt) {

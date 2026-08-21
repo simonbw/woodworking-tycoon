@@ -171,9 +171,16 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     // A part a fastener already holds is part of the build: no dragging
     // it back off.
     if (this.fastened().has(piece.material.id)) return;
+    // Picking a piece up trues it: the hand squares the small tilt it
+    // landed with, so setting it against a laid-out plan doesn't start
+    // with a nudging match. Squaring turns it about its middle — the
+    // very point being held — so nothing moves.
     this.drag = {
       materialId: piece.material.id,
-      placement: piece.placement,
+      placement: {
+        ...piece.placement,
+        angleDeg: nearestRightAngle(piece.placement.angleDeg),
+      },
       grabDxIn: piece.placement.xIn - stage.pointer.xIn,
       grabDyIn: piece.placement.yIn - stage.pointer.yIn,
     };
@@ -308,10 +315,11 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     const current = this.drag?.placement ?? piece.placement;
     // One flip verb: a board cycles flat → up on its long edge → up on
     // its end → flat again; anything else turns over. Mirroring a board
-    // face-for-face never showed anyway.
+    // face-for-face never showed anyway. R trues as it turns — a piece
+    // lying at a small tilt lands square, not tilted a quarter further.
     const turned: BenchPlacement =
       key === "KeyR"
-        ? { ...current, angleDeg: current.angleDeg + 90 }
+        ? { ...current, angleDeg: nearestRightAngle(current.angleDeg) + 90 }
         : tumbles(piece.material)
           ? atFlipStop(current, nextFlipStop(flipStopOf(current)))
           : { ...current, flipped: !current.flipped };
@@ -347,9 +355,12 @@ export class BenchArrangeView extends BaseEntity implements Entity {
       const piece = this.handPiece(group);
       if (piece) {
         if (!this.carriedMotion) {
-          // Taken hold of where it lies: motion starts from rest.
+          // Taken hold of where it lies: motion starts from rest, then
+          // lifts — the piece grows a hair toward the eye and its shadow
+          // spreads, the way a thing picked up comes off the surface.
           this.carriedMotion = new PieceMotion();
           this.carriedMotion.setLit(true);
+          this.carriedMotion.setCarried(true);
           this.carried.addChild(this.carriedMotion.holder);
         }
         this.carriedMotion.retarget(piece.material, this.drag.placement, fit, {
@@ -367,6 +378,11 @@ export class BenchArrangeView extends BaseEntity implements Entity {
     this.carriedMotion.holder.destroy({ children: true });
     this.carriedMotion = null;
   }
+}
+
+/** The square angle a tilted piece trues to when the hand takes it. */
+function nearestRightAngle(angleDeg: number): number {
+  return Math.round(angleDeg / 90) * 90;
 }
 
 /** The member bookkeeping this piece, or the run's first table. */

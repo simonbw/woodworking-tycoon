@@ -1,11 +1,14 @@
 import { Graphics } from "pixi.js";
 
 /**
- * The soft double halo a piece throws on the surface under it. The
- * spread grows with how far the piece stands off that surface — a flat
- * board's thickness, a standing board's width — which is how depth
- * reads from above now that a lying piece draws only its top face.
- * Capped so a tall piece darkens a rim, not the whole bench.
+ * The soft shadow a piece throws on the surface under it — one shadow,
+ * drawn as a dense core with a fainter fringe so the edge reads soft
+ * without a blur filter. The spread grows with how far the piece stands
+ * off that surface — a flat board's thickness, a standing board's
+ * width — which is how depth reads from above now that a lying piece
+ * draws only its top face. Capped so a tall piece darkens a rim, not
+ * the whole bench. Every material's spread lives in materialShadow.ts;
+ * pieces built from parts cast one shadow for the whole piece there.
  */
 export function drawContactShadow(
   g: Graphics,

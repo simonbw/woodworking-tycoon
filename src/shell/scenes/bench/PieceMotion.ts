@@ -10,7 +10,11 @@ import {
   tumbles,
 } from "../../../game/bench-work/flip-cycle";
 import { MaterialInstance } from "../../../game/Materials";
-import { createMaterialSprite } from "../../../views/material-sprites/MaterialSprite";
+import {
+  createMaterialSprite,
+  materialSpriteArt,
+  materialSpriteShadow,
+} from "../../../views/material-sprites/MaterialSprite";
 import { TARGET_HIGHLIGHT_FILTERS } from "../../../views/targetHighlight";
 import { StageFit, stepTurnSpring } from "./stageMath";
 
@@ -26,6 +30,13 @@ import { StageFit, stepTurnSpring } from "./stageMath";
 const LIT_BRIGHTNESS = new ColorMatrixFilter();
 LIT_BRIGHTNESS.brightness(1.15, false);
 const LIT_FILTERS: Filter[] = [...TARGET_HIGHLIGHT_FILTERS, LIT_BRIGHTNESS];
+
+/** How much a carried piece grows toward the eye — just enough to read
+ * as coming off the surface. */
+const CARRIED_LIFT = 1.04;
+/** The shadow spreads harder than the wood grows: the piece is off the
+ * bench, and the widening pool under it is what says how far. */
+const CARRIED_SHADOW_SPREAD = 2.5;
 
 /** Motion the player has asked not to see is pinned, not played — which
  * is also how the E2E suite runs, so its assertions land on end states. */
@@ -55,6 +66,13 @@ function reducedMotion(): boolean {
 export class PieceMotion {
   readonly holder = new Container();
   private lit = false;
+  /** The hand has it off the surface: the art grows a hair and the
+   * shadow spreads, springing back down when it's set down. The spring
+   * runs on a 0–1 phase — the scale's own travel is far below the
+   * spring's snap threshold. */
+  private carried = false;
+  private liftPhase = 0;
+  private liftVelocity = 0;
   /** The tumble's three stop sprites, only for a board that tumbles. */
   private stopSprites: Container[] | null = null;
   private spriteKey = "";
@@ -130,6 +148,9 @@ export class PieceMotion {
       }
       this.spriteKey = spriteKey;
       this.drawn = material;
+      // The light lives on the sprites' art layers now, so a rebuild
+      // has to dress the fresh ones.
+      this.applyLit();
     }
     this.material = material;
     this.originX = fit.originX;
@@ -173,7 +194,32 @@ export class PieceMotion {
   setLit(lit: boolean): void {
     if (lit === this.lit) return;
     this.lit = lit;
-    this.holder.filters = lit ? LIT_FILTERS : [];
+    this.applyLit();
+  }
+
+  /** The rim and brightness dress the wood alone: the shadow is a mark
+   * on the bench, not part of the piece's silhouette, so the light
+   * never traces it. */
+  private applyLit(): void {
+    for (const sprite of this.holder.children) {
+      const art = materialSpriteArt(sprite) ?? sprite;
+      art.filters = this.lit ? LIT_FILTERS : [];
+    }
+  }
+
+  /** Pick the piece up (or set it down) — the lift springs there. */
+  setCarried(carried: boolean): void {
+    if (carried === this.carried) return;
+    this.carried = carried;
+    if (reducedMotion()) {
+      this.liftPhase = this.targetLiftPhase();
+      this.liftVelocity = 0;
+      this.apply();
+    }
+  }
+
+  private targetLiftPhase(): number {
+    return this.carried ? 1 : 0;
   }
 
   step(dt: number): void {
@@ -182,10 +228,17 @@ export class PieceMotion {
       this.yIn === this.targetYIn &&
       this.angle === this.targetAngle &&
       this.flip === this.targetFlip &&
-      this.phase === this.targetPhase
+      this.phase === this.targetPhase &&
+      this.liftPhase === this.targetLiftPhase()
     ) {
       return;
     }
+    [this.liftPhase, this.liftVelocity] = stepTurnSpring(
+      this.liftPhase,
+      this.liftVelocity,
+      this.targetLiftPhase(),
+      dt,
+    );
     [this.xIn, this.xVelocity] = stepTurnSpring(
       this.xIn,
       this.xVelocity,
@@ -226,6 +279,18 @@ export class PieceMotion {
     );
     this.holder.angle = this.angle;
     this.holder.scale.set(this.flip * this.spriteScale, this.spriteScale);
+    // The lift rides the sprites' layers, under whatever scale the
+    // tumble puts on their roots: the wood grows a hair, the shadow
+    // pool under it spreads harder — height, read from above.
+    const lift = 1 + this.liftPhase * (CARRIED_LIFT - 1);
+    const shadowLift =
+      1 + this.liftPhase * (CARRIED_LIFT - 1) * CARRIED_SHADOW_SPREAD;
+    for (const sprite of this.holder.children) {
+      const art = materialSpriteArt(sprite);
+      if (art) art.scale.set(lift);
+      const shadow = materialSpriteShadow(sprite);
+      if (shadow) shadow.scale.set(shadowLift);
+    }
     if (!this.stopSprites || !this.material) return;
     const frame = tumbleFrame(this.material, this.phase);
     this.stopSprites.forEach((sprite, stop) => {

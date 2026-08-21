@@ -184,35 +184,21 @@ export class BenchPryView extends BaseEntity implements Entity {
   }
 
   /**
-   * F turns the pallet over: bare-handed with the pointer on it, or with
-   * the hammer in hand anywhere on the stage — the rest of the nails are
-   * on the other side, and putting the hammer down to turn it would be
-   * a step for nothing.
+   * F with the hammer in hand turns the pallet over from anywhere on the
+   * stage — the rest of the nails are on the other side, and putting the
+   * hammer down to turn it would be a step for nothing. Bare-handed F
+   * belongs to the arranging view, which flips exactly the piece under
+   * the pointer — the pallet included, now that it hit-tests like any
+   * other piece — so one press only ever turns one thing.
    */
   @on("keyDown")
   onKeyDown({ key, event }: GameEventMap["keyDown"]) {
     if (key !== "KeyF") return;
+    if (!this.hammerHeld()) return;
     if (!stageSettled(this.game)) return;
-    const dive = this.dive();
-    const bench = dive?.openBench();
+    const bench = this.dive()?.openBench();
     const staged = this.stagedPallet();
     if (!bench || !staged) return;
-    if (!this.hammerHeld()) {
-      // Bare hands: only the pallet under the pointer turns over, so F
-      // over a board still means that board.
-      if (dive?.handsFull()) return;
-      const at = this.pointerInches();
-      if (!at) return;
-      const local = benchPointOnPallet(staged.placement, at.xIn, at.yIn);
-      if (
-        local.xIn < 0 ||
-        local.yIn < 0 ||
-        local.xIn > PALLET_WIDTH_IN ||
-        local.yIn > PALLET_HEIGHT_IN
-      ) {
-        return;
-      }
-    }
     event.preventDefault();
     event.stopImmediatePropagation();
     arrangeBenchMaterial(this.game, bench, staged.pallet.id, {

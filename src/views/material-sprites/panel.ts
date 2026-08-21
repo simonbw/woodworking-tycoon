@@ -1,7 +1,6 @@
 import { Graphics } from "pixi.js";
 import { PIXELS_PER_INCH } from "../shop-scale";
 import { defaultBoardFace, EndGrainSlice, Panel } from "../../game/Materials";
-import { drawContactShadow } from "./contactShadow";
 import { endFill, faceFill, TURNED_AWAY_SHADE, woodArt } from "./woodFills";
 
 /** The panel data the renderer reads — everything but identity. */
@@ -23,15 +22,6 @@ export function drawPanel(g: Graphics, panel: PanelLook, seed?: string): void {
     strips.reduce((sum, strip) => sum + strip.width, 0) * PIXELS_PER_INCH;
   const height = length * PIXELS_PER_INCH;
   const panelSeed = seed ?? `panel-${strips.length}x${length}`;
-
-  drawContactShadow(
-    g,
-    -totalWidth / 2,
-    -height / 2,
-    totalWidth,
-    height,
-    thickness / 4,
-  );
 
   // strips, left to right in list order
   let x = -totalWidth / 2;
@@ -104,15 +94,6 @@ export function drawEndGrainSlice(
   const heightIn = 2;
   const height = heightIn * PIXELS_PER_INCH;
   const sliceSeed = seed ?? `slice-${strips.length}`;
-
-  drawContactShadow(
-    g,
-    -totalWidth / 2,
-    -height / 2,
-    totalWidth,
-    height,
-    thickness / 4,
-  );
 
   // pattern segments, left to right
   let x = -totalWidth / 2;

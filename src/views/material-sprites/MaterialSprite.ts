@@ -7,6 +7,7 @@ import {
 import { createAssembledProductSprite } from "./assembledProduct";
 import { createBoardSprite, drawBoardOnEdge, drawBoardOnEnd } from "./board";
 import { drawCuttingBoard } from "./cuttingBoard";
+import { drawMaterialShadow } from "./materialShadow";
 import { createPalletSprite } from "./pallet";
 import { drawEndGrainSlice, drawPanel } from "./panel";
 import { drawSheetGood } from "./sheetGood";
@@ -37,11 +38,58 @@ export interface MaterialSpriteOptions {
    * negative x scale); pallets additionally reorder their layers and
    * swap which nail heads show (createPalletSprite). */
   flipped?: boolean;
+  /** Skip the contact shadow — for a sprite stacked over another copy
+   * of the same piece (the stroke reveal's finished state), which would
+   * otherwise darken the one shadow already under it. */
+  shadow?: boolean;
+}
+
+/**
+ * The sprite's two layers, split so effects can address them apart: the
+ * hover rim dresses the art without tracing the shadow, and carrying a
+ * piece spreads the shadow without touching the wood.
+ */
+export const MATERIAL_SHADOW_LABEL = "shadow";
+export const MATERIAL_ART_LABEL = "art";
+
+/** The sprite's shadow layer, for effects that spread or hide it. */
+export function materialSpriteShadow(sprite: Container): Container | null {
+  return (
+    sprite.children.find((child) => child.label === MATERIAL_SHADOW_LABEL) ??
+    null
+  );
+}
+
+/** The sprite's art layer — the wood itself, for rims and tints. */
+export function materialSpriteArt(sprite: Container): Container | null {
+  return (
+    sprite.children.find((child) => child.label === MATERIAL_ART_LABEL) ?? null
+  );
 }
 
 export function createMaterialSprite(
   material: MaterialInstance,
   options: MaterialSpriteOptions = {},
+): Container {
+  const { alpha, shadow = true, onEdge, onEnd } = options;
+  const root = new Container();
+  if (shadow) {
+    const shadowG = new Graphics();
+    shadowG.label = MATERIAL_SHADOW_LABEL;
+    drawMaterialShadow(shadowG, material, { onEdge, onEnd });
+    if (alpha !== undefined) shadowG.alpha = alpha;
+    root.addChild(shadowG);
+  }
+  const art = createMaterialArt(material, options);
+  art.label = MATERIAL_ART_LABEL;
+  root.addChild(art);
+  return root;
+}
+
+/** The wood itself, shadowless — one drawing per material type. */
+function createMaterialArt(
+  material: MaterialInstance,
+  options: MaterialSpriteOptions,
 ): Container {
   const { alpha, tint, onEdge, onEnd, flipped } = options;
 

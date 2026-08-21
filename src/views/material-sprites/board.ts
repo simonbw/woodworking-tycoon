@@ -9,7 +9,6 @@ import {
 import { lerp } from "../../utils/mathUtils";
 import { seededRandom } from "../../utils/randUtils";
 import { BOARD_ROUGHNESS_TEXTURES } from "./boardFaceTextures";
-import { drawContactShadow } from "./contactShadow";
 import {
   edgeFill,
   endFill,
@@ -88,8 +87,6 @@ export function createBoardSprite(
   if (alpha !== undefined) root.alpha = alpha;
   const g = root.addChild(new Graphics());
   if (tint !== undefined) g.tint = tint;
-
-  drawContactShadow(g, -width / 2, -height / 2, width, height, thickness / 4);
 
   const art = woodArt(species, region.seed, thickness);
   g.poly(silhouette.facePoly);
@@ -261,12 +258,6 @@ export function drawBoardOnEdge(
   const region = face ?? defaultBoardFace(pieceSeed, boardLength, boardWidth);
   const art = woodArt(species, region.seed, thickness);
 
-  // A standing board stands its whole width off the bench, and the
-  // shadow says so — far wider than any lying board's
-  drawContactShadow(g, -width / 2, -height / 2, width + lean, height, boardWidth, {
-    alpha: 0.12,
-  });
-
   // The upturned edge face
   g.rect(-width / 2, -height / 2, width, height);
   g.fill(edgeFill(art, region, boardWidth, thickness, -width / 2, -height / 2));
@@ -339,9 +330,6 @@ export function drawBoardOnEnd(
   const w = boardWidth * PIXELS_PER_INCH;
   const h = (thickness / 4) * PIXELS_PER_INCH;
   const pieceSeed = seed ?? "on-end";
-
-  // The tallest a board can stand — the shadow spreads to its cap
-  drawContactShadow(g, -w / 2, -h / 2, w, h, length, { alpha: 0.12 });
 
   const art = woodArt(species, pieceSeed, thickness);
   g.rect(-w / 2, -h / 2, w, h);
