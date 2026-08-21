@@ -34,9 +34,11 @@ const LIT_FILTERS: Filter[] = [...TARGET_HIGHLIGHT_FILTERS, LIT_BRIGHTNESS];
 /** How much a carried piece grows toward the eye — just enough to read
  * as coming off the surface. */
 const CARRIED_LIFT = 1.04;
-/** The shadow spreads harder than the wood grows: the piece is off the
- * bench, and the widening pool under it is what says how far. */
-const CARRIED_SHADOW_SPREAD = 2.5;
+/** How far the shadow's rim spreads while carried, in sprite px —
+ * an equal fringe on every side, like the drawn spread itself, not a
+ * scale-up of the silhouette (which would give a long board a huge
+ * shadow past its ends and almost none along its edges). */
+const CARRIED_SHADOW_GROW_PX = 4;
 
 /** Motion the player has asked not to see is pinned, not played — which
  * is also how the E2E suite runs, so its assertions land on end states. */
@@ -280,16 +282,27 @@ export class PieceMotion {
     this.holder.angle = this.angle;
     this.holder.scale.set(this.flip * this.spriteScale, this.spriteScale);
     // The lift rides the sprites' layers, under whatever scale the
-    // tumble puts on their roots: the wood grows a hair, the shadow
-    // pool under it spreads harder — height, read from above.
+    // tumble puts on their roots: the wood grows a hair, and the shadow
+    // pool spreads by an even margin all around — height, read from
+    // above. The margin is per-axis scale off the shadow's own bounds,
+    // so a long board's shadow widens the same few px at its edges as
+    // past its ends.
     const lift = 1 + this.liftPhase * (CARRIED_LIFT - 1);
-    const shadowLift =
-      1 + this.liftPhase * (CARRIED_LIFT - 1) * CARRIED_SHADOW_SPREAD;
+    const growPx = this.liftPhase * CARRIED_SHADOW_GROW_PX;
     for (const sprite of this.holder.children) {
       const art = materialSpriteArt(sprite);
       if (art) art.scale.set(lift);
       const shadow = materialSpriteShadow(sprite);
-      if (shadow) shadow.scale.set(shadowLift);
+      if (!shadow) continue;
+      const bounds = shadow.getLocalBounds();
+      if (growPx > 0 && bounds.width > 0 && bounds.height > 0) {
+        shadow.scale.set(
+          (bounds.width + growPx * 2) / bounds.width,
+          (bounds.height + growPx * 2) / bounds.height,
+        );
+      } else {
+        shadow.scale.set(1);
+      }
     }
     if (!this.stopSprites || !this.material) return;
     const frame = tumbleFrame(this.material, this.phase);
