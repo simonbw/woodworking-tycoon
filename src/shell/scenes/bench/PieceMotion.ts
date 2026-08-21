@@ -1,4 +1,4 @@
-import { ColorMatrixFilter, Container, Filter } from "pixi.js";
+import { ColorMatrixFilter, Container, Filter, Graphics } from "pixi.js";
 import { BenchPlacement } from "../../../game/bench-work/bench-layout";
 import {
   advanceFlipPhase,
@@ -11,11 +11,18 @@ import {
 } from "../../../game/bench-work/flip-cycle";
 import { MaterialInstance } from "../../../game/Materials";
 import {
+  CONTACT_SHADOW_ALPHA,
+  drawContactShadow,
+} from "../../../views/material-sprites/contactShadow";
+import {
   createMaterialSprite,
   materialSpriteArt,
   materialSpriteShadow,
 } from "../../../views/material-sprites/MaterialSprite";
+import { materialShadowLook } from "../../../views/material-sprites/materialShadow";
+import { PIXELS_PER_INCH } from "../../../views/shop-scale";
 import { TARGET_HIGHLIGHT_FILTERS } from "../../../views/targetHighlight";
+import { lerp } from "../../../utils/mathUtils";
 import { StageFit, stepTurnSpring } from "./stageMath";
 
 /**
@@ -77,6 +84,8 @@ export class PieceMotion {
   private liftVelocity = 0;
   /** The tumble's three stop sprites, only for a board that tumbles. */
   private stopSprites: Container[] | null = null;
+  /** Their one shared shadow, under them all — see the mount note. */
+  private tumbleShadow: Graphics | null = null;
   private spriteKey = "";
   /** The instance the mounted sprites were drawn from, compared by
    * reference — see the note in `retarget`. */
@@ -129,12 +138,21 @@ export class PieceMotion {
       this.holder
         .removeChildren()
         .forEach((child) => child.destroy({ children: true }));
+      // A tumbling board's shadow is the holder's, not the stops': the
+      // three stop sprites ride non-uniform footprint scales mid-leg,
+      // which would smear a baked shadow's rim, and two of them
+      // crossfading would double it. One Graphics under them all,
+      // redrawn at the footprint the tumble is passing through.
+      this.tumbleShadow = tumbles(material)
+        ? this.holder.addChild(new Graphics())
+        : null;
       this.stopSprites = tumbles(material)
         ? FLIP_STOPS.map((stop) =>
             this.holder.addChild(
               createMaterialSprite(material, {
                 onEdge: stop.onEdge,
                 onEnd: stop.onEnd,
+                shadow: false,
               }),
             ),
           )
@@ -310,6 +328,41 @@ export class PieceMotion {
     }
     if (!this.stopSprites || !this.material) return;
     const frame = tumbleFrame(this.material, this.phase);
+    // The tumble's one shadow, redrawn at the very footprint the board
+    // is passing through (matched to the art's lift and bounce so the
+    // fringe stays even), its spread and darkness blending between the
+    // stop being left and the one being arrived at — a board tipping
+    // onto its edge watches its shadow widen into the standing spread
+    // instead of two baked shadows smearing through the crossfade.
+    if (this.tumbleShadow) {
+      const from = materialShadowLook(
+        this.material,
+        FLIP_STOPS[frame.fromStop],
+      );
+      const to = materialShadowLook(this.material, FLIP_STOPS[frame.toStop]);
+      const g = this.tumbleShadow;
+      g.clear();
+      if (from && to) {
+        const w = frame.widthIn * PIXELS_PER_INCH * frame.lift * lift;
+        const h = frame.heightIn * PIXELS_PER_INCH * frame.lift * lift;
+        drawContactShadow(
+          g,
+          -w / 2,
+          -h / 2,
+          w,
+          h,
+          lerp(from.standInches, to.standInches, frame.fade),
+          {
+            alpha: lerp(
+              from.alpha ?? CONTACT_SHADOW_ALPHA,
+              to.alpha ?? CONTACT_SHADOW_ALPHA,
+              frame.fade,
+            ),
+            extraSpreadPx: growPx,
+          },
+        );
+      }
+    }
     this.stopSprites.forEach((sprite, stop) => {
       const showing =
         stop === frame.fromStop

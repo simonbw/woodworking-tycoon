@@ -28,7 +28,7 @@ import { drawContactShadow } from "./contactShadow";
  * width, a pallet its stringer-and-decks height.
  */
 
-interface ShadowLook {
+export interface ShadowLook {
   readonly widthPx: number;
   readonly heightPx: number;
   /** Extra spread past the right edge — the standing board's face
@@ -37,6 +37,16 @@ interface ShadowLook {
   readonly standInches: number;
   readonly alpha?: number;
   readonly radius?: number;
+}
+
+/** The shadow a material would throw as placed — for callers that
+ * blend between two placements (the flip tumble) instead of drawing
+ * one outright. */
+export function materialShadowLook(
+  material: MaterialInstance,
+  placement: { onEdge?: boolean; onEnd?: boolean } = {},
+): ShadowLook | null {
+  return shadowLook(material, placement);
 }
 
 export function drawMaterialShadow(

@@ -9,6 +9,10 @@ import { Graphics } from "pixi.js";
  * Every material's spread lives in materialShadow.ts; pieces built
  * from parts cast one shadow for the whole piece there.
  */
+/** The default darkness, shared so callers that blend between two
+ * looks (the flip tumble) can lerp from the same number. */
+export const CONTACT_SHADOW_ALPHA = 0.16;
+
 export function drawContactShadow(
   g: Graphics,
   x: number,
@@ -16,10 +20,20 @@ export function drawContactShadow(
   width: number,
   height: number,
   standInches: number,
-  options: { alpha?: number; radius?: number } = {},
+  options: {
+    alpha?: number;
+    radius?: number;
+    /** Extra rim past the stand-height spread, in px — the carried
+     * lift's even fringe. */
+    extraSpreadPx?: number;
+  } = {},
 ): void {
-  const { alpha = 0.16, radius = 0 } = options;
-  const spread = Math.min(standInches, 4) * 1.5;
+  const {
+    alpha = CONTACT_SHADOW_ALPHA,
+    radius = 0,
+    extraSpreadPx = 0,
+  } = options;
+  const spread = Math.min(standInches, 4) * 1.5 + extraSpreadPx;
   const r = radius > 0 ? radius + spread : 0;
   g.roundRect(
     x - spread,
