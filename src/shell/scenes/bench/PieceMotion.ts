@@ -219,9 +219,10 @@ export class PieceMotion {
 
   /** The rim and brightness dress the wood alone: the shadow is a mark
    * on the bench, not part of the piece's silhouette, so the light
-   * never traces it. */
+   * never traces it — the tumble's holder-level shadow included. */
   private applyLit(): void {
     for (const sprite of this.holder.children) {
+      if (sprite === this.tumbleShadow) continue;
       const art = materialSpriteArt(sprite) ?? sprite;
       art.filters = this.lit ? LIT_FILTERS : [];
     }
