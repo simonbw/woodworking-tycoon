@@ -70,7 +70,7 @@ function shadowLook(
           widthPx: b.width * PIXELS_PER_INCH,
           heightPx: (b.thickness / 4) * PIXELS_PER_INCH,
           standInches: b.length,
-          alpha: 0.12,
+          alpha: 0.18,
         };
       }
       if (placement.onEdge) {
@@ -82,7 +82,7 @@ function shadowLook(
           heightPx: b.length * PIXELS_PER_INCH,
           widenPx: Math.min(edgePx * 0.8, 3),
           standInches: b.width,
-          alpha: 0.12,
+          alpha: 0.18,
         };
       }
       return {
