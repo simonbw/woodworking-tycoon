@@ -1,6 +1,7 @@
 import React from "react";
 import { websiteRequested } from "../../utils/urlFlags";
 import { useShopOpen } from "../useShell";
+import { DevMenu } from "./dev/DevMenu";
 import { HandsStrip } from "./HandsStrip";
 import { HoldMusicLayer } from "./HoldMusicLayer";
 import { ManualProvider } from "./manual/ManualProvider";
@@ -142,6 +143,11 @@ export const EngineHud: React.FC = () => {
 
         {/* Headless: elevator music while the wait key is held down. */}
         <HoldMusicLayer />
+
+        {/* The playtesting cheats on the backtick key. Dev builds only —
+          the guard is a compile-time constant, so production never
+          mounts it. */}
+        {process.env.NODE_ENV !== "production" && <DevMenu />}
       </main>
     </ManualProvider>
   );

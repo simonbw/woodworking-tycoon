@@ -455,6 +455,29 @@ test.describe("Screens", () => {
       await expect(
         page.getByRole("checkbox", { name: "Mute all" }),
       ).toBeChecked();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog", { name: "Paused" })).toHaveCount(0);
+    });
+
+    // Dev builds only (which this is): the playtesting cheats on the
+    // backtick key. Wiring only — each cheat's effect is proven in
+    // src/sim/commands/dev-commands.test.ts.
+    const devMenu = page.getByRole("dialog", { name: "Dev menu" });
+
+    await test.step("backtick opens the dev menu", async () => {
+      await page.keyboard.press("Backquote");
+      await expect(devMenu).toBeVisible();
+    });
+
+    await test.step("a cheat lands in the HUD's readouts", async () => {
+      const before = (await getState(page)).money;
+      await devMenu.getByRole("button", { name: "+$100" }).click();
+      expect((await getState(page)).money).toBe(before + 100);
+    });
+
+    await test.step("backtick closes it again", async () => {
+      await page.keyboard.press("Backquote");
+      await expect(devMenu).toHaveCount(0);
     });
   });
 });

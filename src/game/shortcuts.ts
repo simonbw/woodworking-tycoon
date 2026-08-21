@@ -623,6 +623,27 @@ const defs = [
     group: "General",
     hidden: true,
   },
+  // The dev menu (dev builds only — DevMenu never mounts in production).
+  // Hidden: it isn't part of the game, so the cheat sheet doesn't teach it.
+  {
+    id: "dev-menu",
+    codes: ["Backquote"],
+    keys: [["`"]],
+    description: "Open the dev menu",
+    scope: "global",
+    group: "General",
+    hidden: true,
+  },
+  // Its toggle half, re-bound inside the modal scope like close-journal.
+  {
+    id: "close-dev-menu",
+    codes: ["Backquote"],
+    keys: [["`"]],
+    description: "Close the dev menu",
+    scope: "modal",
+    group: "General",
+    hidden: true,
+  },
 ] as const;
 
 export type ShortcutId = (typeof defs)[number]["id"];
