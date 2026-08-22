@@ -4,7 +4,10 @@ import { Entity } from "../../../core/entity/Entity";
 import { on } from "../../../core/entity/handler";
 import { Machine, machineKey } from "../../../game/Machine";
 import { BenchGroup, benchGroupAt } from "../../../game/bench-work/bench-group";
-import { BenchScript, benchGroupWork } from "../../../game/bench-work/workpiece";
+import {
+  BenchScript,
+  benchGroupWork,
+} from "../../../game/bench-work/workpiece";
 import { projectProgression } from "../../../sim/projection";
 import { PalletNail } from "../../../game/Materials";
 import { ToolId } from "../../../game/Tool";
@@ -28,6 +31,23 @@ const DIVE_SECONDS = 0.65;
 const TOP_CHROME_PX = 232;
 const BOTTOM_CHROME_PX = 96;
 const SIDE_CHROME_PX = 24;
+
+/**
+ * One thing the hands can take down off the tool rail. A bar clamp and
+ * the glue bottle grab exactly like the tools do, even though under the
+ * hood a clamp is a pooled supply (game/Clamp.ts) and glue is free —
+ * the hand doesn't care what the registry calls it.
+ */
+export type BenchHand =
+  { kind: "tool"; toolId: ToolId } | { kind: "clamp" } | { kind: "glue" };
+
+function sameHand(a: BenchHand | null, b: BenchHand): boolean {
+  return (
+    a !== null &&
+    a.kind === b.kind &&
+    (a.kind !== "tool" || b.kind !== "tool" || a.toolId === b.toolId)
+  );
+}
 
 /** The opened bench: its run, and where that run lands on screen. */
 export interface BenchStage {
@@ -79,19 +99,27 @@ export class BenchDive extends BaseEntity implements Entity {
   dive = 0;
 
   /**
-   * The tool in hand — the bench's mode selector (docs/bench-work.md
-   * decision 0). Applying it to a valid target IS the operation, so a
-   * hammer over a staged pallet is pry mode and nothing else is.
+   * What the hands took off the rail — the bench's mode selector
+   * (docs/bench-work.md decision 0). Applying it to a valid target IS
+   * the operation, so a hammer over a staged pallet is pry mode and
+   * nothing else is. A bar clamp and the glue bottle hang on the rail
+   * with the tools and are grabbed the same way; one field means one
+   * thing in the hands at a time by construction.
    */
-  heldTool: ToolId | null = null;
+  held: BenchHand | null = null;
 
-  /**
-   * The glue-up's two hands, which aren't tools on the rail: a bar
-   * clamp off the rack, or the glue bottle. Holding either puts the
-   * tool down — one thing in the hands at a time.
-   */
-  holdingClamp = false;
-  holdingGlue = false;
+  /** The tool in hand, when the hand is holding one. */
+  get heldTool(): ToolId | null {
+    return this.held?.kind === "tool" ? this.held.toolId : null;
+  }
+
+  get holdingClamp(): boolean {
+    return this.held?.kind === "clamp";
+  }
+
+  get holdingGlue(): boolean {
+    return this.held?.kind === "glue";
+  }
 
   /** The nail the hammer is over, if any — the ring that warms. */
   hoveredNail: PalletNail | null = null;
@@ -120,48 +148,33 @@ export class BenchDive extends BaseEntity implements Entity {
       this.dive = 0;
       this.closingKey = null;
     }
-    // Standing up empties the hands: the tool goes back on its rail
-    // and the clamp and bottle go back on the rack, as the old view's
+    // Standing up empties the hands: whatever was taken down — a tool,
+    // a clamp, the bottle — goes back on the rail, as the old view's
     // unmount did.
-    this.heldTool = null;
-    this.holdingClamp = false;
-    this.holdingGlue = false;
+    this.held = null;
     this.hoveredNail = null;
     this.prying = null;
     this.invalidateStage();
     this.bump();
   }
 
-  /** Take a tool in hand, or hang the held one back up. */
-  toggleTool(toolId: ToolId): void {
-    this.heldTool = this.heldTool === toolId ? null : toolId;
-    this.holdingClamp = false;
-    this.holdingGlue = false;
+  /** Put something in the hands, or empty them (null). Taking one
+   * thing always puts back whatever else was held. */
+  hold(hand: BenchHand | null): void {
+    this.held = hand;
     this.hoveredNail = null;
     this.bump();
   }
 
-  /** Pick up a clamp or the glue bottle — or put both down (null). */
-  setHolding(what: "clamp" | "glue" | null): void {
-    this.holdingClamp = what === "clamp";
-    this.holdingGlue = what === "glue";
-    // Empty hands are empty: putting the clamp down also hangs up
-    // whatever tool was in the other hand.
-    this.heldTool = null;
-    this.hoveredNail = null;
-    this.bump();
+  /** The rail's click: take the thing in hand, or — already holding
+   * it — hang it back up. */
+  toggleHand(hand: BenchHand): void {
+    this.hold(sameHand(this.held, hand) ? null : hand);
   }
 
   /** Whether the hands are carrying anything at all. */
   handsFull(): boolean {
-    return this.heldTool !== null || this.holdingClamp || this.holdingGlue;
-  }
-
-  dropTool(): void {
-    if (this.heldTool === null) return;
-    this.heldTool = null;
-    this.hoveredNail = null;
-    this.bump();
+    return this.held !== null;
   }
 
   /**
@@ -172,7 +185,7 @@ export class BenchDive extends BaseEntity implements Entity {
   @on("rightDown")
   onRightDown() {
     if (this.openBenchKey === null || !this.handsFull()) return;
-    this.setHolding(null);
+    this.hold(null);
   }
 
   /** Whether the lean-in has landed: until it does, the surface is a
@@ -309,7 +322,6 @@ export class BenchDive extends BaseEntity implements Entity {
     this.groupKeys = null;
   }
 
-
   /** The opened bench's live entity, or null once it's out of reach. */
   openBench(): MachineEntity | null {
     return this.benchFor(this.openBenchKey);
@@ -367,14 +379,11 @@ export class BenchDive extends BaseEntity implements Entity {
 
   @on("tick")
   onTick(dt: number) {
-    // A held tool or clamp IS the pointer (the tool-icon cursor in
+    // Whatever the hand holds IS the pointer (the icon cursor in
     // BenchStageMarker, the glue view's clamp ghost) — the native arrow
     // under it would read as two hands.
     this.game.renderer?.setCursor(
-      this.openBenchKey !== null &&
-        (this.heldTool !== null || this.holdingClamp)
-        ? "none"
-        : "auto",
+      this.openBenchKey !== null && this.held !== null ? "none" : "auto",
     );
 
     // The lean-in runs on real time, like the truck's roll: forward

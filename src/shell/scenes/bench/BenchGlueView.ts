@@ -416,7 +416,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
       if (this.clampsAvailable() <= 0) return;
       this.clamps.push(this.snapClamp(run, at.xIn, at.yIn));
       // The last free bar leaves the hand empty.
-      if (this.clampsAvailable() <= 0) dive.setHolding(null);
+      if (this.clampsAvailable() <= 0) dive.hold(null);
       this.game.entities.tryGetSingleton(ShellStore)?.bump();
       return;
     }
@@ -440,7 +440,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
     }
     // Nothing to wind here: the press picks the bar back up.
     this.clamps.splice(index, 1);
-    dive.setHolding("clamp");
+    dive.hold({ kind: "clamp" });
     this.game.entities.tryGetSingleton(ShellStore)?.bump();
   }
 
@@ -466,7 +466,7 @@ export class BenchGlueView extends BaseEntity implements Entity {
   /** Put the bars and the bottle away and forget the beads. */
   private clearBench(): void {
     const dive = this.dive();
-    if (dive && (dive.holdingClamp || dive.holdingGlue)) dive.setHolding(null);
+    if (dive && (dive.holdingClamp || dive.holdingGlue)) dive.hold(null);
     if (this.clamps.length === 0 && this.beads.size === 0) return;
     this.clamps = [];
     this.tightened = 0;

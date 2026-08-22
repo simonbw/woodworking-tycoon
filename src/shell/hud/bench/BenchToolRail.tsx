@@ -22,8 +22,12 @@ import {
 import { machineStatesNow } from "../../../sim/machine-reads";
 import { projectPerson, projectProgression } from "../../../sim/projection";
 import { Consumables } from "../../../sim/singletons/Consumables";
-import { toolIconSrc } from "../../../utils/uiImages";
-import { BenchDive } from "../../scenes/bench/BenchDive";
+import {
+  BAR_CLAMP_ICON,
+  GLUE_BOTTLE_ICON,
+  toolIconSrc,
+} from "../../../utils/uiImages";
+import { BenchDive, BenchHand } from "../../scenes/bench/BenchDive";
 import { useGame, useShellVersion } from "../../useShell";
 import { useBenchChrome } from "./useBenchDive";
 
@@ -49,15 +53,17 @@ const BENCH_TOOL_SHORTCUTS: readonly ShortcutId[] = [
  * carried in the arms appears ghosted on a hook, and clicking it hangs
  * it up — mounting adds its operations to the bench's work.
  *
+ * Where a glue-up could happen, a bar clamp and the glue bottle hang on
+ * hooks of their own right after the rack's, grabbed exactly like the
+ * tools — click or digit to take one in hand, again to hang it back up.
+ * They never mount (a clamp is a pooled supply, the glue is free), so
+ * their hooks take no ✕ and don't count against the slots.
+ *
  * Tables pushed together are one bench (bench-work/bench-group.ts), so
  * the rail shows the whole run's tools: the neighbours' hang past a
  * divider, and clicking one slides it onto this table's rack and takes
  * it in hand — the same move-then-work the pieces make. A full rack
  * refuses the slide, saying so in the hook's title.
- *
- * The glue-up's two hands hang at the end: a bar clamp off the rack and
- * the bottle. They aren't tools — nothing mounts them — so they only
- * show where a glue-up could happen.
  */
 export const BenchToolRail: React.FC = () => {
   const game = useGame();
@@ -109,36 +115,54 @@ export const BenchToolRail: React.FC = () => {
     : [];
   const railFull = freeSlots <= 0;
 
+  // The clamp and the bottle hang right after the rack's hooks,
+  // wherever a glue-up could happen.
+  const glue = machine
+    ? availableOperations(machine, projectProgression(game)).some(
+        (operation) => operation.interaction?.kind === "glue",
+      )
+    : false;
+  const consumables = game.entities.tryGetSingleton(Consumables);
+  const clampsAvailable = consumables
+    ? clampsFree(consumables.clamps, machineStatesNow(game))
+    : 0;
+  const clampHook = glue ? toolSlots : -1;
+  const glueHook = glue ? toolSlots + 1 : -1;
+
   // The digits answer to the hooks in rail order: digit N does what
-  // clicking the Nth hook does, whether that's a mounted tool or a
-  // carried one ghosted on a free hook. Registered unconditionally
-  // (hooks), enabled per hook exactly when its click would work.
+  // clicking the Nth hook does, whether that's a mounted tool, a
+  // carried one ghosted on a free hook, or the clamp and bottle after
+  // them. Registered unconditionally (hooks), enabled per hook exactly
+  // when its click would work.
   for (const [index, shortcutId] of BENCH_TOOL_SHORTCUTS.entries()) {
     const mounted: ToolId | undefined = tools[index];
     const ghost = index < toolSlots ? mountable[index - tools.length] : null;
+    const grab: BenchHand | null =
+      index === clampHook
+        ? { kind: "clamp" }
+        : index === glueHook
+          ? { kind: "glue" }
+          : null;
     // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed-length list
     useShortcut(
       shortcutId,
       () => {
-        if (mounted) dive?.toggleTool(mounted);
+        if (mounted) dive?.toggleHand({ kind: "tool", toolId: mounted });
+        else if (grab) dive?.toggleHand(grab);
         else if (ghost && bench) mountTool(game, bench, ghost);
       },
       bench != null &&
         !chrome.inert &&
-        (mounted != null || (ghost != null && !working)),
+        (mounted != null ||
+          (grab != null &&
+            (grab.kind !== "clamp" ||
+              clampsAvailable > 0 ||
+              (dive?.holdingClamp ?? false))) ||
+          (ghost != null && !working)),
     );
   }
 
   if (!dive || !bench || !machine) return null;
-
-  const glue = availableOperations(machine, projectProgression(game)).some(
-    (operation) => operation.interaction?.kind === "glue",
-  );
-  const consumables = game.entities.getSingleton(Consumables);
-  const clampsAvailable = clampsFree(
-    consumables.clamps,
-    machineStatesNow(game),
-  );
   if (toolSlots === 0 && !glue) return null;
 
   return (
@@ -175,7 +199,7 @@ export const BenchToolRail: React.FC = () => {
                 data-sfx="ui-tab"
                 onClick={(event) => {
                   event.stopPropagation();
-                  dive.toggleTool(toolId);
+                  dive.toggleHand({ kind: "tool", toolId });
                 }}
                 className={`cursor-pointer rounded p-1 transition-transform hover:-translate-y-0.5 hover:drop-shadow-[0_3px_4px_rgba(0,0,0,0.5)] ${
                   held ? "opacity-30" : ""
@@ -260,6 +284,33 @@ export const BenchToolRail: React.FC = () => {
           );
         })}
 
+        {/* The clamp and the bottle, on hooks of their own where a
+            glue-up could happen — grabbed like any other tool, hung
+            back up the same way */}
+        {glue && (
+          <span className="ml-1 flex items-center gap-2 border-l border-paper-manila/20 pl-3">
+            <GrabHook
+              testId="bench-clamp-supply"
+              iconSrc={BAR_CLAMP_ICON}
+              name="bar clamp"
+              title={`Bar clamps — ${clampsAvailable} free on the rack`}
+              held={dive.holdingClamp}
+              hookNumber={clampHook + 1}
+              disabled={clampsAvailable === 0 && !dive.holdingClamp}
+              onClick={() => dive.toggleHand({ kind: "clamp" })}
+            />
+            <GrabHook
+              testId="bench-glue-bottle"
+              iconSrc={GLUE_BOTTLE_ICON}
+              name="glue bottle"
+              title="Wood glue — run a bead down each open seam"
+              held={dive.holdingGlue}
+              hookNumber={glueHook + 1}
+              onClick={() => dive.toggleHand({ kind: "glue" })}
+            />
+          </span>
+        )}
+
         {/* The neighbours' tools, past a divider: one rail for the whole
             run. Clicking slides the tool onto this table's rack and
             takes it in hand */}
@@ -280,7 +331,9 @@ export const BenchToolRail: React.FC = () => {
                 onClick={(event) => {
                   event.stopPropagation();
                   if (gatherBenchTool(game, bench, toolId)) {
-                    if (dive.heldTool !== toolId) dive.toggleTool(toolId);
+                    if (dive.heldTool !== toolId) {
+                      dive.toggleHand({ kind: "tool", toolId });
+                    }
                   }
                 }}
                 className={`rounded p-1 opacity-60 transition-transform ${
@@ -297,28 +350,6 @@ export const BenchToolRail: React.FC = () => {
                 />
               </button>
             ))}
-          </span>
-        )}
-
-        {glue && (
-          <span className="ml-1 flex items-center gap-2 border-l border-paper-manila/20 pl-3">
-            <RailButton
-              testId="bench-clamp-supply"
-              label="Clamp"
-              title={`Bar clamps — ${clampsAvailable} free on the rack`}
-              held={dive.holdingClamp}
-              disabled={clampsAvailable === 0 && !dive.holdingClamp}
-              onClick={() =>
-                dive.setHolding(dive.holdingClamp ? null : "clamp")
-              }
-            />
-            <RailButton
-              testId="bench-glue-bottle"
-              label="Glue"
-              title="Wood glue — run a bead down each open seam"
-              held={dive.holdingGlue}
-              onClick={() => dive.setHolding(dive.holdingGlue ? null : "glue")}
-            />
           </span>
         )}
 
@@ -339,30 +370,55 @@ export const BenchToolRail: React.FC = () => {
   );
 };
 
-/** One plain chip on the rail — the clamp and the bottle, which have no
- * tool icon of their own. */
-const RailButton: React.FC<{
+/** The clamp's and the bottle's hooks — the same icon-on-a-hook the
+ * tools get, minus the ✕ (nothing mounts them, nothing takes them off
+ * the rail). */
+const GrabHook: React.FC<{
   testId: string;
-  label: string;
+  iconSrc: string;
+  name: string;
   title: string;
   held: boolean;
+  hookNumber: number;
   disabled?: boolean;
   onClick: () => void;
-}> = ({ testId, label, title, held, disabled, onClick }) => (
-  <button
-    type="button"
-    data-testid={testId}
-    aria-pressed={held}
-    title={title}
-    disabled={disabled}
-    onClick={onClick}
-    data-sfx="ui-tab"
-    className={`rounded-sm border px-2.5 py-1.5 font-condensed uppercase tracking-wider text-xs disabled:opacity-40 ${
-      held
-        ? "border-gold bg-gold/20 text-paper-ivory"
-        : "border-workshop-edge bg-workshop-bg/85 text-paper-manila hover:bg-workshop-bg"
-    }`}
-  >
-    {label}
-  </button>
+}> = ({
+  testId,
+  iconSrc,
+  name,
+  title,
+  held,
+  hookNumber,
+  disabled,
+  onClick,
+}) => (
+  <span className="relative">
+    <button
+      type="button"
+      data-testid={testId}
+      aria-label={held ? `Put the ${name} back` : `Pick up the ${name}`}
+      title={title}
+      disabled={disabled}
+      data-sfx="ui-tab"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className={`cursor-pointer rounded p-1 transition-transform hover:-translate-y-0.5 hover:drop-shadow-[0_3px_4px_rgba(0,0,0,0.5)] disabled:cursor-default disabled:opacity-40 disabled:hover:translate-y-0 ${
+        held ? "opacity-30" : ""
+      }`}
+    >
+      <img
+        src={iconSrc}
+        alt=""
+        draggable={false}
+        className="size-11 select-none [image-rendering:pixelated] drop-shadow-[0_2px_2px_rgba(0,0,0,0.45)]"
+      />
+    </button>
+    {hookNumber >= 1 && hookNumber <= BENCH_TOOL_SHORTCUTS.length && (
+      <Kbd className="pointer-events-none absolute -bottom-1 -left-1">
+        {hookNumber}
+      </Kbd>
+    )}
+  </span>
 );

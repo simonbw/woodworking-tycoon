@@ -33,6 +33,7 @@ export const upgradeIconSrc = (upgradeId: UpgradeId) =>
 
 /** One-offs with no id registry behind them. */
 export const BAR_CLAMP_ICON = `${ICON_DIR}/misc-barClamp.png`;
+export const GLUE_BOTTLE_ICON = `${ICON_DIR}/misc-glueBottle.png`;
 export const SHOP_VAC_ICON = `${ICON_DIR}/misc-shopVac.png`;
 export const BROOM_ICON = `${ICON_DIR}/misc-broom.png`;
 
@@ -108,6 +109,7 @@ export const UI_IMAGE_ASSETS: readonly string[] = Array.from(
       .filter((id) => !IDS_WITHOUT_ICON_ART.upgrades.includes(id))
       .map(upgradeIconSrc),
     BAR_CLAMP_ICON,
+    GLUE_BOTTLE_ICON,
     SHOP_VAC_ICON,
     BROOM_ICON,
     // On screen before this ever runs — index.html preloads it so it's

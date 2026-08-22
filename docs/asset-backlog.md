@@ -81,7 +81,11 @@ wiring: same path, same size, same component.
 - [ ] Store-shelf icons for the things that aren't tools or consumables —
       `upgrade-vise`, `misc-barClamp`, `misc-broom`, and `misc-shopVac`.
       Same 64×64 icons directory, rendered by `UpgradeIcon` / `ClampIcon` /
-      `BroomIcon` / `ShopVacIcon` in `components/ItemIcon.tsx`. Two
+      `BroomIcon` / `ShopVacIcon` in `components/ItemIcon.tsx`. The bench
+      rail's glue bottle (`misc-glueBottle`, drawn programmatically rather
+      than generated — same stopgap tier) hangs beside the bar clamp on the
+      rail and rides the pointer while held (`BenchToolRail`,
+      `BenchStageMarker`). Two
       upgrades have **no icon art at all** and fall back to a drawn
       placeholder: `toolDrawers` and `materialShelf` (listed in
       `uiImages.ts`'s no-art set) — a harder gap than the generated ones.

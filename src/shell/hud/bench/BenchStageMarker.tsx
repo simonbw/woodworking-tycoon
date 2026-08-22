@@ -2,7 +2,7 @@ import React from "react";
 import { useGame, useShellVersion } from "../../useShell";
 import { BenchArrangeView } from "../../scenes/bench/BenchArrangeView";
 import { BenchAssemblyView } from "../../scenes/bench/BenchAssemblyView";
-import { BenchDive } from "../../scenes/bench/BenchDive";
+import { BenchDive, BenchHand } from "../../scenes/bench/BenchDive";
 import { BenchGlueView } from "../../scenes/bench/BenchGlueView";
 import { BenchPryView } from "../../scenes/bench/BenchPryView";
 import { BenchSawView } from "../../scenes/bench/BenchSawView";
@@ -10,8 +10,7 @@ import { BenchStrokeView } from "../../scenes/bench/BenchStrokeView";
 import { benchStage, benchWork } from "../../scenes/bench/benchStage";
 import { BlueprintSlot } from "../../../game/bench-work/blueprint";
 import { describeMaterialRequirement } from "../../../game/material-helpers";
-import { ToolId } from "../../../game/Tool";
-import { toolIconSrc } from "../../../utils/uiImages";
+import { GLUE_BOTTLE_ICON, toolIconSrc } from "../../../utils/uiImages";
 
 /**
  * What the bench is doing, written onto the page. Nothing here is drawn
@@ -99,8 +98,8 @@ export const BenchStageMarker: React.FC = () => {
         data-clamps-placed={glue?.clampsSetOut()}
       />
       <SlotTag slot={assembly?.hoveredSlot() ?? null} />
-      <ToolCursor
-        tool={dive.heldTool}
+      <HandCursor
+        hand={dive.held}
         prying={dive.prying !== null}
         driving={assembly?.isDriving() ?? false}
       />
@@ -109,18 +108,20 @@ export const BenchStageMarker: React.FC = () => {
 };
 
 /**
- * The held tool riding the pointer — the hand IS the hammer while one
- * is up off the rail. The native cursor hides under it (BenchDive owns
- * that), and the icon swings while a nail is being pried and taps while
- * a fastener drives, the old surface's own animations.
+ * Whatever's off the rail riding the pointer — the hand IS the hammer,
+ * or the glue bottle, while one is up. The native cursor hides under it
+ * (BenchDive owns that), and the icon swings while a nail is being
+ * pried and taps while a fastener drives, the old surface's own
+ * animations. The clamp is the one hand with no icon here: its ghost
+ * bar on the canvas (BenchGlueView) already rides the pointer.
  */
-const ToolCursor: React.FC<{
-  tool: ToolId | null;
+const HandCursor: React.FC<{
+  hand: BenchHand | null;
   prying: boolean;
   driving: boolean;
-}> = ({ tool, prying, driving }) => {
+}> = ({ hand, prying, driving }) => {
   const game = useGame();
-  if (!tool) return null;
+  if (!hand || hand.kind === "clamp") return null;
   const [x, y] = game.io.mousePosition;
   return (
     <div
@@ -128,7 +129,7 @@ const ToolCursor: React.FC<{
       style={{ transform: `translate(${x - 12}px, ${y - 11}px)` }}
     >
       <img
-        src={toolIconSrc(tool)}
+        src={hand.kind === "tool" ? toolIconSrc(hand.toolId) : GLUE_BOTTLE_ICON}
         alt=""
         draggable={false}
         className={`size-12 select-none [image-rendering:pixelated] drop-shadow-[0_4px_5px_rgba(0,0,0,0.5)] ${

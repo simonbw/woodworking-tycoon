@@ -144,7 +144,7 @@ export class ShortcutDispatcher extends BaseEntity implements Entity {
       // the glue bottle — goes back where it came from before Escape
       // means standing up. Tab always steps back.
       if (key === "Escape" && dive.handsFull()) {
-        dive.setHolding(null);
+        dive.hold(null);
         consume(event);
         return;
       }
