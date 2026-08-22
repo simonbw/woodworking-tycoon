@@ -31,4 +31,5 @@ Designs for unbuilt features live in the GitHub issue tracker, not in this repo.
 
 - `CLAUDE.md` — architecture overview and development guidelines
 - `docs/` — system documentation and content-creation guidance
+- `docs/art-direction.md` — the design language for everything drawn in the world
 - `docs/asset-backlog.md` — which shop-view objects still want real art

@@ -75,7 +75,7 @@ The shop is an entity world drawn by an engine, with a DOM layer over it:
 
 The world is drawn with PIXI.js by view entities (`src/views/`, `src/shell/scenes/`), and the chrome over it is React/Tailwind in two roots (`shell/HudRoot.tsx`, `shell/OverlayRoot.tsx`). Anything that moves with the world is a view; anything that reads as paperwork is DOM.
 
-In-world things are drawn either from a PNG texture (registered in `src/utils/loadAssets.ts`) or procedurally with PIXI `Graphics`. Which objects still want real art, which are procedural on purpose, and how to swap one for the other is tracked in `docs/asset-backlog.md` — read it before drawing a new `Graphics` sprite or replacing an existing one.
+In-world things are drawn either from a PNG texture (registered in `src/utils/loadAssets.ts`) or procedurally with PIXI `Graphics`. The visual rules for everything on the canvas — the style tiers, the fidelity gradient, what any new art or procedural sprite should look like — are `docs/art-direction.md`. Which objects still want real art, which are procedural on purpose, and how to swap one for the other is tracked in `docs/asset-backlog.md` — read both before drawing a new `Graphics` sprite or replacing an existing one.
 
 ## File Organization
 

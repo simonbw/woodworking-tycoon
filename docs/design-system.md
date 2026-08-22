@@ -1,7 +1,7 @@
 # The Paperwork Design System
 
 The UI is the paperwork of a small woodworking shop: paper props sitting on
-dark workshop chrome. Every panel should read as a *physical object* — a
+dark workshop chrome. Every panel should read as a _physical object_ — a
 receipt, a corkboard, a folder, a spec sheet taped to a machine — not as a
 generic web card. The tokens live in `tailwind.config.ts`; the shared
 component classes live in `src/styles/index.css`. This doc is the rubric for
@@ -10,19 +10,20 @@ using them.
 The core rule: **when everything is stylized, nothing reads as important.**
 Character fonts and loud surfaces are a budget to be spent, not a default.
 
-This doc covers the DOM UI. The art *inside* the shop view — machines,
-materials, props on the floor — follows its own rules; what still needs
-drawing is tracked in `docs/asset-backlog.md`.
+This doc covers the DOM UI. The art _inside_ the shop view — machines,
+materials, props on the floor — has its own design language,
+`docs/art-direction.md`; what still needs drawing is tracked in
+`docs/asset-backlog.md`.
 
 ## Font roles
 
-| Font | Class | Role | Budget |
-| --- | --- | --- | --- |
-| Barlow Condensed | `font-condensed` | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free. | Unlimited — it's the quiet default. |
-| Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — the manual's pages, the calendar page, receipt fine print — and the figures typed onto them (payouts, receipt digits). Opt-in only — never on interactive chrome. | A few document surfaces per screen. |
-| Stardos Stencil | `font-stencil` | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it. | One logo. Adding a second needs a new venue. |
-| Shantell Notes | `font-ink` | **Handwriting.** Human margin notes: the scavenging log's entries, a scribbled errand, a tally next to a quantity, a margin note in the manual. Runs small — use `text-base`/`text-lg`, never `text-xs`. Its weight axis runs 300–800: a whole page of it wants `.pencil-hand`, which sets the weight and spacing a pen actually leaves rather than the browser's defaults. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else — never on a screen. |
-| Lumberjack | `font-lumberjack` | **Reserved for the shop's own signage.** Currently has no call sites — the title screen and the Sawyer & Sons sign both became artwork — but the family is kept declared and loaded for the next sign that needs live type. It is not a heading face. | Signs only. Nothing today. |
+| Font                    | Class             | Role                                                                                                                                                                                                                                                                                                                                                                        | Budget                                                                                                                 |
+| ----------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Barlow Condensed        | `font-condensed`  | **The workhorse.** All UI chrome: labels, buttons, list rows, tabs, stats, tooltips, keyboard legends. This is the base font (`html`), so unstyled text gets it for free.                                                                                                                                                                                                   | Unlimited — it's the quiet default.                                                                                    |
+| Andada Pro (typewriter) | `font-typewriter` | **Typed documents.** Body text of in-fiction paperwork — the manual's pages, the calendar page, receipt fine print — and the figures typed onto them (payouts, receipt digits). Opt-in only — never on interactive chrome.                                                                                                                                                  | A few document surfaces per screen.                                                                                    |
+| Stardos Stencil         | `font-stencil`    | **Logos only.** Too grating for UI at any size, but it's the right face for a painted sign: the Orange Box wordmark (`OrangeBoxLogo`). Headings, including the store's aisle signage, stay bold condensed. Never set a label, a row, or a heading in it.                                                                                                                    | One logo. Adding a second needs a new venue.                                                                           |
+| Shantell Notes          | `font-ink`        | **Handwriting.** Human margin notes: the scavenging log's entries, a scribbled errand, a tally next to a quantity, a margin note in the manual. Runs small — use `text-base`/`text-lg`, never `text-xs`. Its weight axis runs 300–800: a whole page of it wants `.pencil-hand`, which sets the weight and spacing a pen actually leaves rather than the browser's defaults. | The character lever. Use it where a human would plausibly have written on the paper, nowhere else — never on a screen. |
+| Lumberjack              | `font-lumberjack` | **Reserved for the shop's own signage.** Currently has no call sites — the title screen and the Sawyer & Sons sign both became artwork — but the family is kept declared and loaded for the next sign that needs live type. It is not a heading face.                                                                                                                       | Signs only. Nothing today.                                                                                             |
 
 ## Where the fonts come from
 
@@ -90,17 +91,17 @@ so in a comment, or the value stops surviving its own `parseFloat`.
 
 ## Surface roles
 
-| Surface | Class / token | Means |
-| --- | --- | --- |
-| Workshop chrome | `workshop-bg` / `workshop-panel` / `workshop-edge` | The dark room the paper sits in. Never put body text directly on it except `.section-heading` object titles and `.button` chrome. |
-| Manila | `.paper-card`, `paper-manila` | Folders and general shop paperwork. The default card. |
-| Ivory | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory` | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-typewriter`. |
-| Legal | `.paper-card-legal`, `paper-legal` | Official documents from other people. Currently has no consumer (the work orders it dressed are gone); the classes stay declared in `index.css`/`tailwind.config.ts` for the next official document. |
-| HUD chip | `.hud-chip` (dark, translucent) | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of *overlay*, paperwork of *documents* — a HUD element is chrome, and a document it opens (a station sheet, the manual) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
-| Loose sheet | `.paper-note` + `.pencil-hand` | A sheet the character wrote on and left lying around, as against a document that was filed: a gradient for the light falling across it, a faint tooth, corners clipped off square, and a half-degree out of true. Today the guided opening's to-do card (`TutorialCard`). Everything on such a sheet is written, not typeset — see *Marks made by hand* below. |
-| Corkboard | `corkboard-*` + `.corkboard-bg` | Currently has no consumer (the job board it dressed is gone); the tokens stay declared in `index.css`/`tailwind.config.ts` for the next pinned-up surface. The *pinned* idiom lives on: the dust note wears a thumbtack + slight rotation via the `Thumbtack` component. |
-| Big-box store | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI. |
-| Lumberyard | `mill-*` | The Sawyer & Sons trip (`LumberyardTripOverlay`) only: painted-sign green over stickered stacks and gravel. Same rule as the store tokens — a location's palette stays at that location. |
+| Surface         | Class / token                                              | Means                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workshop chrome | `workshop-bg` / `workshop-panel` / `workshop-edge`         | The dark room the paper sits in. Never put body text directly on it except `.section-heading` object titles and `.button` chrome.                                                                                                                                                                                                                                                                                                                   |
+| Manila          | `.paper-card`, `paper-manila`                              | Folders and general shop paperwork. The default card.                                                                                                                                                                                                                                                                                                                                                                                               |
+| Ivory           | `.paper-card-ivory`, `.receipt-strip`, `paper-ivory`       | Machine-printed output: receipts, the ledger, the calendar page, reference cards. Numbers on ivory are `font-typewriter`.                                                                                                                                                                                                                                                                                                                           |
+| Legal           | `.paper-card-legal`, `paper-legal`                         | Official documents from other people. Currently has no consumer (the work orders it dressed are gone); the classes stay declared in `index.css`/`tailwind.config.ts` for the next official document.                                                                                                                                                                                                                                                |
+| HUD chip        | `.hud-chip` (dark, translucent)                            | A floating piece of workshop chrome over the world canvas: the top readouts, the hands strip, the supplies tally. Chrome is the language of _overlay_, paperwork of _documents_ — a HUD element is chrome, and a document it opens (a station sheet, the manual) is paper. Text on it follows the chrome rules (condensed, manila tones); numbers stay in the condensed face and carry `tabular-nums` — the top bar's readouts bold like the clock. |
+| Loose sheet     | `.paper-note` + `.pencil-hand`                             | A sheet the character wrote on and left lying around, as against a document that was filed: a gradient for the light falling across it, a faint tooth, corners clipped off square, and a half-degree out of true. Today the guided opening's to-do card (`TutorialCard`). Everything on such a sheet is written, not typeset — see _Marks made by hand_ below.                                                                                      |
+| Corkboard       | `corkboard-*` + `.corkboard-bg`                            | Currently has no consumer (the job board it dressed is gone); the tokens stay declared in `index.css`/`tailwind.config.ts` for the next pinned-up surface. The _pinned_ idiom lives on: the dust note wears a thumbtack + slight rotation via the `Thumbtack` component.                                                                                                                                                                            |
+| Big-box store   | `store-*`, `.product-card`, `.aisle-heading`, `.price-tag` | The Orange Box trip (`StoreTripOverlay`, and the skills catalog, which mimics it) only. Deliberately louder — it's a different location with its own retail fiction. Don't leak these tokens into the shop UI.                                                                                                                                                                                                                                      |
+| Lumberyard      | `mill-*`                                                   | The Sawyer & Sons trip (`LumberyardTripOverlay`) only: painted-sign green over stickered stacks and gravel. Same rule as the store tokens — a location's palette stays at that location.                                                                                                                                                                                                                                                            |
 
 ## Marks made by hand
 
@@ -177,7 +178,7 @@ stack of equal-weight cards:
 **Every surface is viewport-sized** (`h-screen`/`inset-0` +
 `overflow-hidden`, `p-6` margin) — the home screen and the store trip
 overlay alike — so nothing ever adds or removes a page scrollbar. Long
-content scrolls *inside* its own panel, aisle, or column. On Home, HUD
+content scrolls _inside_ its own panel, aisle, or column. On Home, HUD
 objects float over the canvas without ever moving it, and panels
 appearing or growing must never shove their neighbors around.
 
@@ -185,7 +186,7 @@ Spacing discipline for the anchored layout: **one gutter unit (`gap-6` /
 `p-6`) everywhere** — page margin and the gaps between HUD objects — so
 the edge-anchored composition stays consistent around the world.
 
-When adding a new panel, first ask which existing object it belongs *inside*.
+When adding a new panel, first ask which existing object it belongs _inside_.
 Only mint a new top-level object if it's genuinely a new piece of furniture,
 and give it exactly one `.section-heading`.
 
